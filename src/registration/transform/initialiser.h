@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __registration_transform_initialiser_h__
 #define __registration_transform_initialiser_h__
@@ -30,8 +29,8 @@ namespace MR
       namespace Init
       {
         enum InitType {set_centre_mass, set_centre_geometric, mass, geometric, moments, rot_search, none};
-        struct LinearInitialisationParams {
-          struct TranslationInit {
+        struct LinearInitialisationParams { MEMALIGN(LinearInitialisationParams)
+          struct TranslationInit { MEMALIGN(TranslationInit)
             bool unmasked1;
             bool unmasked2;
             TranslationInit () :
@@ -39,15 +38,15 @@ namespace MR
               unmasked2 (false) {} // TODO config parsing
           };
 
-          struct RotationInit {
+          struct RotationInit { MEMALIGN(RotationInit)
             bool unmasked1;
             bool unmasked2;
-            struct rot_search {
-              std::vector<default_type> angles;
+            struct rot_search { MEMALIGN(rot_search)
+              vector<default_type> angles;
               default_type scale;
               size_t directions;
               bool run_global;
-              struct global_search {
+              struct global_search { MEMALIGN(global_search)
                 size_t iterations;
                 global_search () :
                   iterations (10000) {}

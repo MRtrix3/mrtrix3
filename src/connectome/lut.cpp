@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 
 #include "connectome/lut.h"
@@ -68,7 +65,7 @@ LUT::file_format LUT::guess_file_format (const std::string& path)
 {
 
   class Column
-  {
+  { NOMEMALIGN
     public:
       Column () :
           numeric (true),
@@ -108,7 +105,7 @@ LUT::file_format LUT::guess_file_format (const std::string& path)
   std::ifstream in_lut (path, std::ios_base::in);
   if (!in_lut)
     throw Exception ("Unable to open lookup table file");
-  std::vector<Column> columns;
+  vector<Column> columns;
   std::string line;
   while (std::getline (in_lut, line)) {
     if (line.size() > 1 && line[0] != '#') {
@@ -287,25 +284,25 @@ void LUT::check_and_insert (const node_t index, const LUT_node& data)
 
 
 
-std::vector<node_t> get_lut_mapping (const LUT& in, const LUT& out)
+vector<node_t> get_lut_mapping (const LUT& in, const LUT& out)
 {
-  std::vector<node_t> map;
+  if (in.empty())
+    return vector<node_t>();
+  vector<node_t> map (in.rbegin()->first + 1, 0);
   for (const auto& node_in : in) {
     node_t target = 0;
     for (const auto& node_out : out) {
       if (node_out.second.get_name() == node_in.second.get_name()) {
         if (target) {
           throw Exception ("Cannot perform LUT conversion: Node " + str(node_in.first) + " (" + node_in.second.get_name() + ") has multiple possible targets");
-          return std::vector<node_t> ();
+          return vector<node_t> ();
         }
         target = node_out.first;
+        break;
       }
     }
-    if (target) {
-      if (node_in.first >= map.size())
-        map.resize (node_in.first + 1, 0);
+    if (target)
       map[node_in.first] = target;
-    }
   }
   return map;
 }

@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -27,9 +25,10 @@ using namespace App;
 void usage () {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au), Thijs Dhollander (thijs.dhollander@gmail.com) and Ben Jeurissen (ben.jeurissen@uantwerpen.be)";
 
+SYNOPSIS = "Generates a whole brain mask from a DWI image";
+
 DESCRIPTION
-  + "Generates a whole brain mask from a DWI image. "
-    "All diffusion weighted and b=0 volumes are used to "
+  + "All diffusion weighted and b=0 volumes are used to "
     "obtain a mask that includes both brain tissue and CSF. "
     "\nIn a second step peninsula-like extensions, where the "
     "peninsula itself is wider than the bridge connecting it "

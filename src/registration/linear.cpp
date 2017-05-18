@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "registration/linear.h"
 
@@ -27,9 +26,11 @@ namespace MR
 
     const char* linear_metric_choices[] = { "diff", "ncc", nullptr };
     const char* linear_robust_estimator_choices[] = { "l1", "l2", "lp", nullptr };
+    const char* linear_optimisation_algo_choices[] = { "bbgd", "gd", nullptr };
+    const char* optim_algo_names[] = { "BBGD", "GD", nullptr };
 
     // define parameters of initialisation methods used for both, rigid and affine registration
-    void parse_general_init_options (Registration::Linear& registration) {
+    void parse_general_options (Registration::Linear& registration) {
       if (get_options("init_translation.unmasked1").size()) registration.init.init_translation.unmasked1 = true;
       if (get_options("init_translation.unmasked2").size()) registration.init.init_translation.unmasked2 = true;
 
@@ -39,7 +40,7 @@ namespace MR
       if (get_options("init_rotation.search.run_global").size()) registration.init.init_rotation.search.run_global = true;
       auto opt = get_options("init_rotation.search.angles");
       if (opt.size()) {
-        std::vector<default_type> angles = parse_floats (opt[0][0]);
+        vector<default_type> angles = parse_floats (opt[0][0]);
         for (auto& a: angles) {
           if (a < 0.0 or a > 180.0)
             throw Exception ("init_rotation.search.angles have to be between 0 and 180 degree.");
@@ -66,6 +67,54 @@ namespace MR
         if (iters == 0)
             throw Exception ("init_rotation.search.global.iterations has to be at least 1");
         registration.init.init_rotation.search.global.iterations = iters;
+      }
+
+
+      opt = get_options("linstage.optimiser.default");
+      if (opt.size()) {
+        switch ((int) opt[0][0]) {
+        case 0:
+          registration.set_stage_optimiser_default (Registration::OptimiserAlgoType::bbgd);
+          break;
+        case 1:
+          registration.set_stage_optimiser_default (Registration::OptimiserAlgoType::gd);
+          break;
+        }
+      }
+
+      opt = get_options("linstage.optimiser.first");
+      if (opt.size()) {
+        switch ((int) opt[0][0]) {
+        case 0:
+          registration.set_stage_optimiser_first (Registration::OptimiserAlgoType::bbgd);
+          break;
+        case 1:
+          registration.set_stage_optimiser_first (Registration::OptimiserAlgoType::gd);
+          break;
+        }
+      }
+
+      opt = get_options("linstage.optimiser.last");
+      if (opt.size()) {
+        switch ((int) opt[0][0]) {
+        case 0:
+          registration.set_stage_optimiser_last (Registration::OptimiserAlgoType::bbgd);
+          break;
+        case 1:
+          registration.set_stage_optimiser_last (Registration::OptimiserAlgoType::gd);
+          break;
+        }
+      }
+
+      opt = get_options("linstage.iterations");
+      if (opt.size()) {
+        vector<int> iterations = parse_ints (opt[0][0]);
+        registration.set_stage_iterations (iterations);
+      }
+
+      opt = get_options("linstage.diagnostics.prefix");
+      if (opt.size()) {
+        registration.set_diagnostics_image_prefix (opt[0][0]);
       }
     }
 
@@ -123,6 +172,31 @@ namespace MR
       + Option ("init_rotation.search.global.iterations", "number of rotations to investigate (Default: 10000)")
         + Argument ("num").type_integer (1, 1e10);
 
+    const OptionGroup lin_stage_options =
+      OptionGroup ("Advanced linear registration stage options")
+      + Option ("linstage.iterations", "number of iterations for each registration stage, not to be confused with -rigid_niter or -affine_niter. "
+        "This can be used to generate intermediate diagnostics images (-linstage.diagnostics.prefix) "
+        "or to change the cost function optimiser during registration (without the need to repeatedly resize the images). (Default: 1 == no repetition)")
+        + Argument ("num or comma separated list").type_sequence_int ()
+
+      // TODO linstage.loop_density
+
+      // TODO linstage.robust: Start each stage repetition with the estimated parameters from the previous stage.
+      // choose parameter consensus criterion: maximum overlap, min cost
+
+      + Option ("linstage.optimiser.first", "Cost function optimisation algorithm to use at first iteration of all stages. "
+        "Valid choices: bbgd (Barzilai-Borwein gradient descent) or gd (simple gradient descent). (Default: bbgd)")
+        + Argument ("algorithm").type_choice (linear_optimisation_algo_choices)
+      + Option ("linstage.optimiser.last", "Cost function optimisation algorithm to use at last iteration of all stages (if there are more than one). "
+        "Valid choices: bbgd (Barzilai-Borwein gradient descent) or gd (simple gradient descent). (Default: bbgd)")
+        + Argument ("algorithm").type_choice (linear_optimisation_algo_choices)
+      + Option ("linstage.optimiser.default", "Cost function optimisation algorithm to use at any stage iteration other than first or last iteration. "
+        "Valid choices: bbgd (Barzilai-Borwein gradient descent) or gd (simple gradient descent). (Default: bbgd)")
+        + Argument ("algorithm").type_choice (linear_optimisation_algo_choices)
+
+      + Option ("linstage.diagnostics.prefix", "generate diagnostics images after every registration stage")
+        + Argument ("file prefix").type_text();
+
     const OptionGroup rigid_options =
       OptionGroup ("Rigid registration options")
 
@@ -159,7 +233,7 @@ namespace MR
                                "using comma separated values (Default: 0.25,0.5,1.0)")
         + Argument ("factor").type_sequence_float ()
 
-      + Option ("rigid_niter", "the maximum number of iterations. This can be specified either as a single number "
+      + Option ("rigid_niter", "the maximum number of gradient descent iterations per stage. This can be specified either as a single number "
                                "for all multi-resolution levels, or a single value for each level. (Default: 1000)")
         + Argument ("num").type_sequence_int ()
 
@@ -227,7 +301,7 @@ namespace MR
                                "using comma separated values (Default: 0.25,0.5,1.0)")
         + Argument ("factor").type_sequence_float ()
 
-      + Option ("affine_niter", "the maximum number of iterations. This can be specified either as a single number "
+      + Option ("affine_niter", "the maximum number of gradient descent iterations per stage. This can be specified either as a single number "
                                "for all multi-resolution levels, or a single value for each level. (Default: 1000)")
         + Argument ("num").type_sequence_int ()
 

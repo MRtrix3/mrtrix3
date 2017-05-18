@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __registration_transform_base_h__
 #define __registration_transform_base_h__
@@ -21,6 +20,8 @@
 #include <Eigen/SVD>
 #include <Eigen/Geometry> // Eigen::Translation
 #include "datatype.h" // debug
+#include "file/config.h"
+#include "registration/transform/convergence_check.h"
 
 namespace MR
 {
@@ -80,20 +81,19 @@ namespace MR
        * The translation also should be initialised as image1 image centre minus the image2 image centre.
        *
        */
-      class Base  {
+      class Base  { MEMALIGN(Base)
         public:
 
           using ParameterType = default_type;
           Base (size_t number_of_parameters) :
-            number_of_parameters(number_of_parameters),
-            optimiser_weights (number_of_parameters) {
+              number_of_parameters (number_of_parameters),
+              optimiser_weights (number_of_parameters) {
               trafo.matrix().setIdentity();
               trafo_half.matrix().setIdentity();
               trafo_half_inverse.matrix().setIdentity();
               centre.setZero();
-          }
+            }
 
-          EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
           template <class OutPointType, class InPointType>
           inline void transform (OutPointType& out, const InPointType& in) const {
@@ -135,7 +135,7 @@ namespace MR
           }
 
           template <class TrafoType>
-          void set_transform (TrafoType& transform) {
+          void set_transform (const TrafoType& transform) {
             trafo.matrix().template block<3,4>(0,0) = transform.matrix().template block<3,4>(0,0);
             compute_halfspace_transformations();
           }
@@ -147,17 +147,17 @@ namespace MR
           }
 
           // set_matrix updates the 3x3 matrix and also updates the translation
-          void set_matrix (const Eigen::Matrix<ParameterType, 3, 3>& mat) {
-            transform_type Tc2, To, R0;
-            Tc2.setIdentity();
-            To.setIdentity();
-            R0.setIdentity();
-            To.translation() = offset;
-            Tc2.translation() = centre - 0.5 * offset;
-            R0.linear() = mat;
-            trafo = Tc2 * To * R0 * Tc2.inverse();
-            compute_halfspace_transformations();
-          }
+          // void set_matrix (const Eigen::Matrix<ParameterType, 3, 3>& mat) {
+          //   transform_type Tc2, To, R0;
+          //   Tc2.setIdentity();
+          //   To.setIdentity();
+          //   R0.setIdentity();
+          //   To.translation() = offset;
+          //   Tc2.translation() = centre - 0.5 * offset;
+          //   R0.linear() = mat;
+          //   trafo = Tc2 * To * R0 * Tc2.inverse();
+          //   compute_halfspace_transformations();
+          // }
 
           const Eigen::Matrix<ParameterType, 3, 3> get_matrix () const {
             return trafo.linear();
@@ -213,19 +213,18 @@ namespace MR
           }
 
           std::string debug () {
-            INFO ("parameters of type " + str(DataType::from<ParameterType>().specifier()));
             Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "");
-            INFO ("trafo:\n"+str(trafo.matrix().format(fmt)));
-            INFO ("trafo.inverse():\n"+str(trafo.inverse().matrix().format(fmt)));
-            INFO ("trafo_half:\n"+str(trafo_half.matrix().format(fmt)));
-            INFO ("trafo_half_inverse:\n"+str(trafo_half_inverse.matrix().format(fmt)));
-            INFO ("centre: "+str(centre.transpose(),12));
+            CONSOLE ("trafo:\n"+str(trafo.matrix().format(fmt)));
+            CONSOLE ("trafo_inverse:\n"+str(trafo.inverse().matrix().format(fmt)));
+            CONSOLE ("trafo_half:\n"+str(trafo_half.matrix().format(fmt)));
+            CONSOLE ("trafo_half_inverse:\n"+str(trafo_half_inverse.matrix().format(fmt)));
+            CONSOLE ("centre: "+str(centre.transpose(),12));
             return "";
           }
 
           template <class ParamType, class VectorType>
           bool robust_estimate (VectorType& gradient,
-                                std::vector<VectorType>& grad_estimates,
+                                vector<VectorType>& grad_estimates,
                                 const ParamType& params,
                                 const VectorType& parameter_vector,
                                 const default_type& weiszfeld_precision,
@@ -259,16 +258,11 @@ namespace MR
           }
 
           size_t number_of_parameters;
-          // TODO matrix, translation and offset are only here for the rigid class. to be removed
-          Eigen::Matrix<ParameterType, 3, 3> matrix;
-          Eigen::Vector3 translation;
-          Eigen::Vector3 offset;
           Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo;
           Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo_half;
           Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo_half_inverse;
           Eigen::Vector3 centre;
           Eigen::VectorXd optimiser_weights;
-
       };
       //! @}
     }

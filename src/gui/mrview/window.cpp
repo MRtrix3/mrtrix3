@@ -1,17 +1,17 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
+
 #include "app.h"
 #include "timer.h"
 #include "file/config.h"
@@ -117,8 +117,11 @@ namespace MR
         }
 
       QSize Window::GLArea::sizeHint () const {
+        //CONF option: MRViewInitWindowSize
+        //CONF initial window size of MRView in pixels
+        //CONF default: 512,512
         std::string init_size_string = lowercase (MR::File::Config::get ("MRViewInitWindowSize"));
-        std::vector<int> init_window_size;
+        vector<int> init_window_size;
         if (init_size_string.length())
           init_window_size = parse_ints(init_size_string);
         if (init_window_size.size() == 2)
@@ -138,11 +141,11 @@ namespace MR
       void Window::GLArea::dropEvent (QDropEvent* event) {
         const QMimeData* mimeData = event->mimeData();
         if (mimeData->hasUrls()) {
-          std::vector<std::unique_ptr<MR::Header>> list;
+          vector<std::unique_ptr<MR::Header>> list;
           QList<QUrl> urlList = mimeData->urls();
           for (int i = 0; i < urlList.size() && i < 32; ++i) {
             try {
-              list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (urlList.at (i).path().toUtf8().constData()))));
+              list.push_back (make_unique<MR::Header> (MR::Header::open (urlList.at (i).path().toUtf8().constData())));
             }
             catch (Exception& e) {
               e.display();
@@ -240,12 +243,12 @@ namespace MR
           setDocumentMode (true);
 
           //CONF option: IconSize
-          //CONF default: 24
+          //CONF default: 30
           //CONF The size of the icons in the main MRView toolbar.
           setWindowTitle (tr ("MRView"));
           setWindowIcon (QPixmap (":/mrtrix.png"));
           {
-            int iconsize = MR::File::Config::get_int ("IconSize", 24);
+            int iconsize = MR::File::Config::get_int ("IconSize", 30);
             setIconSize (QSize (iconsize, iconsize));
           }
           setCentralWidget (glarea);
@@ -286,8 +289,8 @@ namespace MR
           action->setShortcut (tr ("Ctrl+M"));
           addAction (action);
 
-          // File menu:
 
+          // File menu:
           menu = new QMenu (tr ("File menu"), this);
 
           action = menu->addAction (tr ("Open..."), this, SLOT (image_open_slot()));
@@ -318,15 +321,14 @@ namespace MR
           button = new QToolButton (this);
           button->setText ("File");
           button->setToolButtonStyle (button_style);
-          button->setToolTip (tr ("File menu"));
-          button->setIcon (QIcon (":/start.svg"));
+          button->setToolTip (tr ("Load and save images"));
+          button->setIcon (QIcon (":/file.svg"));
           button->setPopupMode (QToolButton::InstantPopup);
           button->setMenu (menu);
           toolbar->addWidget (button);
 
 
           // Image menu:
-
           image_menu = new QMenu (tr ("Image menu"), this);
 
           image_group = new QActionGroup (this);
@@ -386,7 +388,7 @@ namespace MR
           button = new QToolButton (this);
           button->setText ("Image");
           button->setToolButtonStyle (button_style);
-          button->setToolTip (tr ("Image menu"));
+          button->setToolTip (tr ("Navigate the image"));
           button->setIcon (QIcon (":/image.svg"));
           button->setPopupMode (QToolButton::InstantPopup);
           button->setMenu (image_menu);
@@ -394,10 +396,10 @@ namespace MR
 
 
           // Colourmap menu:
-
           colourmap_button = new ColourMapButton (this, *this, true, true, false);
           colourmap_button->setText ("Colourmap");
           colourmap_button->setToolButtonStyle (button_style);
+          colourmap_button->setToolTip (tr ("Change the colourmap"));
           colourmap_button->setPopupMode (QToolButton::InstantPopup);
 
           QMenu* colourmap_menu = colourmap_button->menu();
@@ -423,8 +425,6 @@ namespace MR
           addAction (image_interpolate_action);
 
           toolbar->addWidget (colourmap_button);
-
-
 
 
           // Mode menu:
@@ -560,51 +560,16 @@ namespace MR
           button = new QToolButton (this);
           button->setText ("View");
           button->setToolButtonStyle (button_style);
-          button->setToolTip (tr ("Display"));
-          button->setIcon (QIcon (":/mode.svg"));
+          button->setToolTip (tr ("View modes and options"));
+          button->setIcon (QIcon (":/view.svg"));
           button->setMenu (menu);
           button->setPopupMode (QToolButton::InstantPopup);
           toolbar->addWidget (button);
-
-
-
-
-          // Tool menu:
-          tool_group = new QActionGroup (this);
-          tool_group->setExclusive (false);
-          connect (tool_group, SIGNAL (triggered (QAction*)), this, SLOT (select_tool_slot (QAction*)));
-
-          menu = new QMenu (tr ("Tools"), this);
-#undef TOOL
-#define TOOL(classname, name, description) \
-          menu->addAction (new Action<Tool::classname> (tool_group, #name, #description, n++));
-          {
-            using namespace Tool;
-            size_t n = 1;
-#include "gui/mrview/tool/list.h"
-          }
-          for (int n = 0; n < tool_group->actions().size(); ++n)
-            addAction (tool_group->actions()[n]);
-
-          button = new QToolButton (this);
-          button->setText ("Tool");
-          button->setToolButtonStyle (button_style);
-          button->setToolTip (tr ("Select additional tools..."));
-          button->setIcon (QIcon (":/tools.svg"));
-          button->setMenu (menu);
-          button->setPopupMode (QToolButton::InstantPopup);
-          toolbar->addWidget (button);
-
-
-
 
           toolbar->addSeparator();
 
 
-
           // Mouse mode actions:
-
-
           mode_action_group = new QActionGroup (this);
           mode_action_group->setExclusive (true);
           connect (mode_action_group, SIGNAL (triggered (QAction*)), this, SLOT (select_mouse_mode_slot (QAction*)));
@@ -662,6 +627,42 @@ namespace MR
 
           toolbar->addSeparator();
 
+
+          // Dynamic spacer:
+          QWidget* spacer = new QWidget();
+          spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+          toolbar->addWidget (spacer);
+
+
+          // Tool menu:
+          tool_group = new QActionGroup (this);
+          tool_group->setExclusive (false);
+          connect (tool_group, SIGNAL (triggered (QAction*)), this, SLOT (select_tool_slot (QAction*)));
+
+          menu = new QMenu (tr ("Tools"), this);
+#undef TOOL
+#define TOOL(classname, name, description) \
+          menu->addAction (new Action<Tool::classname> (tool_group, #name, #description, n++));
+          {
+            using namespace Tool;
+            size_t n = 1;
+#include "gui/mrview/tool/list.h"
+          }
+          for (int n = 0; n < tool_group->actions().size(); ++n)
+            addAction (tool_group->actions()[n]);
+
+          button = new QToolButton (this);
+          button->setText ("Tool");
+          button->setToolButtonStyle (button_style);
+          button->setToolTip (tr ("Open different tools"));
+          button->setIcon (QIcon (":/tools.svg"));
+          button->setMenu (menu);
+          button->setPopupMode (QToolButton::InstantPopup);
+          toolbar->addWidget (button);
+
+          toolbar->addSeparator();
+
+
           // Information menu:
 
           menu = new QMenu (tr ("Info"), this);
@@ -672,10 +673,9 @@ namespace MR
 
 
           button = new QToolButton (this);
-          button->setText ("Info");
           button->setToolButtonStyle (button_style);
           button->setToolTip (tr ("Information"));
-          button->setIcon (QIcon (":/help.svg"));
+          button->setIcon (QIcon (":/info.svg"));
           button->setPopupMode (QToolButton::InstantPopup);
           button->setMenu (menu);
           toolbar->addWidget (button);
@@ -723,20 +723,20 @@ namespace MR
                 throw Exception ("FIXME: error determining position of last argument!");
 
             // identify first non-standard option:
-            size_t first_option = 0; 
-            for (; first_option < MR::App::option.size(); ++first_option) { 
+            size_t first_option = 0;
+            for (; first_option < MR::App::option.size(); ++first_option) {
               if (size_t (MR::App::option[first_option].opt - &MR::App::__standard_options[0]) >= MR::App::__standard_options.size())
                 break;
             }
-              
+
             first_option = MR::App::option[first_option].args - MR::App::argv;
             if (first_option < last_arg_pos)
               throw Exception ("options must appear after the last argument - see help page for details");
           }
 
-          std::vector<std::unique_ptr<MR::Header>> list;
+          vector<std::unique_ptr<MR::Header>> list;
           for (size_t n = 0; n < MR::App::argument.size(); ++n) {
-            try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (MR::App::argument[n])))); }
+            try { list.push_back (make_unique<MR::Header> (MR::Header::open (MR::App::argument[n]))); }
             catch (Exception& e) { e.display(); }
           }
           add_images (list);
@@ -788,14 +788,14 @@ namespace MR
 
       void Window::image_open_slot ()
       {
-        std::vector<std::string> image_list = Dialog::File::get_images (this, "Select images to open");
+        vector<std::string> image_list = Dialog::File::get_images (this, "Select images to open");
         if (image_list.empty())
           return;
 
-        std::vector<std::unique_ptr<MR::Header>> list;
+        vector<std::unique_ptr<MR::Header>> list;
         for (size_t n = 0; n < image_list.size(); ++n) {
           try {
-            list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (image_list[n]))));
+            list.push_back (make_unique<MR::Header> (MR::Header::open (image_list[n])));
           }
           catch (Exception& E) {
             E.display();
@@ -814,8 +814,8 @@ namespace MR
 
 
         try {
-          std::vector<std::unique_ptr<MR::Header>> list;
-          list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (folder))));
+          vector<std::unique_ptr<MR::Header>> list;
+          list.push_back (make_unique<MR::Header> (MR::Header::open (folder)));
           add_images (list);
         }
         catch (Exception& E) {
@@ -826,7 +826,7 @@ namespace MR
 
 
 
-      void Window::add_images (std::vector<std::unique_ptr<MR::Header>>& list)
+      void Window::add_images (vector<std::unique_ptr<MR::Header>>& list)
       {
         for (size_t i = 0; i < list.size(); ++i) {
           const std::string name = list[i]->name(); // Gets move-constructed out
@@ -1654,7 +1654,7 @@ namespace MR
       void Window::wheelEventGL (QWheelEvent* event)
       {
         assert (mode);
-#if QT_VERSION >= 0x050400
+#if QT_VERSION >= 0x050500
         QPoint delta;
         if (event->source() == Qt::MouseEventNotSynthesized)
           delta = event->angleDelta();
@@ -1756,7 +1756,7 @@ namespace MR
 
 
 
-      void Window::process_commandline_option () 
+      void Window::process_commandline_option ()
       {
         auto& opt (MR::App::option[current_option]);
 
@@ -1788,7 +1788,7 @@ namespace MR
           }
 
           if (opt.opt->is ("size")) {
-            std::vector<int> glsize = opt[0];
+            vector<int> glsize = opt[0];
             if (glsize.size() != 2)
               throw Exception ("invalid argument \"" + std::string(opt.args[0]) + "\" to view.size batch command");
             QSize oldsize = glarea->size();
@@ -1802,7 +1802,7 @@ namespace MR
             return;
           }
 
-          else if (opt.opt->is ("fov")) {
+          if (opt.opt->is ("fov")) {
             float fov = opt[0];
             set_FOV (fov);
             glarea->update();
@@ -1830,7 +1830,7 @@ namespace MR
 
           if (opt.opt->is ("voxel")) {
             if (image()) {
-              std::vector<default_type> pos = parse_floats (opt[0]);
+              vector<default_type> pos = parse_floats (opt[0]);
               if (pos.size() != 3)
                 throw Exception ("-voxel option expects a comma-separated list of 3 floating-point values");
               set_focus (image()->transform().voxel2scanner.cast<float>() *  Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
@@ -1883,8 +1883,8 @@ namespace MR
           }
 
           if (opt.opt->is ("load")) {
-            std::vector<std::unique_ptr<MR::Header>> list;
-            try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (opt[0])))); }
+            vector<std::unique_ptr<MR::Header>> list;
+            try { list.push_back (make_unique<MR::Header> (MR::Header::open (opt[0]))); }
             catch (Exception& e) { e.display(); }
             add_images (list);
             return;
@@ -1915,7 +1915,7 @@ namespace MR
 
           if (opt.opt->is ("intensity_range")) {
             if (image()) {
-              std::vector<default_type> param = parse_floats (opt[0]);
+              vector<default_type> param = parse_floats (opt[0]);
               if (param.size() != 2)
                 throw Exception ("-intensity_range options expects comma-separated list of two floating-point values");
               image()->set_windowing (param[0], param[1]);
@@ -1925,7 +1925,7 @@ namespace MR
           }
 
           if (opt.opt->is ("position")) {
-            std::vector<int> pos = opt[0];
+            vector<int> pos = opt[0];
             if (pos.size() != 2)
               throw Exception ("invalid argument \"" + std::string(opt[0]) + "\" to -position option");
             move (pos[0], pos[1]);
@@ -2009,6 +2009,7 @@ namespace MR
           if (opt.opt->is ("exit")) {
             qApp->processEvents();
             qApp->quit();
+            return;
           }
 
           assert ("shouldn't reach here!" && false);
@@ -2102,7 +2103,11 @@ namespace MR
           + OptionGroup ("Debugging options")
 
           + Option ("fps", "Display frames per second, averaged over the last 10 frames. "
-              "The maximum over the last 3 seconds is also displayed.");
+              "The maximum over the last 3 seconds is also displayed.")
+
+          + OptionGroup ("Other options")
+
+          + NoRealignOption;
 
       }
 

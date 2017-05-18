@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -28,8 +26,7 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  DESCRIPTION
-    + "report statistics on a direction set";
+  SYNOPSIS = "Report statistics on a direction set";
 
   ARGUMENTS
     + Argument ("dirs", "the text file containing the directions.").type_file_in();
@@ -44,11 +41,11 @@ int precision = 6;
 
 void report (const std::string& title, const Eigen::MatrixXd& directions) 
 {
-  std::vector<double> NN_bipolar (directions.rows(), -1.0);
-  std::vector<double> NN_unipolar (directions.rows(), -1.0);
+  vector<double> NN_bipolar (directions.rows(), -1.0);
+  vector<double> NN_unipolar (directions.rows(), -1.0);
 
-  std::vector<double> E_bipolar (directions.rows(), 0.0);
-  std::vector<double> E_unipolar (directions.rows(), 0.0);
+  vector<double> E_bipolar (directions.rows(), 0.0);
+  vector<double> E_unipolar (directions.rows(), 0.0);
 
   for (ssize_t i = 0; i < directions.rows()-1; ++i) {
     for (ssize_t j = i+1; j < directions.rows(); ++j) {
@@ -75,7 +72,7 @@ void report (const std::string& title, const Eigen::MatrixXd& directions)
 
 
 
-  auto report_NN = [](const std::vector<double>& NN) {
+  auto report_NN = [](const vector<double>& NN) {
     double min = std::numeric_limits<double>::max();
     double mean = 0.0;
     double max = 0.0;
@@ -92,7 +89,7 @@ void report (const std::string& title, const Eigen::MatrixXd& directions)
 
 
 
-  auto report_E = [](const std::vector<double>& E) {
+  auto report_E = [](const vector<double>& E) {
     double min = std::numeric_limits<double>::max();
     double total = 0.0;
     double max = 0.0;

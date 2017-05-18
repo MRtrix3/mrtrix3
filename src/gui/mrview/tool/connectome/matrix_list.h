@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __gui_mrview_tool_connectome_matrix_list_h__
 #define __gui_mrview_tool_connectome_matrix_list_h__
@@ -41,7 +40,7 @@ namespace MR
 
 
         class Matrix_list_model : public QAbstractItemModel
-        {
+        { MEMALIGN(Matrix_list_model)
           public:
 
             Matrix_list_model (Connectome* parent);
@@ -88,13 +87,13 @@ namespace MR
               endRemoveRows();
             }
 
-            void add_items (std::vector<FileDataVector>&);
+            void add_items (vector<FileDataVector>&);
 
             const FileDataVector& get (const size_t index) { assert (index < items.size()); return items[index]; }
             const FileDataVector& get (QModelIndex& index) { assert (size_t(index.row()) < items.size()); return items[index.row()]; }
 
           protected:
-            std::vector<FileDataVector> items;
+            vector<FileDataVector> items;
 
         };
 

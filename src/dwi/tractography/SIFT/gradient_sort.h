@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 
 #ifndef __dwi_tractography_sift_sort_h__
@@ -39,7 +36,7 @@ namespace MR
 
 
       class Cost_fn_gradient_sort
-      {
+      { MEMALIGN(Cost_fn_gradient_sort)
         public:
           Cost_fn_gradient_sort (const track_t i, const double g, const double gpul) :
             tck_index            (i),
@@ -80,12 +77,12 @@ namespace MR
       //     be filtered in a single iteration, provided the gradient is less than that of the candidate streamline
       //     from all other blocks
       class MT_gradient_vector_sorter
-      {
+      { MEMALIGN(MT_gradient_vector_sorter)
 
-          using VecType = std::vector<Cost_fn_gradient_sort>;
+          using VecType = vector<Cost_fn_gradient_sort>;
           using VecItType = VecType::iterator;
 
-          class Comparator {
+          class Comparator { NOMEMALIGN
             public:
               bool operator() (const VecItType& a, const VecItType& b) const { return (a->get_gradient_per_unit_length() < b->get_gradient_per_unit_length()); }
           };
@@ -109,7 +106,7 @@ namespace MR
 
 
           class BlockSender
-          {
+          { MEMALIGN(BlockSender)
             public:
               BlockSender (const track_t count, const track_t size) :
                 num_tracks (count),
@@ -132,7 +129,7 @@ namespace MR
           };
 
           class Sorter
-          {
+          { MEMALIGN(Sorter)
             public:
               Sorter (VecType& in) :
                 data  (in) { }

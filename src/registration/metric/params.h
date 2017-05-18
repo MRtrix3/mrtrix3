@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __registration_metric_params_h__
 #define __registration_metric_params_h__
@@ -19,6 +18,7 @@
 #include "image.h"
 #include "interp/linear.h"
 #include "interp/nearest.h"
+#include "adapter/reslice.h"
 
 namespace MR
 {
@@ -42,6 +42,10 @@ namespace MR
                 class ProcMaskType = Image<bool>,
                 class ProcessedMaskInterpolatorType = Interp::Nearest<Image<bool>>>
       class Params {
+        MEMALIGN(Params<TransformType,Im1ImageType,Im2ImageType,MidwayImageType,
+            Im1MaskType,Im2MaskType,Im1ImageInterpType,Im2ImageInterpType,
+            Im1MaskInterpolatorType,Im2MaskInterpolatorType,ProcImageType,ProcImageInterpolatorType,
+            ProcMaskType,ProcessedMaskInterpolatorType>)
         public:
 
           using TransformParamType = typename TransformType::ParameterType;
@@ -81,7 +85,7 @@ namespace MR
                       update_control_points();
           }
 
-          void set_extent (std::vector<size_t> extent_vector) { extent=std::move(extent_vector); }
+          void set_extent (vector<size_t> extent_vector) { extent=std::move(extent_vector); }
 
           template <class VectorType>
           void set_control_points_extent(const VectorType& extent) {
@@ -109,7 +113,68 @@ namespace MR
             control_points.block<3,4>(0,0).colwise() += centre;
           }
 
-          const std::vector<size_t>& get_extent() const { return extent; }
+          const vector<size_t>& get_extent() const { return extent; }
+
+          template <class OptimiserType>
+            void optimiser_update (OptimiserType& optim, const ssize_t overlap_count) {
+              DEBUG ("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
+              if (!is_finite(optim.state())) {
+                CONSOLE ("last valid transformation:");
+                transformation.debug();
+                CONSOLE ("last optimisation step ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
+                if (overlap_count == 0)
+                  WARN ("linear registration failed because (masked) images do not overlap.");
+                throw Exception ("Linear registration failed, transformation parameters are NaN.");
+              }
+              transformation.set_parameter_vector (optim.state());
+              update_control_points();
+            }
+
+          void make_diagnostics_image (const std::basic_string<char>& image_path, bool masked = true) {
+              Header header (midway_image);
+              header.datatype() = DataType::Float64;
+              header.ndim() = 4;
+              header.size(3) = 3;
+              // auto check = Image<float>::scratch (header);
+              auto check = Image<default_type>::create (image_path, header);
+
+              auto trafo1 = transformation.get_transform_half();
+              auto trafo2 = transformation.get_transform_half_inverse();
+
+              Adapter::Reslice<Interp::Linear, Im1ImageType > im1_reslicer (
+                im1_image, midway_image, trafo1, Adapter::AutoOverSample, NAN);
+              Adapter::Reslice<Interp::Linear, Im2ImageType > im2_reslicer (
+                im2_image, midway_image, trafo2, Adapter::AutoOverSample, NAN);
+
+              auto T = MR::Transform(midway_image).voxel2scanner;
+              Eigen::Vector3 midway_point, voxel_pos, im1_point, im2_point;
+
+              for (auto i = Loop (midway_image) (check, im1_reslicer, im2_reslicer); i; ++i) {
+                voxel_pos = Eigen::Vector3 ((default_type)check.index(0), (default_type)check.index(1), (default_type)check.index(2));
+                midway_point = T * voxel_pos;
+
+                check.index(3) = 0;
+                check.value() = im1_reslicer.value();
+                if (masked and im1_mask_interp) {
+                  transformation.transform_half (im1_point, midway_point);
+                  im1_mask_interp->scanner (im1_point);
+                  if (im1_mask_interp->value() <= 0.5)
+                    check.value() = NAN;
+                }
+
+                check.index(3) = 1;
+                check.value() = im2_reslicer.value();
+                if (masked and im2_mask_interp) {
+                  transformation.transform_half_inverse (im2_point, midway_point);
+                  im2_mask_interp->scanner (im1_point);
+                  if (im2_mask_interp->value() <= 0.5)
+                    check.value() = NAN;
+                }
+                check.index(3) = 0;
+              }
+              INFO("diagnostics image written");
+              // display (check);
+          }
 
           TransformType& transformation;
           Im1ImageType im1_image;
@@ -125,7 +190,7 @@ namespace MR
           bool robust_estimate;
           Eigen::Vector3 control_point_exent;
           Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
-          std::vector<size_t> extent;
+          vector<size_t> extent;
 
           ProcImageType processed_image;
           MR::copy_ptr<ProcImageInterpolatorType> processed_image_interp;

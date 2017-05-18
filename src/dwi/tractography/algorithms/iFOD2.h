@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_tractography_algorithms_iFOD2_h__
 #define __dwi_tractography_algorithms_iFOD2_h__
@@ -39,16 +38,16 @@ namespace MR
 
         using namespace MR::DWI::Tractography::Tracking;
 
-        class iFOD2 : public MethodBase {
+        class iFOD2 : public MethodBase { MEMALIGN(iFOD2)
           public:
 
-            class Shared : public SharedBase {
+            class Shared : public SharedBase { MEMALIGN(Shared)
               public:
                 Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
                   SharedBase (diff_path, property_set),
                   lmax (Math::SH::LforN (source.size(3))),
-                  num_samples (DEFAULT_TRACTOGRAPHY_IFOD2_NSAMPLES),
-                  max_trials (DEFAULT_TRACTOGRAPHY_MAX_TRIALS),
+                  num_samples (TCKGEN_DEFAULT_IFOD2_NSAMPLES),
+                  max_trials (TCKGEN_DEFAULT_MAX_TRIALS_PER_STEP),
                   sin_max_angle (std::sin (max_angle)),
                   mean_samples (0.0),
                   mean_truncations (0.0),
@@ -245,7 +244,7 @@ end_init:
               }
 
               if (max_val <= 0.0)
-                return CALIBRATE_FAIL;
+                return CALIBRATOR;
 
               max_val *= calibrate_ratio;
 
@@ -332,11 +331,11 @@ end_init:
             float calibrate_ratio, half_log_prob0, last_half_log_probN, half_log_prob0_seed;
             size_t mean_sample_num, num_sample_runs, num_truncations;
             float max_truncation;
-            std::vector<Eigen::Vector3f> calibrate_list;
+            vector<Eigen::Vector3f> calibrate_list;
 
             // Store list of points in the currently-calculated arc
-            std::vector<Eigen::Vector3f> positions, calib_positions;
-            std::vector<Eigen::Vector3f> tangents, calib_tangents;
+            vector<Eigen::Vector3f> positions, calib_positions;
+            vector<Eigen::Vector3f> tangents, calib_tangents;
 
             // Generate an arc only when required, and on the majority of next() calls, simply return the next point
             //   in the arc - more dense structural image sampling
@@ -370,7 +369,7 @@ end_init:
 
 
 
-            float path_prob (std::vector<Eigen::Vector3f>& positions, std::vector<Eigen::Vector3f>& tangents)
+            float path_prob (vector<Eigen::Vector3f>& positions, vector<Eigen::Vector3f>& tangents)
             {
 
               // Early exit for ACT when path is not sensible
@@ -403,7 +402,7 @@ end_init:
 
 
           protected:
-            void get_path (std::vector<Eigen::Vector3f>& positions, std::vector<Eigen::Vector3f>& tangents, const Eigen::Vector3f& end_dir) const
+            void get_path (vector<Eigen::Vector3f>& positions, vector<Eigen::Vector3f>& tangents, const Eigen::Vector3f& end_dir) const
             {
               float cos_theta = end_dir.dot (dir);
               cos_theta = std::min (cos_theta, float(1.0));
@@ -444,7 +443,7 @@ end_init:
 
           private:
             class Calibrate
-            {
+            { MEMALIGN(Calibrate)
               public:
                 Calibrate (iFOD2& method) :
                   P (method),
@@ -481,7 +480,7 @@ end_init:
                 Eigen::VectorXf& fod;
                 const float vox;
                 float init_log_prob;
-                std::vector<Eigen::Vector3f> positions, tangents;
+                vector<Eigen::Vector3f> positions, tangents;
             };
 
             friend void calibrate<iFOD2> (iFOD2& method);

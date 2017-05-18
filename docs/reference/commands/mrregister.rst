@@ -1,9 +1,14 @@
 .. _mrregister:
 
 mrregister
-===========
+===================
 
 Synopsis
+--------
+
+Register two images together using a symmetric rigid, affine or non-linear transformation model
+
+Usage
 --------
 
 ::
@@ -15,8 +20,6 @@ Synopsis
 
 Description
 -----------
-
-Register two images together using a rigid, affine or a non-linear transformation model.
 
 By default this application will perform an affine, followed by non-linear registration.
 
@@ -54,11 +57,11 @@ Rigid registration options
 
 -  **-rigid_scale factor** use a multi-resolution scheme by defining a scale factor for each level using comma separated values (Default: 0.25,0.5,1.0)
 
--  **-rigid_niter num** the maximum number of iterations. This can be specified either as a single number for all multi-resolution levels, or a single value for each level. (Default: 1000)
+-  **-rigid_niter num** the maximum number of gradient descent iterations per stage. This can be specified either as a single number for all multi-resolution levels, or a single value for each level. (Default: 1000)
 
 -  **-rigid_metric type** valid choices are: diff (intensity differences), Default: diff
 
--  **-rigid_metric.diff.estimator type** Valid choices are: l1 (least absolute: |x|), l2 (ordinary least squares), lp (least powers: |x|^1.2), Default: l2
+-  **-rigid_metric.diff.estimator type** Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), Default: l2
 
 -  **-rigid_lmax num** explicitly set the lmax to be used per scale factor in rigid FOD registration. By default FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
 
@@ -81,11 +84,11 @@ Affine registration options
 
 -  **-affine_scale factor** use a multi-resolution scheme by defining a scale factor for each level using comma separated values (Default: 0.25,0.5,1.0)
 
--  **-affine_niter num** the maximum number of iterations. This can be specified either as a single number for all multi-resolution levels, or a single value for each level. (Default: 1000)
+-  **-affine_niter num** the maximum number of gradient descent iterations per stage. This can be specified either as a single number for all multi-resolution levels, or a single value for each level. (Default: 1000)
 
 -  **-affine_metric type** valid choices are: diff (intensity differences), Default: diff
 
--  **-affine_metric.diff.estimator type** Valid choices are: l1 (least absolute: |x|), l2 (ordinary least squares), lp (least powers: |x|^1.2), Default: l2
+-  **-affine_metric.diff.estimator type** Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), Default: l2
 
 -  **-affine_lmax num** explicitly set the lmax to be used per scale factor in affine FOD registration. By default FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
 
@@ -111,6 +114,19 @@ Advanced linear transformation initialisation options
 -  **-init_rotation.search.run_global** perform a global search. (Default: local)
 
 -  **-init_rotation.search.global.iterations num** number of rotations to investigate (Default: 10000)
+
+Advanced linear registration stage options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-linstage.iterations num or comma separated list** number of iterations for each registration stage, not to be confused with -rigid_niter or -affine_niter. This can be used to generate intermediate diagnostics images (-linstage.diagnostics.prefix) or to change the cost function optimiser during registration (without the need to repeatedly resize the images). (Default: 1 == no repetition)
+
+-  **-linstage.optimiser.first algorithm** Cost function optimisation algorithm to use at first iteration of all stages. Valid choices: bbgd (Barzilai-Borwein gradient descent) or gd (simple gradient descent). (Default: bbgd)
+
+-  **-linstage.optimiser.last algorithm** Cost function optimisation algorithm to use at last iteration of all stages (if there are more than one). Valid choices: bbgd (Barzilai-Borwein gradient descent) or gd (simple gradient descent). (Default: bbgd)
+
+-  **-linstage.optimiser.default algorithm** Cost function optimisation algorithm to use at any stage iteration other than first or last iteration. Valid choices: bbgd (Barzilai-Borwein gradient descent) or gd (simple gradient descent). (Default: bbgd)
+
+-  **-linstage.diagnostics.prefix file prefix** generate diagnostics images after every registration stage
 
 Non-linear registration options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -177,11 +193,16 @@ Raffelt, D.; Tournier, J.-D.; Crozier, S.; Connelly, A. & Salvado, O. Reorientat
 
 **Author:** David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk)
 
-**Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
 
-This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+MRtrix is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see www.mrtrix.org
+For more details, see http://www.mrtrix.org/.
+
 

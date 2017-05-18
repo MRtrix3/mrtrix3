@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_tractography_act_gmwmi_h__
 #define __dwi_tractography_act_gmwmi_h__
@@ -47,7 +46,7 @@ namespace MR
 
 
         class GMWMI_finder
-        {
+        { MEMALIGN(GMWMI_finder)
 
           protected:
             using Interp = Interp::Linear<Image<float>>;
@@ -71,8 +70,8 @@ namespace MR
             bool is_cgm (const Eigen::Vector3f&) const;
 
 
-            Eigen::Vector3f find_interface (const std::vector<Eigen::Vector3f>&, const bool) const;
-            void crop_track (std::vector<Eigen::Vector3f>&) const;
+            Eigen::Vector3f find_interface (const vector<Eigen::Vector3f>&, const bool) const;
+            void crop_track (vector<Eigen::Vector3f>&) const;
 
 
           protected:
@@ -90,7 +89,7 @@ namespace MR
             Eigen::Vector3f get_normal (const Eigen::Vector3f&, Interp&) const;
             Eigen::Vector3f get_cf_min_step (const Eigen::Vector3f&, Interp&) const;
 
-            Eigen::Vector3f find_interface (const std::vector<Eigen::Vector3f>&, const bool, Interp&) const;
+            Eigen::Vector3f find_interface (const vector<Eigen::Vector3f>&, const bool, Interp&) const;
 
 
             friend class Track_extender;

@@ -1,17 +1,17 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
+
 #ifndef TOOL
 
 // place #include files in here:
@@ -19,7 +19,7 @@
 #include "gui/mrview/tool/roi_editor/roi.h"
 #include "gui/mrview/tool/overlay.h"
 #include "gui/mrview/tool/odf/odf.h"
-#include "gui/mrview/tool/vector.h"
+#include "gui/mrview/tool/fixel/fixel.h"
 #include "gui/mrview/tool/screen_capture.h"
 #include "gui/mrview/tool/tractography/tractography.h"
 #include "gui/mrview/tool/connectome/connectome.h"
@@ -35,8 +35,8 @@ TOOL(View, View options, Adjust view settings)
 TOOL(Overlay, Overlay, Overlay other images over the current image)
 TOOL(ROI, ROI editor, View & edit regions of interest)
 TOOL(Tractography, Tractography, Display tracks over the current image)
-TOOL(ODF, ODF Display, Display orientation density functions)
-TOOL(Vector, Vector Plot, Plot vector images)
+TOOL(ODF, ODF display, Display orientation density functions)
+TOOL(Fixel, Fixel plot, Plot fixel images)
 TOOL(Connectome, Connectome, Plot connectome properties)
 TOOL(Capture, Screen capture, Capture the screen as a png file)
 

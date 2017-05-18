@@ -1,26 +1,25 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
+#include <Eigen/Geometry>
 #include <unsupported/Eigen/MatrixFunctions>
 #include <algorithm>
 #include "command.h"
 #include "math/math.h"
 #include "math/average_space.h"
 #include "image.h"
-#include "file/nifti1_utils.h"
+#include "file/nifti_utils.h"
 #include "transform.h"
 #include "file/key_value.h"
 
@@ -36,6 +35,7 @@ const char* operations[] = {
   "average",
   "interpolate",
   "decompose",
+  "align_vertices_rigid",
   NULL
 };
 
@@ -43,48 +43,110 @@ void usage ()
 {
   AUTHOR = "Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
-  DESCRIPTION
-  + "This command's function is to process linear transformation matrices."
-
-  + "It allows to perform affine matrix operations or to convert the transformation matrix provided by FSL's flirt command to a format usable in MRtrix"
-  ;
+  SYNOPSIS = "Perform calculations on linear transformation matrices";
 
   ARGUMENTS
-  + Argument ("input", "the input for the specified operation").allow_multiple()
-  + Argument ("operation", "the operation to perform, one of: " + join(operations, ", ") + "."
-    + "\n\ninvert: invert the input transformation:\nmatrix_in invert output"
-
-    + "\n\nhalf: calculate the matrix square root of the input transformation:\nmatrix_in half output"
-
-    + "\n\nrigid: calculate the rigid transformation of the affine input transformation:\nmatrix_in rigid output"
-
-    + "\n\nheader: calculate the transformation matrix from an original image and an image with modified header:\nmov mapmovhdr header output"
-
-    + "\n\naverage: calculate the average affine matrix of all input matrices:\ninput ... average output"
-
-    + "\n\ninterpolate: create interpolated transformation matrix between input (t=0) and input2 (t=1). "
-        "Based on matrix decomposition with linear interpolation of "
-        " translation, rotation and stretch described in "
-        " Shoemake, K., Hill, M., & Duff, T. (1992). Matrix Animation and Polar Decomposition. "
-        " Matrix, 92, 258-264. doi:10.1.1.56.1336"
-        "\ninput input2 interpolate output"
-
-    + "\n\ndecompose: decompose transformation matrix M into translation, rotation and stretch and shear (M = T * R * S). "
-        "The output is a key-value text file "
-        "scaling: vector of 3 scaling factors in x, y, z direction, "
-        "shear: list of shear factors for xy, xz, yz axes, "
-        "angles: list of Euler angles about static x, y, z axes in radians in the range [0:pi]x[-pi:pi]x[-pi:pi], "
-        "angle_axis: angle in radians and rotation axis, "
-        "translation : translation vector along x, y, z axes in mm, "
-        "R: composed roation matrix (R = rot_x * rot_y * rot_z), "
-        "S: composed scaling and shear matrix."
-        "\nmatrix_in decompose output"
-    ).type_choice (operations)
+  + Argument ("inputs", "the inputs for the specified operation").allow_multiple()
+  + Argument ("operation", "the operation to perform, one of: " + join(operations, ", ") + " (see description section for details).").type_choice (operations)
   + Argument ("output", "the output transformation matrix.").type_file_out ();
+
+  DESCRIPTION
+      + "invert: invert the input transformation:"
+      + "matrix_in invert output"
+
+      + "half: calculate the matrix square root of the input transformation:"
+      + "matrix_in half output"
+
+      + "rigid: calculate the rigid transformation of the affine input transformation:"
+      + "matrix_in rigid output"
+
+      + "header: calculate the transformation matrix from an original image and an image with modified header:"
+      + "mov mapmovhdr header output"
+
+      + "average: calculate the average affine matrix of all input matrices:"
+      + "input ... average output"
+
+      + "interpolate: create interpolated transformation matrix between input (t=0) and input2 (t=1). "
+        "Based on matrix decomposition with linear interpolation of "
+        "translation, rotation and stretch described in "
+        "Shoemake, K., Hill, M., & Duff, T. (1992). Matrix Animation and Polar Decomposition. "
+        "Matrix, 92, 258-264. doi:10.1.1.56.1336:"
+      + "input input2 interpolate output"
+
+      + "decompose: decompose transformation matrix M into translation, rotation and stretch and shear (M = T * R * S). "
+        "The output is a key-value text file containing: "
+        "scaling: vector of 3 scaling factors in x, y, z direction; "
+        "shear: list of shear factors for xy, xz, yz axes; "
+        "angles: list of Euler angles about static x, y, z axes in radians in the range [0:pi]x[-pi:pi]x[-pi:pi]; "
+        "angle_axis: angle in radians and rotation axis; "
+        "translation : translation vector along x, y, z axes in mm; "
+        "R: composed roation matrix (R = rot_x * rot_y * rot_z); "
+        "S: composed scaling and shear matrix:"
+      + "matrix_in decompose output"
+
+      + "align_vertices_rigid: align two sets of landmarks using a rigid transformation. "
+        "Vertex coordinates are in scanner space, corresponding vertices must be stored in the same row "
+        "of moving.txt and fixed.txt. Requires 3 or more vertices in each file. "
+        "Algorithm: Kabsch 'A solution for the best rotation to relate two sets of vectors' DOI:10.1107/S0567739476001873:"
+      + "input moving.txt fixed.txt align_vertices_rigid output";
+
 }
 
 template <typename T> int sgn(T val) {
     return (T(0) < val) - (val < T(0));
+}
+
+transform_type align_corresponding_vertices (const Eigen::MatrixXd &target_vertices, const Eigen::MatrixXd &moving_vertices, bool scale) {
+  //  this function aligns two sets of vertices which must have corresponding vertices stored in the same row
+  //
+  //  scale == false --> Kabsch
+  //  minimise (target_vertices.row(i) - M * moving_vertices.row(i) + t).squaredNorm();
+  //
+  //  scale == true --> Umeyama
+  //  nonrigid version of Kabsch algorithm that also includes scale (not shear)
+  //
+  assert(target_vertices.rows() == moving_vertices.rows());
+  const size_t n = moving_vertices.rows();
+  assert (n > 2);
+
+  assert(target_vertices.cols() == moving_vertices.cols());
+  assert(target_vertices.cols() == 3 && "align_corresponding_vertices implemented only for 3D data");
+
+  Eigen::VectorXd moving_centre = moving_vertices.colwise().mean();
+  Eigen::VectorXd target_centre = target_vertices.colwise().mean();
+  Eigen::MatrixXd moving_centered = moving_vertices.rowwise() - moving_centre.transpose();
+  Eigen::MatrixXd target_centered = target_vertices.rowwise() - target_centre.transpose();
+  Eigen::MatrixXd cov = (target_centered.adjoint() * moving_centered) / default_type (n - 1);
+
+  Eigen::JacobiSVD<Eigen::Matrix3d> svd (cov, Eigen::ComputeFullU | Eigen::ComputeFullV);
+
+  // rotation matrix
+  Eigen::Matrix3d R = svd.matrixV() * svd.matrixU().transpose();
+
+  // calculate determinant of V*U^T to disambiguate rotation sign
+  default_type f_det = R.determinant();
+  Eigen::Vector3d e(1, 1, (f_det < 0)? -1 : 1);
+
+  // recompute the rotation if the determinant was negative
+  if (f_det < 0)
+    R.noalias() = svd.matrixV() * e.asDiagonal() * svd.matrixU().transpose();
+
+  // renormalize the rotation, R needs to be Matrix3d
+  R = Eigen::Quaterniond(R).normalized().toRotationMatrix();
+
+  if (scale) {
+    default_type fsq = 0;
+    for (size_t i = 0; i < n; ++ i)
+      fsq += moving_centered.row(i).squaredNorm();
+    // calculate and apply the scale
+    default_type fscale = svd.singularValues().dot(e) / fsq;
+    R *= fscale;
+  }
+
+  transform_type T;
+  T.linear() = R;
+  T.translation() = target_centre - (R * moving_centre);
+  return T;
 }
 
 void run ()
@@ -136,7 +198,7 @@ void run ()
       transform_type transform_out;
       Eigen::Transform<default_type, 3, Eigen::Projective> Tin;
       Eigen::MatrixXd Min;
-      std::vector<Eigen::MatrixXd> matrices;
+      vector<Eigen::MatrixXd> matrices;
       for (size_t i = 0; i < num_inputs; i++) {
         DEBUG(str(argument[i]));
         Tin = load_transform (argument[i]);
@@ -226,6 +288,15 @@ void run ()
       out << "S: " << S.row(1).format(fmt);
       out << "S: " << S.row(2).format(fmt);
 
+      break;
+    }
+    case 7: { // align_vertices_rigid
+      if (num_inputs != 2)
+        throw Exception ("align_vertices_rigid requires 2 input");
+      const Eigen::MatrixXd target_vertices = load_matrix (argument[0]);
+      const Eigen::MatrixXd moving_vertices = load_matrix (argument[1]);
+      const transform_type T = align_corresponding_vertices (target_vertices, moving_vertices, false);
+      save_transform (T, output_path);
       break;
     }
     default: assert (0);
