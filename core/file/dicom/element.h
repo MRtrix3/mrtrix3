@@ -60,7 +60,7 @@ namespace MR {
           bool read ();
 
           bool is (uint16_t Group, uint16_t Element) const {
-            if (group != Group) 
+            if (group != Group)
               return false;
             return element == Element;
           }
@@ -77,17 +77,17 @@ namespace MR {
               group, element
 #else
               element, group
-#endif 
+#endif
             } };
             return val.i;
           }
 
 
           size_t offset (uint8_t* address) const {
-            return address - fmap->address(); 
+            return address - fmap->address();
           }
           bool is_big_endian () const {
-            return is_BE; 
+            return is_BE;
           }
 
           Type type () const;
@@ -104,6 +104,7 @@ namespace MR {
                     "----- ---- ---- --  -------  -------   -------------------------------------  ---------------------------------------\n";
           }
 
+          static const char* get_error () { return error_message; }
 
         protected:
 
@@ -117,8 +118,10 @@ namespace MR {
 
           vector<uint8_t*>  end_seq;
 
+          static const char* error_message;
+
           uint16_t get_VR_from_tag_name (const std::string& name) {
-            union { 
+            union {
               char t[2];
               uint16_t i;
             } d = { { name[0], name[1] } };
@@ -133,43 +136,6 @@ namespace MR {
                   "in DICOM implicit syntax for tag (%02X %02X) - ignored", group, element));
           }
       };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
