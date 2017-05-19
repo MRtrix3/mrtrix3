@@ -235,6 +235,7 @@ If running a simple command such as:
 .. code-block::
  
     $ mrconvert DICOM/ out.nii
+    mrconvert: [SYSTEM FATAL CODE: SIGSEGV (11)] Segmentation fault: Invalid memory access
 
 crashes without a relevant error message, then this is an overt bug that needs
 fixing within the *MRtrix3* code. Even if the data are not DICOM-compliant, the
@@ -257,7 +258,16 @@ different sub-folders. This makes it all too easy for some of the images in a
 DICOM series to go missing, due to users forgetting to copy over all of the
 folders. Another way this can happen is when users copy the data from their
 DICOM client (e.g. PACS system) before the DICOM sender has finished sending
-the data (these transfers can take a long time...). 
+the data (these transfers can take a long time...). Attempts to read the data
+will fail with a message like this:
+
+.. code-block::
+
+    $ mrinfo DICOM/
+    mrinfo: [done] scanning DICOM folder "DICOM/"
+    mrinfo: [100%] reading DICOM series "DWI_60"
+    mrinfo: [ERROR] missing image frames for DICOM image "Joe Bloggs [MR] DWI_60"
+    mrinfo: [ERROR] error opening image "DICOM/"
 
 In these cases, it is simply not possible to load the data, since there are
 missing frames within it. The only solution here is to go back to the data
@@ -267,18 +277,30 @@ ERROR: no diffusion encoding information found in image
 .......................................................
 
 This indicates that *MRtrix3* was unable to find any information regarding the
-DW gradient directions (bvevcs/bvals) in the DICOM headers. This can happen for
-a number of reasons:
+DW gradient directions (bvevcs/bvals) in the DICOM headers, leading to errors
+like:
+
+.. code-block::
+
+    $ dwi2tensor DICOM/ dt.mif
+    dwi2tensor: [done] scanning DICOM folder "DICOM/"
+    dwi2tensor: [100%] reading DICOM series "DWI_60"
+    dwi2tensor: [ERROR] no diffusion encoding information found in image "Joe Bloggs [MR] DWI_60"
+
+This can happen for a number of reasons:
 
 - the information is simply not present. This can happen with custom sequences
   not explicitly designed to provide this information, or lack of support for
-  providing this information from some manufacturers. 
+  providing this information from some manufacturers. The only possible
+  solution in this case is to obtain the DW information from a different
+  source, and provide it to *MRtrix3* manually using the `-grad` or `-fslgrad`
+  options in those commands that support it. 
 
-- the information is present, but in a manner that *MRtrix3* doesn't yet
+- the information is present, but in a format that *MRtrix3* doesn't yet
   support. This is a very rare occurence these days, but still possible. If
   you're convinced your data should contain this information, please get in
-  touch with members of the *MRtrix3*, so we can take a look and see if support
-  can be added to the code. 
+  touch with members of the *MRtrix3* team, so we can take a look and see if
+  support can be added to the code. 
 
 - the information *was* present, but has been stripped out by third-party
   software, in particular anonymisation packages. These typically work by
@@ -286,9 +308,10 @@ a number of reasons:
   This often includes removing any *private* (vendor-specific) DICOM
   entries, since it's not possible for a computer program to guarantee that
   these entries contain no sensitive information. Unfortunately, these entries
-  often contain important information, notably the DW gradient information. In
-  these cases, the only sensible solution is to request the raw non-anonymised
-  data, convert these correctly, and anonymise the *converted* images.
+  often do contain important information, notably the DW gradient information.
+  In these cases, the only sensible solution is to request the raw
+  non-anonymised data, convert these correctly, and anonymise the *converted*
+  images.
 
 ERROR: unsupported transfer syntax
 ..................................
@@ -316,4 +339,42 @@ these are:
 - Explicit VR Big Endian (`1.2.840.10008.1.2.2`)
 
 Any other transfer syntax will be flagged as unsupported, and *MRtrix3* will be
-unable to read the data. Thankfully, there are ways around this. 
+unable to read the data, providing an error message similar to this:
+
+.. code-block::
+
+    $ mrinfo DICOM
+    mrinfo: [done] scanning DICOM folder "DICOM"
+    mrinfo: [ERROR] unable to read DICOM images in "DICOM":
+    mrinfo: [ERROR]   unsupported transfer syntax found in DICOM data
+    mrinfo: [ERROR]   consider using third-party tools to convert your data to standard uncompressed encoding
+    mrinfo: [ERROR]   e.g. dcmtk: http://dicom.offis.de/dcmtk.php.en
+    mrinfo: [ERROR] error opening image "DICOM"
+
+Thankfully, other tools exist that should be able to convert the data to a
+format that *MRtrix3* (and other DICOM tools) will read. The `dcmtk
+<http://dicom.offis.de/dcmtk.php.en>`__ DICOM toolkit in particular provides
+the ``dcmdjpeg`` command to decompress data stored using JPEG transfer syntax.
+On Linux, a directory of such files can be decompressed as follows (amend the
+various `PATH` as required for your system):
+
+.. code-block::
+    
+    export PATH=/opt/dcmtk/bin:$PATH
+    export DCMDICTPATH=/opt/dcmtk/share/dcmtk/dicom.dic
+
+    for img in dcmdir/*
+    do
+        dcmdjpeg $img ${img}.tmp
+        mv ${img}.tmp $img
+    done
+
+*MRtrix3* commands should now be able to read the directory successfully:
+
+.. code-block::
+
+    mrinfo dcmdir
+    mrinfo: [done] scanning DICOM folder "data/driss/t1"
+    mrinfo: [100%] reading DICOM series "AX FSPGR 3D ASSET  C+"
+    ...
+
