@@ -290,6 +290,30 @@ a number of reasons:
   these cases, the only sensible solution is to request the raw non-anonymised
   data, convert these correctly, and anonymise the *converted* images.
 
+ERROR: unsupported transfer syntax
+..................................
 
+The DICOM standard specifies a default *transfer syntax* to encode the
+information and the imaging data themselves. However, it also allows specifies
+a number of other storage formats to store the imaging data, notably compressed
+formats such as different variants of `JPEG <https://jpeg.org/>`__ and `MPEG
+<http://mpeg.chiariglione.org/>`__ (see the official `DICOM standard
+<http://dicom.nema.org/dicom/2013/output/chtml/part05/chapter_10.html>`__ for
+details). Importantly, these compressed formats are not mandatory: a compliant
+DICOM implementation does not need to support these features. This makes it
+entirely possible (and indeed, quite common) for a fully DICOM-compliant
+implementation to produce data that cannot be understood by another fully
+DICOM-compliant implementation - a less than ideal situation... 
 
+*MRtrix3* does not currently support non-default transfer syntaxes - only those
+that the standard defines as mandatory, and variants thereof. For reference,
+these are:
 
+- Implicit VR Little Endian (`1.2.840.10008.1.2`)
+
+- Explicit VR Little Endian (`1.2.840.10008.1.2.1`)
+
+- Explicit VR Big Endian (`1.2.840.10008.1.2.2`)
+
+Any other transfer syntax will be flagged as unsupported, and *MRtrix3* will be
+unable to read the data. Thankfully, there are ways around this. 
