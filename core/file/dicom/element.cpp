@@ -20,14 +20,13 @@ namespace MR {
   namespace File {
     namespace Dicom {
 
-      const char* Element::error_message = nullptr;
-
       void Element::set (const std::string& filename, bool force_read, bool read_write)
       {
         group = element = VR = 0;
         size = 0;
         start = data = next = NULL;
         is_BE = is_transfer_syntax_BE = false;
+        transfer_syntax_supported = true;
         parents.clear();
 
         fmap.reset (new File::MMap (filename, read_write));
@@ -158,14 +157,12 @@ namespace MR {
           size = Raw::fetch_<uint32_t> (start+4, is_BE);
         }
 
-
         next = data;
+
         if (size == LENGTH_UNDEFINED) {
-          if (VR != VR_SQ && !(group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_ITEM)) {
+          if (VR != VR_SQ && !(group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_ITEM)) 
             INFO ("undefined length used for DICOM tag " + ( tag_name().size() ? tag_name().substr (2) : "" )
                 + MR::printf ("(%04X, %04X) in file \"", group, element) + fmap->name() + "\"");
-            size = 0;
-          }
         }
         else if (next+size > fmap->address() + fmap->size())
           throw Exception ("file \"" + fmap->name() + "\" is too small to contain DICOM elements specified");
@@ -173,20 +170,26 @@ namespace MR {
           if (size%2)
             DEBUG ("WARNING: odd length (" + str (size) + ") used for DICOM tag " + ( tag_name().size() ? tag_name().substr (2) : "" )
                 + " (" + str (group) + ", " + str (element) + ") in file \"" + fmap->name() + "");
-          if (VR != VR_SQ && ( group != GROUP_SEQUENCE || element != ELEMENT_SEQUENCE_ITEM ) )
-            next += size;
+          if (VR != VR_SQ) {
+            if (group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_ITEM) {
+              if (parents.size() && parents.back().group == GROUP_DATA && parents.back().element == ELEMENT_DATA)
+                next += size;
+            }
+            else
+              next += size;
+          }
         }
 
 
 
-        if (parents.size())
+        if (parents.size()) 
           if ((parents.back().end && data > parents.back().end) ||
-              (group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_DELIMITATION_ITEM))
+              (group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_DELIMITATION_ITEM)) 
             parents.pop_back();
 
-        if (VR == VR_SQ) {
+        if (is_new_sequence()) {
           if (size == LENGTH_UNDEFINED)
-            parents.push_back (Sequence (group, element, NULL));
+            parents.push_back (Sequence (group, element, nullptr));
           else
             parents.push_back (Sequence (group, element, data + size));
         }
@@ -214,10 +217,7 @@ namespace MR {
                   throw Exception ("DICOM deflated explicit VR little endian transfer syntax not supported");
                 }
                 else {
-                  error_message =
-                    "unsupported transfer syntax found in DICOM data\n"
-                    "consider using third-party tools to convert your data to standard uncompressed encoding\n"
-                    "e.g. dcmtk: http://dicom.offis.de/dcmtk.php.en";
+                  transfer_syntax_supported = false;
                   INFO ("unsupported DICOM transfer syntax: \"" + std::string (reinterpret_cast<const char*> (data), size)
                     + "\" in file \"" + fmap->name() + "\"");
                 }
@@ -376,7 +376,7 @@ namespace MR {
         size_t indent = item.level() - ( item.VR == VR_SQ ? 1 : 0 );
         for (size_t i = 0; i < indent; i++)
           tmp += "  ";
-        if (item.VR == VR_SQ)
+        if (item.is_new_sequence())
           tmp += "> ";
         else if (item.group == GROUP_SEQUENCE && item.element == ELEMENT_SEQUENCE_ITEM)
           tmp += "- ";

@@ -102,6 +102,7 @@ namespace MR {
         image->filename = filename;
         image->series = series.get();
         image->sequence_name = reader.sequence;
+        image->transfer_syntax_supported = reader.transfer_syntax_supported;
         series->push_back (image);
       }
 
@@ -125,14 +126,6 @@ namespace MR {
         if (size() > 0)
           return;
 
-        auto error_msg = Element::get_error();
-        if (error_msg) {
-          auto lines = split_lines (error_msg);
-          Exception E ("unable to read DICOM images in \"" + filename + "\":");
-          for (const auto& line: lines)
-            E.push_back ("  " + line);
-          throw E;
-        }
         throw Exception ("no DICOM images found in \"" + filename + "\"");
       }
 

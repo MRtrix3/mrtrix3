@@ -60,6 +60,12 @@ namespace MR {
 
           // loop over images in each series:
           for (auto image_it : *series_it) {
+            if (!image_it->transfer_syntax_supported) {
+              Exception E ("unsupported transfer syntax found in DICOM data");
+              E.push_back ("consider using third-party tools to convert your data to standard uncompressed encoding");
+              E.push_back ("e.g. dcmtk: http://dicom.offis.de/dcmtk.php.en");
+              throw E;
+            }
             // if multi-frame, loop over frames in image:
             if (image_it->frames.size()) {
               std::sort (image_it->frames.begin(), image_it->frames.end(), compare_ptr_contents());

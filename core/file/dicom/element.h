@@ -55,6 +55,7 @@ namespace MR {
           uint32_t size;
           uint8_t* data;
           vector<Sequence> parents;
+          bool transfer_syntax_supported;
 
           void set (const std::string& filename, bool force_read = false, bool read_write = false);
           bool read ();
@@ -89,6 +90,9 @@ namespace MR {
           bool is_big_endian () const {
             return is_BE;
           }
+          bool is_new_sequence () const {
+            return VR == VR_SQ || ( group == GROUP_DATA && element == ELEMENT_DATA && size == LENGTH_UNDEFINED );
+          }
 
           Type type () const;
           vector<int32_t> get_int () const;
@@ -104,7 +108,6 @@ namespace MR {
                     "----- ---- ---- --  -------  -------   -------------------------------------  ---------------------------------------\n";
           }
 
-          static const char* get_error () { return error_message; }
 
         protected:
 
@@ -118,7 +121,6 @@ namespace MR {
 
           vector<uint8_t*>  end_seq;
 
-          static const char* error_message;
 
           uint16_t get_VR_from_tag_name (const std::string& name) {
             union {
