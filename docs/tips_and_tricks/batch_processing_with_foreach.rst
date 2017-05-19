@@ -1,9 +1,9 @@
 .. _batch_processing:
 
-Batch processing with :code:`foreach`
+Batch processing with ``foreach``
 =====================================
 
-Image processing often involves executing the same command on many different subjects or time points within a study. MRtrix includes a bash script called :code:`foreach` to simplify this process. The main benefit of using :code:`foreach` compared to a bash :code:`for` loop is a simpler and less verbose syntax. However other benefits include multi-threaded job execution (to exploit modern multi-core CPUs when the command being run is not already multi-threaded), and automatic identification of path basenames and prefixes. To view the full help page run :code:`foreach` on the command line with no arguments.
+Image processing often involves executing the same command on many different subjects or time points within a study. MRtrix includes a bash script called ``foreach`` to simplify this process. The main benefit of using ``foreach`` compared to a bash ``for`` loop is a simpler and less verbose syntax. However other benefits include multi-threaded job execution (to exploit modern multi-core CPUs when the command being run is not already multi-threaded), and automatic identification of path basenames and prefixes. To view the full help page run ``foreach`` on the command line with no arguments.
 
 
 Example 1 - using IN
@@ -21,11 +21,13 @@ The foreach script can be used to run the same command on each subject, for exam
 
   $ foreach study/* : dwidenoise IN/dwi.mif IN/dwi_denoised.mif
 
-The first part of the command above is the :code:`foreach` script name, followed by the pattern matching string (:code:`study/*`) to identify all the files (which in this case are directories) to be looped over. The colon is used to separate the pattern matching from the start of the command. In this example the :code:`dwidenoise` command will be run multiple times, by substituting the keyword :code:`IN` with each of the directories that match the pattern (:code:`study/001_patient`, :code:`study/002_patient`, etc).
+The first part of the command above is the ``foreach`` script name, followed by the pattern matching string (``study/*``) to identify all the files (which in this case are directories) to be looped over. The colon is used to separate the pattern matching from the start of the command. In this example the ``dwidenoise`` command will be run multiple times, by substituting the keyword ``IN`` with each of the directories that match the pattern (``study/001_patient``, ``study/002_patient``, etc).
 
 Example 2 - using NAME
 -----------------------
-Other people may pefer to organise their imaging datasets with one folder per image type and have all subjects inside. For example::
+Other people may pefer to organise their imaging datasets with one folder per image type and have all subjects inside. For example:
+
+.. code-block:: text
 
   study/dwi/001_patient.mif
   study/dwi/002_patient.mif
@@ -34,14 +36,18 @@ Other people may pefer to organise their imaging datasets with one folder per im
   study/dwi/005_control.mif
   study/dwi/006_control.mif
 
-The :code:`NAME` keyword can be used in this situation to obtain the basename of the file path. For example::
+The ``NAME`` keyword can be used in this situation to obtain the basename of the file path. For example:
+
+.. code-block:: console
 
   $ mkdir study/dwi_denoised
   $ foreach study/dwi/* : dwidenoise IN study/dwi_denoised/NAME
 
-Here, the IN keyword will be substituted with the full string from the matching pattern (:code:`study/dwi/001_patient.mif`, :code:`study/dwi/002_patient.mif`, etc), however the NAME keyword will be replaced with the *basename* of the matching pattern (:code:`001_patient.mif`, :code:`002_patient.mif`, etc).
+Here, the IN keyword will be substituted with the full string from the matching pattern (``study/dwi/001_patient.mif``, ``study/dwi/002_patient.mif``, etc), however the NAME keyword will be replaced with the *basename* of the matching pattern (``001_patient.mif``, ``002_patient.mif``, etc).
 
-Alternatively, the same result can be achieved by running foreach from inside the :code:`study/dwi` directory. In this case NAME would not be required. For example::
+Alternatively, the same result can be achieved by running foreach from inside the ``study/dwi`` directory. In this case NAME would not be required. For example:
+
+.. code-block:: console
 
   $ mkdir study/dwi_denoised
   $ cd study/dwi
@@ -50,7 +56,9 @@ Alternatively, the same result can be achieved by running foreach from inside th
 
 Example 3 - using PRE
 ----------------------
-For this example let us assume we want to convert all dwi.mif files from example 2 to NIfTI file format (*.nii). This can be performed using::
+For this example let us assume we want to convert all dwi.mif files from example 2 to NIfTI file format (``*.nii``). This can be performed using:
+
+.. code-block:: console
 
   $ foreach study/dwi/* : mrconvert IN study/dwi/PRE.nii
   $ rm *.mif
@@ -60,19 +68,25 @@ There the PRE keyword will be replaced by the file basename, without the file ex
 
 Example 4 - Sequential Processing
 ---------------------------------
-As an example of a single :code:`foreach` command running multiple sequential commands (e.g. with the bash ;, |, &&, || operators), lets assume in the previous example we wanted to remove the *.mif files as they were converted. We could use the :code:`&&` operator, which means "run next command only if current command succeeds without error".
+As an example of a single ``foreach`` command running multiple sequential commands (e.g. with the bash ``;``, ``|``, ``&&``, ``||`` operators), lets assume in the previous example we wanted to remove the ``*.mif`` files as they were converted. We could use the ``&&`` operator, which means "run next command only if current command succeeds without error".
+
+.. code-block:: console
 
   $ foreach study/dwi/* : mrconvert IN study/dwi/PRE.nii "&&" rm IN
 
 
-As shown the :code:`&&` operator must be escaped with quotes to prevent the shell from interpreting it. Bash operator characters can also be escaped with the "\" character, for example to :ref:`pipe an image <unix_pipelines>` between two MRtrix commands (assuming the data set directory layout from example 1)::
+As shown the ``&&`` operator must be escaped with quotes to prevent the shell from interpreting it. Bash operator characters can also be escaped with the "\" character, for example to :ref:`pipe an image <unix_pipelines>` between two MRtrix commands (assuming the data set directory layout from example 1):
+
+.. code-block:: console
 
   $ foreach study/* : dwiextract -bzero IN/dwi.mif - \| mrmath - mean -axis 3 IN/mean_b0.mif
 
 
 Example 5 - Parallel Processing
 -------------------------------
-To run multiple jobs at once, add the -N option before the colon, where N is the number of concurrent jobs required. For example::
+To run multiple jobs at once, add the -N option before the colon, where N is the number of concurrent jobs required. For example:
+
+.. code-block:: console
 
   $ foreach -8 study/* : dwidenoise IN/dwi.mif IN/dwi_denoised.mif
 

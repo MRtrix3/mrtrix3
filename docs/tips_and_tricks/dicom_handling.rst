@@ -362,20 +362,20 @@ various ``PATH`` as required for your system):
 
 .. code-block:: console
     
-    export PATH=/opt/dcmtk/bin:$PATH
-    export DCMDICTPATH=/opt/dcmtk/share/dcmtk/dicom.dic
+    $ export PATH=/opt/dcmtk/bin:$PATH
+    $ export DCMDICTPATH=/opt/dcmtk/share/dcmtk/dicom.dic
 
-    for img in dcmdir/*
-    do
-        dcmdjpeg $img ${img}.tmp
-        mv ${img}.tmp $img
-    done
+    $ for img in dcmdir/*
+    > do
+    >     dcmdjpeg $img ${img}.tmp
+    >     mv ${img}.tmp $img
+    > done
 
 *MRtrix3* commands should now be able to read the directory successfully:
 
 .. code-block:: console
 
-    mrinfo dcmdir
+    $ mrinfo dcmdir
     mrinfo: [done] scanning DICOM folder "data/driss/t1"
     mrinfo: [100%] reading DICOM series "AX FSPGR 3D ASSET  C+"
     ...
