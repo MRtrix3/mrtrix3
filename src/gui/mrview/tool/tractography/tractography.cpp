@@ -41,7 +41,7 @@ namespace MR
             Model (QObject* parent) :
               ListModelBase (parent) { }
 
-            void add_items (vector<std::string>& filenames,
+            void add_items (MR::vector<std::string>& filenames,
                             Tractography& tractography_tool) {
 
               for (size_t i = 0; i < filenames.size(); ++i) {
@@ -292,7 +292,7 @@ namespace MR
           add_tractogram(list);
         }
         
-        void Tractography::add_tractogram(MR::vector<std::string>& list)
+        void Tractography::add_tractogram (MR::vector<std::string>& list)
         {
           if (list.empty())
           { return; }
@@ -312,7 +312,7 @@ namespace MR
 
           const QMimeData* mimeData = event->mimeData();
           if (mimeData->hasUrls()) {
-            vector<std::string> list;
+            MR::vector<std::string> list;
             QList<QUrl> urlList = mimeData->urls();
             for (int i = 0; i < urlList.size() && i < max_files; ++i) {
                 list.push_back (urlList.at (i).path().toUtf8().constData());
@@ -749,7 +749,7 @@ namespace MR
             try
             {
               //Set the tsf visualisation range
-                std::vector<default_type> range;
+                MR::vector<default_type> range;
                 if(process_commandline_option_tsf_option(opt,2, range))      
                 {      
                   scalar_file_options->set_scaling(range[0], range[1]);
@@ -765,7 +765,7 @@ namespace MR
             try
             {
               //Set the tsf visualisation threshold
-              std::vector<default_type> range;
+              MR::vector<default_type> range;
                 if(process_commandline_option_tsf_option(opt,2, range))      
                 {      
                   scalar_file_options->set_threshold(TrackThresholdType::UseColourFile,range[0], range[1]);
@@ -829,7 +829,7 @@ namespace MR
         }
       
       /*Checks whether legal to apply tsf options and prepares the scalar_file_options to do so. Returns the vector of floats parsed from the options, or null on fail*/
-        bool Tractography::process_commandline_option_tsf_option(const MR::App::ParsedOption& opt, uint reqArgSize, std::vector<default_type>& range)
+        bool Tractography::process_commandline_option_tsf_option(const MR::App::ParsedOption& opt, uint reqArgSize, MR::vector<default_type>& range)
         {
           if(process_commandline_option_tsf_check_tracto_loaded()){
             QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
