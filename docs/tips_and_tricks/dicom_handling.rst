@@ -1,3 +1,5 @@
+.. _dicom_handling:
+
 DICOM handling
 ==============
 
