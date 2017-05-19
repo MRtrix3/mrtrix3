@@ -163,8 +163,7 @@ namespace MR {
         if (size == LENGTH_UNDEFINED) {
           if (VR != VR_SQ && !(group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_ITEM)) {
             INFO ("undefined length used for DICOM tag " + ( tag_name().size() ? tag_name().substr (2) : "" )
-                + " (" + str (group) + ", " + str (element)
-                + ") in file \"" + fmap->name() + "\"");
+                + MR::printf ("(%04X, %04X) in file \"", group, element) + fmap->name() + "\"");
             size = 0;
           }
         }
@@ -219,7 +218,7 @@ namespace MR {
                     "unsupported transfer syntax found in DICOM data\n"
                     "consider using third-party tools to convert your data to standard uncompressed encoding\n"
                     "e.g. dcmtk: http://dicom.offis.de/dcmtk.php.en";
-                  throw Exception ("unknown DICOM transfer syntax: \"" + std::string (reinterpret_cast<const char*> (data), size)
+                  INFO ("unsupported DICOM transfer syntax: \"" + std::string (reinterpret_cast<const char*> (data), size)
                     + "\" in file \"" + fmap->name() + "\"");
                 }
                 break;
