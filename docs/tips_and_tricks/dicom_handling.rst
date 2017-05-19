@@ -144,7 +144,7 @@ exact steps taken at every stage of the analysis are recorded. However, access
 to DICOM data requires user interaction to select the right series for each
 subject. Thankfully, it is simple to record these selections and use them in
 scripts once the correct choices are known. For example, assuming we have a
-data folder containing lots of data, and we are interested in the Donald's T1
+data folder containing lots of data, and we are interested in Donald's T1
 scan:
 
 .. code-block:: console
@@ -190,9 +190,9 @@ scan:
                          DOB: 09/03/1977
                          DOS: 03/10/2007 15:37:34
 
-We can see that the relevant series is obtained using the choices `2` (to get
-the second patient) and `1` (to get the second series for that patient). This
-can be scripted using the `echo` command to *pipe* these numbers directly to the
+We can see that the relevant series is obtained using the choices ``2`` (to get
+the second patient) and ``1`` (to get the second series for that patient). This
+can be scripted using the ``echo`` command to *pipe* these numbers directly to the
 relevant command, with no further user interaction required, for example:
 
 .. code-block:: console
@@ -234,7 +234,7 @@ The application crashes
 
 If running a simple command such as:
 
-.. code-block::
+.. code-block:: console
  
     $ mrconvert DICOM/ out.nii
     mrconvert: [SYSTEM FATAL CODE: SIGSEGV (11)] Segmentation fault: Invalid memory access
@@ -263,7 +263,7 @@ DICOM client (e.g. PACS system) before the DICOM sender has finished sending
 the data (these transfers can take a long time...). Attempts to read the data
 will fail with a message like this:
 
-.. code-block::
+.. code-block:: console
 
     $ mrinfo DICOM/
     mrinfo: [done] scanning DICOM folder "DICOM/"
@@ -282,7 +282,7 @@ This indicates that *MRtrix3* was unable to find any information regarding the
 DW gradient directions (bvevcs/bvals) in the DICOM headers, leading to errors
 like:
 
-.. code-block::
+.. code-block:: console
 
     $ dwi2tensor DICOM/ dt.mif
     dwi2tensor: [done] scanning DICOM folder "DICOM/"
@@ -295,7 +295,7 @@ This can happen for a number of reasons:
   not explicitly designed to provide this information, or lack of support for
   providing this information from some manufacturers. The only possible
   solution in this case is to obtain the DW information from a different
-  source, and provide it to *MRtrix3* manually using the `-grad` or `-fslgrad`
+  source, and provide it to *MRtrix3* manually using the ``-grad`` or ``-fslgrad``
   options in those commands that support it. 
 
 - the information is present, but in a format that *MRtrix3* doesn't yet
@@ -334,16 +334,16 @@ DICOM-compliant implementation - a less than ideal situation...
 that the standard defines as mandatory, and variants thereof. For reference,
 these are:
 
-- Implicit VR Little Endian (`1.2.840.10008.1.2`)
+- Implicit VR Little Endian (``1.2.840.10008.1.2``)
 
-- Explicit VR Little Endian (`1.2.840.10008.1.2.1`)
+- Explicit VR Little Endian (``1.2.840.10008.1.2.1``)
 
-- Explicit VR Big Endian (`1.2.840.10008.1.2.2`)
+- Explicit VR Big Endian (``1.2.840.10008.1.2.2``)
 
 Any other transfer syntax will be flagged as unsupported, and *MRtrix3* will be
 unable to read the data, providing an error message similar to this:
 
-.. code-block::
+.. code-block:: console
 
     $ mrinfo DICOM
     mrinfo: [done] scanning DICOM folder "DICOM"
@@ -358,9 +358,9 @@ format that *MRtrix3* (and other DICOM tools) will read. The `dcmtk
 <http://dicom.offis.de/dcmtk.php.en>`__ DICOM toolkit in particular provides
 the ``dcmdjpeg`` command to decompress data stored using JPEG transfer syntax.
 On Linux, a directory of such files can be decompressed as follows (amend the
-various `PATH` as required for your system):
+various ``PATH`` as required for your system):
 
-.. code-block::
+.. code-block:: console
     
     export PATH=/opt/dcmtk/bin:$PATH
     export DCMDICTPATH=/opt/dcmtk/share/dcmtk/dicom.dic
@@ -373,7 +373,7 @@ various `PATH` as required for your system):
 
 *MRtrix3* commands should now be able to read the directory successfully:
 
-.. code-block::
+.. code-block:: console
 
     mrinfo dcmdir
     mrinfo: [done] scanning DICOM folder "data/driss/t1"
