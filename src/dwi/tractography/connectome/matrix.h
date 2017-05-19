@@ -16,7 +16,8 @@
 #define __dwi_tractography_connectome_matrix_h__
 
 #include <set>
-#include <vector>
+
+#include "types.h"
 
 #include "connectome/connectome.h"
 #include "connectome/mat2vec.h"

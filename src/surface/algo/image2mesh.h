@@ -17,10 +17,10 @@
 
 #include <array>
 #include <map>
-#include <vector>
 
 #include "image_helpers.h"
 #include "transform.h"
+#include "types.h"
 
 #include "surface/mesh.h"
 #include "surface/types.h"

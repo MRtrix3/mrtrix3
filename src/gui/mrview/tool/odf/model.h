@@ -17,7 +17,8 @@
 
 #include <memory>
 #include <string>
-#include <vector>
+
+#include "types.h"
 
 #include "gui/mrview/tool/odf/item.h"
 #include "gui/mrview/tool/odf/type.h"

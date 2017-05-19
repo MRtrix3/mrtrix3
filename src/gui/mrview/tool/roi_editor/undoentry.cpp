@@ -13,7 +13,6 @@
 
 
 #include <limits>
-#include <vector>
 
 #include "gui/mrview/window.h"
 #include "gui/mrview/tool/roi_editor/item.h"

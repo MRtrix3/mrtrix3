@@ -14,11 +14,11 @@
 
 #include <map>
 #include <string>
-#include <vector>
 
 #include "command.h"
 #include "header.h"
 #include "phase_encoding.h"
+#include "types.h"
 #include "file/json.h"
 #include "dwi/gradient.h"
 

@@ -12,15 +12,14 @@
  */
 
 
-#include <vector>
 #include <set>
 
 #include "command.h"
-#include "progressbar.h"
-#include "memory.h"
-
 #include "image.h"
+#include "memory.h"
+#include "progressbar.h"
 #include "thread_queue.h"
+#include "types.h"
 
 #include "dwi/gradient.h"
 #include "dwi/tractography/file.h"

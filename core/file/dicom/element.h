@@ -15,11 +15,11 @@
 #ifndef __file_dicom_element_h__
 #define __file_dicom_element_h__
 
-#include <vector>
 #include <unordered_map>
 
 #include "memory.h"
 #include "raw.h"
+#include "types.h"
 #include "file/mmap.h"
 #include "file/dicom/definitions.h"
 

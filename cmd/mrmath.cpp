@@ -12,16 +12,17 @@
  */
 
 
+#include <limits>
+
 #include "command.h"
 #include "progressbar.h"
 #include "memory.h"
 #include "image.h"
+#include "types.h"
 #include "algo/threaded_loop.h"
 #include "math/math.h"
 #include "math/median.h"
 
-#include <limits>
-#include <vector>
 
 
 using namespace MR;
