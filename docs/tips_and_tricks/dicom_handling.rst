@@ -315,6 +315,9 @@ This can happen for a number of reasons:
   non-anonymised data, convert these correctly, and anonymise the *converted*
   images.
 
+- the image series is simply *not* a DWI series. Double-check that you in fact
+  trying to read the correct dataset.
+
 ERROR: unsupported transfer syntax
 ..................................
 
@@ -350,7 +353,8 @@ unable to read the data, providing an error message similar to this:
     mrinfo: [ERROR] unable to read DICOM images in "DICOM":
     mrinfo: [ERROR]   unsupported transfer syntax found in DICOM data
     mrinfo: [ERROR]   consider using third-party tools to convert your data to standard uncompressed encoding
-    mrinfo: [ERROR]   e.g. dcmtk: http://dicom.offis.de/dcmtk.php.en
+    mrinfo: [ERROR] See the MRtrix3 documentation on DICOM handling for details:
+    mrinfo: [ERROR]    http://mrtrix.readthedocs.io/en/latest/tips_and_tricks/dicom_handling.html#error-unsupported-transfer-syntax
     mrinfo: [ERROR] error opening image "DICOM"
 
 Thankfully, other tools exist that should be able to convert the data to a

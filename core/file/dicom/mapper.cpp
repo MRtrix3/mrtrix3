@@ -63,7 +63,8 @@ namespace MR {
             if (!image_it->transfer_syntax_supported) {
               Exception E ("unsupported transfer syntax found in DICOM data");
               E.push_back ("consider using third-party tools to convert your data to standard uncompressed encoding");
-              E.push_back ("e.g. dcmtk: http://dicom.offis.de/dcmtk.php.en");
+              E.push_back ("See the MRtrix3 documentation on DICOM handling for details:");
+              E.push_back ("   http://mrtrix.readthedocs.io/en/latest/tips_and_tricks/dicom_handling.html#error-unsupported-transfer-syntax");
               throw E;
             }
             // if multi-frame, loop over frames in image:
