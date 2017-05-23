@@ -13,6 +13,7 @@
 
 
 #include <cstdio>
+#include <sstream>
 #include "command.h"
 #include "file/ofstream.h"
 #include "file/name_parser.h"
@@ -34,7 +35,7 @@ void usage ()
 
   DESCRIPTION
   + "The program currently supports MRtrix .tck files (input/output), "
-    "ascii text files (input/output), and VTK polydata files (output only)."
+    "ascii text files (input/output), and VTK polydata files (input/output)."
 
   + "Note that ascii files will be stored with one streamline per numbered file. "
     "To support this, the command will use the multi-file numbering syntax, "
@@ -137,6 +138,73 @@ private:
 
 };
 
+
+
+class VTKReader: public ReaderInterface<float> { MEMALIGN(VTKReader)
+public:
+    VTKReader(const std::string& file) {
+      points = NULL;
+      lines = NULL;
+      std::ifstream input (file, std::ios::binary );
+      std::string line;
+      int number_of_points;
+      while ( std::getline(input,line) ) {
+        if ( sscanf ( line.c_str(), "POINTS %d float", &number_of_points ) == 1) {
+          points = new float[3*number_of_points];
+          input.read((char*) points, 3*number_of_points * sizeof(float) );
+          
+          // swap
+          for ( size_t i = 0; i < 3*number_of_points; i++ ) {
+            points[i] = Raw::fetch_BE<float>(points, i);
+          }
+      
+          continue;
+        } else {
+          if ( sscanf ( line.c_str(), "LINES %d %d", &number_of_lines, &number_of_line_indices ) == 2) {
+            lines = new int[number_of_line_indices];
+            input.read((char*) lines, number_of_line_indices * sizeof(int) );
+            // swap
+            for ( size_t i = 0; i < number_of_line_indices; i++ ) {
+              lines[i] = Raw::fetch_BE<int>(lines, i);
+            }
+            // We can safely break
+            break;
+          }
+        }
+      }
+      input.close();
+      lineIdx = 0;
+    }
+
+    bool operator() (Streamline<float>& tck) {
+        tck.clear();
+        if ( lineIdx < number_of_line_indices ) {
+          int count = lines[lineIdx];
+          lineIdx++;
+          for ( int i = 0; i < count; i++ ) {
+            int idx = lines[lineIdx];
+            Eigen::Vector3f f ( points[idx*3], points[idx*3+1], points[idx*3+2] );
+            tck.push_back(f);
+            lineIdx++;
+          }
+          return true;          
+        }
+        return false;
+    }
+
+    ~VTKReader() {
+      if ( points != NULL ) { delete[] points; }
+      if ( lines != NULL ) { delete[] lines; }
+    }
+
+private:
+  float *points;
+  int *lines;
+  size_t lineIdx;
+  int number_of_lines;
+  int number_of_line_indices;
+
+};
 
 
 
@@ -446,6 +514,55 @@ private:
 };
 
 
+class RibWriter: public WriterInterface<float> { MEMALIGN(RibWriter)
+public:
+RibWriter(const std::string& file, float radius = 0.1) : out(file), radius(radius) {
+  pointsFilename = File::create_tempfile(0,".points");
+  pointsOF.open(pointsFilename );
+  pointsOF << "\"P\" [";
+  
+
+  // Header
+  out << "##RenderMan RIB\n"
+      << "# Written by tckconvert\n"
+      << "# Part of the MRtrix package (http://mrtrix.org)\n"
+      << "# version: " << mrtrix_version << "\n"
+      << "Basis \"catmull-rom\" 1 \"catmull-rom\" 1\n"
+      << "Attribute \"dice\" \"int roundcurve\" [1] \"int hair\" [1]\n"
+      << "Curves \"linear\" [";
+}
+
+  bool operator() (const Streamline<float>& tck) {
+    if ( tck.size() < 3 ) { return true; }
+    out << tck.size() << " ";
+    for ( auto pt : tck ) {
+      pointsOF << pt[0] << " " << pt[1] << " " << pt[2] << " ";
+    }
+    return true;
+  }
+
+  ~RibWriter() {
+    pointsOF << "] \"constantwidth\" " << radius << "\n" ;
+    pointsOF.close();
+    out << "] \"nonperiodic\" ";
+    
+    std::ifstream pointsIF ( pointsFilename );
+    out << pointsIF.rdbuf();
+    File::unlink(pointsFilename.c_str());
+
+    out.close();
+    
+  }
+    
+  private:
+  std::string pointsFilename;
+  File::OFStream out;
+  File::OFStream pointsOF;
+  float radius;
+};
+
+
+
 
 bool has_suffix(const std::string &str, const std::string &suffix)
 {
@@ -468,6 +585,9 @@ void run ()
     else if (has_suffix(argument[0], ".txt")) {
         reader.reset( new ASCIIReader(argument[0]) );
     }
+    else if (has_suffix(argument[0], ".vtk")) {
+        reader.reset( new VTKReader(argument[0]) );
+    }
     else {
         throw Exception("Unsupported input file type.");
     }
@@ -486,6 +606,9 @@ void run ()
         auto radius = get_options("radius").size() ? get_options("radius")[0][0].as_float() : 0.1f;
         auto sides = get_options("sides").size() ? get_options("sides")[0][0].as_int() : 5;
         writer.reset( new PLYWriter(argument[1], increment, radius, sides) );
+    }
+    else if (has_suffix(argument[1], ".rib")) {
+        writer.reset( new RibWriter(argument[1]) );
     }
     else if (has_suffix(argument[1], ".txt")) {
         writer.reset( new ASCIIWriter(argument[1]) );
