@@ -22,7 +22,6 @@
 
 using namespace MR;
 using namespace App;
-using namespace std;
 
 
 void usage ()

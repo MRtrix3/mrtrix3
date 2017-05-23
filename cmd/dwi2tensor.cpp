@@ -21,7 +21,6 @@
 
 using namespace MR;
 using namespace App;
-using namespace std;
 
 using value_type = float;
 
