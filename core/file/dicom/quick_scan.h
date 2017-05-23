@@ -31,6 +31,7 @@ namespace MR {
           std::string study, study_ID, study_date, study_time;
           std::string series, series_date, series_time, sequence;
           size_t series_number, bits_alloc, dim[2], data;
+          bool transfer_syntax_supported;
       };
 
       std::ostream& operator<< (std::ostream& stream, const QuickScan& file);

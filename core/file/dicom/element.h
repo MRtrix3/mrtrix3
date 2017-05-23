@@ -55,12 +55,13 @@ namespace MR {
           uint32_t size;
           uint8_t* data;
           vector<Sequence> parents;
+          bool transfer_syntax_supported;
 
           void set (const std::string& filename, bool force_read = false, bool read_write = false);
           bool read ();
 
           bool is (uint16_t Group, uint16_t Element) const {
-            if (group != Group) 
+            if (group != Group)
               return false;
             return element == Element;
           }
@@ -77,17 +78,20 @@ namespace MR {
               group, element
 #else
               element, group
-#endif 
+#endif
             } };
             return val.i;
           }
 
 
           size_t offset (uint8_t* address) const {
-            return address - fmap->address(); 
+            return address - fmap->address();
           }
           bool is_big_endian () const {
-            return is_BE; 
+            return is_BE;
+          }
+          bool is_new_sequence () const {
+            return VR == VR_SQ || ( group == GROUP_DATA && element == ELEMENT_DATA && size == LENGTH_UNDEFINED );
           }
 
           Type type () const;
@@ -117,8 +121,9 @@ namespace MR {
 
           vector<uint8_t*>  end_seq;
 
+
           uint16_t get_VR_from_tag_name (const std::string& name) {
-            union { 
+            union {
               char t[2];
               uint16_t i;
             } d = { { name[0], name[1] } };
@@ -133,43 +138,6 @@ namespace MR {
                   "in DICOM implicit syntax for tag (%02X %02X) - ignored", group, element));
           }
       };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
