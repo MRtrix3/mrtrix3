@@ -15,8 +15,6 @@
 #ifndef __file_nifti_utils_h__
 #define __file_nifti_utils_h__
 
-#include <vector>
-
 #include "types.h"
 
 namespace MR

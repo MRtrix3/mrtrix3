@@ -13,7 +13,6 @@
 
 
 #include <fstream>
-#include <vector>
 
 #include "file/json_utils.h"
 #include "file/nifti_utils.h"
@@ -22,6 +21,7 @@
 #include "header.h"
 #include "mrtrix.h"
 #include "phase_encoding.h"
+#include "types.h"
 #include "file/ofstream.h"
 
 namespace MR

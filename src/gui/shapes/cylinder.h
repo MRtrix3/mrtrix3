@@ -15,8 +15,6 @@
 #ifndef __gui_shapes_cylinder_h__
 #define __gui_shapes_cylinder_h__
 
-#include <vector>
-
 #include "gui/opengl/gl.h"
 #include "gui/opengl/gl_core_3_3.h"
 

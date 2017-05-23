@@ -15,7 +15,7 @@
 #ifndef __gt_internalenergy_h__
 #define __gt_internalenergy_h__
 
-#include <vector>
+#include "types.h"
 
 #include "math/math.h"
 #include "math/rng.h"

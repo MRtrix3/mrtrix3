@@ -12,11 +12,10 @@
  */
 
 
-#include <vector>
-
 #include "command.h"
-#include "progressbar.h"
 #include "memory.h"
+#include "progressbar.h"
+#include "types.h"
 
 #include "file/ofstream.h"
 

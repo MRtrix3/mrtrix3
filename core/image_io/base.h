@@ -15,13 +15,13 @@
 #ifndef __image_io_base_h__
 #define __image_io_base_h__
 
-#include <vector>
+#include <cassert>
 #include <cstdint>
 #include <unistd.h>
-#include <cassert>
 
 #include "memory.h"
 #include "mrtrix.h"
+#include "types.h"
 #include "file/entry.h"
 
 #define MAX_FILES_PER_IMAGE 256U

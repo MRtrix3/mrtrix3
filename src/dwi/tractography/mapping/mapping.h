@@ -15,10 +15,10 @@
 #ifndef __dwi_tractography_mapping_mapping_h__
 #define __dwi_tractography_mapping_mapping_h__
 
-#include <vector>
-
 #include "header.h"
 #include "progressbar.h"
+#include "types.h"
+
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/file.h"
 
