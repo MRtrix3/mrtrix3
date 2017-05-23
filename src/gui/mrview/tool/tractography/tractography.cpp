@@ -41,7 +41,7 @@ namespace MR
             Model (QObject* parent) :
               ListModelBase (parent) { }
 
-            void add_items (MR::vector<std::string>& filenames,
+            void add_items (vector<std::string>& filenames,
                             Tractography& tractography_tool) {
 
               for (size_t i = 0; i < filenames.size(); ++i) {
@@ -288,11 +288,15 @@ namespace MR
         void Tractography::tractogram_open_slot ()
         {
 
-          MR::vector<std::string> list = Dialog::File::get_files (this, "Select tractograms to open", "Tractograms (*.tck)");
+          vector<std::string> list = Dialog::File::get_files (this, "Select tractograms to open", "Tractograms (*.tck)");
           add_tractogram(list);
         }
         
-        void Tractography::add_tractogram (MR::vector<std::string>& list)
+
+
+
+
+        void Tractography::add_tractogram (vector<std::string>& list)
         {
           if (list.empty())
           { return; }
@@ -306,13 +310,17 @@ namespace MR
           
         }
 
+
+
+
+
         void Tractography::dropEvent (QDropEvent* event)
         {
           static constexpr int max_files = 32;
 
           const QMimeData* mimeData = event->mimeData();
           if (mimeData->hasUrls()) {
-            MR::vector<std::string> list;
+            vector<std::string> list;
             QList<QUrl> urlList = mimeData->urls();
             for (int i = 0; i < urlList.size() && i < max_files; ++i) {
                 list.push_back (urlList.at (i).path().toUtf8().constData());
@@ -699,84 +707,80 @@ namespace MR
         */
         void Tractography::select_last_added_tractogram()
         {
-            int count = tractogram_list_model->rowCount();
-            if(count != 0){
-              QModelIndex index = tractogram_list_view->model()->index(count-1, 0);
-              tractogram_list_view->setCurrentIndex(index);
-              window().updateGL();
-            }
+          int count = tractogram_list_model->rowCount();
+          if(count != 0){
+            QModelIndex index = tractogram_list_view->model()->index(count-1, 0);
+            tractogram_list_view->setCurrentIndex(index);
+            window().updateGL();
+          }
         }
-        
+
+
+
+
+
         bool Tractography::process_commandline_option (const MR::App::ParsedOption& opt)
         {
 
           if (opt.opt->is ("tractography.load"))
           {
-            MR::vector<std::string> list (1, std::string(opt[0]));
+            vector<std::string> list (1, std::string(opt[0]));
             add_tractogram(list);
             return true;
           }
 
 
-          if (opt.opt->is("tractography.tsf_load"))
+          if (opt.opt->is ("tractography.tsf_load"))
           {
-            try
-            {
+            try {
               
-              if(process_commandline_option_tsf_check_tracto_loaded())
-              {
+              if (process_commandline_option_tsf_check_tracto_loaded()) {
                 QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
         
-                if(indices.size() == 1) {//just in case future edits break this assumption
+                if (indices.size() == 1) {//just in case future edits break this assumption
                   Tractogram* tractogram = tractogram_list_model->get_tractogram (indices[0]);
                   
                   //set its tsf filename and load the tsf file
-                  scalar_file_options->set_tractogram(tractogram);
-                  scalar_file_options->open_intensity_track_scalar_file_slot(std::string(opt[0]));
+                  scalar_file_options->set_tractogram (tractogram);
+                  scalar_file_options->open_intensity_track_scalar_file_slot (std::string(opt[0]));
           
                   //Set the GUI to use the file for visualisation
                   colour_combobox->setCurrentIndex(4); // Set combobox to "File"
                 }
               }              
             }
-            catch(Exception& E) { E.display(); }
+            catch (Exception& E) { E.display(); }
 
             return true;
           }
 
-          if (opt.opt->is("tractography.tsf_range"))
+          if (opt.opt->is ("tractography.tsf_range"))
           {
-            try
-            {
+            try {
               //Set the tsf visualisation range
-                MR::vector<default_type> range;
-                if(process_commandline_option_tsf_option(opt,2, range))      
-                {      
-                  scalar_file_options->set_scaling(range[0], range[1]);
-                } 
+              vector<default_type> range;
+              if (process_commandline_option_tsf_option(opt,2, range))      
+                scalar_file_options->set_scaling (range[0], range[1]);
             }
-              catch(Exception& E) { E.display(); }
-              return true;
+            catch (Exception& E) { E.display(); }
+            return true;
           }
+
           
-          
-          if (opt.opt->is("tractography.tsf_thresh"))
+          if (opt.opt->is ("tractography.tsf_thresh"))
           {
-            try
-            {
+            try {
               //Set the tsf visualisation threshold
-              MR::vector<default_type> range;
-                if(process_commandline_option_tsf_option(opt,2, range))      
-                {      
-                  scalar_file_options->set_threshold(TrackThresholdType::UseColourFile,range[0], range[1]);
-                } 
+              vector<default_type> range;
+              if (process_commandline_option_tsf_option(opt,2, range))      
+                scalar_file_options->set_threshold (TrackThresholdType::UseColourFile,range[0], range[1]);
             }
             catch(Exception& E) { E.display(); }
             return true;
           }
-        
-      
-      
+
+
+
           if (opt.opt->is ("tractography.thickness")) {
             // Thickness runs from -1000 to 1000,
             float thickness = float(opt[0]) * 1000.0f;
@@ -817,6 +821,10 @@ namespace MR
         }
 
 
+
+
+
+
       /*Checks whether any tractography has been loaded and warns the user if it has not*/
         bool Tractography::process_commandline_option_tsf_check_tracto_loaded()
         {
@@ -827,9 +835,14 @@ namespace MR
           }
           return count != 0;
         }
+
+
+
+
+
       
       /*Checks whether legal to apply tsf options and prepares the scalar_file_options to do so. Returns the vector of floats parsed from the options, or null on fail*/
-        bool Tractography::process_commandline_option_tsf_option(const MR::App::ParsedOption& opt, uint reqArgSize, MR::vector<default_type>& range)
+        bool Tractography::process_commandline_option_tsf_option(const MR::App::ParsedOption& opt, uint reqArgSize, vector<default_type>& range)
         {
           if(process_commandline_option_tsf_check_tracto_loaded()){
             QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
