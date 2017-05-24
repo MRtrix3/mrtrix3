@@ -44,16 +44,16 @@ namespace MR {
           ParticleGrid(const HeaderType& image)
           {
             DEBUG("Initialise particle grid.");
-            dims[0] = Math::ceil<size_t>( image.size(0) * image.spacing(0) / (2*Particle::L) );
-            dims[1] = Math::ceil<size_t>( image.size(1) * image.spacing(1) / (2*Particle::L) );
-            dims[2] = Math::ceil<size_t>( image.size(2) * image.spacing(2) / (2*Particle::L) );
+            dims[0] = Math::ceil<size_t>( image.size(0) * image.spacing(0) / (2.0*Particle::L) );
+            dims[1] = Math::ceil<size_t>( image.size(1) * image.spacing(1) / (2.0*Particle::L) );
+            dims[2] = Math::ceil<size_t>( image.size(2) * image.spacing(2) / (2.0*Particle::L) );
             grid.resize(dims[0]*dims[1]*dims[2]);
             
             // Initialise scanner-to-grid transform
-            Eigen::DiagonalMatrix<default_type, 3> newspacing (2*Particle::L, 2*Particle::L, 2*Particle::L);
-            Eigen::Vector3 shift (image.spacing(0)/2 - Particle::L, 
-                                  image.spacing(1)/2 - Particle::L, 
-                                  image.spacing(2)/2 - Particle::L);
+            Eigen::DiagonalMatrix<default_type, 3> newspacing (2.0*Particle::L, 2.0*Particle::L, 2.0*Particle::L);
+            Eigen::Vector3 shift (image.spacing(0)/2.0 - Particle::L,
+                                  image.spacing(1)/2.0 - Particle::L,
+                                  image.spacing(2)/2.0 - Particle::L);
             T_s2g = image.transform() * newspacing;
             T_s2g = T_s2g.inverse().translate(shift);
           }
@@ -106,6 +106,7 @@ namespace MR {
           inline void pos2xyz(const Point_t& pos, size_t& x, size_t& y, size_t& z) const
           {
             Point_t gpos = T_s2g.cast<float>() * pos;
+            assert (gpos[0]>=-0.5 && gpos[1]>=-0.5 && gpos[2]>=-0.5);
             x = Math::round<size_t>(gpos[0]);
             y = Math::round<size_t>(gpos[1]);
             z = Math::round<size_t>(gpos[2]);
