@@ -83,7 +83,7 @@ class SH2Amp { MEMALIGN(SH2Amp)
 
 void run ()
 {
-  auto sh_data = Image<value_type>::open(argument[0]);
+  auto sh_data = Image<value_type>::open(argument[0]).with_direct_io(3);
   Math::SH::check (sh_data);
 
   Header amp_header (sh_data);
