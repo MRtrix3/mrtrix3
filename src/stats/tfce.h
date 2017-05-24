@@ -1,23 +1,26 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
+
 #ifndef __stats_tfce_h__
 #define __stats_tfce_h__
 
-#include "math/stats/permutation.h"
-#include "filter/connected_components.h"
 #include "thread_queue.h"
+#include "filter/connected_components.h"
+#include "math/stats/permutation.h"
+#include "math/stats/typedefs.h"
+
+#include "stats/enhance.h"
 
 namespace MR
 {
@@ -26,41 +29,53 @@ namespace MR
     namespace TFCE
     {
 
-      typedef float value_type;
+
+      const App::OptionGroup Options (const default_type, const default_type, const default_type);
 
 
-      /** \addtogroup Statistics
-      @{ */
 
-      class Enhancer {
+
+      using value_type = Math::Stats::value_type;
+      using vector_type = Math::Stats::vector_type;
+
+
+
+      class EnhancerBase : public Stats::EnhancerBase
+      { MEMALIGN (EnhancerBase)
         public:
-          Enhancer (const Filter::Connector& connector, const value_type dh, const value_type E, const value_type H) :
-                    connector (connector), dh (dh), E (E), H (H) {}
+          // Alternative functor that also takes the threshold value;
+          //   makes TFCE integration cleaner
+          virtual value_type operator() (const vector_type& /*input_statistics*/, const value_type /*threshold*/, vector_type& /*enhanced_statistics*/) const = 0;
 
-          value_type operator() (const value_type max_stat, const std::vector<value_type>& stats,
-                                 std::vector<value_type>& enhanced_stats) const
-          {
-            enhanced_stats.resize(stats.size());
-            std::fill (enhanced_stats.begin(), enhanced_stats.end(), 0.0);
-
-            for (value_type h = this->dh; h < max_stat; h += this->dh) {
-              std::vector<Filter::cluster> clusters;
-              std::vector<uint32_t> labels (enhanced_stats.size(), 0);
-              connector.run (clusters, labels, stats, h);
-              for (size_t i = 0; i < enhanced_stats.size(); ++i)
-                if (labels[i])
-                  enhanced_stats[i] += pow (clusters[labels[i]-1].size, this->E) * pow (h, this->H);
-            }
-
-            return *std::max_element (enhanced_stats.begin(), enhanced_stats.end());
-          }
-
-        protected:
-          const Filter::Connector& connector;
-          const value_type dh, E, H;
       };
 
-      //! @}
+
+
+
+      class Wrapper : public Stats::EnhancerBase
+      { MEMALIGN (Wrapper)
+        public:
+          Wrapper (const std::shared_ptr<TFCE::EnhancerBase> base) : enhancer (base), dH (NaN), E (NaN), H (NaN) { }
+          Wrapper (const std::shared_ptr<TFCE::EnhancerBase> base, const default_type dh, const default_type e, const default_type h) : enhancer (base), dH (dh), E (e), H (h) { }
+          Wrapper (const Wrapper& that) = default;
+          ~Wrapper() { }
+
+          void set_tfce_parameters (const value_type d_height, const value_type extent, const value_type height)
+          {
+            dH = d_height;
+            E = extent;
+            H = height;
+          }
+
+          value_type operator() (const vector_type&, vector_type&) const override;
+
+        private:
+          std::shared_ptr<Stats::TFCE::EnhancerBase> enhancer;
+          value_type dH, E, H;
+      };
+
+
+
     }
   }
 }

@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __registration_metric_evaluate_h__
 #define __registration_metric_evaluate_h__
@@ -32,38 +31,38 @@ namespace MR
       //! \cond skip
       namespace {
         template<class T>
-        struct Void2 {
-          typedef void type;
+        struct Void2 { NOMEMALIGN
+          using type = void;
         };
 
         template <class MetricType, typename U = void>
-        struct metric_requires_precompute {
-          typedef int no;
+        struct metric_requires_precompute { NOMEMALIGN
+          using no = int;
         };
 
         template <class MetricType>
-        struct metric_requires_precompute<MetricType, typename Void2<typename MetricType::requires_precompute>::type> {
-          typedef int yes;
+        struct metric_requires_precompute<MetricType, typename Void2<typename MetricType::requires_precompute>::type> { NOMEMALIGN
+          using yes = int;
         };
 
         template <class MetricType, typename U = void>
-        struct metric_requires_initialisation {
-          typedef int no;
+        struct metric_requires_initialisation { NOMEMALIGN
+          using no = int;
         };
 
         template <class MetricType>
-        struct metric_requires_initialisation<MetricType, typename Void2<typename MetricType::requires_initialisation>::type> {
-          typedef int yes;
+        struct metric_requires_initialisation<MetricType, typename Void2<typename MetricType::requires_initialisation>::type> { NOMEMALIGN
+          using yes = int;
         };
       }
       //! \endcond
 
       template <class MetricType, class ParamType>
-        class Evaluate {
+        class Evaluate { MEMALIGN(Evaluate<MetricType,ParamType>)
           public:
 
-            typedef typename ParamType::TransformParamType TransformParamType;
-            typedef default_type value_type;
+            using TransformParamType = typename ParamType::TransformParamType;
+            using value_type = default_type;
 
             template <class U = MetricType>
             Evaluate (const MetricType& metric_, ParamType& parameters, typename metric_requires_initialisation<U>::yes = 0) :
@@ -84,6 +83,7 @@ namespace MR
             template <class U = MetricType>
             default_type operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x, Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient, typename metric_requires_precompute<U>::yes = 0) {
               Eigen::VectorXd overall_cost_function = Eigen::VectorXd::Zero(1,1);
+
               gradient.setZero();
               params.transformation.set_parameter_vector(x);
 
@@ -91,36 +91,42 @@ namespace MR
                 DEBUG ("Reorienting FODs...");
                 std::shared_ptr<Image<default_type> > im1_image_reoriented;
                 std::shared_ptr<Image<default_type> > im2_image_reoriented;
-                im1_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im1_image));
-                im2_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im2_image));
-                Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions);
-                Registration::Transform::reorient (params.im2_image, *im2_image_reoriented, params.transformation.get_transform_half_inverse(), directions);
+                im1_image_reoriented = make_shared<Image<default_type>>(Image<default_type>::scratch (params.im1_image));
+                im2_image_reoriented = make_shared<Image<default_type>>(Image<default_type>::scratch (params.im2_image));
+                {
+                   LogLevelLatch log_level (0);
+                  Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions);
+                  Registration::Transform::reorient (params.im2_image, *im2_image_reoriented, params.transformation.get_transform_half_inverse(), directions);
+                }
                 params.set_im1_iterpolator (*im1_image_reoriented);
                 params.set_im2_iterpolator (*im2_image_reoriented);
               }
 
               metric.precompute (params);
               {
-                ThreadKernel<MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient);
+                overlap_count = 0;
+                ThreadKernel<MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient, &overlap_count);
                   ThreadedLoop (params.processed_image, 0, 3).run (kernel);
               }
               DEBUG ("Metric evaluate iteration: " + str(iteration++) + ", cost: " + str(overall_cost_function.transpose()));
               DEBUG ("  x: " + str(x.transpose()));
               DEBUG ("  gradient: " + str(gradient.transpose()));
               DEBUG ("  norm(gradient): " + str(gradient.norm()));
+              DEBUG ("  overlapping voxels: " + str(overlap_count));
               return overall_cost_function(0);
             }
 
-            struct ThreadFunctor {
+            struct ThreadFunctor { MEMALIGN(ThreadFunctor)
               public:
                 ThreadFunctor (
-                    const std::vector<size_t>& inner_axes,
+                    const vector<size_t>& inner_axes,
                     const default_type density,
                     const MetricType& metric,
                     const ParamType& parameters,
                     Eigen::VectorXd& overall_cost_function,
                     Eigen::VectorXd& overall_grad,
-                    Math::RNG& rng_engine) :
+                    Math::RNG& rng_engine,
+                    ssize_t* overlap_count = nullptr) :
                   inner_axes (inner_axes),
                   density (density),
                   metric (metric),
@@ -129,7 +135,8 @@ namespace MR
                   gradient (overall_grad.size()),
                   overall_cost_function (overall_cost_function),
                   overall_gradient (overall_grad),
-                  rng (rng_engine)  {
+                  rng (rng_engine),
+                  overlap_count (overlap_count)  {
                     gradient.setZero();
                     cost_function.setZero();
                     assert(inner_axes.size() >= 2);
@@ -143,18 +150,17 @@ namespace MR
 
                 void operator() (const Iterator& iter) {
                   auto engine = std::default_random_engine{static_cast<std::default_random_engine::result_type>(rng.get_seed())};
-                  auto kern = ThreadKernel<MetricType, ParamType> (metric, params, cost_function, gradient);
+                  auto kern = ThreadKernel<MetricType, ParamType> (metric, params, cost_function, gradient, overlap_count);
                   Iterator iterator (iter);
                   assign_pos_of(iter).to(iterator);
                   auto inner_loop = Random_loop<Iterator, std::default_random_engine>(iterator, engine, inner_axes[1], (float) iterator.size(inner_axes[1]) * density);
                   for (auto j = inner_loop; j; ++j)
-                    for (auto k = Loop (inner_axes[0]) (iterator); k; ++k){
-                      DEBUG (str(iterator));
+                    for (auto k = Loop (inner_axes[0]) (iterator); k; ++k) {
                       kern (iterator);
                     }
                 }
               protected:
-                std::vector<size_t> inner_axes;
+                vector<size_t> inner_axes;
                 default_type density;
                 MetricType metric;
                 ParamType params;
@@ -163,6 +169,7 @@ namespace MR
                 Eigen::VectorXd& overall_cost_function;
                 Eigen::VectorXd& overall_gradient;
                 Math::RNG rng;
+                ssize_t* overlap_count;
             };
 
             template <class TransformType_>
@@ -172,22 +179,27 @@ namespace MR
                   const ParamType& params,
                   Eigen::VectorXd& cost,
                   Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient,
-                  const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x) {
+                  const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,
+                  ssize_t* overlap_count = nullptr) {
 
-                if (params.loop_density < 1.0){
-                  DEBUG("stochastic gradient descent, density: " + str(params.loop_density));
+                if (params.loop_density < 1.0) {
+                  DEBUG ("stochastic gradient descent, density: " + str(params.loop_density));
                   if (params.robust_estimate){
                     throw Exception ("TODO robust estimate not implemented");
                   } else {
                     Math::RNG rng;
                     gradient.setZero();
                     auto loop = ThreadedLoop (params.midway_image, 0, 3, 2);
-                    ThreadFunctor functor (loop.inner_axes, params.loop_density, metric, params, cost, gradient, rng);
+                    if (overlap_count)
+                      *overlap_count = 0;
+                    ThreadFunctor functor (loop.inner_axes, params.loop_density, metric, params, cost, gradient, rng, overlap_count);
                     loop.run_outer (functor);
                   }
                 }
                 else {
-                  ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient);
+                  if (overlap_count)
+                    *overlap_count = 0;
+                  ThreadKernel <MetricType, ParamType> kernel (metric, params, cost, gradient, overlap_count);
                   ThreadedLoop (params.midway_image, 0, 3).run (kernel);
                 }
               }
@@ -200,27 +212,36 @@ namespace MR
               params.transformation.set_parameter_vector(x);
 
               if (directions.cols()) {
-                INFO ("Reorienting FODs...");
+                DEBUG ("Reorienting FODs...");
                 std::shared_ptr<Image<default_type> > im1_image_reoriented;
                 std::shared_ptr<Image<default_type> > im2_image_reoriented;
-                im1_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im1_image));
-                im2_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch (params.im2_image));
-                Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions);
-                Registration::Transform::reorient (params.im2_image, *im2_image_reoriented, params.transformation.get_transform_half_inverse(), directions);
+                im1_image_reoriented = make_shared<Image<default_type>>(Image<default_type>::scratch (params.im1_image));
+                im2_image_reoriented = make_shared<Image<default_type>>(Image<default_type>::scratch (params.im2_image));
+                {
+                   LogLevelLatch log_level (0);
+                  Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions);
+                  Registration::Transform::reorient (params.im2_image, *im2_image_reoriented, params.transformation.get_transform_half_inverse(), directions);
+                }
                 params.set_im1_iterpolator (*im1_image_reoriented);
                 params.set_im2_iterpolator (*im2_image_reoriented);
               }
 
-              estimate(params.transformation, metric, params, overall_cost_function, gradient, x);
+              estimate (params.transformation, metric, params, overall_cost_function, gradient, x, &overlap_count);
+
               DEBUG ("Metric evaluate iteration: " + str(iteration++) + ", cost: " + str(overall_cost_function.transpose()));
               DEBUG ("  x: " + str(x.transpose()));
               DEBUG ("  gradient: " + str(gradient.transpose()));
               DEBUG ("  norm(gradient): " + str(gradient.norm()));
+              DEBUG ("  overlapping voxels: " + str(overlap_count));
               return overall_cost_function(0);
             }
 
             size_t size() {
               return params.transformation.size();
+            }
+
+            ssize_t overlap() {
+              return overlap_count;
             }
 
             default_type init (Eigen::VectorXd& x) {
@@ -235,9 +256,10 @@ namespace MR
           protected:
               MetricType metric;
               ParamType params;
-              std::vector<size_t> extent;
+              vector<size_t> extent;
               size_t iteration;
               Eigen::MatrixXd directions;
+              ssize_t overlap_count;
 
       };
     }

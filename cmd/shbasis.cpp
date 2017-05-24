@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 
 #include <vector>
@@ -44,10 +41,9 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
+  SYNOPSIS = "Examine the values in spherical harmonic images to estimate (and optionally change) the SH basis used";
 
   DESCRIPTION
-    + "examine the values in spherical harmonic images to estimate (and optionally change) the SH basis used."
-
     + "In previous versions of MRtrix, the convention used for storing spherical harmonic "
       "coefficients was a non-orthonormal basis (the m!=0 coefficients were a factor of "
       "sqrt(2) too large). This error has been rectified in the new MRtrix (assuming that "
@@ -81,7 +77,7 @@ void usage ()
 
 // Perform a linear regression on the power ratio in each order
 // Omit l=2 - tends to be abnormally small due to non-isotropic brain-wide fibre distribution
-std::pair<float, float> get_regression (const std::vector<float>& ratios)
+std::pair<float, float> get_regression (const vector<float>& ratios)
 {
   const size_t n = ratios.size() - 1;
   Eigen::VectorXf Y (n), b (2);
@@ -141,7 +137,7 @@ void check_and_update (Header& H, const conv_t conversion)
   if (App::log_level > 0 && App::log_level < 2)
     progress.reset (new ProgressBar ("Evaluating SH basis of image \"" + H.name() + "\"", N-1));
 
-  std::vector<float> ratios;
+  vector<float> ratios;
 
   for (size_t l = 2; l <= lmax; l += 2) {
 
@@ -323,7 +319,7 @@ void run ()
     }
   }
 
-  for (std::vector<ParsedArgument>::const_iterator i = argument.begin(); i != argument.end(); ++i) {
+  for (vector<ParsedArgument>::const_iterator i = argument.begin(); i != argument.end(); ++i) {
 
     const std::string path = *i;
     Header H = Header::open (path);

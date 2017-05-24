@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -25,7 +23,7 @@
 #include "registration/transform/affine.h"
 #include "registration/warp/compose.h"
 #include "registration/warp/convert.h"
-#include "registration/warp/utils.h"
+#include "registration/warp/helpers.h"
 #include "registration/warp/invert.h"
 #include "registration/metric/demons.h"
 #include "registration/metric/demons4D.h"
@@ -41,7 +39,7 @@ namespace MR
 
 
     class NonLinear
-    {
+    { MEMALIGN(NonLinear)
 
       public:
 
@@ -62,7 +60,6 @@ namespace MR
             fod_lmax[2] = 4;
         }
 
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
         template <class TransformType, class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType>
           void run (TransformType linear_transform,
@@ -76,7 +73,7 @@ namespace MR
               im2_to_mid_linear = linear_transform.get_transform_half_inverse();
 
               INFO ("Estimating halfway space");
-              std::vector<Eigen::Transform<double, 3, Eigen::Projective> > init_transforms;
+              vector<Eigen::Transform<double, 3, Eigen::Projective>> init_transforms;
               // define transfomations that will be applied to the image header when the common space is calculated
               {
                 Eigen::Transform<double, 3, Eigen::Projective> init_trafo_2 = linear_transform.get_transform_half();
@@ -86,7 +83,7 @@ namespace MR
               }
 
               auto padding = Eigen::Matrix<default_type, 4, 1>(0.0, 0.0, 0.0, 0.0);
-              std::vector<Header> headers;
+              vector<Header> headers;
               headers.push_back (Header (im2_image));
               headers.push_back (Header (im1_image));
               midway_image_header = compute_minimum_average_header(headers, 1, padding, init_transforms);
@@ -115,9 +112,9 @@ namespace MR
                 }
               } else {
                 if (do_reorientation) {
-                  CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor " + str(scale_factor[level]) + ", lmax " + str(fod_lmax[level]));
+                  CONSOLE ("nonlinear stage " + str(level + 1) + ", scale factor " + str(scale_factor[level]) + ", lmax " + str(fod_lmax[level]));
                 } else {
-                  CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor " + str(scale_factor[level]));
+                  CONSOLE ("nonlinear stage " + str(level + 1) + ", scale factor " + str(scale_factor[level]));
                 }
               }
 
@@ -154,19 +151,19 @@ namespace MR
               field_header.ndim() = 4;
               field_header.size(3) = 3;
 
-              im1_to_mid_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-              im2_to_mid_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-              im1_update = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-              im2_update = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-              im1_update_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-              im2_update_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+              im1_to_mid_new = make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+              im2_to_mid_new = make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+              im1_update = make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+              im2_update = make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+              im1_update_new = make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+              im2_update_new = make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
 
               if (!is_initialised) {
                 if (level == 0) {
-                  im1_to_mid = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-                  im2_to_mid = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-                  mid_to_im1 = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-                  mid_to_im2 = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+                  im1_to_mid = make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+                  im2_to_mid = make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+                  mid_to_im1 = make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+                  mid_to_im2 = make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
                 } else {
                   DEBUG ("Upsampling fields");
                   {
@@ -189,15 +186,15 @@ namespace MR
                   DEBUG ("smoothing update fields");
                   Filter::Smooth smooth_filter (*im1_update);
                   smooth_filter.set_stdev (update_smoothing_mm);
-                  smooth_filter (*im1_update, *im1_update);
-                  smooth_filter (*im2_update, *im2_update);
+                  smooth_filter (*im1_update);
+                  smooth_filter (*im2_update);
                 }
 
                 Image<default_type> im1_deform_field = Image<default_type>::scratch (field_header);
                 Image<default_type> im2_deform_field = Image<default_type>::scratch (field_header);
 
                 if (iteration > 1) {
-                  DEBUG ("updating displacement field field");
+                  DEBUG ("updating displacement field");
                   Warp::update_displacement_scaling_and_squaring (*im1_to_mid, *im1_update, *im1_to_mid_new, grad_step_altered);
                   Warp::update_displacement_scaling_and_squaring (*im2_to_mid, *im2_update, *im2_to_mid_new, grad_step_altered);
 
@@ -205,8 +202,8 @@ namespace MR
                   Filter::Smooth smooth_filter (*im1_to_mid_new);
                   smooth_filter.set_stdev (disp_smoothing_mm);
                   smooth_filter.set_zero_boundary (true);
-                  smooth_filter (*im1_to_mid_new, *im1_to_mid_new);
-                  smooth_filter (*im2_to_mid_new, *im2_to_mid_new);
+                  smooth_filter (*im1_to_mid_new);
+                  smooth_filter (*im2_to_mid_new);
 
                   Registration::Warp::compose_linear_displacement (im1_to_mid_linear, *im1_to_mid_new, im1_deform_field);
                   Registration::Warp::compose_linear_displacement (im2_to_mid_linear, *im2_to_mid_new, im2_deform_field);
@@ -310,22 +307,22 @@ namespace MR
             field_header.ndim() = 4;
             field_header.size(3) = 3;
 
-            im1_to_mid = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
+            im1_to_mid = make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
             input_warps.index(4) = 0;
             threaded_copy (input_warps, *im1_to_mid, 0, 4);
             Registration::Warp::deformation2displacement (*im1_to_mid, *im1_to_mid);
 
-            mid_to_im1 = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
+            mid_to_im1 = make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
             input_warps.index(4) = 1;
             threaded_copy (input_warps, *mid_to_im1, 0, 4);
             Registration::Warp::deformation2displacement (*mid_to_im1, *mid_to_im1);
 
-            im2_to_mid = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
+            im2_to_mid = make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
             input_warps.index(4) = 2;
             threaded_copy (input_warps, *im2_to_mid, 0, 4);
             Registration::Warp::deformation2displacement (*im2_to_mid, *im2_to_mid);
 
-            mid_to_im2 = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
+            mid_to_im2 = make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
             input_warps.index(4) = 3;
             threaded_copy (input_warps, *mid_to_im2, 0, 4);
             Registration::Warp::deformation2displacement (*mid_to_im2, *mid_to_im2);
@@ -333,7 +330,7 @@ namespace MR
           }
 
 
-          void set_max_iter (const std::vector<int>& maxiter) {
+          void set_max_iter (const vector<int>& maxiter) {
             for (size_t i = 0; i < maxiter.size (); ++i)
               if (maxiter[i] < 0)
                 throw Exception ("the number of iterations must be positive");
@@ -341,7 +338,7 @@ namespace MR
           }
 
 
-          void set_scale_factor (const std::vector<default_type>& scalefactor) {
+          void set_scale_factor (const vector<default_type>& scalefactor) {
             for (size_t level = 0; level < scalefactor.size(); ++level) {
               if (scalefactor[level] <= 0 || scalefactor[level] > 1)
                 throw Exception ("the non-linear registration scale factor for each multi-resolution level must be between 0 and 1");
@@ -349,7 +346,7 @@ namespace MR
             scale_factor = scalefactor;
           }
 
-          std::vector<default_type> get_scale_factor () const {
+          vector<default_type> get_scale_factor () const {
             return scale_factor;
           }
 
@@ -370,7 +367,7 @@ namespace MR
             disp_smoothing = voxel_fwhm;
           }
 
-          void set_lmax (const std::vector<int>& lmax) {
+          void set_lmax (const vector<int>& lmax) {
             for (size_t i = 0; i < lmax.size (); ++i)
               if (lmax[i] < 0 || lmax[i] % 2)
                 throw Exception ("the input nonlinear lmax must be positive and even");
@@ -452,7 +449,7 @@ namespace MR
         protected:
 
           std::shared_ptr<Image<default_type> > reslice (Image<default_type>& image, Header& header) {
-            std::shared_ptr<Image<default_type> > temp = std::make_shared<Image<default_type> > (Image<default_type>::scratch (header));
+            std::shared_ptr<Image<default_type> > temp = make_shared<Image<default_type> > (Image<default_type>::scratch (header));
             Filter::reslice<Interp::Linear> (image, *temp);
             return temp;
           }
@@ -469,14 +466,14 @@ namespace MR
 
 
           bool is_initialised;
-          std::vector<int> max_iter;
-          std::vector<default_type> scale_factor;
+          vector<int> max_iter;
+          vector<default_type> scale_factor;
           default_type update_smoothing;
           default_type disp_smoothing;
           default_type gradient_step;
           Eigen::MatrixXd aPSF_directions;
           bool do_reorientation;
-          std::vector<int> fod_lmax;
+          vector<int> fod_lmax;
 
           transform_type im1_to_mid_linear;
           transform_type im2_to_mid_linear;

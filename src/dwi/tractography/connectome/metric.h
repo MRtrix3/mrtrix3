@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 
 #ifndef __dwi_tractography_connectome_metric_h__
@@ -42,7 +39,7 @@ namespace Connectome {
 
 // Provide a common interface for calculating the contribution from a
 //   particular streamline to a particular edge of the connectome
-class Metric {
+class Metric { MEMALIGN(Metric)
 
   public:
     Metric() :
@@ -63,11 +60,11 @@ class Metric {
       return (*this)(tck);
     }
 
-    double operator() (const Streamline<>& tck, const std::vector<node_t>& nodes) const
+    double operator() (const Streamline<>& tck, const vector<node_t>& nodes) const
     {
       if (scale_by_invnodevol) {
         double sum_volumes = 0.0;
-        for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
+        for (vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
           assert (*n < node_volumes.size());
           sum_volumes += node_volumes[*n];
         }

@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_tractography_algorithms_nulldist_h__
 #define __dwi_tractography_algorithms_nulldist_h__
@@ -34,10 +33,10 @@ namespace MR
 
     using namespace MR::DWI::Tractography::Tracking;
 
-    class NullDist1 : public MethodBase {
+    class NullDist1 : public MethodBase { MEMALIGN(NullDist1)
       public:
 
-      class Shared : public SharedBase {
+      class Shared : public SharedBase { MEMALIGN(Shared)
         public:
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           SharedBase (diff_path, property_set)
@@ -82,10 +81,10 @@ namespace MR
 
     };
 
-    class NullDist2 : public iFOD2 {
+    class NullDist2 : public iFOD2 { MEMALIGN(NullDist2)
       public:
 
-      class Shared : public iFOD2::Shared {
+      class Shared : public iFOD2::Shared { MEMALIGN(Shared)
         public:
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           iFOD2::Shared (diff_path, property_set)
@@ -157,7 +156,7 @@ namespace MR
       const Shared& S;
       Interpolator<Image<float>>::type source;
 
-      std::vector<Eigen::Vector3f> positions, tangents;
+      vector<Eigen::Vector3f> positions, tangents;
       size_t sample_idx;
 
     };

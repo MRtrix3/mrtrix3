@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -25,7 +23,7 @@ using namespace MR;
 using namespace App;
 using namespace std;
 
-typedef float value_type;
+using value_type = float;
 
 #define DEFAULT_NITER 2
 
@@ -66,15 +64,15 @@ void usage ()
   
   AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be)";
   
+  SYNOPSIS = "Diffusion (kurtosis) tensor estimation using iteratively reweighted linear least squares estimator";
+
   DESCRIPTION
-  + "Diffusion (kurtosis) tensor estimation using iteratively reweighted linear least squares estimator."
   + encoding_description;
 
 }
 
 template <class MASKType, class B0Type, class DKTType, class PredictType>
-class Processor
-{
+class Processor { MEMALIGN(Processor)
   public:
     Processor (const Eigen::MatrixXd& b, const int iter, MASKType* mask_image, B0Type* b0_image, DKTType* dkt_image, PredictType* predict_image) :
       mask_image (mask_image),
@@ -181,6 +179,7 @@ void run ()
   Header header (dwi);
   header.datatype() = DataType::Float32;
   header.ndim() = 4;
+  DWI::stash_DW_scheme (header, grad);
   
   Image<value_type>* predict = nullptr;
   opt = get_options ("predicted_signal");

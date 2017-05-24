@@ -1,4 +1,4 @@
-.. _command_line:
+.. _command-line-interface:
 
 Command-line usage
 ==================
@@ -13,44 +13,79 @@ If you need to become familiar with using the command-line, there are
 plenty of tutorials online to get you started. There are however a few notable 
 features specific to *MRtrix3*, which are outlined below.
 
-Using short option names
-------------------------
-
-Options do not need to be provided in full, as long as the initial part
-of the option provided is sufficient to unambiguously identify it. For
-example:
-
-.. code-block:: console
-
-    $ mrconvert -debug in.mif out.nii.gz
-
-is the same as:
-
-.. code-block:: console
-
-    $ mrconvert -de in.mif out.nii.gz
-
-but will conflict with the ``-datatype`` option if shortened any
-further:
-
-.. code-block:: console
-
-    $ mrconvert -d in.mif out.nii.gz 
-    mrconvert: [ERROR] several matches possible for option "-d": "-datatype, "-debug"
 
 Ordering of options on the command-line
 ---------------------------------------
 
 Options can typically occur anywhere on the command-line, in any order -
-they do not usually need to precede the arguments. However, there are a
-few commands where the order does matter, particularly ``mrcalc``.
+they do not usually need to precede the arguments.
+
+For instance, all three of the lines below will have the same result:
+
+.. code-block:: console
+
+    $ command -option1 -option2 argument1 argument2
+    $ command argument1 argument2 -option1 -option2
+    $ command -option2 argument1 argument2 -option1
+
+Care must however be taken in cases where a command-line option *itself
+has an associated compulsory argument*. For instance, consider a command-line
+option ``-number``, which allows the user to manually provide a numerical
+value in order to control some behaviour. The user's desired value
+*must* be provided *immediately after* '``-number``' appears on the
+command-line in order to be correctly associated with that particular option.
+
+For instance, the following would be interpreted correctly:
+
+.. code-block:: console
+
+    $ command -number 10 argument1 argument2
+
+But the following would *not*:
+
+.. code-block:: console
+
+    $ command -number argument1 10 argument2
+
+The following cases would also *not* be interpreted correctly by *MRtrix3*,
+even though some other softwares may interpret their command-line options in
+such ways:
+
+.. code::
+
+    $ command -number10 argument1 argument2
+    $ command --number=10 argument1 argument2
+
+There are a few cases in *MRtrix3* where the order of options on the
+command-line *does* matter, and hence the above demonstration does not apply:
+
+-  :ref:`mrcalc`: ``mrcalc`` is a stack-based calculator, and as such, the
+   order of inputs and operations on the command-line determine how the
+   mathematical expression is formed.
+
+-  :ref:`mrview`: ``mrview`` includes a number of command-line options for
+   automatically configuring the viewing window, and importing data into
+   its various tools. Here the order of such options does matter: the
+   command line contents are read from left to right, and any command-line
+   options that alter the display of a particular image or data open within
+   a tool is applied to the *most recent* data (image or otherwise) opened
+   by the tool associated with that option.
+
+-  *Scripts*: A subset of the Python scripts provided with *MRtrix3*
+   (currently :ref:`5ttgen` and :ref:`dwi2response`) require the selection
+   of an *algorithm*, which defines the approach that the script will use to
+   arrive at its end result based on the data provided. The name of this
+   algorithm *must* be the *first* argument on the command-line; any
+   command-line options provided *prior* to this algorithm name will be
+   **silently ignored**.
+
 
 .. _number_sequences:
 
 Number sequences and floating-point lists
 -----------------------------------------
 
-Options often expect arguments in the form of *number sequences* or
+Some options expect arguments in the form of *number sequences* or
 *floating-point lists of numbers*. The former consists or a series of
 integers separated by commas or colons (no spaces), with colons
 indicating a range, optionally with an increment (if different from 1).
@@ -67,6 +102,33 @@ Likewise, floating-point lists consist of a comma-separated list of
 numbers, for example:
 
 -  ``2.47,-8.2223,1.45e-3``
+
+
+Using shortened option names
+----------------------------
+
+Options do not need to be provided in full, as long as the initial part
+of the option provided is sufficient to unambiguously identify it.
+
+For example:
+
+.. code::
+
+    $ mrconvert -debug in.mif out.nii.gz
+
+is the same as:
+
+.. code::
+
+    $ mrconvert -de in.mif out.nii.gz
+
+but will conflict with the ``-datatype`` option if shortened any
+further:
+
+.. code::
+
+    $ mrconvert -d in.mif out.nii.gz
+    mrconvert: [ERROR] several matches possible for option "-d": "-datatype, "-debug"
 
 
 .. _unix_pipelines:

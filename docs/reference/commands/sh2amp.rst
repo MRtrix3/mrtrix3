@@ -1,9 +1,14 @@
 .. _sh2amp:
 
 sh2amp
-===========
+===================
 
 Synopsis
+--------
+
+Evaluate the amplitude of an image of spherical harmonic functions along specified directions
+
+Usage
 --------
 
 ::
@@ -13,11 +18,6 @@ Synopsis
 -  *input*: the input image consisting of spherical harmonic (SH) coefficients.
 -  *directions*: the list of directions along which the SH functions will be sampled, generated using the dirgen command
 -  *output*: the output image consisting of the amplitude of the SH functions along the specified directions.
-
-Description
------------
-
-Evaluate the amplitude of an image of spherical harmonic functions along the specified directions
 
 Options
 -------
@@ -61,11 +61,16 @@ Standard options
 
 **Author:** David Raffelt (david.raffelt@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
 
-This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+MRtrix is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see www.mrtrix.org
+For more details, see http://www.mrtrix.org/.
+
 

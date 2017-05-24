@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -158,9 +156,9 @@ void usage () {
 
 AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)";
 
-DESCRIPTION
-  + "Use track data as a form of contrast for producing a high-resolution image."
+SYNOPSIS = "Use track data as a form of contrast for producing a high-resolution image";
 
+DESCRIPTION
   + "Note: if you run into limitations with RAM usage, make sure you output the "
     "results to a .mif file or .mih / .dat file pair - this will avoid the allocation "
     "of an additional buffer to store the output for write-out.";
@@ -266,7 +264,7 @@ void run () {
 
   const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t> (properties["count"]);
 
-  std::vector<default_type> voxel_size = get_option_value ("vox", std::vector<default_type>());
+  vector<default_type> voxel_size = get_option_value ("vox", vector<default_type>());
 
   if (voxel_size.size() == 1)
     voxel_size.assign (3, voxel_size.front());

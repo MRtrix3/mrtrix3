@@ -1,24 +1,16 @@
-/*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
 
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
 #include "progressbar.h"
@@ -35,8 +27,7 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  DESCRIPTION
-  + "generate a test image of random numbers";
+  SYNOPSIS = "Generate a test image of random numbers";
 
   ARGUMENTS
   + Argument ("size", "the dimensions of the test data.").type_sequence_int ()
@@ -50,7 +41,7 @@ void usage ()
 
 void run ()
 {
-  std::vector<int> dim = argument[0];
+  vector<int> dim = argument[0];
 
   Header header;
 
@@ -64,7 +55,7 @@ void run ()
 
   auto image = Header::create (argument[1], header).get_image<float>();
 
-  struct fill {
+  struct fill { NOMEMALIGN
     Math::RNG rng;
     std::normal_distribution<float> normal;
     void operator() (decltype(image)& v) { v.value() = normal(rng); }
