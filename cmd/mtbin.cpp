@@ -266,8 +266,10 @@ void run ()
     if (!converged && !user_supplied_mask) {
       auto summed = Image<float>::scratch (header_3D);
       for (size_t j = 0; j < input_images.size(); ++j) {
-        for (auto i = Loop (summed, 0, 3) (summed, input_images[j], bias_field); i; ++i)
-          summed.value() += scale_factors(j, 0) * input_images[j].value() / bias_field.value();
+        for (auto i = Loop (summed, 0, 3) (summed, input_images[j], bias_field, mask); i; ++i) {
+          if (mask.value())
+            summed.value() += scale_factors(j, 0) * input_images[j].value() / bias_field.value();
+        }
       }
       compute_mask (summed, mask);
       vector<float> summed_values;
