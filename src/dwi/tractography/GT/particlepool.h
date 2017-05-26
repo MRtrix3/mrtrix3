@@ -97,14 +97,14 @@ namespace MR {
           void clear() {
             std::lock_guard<std::mutex> lock (mutex);
             pool.clear();
-            std::stack<Particle*> e {};
+            std::stack<Particle*, vector<Particle*> > e {};
             avail.swap(e);
           }
           
         protected:
           std::mutex mutex;
-          std::deque<Particle> pool;
-          std::stack<Particle*> avail;
+          std::deque<Particle, Eigen::aligned_allocator<Particle> > pool;
+          std::stack<Particle*, vector<Particle*> > avail;
           Math::RNG rng;
         };
 
