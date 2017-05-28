@@ -15,9 +15,9 @@
 #ifndef __formats_mrtrix_utils_h__
 #define __formats_mrtrix_utils_h__
 
-#include <vector>
-
 #include "header.h"
+#include "types.h"
+
 #include "file/gz.h"
 #include "file/key_value.h"
 #include "file/ofstream.h"

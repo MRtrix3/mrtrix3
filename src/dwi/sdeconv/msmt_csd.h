@@ -15,9 +15,8 @@
 #ifndef __dwi_sdeconv_msmt_csd_h__
 #define __dwi_sdeconv_msmt_csd_h__
 
-#include <vector>
-
 #include "header.h"
+#include "types.h"
 
 #include "math/constrained_least_squares.h"
 #include "math/math.h"

@@ -15,17 +15,19 @@
 #ifndef __registration_transform_search_h__
 #define __registration_transform_search_h__
 
-#include <vector>
 #include <iostream>
 #include <Eigen/Geometry>
 #include <Eigen/Eigen>
+
+#include "debug.h"
+#include "image.h"
+#include "progressbar.h"
+#include "types.h"
 
 #include "math/math.h"
 #include "math/median.h"
 #include "math/rng.h"
 #include "math/gradient_descent.h"
-#include "image.h"
-#include "debug.h"
 #include "math/average_space.h"
 #include "filter/resize.h"
 #include "filter/reslice.h"
@@ -40,7 +42,6 @@
 #include "registration/metric/thread_kernel.h"
 #include "registration/transform/initialiser.h"
 #include "registration/transform/rigid.h"
-#include "progressbar.h"
 #include "file/config.h"
 
 namespace MR

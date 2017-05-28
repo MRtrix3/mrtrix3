@@ -17,7 +17,8 @@
 
 
 #include <set>
-#include <vector>
+
+#include "types.h"
 
 #include "dwi/tractography/SIFT/track_index_range.h"
 #include "dwi/tractography/SIFT/types.h"
