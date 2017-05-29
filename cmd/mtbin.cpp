@@ -30,7 +30,7 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au), Rami Tabbara (rami.tabbara@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)";
 
   SYNOPSIS = "Multi-Tissue Bias field correction and Intensity Normalisation (MTBIN)";
 
@@ -39,8 +39,10 @@ void usage ()
      "(e.g. from multi-tissue CSD), and outputs N corrected tissue components. Intensity normalisation is performed by either "
      "determining a common global normalisation factor for all tissue types (default) or by normalising each tissue type independently "
      "with a single tissue-specific global scale factor."
+     
+   + "The -mask option is mandatory, and is optimally provided with a brain mask, such as the one obtained from dwi2mask earlier in the processing pipeline."
 
-   + "Example usage: mtbin wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif."
+   + "Example usage: mtbin wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif."
 
    + "The estimated multiplicative bias field is guaranteed to have a mean of 1 over all voxels within the mask.";
 
@@ -49,7 +51,7 @@ void usage ()
                               "Note that any number of tissues can be normalised").type_image_in().allow_multiple();
 
   OPTIONS
-    + Option ("mask", "define the mask to compute the normalisation within. If not supplied this is estimated automatically").required ()
+    + Option ("mask", "define the mask to compute the normalisation within. This option is mandatory.").required ()
     + Argument ("image").type_image_in ()
 
     + Option ("value", "specify the value to which the summed tissue compartments will be normalised to "
@@ -65,7 +67,7 @@ void usage ()
                          "It will stop before the max iterations if convergence is detected")
     + Argument ("number").type_integer()
 
-    + Option ("check", "check the automatically computed mask")
+    + Option ("check", "check the final mask used to compute the bias field. This mask excludes outlier regions ignored by the bias field fitting procedure. However, these regions are still corrected for bias fields based on the other image data.")
     + Argument ("image").type_image_out ();
 }
 
