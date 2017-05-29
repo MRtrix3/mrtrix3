@@ -49,7 +49,7 @@ void usage ()
                               "Note that any number of tissues can be normalised").type_image_in().allow_multiple();
 
   OPTIONS
-    + Option ("mask", "define the mask to compute the normalisation within. If not supplied this is estimated automatically")
+    + Option ("mask", "define the mask to compute the normalisation within. If not supplied this is estimated automatically").required ()
     + Argument ("image").type_image_in ()
 
     + Option ("value", "specify the value to which the summed tissue compartments will be normalised to "
@@ -100,7 +100,7 @@ FORCE_INLINE Eigen::MatrixXd basis_function (const Eigen::Vector3 pos) {
   return basis;
 }
 
-
+// Currently not used, but keep if we want to make mask argument optional in the future
 FORCE_INLINE void compute_mask (Image<float>& summed, Image<bool>& mask) {
   LogLevelLatch level (0);
   Filter::OptimalThreshold threshold_filter (summed);
@@ -112,6 +112,19 @@ FORCE_INLINE void compute_mask (Image<float>& summed, Image<bool>& mask) {
   connected_filter (mask, mask);
   Filter::MaskClean clean_filter (mask);
   clean_filter (mask, mask);
+}
+
+
+FORCE_INLINE void refine_mask (Image<float>& summed,
+  Image<bool>& orig_mask,
+  Image<bool>& mask) {
+
+  for (auto i = Loop (summed, 0, 3) (summed, orig_mask, mask); i; ++i) {
+    if (std::isfinite(summed.value ()) && summed.value () > 0.f && orig_mask.value ())
+      mask.value () = true;
+    else
+      mask.value () = false;
+  }
 }
 
 
@@ -146,24 +159,24 @@ void run ()
     output_filenames.push_back (argument[i + 1]);
   }
 
-  // Load or compute a mask to work with
-  Image<bool> mask;
-  bool user_supplied_mask = false;
+  // Load the mask
   Header header_3D (input_images[0]);
   header_3D.ndim() = 3;
   auto opt = get_options ("mask");
-  if (opt.size()) {
-    mask = Image<bool>::open (opt[0][0]);
-    user_supplied_mask = true;
-  } else {
-    auto summed = Image<float>::scratch (header_3D);
-    for (size_t j = 0; j < input_images.size(); ++j) {
-      for (auto i = Loop (summed, 0, 3) (summed, input_images[j]); i; ++i)
-        summed.value() += input_images[j].value();
-      progress++;
-    }
-    compute_mask (summed, mask);
+
+  auto orig_mask = Image<bool>::open (opt[0][0]);
+  Image<bool> mask = Image<bool>::scratch (orig_mask);
+
+  auto summed = Image<float>::scratch (header_3D);
+  for (size_t j = 0; j < input_images.size(); ++j) {
+    for (auto i = Loop (summed, 0, 3) (summed, input_images[j]); i; ++i)
+      summed.value() += input_images[j].value();
+    progress++;
   }
+
+  // Refine the initial mask to exclude negative summed tissue components
+  refine_mask (summed, orig_mask, mask);
+
   size_t num_voxels = 0;
   for (auto i = Loop (mask) (mask); i; ++i) {
     if (mask.value())
@@ -262,16 +275,17 @@ void run ()
         converged = true;
     }
 
-    // Revaluate mask
-    if (!converged && !user_supplied_mask) {
+    // Re-evaluate mask
+    if (!converged) {
       auto summed = Image<float>::scratch (header_3D);
       for (size_t j = 0; j < input_images.size(); ++j) {
-        for (auto i = Loop (summed, 0, 3) (summed, input_images[j], bias_field, mask); i; ++i) {
-          if (mask.value())
+        for (auto i = Loop (summed, 0, 3) (summed, input_images[j], bias_field); i; ++i) {
             summed.value() += scale_factors(j, 0) * input_images[j].value() / bias_field.value();
         }
       }
-      compute_mask (summed, mask);
+
+      refine_mask (summed, orig_mask, mask);
+
       vector<float> summed_values;
       for (auto i = Loop (mask) (mask, summed); i; ++i) {
         if (mask.value())
