@@ -21,6 +21,7 @@
 #include "filter/connected_components.h"
 #include "transform.h"
 #include "math/least_squares.h"
+#include "algo/threaded_copy.h"
 
 using namespace MR;
 using namespace App;
@@ -118,14 +119,14 @@ FORCE_INLINE void compute_mask (Image<float>& summed, Image<bool>& mask) {
 
 
 FORCE_INLINE void refine_mask (Image<float>& summed,
-  Image<bool>& orig_mask,
-  Image<bool>& mask) {
+  Image<bool>& initial_mask,
+  Image<bool>& refined_mask) {
 
-  for (auto i = Loop (summed, 0, 3) (summed, orig_mask, mask); i; ++i) {
-    if (std::isfinite(summed.value ()) && summed.value () > 0.f && orig_mask.value ())
-      mask.value () = true;
+  for (auto i = Loop (summed, 0, 3) (summed, initial_mask, refined_mask); i; ++i) {
+    if (std::isfinite(summed.value ()) && summed.value () > 0.f && initial_mask.value ())
+      refined_mask.value () = true;
     else
-      mask.value () = false;
+      refined_mask.value () = false;
   }
 }
 
@@ -167,7 +168,8 @@ void run ()
   auto opt = get_options ("mask");
 
   auto orig_mask = Image<bool>::open (opt[0][0]);
-  Image<bool> mask = Image<bool>::scratch (orig_mask);
+  auto initial_mask = Image<bool>::scratch (orig_mask);
+  auto mask = Image<bool>::scratch (orig_mask);
 
   auto summed = Image<float>::scratch (header_3D);
   for (size_t j = 0; j < input_images.size(); ++j) {
@@ -177,7 +179,9 @@ void run ()
   }
 
   // Refine the initial mask to exclude negative summed tissue components
-  refine_mask (summed, orig_mask, mask);
+  refine_mask (summed, orig_mask, initial_mask);
+
+  threaded_copy (initial_mask, mask);
 
   size_t num_voxels = 0;
   for (auto i = Loop (mask) (mask); i; ++i) {
@@ -286,7 +290,7 @@ void run ()
         }
       }
 
-      refine_mask (summed, orig_mask, mask);
+      refine_mask (summed, initial_mask, mask);
 
       vector<float> summed_values;
       for (auto i = Loop (mask) (mask, summed); i; ++i) {
