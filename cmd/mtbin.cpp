@@ -123,7 +123,7 @@ FORCE_INLINE void refine_mask (Image<float>& summed,
   Image<bool>& refined_mask) {
 
   for (auto i = Loop (summed, 0, 3) (summed, initial_mask, refined_mask); i; ++i) {
-    if (std::isfinite(summed.value ()) && summed.value () > 0.f && initial_mask.value ())
+    if (std::isfinite((float) summed.value ()) && summed.value () > 0.f && initial_mask.value ())
       refined_mask.value () = true;
     else
       refined_mask.value () = false;
