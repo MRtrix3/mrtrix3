@@ -2012,7 +2012,7 @@ namespace MR
             return;
           }
 
-          assert ("shouldn't reach here!" && false);
+          assert (opt.opt->is ("info") or opt.opt->is ("debug") or ("shouldn't reach here!" && false));
         }
         catch (Exception& E) {
           E.display();
