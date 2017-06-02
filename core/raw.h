@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -175,6 +175,9 @@ namespace MR
 
     template <> 
       inline void store_native<bool> (const bool value, void* data, size_t i) {
+        // bit of a hack - assume lock-free atomic operations on bytes, and that
+        // atomic<uint8_t> genuinely is one byte. Both now checked in thread
+        // initialisation (in Thread::__Backend() constructor)
         std::atomic<uint8_t>* at = reinterpret_cast<std::atomic<uint8_t>*> (as<uint8_t>(data) + (i/8));
         uint8_t prev = *at, new_value;
         do {

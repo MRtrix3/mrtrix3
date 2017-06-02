@@ -22,14 +22,16 @@ Description
 
 This command inputs N number of tissue components (e.g. from multi-tissue CSD), and outputs N corrected tissue components. Intensity normalisation is performed by either determining a common global normalisation factor for all tissue types (default) or by normalising each tissue type independently with a single tissue-specific global scale factor.
 
-Example usage: mtbin wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif.
+The -mask option is mandatory, and is optimally provided with a brain mask, such as the one obtained from dwi2mask earlier in the processing pipeline.
+
+Example usage: mtbin wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif.
 
 The estimated multiplicative bias field is guaranteed to have a mean of 1 over all voxels within the mask.
 
 Options
 -------
 
--  **-mask image** define the mask to compute the normalisation within. If not supplied this is estimated automatically
+-  **-mask image** define the mask to compute the normalisation within. This option is mandatory.
 
 -  **-value number** specify the value to which the summed tissue compartments will be normalised to (Default: sqrt(1/(4*pi)) = 0.282094)
 
@@ -39,7 +41,7 @@ Options
 
 -  **-maxiter number** set the maximum number of iterations. Default(100). It will stop before the max iterations if convergence is detected
 
--  **-check image** check the automatically computed mask
+-  **-check image** check the final mask used to compute the bias field. This mask excludes outlier regions ignored by the bias field fitting procedure. However, these regions are still corrected for bias fields based on the other image data.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -64,9 +66,9 @@ Standard options
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au)
+**Author:** David Raffelt (david.raffelt@florey.edu.au), Rami Tabbara (rami.tabbara@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -60,6 +60,13 @@ namespace MR {
 
           // loop over images in each series:
           for (auto image_it : *series_it) {
+            if (!image_it->transfer_syntax_supported) {
+              Exception E ("unsupported transfer syntax found in DICOM data");
+              E.push_back ("consider using third-party tools to convert your data to standard uncompressed encoding");
+              E.push_back ("See the MRtrix3 documentation on DICOM handling for details:");
+              E.push_back ("   http://mrtrix.readthedocs.io/en/latest/tips_and_tricks/dicom_handling.html#error-unsupported-transfer-syntax");
+              throw E;
+            }
             // if multi-frame, loop over frames in image:
             if (image_it->frames.size()) {
               std::sort (image_it->frames.begin(), image_it->frames.end(), compare_ptr_contents());

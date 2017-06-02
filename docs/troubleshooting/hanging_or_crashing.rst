@@ -3,7 +3,7 @@ Hanging or Crashing
 
 
 Hanging on network file system when writing images
----------------------------------------------------
+--------------------------------------------------
 
 When any *MRtrix3* command must read or write image data, there are two
 primary mechanisms by which this is performed:
@@ -43,7 +43,7 @@ configuration and file system type in use.
 
 
 Commands crashing due to memory requirements
------------------------------------------
+--------------------------------------------
 
 Some commands in *MRtrix3* have substantial RAM requirements, and can
 therefore fail even on a relatively modern machine:
@@ -77,9 +77,9 @@ influence on the outcomes of such algorithms.
 
 For SIFT/SIFT2, the subject FOD image can be down-sampled using e.g.:
 
-.. code::
+.. code-block:: console
 
-    mrresize in.mif out.mif -scale 0.5
+    $ mrresize in.mif out.mif -scale 0.5
 
 Note that it is not necessary to use this down-sampled image for tractography,
 nor for any other processing; it is simply used for SIFT/SIFT2 to reduce
