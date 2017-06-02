@@ -48,7 +48,9 @@ Other options for the dwipreproc script
 
 - **-json_import JSON_file** Import image header information from an associated JSON file (may be necessary to determine phase encoding information)
 
-- **-eddy_options Options** Manually provide additional command-line options to the eddy command
+- **-topup_options TopupOptions** Manually provide additional command-line options to the topup command
+
+- **-eddy_options EddyOptions** Manually provide additional command-line options to the eddy command
 
 - **-cuda** Use the CUDA version of eddy (if available)
 
@@ -104,7 +106,7 @@ References
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

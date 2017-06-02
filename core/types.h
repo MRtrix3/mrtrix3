@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,6 +20,7 @@
 #include <complex>
 #include <iostream>
 #include <vector>
+#include <deque>
 #include <cstddef>
 #include <memory>
 
@@ -242,6 +243,21 @@ namespace MR
       public:
         using ::std::vector<X>::vector;
         vector() { }
+    };
+
+  
+  template <typename X, int N=(alignof(X)>::MR::malloc_align)>
+    class deque : public ::std::deque<X, Eigen::aligned_allocator<X>> { NOMEMALIGN
+      public:
+        using ::std::deque<X,Eigen::aligned_allocator<X>>::deque;
+        deque() { }
+    };
+
+  template <typename X>
+    class deque<X,0> : public ::std::deque<X> { NOMEMALIGN
+      public:
+        using ::std::deque<X>::deque;
+        deque() { }
     };
 
 

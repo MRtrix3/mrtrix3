@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -37,6 +37,7 @@ namespace MR {
         series_time.clear();
         sequence.clear();
         series_number = bits_alloc = dim[0] = dim[1] = data = 0;
+        transfer_syntax_supported = true;
 
         Element item;
         try {
@@ -81,6 +82,8 @@ namespace MR {
               }
             }
           }
+
+          transfer_syntax_supported = item.transfer_syntax_supported;
 
         }
         catch (Exception& E) { 

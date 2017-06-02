@@ -38,7 +38,7 @@ Fixel-based analysis steps
 
 3. Computing group average tissue response functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-As described `here <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`_, using the same response function when estimating FOD images for all subjects enables differences in the intra-axonal volume (and therefore DW signal) across subjects to be detected as differences in the FOD amplitude (the AFD). To ensure the response function is representative of your study population, a group average response function can be computed by first estimating a response function per subject, then averaging with the script::
+As described `here <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`__, using the same response function when estimating FOD images for all subjects enables differences in the intra-axonal volume (and therefore DW signal) across subjects to be detected as differences in the FOD amplitude (the AFD). To ensure the response function is representative of your study population, a group average response function can be computed by first estimating a response function per subject, then averaging with the script::
 
     foreach * : dwi2response dhollander IN/dwi_denoised_preproc.mif IN/response_wm.txt IN/response_gm.txt IN/response_csf.txt
     average_response */response_wm.txt ../group_average_response_wm.txt
@@ -76,7 +76,7 @@ When performing analysis of AFD, Constrained Spherical Deconvolution (CSD) shoul
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This step performs :ref:`global intensity normalisation <global-intensity-normalisation>` by scaling all tissue types based on a single scale factor. A single multiplicative bias field is also estimated and applied to correct the output::
 
-    foreach * : mtbin IN/fod.mif IN/fod_bias_norm.mif IN/gm.mif IN/gm_bias_norm.mif IN/csf.mif IN/csf_bias_norm.mif
+    foreach * : mtbin IN/fod.mif IN/fod_bias_norm.mif IN/gm.mif IN/gm_bias_norm.mif IN/csf.mif IN/csf_bias_norm.mif -mask IN/dwi_mask_upsampled.mif
 
 .. WARNING:: We strongly recommend you that you check the scale factors applied during intensity normalisation are not influenced by the variable of interest in your study. For example if one group contains global changes in white matter T2 then this may directly influence the intensity normalisation and therefore bias downstream AFD analysis. To check this we recommend you perform an equivalence test to ensure mean scale factors are the same between groups. To output the scale factor applied for all subjects use :code:`foreach * : mrinfo IN/fod_bias_norm.mif -property normalisation_scale_factor`.
 
@@ -117,7 +117,7 @@ Here we first identify all voxels having some white matter by thresholding the D
 
     mrconvert ../template/fod_template.mif -coord 3 0 - | mrthreshold - ../template/voxel_mask.mif
 
-Next we segment all fixels from each FOD in the template image (see `here <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`_ for more information about a analysis fixel mask). Note that the fixel image output from this step is stored using the :ref:`fixel_format`, which exploits the filesystem to store all fixel data in a directory::
+Next we segment all fixels from each FOD in the template image (see `here <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`__ for more information about a analysis fixel mask). Note that the fixel image output from this step is stored using the :ref:`fixel_format`, which exploits the filesystem to store all fixel data in a directory::
 
 
    fod2fixel -mask ../template/voxel_mask.mif -fmls_peak_value 0.2 ../template/fod_template.mif ../template/fixel_mask
@@ -147,7 +147,7 @@ Note that here we warp FOD images into template space *without* FOD reorientatio
 
 15. Assign subject fixels to template fixels
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-In step 8 & 9 we obtained spatial correspondence between subject and template. In step 14 we corrected the fixel orientations to ensure angular correspondence of the segmented peaks of subject and template. Here, for each fixel in the template fixel analysis mask, we identify the corresponding fixel in each voxel of the subject image and assign the FD value of the subject fixel to the corresponding fixel in template space. If no fixel exists in the subject that corresponds to the template fixel then it is assigned a value of zero. See `this paper <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`_ for more information. In the command below, you will note that the output fixel directory is the same for all subjects. This directory now stores data for all subjects at corresponding fixels, ready for input to :code:`fixelcfestats` in step 20 below::
+In step 8 & 9 we obtained spatial correspondence between subject and template. In step 14 we corrected the fixel orientations to ensure angular correspondence of the segmented peaks of subject and template. Here, for each fixel in the template fixel analysis mask, we identify the corresponding fixel in each voxel of the subject image and assign the FD value of the subject fixel to the corresponding fixel in template space. If no fixel exists in the subject that corresponds to the template fixel then it is assigned a value of zero. See `this paper <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`__ for more information. In the command below, you will note that the output fixel directory is the same for all subjects. This directory now stores data for all subjects at corresponding fixels, ready for input to :code:`fixelcfestats` in step 20 below::
 
     foreach * : fixelcorrespondence IN/fixel_in_template_space/fd.mif ../template/fixel_mask ../template/fd PRE.mif
 

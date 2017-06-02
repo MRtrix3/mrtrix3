@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -42,6 +42,7 @@ namespace MR {
             bvalue = G[0] = G[1] = G[2] = NAN;
             data = bits_alloc = data_size = frame_offset = 0;
             DW_scheme_wrt_image = false;
+            transfer_syntax_supported = true;
             pe_axis = 3;
             pe_sign = 0;
             pixel_bandwidth = bandwidth_per_pixel_phase_encode = echo_time = NAN;
@@ -53,7 +54,7 @@ namespace MR {
           default_type distance, pixel_size[2], slice_thickness, slice_spacing, scale_slope, scale_intercept, bvalue;
           size_t data, bits_alloc, data_size, frame_offset;
           std::string filename;
-          bool DW_scheme_wrt_image;
+          bool DW_scheme_wrt_image, transfer_syntax_supported;
           size_t pe_axis;
           int pe_sign;
           default_type pixel_bandwidth, bandwidth_per_pixel_phase_encode, echo_time;

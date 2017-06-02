@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,6 +31,7 @@ namespace MR {
           std::string study, study_ID, study_date, study_time;
           std::string series, series_date, series_time, sequence;
           size_t series_number, bits_alloc, dim[2], data;
+          bool transfer_syntax_supported;
       };
 
       std::ostream& operator<< (std::ostream& stream, const QuickScan& file);
