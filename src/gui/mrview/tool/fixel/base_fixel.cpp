@@ -13,7 +13,7 @@
 
 
 #include "gui/mrview/tool/fixel/base_fixel.h"
-
+#include "file/config.h"
 
 namespace MR
 {
@@ -151,10 +151,15 @@ namespace MR
             default:
               break;
           }
-
-          source +=
+          if (File::Config::get_bool ("MRViewFixel_vector_field", false))
+            source +=
+               "    vec4 start = MVP * (gl_in[0].gl_Position);\n"
+               "    vec4 end = MVP * (gl_in[0].gl_Position + 2.0 * line_offset);\n";
+          else
+            source +=
                "    vec4 start = MVP * (gl_in[0].gl_Position - line_offset);\n"
-               "    vec4 end = MVP * (gl_in[0].gl_Position + line_offset);\n"
+               "    vec4 end = MVP * (gl_in[0].gl_Position + line_offset);\n";
+          source +=
                "    vec4 line = end - start;\n"
                "    vec4 normal =  normalize(vec4(-line.y, line.x, 0.0, 0.0));\n"
                "    vec4 thick_vec =  line_thickness * normal;\n"
