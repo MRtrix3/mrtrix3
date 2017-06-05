@@ -78,6 +78,9 @@ namespace MR
           assert (gz);
           return (gztell (gz));
         }
+        int64_t tellg () const {
+          return tell();
+        }
 
         void seek (int64_t offset) {
           assert (gz);
