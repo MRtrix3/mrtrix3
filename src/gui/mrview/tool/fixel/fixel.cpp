@@ -214,8 +214,8 @@ namespace MR
             main_box->addLayout (hlayout);
             hlayout->addWidget (new QLabel ("length multiplier"));
             length_multiplier = new AdjustButton (this, 0.01);
-            length_multiplier->setMin (0.1);
-            length_multiplier->setValue (1.0);
+            length_multiplier->setMin (0.001);
+            length_multiplier->setValue (10.0);
             connect (length_multiplier, SIGNAL (valueChanged()), this, SLOT (length_multiplier_slot()));
             hlayout->addWidget (length_multiplier);
 
