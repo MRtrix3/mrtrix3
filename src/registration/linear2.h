@@ -12,8 +12,8 @@
  */
 
 
-#ifndef __registration_linear_h__
-#define __registration_linear_h__
+#ifndef __registration_linear2_h__
+#define __registration_linear2_h__
 
 #include <vector>
 
