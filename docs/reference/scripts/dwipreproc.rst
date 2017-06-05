@@ -48,9 +48,9 @@ Other options for the dwipreproc script
 
 - **-json_import JSON_file** Import image header information from an associated JSON file (may be necessary to determine phase encoding information)
 
-- **-topup_options TopupOptions** Manually provide additional command-line options to the topup command
+- **-topup_options TopupOptions** Manually provide additional command-line options to the topup command (provide a string within quotation marks that contains at least one space, even if only passing a single command-line option to topup)
 
-- **-eddy_options EddyOptions** Manually provide additional command-line options to the eddy command
+- **-eddy_options EddyOptions** Manually provide additional command-line options to the eddy command (provide a string within quotation marks that contains at least one space, even if only passing a single command-line option to eddy)
 
 - **-cuda** Use the CUDA version of eddy (if available)
 
