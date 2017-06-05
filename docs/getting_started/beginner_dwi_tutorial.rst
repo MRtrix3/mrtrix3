@@ -22,7 +22,7 @@ current-induced distortions and inter-volume subject motion. Procedures
 for this correct are not yet implemented in *MRtrix3*, though we do provide
 a script called ``dwipreproc`` for interfacing with the relevant FSL tools.
 Due to the nuances of the operation of this script, the reader is referred
-to the :ref:`DWI distortion correction using ``dwipreproc`` ` page.
+to the :ref:`dwipreproc_page` page.
 
 DWI brain mask estimation
 ~~~~~~~~~~~~~~~~~~~~~~~~~
