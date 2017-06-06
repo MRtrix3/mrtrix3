@@ -68,26 +68,43 @@ namespace MR {
 
         class TWIImagePluginBase
         { MEMALIGN(TWIImagePluginBase)
-
           public:
-            TWIImagePluginBase (const std::string& input_image) :
-              interp (Image<float>::open (input_image).with_direct_io()) { }
+            TWIImagePluginBase (const std::string& input_image, const tck_stat_t track_statistic) :
+                statistic (track_statistic),
+                interp (Image<float>::open (input_image).with_direct_io()),
+                backtrack (false) { }
+
+            TWIImagePluginBase (Image<float>& input_image, const tck_stat_t track_statistic) :
+                statistic (track_statistic),
+                interp (input_image),
+                backtrack (false) { }
+
+            TWIImagePluginBase (const TWIImagePluginBase& that) = default;
 
             virtual ~TWIImagePluginBase() { }
 
-            virtual void load_factors (const Streamline<>&, vector<default_type>&) = 0;
+            void set_backtrack();
+
+            virtual void load_factors (const Streamline<>&, vector<default_type>&) const = 0;
+
 
           protected:
+            const tck_stat_t statistic;
+
             //Image<float> voxel;
             // Each instance of the class has its own interpolator for obtaining values
             //   in a thread-safe fashion
             mutable Interp::Linear<Image<float>> interp;
 
-            // New helper function; find the last point on the streamline from which valid image information can be read
-            const Streamline<>::point_type get_last_point_in_fov (const Streamline<>&, const bool) const;
+            // For handling backtracking for endpoint-based track-wise statistics
+            bool backtrack;
+            mutable Image<bool> backtrack_mask;
+
+            // Helper functions; find the last point on the streamline from which valid image information can be read
+            const ssize_t                  get_end_index (const Streamline<>&, const bool) const;
+            const Streamline<>::point_type get_end_point (const Streamline<>&, const bool) const;
 
         };
-
 
 
 
@@ -96,31 +113,28 @@ namespace MR {
         { MEMALIGN(TWIScalarImagePlugin)
           public:
             TWIScalarImagePlugin (const std::string& input_image, const tck_stat_t track_statistic) :
-              TWIImagePluginBase (input_image),
-              statistic (track_statistic) {
+                TWIImagePluginBase (input_image, track_statistic)
+            {
+              if (statistic == ENDS_CORR) {
+                if (interp.ndim() != 4)
+                  throw Exception ("Image provided for ends_corr statistic must be a 4D image");
+              } else {
                 if (!((interp.ndim() == 3) || (interp.ndim() == 4 && interp.size(3) == 1)))
                   throw Exception ("Scalar image used for TWI must be a 3D image");
                 if (interp.ndim() == 4)
                   interp.index(3) = 0;
               }
+            }
 
             TWIScalarImagePlugin (const TWIScalarImagePlugin& that) :
-              TWIImagePluginBase (that),
-              statistic (that.statistic) {
-                if (interp.ndim() == 4)
-                  interp.index(3) = 0;
-              }
+              TWIImagePluginBase (that)
+            {
+              if (interp.ndim() == 4)
+                interp.index(3) = 0;
+            }
 
-            ~TWIScalarImagePlugin() { }
-
-
-            void load_factors (const Streamline<>&, vector<default_type>&);
-
-          private:
-            const tck_stat_t statistic;
-
+            void load_factors (const Streamline<>&, vector<default_type>&) const override;
         };
-
 
 
 
@@ -128,25 +142,42 @@ namespace MR {
         class TWIFODImagePlugin : public TWIImagePluginBase
         { MEMALIGN(TWIFODImagePlugin)
           public:
-            TWIFODImagePlugin (const std::string& input_image) :
-              TWIImagePluginBase (input_image),
-              sh_coeffs (interp.size(3)),
-              precomputer (new Math::SH::PrecomputedAL<default_type> ()) {
-                Math::SH::check (Header (interp));
-                precomputer->init (Math::SH::LforN (sh_coeffs.size()));
-              }
+            TWIFODImagePlugin (const std::string& input_image, const tck_stat_t track_statistic) :
+                TWIImagePluginBase (input_image, track_statistic),
+                sh_coeffs (interp.size(3)),
+                precomputer (new Math::SH::PrecomputedAL<default_type> ())
+            {
+              if (track_statistic == ENDS_CORR)
+                throw Exception ("Cannot use ends_corr track statistic with an FOD image");
+              Math::SH::check (Header (interp));
+              precomputer->init (Math::SH::LforN (sh_coeffs.size()));
+            }
 
-            void load_factors (const Streamline<>&, vector<default_type>&);
+            void load_factors (const Streamline<>&, vector<default_type>&) const override;
 
           private:
-            Eigen::Matrix<default_type, Eigen::Dynamic, 1> sh_coeffs;
+            mutable Eigen::Matrix<default_type, Eigen::Dynamic, 1> sh_coeffs;
             std::shared_ptr<Math::SH::PrecomputedAL<default_type>> precomputer;
-
         };
 
 
 
 
+        class TWDFCImagePlugin : public TWIImagePluginBase
+        { MEMALIGN(TWDFCImagePlugin)
+          public:
+            TWDFCImagePlugin (Image<float>& input_image, const vector<float>& kernel, const ssize_t timepoint) :
+                TWIImagePluginBase (input_image, ENDS_CORR),
+                kernel (kernel),
+                kernel_centre ((kernel.size()-1) / 2),
+                sample_centre (timepoint) { }
+
+            void load_factors (const Streamline<>&, vector<default_type>&) const override;
+
+          protected:
+            const vector<float> kernel;
+            const ssize_t kernel_centre, sample_centre;
+        };
 
 
 

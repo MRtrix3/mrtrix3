@@ -126,7 +126,12 @@ const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast p
   + Option ("map_zero",
       "if a streamline has zero contribution based on the contrast & statistic, typically it is not mapped; "
       "use this option to still contribute to the map even if this is the case "
-      "(these non-contributing voxels can then influence the mean value in each voxel of the map)");
+      "(these non-contributing voxels can then influence the mean value in each voxel of the map)")
+
+  + Option ("backtrack",
+      "when using -stat_tck ends_*, if the streamline endpoint is outside the FoV, backtrack along "
+      "the streamline trajectory until an appropriate point is found "
+      "(note: with -stat_tck ends_corr, this will also look for a valid time-series)");
 
 
 
@@ -321,6 +326,15 @@ void run () {
   }
 
 
+  bool backtrack = false;
+  if (get_options ("backtrack").size()) {
+    if (stat_tck == ENDS_CORR || stat_tck == ENDS_MAX || stat_tck == ENDS_MEAN || stat_tck == ENDS_MIN || stat_tck == ENDS_PROD)
+      backtrack = true;
+    else
+      WARN ("-backtrack option ignored; only applicable to endpoint-based track statistics");
+  }
+
+
   // Determine the dimensionality of the output image
   writer_dim writer_type = GREYSCALE;
 
@@ -405,8 +419,8 @@ void run () {
       break;
 
     case FOD_AMP:
-      if (stat_tck == ENDS_MIN || stat_tck == ENDS_MEAN || stat_tck == ENDS_MAX || stat_tck == ENDS_PROD)
-        throw Exception ("Can't use endpoint-based track-wise statistics with FOD_AMP contrast");
+      if (stat_tck == ENDS_CORR)
+        throw Exception ("Can't use endpoint-correlation track-wise statistic with FOD_AMP contrast");
       break;
 
     case CURVATURE:
@@ -423,9 +437,12 @@ void run () {
 
   }
 
+
   header.keyval()["twi_contrast"] = contrasts[contrast];
   header.keyval()["twi_vox_stat"] = voxel_statistics[stat_vox];
   header.keyval()["twi_tck_stat"] = track_statistics[stat_tck];
+  if (backtrack)
+    header.keyval()["twi_backtrack"] = "1";
 
 
   // Figure out how the streamlines will be mapped
@@ -531,6 +548,7 @@ void run () {
       case ENDS_MEAN:      msg += "endpoints (mean)"; break;
       case ENDS_MAX:       msg += "endpoints (maximum)"; break;
       case ENDS_PROD:      msg += "endpoints (product)"; break;
+      case ENDS_CORR:      msg += "endpoints (correlation)"; break;
       default:             msg += "ERROR";   break;
     }
     msg += " per-track statistic";
@@ -559,11 +577,13 @@ void run () {
         throw Exception ("If using 'fod_amp' contrast, must provide the relevant spherical harmonic image using -image option");
     }
     const std::string assoc_image (opt[0][0]);
-    const auto H_assoc_image = Header::open (assoc_image);
-    if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)
+    if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT) {
       mapper->add_scalar_image (assoc_image);
-    else
+      if (backtrack)
+        mapper->set_backtrack();
+    } else {
       mapper->add_fod_image (assoc_image);
+    }
     header.keyval()["twi_assoc_image"] = Path::basename (assoc_image);
   } else if (contrast == VECTOR_FILE) {
     opt = get_options ("vector_file");

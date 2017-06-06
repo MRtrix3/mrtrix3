@@ -373,7 +373,9 @@ namespace MR {
 
 
             void add_scalar_image (const std::string&);
+            void set_backtrack();
             void add_fod_image    (const std::string&);
+            void add_twdfc_image   (Image<float>&, const vector<float>&, const ssize_t);
             void add_vector_data  (const std::string&);
 
 
