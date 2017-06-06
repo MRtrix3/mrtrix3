@@ -161,6 +161,7 @@ namespace MR
       throw Exception ("no name supplied to open image!");
 
     Header H (template_header);
+    const auto previous_datatype = H.datatype();
 
     try {
       INFO ("creating image \"" + image_name + "\"...");
@@ -280,6 +281,14 @@ namespace MR
     }
     catch (Exception& E) {
       throw Exception (E, "error creating image \"" + image_name + "\"");
+    }
+
+    DataType new_datatype = H.datatype();
+    if (new_datatype != previous_datatype) {
+      new_datatype.unset_flag (DataType::BigEndian);
+      new_datatype.unset_flag (DataType::LittleEndian);
+      if (new_datatype != previous_datatype) 
+        WARN (std::string ("requested datatype (") + previous_datatype.specifier() + ") not supported - substituting with " + H.datatype().specifier());
     }
 
     return H;
