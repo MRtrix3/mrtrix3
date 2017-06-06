@@ -73,14 +73,21 @@ void usage ()
 
   + OptionGroup ("Options specific to PLY writer")
 
-  + Option ("radius", "radius of the streamlines")
-  +   Argument("radius").type_float(0.0f)
-
   + Option ("sides", "number of sides for streamlines")
   +   Argument("sides").type_integer(3,15)
 
   + Option ("increment", "generate streamline points at every (increment) points")
-  +   Argument("increment").type_integer(1);
+  +   Argument("increment").type_integer(1)
+
+  + OptionGroup ("Options specific to RIB writer")
+
+  + Option ("dec", "add DEC as a primvar")
+
+  + OptionGroup ("Options for both PLY and RIB writer")
+
+  + Option ("radius", "radius of the streamlines")
+  +   Argument("radius").type_float(0.0f);
+
 }
 
 
@@ -516,10 +523,13 @@ private:
 
 class RibWriter: public WriterInterface<float> { MEMALIGN(RibWriter)
 public:
-RibWriter(const std::string& file, float radius = 0.1) : out(file), radius(radius) {
+RibWriter(const std::string& file, float radius = 0.1, bool dec = false) : out(file), writeDEC(dec), radius(radius) {
   pointsFilename = File::create_tempfile(0,".points");
   pointsOF.open(pointsFilename );
   pointsOF << "\"P\" [";
+  decFilename = File::create_tempfile(0,".dec");
+  decOF.open ( decFilename );
+  decOF << "\"varying color dec\" [";
   
 
   // Header
@@ -535,29 +545,49 @@ RibWriter(const std::string& file, float radius = 0.1) : out(file), radius(radiu
   bool operator() (const Streamline<float>& tck) {
     if ( tck.size() < 3 ) { return true; }
     out << tck.size() << " ";
+    Eigen::Vector3f prev = tck[1];
     for ( auto pt : tck ) {
       pointsOF << pt[0] << " " << pt[1] << " " << pt[2] << " ";
+      // Should we write the dec?
+      if ( writeDEC ) {
+        Eigen::Vector3f T = ( prev - pt ).normalized();
+        decOF << fabs(T[0]) << " " << fabs(T[1]) << " " << fabs(T[2]) << " ";
+        prev = pt;
+      }
     }
     return true;
   }
 
   ~RibWriter() {
-    pointsOF << "] \"constantwidth\" " << radius << "\n" ;
+    pointsOF << "]\n" ;
     pointsOF.close();
+    decOF << "]\n" ;
+    decOF.close();
     out << "] \"nonperiodic\" ";
     
     std::ifstream pointsIF ( pointsFilename );
     out << pointsIF.rdbuf();
     File::unlink(pointsFilename.c_str());
 
+    if ( writeDEC ) {
+      std::ifstream decIF ( decFilename );
+      out << decIF.rdbuf();
+      decIF.close();
+      File::unlink(decFilename.c_str());
+    }
+
+    out << " \"constantwidth\" " << radius << "\n";
     out.close();
     
   }
     
   private:
   std::string pointsFilename;
+  std::string decFilename;
   File::OFStream out;
   File::OFStream pointsOF;
+  File::OFStream decOF;
+  bool writeDEC;
   float radius;
 };
 
