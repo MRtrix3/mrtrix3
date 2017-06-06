@@ -728,10 +728,11 @@ namespace MR
               if (size_t (MR::App::option[first_option].opt - &MR::App::__standard_options[0]) >= MR::App::__standard_options.size())
                 break;
             }
-
-            first_option = MR::App::option[first_option].args - MR::App::argv;
-            if (first_option < last_arg_pos)
-              throw Exception ("options must appear after the last argument - see help page for details");
+            if (MR::App::option.size() > first_option) {
+              first_option = MR::App::option[first_option].args - MR::App::argv;
+              if (first_option < last_arg_pos)
+                throw Exception ("options must appear after the last argument - see help page for details");
+            }
           }
 
           vector<std::unique_ptr<MR::Header>> list;
@@ -2012,7 +2013,7 @@ namespace MR
             return;
           }
 
-          assert ("shouldn't reach here!" && false);
+          assert (opt.opt->is ("info") or opt.opt->is ("debug") or ("shouldn't reach here!" && false));
         }
         catch (Exception& E) {
           E.display();
