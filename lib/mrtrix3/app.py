@@ -481,7 +481,7 @@ class Parser(argparse.ArgumentParser):
       trailing_ellipsis = ' ...'
     for arg in self._positionals._group_actions:
       if arg.metavar:
-        argument_list.append(arg.metavar)
+        argument_list.append(' '.join(arg.metavar))
       else:
         argument_list.append(arg.dest)
     return self.prog + ' ' + ' '.join(argument_list) + ' [ options ]' + trailing_ellipsis
