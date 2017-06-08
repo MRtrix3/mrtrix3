@@ -67,7 +67,7 @@ Install and update MSYS2
     that they are followed correctly!
 
 Install *MRtrix3* dependencies
-----------------------------
+------------------------------
 
 1. From the **'MinGW-w64 Win64 Shell'** run::
 

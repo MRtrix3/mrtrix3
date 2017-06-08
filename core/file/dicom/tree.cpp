@@ -30,15 +30,15 @@ namespace MR {
         for (size_t n = 0; n < size(); n++) {
           bool match = true;
           if (patient_name == (*this)[n]->name) {
-            if (patient_ID.size() && (*this)[n]->ID.size()) 
-              if (patient_ID != (*this)[n]->ID) 
+            if (patient_ID.size() && (*this)[n]->ID.size())
+              if (patient_ID != (*this)[n]->ID)
                 match = false;
             if (match) {
               if (patient_DOB.size() && (*this)[n]->DOB.size())
-                if (patient_DOB != (*this)[n]->DOB) 
+                if (patient_DOB != (*this)[n]->DOB)
                   match = false;
             }
-            if (match) 
+            if (match)
               return (*this)[n];
           }
         }
@@ -54,26 +54,26 @@ namespace MR {
 
       void Tree::read_dir (const std::string& filename, ProgressBar& progress)
       {
-        try { 
-          Path::Dir folder (filename); 
+        try {
+          Path::Dir folder (filename);
           std::string entry;
           while ((entry = folder.read_name()).size()) {
             std::string name (Path::join (filename, entry));
             if (Path::is_dir (name))
               read_dir (name, progress);
             else {
-              try { 
-                read_file (name); 
+              try {
+                read_file (name);
               }
-              catch (Exception& E) { 
+              catch (Exception& E) {
                 E.display (3);
               }
             }
             ++progress;
           }
         }
-        catch (Exception& E) { 
-          throw Exception (E, "error opening DICOM folder \"" + filename + "\": " + strerror (errno)); 
+        catch (Exception& E) {
+          throw Exception (E, "error opening DICOM folder \"" + filename + "\": " + strerror (errno));
         }
       }
 
@@ -85,12 +85,12 @@ namespace MR {
       {
         QuickScan reader;
         if (reader.read (filename)) {
-          INFO ("error reading file \"" + filename + "\" - assuming not DICOM"); 
+          INFO ("error reading file \"" + filename + "\" - ignored");
           return;
         }
 
         if (! (reader.dim[0] && reader.dim[1] && reader.bits_alloc && reader.data)) {
-          INFO ("DICOM file \"" + filename + "\" does not seem to contain image data - ignored"); 
+          INFO ("DICOM file \"" + filename + "\" does not seem to contain image data - ignored");
           return;
         }
 
@@ -102,6 +102,7 @@ namespace MR {
         image->filename = filename;
         image->series = series.get();
         image->sequence_name = reader.sequence;
+        image->transfer_syntax_supported = reader.transfer_syntax_supported;
         series->push_back (image);
       }
 
@@ -118,11 +119,11 @@ namespace MR {
           try {
             read_file (filename);
           }
-          catch (Exception) { 
+          catch (Exception) {
           }
         }
 
-        if (size() > 0) 
+        if (size() > 0)
           return;
 
         throw Exception ("no DICOM images found in \"" + filename + "\"");
@@ -134,10 +135,10 @@ namespace MR {
 
 
       std::ostream& operator<< (std::ostream& stream, const Tree& item)
-      { 
+      {
         stream << "FileSet " << item.description << ":\n";
-        for (size_t n = 0; n < item.size(); n++) 
-          stream << *item[n]; 
+        for (size_t n = 0; n < item.size(); n++)
+          stream << *item[n];
         return stream;
       }
 

@@ -20,6 +20,7 @@
 #include <complex>
 #include <iostream>
 #include <vector>
+#include <deque>
 #include <cstddef>
 #include <memory>
 
@@ -242,6 +243,21 @@ namespace MR
       public:
         using ::std::vector<X>::vector;
         vector() { }
+    };
+
+  
+  template <typename X, int N=(alignof(X)>::MR::malloc_align)>
+    class deque : public ::std::deque<X, Eigen::aligned_allocator<X>> { NOMEMALIGN
+      public:
+        using ::std::deque<X,Eigen::aligned_allocator<X>>::deque;
+        deque() { }
+    };
+
+  template <typename X>
+    class deque<X,0> : public ::std::deque<X> { NOMEMALIGN
+      public:
+        using ::std::deque<X>::deque;
+        deque() { }
     };
 
 

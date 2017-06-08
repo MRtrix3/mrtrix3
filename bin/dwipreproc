@@ -51,8 +51,8 @@ options.add_argument('-pe_dir', metavar=('PE'), help='Manually specify the phase
 options.add_argument('-readout_time', metavar=('time'), type=float, help='Manually specify the total readout time of the input series (in seconds)')
 options.add_argument('-se_epi', metavar=('file'), help='Provide an additional image series consisting of spin-echo EPI images, which is to be used exclusively by topup for estimating the inhomogeneity field (i.e. it will not form part of the output image series)')
 options.add_argument('-json_import', metavar=('JSON_file'), help='Import image header information from an associated JSON file (may be necessary to determine phase encoding information)')
-options.add_argument('-topup_options', metavar=('TopupOptions'), help='Manually provide additional command-line options to the topup command')
-options.add_argument('-eddy_options', metavar=('EddyOptions'), help='Manually provide additional command-line options to the eddy command')
+options.add_argument('-topup_options', metavar=('TopupOptions'), help='Manually provide additional command-line options to the topup command (provide a string within quotation marks that contains at least one space, even if only passing a single command-line option to topup)')
+options.add_argument('-eddy_options', metavar=('EddyOptions'), help='Manually provide additional command-line options to the eddy command (provide a string within quotation marks that contains at least one space, even if only passing a single command-line option to eddy)')
 options.add_argument('-cuda', help='Use the CUDA version of eddy (if available)', action='store_true', default=False)
 rpe_options = app.cmdline.add_argument_group('Options for specifying the acquisition phase-encoding design; note that one of the -rpe_* options MUST be provided')
 rpe_options.add_argument('-rpe_none', action='store_true', help='Specify that no reversed phase-encoding image data is being provided; eddy will perform eddy current and motion correction only')
@@ -256,7 +256,7 @@ def scheme_dirs_match(one, two):
 
 def scheme_times_match(one, two):
   for line_one, line_two in zip(one, two):
-    if abs(header_line[3] - manual_line[3]) > 5e-3:
+    if abs(line_one[3] - line_two[3]) > 5e-3:
       return False
   return True
 

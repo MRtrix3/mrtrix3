@@ -7,8 +7,6 @@ function tracks = read_mrtrix_tracks (filename)
 % The track data will be stored as a cell array in the 'data' field of the
 % return variable.
 
-image.comments = {};
-
 f = fopen (filename, 'r');
 assert(f ~= -1, 'error opening %s', filename);
 L = fgetl(f);
@@ -35,7 +33,7 @@ while 1
     elseif strcmp(key, 'datatype')
       tracks.datatype = value;
     else 
-      tracks = setfield (tracks, key, value);
+      tracks = add_field (tracks, key, value);
     end
   end
 end
@@ -80,3 +78,18 @@ for n = 1:(prod(size(k))-1)
   tracks.data{end+1} = data(pk:(k(n)-1),:);
   pk = k(n)+1;
 end
+
+
+
+
+function image = add_field (image, key, value)
+  if isfield (image, key)
+    previous = getfield (image, key);
+    if iscell (previous)
+      image = setfield (image, key, [ previous {value} ]);
+    else
+      image = setfield (image, key, { previous, value });
+    end
+  else
+    image = setfield (image, key, value);
+  end

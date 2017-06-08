@@ -37,6 +37,7 @@ namespace MR {
         series_time.clear();
         sequence.clear();
         series_number = bits_alloc = dim[0] = dim[1] = data = 0;
+        transfer_syntax_supported = true;
 
         Element item;
         try {
@@ -81,6 +82,8 @@ namespace MR {
               }
             }
           }
+
+          transfer_syntax_supported = item.transfer_syntax_supported;
 
         }
         catch (Exception& E) { 
