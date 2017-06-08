@@ -204,6 +204,7 @@ options.add_argument('-transformed_dir', help='Output a directory containing the
 options.add_argument('-linear_transformations_dir', help='Output a directory containing the linear transformations used to generate the template. If the folder does not exist it will be created')
 options.add_argument('-template_mask', help='Output a template mask. Only works in -mask_dir has been input. The template mask is computed as the intersection of all subject masks in template space.')
 options.add_argument('-noreorientation', action='store_true', help='Turn off FOD reorientation in mrregister. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc)')
+options.add_argument('-leave_one_out', help='Register each input image to a template that does not contain that image. Valid choices: 0, 1, auto. (Default: auto (true if n_subjects < 15)) ')
 
 app.parse()
 
@@ -343,6 +344,18 @@ for ifile, fname in enumerate(inFiles[0]):
     input.append(Input(fnames, prefix, dirs, contrasts))
 
 
+leave_one_out = 'auto'
+if app.args.leave_one_out is not None:
+  leave_one_out = app.args.leave_one_out
+  if not leave_one_out in ['0','1','auto']:
+    app.error('leave_one_out not understood:%s' % (leave_one_out))
+
+if leave_one_out == 'auto':
+  leave_one_out = len(input) > 15
+else:
+  leave_one_out = bool(leave_one_out)
+if leave_one_out:
+  app.console('performing leave-one-out registration')
 noreorientation = app.args.noreorientation
 
 do_pause_on_warn = True
@@ -526,6 +539,10 @@ app.gotoTempDir()
 for contrast in contrasts:
   file.makeDir('input_transformed'+contrast)
 
+for contrast in contrasts:
+  file.makeDir('isfinite'+contrast)
+isfinite_count = ['isfinite'+contrast+'.mif' for contrast in contrasts]
+
 file.makeDir('linear_transforms_initial')
 file.makeDir('linear_transforms')
 for level in range(0, len(linear_scales)):
@@ -585,6 +602,11 @@ if initial_alignment == 'none':
       run.command('mrtransform ' + i.paths_in[c] + ' -interp linear ' +
         '-template ' + current_template[c] + ' ' +
         os.path.join('input_transformed'+contrasts[c], i.prefix + '.mif') + datatype)
+      if leave_one_out:
+          run.command('mrconvert '+ os.path.join('input_transformed'+i.contrasts[c], '%s.mif' % i.prefix) +' -coord 3 0 - | mrcalc - -finite isfinite%s/%s.mif'%(i.contrasts[c],i.prefix) + ' -force')
+  if leave_one_out:
+    for c in range(n_contrasts):
+      run.command('mrmath ' + allindir('isfinite%s'%contrasts[c]) + ' sum ' + isfinite_count[c] + ' -force')
   if not dolinear:
     for i in input:
       with open(os.path.join('linear_transforms_initial','%s.txt' % (i.prefix)),'w') as fout:
@@ -669,6 +691,9 @@ else:
                  ' -interp linear -template average_header.mif' +
                  datatype)
       run.function(remove, os.path.join('input_transformed'+i.contrasts[c], i.prefix + '_translated.mif'))
+      if leave_one_out:
+          run.command('mrconvert '+ os.path.join('input_transformed'+i.contrasts[c], '%s.mif' % i.prefix) +' -coord 3 0 - | mrcalc - -finite isfinite%s/%s.mif'%(i.contrasts[c],i.prefix) + ' -force')
+    run.command('mrmath ' + allindir('isfinite%s'%contrasts[c]) + ' sum ' + isfinite_count[c] + ' -force')
 
 current_template = ['initial_template'+contrast+'.mif' for contrast in contrasts]
 for c in range(n_contrasts):
@@ -728,7 +753,17 @@ else:
           metric = ' -affine_metric.diff.estimator ' + linear_estimator
         if write_log:
           mrregister_log = ' -info -affine_log ' + os.path.join('log', i.prefix + '_' + str(level) + '.log')
-      images = ' + '.join( [p+' '+t for p, t in zip(i.paths_in, current_template) ] )
+
+      if leave_one_out:
+        tmpl = []
+        for c in range(n_contrasts):
+          current = os.path.join('input_transformed'+i.contrasts[c], '%s.mif' % i.prefix)
+          isfinite = 'isfinite%s/%s.mif'%(i.contrasts[c],i.prefix)
+          run.command('mrcalc '+isfinite_count[c]+' '+isfinite+' -neg -add - | mrcalc '+current_template[c]+' '+isfinite_count[c]+' -mult '+current+' -neg -add - -div loo_%s -force'%current_template[c])
+          tmpl.append('loo_%s'%current_template[c])
+        images = ' + '.join( [p+' '+t for p, t in zip(i.paths_in, tmpl)] )
+      else:
+        images = ' + '.join( [p+' '+t for p, t in zip(i.paths_in, current_template) ] )
       command = 'mrregister ' + images + \
                   ' -force' + \
                   initialise + \
@@ -744,8 +779,12 @@ else:
                   mrregister_log
       run.command(command)
       check_linear_transformation(os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix), command, pause_on_warn=do_pause_on_warn)
+      if leave_one_out:
+        for im_temp in tmpl:
+          run.function(remove,im_temp)
 
     # Here we ensure the template doesn't drift or scale
+    # TODO matrix avarage might produce a large FOV for large rotations
     run.command('transformcalc ' + allindir('linear_transforms_%i' % level) + ' average linear_transform_average.txt -force -quiet')
     if linear_type[level] == 'rigid':
       run.command('transformcalc linear_transform_average.txt rigid linear_transform_average.txt -force -quiet')
@@ -765,12 +804,17 @@ else:
                    ' ' + os.path.join('input_transformed'+i.contrasts[c], '%s.mif' % i.prefix) +
                    datatype +
                    ' -force')
+        if leave_one_out:
+          run.command('mrconvert '+ os.path.join('input_transformed'+i.contrasts[c], '%s.mif' % i.prefix) +' -coord 3 0 - | mrcalc - -finite isfinite%s/%s.mif'%(i.contrasts[c],i.prefix) + ' -force')
+      if leave_one_out:
+        run.command('mrmath ' + allindir('isfinite%s'%contrasts[c]) + ' sum ' + isfinite_count[c] + ' -force')
 
       current_template[c] = 'linear_template%i%s.mif'%(level,contrasts[c])
       run.command('mrmath ' + allindir('input_transformed'+contrasts[c]) + ' mean ' + current_template[c] + ' -force')
       if n_volumes[c] == 1:
         run.function(move,current_template[c],'tmp.mif')
         run.command('mrconvert tmp.mif ' + current_template[c] + ' -axes 0,1,2,-1')
+        run.function(remove,'tmp.mif')
 
 
   for filename in os.listdir('linear_transforms_%i' % level):
@@ -817,7 +861,16 @@ if dononlinear:
       contrast_weight = ''
       if n_contrasts > 1:
         contrast_weight = ' -mc_weights ' + ','.join(app.args.mc_weight_nl) + ' '
-      images = ' + '.join( [p+' '+t for p, t in zip(i.paths_in, current_template) ] )
+      if leave_one_out:
+        tmpl = []
+        for c in range(n_contrasts):
+          current = os.path.join('input_transformed'+i.contrasts[c], '%s.mif' % i.prefix)
+          isfinite = 'isfinite%s/%s.mif'%(i.contrasts[c],i.prefix)
+          run.command('mrcalc '+isfinite_count[c]+' '+isfinite+' -neg -add - | mrcalc '+current_template[c]+' '+isfinite_count[c]+' -mult '+current+' -neg -add - -div loo_%s -force'%current_template[c])
+          tmpl.append('loo_%s'%current_template[c])
+        images = ' + '.join( [p+' '+t for p, t in zip(i.paths_in, tmpl)] )
+      else:
+        images = ' + '.join( [p+' '+t for p, t in zip(i.paths_in, current_template) ] )
       run.command('mrregister ' + images +
                  ' -type nonlinear' +
                  ' -nl_niter ' + str(nl_niter[level]) +
@@ -835,6 +888,12 @@ if dononlinear:
                    lmax)
       if level > 0:
         run.function(remove, os.path.join('warps_%i'%(level-1), '%s.mif' % i.prefix))
+      if leave_one_out:
+        for im_temp in tmpl:
+          run.function(remove,im_temp)
+        for c in range(n_contrasts):
+          run.command('mrconvert '+ os.path.join('input_transformed'+i.contrasts[c], '%s.mif' % i.prefix) +' -coord 3 0 - | mrcalc - -finite isfinite%s/%s.mif'%(i.contrasts[c],i.prefix) + ' -force')
+
       if useMasks:
         run.command('mrtransform ' + i.mask +
                    ' -template ' + current_template[0] +
@@ -842,12 +901,17 @@ if dononlinear:
                    ' ' + os.path.join('masks_transformed', i.prefix + '.mif') +
                    ' -interp nearest ' +
                    ' -force')
+    if leave_one_out:
+      for c in range(n_contrasts):
+        run.command('mrmath ' + allindir('isfinite%s'%contrasts[c]) + ' sum ' + isfinite_count[c] + ' -force')
+
     for c in range(n_contrasts):
       current_template[c] = 'nl_template%i%s.mif' % (level,contrasts[c])
       run.command ('mrmath ' + allindir('input_transformed'+contrasts[c]) + ' mean ' + current_template[c])
       if n_volumes[c] == 1:
         run.function (move,current_template[c],'tmp.mif')
         run.command ('mrconvert tmp.mif ' + current_template[c] + ' -axes 0,1,2,-1')
+        run.function(remove,'tmp.mif')
 
     if useMasks:
       run.command ('mrmath ' + allindir('masks_transformed') + ' min - | maskfilter - median - | maskfilter - dilate -npass 5 nl_template_mask' + str(level) + '.mif')
