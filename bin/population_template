@@ -693,7 +693,8 @@ else:
       run.function(remove, os.path.join('input_transformed'+i.contrasts[c], i.prefix + '_translated.mif'))
       if leave_one_out:
           run.command('mrconvert '+ os.path.join('input_transformed'+i.contrasts[c], '%s.mif' % i.prefix) +' -coord 3 0 - | mrcalc - -finite isfinite%s/%s.mif'%(i.contrasts[c],i.prefix) + ' -force')
-    run.command('mrmath ' + allindir('isfinite%s'%contrasts[c]) + ' sum ' + isfinite_count[c] + ' -force')
+    if leave_one_out:
+      run.command('mrmath ' + allindir('isfinite%s'%contrasts[c]) + ' sum ' + isfinite_count[c] + ' -force')
 
 current_template = ['initial_template'+contrast+'.mif' for contrast in contrasts]
 for c in range(n_contrasts):
