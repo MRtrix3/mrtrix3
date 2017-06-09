@@ -241,7 +241,7 @@ namespace MR
     }
 
   //! error if the image does not represent spatial data: need 3 spatial axes all with size greater than 1
-  //! requirement for anything that performs 3D interpolation or erosion (& maybe others not thought of yet)
+  //! requirement for anything that performs 3D interpolation, or erosion (& maybe others not thought of yet)
   template <class HeaderType>
     FORCE_INLINE void check_3D_nonunity (const HeaderType& in)
     {

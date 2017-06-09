@@ -135,7 +135,7 @@ if app.args.json_import:
   json_option = ' -json_import ' + path.fromUser(app.args.json_import, True)
 run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('dwi.mif', True) + grad_option + json_option)
 if app.args.se_epi:
-  image.checkIsSpatial(path.fromUser(app.args.se_epi, False))
+  image.check3DNonunity(path.fromUser(app.args.se_epi, False))
   run.command('mrconvert ' + path.fromUser(app.args.se_epi, True) + ' ' + path.toTemp('topup_in.mif', True))
 
 app.gotoTempDir()

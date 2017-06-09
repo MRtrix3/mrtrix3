@@ -18,6 +18,7 @@
 #include "progressbar.h"
 #include "memory.h"
 #include "image.h"
+#include "image_helpers.h"
 #include "algo/copy.h"
 #include "algo/loop.h"
 #include "filter/base.h"

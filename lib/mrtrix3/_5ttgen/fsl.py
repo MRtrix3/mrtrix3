@@ -24,7 +24,7 @@ def checkOutputPaths():
 def getInputs():
   import os
   from mrtrix3 import app, image, path, run
-  image.checkIsSpatial(path.fromUser(app.args.input, False))
+  image.check3DNonunity(path.fromUser(app.args.input, False))
   run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('input.mif', True))
   if app.args.mask:
     run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit -stride -1,+2,+3')

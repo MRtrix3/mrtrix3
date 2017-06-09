@@ -16,7 +16,6 @@
 
 #include "command.h"
 #include "image.h"
-#include "mrtrix.h"
 #include "filter/base.h"
 #include "filter/fft.h"
 #include "filter/gradient.h"
