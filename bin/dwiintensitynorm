@@ -11,7 +11,7 @@ sys.path.insert(0, lib_folder)
 
 
 import math
-from mrtrix3 import app, file, path, run
+from mrtrix3 import app, file, image, path, run
 
 
 def abspath(*arg):
@@ -70,6 +70,7 @@ for i in inFiles:
   prefix = i.split(commonPostfix)[0]
   if prefix not in maskPrefixes:
     app.error ('no matching mask image was found for input image ' + i)
+  image.check3DNonunity(os.path.join(path.fromUser(inputDir, False), i))
   index = maskPrefixes.index(prefix)
   input.append(Input(i, prefix, path.fromUser(inputDir, False), maskFiles[index], path.fromUser(maskDir, False)))
 

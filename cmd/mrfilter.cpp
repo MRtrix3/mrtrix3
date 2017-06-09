@@ -16,6 +16,7 @@
 
 #include "command.h"
 #include "image.h"
+#include "mrtrix.h"
 #include "filter/base.h"
 #include "filter/fft.h"
 #include "filter/gradient.h"
@@ -28,7 +29,7 @@ using namespace MR;
 using namespace App;
 
 
-const char* filters[] = { "fft", "gradient", "median", "smooth", "normalise", NULL };
+const char* filters[] = { "fft", "gradient", "median", "smooth", "normalise", nullptr };
 
 
 const OptionGroup FFTOption = OptionGroup ("Options for FFT filter")
@@ -108,9 +109,9 @@ void usage ()
   SYNOPSIS = "Perform filtering operations on 3D / 4D MR images";
 
   DESCRIPTION
-  + "For 4D images, each 3D volume is processed independently."
   + "The available filters are: fft, gradient, median, smooth, normalise."
-  + "Each filter has its own unique set of optional parameters.";
+  + "Each filter has its own unique set of optional parameters."
+  + "For 4D images, each 3D volume is processed independently.";
 
   ARGUMENTS
   + Argument ("input",  "the input image.").type_image_in ()

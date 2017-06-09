@@ -240,6 +240,17 @@ namespace MR
       return false;
     }
 
+  //! error if the image does not represent spatial data: need 3 spatial axes all with size greater than 1
+  //! requirement for anything that performs 3D interpolation or erosion (& maybe others not thought of yet)
+  template <class HeaderType>
+    FORCE_INLINE void check_3D_nonunity (const HeaderType& in)
+    {
+      if (in.ndim() < 3)
+        throw Exception ("Image \"" + in.name() + "\" does not represent spatial data (less than 3 dimensions)");
+      if (std::min ({ in.size(0), in.size(1), in.size(2) }) == 1)
+        throw Exception ("Image \"" + in.name() + "\" does not represent spatial data (has axis with size 1)");
+    }
+
   //! returns the number of voxel in the data set, or a relevant subvolume
   template <class HeaderType> 
     inline size_t voxel_count (const HeaderType& in, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())

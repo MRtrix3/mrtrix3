@@ -15,6 +15,7 @@
 #ifndef __interp_cubic_h__
 #define __interp_cubic_h__
 
+#include "image_helpers.h"
 #include "types.h"
 #include "interp/base.h"
 #include "math/cubic_spline.h"

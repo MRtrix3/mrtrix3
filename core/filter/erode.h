@@ -51,6 +51,7 @@ namespace MR
             Base (in),
             npass (1)
         {
+          check_3D_nonunity (in);
           datatype_ = DataType::Bit;
         }
 
@@ -59,6 +60,7 @@ namespace MR
             Base (in, message),
             npass (1)
         {
+          check_3D_nonunity (in);
           datatype_ = DataType::Bit;
         }
 

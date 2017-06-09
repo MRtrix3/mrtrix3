@@ -29,8 +29,9 @@ SYNOPSIS = "Generates a whole brain mask from a DWI image";
 
 DESCRIPTION
   + "All diffusion weighted and b=0 volumes are used to "
-    "obtain a mask that includes both brain tissue and CSF. "
-    "\nIn a second step peninsula-like extensions, where the "
+    "obtain a mask that includes both brain tissue and CSF."
+
+  + "In a second step peninsula-like extensions, where the "
     "peninsula itself is wider than the bridge connecting it "
     "to the mask, are removed. This may help removing "
     "artefacts and non-brain parts, e.g. eyes, from "
@@ -42,12 +43,12 @@ REFERENCES
     "ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5.";
 
 ARGUMENTS
-   + Argument ("image",
+   + Argument ("input",
     "the input DWI image containing volumes that are both diffusion weighted and b=0")
     .type_image_in ()
 
-   + Argument ("image",
-    "the output whole brain mask image")
+   + Argument ("output",
+    "the output whole-brain mask image")
     .type_image_out ();
 
 OPTIONS
@@ -79,9 +80,15 @@ void run () {
   unsigned int scale = get_option_value ("clean_scale", DEFAULT_CLEAN_SCALE);
 
   if (scale > 0) {
-    Filter::MaskClean clean_filter (temp_mask, std::string("applying mask cleaning filter"));
-    clean_filter.set_scale(scale);
-    clean_filter (temp_mask, output);
+    try {
+      Filter::MaskClean clean_filter (temp_mask, std::string("applying mask cleaning filter"));
+      clean_filter.set_scale (scale);
+      clean_filter (temp_mask, output);
+    } catch (Exception& e) {
+      WARN("Unable to run mask cleaning filter (image is not truly 3D); skipping");
+      for (auto l = Loop (0,3) (temp_mask, output); l; ++l)
+        output.value() = temp_mask.value();
+    }
   }
   else {
     for (auto l = Loop (0,3) (temp_mask, output); l; ++l)
