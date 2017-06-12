@@ -256,7 +256,7 @@ def scheme_dirs_match(one, two):
 
 def scheme_times_match(one, two):
   for line_one, line_two in zip(one, two):
-    if abs(header_line[3] - manual_line[3]) > 5e-3:
+    if abs(line_one[3] - line_two[3]) > 5e-3:
       return False
   return True
 
