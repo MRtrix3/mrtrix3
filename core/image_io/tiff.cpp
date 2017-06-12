@@ -30,33 +30,35 @@ namespace MR
       DEBUG ("allocating buffer for TIFF image \"" + header.name() + "\"...");
       addresses.resize (1);
       addresses[0].reset (new uint8_t [footprint (header)]);
-
-      File::TIFF tif (header.name());
-
-      uint16 config (0);
-      tif.read_and_check (TIFFTAG_PLANARCONFIG, config);
-
-      size_t scanline_size = tif.scanline_size();
       uint8_t* data = addresses[0].get();
 
-      do {
+      for (auto& entry : files) {
+        File::TIFF tif (entry.name);
 
-        if (header.ndim() == 3 || config == PLANARCONFIG_CONTIG) {
-          for (ssize_t row = 0; row < header.size(1); ++row) {
-            tif.read_scanline (data, row);
-            data += scanline_size;
-          }
-        }
-        else if (config == PLANARCONFIG_SEPARATE) {
-          for (ssize_t s = 0; s < header.size(3); s++) {
+        uint16 config (0);
+        tif.read_and_check (TIFFTAG_PLANARCONFIG, config);
+
+        size_t scanline_size = tif.scanline_size();
+
+        do {
+
+          if (header.ndim() == 3 || config == PLANARCONFIG_CONTIG) {
             for (ssize_t row = 0; row < header.size(1); ++row) {
-              tif.read_scanline (data, row, s);
+              tif.read_scanline (data, row);
               data += scanline_size;
             }
           }
-        }
+          else if (config == PLANARCONFIG_SEPARATE) {
+            for (ssize_t s = 0; s < header.size(3); s++) {
+              for (ssize_t row = 0; row < header.size(1); ++row) {
+                tif.read_scanline (data, row, s);
+                data += scanline_size;
+              }
+            }
+          }
 
-      } while (tif.read_directory() != 0);
+        } while (tif.read_directory() != 0);
+      }
 
     }
 
