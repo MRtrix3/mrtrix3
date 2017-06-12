@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "mrtrix.h"
 #include "dwi/gradient.h"
@@ -101,9 +100,10 @@ namespace MR
 
             show_preview_button = new QPushButton ("Inspect ODF at focus",this);
             show_preview_button->setToolTip (tr ("Inspect ODF at focus<br>(opens separate window)"));
+            show_preview_button->setIcon (QIcon (":/inspect.svg"));
             connect (show_preview_button, SIGNAL (clicked()), this, SLOT (show_preview_slot ()));
             main_box->addWidget (show_preview_button, 1);
-            
+
 
             QGroupBox* group_box = new QGroupBox (tr("Display settings"));
             main_box->addWidget (group_box);
@@ -159,11 +159,14 @@ namespace MR
             label->setAlignment (Qt::AlignHCenter);
             box_layout->addWidget (label, 2, 0);
             scale = new AdjustButton (this, 1.0);
-            scale->setValue (1.0);
+            //CONF option: MRViewOdfScale
+            //CONF default: 1.0
+            //CONF The factor by which the ODF overlay is scaled
+            scale->setValue (MR::File::Config::get_float ("MRViewOdfScale", 1.0));
             scale->setMin (0.0);
             connect (scale, SIGNAL (valueChanged()), this, SLOT (adjust_scale_slot()));
             box_layout->addWidget (scale, 2, 1, 1, 3);
-            
+
             interpolation_box = new QCheckBox ("interpolation");
             interpolation_box->setChecked (true);
             connect (interpolation_box, SIGNAL (stateChanged(int)), this, SLOT (updateGL()));
@@ -203,6 +206,7 @@ namespace MR
             box_layout->addWidget (use_lighting_box, 5, 2, 1, 2);
 
             QPushButton *lighting_settings_button = new QPushButton ("ODF lighting...", this);
+            lighting_settings_button->setIcon (QIcon (":/light.svg"));
             connect (lighting_settings_button, SIGNAL(clicked(bool)), this, SLOT (lighting_settings_slot (bool)));
             box_layout->addWidget (lighting_settings_button, 6, 0, 1, 4);
 
@@ -250,7 +254,7 @@ namespace MR
         void ODF::draw (const Projection& projection, bool is_3D, int, int)
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
-          if (is_3D) 
+          if (is_3D)
             return;
 
           ODF_Item* settings = get_image();
@@ -276,7 +280,7 @@ namespace MR
 
             renderer->set_mode (settings->odf_type);
 
-            renderer->start (projection, *lighting, settings->scale, 
+            renderer->start (projection, *lighting, settings->scale,
                 use_lighting_box->isChecked(), settings->color_by_direction, settings->hide_negative, true);
 
             gl::Enable (gl::DEPTH_TEST);
@@ -449,7 +453,7 @@ namespace MR
 
 
 
-        void ODF::add_images (std::vector<std::string>& list, const odf_type_t mode)
+        void ODF::add_images (vector<std::string>& list, const odf_type_t mode)
         {
           size_t previous_size = image_list_model->rowCount();
           if (!image_list_model->add_items (list, mode,
@@ -492,7 +496,7 @@ namespace MR
 
         void ODF::sh_open_slot ()
         {
-          std::vector<std::string> list = Dialog::File::get_images (&window(), "Select SH-based ODF images to open");
+          vector<std::string> list = Dialog::File::get_images (&window(), "Select SH-based ODF images to open");
           if (list.empty())
             return;
 
@@ -501,7 +505,7 @@ namespace MR
 
         void ODF::tensor_open_slot ()
         {
-          std::vector<std::string> list = Dialog::File::get_images (&window(), "Select tensor images to open");
+          vector<std::string> list = Dialog::File::get_images (&window(), "Select tensor images to open");
           if (list.empty())
             return;
 
@@ -510,7 +514,7 @@ namespace MR
 
         void ODF::dixel_open_slot ()
         {
-          std::vector<std::string> list = Dialog::File::get_images (&window(), "Select dixel-based ODF images to open");
+          vector<std::string> list = Dialog::File::get_images (&window(), "Select dixel-based ODF images to open");
           if (list.empty())
             return;
 
@@ -566,7 +570,7 @@ namespace MR
 
 
 
-        void ODF::colour_by_direction_slot (int) 
+        void ODF::colour_by_direction_slot (int)
         {
           if (colour_by_direction_box->isChecked()) {
             colour_by_direction_box->setText ("colour by direction");
@@ -595,7 +599,7 @@ namespace MR
           if (!settings)
             return;
           settings->hide_negative = hide_negative_values_box->isChecked();
-          if (preview) 
+          if (preview)
             preview->render_frame->set_hide_neg_values (hide_negative_values_box->isChecked());
           updateGL();
           update_preview();
@@ -617,14 +621,14 @@ namespace MR
 
 
 
-        void ODF::lmax_slot (int) 
-        { 
+        void ODF::lmax_slot (int)
+        {
           ODF_Item* settings = get_image();
           if (!settings)
             return;
           assert (settings->odf_type == odf_type_t::SH);
           settings->lmax = lmax_selector->value();
-          if (preview) 
+          if (preview)
             preview->render_frame->set_lmax (lmax_selector->value());
           updateGL();
         }
@@ -731,7 +735,7 @@ namespace MR
 
         void ODF::use_lighting_slot (int)
         {
-          if (preview) 
+          if (preview)
             preview->render_frame->set_use_lighting (use_lighting_box->isChecked());
           updateGL();
           update_preview();
@@ -756,7 +760,7 @@ namespace MR
 
         void ODF::close_event ()
         {
-          if (preview) 
+          if (preview)
             preview->hide();
           if (lighting_dock)
             lighting_dock->hide();
@@ -764,7 +768,7 @@ namespace MR
 
 
 
-        void ODF::updateGL () 
+        void ODF::updateGL ()
         {
           if (!hide_all_button->isChecked())
             window().updateGL();
@@ -772,7 +776,7 @@ namespace MR
 
         void ODF::update_preview()
         {
-          if (!preview) 
+          if (!preview)
             return;
           if (!preview->isVisible())
             return;
@@ -848,8 +852,8 @@ namespace MR
 
 
 
-        void ODF::add_commandline_options (MR::App::OptionList& options) 
-        { 
+        void ODF::add_commandline_options (MR::App::OptionList& options)
+        {
           using namespace MR::App;
           options
             + OptionGroup ("ODF tool options")
@@ -862,18 +866,18 @@ namespace MR
 
             + Option ("odf.load_dixel", "Loads the specified dixel-based image on the ODF tool.").allow_multiple()
             +   Argument ("image").type_image_in();
-            
+
         }
 
 
 
 
 
-        bool ODF::process_commandline_option (const MR::App::ParsedOption& opt) 
+        bool ODF::process_commandline_option (const MR::App::ParsedOption& opt)
         {
           if (opt.opt->is ("odf.load_sh")) {
             try {
-              std::vector<std::string> list (1, opt[0]);
+              vector<std::string> list (1, opt[0]);
               add_images (list, odf_type_t::SH);
             }
             catch (Exception& e) {
@@ -884,7 +888,7 @@ namespace MR
 
           if (opt.opt->is ("odf.load_tensor")) {
             try {
-              std::vector<std::string> list (1, opt[0]);
+              vector<std::string> list (1, opt[0]);
               add_images (list, odf_type_t::TENSOR);
             }
             catch (Exception& e) {
@@ -895,7 +899,7 @@ namespace MR
 
           if (opt.opt->is ("odf.load_dixel")) {
             try {
-              std::vector<std::string> list (1, opt[0]);
+              vector<std::string> list (1, opt[0]);
               add_images (list, odf_type_t::DIXEL);
             }
             catch (Exception& e) {

@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __gui_mrview_tool_connectome_edge_h__
 #define __gui_mrview_tool_connectome_edge_h__
@@ -37,9 +36,9 @@ namespace MR
       // Stores all information relating to the drawing of individual edges, both fixed and variable
       // Try to store more than would otherwise be optimal in here, in order to simplify the drawing process
       class Edge
-      {
+      { MEMALIGN(Edge)
 
-          typedef MR::Connectome::node_t node_t;
+          using node_t = MR::Connectome::node_t;
 
         public:
           Edge (const node_t, const node_t, const Eigen::Vector3f&, const Eigen::Vector3f&);
@@ -99,7 +98,7 @@ namespace MR
           class Streamtube;
 
           class Line
-          {
+          { MEMALIGN(Line)
             public:
               Line (const Edge& parent);
               Line (Line&& that) :
@@ -117,7 +116,7 @@ namespace MR
 
           // Raw data for exemplar; need to hold on to this
           class Exemplar
-          {
+          { MEMALIGN(Exemplar)
             public:
               Exemplar (const Edge&, const MR::DWI::Tractography::Streamline<float>&);
               Exemplar (Exemplar&& that) :
@@ -129,7 +128,7 @@ namespace MR
               Exemplar () = delete;
             private:
               const Eigen::Vector3f endpoints[2];
-              std::vector<Eigen::Vector3f> vertices, tangents, normals, binormals;
+              vector<Eigen::Vector3f> vertices, tangents, normals, binormals;
               friend class Streamline;
               friend class Streamtube;
           };
@@ -137,7 +136,7 @@ namespace MR
 
           // Class to store data relating to storing and displaying the exemplar as a streamline
           class Streamline
-          {
+          { MEMALIGN(Streamline)
             public:
               Streamline (const Exemplar& exemplar);
               Streamline (Streamline&& that) :
@@ -158,7 +157,7 @@ namespace MR
 
           // Class to store data for plotting each edge exemplar as a streamtube
           class Streamtube
-          {
+          { MEMALIGN(Streamtube)
             public:
               Streamtube (const Exemplar&);
               Streamtube (Streamtube&& that) :
@@ -176,7 +175,7 @@ namespace MR
               GL::VertexArrayObject vertex_array_object;
 
               class Shared
-              {
+              { MEMALIGN(Shared)
                 public:
                   Shared() : max_num_points (0), LOD (0), element_counts (nullptr) { }
                   ~Shared() { clear(); }

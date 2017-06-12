@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_sdeconv_msmt_csd_h__
 #define __dwi_sdeconv_msmt_csd_h__
@@ -23,6 +22,7 @@
 #include "math/constrained_least_squares.h"
 #include "math/math.h"
 #include "math/SH.h"
+#include "math/ZSH.h"
 
 #include "dwi/directions/predefined.h"
 #include "dwi/gradient.h"
@@ -38,11 +38,10 @@ namespace MR
 
 
 
-      class MSMT_CSD {
+      class MSMT_CSD { MEMALIGN(MSMT_CSD)
         public:
 
-          class Shared
-          {
+          class Shared { MEMALIGN(Shared)
             public:
               Shared (const Header& dwi_header) :
                   grad (DWI::get_valid_DW_scheme (dwi_header)),
@@ -63,7 +62,7 @@ namespace MR
 
 
 
-              void set_responses (const std::vector<std::string>& files)
+              void set_responses (const vector<std::string>& files)
               {
                 lmax_response.clear();
                 for (const auto s : files) {
@@ -78,7 +77,7 @@ namespace MR
                 prepare_responses();
               }
 
-              void set_responses (const std::vector<Eigen::MatrixXd>& matrices)
+              void set_responses (const vector<Eigen::MatrixXd>& matrices)
               {
                 responses = matrices;
                 prepare_responses();
@@ -90,6 +89,9 @@ namespace MR
               {
                 if (lmax.empty()) {
                   lmax = lmax_response;
+                  for (size_t t = 0; t != num_tissues(); ++t) {
+                    lmax[t] = std::min (8, lmax[t]);
+                  }
                 } else {
                   if (lmax.size() != num_tissues())
                     throw Exception ("Number of lmaxes specified does not match number of tissues");
@@ -103,7 +105,7 @@ namespace MR
                   if (size_t(responses[t].rows()) != num_shells())
                     throw Exception ("number of rows in response function must match number of b-value shells");
                   // Pad response functions out to the requested lmax for this tissue
-                  responses[t].conservativeResizeLike (Eigen::MatrixXd::Zero (num_shells(), lmax[t]/2+1));
+                  responses[t].conservativeResizeLike (Eigen::MatrixXd::Zero (num_shells(), Math::ZSH::NforL (lmax[t])));
                 }
 
                 //////////////////////////////////////////////////
@@ -121,7 +123,7 @@ namespace MR
 
                 Eigen::MatrixXd C (grad.rows(), nparams);
 
-                std::vector<size_t> dwilist;
+                vector<size_t> dwilist;
                 for (size_t i = 0; i != size_t(grad.rows()); i++)
                   dwilist.push_back(i);
 
@@ -162,7 +164,7 @@ namespace MR
                       }
                       li++;
                     }
-                    std::vector<size_t> vols = shells[shell_idx].get_volumes();
+                    vector<size_t> vols = shells[shell_idx].get_volumes();
                     for (size_t idx = 0; idx < vols.size(); idx++) {
                       Eigen::VectorXd SHT_(SHT.row (vols[idx]).head (tissue_n));
                       SHT_ = (SHT_.array()*fconv.array()).matrix();
@@ -172,8 +174,8 @@ namespace MR
                   pbegin += tissue_n;
                 }
 
-                std::vector<size_t> m (num_tissues());
-                std::vector<size_t> n (num_tissues());
+                vector<size_t> m (num_tissues());
+                vector<size_t> n (num_tissues());
                 size_t M = 0;
                 size_t N = 0;
 
@@ -210,8 +212,8 @@ namespace MR
               const Eigen::MatrixXd grad;
               const DWI::Shells shells;
               Eigen::MatrixXd HR_dirs;
-              std::vector<int> lmax, lmax_response;
-              std::vector<Eigen::MatrixXd> responses;
+              vector<int> lmax, lmax_response;
+              vector<Eigen::MatrixXd> responses;
               Math::ICLS::Problem<double> problem;
 
 
@@ -230,9 +232,10 @@ namespace MR
                   // Clip off any empty columns, i.e. degrees containing zero coefficients for all shells
                   r.conservativeResize (r.rows(), n);
                   // Store the lmax for each tissue based on their response functions;
-                  //   if the user doesn't manually specify lmax, these will determine
-                  //   the lmax of each tissue ODF output
-                  lmax_response.push_back ((r.cols()-1)*2);
+                  //   if the user doesn't manually specify lmax, these will determine the
+                  //   lmax of each tissue ODF output, with a further default lmax=8
+                  //   restriction at that stage
+                  lmax_response.push_back (Math::ZSH::LforN (r.cols()));
                 }
               }
 

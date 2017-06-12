@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __gui_opengl_font_h__
 #define __gui_opengl_font_h__
@@ -25,13 +24,13 @@ namespace MR
     namespace GL
     {
 
-      class Font {
+      class Font { MEMALIGN(Font)
         public:
-          Font (const QFont& font) :
+          Font (const QFont font) :
             metric (font),
             font (font) { } 
 
-          void initGL ();
+          void initGL (bool with_shadow = true);
 
           const QFontMetrics metric;
 
@@ -59,7 +58,7 @@ namespace MR
           void render (const std::string& text, int x, int y) const;
 
         protected:
-          const QFont& font;
+          const QFont font;
           GL::Texture tex;
           GL::VertexBuffer vertex_buffer[2];
           GL::VertexArrayObject vertex_array_object;

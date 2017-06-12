@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -33,9 +31,9 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "obtain an estimate of fibre connectivity between two regions using AFD and streamlines tractography"
+  SYNOPSIS = "Obtain an estimate of fibre connectivity between two regions using AFD and streamlines tractography";
 
+  DESCRIPTION
   + "This estimate is obtained by determining a fibre volume (AFD) occupied by the pathway "
     "of interest, and dividing by the streamline length."
 
@@ -83,14 +81,14 @@ void usage ()
 }
 
 
-typedef float value_type;
-typedef DWI::Tractography::Mapping::SetDixel SetDixel;
-typedef DWI::Tractography::SIFT::FixelBase FixelBase;
+using value_type = float;
+using DWI::Tractography::Mapping::SetDixel;
+using DWI::Tractography::SIFT::FixelBase;
 
 
 
 class Fixel : public FixelBase
-{
+{ MEMALIGN(Fixel)
   public:
     Fixel () : FixelBase (), length (0.0) { }
     Fixel (const FMLS::FOD_lobe& lobe) : FixelBase (lobe), length (0.0) { }
@@ -111,7 +109,7 @@ class Fixel : public FixelBase
 
 
 class AFDConnectivity : public DWI::Tractography::SIFT::ModelBase<Fixel>
-{
+{ MEMALIGN(AFDConnectivity)
   public:
     AFDConnectivity (Image<value_type>& fod_buffer, const DWI::Directions::FastLookupSet& dirs, const std::string& tck_path, const std::string& wbft_path) :
         DWI::Tractography::SIFT::ModelBase<Fixel> (fod_buffer, dirs),
@@ -223,7 +221,7 @@ value_type AFDConnectivity::get (const std::string& path)
     if (all_fixels) {
 
       // All fixels contribute to the result
-      for (std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
+      for (vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
         if (i->is_selected())
           sum_volumes += i->get_FOD();
       }

@@ -1,7 +1,10 @@
-mrtransform moving.mif.gz -template template.mif.gz -linear moving2template.txt - | testing_diff_data - mrtransform/out.mif.gz -frac 1e-5
-mrtransform moving.mif.gz -linear moving2template.txt - | testing_diff_data - mrtransform/out2.mif.gz -frac 1e-5
-mrtransform moving.mif.gz -replace moving2template.txt - | testing_diff_data - mrtransform/out3.mif.gz -frac 1e-5
-mrtransform template.mif.gz -template moving.mif.gz -interp linear -inverse -linear moving2template.txt - | testing_diff_data - mrtransform/out4.mif.gz -frac 1e-5
-mrtransform dwi_mean.mif -flip 0 - | testing_diff_data - mrtransform/out5.mif -frac 1e-5
-mrtransform dwi.mif -identity - | testing_diff_data - mrtransform/out6.mif
-mrinfo dwi.mif -transform > tmp.txt && mrtransform -replace tmp.txt dwi.mif - | mrtransform dwi.mif -template - - | testing_diff_data - dwi.mif -abs 1e-4
+mrtransform moving.mif.gz -template template.mif.gz -linear moving2template.txt - | testing_diff_image - mrtransform/out.mif.gz -image $(mrcalc mrtransform/out.mif.gz -abs 1e-5 -mult - | mrfilter - smooth -)
+mrtransform moving.mif.gz -linear moving2template.txt - | testing_diff_image - mrtransform/out2.mif.gz -frac 1e-5
+mrtransform moving.mif.gz -replace moving2template.txt - | testing_diff_image - mrtransform/out3.mif.gz -frac 1e-5
+mrtransform template.mif.gz -template moving.mif.gz -interp linear -inverse -linear moving2template.txt - | testing_diff_image - mrtransform/out4.mif.gz -image $(mrcalc mrtransform/out4.mif.gz -abs 1e-5 -mult - | mrfilter - smooth -)
+mrtransform dwi_mean.mif -flip 0 - | testing_diff_image - mrtransform/out5.mif -frac 1e-5
+mrtransform dwi.mif -identity - | testing_diff_image - mrtransform/out6.mif -frac 1e-5
+mrinfo dwi_mean.mif -transform > tmp.txt && mrtransform -replace tmp.txt dwi_mean.mif - | mrtransform dwi_mean.mif -template - - | testing_diff_image - dwi_mean.mif -image $(mrcalc dwi_mean.mif -abs 1e-5 -mult - | mrfilter - smooth -)
+mrtransform fod.mif -linear rotatez.txt - | testing_diff_image - mrtransform/out7.mif.gz -voxel 0.001
+mrtransform fod.mif -linear rotatez.txt -template fod.mif - | testing_diff_image - mrtransform/out8.mif.gz -voxel 0.001
+mrtransform fod.mif -warp rotatez_warp.mif - | testing_diff_image - mrtransform/out9.mif.gz -voxel 0.001

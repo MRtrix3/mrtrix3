@@ -1,19 +1,20 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
+
 #include "dwi/tractography/resampling/arc.h"
+
+#include "math/math.h"
 
 
 namespace MR {
@@ -23,44 +24,26 @@ namespace MR {
 
 
 
-        bool Arc::operator() (std::vector<Eigen::Vector3f>& tck) const
+        bool Arc::operator() (const Streamline<>& in, Streamline<>& out) const
         {
-          assert (tck.size());
+          assert (in.size());
           assert (planes.size());
-          const bool reverse = idx_start > idx_end;
-          size_t i = idx_start;
-          std::vector<point_type> rtck;
+          out.clear();
+          out.index = in.index;
+          out.weight = in.weight;
 
-          for (size_t n = 0; n < nsamples; n++) {
-            while (i != idx_end) {
-              const value_type d = planes[n].dist (tck[i]);
-              if (d > 0.0) {
-                const value_type f = d / (d - planes[n].dist (tck[reverse ? i+1 : i-1]));
-                rtck.push_back (f*tck[i-1] + (1.0f-f)*tck[i]);
-                break;
-              }
-              reverse ? --i : ++i;
-            }
-          }
-          tck = rtck;
-          return true;
-        }
-
-
-
-        bool Arc::limits (const std::vector<Eigen::Vector3f>& tck)
-        {
+          // Determine which points on the streamline correspond to the endpoints of the arc
           idx_start = idx_end = 0;
           size_t a (0), b (0);
 
           int prev_s = -1;
-          for (size_t i = 0; i < tck.size(); ++i) {
-            int s = state (tck[i]);
+          for (size_t i = 0; i < in.size(); ++i) {
+            int s = state (in[i]);
             if (i) {
               if (prev_s == -1 && s == 0) a = i-1;
               if (prev_s == 0 && s == -1) a = i;
-              if (prev_s == 1 && s == 2) b = i;
-              if (prev_s == 2 && s == 1) b = i-1;
+              if (prev_s == 1 && s == 2)  b = i;
+              if (prev_s == 2 && s == 1)  b = i-1;
 
               if (a && b) {
                 if (b - a > idx_end - idx_start) {
@@ -72,10 +55,26 @@ namespace MR {
             }
             prev_s = s;
           }
-
           ++idx_end;
 
-          return (idx_start && idx_end);
+          if (!(idx_start && idx_end))
+            return false;
+
+          const bool reverse = idx_start > idx_end;
+          size_t i = idx_start;
+
+          for (size_t n = 0; n < nsamples; n++) {
+            while (i != idx_end) {
+              const value_type d = planes[n].dist (in[i]);
+              if (d > 0.0) {
+                const value_type f = d / (d - planes[n].dist (in[reverse ? i+1 : i-1]));
+                out.push_back (f*in[i-1] + (1.0f-f)*in[i]);
+                break;
+              }
+              reverse ? --i : ++i;
+            }
+          }
+          return true;
         }
 
 

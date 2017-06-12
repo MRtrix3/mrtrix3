@@ -1,5 +1,5 @@
 Motivation for ``afdconnectivity``
-==================
+==================================
 
 
 Due to the interest in the :ref:`afdconnectivity` command, I thought I'd

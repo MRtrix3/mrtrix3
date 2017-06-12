@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "gui/shapes/halfsphere.h"
 
@@ -54,7 +53,7 @@ namespace MR
 
 
       class Triangle
-      {
+      { NOMEMALIGN
         public:
           Triangle () { }
           Triangle (const GLuint x[3]) {
@@ -79,8 +78,8 @@ namespace MR
           GLuint  index[3];
       };
 
-      class Edge
-      {
+      class Edge 
+      { NOMEMALIGN
         public:
           Edge (const Edge& E) {
             set (E.i1, E.i2);
@@ -114,9 +113,9 @@ namespace MR
 
     void HalfSphere::LOD (const size_t level_of_detail)
     {
-      //std::vector<Vertex> vertices;
+      //vector<Vertex> vertices;
       vertices.clear();
-      std::vector<Triangle> indices;
+      vector<Triangle> indices;
 
       for (size_t n = 0; n < NUM_VERTICES; n++)
         vertices.push_back (initial_vertices[n]);
