@@ -32,6 +32,7 @@
 #include "registration/metric/evaluate.h"
 #include "math/gradient_descent.h"
 #include "math/gradient_descent_bb.h"
+#include "registration/transform/initialiser.h"
 // #include "math/check_gradient.h"
 #include "math/rng.h"
 #include "math/math.h"
@@ -125,6 +126,8 @@ namespace MR
             if (scalefactor[level] <= 0 || scalefactor[level] > 1.0)
               throw Exception ("the linear registration scale factor for each multi-resolution level must be between 0 and 1");
             stages[level].scale_factor = scalefactor[level];
+            if (level > 2)
+              stages[level].fod_lmax = stages[2].fod_lmax;
           }
         }
 
@@ -319,6 +322,9 @@ namespace MR
               for (auto & s : stages)
                 if (s.fod_lmax < 0)
                   throw Exception ("the lmax needs to be defined for each registration stage");
+
+            Transform::Init::LinearInitialisationParams init;
+            Transform::Init::set_centre_via_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts); // doesn't change translation or linear matrix
 
             INFO ("Transformation before registration:");
             INFO (transform.info());

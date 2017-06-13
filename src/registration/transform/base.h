@@ -256,7 +256,7 @@ namespace MR
 
           void compute_halfspace_transformations() {
             if (nonsymmetric) {
-              INFO ("nonsymmetric update");
+              DEBUG ("nonsymmetric update");
               trafo_half = trafo;
               trafo_half_inverse.setIdentity();
             }

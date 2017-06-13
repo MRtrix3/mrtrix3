@@ -17,6 +17,7 @@
 
 #include "math/math.h"
 #include "registration/metric/linear_base.h"
+#include "transform.h"
 
 namespace MR
 {
@@ -89,6 +90,11 @@ namespace MR
 
       class MeanSquaredNonSymmetric : public LinearBase { MEMALIGN(MeanSquaredNonSymmetric)
         public:
+          /** typedef int is_asymmetric_type: type_trait to distinguish symmetric (two moving images)
+            * from asymmetric (moving and fixed image) registration
+            */
+          using is_asymmetric_type = int;
+
           template <class Params>
             default_type operator() (Params& params,
                                      const Eigen::Vector3& im1_point,
@@ -99,20 +105,25 @@ namespace MR
               assert (!this->weighted && "FIXME: set_weights not implemented for 3D metric");
 
               typename Params::Im1ValueType im1_value;
-              typename Params::Im2ValueType im2_value;
+              default_type im2_value;
               Eigen::Matrix<typename Params::Im1ValueType, 1, 3> im1_grad;
 
               params.im1_image_interp->value_and_gradient_wrt_scanner (im1_value, im1_grad);
               if (std::isnan (default_type (im1_value)))
                 return 0.0;
-              im2_value = params.im2_image_interp->value ();
-              if (std::isnan (default_type (im2_value)))
+
+              assert(params.im2_image.index(0) == std::round((MR::Transform(params.midway_image).voxel2scanner.inverse() * midway_point)[0]));
+              assert(params.im2_image.index(1) == std::round((MR::Transform(params.midway_image).voxel2scanner.inverse() * midway_point)[1]));
+              assert(params.im2_image.index(2) == std::round((MR::Transform(params.midway_image).voxel2scanner.inverse() * midway_point)[2]));
+              im2_value = params.im2_image.value();
+
+              if (std::isnan (im2_value))
                 return 0.0;
 
-              default_type diff = (default_type) im1_value - (default_type) im2_value;
+              default_type diff = (default_type) im1_value - im2_value;
 
               const auto jacobian_vec = params.transformation.get_jacobian_vector_wrt_params (im2_point);
-              const Eigen::Vector3d g = diff * im1_grad;
+              const Eigen::Vector3d g = 2.0 * diff * im1_grad;
               gradient.segment<4>(0) += g(0) * jacobian_vec;
               gradient.segment<4>(4) += g(1) * jacobian_vec;
               gradient.segment<4>(8) += g(2) * jacobian_vec;
