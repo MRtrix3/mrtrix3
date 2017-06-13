@@ -203,13 +203,14 @@ namespace MR
 
           Eigen::Matrix<default_type, 4, 1> Affine::get_jacobian_vector_wrt_params (const Eigen::Vector3& p) const {
             Eigen::Matrix<default_type, 4, 1> jac;
-            jac.head(3) = p; // - centre;
+            jac.head(3) = p - centre;
             jac(3) = 1.0;
             return jac;
           }
 
           Eigen::MatrixXd Affine::get_jacobian_wrt_params (const Eigen::Vector3& p) const {
-            Eigen::MatrixXd jacobian = Eigen::MatrixXd::Zero(3, 12);
+            Eigen::MatrixXd jacobian (3, 12);
+            jacobian.setZero();
             const auto v = get_jacobian_vector_wrt_params(p);
             jacobian.block<1, 4>(0, 0) = v;
             jacobian.block<1, 4>(1, 4) = v;
