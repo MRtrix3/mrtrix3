@@ -104,6 +104,7 @@ namespace MR
           log_stream (nullptr),
           robust_estimate (false),
           do_reorientation (false),
+          do_nonsymmetric (false),
           //CONF option: reg_analyse_descent
           //CONF default: 0 (false)
           //CONF Linear registration: write comma separated gradient descent parameters and gradients
@@ -245,6 +246,11 @@ namespace MR
         }
 
 
+        void use_nonsymmetric (bool use) {
+          do_nonsymmetric = use;
+        }
+
+
         void set_grad_tolerance (const float& tolerance) {
           grad_tolerance = tolerance;
         }
@@ -348,7 +354,11 @@ namespace MR
             Eigen::Matrix<typename TransformType::ParameterType, Eigen::Dynamic, 1> optimiser_weights = transform.get_optimiser_weights();
 
             // calculate midway (affine average) space which will be constant for each resolution level
-            midway_image_header = compute_minimum_average_header (im1_image, im2_image, transform.get_transform_half_inverse(), transform.get_transform_half());
+            if (do_nonsymmetric) {
+              midway_image_header = Header(im2_image);
+            } else {
+              midway_image_header = compute_minimum_average_header (im1_image, im2_image, transform.get_transform_half_inverse(), transform.get_transform_half());
+            }
 
             for (size_t istage = 0; istage < stages.size(); istage++) {
               auto& stage = stages[istage];
@@ -492,8 +502,12 @@ namespace MR
                   parameters.make_diagnostics_image (stage.diagnostics_images[stage_iter - 1], File::Config::get_bool ("reg_linreg_diagnostics_image_masked", false));
                 }
               }
-              // update midway (affine average) space using the current transformations
-              midway_image_header = compute_minimum_average_header (im1_image, im2_image, parameters.transformation.get_transform_half_inverse(), parameters.transformation.get_transform_half());
+              if (do_nonsymmetric) {
+                midway_image_header = Header(im2_image);
+              } else {
+                // update midway (affine average) space using the current transformations
+                midway_image_header = compute_minimum_average_header (im1_image, im2_image, parameters.transformation.get_transform_half_inverse(), parameters.transformation.get_transform_half());
+              }
             }
             INFO("linear registration done");
             INFO (transform.info());
@@ -535,6 +549,7 @@ namespace MR
         std::streambuf* log_stream;
         bool robust_estimate;
         bool do_reorientation;
+        bool do_nonsymmetric;
         Eigen::MatrixXd aPSF_directions;
         const bool analyse_descent;
 

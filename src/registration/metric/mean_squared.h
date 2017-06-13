@@ -87,6 +87,40 @@ namespace MR
           }
       };
 
+      class MeanSquaredNonSymmetric : public LinearBase { MEMALIGN(MeanSquaredNonSymmetric)
+        public:
+          template <class Params>
+            default_type operator() (Params& params,
+                                     const Eigen::Vector3& im1_point,
+                                     const Eigen::Vector3& im2_point,
+                                     const Eigen::Vector3& midway_point,
+                                     Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
+
+              assert (!this->weighted && "FIXME: set_weights not implemented for 3D metric");
+
+              typename Params::Im1ValueType im1_value;
+              typename Params::Im2ValueType im2_value;
+              Eigen::Matrix<typename Params::Im1ValueType, 1, 3> im1_grad;
+
+              params.im1_image_interp->value_and_gradient_wrt_scanner (im1_value, im1_grad);
+              if (std::isnan (default_type (im1_value)))
+                return 0.0;
+              im2_value = params.im2_image_interp->value ();
+              if (std::isnan (default_type (im2_value)))
+                return 0.0;
+
+              default_type diff = (default_type) im1_value - (default_type) im2_value;
+
+              const auto jacobian_vec = params.transformation.get_jacobian_vector_wrt_params (im2_point);
+              const Eigen::Vector3d g = diff * im1_grad;
+              gradient.segment<4>(0) += g(0) * jacobian_vec;
+              gradient.segment<4>(4) += g(1) * jacobian_vec;
+              gradient.segment<4>(8) += g(2) * jacobian_vec;
+
+              return diff * diff;
+          }
+      };
+
       template <class Im1Type, class Im2Type>
         class MeanSquared4D : public LinearBase { MEMALIGN(MeanSquared4D<Im1Type,Im2Type>)
           public:

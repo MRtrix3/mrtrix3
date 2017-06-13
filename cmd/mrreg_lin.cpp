@@ -69,6 +69,8 @@ void usage ()
   + Option ("mask2", "a mask to define the region of image2 to use for optimisation.")
     + Argument ("filename").type_image_in ()
 
+  + Option ("nonsymmetric", "Use non-symmetric registration with fixed template image.")
+
   + Registration::affine_options
 
   + Registration::lin_stage_options
@@ -211,8 +213,15 @@ void run () {
     check_dimensions (input2[0], im2_mask, 0, 3);
   }
 
+  // Non-symmetric registration
+  bool do_nonsymmetric = get_options("nonsymmetric").size();
+
+
   // ****** AFFINE REGISTRATION OPTIONS *******
   Registration::Linear affine_registration;
+
+  affine_registration.use_nonsymmetric(do_nonsymmetric);
+
   opt = get_options ("affine");
   bool output_affine = false;
   std::string affine_filename;
@@ -249,6 +258,10 @@ void run () {
     transform_type init_affine = load_transform (opt[0][0]);
     affine.set_transform (init_affine);
   }
+
+  affine.use_nonsymmetric(do_nonsymmetric);
+
+
   //   affine_registration.set_init_translation_type (Registration::Transform::Init::set_centre_mass);
   // }
 
@@ -356,14 +369,14 @@ void run () {
   }
 
 
-  // ****** PARSE OPTIONS *******
-  for (auto& s: Registration::lin_stage_options) {
-    if (get_options(s.id).size()) {
-      std::stringstream msg;
-      msg << "cannot use option -" << s.id << " when no linear registration is requested";
-      throw Exception (msg.str());
-    }
-  }
+//  // ****** PARSE OPTIONS *******
+//  for (auto& s: Registration::lin_stage_options) {
+//    if (get_options(s.id).size()) {
+//      std::stringstream msg;
+//      msg << "cannot use option -" << s.id << " when no linear registration is requested";
+//      throw Exception (msg.str());
+//    }
+//  }
 
   Registration::parse_general_options (affine_registration);
 
@@ -457,8 +470,13 @@ void run () {
     }
     else if (affine_metric == Registration::Diff) {
       if (affine_estimator == Registration::None) {
-        Registration::Metric::MeanSquared metric;
-        affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
+        if (do_nonsymmetric) {
+          Registration::Metric::MeanSquaredNonSymmetric metric;
+          affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
+        } else {
+          Registration::Metric::MeanSquared metric;
+          affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
+        }
       } else if (affine_estimator == Registration::L1) {
         Registration::Metric::L1 estimator;
         Registration::Metric::DifferenceRobust<Registration::Metric::L1> metric(estimator);
