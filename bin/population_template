@@ -311,6 +311,8 @@ if app.args.mask_dir:
   if len(maskFiles) < len(inFiles[0]):
     app.error ('there are not enough mask images for the number of images in the input directory')
   maskCommonPostfix = path.commonPostfix(maskFiles)
+  if len(maskCommonPostfix) == 0:
+    app.error('mask filenames do not have a common postfix')
   maskPrefixes = []
   for m in maskFiles:
     maskPrefixes.append(m.split(maskCommonPostfix)[0])
@@ -322,6 +324,9 @@ if app.args.template_mask and not useMasks:
   app.error ('you cannot output a template mask because no subject masks were input using -mask_dir')
 
 commonPostfix = [path.commonPostfix(files) for files in inFiles]
+for postfix in commonPostfix:
+  if len(postfix) == 0:
+    app.error('image filenames do not have a common postfix')
 contrasts = [''] + ["_c"+c for c in map(str,range(1,n_contrasts))]
 input = []
 for ifile, fname in enumerate(inFiles[0]):
