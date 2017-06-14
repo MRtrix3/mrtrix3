@@ -286,12 +286,6 @@ void run () {
     affine_registration.set_scale_factor (parse_floats (opt[0][0]));
   }
 
-  // opt = get_options ("affine_stage.iterations");
-  // if (opt.size ()) {
-  //   if (!do_affine)
-  //     throw Exception ("the affine repetition factors were input when no affine registration is requested");
-  //   affine_registration.set_stage_iterations (parse_ints (opt[0][0]));
-  // }
 
   opt = get_options ("affine_loop_density");
   if (opt.size ()) {
@@ -335,6 +329,21 @@ void run () {
         break;
       default:
         break;
+    }
+  }
+
+  opt = get_options ("type");
+  if (opt.size ()) {
+    switch ((int) opt[0][0]) {
+    case 0:
+      affine_registration.set_transform_projector (Registration::Transform::TransformProjectionType::rigid_nonsym);
+      break;
+    case 1:
+      affine_registration.set_transform_projector (Registration::Transform::TransformProjectionType::affine);
+      break;
+    case 2:
+      affine_registration.set_transform_projector (Registration::Transform::TransformProjectionType::affine_nonsym);
+      break;
     }
   }
 

@@ -39,6 +39,7 @@
 #include <iostream>
 #include "registration/multi_resolution_lmax.h"
 #include "registration/multi_contrast.h"
+#include "registration/transform/affine.h"
 
 namespace MR
 {
@@ -55,7 +56,6 @@ namespace MR
     enum LinearRobustMetricEstimatorType {L1, L2, LP, None};
     enum OptimiserAlgoType {bbgd, gd, none};
 
-
     struct StageSetting {  MEMALIGN(StageSetting)
       StageSetting() :
         stage_iterations (1),
@@ -65,6 +65,7 @@ namespace MR
         optimiser_default (OptimiserAlgoType::bbgd),
         optimiser_first (OptimiserAlgoType::bbgd),
         optimiser_last (OptimiserAlgoType::gd),
+        transform_projector (1, Transform::TransformProjectionType::affine),
         loop_density (1.0),
         fod_lmax (-1) {}
 
@@ -88,6 +89,7 @@ namespace MR
       default_type scale_factor;
       vector<OptimiserAlgoType> optimisers;
       OptimiserAlgoType optimiser_default, optimiser_first, optimiser_last;
+      vector<Transform::TransformProjectionType> transform_projector;
       default_type loop_density;
       ssize_t fod_lmax;
       vector<std::string> diagnostics_images;
@@ -110,13 +112,22 @@ namespace MR
           //CONF default: 0 (false)
           //CONF Linear registration: write comma separated gradient descent parameters and gradients
           //CONF to stdout and verbose gradient descent output to stderr
-          analyse_descent (File::Config::get_bool ("reg_analyse_descent", false)) {
+          analyse_descent (File::Config::get_bool ("reg_analyse_descent", false)),
+          transform_projector_default (Transform::TransformProjectionType::affine) {
             stages[0].scale_factor = 0.25;
             stages[0].fod_lmax = 0;
             stages[1].scale_factor = 0.5;
             stages[1].fod_lmax = 2;
             stages[2].scale_factor = 1.0;
             stages[2].fod_lmax = 4;
+        }
+
+        void set_transform_projector (const  Transform::TransformProjectionType& type) {
+          transform_projector_default = type;
+          if (stages.size())
+            for (auto & stage : stages)
+              for (auto & tp : stage.transform_projector)
+                tp = type;
         }
 
         // set_scale_factor needs to be the first option that is set as it overwrites the stage vector
@@ -166,6 +177,8 @@ namespace MR
             stage.optimisers[0] = stage.optimiser_first;
             if (stage.stage_iterations > 1)
             stage.optimisers[stage.stage_iterations - 1] = stage.optimiser_last;
+
+            stage.transform_projector.resize(stage.stage_iterations, transform_projector_default);
           }
         }
 
@@ -474,6 +487,7 @@ namespace MR
 
               INFO ("registration stage running...");
               for (auto stage_iter = 1U; stage_iter <= stage.stage_iterations; ++stage_iter) {
+                transform.get_gradient_descent_updator()->set_projection_type (stage.transform_projector[stage_iter - 1]);
                 if (stage.gd_max_iter > 0 and stage.optimisers[stage_iter - 1] == OptimiserAlgoType::bbgd) {
                   Math::GradientDescentBB<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
                   optim (evaluate, *transform.get_gradient_descent_updator());
@@ -557,6 +571,7 @@ namespace MR
         bool do_nonsymmetric;
         Eigen::MatrixXd aPSF_directions;
         const bool analyse_descent;
+        Transform::TransformProjectionType transform_projector_default;
 
         Header midway_image_header;
     };
