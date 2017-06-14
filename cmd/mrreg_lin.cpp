@@ -445,8 +445,13 @@ void run () {
     // if (affine_metric == Registration::NCC) // TODO
     if (affine_metric == Registration::Diff) {
       if (affine_estimator == Registration::None) {
-        Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric;
-        affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
+        if (do_nonsymmetric) {
+          Registration::Metric::MeanSquared4DNonSymmetric<Image<value_type>, Image<value_type>> metric;
+          affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
+        } else {
+          Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric;
+          affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
+        }
       } else if (affine_estimator == Registration::L1) {
         Registration::Metric::L1 estimator;
         Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::L1> metric (images1, images2, estimator);
