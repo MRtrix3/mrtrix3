@@ -222,6 +222,65 @@ namespace MR
             Eigen::VectorXd diff_values;
         };
 
+        template <class Im1Type, class Im2Type>
+          class MeanSquared4DNonSymmetric : public LinearBase { MEMALIGN(MeanSquared4DNonSymmetric<Im1Type,Im2Type>)
+            public:
+              template <class Params>
+              default_type operator() (Params& params,
+                                       const Eigen::Vector3& im1_point,
+                                       const Eigen::Vector3& im2_point,
+                                       const Eigen::Vector3& midway_point,
+                                       Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
+
+                const ssize_t volumes = params.im1_image_interp->size(3);
+
+                if (im1_values.rows() != volumes) {
+                  im1_values.resize (volumes);
+                  im1_grad.resize (volumes, 3);
+                  diff_values.resize (volumes);
+                  im2_values.resize (volumes);
+                  im2_grad.resize (volumes, 3);
+                }
+
+                params.im1_image_interp->value_and_gradient_row_wrt_scanner (im1_values, im1_grad);
+                if (im1_values.hasNaN())
+                  return 0.0;
+
+                params.im2_image_interp->value_and_gradient_row_wrt_scanner (im2_values, im2_grad);
+                if (im2_values.hasNaN())
+                  return 0.0;
+
+                assert(params.im2_image.index(0) == std::round((MR::Transform(params.midway_image).voxel2scanner.inverse() * midway_point)[0]));
+                assert(params.im2_image.index(1) == std::round((MR::Transform(params.midway_image).voxel2scanner.inverse() * midway_point)[1]));
+                assert(params.im2_image.index(2) == std::round((MR::Transform(params.midway_image).voxel2scanner.inverse() * midway_point)[2]));
+                im2_values = params.im2_image.row(3);
+
+                if (im2_values.hasNaN())
+                  return 0.0;
+
+                const Eigen::Matrix<default_type, 4, 1> jacobian_vec = params.transformation.get_jacobian_vector_wrt_params (im2_point);
+                diff_values = im1_values - im2_values;
+
+                if (this->weighted)
+                  diff_values.array() *= this->mc_weights.array();
+
+                for (ssize_t i = 0; i < volumes; ++i) {
+                  const Eigen::Vector3d g = 2.0 * diff_values[i] * im1_grad.row(i);
+                  gradient.segment<4>(0) += g(0) * jacobian_vec;
+                  gradient.segment<4>(4) += g(1) * jacobian_vec;
+                  gradient.segment<4>(8) += g(2) * jacobian_vec;
+                }
+
+                return diff_values.squaredNorm() / volumes;
+              }
+            private:
+              Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 1> im1_values;
+              Eigen::Matrix<typename Im2Type::value_type, Eigen::Dynamic, 1> im2_values;
+              Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 3> im1_grad;
+              Eigen::Matrix<typename Im2Type::value_type, Eigen::Dynamic, 3> im2_grad;
+              Eigen::VectorXd diff_values;
+          };
+
       template <class Im1Type, class Im2Type>
         class MeanSquaredVectorNoGradient4D : public LinearBase { MEMALIGN(MeanSquaredVectorNoGradient4D<Im1Type,Im2Type>)
           public:

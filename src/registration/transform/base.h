@@ -255,24 +255,23 @@ namespace MR
           }
 
           void compute_halfspace_transformations() {
+            Eigen::Matrix<ParameterType, 4, 4> tmp;
+            tmp.setIdentity();
+            tmp.template block<3,4>(0,0) = trafo.matrix();
+            assert ((tmp.template block<3,3>(0,0).isApprox (trafo.linear())));
+            assert (tmp.determinant() > 0);
             if (nonsymmetric) {
-              DEBUG ("nonsymmetric update");
-              trafo_half = trafo;
+              trafo_half.matrix() = tmp.template block<3,4>(0,0);
               trafo_half_inverse.setIdentity();
-            }
-            else {
-              Eigen::Matrix<ParameterType, 4, 4> tmp;
-              tmp.setIdentity();
-              tmp.template block<3,4>(0,0) = trafo.matrix();
-              assert ((tmp.template block<3,3>(0,0).isApprox (trafo.linear())));
-              assert (tmp.determinant() > 0);
+              assert (trafo.matrix().isApprox (trafo.matrix()));
+            } else {
               tmp = tmp.sqrt().eval();
               trafo_half.matrix() = tmp.template block<3,4>(0,0);
               trafo_half_inverse.matrix() = trafo_half.inverse().matrix();
               assert (trafo.matrix().isApprox ((trafo_half*trafo_half).matrix()));
               assert (trafo.inverse().matrix().isApprox ((trafo_half_inverse*trafo_half_inverse).matrix()));
-              // debug();
             }
+            // debug();
           }
 
           size_t number_of_parameters;
