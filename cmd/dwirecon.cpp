@@ -95,7 +95,7 @@ void run ()
   // Force single-shell until multi-shell basis is implemented
   auto grad = DWI::get_valid_DW_scheme (dwi);
   DWI::Shells shells (grad);
-  shells.select_shells (true, false, true);
+  shells.select_shells (false, false, false);
   auto idx = shells.largest().get_volumes();
 
   // Select subset
