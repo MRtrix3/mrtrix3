@@ -100,12 +100,23 @@ void run ()
 
   // Select subset
   auto dwisub = Adapter::make <Adapter::Extract1D> (dwi, 3, container_cast<vector<int>> (idx));
+
   Eigen::MatrixXf gradsub (idx.size(), grad.cols());
   for (size_t i = 0; i < idx.size(); i++)
     gradsub.row(i) = grad.row(idx[i]).template cast<float>();
-  Eigen::MatrixXf motionsub (idx.size(), motion.cols());
-  for (size_t i = 0; i < idx.size(); i++)
-    motionsub.row(i) = motion.row(idx[i]).template cast<float>();
+
+  Eigen::MatrixXf motionsub;
+  if (motion.rows() == dwi.size(3)) {   // per-volume rigid motion
+    motionsub.resize(idx.size(), motion.cols());
+    for (size_t i = 0; i < idx.size(); i++)
+      motionsub.row(i) = motion.row(idx[i]).template cast<float>();
+  }
+  else {                                // per-slice rigid motion
+    motionsub.resize(idx.size() * dwi.size(2), motion.cols());
+    for (size_t i = 0; i < idx.size(); i++)
+      for (size_t j = 0; j < dwi.size(2); j++)
+        motionsub.row(i * dwi.size(2) + j) = motion.row(idx[i] + j).template cast<float>();
+  }
 
 
   // Set up scattered data matrix
