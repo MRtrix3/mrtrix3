@@ -134,9 +134,8 @@ void run ()
   INFO("solve with conjugate gradient method");
 
   Eigen::initParallel();
-  Eigen::setNbThreads(Thread::number_of_threads());
-  VAR(Thread::number_of_threads());
-  VAR(Eigen::nbThreads());
+  Eigen::setNbThreads(Thread::number_of_threads());     // only used when configured with OpenMP
+  //VAR(Eigen::nbThreads());
 
   Eigen::LeastSquaresConjugateGradient<DWI::ReconMatrix, Eigen::IdentityPreconditioner> lscg;
   lscg.compute(R);

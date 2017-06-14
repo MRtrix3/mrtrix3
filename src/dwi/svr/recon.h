@@ -279,7 +279,7 @@ namespace Eigen {
         // This method should implement "dst += alpha * lhs * rhs" inplace
         assert(alpha==Scalar(1) && "scaling is not implemented");
 
-        TRACE;
+        //TRACE;
         auto Y = lhs.getY();
         size_t nc = Y.cols();
         size_t nxyz = lhs.getM().cols();
@@ -308,7 +308,7 @@ namespace Eigen {
         // This method should implement "dst += alpha * lhs * rhs" inplace
         assert(alpha==Scalar(1) && "scaling is not implemented");
 
-        TRACE;
+        //TRACE;
         auto Y = lhs.R.getY();
         size_t nc = Y.cols();
         size_t nxyz = lhs.R.getM().cols();
