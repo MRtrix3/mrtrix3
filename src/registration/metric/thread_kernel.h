@@ -156,17 +156,24 @@ namespace MR
             Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
             Eigen::Vector3 im2_point = transform.voxel2scanner * voxel_pos; // image 2 == midway_point == fixed image
 
-            if (params.im2_mask.valid()) { // assumes that im2_mask shares the coordinate system and voxel grid with image 2
-              params.im2_mask.index(0) = voxel_pos[0];
-              params.im2_mask.index(1) = voxel_pos[1];
-              params.im2_mask.index(2) = voxel_pos[2];
-              if (params.im2_mask.value() < 0.5)
-                return;
-            }
-
             params.im2_image.index(0) = voxel_pos[0];
             params.im2_image.index(1) = voxel_pos[1];
             params.im2_image.index(2) = voxel_pos[2];
+
+            // assumes that im2_mask shares the coordinate system and voxel grid with image 2
+            // if (params.im2_mask.valid()) {
+            //   params.im2_mask.index(0) = voxel_pos[0];
+            //   params.im2_mask.index(1) = voxel_pos[1];
+            //   params.im2_mask.index(2) = voxel_pos[2];
+            //   if (params.im2_mask.value() < 0.5)
+            //     return;
+            // }
+
+            if (params.im2_mask_interp) {
+              params.im2_mask_interp->scanner (im2_point);
+              if (params.im2_mask_interp->value() < 0.5)
+                return;
+            }
 
             Eigen::Vector3 im1_point; // moving
             params.transformation.transform_half (im1_point, im2_point); // transform_half is full transformation, transform_half_inverse is identity
