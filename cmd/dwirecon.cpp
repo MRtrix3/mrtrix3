@@ -85,6 +85,12 @@ void run ()
   if (opt.size())
     motion = load_matrix<float>(opt[0][0]);
 
+  // Check dimensions
+  if (motion.size() && motion.cols() != 6)
+    throw Exception("No. columns in motion parameters must equal 6.");
+  if (motion.size() && (motion.rows() != dwi.size(3)) && (motion.rows() != dwi.size(3) * dwi.size(2)))
+    throw Exception("No. rows in motion parameters must equal the number of DWI volumes or slices.");
+
 
   // Force single-shell until multi-shell basis is implemented
   auto grad = DWI::get_valid_DW_scheme (dwi);
@@ -97,18 +103,14 @@ void run ()
   Eigen::MatrixXf gradsub (idx.size(), grad.cols());
   for (size_t i = 0; i < idx.size(); i++)
     gradsub.row(i) = grad.row(idx[i]).template cast<float>();
-
-
-  // Check dimensions
-  if (motion.size() && motion.cols() != 6)
-    throw Exception("No. columns in motion parameters must equal 6.");
-  if (motion.size() && (motion.rows() != dwisub.size(3)) && (motion.rows() != dwisub.size(3) * dwisub.size(2)))
-    throw Exception("No. rows in motion parameters must equal the number of DWI volumes or slices.");
+  Eigen::MatrixXf motionsub (idx.size(), motion.cols());
+  for (size_t i = 0; i < idx.size(); i++)
+    motionsub.row(i) = motion.row(idx[i]).template cast<float>();
 
 
   // Set up scattered data matrix
   INFO("initialise reconstruction matrix");
-  DWI::ReconMatrix R (dwisub, motion, gradsub, lmax);
+  DWI::ReconMatrix R (dwisub, motionsub, gradsub, lmax);
 
   // Read input data to vector
   Eigen::VectorXf y (dwisub.size(0)*dwisub.size(1)*dwisub.size(2)*dwisub.size(3));
