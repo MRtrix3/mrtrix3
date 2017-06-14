@@ -4,7 +4,8 @@
 
 # Make the corresponding MRtrix3 Python libraries available
 import inspect, os, sys
-lib_folder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile(inspect.currentframe()))[0], os.pardir, 'lib')))
+#lib_folder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile(inspect.currentframe()))[0], os.pardir, 'lib')))
+lib_folder = os.path.realpath(os.path.abspath('/home/dc16/dev/mrtrix3/lib'))
 if not os.path.isdir(lib_folder):
   sys.stderr.write('Unable to locate MRtrix3 Python libraries')
   sys.exit(1)
@@ -65,6 +66,30 @@ else:
 
 # Initiate motion correction
 
+# for now, do b=0 map only.
+run.command('dwiextract -bzero in.mif bzeros.mif')
+dims = map(int, image.headerField('bzeros.mif', 'size').split())
+# initial template = average in 4th dimension
+run.command('mrmath -axis 3 bzeros.mif mean template.mif')
+
+# register template to volumes
+f = open('motion.txt', 'w')
+for v in range(dims[3]):
+    run.command('mrconvert -coord 3 ' + str(v) + ' -axes 0,1,2 bzeros.mif target.mif -force')
+    run.command('mrreg_lin template.mif target.mif -nonsymmetric -mask1 mask.mif -affine T.txt -force')
+    run.command('transformcalc T.txt decompose T2.txt -force')
+    f2 = open('T2.txt')
+    L = f2.readlines()
+    f2.close()
+    tra = L[4].strip().split(':')[1]    # translation
+    rot = L[2].strip().split(':')[1]    # rotation
+    f.write(tra + ' ' + rot + '\n')
+f.close()
+# update template
+run.command('dwirecon bzeros.mif tmp.mif -lmax 0 -motion motion.txt -force')
+run.command('mrcalc 0.282095 tmp.mif -mult template.mif -force')
+
+run.command('mrconvert template.mif result.mif')
 
 
 # Copy result to output path
