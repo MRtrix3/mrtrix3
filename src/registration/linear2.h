@@ -388,15 +388,14 @@ namespace MR
               INFO ("smoothing image 1");
               auto im1_smoothed = Registration::multi_resolution_lmax (im1_image, stage.scale_factor, do_reorientation, stage_contrasts);
               INFO ("smoothing image 2");
-              auto im2_smoothed = Registration::multi_resolution_lmax (im2_image, stage.scale_factor, do_reorientation, stage_contrasts, &stage_contrasts);
+              auto im2_smoothed = Registration::multi_resolution_lmax (im2_image, (do_nonsymmetric) ? 1.0 : stage.scale_factor, do_reorientation, stage_contrasts, &stage_contrasts);
 
               DEBUG ("after downsampling:");
               for (const auto & mc : stage_contrasts)
                 INFO (str(mc));
 
-
               Filter::Resize midway_resize_filter (midway_image_header);
-              midway_resize_filter.set_scale_factor (stage.scale_factor);
+              midway_resize_filter.set_scale_factor ( (do_nonsymmetric) ? 1.0 : stage.scale_factor );
               Header midway_resized (midway_resize_filter);
 
               ParamType parameters (transform, im1_smoothed, im2_smoothed, midway_resized, im1_mask, im2_mask);
