@@ -24,6 +24,7 @@ options = app.cmdline.add_argument_group('Options for the dwimotioncorrect scrip
 options.add_argument('-mask', help='Manually provide a mask image for motion correction')
 options.add_argument('-grad', help='Pass the diffusion gradient table in MRtrix format')
 options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
+options.add_argument('-niter', help='Number of epochs (default = 3)')
 app.cmdline.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
 app.parse()
 
@@ -64,30 +65,38 @@ else:
   run.command('dwi2mask in.mif mask.mif')
 
 
+# Set no. iterations
+niter = 3
+if app.args.niter:
+    niter = int(app.args.niter)
+
+
 # Initiate motion correction
 
 # for now, do b=0 map only.
 run.command('dwiextract -bzero in.mif bzeros.mif')
 dims = map(int, image.headerField('bzeros.mif', 'size').split())
 # initial template = average in 4th dimension
-run.command('mrmath -axis 3 bzeros.mif mean template.mif')
+run.command('mrmath -axis 3 bzeros.mif mean b0init.mif')
+run.command('mrconvert -axes 0,1,2,-1 b0init.mif template.mif')
 
-# register template to volumes
-f = open('motion.txt', 'w')
-for v in range(dims[3]):
-    run.command('mrconvert -coord 3 ' + str(v) + ' -axes 0,1,2 bzeros.mif target.mif -force')
-    run.command('mrreg_lin template.mif target.mif -nonsymmetric -mask1 mask.mif -affine T.txt -force')
-    run.command('transformcalc T.txt decompose T2.txt -force')
-    f2 = open('T2.txt')
-    L = f2.readlines()
-    f2.close()
-    tra = L[4].strip().split(':')[1]    # translation
-    rot = L[2].strip().split(':')[1]    # rotation
-    f.write(tra + ' ' + rot + '\n')
-f.close()
-# update template
-run.command('dwirecon bzeros.mif tmp.mif -lmax 0 -motion motion.txt -force')
-run.command('mrcalc 0.282095 tmp.mif -mult template.mif -force')
+for k in range(niter):
+    # register template to volumes
+    f = open('motion.txt', 'w')
+    for v in range(dims[3]):
+        run.command('mrconvert -coord 3 ' + str(v) + ' bzeros.mif target.mif -force')
+        run.command('mrreg_lin template.mif target.mif -nonsymmetric -mask2 mask.mif -affine T.txt -force')
+        run.command('transformcalc T.txt decompose T2.txt -force')
+        f2 = open('T2.txt')
+        L = f2.readlines()
+        f2.close()
+        tra = L[4].strip().split(':')[1]    # translation
+        rot = L[2].strip().split(':')[1]    # rotation
+        f.write(tra + ' ' + rot + '\n')
+    f.close()
+    # update template
+    run.command('dwirecon bzeros.mif tmp.mif -lmax 0 -motion motion.txt -force')
+    run.command('mrcalc 0.282095 tmp.mif -mult template.mif -force')
 
 run.command('mrconvert template.mif result.mif')
 
