@@ -25,6 +25,8 @@ options.add_argument('-mask', help='Manually provide a mask image for motion cor
 options.add_argument('-grad', help='Pass the diffusion gradient table in MRtrix format')
 options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
 options.add_argument('-niter', help='Number of epochs (default = 3)')
+options.add_argument('-shell', help='Shell to be processed (default = 0)')
+options.add_argument('-lmax', help='SH basis order (default = 0)')
 app.cmdline.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
 app.parse()
 
@@ -70,21 +72,44 @@ niter = 3
 if app.args.niter:
     niter = int(app.args.niter)
 
+# Set lmax
+shell = 0
+if app.args.shell:
+    shell = int(app.args.shell)
 
-# Initiate motion correction
+# Set lmax
+lmax = 0
+if app.args.lmax:
+    lmax = int(app.args.lmax)
+if shell==0 and lmax>0:
+    app.error('Option -lmax ' + str(lmax) + ' incompatible with b=0 shell.')
 
-# for now, do b=0 map only.
-run.command('dwiextract -bzero in.mif bzeros.mif')
-dims = map(int, image.headerField('bzeros.mif', 'size').split())
-# initial template = average in 4th dimension
-run.command('mrmath -axis 3 bzeros.mif mean b0init.mif')
-run.command('mrconvert -axes 0,1,2,-1 b0init.mif template.mif')
+
+# _________ Motion correction _________
+
+# select shell
+run.command('dwiextract -shell ' + str(shell) + ' in.mif shell.mif')
+dims = map(int, image.headerField('shell.mif', 'size').split())
+if dims[3] < (lmax+1)*(lmax+2)//2:
+    app.error('Option -lmax ' + str(lmax) + ' incompatible with n=' +str(dims[3])+ ' volumes in b=' + str(shell) + ' shell.')
+run.command('mrinfo shell.mif -export_grad_mrtrix grad.txt')
+
+# initial template
+if shell:
+    run.command('amp2sh -lmax ' + str(lmax) + ' shell.mif recon-0.mif')
+else:
+    run.command('mrmath -axis 3 shell.mif mean b0init.mif')
+    run.command('mrconvert -axes 0,1,2,-1 b0init.mif template.mif')
+    run.command('mrcalc template.mif 0.282095 -divide recon-0.mif')
 
 for k in range(niter):
+    # sample directions
+    run.command('sh2amp -gradient recon-'+str(k)+'.mif grad.txt pred.mif -force')
     # register template to volumes
     f = open('motion.txt', 'w')
     for v in range(dims[3]):
-        run.command('mrconvert -coord 3 ' + str(v) + ' bzeros.mif target.mif -force')
+        run.command('mrconvert -coord 3 ' + str(v) + ' pred.mif template.mif -force')
+        run.command('mrconvert -coord 3 ' + str(v) + ' shell.mif target.mif -force')
         run.command('mrreg_lin template.mif target.mif -nonsymmetric -mask2 mask.mif' +
                     ' -type rigid ' + ('-affine_init T-'+str(v)+'.txt' if k>0 else '') +
                     ' -affine_scale ' + str((k+1.0)/niter) + ' -affine T-'+str(v)+'.txt -force')
@@ -97,10 +122,9 @@ for k in range(niter):
         f.write(tra + ' ' + rot + '\n')
     f.close()
     # update template
-    run.command('dwirecon bzeros.mif recon-'+str(k)+'.mif -lmax 0 -motion motion.txt')
-    run.command('mrcalc 0.282095 recon-'+str(k)+'.mif -mult template.mif -force')
+    run.command('dwirecon shell.mif recon-'+str(k+1)+'.mif -lmax '+str(lmax)+' -motion motion.txt')
 
-run.command('mrconvert template.mif result.mif')
+run.command('mrconvert recon-'+str(niter)+'.mif result.mif')
 
 
 # Copy result to output path
