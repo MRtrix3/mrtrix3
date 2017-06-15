@@ -87,7 +87,7 @@ for k in range(niter):
         run.command('mrconvert -coord 3 ' + str(v) + ' bzeros.mif target.mif -force')
         run.command('mrreg_lin template.mif target.mif -nonsymmetric -mask2 mask.mif' +
                     ' -type rigid ' + ('-affine_init T-'+str(v)+'.txt' if k>0 else '') +
-                    ' -affine T-'+str(v)+'.txt -force')
+                    ' -affine_scale ' + str((k+1.0)/niter) + ' -affine T-'+str(v)+'.txt -force')
         run.command('transformcalc T-'+str(v)+'.txt decompose trafo.txt -force')
         f2 = open('trafo.txt')
         L = f2.readlines()
