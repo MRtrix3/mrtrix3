@@ -85,9 +85,9 @@ for k in range(niter):
     f = open('motion.txt', 'w')
     for v in range(dims[3]):
         run.command('mrconvert -coord 3 ' + str(v) + ' bzeros.mif target.mif -force')
-        run.command('mrreg_lin template.mif target.mif -nonsymmetric -mask2 mask.mif -affine T.txt -force')
-        run.command('transformcalc T.txt decompose T2.txt -force')
-        f2 = open('T2.txt')
+        run.command('mrreg_lin template.mif target.mif -nonsymmetric -mask2 mask.mif -affine T-'+str(v)+'.txt -force')
+        run.command('transformcalc T-'+str(v)+'.txt decompose trafo.txt -force')
+        f2 = open('trafo.txt')
         L = f2.readlines()
         f2.close()
         tra = L[4].strip().split(':')[1]    # translation
@@ -95,8 +95,8 @@ for k in range(niter):
         f.write(tra + ' ' + rot + '\n')
     f.close()
     # update template
-    run.command('dwirecon bzeros.mif tmp.mif -lmax 0 -motion motion.txt -force')
-    run.command('mrcalc 0.282095 tmp.mif -mult template.mif -force')
+    run.command('dwirecon bzeros.mif recon-'+str(k)+'.mif -lmax 0 -motion motion.txt')
+    run.command('mrcalc 0.282095 recon-'+str(k)+'.mif -mult template.mif -force')
 
 run.command('mrconvert template.mif result.mif')
 
