@@ -85,13 +85,15 @@ for k in range(niter):
     f = open('motion.txt', 'w')
     for v in range(dims[3]):
         run.command('mrconvert -coord 3 ' + str(v) + ' bzeros.mif target.mif -force')
-        run.command('mrreg_lin template.mif target.mif -nonsymmetric -mask2 mask.mif -affine T-'+str(v)+'.txt -force')
+        run.command('mrreg_lin template.mif target.mif -nonsymmetric -mask2 mask.mif' +
+                    ' -type rigid ' + ('-affine_init T-'+str(v)+'.txt' if k>0 else '') +
+                    ' -affine T-'+str(v)+'.txt -force')
         run.command('transformcalc T-'+str(v)+'.txt decompose trafo.txt -force')
         f2 = open('trafo.txt')
         L = f2.readlines()
         f2.close()
-        tra = L[4].strip().split(':')[1]    # translation
-        rot = L[2].strip().split(':')[1]    # rotation
+        tra = L[4].strip().split(':')[1].strip()    # translation
+        rot = L[2].strip().split(':')[1].strip()    # rotation
         f.write(tra + ' ' + rot + '\n')
     f.close()
     # update template
