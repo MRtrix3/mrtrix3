@@ -41,9 +41,7 @@ app.checkOutputPath(app.args.output)
 alg.checkOutputPaths()
 
 app.makeTempDir()
-run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('input.mif', True))
 alg.getInputs()
-
 app.gotoTempDir()
 
 alg.execute()

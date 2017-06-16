@@ -393,7 +393,7 @@ namespace MR
             const int32_t filename_length = fetch<int32_t> (in);
             std::string filename (filename_length + 1, '\0');
             in.read (const_cast<char*> (filename.data()), filename_length);
-            for (size_t structure = 0; structure != nentries; ++structure) {
+            for (int32_t structure = 0; structure != nentries; ++structure) {
               const int32_t structurename_length = fetch<int32_t> (in);
               if (structurename_length < 0)
                 throw Exception ("Error reading colour table from file \"" + H.name() + "\": Negative structure name length");
@@ -421,13 +421,13 @@ namespace MR
             std::string filename (filename_length + 1, '\0');
             in.read (const_cast<char*> (filename.data()), filename_length);
             const int32_t num_entries_to_read = fetch<int32_t> (in);
-            for (size_t i = 0; i != num_entries_to_read; ++i) {
+            for (int32_t i = 0; i != num_entries_to_read; ++i) {
               const int32_t structure = fetch<int32_t> (in);
               if (structure < 0)
                 throw Exception ("Error reading colour table from file \"" + H.name() + "\": Negative structure index (" + str(structure) + ")");
-              if (structure < table.size() && table[structure].size())
+              if (size_t (structure) < table.size() && table[structure].size())
                 throw Exception ("Error reading colour table from file \"" + H.name() + "\": Duplicate structure index (" + str(structure) + ")");
-              else if (structure >= table.size())
+              else if (size_t (structure) >= table.size())
                 table.resize (structure + 1, std::string());
               const int32_t structurename_length = fetch<int32_t> (in);
               if (structurename_length < 0)

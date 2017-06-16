@@ -36,6 +36,8 @@ app.parse()
 image_dimensions = [ int(i) for i in image.headerField(app.args.input, 'size').split() ]
 if len(image_dimensions) != 4:
   app.error('Input image must be a 4D image')
+if min(image_dimensions) == 1:
+  app.error('Cannot perform tractography on an image with a unity spatial dimension')
 num_volumes = image_dimensions[3]
 
 app.makeTempDir()
