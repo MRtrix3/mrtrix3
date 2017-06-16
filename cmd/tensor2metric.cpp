@@ -80,6 +80,10 @@ void usage ()
             "principal (1) and minor (3) eigenvalues/eigenvectors (default = 1).")
   + Argument ("sequence").type_sequence_int()
 
+  + Option ("abs",
+            "sort eigenvalues in order of decreasing absolute value, rather than actual "
+            "value (the default). This interacts with the -num option above.")
+
   + Option ("modulate",
             "specify how to modulate the magnitude of the eigenvectors. Valid choices "
             "are: none, FA, eigval (default = FA).")
@@ -115,7 +119,8 @@ class Processor { MEMALIGN(Processor)
         Image<value_type>& value_img, 
         Image<value_type>& vector_img, 
         vector<int>& vals, 
-        int modulate) :
+        int modulate,
+        bool sort_by_abs) :
       mask_img (mask_img),
       adc_img (adc_img),
       fa_img (fa_img),
@@ -127,7 +132,8 @@ class Processor { MEMALIGN(Processor)
       value_img (value_img),
       vector_img (vector_img),
       vals (vals),
-      modulate (modulate) { }
+      modulate (modulate),
+      sort_by_abs (sort_by_abs) { }
 
     void operator() (Image<value_type>& dt_img)
     {
@@ -159,7 +165,7 @@ class Processor { MEMALIGN(Processor)
         fa_img.value() = fa;
       }
       
-      bool need_eigenvalues = value_img.valid() || (vector_img.valid() && (modulate == 2)) || ad_img.valid() || rd_img.valid() || cl_img.valid() || cp_img.valid() || cs_img.valid();
+      bool need_eigenvalues = value_img.valid() || (vector_img.valid() && (modulate == 2 || sort_by_abs)) || ad_img.valid() || rd_img.valid() || cl_img.valid() || cp_img.valid() || cs_img.valid();
       
       Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> es;
       if (need_eigenvalues || vector_img.valid()) {
@@ -174,8 +180,18 @@ class Processor { MEMALIGN(Processor)
       }
       
       Eigen::Vector3d eigval;
-      if (need_eigenvalues)
+      ssize_t ith_eig[3] = { 2, 1, 0 };
+      if (need_eigenvalues) {
         eigval = es.eigenvalues();
+        if (sort_by_abs) {
+          ith_eig[0] = 0; ith_eig[1] = 1; ith_eig[2] = 2;
+          std::sort (std::begin (ith_eig), std::end (ith_eig), 
+              [&eigval](size_t a, size_t b) { return std::abs(eigval[a]) > std::abs(eigval[b]); });
+        }
+        //std::cerr << ith_eig[0] << ": " << eigval[ith_eig[0]] << "; ";
+        //std::cerr << ith_eig[1] << ": " << eigval[ith_eig[1]] << "; ";
+        //std::cerr << ith_eig[2] << ": " << eigval[ith_eig[2]] << "\n";
+      }
         
       /* output value */
       if (value_img.valid()) {
@@ -183,10 +199,10 @@ class Processor { MEMALIGN(Processor)
         if (vals.size() > 1) {
           auto l = Loop(3)(value_img);
           for (size_t i = 0; i < vals.size(); i++) {
-            value_img.value() = eigval(3-vals[i]); l++;
+            value_img.value() = eigval(ith_eig[vals[i]]); l++;
           }
         } else {
-          value_img.value() = eigval(3-vals[0]);
+          value_img.value() = eigval(ith_eig[vals[0]]);
         }
       }
       
@@ -231,10 +247,10 @@ class Processor { MEMALIGN(Processor)
           if (modulate == 1)
             fact = fa;
           else if (modulate == 2)
-            fact = eigval(3-vals[i]);
-          vector_img.value() = eigvec(0,3-vals[i])*fact; l++;
-          vector_img.value() = eigvec(1,3-vals[i])*fact; l++;
-          vector_img.value() = eigvec(2,3-vals[i])*fact; l++;
+            fact = eigval(ith_eig[vals[i]]);
+          vector_img.value() = eigvec(0,ith_eig[vals[i]])*fact; l++;
+          vector_img.value() = eigvec(1,ith_eig[vals[i]])*fact; l++;
+          vector_img.value() = eigvec(2,ith_eig[vals[i]])*fact; l++;
         }
       }                   
     }
@@ -252,7 +268,15 @@ class Processor { MEMALIGN(Processor)
     Image<value_type> vector_img;
     vector<int> vals;
     int modulate;
+    bool sort_by_abs;
 };
+
+
+
+
+
+
+
 
 void run ()
 {
@@ -319,12 +343,16 @@ void run ()
   opt = get_options ("num");
   if (opt.size()) {
     vals = opt[0][0];
-  if (vals.empty())
-    throw Exception ("invalid eigenvalue/eigenvector number specifier");
-  for (size_t i = 0; i < vals.size(); ++i)
-    if (vals[i] < 1 || vals[i] > 3)
-      throw Exception ("eigenvalue/eigenvector number is out of bounds");
+    if (vals.empty())
+      throw Exception ("invalid eigenvalue/eigenvector number specifier");
+    for (size_t i = 0; i < vals.size(); ++i) {
+      if (vals[i] < 1 || vals[i] > 3)
+        throw Exception ("eigenvalue/eigenvector number is out of bounds");
+      --vals[i];
+    }
   }
+
+  bool sort_by_abs = get_options ("abs").size();
 
   float modulate = get_option_value ("modulate", 1);
 
@@ -348,5 +376,5 @@ void run ()
   }
   
   ThreadedLoop ("computing metrics", dt_img, 0, 3)
-    .run (Processor (mask_img, adc_img, fa_img, ad_img, rd_img, cl_img, cp_img, cs_img, value_img, vector_img, vals, modulate), dt_img);
+    .run (Processor (mask_img, adc_img, fa_img, ad_img, rd_img, cl_img, cp_img, cs_img, value_img, vector_img, vals, modulate, sort_by_abs), dt_img);
 }
