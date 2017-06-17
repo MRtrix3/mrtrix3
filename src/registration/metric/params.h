@@ -163,10 +163,14 @@ namespace MR
               header.ndim() = 4;
               header.size(3) = 3;
               // auto check = Image<float>::scratch (header);
-              auto check = Image<default_type>::create (image_path, header);
-
               auto trafo1 = transformation.get_transform_half();
               auto trafo2 = transformation.get_transform_half_inverse();
+
+              header.keyval()["control_points"] = str(control_points);
+              header.keyval()["trafo1"] = str(trafo1.matrix());
+              header.keyval()["trafo2"] = str(trafo2.matrix());
+              auto check = Image<default_type>::create (image_path, header);
+
 
               Adapter::Reslice<Interp::Linear, Im1ImageType > im1_reslicer (
                 im1_image, midway_image, trafo1, Adapter::AutoOverSample, NAN);
