@@ -14,6 +14,7 @@
 
 #include "math/stats/glm.h"
 
+#include "bitset.h"
 #include "debug.h"
 
 #define GLM_BATCH_SIZE 1024
@@ -204,9 +205,11 @@ namespace MR
 
 
 
-      GLMTTestVariable::GLMTTestVariable (const vector<CohortDataImport>& importers, const matrix_type& measurements, const matrix_type& design, const matrix_type& contrasts) :
+      GLMTTestVariable::GLMTTestVariable (const vector<CohortDataImport>& importers, const matrix_type& measurements, const matrix_type& design, const matrix_type& contrasts, const bool nans_in_data, const bool nans_in_columns) :
           GLMTestBase (measurements, design, contrasts),
-          importers (importers)
+          importers (importers),
+          nans_in_data (nans_in_data),
+          nans_in_columns (nans_in_columns)
       {
         // Make sure that the specified contrasts reflect the full design matrix (with additional
         //   data loaded)
@@ -241,12 +244,56 @@ namespace MR
           for (ssize_t col = 0; col != ssize_t(importers.size()); ++col)
             extra_data.col(col) = importers[col] (element);
 
-          // Make sure the data from the additional columns is appropriately permuted
-          //   (i.e. in the same way as what the fixed portion of the design matrix experienced)
-          for (ssize_t row = 0; row != X.rows(); ++row)
-            SX.block(row, X.cols(), 1, importers.size()) = extra_data.row(perm_labelling[row]);
+          // If there are non-finite values present either in the input
+          //   data or the element-wise design matrix columns (or both),
+          //   need to track which rows are being kept / discarded
+          BitSet row_mask (X.rows(), true);
+          if (nans_in_data) {
+            for (ssize_t row = 0; row != y.rows(); ++row) {
+              if (!std::isfinite (y (row, element)))
+                row_mask[row] = false;
+            }
+          }
+          if (nans_in_columns) {
+            // Bear in mind that we need to test for finite values in the
+            //   row in which this data is going to be written to based on
+            //   the permutation labelling
+            for (ssize_t row = 0; row != extra_data.rows(); ++row) {
+              if (!extra_data.row (perm_labelling[row]).allFinite())
+                row_mask[row] = false;
+            }
+          }
 
-          ttest (tvalues, SX, y.row(element), betas, residuals);
+          // Do we need to reduce the size of our matrices / vectors
+          //   based on the presence of non-finite values?
+          if (row_mask.full()) {
+
+            // Make sure the data from the additional columns is appropriately permuted
+            //   (i.e. in the same way as what the fixed portion of the design matrix experienced)
+            for (ssize_t row = 0; row != X.rows(); ++row)
+              SX.block(row, X.cols(), 1, importers.size()) = extra_data.row (perm_labelling[row]);
+
+            ttest (tvalues, SX, y.row(element), betas, residuals);
+
+          } else {
+
+            const ssize_t new_num_rows = row_mask.count();
+            vector_type y_masked (new_num_rows);
+            matrix_type SX_masked (new_num_rows, X.cols() + importers.size());
+            ssize_t new_row = 0;
+            for (ssize_t old_row = 0; old_row != X.rows(); ++old_row) {
+              if (row_mask[old_row]) {
+                y_masked[new_row] = y(old_row, element);
+                SX_masked.block (new_row, 0, 1, X.cols()) = SX.block (old_row, 0, 1, X.cols());
+                SX_masked.block (new_row, X.cols(), 1, importers.size()) = extra_data.row (perm_labelling[old_row]);
+                ++new_row;
+              }
+            }
+            assert (new_row == new_num_rows);
+
+            ttest (tvalues, SX_masked, y_masked, betas, residuals);
+
+          }
 
           // FIXME
           // Currently output only the first contrast, as is done in GLMTTestFixed

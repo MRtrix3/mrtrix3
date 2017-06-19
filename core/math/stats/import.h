@@ -64,6 +64,8 @@ namespace MR
 
           const std::string& name() const { return path; }
 
+          virtual size_t size() const = 0;
+
         protected:
           const std::string path;
 
@@ -101,6 +103,8 @@ namespace MR
             assert (i < files.size());
             return files[i];
           }
+
+          bool allFinite() const;
 
         protected:
           vector<std::shared_ptr<SubjectDataImportBase>> files;

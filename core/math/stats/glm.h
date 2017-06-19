@@ -200,7 +200,7 @@ namespace MR
       // Is it to do with the data fetching?
       class GLMTTestVariable : public GLMTestBase { MEMALIGN(GLMTTestVariable)
         public:
-          GLMTTestVariable (const vector<CohortDataImport>& importers, const matrix_type& measurements, const matrix_type& design, const matrix_type& contrasts);
+          GLMTTestVariable (const vector<CohortDataImport>& importers, const matrix_type& measurements, const matrix_type& design, const matrix_type& contrasts, const bool nans_in_data, const bool nans_in_columns);
 
           /*! Compute the t-statistics
            * @param perm_labelling a vector to shuffle the rows in the design matrix (for permutation testing)
@@ -220,6 +220,7 @@ namespace MR
 
         protected:
           const vector<CohortDataImport>& importers;
+          const bool nans_in_data, nans_in_columns;
 
           //! generic GLM t-test
           /*! This version of the t-test function does not incorporate the

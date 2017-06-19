@@ -152,18 +152,20 @@ class SubjectFixelImport : public SubjectDataImportBase
 
     void operator() (matrix_type::ColXpr column) const override
     {
-      assert (column.rows() == data.size(0));
+      assert (column.rows() == size());
       Image<float> temp (data); // For thread-safety
       column = temp.row(0);
     }
 
     default_type operator[] (const size_t index) const override
     {
-      assert (index < size_t(data.size(0)));
+      assert (index < size());
       Image<float> temp (data); // For thread-safety
       temp.index(0) = index;
       return default_type(temp.value());
     }
+
+    size_t size() const override { return data.size(0); }
 
     const Header& header() const { return H; }
 
@@ -267,13 +269,18 @@ void run()
   // Before validating the contrast matrix, we first need to see if there are any
   //   additional design matrix columns coming from fixel-wise subject data
   vector<CohortDataImport> extra_columns;
+  bool nans_in_columns = false;
   opt = get_options ("column");
   for (size_t i = 0; i != opt.size(); ++i) {
     extra_columns.push_back (CohortDataImport());
     extra_columns[i].initialise<SubjectFixelImport> (opt[i][0]);
+    if (!extra_columns[i].allFinite())
+      nans_in_columns = true;
   }
   if (extra_columns.size()) {
     CONSOLE ("number of element-wise design matrix columns: " + str(extra_columns.size()));
+    if (nans_in_columns)
+      INFO ("Non-finite values detected in element-wise design matrix columns; individual rows will be removed from fixel-wise design matrices accordingly");
   }
 
   if (contrast.cols() != design.cols() + ssize_t(extra_columns.size()))
@@ -352,13 +359,11 @@ void run()
 
       // Normalise smoothing weights
       value_type sum = 0.0;
-      for (auto smooth_it = smoothing_weights[fixel].begin(); smooth_it != smoothing_weights[fixel].end(); ++smooth_it) {
+      for (auto smooth_it = smoothing_weights[fixel].begin(); smooth_it != smoothing_weights[fixel].end(); ++smooth_it)
         sum += smooth_it->second;
-      }
-      value_type norm_factor = 1.0 / sum;
-      for (auto smooth_it = smoothing_weights[fixel].begin(); smooth_it != smoothing_weights[fixel].end(); ++smooth_it) {
+      const value_type norm_factor = 1.0 / sum;
+      for (auto smooth_it = smoothing_weights[fixel].begin(); smooth_it != smoothing_weights[fixel].end(); ++smooth_it)
         smooth_it->second *= norm_factor;
-      }
       progress++;
     }
   }
@@ -375,9 +380,8 @@ void run()
 
 
   // Load input data
-  matrix_type data (num_fixels, importer.size());
-  data.setZero();
-
+  matrix_type data = matrix_type::Zero (num_fixels, importer.size());
+  bool nans_in_data = false;
   {
     ProgressBar progress ("loading input images", importer.size());
     for (size_t subject = 0; subject < importer.size(); subject++) {
@@ -385,23 +389,41 @@ void run()
       // Smooth the data
       vector_type smoothed_data (vector_type::Zero (num_fixels));
       for (size_t fixel = 0; fixel < num_fixels; ++fixel) {
-        value_type value = 0.0;
-        std::map<uint32_t, connectivity_value_type>::const_iterator it = smoothing_weights[fixel].begin();
-        for (; it != smoothing_weights[fixel].end(); ++it)
-          value += data (it->first, subject) * it->second;
-        smoothed_data (fixel) = value;
+        if (std::isfinite (data (fixel, subject))) {
+          value_type value = 0.0, sum_weights = 0.0;
+          std::map<uint32_t, connectivity_value_type>::const_iterator it = smoothing_weights[fixel].begin();
+          for (; it != smoothing_weights[fixel].end(); ++it) {
+            if (std::isfinite (data (it->first, subject))) {
+              value += data (it->first, subject) * it->second;
+              sum_weights += it->second;
+            }
+          }
+          if (sum_weights)
+            smoothed_data (fixel) = value / sum_weights;
+          else
+            smoothed_data (fixel) = NaN;
+        } else {
+          smoothed_data (fixel) = NaN;
+        }
       }
-      if (!smoothed_data.allFinite())
-        throw Exception ("Input fixel data \"" + importer[subject]->name() + "\" contains at least one non-finite value");
       data.col (subject) = smoothed_data;
+      if (!smoothed_data.allFinite())
+        nans_in_data = true;
     }
     progress++;
   }
+  if (nans_in_data) {
+    INFO ("Non-finite values present in data; rows will be removed from fixel-wise design matrices accordingly");
+    if (!extra_columns.size()) {
+      INFO ("(Note that this will result in slower execution than if such values were not present)");
+    }
+  }
+
 
   // Construct the class for performing the initial statistical tests
   std::shared_ptr<GLMTestBase> glm_test;
-  if (extra_columns.size()) {
-    glm_test.reset (new GLMTTestVariable (extra_columns, data, design, contrast));
+  if (extra_columns.size() || nans_in_data) {
+    glm_test.reset (new GLMTTestVariable (extra_columns, data, design, contrast, nans_in_data, nans_in_columns));
   } else {
     glm_test.reset (new GLMTTestFixed (data, design, contrast));
   }

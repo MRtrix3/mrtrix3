@@ -37,6 +37,20 @@ namespace MR
 
 
 
+      bool CohortDataImport::allFinite() const
+      {
+        for (size_t i = 0; i != files.size(); ++i) {
+          for (size_t j = 0; j != files[i]->size(); ++j) {
+            if ((*files[i])[j])
+              return false;
+          }
+        }
+        return true;
+      }
+
+
+
+
     }
   }
 }
