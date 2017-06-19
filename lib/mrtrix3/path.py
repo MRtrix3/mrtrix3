@@ -16,7 +16,7 @@ def commonPostfix(inputFiles):
       if found == False:
         common = first[len(first)-cursor-1] + common
       cursor += 1
-  app.debug('Common postfix of ' + str(len(inputFiles)) + ' is \'' + common + '\'')
+  app.debug('Common postfix of ' + str(len(inputFiles)) + ' items is \'' + common + '\'')
   return common
 
 

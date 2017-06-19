@@ -37,7 +37,6 @@ app.parse()
 # Find out which algorithm the user has requested
 alg = algorithm.getModule(app.args.algorithm)
 
-app.checkOutputPath(app.args.output)
 alg.checkOutputPaths()
 
 app.makeTempDir()

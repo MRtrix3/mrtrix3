@@ -10,7 +10,8 @@ def initialise(base_parser, subparsers):
 
 
 def checkOutputPaths():
-  pass
+  from mrtrix3 import app
+  app.checkOutputPath(app.args.output)
 
 
 

@@ -25,7 +25,6 @@ def getList():
     if len(filename) == 2 and filename[1] == 'py' and not filename[0] == '__init__':
       algorithm_list.append(filename[0])
   algorithm_list = sorted(algorithm_list)
-  app.debug('Found algorithms: ' + str(algorithm_list))
   return algorithm_list
 
 
@@ -43,7 +42,6 @@ def initialise():
     module = importlib.import_module('mrtrix3.' + path.scriptSubDirName() + '.' + package_name)
     module.initialise(base_parser, subparsers)
     initlist.extend(package_name)
-  app.debug('Initialised algorithms: ' + str(initlist))
 
 
 

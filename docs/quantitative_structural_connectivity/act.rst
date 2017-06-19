@@ -28,6 +28,10 @@ Image registration
 
 My personal preference is to register the T1-contrast anatomical image to the diffusion image series before any further processing of the T1 image is performed. By registering the T1 image to the diffusion series rather than the other way around, reorientation of the diffusion gradient table is not necessary; and by doing this registration before subsequent T1 processing, any subsequent images derived from the T1 are inherently aligned with the diffusion image series. This registration should be rigid-body only; if the DWI distortion correction is effective, a higher-order registration is likely to only introduce errors.
 
+.. NOTE::
+
+    Some software used for registration may, by default, automatically re-sample the moving image to the voxel grid of the static image. In the case of T1-to-_b_=0 image registration, this results in down-sampling of the T1 image. This is not only not ideal for ACT (which is designed to be able to exploit the higher spatial resolution of tissue segmentation), but may cause issues if trying to run tissue segmentation algorithms. For instance: ``5ttgen fsl`` (specifically the ``run_first_all`` component) regularly fails if provided with a T1 image that has been resampled to match the corresponding diffusion images. Therefore, regardless of whether image registration is performed before or after tissue segmentation in preparation for ACT, we recommend that you check that the spatial resolution of the T1 image has not decreased during tissue segmentation.
+
 DWI pre-processing
 ^^^^^^^^^^^^^^^^^^
 
@@ -36,7 +40,7 @@ Because the anatomical image is used to limit the spatial extent of streamlines 
 Tissue segmentation
 ^^^^^^^^^^^^^^^^^^^
 
-So far I have had success with using FSL tools to also perform the anatomical image segmentation; FAST is not perfect, but in most cases it's good enough, and most alternative software I tried provided binary mask images only, which is not ideal. The ``5ttgen`` script using the ``fsl`` algorithm interfaces with FSL to generate the necessary image data from the raw T1 image, using BET, FAST and FIRST. Note that this script also crops the resulting image so that it contains no more than the extracted brain (as this reduces the file size and therefore improves memory access performance during tractography); if you want the output image to possess precisely the same dimensions as the input T1 image, you can use the ``-nocrop`` option.
+So far I have had success with using FSL tools to also perform the anatomical image segmentation; FAST is not perfect, but in most cases it's good enough, and most alternative software I tried provided binary mask images only, which is not ideal. The ``5ttgen`` script using the ``fsl`` algorithm interfaces with FSL to generate the necessary image data from a T1 image, using BET, FAST and FIRST. Note that this script also crops the resulting image so that it contains no more than the extracted brain (as this reduces the file size and therefore improves memory access performance during tractography); if you want the output image to possess precisely the same dimensions as the input T1 image, you can use the ``-nocrop`` option.
 
 Using ACT
 ---------
