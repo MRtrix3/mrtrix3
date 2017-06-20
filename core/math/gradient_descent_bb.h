@@ -126,6 +126,8 @@ namespace MR
             dt = func.init (x1);
             f = evaluate_func (x1, g1, verbose);
             normg = g1.norm();
+            if (normg == 0.0)
+              return;
             assert(std::isfinite(normg)); assert(!std::isnan(normg));
             dt /= normg;
             if (verbose) {
@@ -170,7 +172,7 @@ namespace MR
 
           bool iterate (std::ostream& log_os) {
             assert (std::isfinite (normg));
-            if (!update_func (x3, x2, g2, dt))
+            if ((normg == 0.0) or !update_func (x3, x2, g2, dt))
               return false;
 
             f = evaluate_func (x3, g3, verbose);
