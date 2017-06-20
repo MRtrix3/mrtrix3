@@ -75,8 +75,8 @@ namespace MR
                     im1_mask (im1_mask),
                     im2_mask (im2_mask),
                     loop_density (1.0),
-                    robust_estimate (false),
-                    control_point_exent (10.0, 10.0, 10.0) {
+                    control_point_exent (10.0, 10.0, 10.0),
+                    robust_estimate (false) {
                       im1_image_interp.reset (new Im1ImageInterpType (im1_image));
                       im2_image_interp.reset (new Im2ImageInterpType (im2_image));
                       if (im1_mask.valid())
@@ -171,11 +171,11 @@ namespace MR
               header.keyval()["trafo2"] = str(trafo2.matrix());
               auto check = Image<default_type>::create (image_path, header);
 
-
+              vector<int> no_oversampling;
               Adapter::Reslice<Interp::Linear, Im1ImageType > im1_reslicer (
-                im1_image, midway_image, trafo1, Adapter::AutoOverSample, NAN);
+                im1_image, midway_image, trafo1, no_oversampling, NAN);
               Adapter::Reslice<Interp::Linear, Im2ImageType > im2_reslicer (
-                im2_image, midway_image, trafo2, Adapter::AutoOverSample, NAN);
+                im2_image, midway_image, trafo2, no_oversampling, NAN);
 
               auto T = MR::Transform(midway_image).voxel2scanner;
               Eigen::Vector3 midway_point, voxel_pos, im1_point, im2_point;
@@ -201,6 +201,13 @@ namespace MR
                   if (im2_mask_interp->value() <= 0.5)
                     check.value() = NAN;
                 }
+                if (processed_mask.valid()) {
+                  processed_mask.index(0) = voxel_pos(0);
+                  processed_mask.index(1) = voxel_pos(1);
+                  processed_mask.index(2) = voxel_pos(2);
+                  check.index(3) = 2;
+                  check.value() = processed_mask.value();
+                }
                 check.index(3) = 0;
               }
               INFO("diagnostics image written");
@@ -218,8 +225,11 @@ namespace MR
           MR::copy_ptr<Im1MaskInterpolatorType> im1_mask_interp;
           MR::copy_ptr<Im2MaskInterpolatorType> im2_mask_interp;
           default_type loop_density;
-          bool robust_estimate;
           Eigen::Vector3 control_point_exent;
+
+          bool robust_estimate;
+          MR::vector<int> robust_from;
+          MR::vector<int> robust_size;
           Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
           vector<size_t> extent;
           vector<MultiContrastSetting> mc_settings;

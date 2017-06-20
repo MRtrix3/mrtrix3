@@ -23,8 +23,8 @@ namespace MR
 
     const char* linear_metric_choices[] = { "diff", "ncc", nullptr };
     const char* linear_robust_estimator_choices[] = { "l1", "l2", "lp", nullptr };
-    const char* linear_optimisation_algo_choices[] = { "bbgd", "gd", nullptr };
-    const char* optim_algo_names[] = { "BBGD", "GD", nullptr };
+    const char* linear_optimisation_algo_choices[] = { "bbgd", "gd", "bbgd_robust", nullptr };
+    const char* optim_algo_names[] = { "BBGD", "GD", "BBGD_robust", nullptr };
     const char* transformProjectionTypeName[] = { "rigid", "affine", "affine_nonsym", nullptr };
 
     // define parameters of initialisation methods used for both, rigid and affine registration
@@ -38,6 +38,9 @@ namespace MR
         case 1:
           registration.set_stage_optimiser_default (Registration::OptimiserAlgoType::gd);
           break;
+        case 2:
+          registration.set_stage_optimiser_default (Registration::OptimiserAlgoType::bbgd_robust);
+          break;
         }
       }
 
@@ -49,6 +52,9 @@ namespace MR
           break;
         case 1:
           registration.set_stage_optimiser_first (Registration::OptimiserAlgoType::gd);
+          break;
+        case 2:
+          registration.set_stage_optimiser_first (Registration::OptimiserAlgoType::bbgd_robust);
           break;
         }
       }
@@ -62,12 +68,18 @@ namespace MR
         case 1:
           registration.set_stage_optimiser_last (Registration::OptimiserAlgoType::gd);
           break;
+        case 2:
+          registration.set_stage_optimiser_last (Registration::OptimiserAlgoType::bbgd_robust);
+          break;
         }
       }
 
       opt = get_options("linstage.iterations");
       if (opt.size()) {
         vector<int> iterations = parse_ints (opt[0][0]);
+        registration.set_stage_iterations (iterations);
+      } else {
+        vector<int> iterations (1,1);
         registration.set_stage_iterations (iterations);
       }
 

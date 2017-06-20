@@ -34,6 +34,12 @@ namespace MR
           assert (x.size() == 12);
           assert (g.size() == 12);
 
+          if ((g.array() == 0).all()) {
+            DEBUG ("gradient zero");
+            newx = x;
+            return false;
+          }
+
           Eigen::Matrix<default_type, 12, 1> delta;
           Eigen::Matrix<default_type, 4, 4> X, Delta, G, A, Asqrt, B, Bsqrt, Bsqrtinv, Xnew, P, Diff, XnewP;
           Registration::Transform::param_vec2mat(g, G);

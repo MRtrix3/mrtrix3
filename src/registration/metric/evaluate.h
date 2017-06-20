@@ -117,7 +117,10 @@ namespace MR
               {
                 overlap_count = 0;
                 ThreadKernel<MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient, &overlap_count);
+                {
+                  LogLevelLatch log_level (0);
                   ThreadedLoop (params.processed_image, 0, 3).run (kernel);
+                }
               }
               DEBUG ("Metric evaluate iteration: " + str(iteration++) + ", cost: " + str(overall_cost_function.transpose()));
               DEBUG ("  x: " + str(x.transpose()));
@@ -127,39 +130,43 @@ namespace MR
               return overall_cost_function(0);
             }
 
-            template <class TransformType_>
-              void estimate (TransformType_&& trafo,
-                  const MetricType& metric,
-                  const ParamType& params,
-                  Eigen::VectorXd& cost,
-                  Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient,
-                  const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,
-                  ssize_t* overlap_count = nullptr) {
+            // template <class TransformType_>
+            //   void estimate (TransformType_&& trafo,
+            //       const MetricType& metric,
+            //       const ParamType& params,
+            //       Eigen::VectorXd& cost,
+            //       Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient,
+            //       const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,
+            //       ssize_t* overlap_count = nullptr) {
 
-                if (params.robust_estimate) {
-                  throw Exception ("TODO robust estimate not implemented");
-                }
-                if (params.loop_density < 1.0) {
-                  DEBUG ("stochastic gradient descent, density: " + str(params.loop_density));
-                  Math::RNG rng;
-                  gradient.setZero();
-                  auto loop = ThreadedLoop (params.midway_image, 0, 3, 2);
-                  if (overlap_count)
-                    *overlap_count = 0;
-                  StochasticThreadKernel <MetricType, ParamType> functor (loop.inner_axes, params.loop_density, metric, params, cost, gradient, rng, overlap_count);
-                  loop.run_outer (functor);
-                }
-                else {
-                  if (overlap_count)
-                    *overlap_count = 0;
-                  ThreadKernel <MetricType, ParamType> kernel (metric, params, cost, gradient, overlap_count);
-                  ThreadedLoop (params.midway_image, 0, 3).run (kernel);
-                }
-              }
+            //     if (params.loop_density < 1.0) {
+            //       DEBUG ("stochastic gradient descent, density: " + str(params.loop_density));
+            //       Math::RNG rng;
+            //       gradient.setZero();
+            //       auto loop = ThreadedLoop (params.midway_image, 0, 3, 2);
+            //       if (overlap_count)
+            //         *overlap_count = 0;
+            //       StochasticThreadKernel <MetricType, ParamType> functor (loop.inner_axes, params.loop_density, metric, params, cost, gradient, rng, overlap_count);
+            //       loop.run_outer (functor);
+            //     }
+            //     else {
+            //       if (overlap_count)
+            //         *overlap_count = 0;
+            //       ThreadKernel <MetricType, ParamType> kernel (metric, params, cost, gradient, overlap_count);
+
+            //       if (params.robust_estimate) {
+            //         assert(params.robust_from.size());
+            //         assert(params.robust_size.size());
+            //         Adapter::Subset<Image<default_type>> midway_subset (params.midway_image, params.robust_from, params.robust_size);
+            //         ThreadedLoop (midway_subset, 0, 3).run (kernel);
+            //       } else {
+            //         ThreadedLoop (params.midway_image, 0, 3).run (kernel);
+            //       }
+            //     }
+            //   }
 
             template <class U = MetricType>
             default_type operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x, Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient, typename metric_requires_precompute<U>::no = 0) {
-
               Eigen::VectorXd overall_cost_function = Eigen::VectorXd::Zero(1,1);
               gradient.setZero();
               params.transformation.set_parameter_vector(x);
@@ -188,7 +195,32 @@ namespace MR
                 params.set_im2_iterpolator (*im2_image_reoriented);
               }
 
-              estimate (params.transformation, metric, params, overall_cost_function, gradient, x, &overlap_count);
+              // estimate (params.transformation, metric, params, overall_cost_function, gradient, x, &overlap_count);
+              if (params.loop_density < 1.0) {
+                DEBUG ("stochastic gradient descent, density: " + str(params.loop_density));
+                Math::RNG rng;
+                gradient.setZero();
+                auto loop = ThreadedLoop (params.midway_image, 0, 3, 2);
+                overlap_count = 0;
+                StochasticThreadKernel <MetricType, ParamType> functor (loop.inner_axes, params.loop_density, metric, params, overall_cost_function, gradient, rng, &overlap_count);
+                {
+                  LogLevelLatch log_level (0);
+                  loop.run_outer (functor);
+                }
+              } else {
+                overlap_count = 0;
+                ThreadKernel <MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient, &overlap_count);
+                if (params.robust_estimate) {
+                  assert(params.robust_from.size() == 3);
+                  assert(params.robust_size.size() == 3);
+                  Adapter::Subset<decltype(params.processed_mask)> subset (params.processed_mask, params.robust_from, params.robust_size);
+                  LogLevelLatch log_level (0);
+                  ThreadedLoop (subset, 0, 3).run (kernel);
+                } else {
+                  LogLevelLatch log_level (0);
+                  ThreadedLoop (params.midway_image, 0, 3).run (kernel);
+                }
+              }
 
               DEBUG ("Metric evaluate iteration: " + str(iteration++) + ", cost: " + str(overall_cost_function.transpose()));
               DEBUG ("  x: " + str(x.transpose()));
@@ -211,7 +243,7 @@ namespace MR
               return 1.0;
             }
 
-            void set_directions (Eigen::MatrixXd& dir) {
+            void set_directions (const Eigen::MatrixXd& dir) {
               directions = dir;
             }
 
