@@ -61,7 +61,15 @@ void usage ()
 
   + Option ("maxiter",
             "the maximum number of iterations of the conjugate gradient solver. (default = " + str(DEFAULT_MAXITER) + ")")
-    + Argument ("n").type_integer(1);
+    + Argument ("n").type_integer(1)
+    
+  + Option ("rpred",
+            "output predicted signal in original (rotated) directions. (useful for registration)")
+    + Argument ("out").type_image_out()
+  
+  + Option ("spred",
+            "output source prediction of all scattered slices. (useful for diagnostics)")
+    + Argument ("out").type_image_out();
 
 }
 
@@ -157,6 +165,32 @@ void run ()
   j = 0;
   for (auto l = Loop("writing result to image", {0, 1, 2, 3})(out); l; l++, j++) {
     out.value() = x[j];
+  }
+
+
+  // Output registration prediction
+  opt = get_options("rpred");
+  if (opt.size()) {
+    header.size(3) = R.getY().rows();
+    auto rpred = Image<value_type>::create(opt[0][0], header);
+    ThreadedLoop("saving registration prediction", out, 0, 3).run( [&](Image<value_type>& i, Image<value_type>& o)
+      { 
+        Eigen::VectorXf ir = i.row(3);
+        o.row(3) = R.getY() * ir; 
+      }  , out, rpred);
+  }
+
+
+  // Output source prediction
+  opt = get_options("spred");
+  if (opt.size()) {
+    header.size(3) = dwisub.size(3);
+    auto spred = Image<value_type>::create(opt[0][0], header);
+    Eigen::VectorXf p = R * x;
+    j = 0;
+    for (auto l = Loop("saving source prediction", {0, 1, 2, 3})(spred); l; l++, j++) {
+      spred.value() = p[j];
+    }
   }
 
 

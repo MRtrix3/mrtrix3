@@ -111,10 +111,9 @@ else:
     run.command('mrmath -axis 3 shell.mif mean b0init.mif')
     run.command('mrconvert -axes 0,1,2,-1 b0init.mif template.mif')
     run.command('mrcalc template.mif 0.282095 -divide recon-0.mif')
+sh2amp('sh2amp -gradient recon-0.mif grad.txt pred.mif')
 
 for k in range(niter):
-    # sample directions
-    run.command('sh2amp -gradient recon-'+str(k)+'.mif grad.txt pred.mif -force')
     # register template to volumes
     f = open('motion.txt', 'w')
     for v in range(dims[3]):
@@ -132,7 +131,7 @@ for k in range(niter):
         f.write(tra + ' ' + rot + '\n')
     f.close()
     # update template
-    run.command('dwirecon shell.mif recon-'+str(k+1)+'.mif -lmax '+str(lmax)+' -motion motion.txt')
+    run.command('dwirecon shell.mif recon-'+str(k+1)+'.mif -lmax '+str(lmax)+' -motion motion.txt -rpred pred.mif -force')
 
 run.command('mrconvert recon-'+str(niter)+'.mif result.mif')
 
