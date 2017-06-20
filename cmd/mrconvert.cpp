@@ -317,8 +317,9 @@ void run ()
       if (*maxval >= header_in.size(axis))
         throw Exception ("coordinate position " + str(*maxval) + " for axis " + str(axis) + " provided with -coord option is out of range of input image");
 
+      header_out.size (axis) = pos[axis].size();
       if (axis == 3) {
-        const auto grad = DWI::get_DW_scheme (header_out);
+        const auto grad = DWI::get_DW_scheme (header_in);
         if (grad.rows()) {
           if ((ssize_t)grad.rows() != header_in.size(3)) {
             WARN ("Diffusion encoding of input file does not match number of image volumes; omitting gradient information from output image");
@@ -332,7 +333,7 @@ void run ()
         }
         Eigen::MatrixXd pe_scheme;
         try {
-          pe_scheme = PhaseEncoding::parse_scheme (header_out);
+          pe_scheme = PhaseEncoding::get_scheme (header_in);
           if (pe_scheme.rows()) {
             Eigen::MatrixXd extract_scheme (pos[3].size(), pe_scheme.cols());
             for (size_t vol = 0; vol != pos[3].size(); ++vol)
