@@ -21,6 +21,7 @@
 #include <algorithm>
 
 #include "types.h"
+#include "app.h"
 
 
 namespace MR
@@ -107,7 +108,7 @@ namespace MR
         }
         dist[i] = sdist;
         if (denum == 0.0 or std::isnan(denum)){
-          WARN( "Couldn't compute geometric median!" );
+          WARN ("Could not compute geometric median!" );
           break;
         }
 
@@ -118,7 +119,7 @@ namespace MR
         ++i;
       }
       if (i == numIter)
-        WARN( "Weiszfeld's median algorithm did not converge after "+str(numIter)+" iterations");
+        WARN ("Weiszfeld's median algorithm did not converge after "+str(numIter)+" iterations");
       // std::cerr << str(dist) << std::endl;
       return convergence;
     }
