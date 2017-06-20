@@ -182,6 +182,7 @@ inline vector<int> set_header (Header& header, const ImageType& input)
       if (axes[i] >= static_cast<int> (input.ndim()))
         throw Exception ("axis supplied to option -axes is out of bounds");
       header.size(i) = axes[i] < 0 ? 1 : input.size (axes[i]);
+      header.spacing(i) = axes[i] < 0 ? NaN : input.spacing (axes[i]);
     }
     permute_DW_scheme (header, axes);
     permute_PE_scheme (header, axes);
