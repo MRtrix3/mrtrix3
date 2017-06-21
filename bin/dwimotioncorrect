@@ -37,6 +37,8 @@ options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass
 options.add_argument('-niter', help='Number of epochs (default = 3)')
 options.add_argument('-shell', help='Shell to be processed (default = 0)')
 options.add_argument('-lmax', help='SH basis order (default = 0)')
+options.add_argument('-svr', help='Number of slice-to-volume reconstruction epochs (default = 0).')
+options.add_argument('-mb', help='Multiband factor (default = 1)')
 app.cmdline.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
 app.parse()
 
@@ -78,9 +80,13 @@ else:
 
 
 # Set no. iterations
-niter = 3
+v2viter = 3
 if app.args.niter:
-    niter = int(app.args.niter)
+    s2viter = int(app.args.niter)
+s2viter = 0
+if app.args.svr:
+    s2viter = int(app.args.svr)
+niter = v2viter + s2viter
 
 # Set shell
 shell = 0
@@ -93,6 +99,12 @@ if app.args.lmax:
     lmax = int(app.args.lmax)
 if shell==0 and lmax>0:
     app.error('Option -lmax ' + str(lmax) + ' incompatible with b=0 shell.')
+
+# Set multiband factor
+mb = 1
+if app.args.mb:
+    mb = int(app.args.mb)
+
 
 
 #   __________ Motion correction __________
@@ -113,7 +125,8 @@ else:
     run.command('mrcalc template.mif 0.282095 -divide recon-0.mif')
 run.command('sh2amp -gradient recon-0.mif grad.txt pred.mif')
 
-for k in range(niter):
+# volume-to-volume registration
+for k in range(v2viter):
     # register template to volumes
     f = open('motion.txt', 'w')
     for v in range(dims[3]):
@@ -121,7 +134,7 @@ for k in range(niter):
         run.command('mrconvert -coord 3 ' + str(v) + ' shell.mif target.mif -force')
         run.command('mrreg_lin template.mif target.mif -nonsymmetric -mask2 mask.mif' +
                     ' -type rigid ' + ('-affine_init T-'+str(v)+'.txt' if k>0 else '') +
-                    ' -affine_scale ' + str(0.3 + 0.7*k/(niter-1.0)) + ' -affine T-'+str(v)+'.txt -force')
+                    ' -affine_scale ' + str(0.3 + 0.7*k/(v2viter-1.0)) + ' -affine T-'+str(v)+'.txt -force')
         run.command('transformcalc T-'+str(v)+'.txt decompose trafo.txt -force')
         f2 = open('trafo.txt')
         L = f2.readlines()
@@ -132,6 +145,35 @@ for k in range(niter):
     f.close()
     # update template
     run.command('dwirecon shell.mif recon-'+str(k+1)+'.mif -lmax '+str(lmax)+' -motion motion.txt -rpred pred.mif -force')
+
+# slice-to-volume registration
+for k in range(s2viter):
+    # register template to slices
+    f = open('motion.txt', 'w')
+    for v in range(dims[3]):
+        volmotion = ''
+        if k == 0:
+            run.command('mrconvert -coord 3 ' + str(v) + ' pred.mif template.mif -force')
+        run.command('mrconvert -coord 3 ' + str(v) + ' shell.mif target.mif -force')
+        for s in range(dims[2]/mb):
+            run.command('maskslice -mb ' + str(mb) + ' mask.mif ' + str(s) + ' slicemask.mif -force')
+            if k > 0:
+                run.command('mrconvert -coord 3 ' + str(v*dims[2] + s) + ' pred.mif template.mif -force')
+            run.command('mrreg_lin template.mif target.mif -nonsymmetric -mask2 slicemask.mif' +
+                    ' -type rigid -affine_init ' + ('T-'+str(v)+'-'+str(s)+'.txt' if k>0 else 'T-'+str(v)+'.txt') +
+                    ' -affine_scale ' + str(0.5 + 0.5*k/(s2viter-1.0)) + ' -affine T-'+str(v)+'-'+str(s)+'.txt -force')
+            run.command('transformcalc T-'+str(v)+'-'+str(s)+'.txt decompose trafo.txt -force')
+            f2 = open('trafo.txt')
+            L = f2.readlines()
+            f2.close()
+            tra = L[4].strip().split(':')[1].strip()    # translation
+            rot = L[2].strip().split(':')[1].strip()    # rotation
+            volmotion += tra + ' ' + rot + '\n'
+        for m in range(mb):
+            f.write(volmotion)
+    f.close()
+    # update template
+    run.command('dwirecon shell.mif recon-'+str(v2viter+k+1)+'.mif -lmax '+str(lmax)+' -motion motion.txt -rpred pred.mif -force')
 
 run.command('mrconvert recon-'+str(niter)+'.mif result.mif')
 
