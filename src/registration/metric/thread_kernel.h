@@ -95,14 +95,14 @@ namespace MR
             overall_gradient (overall_gradient),
             overall_cnt (overall_cnt),
             voxel2scanner (MR::Transform(params.midway_image).voxel2scanner) {
-              if (params.robust_estimate) {
+              if (params.robust_estimate_subset) {
                 // iterates over subset --> adjust voxel to scanner
-                assert (params.robust_from.size() == 3);
+                assert (params.robust_estimate_subset_from.size() == 3);
                 transform_type i2s (params.midway_image.transform());
                 auto spacing = Eigen::DiagonalMatrix<default_type, 3> (params.midway_image.spacing(0), params.midway_image.spacing(1), params.midway_image.spacing(2));
                 for (size_t j = 0; j < 3; ++j)
                   for (size_t i = 0; i < 3; ++i)
-                    i2s(i,3) += params.robust_from[j] * params.midway_image.spacing(j) * i2s(i,j);
+                    i2s(i,3) += params.robust_estimate_subset_from[j] * params.midway_image.spacing(j) * i2s(i,j);
                 voxel2scanner = i2s * spacing;
               }
               gradient.setZero();
@@ -122,6 +122,13 @@ namespace MR
               typename use_processed_image<U>::no = 0,
               typename cost_is_vector<U>::no = 0,
               typename is_asymmetric<U>::no = 0) {
+
+            if (!params.robust_estimate_subset && params.processed_mask.valid()) {
+              assign_pos_of(iter, 0 , 3).to(params.processed_mask);
+              if (params.processed_mask.value() < 0.5) {
+                return;
+              }
+            }
 
             Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
             Eigen::Vector3 midway_point = voxel2scanner * voxel_pos;
@@ -166,12 +173,21 @@ namespace MR
             Eigen::Vector3 im2_point = voxel2scanner * voxel_pos; // image 2 == midway_point == fixed image
 
             // shift voxel position as evaluate iterates over a subset of the image
-            if (params.robust_estimate) {
-              assert(params.robust_from.size() == 3);
-              voxel_pos[0] += params.robust_from[0];
-              voxel_pos[1] += params.robust_from[1];
-              voxel_pos[2] += params.robust_from[2];
+            if (params.robust_estimate_subset) {
+              assert(params.robust_estimate_subset_from.size() == 3);
+              voxel_pos[0] += params.robust_estimate_subset_from[0];
+              voxel_pos[1] += params.robust_estimate_subset_from[1];
+              voxel_pos[2] += params.robust_estimate_subset_from[2];
             }
+
+            if (!params.robust_estimate_subset && params.processed_mask.valid()) {
+              params.processed_mask.index(0) = voxel_pos[0];
+              params.processed_mask.index(1) = voxel_pos[1];
+              params.processed_mask.index(2) = voxel_pos[2];
+              if (params.processed_mask.value() < 0.5)
+                return;
+            }
+
             params.im2_image.index(0) = voxel_pos[0];
             params.im2_image.index(1) = voxel_pos[1];
             params.im2_image.index(2) = voxel_pos[2];

@@ -349,7 +349,7 @@ namespace MR
             }
 
             using MidwayImageType = Header;
-            using ProcessedImageType = Im1ImageType;
+            using ProcessedImageType = Im2ImageType;
             using ProcessedMaskType = Image<bool>;
 
             using Im1ImageInterpolatorType = Interp::LinearInterp<Im1ImageType, Interp::LinearInterpProcessingType::ValueAndDerivative>;
@@ -451,7 +451,7 @@ namespace MR
               stop.array() *= reg_stop_len;
               DEBUG ("coherence length: " + str(coherence));
               DEBUG ("stop length:      " + str(stop));
-              transform.get_gradient_descent_updator()->set_control_points (parameters.control_points, coherence, stop, spacing);
+              parameters.transformation.get_gradient_descent_updator()->set_control_points (parameters.control_points, coherence, stop, spacing);
 
               // convergence check using slope of smoothed parameter trajectories
               Eigen::VectorXd slope_threshold = Eigen::VectorXd::Ones (12);
@@ -480,18 +480,18 @@ namespace MR
               //CONF default: 10
               //CONF Linear registration: minimum number of iterations until convergence check is activated
               size_t min_iter (MR::File::Config::get_float ("reg_gd_convergence_min_iter", 10));
-              transform.get_gradient_descent_updator()->set_convergence_check (slope_threshold, alpha, beta, buffer_len, min_iter);
+              parameters.transformation.get_gradient_descent_updator()->set_convergence_check (slope_threshold, alpha, beta, buffer_len, min_iter);
 
               INFO ("registration stage running...");
               for (auto stage_iter = 1U; stage_iter <= stage.stage_iterations; ++stage_iter) {
-                transform.get_gradient_descent_updator()->set_projection_type (stage.transform_projector[stage_iter - 1]);
+                parameters.transformation.get_gradient_descent_updator()->set_projection_type (stage.transform_projector[stage_iter - 1]);
                 if (stage.gd_max_iter > 0) {
                   if (stage.optimisers[stage_iter - 1] == OptimiserAlgoType::bbgd) {
                     Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
                     if (do_reorientation && stage.fod_lmax > 0)
                       evaluate.set_directions (aPSF_directions);
                     Math::GradientDescentBB<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
-                      optim (evaluate, *transform.get_gradient_descent_updator());
+                      optim (evaluate, *parameters.transformation.get_gradient_descent_updator());
                     optim.be_verbose (analyse_descent);
                     optim.precondition (optimiser_weights);
                     optim.run (stage.gd_max_iter, grad_tolerance, analyse_descent ? std::cout.rdbuf() : log_stream);
@@ -503,7 +503,7 @@ namespace MR
                     if (do_reorientation && stage.fod_lmax > 0)
                       evaluate.set_directions (aPSF_directions);
                     Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
-                      optim (evaluate, *transform.get_gradient_descent_updator());
+                      optim (evaluate, *parameters.transformation.get_gradient_descent_updator());
                     optim.be_verbose (analyse_descent);
                     optim.precondition (optimiser_weights);
                     optim.run (stage.gd_max_iter, grad_tolerance, analyse_descent ? std::cout.rdbuf() : log_stream);
@@ -511,10 +511,10 @@ namespace MR
                     INFO ("    iteration: "+str(stage_iter)+"/"+str(stage.stage_iterations)+" GD iterations: "+
                     str(optim.function_evaluations())+" cost: "+str(optim.value())+" overlap: "+str(evaluate.overlap()));
                   } else if (stage.optimisers[stage_iter - 1] == OptimiserAlgoType::bbgd_robust) {
-                    assert (parameters.loop_density == 1.0L && "bbgd_robust and batch gradient descent not implemented");
-                    parameters.robust_estimate = true;
-                    parameters.processed_mask = ProcessedMaskType::scratch (midway_image_header);
-                    robust_stage<ParamType, decltype(stage), MetricType, TransformType> (parameters, stage, metric, do_reorientation, aPSF_directions, optimiser_weights, grad_tolerance);
+                    if (parameters.loop_density != 1.0L)
+                      throw Exception ("bbgd_robust and batch gradient descent not implemented");
+                    parameters.robust_estimate_subset = true;
+                    RobustStage<ParamType, decltype(stage), MetricType, TransformType> rstage (parameters, stage, metric, do_reorientation, aPSF_directions, optimiser_weights, grad_tolerance);
                   }
                 }
 

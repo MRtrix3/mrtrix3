@@ -17,6 +17,7 @@
 
 #include "registration/metric/thread_kernel.h"
 #include "algo/threaded_loop.h"
+#include "algo/loop.h"
 #include "registration/transform/reorient.h"
 #include "image.h"
 
@@ -154,10 +155,10 @@ namespace MR
             //         *overlap_count = 0;
             //       ThreadKernel <MetricType, ParamType> kernel (metric, params, cost, gradient, overlap_count);
 
-            //       if (params.robust_estimate) {
-            //         assert(params.robust_from.size());
-            //         assert(params.robust_size.size());
-            //         Adapter::Subset<Image<default_type>> midway_subset (params.midway_image, params.robust_from, params.robust_size);
+            //       if (params.robust_estimate_subset) {
+            //         assert(params.robust_estimate_subset_from.size());
+            //         assert(params.robust_estimate_subset_size.size());
+            //         Adapter::Subset<Image<default_type>> midway_subset (params.midway_image, params.robust_estimate_subset_from, params.robust_estimate_subset_size);
             //         ThreadedLoop (midway_subset, 0, 3).run (kernel);
             //       } else {
             //         ThreadedLoop (params.midway_image, 0, 3).run (kernel);
@@ -210,12 +211,15 @@ namespace MR
               } else {
                 overlap_count = 0;
                 ThreadKernel <MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient, &overlap_count);
-                if (params.robust_estimate) {
-                  assert(params.robust_from.size() == 3);
-                  assert(params.robust_size.size() == 3);
-                  Adapter::Subset<decltype(params.processed_mask)> subset (params.processed_mask, params.robust_from, params.robust_size);
+                if (params.robust_estimate_subset) {
+                  assert(params.robust_estimate_subset_from.size() == 3);
+                  assert(params.robust_estimate_subset_size.size() == 3);
+                  Adapter::Subset<decltype(params.processed_mask)> subset (params.processed_mask, params.robust_estimate_subset_from, params.robust_estimate_subset_size);
                   LogLevelLatch log_level (0);
-                  ThreadedLoop (subset, 0, 3).run (kernel);
+                  // single threaded as we loop over small VOIs. multi-threading of small VOIs is VERY slow compared to single threading!
+                  for (auto i = Loop(0,3) (subset); i; ++i) {
+                    kernel(subset);
+                  }
                 } else {
                   LogLevelLatch log_level (0);
                   ThreadedLoop (params.midway_image, 0, 3).run (kernel);

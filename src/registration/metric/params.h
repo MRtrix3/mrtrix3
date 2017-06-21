@@ -76,7 +76,7 @@ namespace MR
                     im2_mask (im2_mask),
                     loop_density (1.0),
                     control_point_exent (10.0, 10.0, 10.0),
-                    robust_estimate (false) {
+                    robust_estimate_subset (false) {
                       im1_image_interp.reset (new Im1ImageInterpType (im1_image));
                       im2_image_interp.reset (new Im2ImageInterpType (im2_image));
                       if (im1_mask.valid())
@@ -171,7 +171,7 @@ namespace MR
               header.keyval()["trafo2"] = str(trafo2.matrix());
               auto check = Image<default_type>::create (image_path, header);
 
-              vector<int> no_oversampling;
+              vector<int> no_oversampling (3,1);
               Adapter::Reslice<Interp::Linear, Im1ImageType > im1_reslicer (
                 im1_image, midway_image, trafo1, no_oversampling, NAN);
               Adapter::Reslice<Interp::Linear, Im2ImageType > im2_reslicer (
@@ -197,16 +197,14 @@ namespace MR
                 check.value() = im2_reslicer.value();
                 if (masked and im2_mask_interp) {
                   transformation.transform_half_inverse (im2_point, midway_point);
-                  im2_mask_interp->scanner (im1_point);
+                  im2_mask_interp->scanner (im2_point);
                   if (im2_mask_interp->value() <= 0.5)
                     check.value() = NAN;
                 }
-                if (processed_mask.valid()) {
-                  processed_mask.index(0) = voxel_pos(0);
-                  processed_mask.index(1) = voxel_pos(1);
-                  processed_mask.index(2) = voxel_pos(2);
+                if (processed_image.valid()) {
+                  assign_pos_of(check, 0, 3).to(processed_image);
                   check.index(3) = 2;
-                  check.value() = processed_mask.value();
+                  check.value() = processed_image.value();
                 }
                 check.index(3) = 0;
               }
@@ -227,9 +225,9 @@ namespace MR
           default_type loop_density;
           Eigen::Vector3 control_point_exent;
 
-          bool robust_estimate;
-          MR::vector<int> robust_from;
-          MR::vector<int> robust_size;
+          bool robust_estimate_subset;
+          MR::vector<int> robust_estimate_subset_from;
+          MR::vector<int> robust_estimate_subset_size;
           Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
           vector<size_t> extent;
           vector<MultiContrastSetting> mc_settings;

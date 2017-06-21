@@ -100,15 +100,22 @@ void run () {
   vector<Registration::MultiContrastSetting> contrasts;
 
   // if (init_translation_type == Transform::Init::mass)
-  if (get_options ("moments").size())
+  if (get_options ("moments").size()) {
     Registration::Transform::Init::initialise_using_image_moments (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
-  else
+  }
+  else if (get_options ("rotation").size()) {
     Registration::Transform::Init::initialise_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
+    Registration::Transform::Init::set_centre_via_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
+    Registration::Transform::Init::initialise_using_rotation_search (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
+  }
+  else {
+    Registration::Transform::Init::initialise_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
+  }
   transform.info();
   // Registration::Transform::Init::initialise_using_image_centres (im1_image, im2_image, im1_mask, im2_mask, transform, init);
   // Registration::Transform::Init::set_centre_via_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
   // Registration::Transform::Init::set_centre_via_image_centres (im1_image, im2_image, im1_mask, im2_mask, transform, init);
-  // Registration::Transform::Init::initialise_using_rotation_search (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
+
 
   save_transform (transform.get_transform(), argument[2]);
 
