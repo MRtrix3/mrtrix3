@@ -162,7 +162,7 @@ namespace MR
               Header header (midway_image);
               header.datatype() = DataType::Float64;
               header.ndim() = 4;
-              header.size(3) = 3;
+              header.size(3) = 3; // + processed_image.valid();
               // auto check = Image<float>::scratch (header);
               auto trafo1 = transformation.get_transform_half();
               auto trafo2 = transformation.get_transform_half_inverse();
@@ -190,7 +190,7 @@ namespace MR
                 if (masked and im1_mask_interp) {
                   transformation.transform_half (im1_point, midway_point);
                   im1_mask_interp->scanner (im1_point);
-                  if (im1_mask_interp->value() <= 0.5)
+                  if (im1_mask_interp->value() < 0.5)
                     check.value() = NAN;
                 }
 
@@ -199,14 +199,25 @@ namespace MR
                 if (masked and im2_mask_interp) {
                   transformation.transform_half_inverse (im2_point, midway_point);
                   im2_mask_interp->scanner (im2_point);
-                  if (im2_mask_interp->value() <= 0.5)
+                  if (im2_mask_interp->value() < 0.5)
                     check.value() = NAN;
                 }
-                if (processed_image.valid()) {
-                  assign_pos_of(check, 0, 3).to(processed_image);
+                if (robust_estimate_score1_interp) {
                   check.index(3) = 2;
-                  check.value() = processed_image.value();
+                  transformation.transform_half (im1_point, midway_point);
+                  robust_estimate_score1_interp->scanner (im1_point);
+                  transformation.transform_half_inverse (im2_point, midway_point);
+                  robust_estimate_score2_interp->scanner (im2_point);
+                  if (robust_estimate_score1_interp->value() >= 0.5 && robust_estimate_score2_interp->value() >= 0.5)
+                    check.value() = 0.0; // 0.5 * (robust_estimate_score2_interp->value() + robust_estimate_score1_interp->value());
+                  else
+                    check.value() = NaN;
                 }
+                // if (processed_image.valid()) {
+                //   assign_pos_of(voxel_pos, 0, 3).to(processed_image);
+                //   check.index(3) = 3;
+                //   check.value() = processed_image.value();
+                // }
                 check.index(3) = 0;
               }
               INFO("diagnostics image written");
@@ -231,8 +242,8 @@ namespace MR
           MR::vector<int> robust_estimate_subset_from;
           MR::vector<int> robust_estimate_subset_size;
           Image<float> robust_estimate_score1, robust_estimate_score2;
-          MR::copy_ptr<Interp::Nearest<Image<float>>> robust_estimate_score1_interp;
-          MR::copy_ptr<Interp::Nearest<Image<float>>> robust_estimate_score2_interp;
+          MR::copy_ptr<Interp::Linear<Image<float>>> robust_estimate_score1_interp;
+          MR::copy_ptr<Interp::Linear<Image<float>>> robust_estimate_score2_interp;
 
           Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
           vector<size_t> extent;

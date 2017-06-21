@@ -168,19 +168,19 @@ namespace MR
             h2.ndim() = 3;
             params.robust_estimate_score1 = Image<float>::scratch(h1);
             params.robust_estimate_score2 = Image<float>::scratch(h2);
-            params.robust_estimate_score1_interp.reset (new Interp::Nearest<Image<float>> (params.robust_estimate_score1));
-            params.robust_estimate_score2_interp.reset (new Interp::Nearest<Image<float>> (params.robust_estimate_score2));
+            params.robust_estimate_score1_interp.reset (new Interp::Linear<Image<float>> (params.robust_estimate_score1));
+            params.robust_estimate_score2_interp.reset (new Interp::Linear<Image<float>> (params.robust_estimate_score2));
 
             vector<int> no_oversampling (3,1);
             Adapter::Reslice<Interp::Linear, decltype(params.processed_image)> score_reslicer1 (
               params.processed_image, params.robust_estimate_score1, params.transformation.get_transform_half().inverse(), no_oversampling, NAN);
             for (auto i = Loop (0, 3) (params.robust_estimate_score1, score_reslicer1); i; ++i) {
-              params.robust_estimate_score1.value() = score_reslicer1.value();
+              params.robust_estimate_score1.value() = 1.0 - score_reslicer1.value();
             }
             Adapter::Reslice<Interp::Linear, decltype(params.processed_image)> score_reslicer2 (
               params.processed_image, params.robust_estimate_score2, params.transformation.get_transform_half_inverse().inverse(), no_oversampling, NAN);
             for (auto i = Loop (0, 3) (params.robust_estimate_score2, score_reslicer2); i; ++i) {
-              params.robust_estimate_score2.value() = score_reslicer2.value();
+              params.robust_estimate_score2.value() = 1.0 - score_reslicer2.value();
             }
           }
 

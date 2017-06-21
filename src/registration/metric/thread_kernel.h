@@ -137,7 +137,7 @@ namespace MR
             }
             if (params.robust_estimate_use_score && params.robust_estimate_score2_interp) {
               params.robust_estimate_score2_interp->scanner (im2_point);
-              if (params.robust_estimate_score2_interp->value() > 0.5)
+              if (!(params.robust_estimate_score2_interp->value() >= 0.5))
                 return;
             }
 
@@ -150,7 +150,7 @@ namespace MR
             }
             if (params.robust_estimate_use_score && params.robust_estimate_score1_interp) {
               params.robust_estimate_score1_interp->scanner (im1_point);
-              if (params.robust_estimate_score1_interp->value() > 0.5)
+              if (!(params.robust_estimate_score1_interp->value() >= 0.5))
                 return;
             }
 
@@ -187,7 +187,7 @@ namespace MR
 
             if (!params.robust_estimate_subset && params.robust_estimate_score2_interp) {
               params.robust_estimate_score2_interp->scanner (im2_point);
-              if (params.robust_estimate_score2_interp->value() > 0.5)
+              if (!(params.robust_estimate_score2_interp->value() >= 0.5))
                 return;
             }
 
@@ -219,7 +219,7 @@ namespace MR
             }
             if (params.robust_estimate_use_score && params.robust_estimate_score1_interp) {
               params.robust_estimate_score1_interp->scanner (im1_point);
-              if (params.robust_estimate_score1_interp->value() < 0.5)
+              if (!(params.robust_estimate_score1_interp->value() >= 0.5))
                 return;
             }
 
