@@ -20,6 +20,8 @@
 #include <string>
 #include <vector>
 
+#include "progressbar.h"
+
 #include "file/path.h"
 
 #include "math/stats/typedefs.h"
@@ -118,6 +120,7 @@ namespace MR
         // Read the provided text file one at a time
         // For each file, create an instance of SubjectDataImport
         //   (which must derive from SubjectDataImportBase)
+        ProgressBar progress ("Importing data from files listed in \"" + Path::basename (path) + "\"");
         const std::string directory = Path::dirname (path);
         std::ifstream ifs (path.c_str());
         std::string line;
@@ -134,6 +137,7 @@ namespace MR
               throw Exception (e, "Reading text file \"" + Path::basename (path) + "\": input image data file not found: \"" + filename + "\"");
             }
           }
+          ++progress;
         }
       }
 

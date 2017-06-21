@@ -19,6 +19,7 @@
 
 #include "file/path.h"
 #include "math/stats/glm.h"
+#include "math/stats/import.h"
 #include "math/stats/permutation.h"
 #include "math/stats/typedefs.h"
 
@@ -30,6 +31,10 @@
 
 using namespace MR;
 using namespace App;
+using namespace MR::Math::Stats;
+
+using Math::Stats::matrix_type;
+using Math::Stats::vector_type;
 
 
 const char* algorithms[] = { "nbs", "nbse", "none", nullptr };
@@ -73,7 +78,12 @@ void usage ()
   + OptionGroup ("Additional options for connectomestats")
 
   + Option ("threshold", "the t-statistic value to use in threshold-based clustering algorithms")
-  + Argument ("value").type_float (0.0);
+  + Argument ("value").type_float (0.0)
+
+  // TODO Generalise this across commands
+  + Option ("column", "add a column to the design matrix corresponding to subject edge-wise values "
+                      "(the contrast vector length must include columns for these additions)").allow_multiple()
+  + Argument ("path").type_file_in();
 
 
   REFERENCES + "* If using the NBS algorithm: \n"
@@ -92,10 +102,6 @@ void usage ()
 
 
 
-using Math::Stats::matrix_type;
-using Math::Stats::vector_type;
-
-
 
 void load_tfce_parameters (Stats::TFCE::Wrapper& enhancer)
 {
@@ -107,32 +113,63 @@ void load_tfce_parameters (Stats::TFCE::Wrapper& enhancer)
 
 
 
+// Define data importer class that willl obtain connectome data for a
+//   specific subject based on the string path to the image file for
+//   that subject
+class SubjectConnectomeImport : public SubjectDataImportBase
+{ MEMALIGN(SubjectConnectomeImport)
+  public:
+    SubjectConnectomeImport (const std::string& path) :
+        SubjectDataImportBase (path)
+    {
+      auto M = load_matrix (path);
+      Connectome::check (M);
+      if (Connectome::is_directed (M))
+        throw Exception ("Connectome from file \"" + Path::basename (path) + "\" is a directed matrix");
+      Connectome::to_upper (M);
+      Connectome::Mat2Vec mat2vec (M.rows());
+      mat2vec.M2V (M, data);
+    }
+
+    void operator() (matrix_type::ColXpr column) const override
+    {
+      assert (column.rows() == data.size());
+      column = data;
+    }
+
+    default_type operator[] (const size_t index) const override
+    {
+      assert (index < data.size());
+      return (data[index]);
+    }
+
+    size_t size() const override { return data.size(); }
+
+  private:
+    vector_type data;
+
+};
+
+
+
 void run()
 {
 
-  // Read filenames
-  vector<std::string> filenames;
-  {
-    std::string folder = Path::dirname (argument[0]);
-    std::ifstream ifs (argument[0].c_str());
-    std::string temp;
-    while (getline (ifs, temp)) {
-      std::string filename (Path::join (folder, temp));
-      size_t p = filename.find_last_not_of(" \t");
-      if (std::string::npos != p)
-        filename.erase(p+1);
-      if (filename.size()) {
-        if (!MR::Path::exists (filename))
-          throw Exception ("Input connectome file not found: \"" + filename + "\"");
-        filenames.push_back (filename);
-      }
-    }
+  // Read file names and check files exist
+  CohortDataImport importer;
+  importer.initialise<SubjectConnectomeImport> (argument[0]);
+  CONSOLE ("Number of subjects: " + str(importer.size()));
+  const size_t num_edges = importer[0]->size();
+
+  for (size_t i = 1; i < importer.size(); ++i) {
+    if (importer[i]->size() != importer[0]->size())
+      throw Exception ("Size of connectome for subject " + str(i) + " (file \"" + importer[i]->name() + "\" does not match that of first subject");
   }
 
-  const MR::Connectome::matrix_type example_connectome = load_matrix (filenames.front());
-  if (example_connectome.rows() != example_connectome.cols())
-    throw Exception ("Connectome of first subject is not square (" + str(example_connectome.rows()) + " x " + str(example_connectome.cols()) + ")");
+  // TODO Could determine this from the vector length with the right equation
+  const MR::Connectome::matrix_type example_connectome = load_matrix (importer[0]->name());
   const MR::Connectome::node_t num_nodes = example_connectome.rows();
+  Connectome::Mat2Vec mat2vec (num_nodes);
 
   // Initialise enhancement algorithm
   std::shared_ptr<Stats::EnhancerBase> enhancer;
@@ -168,111 +205,199 @@ void run()
 
   // Load design matrix
   const matrix_type design = load_matrix (argument[2]);
-  if (size_t(design.rows()) != filenames.size())
-    throw Exception ("number of subjects does not match number of rows in design matrix");
+  if (size_t(design.rows()) != importer.size())
+    throw Exception ("number of subjects (" + str(importer.size()) + ") does not match number of rows in design matrix (" + str(design.rows()) + ")");
+
+  // Load contrast matrix
+  matrix_type contrast = load_matrix (argument[3]);
+
+  // Before validating the contrast matrix, we first need to see if there are any
+  //   additional design matrix columns coming from fixel-wise subject data
+  vector<CohortDataImport> extra_columns;
+  bool nans_in_columns = false;
+  auto opt = get_options ("column");
+  for (size_t i = 0; i != opt.size(); ++i) {
+    extra_columns.push_back (CohortDataImport());
+    extra_columns[i].initialise<SubjectConnectomeImport> (opt[i][0]);
+    if (!extra_columns[i].allFinite())
+      nans_in_columns = true;
+  }
+  if (extra_columns.size()) {
+    CONSOLE ("number of element-wise design matrix columns: " + str(extra_columns.size()));
+    if (nans_in_columns)
+      INFO ("Non-finite values detected in element-wise design matrix columns; individual rows will be removed from edge-wise design matrices accordingly");
+  }
+
+  // Now we can check the contrast matrix
+  if (contrast.cols() != design.cols() + ssize_t(extra_columns.size()))
+    throw Exception ("the number of columns per contrast (" + str(contrast.cols()) + ")"
+                     + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")"
+                     + (extra_columns.size() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
+  if (contrast.rows() > 1)
+    throw Exception ("only a single contrast vector (defined as a row) is currently supported");
+
 
   // Load permutations file if supplied
-  auto opt = get_options("permutations");
+  opt = get_options ("permutations");
   vector<vector<size_t> > permutations;
   if (opt.size()) {
-    permutations = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
+    permutations = Permutation::load_permutations_file (opt[0][0]);
     num_perms = permutations.size();
     if (permutations[0].size() != (size_t)design.rows())
       throw Exception ("number of rows in the permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix");
   }
 
   // Load non-stationary correction permutations file if supplied
-  opt = get_options("permutations_nonstationary");
+  opt = get_options ("permutations_nonstationary");
   vector<vector<size_t> > permutations_nonstationary;
   if (opt.size()) {
-    permutations_nonstationary = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
+    permutations_nonstationary = Permutation::load_permutations_file (opt[0][0]);
     nperms_nonstationary = permutations.size();
     if (permutations_nonstationary[0].size() != (size_t)design.rows())
       throw Exception ("number of rows in the nonstationary permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix");
   }
 
 
-  // Load contrast matrix
-  matrix_type contrast = load_matrix (argument[3]);
-  if (contrast.cols() > design.cols())
-    throw Exception ("too many contrasts for design matrix");
-  contrast.conservativeResize (contrast.rows(), design.cols());
-
   const std::string output_prefix = argument[4];
 
   // Load input data
   // For compatibility with existing statistics code, symmetric matrix data is adjusted
-  //   into vector form - one row per edge in the symmetric connectome. The Mat2Vec class
-  //   deals with the re-ordering of matrix data into this form.
-  MR::Connectome::Mat2Vec mat2vec (num_nodes);
-  const size_t num_edges = mat2vec.vec_size();
-  matrix_type data (num_edges, filenames.size());
+  //   into vector form - one row per edge in the symmetric connectome. This has already
+  //   been performed when the CohortDataImport class is initialised.
+  matrix_type data (num_edges, importer.size());
   {
-    ProgressBar progress ("Loading input connectome data", filenames.size());
-    for (size_t subject = 0; subject < filenames.size(); subject++) {
-
-      const std::string& path (filenames[subject]);
-      MR::Connectome::matrix_type subject_data;
-      try {
-        subject_data = load_matrix (path);
-      } catch (Exception& e) {
-        throw Exception (e, "Error loading connectome data for subject #" + str(subject) + " (file \"" + path + "\"");
-      }
-
-      try {
-        MR::Connectome::to_upper (subject_data);
-        if (size_t(subject_data.rows()) != num_nodes)
-          throw Exception ("Connectome matrix is not the correct size (" + str(subject_data.rows()) + ", should be " + str(num_nodes) + ")");
-      } catch (Exception& e) {
-        throw Exception (e, "Connectome for subject #" + str(subject) + " (file \"" + path + "\") invalid");
-      }
-
-      for (size_t i = 0; i != num_edges; ++i)
-        data(i, subject) = subject_data (mat2vec(i).first, mat2vec(i).second);
-
+    ProgressBar progress ("Agglomerating input connectome data", importer.size());
+    for (size_t subject = 0; subject < importer.size(); subject++) {
+      (*importer[subject]) (data.col (subject));
       ++progress;
     }
   }
+  const bool nans_in_data = data.allFinite();
 
-  {
-    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation...", contrast.cols() + 3);
-
-    const matrix_type betas = Math::Stats::GLM::solve_betas (data, design);
-    for (size_t i = 0; i < size_t(contrast.cols()); ++i) {
-      save_matrix (mat2vec.V2M (betas.col(i)), output_prefix + "_beta_" + str(i) + ".csv");
-      ++progress;
-    }
-
-    const matrix_type abs_effects = Math::Stats::GLM::abs_effect_size (data, design, contrast);
-    save_matrix (mat2vec.V2M (abs_effects.col(0)), output_prefix + "_abs_effect.csv");
-    ++progress;
-
-    const matrix_type std_effects = Math::Stats::GLM::std_effect_size (data, design, contrast);
-    matrix_type first_std_effect = mat2vec.V2M (std_effects.col (0));
-    for (MR::Connectome::node_t i = 0; i != num_nodes; ++i) {
-      for (MR::Connectome::node_t j = 0; j != num_nodes; ++j) {
-        if (!std::isfinite (first_std_effect (i, j)))
-          first_std_effect (i, j) = 0.0;
-      }
-    }
-    save_matrix (first_std_effect, output_prefix + "_std_effect.csv");
-    ++progress;
-
-    const matrix_type stdevs = Math::Stats::GLM::stdev (data, design);
-    save_vector (stdevs.col(0), output_prefix + "_std_dev.csv");
+  // Construct the class for performing the initial statistical tests
+  std::shared_ptr<GLMTestBase> glm_test;
+  if (extra_columns.size() || nans_in_data) {
+    glm_test.reset (new GLMTTestVariable (extra_columns, data, design, contrast, nans_in_data, nans_in_columns));
+  } else {
+    glm_test.reset (new GLMTTestFixed (data, design, contrast));
   }
 
-  std::shared_ptr<Math::Stats::GLMTestBase> glm_ttest (new Math::Stats::GLMTTestFixed (data, design, contrast));
+  if (extra_columns.size()) {
+
+    // For each variable of interest (e.g. beta coefficients, effect size etc.) need to:
+    //   Construct the output data vector, with size = num_edges
+    //   For each edge:
+    //     Use glm_test to obtain the design matrix for the default permutation for that edge
+    //     Use the relevant Math::Stats::GLM function to get the value of interest for just that edge
+    //       (will still however need to come out as a matrix_type)
+    //     Write that value to data vector
+    //   Finally, write results to connectome files
+    matrix_type betas (contrast.cols(), num_edges);
+    vector_type abs_effect_size (num_edges), std_effect_size (num_edges), stdev (num_edges);
+    {
+      class Source
+      { NOMEMALIGN
+        public:
+          Source (const size_t num_edges) :
+              num_edges (num_edges),
+              counter (0),
+              progress (new ProgressBar ("estimating beta coefficients, effect size and standard deviation", num_edges)) { }
+          bool operator() (size_t& edge_index)
+          {
+            edge_index = counter++;
+            if (counter >= num_edges) {
+              progress.reset();
+              return false;
+            }
+            assert (progress);
+            ++(*progress);
+            return true;
+          }
+        private:
+          const size_t num_edges;
+          size_t counter;
+          std::unique_ptr<ProgressBar> progress;
+      };
+
+      class Functor
+      { MEMALIGN(Functor)
+        public:
+          Functor (const matrix_type& data, std::shared_ptr<GLMTestBase> glm_test, const matrix_type& contrasts,
+                   matrix_type& betas, vector_type& abs_effect_size, vector_type& std_effect_size, vector_type& stdev) :
+              data (data),
+              glm_test (glm_test),
+              contrasts (contrasts),
+              global_betas (betas),
+              global_abs_effect_size (abs_effect_size),
+              global_std_effect_size (std_effect_size),
+              global_stdev (stdev) { }
+          bool operator() (const size_t& edge_index)
+          {
+            const matrix_type data_f = data.row (edge_index);
+            const matrix_type design_f = dynamic_cast<GLMTTestVariable*>(glm_test.get())->default_design (edge_index);
+            Math::Stats::GLM::all_stats (data_f, design_f, contrasts,
+                                         local_betas, local_abs_effect_size, local_std_effect_size, local_stdev);
+            global_betas.col (edge_index) = local_betas;
+            global_abs_effect_size[edge_index] = local_abs_effect_size(0,0);
+            global_std_effect_size[edge_index] = local_std_effect_size(0,0);
+            global_stdev[edge_index] = local_stdev(0,0);
+            return true;
+          }
+
+        private:
+          const matrix_type& data;
+          const std::shared_ptr<GLMTestBase> glm_test;
+          const matrix_type& contrasts;
+          matrix_type& global_betas;
+          vector_type& global_abs_effect_size;
+          vector_type& global_std_effect_size;
+          vector_type& global_stdev;
+          matrix_type local_betas, local_abs_effect_size, local_std_effect_size, local_stdev;
+      };
+
+      Source source (num_edges);
+      Functor functor (data, glm_test, contrast,
+                       betas, abs_effect_size, std_effect_size, stdev);
+      Thread::run_queue (source, Thread::batch (size_t()), Thread::multi (functor));
+    }
+    {
+      ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", contrast.cols() + 3);
+      for (ssize_t i = 0; i != contrast.cols(); ++i) {
+        save_matrix (mat2vec.V2M (betas.row(i)), "beta" + str(i) + ".csv");
+        ++progress;
+      }
+      save_matrix (mat2vec.V2M (abs_effect_size), "abs_effect.csv"); ++progress;
+      save_matrix (mat2vec.V2M (std_effect_size), "std_effect.csv"); ++progress;
+      save_matrix (mat2vec.V2M (stdev), "std_dev.csv");
+    }
+
+  } else {
+
+    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", contrast.cols() + 4);
+    matrix_type betas, abs_effect_size, std_effect_size, stdev;
+    Math::Stats::GLM::all_stats (data, design, contrast,
+                                 betas, abs_effect_size, std_effect_size, stdev);
+    ++progress;
+    for (ssize_t i = 0; i < contrast.cols(); ++i) {
+      save_matrix (mat2vec.V2M (betas.row(i)), "beta" + str(i) + ".csv");
+      ++progress;
+    }
+    save_matrix (mat2vec.V2M (abs_effect_size.row(0)), "abs_effect.csv"); ++progress;
+    save_matrix (mat2vec.V2M (std_effect_size.row(0)), "std_effect.csv"); ++progress;
+    save_matrix (mat2vec.V2M (stdev.row(0)), "std_dev.csv");
+
+  }
+
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical statistic
   vector_type empirical_statistic;
   if (do_nonstationary_adjustment) {
     if (permutations_nonstationary.size()) {
-      Stats::PermTest::PermutationStack perm_stack (permutations_nonstationary, "precomputing empirical statistic for non-stationarity adjustment...");
-      Stats::PermTest::precompute_empirical_stat (glm_ttest, enhancer, perm_stack, empirical_statistic);
+      Stats::PermTest::PermutationStack perm_stack (permutations_nonstationary, "precomputing empirical statistic for non-stationarity adjustment");
+      Stats::PermTest::precompute_empirical_stat (glm_test, enhancer, perm_stack, empirical_statistic);
     } else {
-      Stats::PermTest::PermutationStack perm_stack (nperms_nonstationary, design.rows(), "precomputing empirical statistic for non-stationarity adjustment...", true);
-      Stats::PermTest::precompute_empirical_stat (glm_ttest, enhancer, perm_stack, empirical_statistic);
+      Stats::PermTest::PermutationStack perm_stack (nperms_nonstationary, design.rows(), "precomputing empirical statistic for non-stationarity adjustment", true);
+      Stats::PermTest::precompute_empirical_stat (glm_test, enhancer, perm_stack, empirical_statistic);
     }
     save_matrix (mat2vec.V2M (empirical_statistic), output_prefix + "_empirical.csv");
   }
@@ -281,7 +406,7 @@ void run()
   vector_type tvalue_output   (num_edges);
   vector_type enhanced_output (num_edges);
 
-  Stats::PermTest::precompute_default_permutation (glm_ttest, enhancer, empirical_statistic, enhanced_output, std::shared_ptr<vector_type>(), tvalue_output);
+  Stats::PermTest::precompute_default_permutation (glm_test, enhancer, empirical_statistic, enhanced_output, std::shared_ptr<vector_type>(), tvalue_output);
 
   save_matrix (mat2vec.V2M (tvalue_output),   output_prefix + "_tvalue.csv");
   save_matrix (mat2vec.V2M (enhanced_output), output_prefix + "_enhanced.csv");
@@ -295,12 +420,12 @@ void run()
     vector_type uncorrected_pvalues (num_edges);
 
     if (permutations.size()) {
-      Stats::PermTest::run_permutations (permutations, glm_ttest, enhancer, empirical_statistic,
+      Stats::PermTest::run_permutations (permutations, glm_test, enhancer, empirical_statistic,
                                          enhanced_output, std::shared_ptr<vector_type>(),
                                          null_distribution, std::shared_ptr<vector_type>(),
                                          uncorrected_pvalues, std::shared_ptr<vector_type>());
     } else {
-      Stats::PermTest::run_permutations (num_perms, glm_ttest, enhancer, empirical_statistic,
+      Stats::PermTest::run_permutations (num_perms, glm_test, enhancer, empirical_statistic,
                                          enhanced_output, std::shared_ptr<vector_type>(),
                                          null_distribution, std::shared_ptr<vector_type>(),
                                          uncorrected_pvalues, std::shared_ptr<vector_type>());

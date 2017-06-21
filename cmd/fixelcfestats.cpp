@@ -22,6 +22,7 @@
 #include "fixel/keys.h"
 #include "fixel/loop.h"
 #include "math/stats/glm.h"
+#include "math/stats/import.h"
 #include "math/stats/permutation.h"
 #include "math/stats/typedefs.h"
 #include "stats/cfe.h"
