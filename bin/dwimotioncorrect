@@ -111,7 +111,7 @@ else:
     run.command('mrmath -axis 3 shell.mif mean b0init.mif')
     run.command('mrconvert -axes 0,1,2,-1 b0init.mif template.mif')
     run.command('mrcalc template.mif 0.282095 -divide recon-0.mif')
-sh2amp('sh2amp -gradient recon-0.mif grad.txt pred.mif')
+run.command('sh2amp -gradient recon-0.mif grad.txt pred.mif')
 
 for k in range(niter):
     # register template to volumes

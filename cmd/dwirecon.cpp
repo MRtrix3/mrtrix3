@@ -160,6 +160,8 @@ void run ()
   Header header (dwisub);
   DWI::stash_DW_scheme (header, gradsub);
   header.size(3) = Math::SH::NforL(lmax);
+  Stride::set_from_command_line (header, Stride::contiguous_along_axis (3));
+  header.datatype() = DataType::from_command_line (DataType::Float32);
   auto out = Image<value_type>::create (argument[1], header);
 
   j = 0;
@@ -171,13 +173,24 @@ void run ()
   // Output registration prediction
   opt = get_options("rpred");
   if (opt.size()) {
-    header.size(3) = R.getY().rows();
+    header.size(3) = motionsub.rows();
+    Stride::set (header, Stride::contiguous_along_spatial_axes (header));
     auto rpred = Image<value_type>::create(opt[0][0], header);
-    ThreadedLoop("saving registration prediction", out, 0, 3).run( [&](Image<value_type>& i, Image<value_type>& o)
-      { 
-        Eigen::VectorXf ir = i.row(3);
-        o.row(3) = R.getY() * ir; 
-      }  , out, rpred);
+    class PredFunctor {
+    public:
+      PredFunctor (const Eigen::VectorXf& _y) : y(_y) {}
+      void operator () (Image<value_type>& in, Image<value_type>& out) {
+        v = in.row(3);
+        out.value() = y.dot(v);
+      }
+    private:
+      Eigen::VectorXf y, v;
+    };
+    j = 0;
+    size_t n = (motionsub.rows() == dwisub.size(3)) ? dwisub.size(2) : 1;
+    for (auto l = Loop("saving registration prediction", 3)(rpred); l; l++, j+=n) {
+      ThreadedLoop(out, 0, 3).run( PredFunctor (R.getY().row(j)) , out , rpred );
+    }
   }
 
 
