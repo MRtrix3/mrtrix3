@@ -123,15 +123,10 @@ namespace MR
               typename cost_is_vector<U>::no = 0,
               typename is_asymmetric<U>::no = 0) {
 
-            if (!params.robust_estimate_subset && params.processed_mask.valid()) {
-              assign_pos_of(iter, 0 , 3).to(params.processed_mask);
-              if (params.processed_mask.value() < 0.5) {
-                return;
-              }
-            }
-
             Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
             Eigen::Vector3 midway_point = voxel2scanner * voxel_pos;
+
+
 
             Eigen::Vector3 im2_point;
             params.transformation.transform_half_inverse (im2_point, midway_point);
@@ -140,12 +135,22 @@ namespace MR
               if (params.im2_mask_interp->value() < 0.5)
                 return;
             }
+            if (params.robust_estimate_use_score && params.robust_estimate_score2_interp) {
+              params.robust_estimate_score2_interp->scanner (im2_point);
+              if (params.robust_estimate_score2_interp->value() > 0.5)
+                return;
+            }
 
             Eigen::Vector3 im1_point;
             params.transformation.transform_half (im1_point, midway_point);
             if (params.im1_mask_interp) {
               params.im1_mask_interp->scanner (im1_point);
               if (params.im1_mask_interp->value() < 0.5)
+                return;
+            }
+            if (params.robust_estimate_use_score && params.robust_estimate_score1_interp) {
+              params.robust_estimate_score1_interp->scanner (im1_point);
+              if (params.robust_estimate_score1_interp->value() > 0.5)
                 return;
             }
 
@@ -180,11 +185,9 @@ namespace MR
               voxel_pos[2] += params.robust_estimate_subset_from[2];
             }
 
-            if (!params.robust_estimate_subset && params.processed_mask.valid()) {
-              params.processed_mask.index(0) = voxel_pos[0];
-              params.processed_mask.index(1) = voxel_pos[1];
-              params.processed_mask.index(2) = voxel_pos[2];
-              if (params.processed_mask.value() < 0.5)
+            if (!params.robust_estimate_subset && params.robust_estimate_score2_interp) {
+              params.robust_estimate_score2_interp->scanner (im2_point);
+              if (params.robust_estimate_score2_interp->value() > 0.5)
                 return;
             }
 
@@ -212,6 +215,11 @@ namespace MR
             if (params.im1_mask_interp) {
               params.im1_mask_interp->scanner (im1_point);
               if (params.im1_mask_interp->value() < 0.5)
+                return;
+            }
+            if (params.robust_estimate_use_score && params.robust_estimate_score1_interp) {
+              params.robust_estimate_score1_interp->scanner (im1_point);
+              if (params.robust_estimate_score1_interp->value() < 0.5)
                 return;
             }
 

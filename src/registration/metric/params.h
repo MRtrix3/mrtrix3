@@ -76,7 +76,8 @@ namespace MR
                     im2_mask (im2_mask),
                     loop_density (1.0),
                     control_point_exent (10.0, 10.0, 10.0),
-                    robust_estimate_subset (false) {
+                    robust_estimate_subset (false),
+                    robust_estimate_use_score (false) {
                       im1_image_interp.reset (new Im1ImageInterpType (im1_image));
                       im2_image_interp.reset (new Im2ImageInterpType (im2_image));
                       if (im1_mask.valid())
@@ -226,8 +227,13 @@ namespace MR
           Eigen::Vector3 control_point_exent;
 
           bool robust_estimate_subset;
+          bool robust_estimate_use_score;
           MR::vector<int> robust_estimate_subset_from;
           MR::vector<int> robust_estimate_subset_size;
+          Image<float> robust_estimate_score1, robust_estimate_score2;
+          MR::copy_ptr<Interp::Nearest<Image<float>>> robust_estimate_score1_interp;
+          MR::copy_ptr<Interp::Nearest<Image<float>>> robust_estimate_score2_interp;
+
           Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
           vector<size_t> extent;
           vector<MultiContrastSetting> mc_settings;
@@ -236,6 +242,7 @@ namespace MR
           MR::copy_ptr<ProcImageInterpolatorType> processed_image_interp;
           ProcMaskType processed_mask;
           MR::copy_ptr<ProcessedMaskInterpolatorType> processed_mask_interp;
+
 
         private:
           Eigen::Matrix<default_type, Eigen::Dynamic, 1> mc_weights;

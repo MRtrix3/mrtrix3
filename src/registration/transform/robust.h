@@ -110,7 +110,9 @@ namespace MR
                 optim.be_verbose (analyse_descent);
                 optim.precondition (optimiser_weights);
                 optim.run (robust_maxiter, grad_tolerance, log_stream);
-                if (is_finite(optim.state()) and evaluate.overlap() >= minoverlap) {
+                minoverlap = std::floor<ssize_t> ( params.loop_density * mask_fraction *
+                 parameters.robust_estimate_subset_size[0] * parameters.robust_estimate_subset_size[1] * parameters.robust_estimate_subset_size[2]);
+                if (is_finite(optim.state()) and evaluate.overlap() > minoverlap) {
                   transform_type T;
                   Transform::param_vec2mat(optim.state().template cast <default_type> (), T.matrix());
                   candid_trafo.push_back(T);
@@ -131,17 +133,15 @@ namespace MR
 
           transform_type median_trafo;
           MR::vector<default_type> scores(candid_trafo.size());
-          // calculate median (half) transformation
+          // calculate median transformation
           calc_median_trafo (candid_trafo, vertices_4, trafo_before, median_trafo, scores);
 
           size_t trusted_voxels = 0;
-          for (size_t iroi = 0; iroi < candid_trafo.size(); iroi++){
-            MR::vector<int> pos = candid_pos[iroi];
-            MR::vector<int> sze = candid_size[iroi];
-            Adapter::Subset<decltype(params.processed_image)> subset (params.processed_image, pos, sze);
-            Adapter::Subset<decltype(params.processed_mask)> subsetmask (params.processed_mask, pos, sze);
+          for (size_t iroi = 0; iroi < candid_trafo.size(); iroi++) {
+            Adapter::Subset<decltype(params.processed_image)> subset (params.processed_image, candid_pos[iroi], candid_size[iroi]);
+            Adapter::Subset<decltype(params.processed_mask)> subsetmask (params.processed_mask, candid_pos[iroi], candid_size[iroi]);
             if (scores[iroi] < 0.5)
-              trusted_voxels += sze[0] * sze[1] * sze[2];
+              trusted_voxels += candid_size[iroi][0] * candid_size[iroi][1] * candid_size[iroi][2];
             for (auto l = Loop (0, 3) (subset, subsetmask); l; ++l) {
               subset.value() = scores[iroi];
               subsetmask.value() = scores[iroi] < 0.5;
@@ -150,20 +150,51 @@ namespace MR
           if (!trusted_voxels) {
             WARN ("no robust consensus found. using best VOI");
             size_t iroi = std::distance(scores.begin(), std::min_element(scores.begin(), scores.end()));
-            MR::vector<int> pos = candid_pos[iroi];
-            MR::vector<int> sze = candid_size[iroi];
-            Adapter::Subset<decltype(params.processed_image)> subset (params.processed_image, pos, sze);
-            Adapter::Subset<decltype(params.processed_mask)> subsetmask (params.processed_mask, pos, sze);
+            Adapter::Subset<decltype(params.processed_image)> subset (params.processed_image, candid_pos[iroi], candid_size[iroi]);
+            Adapter::Subset<decltype(params.processed_mask)> subsetmask (params.processed_mask, candid_pos[iroi], candid_size[iroi]);
             if (scores[iroi] < 0.5)
-              trusted_voxels += sze[0] * sze[1] * sze[2];
+              trusted_voxels += candid_size[iroi][0] * candid_size[iroi][1] * candid_size[iroi][2];
             for (auto l = Loop (0, 3) (subset, subsetmask); l; ++l) {
               subset.value() = scores[iroi];
               subsetmask.value() = scores[iroi] < score_thresh;
             }
           }
           INFO ("    selected voxels: " + str(trusted_voxels) + " / " + str(params.midway_image.size(0) * params.midway_image.size(1) * params.midway_image.size(2)));
+          INFO ("    creating score images");
+          {
+            Header h1 = Header(params.im1_image);
+            Header h2 = Header(params.im2_image);
+            h1.ndim() = 3;
+            h2.ndim() = 3;
+            params.robust_estimate_score1 = Image<float>::scratch(h1);
+            params.robust_estimate_score2 = Image<float>::scratch(h2);
+            params.robust_estimate_score1_interp.reset (new Interp::Nearest<Image<float>> (params.robust_estimate_score1));
+            params.robust_estimate_score2_interp.reset (new Interp::Nearest<Image<float>> (params.robust_estimate_score2));
 
+            vector<int> no_oversampling (3,1);
+            Adapter::Reslice<Interp::Linear, decltype(params.processed_image)> score_reslicer1 (
+              params.processed_image, params.robust_estimate_score1, params.transformation.get_transform_half().inverse(), no_oversampling, NAN);
+            for (auto i = Loop (0, 3) (params.robust_estimate_score1, score_reslicer1); i; ++i) {
+              params.robust_estimate_score1.value() = score_reslicer1.value();
+            }
+            Adapter::Reslice<Interp::Linear, decltype(params.processed_image)> score_reslicer2 (
+              params.processed_image, params.robust_estimate_score2, params.transformation.get_transform_half_inverse().inverse(), no_oversampling, NAN);
+            for (auto i = Loop (0, 3) (params.robust_estimate_score2, score_reslicer2); i; ++i) {
+              params.robust_estimate_score2.value() = score_reslicer2.value();
+            }
+          }
+
+          //   MR::Transform T (params.robust_estimate_score1);
+          //   for (auto l = Loop (0, 3) (params.robust_estimate_score1); l; ++l) {
+          //     Eigen::Vector3 voxel_pos ((default_type)params.robust_estimate_score1.index(0), (default_type)params.robust_estimate_score1.index(1), (default_type)params.robust_estimate_score1.index(2));
+          //     Eigen::Vector3 coord = T.voxel2scanner * voxel_pos;
+
+          //     params.robust_estimate_score1.value() =
+          //   }
+          // }
+          INFO ("    registering masked images");
           params.robust_estimate_subset = false;
+          params.robust_estimate_use_score = true;
           Metric::Evaluate<MetricType, ParamType> evaluate (metric, params);
           if (do_reorientation && stage.fod_lmax > 0)
             evaluate.set_directions (aPSF_directions);
@@ -177,9 +208,12 @@ namespace MR
           INFO ("    GD iterations: "+str(optim.function_evaluations())+" cost: "+str(optim.value())+" overlap: "+str(evaluate.overlap()));
           params.optimiser_update (optim, evaluate.overlap());
 
-          converged = !force_maxiter || robust_gditer >= stage.gd_max_iter || optim.function_evaluations() < maxiter;
+          converged = !force_maxiter || robust_gditer >= stage.gd_max_iter || (optim.function_evaluations() - 2) < maxiter; // - 2 because of BBGD initialisation
           params.robust_estimate_subset = true;
+          params.robust_estimate_use_score = false;
         }
+        params.robust_estimate_subset = false;
+        params.robust_estimate_use_score = false;
       }
     };
   }
