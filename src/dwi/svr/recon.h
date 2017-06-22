@@ -24,7 +24,7 @@
 #include "header.h"
 #include "transform.h"
 #include "math/SH.h"
-
+#include "dwi/svr/psf.h"
 
 
 namespace MR {
