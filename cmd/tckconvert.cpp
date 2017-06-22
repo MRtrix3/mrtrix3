@@ -35,7 +35,8 @@ void usage ()
 
   DESCRIPTION
   + "The program currently supports MRtrix .tck files (input/output), "
-    "ascii text files (input/output), and VTK polydata files (input/output)."
+    "ascii text files (input/output), VTK polydata files (input/output), "
+    "and RenderMan RIB (export only)."
 
   + "Note that ascii files will be stored with one streamline per numbered file. "
     "To support this, the command will use the multi-file numbering syntax, "
@@ -161,7 +162,7 @@ public:
           input.read((char*) points, 3*number_of_points * sizeof(float) );
           
           // swap
-          for ( size_t i = 0; i < 3*number_of_points; i++ ) {
+          for ( int i = 0; i < 3*number_of_points; i++ ) {
             points[i] = Raw::fetch_BE<float>(points, i);
           }
       
@@ -171,7 +172,7 @@ public:
             lines = new int[number_of_line_indices];
             input.read((char*) lines, number_of_line_indices * sizeof(int) );
             // swap
-            for ( size_t i = 0; i < number_of_line_indices; i++ ) {
+            for ( int i = 0; i < number_of_line_indices; i++ ) {
               lines[i] = Raw::fetch_BE<int>(lines, i);
             }
             // We can safely break
@@ -207,7 +208,7 @@ public:
 private:
   float *points;
   int *lines;
-  size_t lineIdx;
+  int lineIdx;
   int number_of_lines;
   int number_of_line_indices;
 
