@@ -13,15 +13,18 @@
 
 
 #include "command.h"
-#include "file/path.h"
-#include "algo/loop.h"
 #include "image.h"
+
+#include "algo/loop.h"
+#include "file/path.h"
 #include "math/SH.h"
+
 #include "dwi/directions/predefined.h"
-#include "timer.h"
+
 #include "math/stats/glm.h"
 #include "math/stats/permutation.h"
 #include "math/stats/typedefs.h"
+
 #include "stats/cluster.h"
 #include "stats/enhance.h"
 #include "stats/permtest.h"
@@ -84,6 +87,25 @@ void usage ()
     + Option ("connectivity", "use 26-voxel-neighbourhood connectivity (Default: 6)");
 
 }
+
+
+
+// TODO Want to make the connected-components filter & surrounding operations
+//   a little cleaner; in particular, for supporting voxel-wise regressors,
+//   need the mechanism for going from image data to vectorised data to be
+//   accessible by a derivative of SubjectDataImportBase
+//
+// This will include:
+// * A class for transforming image positions into indices for vectorised data
+//   (requires only an input mask image)
+//   (If input data has higher dimensionality than mask image, need to
+//   effectively replicate mask across extra axes)
+// * A class for determining the connectivity between elements
+//   (requires access to the first class, axis list, degree of voxel connectivity,
+//   also ideally capacity to define custom connectivity for a particular axis
+//   in order to support dixel data)
+
+
 
 
 
@@ -161,7 +183,8 @@ void run() {
   // Load Mask and compute adjacency
   auto mask_image = mask_header.get_image<value_type>();
   Filter::Connector connector (do_26_connectivity);
-  vector<vector<int> > mask_indices = connector.precompute_adjacency (mask_image);
+  connector.precompute_adjacency (mask_image);
+  const vector<vector<int> >& mask_indices = connector.get_mask_indices();
   const size_t num_vox = mask_indices.size();
 
   matrix_type data (num_vox, subjects.size());
@@ -174,8 +197,7 @@ void run() {
       auto input_image = Image<float>::open (subjects[subject]); //.with_direct_io (3); <- Should be inputting 3D images?
       check_dimensions (input_image, mask_image, 0, 3);
       int index = 0;
-      vector<vector<int> >::iterator it;
-      for (it = mask_indices.begin(); it != mask_indices.end(); ++it) {
+      for (auto it = mask_indices.begin(); it != mask_indices.end(); ++it) {
         input_image.index(0) = (*it)[0];
         input_image.index(1) = (*it)[1];
         input_image.index(2) = (*it)[2];

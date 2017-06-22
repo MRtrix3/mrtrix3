@@ -17,8 +17,10 @@
 
 #include "memory.h"
 #include "image.h"
-#include "algo/loop.h"
+#include "types.h"
 
+#include "adapter/replicate.h"
+#include "algo/loop.h"
 #include "filter/base.h"
 
 #include <stack>
@@ -29,7 +31,128 @@ namespace MR
   namespace Filter
   {
 
-    class cluster { NOMEMALIGN
+
+
+    // A class to achieve a mapping from a voxel position in an image
+    //   with any number of axes, to an index in a 1D vector of data.
+    class Voxel2Vector
+    { MEMALIGN(Voxel2Vector)
+      public:
+
+        typedef uint32_t index_t;
+
+        static const index_t invalid = std::numeric_limits<index_t>::max();
+
+        Voxel2Vector (Image<bool>& mask, const Header& data);
+
+        size_t size() const { return reverse.size(); }
+
+        const vector<index_t>& operator[] (const size_t index) const {
+          assert (index < reverse.size());
+          return reverse[index];
+        }
+
+        template <class PosType>
+        index_t operator() (const PosType& pos) const {
+          Image<index_t> temp (forward); // For thread-safety
+          assign_pos_of (pos).to (temp);
+          if (is_out_of_bounds (temp))
+            return invalid;
+          return temp.value();
+        }
+
+      private:
+        Image<index_t> forward;
+        vector< vector<index_t> > reverse;
+    };
+
+
+
+    // A class that pre-computes and stores, for each voxel, a
+    //   list of voxels (represented as indices) that are adjacent
+    //
+    // If we were to re-implement dixel-wise connectivity, it would
+    //   be done using a plugin to this class to define the volumes
+    //   on the fourth axis that correspond to neighbouring directions
+    class Adjacency
+    {
+      public:
+        typedef Voxel2Vector::index_t index_t;
+
+        Adjacency() :
+            use_26_neighbours (false),
+            enabled_axes (3, true) { }
+
+        void toggle_axis (const size_t axis, const bool value) {
+          if (axis > enabled_axes.size())
+            enabled_axes.resize (axis+1, false);
+          enabled_axes[axis] = value;
+        }
+
+        void initialise (const Header&, const Voxel2Vector&);
+
+        const vector<index_t>& operator[] (const size_t index) {
+          assert (index < data.size());
+          return data[index];
+        }
+
+      private:
+        bool use_26_neighbours;
+        vector<bool> enabled_axes;
+        vector<vector<index_t>> data;
+    };
+
+
+
+
+
+    // TODO Re-define Connector class
+    // Maybe for now try to duplicate using old interface, get it compiled
+    //   making use of new grunt code, then deal wtih interface changes later?
+    // Remember: Main purpose of rework is to expose Voxel2Vector to the
+    //   GLM stats code...
+    // Maybe require that Voxel2Vector and Adjacency be created explicitly
+    //   in order to construct Connector, but allow the ConnectedComponents
+    //   filter to construct and store these internally itself (to hide)
+    //
+    // Note: When the filter is used, the adjacency is pre-computed
+    //   based on the input image; therefore can't actually initialise
+    //   it once and use it for multiple input images
+    //
+    // Two use cases:
+    // - mrclusterstats: Generate Voxel2Vector based on analysis mask,
+    //   need to be able to pass shared_ptr to SubjectDataLoad classes
+    // - mrfilter: New Voxel2Vector is generated for each input image, since
+    //   it needs to reflect the contents of the input mask image
+
+    class Connector2
+    { NOMEMALIGN
+      public:
+        Connector2 (const Voxel2Vector& v2v) :
+            v2v (v2v) { }
+
+
+
+
+      private:
+        const Voxel2Vector& v2v;
+    };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    class cluster
+    { NOMEMALIGN
       public:
         uint32_t label;
         uint32_t size;
@@ -38,9 +161,8 @@ namespace MR
         }
     };
 
-
-    inline bool compare_clusters (const cluster& i, const cluster& j)
-    {
+    // Used for sorting clusters in order of size
+    inline bool largest (const cluster& i, const cluster& j) {
       return (i.size > j.size);
     }
 
@@ -49,15 +171,16 @@ namespace MR
 
       public:
         Connector (bool do_26_connectivity) :
-          do_26_connectivity (do_26_connectivity),
-          dim_to_ignore (4, false) {
-            dim_to_ignore[3] = true;
+            do_26_connectivity (do_26_connectivity),
+            dim_to_ignore (4, false)
+        {
+          dim_to_ignore[3] = true;
         }
 
 
         // Perform connected components on the mask.
-        const vector<vector<int> >& run (vector<cluster>& clusters,
-                                                   vector<uint32_t>& labels) const {
+        void run (vector<cluster>& clusters,
+                  vector<uint32_t>& labels) const {
           labels.resize (adjacent_indices.size(), 0);
           uint32_t current_label = 1;
           for (uint32_t i = 0; i < labels.size(); i++) {
@@ -73,7 +196,6 @@ namespace MR
           }
           if (clusters.size() > std::numeric_limits<uint32_t>::max())
             throw Exception ("The number of clusters is larger than can be labelled with an unsigned 32bit integer.");
-          return mask_indices;
         }
 
 
@@ -109,7 +231,7 @@ namespace MR
 
 
         template <class MaskImageType>
-        const vector<vector<int> >& precompute_adjacency (MaskImageType& mask) {
+        void precompute_adjacency (MaskImageType& mask) {
 
           auto index_image = Image<uint32_t>::scratch (mask);
 
@@ -159,8 +281,6 @@ namespace MR
             }
             adjacent_indices.push_back (neighbour_indices);
           }
-
-          return mask_indices;
         }
 
 
@@ -240,6 +360,9 @@ namespace MR
         }
 
 
+        const vector<vector<int>>& get_mask_indices() const { return mask_indices; }
+
+
         bool do_26_connectivity;
         vector<bool> dim_to_ignore;
         vector<vector<int> > mask_indices;
@@ -307,11 +430,11 @@ namespace MR
 
         vector<cluster> clusters;
         vector<uint32_t> labels;
-        vector<vector<int> > mask_indices = connector.run (clusters, labels);
+        connector.run (clusters, labels);
 
         if (progress)
           ++(*progress);
-        std::sort (clusters.begin(), clusters.end(), compare_clusters);
+        std::sort (clusters.begin(), clusters.end(), largest);
         if (progress)
           ++(*progress);
 
@@ -321,6 +444,8 @@ namespace MR
 
         for (auto l = Loop (out) (out); l; ++l)
           out.value() = 0;
+
+        const vector<vector<int> >& mask_indices = connector.get_mask_indices();
 
         for (uint32_t i = 0; i < mask_indices.size(); i++)
         {
