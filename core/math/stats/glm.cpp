@@ -14,8 +14,8 @@
 
 #include "math/stats/glm.h"
 
-#include "bitset.h"
 #include "debug.h"
+#include "misc/bitset.h"
 
 #define GLM_BATCH_SIZE 1024
 

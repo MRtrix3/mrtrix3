@@ -18,10 +18,9 @@
 
 #include <vector>
 
-#include "bitset.h"
-
 #include "math/golden_section_search.h"
 #include "math/quadratic_line_search.h"
+#include "misc/bitset.h"
 
 #include "dwi/tractography/SIFT/track_index_range.h"
 #include "dwi/tractography/SIFT/types.h"

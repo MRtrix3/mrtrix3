@@ -18,8 +18,10 @@
 #include <map>
 #include <vector>
 
-#include "bitset.h"
 #include "image.h"
+
+#include "misc/bitset.h"
+#include "surface/mesh.h"
 
 #include "gui/opengl/gl.h"
 #include "gui/opengl/lighting.h"
@@ -35,8 +37,6 @@
 #include "gui/shapes/sphere.h"
 #include "gui/color_button.h"
 #include "gui/projection.h"
-
-#include "surface/mesh.h"
 
 #include "connectome/mat2vec.h"
 #include "connectome/lut.h"

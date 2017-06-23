@@ -27,7 +27,7 @@ namespace MR
 
       value_type ClusterSize::operator() (const vector_type& stats, const value_type T, vector_type& get_cluster_sizes) const
       {
-        vector<Filter::cluster> clusters;
+        vector<Filter::Connector::Cluster> clusters;
         vector<uint32_t> labels (stats.size(), 0);
         connector.run (clusters, labels, stats, T);
         get_cluster_sizes.resize (stats.size());

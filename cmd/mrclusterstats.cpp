@@ -111,11 +111,10 @@ void usage ()
 
 template <class VectorType, class ImageType>
 void write_output (const VectorType& data,
-                   const vector<vector<int> >& mask_indices,
+                   const Voxel2Vector& v2v,
                    ImageType& image) {
-  for (size_t i = 0; i < mask_indices.size(); i++) {
-    for (size_t dim = 0; dim < image.ndim(); dim++)
-      image.index(dim) = mask_indices[i][dim];
+  for (size_t i = 0; i != v2v.size(); i++) {
+    assign_pos_of (v2v[i]).to (image);
     image.value() = data[i];
   }
 }
@@ -181,11 +180,12 @@ void run() {
 
   auto mask_header = Header::open (argument[3]);
   // Load Mask and compute adjacency
-  auto mask_image = mask_header.get_image<value_type>();
-  Filter::Connector connector (do_26_connectivity);
-  connector.precompute_adjacency (mask_image);
-  const vector<vector<int> >& mask_indices = connector.get_mask_indices();
-  const size_t num_vox = mask_indices.size();
+  auto mask_image = mask_header.get_image<bool>();
+  Voxel2Vector v2v (mask_image, mask_header);
+  Filter::Connector connector;
+  connector.adjacency.set_26_adjacency (do_26_connectivity);
+  connector.adjacency.initialise (mask_header, v2v);
+  const size_t num_vox = v2v.size();
 
   matrix_type data (num_vox, subjects.size());
 
@@ -196,12 +196,9 @@ void run() {
       LogLevelLatch log_level (0);
       auto input_image = Image<float>::open (subjects[subject]); //.with_direct_io (3); <- Should be inputting 3D images?
       check_dimensions (input_image, mask_image, 0, 3);
-      int index = 0;
-      for (auto it = mask_indices.begin(); it != mask_indices.end(); ++it) {
-        input_image.index(0) = (*it)[0];
-        input_image.index(1) = (*it)[1];
-        input_image.index(2) = (*it)[2];
-        data (index++, subject) = input_image.value();
+      for (size_t voxel_index = 0; voxel_index != num_vox; ++voxel_index) {
+        assign_pos_of (v2v[voxel_index]).to (input_image);
+        data (voxel_index, subject) = input_image.value();
       }
       progress++;
     }
@@ -263,42 +260,42 @@ void run() {
     ProgressBar progress ("generating pre-permutation output", (compute_negative_contrast ? 3 : 2) + contrast.cols() + 3);
     {
       auto tvalue_image = Image<float>::create (prefix + "tvalue.mif", output_header);
-      write_output (tvalue_output, mask_indices, tvalue_image);
+      write_output (tvalue_output, v2v, tvalue_image);
     }
     ++progress;
     {
       auto cluster_image = Image<float>::create (prefix + (use_tfce ? "tfce.mif" : "cluster_sizes.mif"), output_header);
-      write_output (default_cluster_output, mask_indices, cluster_image);
+      write_output (default_cluster_output, v2v, cluster_image);
     }
     ++progress;
     if (compute_negative_contrast) {
       assert (default_cluster_output_neg);
       auto cluster_image_neg = Image<float>::create (prefix + (use_tfce ? "tfce_neg.mif" : "cluster_sizes_neg.mif"), output_header);
-      write_output (*default_cluster_output_neg, mask_indices, cluster_image_neg);
+      write_output (*default_cluster_output_neg, v2v, cluster_image_neg);
       ++progress;
     }
     auto temp = Math::Stats::GLM::solve_betas (data, design);
     for (ssize_t i = 0; i < contrast.cols(); ++i) {
       auto beta_image = Image<float>::create (prefix + "beta" + str(i) + ".mif", output_header);
-      write_output (temp.row(i), mask_indices, beta_image);
+      write_output (temp.row(i), v2v, beta_image);
       ++progress;
     }
     {
       const auto temp = Math::Stats::GLM::abs_effect_size (data, design, contrast);
       auto abs_effect_image = Image<float>::create (prefix + "abs_effect.mif", output_header);
-      write_output (temp.row(0), mask_indices, abs_effect_image);
+      write_output (temp.row(0), v2v, abs_effect_image);
     }
     ++progress;
     {
       const auto temp = Math::Stats::GLM::std_effect_size (data, design, contrast);
       auto std_effect_image = Image<float>::create (prefix + "std_effect.mif", output_header);
-      write_output (temp.row(0), mask_indices, std_effect_image);
+      write_output (temp.row(0), v2v, std_effect_image);
     }
     ++progress;
     {
       const auto temp = Math::Stats::GLM::stdev (data, design);
       auto std_dev_image = Image<float>::create (prefix + "std_dev.mif", output_header);
-      write_output (temp.row(0), mask_indices, std_dev_image);
+      write_output (temp.row(0), v2v, std_dev_image);
     }
   }
 
@@ -335,26 +332,26 @@ void run() {
     ProgressBar progress ("generating output", compute_negative_contrast ? 4 : 2);
     {
       auto uncorrected_pvalue_image = Image<float>::create (prefix + "uncorrected_pvalue.mif", output_header);
-      write_output (uncorrected_pvalue, mask_indices, uncorrected_pvalue_image);
+      write_output (uncorrected_pvalue, v2v, uncorrected_pvalue_image);
     }
     ++progress;
     {
       vector_type fwe_pvalue_output (num_vox);
       Math::Stats::Permutation::statistic2pvalue (perm_distribution, default_cluster_output, fwe_pvalue_output);
       auto fwe_pvalue_image = Image<float>::create (prefix + "fwe_pvalue.mif", output_header);
-      write_output (fwe_pvalue_output, mask_indices, fwe_pvalue_image);
+      write_output (fwe_pvalue_output, v2v, fwe_pvalue_image);
     }
     ++progress;
     if (compute_negative_contrast) {
       assert (uncorrected_pvalue_neg);
       assert (perm_distribution_neg);
       auto uncorrected_pvalue_image_neg = Image<float>::create (prefix + "uncorrected_pvalue_neg.mif", output_header);
-      write_output (*uncorrected_pvalue_neg, mask_indices, uncorrected_pvalue_image_neg);
+      write_output (*uncorrected_pvalue_neg, v2v, uncorrected_pvalue_image_neg);
       ++progress;
       vector_type fwe_pvalue_output_neg (num_vox);
       Math::Stats::Permutation::statistic2pvalue (*perm_distribution_neg, *default_cluster_output_neg, fwe_pvalue_output_neg);
       auto fwe_pvalue_image_neg = Image<float>::create (prefix + "fwe_pvalue_neg.mif", output_header);
-      write_output (fwe_pvalue_output_neg, mask_indices, fwe_pvalue_image_neg);
+      write_output (fwe_pvalue_output_neg, v2v, fwe_pvalue_image_neg);
     }
   }
 
