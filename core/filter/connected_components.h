@@ -62,6 +62,11 @@ namespace MR
               data.clear();
             }
 
+            void set_axes (const vector<bool>& i) {
+              enabled_axes = i;
+              data.clear();
+            }
+
             void initialise (const Header&, const Voxel2Vector&);
 
             const vector<index_t>& operator[] (const size_t index) const {
@@ -107,7 +112,7 @@ namespace MR
 
         Connector () { }
 
-        // Perform connected components on the mask.
+        // Perform connected components on vectorized binary data
         void run (vector<Cluster>&, vector<uint32_t>&) const;
         template <class VectorType>
         void run (vector<Cluster>&, vector<uint32_t>&,
@@ -116,6 +121,8 @@ namespace MR
 
       private:
 
+        // Utility functions that perform the actual connected
+        //   components functionality
         bool next_neighbour (uint32_t&, vector<uint32_t>&) const;
         template <class VectorType>
         bool next_neighbour (uint32_t&, vector<uint32_t>&,
@@ -156,9 +163,9 @@ namespace MR
 
     template <class VectorType>
     bool Connector::next_neighbour (uint32_t& node,
-                                     vector<uint32_t>& labels,
-                                     const VectorType& data,
-                                     const float threshold) const
+                                    vector<uint32_t>& labels,
+                                    const VectorType& data,
+                                    const float threshold) const
     {
       for (auto n : adjacency[node]) {
         if (!labels[n] && data[n] > threshold) {
@@ -173,10 +180,10 @@ namespace MR
 
     template <class VectorType>
     void Connector::depth_first_search (const uint32_t root,
-                                         Cluster& cluster,
-                                         vector<uint32_t>& labels,
-                                         const VectorType& data,
-                                         const float threshold) const
+                                        Cluster& cluster,
+                                        vector<uint32_t>& labels,
+                                        const VectorType& data,
+                                        const float threshold) const
     {
       uint32_t node = root;
       std::stack<uint32_t> stack;
@@ -222,15 +229,16 @@ namespace MR
         template <class HeaderType>
         ConnectedComponents (const HeaderType& in) :
             Base (in),
+            enabled_axes (ndim(), true),
             largest_only (false),
             do_26_connectivity (false)
         {
           if (this->ndim() > 4)
             throw Exception ("Cannot run connected components analysis with more than 4 dimensions");
           datatype_ = DataType::UInt32;
-          dim_to_ignore.resize (this->ndim(), false);
-          if (this->ndim() == 4) // Ignore 4D unless explicitly instructed to
-            dim_to_ignore[3] = true;
+          // By default, ignore all axes above the three spatial dimensions
+          for (size_t axis = 3; axis < ndim(); ++axis)
+            enabled_axes[axis] = false;
         }
 
         template <class HeaderType>
@@ -247,8 +255,7 @@ namespace MR
           Voxel2Vector v2v (in, *this);
 
           Connector connector;
-          for (size_t axis = 0; axis != dim_to_ignore.size(); ++axis)
-            connector.adjacency.toggle_axis (axis, !dim_to_ignore[axis]);
+          connector.adjacency.set_axes (enabled_axes);
           connector.adjacency.set_26_adjacency (do_26_connectivity);
           connector.adjacency.initialise (in, v2v);
 
@@ -289,10 +296,17 @@ namespace MR
 
 
 
-        void set_ignore_dim (size_t dim, bool ignore)
+        void set_axes (const vector<int>& i)
         {
-          assert (dim < this->ndim());
-          dim_to_ignore[dim] = ignore;
+          const size_t max_axis = *std::max_element (i.begin(), i.end());
+          if (max_axis >= ndim())
+            throw Exception ("Requested axis for connected component filter (" + str(max_axis) + " is beyond the dimensionality of the image (" + str(ndim()) + "D)");
+          enabled_axes.assign (std::max (max_axis+1, size_t(ndim())), false);
+          for (const auto& axis : i) {
+            if (axis < 0)
+              throw Exception ("Cannot specify negative axis index for connected-component filter");
+            enabled_axes[axis] = true;
+          }
         }
 
 
@@ -309,7 +323,7 @@ namespace MR
 
 
       protected:
-        vector<bool> dim_to_ignore;
+        vector<bool> enabled_axes;
         bool largest_only;
         bool do_26_connectivity;
     };

@@ -84,35 +84,26 @@ void usage ()
                            "This disables TFCE, which is the default otherwise.")
     + Argument ("value").type_float (1.0e-6)
 
+    + Option ("column", "add a column to the design matrix corresponding to subject voxel-wise values "
+                        "(the contrast vector length must include columns for these additions)").allow_multiple()
+    + Argument ("path").type_file_in()
+
     + Option ("connectivity", "use 26-voxel-neighbourhood connectivity (Default: 6)");
 
 }
 
 
 
-// TODO Want to make the connected-components filter & surrounding operations
-//   a little cleaner; in particular, for supporting voxel-wise regressors,
-//   need the mechanism for going from image data to vectorised data to be
-//   accessible by a derivative of SubjectDataImportBase
-//
-// This will include:
-// * A class for transforming image positions into indices for vectorised data
-//   (requires only an input mask image)
-//   (If input data has higher dimensionality than mask image, need to
-//   effectively replicate mask across extra axes)
-// * A class for determining the connectivity between elements
-//   (requires access to the first class, axis list, degree of voxel connectivity,
-//   also ideally capacity to define custom connectivity for a particular axis
-//   in order to support dixel data)
+typedef Stats::TFCE::value_type value_type;
 
 
 
-
-
-template <class VectorType, class ImageType>
+template <class VectorType>
 void write_output (const VectorType& data,
                    const Voxel2Vector& v2v,
-                   ImageType& image) {
+                   const std::string& path,
+                   const Header& header) {
+  auto image = Image<float>::create (path, header);
   for (size_t i = 0; i != v2v.size(); i++) {
     assign_pos_of (v2v[i]).to (image);
     image.value() = data[i];
@@ -121,7 +112,65 @@ void write_output (const VectorType& data,
 
 
 
-typedef Stats::TFCE::value_type value_type;
+// Define data importer class that willl obtain voxel data for a
+//   specific subject based on the string path to the image file for
+//   that subject
+//
+// The challenge with this mechanism for voxel data is that the
+//   class must know how to map data from voxels in 3D space into
+//   a 1D vector of data. This mapping must be done based on the
+//   analysis mask prior to the importing of any subject data.
+//   Moreover, in the case of voxel-wise design matrix columns, the
+//   class must have access to this mapping functionality without
+//   any modification of the class constructor (since these data
+//   are initialised in the CohortDataImport class).
+//
+class SubjectVoxelImport : public SubjectDataImportBase
+{ MEMALIGN(SubjectVoxelImport)
+  public:
+    SubjectVoxelImport (const std::string& path) :
+        SubjectDataImportBase (path),
+        H (Header::open (path)),
+        data (H.get_image<float>()) { }
+
+    void operator() (matrix_type::ColXpr column) const override
+    {
+      assert (v2v);
+      assert (column.rows() == size());
+      Image<float> temp (data); // For thread-safety
+      for (size_t i = 0; i != size(); ++i) {
+        assign_pos_of ((*v2v)[i]).to (temp);
+        column[i] = temp.value();
+      }
+    }
+
+    default_type operator[] (const size_t index) const override
+    {
+      assert (v2v);
+      assert (index < size());
+      Image<float> temp (data); // For thread-safety
+      assign_pos_of ((*v2v)[index]).to (temp);
+      return temp.value();
+    }
+
+    size_t size() const override { assert (v2v); return v2v->size(); }
+
+    const Header& header() const { return H; }
+
+    void set_mapping (std::shared_ptr<Voxel2Vector>& ptr) {
+      v2v = ptr;
+    }
+
+  private:
+    Header H;
+    const Image<float> data;
+
+    static std::shared_ptr<Voxel2Vector> v2v;
+
+};
+std::shared_ptr<Voxel2Vector> SubjectVoxelImport::v2v = nullptr;
+
+
 
 
 
@@ -138,23 +187,61 @@ void run() {
   const bool do_26_connectivity = get_options("connectivity").size();
   const bool do_nonstationary_adjustment = get_options ("nonstationary").size();
 
-  // Read filenames
-  vector<std::string> subjects;
-  {
-    std::string folder = Path::dirname (argument[0]);
-    std::ifstream ifs (argument[0].c_str());
-    std::string temp;
-    while (getline (ifs, temp))
-      subjects.push_back (Path::join (folder, temp));
+  // Load analysis mask and compute adjacency
+  auto mask_header = Header::open (argument[3]);
+  auto mask_image = mask_header.get_image<bool>();
+  Voxel2Vector v2v (mask_image, mask_header);
+  Filter::Connector connector;
+  connector.adjacency.set_26_adjacency (do_26_connectivity);
+  connector.adjacency.initialise (mask_header, v2v);
+  const size_t num_voxels = v2v.size();
+
+  // Read file names and check files exist
+  CohortDataImport importer;
+  importer.initialise<SubjectVoxelImport> (argument[0]);
+  for (size_t i = 0; i != importer.size(); ++i) {
+    if (!dimensions_match (dynamic_cast<SubjectVoxelImport*>(importer[i].get())->header(), mask_header))
+      throw Exception ("Image file \"" + importer[i]->name() + "\" does not match analysis mask");
   }
+  CONSOLE ("Number of subjects: " + str(importer.size()));
 
   // Load design matrix
   const matrix_type design = load_matrix<value_type> (argument[1]);
-  if (design.rows() != (ssize_t)subjects.size())
+  if (design.rows() != (ssize_t)importer.size())
     throw Exception ("number of input files does not match number of rows in design matrix");
 
+  // Load contrast matrix
+  const matrix_type contrast = load_matrix<value_type> (argument[2]);
+  if (contrast.cols() != design.cols())
+    throw Exception ("the number of contrasts does not equal the number of columns in the design matrix");
+
+  // Before validating the contrast matrix, we first need to see if there are any
+  //   additional design matrix columns coming from voxel-wise subject data
+  // TODO Functionalise this
+  vector<CohortDataImport> extra_columns;
+  bool nans_in_columns = false;
+  auto opt = get_options ("column");
+  for (size_t i = 0; i != opt.size(); ++i) {
+    extra_columns.push_back (CohortDataImport());
+    extra_columns[i].initialise<SubjectVoxelImport> (opt[i][0]);
+    if (!extra_columns[i].allFinite())
+      nans_in_columns = true;
+  }
+  if (extra_columns.size()) {
+    CONSOLE ("number of element-wise design matrix columns: " + str(extra_columns.size()));
+    if (nans_in_columns)
+      INFO ("Non-finite values detected in element-wise design matrix columns; individual rows will be removed from voxel-wise design matrices accordingly");
+  }
+
+  if (contrast.cols() != design.cols() + ssize_t(extra_columns.size()))
+    throw Exception ("the number of columns per contrast (" + str(contrast.cols()) + ")"
+                     + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")"
+                     + (extra_columns.size() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
+  if (contrast.rows() > 1)
+    throw Exception ("only a single contrast vector (defined as a row) is currently supported");
+
   // Load permutations file if supplied
-  auto opt = get_options("permutations");
+  opt = get_options("permutations");
   vector<vector<size_t> > permutations;
   if (opt.size()) {
     permutations = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
@@ -173,38 +260,24 @@ void run() {
       throw Exception ("number of rows in the nonstationary permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix");
   }
 
-  // Load contrast matrix
-  const matrix_type contrast = load_matrix<value_type> (argument[2]);
-  if (contrast.cols() != design.cols())
-    throw Exception ("the number of contrasts does not equal the number of columns in the design matrix");
-
-  auto mask_header = Header::open (argument[3]);
-  // Load Mask and compute adjacency
-  auto mask_image = mask_header.get_image<bool>();
-  Voxel2Vector v2v (mask_image, mask_header);
-  Filter::Connector connector;
-  connector.adjacency.set_26_adjacency (do_26_connectivity);
-  connector.adjacency.initialise (mask_header, v2v);
-  const size_t num_vox = v2v.size();
-
-  matrix_type data (num_vox, subjects.size());
-
+  matrix_type data (num_voxels, importer.size());
+  bool nans_in_data = false;
   {
     // Load images
-    ProgressBar progress("loading images", subjects.size());
-    for (size_t subject = 0; subject < subjects.size(); subject++) {
-      LogLevelLatch log_level (0);
-      auto input_image = Image<float>::open (subjects[subject]); //.with_direct_io (3); <- Should be inputting 3D images?
-      check_dimensions (input_image, mask_image, 0, 3);
-      for (size_t voxel_index = 0; voxel_index != num_vox; ++voxel_index) {
-        assign_pos_of (v2v[voxel_index]).to (input_image);
-        data (voxel_index, subject) = input_image.value();
-      }
+    ProgressBar progress ("loading input images", importer.size());
+    for (size_t subject = 0; subject < importer.size(); subject++) {
+      (*importer[subject]) (data.col (subject));
+      if (!data.col (subject).allFinite())
+        nans_in_data = true;
       progress++;
     }
   }
-  if (!data.allFinite())
-    WARN ("input data contains non-finite value(s)");
+  if (nans_in_data) {
+    INFO ("Non-finite values present in data; rows will be removed from voxel-wise design matrices accordingly");
+    if (!extra_columns.size()) {
+      INFO ("(Note that this will result in slower execution than if such values were not present)");
+    }
+  }
 
   Header output_header (mask_header);
   output_header.datatype() = DataType::Float32;
@@ -222,14 +295,126 @@ void run() {
   const std::string prefix (argument[4]);
   bool compute_negative_contrast = get_options("negative").size();
 
-  vector_type default_cluster_output (num_vox);
+  vector_type default_cluster_output (num_voxels);
   std::shared_ptr<vector_type> default_cluster_output_neg;
-  vector_type tvalue_output (num_vox);
+  vector_type tvalue_output (num_voxels);
   vector_type empirical_enhanced_statistic;
   if (compute_negative_contrast)
-    default_cluster_output_neg.reset (new vector_type (num_vox));
+    default_cluster_output_neg.reset (new vector_type (num_voxels));
 
-  std::shared_ptr<Math::Stats::GLMTestBase> glm (new Math::Stats::GLMTTestFixed (data, design, contrast));
+  // Construct the class for performing the initial statistical tests
+  std::shared_ptr<GLMTestBase> glm_test;
+  if (extra_columns.size() || nans_in_data) {
+    glm_test.reset (new GLMTTestVariable (extra_columns, data, design, contrast, nans_in_data, nans_in_columns));
+  } else {
+    glm_test.reset (new GLMTTestFixed (data, design, contrast));
+  }
+
+  if (extra_columns.size()) {
+
+    // For each variable of interest (e.g. beta coefficients, effect size etc.) need to:
+    //   Construct the output data vector, with size = num_voxels
+    //   For each voxel:
+    //     Use glm_test to obtain the design matrix for the default permutation for that voxel
+    //     Use the relevant Math::Stats::GLM function to get the value of interest for just that voxel
+    //       (will still however need to come out as a matrix_type)
+    //     Write that value to data vector
+    //   Finally, use write_output() function to write to an image file
+    matrix_type betas (contrast.cols(), num_voxels);
+    vector_type abs_effect_size (num_voxels), std_effect_size (num_voxels), stdev (num_voxels);
+    {
+      class Source
+      { NOMEMALIGN
+        public:
+          Source (const size_t num_voxels) :
+              num_voxels (num_voxels),
+              counter (0),
+              progress (new ProgressBar ("estimating beta coefficients, effect size and standard deviation", num_voxels)) { }
+          bool operator() (size_t& voxel_index)
+          {
+            voxel_index = counter++;
+            if (counter >= num_voxels) {
+              progress.reset();
+              return false;
+            }
+            assert (progress);
+            ++(*progress);
+            return true;
+          }
+        private:
+          const size_t num_voxels;
+          size_t counter;
+          std::unique_ptr<ProgressBar> progress;
+      };
+
+      class Functor
+      { MEMALIGN(Functor)
+        public:
+          Functor (const matrix_type& data, std::shared_ptr<GLMTestBase> glm_test, const matrix_type& contrasts,
+                   matrix_type& betas, vector_type& abs_effect_size, vector_type& std_effect_size, vector_type& stdev) :
+              data (data),
+              glm_test (glm_test),
+              contrasts (contrasts),
+              global_betas (betas),
+              global_abs_effect_size (abs_effect_size),
+              global_std_effect_size (std_effect_size),
+              global_stdev (stdev) { }
+          bool operator() (const size_t& voxel_index)
+          {
+            const matrix_type data_f = data.row (voxel_index);
+            const matrix_type design_f = dynamic_cast<GLMTTestVariable*>(glm_test.get())->default_design (voxel_index);
+            Math::Stats::GLM::all_stats (data_f, design_f, contrasts,
+                                         local_betas, local_abs_effect_size, local_std_effect_size, local_stdev);
+            global_betas.col (voxel_index) = local_betas;
+            global_abs_effect_size[voxel_index] = local_abs_effect_size(0,0);
+            global_std_effect_size[voxel_index] = local_std_effect_size(0,0);
+            global_stdev[voxel_index] = local_stdev(0,0);
+            return true;
+          }
+
+        private:
+          const matrix_type& data;
+          const std::shared_ptr<GLMTestBase> glm_test;
+          const matrix_type& contrasts;
+          matrix_type& global_betas;
+          vector_type& global_abs_effect_size;
+          vector_type& global_std_effect_size;
+          vector_type& global_stdev;
+          matrix_type local_betas, local_abs_effect_size, local_std_effect_size, local_stdev;
+      };
+
+      Source source (num_voxels);
+      Functor functor (data, glm_test, contrast,
+                       betas, abs_effect_size, std_effect_size, stdev);
+      Thread::run_queue (source, Thread::batch (size_t()), Thread::multi (functor));
+    }
+    {
+      ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", contrast.cols() + 3);
+      for (ssize_t i = 0; i != contrast.cols(); ++i) {
+        write_output (betas.row(i), v2v, prefix + (use_tfce ? "tfce.mif" : "cluster_sizes.mif"), output_header);
+        ++progress;
+      }
+      write_output (abs_effect_size, v2v, prefix + "abs_effect.mif", output_header); ++progress;
+      write_output (std_effect_size, v2v, prefix + "std_effect.mif", output_header); ++progress;
+      write_output (stdev, v2v, prefix + "std_dev.mif", output_header);
+    }
+
+  } else {
+
+    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", contrast.cols() + 4);
+    matrix_type betas, abs_effect_size, std_effect_size, stdev;
+    Math::Stats::GLM::all_stats (data, design, contrast,
+                                 betas, abs_effect_size, std_effect_size, stdev);
+    ++progress;
+    for (ssize_t i = 0; i != contrast.cols(); ++i) {
+      write_output (betas.row(i), v2v, prefix + (use_tfce ? "tfce.mif" : "cluster_sizes.mif"), output_header);
+      ++progress;
+    }
+    write_output (abs_effect_size.row(0), v2v, prefix + "abs_effect.mif", output_header); ++progress;
+    write_output (std_effect_size.row(0), v2v, prefix + "std_effect.mif", output_header); ++progress;
+    write_output (stdev.row(0), v2v, prefix + "std_dev.mif", output_header);
+
+  }
 
   std::shared_ptr<Stats::EnhancerBase> enhancer;
   if (use_tfce) {
@@ -244,80 +429,61 @@ void run() {
       throw Exception ("nonstationary adjustment is not currently implemented for threshold-based cluster analysis");
     if (permutations_nonstationary.size()) {
       Stats::PermTest::PermutationStack permutations (permutations_nonstationary, "precomputing empirical statistic for non-stationarity adjustment...");
-      Stats::PermTest::precompute_empirical_stat (glm, enhancer, permutations, empirical_enhanced_statistic);
+      Stats::PermTest::precompute_empirical_stat (glm_test, enhancer, permutations, empirical_enhanced_statistic);
     } else {
       Stats::PermTest::PermutationStack permutations (nperms_nonstationary, design.rows(), "precomputing empirical statistic for non-stationarity adjustment...", false);
-      Stats::PermTest::precompute_empirical_stat (glm, enhancer, permutations, empirical_enhanced_statistic);
+      Stats::PermTest::precompute_empirical_stat (glm_test, enhancer, permutations, empirical_enhanced_statistic);
     }
 
     save_matrix (empirical_enhanced_statistic, prefix + "empirical.txt");
   }
 
-  Stats::PermTest::precompute_default_permutation (glm, enhancer, empirical_enhanced_statistic,
+  Stats::PermTest::precompute_default_permutation (glm_test, enhancer, empirical_enhanced_statistic,
                                                    default_cluster_output, default_cluster_output_neg, tvalue_output);
 
   {
     ProgressBar progress ("generating pre-permutation output", (compute_negative_contrast ? 3 : 2) + contrast.cols() + 3);
-    {
-      auto tvalue_image = Image<float>::create (prefix + "tvalue.mif", output_header);
-      write_output (tvalue_output, v2v, tvalue_image);
-    }
-    ++progress;
-    {
-      auto cluster_image = Image<float>::create (prefix + (use_tfce ? "tfce.mif" : "cluster_sizes.mif"), output_header);
-      write_output (default_cluster_output, v2v, cluster_image);
-    }
-    ++progress;
+    write_output (tvalue_output, v2v, prefix + "tvalue.mif", output_header); ++progress;
+    write_output (default_cluster_output, v2v, prefix + (use_tfce ? "tfce.mif" : "cluster_sizes.mif"), output_header); ++progress;
     if (compute_negative_contrast) {
       assert (default_cluster_output_neg);
-      auto cluster_image_neg = Image<float>::create (prefix + (use_tfce ? "tfce_neg.mif" : "cluster_sizes_neg.mif"), output_header);
-      write_output (*default_cluster_output_neg, v2v, cluster_image_neg);
+      write_output (*default_cluster_output_neg, v2v, prefix + (use_tfce ? "tfce_neg.mif" : "cluster_sizes_neg.mif"), output_header);
       ++progress;
     }
     auto temp = Math::Stats::GLM::solve_betas (data, design);
     for (ssize_t i = 0; i < contrast.cols(); ++i) {
-      auto beta_image = Image<float>::create (prefix + "beta" + str(i) + ".mif", output_header);
-      write_output (temp.row(i), v2v, beta_image);
+      write_output (temp.row(i), v2v, prefix + "beta" + str(i) + ".mif", output_header);
       ++progress;
     }
-    {
-      const auto temp = Math::Stats::GLM::abs_effect_size (data, design, contrast);
-      auto abs_effect_image = Image<float>::create (prefix + "abs_effect.mif", output_header);
-      write_output (temp.row(0), v2v, abs_effect_image);
-    }
+    const auto abs_effect_size = Math::Stats::GLM::abs_effect_size (data, design, contrast);
+    write_output (abs_effect_size.row(0), v2v, prefix + "abs_effect.mif", output_header);
     ++progress;
-    {
-      const auto temp = Math::Stats::GLM::std_effect_size (data, design, contrast);
-      auto std_effect_image = Image<float>::create (prefix + "std_effect.mif", output_header);
-      write_output (temp.row(0), v2v, std_effect_image);
-    }
+    const auto std_effect_size = Math::Stats::GLM::std_effect_size (data, design, contrast);
+    write_output (std_effect_size.row(0), v2v, prefix + "std_effect.mif", output_header);
     ++progress;
-    {
-      const auto temp = Math::Stats::GLM::stdev (data, design);
-      auto std_dev_image = Image<float>::create (prefix + "std_dev.mif", output_header);
-      write_output (temp.row(0), v2v, std_dev_image);
-    }
+    const auto stdev = Math::Stats::GLM::stdev (data, design);
+    write_output (stdev.row(0), v2v, prefix + "std_dev.mif", output_header);
   }
 
   if (!get_options ("notest").size()) {
 
     vector_type perm_distribution (num_perms);
     std::shared_ptr<vector_type> perm_distribution_neg;
-    vector_type uncorrected_pvalue (num_vox);
+    vector_type uncorrected_pvalue (num_voxels);
     std::shared_ptr<vector_type> uncorrected_pvalue_neg;
 
     if (compute_negative_contrast) {
       perm_distribution_neg.reset (new vector_type (num_perms));
-      uncorrected_pvalue_neg.reset (new vector_type (num_vox));
+      uncorrected_pvalue_neg.reset (new vector_type (num_voxels));
     }
 
     if (permutations.size()) {
-      Stats::PermTest::run_permutations (permutations, glm, enhancer, empirical_enhanced_statistic,
+      Stats::PermTest::run_permutations (permutations, glm_test, enhancer, empirical_enhanced_statistic,
                                          default_cluster_output, default_cluster_output_neg,
                                          perm_distribution, perm_distribution_neg,
                                          uncorrected_pvalue, uncorrected_pvalue_neg);
     } else {
-      Stats::PermTest::run_permutations (num_perms, glm, enhancer, empirical_enhanced_statistic,
+      Stats::PermTest::run_permutations (num_perms, glm_test, enhancer, empirical_enhanced_statistic,
                                          default_cluster_output, default_cluster_output_neg,
                                          perm_distribution, perm_distribution_neg,
                                          uncorrected_pvalue, uncorrected_pvalue_neg);
@@ -330,28 +496,20 @@ void run() {
     }
 
     ProgressBar progress ("generating output", compute_negative_contrast ? 4 : 2);
-    {
-      auto uncorrected_pvalue_image = Image<float>::create (prefix + "uncorrected_pvalue.mif", output_header);
-      write_output (uncorrected_pvalue, v2v, uncorrected_pvalue_image);
-    }
+    write_output (uncorrected_pvalue, v2v, prefix + "uncorrected_pvalue.mif", output_header);
     ++progress;
-    {
-      vector_type fwe_pvalue_output (num_vox);
-      Math::Stats::Permutation::statistic2pvalue (perm_distribution, default_cluster_output, fwe_pvalue_output);
-      auto fwe_pvalue_image = Image<float>::create (prefix + "fwe_pvalue.mif", output_header);
-      write_output (fwe_pvalue_output, v2v, fwe_pvalue_image);
-    }
+    vector_type fwe_pvalue_output (num_voxels);
+    Math::Stats::Permutation::statistic2pvalue (perm_distribution, default_cluster_output, fwe_pvalue_output);
+    write_output (fwe_pvalue_output, v2v, prefix + "fwe_pvalue.mif", output_header);
     ++progress;
     if (compute_negative_contrast) {
       assert (uncorrected_pvalue_neg);
       assert (perm_distribution_neg);
-      auto uncorrected_pvalue_image_neg = Image<float>::create (prefix + "uncorrected_pvalue_neg.mif", output_header);
-      write_output (*uncorrected_pvalue_neg, v2v, uncorrected_pvalue_image_neg);
+      write_output (*uncorrected_pvalue_neg, v2v, prefix + "uncorrected_pvalue_neg.mif", output_header);
       ++progress;
-      vector_type fwe_pvalue_output_neg (num_vox);
+      vector_type fwe_pvalue_output_neg (num_voxels);
       Math::Stats::Permutation::statistic2pvalue (*perm_distribution_neg, *default_cluster_output_neg, fwe_pvalue_output_neg);
-      auto fwe_pvalue_image_neg = Image<float>::create (prefix + "fwe_pvalue_neg.mif", output_header);
-      write_output (fwe_pvalue_output_neg, v2v, fwe_pvalue_image_neg);
+      write_output (fwe_pvalue_output_neg, v2v, prefix + "fwe_pvalue_neg.mif", output_header);
     }
   }
 
