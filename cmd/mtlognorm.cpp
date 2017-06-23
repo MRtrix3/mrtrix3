@@ -33,7 +33,7 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au), Rami Tabbara (rami.tabbara@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)";
 
-  SYNOPSIS = "Multi-Tissue Bias field correction and Intensity Normalisation (MTBIN)";
+  SYNOPSIS = "Multi-Tissue Intensity Normalisation and Bias-field correction.";
 
   DESCRIPTION
    + "This command inputs N number of tissue components "
@@ -252,15 +252,11 @@ void run ()
 
       scale_factors = X.colPivHouseholderQr().solve(y);
 
-      INFO ("scale factors in iteration: " + str(scale_factors.transpose()));
-
       // Ensure our scale factors satisfy the condition that sum(log(scale_factors)) = 0
       double log_sum = 0.f;
       for (size_t j = 0; j < n_tissue_types; ++j)
         log_sum += std::log (scale_factors(j));
       scale_factors /= std::exp (log_sum / n_tissue_types);
-
-      INFO ("log-normalised scale factors in iteration: " + str(scale_factors.transpose()));
 
       // Check for convergence
       Eigen::MatrixXd diff;
@@ -275,8 +271,6 @@ void run ()
       // Perform outlier rejection on log-domain of summed images
       if (!norm_converged) {
 
-        INFO ("Performing outlier rejection");
-
         auto summed_log = Image<float>::scratch (header_3D);
         for (size_t j = 0; j < input_images.size(); ++j) {
           for (auto i = Loop (summed_log, 0, 3) (summed_log, input_images[j], bias_field_image); i; ++i) {
@@ -285,8 +279,6 @@ void run ()
 
           summed_log.value() = std::log(summed_log.value());
         }
-
-        INFO ("Loaded log sum image");
 
         refine_mask (summed_log, initial_mask, mask);
 
@@ -298,15 +290,12 @@ void run ()
 
         num_voxels = summed_log_values.size();
 
-        INFO ("Flatten log sum image: Number of voxels " + str(num_voxels));
-
         std::sort (summed_log_values.begin(), summed_log_values.end());
         float lower_quartile = summed_log_values[std::round ((float)num_voxels * 0.25)];
         float upper_quartile = summed_log_values[std::round ((float)num_voxels * 0.75)];
         float upper_outlier_threshold = upper_quartile + 1.6 * (upper_quartile - lower_quartile);
         float lower_outlier_threshold = lower_quartile - 1.6 * (upper_quartile - lower_quartile);
 
-        INFO ("Finding quartile ranges");
 
         for (auto i = Loop (mask) (mask, summed_log); i; ++i) {
           if (mask.value()) {
