@@ -27,7 +27,7 @@ namespace MR
   {
 
     class TIFF : public Base
-    {
+    { MEMALIGN (TIFF)
       public:
         TIFF (const Header& header) : Base (header) { } 
 

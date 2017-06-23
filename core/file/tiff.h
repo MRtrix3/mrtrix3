@@ -30,7 +30,7 @@ namespace MR
   {
 
     class TIFF
-    {
+    { MEMALIGN (TIFF)
       public:
         TIFF (const std::string& filename, const char* mode = "r");
 
