@@ -133,7 +133,10 @@ class Processor { MEMALIGN(Processor)
       vector_img (vector_img),
       vals (vals),
       modulate (modulate),
-      sort_by_abs (sort_by_abs) { }
+      sort_by_abs (sort_by_abs) { 
+        for (auto& n : this->vals)
+          --n;
+      }
 
     void operator() (Image<value_type>& dt_img)
     {
@@ -188,9 +191,6 @@ class Processor { MEMALIGN(Processor)
           std::sort (std::begin (ith_eig), std::end (ith_eig), 
               [&eigval](size_t a, size_t b) { return std::abs(eigval[a]) > std::abs(eigval[b]); });
         }
-        //std::cerr << ith_eig[0] << ": " << eigval[ith_eig[0]] << "; ";
-        //std::cerr << ith_eig[1] << ": " << eigval[ith_eig[1]] << "; ";
-        //std::cerr << ith_eig[2] << ": " << eigval[ith_eig[2]] << "\n";
       }
         
       /* output value */
@@ -345,11 +345,9 @@ void run ()
     vals = opt[0][0];
     if (vals.empty())
       throw Exception ("invalid eigenvalue/eigenvector number specifier");
-    for (size_t i = 0; i < vals.size(); ++i) {
+    for (size_t i = 0; i < vals.size(); ++i) 
       if (vals[i] < 1 || vals[i] > 3)
         throw Exception ("eigenvalue/eigenvector number is out of bounds");
-      --vals[i];
-    }
   }
 
   bool sort_by_abs = get_options ("abs").size();
