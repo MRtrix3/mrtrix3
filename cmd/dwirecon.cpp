@@ -123,7 +123,7 @@ void run ()
     motionsub.resize(idx.size() * dwi.size(2), motion.cols());
     for (size_t i = 0; i < idx.size(); i++)
       for (size_t j = 0; j < dwi.size(2); j++)
-        motionsub.row(i * dwi.size(2) + j) = motion.row(idx[i] + j).template cast<float>();
+        motionsub.row(i * dwi.size(2) + j) = motion.row(idx[i] * dwi.size(2) + j).template cast<float>();
   }
 
 

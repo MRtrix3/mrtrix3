@@ -82,7 +82,7 @@ else:
 # Set no. iterations
 v2viter = 3
 if app.args.niter:
-    s2viter = int(app.args.niter)
+    v2viter = int(app.args.niter)
 s2viter = 0
 if app.args.svr:
     s2viter = int(app.args.svr)
@@ -134,7 +134,7 @@ for k in range(v2viter):
         run.command('mrconvert -coord 3 ' + str(v) + ' shell.mif target.mif -force')
         run.command('mrreg_lin template.mif target.mif -nonsymmetric -mask2 mask.mif' +
                     ' -type rigid ' + ('-affine_init T-'+str(v)+'.txt' if k>0 else '') +
-                    ' -affine_scale ' + str(0.3 + 0.7*k/(v2viter-1.0)) + ' -affine T-'+str(v)+'.txt -force')
+                    ' -affine_scale ' + str(0.3 + 0.7*(k+1)/v2viter) + ' -affine T-'+str(v)+'.txt -force')
         run.command('transformcalc T-'+str(v)+'.txt decompose trafo.txt -force')
         f2 = open('trafo.txt')
         L = f2.readlines()
@@ -161,7 +161,7 @@ for k in range(s2viter):
                 run.command('mrconvert -coord 3 ' + str(v*dims[2] + s) + ' pred.mif template.mif -force')
             run.command('mrreg_lin template.mif target.mif -nonsymmetric -mask2 slicemask.mif' +
                     ' -type rigid -affine_init ' + ('T-'+str(v)+'-'+str(s)+'.txt' if k>0 else 'T-'+str(v)+'.txt') +
-                    ' -affine_scale ' + str(0.5 + 0.5*k/(s2viter-1.0)) + ' -affine T-'+str(v)+'-'+str(s)+'.txt -force')
+                    ' -affine_scale ' + str(0.5 + 0.5*(k+1)/s2viter) + ' -affine T-'+str(v)+'-'+str(s)+'.txt -force')
             run.command('transformcalc T-'+str(v)+'-'+str(s)+'.txt decompose trafo.txt -force')
             f2 = open('trafo.txt')
             L = f2.readlines()
