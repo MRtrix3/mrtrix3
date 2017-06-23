@@ -29,7 +29,7 @@ void usage ()
   SYNOPSIS = "Create bitwise checkerboard image";
 
   ARGUMENTS
-  + Argument ("input", "the input image to be .").type_image_in ()
+  + Argument ("input", "the input image to be used as a template.").type_image_in ()
   + Argument ("output", "the output binary image mask.").type_image_out ();
 
   OPTIONS
@@ -55,8 +55,7 @@ void run ()
   const bool use_NaN = get_options ("nan").size();
 
   auto in = Image<float>::open (argument[0]);
-  if (in.ndim() < 3)
-    throw Exception ("3D image required");
+  check_3D_nonunity (in);
 
   size_t patchwidth_x = ceil((float) in.size(0) / ntiles);
   size_t patchwidth_y = ceil((float) in.size(1) / ntiles);

@@ -22,11 +22,11 @@ Usage
 Description
 -----------
 
-For 4D images, each 3D volume is processed independently.
-
 The available filters are: fft, gradient, median, smooth, normalise.
 
 Each filter has its own unique set of optional parameters.
+
+For 4D images, each 3D volume is processed independently.
 
 Options
 -------
