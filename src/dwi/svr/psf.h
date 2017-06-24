@@ -44,7 +44,10 @@ namespace MR
 
     private:
         const T _sxy, _sz, _w;
-        static constexpr T fwhm = 2 * std::sqrt(2 * M_LN2); 
+        const T fwhm = 2 * std::sqrt(2 * M_LN2); 
+        const T eps  = std::numeric_limits<T>::epsilon();
+        const T eps2 = std::sqrt(eps);
+        const T eps4 = std::sqrt(eps2);
 
         inline T psf_xy (T x) const
         {
@@ -63,10 +66,6 @@ namespace MR
 
         inline T sinc (T x) const
         {
-            constexpr T eps  = std::numeric_limits<T>::epsilon;
-            constexpr T eps2 = std::sqrt(eps);
-            constexpr T eps4 = std::sqrt(eps2);
-
             T y = M_PI * x;
             if (y > eps4)
                 return std::sin(y) / y;

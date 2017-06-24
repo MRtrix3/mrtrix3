@@ -109,50 +109,53 @@ namespace MR
       inline void init_M(const Header& in, const Eigen::MatrixXf& rigid)
       {
         DEBUG("initialise M");
-        // Tri-linear interpolation for now.
-        // TODO: add point spread function for superresolution
-
         // Note that this step is highly time and memory critical!
         // Special care must be taken when inserting elements and it is advised to reserve appropriate memory in advance.
 
+        int n = 2;
+        PSF<float> psf (n);
+
         // reserve memory for 8 elements along each row (outer strides with row-major order).
-        M.reserve(Eigen::VectorXi::Constant(nv*nz*nxy, 8));
+        M.reserve(Eigen::VectorXi::Constant(nv*nz*nxy, 8*n*n*n));
 
         // set up transform
         Transform T0 (in);          // assume output transform = input transform; needs extending for superresolution
 
-        transform_type T;
-        T.setIdentity();
+        transform_type Ts2r, Tr2s;
 
-        Eigen::Vector3 p, pp0;
+        Eigen::Vector3f ps, pr, p;
         Eigen::Vector3i p0;
-        Eigen::Vector3f w;
 
         // fill weights
         size_t i = 0;
         for (size_t v = 0; v < nv; v++) {
-          if (rigid.rows() == nv)
-            T = get_transform(rigid.row(v));
+          if (rigid.rows() == nv) {
+            Ts2r = T0.scanner2voxel * get_transform(rigid.row(v)) * T0.voxel2scanner;
+            Tr2s = Ts2r.inverse();
+          }
 
           for (size_t z = 0; z < nz; z++) {
-            if (rigid.rows() == nv*nz)
-              T = get_transform(rigid.row(v*nz+z));
+            if (rigid.rows() == nv*nz) {
+              Ts2r = T0.scanner2voxel * get_transform(rigid.row(v*nz+z)) * T0.voxel2scanner;
+              Tr2s = Ts2r.inverse();
+            }
 
             for (size_t y = 0; y < in.size(1); y++) {
               for (size_t x = 0; x < in.size(0); x++, i++) {
-                p = T0.scanner2voxel * T * T0.voxel2scanner * Eigen::Vector3(x, y, z);
-                pp0 = Eigen::Vector3(std::floor(p[0]), std::floor(p[1]), std::floor(p[2]));
-                p0 = pp0.template cast<int>();
-                w = (p - pp0).template cast<float>();
+                ps = Eigen::Vector3f(x, y, z);
+                pr = (Ts2r.cast<float>() * ps);
 
-                if (inbounds(in, p0[0]  , p0[1]  , p0[2]  )) M.insert(i, get_idx(in, p0[0]  , p0[1]  , p0[2]  )) = (1 - w[0]) * (1 - w[1]) * (1 - w[2]);
-                if (inbounds(in, p0[0]+1, p0[1]  , p0[2]  )) M.insert(i, get_idx(in, p0[0]+1, p0[1]  , p0[2]  )) =      w[0]  * (1 - w[1]) * (1 - w[2]);
-                if (inbounds(in, p0[0]  , p0[1]+1, p0[2]  )) M.insert(i, get_idx(in, p0[0]  , p0[1]+1, p0[2]  )) = (1 - w[0]) *      w[1]  * (1 - w[2]);
-                if (inbounds(in, p0[0]+1, p0[1]+1, p0[2]  )) M.insert(i, get_idx(in, p0[0]+1, p0[1]+1, p0[2]  )) =      w[0]  *      w[1]  * (1 - w[2]);
-                if (inbounds(in, p0[0]  , p0[1]  , p0[2]+1)) M.insert(i, get_idx(in, p0[0]  , p0[1]  , p0[2]+1)) = (1 - w[0]) * (1 - w[1]) *      w[2] ;
-                if (inbounds(in, p0[0]+1, p0[1]  , p0[2]+1)) M.insert(i, get_idx(in, p0[0]+1, p0[1]  , p0[2]+1)) =      w[0]  * (1 - w[1]) *      w[2] ;
-                if (inbounds(in, p0[0]  , p0[1]+1, p0[2]+1)) M.insert(i, get_idx(in, p0[0]  , p0[1]+1, p0[2]+1)) = (1 - w[0]) *      w[1]  *      w[2] ;
-                if (inbounds(in, p0[0]+1, p0[1]+1, p0[2]+1)) M.insert(i, get_idx(in, p0[0]+1, p0[1]+1, p0[2]+1)) =      w[0]  *      w[1]  *      w[2] ;
+                for (int rx = -n; rx < n; rx++) {
+                  for (int ry = -n; ry < n; ry++) {
+                    for (int rz = -n; rz < n; rz++) {
+                      p0 = Eigen::Vector3i(std::ceil(pr[0]), std::ceil(pr[1]), std::ceil(pr[2])) + Eigen::Vector3i(rx, ry, rz);
+                      if (inbounds(in, p0[0], p0[1], p0[2])) {
+                        p = Tr2s.cast<float>() * p0.cast<float>();
+                        M.insert(i, get_idx(in, p0[0], p0[1], p0[2])) = psf(ps - p);
+                      }
+                    }
+                  }
+                }
 
               }
             }
