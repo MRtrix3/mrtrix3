@@ -23,8 +23,9 @@ namespace MR
 
     const char* linear_metric_choices[] = { "diff", "ncc", nullptr };
     const char* linear_robust_estimator_choices[] = { "l1", "l2", "lp", nullptr };
-    const char* linear_optimisation_algo_choices[] = { "bbgd", "gd", nullptr };
-    const char* optim_algo_names[] = { "BBGD", "GD", nullptr };
+    const char* linear_optimisation_algo_choices[] = { "bbgd", "gd", "bbgd_robust", nullptr };
+    const char* optim_algo_names[] = { "BBGD", "GD", "BBGD_robust", nullptr };
+    const char* transformProjectionTypeName[] = { "rigid", "affine", "affine_nonsym", nullptr };
 
     // define parameters of initialisation methods used for both, rigid and affine registration
     void parse_general_options (Registration::Linear& registration) {
@@ -36,6 +37,9 @@ namespace MR
           break;
         case 1:
           registration.set_stage_optimiser_default (Registration::OptimiserAlgoType::gd);
+          break;
+        case 2:
+          registration.set_stage_optimiser_default (Registration::OptimiserAlgoType::bbgd_robust);
           break;
         }
       }
@@ -49,6 +53,9 @@ namespace MR
         case 1:
           registration.set_stage_optimiser_first (Registration::OptimiserAlgoType::gd);
           break;
+        case 2:
+          registration.set_stage_optimiser_first (Registration::OptimiserAlgoType::bbgd_robust);
+          break;
         }
       }
 
@@ -61,12 +68,18 @@ namespace MR
         case 1:
           registration.set_stage_optimiser_last (Registration::OptimiserAlgoType::gd);
           break;
+        case 2:
+          registration.set_stage_optimiser_last (Registration::OptimiserAlgoType::bbgd_robust);
+          break;
         }
       }
 
       opt = get_options("linstage.iterations");
       if (opt.size()) {
         vector<int> iterations = parse_ints (opt[0][0]);
+        registration.set_stage_iterations (iterations);
+      } else {
+        vector<int> iterations (1,1);
         registration.set_stage_iterations (iterations);
       }
 
@@ -100,60 +113,6 @@ namespace MR
 
       + Option ("linstage.diagnostics.prefix", "generate diagnostics images after every registration stage")
         + Argument ("file prefix").type_text();
-
-    const OptionGroup rigid_options =
-      OptionGroup ("Rigid registration options")
-
-      + Option ("rigid", "the output text file containing the rigid transformation as a 4x4 matrix")
-        + Argument ("file").type_file_out ()
-
-      + Option ("rigid_1tomidway", "the output text file containing the rigid transformation that "
-        "aligns image1 to image2 in their common midway space as a 4x4 matrix")
-        + Argument ("file").type_file_out ()
-
-      + Option ("rigid_2tomidway", "the output text file containing the rigid transformation that aligns "
-        "image2 to image1 in their common midway space as a 4x4 matrix")
-        + Argument ("file").type_file_out ()
-
-
-      + Option ("rigid_init_matrix", "initialise either the rigid, affine, or syn registration with "
-                                "the supplied rigid transformation (as a 4x4 matrix in scanner coordinates). "
-                                "Note that this overrides rigid_init_translation and rigid_init_rotation initialisation ") // TODO definition of centre
-        + Argument ("file").type_file_in ()
-
-      + Option ("rigid_scale", "use a multi-resolution scheme by defining a scale factor for each level "
-                               "using comma separated values (Default: 0.25,0.5,1.0)")
-        + Argument ("factor").type_sequence_float ()
-
-      + Option ("rigid_niter", "the maximum number of gradient descent iterations per stage. This can be specified either as a single number "
-                               "for all multi-resolution levels, or a single value for each level. (Default: 1000)")
-        + Argument ("num").type_sequence_int ()
-
-      + Option ("rigid_metric", "valid choices are: "
-                                 "diff (intensity differences), "
-                                 // "ncc (normalised cross-correlation) " TODO
-                                 "Default: diff")
-        + Argument ("type").type_choice (linear_metric_choices)
-
-      + Option ("rigid_metric.diff.estimator", "Valid choices are: "
-                                  "l1 (least absolute: |x|), "
-                                  "l2 (ordinary least squares), "
-                                  "lp (least powers: |x|^1.2), "
-                                  "Default: l2")
-        + Argument ("type").type_choice (linear_robust_estimator_choices)
-
-      // + Option ("rigid_loop_density", "density of gradient descent 1 (batch) to 0.0 (max stochastic) (Default: 1.0)")
-      //   + Argument ("num").type_sequence_float () // TODO
-
-      // + Option ("rigid_repetitions", " ")
-      //   + Argument ("num").type_sequence_int () // TODO
-
-      + Option ("rigid_lmax", "explicitly set the lmax to be used per scale factor in rigid FOD registration. By default FOD registration will "
-                              "use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.")
-      + Argument ("num").type_sequence_int ()
-
-      + Option ("rigid_log", "write gradient descent parameter evolution to log file")
-      + Argument ("file").type_file_out ();
 
 
     const OptionGroup affine_options =
@@ -195,6 +154,13 @@ namespace MR
                                   "lp (least powers: |x|^1.2), "
                                   "Default: l2")
         + Argument ("type").type_choice (linear_robust_estimator_choices)
+
+      + Option ("type", "Valid choices are: "
+                                  "rigid"
+                                  "affine"
+                                  "affine_nonsym"
+                                  "Default: affine")
+        + Argument ("type").type_choice (transformProjectionTypeName)
 
       // + Option ("affine_loop_density", "density of gradient descent 1 (batch) to 0.0 (max stochastic) (Default: 1.0)")
       //   + Argument ("num").type_sequence_float () // TODO

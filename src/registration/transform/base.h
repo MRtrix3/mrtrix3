@@ -87,7 +87,9 @@ namespace MR
           using ParameterType = default_type;
           Base (size_t number_of_parameters) :
               number_of_parameters (number_of_parameters),
-              optimiser_weights (number_of_parameters) {
+              optimiser_weights (number_of_parameters),
+              nonsymmetric (false)
+            {
               trafo.matrix().setIdentity();
               trafo_half.matrix().setIdentity();
               trafo_half_inverse.matrix().setIdentity();
@@ -199,6 +201,15 @@ namespace MR
             return optimiser_weights;
           }
 
+
+          const bool is_symmetric () const {
+            return !nonsymmetric;
+          }
+
+          void use_nonsymmetric (const bool asym) {
+            nonsymmetric = asym;
+          }
+
           void set_offset (const Eigen::Vector3& offset_in) {
             trafo.translation() = offset_in;
             compute_halfspace_transformations();
@@ -249,11 +260,17 @@ namespace MR
             tmp.template block<3,4>(0,0) = trafo.matrix();
             assert ((tmp.template block<3,3>(0,0).isApprox (trafo.linear())));
             assert (tmp.determinant() > 0);
-            tmp = tmp.sqrt().eval();
-            trafo_half.matrix() = tmp.template block<3,4>(0,0);
-            trafo_half_inverse.matrix() = trafo_half.inverse().matrix();
-            assert (trafo.matrix().isApprox ((trafo_half*trafo_half).matrix()));
-            assert (trafo.inverse().matrix().isApprox ((trafo_half_inverse*trafo_half_inverse).matrix()));
+            if (nonsymmetric) {
+              trafo_half.matrix() = tmp.template block<3,4>(0,0);
+              trafo_half_inverse.setIdentity();
+              assert (trafo.matrix().isApprox (trafo.matrix()));
+            } else {
+              tmp = tmp.sqrt().eval();
+              trafo_half.matrix() = tmp.template block<3,4>(0,0);
+              trafo_half_inverse.matrix() = trafo_half.inverse().matrix();
+              assert (trafo.matrix().isApprox ((trafo_half*trafo_half).matrix()));
+              assert (trafo.inverse().matrix().isApprox ((trafo_half_inverse*trafo_half_inverse).matrix()));
+            }
             // debug();
           }
 
@@ -263,6 +280,8 @@ namespace MR
           Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo_half_inverse;
           Eigen::Vector3 centre;
           Eigen::VectorXd optimiser_weights;
+          bool nonsymmetric;
+
       };
       //! @}
     }
