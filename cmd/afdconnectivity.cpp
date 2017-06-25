@@ -293,6 +293,7 @@ void run ()
   DWI::Directions::FastLookupSet dirs (1281);
   auto fod = Image<value_type>::open (argument[0]);
   Math::SH::check (fod);
+  check_3D_nonunity (fod);
   AFDConnectivity model (fod, dirs, argument[1], wbft_path);
 
   opt = get_options ("all_fixels");

@@ -286,10 +286,19 @@ def debug(text):
   if _verbosity <= 2: return
   stack = inspect.stack()[1]
   try:
+    filename = stack.filename
     fname = stack.function
   except: # Prior to Version 3.5
+    filename = stack[1]
     fname = stack[3]
-  sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourDebug + '[DEBUG] ' + fname + '(): ' + text + colourClear + '\n')
+  funcname = fname + '()'
+  modulename = inspect.getmodulename(filename)
+  if modulename:
+    funcname = modulename + '.' + funcname
+  # If debug() has been called from within some external function (e.g. a library function), it's often to report on the outcome of that function.
+  # In this instance, find the location where that function itself was called from, rather than where debug() was called from.
+  caller = inspect.getframeinfo(inspect.stack()[min(2,len(inspect.stack()))][0])
+  sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourDebug + '[DEBUG] ' + funcname + ' (from ' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + '): ' + text + colourClear + '\n')
 
 def error(text):
   import os, sys

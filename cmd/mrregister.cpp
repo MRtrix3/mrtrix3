@@ -13,6 +13,7 @@
 
 #include "command.h"
 #include "image.h"
+#include "image_helpers.h"
 #include "filter/reslice.h"
 #include "interp/cubic.h"
 #include "transform.h"
@@ -150,7 +151,10 @@ void run () {
     if (input1[i].ndim() != input2[i].ndim())
       throw Exception ("input images " + input1[i].name() + " and "
         + input2[i].name() + " do not have the same number of dimensions");
+    check_3D_nonunity (input1[i]);
+    check_3D_nonunity (input2[i]);
   }
+
 
 
   auto opt = get_options ("type");
