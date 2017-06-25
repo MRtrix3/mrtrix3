@@ -13,15 +13,17 @@ Usage
 
 ::
 
-    dwi2mask [ options ]  image image
+    dwi2mask [ options ]  input output
 
--  *image*: the input DWI image containing volumes that are both diffusion weighted and b=0
--  *image*: the output whole brain mask image
+-  *input*: the input DWI image containing volumes that are both diffusion weighted and b=0
+-  *output*: the output whole-brain mask image
 
 Description
 -----------
 
-All diffusion weighted and b=0 volumes are used to obtain a mask that includes both brain tissue and CSF. In a second step peninsula-like extensions, where the peninsula itself is wider than the bridge connecting it to the mask, are removed. This may help removing artefacts and non-brain parts, e.g. eyes, from the mask.
+All diffusion weighted and b=0 volumes are used to obtain a mask that includes both brain tissue and CSF.
+
+In a second step peninsula-like extensions, where the peninsula itself is wider than the bridge connecting it to the mask, are removed. This may help removing artefacts and non-brain parts, e.g. eyes, from the mask.
 
 Options
 -------

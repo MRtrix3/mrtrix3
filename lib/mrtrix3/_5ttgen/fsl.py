@@ -24,6 +24,8 @@ def checkOutputPaths():
 def getInputs():
   import os
   from mrtrix3 import app, image, path, run
+  image.check3DNonunity(path.fromUser(app.args.input, False))
+  run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('input.mif', True))
   if app.args.mask:
     run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit -stride -1,+2,+3')
   if app.args.t2:
@@ -165,15 +167,25 @@ def execute():
     first_input_is_brain_extracted = ' -b'
   run.command(first_cmd + ' -s ' + ','.join(sgm_structures) + ' -i T1.nii -o first' + first_input_is_brain_extracted)
 
+  # Test to see whether or not FIRST has succeeded
+  # However if the expected image is absent, it may be due to FIRST being run
+  #   on SGE; in this case it is necessary to wait and see if the file appears.
+  #   But even in this case, FIRST may still fail, and the file will never appear...
+  combined_image_path = 'first_all_none_firstseg' + fsl_suffix
+  if not os.path.isfile(combined_image_path):
+    if 'SGE_ROOT' in os.environ:
+      app.console('FSL FIRST job has been submitted to SGE; awaiting completion')
+      app.console('(note however that FIRST may fail, and hence this script may hang indefinitely)')
+      file.waitFor(combined_image_path)
+    else:
+      app.error('FSL FIRST has failed; not all structures were segmented successfully (check ' + path.toTemp('first.logs', False) + ')')
+
   # Convert FIRST meshes to partial volume images
   pve_image_list = [ ]
   for struct in sgm_structures:
     pve_image_path = 'mesh2pve_' + struct + '.mif'
     vtk_in_path = 'first-' + struct + '_first.vtk'
     vtk_temp_path = struct + '.vtk'
-    # If SGE is used, run_first_all may return without error even though
-    #   the output files haven't actually been created yet
-    file.waitFor(vtk_in_path)
     run.command('meshconvert ' + vtk_in_path + ' ' + vtk_temp_path + ' -transform first2real T1.nii')
     run.command('mesh2pve ' + vtk_temp_path + ' ' + fast_t1_input + ' ' + pve_image_path)
     pve_image_list.append(pve_image_path)

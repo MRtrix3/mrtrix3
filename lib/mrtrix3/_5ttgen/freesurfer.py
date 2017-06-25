@@ -17,6 +17,7 @@ def checkOutputPaths():
 def getInputs():
   import os, shutil
   from mrtrix3 import app, path, run
+  run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('input.mif', True))
   if app.args.lut:
     run.function(shutil.copyfile, path.fromUser(app.args.lut, False), path.toTemp('LUT.txt', False))
 
