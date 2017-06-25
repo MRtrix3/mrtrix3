@@ -54,9 +54,9 @@ namespace MR
         using UpdateType = typename TransformType::UpdateType;
 
         ///////////////////////////////// parameters ///////////////////////////////////////
-        MR::vector<int> ntiles (3, File::Config::get_int ("reg_linreg_robust_ntiles", 8));
+        MR::vector<int> ntiles (3, File::Config::get_int ("reg_linreg_robust_ntiles", 7));
         int max_tilesize = File::Config::get_int ("reg_linreg_robust_max_tilesize", 15);
-        int robust_maxiter = File::Config::get_int ("reg_linreg_robust_maxiter", 20);
+        int robust_maxiter = File::Config::get_int ("reg_linreg_robust_maxiter", 30);
         default_type mask_fraction = File::Config::get_float ("reg_linreg_robust_mask_fraction", 0.15);
           // store current parameters
         Eigen::Matrix<ParameterType, Eigen::Dynamic, 1> x_before;
