@@ -105,18 +105,15 @@ void run () {
   }
   else if (get_options ("rotation").size()) {
     Registration::Transform::Init::initialise_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
-    Registration::Transform::Init::set_centre_via_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
     Registration::Transform::Init::initialise_using_rotation_search (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
   }
   else {
     Registration::Transform::Init::initialise_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
   }
-  transform.info();
+  INFO(transform.info());
   // Registration::Transform::Init::initialise_using_image_centres (im1_image, im2_image, im1_mask, im2_mask, transform, init);
   // Registration::Transform::Init::set_centre_via_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
   // Registration::Transform::Init::set_centre_via_image_centres (im1_image, im2_image, im1_mask, im2_mask, transform, init);
-
-
   save_transform (transform.get_transform(), argument[2]);
-
+  std::cout << transform.get_centre()(0) << ',' << transform.get_centre()(1) << ',' << transform.get_centre()(2) << std::endl;
 }
