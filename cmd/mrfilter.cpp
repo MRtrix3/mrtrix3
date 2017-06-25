@@ -121,9 +121,9 @@ void usage ()
   SYNOPSIS = "Perform filtering operations on 3D / 4D MR images";
 
   DESCRIPTION
-  + "For 4D images, each 3D volume is processed independently."
-  + "The available filters are: fft, gradient, median, smooth, normalise, zclean."
-  + "Each filter has its own unique set of optional parameters.";
+  + "The available filters are: fft, gradient, median, smooth, normalise."
+  + "Each filter has its own unique set of optional parameters."
+  + "For 4D images, each 3D volume is processed independently.";
 
   ARGUMENTS
   + Argument ("input",  "the input image.").type_image_in ()
@@ -279,16 +279,6 @@ void run () {
       auto opt = get_options ("maskin");
       if (!opt.size())
         throw Exception (std::string(argument[1]) + " filter requires initial mask");
-      // INFO ("creating intensity mask using ball in centre of image");
-      // Eigen::Vector3 pos;
-      // const Eigen::Vector3 centre (input.size(0) / 2, input.size(1) / 2, input.size(2) / 2);
-      // int dsq = std::ceil<int>(1.0 * centre.minCoeff());
-      // dsq *= dsq;
-      // for (auto l = Loop (0,3) (int_roi); l; ++l) {
-      //   pos << int_roi.index(0), int_roi.index(1), int_roi.index(2);
-      //   int_roi.value() = (centre - pos).squaredNorm() < dsq;
-      //   cnt += int_roi.value();
-      // }
       Image<float> maskin = Image<float>::open (opt[0][0]);
       check_dimensions (maskin, input, 0, 3);
 
