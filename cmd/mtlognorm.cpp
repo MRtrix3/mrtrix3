@@ -31,9 +31,9 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au), Rami Tabbara (rami.tabbara@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)";
+  AUTHOR = "Thijs Dhollander (thijs.dhollander@gmail.com), Rami Tabbara (rami.tabbara@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)";
 
-  SYNOPSIS = "Multi-Tissue Intensity Normalisation and Bias-field correction.";
+  SYNOPSIS = "Multi-tissue informed log-domain intensity normalisation";
 
   DESCRIPTION
    + "This command inputs N number of tissue components "
@@ -43,9 +43,7 @@ void usage ()
 
    + "The -mask option is mandatory, and is optimally provided with a brain mask, such as the one obtained from dwi2mask earlier in the processing pipeline."
 
-   + "Example usage: mtbin wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif."
-
-   + "The estimated multiplicative bias field is guaranteed to have a mean of 1 over all voxels within the mask.";
+   + "Example usage: mtlognorm wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif.";
 
   ARGUMENTS
     + Argument ("input output", "list of all input and output tissue compartment files. See example usage in the description. "
@@ -64,8 +62,7 @@ void usage ()
 
     + Option ("independent", "intensity normalise each tissue type independently")
 
-    + Option ("maxiter", "set the maximum number of iterations. Default(" + str(DEFAULT_MAXITER_VALUE) + "). "
-                         "It will stop before the max iterations if convergence is detected")
+    + Option ("maxiter", "set the number of iterations. Default(" + str(DEFAULT_MAXITER_VALUE) + ").")
     + Argument ("number").type_integer()
 
     + Option ("check", "check the final mask used to compute the bias field. This mask excludes outlier regions ignored by the bias field fitting procedure. However, these regions are still corrected for bias fields based on the other image data.")
@@ -84,21 +81,21 @@ FORCE_INLINE Eigen::MatrixXd basis_function (const Eigen::Vector3 pos) {
   basis(1) = x;
   basis(2) = y;
   basis(3) = z;
-  basis(4) = x * y;
-  basis(5) = x * z;
-  basis(6) = y * z;
-  basis(7) = x * x;
-  basis(8) = y * y;
-  basis(9)= z * z;
-  basis(10)= x * x * y;
-  basis(11) = x * x * z;
-  basis(12) = y * y * x;
-  basis(13) = y * y * z;
-  basis(14) = z * z * x;
-  basis(15) = z * z * y;
-  basis(16) = x * x * x;
-  basis(17) = y * y * y;
-  basis(18) = z * z * z;
+  basis(4) = x * x;
+  basis(5) = y * y;
+  basis(6) = z * z;
+  basis(7) = x * y;
+  basis(8) = x * z;
+  basis(9) = y * z;
+  basis(10) = x * x * x;
+  basis(11) = y * y * y;
+  basis(12) = z * z * z;
+  basis(13) = x * x * y;
+  basis(14) = x * x * z;
+  basis(15) = y * y * x;
+  basis(16) = y * y * z;
+  basis(17) = z * z * x;
+  basis(18) = z * z * y;
   basis(19) = x * y * z;
   return basis;
 }

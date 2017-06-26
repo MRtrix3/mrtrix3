@@ -189,7 +189,7 @@ List of MRtrix3 commands
     :ref:`mrtransform`, "Apply spatial transformations to an image"
     :ref:`mrview`, "The MRtrix image viewer."
     :ref:`mtbin`, "Multi-Tissue Bias field correction and Intensity Normalisation (MTBIN)"
-    :ref:`mtlognorm`, "Multi-Tissue Intensity Normalisation and Bias-field correction."
+    :ref:`mtlognorm`, "Multi-tissue informed log-domain intensity normalisation"
     :ref:`mtnormalise`, "Multi-tissue normalise"
     :ref:`peaks2amp`, "Convert peak directions image to amplitudes"
     :ref:`sh2amp`, "Evaluate the amplitude of an image of spherical harmonic functions along specified directions"

@@ -6,7 +6,7 @@ mtlognorm
 Synopsis
 --------
 
-Multi-Tissue Intensity Normalisation and Bias-field correction.
+Multi-tissue informed log-domain intensity normalisation
 
 Usage
 --------
@@ -24,9 +24,7 @@ This command inputs N number of tissue components (e.g. from multi-tissue CSD), 
 
 The -mask option is mandatory, and is optimally provided with a brain mask, such as the one obtained from dwi2mask earlier in the processing pipeline.
 
-Example usage: mtbin wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif.
-
-The estimated multiplicative bias field is guaranteed to have a mean of 1 over all voxels within the mask.
+Example usage: mtlognorm wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif.
 
 Options
 -------
@@ -39,7 +37,7 @@ Options
 
 -  **-independent** intensity normalise each tissue type independently
 
--  **-maxiter number** set the maximum number of iterations. Default(10). It will stop before the max iterations if convergence is detected
+-  **-maxiter number** set the number of iterations. Default(10).
 
 -  **-check image** check the final mask used to compute the bias field. This mask excludes outlier regions ignored by the bias field fitting procedure. However, these regions are still corrected for bias fields based on the other image data.
 
@@ -66,7 +64,7 @@ Standard options
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au), Rami Tabbara (rami.tabbara@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)
+**Author:** Thijs Dhollander (thijs.dhollander@gmail.com), Rami Tabbara (rami.tabbara@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
 
