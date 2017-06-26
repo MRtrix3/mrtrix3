@@ -29,7 +29,8 @@ void usage ()
 {
   AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk), "
            "J-Donald Tournier (jdtournier@gmail.com), "
-           "Philip Broser (philip.broser@me.com).";
+           "Philip Broser (philip.broser@me.com), "
+           "Daniel Blezek (daniel.blezek@gmail.com).";
 
   SYNOPSIS = "Convert between different track file formats";
 
