@@ -358,9 +358,15 @@ void run () {
   bool init_rigid_matrix_set = false;
   if (opt.size()) {
     init_rigid_matrix_set = true;
-    transform_type rigid_transform = load_transform (opt[0][0]);
+    Eigen::Vector3 centre;
+    transform_type rigid_transform = load_transform (opt[0][0], centre);
     rigid.set_transform (rigid_transform);
-    rigid_registration.set_init_translation_type (Registration::Transform::Init::set_centre_mass);
+    if (!std::isfinite(centre(0))) {
+      rigid_registration.set_init_translation_type (Registration::Transform::Init::set_centre_mass);
+    } else {
+      rigid.set_centre_without_transform_update(centre);
+      rigid_registration.set_init_translation_type (Registration::Transform::Init::none);
+    }
   }
 
   opt = get_options ("rigid_init_translation");
@@ -509,9 +515,15 @@ void run () {
       throw Exception ("you cannot initialise with -affine_init_matrix since a rigid registration is being performed");
 
     init_affine_matrix_set = true;
-    transform_type init_affine = load_transform (opt[0][0]);
-    affine.set_transform (init_affine);
-    affine_registration.set_init_translation_type (Registration::Transform::Init::set_centre_mass);
+    Eigen::Vector3 centre;
+    transform_type affine_transform = load_transform (opt[0][0], centre);
+    affine.set_transform (affine_transform);
+    if (!std::isfinite(centre(0))) {
+      affine_registration.set_init_translation_type (Registration::Transform::Init::set_centre_mass);
+    } else {
+      affine.set_centre_without_transform_update(centre);
+      affine_registration.set_init_translation_type (Registration::Transform::Init::none);
+    }
   }
 
   opt = get_options ("affine_init_translation");
@@ -872,13 +884,13 @@ void run () {
     }
 
     if (output_rigid_1tomid)
-      save_transform (rigid.get_transform_half(), rigid_1tomid_filename);
+      save_transform (rigid.get_centre(), rigid.get_transform_half(), rigid_1tomid_filename);
 
     if (output_rigid_2tomid)
-      save_transform (rigid.get_transform_half_inverse(), rigid_2tomid_filename);
+      save_transform (rigid.get_centre(), rigid.get_transform_half_inverse(), rigid_2tomid_filename);
 
     if (output_rigid)
-      save_transform (rigid.get_transform(), rigid_filename);
+      save_transform (rigid.get_centre(), rigid.get_transform(), rigid_filename);
   }
 
   // ****** RUN AFFINE REGISTRATION *******
@@ -940,13 +952,13 @@ void run () {
       } else throw Exception ("FIXME: metric selection");
     }
     if (output_affine_1tomid)
-      save_transform (affine.get_transform_half(), affine_1tomid_filename);
+      save_transform (affine.get_centre(), affine.get_transform_half(), affine_1tomid_filename);
 
     if (output_affine_2tomid)
-      save_transform (affine.get_transform_half_inverse(), affine_2tomid_filename);
+      save_transform (affine.get_centre(), affine.get_transform_half_inverse(), affine_2tomid_filename);
 
     if (output_affine)
-      save_transform (affine.get_transform(), affine_filename);
+      save_transform (affine.get_centre(), affine.get_transform(), affine_filename);
   }
 
 
