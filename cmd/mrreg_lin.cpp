@@ -255,8 +255,10 @@ void run () {
   // bool init_affine_matrix_set = false;
   if (opt.size()) {
   //   init_affine_matrix_set = true;
-    transform_type init_affine = load_transform (opt[0][0]);
+    Eigen::Vector3 centre;
+    transform_type init_affine = load_transform (opt[0][0], centre);
     affine.set_transform (init_affine);
+    affine.set_centre_without_transform_update (centre); // centre is NaN if not present in matrix file.
   }
 
   affine.use_nonsymmetric(do_nonsymmetric);
@@ -507,13 +509,13 @@ void run () {
     } else throw Exception ("FIXME: metric selection");
   }
   if (output_affine_1tomid)
-    save_transform (affine.get_transform_half(), affine_1tomid_filename);
+    save_transform (affine.get_centre(), affine.get_transform_half(), affine_1tomid_filename);
 
   if (output_affine_2tomid)
-    save_transform (affine.get_transform_half_inverse(), affine_2tomid_filename);
+    save_transform (affine.get_centre(), affine.get_transform_half_inverse(), affine_2tomid_filename);
 
   if (output_affine)
-    save_transform (affine.get_transform(), affine_filename);
+    save_transform (affine.get_centre(), affine.get_transform(), affine_filename);
 
   if (get_options ("affine_log").size())
     linear_logstream.close();

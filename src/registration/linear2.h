@@ -337,8 +337,10 @@ namespace MR
                 if (s.fod_lmax < 0)
                   throw Exception ("the lmax needs to be defined for each registration stage");
 
-            Transform::Init::LinearInitialisationParams init;
-            Transform::Init::set_centre_via_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts); // doesn't change translation or linear matrix
+            if (!std::isfinite(transform.get_centre()(0)) or !std::isfinite(transform.get_centre()(1)) or !std::isfinite(transform.get_centre()(2))) {
+              Transform::Init::LinearInitialisationParams init;
+              Transform::Init::set_centre_via_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts); // doesn't change translation or linear matrix
+            }
 
             INFO ("Transformation before registration:");
             INFO (transform.info());
