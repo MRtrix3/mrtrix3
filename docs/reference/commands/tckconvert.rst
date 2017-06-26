@@ -80,7 +80,7 @@ Standard options
 
 
 
-**Author:** Daan Christiaens (daan.christiaens@kcl.ac.uk), J-Donald Tournier (jdtournier@gmail.com), Philip Broser (philip.broser@me.com).
+**Author:** Daan Christiaens (daan.christiaens@kcl.ac.uk), J-Donald Tournier (jdtournier@gmail.com), Philip Broser (philip.broser@me.com), Daniel Blezek (daniel.blezek@gmail.com).
 
 **Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
 
