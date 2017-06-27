@@ -27,8 +27,8 @@ using namespace MR;
 using namespace App;
 
 #define DEFAULT_NORM_VALUE 0.282094
-#define DEFAULT_MAXITER_VALUE 10
-#define DEFAULT_INNER_MAXITER_VALUE 10
+#define DEFAULT_MAIN_ITER_VALUE 15
+#define DEFAULT_INNER_MAXITER_VALUE 21
 
 void usage ()
 {
@@ -61,7 +61,7 @@ void usage ()
     + Option ("bias", "output the estimated bias field")
     + Argument ("image").type_image_out ()
 
-    + Option ("maxiter", "set the number of iterations. Default(" + str(DEFAULT_MAXITER_VALUE) + ").")
+    + Option ("maxiter", "set the number of iterations. Default(" + str(DEFAULT_MAIN_ITER_VALUE) + ").")
     + Argument ("number").type_integer()
 
     + Option ("check", "check the final mask used to compute the bias field. This mask excludes outlier regions ignored by the bias field fitting procedure."
@@ -197,7 +197,7 @@ void run ()
 
   const float log_norm_value = std::log (normalisation_value);
 
-  const size_t max_iter = get_option_value ("maxiter", DEFAULT_MAXITER_VALUE);
+  const size_t max_iter = get_option_value ("maxiter", DEFAULT_MAIN_ITER_VALUE);
 
   const size_t max_inner_iter = DEFAULT_INNER_MAXITER_VALUE;
 

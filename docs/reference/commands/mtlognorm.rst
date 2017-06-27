@@ -35,7 +35,7 @@ Options
 
 -  **-bias image** output the estimated bias field
 
--  **-maxiter number** set the number of iterations. Default(10).
+-  **-maxiter number** set the number of iterations. Default(15).
 
 -  **-check image** check the final mask used to compute the bias field. This mask excludes outlier regions ignored by the bias field fitting procedure.However, these regions are still corrected for bias fields based on the other image data.
 
