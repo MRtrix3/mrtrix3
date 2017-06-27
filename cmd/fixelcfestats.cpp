@@ -408,7 +408,7 @@ void run() {
           data (fixel, subject) = value;
         }
       } else {
-        data.col (subject) = subject_data_vector;
+        data.col (subject) = Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, 1> > (subject_data_vector.data(), mask_fixels);
       }
       progress++;
     }
