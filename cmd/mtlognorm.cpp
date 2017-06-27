@@ -28,6 +28,7 @@ using namespace App;
 
 #define DEFAULT_NORM_VALUE 0.282094
 #define DEFAULT_MAXITER_VALUE 10
+#define DEFAULT_INNER_MAXITER_VALUE 10
 
 void usage ()
 {
@@ -60,12 +61,11 @@ void usage ()
     + Option ("bias", "output the estimated bias field")
     + Argument ("image").type_image_out ()
 
-    + Option ("independent", "intensity normalise each tissue type independently")
-
     + Option ("maxiter", "set the number of iterations. Default(" + str(DEFAULT_MAXITER_VALUE) + ").")
     + Argument ("number").type_integer()
 
-    + Option ("check", "check the final mask used to compute the bias field. This mask excludes outlier regions ignored by the bias field fitting procedure. However, these regions are still corrected for bias fields based on the other image data.")
+    + Option ("check", "check the final mask used to compute the bias field. This mask excludes outlier regions ignored by the bias field fitting procedure."
+                       "However, these regions are still corrected for bias fields based on the other image data.")
     + Argument ("image").type_image_out ();
 }
 
@@ -118,9 +118,6 @@ void run ()
   if (argument.size() % 2)
     throw Exception ("The number of input arguments must be even. There must be an output file provided for every input tissue image");
 
-  if (argument.size() < 4)
-    throw Exception ("At least two tissue types must be provided");
-
   ProgressBar progress ("performing intensity normalisation and bias field correction...");
   vector<Image<float> > input_images;
   vector<Header> output_headers;
@@ -134,6 +131,9 @@ void run ()
 
     if (i > 0)
       check_dimensions (input_images[0], input_images[i / 2], 0, 3);
+
+    if (input_images[i / 2].ndim () != 4)
+      throw Exception ("input image \"" + input_images[i / 2].name() + "\" must be 4-dimensional.");
 
     if (Path::exists (argument[i + 1]) && !App::overwrite_files)
       throw Exception ("output file \"" + argument[i] + "\" already exists (use -force option to force overwrite)");
@@ -199,6 +199,7 @@ void run ()
 
   const size_t max_iter = get_option_value ("maxiter", DEFAULT_MAXITER_VALUE);
 
+  const size_t max_inner_iter = DEFAULT_INNER_MAXITER_VALUE;
 
   // Initialise bias fields in both image and log domain
   Eigen::MatrixXd bias_field_weights (n_basis_vecs, 0);
@@ -214,8 +215,58 @@ void run ()
   Eigen::VectorXd scale_factors (n_tissue_types);
   Eigen::VectorXd previous_scale_factors (n_tissue_types);
 
+  scale_factors.fill(1);
+
   size_t iter = 1;
 
+  // Store lambda-function for performing outlier-rejection.
+  // We perform a coarse outlier-rejection initially as well as
+  // a finer outlier-rejection within the inner loop when computing
+  // normalisation scale factors
+  auto outlier_rejection = [&](float outlier_range) {
+
+    auto summed_log = Image<float>::scratch (header_3D);
+    for (size_t j = 0; j < n_tissue_types; ++j) {
+      for (auto i = Loop (summed_log, 0, 3) (summed_log, combined_tissue, bias_field_image); i; ++i) {
+        combined_tissue.index(3) = j;
+        summed_log.value() += scale_factors(j) * combined_tissue.value() / bias_field_image.value();
+      }
+
+      summed_log.value() = std::log(summed_log.value());
+    }
+
+    threaded_copy (initial_mask, mask);
+
+    vector<float> summed_log_values;
+    for (auto i = Loop (mask) (mask, summed_log); i; ++i) {
+      if (mask.value())
+        summed_log_values.emplace_back (summed_log.value());
+    }
+
+    num_voxels = summed_log_values.size();
+
+    std::sort (summed_log_values.begin(), summed_log_values.end());
+    float lower_quartile = summed_log_values[std::round ((float)num_voxels * 0.25)];
+    float upper_quartile = summed_log_values[std::round ((float)num_voxels * 0.75)];
+    float upper_outlier_threshold = upper_quartile + outlier_range * (upper_quartile - lower_quartile);
+    float lower_outlier_threshold = lower_quartile - outlier_range * (upper_quartile - lower_quartile);
+
+
+    for (auto i = Loop (mask) (mask, summed_log); i; ++i) {
+      if (mask.value()) {
+        if (summed_log.value() < lower_outlier_threshold || summed_log.value() > upper_outlier_threshold) {
+          mask.value() = 0;
+          num_voxels--;
+        }
+      }
+    }
+
+    if (log_level >= 3)
+      display (mask);
+  };
+
+  // Perform an initial outlier rejection prior to the first iteration
+  outlier_rejection (3.f);
 
   while (iter < max_iter) {
 
@@ -226,38 +277,41 @@ void run ()
     size_t norm_iter = 1;
     bool norm_converged = false;
 
-    while (!norm_converged && norm_iter < max_iter) {
+    while (!norm_converged && norm_iter < max_inner_iter) {
 
       INFO ("norm iteration: " + str(norm_iter));
 
-      // Solve for tissue normalisation scale factors
-      Eigen::MatrixXd X (num_voxels, n_tissue_types);
-      Eigen::VectorXd y (num_voxels);
-      y.fill (1);
-      uint32_t index = 0;
+      if (n_tissue_types > 1) {
 
-      for (auto i = Loop (mask) (mask, combined_tissue, bias_field_image); i; ++i) {
-        if (mask.value()) {
-          for (size_t j = 0; j < n_tissue_types; ++j) {
-            combined_tissue.index (3) = j;
-            X (index, j) = combined_tissue.value() / bias_field_image.value();
+        // Solve for tissue normalisation scale factors
+        Eigen::MatrixXd X (num_voxels, n_tissue_types);
+        Eigen::VectorXd y (num_voxels);
+        y.fill (1);
+        uint32_t index = 0;
+
+        for (auto i = Loop (mask) (mask, combined_tissue, bias_field_image); i; ++i) {
+          if (mask.value()) {
+            for (size_t j = 0; j < n_tissue_types; ++j) {
+              combined_tissue.index (3) = j;
+              X (index, j) = combined_tissue.value() / bias_field_image.value();
+            }
+            ++index;
           }
-          ++index;
         }
-      }
 
-      scale_factors = X.colPivHouseholderQr().solve(y);
+        scale_factors = X.colPivHouseholderQr().solve(y);
 
-      // Ensure our scale factors satisfy the condition that sum(log(scale_factors)) = 0
-      double log_sum = 0.f;
-      for (size_t j = 0; j < n_tissue_types; ++j) {
-        if (scale_factors(j) <= 0.0)
-          throw Exception ("Non-positive tissue intensity normalisation scale factor was computed."
-                           " Tissue index: " + str(j) + " Scale factor: " + str(scale_factors(j)) +
-                           " Needs to be strictly positive!");
-        log_sum += std::log (scale_factors(j));
+        // Ensure our scale factors satisfy the condition that sum(log(scale_factors)) = 0
+        double log_sum = 0.f;
+        for (size_t j = 0; j < n_tissue_types; ++j) {
+          if (scale_factors(j) <= 0.0)
+            throw Exception ("Non-positive tissue intensity normalisation scale factor was computed."
+                             " Tissue index: " + str(j) + " Scale factor: " + str(scale_factors(j)) +
+                             " Needs to be strictly positive!");
+          log_sum += std::log (scale_factors(j));
+        }
+        scale_factors /= std::exp (log_sum / n_tissue_types);
       }
-      scale_factors /= std::exp (log_sum / n_tissue_types);
 
       // Check for convergence
       if (iter > 1) {
@@ -270,45 +324,7 @@ void run ()
 
       // Perform outlier rejection on log-domain of summed images
       if (!norm_converged) {
-
-        auto summed_log = Image<float>::scratch (header_3D);
-        for (size_t j = 0; j < n_tissue_types; ++j) {
-          for (auto i = Loop (summed_log, 0, 3) (summed_log, combined_tissue, bias_field_image); i; ++i) {
-            combined_tissue.index(3) = j;
-            summed_log.value() += scale_factors(j) * combined_tissue.value() / bias_field_image.value();
-          }
-
-          summed_log.value() = std::log(summed_log.value());
-        }
-
-        refine_mask (summed_log, initial_mask, mask);
-
-        vector<float> summed_log_values;
-        for (auto i = Loop (mask) (mask, summed_log); i; ++i) {
-          if (mask.value())
-            summed_log_values.emplace_back (summed_log.value());
-        }
-
-        num_voxels = summed_log_values.size();
-
-        std::sort (summed_log_values.begin(), summed_log_values.end());
-        float lower_quartile = summed_log_values[std::round ((float)num_voxels * 0.25)];
-        float upper_quartile = summed_log_values[std::round ((float)num_voxels * 0.75)];
-        float upper_outlier_threshold = upper_quartile + 1.6 * (upper_quartile - lower_quartile);
-        float lower_outlier_threshold = lower_quartile - 1.6 * (upper_quartile - lower_quartile);
-
-
-        for (auto i = Loop (mask) (mask, summed_log); i; ++i) {
-          if (mask.value()) {
-            if (summed_log.value() < lower_outlier_threshold || summed_log.value() > upper_outlier_threshold) {
-              mask.value() = 0;
-              num_voxels--;
-            }
-          }
-        }
-
-        if (log_level >= 3)
-          display (mask);
+        outlier_rejection(1.6f);
       }
 
       previous_scale_factors = scale_factors;
@@ -372,16 +388,6 @@ void run ()
   }
   progress++;
 
-  // Compute mean of all scale factors in the log domain
-  opt = get_options ("independent");
-  if (!opt.size()) {
-    float mean = 0.0;
-    for (int i = 0; i < scale_factors.size(); ++i)
-      mean += std::log(scale_factors(i, 0));
-    mean /= scale_factors.size();
-    mean = std::exp (mean);
-    scale_factors.fill (mean);
-  }
 
   // Output bias corrected and normalised tissue maps
   uint32_t total_count = 0;
@@ -392,13 +398,33 @@ void run ()
     total_count += count;
   }
 
+  // Compute log-norm scale
+  float log_norm_scale { 0.f };
+  if (num_voxels) {
+    for (auto i = Loop (0,3) (mask, bias_field_log); i; ++i) {
+      if (mask.value ())
+        log_norm_scale += bias_field_log.value ();
+    }
+
+    log_norm_scale = std::exp(log_norm_scale / (float)num_voxels);
+  }
+
+
   for (size_t j = 0; j < output_filenames.size(); ++j) {
-    output_headers[j].keyval()["normalisation_scale_factor"] = str(scale_factors(j, 0));
+    output_headers[j].keyval()["log_norm_scale"] = str(log_norm_scale);
     auto output_image = Image<float>::create (output_filenames[j], output_headers[j]);
-    for (auto i = Loop (output_image) (output_image, input_images[j]); i; ++i) {
-      assign_pos_of (output_image, 0, 3).to (bias_field_image);
-      output_image.value() = scale_factors(j, 0) * input_images[j].value() / bias_field_image.value();
-      output_image.value() = std::max<float>(output_image.value(), 0.f);
+    const size_t n_vols = input_images[j].size(3);
+    const Eigen::VectorXf zero_vec = Eigen::VectorXf::Zero (n_vols);
+
+    for (auto i = Loop (0,3) (output_image, input_images[j], bias_field_image); i; ++i) {
+      input_images[j].index(3) = 0;
+
+      float dc = scale_factors(j) * input_images[j].value() / bias_field_image.value();
+
+      if (dc < 0.f)
+        output_image.row(3) = zero_vec;
+      else
+        output_image.row(3) = scale_factors(j) * Eigen::VectorXf{input_images[j].row(3)} / bias_field_image.value();
     }
   }
 }
