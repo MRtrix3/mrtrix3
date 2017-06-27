@@ -419,12 +419,12 @@ void run ()
     for (auto i = Loop (0,3) (output_image, input_images[j], bias_field_image); i; ++i) {
       input_images[j].index(3) = 0;
 
-      float dc = scale_factors(j) * input_images[j].value() / bias_field_image.value();
+      float dc = input_images[j].value() / bias_field_image.value();
 
       if (dc < 0.f)
         output_image.row(3) = zero_vec;
       else
-        output_image.row(3) = scale_factors(j) * Eigen::VectorXf{input_images[j].row(3)} / bias_field_image.value();
+        output_image.row(3) = Eigen::VectorXf{input_images[j].row(3)} / bias_field_image.value();
     }
   }
 }
