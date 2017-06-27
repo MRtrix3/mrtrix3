@@ -35,11 +35,9 @@ Options
 
 -  **-bias image** output the estimated bias field
 
--  **-independent** intensity normalise each tissue type independently
-
 -  **-maxiter number** set the number of iterations. Default(10).
 
--  **-check image** check the final mask used to compute the bias field. This mask excludes outlier regions ignored by the bias field fitting procedure. However, these regions are still corrected for bias fields based on the other image data.
+-  **-check image** check the final mask used to compute the bias field. This mask excludes outlier regions ignored by the bias field fitting procedure.However, these regions are still corrected for bias fields based on the other image data.
 
 Standard options
 ^^^^^^^^^^^^^^^^
