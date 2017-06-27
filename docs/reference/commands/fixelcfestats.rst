@@ -62,6 +62,8 @@ Additional options for fixelcfestats
 
 -  **-angle value** the max angle threshold for assigning streamline tangents to fixels (Default: 45 degrees)
 
+-  **-mask file** provide a fixel data file containing a mask of those fixels to be used during processing
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
