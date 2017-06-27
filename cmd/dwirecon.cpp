@@ -56,20 +56,24 @@ void usage ()
 
   + DWI::ShellOption
 
+  + OptionGroup ("Output options")
+
+  + Option ("rpred",
+            "output predicted signal in original (rotated) directions. (useful for registration)")
+    + Argument ("out").type_image_out()
+
+  + Option ("spred",
+            "output source prediction of all scattered slices. (useful for diagnostics)")
+    + Argument ("out").type_image_out()
+
+  + OptionGroup ("CG Optimization options")
+
   + Option ("tolerance", "the tolerance on the conjugate gradient solver. (default = " + str(DEFAULT_TOL) + ")")
     + Argument ("t").type_float(0.0, 1.0)
 
   + Option ("maxiter",
             "the maximum number of iterations of the conjugate gradient solver. (default = " + str(DEFAULT_MAXITER) + ")")
-    + Argument ("n").type_integer(1)
-    
-  + Option ("rpred",
-            "output predicted signal in original (rotated) directions. (useful for registration)")
-    + Argument ("out").type_image_out()
-  
-  + Option ("spred",
-            "output source prediction of all scattered slices. (useful for diagnostics)")
-    + Argument ("out").type_image_out();
+    + Argument ("n").type_integer(1);
 
 }
 
