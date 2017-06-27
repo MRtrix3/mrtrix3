@@ -43,7 +43,7 @@ namespace MR
       @{ */
 
 
-      class connectivity { MEMALIGN(connectivity)
+      class connectivity { NOMEMALIGN
         public:
           connectivity () : value (0.0) { }
           connectivity (const connectivity_value_type v) : value (v) { }
@@ -61,6 +61,7 @@ namespace MR
         public:
           TrackProcessor (Image<uint32_t>& fixel_indexer,
                           const vector<direction_type>& fixel_directions,
+                          Image<bool>& fixel_mask,
                           vector<uint16_t>& fixel_TDI,
                           vector<std::map<uint32_t, connectivity> >& connectivity_matrix,
                           const value_type angular_threshold);
@@ -70,6 +71,7 @@ namespace MR
         private:
           Image<uint32_t> fixel_indexer;
           const vector<direction_type>& fixel_directions;
+          Image<bool> fixel_mask;
           vector<uint16_t>& fixel_TDI;
           vector<std::map<uint32_t, connectivity> >& connectivity_matrix;
           const value_type angular_threshold_dp;

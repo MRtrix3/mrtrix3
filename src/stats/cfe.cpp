@@ -25,11 +25,13 @@ namespace MR
 
       TrackProcessor::TrackProcessor (Image<uint32_t>& fixel_indexer,
                                       const vector<direction_type>& fixel_directions,
+                                      Image<bool>& fixel_mask,
                                       vector<uint16_t>& fixel_TDI,
                                       vector<std::map<uint32_t, connectivity> >& connectivity_matrix,
                                       const value_type angular_threshold) :
                                         fixel_indexer        (fixel_indexer) ,
                                         fixel_directions     (fixel_directions),
+                                        fixel_mask           (fixel_mask),
                                         fixel_TDI            (fixel_TDI),
                                         connectivity_matrix  (connectivity_matrix),
                                         angular_threshold_dp (std::cos (angular_threshold * (Math::pi/180.0))) { }
@@ -43,22 +45,26 @@ namespace MR
         for (SetVoxelDir::const_iterator i = in.begin(); i != in.end(); ++i) {
           assign_pos_of (*i).to (fixel_indexer);
           fixel_indexer.index(3) = 0;
-          uint32_t num_fibres = fixel_indexer.value();
-          if (num_fibres > 0) {
+          uint32_t num_fixels = fixel_indexer.value();
+          if (num_fixels > 0) {
             fixel_indexer.index(3) = 1;
             uint32_t first_index = fixel_indexer.value();
-            uint32_t last_index = first_index + num_fibres;
-            uint32_t closest_fixel_index = 0;
+            uint32_t last_index = first_index + num_fixels;
+            // Note: Streamlines can still be assigned to a fixel that is outside the mask;
+            //   however this will not be permitted to contribute to the matrix
+            uint32_t closest_fixel_index = num_fixels;
             value_type largest_dp = 0.0;
             const direction_type dir (i->get_dir().normalized());
             for (uint32_t j = first_index; j < last_index; ++j) {
               const value_type dp = std::abs (dir.dot (fixel_directions[j]));
               if (dp > largest_dp) {
                 largest_dp = dp;
-                closest_fixel_index = j;
+                fixel_mask.index(0) = j;
+                if (fixel_mask.value())
+                  closest_fixel_index = j;
               }
             }
-            if (largest_dp > angular_threshold_dp) {
+            if (closest_fixel_index != num_fixels && largest_dp > angular_threshold_dp) {
               tract_fixel_indices.push_back (closest_fixel_index);
               fixel_TDI[closest_fixel_index]++;
             }
