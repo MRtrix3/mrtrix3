@@ -268,7 +268,7 @@ void run ()
   // Perform an initial outlier rejection prior to the first iteration
   outlier_rejection (3.f);
 
-  while (iter < max_iter) {
+  while (iter <= max_iter) {
 
     INFO ("iteration: " + str(iter));
 
@@ -277,7 +277,7 @@ void run ()
     size_t norm_iter = 1;
     bool norm_converged = false;
 
-    while (!norm_converged && norm_iter < max_inner_iter) {
+    while (!norm_converged && norm_iter <= max_inner_iter) {
 
       INFO ("norm iteration: " + str(norm_iter));
 
