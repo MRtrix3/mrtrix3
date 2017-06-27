@@ -324,7 +324,7 @@ void run ()
 
       // Perform outlier rejection on log-domain of summed images
       if (!norm_converged) {
-        outlier_rejection(1.6f);
+        outlier_rejection(1.5f);
       }
 
       previous_scale_factors = scale_factors;
@@ -399,19 +399,19 @@ void run ()
   }
 
   // Compute log-norm scale
-  float log_norm_scale { 0.f };
+  float lognorm_scale { 0.f };
   if (num_voxels) {
     for (auto i = Loop (0,3) (mask, bias_field_log); i; ++i) {
       if (mask.value ())
-        log_norm_scale += bias_field_log.value ();
+        lognorm_scale += bias_field_log.value ();
     }
 
-    log_norm_scale = std::exp(log_norm_scale / (float)num_voxels);
+    lognorm_scale = std::exp(lognorm_scale / (float)num_voxels);
   }
 
 
   for (size_t j = 0; j < output_filenames.size(); ++j) {
-    output_headers[j].keyval()["log_norm_scale"] = str(log_norm_scale);
+    output_headers[j].keyval()["lognorm_scale"] = str(lognorm_scale);
     auto output_image = Image<float>::create (output_filenames[j], output_headers[j]);
     const size_t n_vols = input_images[j].size(3);
     const Eigen::VectorXf zero_vec = Eigen::VectorXf::Zero (n_vols);
