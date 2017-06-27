@@ -13,9 +13,10 @@
 #   __________ Initialisation __________
 
 # Make the corresponding MRtrix3 Python libraries available
-import inspect, os, sys
-#lib_folder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile(inspect.currentframe()))[0], os.pardir, 'lib')))
-lib_folder = os.path.realpath(os.path.abspath('/home/dc16/dev/mrtrix3/lib'))
+import inspect, os, sys, subprocess
+p = subprocess.Popen(['which', 'mrinfo'], stdout=subprocess.PIPE)
+line = p.stdout.readline().decode().strip()
+lib_folder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(line)[0], os.pardir, 'lib')))
 if not os.path.isdir(lib_folder):
     sys.stderr.write('Unable to locate MRtrix3 Python libraries')
     sys.exit(1)
@@ -111,7 +112,7 @@ if app.args.mb:
 
 # select shell
 run.command('dwiextract -shell ' + str(shell) + ' in.mif shell.mif')
-dims = map(int, image.headerField('shell.mif', 'size').split())
+dims = list(map(int, image.headerField('shell.mif', 'size').split()))
 if dims[3] < (lmax+1)*(lmax+2)//2:
     app.error('Option -lmax ' + str(lmax) + ' incompatible with n=' +str(dims[3])+ ' volumes in b=' + str(shell) + ' shell.')
 run.command('mrinfo shell.mif -export_grad_mrtrix grad.txt')
