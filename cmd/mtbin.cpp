@@ -22,16 +22,19 @@
 #include "transform.h"
 #include "math/least_squares.h"
 #include "algo/threaded_copy.h"
+#include "algo/threaded_loop.h"
+#include "filter/base.h"
 
 using namespace MR;
 using namespace App;
 
 #define DEFAULT_NORM_VALUE 0.282094
 #define DEFAULT_MAXITER_VALUE 100
+#define DEFAULT_EXTRAPOLATION 0.25
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au), Rami Tabbara (rami.tabbara@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au), Rami Tabbara (rami.tabbara@florey.edu.au), Max Pietsch (maximilian.pietsch@kcl.ac.uk) and Thijs Dhollander (thijs.dhollander@gmail.com)";
 
   SYNOPSIS = "Multi-Tissue Bias field correction and Intensity Normalisation (MTBIN)";
 
@@ -40,12 +43,12 @@ void usage ()
      "(e.g. from multi-tissue CSD), and outputs N corrected tissue components. Intensity normalisation is performed by either "
      "determining a common global normalisation factor for all tissue types (default) or by normalising each tissue type independently "
      "with a single tissue-specific global scale factor."
-     
+
    + "The -mask option is mandatory, and is optimally provided with a brain mask, such as the one obtained from dwi2mask earlier in the processing pipeline."
 
    + "Example usage: mtbin wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif."
 
-   + "The estimated multiplicative bias field is guaranteed to have a mean of 1 over all voxels within the mask.";
+   + "The estimated multiplicative bias field is guaranteed to have a mean of 1 over all voxels within the refined mask.";
 
   ARGUMENTS
     + Argument ("input output", "list of all input and output tissue compartment files. See example usage in the description. "
@@ -59,16 +62,24 @@ void usage ()
                        "(Default: sqrt(1/(4*pi)) = " + str(DEFAULT_NORM_VALUE, 6) + ")")
     + Argument ("number").type_float ()
 
+    + Option ("extrapolate_bias", "specify the range outside the refined mask in which the bias field is applied without fading to 1.0 as a fraction of the field of view. "
+        "The bias field fades to 1.0 for voxels outside this range. "
+        "1.0: apply the unaltered bias field in the whole image. "
+        "0.0: the refined mask is applied to the bias field (not recommended). (Default: "+str(DEFAULT_EXTRAPOLATION)+") ")
+    + Argument ("number").type_float (0.0, 1.0)
+
     + Option ("bias", "output the estimated bias field")
     + Argument ("image").type_image_out ()
 
     + Option ("independent", "intensity normalise each tissue type independently")
 
-    + Option ("maxiter", "set the maximum number of iterations. Default(" + str(DEFAULT_MAXITER_VALUE) + "). "
+    + Option ("maxiter", "set the maximum number of iterations. (Default: " + str(DEFAULT_MAXITER_VALUE) + "). "
                          "It will stop before the max iterations if convergence is detected")
     + Argument ("number").type_integer()
 
-    + Option ("check", "check the final mask used to compute the bias field. This mask excludes outlier regions ignored by the bias field fitting procedure. However, these regions are still corrected for bias fields based on the other image data.")
+    + Option ("check", "check the final refined mask used to compute the bias field. This mask excludes outlier regions ignored by the "
+        "bias field fitting procedure. However, voxels outside this region are still corrected for bias fields using an extrapolation "
+        " based on the image data inside the mask. Use the option extrapolate_bias to adjust this behaviour.")
     + Argument ("image").type_image_out ();
 }
 
@@ -102,6 +113,72 @@ FORCE_INLINE Eigen::MatrixXd basis_function (const Eigen::Vector3 pos) {
   basis(19) = x * y * z;
   return basis;
 }
+
+class DilateCount : public Filter::Base { MEMALIGN(DilateCount)
+
+public:
+  template <class HeaderType>
+  DilateCount (const HeaderType& in) :
+      Base (in),
+      npass (1)
+  {
+    datatype_ = DataType::UInt32;
+  }
+
+  template <class HeaderType>
+  DilateCount (const HeaderType& in, const std::string& message) :
+      Base (in, message),
+      npass (1)
+  {
+    datatype_ = DataType::UInt32;
+  }
+
+  template <class InputImageType, class OutputImageType>
+  void operator() (InputImageType& input, OutputImageType& output)
+  {
+    std::shared_ptr <Image<uint32_t> > in (new Image<unsigned int> (Image<uint32_t>::scratch (input)));
+    copy (input, *in);
+    std::shared_ptr <Image<uint32_t> > out;
+    std::shared_ptr<ProgressBar> progress (message.size() ? new ProgressBar (message, npass + 1) : nullptr);
+
+    for (unsigned int pass = 0; pass < npass; pass++) {
+      out = make_shared<Image<uint32_t>> (Image<uint32_t>::scratch (input));
+      if (pass == npass - 1) {
+        for (auto l = Loop (*in) (*in, *out); l; ++l)
+          out->value() = dilate (*in, npass + 1);
+      } else {
+        for (auto l = Loop (*in) (*in, *out); l; ++l)
+          out->value() = dilate (*in);
+      }
+      if (pass < npass - 1)
+        in = out;
+      if (progress)
+        ++(*progress);
+    }
+    copy (*out, output);
+  }
+
+  void set_npass (unsigned int npasses) {
+    npass = npasses;
+  }
+
+
+protected:
+
+  uint32_t dilate (Image<uint32_t>& in, uint32_t outsidevalue = 0) {
+    if (in.value()) return in.value();
+    uint32_t val;
+    if (in.index(0) > 0) { in.index(0)--; val = in.value(); in.index(0)++; if (val) return ++val; }
+    if (in.index(1) > 0) { in.index(1)--; val = in.value(); in.index(1)++; if (val) return ++val; }
+    if (in.index(2) > 0) { in.index(2)--; val = in.value(); in.index(2)++; if (val) return ++val; }
+    if (in.index(0) < in.size(0)-1) { in.index(0)++; val = in.value(); in.index(0)--; if (val) return ++val; }
+    if (in.index(1) < in.size(1)-1) { in.index(1)++; val = in.value(); in.index(1)--; if (val) return ++val; }
+    if (in.index(2) < in.size(2)-1) { in.index(2)++; val = in.value(); in.index(2)--; if (val) return ++val; }
+    return outsidevalue;
+  }
+
+  unsigned int npass;
+};
 
 // Currently not used, but keep if we want to make mask argument optional in the future
 FORCE_INLINE void compute_mask (Image<float>& summed, Image<bool>& mask) {
@@ -194,6 +271,7 @@ void run ()
     throw Exception ("error in automatic mask generation. Mask contains no voxels");
 
   const float normalisation_value = get_option_value ("value", DEFAULT_NORM_VALUE);
+  const float extrapolate_fov = get_option_value ("extrapolate_bias", DEFAULT_EXTRAPOLATION);
   const size_t max_iter = get_option_value ("maxiter", DEFAULT_MAXITER_VALUE);
 
   // Initialise bias field
@@ -325,6 +403,44 @@ void run ()
 
     progress++;
     iter++;
+  }
+
+  if (extrapolate_fov < 1.0) {
+    DilateCount filter (mask);
+    float fov = 0.0;
+    size_t npass = 1;
+    size_t bridge = 1;
+    for (size_t dim = 0; dim < 3; ++dim) {
+      if (fov < mask.size(dim) * mask.spacing(dim)) {
+        fov = mask.size(dim) * mask.spacing(dim);
+        npass = std::max<size_t>(1,std::ceil(1.5 * extrapolate_fov * mask.size(dim)));
+        bridge = std::max<size_t>(1, std::min(std::ceil(extrapolate_fov * 0.5 * mask.size(dim)), std::ceil(float(npass)/3.0)));
+      }
+    }
+    INFO ("fading bias field to 1.0 for voxels between " + str(bridge) + " and " + str(npass) + " voxels away from refined mask");
+    if (bridge < 5)
+      WARN ("Sharp transition of bias field. Increase extrapolation?");
+    filter.set_npass (npass);
+    filter.datatype() = DataType::Float32;
+    auto mask_distance = Image<float>::scratch (filter);
+    filter (mask, mask_distance);
+    // weight the biasfield for all voxels closer than bridge voxels to the mask with 1.0,
+    // those further apart than npass voxels with 0.0
+    ThreadedLoop (mask_distance).run (
+        [&bridge, &npass](Image<float>& mask_distance, Image<float>& bias_field) {
+          // scale distance to mask to [0, 1]
+          float x = 1.0 - std::max<float>(0, mask_distance.value() - bridge) / (npass - bridge + 1);
+          assert (x >= 0.0);
+          assert (x <= 1.0);
+          // apply smooth step function with zero 1st and 2nd order derivatives at x=0 and x=1
+          x = x*x*x*(x*(x*6.0 - 15.0) + 10.0);
+          bias_field.value() = bias_field.value() * x + 1.0 - x;
+          if (log_level >= 3)
+            mask_distance.value() = x;
+        }, mask_distance, bias_field);
+    if (log_level >= 3)
+      display (mask_distance);
+    progress++;
   }
 
   opt = get_options ("bias");
