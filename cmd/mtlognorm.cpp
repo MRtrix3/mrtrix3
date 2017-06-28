@@ -262,12 +262,12 @@ void run ()
 
     if (log_level >= 3)
       display (mask);
-
-    threaded_copy (mask, prev_mask);
   };
 
   // Perform an initial outlier rejection prior to the first iteration
   outlier_rejection (3.f);
+
+  threaded_copy (mask, prev_mask);
 
   while (iter <= max_iter) {
 
@@ -314,6 +314,8 @@ void run ()
         scale_factors /= std::exp (log_sum / n_tissue_types);
       }
 
+      INFO ("scale factors: " + str(scale_factors.transpose()));
+
       // Perform outlier rejection on log-domain of summed images
       outlier_rejection(1.5f);
 
@@ -326,11 +328,10 @@ void run ()
         }
       }
 
+      threaded_copy (mask, prev_mask);
+
       norm_iter++;
     }
-
-
-    INFO ("scale factors: " + str(scale_factors.transpose()));
 
 
     // Solve for bias field weights in the log domain
