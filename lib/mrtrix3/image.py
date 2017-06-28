@@ -13,65 +13,64 @@ def check3DNonunity(image_path):
 
 
 
-def headerField(image_path, field):
-  import subprocess
-  from mrtrix3 import app, run
-  command = [ run.exeName(run.versionMatch('mrinfo')), image_path, '-' + field ]
-  if app._verbosity > 1:
-    app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
-  proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
-  result, err = proc.communicate()
-  result = result.rstrip().decode('utf-8')
-  if app._verbosity > 1:
-    if '\n' in result:
-      app.console('Result: (' + str(result.count('\n')+1) + ' lines)')
-      app.debug(result)
-    else:
-      app.console('Result: ' + result)
+# Function to grab all contents of an image header
+# Uses mrinfo's new -json_all option in order to grab all header information
+#   from any image format supported by MRtrix3's C++ libraries
+class _Header:
+  def __init__(self, image_path):
+    import json, os, subprocess, tempfile
+    from mrtrix3 import app, file, run
+    filename = file.newTempFile('json')
+    command = [ run.exeName(run.versionMatch('mrinfo')), image_path, '-json_all', filename ]
+    if app._verbosity > 1:
+      app.console('Loading header for image file \'' + image_path + '\'')
+    app.debug(str(command))
+    result = subprocess.call(command, stdout=None, stderr=None)
+    if result:
+      app.error('Could not access header information for image \'' + image_path + '\'')
+    with open(filename, 'r') as f:
+      elements = json.load(f)
+    os.remove(filename)
+    self.__dict__.update(elements)
+    if not self.keyval:
+      self.keyval = { }
+
+def header(image_path):
+  result = _Header(image_path)
   return result
 
 
 
-def headerKeyValue(image_path, key):
-  import subprocess
-  from mrtrix3 import app, run
-  command = [ run.exeName(run.versionMatch('mrinfo')), image_path, '-property', key ]
-  if app._verbosity > 1:
-    app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
-  proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
-  result, err = proc.communicate()
-  result = result.rstrip().decode('utf-8')
-  if app._verbosity > 1:
-    app.console('Result: ' + result)
-  return result
-
-
-
+# Check to see whether the fundamental header properties of two images match
+# Inputs can be either _Header class instances, or file paths
 def match(image_one, image_two):
   import math
   from mrtrix3 import app
-  debug_prefix = '\'' + image_one + '\' \'' + image_two + '\''
+  if not isinstance(image_one, _Header):
+    if not type(image_one) is str:
+      app.error('Error trying to test \'' + str(image_one) + '\': Not an image header or file path')
+    image_one = header(image_one)
+  if not isinstance(image_two, _Header):
+    if not type(image_two) is str:
+      app.error('Error trying to test \'' + str(image_two) + '\': Not an image header or file path')
+    image_two = header(image_two)
+  debug_prefix = '\'' + image_one.name + '\' \'' + image_two.name + '\''
   # Image dimensions
-  one_dim = [ int(i) for i in headerField(image_one, 'size').split() ]
-  two_dim = [ int(i) for i in headerField(image_two, 'size').split() ]
-  if not one_dim == two_dim:
-    app.debug(debug_prefix + ' dimension mismatch (' + str(one_dim) + ' ' + str(two_dim) + ')')
+  if not image_one.size == image_two.size:
+    app.debug(debug_prefix + ' dimension mismatch (' + str(image_one.size) + ' ' + str(image_two.size) + ')')
     return False
   # Voxel size
-  one_spacing = [ float(f) for f in headerField(image_one, 'vox').split() ]
-  two_spacing = [ float(f) for f in headerField(image_two, 'vox').split() ]
-  for one, two in zip(one_spacing, two_spacing):
+  for one, two in zip(image_one.spacing, image_two.spacing):
     if one and two and not math.isnan(one) and not math.isnan(two):
       if (abs(two-one) / (0.5*(one+two))) > 1e-04:
-        app.debug(debug_prefix + ' voxel size mismatch (' + str(one_spacing) + ' ' + str(two_spacing) + ')')
+        app.debug(debug_prefix + ' voxel size mismatch (' + str(image_one.spacing) + ' ' + str(image_two.spacing) + ')')
         return False
   # Image transform
-  one_transform = [ float(f) for f in headerField(image_one, 'transform').replace('\n', ' ').replace(',', ' ').split() ]
-  two_transform = [ float(f) for f in headerField(image_two, 'transform').replace('\n', ' ').replace(',', ' ').split() ]
-  for one, two in zip(one_transform, two_transform):
-    if abs(one-two) > 1e-4:
-      app.debug(debug_prefix + ' transform mismatch (' + str(one_transform) + ' ' + str(two_transform) + ')')
-      return False
+  for line_one, line_two in zip(image_one.transform, image_two.transform):
+    for one, two in zip(line_one, line_two):
+      if abs(one-two) > 1e-4:
+        app.debug(debug_prefix + ' transform mismatch (' + str(image_one.transform) + ' ' + str(image_two.transform) + ')')
+        return False
   # Everything matches!
   app.debug(debug_prefix + ' image match')
   return True

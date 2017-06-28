@@ -2,7 +2,6 @@
 
 # Generates an unbiased group-average template via image registration of images to a midway space.
 
-
 # Make the corresponding MRtrix3 Python libraries available
 import inspect, os, sys
 lib_folder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile(inspect.currentframe()))[0], os.pardir, 'lib')))
@@ -10,7 +9,6 @@ if not os.path.isdir(lib_folder):
   sys.stderr.write('Unable to locate MRtrix3 Python libraries')
   sys.exit(1)
 sys.path.insert(0, lib_folder)
-
 
 
 import shutil
@@ -290,13 +288,13 @@ if app.args.linear_transformations_dir:
 
 # automatically detect SH series
 do_fod_registration = False
-image_size = [int(x) for x in image.headerField(relpath(input[0].directory, input[0].filename), 'size').split(' ')]
+image_size = image.header(relpath(input[0].directory, input[0].filename)).size
 if len(image_size) < 3 or len(image_size) > 4:
   app.error('only 3 and 4 dimensional images can be used to build a template')
 if len(image_size) == 4:
   val = (math.sqrt (1 + 8 * image_size[3]) - 3.0) / 4.0;
   if not (val - int(val)) and not noreorientation:
-    app.console("SH Series detected, performing FOD registration")
+    app.console("SH series detected, performing FOD registration")
     do_fod_registration = True
 
 #rigid options

@@ -53,14 +53,18 @@ def newTempFile(suffix):
   from mrtrix3 import app
   if 'TmpFileDir' in app.config:
     dir_path = app.config['TmpFileDir']
-  else:
+  elif app._tempDir:
     dir_path = app._tempDir
+  else:
+    dir_path = os.getcwd()
   if 'TmpFilePrefix' in app.config:
     prefix = app.config['TmpFilePrefix']
   else:
     prefix = 'mrtrix-tmp-'
   full_path = dir_path
-  if not suffix:
+  if suffix:
+    suffix = suffix.lstrip('.')
+  else:
     suffix = 'mif'
   while os.path.exists(full_path):
     random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
