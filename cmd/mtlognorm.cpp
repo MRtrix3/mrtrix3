@@ -22,6 +22,7 @@
 #include "transform.h"
 #include "math/least_squares.h"
 #include "algo/threaded_copy.h"
+#include "adapter/replicate.h"
 
 using namespace MR;
 using namespace App;
@@ -119,7 +120,11 @@ void run ()
     throw Exception ("The number of input arguments must be even. There must be an output file provided for every input tissue image");
 
   ProgressBar progress ("performing intensity normalisation and bias field correction...");
-  vector<Image<float> > input_images;
+
+  using ImageType = Image<float>;
+  using MaskType = Image<bool>;
+
+  vector<Adapter::Replicate<ImageType>> input_images;
   vector<Header> output_headers;
   vector<std::string> output_filenames;
 
@@ -127,18 +132,28 @@ void run ()
   // Open input images and prepare output image headers
   for (size_t i = 0; i < argument.size(); i += 2) {
     progress++;
-    input_images.emplace_back (Image<float>::open (argument[i]));
+
+    auto image = ImageType::open (argument[i]);
+
+    if (image.ndim () > 4)
+      throw Exception ("input image \"" + image.name() + "\" must contain 4 dimensions or less.");
+
+    // Elevate image dimensions to ensure it is 4-dimensional
+    // e.g. x,y,z -> x,y,z,1
+    // This ensures consistency across multiple tissue input images
+    Header h_image4d (image);
+    h_image4d.ndim() = 4;
+
+    Adapter::Replicate<ImageType> image4d (image, h_image4d);
+    input_images.emplace_back (image4d);
 
     if (i > 0)
       check_dimensions (input_images[0], input_images[i / 2], 0, 3);
 
-    if (input_images[i / 2].ndim () != 4)
-      throw Exception ("input image \"" + input_images[i / 2].name() + "\" must be 4-dimensional.");
-
     if (Path::exists (argument[i + 1]) && !App::overwrite_files)
       throw Exception ("output file \"" + argument[i] + "\" already exists (use -force option to force overwrite)");
 
-    output_headers.emplace_back (Header::open (argument[i]));
+    output_headers.emplace_back (h_image4d);
     output_filenames.emplace_back (argument[i + 1]);
   }
 
@@ -150,12 +165,12 @@ void run ()
   header_3D.ndim() = 3;
   auto opt = get_options ("mask");
 
-  auto orig_mask = Image<bool>::open (opt[0][0]);
-  auto initial_mask = Image<bool>::scratch (orig_mask);
-  auto mask = Image<bool>::scratch (orig_mask);
-  auto prev_mask = Image<bool>::scratch (orig_mask);
+  auto orig_mask = MaskType::open (opt[0][0]);
+  auto initial_mask = MaskType::scratch (orig_mask);
+  auto mask = MaskType::scratch (orig_mask);
+  auto prev_mask = MaskType::scratch (orig_mask);
 
-  auto summed = Image<float>::scratch (header_3D);
+  auto summed = ImageType::scratch (header_3D);
   for (size_t j = 0; j < input_images.size(); ++j) {
     for (auto i = Loop (0, 3) (summed, input_images[j]); i; ++i)
       summed.value() += input_images[j].value();
@@ -171,7 +186,7 @@ void run ()
   Header h_combined_tissue (input_images[0]);
   h_combined_tissue.ndim () = 4;
   h_combined_tissue.size (3) = n_tissue_types;
-  auto combined_tissue = Image<float>::scratch (h_combined_tissue, "Packed tissue components");
+  auto combined_tissue = ImageType::scratch (h_combined_tissue, "Packed tissue components");
 
   for (size_t i = 0; i < n_tissue_types; ++i) {
     combined_tissue.index (3) = i;
@@ -205,8 +220,8 @@ void run ()
   // Initialise bias fields in both image and log domain
   Eigen::MatrixXd bias_field_weights (n_basis_vecs, 0);
 
-  auto bias_field_image = Image<float>::scratch (header_3D);
-  auto bias_field_log = Image<float>::scratch (header_3D);
+  auto bias_field_image = ImageType::scratch (header_3D);
+  auto bias_field_log = ImageType::scratch (header_3D);
 
   for (auto i = Loop(bias_field_log) (bias_field_image, bias_field_log); i; ++i) {
     bias_field_image.value() = 1.f;
@@ -224,7 +239,7 @@ void run ()
   // normalisation scale factors
   auto outlier_rejection = [&](float outlier_range) {
 
-    auto summed_log = Image<float>::scratch (header_3D);
+    auto summed_log = ImageType::scratch (header_3D);
     for (size_t j = 0; j < n_tissue_types; ++j) {
       for (auto i = Loop (0, 3) (summed_log, combined_tissue, bias_field_image); i; ++i) {
         combined_tissue.index(3) = j;
@@ -374,14 +389,14 @@ void run ()
 
   opt = get_options ("bias");
   if (opt.size()) {
-    auto bias_field_output = Image<float>::create (opt[0][0], header_3D);
+    auto bias_field_output = ImageType::create (opt[0][0], header_3D);
     threaded_copy (bias_field_image, bias_field_output);
   }
   progress++;
 
   opt = get_options ("check");
   if (opt.size()) {
-    auto mask_output = Image<float>::create (opt[0][0], mask);
+    auto mask_output = ImageType::create (opt[0][0], mask);
     threaded_copy (mask, mask_output);
   }
   progress++;
@@ -410,7 +425,7 @@ void run ()
 
   for (size_t j = 0; j < output_filenames.size(); ++j) {
     output_headers[j].keyval()["lognorm_scale"] = str(lognorm_scale);
-    auto output_image = Image<float>::create (output_filenames[j], output_headers[j]);
+    auto output_image = ImageType::create (output_filenames[j], output_headers[j]);
     const size_t n_vols = input_images[j].size(3);
     const Eigen::VectorXf zero_vec = Eigen::VectorXf::Zero (n_vols);
 
