@@ -153,6 +153,7 @@ void run ()
   auto orig_mask = Image<bool>::open (opt[0][0]);
   auto initial_mask = Image<bool>::scratch (orig_mask);
   auto mask = Image<bool>::scratch (orig_mask);
+  auto prev_mask = Image<bool>::scratch (orig_mask);
 
   auto summed = Image<float>::scratch (header_3D);
   for (size_t j = 0; j < input_images.size(); ++j) {
@@ -213,8 +214,6 @@ void run ()
   }
 
   Eigen::VectorXd scale_factors (n_tissue_types);
-  Eigen::VectorXd previous_scale_factors (n_tissue_types);
-
   scale_factors.fill(1);
 
   size_t iter = 1;
@@ -263,6 +262,8 @@ void run ()
 
     if (log_level >= 3)
       display (mask);
+
+    threaded_copy (mask, prev_mask);
   };
 
   // Perform an initial outlier rejection prior to the first iteration
@@ -313,21 +314,17 @@ void run ()
         scale_factors /= std::exp (log_sum / n_tissue_types);
       }
 
-      // Check for convergence
-      if (iter > 1) {
-        Eigen::VectorXd diff = previous_scale_factors.array() - scale_factors.array();
-        diff = diff.array().abs() / previous_scale_factors.array();
-        INFO ("percentage change in estimated scale factors: " + str(diff.mean() * 100));
-        if (diff.mean() < 0.001)
-          norm_converged = true;
-      }
-
       // Perform outlier rejection on log-domain of summed images
-      if (!norm_converged) {
-        outlier_rejection(1.5f);
-      }
+      outlier_rejection(1.5f);
 
-      previous_scale_factors = scale_factors;
+      // Check for convergence
+      norm_converged = true;
+      for (auto i = Loop (mask) (mask, prev_mask); i; ++i) {
+        if (mask.value() != prev_mask.value()) {
+          norm_converged = false;
+          break;
+        }
+      }
 
       norm_iter++;
     }
