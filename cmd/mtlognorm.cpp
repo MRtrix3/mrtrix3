@@ -157,7 +157,7 @@ void run ()
 
   auto summed = Image<float>::scratch (header_3D);
   for (size_t j = 0; j < input_images.size(); ++j) {
-    for (auto i = Loop (summed, 0, 3) (summed, input_images[j]); i; ++i)
+    for (auto i = Loop (0, 3) (summed, input_images[j]); i; ++i)
       summed.value() += input_images[j].value();
     progress++;
   }
@@ -226,7 +226,7 @@ void run ()
 
     auto summed_log = Image<float>::scratch (header_3D);
     for (size_t j = 0; j < n_tissue_types; ++j) {
-      for (auto i = Loop (summed_log, 0, 3) (summed_log, combined_tissue, bias_field_image); i; ++i) {
+      for (auto i = Loop (0, 3) (summed_log, combined_tissue, bias_field_image); i; ++i) {
         combined_tissue.index(3) = j;
         summed_log.value() += scale_factors(j) * combined_tissue.value() / bias_field_image.value();
       }
@@ -237,7 +237,7 @@ void run ()
     threaded_copy (initial_mask, mask);
 
     vector<float> summed_log_values;
-    for (auto i = Loop (mask) (mask, summed_log); i; ++i) {
+    for (auto i = Loop (0, 3) (mask, summed_log); i; ++i) {
       if (mask.value())
         summed_log_values.emplace_back (summed_log.value());
     }
@@ -251,7 +251,7 @@ void run ()
     float lower_outlier_threshold = lower_quartile - outlier_range * (upper_quartile - lower_quartile);
 
 
-    for (auto i = Loop (mask) (mask, summed_log); i; ++i) {
+    for (auto i = Loop (0, 3) (mask, summed_log); i; ++i) {
       if (mask.value()) {
         if (summed_log.value() < lower_outlier_threshold || summed_log.value() > upper_outlier_threshold) {
           mask.value() = 0;
@@ -290,7 +290,7 @@ void run ()
         y.fill (1);
         uint32_t index = 0;
 
-        for (auto i = Loop (mask) (mask, combined_tissue, bias_field_image); i; ++i) {
+        for (auto i = Loop (0, 3) (mask, combined_tissue, bias_field_image); i; ++i) {
           if (mask.value()) {
             for (size_t j = 0; j < n_tissue_types; ++j) {
               combined_tissue.index (3) = j;
@@ -321,7 +321,7 @@ void run ()
 
       // Check for convergence
       norm_converged = true;
-      for (auto i = Loop (mask) (mask, prev_mask); i; ++i) {
+      for (auto i = Loop (0, 3) (mask, prev_mask); i; ++i) {
         if (mask.value() != prev_mask.value()) {
           norm_converged = false;
           break;
@@ -340,7 +340,7 @@ void run ()
     Eigen::MatrixXd X (num_voxels, n_tissue_types);
     Eigen::VectorXd y (num_voxels);
     uint32_t index = 0;
-    for (auto i = Loop (mask) (mask, combined_tissue); i; ++i) {
+    for (auto i = Loop (0, 3) (mask, combined_tissue); i; ++i) {
       if (mask.value()) {
         Eigen::Vector3 vox (mask.index(0), mask.index(1), mask.index(2));
         Eigen::Vector3 pos = transform.voxel2scanner * vox;
@@ -358,14 +358,14 @@ void run ()
     bias_field_weights = bias_field_basis.colPivHouseholderQr().solve(y);
 
     // Generate bias field in the log domain
-    for (auto i = Loop (bias_field_log) (bias_field_log); i; ++i) {
+    for (auto i = Loop (0, 3) (bias_field_log); i; ++i) {
         Eigen::Vector3 vox (bias_field_log.index(0), bias_field_log.index(1), bias_field_log.index(2));
         Eigen::Vector3 pos = transform.voxel2scanner * vox;
         bias_field_log.value() = basis_function (pos).col(0).dot (bias_field_weights.col(0));
     }
 
     // Generate bias field in the image domain
-    for (auto i = Loop (bias_field_log) (bias_field_log, bias_field_image); i; ++i)
+    for (auto i = Loop (0, 3) (bias_field_log, bias_field_image); i; ++i)
         bias_field_image.value () = std::exp(bias_field_log.value());
 
     progress++;
@@ -417,9 +417,7 @@ void run ()
     for (auto i = Loop (0,3) (output_image, input_images[j], bias_field_image); i; ++i) {
       input_images[j].index(3) = 0;
 
-      float dc = input_images[j].value() / bias_field_image.value();
-
-      if (dc < 0.f)
+      if (input_images[j].value() < 0.f)
         output_image.row(3) = zero_vec;
       else
         output_image.row(3) = Eigen::VectorXf{input_images[j].row(3)} / bias_field_image.value();
