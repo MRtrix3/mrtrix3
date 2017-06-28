@@ -26,9 +26,9 @@
 using namespace MR;
 using namespace App;
 
-#define DEFAULT_NORM_VALUE 0.282094
+#define DEFAULT_NORM_VALUE 0.28209479177
 #define DEFAULT_MAIN_ITER_VALUE 15
-#define DEFAULT_INNER_MAXITER_VALUE 21
+#define DEFAULT_INNER_MAXITER_VALUE 7
 
 void usage ()
 {
