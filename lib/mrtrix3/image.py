@@ -19,8 +19,8 @@ def check3DNonunity(image_path):
 class _Header:
   def __init__(self, image_path):
     import json, os, subprocess, tempfile
-    from mrtrix3 import app, file, run
-    filename = file.newTempFile('json')
+    from mrtrix3 import app, path, run
+    filename = path.newTemporary('json')
     command = [ run.exeName(run.versionMatch('mrinfo')), image_path, '-json_all', filename ]
     if app._verbosity > 1:
       app.console('Loading header for image file \'' + image_path + '\'')

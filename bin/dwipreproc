@@ -404,12 +404,12 @@ if do_topup:
   if crop_option:
     app.warn('Topup images contain at least one non-even dimension; cropping images for topup compatibility')
     run.command('mrcrop se_epi.mif topup_in_crop.mif' + crop_option)
-    file.delTempFile('se_epi.mif')
+    file.delTemporary('se_epi.mif')
     topup_in_path = 'topup_in_crop.mif'
 
   # Do the conversion in preparation for topup
   run.command('mrconvert ' + topup_in_path + ' topup_in.nii' + import_topup_pe_table_option + ' -stride -1,+2,+3,+4 -export_pe_table topup_datain.txt')
-  file.delTempFile(topup_in_path)
+  file.delTemporary(topup_in_path)
 
   # Run topup
   topup_manual_options = ''
@@ -453,7 +453,7 @@ else:
 
 # Run eddy
 run.command('mrconvert dwi.mif' + import_dwi_pe_table_option + ' dwi.nii -stride -1,+2,+3,+4 -export_grad_fsl bvecs bvals -export_pe_eddy eddy_config.txt eddy_indices.txt')
-file.delTempFile('dwi.mif')
+file.delTemporary('dwi.mif')
 eddy_manual_options = ''
 if app.args.eddy_options:
   eddy_manual_options = ' ' + app.args.eddy_options.strip()
@@ -553,7 +553,7 @@ else:
   if not image.match('topup_in.nii', field_map_image):
     app.warn('topup output field image has erroneous header; recommend updating FSL to version 5.0.8 or later')
     run.command('mrtransform ' + field_map_image + ' -replace topup_in.nii field_map_fix' + fsl_suffix)
-    file.delTempFile(field_map_image)
+    file.delTemporary(field_map_image)
     field_map_image = 'field_map_fix' + fsl_suffix
 
 
@@ -580,9 +580,9 @@ else:
     run.command('mrcalc ' + field_map_image + ' ' + str(config[3]) + ' -mult' + sign_multiplier + ' - | mrfilter - gradient - | mrconvert - ' + field_derivative_path + ' -coord 3 ' + str(pe_axis) + ' -axes 0,1,2')
     jacobian_path = 'jacobian_' + str(index+1) + '.mif'
     run.command('mrcalc 1.0 ' + field_derivative_path + ' -add 0.0 -max ' + jacobian_path)
-    file.delTempFile(field_derivative_path)
+    file.delTemporary(field_derivative_path)
     run.command('mrcalc ' + jacobian_path + ' ' + jacobian_path + ' -mult weight' + str(index+1) + '.mif')
-    file.delTempFile(jacobian_path)
+    file.delTemporary(jacobian_path)
 
   # This section extracts the two volumes corresponding to each reversed phase-encoded volume pair, and
   #   derives a single image volume based on the recombination equation
@@ -594,17 +594,17 @@ else:
     # Volume recombination equation described in Skare and Bammer 2010
     run.command('mrcalc volume0.mif weight' + str(pe_indices[0]) + '.mif -mult volume1.mif weight' + str(pe_indices[1]) + '.mif -mult -add weight' + str(pe_indices[0]) + '.mif weight' + str(pe_indices[1]) + '.mif -add -divide 0.0 -max combined' + str(index) + '.mif')
     combined_image_list.append('combined' + str(index) + '.mif')
-    file.delTempFile('volume0.mif')
-    file.delTempFile('volume1.mif')
+    file.delTemporary('volume0.mif')
+    file.delTemporary('volume1.mif')
 
   for index in range(0, len(eddy_config)):
-    file.delTempFile('weight' + str(index+1) + '.mif')
+    file.delTemporary('weight' + str(index+1) + '.mif')
 
   # Finally the recombined volumes must be concatenated to produce the resulting image series
   run.command('mrcat ' + ' '.join(combined_image_list) + ' - -axis 3 | mrconvert - result.mif -fslgrad bvecs_combined bvals_combined' + stride_option)
 
   for path in combined_image_list:
-    file.delTempFile(path)
+    file.delTemporary(path)
 
 
 
