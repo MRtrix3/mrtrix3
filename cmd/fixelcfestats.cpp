@@ -39,6 +39,7 @@ using namespace MR::DWI::Tractography::Mapping;
 using namespace MR::Math::Stats;
 using Stats::CFE::direction_type;
 using Stats::CFE::connectivity_value_type;
+using Stats::CFE::index_type;
 
 #define DEFAULT_CFE_DH 0.1
 #define DEFAULT_CFE_E 2.0
@@ -50,7 +51,7 @@ using Stats::CFE::connectivity_value_type;
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Fixel-based analysis using connectivity-based fixel enhancement and non-parametric permutation testing";
 
@@ -126,7 +127,7 @@ void write_fixel_output (const std::string& filename,
 {
   assert (size_t(header.size(0)) == fixel2row.size());
   auto output = Image<float>::create (filename, header);
-  for (uint32_t i = 0; i != fixel2row.size(); ++i) {
+  for (size_t i = 0; i != fixel2row.size(); ++i) {
     output.index(0) = i;
     output.value() = (fixel2row[i] >= 0) ? data[fixel2row[i]] : NaN;
   }
@@ -152,16 +153,16 @@ void run() {
 
   const std::string input_fixel_directory = argument[0];
   Header index_header = Fixel::find_index_header (input_fixel_directory);
-  auto index_image = index_header.get_image<uint32_t>();
+  auto index_image = index_header.get_image<index_type>();
 
-  const uint32_t num_fixels = Fixel::get_number_of_fixels (index_header);
+  const index_type num_fixels = Fixel::get_number_of_fixels (index_header);
   CONSOLE ("number of fixels: " + str(num_fixels));
 
   Image<bool> mask;
-  uint32_t mask_fixels;
+  index_type mask_fixels;
   // Lookup table that maps from input fixel index to row number
   // Note that if a fixel is masked out, it will have a value of -1
-  //   in this array
+  //   in this array; hence require a signed integer type
   vector<int32_t> fixel2row (num_fixels);
   opt = get_options ("mask");
   if (opt.size()) {
@@ -169,8 +170,8 @@ void run() {
     Fixel::check_data_file (mask);
     if (!Fixel::fixels_match (index_header, mask))
       throw Exception ("Mask image provided using -mask option does not match fixel template");
-    uint32_t mask_fixels = 0;
-    for (auto l = Loop(mask) (mask); l; ++l)
+    mask_fixels = 0;
+    for (mask.index(0) = 0; mask.index(0) != num_fixels; ++mask.index(0))
       fixel2row[mask.index(0)] = mask.value() ? mask_fixels++ : -1;
     CONSOLE ("Mask contains " + str(mask_fixels) + " fixels");
   } else {
@@ -182,10 +183,8 @@ void run() {
     data_header.spacing(0) = data_header.spacing(1) = data_header.spacing(2) = NaN;
     data_header.stride(0) = 1; data_header.stride(1) = 2; data_header.stride(2) = 3;
     mask = Image<bool>::scratch (data_header, "scratch fixel mask");
-    for (uint32_t f = 0; f != num_fixels; ++f) {
-      mask.index(0) = f;
+    for (mask.index(0) = 0; mask.index(0) != num_fixels; ++mask.index(0))
       mask.value() = true;
-    }
     mask_fixels = num_fixels;
     for (uint32_t f = 0; f != num_fixels; ++f)
       fixel2row[f] = f;
@@ -205,7 +204,7 @@ void run() {
       Eigen::Vector3 vox ((default_type)index_image.index(0), (default_type)index_image.index(1), (default_type)index_image.index(2));
       vox = image_transform.voxel2scanner * vox;
       index_image.index(3) = 1;
-      uint32_t offset = index_image.value();
+      const index_type offset = index_image.value();
       size_t fixel_index = 0;
       for (auto f = Fixel::Loop (index_image) (directions_data); f; ++f, ++fixel_index) {
         directions[offset + fixel_index] = directions_data.row(1);
@@ -217,7 +216,7 @@ void run() {
   vector<std::string> identifiers;
   Header header;
   {
-    ProgressBar progress ("validating input files...");
+    ProgressBar progress ("validating input files");
     std::ifstream ifs (argument[1].c_str());
     std::string temp;
     while (getline (ifs, temp)) {
@@ -268,7 +267,7 @@ void run() {
     throw Exception ("only a single contrast vector (defined as a row) is currently supported");
 
   // Compute fixel-fixel connectivity
-  vector<std::map<uint32_t, Stats::CFE::connectivity> > connectivity_matrix (num_fixels);
+  Stats::CFE::init_connectivity_matrix_type connectivity_matrix (num_fixels);
   vector<uint16_t> fixel_TDI (num_fixels, 0);
   const std::string track_filename = argument[4];
   DWI::Tractography::Properties properties;
@@ -294,8 +293,10 @@ void run() {
   }
   track_file.close();
 
-  // Normalise connectivity matrix and threshold, pre-compute fixel-fixel weights for smoothing.
-  vector<std::map<uint32_t, connectivity_value_type> > smoothing_weights (mask_fixels);
+  // Normalise connectivity matrix, threshold, and put in a more efficient format
+  Stats::CFE::norm_connectivity_matrix_type norm_connectivity_matrix (mask_fixels);
+  // Also pre-compute fixel-fixel weights for smoothing.
+  Stats::CFE::norm_connectivity_matrix_type smoothing_weights (mask_fixels);
   bool do_smoothing = false;
 
   const float gaussian_const2 = 2.0 * smooth_std_dev * smooth_std_dev;
@@ -307,7 +308,7 @@ void run() {
 
   {
     ProgressBar progress ("normalising and thresholding fixel-fixel connectivity matrix", num_fixels);
-    for (uint32_t fixel = 0; fixel < num_fixels; ++fixel) {
+    for (index_type fixel = 0; fixel < num_fixels; ++fixel) {
       mask.index(0) = fixel;
       const int32_t row = fixel2row[fixel];
 
@@ -316,7 +317,6 @@ void run() {
         // Here, the connectivity matrix needs to be modified to reflect the
         //   fact that fixel indices in the template fixel image may not
         //   correspond to rows in the statistical analysis
-        std::map<uint32_t, Stats::CFE::connectivity> new_connectivity_matrix_row;
         connectivity_value_type sum_weights = 0.0;
 
         for (auto& it : connectivity_matrix[fixel]) {
@@ -332,34 +332,32 @@ void run() {
               const value_type distance = std::sqrt (Math::pow2 (positions[fixel][0] - positions[it.first][0]) +
                                                      Math::pow2 (positions[fixel][1] - positions[it.first][1]) +
                                                      Math::pow2 (positions[fixel][2] - positions[it.first][2]));
-              const connectivity_value_type smoothing_weight = connectivity * gaussian_const1 * std::exp (-std::pow (distance, 2) / gaussian_const2);
+              const connectivity_value_type smoothing_weight = connectivity * gaussian_const1 * std::exp (-Math::pow2 (distance) / gaussian_const2);
               if (smoothing_weight >= connectivity_threshold) {
-                smoothing_weights[row][fixel2row[it.first]] = smoothing_weight;
+                smoothing_weights[row].push_back (Stats::CFE::NormMatrixElement (fixel2row[it.first], smoothing_weight));
                 sum_weights += smoothing_weight;
               }
             }
             // Here we pre-exponentiate each connectivity value by C
-            new_connectivity_matrix_row[fixel2row[it.first]] = std::pow (connectivity, cfe_c);
+            norm_connectivity_matrix[row].push_back (Stats::CFE::NormMatrixElement (fixel2row[it.first], std::pow (connectivity, cfe_c)));
           }
         }
 
         // Make sure the fixel is fully connected to itself
-        new_connectivity_matrix_row[row] = Stats::CFE::connectivity (1.0);
-        smoothing_weights[row][row] = connectivity_value_type(gaussian_const1);
+        norm_connectivity_matrix[row].push_back (Stats::CFE::NormMatrixElement (uint32_t(row), connectivity_value_type(1.0)));
+        smoothing_weights[row].push_back (Stats::CFE::NormMatrixElement (uint32_t(row), connectivity_value_type(gaussian_const1)));
         sum_weights += connectivity_value_type(gaussian_const1);
 
         // Normalise smoothing weights
         const connectivity_value_type norm_factor = connectivity_value_type(1.0) / sum_weights;
         for (auto i : smoothing_weights[row])
-          i.second *= norm_factor;
+          i.normalise (norm_factor);
 
-        // Write the new connectivity matrix data to the relevant structure
-        //   Note that due to fixel masking, this may not be the same row as
-        //   the fixel index
-        connectivity_matrix[row] = std::move (new_connectivity_matrix_row);
-        // Force deallocation of memory used
-        std::map<uint32_t, Stats::CFE::connectivity>().swap (new_connectivity_matrix_row);
+        // Force deallocation of memory used for this fixel in the original matrix
+        std::map<uint32_t, Stats::CFE::connectivity>().swap (connectivity_matrix[fixel]);
+
       } else {
+
         // If fixel is not in the mask, tract_processor should never assign
         //   any connections to it
         assert (connectivity_matrix[fixel].empty());
@@ -370,9 +368,11 @@ void run() {
     }
   }
 
-  // If the connectivity matrix has shrunk in size due to the masking of fixels,
-  //   throw out any now-erroneous data off the end of the vector
-  connectivity_matrix.resize (mask_fixels);
+  // The connectivity matrix is now in vector rather than matrix form;
+  //   throw out the structure holding the original data
+  // (Note however that all entries in the original structure should
+  //   have been deleted during the prior loop)
+  Stats::CFE::init_connectivity_matrix_type().swap (connectivity_matrix);
 
 
   Header output_header (header);
@@ -390,7 +390,7 @@ void run() {
   matrix_type data (mask_fixels, identifiers.size());
   data.setZero();
   {
-    ProgressBar progress ("loading input images", identifiers.size());
+    ProgressBar progress (std::string ("loading input images") + (do_smoothing ? " and smoothing" : ""), identifiers.size());
     for (size_t subject = 0; subject < identifiers.size(); subject++) {
       LogLevelLatch log_level (0);
 
@@ -415,7 +415,7 @@ void run() {
         for (size_t fixel = 0; fixel < mask_fixels; ++fixel) {
           value_type value = 0.0;
           for (auto i : smoothing_weights[fixel])
-            value += subject_data_vector[i.first] * i.second;
+            value += subject_data_vector[i.index()] * i.value();
           data (fixel, subject) = value;
         }
       } else {
@@ -425,6 +425,8 @@ void run() {
     }
   }
 
+  // Free the memory occupied by the data smoothing filter; no longer required
+  Stats::CFE::norm_connectivity_matrix_type().swap (smoothing_weights);
 
   if (!data.allFinite())
     throw Exception ("input data contains non-finite value(s)");
@@ -446,7 +448,7 @@ void run() {
 
   Math::Stats::GLMTTest glm_ttest (data, design, contrast);
   std::shared_ptr<Stats::EnhancerBase> cfe_integrator;
-  cfe_integrator.reset (new Stats::CFE::Enhancer (connectivity_matrix, cfe_dh, cfe_e, cfe_h));
+  cfe_integrator.reset (new Stats::CFE::Enhancer (norm_connectivity_matrix, cfe_dh, cfe_e, cfe_h));
   vector_type empirical_cfe_statistic;
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical CFE statistic

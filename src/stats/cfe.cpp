@@ -23,11 +23,11 @@ namespace MR
 
 
 
-      TrackProcessor::TrackProcessor (Image<uint32_t>& fixel_indexer,
+      TrackProcessor::TrackProcessor (Image<index_type>& fixel_indexer,
                                       const vector<direction_type>& fixel_directions,
                                       Image<bool>& fixel_mask,
                                       vector<uint16_t>& fixel_TDI,
-                                      vector<std::map<uint32_t, connectivity> >& connectivity_matrix,
+                                      init_connectivity_matrix_type& connectivity_matrix,
                                       const value_type angular_threshold) :
                                         fixel_indexer        (fixel_indexer) ,
                                         fixel_directions     (fixel_directions),
@@ -41,21 +41,21 @@ namespace MR
       bool TrackProcessor::operator() (const SetVoxelDir& in)
       {
         // For each voxel tract tangent, assign to a fixel
-        vector<int32_t> tract_fixel_indices;
+        vector<index_type> tract_fixel_indices;
         for (SetVoxelDir::const_iterator i = in.begin(); i != in.end(); ++i) {
           assign_pos_of (*i).to (fixel_indexer);
           fixel_indexer.index(3) = 0;
-          uint32_t num_fixels = fixel_indexer.value();
+          const index_type num_fixels = fixel_indexer.value();
           if (num_fixels > 0) {
             fixel_indexer.index(3) = 1;
-            uint32_t first_index = fixel_indexer.value();
-            uint32_t last_index = first_index + num_fixels;
+            const index_type first_index = fixel_indexer.value();
+            const index_type last_index = first_index + num_fixels;
             // Note: Streamlines can still be assigned to a fixel that is outside the mask;
             //   however this will not be permitted to contribute to the matrix
-            uint32_t closest_fixel_index = num_fixels;
+            index_type closest_fixel_index = num_fixels;
             value_type largest_dp = 0.0;
             const direction_type dir (i->get_dir().normalized());
-            for (uint32_t j = first_index; j < last_index; ++j) {
+            for (index_type j = first_index; j < last_index; ++j) {
               const value_type dp = std::abs (dir.dot (fixel_directions[j]));
               if (dp > largest_dp) {
                 largest_dp = dp;
@@ -92,11 +92,11 @@ namespace MR
 
 
 
-      Enhancer::Enhancer (const vector<std::map<uint32_t, connectivity> >& connectivity_map,
+      Enhancer::Enhancer (const norm_connectivity_matrix_type& connectivity_matrix,
                           const value_type dh,
                           const value_type E,
                           const value_type H) :
-          connectivity_map (connectivity_map),
+          connectivity_matrix (connectivity_matrix),
           dh (dh),
           E (E),
           H (H) { }
@@ -107,13 +107,13 @@ namespace MR
       {
         enhanced_stats = vector_type::Zero (stats.size());
         value_type max_enhanced_stat = 0.0;
-        for (size_t fixel = 0; fixel < connectivity_map.size(); ++fixel) {
-          std::map<uint32_t, connectivity>::const_iterator connected_fixel;
+        vector<NormMatrixElement>::const_iterator connected_fixel;
+        for (size_t fixel = 0; fixel < connectivity_matrix.size(); ++fixel) {
           for (value_type h = this->dh; h < stats[fixel]; h +=  this->dh) {
             value_type extent = 0.0;
-            for (connected_fixel = connectivity_map[fixel].begin(); connected_fixel != connectivity_map[fixel].end(); ++connected_fixel)
-              if (stats[connected_fixel->first] > h)
-                extent += connected_fixel->second.value;
+            for (connected_fixel = connectivity_matrix[fixel].begin(); connected_fixel != connectivity_matrix[fixel].end(); ++connected_fixel)
+              if (stats[connected_fixel->index()] > h)
+                extent += connected_fixel->value();
             enhanced_stats[fixel] += std::pow (extent, E) * std::pow (h, H);
           }
           if (enhanced_stats[fixel] > max_enhanced_stat)

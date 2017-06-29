@@ -17,6 +17,7 @@
 
 #include "image.h"
 #include "image_helpers.h"
+#include "types.h"
 #include "math/math.h"
 #include "math/stats/typedefs.h"
 
@@ -30,11 +31,11 @@ namespace MR
     namespace CFE
     {
 
+      using index_type = uint32_t;
       using value_type = Math::Stats::value_type;
       using vector_type = Math::Stats::vector_type;
       using connectivity_value_type = float;
       using direction_type = Eigen::Matrix<value_type, 3, 1>;
-      using connectivity_vector_type = Eigen::Array<connectivity_value_type, Eigen::Dynamic, 1>;
       using SetVoxelDir = DWI::Tractography::Mapping::SetVoxelDir;
 
 
@@ -51,6 +52,30 @@ namespace MR
       };
 
 
+      // A class to store fixel index / connectivity value pairs
+      //   only after the connectivity matrix has been thresholded / normalised
+      class NormMatrixElement
+      {
+        public:
+          NormMatrixElement (const index_type fixel_index,
+                             const connectivity_value_type connectivity_value) :
+              fixel_index (fixel_index),
+              connectivity_value (connectivity_value) { }
+          index_type index() const { return fixel_index; }
+          connectivity_value_type value() const { return connectivity_value; }
+          void normalise (const connectivity_value_type norm_factor) { connectivity_value *= norm_factor; }
+        private:
+          const index_type fixel_index;
+          connectivity_value_type connectivity_value;
+      };
+
+
+
+      // Different types are used depending on whether the connectivity matrix
+      //   is in the process of being built, or whether it has been normalised
+      using init_connectivity_matrix_type = vector<std::map<index_type, connectivity>>;
+      using norm_connectivity_matrix_type = vector<vector<NormMatrixElement>>;
+
 
 
       /**
@@ -59,21 +84,21 @@ namespace MR
       class TrackProcessor { MEMALIGN(TrackProcessor)
 
         public:
-          TrackProcessor (Image<uint32_t>& fixel_indexer,
+          TrackProcessor (Image<index_type>& fixel_indexer,
                           const vector<direction_type>& fixel_directions,
                           Image<bool>& fixel_mask,
                           vector<uint16_t>& fixel_TDI,
-                          vector<std::map<uint32_t, connectivity> >& connectivity_matrix,
+                          init_connectivity_matrix_type& connectivity_matrix,
                           const value_type angular_threshold);
 
           bool operator () (const SetVoxelDir& in);
 
         private:
-          Image<uint32_t> fixel_indexer;
+          Image<index_type> fixel_indexer;
           const vector<direction_type>& fixel_directions;
           Image<bool> fixel_mask;
           vector<uint16_t>& fixel_TDI;
-          vector<std::map<uint32_t, connectivity> >& connectivity_matrix;
+          init_connectivity_matrix_type& connectivity_matrix;
           const value_type angular_threshold_dp;
       };
 
@@ -82,7 +107,7 @@ namespace MR
 
       class Enhancer : public Stats::EnhancerBase { MEMALIGN (Enhancer)
         public:
-          Enhancer (const vector<std::map<uint32_t, connectivity> >& connectivity_map,
+          Enhancer (const norm_connectivity_matrix_type& connectivity_matrix,
                     const value_type dh, const value_type E, const value_type H);
 
 
@@ -90,7 +115,7 @@ namespace MR
 
 
         protected:
-          const vector<std::map<uint32_t, connectivity> >& connectivity_map;
+          const norm_connectivity_matrix_type& connectivity_matrix;
           const value_type dh, E, H;
       };
 
