@@ -52,7 +52,7 @@ def dir(string):
 def getScheme(input):
   from mrtrix3 import app, image
   if not isinstance(input, image._Header):
-    if not input is str:
+    if not (type(input) is str):
       app.error('Error trying to derive phase-encoding scheme from \'' + str(input) + '\': Not an image header or file path')
     input = image.header(input)
   if 'pe_scheme' in input.keyval:

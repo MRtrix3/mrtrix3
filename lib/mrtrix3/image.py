@@ -5,7 +5,7 @@
 
 def check3DNonunity(image_path):
   from mrtrix3 import app
-  dim = [ int(i) for i in headerField(image_path, 'size').strip().split() ]
+  dim = header(image_path).size
   if len(dim) < 3:
     app.error('Image \'' + image_path + '\' does not contain 3 spatial dimensions')
   if min(dim) == 1:
