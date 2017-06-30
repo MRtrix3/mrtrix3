@@ -162,7 +162,7 @@ void run ()
 
   // Set up scattered data matrix
   INFO("initialise reconstruction matrix");
-  DWI::ReconMatrix R (dwisub, motionsub, gradsub, lmax);
+  DWI::ReconMatrix R (dwisub, motionsub, gradsub, lmax, rf);
 
   // Read input data to vector
   Eigen::VectorXf y (dwisub.size(0)*dwisub.size(1)*dwisub.size(2)*dwisub.size(3));
@@ -192,7 +192,7 @@ void run ()
   // Write result to output file
   Header header (dwisub);
   DWI::stash_DW_scheme (header, gradsub);
-  header.size(3) = Math::SH::NforL(lmax);
+  header.size(3) = R.getY().cols();
   Stride::set_from_command_line (header, Stride::contiguous_along_axis (3));
   header.datatype() = DataType::from_command_line (DataType::Float32);
   auto out = Image<value_type>::create (argument[1], header);
