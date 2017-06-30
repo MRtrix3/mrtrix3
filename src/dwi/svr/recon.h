@@ -105,7 +105,7 @@ namespace MR
       Eigen::MatrixXf Y;
 
 
-      inline void init_M(const Header& in, const Eigen::MatrixXf& rigid)
+      void init_M(const Header& in, const Eigen::MatrixXf& rigid)
       {
         DEBUG("initialise M");
         // Tri-linear interpolation for now.
@@ -163,7 +163,7 @@ namespace MR
       }
 
 
-      inline void init_Y(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad, const vector<Eigen::MatrixXf>& rf)
+      void init_Y(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad, const vector<Eigen::MatrixXf>& rf)
       {
         DEBUG("initialise Y");
         assert (grad.rows() == nv);     // one gradient per volume
@@ -172,19 +172,29 @@ namespace MR
         vector<size_t> idx (shells.volumecount());
         vector<Eigen::MatrixXf> shellbasis;
         int n = 0;
-        for (auto& r : rf)
-          n += Math::SH::NforL(std::min(2*(int(r.cols())-1), lmax));
+        if (rf.empty()) {
+          n = Math::SH::NforL(lmax);
+        } else {
+          for (auto& r : rf)
+            n += Math::SH::NforL(std::min(2*(int(r.cols())-1), lmax));
+        }
         Y.resize(nv*nz, n);
         for (size_t s = 0; s < shells.count(); s++) {
           for (auto v : shells[s].get_volumes())
             idx[v] = s;
 
-          Eigen::MatrixXf B = Eigen::MatrixXf::Zero(n, Math::SH::NforL(lmax));
-          size_t j = 0;
-          for (auto& r : rf) {
-            for (size_t l = 0; l < r.cols() and 2*l <= lmax; l++)
-              for (size_t i = l*(2*l-1); i < (l+1)*(2*l+1); i++, j++)
-                B(j,i) = r(s,l);
+          Eigen::MatrixXf B;
+          if (rf.empty()) {
+            B.setIdentity(Math::SH::NforL(lmax), Math::SH::NforL(lmax));
+          }
+          else { 
+            B.setZero(n, Math::SH::NforL(lmax));
+            size_t j = 0;
+            for (auto& r : rf) {
+              for (size_t l = 0; l < r.cols() and 2*l <= lmax; l++)
+                for (size_t i = l*(2*l-1); i < (l+1)*(2*l+1); i++, j++)
+                  B(j,i) = r(s,l);
+            }
           }
           shellbasis.push_back(B);
         }

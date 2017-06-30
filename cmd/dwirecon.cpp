@@ -170,7 +170,6 @@ void run ()
   for (auto l = Loop("loading image data", {0, 1, 2, 3})(dwisub); l; l++, j++)
     y[j] = dwisub.value();
 
-
   // Fit scattered data in basis...
   INFO("solve with conjugate gradient method");
 
