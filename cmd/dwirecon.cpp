@@ -11,6 +11,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <algorithm>
 
 #include "command.h"
 #include "image.h"
@@ -84,12 +85,8 @@ typedef float value_type;
 
 void run ()
 {
+  // Load input data
   auto dwi = Image<value_type>::open(argument[0]);
-
-  // Read parameters
-  int lmax = get_option_value("lmax", DEFAULT_LMAX);
-  value_type tol = get_option_value("tolerance", DEFAULT_TOL);
-  size_t maxiter = get_option_value("maxiter", DEFAULT_MAXITER);
 
   // Read motion parameters
   auto opt = get_options("motion");
@@ -106,11 +103,32 @@ void run ()
     throw Exception("No. rows in motion parameters must equal the number of DWI volumes or slices.");
 
 
-  // Force single-shell until multi-shell basis is implemented
+  // Select shells
   auto grad = DWI::get_valid_DW_scheme (dwi);
   DWI::Shells shells (grad);
   shells.select_shells (false, false, false);
-  auto idx = shells.largest().get_volumes();
+
+  // Read multi-shell basis
+  int lmax = 0;
+  vector<Eigen::MatrixXf> rf;
+  opt = get_options("rf");
+  for (size_t k = 0; k < opt.size(); k++) {
+    Eigen::MatrixXf t = load_matrix<float>(opt[k][0]);
+    if (t.rows() != shells.count())
+      throw Exception("No. shells does not match no. rows in basis function " + opt[k][0] + ".");
+    lmax = std::max(2*(int(t.cols())-1), lmax);
+    rf.push_back(t);
+  }
+
+  // Get volume indices 
+  vector<size_t> idx;
+  if (rf.empty()) {
+    idx = shells.largest().get_volumes();
+  } else {
+    for (size_t k = 0; k < shells.count(); k++)
+      idx.insert(idx.end(), shells[k].get_volumes().begin(), shells[k].get_volumes().end());
+    std::sort(idx.begin(), idx.end());
+  }
 
   // Select subset
   auto dwisub = Adapter::make <Adapter::Extract1D> (dwi, 3, container_cast<vector<int>> (idx));
@@ -131,6 +149,15 @@ void run ()
       for (size_t j = 0; j < dwi.size(2); j++)
         motionsub.row(i * dwi.size(2) + j) = motion.row(idx[i] * dwi.size(2) + j).template cast<float>();
   }
+
+  // Other parameters
+  if (rf.empty())
+    lmax = get_option_value("lmax", DEFAULT_LMAX);
+  else
+    lmax = std::min(lmax, (int) get_option_value("lmax", lmax));
+  
+  value_type tol = get_option_value("tolerance", DEFAULT_TOL);
+  size_t maxiter = get_option_value("maxiter", DEFAULT_MAXITER);
 
 
   // Set up scattered data matrix
