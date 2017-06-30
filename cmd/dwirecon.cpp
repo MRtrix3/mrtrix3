@@ -42,15 +42,19 @@ void usage ()
 
 
   OPTIONS
-  + Option ("lmax",
-            "set the maximum harmonic order for the output series. (default = " + str(DEFAULT_LMAX) + ")")
-    + Argument ("order").type_integer(0, 30)
-
   + Option ("motion", "The motion parameters associated with input slices or volumes. "
                       "These are supplied as a matrix of 6 columns that encode respectively "
                       "the x-y-z translation and 0-1-2 rotation Euler angles for each volume "
                       "or slice in the image. All transformations are w.r.t. scanner space." )
     + Argument ("file").type_file_in()
+
+  + Option ("rf", "Basis functions for the radial (multi-shell) domain, provided as matrices in which "
+                  "rows correspond with shells and columns with SH harmonic bands.").allow_multiple()
+    + Argument ("b").type_file_in()
+  
+  + Option ("lmax",
+            "set the maximum harmonic order for the output series. (default = " + str(DEFAULT_LMAX) + ")")
+    + Argument ("order").type_integer(0, 30)
 
   + DWI::GradImportOptions()
 
@@ -92,6 +96,8 @@ void run ()
   Eigen::MatrixXf motion;
   if (opt.size())
     motion = load_matrix<float>(opt[0][0]);
+  else
+    throw Exception("No motion parameters provided.");
 
   // Check dimensions
   if (motion.size() && motion.cols() != 6)
