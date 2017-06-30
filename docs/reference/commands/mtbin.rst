@@ -15,33 +15,27 @@ Usage
 
     mtbin [ options ]  input output [ input output ... ]
 
--  *input output*: list of all input and output tissue compartment files. See example usage in the description. Note that any number of tissues can be normalised
+-  *input output*: 
 
 Description
 -----------
 
-This command inputs N number of tissue components (e.g. from multi-tissue CSD), and outputs N corrected tissue components. Intensity normalisation is performed by either determining a common global normalisation factor for all tissue types (default) or by normalising each tissue type independently with a single tissue-specific global scale factor.
-
-The -mask option is mandatory, and is optimally provided with a brain mask, such as the one obtained from dwi2mask earlier in the processing pipeline.
-
-Example usage: mtbin wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif.
-
-The estimated multiplicative bias field is guaranteed to have a mean of 1 over all voxels within the mask.
+WARNING: there were some major issues with this method.  Please start using the new mtlognorm command instead.
 
 Options
 -------
 
--  **-mask image** define the mask to compute the normalisation within. This option is mandatory.
+-  **-mask image** 
 
--  **-value number** specify the value to which the summed tissue compartments will be normalised to (Default: sqrt(1/(4*pi)) = 0.282094)
+-  **-value number** 
 
--  **-bias image** output the estimated bias field
+-  **-bias image** 
 
--  **-independent** intensity normalise each tissue type independently
+-  **-independent** 
 
--  **-maxiter number** set the maximum number of iterations. Default(100). It will stop before the max iterations if convergence is detected
+-  **-maxiter number** 
 
--  **-check image** check the final mask used to compute the bias field. This mask excludes outlier regions ignored by the bias field fitting procedure. However, these regions are still corrected for bias fields based on the other image data.
+-  **-check image** 
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -66,7 +60,7 @@ Standard options
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au), Rami Tabbara (rami.tabbara@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)
+**Author:** 
 
 **Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
 
