@@ -38,36 +38,39 @@ void usage ()
   SYNOPSIS = "Multi-tissue informed log-domain intensity normalisation";
 
   DESCRIPTION
-   + "This command inputs N number of tissue components "
-     "(e.g. from multi-tissue CSD), and outputs N corrected tissue components. Intensity normalisation is performed by either "
-     "determining a common global normalisation factor for all tissue types (default) or by normalising each tissue type independently "
-     "with a single tissue-specific global scale factor."
+   + "This command inputs N number of tissue components (e.g. from multi-tissue CSD) "
+     "and outputs N corrected tissue components. Intensity normalisation is performed "
+     "in the log-domain, and can smoothly vary spatially to accomodate the (residual) "
+     "effects of intensity inhomogeneities."
 
-   + "The -mask option is mandatory, and is optimally provided with a brain mask, such as the one obtained from dwi2mask earlier in the processing pipeline."
+   + "The -mask option is mandatory and is optimally provided with a brain mask "
+     "(such as the one obtained from dwi2mask earlier in the processing pipeline). "
+     "Outlier areas with exceptionally low or high combined tissue contributions are "
+     "accounted for and reoptimised as the intensity inhomogeneity estimation becomes "
+     "more accurate."
 
-   + "Example usage: mtlognorm wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif.";
+   + "Example usage: mtlognorm wmfod.mif wmfod_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif.";
 
   ARGUMENTS
-    + Argument ("input output", "list of all input and output tissue compartment files. See example usage in the description. "
-                              "Note that any number of tissues can be normalised").type_image_in().allow_multiple();
+    + Argument ("input output", "list of all input and output tissue compartment files. See example usage in the description.").type_image_in().allow_multiple();
 
   OPTIONS
-    + Option ("mask", "define the mask to compute the normalisation within. This option is mandatory.").required ()
+    + Option ("mask", "the mask defines the data used to compute the intensity normalisation. This option is mandatory.").required ()
     + Argument ("image").type_image_in ()
 
-    + Option ("value", "specify the value to which the summed tissue compartments will be normalised to "
-                       "(Default: sqrt(1/(4*pi)) = " + str(DEFAULT_NORM_VALUE, 6) + ")")
-    + Argument ("number").type_float ()
-
-    + Option ("bias", "output the estimated bias field")
-    + Argument ("image").type_image_out ()
-
-    + Option ("maxiter", "set the number of iterations. Default(" + str(DEFAULT_MAIN_ITER_VALUE) + ").")
+    + Option ("niter", "set the number of iterations. (default: " + str(DEFAULT_MAIN_ITER_VALUE) + ")")
     + Argument ("number").type_integer()
 
-    + Option ("check", "check the final mask used to compute the bias field. This mask excludes outlier regions ignored by the bias field fitting procedure."
-                       "However, these regions are still corrected for bias fields based on the other image data.")
-    + Argument ("image").type_image_out ();
+    + Option ("check_norm", "output the final estimated spatially varying intensity level that is used for normalisation.")
+    + Argument ("image").type_image_out ()
+
+    + Option ("check_mask", "output the final mask used to compute the normalisation. "
+                            "This mask excludes regions identified as outliers by the optimisation process.")
+    + Argument ("image").type_image_out ()
+
+    + Option ("value", "specify the value to which the summed tissue compartments will be normalised. "
+                       "(default: " + str(DEFAULT_NORM_VALUE, 6) + ", SH DC term for unit angular integral)")
+    + Argument ("number").type_float ();
 }
 
 const int n_basis_vecs (20);
@@ -213,7 +216,7 @@ void run ()
 
   const float log_norm_value = std::log (normalisation_value);
 
-  const size_t max_iter = get_option_value ("maxiter", DEFAULT_MAIN_ITER_VALUE);
+  const size_t max_iter = get_option_value ("niter", DEFAULT_MAIN_ITER_VALUE);
 
   const size_t max_inner_iter = DEFAULT_INNER_MAXITER_VALUE;
 
@@ -387,14 +390,14 @@ void run ()
     iter++;
   }
 
-  opt = get_options ("bias");
+  opt = get_options ("check_norm");
   if (opt.size()) {
     auto bias_field_output = ImageType::create (opt[0][0], header_3D);
     threaded_copy (bias_field_image, bias_field_output);
   }
   progress++;
 
-  opt = get_options ("check");
+  opt = get_options ("check_mask");
   if (opt.size()) {
     auto mask_output = ImageType::create (opt[0][0], mask);
     threaded_copy (mask, mask_output);

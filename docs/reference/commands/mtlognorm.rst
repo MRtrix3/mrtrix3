@@ -15,29 +15,29 @@ Usage
 
     mtlognorm [ options ]  input output [ input output ... ]
 
--  *input output*: list of all input and output tissue compartment files. See example usage in the description. Note that any number of tissues can be normalised
+-  *input output*: list of all input and output tissue compartment files. See example usage in the description.
 
 Description
 -----------
 
-This command inputs N number of tissue components (e.g. from multi-tissue CSD), and outputs N corrected tissue components. Intensity normalisation is performed by either determining a common global normalisation factor for all tissue types (default) or by normalising each tissue type independently with a single tissue-specific global scale factor.
+This command inputs N number of tissue components (e.g. from multi-tissue CSD) and outputs N corrected tissue components. Intensity normalisation is performed in the log-domain, and can smoothly vary spatially to accomodate the (residual) effects of intensity inhomogeneities.
 
-The -mask option is mandatory, and is optimally provided with a brain mask, such as the one obtained from dwi2mask earlier in the processing pipeline.
+The -mask option is mandatory and is optimally provided with a brain mask (such as the one obtained from dwi2mask earlier in the processing pipeline). Outlier areas with exceptionally low or high combined tissue contributions are accounted for and reoptimised as the intensity inhomogeneity estimation becomes more accurate.
 
-Example usage: mtlognorm wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif.
+Example usage: mtlognorm wmfod.mif wmfod_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif.
 
 Options
 -------
 
--  **-mask image** define the mask to compute the normalisation within. This option is mandatory.
+-  **-mask image** the mask defines the data used to compute the intensity normalisation. This option is mandatory.
 
--  **-value number** specify the value to which the summed tissue compartments will be normalised to (Default: sqrt(1/(4*pi)) = 0.282095)
+-  **-niter number** set the number of iterations. (default: 15)
 
--  **-bias image** output the estimated bias field
+-  **-check_norm image** output the final estimated spatially varying intensity level that is used for normalisation.
 
--  **-maxiter number** set the number of iterations. Default(15).
+-  **-check_mask image** output the final mask used to compute the normalisation. This mask excludes regions identified as outliers by the optimisation process.
 
--  **-check image** check the final mask used to compute the bias field. This mask excludes outlier regions ignored by the bias field fitting procedure.However, these regions are still corrected for bias fields based on the other image data.
+-  **-value number** specify the value to which the summed tissue compartments will be normalised. (default: 0.282095, SH DC term for unit angular integral)
 
 Standard options
 ^^^^^^^^^^^^^^^^
