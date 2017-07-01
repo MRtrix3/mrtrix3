@@ -27,41 +27,30 @@ namespace MR
   {
 
     /**
-     *  3-D Point Spread Function in (scanner) voxel coordinates.
+     * 3-D Sinc Point Spread Function
      */
     template <typename T = float>
-    class PSF
-    {  MEMALIGN(PSF);
+    class SincPSF
+    {  MEMALIGN(SincPSF);
     public:
 
-        PSF (T w, T sz = 1, T sxy = 1) : _sxy(sxy), _sz(sz), _w(w) {  }
+        SincPSF (T w, T s = 1) : _w(w), _s(s) {  }
 
         template <class VectorType>
-        T operator() (const VectorType& d) const
+        inline T operator() (const VectorType& d) const
         {
-            return psf_xy(d[0]) * psf_xy(d[1]) * psf_z(d[2]);
+            return psf(d[0]) * psf(d[1]) * psf(d[2]);
         }
 
     private:
-        const T _sxy, _sz, _w;
-        const T fwhm = 2 * std::sqrt(2 * M_LN2); 
+        const T _w, _s;
         const T eps  = std::numeric_limits<T>::epsilon();
         const T eps2 = std::sqrt(eps);
         const T eps4 = std::sqrt(eps2);
 
-        inline T psf_xy (T x) const
+        inline T psf (T x) const
         {
-            return sinc(x / _sxy) * blackman(x, _w);
-        }
-
-        inline T psf_z (T z) const
-        {
-            return gaussian(z, _sz/fwhm) * blackman(z, _w);
-        }
-
-        inline T gaussian (T x, T sig = 1) const
-        {
-            return std::exp( -x*x / (2*sig*sig) ) / std::sqrt(2*M_PI*sig*sig);
+            return sinc(x / _s) * blackman(x, _w);
         }
 
         inline T sinc (T x) const
@@ -81,6 +70,33 @@ namespace MR
         {
             T y = M_PI * (x - w) / w;
             return 0.42 - 0.5 * std::cos(y) + 0.08 * std::cos(2*y);
+        }
+
+    };
+
+
+    /**
+     *  1-D Gaussian Slice Sensitivity Profile.
+     */
+    template <typename T = float>
+    class SSP
+    {  MEMALIGN(SSP);
+    public:
+
+        SSP (T t = 1) : _t(t) {  }
+     
+        inline T operator() (const T z) const
+        {
+            return gaussian(z, _t/fwhm);
+        }
+
+    private:
+        const T _t;
+        const T fwhm = 2 * std::sqrt(2 * M_LN2);
+        
+        inline T gaussian (T x, T sig = 1) const
+        {
+            return std::exp( -x*x / (2*sig*sig) ) / std::sqrt(2*M_PI*sig*sig);
         }
 
     };

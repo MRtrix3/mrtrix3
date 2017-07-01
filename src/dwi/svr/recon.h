@@ -113,45 +113,49 @@ namespace MR
         // Special care must be taken when inserting elements and it is advised to reserve appropriate memory in advance.
 
         int n = 2;
-        PSF<float> psf (n);
+        SincPSF<float> psf (n);
+        SSP<float> ssp {};
 
-        // reserve memory for 8 elements along each row (outer strides with row-major order).
-        M.reserve(Eigen::VectorXi::Constant(nv*nz*nxy, 8*n*n*n));
+        // reserve memory for elements along each row (outer strides with row-major order).
+        M.reserve(Eigen::VectorXi::Constant(nv*nz*nxy, (n+1)*8*n*n*n));
 
         // set up transform
-        Transform T0 (in);          // assume output transform = input transform; needs extending for superresolution
+        Transform T0 (in);          // assume output transform = input transform; needs extending for anisotropic voxels
 
         transform_type Ts2r, Tr2s;
 
-        Eigen::Vector3f ps, pr, p;
-        Eigen::Vector3i p0;
-
+        Eigen::Vector3f ps, pr;
+        Eigen::Vector3i p;
+        
         // fill weights
         size_t i = 0;
-        for (size_t v = 0; v < nv; v++) {
+        for (size_t v = 0; v < nv; v++) {   // volumes
           if (rigid.rows() == nv) {
             Ts2r = T0.scanner2voxel * get_transform(rigid.row(v)) * T0.voxel2scanner;
             Tr2s = Ts2r.inverse();
           }
 
-          for (size_t z = 0; z < nz; z++) {
+          for (size_t z = 0; z < nz; z++) { // slices
             if (rigid.rows() == nv*nz) {
               Ts2r = T0.scanner2voxel * get_transform(rigid.row(v*nz+z)) * T0.voxel2scanner;
               Tr2s = Ts2r.inverse();
             }
 
+            // in-plane
             for (size_t y = 0; y < in.size(1); y++) {
               for (size_t x = 0; x < in.size(0); x++, i++) {
-                ps = Eigen::Vector3f(x, y, z);
-                pr = (Ts2r.cast<float>() * ps);
 
-                for (int rx = -n; rx < n; rx++) {
-                  for (int ry = -n; ry < n; ry++) {
-                    for (int rz = -n; rz < n; rz++) {
-                      p0 = Eigen::Vector3i(std::ceil(pr[0]), std::ceil(pr[1]), std::ceil(pr[2])) + Eigen::Vector3i(rx, ry, rz);
-                      if (inbounds(in, p0[0], p0[1], p0[2])) {
-                        p = Tr2s.cast<float>() * p0.cast<float>();
-                        M.insert(i, get_idx(in, p0[0], p0[1], p0[2])) = psf(ps - p);
+                for (int s = -n; s <= n; s++) {     // ssp neighbourhood
+                  ps = Eigen::Vector3f(x, y, z+s);
+                  pr = (Ts2r.cast<float>() * ps);
+
+                  for (int rx = -n; rx < n; rx++) { // sinc interpolator
+                    for (int ry = -n; ry < n; ry++) {
+                      for (int rz = -n; rz < n; rz++) {
+                        p = Eigen::Vector3i(std::ceil(pr[0])+rx, std::ceil(pr[1])+ry, std::ceil(pr[2])+rz);
+                        if (inbounds(in, p[0], p[1], p[2])) {
+                          M.coeffRef(i, get_idx(in, p[0], p[1], p[2])) += ssp(s) * psf(pr - p.cast<float>());
+                        }
                       }
                     }
                   }
