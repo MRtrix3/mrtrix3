@@ -94,7 +94,7 @@ void run ()
   if (opt.size())
     motion = load_matrix<float>(opt[0][0]);
   else
-    throw Exception("No motion parameters provided.");
+    motion = Eigen::MatrixXf::Zero(dwi.size(3), 6); 
 
   // Check dimensions
   if (motion.size() && motion.cols() != 6)
