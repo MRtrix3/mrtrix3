@@ -99,15 +99,21 @@ if app.args.shell:
 lmax = 0
 if app.args.lmax:
     lmax = int(app.args.lmax)
-if shell==0 and lmax>0:
+if shell=='0' and lmax>0:
     app.error('Option -lmax ' + str(lmax) + ' incompatible with b=0 shell.')
 
 # Radial basis
 rf_import_option = ''
 if app.args.rf:
     rf_import_option = ' '.join('-rf ' + path.fromUser(r, True) for r in app.args.rf.split(','))
-if rf_import_option is '' and (shell is None or len(shell)!=1):
-    app.error('No radial basis requires single-shell data.')
+
+recon_option = '-maxiter 10 '
+if rf_import_option is not '':
+    recon_option += rf_import_option
+elif shell is not None and len(shell)==1:
+    recon_option += '-lmax ' + str(lmax)
+else:
+    app.error('Multi-shell data requires radial basis, single-shell data requires lmax.')
 
 # Set multiband factor
 mb = 1
@@ -124,19 +130,9 @@ if shell is not None:
 else:
     run.command('mrconvert in.mif shells.mif')
 dims = list(map(int, image.headerField('shells.mif', 'size').split()))
-#if dims[3] < (lmax+1)*(lmax+2)//2:
-#    app.error('Option -lmax ' + str(lmax) + ' incompatible with n=' +str(dims[3])+ ' volumes in b=' + str(shell) + ' shell.')
-#run.command('mrinfo shell.mif -export_grad_mrtrix grad.txt')
 
 # initial template
-run.command('dwirecon shells.mif ' + rf_import_option + ' recon-0.mif -rpred pred.mif')
-#if shell:
-#    run.command('amp2sh -lmax ' + str(lmax) + ' shell.mif recon-0.mif')
-#else:
-#    run.command('mrmath -axis 3 shell.mif mean b0init.mif')
-#    run.command('mrconvert -axes 0,1,2,-1 b0init.mif template.mif')
-#    run.command('mrcalc template.mif 0.282095 -divide recon-0.mif')
-#run.command('sh2amp -gradient recon-0.mif grad.txt pred.mif')
+run.command('dwirecon shells.mif ' + recon_option + ' recon-0.mif -rpred pred.mif')
 
 # volume-to-volume registration
 for k in range(v2viter):
@@ -147,7 +143,7 @@ for k in range(v2viter):
         run.command('mrconvert -coord 3 ' + str(v) + ' shells.mif target.mif -force')
         run.command('mrreg_lin template.mif target.mif -nonsymmetric -mask2 mask.mif' +
                     ' -type rigid ' + ('-affine_init T-'+str(v)+'.txt' if k>0 else '') +
-                    ' -affine_scale ' + str(0.3 + 0.7*(k+1)/v2viter) + ' -affine T-'+str(v)+'.txt -force')
+                    ' -affine_scale ' + str(0.3 + 0.7*(k+1)/v2viter) + ' -affine T-'+str(v)+'.txt -affine_niter 100 -force')
         run.command('transformcalc T-'+str(v)+'.txt decompose trafo.txt -force')
         f2 = open('trafo.txt')
         L = f2.readlines()
@@ -157,7 +153,7 @@ for k in range(v2viter):
         f.write(tra + ' ' + rot + '\n')
     f.close()
     # update template
-    run.command('dwirecon shells.mif ' + rf_import_option + ' recon-'+str(k+1)+'.mif -motion motion.txt -rpred pred.mif -force')
+    run.command('dwirecon shells.mif ' + recon_option + ' recon-'+str(k+1)+'.mif -motion motion.txt -rpred pred.mif -force')
 
 # slice-to-volume registration
 for k in range(s2viter):
@@ -174,7 +170,7 @@ for k in range(s2viter):
                 run.command('mrconvert -coord 3 ' + str(v*dims[2] + s) + ' pred.mif template.mif -force')
             run.command('mrreg_lin template.mif target.mif -nonsymmetric -mask2 slicemask.mif' +
                     ' -type rigid -affine_init ' + ('T-'+str(v)+'-'+str(s)+'.txt' if k>0 else 'T-'+str(v)+'.txt') +
-                    ' -affine_scale ' + str(0.5 + 0.5*(k+1)/s2viter) + ' -affine T-'+str(v)+'-'+str(s)+'.txt -force')
+                    ' -affine_scale ' + str(0.5 + 0.5*(k+1)/s2viter) + ' -affine T-'+str(v)+'-'+str(s)+'.txt -affine_niter 100 -force')
             run.command('transformcalc T-'+str(v)+'-'+str(s)+'.txt decompose trafo.txt -force')
             f2 = open('trafo.txt')
             L = f2.readlines()
@@ -186,7 +182,7 @@ for k in range(s2viter):
             f.write(volmotion)
     f.close()
     # update template
-    run.command('dwirecon shells.mif ' + rf_import_option + ' recon-'+str(v2viter+k+1)+'.mif -motion motion.txt -rpred pred.mif -force')
+    run.command('dwirecon shells.mif ' + recon_option + ' recon-'+str(v2viter+k+1)+'.mif -motion motion.txt -rpred pred.mif -force')
 
 run.command('mrconvert recon-'+str(niter)+'.mif result.mif')
 
