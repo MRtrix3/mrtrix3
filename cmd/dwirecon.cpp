@@ -11,6 +11,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <algorithm>
 
 #include "command.h"
 #include "image.h"
@@ -42,15 +43,19 @@ void usage ()
 
 
   OPTIONS
-  + Option ("lmax",
-            "set the maximum harmonic order for the output series. (default = " + str(DEFAULT_LMAX) + ")")
-    + Argument ("order").type_integer(0, 30)
-
   + Option ("motion", "The motion parameters associated with input slices or volumes. "
                       "These are supplied as a matrix of 6 columns that encode respectively "
                       "the x-y-z translation and 0-1-2 rotation Euler angles for each volume "
                       "or slice in the image. All transformations are w.r.t. scanner space." )
     + Argument ("file").type_file_in()
+
+  + Option ("rf", "Basis functions for the radial (multi-shell) domain, provided as matrices in which "
+                  "rows correspond with shells and columns with SH harmonic bands.").allow_multiple()
+    + Argument ("b").type_file_in()
+  
+  + Option ("lmax",
+            "set the maximum harmonic order for the output series. (default = " + str(DEFAULT_LMAX) + ")")
+    + Argument ("order").type_integer(0, 30)
 
   + DWI::GradImportOptions()
 
@@ -80,18 +85,16 @@ typedef float value_type;
 
 void run ()
 {
+  // Load input data
   auto dwi = Image<value_type>::open(argument[0]);
-
-  // Read parameters
-  int lmax = get_option_value("lmax", DEFAULT_LMAX);
-  value_type tol = get_option_value("tolerance", DEFAULT_TOL);
-  size_t maxiter = get_option_value("maxiter", DEFAULT_MAXITER);
 
   // Read motion parameters
   auto opt = get_options("motion");
   Eigen::MatrixXf motion;
   if (opt.size())
     motion = load_matrix<float>(opt[0][0]);
+  else
+    motion = Eigen::MatrixXf::Zero(dwi.size(3), 6); 
 
   // Check dimensions
   if (motion.size() && motion.cols() != 6)
@@ -100,11 +103,32 @@ void run ()
     throw Exception("No. rows in motion parameters must equal the number of DWI volumes or slices.");
 
 
-  // Force single-shell until multi-shell basis is implemented
+  // Select shells
   auto grad = DWI::get_valid_DW_scheme (dwi);
   DWI::Shells shells (grad);
   shells.select_shells (false, false, false);
-  auto idx = shells.largest().get_volumes();
+
+  // Read multi-shell basis
+  int lmax = 0;
+  vector<Eigen::MatrixXf> rf;
+  opt = get_options("rf");
+  for (size_t k = 0; k < opt.size(); k++) {
+    Eigen::MatrixXf t = load_matrix<float>(opt[k][0]);
+    if (t.rows() != shells.count())
+      throw Exception("No. shells does not match no. rows in basis function " + opt[k][0] + ".");
+    lmax = std::max(2*(int(t.cols())-1), lmax);
+    rf.push_back(t);
+  }
+
+  // Get volume indices 
+  vector<size_t> idx;
+  if (rf.empty()) {
+    idx = shells.largest().get_volumes();
+  } else {
+    for (size_t k = 0; k < shells.count(); k++)
+      idx.insert(idx.end(), shells[k].get_volumes().begin(), shells[k].get_volumes().end());
+    std::sort(idx.begin(), idx.end());
+  }
 
   // Select subset
   auto dwisub = Adapter::make <Adapter::Extract1D> (dwi, 3, container_cast<vector<int>> (idx));
@@ -126,17 +150,25 @@ void run ()
         motionsub.row(i * dwi.size(2) + j) = motion.row(idx[i] * dwi.size(2) + j).template cast<float>();
   }
 
+  // Other parameters
+  if (rf.empty())
+    lmax = get_option_value("lmax", DEFAULT_LMAX);
+  else
+    lmax = std::min(lmax, (int) get_option_value("lmax", lmax));
+  
+  value_type tol = get_option_value("tolerance", DEFAULT_TOL);
+  size_t maxiter = get_option_value("maxiter", DEFAULT_MAXITER);
+
 
   // Set up scattered data matrix
   INFO("initialise reconstruction matrix");
-  DWI::ReconMatrix R (dwisub, motionsub, gradsub, lmax);
+  DWI::ReconMatrix R (dwisub, motionsub, gradsub, lmax, rf);
 
   // Read input data to vector
   Eigen::VectorXf y (dwisub.size(0)*dwisub.size(1)*dwisub.size(2)*dwisub.size(3));
   size_t j = 0;
   for (auto l = Loop("loading image data", {0, 1, 2, 3})(dwisub); l; l++, j++)
     y[j] = dwisub.value();
-
 
   // Fit scattered data in basis...
   INFO("solve with conjugate gradient method");
@@ -159,7 +191,7 @@ void run ()
   // Write result to output file
   Header header (dwisub);
   DWI::stash_DW_scheme (header, gradsub);
-  header.size(3) = Math::SH::NforL(lmax);
+  header.size(3) = R.getY().cols();
   Stride::set_from_command_line (header, Stride::contiguous_along_axis (3));
   header.datatype() = DataType::from_command_line (DataType::Float32);
   auto out = Image<value_type>::create (argument[1], header);

@@ -16,7 +16,6 @@
 #define __dwi_svr_recon_h__
 
 
-#include <vector>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
@@ -24,6 +23,7 @@
 #include "header.h"
 #include "transform.h"
 #include "math/SH.h"
+#include "dwi/shells.h"
 #include "dwi/svr/psf.h"
 
 
@@ -81,14 +81,13 @@ namespace MR
 
 
       // Custom API:
-      ReconMatrix(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad, const int lmax)
+      ReconMatrix(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad, const int lmax, const vector<Eigen::MatrixXf>& rf)
         : lmax(lmax),
           nxy (in.size(0)*in.size(1)), nz (in.size(2)), nv (in.size(3)),
-          M(nxy*nz*nv, nxy*nz),
-          Y(nz*nv, Math::SH::NforL(lmax))
+          M(nxy*nz*nv, nxy*nz)
       {
         init_M(in, rigid);
-        init_Y(in, rigid, grad);
+        init_Y(in, rigid, grad, rf);
       }
 
       const SparseMat& getM() const { return M; }
@@ -106,7 +105,7 @@ namespace MR
       Eigen::MatrixXf Y;
 
 
-      inline void init_M(const Header& in, const Eigen::MatrixXf& rigid)
+      void init_M(const Header& in, const Eigen::MatrixXf& rigid)
       {
         DEBUG("initialise M");
         // Note that this step is highly time and memory critical!
@@ -171,10 +170,41 @@ namespace MR
       }
 
 
-      inline void init_Y(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad)
+      void init_Y(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad, const vector<Eigen::MatrixXf>& rf)
       {
         DEBUG("initialise Y");
         assert (grad.rows() == nv);     // one gradient per volume
+
+        Shells shells (grad.template cast<double>());
+        vector<size_t> idx (shells.volumecount());
+        vector<Eigen::MatrixXf> shellbasis;
+        int n = 0;
+        if (rf.empty()) {
+          n = Math::SH::NforL(lmax);
+        } else {
+          for (auto& r : rf)
+            n += Math::SH::NforL(std::min(2*(int(r.cols())-1), lmax));
+        }
+        Y.resize(nv*nz, n);
+        for (size_t s = 0; s < shells.count(); s++) {
+          for (auto v : shells[s].get_volumes())
+            idx[v] = s;
+
+          Eigen::MatrixXf B;
+          if (rf.empty()) {
+            B.setIdentity(Math::SH::NforL(lmax), Math::SH::NforL(lmax));
+          }
+          else { 
+            B.setZero(n, Math::SH::NforL(lmax));
+            size_t j = 0;
+            for (auto& r : rf) {
+              for (size_t l = 0; l < r.cols() and 2*l <= lmax; l++)
+                for (size_t i = l*(2*l-1); i < (l+1)*(2*l+1); i++, j++)
+                  B(j,i) = r(s,l);
+            }
+          }
+          shellbasis.push_back(B);
+        }
 
         Eigen::Vector3f vec;
         Eigen::Matrix3f rot;
@@ -192,7 +222,13 @@ namespace MR
               rot = get_rotation(rigid(i*nz+j,3), rigid(i*nz+j,4), rigid(i*nz+j,5));
 
             // evaluate basis functions
-            Y.row(i*nz+j) = Math::SH::delta(delta, rot*vec, lmax);
+            Math::SH::delta(delta, rot*vec, lmax);
+            if (rf.empty()) {
+              Y.row(i*nz+j) = delta;
+            }
+            else {
+              Y.row(i*nz+j) = shellbasis[idx[i]]*delta;
+            }
           }
 
         }
