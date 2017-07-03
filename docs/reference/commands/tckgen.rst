@@ -65,10 +65,6 @@ Streamlines tractography options
 
 -  **-noprecomputed** do NOT pre-compute legendre polynomial values. Warning: this will slow down the algorithm by a factor of approximately 4.
 
--  **-power value** raise the FOD to the power specified (default is 1/nsamples).
-
--  **-samples number** set the number of FOD samples to take per step for the 2nd order (iFOD2) method (Default: 4).
-
 -  **-rk4** use 4th-order Runge-Kutta integration (slower, but eliminates curvature overshoot in 1st-order deterministic methods)
 
 -  **-stop** stop propagating a streamline once it has traversed all include regions
@@ -124,6 +120,13 @@ Anatomically-Constrained Tractography options
 -  **-backtrack** allow tracks to be truncated and re-tracked if a poor structural termination is encountered
 
 -  **-crop_at_gmwmi** crop streamline endpoints more precisely as they cross the GM-WM interface
+
+Options specific to the iFOD2 tracking algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-samples number** set the number of FOD samples to take per step (Default: 4).
+
+-  **-power value** raise the FOD to the power specified (default is 1/nsamples).
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

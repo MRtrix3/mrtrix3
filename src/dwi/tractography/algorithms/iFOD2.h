@@ -18,12 +18,15 @@
 #include <algorithm>
 
 #include "math/SH.h"
+#include "dwi/tractography/properties.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/tractography.h"
 #include "dwi/tractography/tracking/types.h"
 #include "dwi/tractography/algorithms/calibrator.h"
 
+
+#define TCKGEN_DEFAULT_IFOD2_NSAMPLES 4
 
 
 
@@ -35,6 +38,9 @@ namespace MR
     {
       namespace Algorithms
       {
+
+        extern const App::OptionGroup iFOD2Option;
+        void load_iFOD2_options (Tractography::Properties&);
 
         using namespace MR::DWI::Tractography::Tracking;
 
