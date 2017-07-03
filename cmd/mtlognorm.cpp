@@ -64,7 +64,7 @@ void usage ()
                             "This mask excludes regions identified as outliers by the optimisation process.")
     + Argument ("image").type_image_out ()
 
-    + Option ("value", "specify the value to which the summed tissue compartments will be normalised. "
+    + Option ("value", "specify the reference value to which the summed tissue compartments will be normalised. "
                        "(default: " + str(DEFAULT_NORM_VALUE, 6) + ", SH DC term for unit angular integral)")
     + Argument ("number").type_float ();
 }
@@ -116,9 +116,9 @@ FORCE_INLINE void refine_mask (Image<float>& summed,
 void run ()
 {
   if (argument.size() % 2)
-    throw Exception ("The number of input arguments must be even. There must be an output file provided for every input tissue image");
+    throw Exception ("The number of arguments must be even, provided as pairs of each input and its corresponding output file.");
 
-  ProgressBar progress ("performing intensity normalisation and bias field correction...");
+  ProgressBar progress ("performing log-domain intensity normalisation...");
 
   using ImageType = Image<float>;
   using MaskType = Image<bool>;
@@ -135,7 +135,7 @@ void run ()
     auto image = ImageType::open (argument[i]);
 
     if (image.ndim () > 4)
-      throw Exception ("input image \"" + image.name() + "\" must contain 4 dimensions or less.");
+      throw Exception ("input image \"" + image.name() + "\" contains more than 4 dimensions.");
 
     // Elevate image dimensions to ensure it is 4-dimensional
     // e.g. x,y,z -> x,y,z,1
@@ -185,7 +185,7 @@ void run ()
   Header h_combined_tissue (input_images[0]);
   h_combined_tissue.ndim () = 4;
   h_combined_tissue.size (3) = n_tissue_types;
-  auto combined_tissue = ImageType::scratch (h_combined_tissue, "Packed tissue components");
+  auto combined_tissue = ImageType::scratch (h_combined_tissue, "Tissue components");
 
   for (size_t i = 0; i < n_tissue_types; ++i) {
     combined_tissue.index (3) = i;
@@ -201,14 +201,14 @@ void run ()
   }
 
   if (!num_voxels)
-    throw Exception ("Error in automatic mask generation. Mask contains no voxels");
+    throw Exception ("Mask contains no valid voxels");
 
 
   // Load global normalisation factor
   const float normalisation_value = get_option_value ("value", DEFAULT_NORM_VALUE);
 
   if (normalisation_value <= 0.f)
-    throw Exception ("Intensity normalisation value must be strictly positive.");
+    throw Exception ("Normalisation reference value (-value option) must be strictly positive.");
 
   const float log_norm_value = std::log (normalisation_value);
 
@@ -320,15 +320,15 @@ void run ()
         double log_sum = 0.f;
         for (size_t j = 0; j < n_tissue_types; ++j) {
           if (scale_factors(j) <= 0.0)
-            throw Exception ("Non-positive tissue intensity normalisation scale factor was computed."
-                             " Tissue index: " + str(j) + " Scale factor: " + str(scale_factors(j)) +
+            throw Exception ("Non-positive tissue balance factor was computed."
+                             " Tissue index: " + str(j+1) + " Balance factor: " + str(scale_factors(j)) +
                              " Needs to be strictly positive!");
           log_sum += std::log (scale_factors(j));
         }
         scale_factors /= std::exp (log_sum / n_tissue_types);
       }
 
-      INFO ("scale factors: " + str(scale_factors.transpose()));
+      INFO ("Balance factors: " + str(scale_factors.transpose()));
 
       // Perform outlier rejection on log-domain of summed images
       outlier_rejection(1.5f);
@@ -348,7 +348,7 @@ void run ()
     }
 
 
-    // Solve for bias field weights in the log domain
+    // Solve for normalisation field weights in the log domain
     Transform transform (mask);
     Eigen::MatrixXd bias_field_basis (num_voxels, n_basis_vecs);
     Eigen::MatrixXd X (num_voxels, n_tissue_types);
@@ -371,14 +371,14 @@ void run ()
 
     bias_field_weights = bias_field_basis.colPivHouseholderQr().solve(y);
 
-    // Generate bias field in the log domain
+    // Generate normalisation field in the log domain
     for (auto i = Loop (0, 3) (bias_field_log); i; ++i) {
         Eigen::Vector3 vox (bias_field_log.index(0), bias_field_log.index(1), bias_field_log.index(2));
         Eigen::Vector3 pos = transform.voxel2scanner * vox;
         bias_field_log.value() = basis_function (pos).col(0).dot (bias_field_weights.col(0));
     }
 
-    // Generate bias field in the image domain
+    // Generate normalisation field in the image domain
     for (auto i = Loop (0, 3) (bias_field_log, bias_field_image); i; ++i)
         bias_field_image.value () = std::exp(bias_field_log.value());
 
@@ -401,7 +401,7 @@ void run ()
   progress++;
 
 
-  // Output bias corrected and normalised tissue maps
+  // Generate output headers
   uint32_t total_count = 0;
   for (size_t i = 0; i < output_headers.size(); ++i) {
     uint32_t count = 1;
@@ -410,7 +410,7 @@ void run ()
     total_count += count;
   }
 
-  // Compute log-norm scale
+  // Compute log-norm scale parameter (geometric mean of normalisation field in outlier-free mask).
   float lognorm_scale { 0.f };
   if (num_voxels) {
     for (auto i = Loop (0,3) (mask, bias_field_log); i; ++i) {

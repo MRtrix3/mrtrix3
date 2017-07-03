@@ -37,7 +37,7 @@ Options
 
 -  **-check_mask image** output the final mask used to compute the normalisation. This mask excludes regions identified as outliers by the optimisation process.
 
--  **-value number** specify the value to which the summed tissue compartments will be normalised. (default: 0.282095, SH DC term for unit angular integral)
+-  **-value number** specify the reference value to which the summed tissue compartments will be normalised. (default: 0.282095, SH DC term for unit angular integral)
 
 Standard options
 ^^^^^^^^^^^^^^^^
