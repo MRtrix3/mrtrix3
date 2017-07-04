@@ -38,7 +38,7 @@ Bias field correction is important to deal with spatial intensity inhomogeneitie
 
 This can be done in a single step using the :ref:`dwibiascorrect` script in MRtrix. The script uses bias field correction algorthims available in `ANTS <http://stnava.github.io/ANTs/>`_ or `FSL <http://fsl.fmrib.ox.ac.uk/>`_. In our experience the `N4 algorithm <http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3071855/>`_ in ANTS gives far superior results. To install N4, install the `ANTS <http://stnava.github.io/ANTs/>`_ package, then perform bias field correction on DW images using::
 
-    foreach * : dwibiascorrect -ants -mask IN/dwi_mask.mif IN/dwi_denoised_preproc.mif IN/dwi_denoised_preproc_bias.mif
+    foreach * : dwibiascorrect -ants IN/dwi_denoised_preproc.mif IN/dwi_denoised_preproc_bias.mif
 
 
 Fixel-based analysis steps
