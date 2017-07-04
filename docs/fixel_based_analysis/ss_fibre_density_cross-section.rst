@@ -10,9 +10,9 @@ This tutorial explains how to perform `fixel-based analysis of fibre density and
 All steps in this tutorial have written as if the commands are being **run on a cohort of images**, and make extensive use of the :ref:`foreach script to simplify batch processing <batch_processing>`. This tutorial also assumes that the imaging dataset is organised with one directory identifying the subject, and all files within identifying the image type. For example::
 
     study/subjects/001_patient/dwi.mif
-    study/subjects/001_patient/fod.mif
+    study/subjects/001_patient/wmfod.mif
     study/subjects/002_control/dwi.mif
-    study/subjects/002_control/fod.mif
+    study/subjects/002_control/wmfod.mif
 
 .. NOTE:: All commands in this tutorial are run **from the subjects path** up until step 20, where we change directory to the template path
 
@@ -117,7 +117,7 @@ Depending on your data, you may find that upsampling the low-resolution masks fr
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 When performing analysis of AFD, Constrained Spherical Deconvolution (CSD) should be performed using the group average response function computed at step . If not using AFD in the fixel-based analysis (and therefore you have skipped steps 4-6), however you still want to compute FODs for image registration, then you can use a subject-specific response function. Note that :code:`dwi2fod csd` can be used, however here we use :code:`dwi2fod msmt_csd` (even with single shell data) to benefit from the hard non-negativity constraint::
 
-    foreach * : dwiextract IN/dwi_denoised_preproc_bias_norm_upsampled.mif - \| dwi2fod msmt_csd - ../group_average_response.txt IN/fod.mif -mask IN/dwi_mask_upsampled.mif
+    foreach * : dwiextract IN/dwi_denoised_preproc_bias_norm_upsampled.mif - \| dwi2fod msmt_csd - ../group_average_response.txt IN/wmfod.mif -mask IN/dwi_mask_upsampled.mif
 
 10. Generate a study-specific unbiased FOD template
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -126,13 +126,13 @@ When performing analysis of AFD, Constrained Spherical Deconvolution (CSD) shoul
 
 Symbolic link all FOD images (and masks) into a single input folder. If you have fewer than 40 subjects in your study, you can use the entire population to build the template::
 
-    foreach * : ln -sr IN/fod.mif ../template/fod_input/PRE.mif
+    foreach * : ln -sr IN/wmfod.mif ../template/fod_input/PRE.mif
     foreach * : ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
 
 Alternatively, if you have more than 40 subjects you can randomly select a subset of the individuals. If your study has multiple groups, then ideally you want to select the same number of subjects from each group to ensure the template is un-biased. Assuming the subject directory labels can be used to identify members of each group, you could use::
 
-    foreach `ls -d *patient | sort -R | tail -20` : ln -sr IN/fod.mif ../template/fod_input/PRE.mif ";" ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
-    foreach `ls -d *control | sort -R | tail -20` : ln -sr IN/fod.mif ../template/fod_input/PRE.mif ";" ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
+    foreach `ls -d *patient | sort -R | tail -20` : ln -sr IN/wmfod.mif ../template/fod_input/PRE.mif ";" ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
+    foreach `ls -d *control | sort -R | tail -20` : ln -sr IN/wmfod.mif ../template/fod_input/PRE.mif ";" ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
 
 .. include:: common_fba_steps/population_template2.rst
 
@@ -141,7 +141,7 @@ Alternatively, if you have more than 40 subjects you can randomly select a subse
 
 Register the FOD image from all subjects to the FOD template image::
 
-    foreach * : mrregister IN/fod.mif -mask1 IN/dwi_mask_upsampled.mif ../template/fod_template.mif -nl_warp IN/subject2template_warp.mif IN/template2subject_warp.mif
+    foreach * : mrregister IN/wmfod.mif -mask1 IN/dwi_mask_upsampled.mif ../template/wmfod_template.mif -nl_warp IN/subject2template_warp.mif IN/template2subject_warp.mif
 
 
 12. Compute the intersection of all subject masks in template space
@@ -156,7 +156,7 @@ Here we perform a 2-step threshold to identify template white matter fixels to b
        
 Compute a template AFD peaks fixel image::
     
-    fod2fixel ../template/fod_template.mif -mask ../template/mask_intersection.mif ../template/fixel_temp -peak peaks.mif
+    fod2fixel ../template/wmfod_template.mif -mask ../template/mask_intersection.mif ../template/fixel_temp -peak peaks.mif
     
 .. NOTE:: Fixel images in this step are stored using the :ref:`fixel_format`, which exploits the filesystem to store all fixel data in a directory.
     
@@ -173,7 +173,7 @@ Generate an analysis voxel mask from the fixel mask. The median filter in this s
 
 Recompute the fixel mask using the analysis voxel mask. Using the mask allows us to use a lower AFD threshold than possible in the steps above, to ensure we have included fixels with low AFD inside white matter (e.g. areas with fibre crossings)::
  
-    fod2fixel -mask ../template/voxel_mask.mif -fmls_peak_value 0.2 ../template/fod_template.mif ../template/fixel_mask
+    fod2fixel -mask ../template/voxel_mask.mif -fmls_peak_value 0.2 ../template/wmfod_template.mif ../template/fixel_mask
 
 .. NOTE:: We recommend having no more than 500,000 fixels in the analysis fixel mask (you can check this by :code:`mrinfo -size ../template/fixel/mask.mif`, and looking at the size of the image along the 1st dimension), otherwise downstream statistical analysis (using :ref:`fixelcfestats`) will run out of RAM). A mask with 500,000 fixels will require a PC with 128GB of RAM for the statistical analysis step. To reduce the number of fixels, try changing the thresholds in this step, or reduce the extent of upsampling in step 7.
 
@@ -182,7 +182,7 @@ Recompute the fixel mask using the analysis voxel mask. Using the mask allows us
 
 Note that here we warp FOD images into template space *without* FOD reorientation. Reorientation will be performed in a separate subsequent step::
 
-    foreach * : mrtransform IN/fod.mif -warp IN/subject2template_warp.mif -noreorientation IN/fod_in_template_space.mif
+    foreach * : mrtransform IN/wmfod.mif -warp IN/subject2template_warp.mif -noreorientation IN/fod_in_template_space.mif
 
 
 15. Segment FOD images to estimate fixels and their apparent fibre density (FD)

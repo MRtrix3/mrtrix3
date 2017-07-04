@@ -10,9 +10,9 @@ This tutorial explains how to perform `fixel-based analysis of fibre density and
 All steps in this tutorial have written as if the commands are being **run on a cohort of images**, and make extensive use of the :ref:`foreach script to simplify batch processing <batch_processing>`. This tutorial also assumes that the imaging dataset is organised with one directory identifying the subject, and all files within identifying the image type. For example::
 
     study/subjects/001_patient/dwi.mif
-    study/subjects/001_patient/fod.mif
+    study/subjects/001_patient/wmfod.mif
     study/subjects/002_control/dwi.mif
-    study/subjects/002_control/fod.mif
+    study/subjects/002_control/wmfod.mif
 
 .. NOTE:: All commands in this tutorial are run **from the subjects path** up until step 18, where we change directory to the template path
 
@@ -69,16 +69,16 @@ Depending on your data, you may find that computing masks on native resolution D
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 When performing analysis of AFD, Constrained Spherical Deconvolution (CSD) should be performed using the group average response functions computed at step 3::
 
-    foreach * : dwi2fod msmt_csd IN/dwi_denoised_preproc_upsampled.mif ../group_average_response_wm.txt IN/fod.mif ../group_average_response_gm.txt IN/gm.mif  ../group_average_response_csf.txt IN/csf.mif -mask IN/dwi_mask_upsampled.mif
+    foreach * : dwi2fod msmt_csd IN/dwi_denoised_preproc_upsampled.mif ../group_average_response_wm.txt IN/wmfod.mif ../group_average_response_gm.txt IN/gm.mif  ../group_average_response_csf.txt IN/csf.mif -mask IN/dwi_mask_upsampled.mif
 
 
 7. Perform simultaneous bias field correction and intensity normalisation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This step performs :ref:`global intensity normalisation <global-intensity-normalisation>` by scaling all tissue types based on a single scale factor. A single multiplicative bias field is also estimated and applied to correct the output::
+This step performs :ref:`global intensity normalisation <global-intensity-normalisation>` by scaling all tissue types with a spatially smoothly varying normalisation field::
 
-    foreach * : mtbin IN/fod.mif IN/fod_bias_norm.mif IN/gm.mif IN/gm_bias_norm.mif IN/csf.mif IN/csf_bias_norm.mif -mask IN/dwi_mask_upsampled.mif
+    foreach * : mtlognorm IN/wmfod.mif IN/wmfod_norm.mif IN/gm.mif IN/gm_norm.mif IN/csf.mif IN/csf_norm.mif -mask IN/dwi_mask_upsampled.mif
 
-.. WARNING:: We strongly recommend you that you check the scale factors applied during intensity normalisation are not influenced by the variable of interest in your study. For example if one group contains global changes in white matter T2 then this may directly influence the intensity normalisation and therefore bias downstream AFD analysis. To check this we recommend you perform an equivalence test to ensure mean scale factors are the same between groups. To output the scale factor applied for all subjects use :code:`foreach * : mrinfo IN/fod_bias_norm.mif -property normalisation_scale_factor`.
+.. WARNING:: We recommend you that you check that the normalisation scale (computed during intensity normalisation) is not influenced by the variable of interest in your study. For example if one group contains global (widespread) changes in white matter T2, then this may directly influence the intensity normalisation and therefore bias downstream analysis of apparent fibre density (FD). To check this, you can perform an equivalence test to ensure the overall normalisation scale does not differ between groups. To output these overall normalisation scales for all subjects use :code:`mrinfo */wmfod_norm.mif -property lognorm_scale`.
 
 
 8. Generate a study-specific unbiased FOD template
@@ -88,13 +88,13 @@ This step performs :ref:`global intensity normalisation <global-intensity-normal
 
 Symbolic link all FOD images (and masks) into a single input folder. If you have fewer than 40 subjects in your study, you can use the entire population to build the template::
 
-    foreach * : ln -sr IN/fod_bias_norm.mif ../template/fod_input/PRE.mif
+    foreach * : ln -sr IN/wmfod_norm.mif ../template/fod_input/PRE.mif
     foreach * : ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
 
 Alternatively, if you have more than 40 subjects you can randomly select a subset of the individuals. If your study has multiple groups, then ideally you want to select the same number of subjects from each group to ensure the template is un-biased. Assuming the subject directory labels can be used to identify members of each group, you could use::
 
-    foreach `ls -d *patient | sort -R | tail -20` : ln -sr IN/fod_bias_norm.mif ../template/fod_input/PRE.mif ";" ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
-    foreach `ls -d *control | sort -R | tail -20` : ln -sr IN/fod_bias_norm.mif ../template/fod_input/PRE.mif ";" ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
+    foreach `ls -d *patient | sort -R | tail -20` : ln -sr IN/wmfod_norm.mif ../template/fod_input/PRE.mif ";" ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
+    foreach `ls -d *control | sort -R | tail -20` : ln -sr IN/wmfod_norm.mif ../template/fod_input/PRE.mif ";" ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
 
 .. include:: common_fba_steps/population_template2.rst
 
@@ -103,7 +103,7 @@ Alternatively, if you have more than 40 subjects you can randomly select a subse
 
 Register the FOD image from all subjects to the FOD template image. Note you can skip this step if you built your template from your entire population and saved the warps (see previous step)::
 
-    foreach * : mrregister IN/fod_wm_bias_norm.mif -mask1 IN/dwi_mask_upsampled.mif ../template/fod_template.mif -nl_warp IN/subject2template_warp.mif IN/template2subject_warp.mif
+    foreach * : mrregister IN/wmfod_norm.mif -mask1 IN/dwi_mask_upsampled.mif ../template/wmfod_template.mif -nl_warp IN/subject2template_warp.mif IN/template2subject_warp.mif
 
 10. Compute the intersection of all subject masks in template space
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -115,23 +115,23 @@ Register the FOD image from all subjects to the FOD template image. Note you can
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Here we first identify all voxels having some white matter by thresholding the DC term (first SH coefficient) of the multi-tissue FOD image::
 
-    mrconvert ../template/fod_template.mif -coord 3 0 - | mrthreshold - ../template/voxel_mask.mif
+    mrconvert ../template/wmfod_template.mif -coord 3 0 - | mrthreshold - ../template/voxel_mask.mif
 
 Next we segment all fixels from each FOD in the template image (see `here <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`__ for more information about a analysis fixel mask). Note that the fixel image output from this step is stored using the :ref:`fixel_format`, which exploits the filesystem to store all fixel data in a directory::
 
 
-   fod2fixel -mask ../template/voxel_mask.mif -fmls_peak_value 0.2 ../template/fod_template.mif ../template/fixel_mask
+   fod2fixel -mask ../template/voxel_mask.mif -fmls_peak_value 0.1 ../template/wmfod_template.mif ../template/fixel_mask
 
 You can visualise the output fixels using the fixel plot tool from :ref:`mrview`, and opening either the :code:`index.mif` or :code:`directions.mif` found in :code:`../template/fixel_mask`. The automatic thresholding step used above should give you a mask that nicely covers all of white matter, however if not you can always try manually adjusting the threshold with the :code:`mrthreshold -abs` option.
 
-.. NOTE:: We recommend having no more than 500,000 fixels in the analysis_fixel_mask (you can check this by :code:`mrinfo -size ../template/fixel_mask/directions.mif`, and looking at the size of the image along the 1st dimension), otherwise downstream statistical analysis (using :ref:`fixelcfestats`) will run out of RAM). A mask with 500,000 fixels will require a PC with 128GB of RAM for the statistical analysis step. To reduce the number of fixels, try either reducing the number of voxels in the voxel mask by applying a manual threshold using :code:`-abs`, increasing the :code:`-fmls_peak_value`, or reducing the extent of upsampling in step 4.
+.. NOTE:: We recommend having no more than 500,000 fixels in the analysis_fixel_mask (you can check this by :code:`mrinfo -size ../template/fixel_mask/directions.mif`, and looking at the size of the image along the 1st dimension), otherwise downstream statistical analysis (using :ref:`fixelcfestats`) may run out of RAM). A mask with 500,000 fixels will require a PC with 128GB of RAM for the statistical analysis step. To reduce the number of fixels, try either reducing the number of voxels in the voxel mask by applying a manual threshold using :code:`-abs`, increasing the :code:`-fmls_peak_value`, or reducing the extent of upsampling in step 4.
 
 12. Warp FOD images to template space
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Note that here we warp FOD images into template space *without* FOD reorientation. Reorientation will be performed in a separate subsequent step::
 
-    foreach * : mrtransform IN/fod_bias_norm.mif -warp IN/subject2template_warp.mif -noreorientation IN/fod_in_template_space.mif
+    foreach * : mrtransform IN/wmfod_norm.mif -warp IN/subject2template_warp.mif -noreorientation IN/fod_in_template_space.mif
 
 
 13. Segment FOD images to estimate fixels and their apparent fibre density (FD)
