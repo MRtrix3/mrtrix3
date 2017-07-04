@@ -43,6 +43,33 @@ def makeDir(path):
 
 
 
+# Get an appropriate location and name for a new temporary file
+# Note: Doesn't actually create a file; just gives a unique name that won't over-write anything
+def newTempFile(suffix):
+  import os, random, string, sys
+  from mrtrix3 import app
+  if 'TmpFileDir' in app.config:
+    dir_path = app.config['TmpFileDir']
+  elif app._tempDir:
+    dir_path = app._tempDir
+  else:
+    dir_path = os.getcwd()
+  app.debug(dir_path)
+  if 'TmpFilePrefix' in app.config:
+    prefix = app.config['TmpFilePrefix']
+  else:
+    prefix = 'mrtrix-tmp-'
+  app.debug(prefix)
+  full_path = dir_path
+  suffix = suffix.lstrip('.')
+  while os.path.exists(full_path):
+    random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
+    full_path = os.path.join(dir_path, prefix + random_string + '.' + suffix)
+  app.debug(full_path)
+  return full_path
+
+
+
 # Wait until a particular file not only exists, but also does not have any
 #   other process operating on it (so hopefully whatever created it has
 #   finished its work)

@@ -31,7 +31,6 @@ using namespace App;
 const OptionGroup GradImportOptions = DWI::GradImportOptions();
 const OptionGroup GradExportOptions = DWI::GradExportOptions();
 
-
 const OptionGroup FieldExportOptions = OptionGroup ("Options for exporting image header fields")
 
     + Option ("property", "any text properties embedded in the image header under the "
@@ -43,6 +42,7 @@ const OptionGroup FieldExportOptions = OptionGroup ("Options for exporting image
 
     + Option ("json_all", "export all header contents to a JSON file")
     +   Argument ("file").type_file_out();
+
 
 
 void usage ()
@@ -81,7 +81,7 @@ void usage ()
     +   Option ("multiplier", "image intensity multiplier")
     +   Option ("transform", "the voxel to image transformation")
 
-    +   NoRealignOption
+    + NoRealignOption
 
     + FieldExportOptions
 
