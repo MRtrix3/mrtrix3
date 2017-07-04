@@ -61,9 +61,9 @@ namespace MR
                              const connectivity_value_type connectivity_value) :
               fixel_index (fixel_index),
               connectivity_value (connectivity_value) { }
-          index_type index() const { return fixel_index; }
-          connectivity_value_type value() const { return connectivity_value; }
-          void normalise (const connectivity_value_type norm_factor) { connectivity_value *= norm_factor; }
+          FORCE_INLINE index_type index() const { return fixel_index; }
+          FORCE_INLINE connectivity_value_type value() const { return connectivity_value; }
+          FORCE_INLINE void normalise (const connectivity_value_type norm_factor) { connectivity_value *= norm_factor; }
         private:
           const index_type fixel_index;
           connectivity_value_type connectivity_value;
