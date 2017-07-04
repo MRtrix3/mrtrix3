@@ -6,7 +6,7 @@ mtbin
 Synopsis
 --------
 
-Multi-Tissue Bias field correction and Intensity Normalisation (MTBIN)
+Please use the new mtlognorm command instead.
 
 Usage
 --------

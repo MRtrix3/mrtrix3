@@ -35,9 +35,9 @@ void usage ()
 
   DESCRIPTION
    + "This command inputs any number of tissue components (e.g. from multi-tissue CSD) "
-     "and outputs corresponding normalised tissue components. Intensity normalisation is performed "
-     "in the log-domain, and can smoothly vary spatially to accomodate the (residual) "
-     "effects of intensity inhomogeneities."
+     "and outputs corresponding normalised tissue components. Intensity normalisation is "
+     "performed in the log-domain, and can smoothly vary spatially to accomodate the "
+     "effects of (residual) intensity inhomogeneities."
 
    + "The -mask option is mandatory and is optimally provided with a brain mask "
      "(such as the one obtained from dwi2mask earlier in the processing pipeline). "
@@ -228,22 +228,22 @@ void run ()
     norm_field_log.value() = 0.f;
   }
 
-  Eigen::VectorXd scale_factors (n_tissue_types);
-  scale_factors.fill(1);
+  Eigen::VectorXd balance_factors (n_tissue_types);
+  balance_factors.fill(1);
 
   size_t iter = 1;
 
   // Store lambda-function for performing outlier-rejection.
   // We perform a coarse outlier-rejection initially as well as
   // a finer outlier-rejection within the inner loop when computing
-  // normalisation scale factors
+  // tissue balance factors
   auto outlier_rejection = [&](float outlier_range) {
 
     auto summed_log = ImageType::scratch (header_3D);
     for (size_t j = 0; j < n_tissue_types; ++j) {
       for (auto i = Loop (0, 3) (summed_log, combined_tissue, norm_field_image); i; ++i) {
         combined_tissue.index(3) = j;
-        summed_log.value() += scale_factors(j) * combined_tissue.value() / norm_field_image.value();
+        summed_log.value() += balance_factors(j) * combined_tissue.value() / norm_field_image.value();
       }
 
       summed_log.value() = std::log(summed_log.value());
@@ -288,7 +288,7 @@ void run ()
 
     INFO ("iteration: " + str(iter));
 
-    // Iteratively compute intensity normalisation scale factors
+    // Iteratively compute tissue balance factors
     // with outlier rejection
     size_t norm_iter = 1;
     bool balance_converged = false;
@@ -299,7 +299,7 @@ void run ()
 
       if (n_tissue_types > 1) {
 
-        // Solve for tissue normalisation scale factors
+        // Solve for tissue balance factors
         Eigen::MatrixXd X (num_voxels, n_tissue_types);
         Eigen::VectorXd y (num_voxels);
         y.fill (1);
@@ -315,21 +315,21 @@ void run ()
           }
         }
 
-        scale_factors = X.colPivHouseholderQr().solve(y);
+        balance_factors = X.colPivHouseholderQr().solve(y);
 
-        // Ensure our scale factors satisfy the condition that sum(log(scale_factors)) = 0
+        // Ensure our balance factors satisfy the condition that sum(log(balance_factors)) = 0
         double log_sum = 0.f;
         for (size_t j = 0; j < n_tissue_types; ++j) {
-          if (scale_factors(j) <= 0.0)
+          if (balance_factors(j) <= 0.0)
             throw Exception ("Non-positive tissue balance factor was computed."
-                             " Tissue index: " + str(j+1) + " Balance factor: " + str(scale_factors(j)) +
+                             " Tissue index: " + str(j+1) + " Balance factor: " + str(balance_factors(j)) +
                              " Needs to be strictly positive!");
-          log_sum += std::log (scale_factors(j));
+          log_sum += std::log (balance_factors(j));
         }
-        scale_factors /= std::exp (log_sum / n_tissue_types);
+        balance_factors /= std::exp (log_sum / n_tissue_types);
       }
 
-      INFO ("Balance factors: " + str(scale_factors.transpose()));
+      INFO ("Balance factors: " + str(balance_factors.transpose()));
 
       // Perform outlier rejection on log-domain of summed images
       outlier_rejection(1.5f);
@@ -364,7 +364,7 @@ void run ()
         double sum = 0.0;
         for (size_t j = 0; j < n_tissue_types; ++j) {
           combined_tissue.index(3) = j;
-          sum += scale_factors(j) * combined_tissue.value() ;
+          sum += balance_factors(j) * combined_tissue.value() ;
         }
         y (index++) = std::log(sum) - log_norm_value;
       }

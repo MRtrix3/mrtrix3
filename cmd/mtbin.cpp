@@ -23,7 +23,7 @@ void usage ()
 {
   AUTHOR = "";
 
-  SYNOPSIS = "Multi-Tissue Bias field correction and Intensity Normalisation (MTBIN)";
+  SYNOPSIS = "Please use the new mtlognorm command instead.";
 
   DESCRIPTION
    + "WARNING: there were some major issues with this method.  Please start using the new mtlognorm command instead.";

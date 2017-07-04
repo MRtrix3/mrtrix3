@@ -20,7 +20,7 @@ Usage
 Description
 -----------
 
-This command inputs any number of tissue components (e.g. from multi-tissue CSD) and outputs corresponding normalised tissue components. Intensity normalisation is performed in the log-domain, and can smoothly vary spatially to accomodate the (residual) effects of intensity inhomogeneities.
+This command inputs any number of tissue components (e.g. from multi-tissue CSD) and outputs corresponding normalised tissue components. Intensity normalisation is performed in the log-domain, and can smoothly vary spatially to accomodate the effects of (residual) intensity inhomogeneities.
 
 The -mask option is mandatory and is optimally provided with a brain mask (such as the one obtained from dwi2mask earlier in the processing pipeline). Outlier areas with exceptionally low or high combined tissue contributions are accounted for and reoptimised as the intensity inhomogeneity estimation becomes more accurate.
 
