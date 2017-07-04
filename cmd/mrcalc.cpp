@@ -128,6 +128,7 @@ OPTIONS
   + OptionGroup ("Ternary operators")
 
   + Option ("if", "if first operand is true (non-zero), return second operand, otherwise return third operand").allow_multiple()
+  + Option ("replace", "Wherever first operand is equal to the second operand, replace with third operand").allow_multiple()
 
 
   + DataType::options();
@@ -1047,6 +1048,13 @@ class OpIf : public OpTernary { NOMEMALIGN
     complex_type Z (complex_type a, complex_type b, complex_type c) const { return a.real() ? b : c; }
 };
 
+class OpReplace : public OpTernary {
+  public:
+    OpIf () : OpTernary ("(%1, %2 -> %3)") { }
+    complex_type R (real_type a, real_type b, real_type c) const { return ((a==b) || (std::isnan(a) && std::isnan(b))) ? c : a; }
+    complex_type Z (complex_type a, complex_type b, complex_type c) const { return (a==b) ? c : a; }
+};
+
 
 
 /**********************************************************************
@@ -1114,6 +1122,7 @@ void run () {
       else if (opt->is ("complex")) binary_operation (opt->id, stack, OpComplex());
 
       else if (opt->is ("if")) ternary_operation (opt->id, stack, OpIf());
+      else if (opt->is ("replace")) ternary_operation (opt->id, stack, OpReplace());
 
       else if (opt->is ("datatype")) ++n;
       else if (opt->is ("nthreads")) ++n;
