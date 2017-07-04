@@ -30,16 +30,16 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Perform conversion between different file types and optionally "
-  "extract a subset of the input image";
+             "extract a subset of the input image";
 
-DESCRIPTION
+  DESCRIPTION
   + "If used correctly, this program can be a very useful workhorse. "
-  "In addition to converting images between different formats, it can "
-  "be used to extract specific studies from a data set, extract a "
-  "specific region of interest, or flip the images.";
+    "In addition to converting images between different formats, it can "
+    "be used to extract specific studies from a data set, extract a "
+    "specific region of interest, or flip the images.";
 
   ARGUMENTS
   + Argument ("input", "the input image.").type_image_in ()
@@ -214,36 +214,33 @@ inline vector<int> set_header (Header& header, const ImageType& input)
 
 
 
-template <typename T>
-inline void copy_permute (Header& header_in, Header& header_out, const vector<vector<int>>& pos, const std::string& output_filename)
+
+template <typename T, class InputType>
+void copy_permute (const InputType& in, Header& header_out, const std::string& output_filename)
 {
+  const auto axes = set_header (header_out, in);
+  auto out = Image<T>::create (output_filename, header_out);
+  DWI::export_grad_commandline (out);
+  PhaseEncoding::export_commandline (out);
+  auto perm = Adapter::make <Adapter::PermuteAxes> (in, axes);
+  threaded_copy_with_progress (perm, out, 0, std::numeric_limits<size_t>::max(), 2);
+}
 
+
+
+
+
+
+template <typename T>
+void extract (Header& header_in, Header& header_out, const std::vector<std::vector<int>>& pos, const std::string& output_filename)
+{
   auto in = header_in.get_image<T>();
-
   if (pos.empty()) {
-
-    const auto axes = set_header (header_out, in);
-
-    auto out = Header::create (output_filename, header_out).get_image<T>();
-    DWI::export_grad_commandline (out);
-    PhaseEncoding::export_commandline (out);
-
-    auto perm = Adapter::make <Adapter::PermuteAxes> (in, axes);
-    threaded_copy_with_progress (perm, out, 0, std::numeric_limits<size_t>::max(), 2);
-
+    copy_permute (in, header_out, output_filename);
   } else {
-
     auto extract = Adapter::make<Adapter::Extract> (in, pos);
-    const auto axes = set_header (header_out, extract);
-    auto out = Image<T>::create (output_filename, header_out);
-    DWI::export_grad_commandline (out);
-    PhaseEncoding::export_commandline (out);
-
-    auto perm = Adapter::make <Adapter::PermuteAxes> (extract, axes);
-    threaded_copy_with_progress (perm, out, 0, std::numeric_limits<size_t>::max(), 2);
-
+    copy_permute (extract, header_out, output_filename);
   }
-
 }
 
 
@@ -378,15 +375,15 @@ void run ()
       case DataType::UInt16:
       case DataType::UInt32:
         if (header_out.datatype().is_signed())
-          copy_permute<int32_t> (header_in, header_out, pos, argument[1]);
+          extract<int32_t> (header_in, header_out, pos, argument[1]);
         else
-          copy_permute<uint32_t> (header_in, header_out, pos, argument[1]);
+          extract<uint32_t> (header_in, header_out, pos, argument[1]);
         break;
       case DataType::UInt64:
         if (header_out.datatype().is_signed())
-          copy_permute<int64_t> (header_in, header_out, pos, argument[1]);
+          extract<int64_t> (header_in, header_out, pos, argument[1]);
         else
-          copy_permute<uint64_t> (header_in, header_out, pos, argument[1]);
+          extract<uint64_t> (header_in, header_out, pos, argument[1]);
         break;
       case DataType::Undefined: throw Exception ("invalid output image data type"); break;
 
@@ -394,9 +391,9 @@ void run ()
   }
   else {
     if (header_out.datatype().is_complex())
-      copy_permute<cdouble> (header_in, header_out, pos, argument[1]);
+      extract<cdouble> (header_in, header_out, pos, argument[1]);
     else
-      copy_permute<double> (header_in, header_out, pos, argument[1]);
+      extract<double> (header_in, header_out, pos, argument[1]);
   }
 
 
