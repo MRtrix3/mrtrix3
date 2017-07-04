@@ -96,22 +96,15 @@ Fixel-based analysis steps
 
 7. Upsampling DW images
 ^^^^^^^^^^^^^^^^^^^^^^^
-
 Upsampling DWI data before computing FODs can `increase anatomical contrast <http://www.sciencedirect.com/science/article/pii/S1053811914007472>`_ and improve downstream spatial normalisation and statistics. We recommend upsampling to a voxel size of 1.25mm (for human brains). If you have data that has smaller voxels than 1.25mm, then we recommend you can skip this step::
 
     foreach * : mrresize IN/dwi_denoised_preproc_bias_norm.mif -vox 1.25 IN/dwi_denoised_preproc_bias_norm_upsampled.mif
     
 8. Compute upsampled brain mask images
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 Compute a whole brain mask from the upsampled DW images::
 
     foreach * : dwi2mask IN/dwi_denoised_preproc_bias_norm_upsampled.mif IN/dwi_mask_upsampled.mif
-
-Depending on your data, you may find that upsampling the low-resolution masks from step 3 gives superiour masks (with less holes). This can be performed using::
-
-    foreach * : mrresize IN/dwi_mask.mif -scale 2.0 -inter nearest IN/dwi_mask_upsampled.mif
-
 
 9. Fibre Orientation Distribution estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
