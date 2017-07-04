@@ -173,7 +173,7 @@ void run() {
     mask_fixels = 0;
     for (mask.index(0) = 0; mask.index(0) != num_fixels; ++mask.index(0))
       fixel2row[mask.index(0)] = mask.value() ? mask_fixels++ : -1;
-    CONSOLE ("Mask contains " + str(mask_fixels) + " fixels");
+    CONSOLE ("Fixel mask contains " + str(mask_fixels) + " fixels");
   } else {
     Header data_header;
     data_header.ndim() = 3;
@@ -183,10 +183,12 @@ void run() {
     data_header.spacing(0) = data_header.spacing(1) = data_header.spacing(2) = NaN;
     data_header.stride(0) = 1; data_header.stride(1) = 2; data_header.stride(2) = 3;
     mask = Image<bool>::scratch (data_header, "scratch fixel mask");
-    for (mask.index(0) = 0; mask.index(0) != num_fixels; ++mask.index(0))
+    for (index_type f = 0; f != num_fixels; ++f) {
+      mask.index(0) = f;
       mask.value() = true;
+    }
     mask_fixels = num_fixels;
-    for (uint32_t f = 0; f != num_fixels; ++f)
+    for (index_type f = 0; f != num_fixels; ++f)
       fixel2row[f] = f;
   }
 
@@ -304,6 +306,14 @@ void run() {
   if (smooth_std_dev > 0.0) {
     do_smoothing = true;
     gaussian_const1 = 1.0 / (smooth_std_dev *  std::sqrt (2.0 * Math::pi));
+  }
+
+  for (size_t f = 0; f != num_fixels; ++f) {
+    mask.index(0) = f;
+    if (!mask.value()) {
+      TRACE;
+      throw Exception ("False value in mask");
+    }
   }
 
   {
@@ -492,6 +502,9 @@ void run() {
       perm_distribution_neg.reset (new vector_type (num_perms));
       uncorrected_pvalues_neg.reset (new vector_type (mask_fixels));
     }
+
+    // FIXME fixelcfestats is hanging here for some reason...
+    //   Even when no mask is supplied
 
     if (permutations.size()) {
       Stats::PermTest::run_permutations (permutations, glm_ttest, cfe_integrator, empirical_cfe_statistic,
