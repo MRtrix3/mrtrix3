@@ -34,8 +34,8 @@ void usage ()
   SYNOPSIS = "Multi-tissue informed log-domain intensity normalisation";
 
   DESCRIPTION
-   + "This command inputs N number of tissue components (e.g. from multi-tissue CSD) "
-     "and outputs N corrected tissue components. Intensity normalisation is performed "
+   + "This command inputs any number of tissue components (e.g. from multi-tissue CSD) "
+     "and outputs corresponding normalised tissue components. Intensity normalisation is performed "
      "in the log-domain, and can smoothly vary spatially to accomodate the (residual) "
      "effects of intensity inhomogeneities."
 
@@ -100,6 +100,7 @@ FORCE_INLINE Eigen::MatrixXd basis_function (const Eigen::Vector3 pos) {
   return basis;
 }
 
+// Removes non-physical voxels from the mask
 FORCE_INLINE void refine_mask (Image<float>& summed,
   Image<bool>& initial_mask,
   Image<bool>& refined_mask) {
@@ -135,7 +136,7 @@ void run ()
     auto image = ImageType::open (argument[i]);
 
     if (image.ndim () > 4)
-      throw Exception ("input image \"" + image.name() + "\" contains more than 4 dimensions.");
+      throw Exception ("Input image \"" + image.name() + "\" contains more than 4 dimensions.");
 
     // Elevate image dimensions to ensure it is 4-dimensional
     // e.g. x,y,z -> x,y,z,1
@@ -150,7 +151,7 @@ void run ()
       check_dimensions (input_images[0], input_images[i / 2], 0, 3);
 
     if (Path::exists (argument[i + 1]) && !App::overwrite_files)
-      throw Exception ("output file \"" + argument[i] + "\" already exists (use -force option to force overwrite)");
+      throw Exception ("Output file \"" + argument[i] + "\" already exists. (use -force option to force overwrite)");
 
     output_headers.emplace_back (h_image4d);
     output_filenames.emplace_back (argument[i + 1]);
@@ -201,7 +202,7 @@ void run ()
   }
 
   if (!num_voxels)
-    throw Exception ("Mask contains no valid voxels");
+    throw Exception ("Mask contains no valid voxels.");
 
 
   // Load global normalisation factor
@@ -216,15 +217,15 @@ void run ()
 
   const size_t max_inner_iter = DEFAULT_INNER_MAXITER_VALUE;
 
-  // Initialise bias fields in both image and log domain
-  Eigen::MatrixXd bias_field_weights (n_basis_vecs, 0);
+  // Initialise normalisation fields in both image and log domain
+  Eigen::MatrixXd norm_field_weights (n_basis_vecs, 0);
 
-  auto bias_field_image = ImageType::scratch (header_3D);
-  auto bias_field_log = ImageType::scratch (header_3D);
+  auto norm_field_image = ImageType::scratch (header_3D);
+  auto norm_field_log = ImageType::scratch (header_3D);
 
-  for (auto i = Loop(bias_field_log) (bias_field_image, bias_field_log); i; ++i) {
-    bias_field_image.value() = 1.f;
-    bias_field_log.value() = 0.f;
+  for (auto i = Loop(norm_field_log) (norm_field_image, norm_field_log); i; ++i) {
+    norm_field_image.value() = 1.f;
+    norm_field_log.value() = 0.f;
   }
 
   Eigen::VectorXd scale_factors (n_tissue_types);
@@ -240,9 +241,9 @@ void run ()
 
     auto summed_log = ImageType::scratch (header_3D);
     for (size_t j = 0; j < n_tissue_types; ++j) {
-      for (auto i = Loop (0, 3) (summed_log, combined_tissue, bias_field_image); i; ++i) {
+      for (auto i = Loop (0, 3) (summed_log, combined_tissue, norm_field_image); i; ++i) {
         combined_tissue.index(3) = j;
-        summed_log.value() += scale_factors(j) * combined_tissue.value() / bias_field_image.value();
+        summed_log.value() += scale_factors(j) * combined_tissue.value() / norm_field_image.value();
       }
 
       summed_log.value() = std::log(summed_log.value());
@@ -290,9 +291,9 @@ void run ()
     // Iteratively compute intensity normalisation scale factors
     // with outlier rejection
     size_t norm_iter = 1;
-    bool norm_converged = false;
+    bool balance_converged = false;
 
-    while (!norm_converged && norm_iter <= max_inner_iter) {
+    while (!balance_converged && norm_iter <= max_inner_iter) {
 
       INFO ("norm iteration: " + str(norm_iter));
 
@@ -304,11 +305,11 @@ void run ()
         y.fill (1);
         uint32_t index = 0;
 
-        for (auto i = Loop (0, 3) (mask, combined_tissue, bias_field_image); i; ++i) {
+        for (auto i = Loop (0, 3) (mask, combined_tissue, norm_field_image); i; ++i) {
           if (mask.value()) {
             for (size_t j = 0; j < n_tissue_types; ++j) {
               combined_tissue.index (3) = j;
-              X (index, j) = combined_tissue.value() / bias_field_image.value();
+              X (index, j) = combined_tissue.value() / norm_field_image.value();
             }
             ++index;
           }
@@ -334,10 +335,10 @@ void run ()
       outlier_rejection(1.5f);
 
       // Check for convergence
-      norm_converged = true;
+      balance_converged = true;
       for (auto i = Loop (0, 3) (mask, prev_mask); i; ++i) {
         if (mask.value() != prev_mask.value()) {
-          norm_converged = false;
+          balance_converged = false;
           break;
         }
       }
@@ -350,7 +351,7 @@ void run ()
 
     // Solve for normalisation field weights in the log domain
     Transform transform (mask);
-    Eigen::MatrixXd bias_field_basis (num_voxels, n_basis_vecs);
+    Eigen::MatrixXd norm_field_basis (num_voxels, n_basis_vecs);
     Eigen::MatrixXd X (num_voxels, n_tissue_types);
     Eigen::VectorXd y (num_voxels);
     uint32_t index = 0;
@@ -358,7 +359,7 @@ void run ()
       if (mask.value()) {
         Eigen::Vector3 vox (mask.index(0), mask.index(1), mask.index(2));
         Eigen::Vector3 pos = transform.voxel2scanner * vox;
-        bias_field_basis.row (index) = basis_function (pos).col(0);
+        norm_field_basis.row (index) = basis_function (pos).col(0);
 
         double sum = 0.0;
         for (size_t j = 0; j < n_tissue_types; ++j) {
@@ -369,18 +370,18 @@ void run ()
       }
     }
 
-    bias_field_weights = bias_field_basis.colPivHouseholderQr().solve(y);
+    norm_field_weights = norm_field_basis.colPivHouseholderQr().solve(y);
 
     // Generate normalisation field in the log domain
-    for (auto i = Loop (0, 3) (bias_field_log); i; ++i) {
-        Eigen::Vector3 vox (bias_field_log.index(0), bias_field_log.index(1), bias_field_log.index(2));
+    for (auto i = Loop (0, 3) (norm_field_log); i; ++i) {
+        Eigen::Vector3 vox (norm_field_log.index(0), norm_field_log.index(1), norm_field_log.index(2));
         Eigen::Vector3 pos = transform.voxel2scanner * vox;
-        bias_field_log.value() = basis_function (pos).col(0).dot (bias_field_weights.col(0));
+        norm_field_log.value() = basis_function (pos).col(0).dot (norm_field_weights.col(0));
     }
 
     // Generate normalisation field in the image domain
-    for (auto i = Loop (0, 3) (bias_field_log, bias_field_image); i; ++i)
-        bias_field_image.value () = std::exp(bias_field_log.value());
+    for (auto i = Loop (0, 3) (norm_field_log, norm_field_image); i; ++i)
+        norm_field_image.value () = std::exp(norm_field_log.value());
 
     progress++;
     iter++;
@@ -388,8 +389,8 @@ void run ()
 
   opt = get_options ("check_norm");
   if (opt.size()) {
-    auto bias_field_output = ImageType::create (opt[0][0], header_3D);
-    threaded_copy (bias_field_image, bias_field_output);
+    auto norm_field_output = ImageType::create (opt[0][0], header_3D);
+    threaded_copy (norm_field_image, norm_field_output);
   }
   progress++;
 
@@ -413,9 +414,9 @@ void run ()
   // Compute log-norm scale parameter (geometric mean of normalisation field in outlier-free mask).
   float lognorm_scale { 0.f };
   if (num_voxels) {
-    for (auto i = Loop (0,3) (mask, bias_field_log); i; ++i) {
+    for (auto i = Loop (0,3) (mask, norm_field_log); i; ++i) {
       if (mask.value ())
-        lognorm_scale += bias_field_log.value ();
+        lognorm_scale += norm_field_log.value ();
     }
 
     lognorm_scale = std::exp(lognorm_scale / (float)num_voxels);
@@ -428,13 +429,13 @@ void run ()
     const size_t n_vols = input_images[j].size(3);
     const Eigen::VectorXf zero_vec = Eigen::VectorXf::Zero (n_vols);
 
-    for (auto i = Loop (0,3) (output_image, input_images[j], bias_field_image); i; ++i) {
+    for (auto i = Loop (0,3) (output_image, input_images[j], norm_field_image); i; ++i) {
       input_images[j].index(3) = 0;
 
       if (input_images[j].value() < 0.f)
         output_image.row(3) = zero_vec;
       else
-        output_image.row(3) = Eigen::VectorXf{input_images[j].row(3)} / bias_field_image.value();
+        output_image.row(3) = Eigen::VectorXf{input_images[j].row(3)} / norm_field_image.value();
     }
   }
 }
