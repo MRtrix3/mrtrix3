@@ -55,7 +55,7 @@ namespace MR
       // A class to store fixel index / connectivity value pairs
       //   only after the connectivity matrix has been thresholded / normalised
       class NormMatrixElement
-      {
+      { NOMEMALIGN
         public:
           NormMatrixElement (const index_type fixel_index,
                              const connectivity_value_type connectivity_value) :
