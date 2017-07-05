@@ -308,14 +308,6 @@ void run() {
     gaussian_const1 = 1.0 / (smooth_std_dev *  std::sqrt (2.0 * Math::pi));
   }
 
-  for (size_t f = 0; f != num_fixels; ++f) {
-    mask.index(0) = f;
-    if (!mask.value()) {
-      TRACE;
-      throw Exception ("False value in mask");
-    }
-  }
-
   {
     ProgressBar progress ("normalising and thresholding fixel-fixel connectivity matrix", num_fixels);
     for (index_type fixel = 0; fixel < num_fixels; ++fixel) {
