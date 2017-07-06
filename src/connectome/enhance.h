@@ -35,6 +35,7 @@ namespace MR {
 
       typedef Math::Stats::value_type  value_type;
       typedef Math::Stats::vector_type vector_type;
+      typedef Math::Stats::matrix_type matrix_type;
 
 
 
@@ -46,7 +47,7 @@ namespace MR {
           ~PassThrough() { }
 
         private:
-          value_type operator() (const vector_type&, vector_type&) const override;
+          void operator() (in_column_type, out_column_type) const override;
 
       };
 
@@ -64,11 +65,11 @@ namespace MR {
 
           void set_threshold (const value_type t) { threshold = t; }
 
-          value_type operator() (const vector_type& in, vector_type& out) const override {
-            return (*this) (in, threshold, out);
+          void operator() (in_column_type in, out_column_type out) const override {
+            (*this) (in, threshold, out);
           }
 
-          value_type operator() (const vector_type&, const value_type, vector_type&) const override;
+          void operator() (in_column_type, const value_type, out_column_type) const override;
 
         protected:
           std::shared_ptr< vector< vector<size_t> > > adjacency;

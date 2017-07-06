@@ -32,6 +32,7 @@ namespace MR
 
       typedef Math::Stats::value_type value_type;
       typedef Math::Stats::vector_type vector_type;
+      typedef Math::Stats::matrix_type matrix_type;
       typedef float connectivity_value_type;
       typedef Eigen::Matrix<value_type, 3, 1> direction_type;
       typedef Eigen::Array<connectivity_value_type, Eigen::Dynamic, 1> connectivity_vector_type;
@@ -82,13 +83,11 @@ namespace MR
           Enhancer (const vector<std::map<uint32_t, connectivity> >& connectivity_map,
                     const value_type dh, const value_type E, const value_type H);
 
-
-          value_type operator() (const vector_type& stats, vector_type& enhanced_stats) const override;
-
-
         protected:
           const vector<std::map<uint32_t, connectivity> >& connectivity_map;
           const value_type dh, E, H;
+
+          void operator() (in_column_type, out_column_type) const override;
       };
 
 

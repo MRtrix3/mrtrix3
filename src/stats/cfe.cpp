@@ -97,10 +97,9 @@ namespace MR
 
 
 
-      value_type Enhancer::operator() (const vector_type& stats, vector_type& enhanced_stats) const
+      void Enhancer::operator() (in_column_type stats, out_column_type enhanced_stats) const
       {
-        enhanced_stats = vector_type::Zero (stats.size());
-        value_type max_enhanced_stat = 0.0;
+        enhanced_stats.setZero();
         for (size_t fixel = 0; fixel < connectivity_map.size(); ++fixel) {
           std::map<uint32_t, connectivity>::const_iterator connected_fixel;
           for (value_type h = this->dh; h < stats[fixel]; h +=  this->dh) {
@@ -110,11 +109,7 @@ namespace MR
                 extent += connected_fixel->second.value;
             enhanced_stats[fixel] += std::pow (extent, E) * std::pow (h, H);
           }
-          if (enhanced_stats[fixel] > max_enhanced_stat)
-            max_enhanced_stat = enhanced_stats[fixel];
         }
-
-        return max_enhanced_stat;
       }
 
 

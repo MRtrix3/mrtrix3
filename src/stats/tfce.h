@@ -38,16 +38,17 @@ namespace MR
 
       typedef Math::Stats::value_type value_type;
       typedef Math::Stats::vector_type vector_type;
+      typedef Math::Stats::matrix_type matrix_type;
 
 
 
       class EnhancerBase : public Stats::EnhancerBase
       { MEMALIGN (EnhancerBase)
-        public:
+        protected:
           // Alternative functor that also takes the threshold value;
           //   makes TFCE integration cleaner
-          virtual value_type operator() (const vector_type& /*input_statistics*/, const value_type /*threshold*/, vector_type& /*enhanced_statistics*/) const = 0;
-
+          virtual void operator() (in_column_type /*input_statistics*/, const value_type /*threshold*/, out_column_type /*enhanced_statistics*/) const = 0;
+          friend class Wrapper;
       };
 
 
@@ -68,11 +69,11 @@ namespace MR
             H = height;
           }
 
-          value_type operator() (const vector_type&, vector_type&) const override;
-
         private:
           std::shared_ptr<Stats::TFCE::EnhancerBase> enhancer;
           value_type dH, E, H;
+
+          void operator() (in_column_type, out_column_type) const override;
       };
 
 

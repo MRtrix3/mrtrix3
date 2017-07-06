@@ -72,7 +72,7 @@ void usage ()
 
   + Argument ("design", "the design matrix. Note that a column of 1's will need to be added for correlations.").type_file_in ()
 
-  + Argument ("contrast", "the contrast vector, specified as a single row of weights").type_file_in ()
+  + Argument ("contrast", "the contrast matrix, specified as rows of weights").type_file_in ()
 
   + Argument ("tracks", "the tracks used to determine fixel-fixel connectivity").type_tracks_in ()
 
@@ -98,9 +98,6 @@ void usage ()
   + Argument ("value").type_float (0.0, 100.0)
 
   + OptionGroup ("Additional options for fixelcfestats")
-
-  + Option ("negative", "automatically test the negative (opposite) contrast. By computing the opposite contrast simultaneously "
-                        "the computation time is reduced.")
 
   + Option ("column", "add a column to the design matrix corresponding to subject fixel-wise values "
                       "(the contrast vector length must include columns for these additions)").allow_multiple()
@@ -178,8 +175,6 @@ class SubjectFixelImport : public SubjectDataImportBase
 void run()
 {
 
-  auto opt = get_options ("negative");
-  bool compute_negative_contrast = opt.size() ? true : false;
   const value_type cfe_dh = get_option_value ("cfe_dh", DEFAULT_CFE_DH);
   const value_type cfe_h = get_option_value ("cfe_h", DEFAULT_CFE_H);
   const value_type cfe_e = get_option_value ("cfe_e", DEFAULT_CFE_E);
@@ -235,7 +230,7 @@ void run()
     throw Exception ("number of input files does not match number of rows in design matrix");
 
   // Load permutations file if supplied
-  opt = get_options("permutations");
+  auto opt = get_options("permutations");
   vector<vector<size_t> > permutations;
   if (opt.size()) {
     permutations = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
@@ -260,6 +255,7 @@ void run()
 
   // Load contrast matrix
   const matrix_type contrast = load_matrix (argument[3]);
+  const size_t num_contrasts = contrast.rows();
 
   // Before validating the contrast matrix, we first need to see if there are any
   //   additional design matrix columns coming from fixel-wise subject data
@@ -274,8 +270,6 @@ void run()
     throw Exception ("the number of columns per contrast (" + str(contrast.cols()) + ")"
                      + (extra_columns.size() ? " (in addition to the " + str(extra_columns.size()) + " uses of -column)" : "")
                      + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")");
-  if (contrast.rows() > 1)
-    throw Exception ("only a single contrast vector (defined as a row) is currently supported");
 
   // Compute fixel-fixel connectivity
   vector<std::map<uint32_t, Stats::CFE::connectivity> > connectivity_matrix (num_fixels);
@@ -391,22 +385,37 @@ void run()
     progress++;
   }
 
+  // Only add contrast row number to image outputs if there's more than one contrast
+  auto postfix = [&] (const size_t i) { return (num_contrasts > 1) ? ("_" + str(i)) : ""; };
+
   if (extra_columns.size()) {
     WARN ("Beta coefficients, effect size and standard deviation outputs not yet implemented for fixel-wise extra columns");
   } else {
-    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation");
-    auto temp = Math::Stats::GLM::solve_betas (data, design);
+    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", contrast.cols() + (3 * num_contrasts));
 
-    for (ssize_t i = 0; i < contrast.cols(); ++i) {
-      write_fixel_output (Path::join (output_fixel_directory, "beta" + str(i) + ".mif"), temp.row(i), output_header);
+    auto temp = Math::Stats::GLM::solve_betas (data, design);
+    for (size_t i = 0; i != size_t(contrast.cols()); ++i) {
+      write_fixel_output (Path::join (output_fixel_directory, "beta_" + str(i) + ".mif"), temp.row(i), output_header);
       ++progress;
     }
-    temp = Math::Stats::GLM::abs_effect_size (data, design, contrast); ++progress;
-    write_fixel_output (Path::join (output_fixel_directory, "abs_effect.mif"), temp.row(0), output_header); ++progress;
-    temp = Math::Stats::GLM::std_effect_size (data, design, contrast); ++progress;
-    write_fixel_output (Path::join (output_fixel_directory, "std_effect.mif"), temp.row(0), output_header); ++progress;
-    temp = Math::Stats::GLM::stdev (data, design); ++progress;
-    write_fixel_output (Path::join (output_fixel_directory, "std_dev.mif"), temp.row(0), output_header);
+    temp = Math::Stats::GLM::abs_effect_size (data, design, contrast);
+    ++progress;
+    for (size_t i = 0; i != num_contrasts; ++i) {
+      write_fixel_output (Path::join (output_fixel_directory, "abs_effect" + postfix(i) + ".mif"), temp.row(i), output_header);
+      ++progress;
+    }
+    temp = Math::Stats::GLM::std_effect_size (data, design, contrast);
+    ++progress;
+    for (size_t i = 0; i != num_contrasts; ++i) {
+      write_fixel_output (Path::join (output_fixel_directory, "std_effect" + postfix(i) + ".mif"), temp.row(i), output_header);
+      ++progress;
+    }
+    temp = Math::Stats::GLM::stdev (data, design);
+    ++progress;
+    for (size_t i = 0; i != num_contrasts; ++i) {
+      write_fixel_output (Path::join (output_fixel_directory, "std_dev" + postfix(i) + ".mif"), temp.row(i), output_header);
+      ++progress;
+    }
   }
 
   // Construct the class for performing the initial statistical tests
@@ -421,7 +430,7 @@ void run()
   std::shared_ptr<Stats::EnhancerBase> cfe_integrator (new Stats::CFE::Enhancer (connectivity_matrix, cfe_dh, cfe_e, cfe_h));
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical CFE statistic
-  vector_type empirical_cfe_statistic;
+  matrix_type empirical_cfe_statistic;
   if (do_nonstationary_adjustment) {
 
     if (permutations_nonstationary.size()) {
@@ -432,63 +441,51 @@ void run()
       Stats::PermTest::precompute_empirical_stat (glm_test, cfe_integrator, permutations, empirical_cfe_statistic);
     }
     output_header.keyval()["nonstationary adjustment"] = str(true);
-    write_fixel_output (Path::join (output_fixel_directory, "cfe_empirical.mif"), empirical_cfe_statistic, output_header);
+    for (size_t i = 0; i != num_contrasts; ++i)
+      write_fixel_output (Path::join (output_fixel_directory, "cfe_empirical" + postfix(i) + ".mif"), empirical_cfe_statistic.row(i), output_header);
   } else {
     output_header.keyval()["nonstationary adjustment"] = str(false);
   }
 
   // Precompute default statistic and CFE statistic
-  vector_type cfe_output (num_fixels);
-  std::shared_ptr<vector_type> cfe_output_neg;
-  vector_type tvalue_output (num_fixels);
-  if (compute_negative_contrast)
-    cfe_output_neg.reset (new vector_type (num_fixels));
+  matrix_type cfe_output (num_contrasts, num_fixels);
+  matrix_type tvalue_output (num_contrasts, num_fixels);
 
-  Stats::PermTest::precompute_default_permutation (glm_test, cfe_integrator, empirical_cfe_statistic, cfe_output, cfe_output_neg, tvalue_output);
+  Stats::PermTest::precompute_default_permutation (glm_test, cfe_integrator, empirical_cfe_statistic, cfe_output, tvalue_output);
 
-  write_fixel_output (Path::join (output_fixel_directory, "cfe.mif"), cfe_output, output_header);
-  write_fixel_output (Path::join (output_fixel_directory, "tvalue.mif"), tvalue_output, output_header);
-  if (compute_negative_contrast)
-    write_fixel_output (Path::join (output_fixel_directory, "cfe_neg.mif"), *cfe_output_neg, output_header);
+  for (size_t i = 0; i != num_contrasts; ++i) {
+    write_fixel_output (Path::join (output_fixel_directory, "cfe" + postfix(i) + ".mif"), cfe_output.row(i), output_header);
+    write_fixel_output (Path::join (output_fixel_directory, "tvalue" + postfix(i) + ".mif"), tvalue_output.row(i), output_header);
+  }
 
   // Perform permutation testing
   if (!get_options ("notest").size()) {
-    vector_type perm_distribution (num_perms);
-    std::shared_ptr<vector_type> perm_distribution_neg;
-    vector_type uncorrected_pvalues (num_fixels);
-    std::shared_ptr<vector_type> uncorrected_pvalues_neg;
-
-    if (compute_negative_contrast) {
-      perm_distribution_neg.reset (new vector_type (num_perms));
-      uncorrected_pvalues_neg.reset (new vector_type (num_fixels));
-    }
+    matrix_type perm_distribution (num_contrasts, num_perms);
+    matrix_type uncorrected_pvalues (num_contrasts, num_fixels);
 
     if (permutations.size()) {
       Stats::PermTest::run_permutations (permutations, glm_test, cfe_integrator, empirical_cfe_statistic,
-                                         cfe_output, cfe_output_neg,
-                                         perm_distribution, perm_distribution_neg,
-                                         uncorrected_pvalues, uncorrected_pvalues_neg);
+                                         cfe_output, perm_distribution, uncorrected_pvalues);
     } else {
       Stats::PermTest::run_permutations (num_perms, glm_test, cfe_integrator, empirical_cfe_statistic,
-                                         cfe_output, cfe_output_neg,
-                                         perm_distribution, perm_distribution_neg,
-                                         uncorrected_pvalues, uncorrected_pvalues_neg);
+                                         cfe_output, perm_distribution, uncorrected_pvalues);
     }
 
     ProgressBar progress ("outputting final results");
-    save_matrix (perm_distribution, Path::join (output_fixel_directory, "perm_dist.txt")); ++progress;
-
-    vector_type pvalue_output (num_fixels);
-    Math::Stats::Permutation::statistic2pvalue (perm_distribution, cfe_output, pvalue_output); ++progress;
-    write_fixel_output (Path::join (output_fixel_directory, "fwe_pvalue.mif"), pvalue_output, output_header); ++progress;
-    write_fixel_output (Path::join (output_fixel_directory, "uncorrected_pvalue.mif"), uncorrected_pvalues, output_header); ++progress;
-
-    if (compute_negative_contrast) {
-      save_matrix (*perm_distribution_neg, Path::join (output_fixel_directory, "perm_dist_neg.txt")); ++progress;
-      vector_type pvalue_output_neg (num_fixels);
-      Math::Stats::Permutation::statistic2pvalue (*perm_distribution_neg, *cfe_output_neg, pvalue_output_neg); ++progress;
-      write_fixel_output (Path::join (output_fixel_directory, "fwe_pvalue_neg.mif"), pvalue_output_neg, output_header); ++progress;
-      write_fixel_output (Path::join (output_fixel_directory, "uncorrected_pvalue_neg.mif"), *uncorrected_pvalues_neg, output_header);
+    for (size_t i = 0; i != num_contrasts; ++i) {
+      save_vector (perm_distribution.row(i), Path::join (output_fixel_directory, "perm_dist" + postfix(i) + ".txt"));
+      ++progress;
     }
+
+    matrix_type pvalue_output (num_contrasts, num_fixels);
+    Math::Stats::Permutation::statistic2pvalue (perm_distribution, cfe_output, pvalue_output);
+    ++progress;
+    for (size_t i = 0; i != num_contrasts; ++i) {
+      write_fixel_output (Path::join (output_fixel_directory, "fwe_pvalue" + postfix(i) + ".mif"), pvalue_output.row(i), output_header);
+      ++progress;
+      write_fixel_output (Path::join (output_fixel_directory, "uncorrected_pvalue" + postfix(i) + ".mif"), uncorrected_pvalues.row(i), output_header);
+      ++progress;
+    }
+
   }
 }

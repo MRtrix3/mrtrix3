@@ -32,6 +32,7 @@ namespace MR
 
         typedef Math::Stats::value_type value_type;
         typedef Math::Stats::vector_type vector_type;
+        typedef Math::Stats::matrix_type matrix_type;
 
 
 
@@ -46,7 +47,7 @@ namespace MR
                        vector<vector<size_t> >& permutations,
                        const bool include_default);
 
-        void statistic2pvalue (const vector_type& perm_dist, const vector_type& stats, vector_type& pvalues);
+        void statistic2pvalue (const matrix_type& null_dist, const matrix_type& stats, matrix_type& pvalues);
 
 
         vector<vector<size_t> > load_permutations_file (const std::string& filename);

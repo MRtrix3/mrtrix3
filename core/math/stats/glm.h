@@ -32,73 +32,6 @@ namespace MR
       {
 
 
-        // TODO With the upcoming changes, many of these 'loose' functions become specific to the GLMTTestFixed class
-        // Therefore they should be moved
-
-
-        //! scale contrasts for use in t-test
-        /*! This function pre-scales a contrast matrix in order to make conversion from GLM betas
-         * to t-values more computationally efficient.
-         *
-         * For design matrix X, contrast matrix c, beta vector b and variance o^2, the t-value is calculated as:
-         *               c^T.b
-         * t = --------------------------
-         *     sqrt(o^2.c^T.(X^T.X)^-1.c)
-         *
-         * Definition of variance (for vector of residuals e):
-         *       e^T.e
-         * o^2 = ------
-         *       DOF(X)
-         *
-         * This function will generate scaled contrasts c' from c, such that:
-         *                   DOF(X)
-         * c' = c.sqrt(------------------)
-         *              c^T.(X^T.X)^-1.c
-         *
-         *       c'^T.b
-         * t = -----------
-         *     sqrt(e^T.e)
-         *
-         * Note each row of the contrast matrix will still be treated as an independent contrast. The number
-         * of elements in each contrast vector must equal the number of columns in the design matrix */
-        matrix_type scale_contrasts (const matrix_type& contrasts, const matrix_type& design, const size_t degrees_of_freedom);
-
-
-
-        //! generic GLM t-test
-        /*! note that the data, effects, and residual matrices are transposed.
-         * This is to take advantage of Eigen's convention of storing
-         * matrices in column-major format by default.
-         *
-         * Note also that the contrast matrix should already have been scaled
-         * using the GLM::scale_contrasts() function. */
-        void ttest_prescaled (matrix_type& tvalues,
-                              const matrix_type& design,
-                              const matrix_type& pinv_design,
-                              const matrix_type& measurements,
-                              const matrix_type& scaled_contrasts,
-                              matrix_type& betas,
-                              matrix_type& residuals);
-
-
-        //! generic GLM t-test
-        /*! note that the data, effects, and residual matrices are transposed.
-         * This is to take advantage of Eigen's convention of storing
-         * matrices in column-major format by default.
-         *
-         * This version does not require, or take advantage of, pre-calculation
-         * of the pseudo-inverse of the design matrix.
-         *
-         * Note that for this version the contrast matrix should NOT have been scaled
-         * using the GLM::scale_contrasts() function. */
-        void ttest (matrix_type& tvalues,
-                    const matrix_type& design,
-                    const matrix_type& measurements,
-                    const matrix_type& contrasts,
-                    matrix_type& betas,
-                    matrix_type& residuals);
-
-
 
           /** \addtogroup Statistics
           @{ */
@@ -160,9 +93,9 @@ namespace MR
 
           /*! Compute the statistics
            * @param perm_labelling a vector to shuffle the rows in the design matrix (for permutation testing)
-           * @param stats the vector containing the output statistics
+           * @param output the matrix containing the output statistics (one vector per contrast)
            */
-          virtual void operator() (const vector<size_t>& perm_labelling, vector_type& output) const = 0;
+          virtual void operator() (const vector<size_t>& perm_labelling, matrix_type& output) const = 0;
 
           size_t num_subjects () const { return y.cols(); }
           size_t num_elements () const { return y.rows(); }
@@ -185,7 +118,6 @@ namespace MR
        * tested; able to pre-compute a number of matrices before testing, improving
        * execution speed.
        */
-      // TODO Currently this appears to only support a single contrast, since the output is a vector_type
       class GLMTTestFixed : public GLMTestBase { MEMALIGN(GLMTTestFixed)
         public:
           /*!
@@ -197,14 +129,32 @@ namespace MR
 
           /*! Compute the t-statistics
           * @param perm_labelling a vector to shuffle the rows in the design matrix (for permutation testing)
-          * @param stats the vector containing the output t-statistics
-          * @param max_stat the maximum t-statistic
-          * @param min_stat the minimum t-statistic
+          * @param output the vector containing the output t-statistics (one vector per contrast)
           */
-          void operator() (const vector<size_t>& perm_labelling, vector_type& output) const override;
+          void operator() (const vector<size_t>& perm_labelling, matrix_type& output) const override;
 
         protected:
           const matrix_type pinvX, scaled_contrasts;
+
+        private:
+
+          /*! This function pre-scales a contrast matrix in order to make conversion from GLM betas
+           * to t-values more computationally efficient. */
+          matrix_type calc_scaled_contrasts() const;
+
+          //! generic GLM t-test
+          /*! note that the data, effects, and residual matrices are transposed.
+           * This is to take advantage of Eigen's convention of storing
+           * matrices in column-major format by default.
+           *
+           * Note also that the contrast matrix should already have been scaled
+           * using the GLM::scale_contrasts() function. */
+          void ttest (matrix_type& tvalues,
+                      const matrix_type& design,
+                      const matrix_type& pinv_design,
+                      Eigen::Block<const matrix_type> measurements,
+                      matrix_type& betas,
+                      matrix_type& residuals) const;
       };
       //! @}
 
@@ -222,30 +172,39 @@ namespace MR
        * particular type of data being tested. Therefore an Importer class must be
        * defined that is responsible for acquiring and vectorising these data.
        */
-      // TODO Define a "standard" interface for data import: Receives as input a
-      //   text string corresponding to a file, and writes the result to a
-      //   vector / block vector
-      // If this could be defined using a base class, it would remove the templating here...
-      // The same class would also be used in the cmd/ files to do the initial measurement matrix fill
       class GLMTTestVariable : public GLMTestBase { NOMEMALIGN
         public:
           GLMTTestVariable (const vector<CohortDataImport>& importers, const matrix_type& measurements, const matrix_type& design, const matrix_type& contrasts);
 
           /*! Compute the t-statistics
            * @param perm_labelling a vector to shuffle the rows in the design matrix (for permutation testing)
-           * @param stats the vector containing the output t-statistics
+           * @param output the vector containing the output t-statistics
            *
-           * TODO In GLMTTestVariable, this function will additionally need to import the
+           * In GLMTTestVariable, this function additionally needs to import the
            * extra external data individually for each element tested.
            */
-          void operator() (const vector<size_t>& perm_labelling, vector_type& stats) const override;
+          void operator() (const vector<size_t>& perm_labelling, matrix_type& output) const override;
 
-          // TODO A function to acquire the design matrix for the default permutation
+          // A function to acquire the design matrix for the default permutation
           //   (note that this needs to be re-run for each element being tested)
           matrix_type default_design (const matrix_type& design, const size_t index) const;
 
         protected:
           const vector<CohortDataImport>& importers;
+
+          //! generic GLM t-test
+          /*! note that the data, effects, and residual matrices are transposed.
+           * This is to take advantage of Eigen's convention of storing
+           * matrices in column-major format by default.
+           *
+           * This version does not require, or take advantage of, pre-calculation
+           * of the pseudo-inverse of the design matrix, or pre-scaling of contrasts.
+           */
+          void ttest (matrix_type& tvalues,
+                      const matrix_type& design,
+                      const matrix_type& measurements,
+                      matrix_type& betas,
+                      matrix_type& residuals) const;
       };
 
 
@@ -265,9 +224,9 @@ namespace MR
 
           /*! Compute the F-statistics
            * @param perm_labelling a vector to shuffle the rows in the design matrix (for permutation testing)
-           * @param stats the vector containing the output f-statistics
+           * @param output the vector containing the output f-statistics
            */
-          void operator() (const vector<size_t>& perm_labelling, vector_type& stats) const override;
+          void operator() (const vector<size_t>& perm_labelling, matrix_type& output) const override;
 
         protected:
           // TODO How to deal with contrast scaling?

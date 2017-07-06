@@ -30,8 +30,20 @@ namespace MR
     { NOMEMALIGN
       public:
 
-        // Return value is the maximal enhanced statistic
-        virtual Math::Stats::value_type operator() (const Math::Stats::vector_type& /*input_statistics*/, Math::Stats::vector_type& /*enhanced_statistics*/) const = 0;
+        // Perform statistical enhancement once for each column in the matrix
+        //   (correspond to different contrasts)
+        void operator() (const Math::Stats::matrix_type& input_statistics,
+                         Math::Stats::matrix_type& enhanced_statistics) const
+        {
+          for (ssize_t col = 0; col != input_statistics.cols(); ++col)
+            (*this) (input_statistics.col (col), enhanced_statistics.col (col));
+        }
+
+      protected:
+        typedef Math::Stats::matrix_type::ConstColXpr in_column_type;
+        typedef Math::Stats::matrix_type::ColXpr out_column_type;
+        // Derived classes should override this function
+        virtual void operator() (in_column_type, out_column_type) const = 0;
 
     };
 

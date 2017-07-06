@@ -102,10 +102,10 @@ void run()
   }
 
   // Load contrast matrix
-  matrix_type contrast = load_matrix (argument[3]);
-  if (contrast.cols() > design.cols())
-    throw Exception ("too many contrasts for design matrix");
-  contrast.conservativeResize (contrast.rows(), design.cols());
+  const matrix_type contrast = load_matrix (argument[3]);
+  const size_t num_contrasts = contrast.rows();
+  if (contrast.cols() != design.cols())
+    throw Exception ("number of columns in contrast matrix (" + str(contrast.cols()) + ") does not match number of columns in design matrix (" + str(design.cols()) + ")");
 
   const std::string output_prefix = argument[4];
 
@@ -133,29 +133,17 @@ void run()
   }
 
   {
-    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation...", contrast.cols() + 3);
-
     const matrix_type betas = Math::Stats::GLM::solve_betas (data, design);
-    for (size_t i = 0; i < size_t(contrast.cols()); ++i) {
-      save_vector (betas.col(i), output_prefix + "_beta_" + str(i) + ".csv");
-      ++progress;
-    }
+    CONSOLE ("Beta coefficients: " + str(betas));
 
     const matrix_type abs_effects = Math::Stats::GLM::abs_effect_size (data, design, contrast);
-    save_vector (abs_effects.col(0), output_prefix + "_abs_effect.csv");
-    ++progress;
+    CONSOLE ("Absolute effects: " + str(abs_effects));
 
     const matrix_type std_effects = Math::Stats::GLM::std_effect_size (data, design, contrast);
-    vector_type first_std_effect = std_effects.col(0);
-    for (size_t i = 0; i != num_elements; ++i) {
-      if (!std::isfinite (first_std_effect[i]))
-        first_std_effect[i] = 0.0;
-    }
-    save_vector (first_std_effect, output_prefix + "_std_effect.csv");
-    ++progress;
+    CONSOLE ("Standardised effects: " + str(std_effects));
 
     const matrix_type stdevs = Math::Stats::GLM::stdev (data, design);
-    save_vector (stdevs.col(0), output_prefix + "_std_dev.csv");
+    CONSOLE ("Standard deviations: " + str(stdevs));
   }
 
   std::shared_ptr<Math::Stats::GLMTestBase> glm_ttest (new Math::Stats::GLMTTestFixed (data, design, contrast));
@@ -166,34 +154,29 @@ void run()
   vector<size_t> default_permutation (filenames.size());
   for (size_t i = 0; i != filenames.size(); ++i)
     default_permutation[i] = i;
-  vector_type default_tvalues;
+  matrix_type default_tvalues;
   (*glm_ttest) (default_permutation, default_tvalues);
-  save_vector (default_tvalues, output_prefix + "_tvalue.csv");
+  CONSOLE ("T-values for default statistic: " + str(default_tvalues));
 
   // Perform permutation testing
   if (!get_options ("notest").size()) {
 
     std::shared_ptr<Stats::EnhancerBase> enhancer;
-    vector_type null_distribution (num_perms), uncorrected_pvalues (num_perms);
-    vector_type empirical_distribution;
+    matrix_type null_distribution (num_perms, num_contrasts), uncorrected_pvalues (num_perms, num_contrasts);
+    matrix_type empirical_distribution;
 
     if (permutations.size()) {
       Stats::PermTest::run_permutations (permutations, glm_ttest, enhancer, empirical_distribution,
-                                         default_tvalues, std::shared_ptr<vector_type>(),
-                                         null_distribution, std::shared_ptr<vector_type>(),
-                                         uncorrected_pvalues, std::shared_ptr<vector_type>());
+                                         default_tvalues, null_distribution, uncorrected_pvalues);
     } else {
       Stats::PermTest::run_permutations (num_perms, glm_ttest, enhancer, empirical_distribution,
-                                         default_tvalues, std::shared_ptr<vector_type>(),
-                                         null_distribution, std::shared_ptr<vector_type>(),
-                                         uncorrected_pvalues, std::shared_ptr<vector_type>());
+                                         default_tvalues, null_distribution, uncorrected_pvalues);
     }
 
-    vector_type default_pvalues (num_elements);
+    matrix_type default_pvalues (num_contrasts, num_elements);
     Math::Stats::Permutation::statistic2pvalue (null_distribution, default_tvalues, default_pvalues);
-    save_vector (default_pvalues,     output_prefix + "_fwe_pvalue.csv");
-    save_vector (uncorrected_pvalues, output_prefix + "_uncorrected_pvalue.csv");
+    CONSOLE ("FWE-corrected p-values: " + str(default_pvalues));
+    CONSOLE ("Uncorrected p-values: " + str(uncorrected_pvalues));
 
   }
-
 }

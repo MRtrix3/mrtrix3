@@ -73,7 +73,7 @@ namespace MR
           friend std::ostream& operator<< (std::ostream& stream, const Value& value) {
             stream << "Position [ ";
             for (size_t n = 0; n < value.offsets.ndim(); ++n)
-              stream << value.offsets[n] << " ";
+              stream << value.offsets.index(n) << " ";
             stream << "], offset = " << value.offsets.value() << ", " << value.size() << " elements";
             return stream;
           }

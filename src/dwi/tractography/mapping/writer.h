@@ -254,6 +254,10 @@ namespace MR {
           template <class Cont> void receive_dixel     (const Cont&);
           template <class Cont> void receive_tod       (const Cont&);
 
+          // Partially specialized template function to shut up modern compilers
+          //   regarding using multiplication in a boolean context
+          FORCE_INLINE void add (const default_type, const default_type);
+
           // These acquire the TWI factor at any point along the streamline;
           //   For the standard SetVoxel classes, this is a single value 'factor' for the set as
           //     stored in SetVoxelExtras
@@ -294,11 +298,11 @@ namespace MR {
               const default_type factor = get_factor (i, in);
               const default_type weight = in.weight * i.get_length();
               switch (voxel_statistic) {
-                case V_SUM:  buffer.value() += weight * factor; break;
+                case V_SUM:  add (weight, factor); break;
                 case V_MIN:  buffer.value() = std::min (default_type (buffer.value()), factor); break;
                 case V_MAX:  buffer.value() = std::max (default_type (buffer.value()), factor); break;
                 case V_MEAN:
-                             buffer.value() += weight * factor;
+                             add (weight, factor);
                              assert (counts);
                              assign_pos_of (i).to (*counts);
                              counts->value() += weight;
@@ -363,11 +367,11 @@ namespace MR {
               const default_type factor = get_factor (i, in);
               const default_type weight = in.weight * i.get_length();
               switch (voxel_statistic) {
-                case V_SUM:  buffer.value() += weight * factor; break;
+                case V_SUM:  add (weight, factor); break;
                 case V_MIN:  buffer.value() = std::min (default_type (buffer.value()), factor); break;
                 case V_MAX:  buffer.value() = std::max (default_type (buffer.value()), factor); break;
                 case V_MEAN:
-                             buffer.value() += weight * factor;
+                             add (weight, factor);
                              assert (counts);
                              assign_pos_of (i, 0, 3).to (*counts);
                              counts->index(3) = i.get_dir();
@@ -435,6 +439,22 @@ namespace MR {
 
 
 
+        template <>
+        void MapWriter<bool>::add (const default_type weight, const default_type factor)
+        {
+          if (weight && factor)
+            buffer.value() = true;
+        }
+
+        template <typename value_type>
+        void MapWriter<value_type>::add (const default_type weight, const default_type factor)
+        {
+          buffer.value() += weight * factor;
+        }
+
+
+
+
 
         template <typename value_type>
           Eigen::Vector3 MapWriter<value_type>::get_dec ()
@@ -442,8 +462,8 @@ namespace MR {
             assert (type == DEC);
             Eigen::Vector3 value;
             buffer.index(3) = 0; value[0] = buffer.value();
-            ++buffer.index(3);   value[1] = buffer.value();
-            ++buffer.index(3);   value[2] = buffer.value();
+            buffer.index(3)++;   value[1] = buffer.value();
+            buffer.index(3)++;   value[2] = buffer.value();
             return value;
           }
 
@@ -452,8 +472,8 @@ namespace MR {
           {
             assert (type == DEC);
             buffer.index(3) = 0; buffer.value() = value[0];
-            ++buffer.index(3);   buffer.value() = value[1];
-            ++buffer.index(3);   buffer.value() = value[2];
+            buffer.index(3)++;   buffer.value() = value[1];
+            buffer.index(3)++;   buffer.value() = value[2];
           }
 
 

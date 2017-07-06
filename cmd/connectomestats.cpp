@@ -193,10 +193,10 @@ void run()
 
 
   // Load contrast matrix
-  matrix_type contrast = load_matrix (argument[3]);
-  if (contrast.cols() > design.cols())
-    throw Exception ("too many contrasts for design matrix");
-  contrast.conservativeResize (contrast.rows(), design.cols());
+  const matrix_type contrast = load_matrix (argument[3]);
+  const size_t num_contrasts = contrast.rows();
+  if (contrast.cols() != design.cols())
+    throw Exception ("number of columns in contrast matrix (" + str(contrast.cols()) + ") does not match number of columns in design matrix (" + str(design.cols()) + ")");
 
   const std::string output_prefix = argument[4];
 
@@ -234,83 +234,89 @@ void run()
     }
   }
 
+  // Only add contrast row number to image outputs if there's more than one contrast
+  auto postfix = [&] (const size_t i) { return (num_contrasts > 1) ? ("_" + str(i)) : ""; };
+
   {
     ProgressBar progress ("outputting beta coefficients, effect size and standard deviation...", contrast.cols() + 3);
 
     const matrix_type betas = Math::Stats::GLM::solve_betas (data, design);
     for (size_t i = 0; i < size_t(contrast.cols()); ++i) {
-      save_matrix (mat2vec.V2M (betas.col(i)), output_prefix + "_beta_" + str(i) + ".csv");
+      save_matrix (mat2vec.V2M (betas.col(i)), output_prefix + "_beta" + str(i) + ".csv");
       ++progress;
     }
 
     const matrix_type abs_effects = Math::Stats::GLM::abs_effect_size (data, design, contrast);
-    save_matrix (mat2vec.V2M (abs_effects.col(0)), output_prefix + "_abs_effect.csv");
-    ++progress;
+    for (size_t i = 0; i != num_contrasts; ++i) {
+      save_matrix (mat2vec.V2M (abs_effects.col(i)), output_prefix + "_abs_effect" + postfix(i) + ".csv");
+      ++progress;
+    }
 
     const matrix_type std_effects = Math::Stats::GLM::std_effect_size (data, design, contrast);
-    matrix_type first_std_effect = mat2vec.V2M (std_effects.col (0));
-    for (MR::Connectome::node_t i = 0; i != num_nodes; ++i) {
-      for (MR::Connectome::node_t j = 0; j != num_nodes; ++j) {
-        if (!std::isfinite (first_std_effect (i, j)))
-          first_std_effect (i, j) = 0.0;
-      }
+    for (size_t i = 0; i != num_contrasts; ++i) {
+      save_matrix (mat2vec.V2M (std_effects.col(i)), output_prefix + "_std_effect" + postfix(i) + ".csv");
+      ++progress;
     }
-    save_matrix (first_std_effect, output_prefix + "_std_effect.csv");
-    ++progress;
 
     const matrix_type stdevs = Math::Stats::GLM::stdev (data, design);
-    save_vector (stdevs.col(0), output_prefix + "_std_dev.csv");
+    for (size_t i = 0; i != num_contrasts; ++i) {
+      save_matrix (mat2vec.V2M (stdevs.col(i)), output_prefix + "_std_dev" + postfix(i) + ".csv");
+      ++progress;
+    }
   }
 
   std::shared_ptr<Math::Stats::GLMTestBase> glm_ttest (new Math::Stats::GLMTTestFixed (data, design, contrast));
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical statistic
-  vector_type empirical_statistic;
+  matrix_type empirical_statistic;
   if (do_nonstationary_adjustment) {
     if (permutations_nonstationary.size()) {
-      Stats::PermTest::PermutationStack perm_stack (permutations_nonstationary, "precomputing empirical statistic for non-stationarity adjustment...");
+      Stats::PermTest::PermutationStack perm_stack (permutations_nonstationary, "precomputing empirical statistic for non-stationarity adjustment");
       Stats::PermTest::precompute_empirical_stat (glm_ttest, enhancer, perm_stack, empirical_statistic);
     } else {
-      Stats::PermTest::PermutationStack perm_stack (nperms_nonstationary, design.rows(), "precomputing empirical statistic for non-stationarity adjustment...", true);
+      Stats::PermTest::PermutationStack perm_stack (nperms_nonstationary, design.rows(), "precomputing empirical statistic for non-stationarity adjustment", true);
       Stats::PermTest::precompute_empirical_stat (glm_ttest, enhancer, perm_stack, empirical_statistic);
     }
-    save_matrix (mat2vec.V2M (empirical_statistic), output_prefix + "_empirical.csv");
+    for (size_t i = 0; i != num_contrasts; ++i)
+      save_matrix (mat2vec.V2M (empirical_statistic.row(i)), output_prefix + "_empirical" + postfix(i) + ".csv");
   }
 
   // Precompute default statistic and enhanced statistic
-  vector_type tvalue_output   (num_edges);
-  vector_type enhanced_output (num_edges);
+  matrix_type tvalue_output   (num_contrasts, num_edges);
+  matrix_type enhanced_output (num_contrasts, num_edges);
 
-  Stats::PermTest::precompute_default_permutation (glm_ttest, enhancer, empirical_statistic, enhanced_output, std::shared_ptr<vector_type>(), tvalue_output);
+  Stats::PermTest::precompute_default_permutation (glm_ttest, enhancer, empirical_statistic, enhanced_output, tvalue_output);
 
-  save_matrix (mat2vec.V2M (tvalue_output),   output_prefix + "_tvalue.csv");
-  save_matrix (mat2vec.V2M (enhanced_output), output_prefix + "_enhanced.csv");
+  for (size_t i = 0; i != num_contrasts; ++i) {
+    save_matrix (mat2vec.V2M (tvalue_output.row(i)),   output_prefix + "_tvalue" + postfix(i) + ".csv");
+    save_matrix (mat2vec.V2M (enhanced_output.row(i)), output_prefix + "_enhanced" + postfix(i) + ".csv");
+  }
 
   // Perform permutation testing
   if (!get_options ("notest").size()) {
 
     // FIXME Getting NANs in the null distribution
     // Check: was result of pre-nulled subject data
-    vector_type null_distribution (num_perms);
-    vector_type uncorrected_pvalues (num_edges);
+    matrix_type null_distribution   (num_contrasts, num_perms);
+    matrix_type uncorrected_pvalues (num_contrasts, num_edges);
 
     if (permutations.size()) {
       Stats::PermTest::run_permutations (permutations, glm_ttest, enhancer, empirical_statistic,
-                                         enhanced_output, std::shared_ptr<vector_type>(),
-                                         null_distribution, std::shared_ptr<vector_type>(),
-                                         uncorrected_pvalues, std::shared_ptr<vector_type>());
+                                         enhanced_output, null_distribution, uncorrected_pvalues);
     } else {
       Stats::PermTest::run_permutations (num_perms, glm_ttest, enhancer, empirical_statistic,
-                                         enhanced_output, std::shared_ptr<vector_type>(),
-                                         null_distribution, std::shared_ptr<vector_type>(),
-                                         uncorrected_pvalues, std::shared_ptr<vector_type>());
+                                         enhanced_output, null_distribution, uncorrected_pvalues);
     }
 
-    save_vector (null_distribution, output_prefix + "_null_dist.txt");
-    vector_type pvalue_output (num_edges);
+    for (size_t i = 0; i != num_contrasts; ++i)
+      save_vector (null_distribution.row(i), output_prefix + "_null_dist" + postfix(i) + ".txt");
+
+    matrix_type pvalue_output (num_contrasts, num_edges);
     Math::Stats::Permutation::statistic2pvalue (null_distribution, enhanced_output, pvalue_output);
-    save_matrix (mat2vec.V2M (pvalue_output),       output_prefix + "_fwe_pvalue.csv");
-    save_matrix (mat2vec.V2M (uncorrected_pvalues), output_prefix + "_uncorrected_pvalue.csv");
+    for (size_t i = 0; i != num_contrasts; ++i) {
+      save_matrix (mat2vec.V2M (pvalue_output.row(i)),       output_prefix + "_fwe_pvalue" + postfix(i) + ".csv");
+      save_matrix (mat2vec.V2M (uncorrected_pvalues.row(i)), output_prefix + "_uncorrected_pvalue" + postfix(i) + ".csv");
+    }
 
   }
 

@@ -46,6 +46,7 @@ namespace MR
 
       typedef Math::Stats::value_type value_type;
       typedef Math::Stats::vector_type vector_type;
+      typedef Math::Stats::matrix_type matrix_type;
 
 
 
@@ -57,8 +58,8 @@ namespace MR
         public:
           PreProcessor (const std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator,
                         const std::shared_ptr<EnhancerBase> enhancer,
-                        vector_type& global_enhanced_sum,
-                        vector<size_t>& global_enhanced_count);
+                        matrix_type& global_enhanced_sum,
+                        vector<vector<size_t>>& global_enhanced_count);
 
           ~PreProcessor();
 
@@ -67,12 +68,12 @@ namespace MR
         protected:
           std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator;
           std::shared_ptr<EnhancerBase> enhancer;
-          vector_type& global_enhanced_sum;
-          vector<size_t>& global_enhanced_count;
-          vector_type enhanced_sum;
-          vector<size_t> enhanced_count;
-          vector_type stats;
-          vector_type enhanced_stats;
+          matrix_type& global_enhanced_sum;
+          vector<vector<size_t>>& global_enhanced_count;
+          matrix_type enhanced_sum;
+          vector<vector<size_t>> enhanced_count;
+          matrix_type stats;
+          matrix_type enhanced_stats;
           std::shared_ptr<std::mutex> mutex;
       };
 
@@ -84,13 +85,10 @@ namespace MR
         public:
           Processor (const std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator,
                      const std::shared_ptr<EnhancerBase> enhancer,
-                     const vector_type& empirical_enhanced_statistics,
-                     const vector_type& default_enhanced_statistics,
-                     const std::shared_ptr<vector_type> default_enhanced_statistics_neg,
-                     vector_type& perm_dist_pos,
-                     std::shared_ptr<vector_type> perm_dist_neg,
-                     vector<size_t>& global_uncorrected_pvalue_counter,
-                     std::shared_ptr< vector<size_t> > global_uncorrected_pvalue_counter_neg);
+                     const matrix_type& empirical_enhanced_statistics,
+                     const matrix_type& default_enhanced_statistics,
+                     matrix_type& perm_dist,
+                     vector<vector<size_t>>& global_uncorrected_pvalue_counter);
 
           ~Processor();
 
@@ -99,18 +97,13 @@ namespace MR
         protected:
           std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator;
           std::shared_ptr<EnhancerBase> enhancer;
-          const vector_type& empirical_enhanced_statistics;
-          const vector_type& default_enhanced_statistics;
-          const std::shared_ptr<vector_type> default_enhanced_statistics_neg;
-          vector_type statistics;
-          vector_type enhanced_statistics;
-          vector<size_t> uncorrected_pvalue_counter;
-          std::shared_ptr<vector<size_t> > uncorrected_pvalue_counter_neg;
-          vector_type& perm_dist_pos;
-          std::shared_ptr<vector_type> perm_dist_neg;
-
-          vector<size_t>& global_uncorrected_pvalue_counter;
-          std::shared_ptr<vector<size_t> > global_uncorrected_pvalue_counter_neg;
+          const matrix_type& empirical_enhanced_statistics;
+          const matrix_type& default_enhanced_statistics;
+          matrix_type statistics;
+          matrix_type enhanced_statistics;
+          vector<vector<size_t>> uncorrected_pvalue_counter;
+          matrix_type& perm_dist;
+          vector<vector<size_t>>& global_uncorrected_pvalue_counter;
           std::shared_ptr<std::mutex> mutex;
       };
 
@@ -120,7 +113,7 @@ namespace MR
       // Precompute the empircal test statistic for non-stationarity adjustment
       void precompute_empirical_stat (const std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator,
                                       const std::shared_ptr<EnhancerBase> enhancer,
-                                      PermutationStack& perm_stack, vector_type& empirical_statistic);
+                                      PermutationStack& perm_stack, matrix_type& empirical_statistic);
 
 
 
@@ -128,10 +121,9 @@ namespace MR
       // Precompute the default statistic image and enhanced statistic. We need to precompute this for calculating the uncorrected p-values.
       void precompute_default_permutation (const std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator,
                                            const std::shared_ptr<EnhancerBase> enhancer,
-                                           const vector_type& empirical_enhanced_statistic,
-                                           vector_type& default_enhanced_statistics,
-                                           std::shared_ptr<vector_type> default_enhanced_statistics_neg,
-                                           vector_type& default_statistics);
+                                           const matrix_type& empirical_enhanced_statistic,
+                                           matrix_type& default_enhanced_statistics,
+                                           matrix_type& default_statistics);
 
 
 
@@ -143,37 +135,28 @@ namespace MR
       void run_permutations (PermutationStack& perm_stack,
                              const std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator,
                              const std::shared_ptr<EnhancerBase> enhancer,
-                             const vector_type& empirical_enhanced_statistic,
-                             const vector_type& default_enhanced_statistics,
-                             const std::shared_ptr<vector_type> default_enhanced_statistics_neg,
-                             vector_type& perm_dist_pos,
-                             std::shared_ptr<vector_type> perm_dist_neg,
-                             vector_type& uncorrected_pvalues,
-                             std::shared_ptr<vector_type> uncorrected_pvalues_neg);
+                             const matrix_type& empirical_enhanced_statistic,
+                             const matrix_type& default_enhanced_statistics,
+                             matrix_type& perm_dist,
+                             matrix_type& uncorrected_pvalues);
 
 
       void run_permutations (const vector<vector<size_t>>& permutations,
                              const std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator,
                              const std::shared_ptr<EnhancerBase> enhancer,
-                             const vector_type& empirical_enhanced_statistic,
-                             const vector_type& default_enhanced_statistics,
-                             const std::shared_ptr<vector_type> default_enhanced_statistics_neg,
-                             vector_type& perm_dist_pos,
-                             std::shared_ptr<vector_type> perm_dist_neg,
-                             vector_type& uncorrected_pvalues,
-                             std::shared_ptr<vector_type> uncorrected_pvalues_neg);
+                             const matrix_type& empirical_enhanced_statistic,
+                             const matrix_type& default_enhanced_statistics,
+                             matrix_type& perm_dist,
+                             matrix_type& uncorrected_pvalues);
 
 
       void run_permutations (const size_t num_permutations,
                              const std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator,
                              const std::shared_ptr<EnhancerBase> enhancer,
-                             const vector_type& empirical_enhanced_statistic,
-                             const vector_type& default_enhanced_statistics,
-                             const std::shared_ptr<vector_type> default_enhanced_statistics_neg,
-                             vector_type& perm_dist_pos,
-                             std::shared_ptr<vector_type> perm_dist_neg,
-                             vector_type& uncorrected_pvalues,
-                             std::shared_ptr<vector_type> uncorrected_pvalues_neg);
+                             const matrix_type& empirical_enhanced_statistic,
+                             const matrix_type& default_enhanced_statistics,
+                             matrix_type& perm_dist,
+                             matrix_type& uncorrected_pvalues);
 
 
       //! @}

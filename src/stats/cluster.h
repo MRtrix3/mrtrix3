@@ -37,24 +37,23 @@ namespace MR
 
       /** \addtogroup Statistics
       @{ */
-      class ClusterSize : public Stats::TFCE::EnhancerBase { MEMALIGN (ClusterSize)
+      class ClusterSize : public Stats::TFCE::EnhancerBase
+      { MEMALIGN (ClusterSize)
         public:
           ClusterSize (const Filter::Connector& connector, const value_type T) :
                        connector (connector), threshold (T) { }
 
           void set_threshold (const value_type T) { threshold = T; }
 
-
-          value_type operator() (const vector_type& in, vector_type& out) const override {
-            return (*this) (in, threshold, out);
-          }
-
-          value_type operator() (const vector_type&, const value_type, vector_type&) const override;
-
-
         protected:
           const Filter::Connector& connector;
           value_type threshold;
+
+          void operator() (in_column_type in, out_column_type out) const override {
+            (*this) (in, threshold, out);
+          }
+
+          void operator() (in_column_type, const value_type, out_column_type) const override;
       };
       //! @}
 

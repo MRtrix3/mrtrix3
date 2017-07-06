@@ -74,26 +74,28 @@ namespace MR
 
 
 
-        void statistic2pvalue (const vector_type& perm_dist, const vector_type& stats, vector_type& pvalues)
+        void statistic2pvalue (const matrix_type& null_dist, const matrix_type& stats, matrix_type& pvalues)
         {
-          vector<value_type> permutations;
-          permutations.reserve (perm_dist.size());
-          for (ssize_t i = 0; i != perm_dist.size(); ++i)
-            permutations.push_back (perm_dist[i]);
-          std::sort (permutations.begin(), permutations.end());
-          pvalues.resize (stats.size());
-          for (size_t i = 0; i < size_t(stats.size()); ++i) {
-            if (stats[i] > 0.0) {
-              value_type pvalue = 1.0;
-              for (size_t j = 0; j < size_t(permutations.size()); ++j) {
-                if (stats[i] < permutations[j]) {
-                  pvalue = value_type(j) / value_type(permutations.size());
-                  break;
+          pvalues.resize (stats.rows(), stats.cols());
+          for (size_t row = 0; row != stats.rows(); ++row) {
+            vector<value_type> sorted_null_dist;
+            sorted_null_dist.reserve (null_dist.cols());
+            for (size_t i = 0; i != null_dist.size(); ++i)
+              sorted_null_dist.push_back (null_dist(row, i));
+            std::sort (sorted_null_dist.begin(), sorted_null_dist.end());
+            for (size_t i = 0; i != size_t(stats.cols()); ++i) {
+              if (stats(row, i) > 0.0) {
+                value_type pvalue = 1.0;
+                for (size_t j = 0; j < size_t(sorted_null_dist.size()); ++j) {
+                  if (stats(row, i) < sorted_null_dist[j]) {
+                    pvalue = value_type(j) / value_type(sorted_null_dist.size());
+                    break;
+                  }
                 }
+                pvalues(row, i) = pvalue;
+              } else {
+                pvalues(row, i) = 0.0;
               }
-              pvalues[i] = pvalue;
-            } else {
-              pvalues[i] = 0.0;
             }
           }
         }

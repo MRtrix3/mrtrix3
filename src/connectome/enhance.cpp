@@ -26,18 +26,16 @@ namespace MR {
 
 
 
-      value_type PassThrough::operator() (const vector_type& in, vector_type& out) const
+      void PassThrough::operator() (in_column_type in, out_column_type out) const
       {
         out = in;
-        return out.maxCoeff();
       }
 
 
 
-      value_type NBS::operator() (const vector_type& in, const value_type T, vector_type& out) const
+      void NBS::operator() (in_column_type in, const value_type T, out_column_type out) const
       {
         out = vector_type::Zero (in.size());
-        value_type max_value = value_type(0);
 
         for (ssize_t seed = 0; seed != in.size(); ++seed) {
           if (std::isfinite (in[seed]) && in[seed] >= T && !out[seed]) {
@@ -62,14 +60,11 @@ namespace MR {
 
             }
 
-            max_value = std::max (max_value, value_type(cluster_size));
             for (ssize_t i = 0; i != in.size(); ++i)
               out[i] += (visited[i] ? 1.0 : 0.0) * cluster_size;
 
           }
         }
-
-        return max_value;
       }
 
 

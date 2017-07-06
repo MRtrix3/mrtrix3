@@ -25,16 +25,14 @@ namespace MR
 
 
 
-      value_type ClusterSize::operator() (const vector_type& stats, const value_type T, vector_type& get_cluster_sizes) const
+      void ClusterSize::operator() (in_column_type input, const value_type T, out_column_type output) const
       {
         vector<Filter::cluster> clusters;
-        vector<uint32_t> labels (stats.size(), 0);
-        connector.run (clusters, labels, stats, T);
-        get_cluster_sizes.resize (stats.size());
-        for (size_t i = 0; i < size_t(stats.size()); ++i)
-          get_cluster_sizes[i] = labels[i] ? clusters[labels[i]-1].size : 0.0;
-
-        return clusters.size() ? std::max_element (clusters.begin(), clusters.end())->size : 0.0;
+        vector<uint32_t> labels (input.size(), 0);
+        connector.run (clusters, labels, input, T);
+        output.resize (input.size());
+        for (size_t i = 0; i < size_t(input.size()); ++i)
+          output[i] = labels[i] ? clusters[labels[i]-1].size : 0.0;
       }
 
 
