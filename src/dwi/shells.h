@@ -21,9 +21,8 @@
 #include <vector>
 
 #include "app.h"
-#include "bitset.h"
-
 #include "file/config.h"
+#include "misc/bitset.h"
 
 
 // Don't expect these values to change depending on the particular command that is initialising the Shells class;

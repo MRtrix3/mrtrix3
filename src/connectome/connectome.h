@@ -44,11 +44,11 @@ namespace MR {
 
 
     template <class MatrixType>
-    void check (const MatrixType& in, const node_t num_nodes)
+    void check (const MatrixType& in, const node_t num_nodes = 0)
     {
       if (in.rows() != in.cols())
         throw Exception ("Connectome matrix is not square (" + str(in.rows()) + " x " + str(in.cols()) + ")");
-      if (in.rows() != num_nodes)
+      if (num_nodes && (in.rows() != num_nodes))
         throw Exception ("Connectome matrix contains " + str(in.rows()) + " nodes; expected " + str(num_nodes));
     }
 

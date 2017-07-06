@@ -14,8 +14,6 @@
 
 #include "stats/cluster.h"
 
-#include <algorithm>
-
 namespace MR
 {
   namespace Stats
@@ -27,7 +25,7 @@ namespace MR
 
       void ClusterSize::operator() (in_column_type input, const value_type T, out_column_type output) const
       {
-        vector<Filter::cluster> clusters;
+        vector<Filter::Connector::Cluster> clusters;
         vector<uint32_t> labels (input.size(), 0);
         connector.run (clusters, labels, input, T);
         output.resize (input.size());

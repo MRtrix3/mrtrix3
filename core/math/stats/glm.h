@@ -31,46 +31,58 @@ namespace MR
       namespace GLM
       {
 
-
-
-          /** \addtogroup Statistics
-          @{ */
-          /*! Compute a matrix of the beta coefficients
-          * @param measurements a matrix storing the measured data for each subject in a column
-          * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
-          * @return the matrix containing the output effect
-          */
-          matrix_type solve_betas (const matrix_type& measurements, const matrix_type& design);
-
-
-
-          /*! Compute the effect of interest
-          * @param measurements a matrix storing the measured data for each subject in a column
-          * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
-          * @param contrast a matrix defining the group difference
-          * @return the matrix containing the output effect
-          */
-          matrix_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const matrix_type& contrast);
+        /** \addtogroup Statistics
+        @{ */
+        /*! Compute a matrix of the beta coefficients
+         * @param measurements a matrix storing the measured data for each subject in a column
+         * @param design the design matrix (unlike other packages a column of ones is NOT automatically added to estimate the global intercept)
+         * @return the matrix containing the output GLM betas
+         */
+        matrix_type solve_betas (const matrix_type& measurements, const matrix_type& design);
 
 
 
-          /*! Compute the pooled standard deviation
-          * @param measurements a matrix storing the measured data for each subject in a column
-          * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
-          * @return the matrix containing the output standard deviation size
-          */
-          matrix_type stdev (const matrix_type& measurements, const matrix_type& design);
+        /*! Compute the effect of interest
+         * @param measurements a matrix storing the measured data for each subject in a column
+         * @param design the design matrix (unlike other packages a column of ones is NOT automatically added to estimate the global intercept)
+         * @param contrast a matrix defining the group difference
+         * @return the matrix containing the output effect
+         */
+        matrix_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const matrix_type& contrast);
 
 
 
-          /*! Compute cohen's d, the standardised effect size between two means
-          * @param measurements a matrix storing the measured data for each subject in a column
-          * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
-          * @param contrast a matrix defining the group difference
-          * @return the matrix containing the output standardised effect size
-          */
-          matrix_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const matrix_type& contrast);
-          //! @}
+        /*! Compute the pooled standard deviation
+         * @param measurements a matrix storing the measured data for each subject in a column
+         * @param design the design matrix (unlike other packages a column of ones is NOT automatically added to estimate the global intercept)
+         * @return the matrix containing the output standard deviation
+         */
+        matrix_type stdev (const matrix_type& measurements, const matrix_type& design);
+
+
+
+        /*! Compute cohen's d, the standardised effect size between two means
+         * @param measurements a matrix storing the measured data for each subject in a column
+         * @param design the design matrix (unlike other packages a column of ones is NOT automatically added to estimate the global intercept)
+         * @param contrast a matrix defining the group difference
+         * @return the matrix containing the output standardised effect size
+         */
+        matrix_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const matrix_type& contrast);
+
+
+
+        /*! Compute all GLM-related statistics
+         * @param measurements a matrix storing the measured data for each subject in a column
+         * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
+         * @param contrast a matrix defining the group difference
+         * @param betas the matrix containing the output GLM betas
+         * @param abs_effect_size the matrix containing the output effect
+         * @param std_effect_size the matrix containing the output standardised effect size
+         * @param stdev the matrix containing the output standard deviation
+         */
+        void all_stats (const matrix_type& measurements, const matrix_type& design, const matrix_type& contrasts,
+                        matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, matrix_type& stdev);
+        //! @}
 
       } // End GLM namespace
 
@@ -79,16 +91,19 @@ namespace MR
       // Define a base class for GLM tests
       // Should support both T-tests and F-tests
       // The latter will always produce 1 column only, whereas the former will produce the same number of columns as there are contrasts
-      class GLMTestBase { MEMALIGN(GLMTestBase)
+      class GLMTestBase
+      { MEMALIGN(GLMTestBase)
         public:
           GLMTestBase (const matrix_type& measurements, const matrix_type& design, const matrix_type& contrasts) :
             y (measurements),
             X (design),
             c (contrasts),
-            dim (c.rows())
+            outputs (c.rows())
           {
             assert (y.cols() == X.rows());
-            assert (c.cols() == X.cols());
+            // Can no longer apply this assertion here; GLMTTestVariable later
+            //   expands the number of columns in X
+            //assert (c.cols() == X.cols());
           }
 
           /*! Compute the statistics
@@ -97,13 +112,14 @@ namespace MR
            */
           virtual void operator() (const vector<size_t>& perm_labelling, matrix_type& output) const = 0;
 
-          size_t num_subjects () const { return y.cols(); }
           size_t num_elements () const { return y.rows(); }
-          size_t num_outputs  () const { return dim; }
+          size_t num_factors  () const { return X.cols(); }
+          size_t num_outputs  () const { return outputs; }
+          size_t num_subjects () const { return X.rows(); }
 
         protected:
           const matrix_type& y, X, c;
-          size_t dim;
+          size_t outputs;
 
       };
 
@@ -118,7 +134,8 @@ namespace MR
        * tested; able to pre-compute a number of matrices before testing, improving
        * execution speed.
        */
-      class GLMTTestFixed : public GLMTestBase { MEMALIGN(GLMTTestFixed)
+      class GLMTTestFixed : public GLMTestBase
+      { MEMALIGN(GLMTTestFixed)
         public:
           /*!
           * @param measurements a matrix storing the measured data for each subject in a column
@@ -134,27 +151,32 @@ namespace MR
           void operator() (const vector<size_t>& perm_labelling, matrix_type& output) const override;
 
         protected:
-          const matrix_type pinvX, scaled_contrasts;
+          const matrix_type pinvX, scaled_contrasts_t;
 
         private:
 
-          /*! This function pre-scales a contrast matrix in order to make conversion from GLM betas
-           * to t-values more computationally efficient. */
-          matrix_type calc_scaled_contrasts() const;
-
-          //! generic GLM t-test
+          //! GLM t-test incorporating various optimisations
           /*! note that the data, effects, and residual matrices are transposed.
            * This is to take advantage of Eigen's convention of storing
            * matrices in column-major format by default.
            *
-           * Note also that the contrast matrix should already have been scaled
-           * using the GLM::scale_contrasts() function. */
+           * This function makes use of member variable scaled_contrasts_t,
+           * set up by the GLMTTestFixed constructor, which is also transposed. */
           void ttest (matrix_type& tvalues,
-                      const matrix_type& design,
-                      const matrix_type& pinv_design,
+                      const matrix_type& design_t,
+                      const matrix_type& pinv_design_t,
                       Eigen::Block<const matrix_type> measurements,
                       matrix_type& betas,
-                      matrix_type& residuals) const;
+                      matrix_type& residuals_t) const;
+
+          //! Pre-scaling of contrast matrix
+          /*! This modulates the contents of the contrast matrix for compatibility
+           * with member function ttest().
+           *
+           * Scaling is performed in a member function such that member scaled_contrasts_t
+           * can be defined as const. */
+          matrix_type calc_scaled_contrasts() const;
+
       };
       //! @}
 
@@ -172,9 +194,10 @@ namespace MR
        * particular type of data being tested. Therefore an Importer class must be
        * defined that is responsible for acquiring and vectorising these data.
        */
-      class GLMTTestVariable : public GLMTestBase { NOMEMALIGN
+      class GLMTTestVariable : public GLMTestBase
+      { MEMALIGN(GLMTTestVariable)
         public:
-          GLMTTestVariable (const vector<CohortDataImport>& importers, const matrix_type& measurements, const matrix_type& design, const matrix_type& contrasts);
+          GLMTTestVariable (const vector<CohortDataImport>& importers, const matrix_type& measurements, const matrix_type& design, const matrix_type& contrasts, const bool nans_in_data, const bool nans_in_columns);
 
           /*! Compute the t-statistics
            * @param perm_labelling a vector to shuffle the rows in the design matrix (for permutation testing)
@@ -185,26 +208,31 @@ namespace MR
            */
           void operator() (const vector<size_t>& perm_labelling, matrix_type& output) const override;
 
-          // A function to acquire the design matrix for the default permutation
-          //   (note that this needs to be re-run for each element being tested)
-          matrix_type default_design (const matrix_type& design, const size_t index) const;
+          /*! Acquire the design matrix for the default permutation
+           * (note that this needs to be re-run for each element being tested)
+           * @param index the index of the element for which the design matrix is requested
+           * @return the design matrix for that element, including imported data for extra columns
+           */
+          matrix_type default_design (const size_t index) const;
 
         protected:
           const vector<CohortDataImport>& importers;
+          const bool nans_in_data, nans_in_columns;
 
           //! generic GLM t-test
-          /*! note that the data, effects, and residual matrices are transposed.
-           * This is to take advantage of Eigen's convention of storing
-           * matrices in column-major format by default.
+          /*! This version of the t-test function does not incorporate the
+           * optimisations that are used in the GLMTTestFixed class, since
+           * many are not applicable when the design matrix changes between
+           * different elements.
            *
-           * This version does not require, or take advantage of, pre-calculation
-           * of the pseudo-inverse of the design matrix, or pre-scaling of contrasts.
-           */
-          void ttest (matrix_type& tvalues,
-                      const matrix_type& design,
-                      const matrix_type& measurements,
-                      matrix_type& betas,
-                      matrix_type& residuals) const;
+           * Since the design matrix varies between the different elements
+           * being tested, this function only accepts testing of a single
+           * vector of measurements at a time. */
+           void ttest (matrix_type& tvalues,
+                       const matrix_type& design,
+                       matrix_type::ConstRowXpr measurements,
+                       matrix_type& betas,
+                       matrix_type& residuals) const;
       };
 
 
@@ -212,6 +240,7 @@ namespace MR
             @{ */
       /*! A class to compute F-statistics using a fixed General Linear Model.
        * This class produces a single F-statistic across all contrasts of interest.
+       * NOT YET IMPLEMENTED
        */
       class GLMFTestFixed : public GLMTestBase { MEMALIGN(GLMFTestFixed)
         public:
@@ -229,7 +258,6 @@ namespace MR
           void operator() (const vector<size_t>& perm_labelling, matrix_type& output) const override;
 
         protected:
-          // TODO How to deal with contrast scaling?
           // TODO How to deal with f-tests that apply to specific contrasts only?
           const matrix_type ftests;
       };

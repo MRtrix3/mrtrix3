@@ -104,7 +104,7 @@ void run () {
   auto input_image = Image<value_type>::open (argument[0]);
 
   int filter_index = argument[1];
-  
+
   if (filter_index == 0) { // Mask clean
     Filter::MaskClean filter (input_image, std::string("applying mask cleaning filter to image ") + Path::basename (argument[0]));
     filter.set_scale(get_option_value ("scale", DEFAULT_CLEAN_SCALE));
@@ -120,16 +120,9 @@ void run () {
   if (filter_index == 1) { // Connected components
     Filter::ConnectedComponents filter (input_image, std::string("applying connected-component filter to image ") + Path::basename (argument[0]));
     auto opt = get_options ("axes");
-    vector<int> axes;
     if (opt.size()) {
-      axes = opt[0][0];
-      for (size_t d = 0; d < input_image.ndim(); d++)
-        filter.set_ignore_dim (d, true);
-      for (size_t i = 0; i < axes.size(); i++) {
-        if (axes[i] >= static_cast<int> (input_image.ndim()) || axes[i] < 0)
-          throw Exception ("axis supplied to option -ignore is out of bounds");
-        filter.set_ignore_dim (axes[i], false);
-      }
+      const vector<int> axes = opt[0][0];
+      filter.set_axes (axes);
     }
     bool largest_only = false;
     opt = get_options ("largest");

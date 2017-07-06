@@ -32,19 +32,22 @@ namespace MR
 
   namespace Fixel
   {
+    FORCE_INLINE bool is_index_filename (const std::string& path)
+    {
+      for (std::initializer_list<const std::string>::iterator it = supported_sparse_formats.begin();
+           it != supported_sparse_formats.end(); ++it) {
+        if (Path::basename (path) == "index" + *it)
+          return true;
+      }
+      return false;
+    }
+
+
     FORCE_INLINE bool is_index_image (const Header& in)
     {
-      bool is_index = false;
-      if (in.ndim() == 4) {
-        if (in.size(3) == 2) {
-          for (std::initializer_list<const std::string>::iterator it = supported_sparse_formats.begin();
-               it != supported_sparse_formats.end(); ++it) {
-            if (Path::basename (in.name()) == "index" + *it)
-              is_index = true;
-          }
-        }
-      }
-      return is_index;
+      return is_index_filename (in.name())
+          && in.ndim() == 4
+          && in.size(3) == 2;
     }
 
     template <class IndexHeaderType>
@@ -61,20 +64,27 @@ namespace MR
     }
 
 
+    FORCE_INLINE bool is_directions_filename (const std::string& path)
+    {
+      for (std::initializer_list<const std::string>::iterator it = supported_sparse_formats.begin();
+           it != supported_sparse_formats.end(); ++it) {
+        if (Path::basename (path) == "directions" + *it)
+          return true;
+      }
+      return false;
+    }
+
+
     FORCE_INLINE bool is_directions_file (const Header& in)
     {
-      bool is_directions = false;
-      if (in.ndim() == 3) {
-        if (in.size(1) == 3 && in.size(2) == 1) {
-          for (std::initializer_list<const std::string>::iterator it = supported_sparse_formats.begin();
-               it != supported_sparse_formats.end(); ++it) {
-            if (Path::basename (in.name()) == "directions" + *it)
-              is_directions = true;
-          }
-        }
-      }
-      return is_directions;
+      return is_directions_filename (in.name())
+          && in.ndim() == 3
+          && in.size(1) == 3
+          && in.size(2) == 1;
     }
+
+
+
 
 
     FORCE_INLINE void check_data_file (const Header& in)
@@ -242,17 +252,15 @@ namespace MR
 
       auto dir_walker = Path::Dir (fixel_directory_path);
       std::string fname;
-      while ((fname = dir_walker.read_name ()).size ()) {
-        Header tmp_header;
-        auto full_path = Path::join (fixel_directory_path, fname);
-        if (Path::has_suffix (fname, supported_sparse_formats)
-              && is_directions_file (tmp_header = Header::open (full_path))) {
+      while ((fname = dir_walker.read_name()).size()) {
+        if (is_directions_filename (fname)) {
+          Header tmp_header = Header::open (Path::join (fixel_directory_path, fname));
           if (is_directions_file (tmp_header)) {
             if (fixels_match (index_header, tmp_header)) {
               if (directions_found == true)
                 throw Exception ("multiple directions files found in fixel image directory: " + fixel_directory_path);
               directions_found = true;
-              header = std::move(tmp_header);
+              header = std::move (tmp_header);
             } else {
               WARN ("fixel directions file (" + fname + ") does not contain the same number of elements as fixels in the index file" );
             }

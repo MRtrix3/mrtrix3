@@ -12,8 +12,8 @@
  */
 
 
-#ifndef __bitset_h__
-#define __bitset_h__
+#ifndef __misc_bitset_h__
+#define __misc_bitset_h__
 
 
 #include <atomic>

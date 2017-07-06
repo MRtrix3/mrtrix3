@@ -19,6 +19,8 @@
 
 #include "progressbar.h"
 
+#include "misc/bitset.h"
+
 
 namespace MR {
   namespace Connectome {

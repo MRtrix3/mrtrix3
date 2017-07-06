@@ -106,7 +106,11 @@ namespace MR
             std::cout << std::setw(width) << std::right << ( count ? str(mean) : "N/A" );
 
             if (!is_complex) {
-              std::cout << " " << std::setw(width) << std::right << ( count ? str(Math::median (values)) : "N/A" );
+              std::cout << " " << std::setw(width) << std::right;
+              if (count)
+                std::cout << Math::median (values);
+              else
+                std::cout << "N/A";
             }
             std::cout << " " << std::setw(width) << std::right << ( count > 1 ? str(std) : "N/A" )
               << " " << std::setw(width) << std::right << ( count ? str(min) : "N/A" )

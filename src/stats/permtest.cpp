@@ -90,6 +90,8 @@ namespace MR
 
       bool PreProcessor::operator() (const Permutation& permutation)
       {
+        if (permutation.data.empty())
+          return false;
         (*stats_calculator) (permutation.data, stats);
         (*enhancer) (stats, enhanced_stats);
         for (ssize_t c = 0; c != enhanced_stats.rows(); ++c) {

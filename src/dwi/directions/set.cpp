@@ -18,7 +18,7 @@
 #include <set>
 #include <vector>
 
-#include "bitset.h"
+#include "misc/bitset.h"
 #include "math/rng.h"
 
 

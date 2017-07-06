@@ -20,6 +20,8 @@
 #include <string>
 #include <vector>
 
+#include "progressbar.h"
+
 #include "file/path.h"
 
 #include "math/stats/typedefs.h"
@@ -45,7 +47,7 @@ namespace MR
        * cases, within the design matrix).
        */
       class SubjectDataImportBase
-      {
+      { NOMEMALIGN
         public:
           SubjectDataImportBase (const std::string& path) :
               path (path) { }
@@ -64,18 +66,13 @@ namespace MR
 
           const std::string& name() const { return path; }
 
+          virtual size_t size() const = 0;
+
         protected:
           const std::string path;
 
       };
       //! @}
-
-
-
-      // TODO Implementation of the above class would be more difficult for 0.3.15 version of
-      //   fixelcfestats because it would need to keep track of a mapping between template
-      //   fixel index, and subject voxel / fixel index. Would it be preferable to do the
-      //   0.3.16 merge first?
 
 
 
@@ -86,7 +83,7 @@ namespace MR
       //   for each subject a mechanism of data access is spawned & remains open throughout
       //   processing.
       class CohortDataImport
-      {
+      { NOMEMALIGN
         public:
           CohortDataImport() { }
 
@@ -109,8 +106,10 @@ namespace MR
             return files[i];
           }
 
+          bool allFinite() const;
+
         protected:
-          std::vector<std::shared_ptr<SubjectDataImportBase>> files;
+          vector<std::shared_ptr<SubjectDataImportBase>> files;
       };
 
 
@@ -118,20 +117,27 @@ namespace MR
       template <class SubjectDataImport>
       void CohortDataImport::initialise (const std::string& path)
       {
-        // TODO Read the provided text file one at a time
+        // Read the provided text file one at a time
         // For each file, create an instance of SubjectDataImport
         //   (which must derive from SubjectDataImportBase)
+        ProgressBar progress ("Importing data from files listed in \"" + Path::basename (path) + "\"");
         const std::string directory = Path::dirname (path);
         std::ifstream ifs (path.c_str());
         std::string line;
         while (getline (ifs, line)) {
-          std::string filename (Path::join (directory, line));
-          size_t p = filename.find_last_not_of(" \t");
-          if (std::string::npos != p)
-            filename.erase(p+1);
-          if (!Path::exists (filename))
-            throw Exception ("Reading text file \"" + Path::basename (path) + "\": input data file not found: \"" + filename + "\"");
-          files.push_back (std::make_shared<SubjectDataImport> (filename));
+          size_t p = line.find_last_not_of(" \t");
+          if (p != std::string::npos)
+            line.erase (p+1);
+          if (line.size()) {
+            const std::string filename (Path::join (directory, line));
+            try {
+              std::shared_ptr<SubjectDataImport> subject (new SubjectDataImport (filename));
+              files.emplace_back (subject);
+            } catch (Exception& e) {
+              throw Exception (e, "Reading text file \"" + Path::basename (path) + "\": input image data file not found: \"" + filename + "\"");
+            }
+          }
+          ++progress;
         }
       }
 

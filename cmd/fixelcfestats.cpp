@@ -22,6 +22,7 @@
 #include "fixel/keys.h"
 #include "fixel/loop.h"
 #include "math/stats/glm.h"
+#include "math/stats/import.h"
 #include "math/stats/permutation.h"
 #include "math/stats/typedefs.h"
 #include "stats/cfe.h"
@@ -50,7 +51,7 @@ using Stats::CFE::connectivity_value_type;
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Fixel-based analysis using connectivity-based fixel enhancement and non-parametric permutation testing";
 
@@ -134,7 +135,7 @@ void write_fixel_output (const std::string& filename,
 //   specific subject based on the string path to the image file for
 //   that subject
 class SubjectFixelImport : public SubjectDataImportBase
-{ NOMEMALIGN
+{ MEMALIGN(SubjectFixelImport)
   public:
     SubjectFixelImport (const std::string& path) :
         SubjectDataImportBase (path),
@@ -149,18 +150,20 @@ class SubjectFixelImport : public SubjectDataImportBase
 
     void operator() (matrix_type::ColXpr column) const override
     {
-      assert (column.rows() == data.size(0));
+      assert (column.rows() == size());
       Image<float> temp (data); // For thread-safety
       column = temp.row(0);
     }
 
     default_type operator[] (const size_t index) const override
     {
-      assert (index < data.size(0));
+      assert (index < size());
       Image<float> temp (data); // For thread-safety
       temp.index(0) = index;
       return default_type(temp.value());
     }
+
+    size_t size() const override { return data.size(0); }
 
     const Header& header() const { return H; }
 
@@ -216,16 +219,18 @@ void run()
     }
   }
 
-  // Read identifiers and check files exist
+  // Read file names and check files exist
   CohortDataImport importer;
   importer.initialise<SubjectFixelImport> (argument[1]);
   for (size_t i = 0; i != importer.size(); ++i) {
     if (!Fixel::fixels_match (index_header, dynamic_cast<SubjectFixelImport*>(importer[i].get())->header()))
       throw Exception ("Fixel data file \"" + importer[i]->name() + "\" does not match template fixel image");
   }
+  CONSOLE ("Number of subjects: " + str(importer.size()));
 
   // Load design matrix:
   const matrix_type design = load_matrix (argument[2]);
+  CONSOLE ("design matrix dimensions: " + str(design.rows()) + " x " + str(design.cols()));
   if (design.rows() != (ssize_t)importer.size())
     throw Exception ("number of input files does not match number of rows in design matrix");
 
@@ -260,13 +265,21 @@ void run()
   // Before validating the contrast matrix, we first need to see if there are any
   //   additional design matrix columns coming from fixel-wise subject data
   vector<CohortDataImport> extra_columns;
+  bool nans_in_columns = false;
   opt = get_options ("column");
   for (size_t i = 0; i != opt.size(); ++i) {
     extra_columns.push_back (CohortDataImport());
     extra_columns[i].initialise<SubjectFixelImport> (opt[i][0]);
+    if (!extra_columns[i].allFinite())
+      nans_in_columns = true;
+  }
+  if (extra_columns.size()) {
+    CONSOLE ("number of element-wise design matrix columns: " + str(extra_columns.size()));
+    if (nans_in_columns)
+      INFO ("Non-finite values detected in element-wise design matrix columns; individual rows will be removed from fixel-wise design matrices accordingly");
   }
 
-  if (contrast.cols() + ssize_t(extra_columns.size()) != design.cols())
+  if (contrast.cols() != design.cols() + ssize_t(extra_columns.size()))
     throw Exception ("the number of columns per contrast (" + str(contrast.cols()) + ")"
                      + (extra_columns.size() ? " (in addition to the " + str(extra_columns.size()) + " uses of -column)" : "")
                      + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")");
@@ -281,8 +294,9 @@ void run()
   const size_t num_tracks = properties["count"].empty() ? 0 : to<int> (properties["count"]);
   if (!num_tracks)
     throw Exception ("no tracks found in input file");
-  if (num_tracks < 1000000)
-    WARN ("more than 1 million tracks should be used to ensure robust fixel-fixel connectivity");
+  if (num_tracks < 1000000) {
+    WARN ("more than 1 million tracks is preferable to ensure robust fixel-fixel connectivity; file \"" + track_filename + "\" contains only " + str(num_tracks));
+  }
   {
     typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
     DWI::Tractography::Mapping::TrackLoader loader (track_file, num_tracks, "pre-computing fixel-fixel connectivity");
@@ -311,13 +325,14 @@ void run()
   }
 
   {
+    // TODO This could trivially be multi-threaded; fixels are handled independently
     ProgressBar progress ("normalising and thresholding fixel-fixel connectivity matrix", num_fixels);
     for (uint32_t fixel = 0; fixel < num_fixels; ++fixel) {
 
       auto it = connectivity_matrix[fixel].begin();
       while (it != connectivity_matrix[fixel].end()) {
         const connectivity_value_type connectivity = it->second.value / connectivity_value_type (fixel_TDI[fixel]);
-        if (connectivity < connectivity_threshold)  {
+        if (connectivity < connectivity_threshold) {
           connectivity_matrix[fixel].erase (it++);
         } else {
           if (do_smoothing) {
@@ -339,13 +354,11 @@ void run()
 
       // Normalise smoothing weights
       value_type sum = 0.0;
-      for (auto smooth_it = smoothing_weights[fixel].begin(); smooth_it != smoothing_weights[fixel].end(); ++smooth_it) {
+      for (auto smooth_it = smoothing_weights[fixel].begin(); smooth_it != smoothing_weights[fixel].end(); ++smooth_it)
         sum += smooth_it->second;
-      }
-      value_type norm_factor = 1.0 / sum;
-      for (auto smooth_it = smoothing_weights[fixel].begin(); smooth_it != smoothing_weights[fixel].end(); ++smooth_it) {
+      const value_type norm_factor = 1.0 / sum;
+      for (auto smooth_it = smoothing_weights[fixel].begin(); smooth_it != smoothing_weights[fixel].end(); ++smooth_it)
         smooth_it->second *= norm_factor;
-      }
       progress++;
     }
   }
@@ -362,9 +375,8 @@ void run()
 
 
   // Load input data
-  matrix_type data (num_fixels, importer.size());
-  data.setZero();
-
+  matrix_type data = matrix_type::Zero (num_fixels, importer.size());
+  bool nans_in_data = false;
   {
     ProgressBar progress ("loading input images", importer.size());
     for (size_t subject = 0; subject < importer.size(); subject++) {
@@ -372,58 +384,148 @@ void run()
       // Smooth the data
       vector_type smoothed_data (vector_type::Zero (num_fixels));
       for (size_t fixel = 0; fixel < num_fixels; ++fixel) {
-        value_type value = 0.0;
-        std::map<uint32_t, connectivity_value_type>::const_iterator it = smoothing_weights[fixel].begin();
-        for (; it != smoothing_weights[fixel].end(); ++it)
-          value += data (it->first, subject) * it->second;
-        smoothed_data (fixel) = value;
+        if (std::isfinite (data (fixel, subject))) {
+          value_type value = 0.0, sum_weights = 0.0;
+          std::map<uint32_t, connectivity_value_type>::const_iterator it = smoothing_weights[fixel].begin();
+          for (; it != smoothing_weights[fixel].end(); ++it) {
+            if (std::isfinite (data (it->first, subject))) {
+              value += data (it->first, subject) * it->second;
+              sum_weights += it->second;
+            }
+          }
+          if (sum_weights)
+            smoothed_data (fixel) = value / sum_weights;
+          else
+            smoothed_data (fixel) = NaN;
+        } else {
+          smoothed_data (fixel) = NaN;
+        }
       }
-      if (!smoothed_data.allFinite())
-        throw Exception ("Input fixel data \"" + importer[subject]->name() + "\" contains at least one non-finite value");
       data.col (subject) = smoothed_data;
+      if (!smoothed_data.allFinite())
+        nans_in_data = true;
     }
     progress++;
+  }
+  if (nans_in_data) {
+    INFO ("Non-finite values present in data; rows will be removed from fixel-wise design matrices accordingly");
+    if (!extra_columns.size()) {
+      INFO ("(Note that this will result in slower execution than if such values were not present)");
+    }
+  }
+
+
+  // Construct the class for performing the initial statistical tests
+  std::shared_ptr<GLMTestBase> glm_test;
+  if (extra_columns.size() || nans_in_data) {
+    glm_test.reset (new GLMTTestVariable (extra_columns, data, design, contrast, nans_in_data, nans_in_columns));
+  } else {
+    glm_test.reset (new GLMTTestFixed (data, design, contrast));
   }
 
   // Only add contrast row number to image outputs if there's more than one contrast
   auto postfix = [&] (const size_t i) { return (num_contrasts > 1) ? ("_" + str(i)) : ""; };
 
-  if (extra_columns.size()) {
-    WARN ("Beta coefficients, effect size and standard deviation outputs not yet implemented for fixel-wise extra columns");
-  } else {
+  {
+    matrix_type betas (contrast.cols(), num_fixels);
+    matrix_type abs_effect_size (num_contrasts, num_fixels), std_effect_size (num_contrasts, num_fixels), stdev (num_contrasts, num_fixels);
+
+    if (extra_columns.size()) {
+
+      // For each variable of interest (e.g. beta coefficients, effect size etc.) need to:
+      //   Construct the output data vector, with size = num_fixels
+      //   For each fixel:
+      //     Use glm_test to obtain the design matrix for the default permutation for that fixel
+      //     Use the relevant Math::Stats::GLM function to get the value of interest for just that fixel
+      //       (will still however need to come out as a matrix_type)
+      //     Write that value to data vector
+      //   Finally, use write_fixel_output() function to write to an image file
+      class Source
+      { NOMEMALIGN
+        public:
+          Source (const size_t num_fixels) :
+              num_fixels (num_fixels),
+              counter (0),
+              progress (new ProgressBar ("calculating basic properties of default permutation", num_fixels)) { }
+
+          bool operator() (size_t& fixel_index)
+          {
+            fixel_index = counter++;
+            if (counter >= num_fixels) {
+              progress.reset();
+              return false;
+            }
+            assert (progress);
+            ++(*progress);
+            return true;
+          }
+
+        private:
+          const size_t num_fixels;
+          size_t counter;
+          std::unique_ptr<ProgressBar> progress;
+      };
+
+      class Functor
+      { MEMALIGN(Functor)
+        public:
+          Functor (const matrix_type& data, std::shared_ptr<GLMTestBase> glm_test, const matrix_type& contrasts,
+                   matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, matrix_type& stdev) :
+              data (data),
+              glm_test (glm_test),
+              contrasts (contrasts),
+              global_betas (betas),
+              global_abs_effect_size (abs_effect_size),
+              global_std_effect_size (std_effect_size),
+              global_stdev (stdev) { }
+
+          bool operator() (const size_t& fixel_index)
+          {
+            const matrix_type data_fixel = data.row (fixel_index);
+            const matrix_type design_fixel = dynamic_cast<GLMTTestVariable*>(glm_test.get())->default_design (fixel_index);
+            Math::Stats::GLM::all_stats (data_fixel, design_fixel, contrasts,
+                                         local_betas, local_abs_effect_size, local_std_effect_size, local_stdev);
+            global_betas.col(fixel_index) = local_betas;
+            global_abs_effect_size.col(fixel_index) = local_abs_effect_size.col(0);
+            global_std_effect_size.col(fixel_index) = local_std_effect_size.col(0);
+            global_stdev.col(fixel_index) = local_stdev.col(0);
+            return true;
+          }
+
+        private:
+          const matrix_type& data;
+          const std::shared_ptr<GLMTestBase> glm_test;
+          const matrix_type& contrasts;
+          matrix_type& global_betas;
+          matrix_type& global_abs_effect_size;
+          matrix_type& global_std_effect_size;
+          matrix_type& global_stdev;
+          matrix_type local_betas, local_abs_effect_size, local_std_effect_size, local_stdev;
+      };
+
+      Source source (num_fixels);
+      Functor functor (data, glm_test, contrast,
+                       betas, abs_effect_size, std_effect_size, stdev);
+      Thread::run_queue (source, Thread::batch (size_t()), Thread::multi (functor));
+
+    } else {
+
+      ProgressBar progress ("calculating basic properties of default permutation");
+      Math::Stats::GLM::all_stats (data, design, contrast,
+                                   betas, abs_effect_size, std_effect_size, stdev);
+    }
+
     ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", contrast.cols() + (3 * num_contrasts));
+    for (ssize_t i = 0; i != contrast.cols(); ++i) {
+      write_fixel_output (Path::join (output_fixel_directory, "beta" + str(i) + ".mif"), betas.row(i), output_header);
+      ++progress;
+    }
+    for (size_t i = 0; i != num_contrasts; ++i) {
+      write_fixel_output (Path::join (output_fixel_directory, "abs_effect" + postfix(i) + ".mif"), abs_effect_size.row(i), output_header); ++progress;
+      write_fixel_output (Path::join (output_fixel_directory, "std_effect" + postfix(i) + ".mif"), std_effect_size.row(i), output_header); ++progress;
+      write_fixel_output (Path::join (output_fixel_directory, "std_dev" + postfix(i) + ".mif"), stdev.row(i), output_header);
+    }
 
-    auto temp = Math::Stats::GLM::solve_betas (data, design);
-    for (size_t i = 0; i != size_t(contrast.cols()); ++i) {
-      write_fixel_output (Path::join (output_fixel_directory, "beta_" + str(i) + ".mif"), temp.row(i), output_header);
-      ++progress;
-    }
-    temp = Math::Stats::GLM::abs_effect_size (data, design, contrast);
-    ++progress;
-    for (size_t i = 0; i != num_contrasts; ++i) {
-      write_fixel_output (Path::join (output_fixel_directory, "abs_effect" + postfix(i) + ".mif"), temp.row(i), output_header);
-      ++progress;
-    }
-    temp = Math::Stats::GLM::std_effect_size (data, design, contrast);
-    ++progress;
-    for (size_t i = 0; i != num_contrasts; ++i) {
-      write_fixel_output (Path::join (output_fixel_directory, "std_effect" + postfix(i) + ".mif"), temp.row(i), output_header);
-      ++progress;
-    }
-    temp = Math::Stats::GLM::stdev (data, design);
-    ++progress;
-    for (size_t i = 0; i != num_contrasts; ++i) {
-      write_fixel_output (Path::join (output_fixel_directory, "std_dev" + postfix(i) + ".mif"), temp.row(i), output_header);
-      ++progress;
-    }
-  }
-
-  // Construct the class for performing the initial statistical tests
-  std::shared_ptr<GLMTestBase> glm_test;
-  if (extra_columns.size()) {
-    glm_test.reset (new GLMTTestVariable (extra_columns, data, design, contrast));
-  } else {
-    glm_test.reset (new GLMTTestFixed (data, design, contrast));
   }
 
   // Construct the class for performing fixel-based statistical enhancement
@@ -432,7 +534,7 @@ void run()
   // If performing non-stationarity adjustment we need to pre-compute the empirical CFE statistic
   matrix_type empirical_cfe_statistic;
   if (do_nonstationary_adjustment) {
-
+    empirical_cfe_statistic = vector_type::Zero (num_fixels);
     if (permutations_nonstationary.size()) {
       Stats::PermTest::PermutationStack permutations (permutations_nonstationary, "precomputing empirical statistic for non-stationarity adjustment");
       Stats::PermTest::precompute_empirical_stat (glm_test, cfe_integrator, permutations, empirical_cfe_statistic);

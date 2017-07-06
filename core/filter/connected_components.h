@@ -15,236 +15,195 @@
 #ifndef __filter_connected_h__
 #define __filter_connected_h__
 
-#include "memory.h"
+
 #include "image.h"
-#include "algo/loop.h"
+#include "memory.h"
+#include "types.h"
 
 #include "filter/base.h"
+#include "misc/voxel2vector.h"
 
 #include <stack>
 #include <iostream>
+
 
 namespace MR
 {
   namespace Filter
   {
 
-    class cluster { NOMEMALIGN
+
+
+    class Connector
+    { NOMEMALIGN
+
       public:
-        uint32_t label;
-        uint32_t size;
-        bool operator< (const cluster& j) const {
-          return size < j.size;
+
+        // A class that pre-computes and stores, for each voxel, a
+        //   list of voxels (represented as indices) that are adjacent
+        //
+        // If we were to re-implement dixel-wise connectivity, it would
+        //   be done using an alternative initialise() function for this
+        //   class, to define the volumes on the fourth axis that
+        //   correspond to neighbouring directions using a Directions::Set.
+        class Adjacency
+        {
+          public:
+            typedef Voxel2Vector::index_t index_t;
+
+            Adjacency() :
+                use_26_neighbours (false),
+                enabled_axes (3, true) { }
+
+            void toggle_axis (const size_t axis, const bool value) {
+              if (axis > enabled_axes.size())
+                enabled_axes.resize (axis+1, false);
+              enabled_axes[axis] = value;
+              data.clear();
+            }
+
+            void set_axes (const vector<bool>& i) {
+              enabled_axes = i;
+              data.clear();
+            }
+
+            void initialise (const Header&, const Voxel2Vector&);
+
+            const vector<index_t>& operator[] (const size_t index) const {
+              assert (size());
+              assert (index < size());
+              return data[index];
+            }
+
+            void set_26_adjacency (const bool i) {
+              use_26_neighbours = i;
+              data.clear();
+            }
+
+            size_t size() const { return data.size(); }
+
+          private:
+            bool use_26_neighbours;
+            vector<bool> enabled_axes;
+            vector<vector<index_t>> data;
+        } adjacency;
+
+
+
+        class Cluster
+        { NOMEMALIGN
+          public:
+            Cluster (const uint32_t l) :
+                label (l),
+                size (0) { }
+            uint32_t label;
+            uint32_t size;
+            bool operator< (const Cluster& j) const {
+              return size < j.size;
+            }
+        };
+        // Used for sorting clusters in order of size
+        static bool largest (const Cluster& i, const Cluster& j) {
+          return (i.size > j.size);
         }
+
+
+
+
+        Connector () { }
+
+        // Perform connected components on vectorized binary data
+        void run (vector<Cluster>&, vector<uint32_t>&) const;
+        template <class VectorType>
+        void run (vector<Cluster>&, vector<uint32_t>&,
+                  const VectorType&, const float) const;
+
+
+      private:
+
+        // Utility functions that perform the actual connected
+        //   components functionality
+        bool next_neighbour (uint32_t&, vector<uint32_t>&) const;
+        template <class VectorType>
+        bool next_neighbour (uint32_t&, vector<uint32_t>&,
+                             const VectorType&, const float) const;
+
+        void depth_first_search (const uint32_t, Cluster&, vector<uint32_t>&) const;
+        template <class VectorType>
+        void depth_first_search (const uint32_t, Cluster&, vector<uint32_t>&,
+                                 const VectorType&, const float) const;
+
+
     };
 
 
-    inline bool compare_clusters (const cluster& i, const cluster& j)
+
+    template <class VectorType>
+    void Connector::run (vector<Cluster>& clusters,
+                         vector<uint32_t>& labels,
+                         const VectorType& data,
+                         const float threshold) const
     {
-      return (i.size > j.size);
+      assert (adjacency.size());
+      labels.resize (adjacency.size(), 0);
+      uint32_t current_label = 0;
+      for (uint32_t i = 0; i < labels.size(); i++) {
+        // This node has not been already clustered and is above threshold
+        if (!labels[i] && data[i] > threshold) {
+          Cluster cluster (++current_label);
+          depth_first_search (i, cluster, labels, data, threshold);
+          clusters.push_back (cluster);
+        }
+      }
+      if (clusters.size() > std::numeric_limits<uint32_t>::max())
+        throw Exception ("The number of clusters is larger than can be labelled with an unsigned 32bit integer.");
     }
 
 
-    class Connector { NOMEMALIGN
 
-      public:
-        Connector (bool do_26_connectivity) :
-          do_26_connectivity (do_26_connectivity),
-          dim_to_ignore (4, false) {
-            dim_to_ignore[3] = true;
+    template <class VectorType>
+    bool Connector::next_neighbour (uint32_t& node,
+                                    vector<uint32_t>& labels,
+                                    const VectorType& data,
+                                    const float threshold) const
+    {
+      for (auto n : adjacency[node]) {
+        if (!labels[n] && data[n] > threshold) {
+          node = n;
+          return true;
         }
+      }
+      return false;
+    }
 
 
-        // Perform connected components on the mask.
-        const vector<vector<int> >& run (vector<cluster>& clusters,
-                                                   vector<uint32_t>& labels) const {
-          labels.resize (adjacent_indices.size(), 0);
-          uint32_t current_label = 1;
-          for (uint32_t i = 0; i < labels.size(); i++) {
-            // this node has not been already clustered
-            if (labels[i] == 0) {
-              cluster cluster;
-              cluster.label = current_label;
-              cluster.size = 0;
-              depth_first_search (i, cluster, labels);
-              clusters.push_back (cluster);
-              current_label++;
-            }
-          }
-          if (clusters.size() > std::numeric_limits<uint32_t>::max())
-            throw Exception ("The number of clusters is larger than can be labelled with an unsigned 32bit integer.");
-          return mask_indices;
+
+    template <class VectorType>
+    void Connector::depth_first_search (const uint32_t root,
+                                        Cluster& cluster,
+                                        vector<uint32_t>& labels,
+                                        const VectorType& data,
+                                        const float threshold) const
+    {
+      uint32_t node = root;
+      std::stack<uint32_t> stack;
+      while (true) {
+        labels[node] = cluster.label;
+        stack.push (node);
+        cluster.size++;
+        if (next_neighbour (node, labels, data, threshold)) {
+          continue;
+        } else {
+          do {
+            if (stack.top() == root)
+              return;
+            stack.pop();
+            node = stack.top();
+          } while (!next_neighbour (node, labels, data, threshold));
         }
+      }
+    }
 
-
-        // Perform connected components on data with the defined threshold. Assumes adjacency is the same as the mask.
-        template <class VectorType>
-        void run (vector<cluster>& clusters,
-                  vector<uint32_t>& labels,
-                  const VectorType& data,
-                  const float threshold) const {
-          labels.resize (adjacent_indices.size(), 0);
-          uint32_t current_label = 1;
-          for (uint32_t i = 0; i < labels.size(); i++) {
-            // this node has not been already clustered and is above threshold
-            if (labels[i] == 0 && data[i] > threshold) {
-              cluster cluster;
-              cluster.label = current_label;
-              cluster.size = 0;
-              depth_first_search (i, cluster, labels, data, threshold);
-              clusters.push_back (cluster);
-              current_label++;
-            }
-          }
-          if (clusters.size() > std::numeric_limits<uint32_t>::max())
-            throw Exception ("The number of clusters is larger than can be labelled with an unsigned 32bit integer.");
-        }
-
-
-        void set_dim_to_ignore (vector<bool>& ignore_dim) {
-          for (size_t d = 0; d < ignore_dim.size(); ++d) {
-            dim_to_ignore[d] = ignore_dim[d];
-          }
-        }
-
-
-        template <class MaskImageType>
-        const vector<vector<int> >& precompute_adjacency (MaskImageType& mask) {
-
-          auto index_image = Image<uint32_t>::scratch (mask);
-
-          // 1st pass, store mask image indices and their index in the array
-          for (auto l = Loop (mask) (mask, index_image); l; ++l) {
-            if (mask.value() >= 0.5) {
-              // For each voxel, store the index within mask_indices for 2nd pass
-              index_image.value() = mask_indices.size();
-              vector<int> index (mask.ndim());
-              for (size_t dim = 0; dim < mask.ndim(); dim++)
-                index[dim] = mask.index(dim);
-              mask_indices.push_back (index);
-            } else {
-              index_image.value() = 0;
-            }
-          }
-          // Here we pre-compute the offsets for our neighbours in 4D space
-          vector< vector<int> > neighbour_offsets;
-          vector<int> offset (4);
-          for (offset[0] = -1; offset[0] <= 1; offset[0]++) {
-            for (offset[1] = -1; offset[1] <= 1; offset[1]++) {
-              for (offset[2] = -1; offset[2] <= 1; offset[2]++) {
-                for (offset[3] = -1; offset[3] <= 1; offset[3]++) {
-                  if (!do_26_connectivity && ((abs(offset[0]) + abs(offset[1]) + abs(offset[2]) + abs(offset[3])) > 1))
-                    continue;
-                  if ((abs(offset[0]) && dim_to_ignore[0]) || (abs(offset[1]) && dim_to_ignore[1]) ||
-                      (abs(offset[2]) && dim_to_ignore[2]) || (abs(offset[3]) && dim_to_ignore[3]))
-                    continue;
-                  neighbour_offsets.push_back (offset);
-                }
-              }
-            }
-          }
-          // 2nd pass, define adjacency
-          MaskImageType mask_neigh (mask);
-          for (vector<vector<int> >::const_iterator it = mask_indices.begin(); it != mask_indices.end(); ++it) {
-            vector<uint32_t> neighbour_indices;
-            for (vector< vector<int> >::const_iterator offset = neighbour_offsets.begin(); offset != neighbour_offsets.end(); ++offset) {
-              for (size_t dim = 0; dim < mask.ndim(); dim++)
-                mask_neigh.index(dim) = (*it)[dim] + (*offset)[dim];
-              if (!is_out_of_bounds (mask_neigh)) {
-                if (mask_neigh.value() >= 0.5) {
-                  assign_pos_of (mask_neigh).to (index_image);
-                  neighbour_indices.push_back (index_image.value());
-                }
-              }
-            }
-            adjacent_indices.push_back (neighbour_indices);
-          }
-
-          return mask_indices;
-        }
-
-
-        bool next_neighbour (uint32_t& node, vector<uint32_t>& labels) const {
-          for (size_t n = 0; n < adjacent_indices[node].size(); n++) {
-            if (labels[adjacent_indices[node][n]] == 0) {
-              node = adjacent_indices[node][n];
-              return true;
-            }
-          }
-          return false;
-        }
-
-
-        template <class VectorType>
-        bool next_neighbour (uint32_t& node,
-                             vector<uint32_t>& labels,
-                             const VectorType& data,
-                             const float threshold) const {
-          for (size_t n = 0; n < adjacent_indices[node].size(); n++) {
-            if (labels[adjacent_indices[node][n]] == 0 && data[adjacent_indices[node][n]] > threshold) {
-              node = adjacent_indices[node][n];
-              return true;
-            }
-          }
-          return false;
-        }
-
-
-        // use a non-recursive depth first search to agglomerate adjacent voxels
-        void depth_first_search (uint32_t root,
-                                 cluster& cluster,
-                                 vector<uint32_t>& labels) const {
-          uint32_t node = root;
-          std::stack<uint32_t> stack;
-          while (true) {
-            labels[node] = cluster.label;
-            stack.push (node);
-            cluster.size++;
-            if (next_neighbour (node, labels)) {
-              continue;
-            } else {
-              do {
-                if (stack.top() == root)
-                  return;
-                stack.pop();
-                node = stack.top();
-              } while (!next_neighbour (node, labels));
-            }
-          }
-        }
-
-        // use a non-recursive depth first search to agglomerate adjacent voxels
-        template <class VectorType>
-        void depth_first_search (uint32_t root,
-                                 cluster& cluster,
-                                 vector<uint32_t>& labels,
-                                 const VectorType& data,
-                                 const float threshold) const {
-          uint32_t node = root;
-          std::stack<uint32_t> stack;
-          while (true) {
-            labels[node] = cluster.label;
-            stack.push (node);
-            cluster.size++;
-            if (next_neighbour (node, labels, data, threshold)) {
-              continue;
-            } else {
-              do {
-                if (stack.top() == root)
-                  return;
-                stack.pop();
-                node = stack.top();
-              } while (!next_neighbour (node, labels, data, threshold));
-            }
-          }
-        }
-
-
-        bool do_26_connectivity;
-        vector<bool> dim_to_ignore;
-        vector<vector<int> > mask_indices;
-        vector<vector<uint32_t> > adjacent_indices;
-    };
 
 
 
@@ -267,95 +226,104 @@ namespace MR
     class ConnectedComponents : public Base { MEMALIGN(ConnectedComponents)
       public:
 
-      template <class HeaderType>
-      ConnectedComponents (const HeaderType& in) :
-        Base (in),
-        largest_only (false),
-        do_26_connectivity (false)
-      {
-        if (this->ndim() > 4)
-          throw Exception ("Cannot run connected components analysis with more than 4 dimensions");
-        datatype_ = DataType::UInt32;
-        dim_to_ignore.resize (this->ndim(), false);
-        if (this->ndim() == 4) // Ignore 4D unless explicitly instructed to
-          dim_to_ignore[3] = true;
-      }
-
-      template <class HeaderType>
-      ConnectedComponents (const HeaderType& in, const std::string& message) :
-        ConnectedComponents (in)
-      {
-        set_message (message);
-      }
-
-
-      template <class InputVoxelType, class OutputVoxelType>
-      void operator() (InputVoxelType& in, OutputVoxelType& out)
-      {
-        Connector connector (do_26_connectivity);
-
-        if (dim_to_ignore.size())
-          connector.set_dim_to_ignore (dim_to_ignore);
-
-        connector.precompute_adjacency (in);
-
-        std::unique_ptr<ProgressBar> progress;
-        if (message.size()) {
-          progress.reset (new ProgressBar (message));
-          ++(*progress);
+        template <class HeaderType>
+        ConnectedComponents (const HeaderType& in) :
+            Base (in),
+            enabled_axes (ndim(), true),
+            largest_only (false),
+            do_26_connectivity (false)
+        {
+          if (this->ndim() > 4)
+            throw Exception ("Cannot run connected components analysis with more than 4 dimensions");
+          datatype_ = DataType::UInt32;
+          // By default, ignore all axes above the three spatial dimensions
+          for (size_t axis = 3; axis < ndim(); ++axis)
+            enabled_axes[axis] = false;
         }
 
-        vector<cluster> clusters;
-        vector<uint32_t> labels;
-        vector<vector<int> > mask_indices = connector.run (clusters, labels);
-
-        if (progress)
-          ++(*progress);
-        std::sort (clusters.begin(), clusters.end(), compare_clusters);
-        if (progress)
-          ++(*progress);
-
-        vector<int> label_lookup (clusters.size(), 0);
-        for (uint32_t c = 0; c < clusters.size(); c++)
-          label_lookup[clusters[c].label - 1] = c + 1;
-
-        for (auto l = Loop (out) (out); l; ++l)
-          out.value() = 0;
-
-        for (uint32_t i = 0; i < mask_indices.size(); i++)
+        template <class HeaderType>
+        ConnectedComponents (const HeaderType& in, const std::string& message) :
+            ConnectedComponents (in)
         {
-          assign_pos_of (mask_indices[i]).to (out);
-          if (largest_only) {
-            if (label_lookup[labels[i] - 1] == 1)
-              out.value() = 1;
-          } else {
-            out.value() = label_lookup[labels[i] - 1];
+          set_message (message);
+        }
+
+
+        template <class InputVoxelType, class OutputVoxelType>
+        void operator() (InputVoxelType& in, OutputVoxelType& out)
+        {
+          Voxel2Vector v2v (in, *this);
+
+          Connector connector;
+          connector.adjacency.set_axes (enabled_axes);
+          connector.adjacency.set_26_adjacency (do_26_connectivity);
+          connector.adjacency.initialise (in, v2v);
+
+          std::unique_ptr<ProgressBar> progress;
+          if (message.size()) {
+            progress.reset (new ProgressBar (message));
+            ++(*progress);
+          }
+
+          vector<Connector::Cluster> clusters;
+          vector<uint32_t> labels;
+          connector.run (clusters, labels);
+          if (progress) ++(*progress);
+
+          // Sort clusters in order from largest to smallest
+          std::sort (clusters.begin(), clusters.end(), Connector::largest);
+          if (progress) ++(*progress);
+
+          // Generate a lookup table to map input cluster index to
+          //   output cluster index following cluster-size sorting
+          vector<uint32_t> index_lookup (clusters.size() + 1, 0);
+          for (uint32_t c = 0; c < clusters.size(); c++)
+            index_lookup[clusters[c].label] = c + 1;
+
+          for (auto l = Loop (out) (out); l; ++l)
+            out.value() = 0;
+
+          for (uint32_t i = 0; i < v2v.size(); i++) {
+            assign_pos_of (v2v[i]).to (out);
+            if (largest_only) {
+              if (index_lookup[labels[i]] == 1)
+                out.value() = 1;
+            } else {
+              out.value() = index_lookup[labels[i]];
+            }
           }
         }
-      }
 
 
-      void set_ignore_dim (size_t dim, bool ignore)
-      {
-        assert (dim < this->ndim());
-        dim_to_ignore[dim] = ignore;
-      }
+
+        void set_axes (const vector<int>& i)
+        {
+          const size_t max_axis = *std::max_element (i.begin(), i.end());
+          if (max_axis >= ndim())
+            throw Exception ("Requested axis for connected component filter (" + str(max_axis) + " is beyond the dimensionality of the image (" + str(ndim()) + "D)");
+          enabled_axes.assign (std::max (max_axis+1, size_t(ndim())), false);
+          for (const auto& axis : i) {
+            if (axis < 0)
+              throw Exception ("Cannot specify negative axis index for connected-component filter");
+            enabled_axes[axis] = true;
+          }
+        }
 
 
-      void set_largest_only (bool value)
-      {
-        largest_only = value;
-      }
+        void set_largest_only (bool value)
+        {
+          largest_only = value;
+        }
 
 
-      void set_26_connectivity (bool value)
-      {
-        do_26_connectivity = value;
-      }
+        void set_26_connectivity (bool value)
+        {
+          do_26_connectivity = value;
+        }
 
 
       protected:
-        vector<bool> dim_to_ignore;
+        vector<bool> enabled_axes;
         bool largest_only;
         bool do_26_connectivity;
     };
