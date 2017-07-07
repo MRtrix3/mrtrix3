@@ -6,7 +6,7 @@ mtbin
 Synopsis
 --------
 
-Please use the new mtlognorm command instead.
+Multi-Tissue Bias field correction and Intensity Normalisation (WARNING: deprecated).
 
 Usage
 --------
@@ -15,27 +15,27 @@ Usage
 
     mtbin [ options ]  input output [ input output ... ]
 
--  *input output*: 
+-  *input output*: list of all input and output tissue compartment files. See example usage in the description. Note that any number of tissues can be normalised
 
 Description
 -----------
 
-WARNING: there were some major issues with this method.  Please start using the new mtlognorm command instead.
+WARNING: this command is deprecated and may produce inappropriate results in several cases. Please use the new mtnormalise.
 
 Options
 -------
 
--  **-mask image** 
+-  **-mask image** define the mask to compute the normalisation within. This option is mandatory.
 
--  **-value number** 
+-  **-value number** specify the value to which the summed tissue compartments will be normalised to (Default: sqrt(1/(4*pi)) = 0.282094)
 
--  **-bias image** 
+-  **-bias image** output the estimated bias field
 
--  **-independent** 
+-  **-independent** intensity normalise each tissue type independently
 
--  **-maxiter number** 
+-  **-maxiter number** set the maximum number of iterations. Default(100). It will stop before the max iterations if convergence is detected
 
--  **-check image** 
+-  **-check image** check the final mask used to compute the bias field. This mask excludes outlier regions ignored by the bias field fitting procedure. However, these regions are still corrected for bias fields based on the other image data.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -60,7 +60,7 @@ Standard options
 
 
 
-**Author:** 
+**Author:** David Raffelt (david.raffelt@florey.edu.au), Rami Tabbara (rami.tabbara@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)
 
 **Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
 
