@@ -55,6 +55,13 @@ void usage ()
 
   SYNOPSIS = "Fixel-based analysis using connectivity-based fixel enhancement and non-parametric permutation testing";
 
+  DESCRIPTION
+  + "Note that if the -mask option is used, the output fixel directory will still contain the same set of fixels as that "
+    "present in the input fixel template, in order to retain fixel correspondence. However a consequence of this is that "
+    "all fixels in the template will be initialy visible when the output fixel directory is loaded in mrview. Those fixels "
+    "outside the processing mask will immediately disappear from view as soon as any data-file-based fixel colouring or "
+    "thresholding is applied.";
+
   REFERENCES
   + "Raffelt, D.; Smith, RE.; Ridgway, GR.; Tournier, JD.; Vaughan, DN.; Rose, S.; Henderson, R.; Connelly, A." // Internal
     "Connectivity-based fixel enhancement: Whole-brain statistical analysis of diffusion MRI measures in the presence of crossing fibres. \n"

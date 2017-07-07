@@ -22,6 +22,11 @@ Usage
 -  *tracks*: the tracks used to determine fixel-fixel connectivity
 -  *out_fixel_directory*: the output directory where results will be saved. Will be created if it does not exist
 
+Description
+-----------
+
+Note that if the -mask option is used, the output fixel directory will still contain the same set of fixels as that present in the input fixel template, in order to retain fixel correspondence. However a consequence of this is that all fixels in the template will be initialy visible when the output fixel directory is loaded in mrview. Those fixels outside the processing mask will immediately disappear from view as soon as any data-file-based fixel colouring or thresholding is applied.
+
 Options
 -------
 
