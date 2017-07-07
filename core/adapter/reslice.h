@@ -15,8 +15,11 @@
 #ifndef __adapter_reslice_h__
 #define __adapter_reslice_h__
 
+#include <type_traits>
+
 #include "image.h"
 #include "transform.h"
+#include "types.h"
 #include "interp/base.h"
 
 namespace MR
@@ -147,7 +150,7 @@ namespace MR
           using namespace Eigen;
           if (oversampling) {
             Vector3 d (x[0]+from[0], x[1]+from[1], x[2]+from[2]);
-            value_type result = 0.0;
+            default_type result (0.0);
             Vector3 s;
             for (int z = 0; z < OS[2]; ++z) {
               s[2] = d[2] + z*inc[2];
@@ -160,7 +163,7 @@ namespace MR
                 }
               }
             }
-            result *= norm;
+            normalise (result);
             return result;
           }
           interp.voxel (direct_transform * Vector3 (x[0], x[1], x[2]));
@@ -183,9 +186,36 @@ namespace MR
         default_type from[3], inc[3];
         default_type norm;
         const transform_type transform_, direct_transform;
+
+        void normalise (default_type&) const;
+
     };
 
     //! @}
+
+    // Partial specialisation for boolean value_type in order to avoid compiler
+    //   warning regarding use of multiplication when assigning to a boolean
+    template <template <class ImageType> class Interpolator, class ImageType>
+    typename std::enable_if<std::is_same<typename Reslice<Interpolator, ImageType>::value_type, bool>::value, void>::type
+    Reslice<Interpolator, ImageType>::normalise (default_type& result) const
+    {
+      result = ((result*norm) >= 0.5) ? 1.0 : 0.0;
+    }
+
+    // Partial specialisation to invoke round-to-nearest when taking an average of integers
+    template <template <class ImageType> class Interpolator, class ImageType>
+    typename std::enable_if<!std::is_same<typename Reslice<Interpolator, ImageType>::value_type, bool>::value && std::is_integral<typename Reslice<Interpolator, ImageType>::value_type>::value, void>::type
+    Reslice<Interpolator, ImageType>::normalise (default_type& result) const
+    {
+      result = std::round (result*norm);
+    }
+
+    template <template <class ImageType> class Interpolator, class ImageType>
+    typename std::enable_if<std::is_floating_point<typename Reslice<Interpolator, ImageType>::value_type>::value, void>::type
+    Reslice<Interpolator, ImageType>::normalise (default_type& result) const
+    {
+      result *= norm;
+    }
 
   }
 }
