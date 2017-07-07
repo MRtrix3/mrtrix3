@@ -33,19 +33,10 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au), Rami Tabbara (rami.tabbara@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)";
 
-  SYNOPSIS = "Multi-Tissue Bias field correction and Intensity Normalisation (MTBIN)";
+  SYNOPSIS = "Multi-Tissue Bias field correction and Intensity Normalisation (WARNING: deprecated).";
 
   DESCRIPTION
-   + "This command inputs N number of tissue components "
-     "(e.g. from multi-tissue CSD), and outputs N corrected tissue components. Intensity normalisation is performed by either "
-     "determining a common global normalisation factor for all tissue types (default) or by normalising each tissue type independently "
-     "with a single tissue-specific global scale factor."
-     
-   + "The -mask option is mandatory, and is optimally provided with a brain mask, such as the one obtained from dwi2mask earlier in the processing pipeline."
-
-   + "Example usage: mtbin wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif."
-
-   + "The estimated multiplicative bias field is guaranteed to have a mean of 1 over all voxels within the mask.";
+   + "WARNING: this command is deprecated and may produce inappropriate results in several cases. Please use the new mtnormalise.";
 
   ARGUMENTS
     + Argument ("input output", "list of all input and output tissue compartment files. See example usage in the description. "
@@ -133,6 +124,9 @@ FORCE_INLINE void refine_mask (Image<float>& summed,
 
 void run ()
 {
+
+  WARN ("This command is deprecated and may produce inappropriate results in several cases. Please use the new mtnormalise.");
+
   if (argument.size() % 2)
     throw Exception ("The number of input arguments must be even. There must be an output file provided for every input tissue image");
 
