@@ -45,7 +45,7 @@ void usage ()
      "accounted for and reoptimised as the intensity inhomogeneity estimation becomes "
      "more accurate."
 
-   + "Example usage: mtlognorm wmfod.mif wmfod_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif.";
+   + "Example usage: mtnormalise wmfod.mif wmfod_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif.";
 
   ARGUMENTS
     + Argument ("input output", "list of all input and output tissue compartment files. See example usage in the description.").type_image_in().allow_multiple();

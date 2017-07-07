@@ -78,7 +78,7 @@ List of MRtrix3 commands
     commands/mrtransform
     commands/mrview
     commands/mtbin
-    commands/mtlognorm
+    commands/mtnormalise
     commands/peaks2amp
     commands/sh2amp
     commands/sh2peaks
@@ -188,7 +188,7 @@ List of MRtrix3 commands
     :ref:`mrtransform`, "Apply spatial transformations to an image"
     :ref:`mrview`, "The MRtrix image viewer."
     :ref:`mtbin`, "Multi-Tissue Bias field correction and Intensity Normalisation (WARNING: deprecated)."
-    :ref:`mtlognorm`, "Multi-tissue informed log-domain intensity normalisation"
+    :ref:`mtnormalise`, "Multi-tissue informed log-domain intensity normalisation"
     :ref:`peaks2amp`, "Convert peak directions image to amplitudes"
     :ref:`sh2amp`, "Evaluate the amplitude of an image of spherical harmonic functions along specified directions"
     :ref:`sh2peaks`, "Extract the peaks of a spherical harmonic function at each voxel, by commencing a Newton search along a set of specified directions"

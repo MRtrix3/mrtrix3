@@ -1,6 +1,6 @@
-.. _mtlognorm:
+.. _mtnormalise:
 
-mtlognorm
+mtnormalise
 ===================
 
 Synopsis
@@ -13,7 +13,7 @@ Usage
 
 ::
 
-    mtlognorm [ options ]  input output [ input output ... ]
+    mtnormalise [ options ]  input output [ input output ... ]
 
 -  *input output*: list of all input and output tissue compartment files. See example usage in the description.
 
@@ -24,7 +24,7 @@ This command inputs any number of tissue components (e.g. from multi-tissue CSD)
 
 The -mask option is mandatory and is optimally provided with a brain mask (such as the one obtained from dwi2mask earlier in the processing pipeline). Outlier areas with exceptionally low or high combined tissue contributions are accounted for and reoptimised as the intensity inhomogeneity estimation becomes more accurate.
 
-Example usage: mtlognorm wmfod.mif wmfod_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif.
+Example usage: mtnormalise wmfod.mif wmfod_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif.
 
 Options
 -------

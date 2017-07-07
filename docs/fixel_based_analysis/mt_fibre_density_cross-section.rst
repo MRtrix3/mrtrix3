@@ -34,7 +34,7 @@ Pre-processsing steps
 
 3. Bias field correction
 ^^^^^^^^^^^^^^^^^^^^^^^^
-Bias field correction is important to deal with spatial intensity inhomogeneities. Even though this FBA pipeline will account for these as well (in the later :ref:`mtlognorm` step, which is furthermore crucial to correct for global intensity differences between subjects), performing bias field correction at this stage will allow for more accurate estimation of the tissue response functions as well as the individual subject brain masks.
+Bias field correction is important to deal with spatial intensity inhomogeneities. Even though this FBA pipeline will account for these as well (in the later :ref:`mtnormalise` step, which is furthermore crucial to correct for global intensity differences between subjects), performing bias field correction at this stage will allow for more accurate estimation of the tissue response functions as well as the individual subject brain masks.
 
 This can be done in a single step using the :ref:`dwibiascorrect` script in MRtrix. The script uses bias field correction algorthims available in `ANTS <http://stnava.github.io/ANTs/>`_ or `FSL <http://fsl.fmrib.ox.ac.uk/>`_. In our experience the `N4 algorithm <http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3071855/>`_ in ANTS gives far superior results. To install N4, install the `ANTS <http://stnava.github.io/ANTs/>`_ package, then perform bias field correction on DW images using::
 
@@ -78,9 +78,9 @@ When performing analysis of AFD, Constrained Spherical Deconvolution (CSD) shoul
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 This step performs :ref:`global intensity normalisation <global-intensity-normalisation>` in the log-domain by scaling all tissue types with a spatially smoothly varying normalisation field::
 
-    foreach * : mtlognorm IN/wmfod.mif IN/wmfod_norm.mif IN/gm.mif IN/gm_norm.mif IN/csf.mif IN/csf_norm.mif -mask IN/dwi_mask_upsampled.mif
+    foreach * : mtnormalise IN/wmfod.mif IN/wmfod_norm.mif IN/gm.mif IN/gm_norm.mif IN/csf.mif IN/csf_norm.mif -mask IN/dwi_mask_upsampled.mif
 
-If CSD was performed with the same single set of (average) WM, GM and CSF response functions for all subjects, then the resulting output of :ref:`mtlognorm` should make the amplitudes comparable between those subjects as well.
+If CSD was performed with the same single set of (average) WM, GM and CSF response functions for all subjects, then the resulting output of :ref:`mtnormalise` should make the amplitudes comparable between those subjects as well.
 
 Note that this step is crucial in the FBA pipeline, even if bias field correction was applied during the preprocessing stage, as the latter does not correct for global intensity differences between subjects.
 
