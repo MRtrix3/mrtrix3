@@ -252,12 +252,14 @@ void run ()
     // Shouldn't be required...?
     num_voxels = summed_log_values.size();
 
-    const auto lower_quartile = summed_log_values.begin() + std::round ((float)num_voxels * 0.25f);
-    std::nth_element (summed_log_values.begin(), lower_quartile, summed_log_values.end());
-    const auto upper_quartile = summed_log_values.begin() + std::round ((float)num_voxels * 0.75f);
-    std::nth_element (lower_quartile, upper_quartile, summed_log_values.end());
-    const float lower_outlier_threshold = *lower_quartile - outlier_range * (*upper_quartile - *lower_quartile);
-    const float upper_outlier_threshold = *upper_quartile + outlier_range * (*upper_quartile - *lower_quartile);
+    const auto lower_quartile_it = summed_log_values.begin() + std::round ((float)num_voxels * 0.25f);
+    std::nth_element (summed_log_values.begin(), lower_quartile_it, summed_log_values.end());
+    const float lower_quartile = *lower_quartile_it;
+    const auto upper_quartile_it = summed_log_values.begin() + std::round ((float)num_voxels * 0.75f);
+    std::nth_element (lower_quartile_it, upper_quartile_it, summed_log_values.end());
+    const float upper_quartile = *upper_quartile_it;
+    const float lower_outlier_threshold = lower_quartile - outlier_range * (upper_quartile - lower_quartile);
+    const float upper_outlier_threshold = upper_quartile + outlier_range * (upper_quartile - lower_quartile);
 
     for (auto i = Loop (0, 3) (mask, summed_log); i; ++i) {
       if (mask.value()) {
