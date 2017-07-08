@@ -27,6 +27,37 @@ namespace MR
   namespace Adapter
   {
 
+
+
+    namespace
+    {
+      // Partial specialisation for boolean value_type in order to avoid compiler
+      //   warning regarding use of multiplication when assigning to a boolean
+      template <typename value_type>
+      typename std::enable_if<std::is_same<value_type, bool>::value, value_type>::type
+      inline normalise (const default_type sum, const default_type norm)
+      {
+        return ((sum*norm) >= 0.5) ? true : false;
+      }
+
+      // Partial specialisation to invoke round-to-nearest when taking an average of integers
+      template <typename value_type>
+      typename std::enable_if<!std::is_same<value_type, bool>::value && std::is_integral<value_type>::value, value_type>::type
+      inline normalise (const default_type sum, const default_type norm)
+      {
+        return value_type(std::round (sum*norm));
+      }
+
+      template <typename value_type>
+      typename std::enable_if<std::is_floating_point<value_type>::value, value_type>::type
+      inline normalise (const default_type sum, const default_type norm)
+      {
+        return (sum * norm);
+      }
+    }
+
+
+
     extern const transform_type NoTransform;
     extern const vector<int> AutoOverSample;
 
@@ -150,7 +181,7 @@ namespace MR
           using namespace Eigen;
           if (oversampling) {
             Vector3 d (x[0]+from[0], x[1]+from[1], x[2]+from[2]);
-            default_type result (0.0);
+            default_type sum (0.0);
             Vector3 s;
             for (int z = 0; z < OS[2]; ++z) {
               s[2] = d[2] + z*inc[2];
@@ -159,12 +190,11 @@ namespace MR
                 for (int x = 0; x < OS[0]; ++x) {
                   s[0] = d[0] + x*inc[0];
                   if (interp.voxel (direct_transform * s))
-                    result += interp.value();
+                    sum += interp.value();
                 }
               }
             }
-            normalise (result);
-            return result;
+            return normalise<value_type> (sum, norm);
           }
           interp.voxel (direct_transform * Vector3 (x[0], x[1], x[2]));
           return interp.value();
@@ -187,35 +217,9 @@ namespace MR
         default_type norm;
         const transform_type transform_, direct_transform;
 
-        void normalise (default_type&) const;
-
     };
 
     //! @}
-
-    // Partial specialisation for boolean value_type in order to avoid compiler
-    //   warning regarding use of multiplication when assigning to a boolean
-    template <template <class ImageType> class Interpolator, class ImageType>
-    typename std::enable_if<std::is_same<typename Reslice<Interpolator, ImageType>::value_type, bool>::value, void>::type
-    Reslice<Interpolator, ImageType>::normalise (default_type& result) const
-    {
-      result = ((result*norm) >= 0.5) ? 1.0 : 0.0;
-    }
-
-    // Partial specialisation to invoke round-to-nearest when taking an average of integers
-    template <template <class ImageType> class Interpolator, class ImageType>
-    typename std::enable_if<!std::is_same<typename Reslice<Interpolator, ImageType>::value_type, bool>::value && std::is_integral<typename Reslice<Interpolator, ImageType>::value_type>::value, void>::type
-    Reslice<Interpolator, ImageType>::normalise (default_type& result) const
-    {
-      result = std::round (result*norm);
-    }
-
-    template <template <class ImageType> class Interpolator, class ImageType>
-    typename std::enable_if<std::is_floating_point<typename Reslice<Interpolator, ImageType>::value_type>::value, void>::type
-    Reslice<Interpolator, ImageType>::normalise (default_type& result) const
-    {
-      result *= norm;
-    }
 
   }
 }

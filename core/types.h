@@ -277,12 +277,10 @@ namespace std
 {
   // these are not defined in the standard, but are needed
   // for use in generic templates
-  // Note: Get defined in std_abs.h on GCC 7.1, so need to skip
-#ifndef _GLIBCXX_BITS_STD_ABS_H
-  inline uint8_t abs (uint8_t x) { return x; }
-  inline uint16_t abs (uint16_t x) { return x; }
-  inline uint32_t abs (uint32_t x) { return x; }
-#endif
+  FORCE_INLINE uint8_t abs (uint8_t x) { return x; }
+  FORCE_INLINE uint16_t abs (uint16_t x) { return x; }
+  FORCE_INLINE uint32_t abs (uint32_t x) { return x; }
+  FORCE_INLINE uint64_t abs (uint64_t x) { return x; }
 
 
   template <class T> inline ostream& operator<< (ostream& stream, const vector<T>& V)
