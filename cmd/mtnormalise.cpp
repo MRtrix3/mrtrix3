@@ -213,7 +213,6 @@ void run ()
 template <int poly_order>
 void run_primitive () {
 
-  ProgressBar progress ("performing log-domain intensity normalisation");
   PolyBasisFunction<poly_order> basis_function;
 
   using ImageType = Image<float>;
@@ -223,9 +222,11 @@ void run_primitive () {
   vector<Header> output_headers;
   vector<std::string> output_filenames;
 
+  ProgressBar input_progress ("loading input images");
+
   // Open input images and prepare output image headers
   for (size_t i = 0; i < argument.size(); i += 2) {
-    progress++;
+    input_progress++;
 
     auto image = ImageType::open (argument[i]);
 
@@ -265,9 +266,10 @@ void run_primitive () {
   {
     auto summed = ImageType::scratch (header_3D, "Summed tissue volumes");
     for (size_t j = 0; j < input_images.size(); ++j) {
+      input_progress++;
+
       for (auto i = Loop (0, 3) (summed, input_images[j]); i; ++i)
         summed.value() += input_images[j].value();
-      progress++;
     }
     refine_mask (summed, orig_mask, initial_mask);
   }
@@ -282,6 +284,8 @@ void run_primitive () {
   auto combined_tissue = ImageType::scratch (h_combined_tissue, "Tissue components");
 
   for (size_t i = 0; i < n_tissue_types; ++i) {
+    input_progress++;
+
     combined_tissue.index (3) = i;
     for (auto l = Loop (0, 3) (combined_tissue, input_images[i]); l; ++l) {
       combined_tissue.value () = std::max<float>(input_images[i].value (), 0.f);
@@ -366,6 +370,9 @@ void run_primitive () {
       display (mask);
   };
 
+  input_progress.done ();
+  ProgressBar progress ("performing log-domain intensity normalisation");
+
   // Perform an initial outlier rejection prior to the first iteration
   outlier_rejection (3.f);
 
@@ -374,6 +381,7 @@ void run_primitive () {
   while (iter <= max_iter) {
 
     DEBUG ("iteration: " + str(iter));
+    progress++;
 
     // Iteratively compute tissue balance factors
     // with outlier rejection
@@ -383,6 +391,7 @@ void run_primitive () {
     while (!balance_converged && norm_iter <= max_inner_iter) {
 
       DEBUG ("norm iteration: " + str(norm_iter));
+      progress++;
 
       if (n_tissue_types > 1) {
 
@@ -467,25 +476,24 @@ void run_primitive () {
     // Generate normalisation field in the image domain
     for (auto i = Loop (0, 3) (norm_field_log, norm_field_image); i; ++i)
       norm_field_image.value () = std::exp(norm_field_log.value());
-
-    progress++;
     iter++;
   }
+
+  progress.done();
+
+  ProgressBar output_progress("writing output images");
 
   opt = get_options ("check_norm");
   if (opt.size()) {
     auto norm_field_output = ImageType::create (opt[0][0], header_3D);
     threaded_copy (norm_field_image, norm_field_output);
   }
-  progress++;
 
   opt = get_options ("check_mask");
   if (opt.size()) {
     auto mask_output = ImageType::create (opt[0][0], mask);
     threaded_copy (mask, mask_output);
   }
-  progress++;
-
 
   // Compute log-norm scale parameter (geometric mean of normalisation field in outlier-free mask).
   float lognorm_scale (0.f);
@@ -500,6 +508,8 @@ void run_primitive () {
 
 
   for (size_t j = 0; j < output_filenames.size(); ++j) {
+    output_progress++;
+
     output_headers[j].keyval()["lognorm_scale"] = str(lognorm_scale);
     auto output_image = ImageType::create (output_filenames[j], output_headers[j]);
     const size_t n_vols = input_images[j].size(3);
