@@ -77,7 +77,7 @@ void usage ()
 
 
 template <int poly_order>
-struct PolyBasisFunction {
+struct PolyBasisFunction { MEMALIGN (PolyBasisFunction)
 
   const int n_basis_vecs = 20;
 
@@ -112,7 +112,7 @@ struct PolyBasisFunction {
 
 
 template <>
-struct PolyBasisFunction<0> {
+struct PolyBasisFunction<0> { MEMALIGN (PolyBasisFunction<0>)
   const int n_basis_vecs = 1;
 
   PolyBasisFunction() {}
@@ -125,7 +125,7 @@ struct PolyBasisFunction<0> {
 
 
 template <>
-struct PolyBasisFunction<1> {
+struct PolyBasisFunction<1> { MEMALIGN (PolyBasisFunction<1>)
   const int n_basis_vecs = 4;
 
   FORCE_INLINE Eigen::MatrixXd operator () (const Eigen::Vector3& pos) {
@@ -143,7 +143,7 @@ struct PolyBasisFunction<1> {
 
 
 template <>
-struct PolyBasisFunction<2> {
+struct PolyBasisFunction<2> { MEMALIGN (PolyBasisFunction<2>)
   const int n_basis_vecs = 10;
 
   FORCE_INLINE Eigen::MatrixXd operator () (const Eigen::Vector3& pos) {
