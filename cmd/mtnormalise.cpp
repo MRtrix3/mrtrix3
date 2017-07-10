@@ -26,6 +26,9 @@ using namespace App;
 #define DEFAULT_NORM_VALUE 0.28209479177
 #define DEFAULT_MAIN_ITER_VALUE 15
 #define DEFAULT_INNER_MAXITER_VALUE 7
+#define DEFAULT_POLY_ORDER 3
+
+const char* poly_order_choices[] = { "0", "1", "2", "3", nullptr };
 
 void usage ()
 {
@@ -66,39 +69,102 @@ void usage ()
 
     + Option ("value", "specify the reference (positive) value to which the summed tissue compartments will be normalised. "
                        "(default: " + str(DEFAULT_NORM_VALUE, 6) + ", SH DC term for unit angular integral)")
-    + Argument ("number").type_float (std::numeric_limits<default_type>::min());
+    + Argument ("number").type_float (std::numeric_limits<default_type>::min())
+
+    + Option ("poly_order", "the order of the polynomial function used to fit the normalisation field. (default: " + str(DEFAULT_POLY_ORDER) + ")")
+    + Argument ("order").type_choice (poly_order_choices);
 }
 
-constexpr int n_basis_vecs = 20;
+
+template <int poly_order>
+struct PolyBasisFunction {
+
+  const int n_basis_vecs = 20;
+
+  FORCE_INLINE Eigen::MatrixXd operator () (const Eigen::Vector3& pos) {
+    double x = pos[0];
+    double y = pos[1];
+    double z = pos[2];
+    Eigen::MatrixXd basis(n_basis_vecs, 1);
+    basis(0) = 1.0;
+    basis(1) = x;
+    basis(2) = y;
+    basis(3) = z;
+    basis(4) = x * x;
+    basis(5) = y * y;
+    basis(6) = z * z;
+    basis(7) = x * y;
+    basis(8) = x * z;
+    basis(9) = y * z;
+    basis(10) = x * x * x;
+    basis(11) = y * y * y;
+    basis(12) = z * z * z;
+    basis(13) = x * x * y;
+    basis(14) = x * x * z;
+    basis(15) = y * y * x;
+    basis(16) = y * y * z;
+    basis(17) = z * z * x;
+    basis(18) = z * z * y;
+    basis(19) = x * y * z;
+    return basis;
+  }
+};
 
 
-FORCE_INLINE Eigen::MatrixXd basis_function (const Eigen::Vector3 pos) {
-  double x = pos[0];
-  double y = pos[1];
-  double z = pos[2];
-  Eigen::MatrixXd basis(n_basis_vecs, 1);
-  basis(0) = 1.0;
-  basis(1) = x;
-  basis(2) = y;
-  basis(3) = z;
-  basis(4) = x * x;
-  basis(5) = y * y;
-  basis(6) = z * z;
-  basis(7) = x * y;
-  basis(8) = x * z;
-  basis(9) = y * z;
-  basis(10) = x * x * x;
-  basis(11) = y * y * y;
-  basis(12) = z * z * z;
-  basis(13) = x * x * y;
-  basis(14) = x * x * z;
-  basis(15) = y * y * x;
-  basis(16) = y * y * z;
-  basis(17) = z * z * x;
-  basis(18) = z * z * y;
-  basis(19) = x * y * z;
-  return basis;
-}
+template <>
+struct PolyBasisFunction<0> {
+  const int n_basis_vecs = 1;
+
+  PolyBasisFunction() {}
+  FORCE_INLINE Eigen::MatrixXd operator () (const Eigen::Vector3&) {
+    Eigen::MatrixXd basis(n_basis_vecs, 1);
+    basis(0) = 1.0;
+    return basis;
+  }
+};
+
+
+template <>
+struct PolyBasisFunction<1> {
+  const int n_basis_vecs = 4;
+
+  FORCE_INLINE Eigen::MatrixXd operator () (const Eigen::Vector3& pos) {
+    double x = pos[0];
+    double y = pos[1];
+    double z = pos[2];
+    Eigen::MatrixXd basis(n_basis_vecs, 1);
+    basis(0) = 1.0;
+    basis(1) = x;
+    basis(2) = y;
+    basis(3) = z;
+    return basis;
+  }
+};
+
+
+template <>
+struct PolyBasisFunction<2> {
+  const int n_basis_vecs = 10;
+
+  FORCE_INLINE Eigen::MatrixXd operator () (const Eigen::Vector3& pos) {
+    double x = pos[0];
+    double y = pos[1];
+    double z = pos[2];
+    Eigen::MatrixXd basis(n_basis_vecs, 1);
+    basis(0) = 1.0;
+    basis(1) = x;
+    basis(2) = y;
+    basis(3) = z;
+    basis(4) = x * x;
+    basis(5) = y * y;
+    basis(6) = z * z;
+    basis(7) = x * y;
+    basis(8) = x * z;
+    basis(9) = y * z;
+    return basis;
+  }
+};
+
 
 // Removes non-physical voxels from the mask
 FORCE_INLINE void refine_mask (Image<float>& summed,
@@ -114,12 +180,41 @@ FORCE_INLINE void refine_mask (Image<float>& summed,
 }
 
 
+template <int poly_order> void run_primitive ();
+
 void run ()
 {
   if (argument.size() % 2)
     throw Exception ("The number of arguments must be even, provided as pairs of each input and its corresponding output file.");
 
+  // Get poly-order of basis function
+  auto opt = get_options ("poly_order");
+  if (opt.size ()) {
+    const int order = int(opt[0][0]);
+    switch (order) {
+      case 0:
+        run_primitive<0> ();
+        break;
+      case 1:
+        run_primitive<1> ();
+        break;
+      case 2:
+        run_primitive<2> ();
+        break;
+      default:
+        run_primitive<DEFAULT_POLY_ORDER> ();
+        break;
+    }
+  } else
+      run_primitive<DEFAULT_POLY_ORDER> ();
+}
+
+
+template <int poly_order>
+void run_primitive () {
+
   ProgressBar progress ("performing log-domain intensity normalisation");
+  PolyBasisFunction<poly_order> basis_function;
 
   using ImageType = Image<float>;
   using MaskType = Image<bool>;
@@ -127,7 +222,6 @@ void run ()
   vector<Adapter::Replicate<ImageType>> input_images;
   vector<Header> output_headers;
   vector<std::string> output_filenames;
-
 
   // Open input images and prepare output image headers
   for (size_t i = 0; i < argument.size(); i += 2) {
@@ -157,7 +251,6 @@ void run ()
   }
 
   const size_t n_tissue_types = input_images.size();
-
 
   // Load the mask and refine the initial mask to exclude non-positive summed tissue components
   Header header_3D (input_images[0]);
@@ -249,7 +342,6 @@ void run ()
         summed_log_values.push_back (summed_log.value());
     }
 
-    // Shouldn't be required...?
     num_voxels = summed_log_values.size();
 
     const auto lower_quartile_it = summed_log_values.begin() + std::round ((float)num_voxels * 0.25f);
@@ -345,7 +437,7 @@ void run ()
 
     // Solve for normalisation field weights in the log domain
     Transform transform (mask);
-    Eigen::MatrixXd norm_field_basis (num_voxels, n_basis_vecs);
+    Eigen::MatrixXd norm_field_basis (num_voxels, basis_function.n_basis_vecs);
     Eigen::VectorXd y (num_voxels);
     uint32_t index = 0;
     for (auto i = Loop (0, 3) (mask, combined_tissue); i; ++i) {
