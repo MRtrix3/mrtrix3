@@ -31,15 +31,15 @@ Options
 
 -  **-mask image** the mask defines the data used to compute the intensity normalisation. This option is mandatory.
 
+-  **-order number** the maximum order of the polynomial basis used to fit the normalisation field in the log-domain. An order of 0 is equivalent to not allowing spatial variance of the intensity normalisation factor. (default: 3)
+
 -  **-niter number** set the number of iterations. (default: 15)
 
 -  **-check_norm image** output the final estimated spatially varying intensity level that is used for normalisation.
 
 -  **-check_mask image** output the final mask used to compute the normalisation. This mask excludes regions identified as outliers by the optimisation process.
 
--  **-value number** specify the reference (positive) value to which the summed tissue compartments will be normalised. (default: 0.282095, SH DC term for unit angular integral)
-
--  **-poly_order order** the order of the polynomial function used to fit the normalisation field. (default: 3)
+-  **-value number** specify the (positive) reference value to which the summed tissue compartments will be normalised. (default: 0.282095, SH DC term for unit angular integral)
 
 Standard options
 ^^^^^^^^^^^^^^^^

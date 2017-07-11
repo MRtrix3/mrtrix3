@@ -57,6 +57,9 @@ void usage ()
     + Option ("mask", "the mask defines the data used to compute the intensity normalisation. This option is mandatory.").required ()
     + Argument ("image").type_image_in ()
 
+    + Option ("order", "the maximum order of the polynomial basis used to fit the normalisation field in the log-domain. An order of 0 is equivalent to not allowing spatial variance of the intensity normalisation factor. (default: " + str(DEFAULT_POLY_ORDER) + ")")
+    + Argument ("number").type_choice (poly_order_choices)
+
     + Option ("niter", "set the number of iterations. (default: " + str(DEFAULT_MAIN_ITER_VALUE) + ")")
     + Argument ("number").type_integer()
 
@@ -67,12 +70,10 @@ void usage ()
                             "This mask excludes regions identified as outliers by the optimisation process.")
     + Argument ("image").type_image_out ()
 
-    + Option ("value", "specify the reference (positive) value to which the summed tissue compartments will be normalised. "
+    + Option ("value", "specify the (positive) reference value to which the summed tissue compartments will be normalised. "
                        "(default: " + str(DEFAULT_NORM_VALUE, 6) + ", SH DC term for unit angular integral)")
-    + Argument ("number").type_float (std::numeric_limits<default_type>::min())
+    + Argument ("number").type_float (std::numeric_limits<default_type>::min());
 
-    + Option ("poly_order", "the order of the polynomial function used to fit the normalisation field. (default: " + str(DEFAULT_POLY_ORDER) + ")")
-    + Argument ("order").type_choice (poly_order_choices);
 }
 
 
@@ -188,7 +189,7 @@ void run ()
     throw Exception ("The number of arguments must be even, provided as pairs of each input and its corresponding output file.");
 
   // Get poly-order of basis function
-  auto opt = get_options ("poly_order");
+  auto opt = get_options ("order");
   if (opt.size ()) {
     const int order = int(opt[0][0]);
     switch (order) {
@@ -311,7 +312,7 @@ void run_primitive () {
   Eigen::MatrixXd norm_field_weights;
 
   auto norm_field_image = ImageType::scratch (header_3D, "Normalisation field (intensity)");
-  auto norm_field_log = ImageType::scratch (header_3D, "Normalisation field (log-space)");
+  auto norm_field_log = ImageType::scratch (header_3D, "Normalisation field (log-domain)");
 
   for (auto i = Loop(norm_field_log) (norm_field_image, norm_field_log); i; ++i) {
     norm_field_image.value() = 1.f;
@@ -380,7 +381,7 @@ void run_primitive () {
 
   while (iter <= max_iter) {
 
-    DEBUG ("iteration: " + str(iter));
+    INFO ("iteration: " + str(iter));
     progress++;
 
     // Iteratively compute tissue balance factors
@@ -390,7 +391,7 @@ void run_primitive () {
 
     while (!balance_converged && norm_iter <= max_inner_iter) {
 
-      DEBUG ("norm iteration: " + str(norm_iter));
+      INFO ("norm iteration: " + str(norm_iter));
       progress++;
 
       if (n_tissue_types > 1) {
@@ -424,7 +425,7 @@ void run_primitive () {
         balance_factors /= std::exp (log_sum / n_tissue_types);
       }
 
-      DEBUG ("Balance factors: " + str(balance_factors.transpose()));
+      INFO ("Balance factors: " + str(balance_factors.transpose()));
 
       // Perform outlier rejection on log-domain of summed images
       outlier_rejection(1.5f);
