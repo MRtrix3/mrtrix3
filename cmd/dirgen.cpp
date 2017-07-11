@@ -21,6 +21,7 @@
 
 #define DEFAULT_POWER 1
 #define DEFAULT_NITER 10000
+#define DEFAULT_RESTARTS 10
 
 
 using namespace MR;
@@ -59,6 +60,9 @@ void usage ()
     +   Argument ("exp").type_integer (1, std::numeric_limits<int>::max())
 
     + Option ("niter", "specify the maximum number of iterations to perform (default: " + str(DEFAULT_NITER) + ").")
+    +   Argument ("num").type_integer (1, std::numeric_limits<int>::max())
+
+    + Option ("restarts", "specify the number of restarts to perform (default: " + str(DEFAULT_RESTARTS) + ").")
     +   Argument ("num").type_integer (1, std::numeric_limits<int>::max())
 
     + Option ("unipolar", "optimise assuming a unipolar electrostatic repulsion model rather than the bipolar model normally assumed in DWI")
@@ -162,59 +166,77 @@ class Energy { MEMALIGN(Energy)
 
 void run () {
   size_t niter = get_option_value ("niter", DEFAULT_NITER);
+  size_t restarts = get_option_value ("restarts", DEFAULT_RESTARTS);
   int target_power = get_option_value ("power", DEFAULT_POWER);
   bool bipolar = !(get_options ("unipolar").size());
   int ndirs = to<int> (argument[0]);
 
   Eigen::VectorXd directions (3*ndirs);
+  Eigen::VectorXd best_directions (3*ndirs);
+  double best_E = std::numeric_limits<double>::infinity();
+  size_t best_start = 0;
 
-  { // random initialisation:
-    Math::RNG::Normal<double> rng;
-    for (ssize_t n = 0; n < ndirs; ++n) {
-      auto d = directions.segment (3*n,3);
-      d[0] = rng();
-      d[1] = rng();
-      d[2] = rng();
-      d.normalize();
-    }
-  }
 
-  // optimisation proper:
-  {
-    ProgressBar progress ("Optimising directions");
-    for (int power = 1; power <= target_power; power *= 2) {
-      Energy energy (ndirs, power, bipolar, directions);
+  for (size_t start = 0; start < restarts; ++start) {
 
-      Math::GradientDescent<Energy,ProjectedUpdate> optim (energy, ProjectedUpdate());
-
-      INFO ("setting power = " + str (power));
-      optim.init();
-
-      //Math::check_function_gradient (energy, optim.state(), 0.001);
-      //return;
-
-      size_t iter = 0;
-      for (; iter < niter; iter++) {
-        if (!optim.iterate()) 
-          break;
-
-        INFO ("[ " + str (iter) + " ] (pow = " + str (power) + ") E = " + str (optim.value(), 8)
-            + ", grad = " + str (optim.gradient_norm(), 8));
-
-        progress.update ([&]() { return "Optimising directions (power " + str(power) 
-            + ", energy: " + str(optim.value(), 8) + ", gradient: " + str(optim.gradient_norm(), 8) + ", iteration " + str(iter) + ")"; });
+    { // random initialisation:
+      Math::RNG::Normal<double> rng;
+      for (ssize_t n = 0; n < ndirs; ++n) {
+        auto d = directions.segment (3*n,3);
+        d[0] = rng();
+        d[1] = rng();
+        d[2] = rng();
+        d.normalize();
       }
+    }
 
-      directions = optim.state();
+    double E = 0.0;
 
-      progress.set_text ("Optimising directions (power " + str(power) 
-          + ", energy: " + str(optim.value(), 8) + ", gradient: " + str(optim.gradient_norm(), 8) + ", iteration " + str(iter) + ")");
+    // optimisation proper:
+    {
+      ProgressBar progress ("Optimising directions [" + str(start) + "]");
+      for (int power = 1; power <= target_power; power *= 2) {
+        Energy energy (ndirs, power, bipolar, directions);
+
+        Math::GradientDescent<Energy,ProjectedUpdate> optim (energy, ProjectedUpdate());
+
+        INFO ("setting power = " + str (power));
+        optim.init();
+
+        //Math::check_function_gradient (energy, optim.state(), 0.001);
+        //return;
+
+        size_t iter = 0;
+        for (; iter < niter; iter++) {
+          if (!optim.iterate()) 
+            break;
+
+          INFO ("[ " + str (iter) + " ] (pow = " + str (power) + ") E = " + str (optim.value(), 8)
+              + ", grad = " + str (optim.gradient_norm(), 8));
+
+          progress.update ([&]() { return "Optimising directions [" + str(start) + "] (power " + str(power) 
+              + ", energy: " + str(optim.value(), 8) + ", gradient: " + str(optim.gradient_norm(), 8) + ", iteration " + str(iter) + ")"; });
+        }
+
+        directions = optim.state();
+        E = optim.value();
+
+        progress.set_text ("Optimising directions [" + str(start) + "] (power " + str(power) 
+            + ", energy: " + str(optim.value(), 8) + ", gradient: " + str(optim.gradient_norm(), 8) + ", iteration " + str(iter) + ")");
+      }
+    }
+
+    if (E < best_E) {
+      best_start = start;
+      best_E = E;
+      best_directions = directions;
     }
   }
 
+  CONSOLE ("outputting start " + str(best_start) + " (E = " + str(best_E) + ")");
   Eigen::MatrixXd directions_matrix (ndirs, 3);
   for (int n = 0; n < ndirs; ++n) 
-    directions_matrix.row (n) = directions.segment (3*n, 3);
+    directions_matrix.row (n) = best_directions.segment (3*n, 3);
 
   DWI::Directions::save (directions_matrix, argument[1], get_options ("cartesian").size());
 }
