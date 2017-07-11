@@ -381,17 +381,16 @@ void run_primitive () {
 
   while (iter <= max_iter) {
 
-    INFO ("iteration: " + str(iter));
+    INFO ("Iteration: " + str(iter));
     progress++;
 
-    // Iteratively compute tissue balance factors
-    // with outlier rejection
-    size_t norm_iter = 1;
+    // Iteratively compute tissue balance factors with outlier rejection
+    size_t balance_iter = 1;
     bool balance_converged = false;
 
-    while (!balance_converged && norm_iter <= max_inner_iter) {
+    while (!balance_converged && balance_iter <= max_inner_iter) {
 
-      INFO ("norm iteration: " + str(norm_iter));
+      DEBUG ("Balance and outlier rejection iteration " + str(balance_iter) + " starts.");
       progress++;
 
       if (n_tissue_types > 1) {
@@ -425,7 +424,7 @@ void run_primitive () {
         balance_factors /= std::exp (log_sum / n_tissue_types);
       }
 
-      INFO ("Balance factors: " + str(balance_factors.transpose()));
+      INFO ("Balance factors (" + str(balance_iter) + "): " + str(balance_factors.transpose()));
 
       // Perform outlier rejection on log-domain of summed images
       outlier_rejection(1.5f);
@@ -441,7 +440,7 @@ void run_primitive () {
 
       threaded_copy (mask, prev_mask);
 
-      norm_iter++;
+      balance_iter++;
     }
 
 
