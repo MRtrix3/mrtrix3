@@ -60,7 +60,7 @@ namespace MR
       // Required typedefs, constants, and method:
       typedef float Scalar;
       typedef float RealScalar;
-      typedef int StorageIndex;
+      typedef ssize_t StorageIndex;
       enum {
         ColsAtCompileTime = Eigen::Dynamic,
         MaxColsAtCompileTime = Eigen::Dynamic,
@@ -77,7 +77,7 @@ namespace MR
       }
 
 
-      typedef Eigen::SparseMatrix<float, Eigen::RowMajor> SparseMat;
+      typedef Eigen::SparseMatrix<float, Eigen::RowMajor, StorageIndex> SparseMat;
 
 
       // Custom API:
@@ -271,7 +271,7 @@ namespace MR
       // Required typedefs, constants, and method:
       typedef float Scalar;
       typedef float RealScalar;
-      typedef int StorageIndex;
+      typedef ssize_t StorageIndex;
       enum {
         ColsAtCompileTime = Eigen::Dynamic,
         MaxColsAtCompileTime = Eigen::Dynamic,
