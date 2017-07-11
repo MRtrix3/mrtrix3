@@ -198,7 +198,6 @@ void run ()
 
   // Write result to output file
   Header header (dwisub);
-  DWI::stash_DW_scheme (header, gradsub);
   header.size(3) = R.getY().cols();
   Stride::set_from_command_line (header, Stride::contiguous_along_axis (3));
   header.datatype() = DataType::from_command_line (DataType::Float32);
@@ -238,6 +237,7 @@ void run ()
   opt = get_options("spred");
   if (opt.size()) {
     header.size(3) = dwisub.size(3);
+    DWI::stash_DW_scheme (header, gradsub);
     auto spred = Image<value_type>::create(opt[0][0], header);
     Eigen::VectorXf p = R * x;
     j = 0;
@@ -251,6 +251,7 @@ void run ()
   opt = get_options("tpred");
   if (opt.size()) {
     header.size(3) = dwisub.size(3);
+    DWI::stash_DW_scheme (header, gradsub);
     Stride::set (header, Stride::contiguous_along_spatial_axes (header));
     auto tpred = Image<value_type>::create(opt[0][0], header);
     class PredFunctor {
