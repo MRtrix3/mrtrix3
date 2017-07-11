@@ -71,6 +71,10 @@ void usage ()
             "output source prediction of all scattered slices. (useful for diagnostics)")
     + Argument ("out").type_image_out()
 
+  + Option ("tpred",
+            "output predicted signal in the space of the target reconstruction.")
+    + Argument ("out").type_image_out()
+
   + OptionGroup ("CG Optimization options")
 
   + Option ("tolerance", "the tolerance on the conjugate gradient solver. (default = " + str(DEFAULT_TOL) + ")")
@@ -239,6 +243,29 @@ void run ()
     j = 0;
     for (auto l = Loop("saving source prediction", {0, 1, 2, 3})(spred); l; l++, j++) {
       spred.value() = p[j];
+    }
+  }
+
+
+  // Output target prediction
+  opt = get_options("tpred");
+  if (opt.size()) {
+    header.size(3) = dwisub.size(3);
+    Stride::set (header, Stride::contiguous_along_spatial_axes (header));
+    auto tpred = Image<value_type>::create(opt[0][0], header);
+    class PredFunctor {
+    public:
+      PredFunctor (const Eigen::VectorXf& _y) : y(_y) {}
+      void operator () (Image<value_type>& in, Image<value_type>& out) {
+        v = in.row(3);
+        out.value() = y.dot(v);
+      }
+    private:
+      Eigen::VectorXf y, v;
+    };
+    j = 0;
+    for (auto l = Loop("saving registration prediction", 3)(tpred); l; l++, j++) {
+      ThreadedLoop(out, 0, 3).run( PredFunctor (R.getY0(dwisub, gradsub, rf).row(j)) , out , tpred );
     }
   }
 

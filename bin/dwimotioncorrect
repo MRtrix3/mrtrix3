@@ -153,7 +153,7 @@ for k in range(v2viter):
         f.write(tra + ' ' + rot + '\n')
     f.close()
     # update template
-    run.command('dwirecon shells.mif ' + recon_option + ' recon-'+str(k+1)+'.mif -motion motion.txt -rpred pred.mif -force')
+    run.command('dwirecon shells.mif ' + recon_option + ' recon-'+str(k+1)+'.mif -motion motion.txt -rpred pred.mif'+(' -tpred result-v.mif' if k+1==v2viter else '')+' -force')
 
 # slice-to-volume registration
 for k in range(s2viter):
@@ -182,13 +182,14 @@ for k in range(s2viter):
             f.write(volmotion)
     f.close()
     # update template
-    run.command('dwirecon shells.mif ' + recon_option + ' recon-'+str(v2viter+k+1)+'.mif -motion motion.txt -rpred pred.mif -force')
-
-run.command('mrconvert recon-'+str(niter)+'.mif result.mif')
+    run.command('dwirecon shells.mif ' + recon_option + ' recon-'+str(v2viter+k+1)+'.mif -motion motion.txt -rpred pred.mif'+(' -tpred result-s.mif' if k+1==s2viter else '')+' -force')
 
 
 # Copy result to output path
-run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + (' -force' if app.force else ''))
+if s2viter == 0:
+    run.command('mrconvert result-v.mif ' + path.fromUser(app.args.output, True) + (' -force' if app.force else ''))
+else:
+    run.command('mrconvert result-s.mif ' + path.fromUser(app.args.output, True) + (' -force' if app.force else ''))
 
 app.complete()
 

@@ -98,6 +98,65 @@ namespace MR
       const ReconMatrixAdjoint adjoint() const;
 
 
+      const Eigen::MatrixXf getY0(const Header& in, const Eigen::MatrixXf& grad, const vector<Eigen::MatrixXf>& rf) const
+      {
+        DEBUG("initialise Y0");
+        assert (grad.rows() == nv);     // one gradient per volume
+
+        Shells shells (grad.template cast<double>());
+        vector<size_t> idx (shells.volumecount());
+        vector<Eigen::MatrixXf> shellbasis;
+        int n = 0;
+        if (rf.empty()) {
+          n = Math::SH::NforL(lmax);
+        } else {
+          for (auto& r : rf)
+            n += Math::SH::NforL(std::min(2*(int(r.cols())-1), lmax));
+        }
+
+        Eigen::MatrixXf Y0 (nv, n);
+
+        for (size_t s = 0; s < shells.count(); s++) {
+          for (auto v : shells[s].get_volumes())
+            idx[v] = s;
+
+          Eigen::MatrixXf B;
+          if (rf.empty()) {
+            B.setIdentity(Math::SH::NforL(lmax), Math::SH::NforL(lmax));
+          }
+          else {
+            B.setZero(n, Math::SH::NforL(lmax));
+            size_t j = 0;
+            for (auto& r : rf) {
+              for (size_t l = 0; l < r.cols() and 2*l <= lmax; l++)
+                for (size_t i = l*(2*l-1); i < (l+1)*(2*l+1); i++, j++)
+                  B(j,i) = r(s,l);
+            }
+          }
+          shellbasis.push_back(B);
+        }
+
+        Eigen::Vector3f vec;
+        Eigen::VectorXf delta;
+
+        for (size_t i = 0; i < nv; i++) {
+          vec = {grad(i, 0), grad(i, 1), grad(i, 2)};
+
+          // evaluate basis functions
+          Math::SH::delta(delta, vec, lmax);
+          if (rf.empty()) {
+            Y0.row(i) = delta;
+          }
+          else {
+            Y0.row(i) = shellbasis[idx[i]]*delta;
+          }
+
+        }
+
+        return Y0;
+      }
+
+
     private:
       const int lmax;
       const size_t nxy, nz, nv;
@@ -115,6 +174,7 @@ namespace MR
         // Special care must be taken when inserting elements and it is advised to reserve appropriate memory in advance.
 
         // reserve memory for 8 elements along each row (outer strides with row-major order).
+
         M.reserve(Eigen::VectorXi::Constant(nv*nz*nxy, 8));
 
         // set up transform
