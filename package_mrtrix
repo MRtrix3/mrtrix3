@@ -64,7 +64,8 @@ EOF
 
     QTCORE=$(for n in $LIBS; do echo $n; done | grep 'libQt.*Core')
     [[ $QTCORE ]] && ( # sort out Qt:
-      QTPLUGDIR=/usr/lib/qt/plugins/ #$(strings $QTCORE | sed -n 's/qt_plugpath=\(.*\)$/\1/p')
+      [[ -z $QTPLUGDIR ]] && QTPLUGDIR=$(strings $QTCORE | sed -n 's/qt_plugpath=\(.*\)$/\1/p')
+      [[ ! -d "$QTPLUGDIR" ]] && echo "could not find Qt plugins in $QTPLUGDIR, try 'export QTPLUGDIR=/usr/lib/qt/plugins/; package_mrtrix -standalone'" && exit 1
       echo '    Qt plugins in' $QTPLUGDIR
       LDD_PATTERN='^[[:space:]]*[[:graph:]]*[[:space:]]*=>[[:space:]]*\([[:graph:]]*\)[[:space:]]*([[:graph:]]*)$'
       QTLIBS=$(find $QTPLUGDIR -name '*.so' -print0 | xargs -n 1 -0 ldd | sed -n 's/'"$LDD_PATTERN"'/\1/p' | sort | uniq | grep -v 'libGL.so\|libEGL.so\|nvidia\|fglrx' )
