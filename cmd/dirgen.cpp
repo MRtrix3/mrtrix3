@@ -19,7 +19,7 @@
 #include "math/check_gradient.h"
 #include "dwi/directions/file.h"
 
-#define DEFAULT_POWER 2
+#define DEFAULT_POWER 1
 #define DEFAULT_NITER 10000
 
 
@@ -29,33 +29,41 @@ using namespace App;
 void usage ()
 {
 
-AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-SYNOPSIS = "Generate a set of uniformly distributed directions using a bipolar electrostatic repulsion model";
+  SYNOPSIS = "Generate a set of uniformly distributed directions using a bipolar electrostatic repulsion model";
 
-REFERENCES 
-  + "Jones, D.; Horsfield, M. & Simmons, A. "
-  "Optimal strategies for measuring diffusion in anisotropic systems by magnetic resonance imaging. "
-  "Magnetic Resonance in Medicine, 1999, 42: 515-525"
-             
-  + "Papadakis, N. G.; Murrills, C. D.; Hall, L. D.; Huang, C. L.-H. & Adrian Carpenter, T. "
-  "Minimal gradient encoding for robust estimation of diffusion anisotropy. "
-  "Magnetic Resonance Imaging, 2000, 18: 671-679";
+  DESCRIPTION 
+    + "Directions are distributed by analogy to an electrostatic repulsion system, with each direction "
+    "corresponding to a single electrostatic charge (for -unipolar), or a pair of diametrically opposed charges "
+    "for the default bipolar case). The energy of the system is determined based on the Coulomb repulstion, "
+    "which assumed the form 1/r^power, where r is the distance between any pair of charges, and p is the power "
+    "assumed for the repulsion law (default: 1). The minimum energy state is obtained by gradient descent.";
 
-ARGUMENTS
-  + Argument ("ndir", "the number of directions to generate.").type_integer (6, std::numeric_limits<int>::max())
-  + Argument ("dirs", "the text file to write the directions to, as [ az el ] pairs.").type_file_out();
 
-OPTIONS
-  + Option ("power", "specify exponent to use for repulsion power law (default: " + str(DEFAULT_POWER) + "). This must be a power of 2 (i.e. 2, 4, 8, 16, ...).")
-  +   Argument ("exp").type_integer (2, std::numeric_limits<int>::max())
+  REFERENCES 
+    + "Jones, D.; Horsfield, M. & Simmons, A. "
+    "Optimal strategies for measuring diffusion in anisotropic systems by magnetic resonance imaging. "
+    "Magnetic Resonance in Medicine, 1999, 42: 515-525"
 
-  + Option ("niter", "specify the maximum number of iterations to perform (default: " + str(DEFAULT_NITER) + ").")
-  +   Argument ("num").type_integer (1, std::numeric_limits<int>::max())
+    + "Papadakis, N. G.; Murrills, C. D.; Hall, L. D.; Huang, C. L.-H. & Adrian Carpenter, T. "
+    "Minimal gradient encoding for robust estimation of diffusion anisotropy. "
+    "Magnetic Resonance Imaging, 2000, 18: 671-679";
 
-  + Option ("unipolar", "optimise assuming a unipolar electrostatic repulsion model rather than the bipolar model normally assumed in DWI")
+  ARGUMENTS
+    + Argument ("ndir", "the number of directions to generate.").type_integer (6, std::numeric_limits<int>::max())
+    + Argument ("dirs", "the text file to write the directions to, as [ az el ] pairs.").type_file_out();
 
-  + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");
+  OPTIONS
+    + Option ("power", "specify exponent to use for repulsion power law (default: " + str(DEFAULT_POWER) + "). This must be a power of 2 (i.e. 1, 2, 4, 8, 16, ...).")
+    +   Argument ("exp").type_integer (1, std::numeric_limits<int>::max())
+
+    + Option ("niter", "specify the maximum number of iterations to perform (default: " + str(DEFAULT_NITER) + ").")
+    +   Argument ("num").type_integer (1, std::numeric_limits<int>::max())
+
+    + Option ("unipolar", "optimise assuming a unipolar electrostatic repulsion model rather than the bipolar model normally assumed in DWI")
+
+    + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");
 
 }
 
@@ -116,7 +124,8 @@ class Energy { MEMALIGN(Energy)
 
           Eigen::Vector3d r = d1-d2;
           double _1_r2 = 1.0 / r.squaredNorm();
-          double e = fast_pow (_1_r2, power/2); 
+          double _1_r = std::sqrt (_1_r2);
+          double e = fast_pow (_1_r, power); 
           E += e;
           g1 -= (power * e * _1_r2) * r; 
           g2 += (power * e * _1_r2) * r; 
@@ -124,7 +133,8 @@ class Energy { MEMALIGN(Energy)
           if (bipolar) {
             r = d1+d2;
             _1_r2 = 1.0 / r.squaredNorm();
-            e = fast_pow (_1_r2, power/2); 
+            _1_r = std::sqrt (_1_r2);
+            e = fast_pow (_1_r, power); 
             E += e;
             g1 -= (power * e * _1_r2) * r; 
             g2 -= (power * e * _1_r2) * r; 
@@ -172,7 +182,7 @@ void run () {
   // optimisation proper:
   {
     ProgressBar progress ("Optimising directions");
-    for (int power = 2; power <= target_power; power *= 2) {
+    for (int power = 1; power <= target_power; power *= 2) {
       Energy energy (ndirs, power, bipolar, directions);
 
       Math::GradientDescent<Energy,ProjectedUpdate> optim (energy, ProjectedUpdate());
@@ -198,7 +208,7 @@ void run () {
       directions = optim.state();
 
       progress.set_text ("Optimising directions (power " + str(power) 
-        + ", energy: " + str(optim.value(), 8) + ", gradient: " + str(optim.gradient_norm(), 8) + ", iteration " + str(iter) + ")");
+          + ", energy: " + str(optim.value(), 8) + ", gradient: " + str(optim.gradient_norm(), 8) + ", iteration " + str(iter) + ")");
     }
   }
 
