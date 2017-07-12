@@ -127,6 +127,14 @@ namespace MR
 
 
 
+    //! clear the phase encoding matrix from a header
+    /*! this will delete any trace of phase encoding information
+     *  from the Header::keyval() structure of \a header.
+     */
+    void clear_scheme (Header& header);
+
+
+
     //! parse the phase encoding matrix from a header
     /*! extract the phase encoding matrix stored in the \a header if one
        *  is present. This is expected to be stored in the Header::keyval()

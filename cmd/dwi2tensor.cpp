@@ -13,6 +13,7 @@
 
 
 #include "command.h"
+#include "phase_encoding.h"
 #include "progressbar.h"
 #include "image.h"
 #include "algo/threaded_copy.h"
@@ -180,6 +181,7 @@ void run ()
   header.datatype() = DataType::Float32;
   header.ndim() = 4;
   DWI::stash_DW_scheme (header, grad);
+  PhaseEncoding::clear_scheme (header);
   
   Image<value_type>* predict = nullptr;
   opt = get_options ("predicted_signal");

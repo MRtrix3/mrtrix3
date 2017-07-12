@@ -81,6 +81,15 @@ namespace MR
 
 
 
+    void clear_scheme (Header& header)
+    {
+      header.keyval().erase ("pe_scheme");
+      header.keyval().erase ("PhaseEncodingDirection");
+      header.keyval().erase ("TotalReadoutTime");
+    }
+
+
+
     Eigen::MatrixXd parse_scheme (const Header& header)
     {
       Eigen::MatrixXd PE;
