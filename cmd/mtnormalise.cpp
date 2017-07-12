@@ -372,7 +372,7 @@ void run_primitive () {
   };
 
   input_progress.done ();
-  ProgressBar progress ("performing log-domain intensity normalisation");
+  ProgressBar progress ("performing log-domain intensity normalisation", max_iter);
 
   // Perform an initial outlier rejection prior to the first iteration
   outlier_rejection (3.f);
@@ -382,7 +382,6 @@ void run_primitive () {
   while (iter <= max_iter) {
 
     INFO ("Iteration: " + str(iter));
-    progress++;
 
     // Iteratively compute tissue balance factors with outlier rejection
     size_t balance_iter = 1;
@@ -391,7 +390,6 @@ void run_primitive () {
     while (!balance_converged && balance_iter <= max_inner_iter) {
 
       DEBUG ("Balance and outlier rejection iteration " + str(balance_iter) + " starts.");
-      progress++;
 
       if (n_tissue_types > 1) {
 
@@ -476,6 +474,8 @@ void run_primitive () {
     // Generate normalisation field in the image domain
     for (auto i = Loop (0, 3) (norm_field_log, norm_field_image); i; ++i)
       norm_field_image.value () = std::exp(norm_field_log.value());
+
+    progress++;
     iter++;
   }
 
