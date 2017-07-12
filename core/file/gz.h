@@ -55,7 +55,7 @@ namespace MR
 
           gz = gzopen (filename.c_str(), mode);
           if (!gz)
-            throw Exception ("error opening file \"" + filename + "\": insufficient memory");
+            throw Exception ("error opening file \"" + filename + "\": " + strerror(errno));
         }
 
         void close () {
@@ -77,6 +77,9 @@ namespace MR
         int64_t tell () const {
           assert (gz);
           return (gztell (gz));
+        }
+        int64_t tellg () const {
+          return tell();
         }
 
         void seek (int64_t offset) {

@@ -14,6 +14,7 @@
 
 #include "command.h"
 #include "image.h"
+#include "image_helpers.h"
 #include "filter/reslice.h"
 #include "interp/cubic.h"
 #include "transform.h"
@@ -119,6 +120,9 @@ void run ()
 
   if (im1_image.ndim() != im2_image.ndim())
     throw Exception ("input images do not have the same number of dimensions");
+
+  check_3D_nonunity (im1_image);
+  check_3D_nonunity (im2_image);
 
   auto opt = get_options ("type");
   bool do_rigid  = false;

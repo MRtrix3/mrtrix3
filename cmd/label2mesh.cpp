@@ -61,6 +61,7 @@ void run ()
 
   Header labels_header = Header::open (argument[0]);
   Connectome::check (labels_header);
+  check_3D_nonunity (labels_header);
   auto labels = labels_header.get_image<uint32_t>();
 
   using voxel_corner_t = Eigen::Array<int, 3, 1>;

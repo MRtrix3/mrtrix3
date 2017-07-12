@@ -5,8 +5,6 @@ function image = read_mrtrix (filename)
 % returns a structure containing the header information and data for the MRtrix 
 % format image 'filename' (i.e. files with the extension '.mif' or '.mih').
 
-image.comments = {};
-
 f = fopen (filename, 'r');
 assert(f ~= -1, 'error opening %s', filename);
 L = fgetl(f);
@@ -35,24 +33,16 @@ while 1
       image.vox = str2num(char(split_strings (value, ',')))';
     elseif strcmp(key, 'layout')
       image.layout = value;
-    elseif strcmp(key, 'mrtrix_version')
-      image.mrtrix_version = value;
     elseif strcmp(key, 'datatype')
       image.datatype = value;
-    elseif strcmp(key, 'labels')
-      image.labels = split_strings (value, '\');
-    elseif strcmp(key, 'units')
-      image.units = split_strings (value, '\');
     elseif strcmp(key, 'transform')
       transform(end+1,:) = str2num(char(split_strings (value, ',')))';
-    elseif strcmp(key, 'comments')
-      image.comments{end+1} = value;
     elseif strcmp(key, 'file')
       file = value;
     elseif strcmp(key, 'dw_scheme')
       dw_scheme(end+1,:) = str2num(char(split_strings (value, ',')))';
     else 
-      disp (['unknown key ''' key ''' - ignored']);
+      image = add_field (image, key, value);
     end
   end
 end
@@ -122,4 +112,19 @@ function S = split_strings (V, delim)
   while size(V,2) > 0
     [R, V] = strtok(V,delim);
     S{end+1} = R;
+  end
+
+
+
+
+function image = add_field (image, key, value)
+  if isfield (image, key)
+    previous = getfield (image, key);
+    if iscell (previous)
+      image = setfield (image, key, [ previous {value} ]);
+    else
+      image = setfield (image, key, { previous, value });
+    end
+  else
+    image = setfield (image, key, value);
   end

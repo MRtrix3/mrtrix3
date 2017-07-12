@@ -111,7 +111,7 @@ namespace MR
 
         if (fsbuf.f_type == 0xff534d42 /* CIFS */|| fsbuf.f_type == 0x6969 /* NFS */ || 
             fsbuf.f_type == 0x65735546 /* FUSE */ || fsbuf.f_type == 0x517b /* SMB */ || 
-            fsbuf.f_type == 0x47504653 /* GPFS */
+            fsbuf.f_type == 0x47504653 /* GPFS */ || fsbuf.f_type == 0xbd00bd0 /* LUSTRE */
 
 #ifdef MRTRIX_MACOSX
             || fsbuf.f_type == 0x0017 /* OSXFUSE */
