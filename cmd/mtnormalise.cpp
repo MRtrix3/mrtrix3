@@ -25,7 +25,7 @@ using namespace App;
 
 #define DEFAULT_NORM_VALUE 0.28209479177
 #define DEFAULT_MAIN_ITER_VALUE 15
-#define DEFAULT_INNER_MAXITER_VALUE 7
+#define DEFAULT_BALANCE_MAXITER_VALUE 7
 #define DEFAULT_POLY_ORDER 3
 
 const char* poly_order_choices[] = { "0", "1", "2", "3", nullptr };
@@ -306,7 +306,7 @@ void run_primitive () {
   const float normalisation_value = get_option_value ("value", DEFAULT_NORM_VALUE);
   const float log_norm_value = std::log (normalisation_value);
   const size_t max_iter = get_option_value ("niter", DEFAULT_MAIN_ITER_VALUE);
-  const size_t max_inner_iter = DEFAULT_INNER_MAXITER_VALUE;
+  const size_t max_balance_iter = DEFAULT_BALANCE_MAXITER_VALUE;
 
   // Initialise normalisation fields in both image and log domain
   Eigen::MatrixXd norm_field_weights;
@@ -325,8 +325,8 @@ void run_primitive () {
 
   // Store lambda-function for performing outlier-rejection.
   // We perform a coarse outlier-rejection initially as well as
-  // a finer outlier-rejection within the inner loop when computing
-  // tissue balance factors
+  // a finer outlier-rejection within each iteration of the
+  // tissue (re)balancing loop
   auto outlier_rejection = [&](float outlier_range) {
 
     auto summed_log = ImageType::scratch (header_3D, "Log of summed tissue volumes");
@@ -387,7 +387,7 @@ void run_primitive () {
     size_t balance_iter = 1;
     bool balance_converged = false;
 
-    while (!balance_converged && balance_iter <= max_inner_iter) {
+    while (!balance_converged && balance_iter <= max_balance_iter) {
 
       DEBUG ("Balance and outlier rejection iteration " + str(balance_iter) + " starts.");
 
