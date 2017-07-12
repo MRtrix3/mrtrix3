@@ -76,10 +76,7 @@ namespace MR
             Transform (parent),
             out_of_bounds_value (value_when_out_of_bounds),
             bounds { parent.size(0) - 0.5, parent.size(1) - 0.5, parent.size(2) - 0.5 },
-            out_of_bounds (true)
-        {
-          check_3D_nonunity (parent);
-        }
+            out_of_bounds (true) { }
 
 
         //! Functions that must be defined by interpolation classes
