@@ -113,11 +113,12 @@ void run ()
     // use combination of mono- and bi-polar electrostatic repulsion models 
     // to ensure adequate coverage of eddy-current space as well as 
     // orientation space. Use a moderate bias, favouring the bipolar model.
-    return 1.2 / (
+
+    return 1.0 / sqrt(
         Math::pow2 (b[0] - a[0]) + 
         Math::pow2 (b[1] - a[1]) + 
         Math::pow2 (b[2] - a[2]) 
-        ) + 1.0 / (
+        ) + 1.0 / sqrt(
         Math::pow2 (b[0] + a[0]) + 
         Math::pow2 (b[1] + a[1]) + 
         Math::pow2 (b[2] + a[2]) 

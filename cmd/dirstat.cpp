@@ -56,12 +56,12 @@ void report (const std::string& title, const Eigen::MatrixXd& directions)
       NN_bipolar[i] = std::max (NN_bipolar[i], cos_angle);
       NN_bipolar[j] = std::max (NN_bipolar[j], cos_angle);
 
-      double E = 1.0 / (directions.row(i).head(3) - directions.row(j).head(3)).squaredNorm();
+      double E = 1.0 / (directions.row(i).head(3) - directions.row(j).head(3)).norm();
 
       E_unipolar[i] += E;
       E_unipolar[j] += E;
 
-      E += 1.0 / (directions.row(i).head(3) + directions.row(j).head(3)).squaredNorm();
+      E += 1.0 / (directions.row(i).head(3) + directions.row(j).head(3)).norm();
 
       E_bipolar[i] += E;
       E_bipolar[j] += E;
