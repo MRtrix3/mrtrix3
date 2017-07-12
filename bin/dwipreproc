@@ -299,7 +299,7 @@ else:
 
 # This may be required by -rpe_all for extracting b=0 volumes while retaining phase-encoding information
 import_dwi_pe_table_option = ''
-if dwi_manual_pe_scheme:
+if overwrite_dwi_pe_scheme:
   with open('dwi_manual_pe_scheme.txt', 'w') as f:
     for line in dwi_manual_pe_scheme:
       f.write(' '.join( [ str(value) for value in line ] ) + '\n')
@@ -309,6 +309,7 @@ if dwi_manual_pe_scheme:
 
 # Deal with the phase-encoding of the images to be fed to topup (if applicable)
 overwrite_topup_pe_scheme = False
+topup_in_path = 'topup_in.mif'
 if app.args.se_epi:
 
   # 3 possible sources of PE information: DWI header, topup image header, command-line
@@ -361,6 +362,68 @@ if app.args.se_epi:
     if not topup_pe_scheme:
       app.error('No phase-encoding information present in SE EPI image header');
 
+  # If we are using the -se_epi option, and hence the input images to topup have not come from the DWIs themselves,
+  #   we need to insert the first b=0 DWI volume to the start of the topup input image
+  # Additionally:
+  # - If the input to topup is currently balanced in terms of phase encoding, and insertion of this volume is therefore
+  #   unbalancing the input, and we can find an existing volume in the SE_EPI image with the same phase encoding as the
+  #   first DWI, remove that volume from the input to topup
+  # - TODO If the DWI is defined on a different voxel grid to the SE-EPI image, it will be necessary to re-grid the SE-EPI
+  #   data to match the DWI
+  # - Ideally, it would also be preferable to somehow quantify the overall image contrast between the b=0 image, and the SE-EPI
+  #   images, and instead use a registration-based solution. However I think this can wait for now, given I don't know of
+  #   anybody using such an acquisition.
+  # - TODO The first b=0 volume in the DWIs should also be the first volume of the DWI series; is basically always the case, but
+  #   it wouuld nevertheless be preferable to test for this
+
+  bzero_threshold = 10.0
+  if ['BZeroThreshold'] in app.config:
+    bzero_threshold = float(app.config['BZeroThreshold'])
+  dwi_first_bzero_index = 0
+  for line in grad:
+    if line[3] <= bzero_threshold:
+      break
+    dwi_first_bzero_index += 1
+  if dwi_first_bzero_index == len(grad):
+    app.error('Unable to find b=0 volume in input DWIs to provide alignment between topup and eddy')
+  run.command('mrconvert dwi.mif dwi_first_bzero.mif -coord 3 ' + str(dwi_first_bzero_index))
+  dwi_first_bzero_pe = dwi_manual_pe_scheme[dwi_first_bzero_index] if overwrite_dwi_pe_scheme else dwi_pe_scheme[dwi_first_bzero_index]
+  topup_pe_sum = [ 0, 0, 0 ]
+  topup_volume_to_remove = len(topup_pe_scheme)
+  for index, line in enumerate(topup_pe_scheme):
+    topup_pe_sum = [ i + j for i, j in zip(topup_pe_sum, line[0:3]) ]
+    if line[0:3] == dwi_first_bzero_pe[0:3]:
+      topup_volume_to_remove = index
+  if (topup_pe_sum == [ 0, 0, 0 ]) and (topup_volume_to_remove < len(topup_pe_scheme):
+    app.console('Balanced phase-encoding scheme detected in series provided via -se_epi option; volume ' + str(topup_volume_to_remove) + ' will be removed and replaced with first b=0 from DWIs')
+    run.command('mrconvert ' + topup_in_path + ' - -coord 3 ' + ','.join([index for index in range(len(topup_pe_scheme)) if not index == topup_volume_to_remove]) + ' | mrcat dwi_first_bzero.mif - topup_in_dwibzero.mif -axis 3')
+    file.delTempFile(topup_in_path)
+    # Also need to update the phase-encoding scheme appropriately if it's being set manually
+    #   (if embedded within the image headers, should be updated through the command calls)
+    if topup_manual_pe_scheme:
+      first_line = list(manual_pe_dir)
+      first_line.append(trt)
+      new_topup_manual_pe_scheme = [ ]
+      new_topup_manual_pe_scheme.append(line)
+      for index, entry in enumerate(topup_manual_pe_scheme):
+        if not index == topup_volume_to_remove:
+          new_topup_manual_pe_scheme.append(entry)
+      topup_manual_pe_scheme = new_topup_manual_pe_scheme
+  else
+    app.console('Unbalanced phase-encoding scheme detected in series provided via -se_epi option; first DWI b=0 volume will be inserted to start of series')
+    run.command('mrcat dwi_first_bzero.mif ' + topup_in_path + ' topup_in_dwibzero.mif -axis 3')
+    file.delTempFile(topup_in_path)
+    # Also need to update the phase-encoding scheme appropriately
+    if topup_manual_pe_scheme:
+      first_line = list(manual_pe_dir)
+      first_line.append(trt)
+      topup_manual_pe_scheme = [ first_line, topup_manual_pe_scheme ]
+  topup_in_path = 'topup_in_dwibzero.mif'
+  
+  
+  
+  
+
 elif not PE_design == 'None': # No SE EPI images explicitly provided: In some cases, can extract appropriate b=0 images from DWI
 
   # If using 'All' or 'Header', and haven't been given any topup images, need to extract the b=0 volumes from the series,
@@ -404,7 +467,6 @@ if do_topup:
 
   # If no axes need to be cropped, use the original topup input volumes
   # Otherwise, need to call mrcrop with the appropriate options, and pass those to topup
-  topup_in_path = 'topup_in.mif'
   # For any non-even axis sizes, crop the first voxel along that dimension
   # TODO This primarily applies to topup - don't recall if eddy bugs out or not
   crop_option = ''
@@ -413,8 +475,8 @@ if do_topup:
       crop_option += ' -axis ' + str(axis) + ' 1 ' + str(int(axis_size)-1)
   if crop_option:
     app.warn('Topup images contain at least one non-even dimension; cropping images for topup compatibility')
-    run.command('mrcrop topup_in.mif topup_in_crop.mif' + crop_option)
-    file.delTempFile('topup_in.mif')
+    run.command('mrcrop ' + topup_in_path + ' topup_in_crop.mif' + crop_option)
+    file.delTempFile(topup_in_path)
     topup_in_path = 'topup_in_crop.mif'
 
   # Do the conversion in preparation for topup
@@ -565,6 +627,7 @@ else:
     run.command('mrtransform ' + field_map_image + ' -replace topup_in.nii field_map_fix' + fsl_suffix)
     file.delTempFile(field_map_image)
     field_map_image = 'field_map_fix' + fsl_suffix
+  file.delTempFile('topup_in.nii')
 
 
 
