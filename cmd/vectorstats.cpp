@@ -87,7 +87,7 @@ void run()
   size_t num_perms = get_option_value ("nperms", DEFAULT_NUMBER_PERMUTATIONS);
 
   // Load design matrix
-  const matrix_type design = load_matrix (argument[2]);
+  const matrix_type design = load_matrix (argument[1]);
   if (size_t(design.rows()) != filenames.size())
     throw Exception ("number of subjects does not match number of rows in design matrix");
 
@@ -102,12 +102,12 @@ void run()
   }
 
   // Load contrast matrix
-  const matrix_type contrast = load_matrix (argument[3]);
+  const matrix_type contrast = load_matrix (argument[2]);
   const size_t num_contrasts = contrast.rows();
   if (contrast.cols() != design.cols())
     throw Exception ("number of columns in contrast matrix (" + str(contrast.cols()) + ") does not match number of columns in design matrix (" + str(design.cols()) + ")");
 
-  const std::string output_prefix = argument[4];
+  const std::string output_prefix = argument[3];
 
   // Load input data
   matrix_type data (num_elements, filenames.size());
@@ -120,7 +120,7 @@ void run()
       try {
         subject_data = load_vector (path);
       } catch (Exception& e) {
-        throw Exception (e, "Error loading vector data for subject #" + str(subject) + " (file \"" + path + "\"");
+        throw Exception (e, "Error loading vector data for subject #" + str(subject) + " (file \"" + path + "\")");
       }
 
       if (size_t(subject_data.size()) != num_elements)
@@ -134,16 +134,16 @@ void run()
 
   {
     const matrix_type betas = Math::Stats::GLM::solve_betas (data, design);
-    CONSOLE ("Beta coefficients: " + str(betas));
+    save_matrix (betas, output_prefix + "betas.csv");
 
     const matrix_type abs_effects = Math::Stats::GLM::abs_effect_size (data, design, contrast);
-    CONSOLE ("Absolute effects: " + str(abs_effects));
+    save_matrix (abs_effects, output_prefix + "abs_effect.csv");
 
     const matrix_type std_effects = Math::Stats::GLM::std_effect_size (data, design, contrast);
-    CONSOLE ("Standardised effects: " + str(std_effects));
+    save_matrix (std_effects, output_prefix + "std_effect.csv");
 
     const matrix_type stdevs = Math::Stats::GLM::stdev (data, design);
-    CONSOLE ("Standard deviations: " + str(stdevs));
+    save_matrix (stdevs, output_prefix + "std_dev.csv");
   }
 
   std::shared_ptr<Math::Stats::GLMTestBase> glm_ttest (new Math::Stats::GLMTTestFixed (data, design, contrast));
@@ -156,7 +156,7 @@ void run()
     default_permutation[i] = i;
   matrix_type default_tvalues;
   (*glm_ttest) (default_permutation, default_tvalues);
-  CONSOLE ("T-values for default statistic: " + str(default_tvalues));
+  save_matrix (default_tvalues, output_prefix + "tvalue.csv");
 
   // Perform permutation testing
   if (!get_options ("notest").size()) {
@@ -175,8 +175,8 @@ void run()
 
     matrix_type default_pvalues (num_contrasts, num_elements);
     Math::Stats::Permutation::statistic2pvalue (null_distribution, default_tvalues, default_pvalues);
-    CONSOLE ("FWE-corrected p-values: " + str(default_pvalues));
-    CONSOLE ("Uncorrected p-values: " + str(uncorrected_pvalues));
+    save_matrix (default_pvalues, output_prefix + "fwe_pvalue.csv");
+    save_matrix (uncorrected_pvalues, output_prefix + "uncorrected_pvalue.csv");
 
   }
 }
