@@ -1,7 +1,7 @@
 .. _mrtrix_config:
 
 Configuration file
-======
+==================
 
 The behaviour of a number of aspects of *MRtrix3* can be controlled by
 the user via the *MRtrix3 configuration file*. Note, that this file is distinct
@@ -10,7 +10,7 @@ installation, but rather is used to specify default settings for a number of
 parameters, many of which relate to data visualisation when using ``mrview``.
 
 For all available configurable options, please refer to the
-`configuration file options <config_file_options>`_ page.
+`configuration file options <../reference/config_file_options.html>`_ page.
 
 Location
 ^^^^^^^^
@@ -47,5 +47,5 @@ The value entry may be interpreted by *MRtrix3* applications as either:
 -  ``Text``: any text string, without any further interpretation
 
 The list of all configuration file options can be found
-`here <config_file_options>`_.
+`here <../reference/config_file_options.html>`_.
 

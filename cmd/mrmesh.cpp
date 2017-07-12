@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -18,8 +16,8 @@
 
 #include "image.h"
 #include "filter/optimal_threshold.h"
-#include "mesh/mesh.h"
-#include "mesh/vox2mesh.h"
+#include "surface/mesh.h"
+#include "surface/algo/image2mesh.h"
 
 
 
@@ -34,8 +32,7 @@ void usage ()
 {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "Generate a mesh file from an image.";
+  SYNOPSIS = "Generate a mesh file from an image";
 
   ARGUMENTS
   + Argument ("input",  "the input image.").type_image_in ()
@@ -53,18 +50,23 @@ void usage ()
 void run ()
 {
 
-  Mesh::Mesh mesh;
+  Surface::Mesh mesh;
 
   if (get_options ("blocky").size()) {
 
     auto input = Image<bool>::open (argument[0]);
-    Mesh::vox2mesh (input, mesh);
+    Surface::Algo::image2mesh_blocky (input, mesh);
 
   } else {
-
+    default_type threshold = 0.0;
     auto input = Image<float>::open (argument[0]);
-    float threshold = get_option_value ("threshold", Filter::estimate_optimal_threshold (input));
-    Mesh::vox2mesh_mc (input, threshold, mesh);
+    auto opt = get_options("threshold");
+    if ( opt.size() ) {
+      threshold = (default_type) opt[0][0];
+    } else {
+      threshold = Filter::estimate_optimal_threshold (input);
+    }
+    Surface::Algo::image2mesh_mc (input, mesh, threshold);
 
   }
 

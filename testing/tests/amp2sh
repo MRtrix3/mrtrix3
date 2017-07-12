@@ -1,1 +1,1 @@
-amp2sh dwi.mif - | testing_diff_data - amp2sh/out.mif 1e-3
+amp2sh dwi.mif - | testing_diff_image - amp2sh/out.mif -voxel 1e-5

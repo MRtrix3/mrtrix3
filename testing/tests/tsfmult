@@ -1,1 +1,1 @@
-tsfmult afd.tsf afd.tsf tmp.tsf -force; testing_diff_tsf tmp.tsf tsfmult/out.tsf 0
+tsfmult afd.tsf afd.tsf tmp.tsf -force && testing_diff_tsf tmp.tsf tsfmult/out.tsf -frac 1e-5

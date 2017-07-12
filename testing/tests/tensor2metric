@@ -1,8 +1,8 @@
-tensor2metric tensor2metric/dt.mif -fa - | testing_diff_data - tensor2metric/fa.mif 1e-6
-tensor2metric tensor2metric/dt.mif -adc - | testing_diff_data - tensor2metric/adc.mif 1e-9
-tensor2metric tensor2metric/dt.mif -num 1 -value - | testing_diff_data - tensor2metric/eigval1.mif 1e-9
-tensor2metric tensor2metric/dt.mif -num 2 -value - | testing_diff_data - tensor2metric/eigval2.mif 1e-9
-tensor2metric tensor2metric/dt.mif -num 3 -value - | testing_diff_data - tensor2metric/eigval3.mif 1e-9
-tensor2metric tensor2metric/dt.mif -num 1 -modulate none -vector - | mrcalc - tensor2metric/eigvec1.mif -multiply - | mrmath -axis 3 - sum - | mrcalc - -abs - | testing_diff_data - tensor2metric/ones.mif 1e-6
-tensor2metric tensor2metric/dt.mif -num 2 -modulate none -vector - | mrcalc - tensor2metric/eigvec2.mif -multiply - | mrmath -axis 3 - sum - | mrcalc - -abs - | testing_diff_data - tensor2metric/ones.mif 1e-6
-tensor2metric tensor2metric/dt.mif -num 3 -modulate none -vector - | mrcalc - tensor2metric/eigvec3.mif -multiply - | mrmath -axis 3 - sum - | mrcalc - -abs - | testing_diff_data - tensor2metric/ones.mif 1e-6
+tensor2metric tensor2metric/dt.mif -fa - | testing_diff_image - tensor2metric/fa.mif -frac 1e-5
+tensor2metric tensor2metric/dt.mif -adc - | testing_diff_image - tensor2metric/adc.mif -frac 1e-5
+tensor2metric tensor2metric/dt.mif -num 1 -value - | testing_diff_image - tensor2metric/eigval1.mif -frac 1e-4
+tensor2metric tensor2metric/dt.mif -num 2 -value - | testing_diff_image - tensor2metric/eigval2.mif -frac 1e-4
+tensor2metric tensor2metric/dt.mif -num 3 -value - | testing_diff_image - tensor2metric/eigval3.mif -frac 1e-4
+tensor2metric tensor2metric/dt.mif -num 1 -modulate none -vector - | mrcalc - tensor2metric/eigvec1.mif -multiply - | mrmath -axis 3 - sum - | mrcalc - -abs - | testing_diff_image - tensor2metric/ones.mif -frac 1e-5
+tensor2metric tensor2metric/dt.mif -num 2 -modulate none -vector - | mrcalc - tensor2metric/eigvec2.mif -multiply - | mrmath -axis 3 - sum - | mrcalc - -abs - | testing_diff_image - tensor2metric/ones.mif -frac 1e-5
+tensor2metric tensor2metric/dt.mif -num 3 -modulate none -vector - | mrcalc - tensor2metric/eigvec3.mif -multiply - | mrmath -axis 3 - sum - | mrcalc - -abs - | testing_diff_image - tensor2metric/ones.mif -frac 1e-5

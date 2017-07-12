@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "gui/mrview/gui_image.h"
 
@@ -173,7 +172,7 @@ namespace MR
         const ssize_t xsize = header().size (x), ysize = header().size (y);
 
         type = gl::FLOAT;
-        std::vector<float> data;
+        vector<float> data;
 
         std::string cmap_name = ColourMap::maps[colourmap].name;
 
@@ -185,7 +184,10 @@ namespace MR
           format = gl::RGB;
           internal_format = gl::RGB32F;
 
-          if (tex_positions[plane] >= 0 && tex_positions[plane] < header().size (plane)) {
+          if (tex_positions[plane] < 0 || tex_positions[plane] >= header().size (plane)) {
+            value_min = 0.0f;
+            value_max = 0.0f;
+          } else {
             // copy data:
             image.index (plane) = slice;
             slice_min[plane] = std::numeric_limits<float>::infinity();
@@ -229,6 +231,8 @@ namespace MR
 
           if (tex_positions[plane] < 0 || tex_positions[plane] >= header().size (plane)) {
             for (auto& d : data) d = 0.0f;
+            value_min = 0.0f;
+            value_max = 0.0f;
           }
           else {
             // copy data:
@@ -242,7 +246,7 @@ namespace MR
                 data[idx] = val.real();
                 data[idx+1] = val.imag();
                 float mag = std::abs (val);
-                if (std::isfinite (mag)) 
+                if (std::isfinite (mag))
                   slice_max[plane] = std::max (slice_max[plane], mag);
               }
             }
@@ -259,6 +263,8 @@ namespace MR
 
           if (tex_positions[plane] < 0 || tex_positions[plane] >= header().size (plane)) {
             for (auto& d : data) d = 0.0f;
+            value_min = 0.0f;
+            value_max = 0.0f;
           }
           else {
             // copy data:
@@ -308,7 +314,7 @@ namespace MR
 
         if (volume_unchanged() && !texture_mode_changed)
           return;
-        
+
         std::string cmap_name = ColourMap::maps[colourmap].name;
 
         if (cmap_name == "RGB") format = gl::RGB;
@@ -409,7 +415,7 @@ namespace MR
 
           }
         }
-        else 
+        else
           copy_texture_3D_complex();
 
         min_max_set ();
@@ -443,10 +449,10 @@ namespace MR
 
       // required to shut up clang's compiler warnings about std::abs() when
       // instantiating Image::copy_texture_3D() with unsigned types:
-      template <typename ValueType> 
+      template <typename ValueType>
         inline ValueType abs_if_signed (ValueType x, typename std::enable_if<!std::is_unsigned<ValueType>::value>::type* = nullptr) { return std::abs(x); }
 
-      template <typename ValueType> 
+      template <typename ValueType>
         inline ValueType abs_if_signed (ValueType x, typename std::enable_if<std::is_unsigned<ValueType>::value>::type* = nullptr) { return x; }
 
 
@@ -454,13 +460,13 @@ namespace MR
       template <typename ValueType>
         inline void Image::copy_texture_3D ()
         {
-          struct WithType : public MR::Image<cfloat> {
+          struct WithType : public MR::Image<cfloat> { NOMEMALIGN
             using MR::Image<cfloat>::data_offset;
             using MR::Image<cfloat>::buffer;
 
             WithType (const MR::Image<cfloat>& source) : MR::Image<cfloat> (source) {
               __set_fetch_store_functions (fetch_func, store_func, buffer->datatype());
-            } 
+            }
             FORCE_INLINE ValueType value () const {
               ssize_t nseg = data_offset / buffer->get_io()->segment_size();
               return fetch_func (buffer->get_io()->segment (nseg), data_offset - nseg*buffer->get_io()->segment_size(), buffer->intensity_offset(), buffer->intensity_scale());
@@ -470,11 +476,11 @@ namespace MR
           } V (image);
 
           const size_t N = ( format == gl::RED ? 1 : 3 );
-          std::vector<ValueType> data (N * V.size(0) * V.size(1));
+          vector<ValueType> data (N * V.size(0) * V.size(1));
 
           ProgressBar progress ("loading image data", V.size(2));
 
-          for (size_t n = 3; n < V.ndim(); ++n) 
+          for (size_t n = 3; n < V.ndim(); ++n)
             V.index (n) = tex_positions[n];
 
           value_min = std::numeric_limits<float>::infinity();
@@ -523,10 +529,10 @@ namespace MR
                   }
                 }
 
-                if (V.ndim() <= 3) 
+                if (V.ndim() <= 3)
                   break;
               }
-              if (V.ndim() > 3) 
+              if (V.ndim() > 3)
                 V.index (3) = tex_positions[3];
 
             }
@@ -540,7 +546,7 @@ namespace MR
 
       inline void Image::copy_texture_3D_complex ()
       {
-        std::vector<float> data (2 * image.size (0) * image.size (1));
+        vector<float> data (2 * image.size (0) * image.size (1));
 
         ProgressBar progress ("loading image data", image.size (2));
 
@@ -612,7 +618,7 @@ namespace MR
           }
         }
 
-        if (!is_unchanged) 
+        if (!is_unchanged)
           tex_positions[0] = tex_positions[1] = tex_positions[2] = -1;
 
         return is_unchanged;

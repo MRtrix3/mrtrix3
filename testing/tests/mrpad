@@ -1,4 +1,4 @@
-mrpad dwi.mif -uniform 3 - | testing_diff_data - mrpad/out.mif 0
-mrpad dwi.mif -axis 0 1 2 - | testing_diff_data - mrpad/out2.mif 0
-mrpad dwi.mif -axis 0 1 2 -uniform 3 - | testing_diff_data - mrpad/out3.mif 0
-mrpad dwi.mif -axis 0 1 2 -axis 1 0 2 - | testing_diff_data - mrpad/out4.mif 0
+mrpad dwi.mif -uniform 3 - | testing_diff_image - mrpad/out.mif
+mrpad dwi.mif -axis 0 1 2 - | testing_diff_image - mrpad/out2.mif
+mrpad dwi.mif -axis 0 1 2 -uniform 3 - | testing_diff_image - mrpad/out3.mif
+mrpad dwi.mif -axis 0 1 2 -axis 1 0 2 - | testing_diff_image - mrpad/out4.mif

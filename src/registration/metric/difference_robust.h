@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __registration_metric_difference_robust_h__
 #define __registration_metric_difference_robust_h__
@@ -26,7 +25,7 @@ namespace MR
     namespace Metric
     {
       template<class Estimator = L2>
-        class DifferenceRobust {
+        class DifferenceRobust { MEMALIGN(DifferenceRobust<Estimator>)
           public:
             DifferenceRobust (Estimator est) : estimator(est) {}
 
@@ -64,7 +63,7 @@ namespace MR
         };
 
       template<class Im1Type, class Im2Type, class Estimator = L2>
-        class DifferenceRobust4D {
+        class DifferenceRobust4D { MEMALIGN(DifferenceRobust4D<Im1Type,Im2Type,Estimator>)
           public:
             DifferenceRobust4D (const Im1Type& im1, const Im2Type& im2, const Estimator& est) :
               volumes(im1.size(3)),
@@ -78,7 +77,7 @@ namespace MR
 
           /** requires_initialisation:
           type_trait to distinguish metric types that require a call to init before the operator() is called */
-          typedef int requires_initialisation;
+          using requires_initialisation = int;
 
           void init (const Im1Type& im1, const Im2Type& im2) {
             assert (im1.ndim() == 4);

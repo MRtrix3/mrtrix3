@@ -1,3 +1,3 @@
-tck2connectome SIFT_phantom/tracks.tck SIFT_phantom/parc.mif tmp.csv -force && testing_diff_matrix tmp.csv tck2connectome/out.csv 0.5
-tck2connectome SIFT_phantom/tracks.tck SIFT_phantom/parc.mif tmp1.csv -out_assignments tmp.csv -force && testing_diff_matrix tmp.csv tck2connectome/assignments.csv 0.5
-tck2connectome SIFT_phantom/tracks.tck SIFT_phantom/parc.mif tmp.csv -assignment_forward_search 5 -force && testing_diff_matrix tmp.csv tck2connectome/out.csv 0.5
+tck2connectome SIFT_phantom/tracks.tck SIFT_phantom/parc.mif tmp.csv -force && testing_diff_matrix tmp.csv tck2connectome/out.csv
+tck2connectome SIFT_phantom/tracks.tck SIFT_phantom/parc.mif tmp1.csv -out_assignments tmp.csv -force && testing_diff_matrix tmp.csv tck2connectome/assignments.csv
+tck2connectome SIFT_phantom/tracks.tck SIFT_phantom/parc.mif tmp.csv -assignment_forward_search 5 -force && testing_diff_matrix tmp.csv tck2connectome/out.csv

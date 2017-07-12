@@ -1,22 +1,20 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
 #include "command.h"
 #include "image.h"
-#include "registration/warp/utils.h"
+#include "registration/warp/helpers.h"
 #include "registration/warp/compose.h"
 #include "registration/warp/convert.h"
 #include "adapter/extract.h"
@@ -32,8 +30,10 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
+  SYNOPSIS = "Convert between different representations of a non-linear warp";
+
   DESCRIPTION
-  + "convert between different representations of a non-linear warp. A deformation field is defined as an image where each voxel "
+  + "A deformation field is defined as an image where each voxel "
     "defines the corresponding position in the other image (in scanner space coordinates). A displacement field "
     "stores the displacements (in mm) to the other image from the each voxel's position (in scanner space). The warpfull file is the "
     "5D format output from mrregister -nl_warp_full, which contains linear transforms, warps and their inverses that map each image to a midway space."; //TODO at link to warp format documentation
@@ -92,10 +92,7 @@ void run ()
       WARN ("-from option ignored with deformation2displacement conversion type");
 
     auto deformation = Image<default_type>::open (argument[0]).with_direct_io (3);
-    if (deformation.ndim() != 4)
-      throw Exception ("invalid input image. The input deformation field image must be a 4D file.");
-    if (deformation.size(3) != 3)
-      throw Exception ("invalid input image. The input deformation field image must have 3 volumes (x,y,z) in the 4th dimension.");
+    Registration::Warp::check_warp (deformation);
 
     Header header (deformation);
     header.datatype() = DataType::from_command_line (DataType::Float32);
@@ -105,10 +102,7 @@ void run ()
   // displacement2deformation
   } else if (registration_type == 1) {
     auto displacement = Image<default_type>::open (argument[0]).with_direct_io (3);
-    if (displacement.ndim() != 4)
-      throw Exception ("invalid input image. The input displacement field image must be a 4D file.");
-    if (displacement.size(3) != 3)
-      throw Exception ("invalid input image. The input displacement field image must have 3 volumes (x,y,z) in the 4th dimension.");
+    Registration::Warp::check_warp (displacement);
 
     if (midway_space)
       WARN ("-midway_space option ignored with displacement2deformation conversion type");
@@ -126,12 +120,7 @@ void run ()
   } else if (registration_type == 2 || registration_type == 3) {
 
     auto warp = Image<default_type>::open (argument[0]).with_direct_io (3);
-    if (warp.ndim() != 5)
-      throw Exception ("invalid input image. The input warpfull field image must be a 5D file.");
-    if (warp.size(3) != 3)
-      throw Exception ("invalid input image. The input warpfull field image must have 3 volumes (x,y,z) in the 4th dimension.");
-    if (warp.size(4) != 4)
-      throw Exception ("invalid input image. The input warpfull field image must have 4 volumes in the 5th dimension.");
+    Registration::Warp::check_warp_full (warp);
 
     Image<default_type> warp_output;
     if (midway_space) {
@@ -149,7 +138,7 @@ void run ()
     Header header (warp_output);
     header.datatype() = DataType::from_command_line (DataType::Float32);
     Image<default_type> output = Image<default_type>::create (argument[1], header);
-    threaded_copy (warp_output, output);
+    threaded_copy_with_progress_message ("converting warp", warp_output, output);
   }
 
 }

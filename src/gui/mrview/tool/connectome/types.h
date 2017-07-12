@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __gui_mrview_tool_connectome_types_h__
 #define __gui_mrview_tool_connectome_types_h__
@@ -28,9 +27,9 @@ namespace MR
       namespace Tool
       {
 
-      typedef MR::Connectome::node_t   node_t;
-      typedef MR::Connectome::LUT_node LUT_node;
-      typedef MR::Connectome::LUT      LUT;
+      using MR::Connectome::node_t;
+      using MR::Connectome::LUT_node;
+      using MR::Connectome::LUT;
 
       enum class node_visibility_t { ALL, NONE, DEGREE, CONNECTOME, VECTOR_FILE, MATRIX_FILE };
       enum class node_geometry_t   { SPHERE, CUBE, OVERLAY, MESH };

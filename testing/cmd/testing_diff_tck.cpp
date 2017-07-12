@@ -1,24 +1,16 @@
-/*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
 
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
 #include "progressbar.h"
@@ -32,9 +24,10 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
+  SYNOPSIS = "Compare two track files for differences, within specified tolerance";
+
   DESCRIPTION
-  + "compare two track files for differences, within specified tolerance. "
-    "This uses the symmetric Hausdorff distance to compare streamlines. For each "
+  + "This uses the symmetric Hausdorff distance to compare streamlines. For each "
     "streamline in the first input, the distance to the closest match in the second "
     "file is used and compared to the tolerance. The test succeeds if fewer "
     "than 10 streamlines fail."
@@ -61,7 +54,7 @@ inline bool within_haussdorf (const DWI::Tractography::Streamline<>& tck1, const
   return true;
 }
 
-inline bool within_haussdorf (const DWI::Tractography::Streamline<>& tck, const std::vector<DWI::Tractography::Streamline<>>& list, float tol)
+inline bool within_haussdorf (const DWI::Tractography::Streamline<>& tck, const vector<DWI::Tractography::Streamline<>>& list, float tol)
 {
   for (auto& tck2 : list) {
     if (within_haussdorf (tck, tck2, tol) || within_haussdorf (tck2, tck, tol)) 
@@ -78,7 +71,7 @@ void run ()
   float tol = argument[2];
 
   DWI::Tractography::Properties properties1, properties2;
-  std::vector<DWI::Tractography::Streamline<>> ref_list;
+  vector<DWI::Tractography::Streamline<>> ref_list;
   DWI::Tractography::Reader<> reader1 (argument[0], properties1);
   DWI::Tractography::Reader<> reader2 (argument[1], properties2);
 

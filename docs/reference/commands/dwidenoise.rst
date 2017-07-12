@@ -1,9 +1,14 @@
 .. _dwidenoise:
 
 dwidenoise
-===========
+===================
 
 Synopsis
+--------
+
+Denoise DWI data and estimate the noise level based on the optimal threshold for PCA
+
+Usage
 --------
 
 ::
@@ -15,8 +20,6 @@ Synopsis
 
 Description
 -----------
-
-Denoise DWI data and estimate the noise level based on the optimal threshold for PCA.
 
 DWI data denoising and noise map estimation by exploiting data redundancy in the PCA domain using the prior knowledge that the eigenspectrum of random covariance matrices is described by the universal Marchenko Pastur distribution.
 
@@ -55,13 +58,15 @@ Standard options
 References
 ^^^^^^^^^^
 
-Veraart, J.; Fieremans, E. & Novikov, D.S. Diffusion MRI noise mapping using random matrix theory Magn. Res. Med., 2016, early view, doi: 10.1002/mrm.26059
+Veraart, J.; Novikov, D.S.; Christiaens, D.; Ades-aron, B.; Sijbers, J. & Fieremans, E. Denoising of diffusion MRI using random matrix theory. NeuroImage, 2016, 142, 394-406, doi: 10.1016/j.neuroimage.2016.08.016
+
+Veraart, J.; Fieremans, E. & Novikov, D.S. Diffusion MRI noise mapping using random matrix theory. Magn. Res. Med., 2016, 76(5), 1582-1593, doi: 10.1002/mrm.26059
 
 --------------
 
 
 
-**Author:** Daan Christiaens (daan.christiaens@kuleuven.be) & Jelle Veraart (jelle.veraart@nyumc.org) & J-Donald Tournier (jdtournier@gmail.com)
+**Author:** Daan Christiaens (daan.christiaens@kcl.ac.uk) & Jelle Veraart (jelle.veraart@nyumc.org) & J-Donald Tournier (jdtournier@gmail.com)
 
 **Copyright:** Copyright (c) 2016 New York University, University of Antwerp, and the MRtrix3 contributors 
  

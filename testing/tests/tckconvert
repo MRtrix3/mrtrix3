@@ -1,4 +1,6 @@
-tckconvert tracks.tck tmp.vtk -force && diff tmp.vtk tckconvert/out0.vtk
-tckconvert tracks.tck -scanner2voxel dwi.mif tmp.vtk -force && diff tmp.vtk tckconvert/out1.vtk
-tckedit tracks.tck -number 10 tmp.tck -nthread 0 && tckconvert tmp.tck tmp-[].txt && cat tmp-*.txt > tmp-all.txt && testing_diff_matrix tmp-all.txt tckconvert/out2-all.txt 1e-4
+tckconvert tracks.tck tmp.vtk -force && awk '/POINTS/{s=1;next}/LINES/{s=0}s' tmp.vtk >tmppoints1.txt && awk '/POINTS/{s=1;next}/LINES/{s=0}s' tckconvert/out0.vtk >tmppoints2.txt && testing_diff_matrix tmppoints1.txt tmppoints2.txt -abs 1e-4
+tckconvert tracks.tck tmp.vtk -force && awk '/LINES/,0' tmp.vtk >tmplines1.txt && awk '/LINES/,0' tckconvert/out0.vtk >tmplines2.txt && diff tmplines1.txt tmplines2.txt
+tckconvert tracks.tck -scanner2voxel dwi.mif tmp.vtk -force && awk '/POINTS/{s=1;next}/LINES/{s=0}s' tmp.vtk >tmppoints1.txt && awk '/POINTS/{s=1;next}/LINES/{s=0}s' tckconvert/out1.vtk >tmppoints2.txt && testing_diff_matrix tmppoints1.txt tmppoints2.txt -abs 1e-4
+tckconvert tracks.tck -scanner2voxel dwi.mif tmp.vtk -force && awk '/LINES/,0' tmp.vtk >tmplines1.txt && awk '/LINES/,0' tckconvert/out1.vtk >tmplines2.txt && diff tmplines1.txt tmplines2.txt
+tckedit tracks.tck -number 10 tmp.tck -nthread 0 && tckconvert tmp.tck tmp-[].txt && cat tmp-*.txt > tmp-all.txt && testing_diff_matrix tmp-all.txt tckconvert/out2-all.txt -abs 1e-4
 tckconvert tckconvert/out2-[2:9].txt tmp.tck -force && testing_diff_tck tmp.tck tckconvert/out3.tck 1e-4

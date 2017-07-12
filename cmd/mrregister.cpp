@@ -1,20 +1,20 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "command.h"
 #include "image.h"
+#include "image_helpers.h"
 #include "filter/reslice.h"
 #include "interp/cubic.h"
 #include "transform.h"
@@ -27,8 +27,9 @@
 #include "registration/transform/affine.h"
 #include "registration/transform/rigid.h"
 #include "dwi/directions/predefined.h"
-#include "math/SH.h"
 #include "math/average_space.h"
+#include "math/SH.h"
+#include "math/sphere.h"
 
 
 using namespace MR;
@@ -41,9 +42,9 @@ void usage ()
 {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
-  DESCRIPTION
-      + "Register two images together using a rigid, affine or a non-linear transformation model."
+  SYNOPSIS = "Register two images together using a symmetric rigid, affine or non-linear transformation model";
 
+  DESCRIPTION
       + "By default this application will perform an affine, followed by non-linear registration."
 
       + "FOD registration (with apodised point spread reorientation) will be performed by default if the number of volumes "
@@ -98,6 +99,8 @@ void usage ()
 
   + Registration::adv_init_options
 
+  + Registration::lin_stage_options
+
   + Registration::nonlinear_options
 
   + Registration::fod_options
@@ -105,7 +108,7 @@ void usage ()
   + DataType::options();
 }
 
-typedef double value_type;
+using value_type = double;
 
 
 
@@ -117,6 +120,9 @@ void run ()
 
   if (im1_image.ndim() != im2_image.ndim())
     throw Exception ("input images do not have the same number of dimensions");
+
+  check_3D_nonunity (im1_image);
+  check_3D_nonunity (im2_image);
 
   auto opt = get_options ("type");
   bool do_rigid  = false;
@@ -165,7 +171,7 @@ void run ()
   Eigen::MatrixXd directions_cartesian;
   opt = get_options ("directions");
   if (opt.size())
-    directions_cartesian = Math::SH::spherical2cartesian (load_matrix (opt[0][0])).transpose();
+    directions_cartesian = Math::Sphere::spherical2cartesian (load_matrix (opt[0][0])).transpose();
 
   int image_lmax = 0;
 
@@ -182,7 +188,7 @@ void run ()
       CONSOLE ("SH series detected, performing FOD registration");
       do_reorientation = true;
       if (!directions_cartesian.cols())
-        directions_cartesian = Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_60()).transpose();
+        directions_cartesian = Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_60()).transpose();
     } else {
       do_reorientation = false;
       if (directions_cartesian.cols())
@@ -207,16 +213,20 @@ void run ()
     im2_midway_transformed_path = str(opt[0][1]);
   }
 
-  opt = get_options ("mask2");
-  Image<value_type> im2_mask;
-  if (opt.size ())
-    im2_mask = Image<value_type>::open(opt[0][0]);
-
   opt = get_options ("mask1");
   Image<value_type> im1_mask;
-  if (opt.size ())
+  if (opt.size ()) {
     im1_mask = Image<value_type>::open(opt[0][0]);
+    check_dimensions (im1_image, im1_mask, 0, 3);
+  }
 
+
+  opt = get_options ("mask2");
+  Image<value_type> im2_mask;
+  if (opt.size ()) {
+    im2_mask = Image<value_type>::open(opt[0][0]);
+    check_dimensions (im2_image, im2_mask, 0, 3);
+  }
 
 
   // ****** RIGID REGISTRATION OPTIONS *******
@@ -282,12 +292,12 @@ void run ()
     rigid_registration.set_scale_factor (parse_floats (opt[0][0]));
   }
 
-  opt = get_options ("rigid_repetitions");
-  if (opt.size ()) {
-    if (!do_rigid)
-      throw Exception ("the rigid repetition factors were input when no rigid registration is requested");
-    rigid_registration.set_gradient_descent_repetitions (parse_ints (opt[0][0]));
-  }
+  // opt = get_options ("rigid_stage.iterations");
+  // if (opt.size ()) {
+  //   if (!do_rigid)
+  //     throw Exception ("the rigid iterations were input when no rigid registration is requested");
+  //   rigid_registration.set_stage_iterations (parse_ints (opt[0][0]));
+  // }
 
   opt = get_options ("rigid_loop_density");
   if (opt.size ()) {
@@ -342,7 +352,7 @@ void run ()
   }
 
   opt = get_options ("rigid_lmax");
-  std::vector<int> rigid_lmax;
+  vector<int> rigid_lmax;
   if (opt.size ()) {
     if (!do_rigid)
       throw Exception ("the -rigid_lmax option has been set when no rigid registration is requested");
@@ -431,12 +441,12 @@ void run ()
     affine_registration.set_scale_factor (parse_floats (opt[0][0]));
   }
 
-  opt = get_options ("affine_repetitions");
-  if (opt.size ()) {
-    if (!do_affine)
-      throw Exception ("the affine repetition factors were input when no affine registration is requested");
-    affine_registration.set_gradient_descent_repetitions (parse_ints (opt[0][0]));
-  }
+  // opt = get_options ("affine_stage.iterations");
+  // if (opt.size ()) {
+  //   if (!do_affine)
+  //     throw Exception ("the affine repetition factors were input when no affine registration is requested");
+  //   affine_registration.set_stage_iterations (parse_ints (opt[0][0]));
+  // }
 
   opt = get_options ("affine_loop_density");
   if (opt.size ()) {
@@ -490,9 +500,8 @@ void run ()
     affine_registration.set_max_iter (parse_ints (opt[0][0]));
   }
 
-
   opt = get_options ("affine_lmax");
-  std::vector<int> affine_lmax;
+  vector<int> affine_lmax;
   if (opt.size ()) {
     if (!do_affine)
       throw Exception ("the -affine_lmax option has been set when no affine registration is requested");
@@ -513,9 +522,17 @@ void run ()
     affine_registration.set_log_stream (linear_logstream.rdbuf());
   }
 
-  // ****** LINEAR INITIALISATION OPTIONS *******
+
+  // ****** LINEAR INITIALISATION AND STAGE OPTIONS *******
   if (!do_rigid and !do_affine) {
     for (auto& s: Registration::adv_init_options) {
+      if (get_options(s.id).size()) {
+        std::stringstream msg;
+        msg << "cannot use option -" << s.id << " when no linear registration is requested";
+        throw Exception (msg.str());
+      }
+    }
+    for (auto& s: Registration::lin_stage_options) {
       if (get_options(s.id).size()) {
         std::stringstream msg;
         msg << "cannot use option -" << s.id << " when no linear registration is requested";
@@ -525,9 +542,9 @@ void run ()
   }
 
   if (do_rigid)
-    Registration::parse_general_init_options (rigid_registration);
+    Registration::parse_general_options (rigid_registration);
   if (do_affine)
-    Registration::parse_general_init_options (affine_registration);
+    Registration::parse_general_options (affine_registration);
 
   // ****** NON-LINEAR REGISTRATION OPTIONS *******
   Registration::NonLinear nl_registration;
@@ -583,7 +600,7 @@ void run ()
   if (opt.size ()) {
     if (!do_nonlinear)
       throw Exception ("the non-linear multi-resolution scale factors were input when no non-linear registration is requested");
-    std::vector<default_type> scale_factors = parse_floats (opt[0][0]);
+    vector<default_type> scale_factors = parse_floats (opt[0][0]);
     if (nonlinear_init) {
       WARN ("-nl_scale option ignored since only the full resolution will be performed when initialising with non-linear warp");
     } else {
@@ -595,7 +612,7 @@ void run ()
   if (opt.size ()) {
     if (!do_nonlinear)
       throw Exception ("the number of non-linear iterations have been input when no non-linear registration is requested");
-    std::vector<int> iterations_per_level = parse_ints (opt[0][0]);
+    vector<int> iterations_per_level = parse_ints (opt[0][0]);
     if (nonlinear_init && iterations_per_level.size() > 1)
       throw Exception ("when initialising the non-linear registration the max number of iterations can only be defined for a single level");
     else
@@ -624,7 +641,7 @@ void run ()
   }
 
   opt = get_options ("nl_lmax");
-  std::vector<int> nl_lmax;
+  vector<int> nl_lmax;
   if (opt.size ()) {
     if (!do_nonlinear)
       throw Exception ("the -nl_lmax option has been set when no non-linear registration is requested");
@@ -668,7 +685,7 @@ void run ()
     } else { // 3D
       if (rigid_metric == Registration::NCC){
         Registration::Metric::NormalisedCrossCorrelation metric;
-        std::vector<size_t> extent(3,3);
+        vector<size_t> extent(3,3);
         rigid_registration.set_extent (extent);
         rigid_registration.run_masked (metric, rigid, im1_image, im2_image, im1_mask, im2_mask);
       }
@@ -708,8 +725,7 @@ void run ()
 
     if (do_rigid) {
       affine.set_centre (rigid.get_centre());
-      affine.set_translation (rigid.get_translation());
-      affine.set_matrix (rigid.get_matrix());
+      affine.set_transform (rigid.get_transform());
       affine_registration.set_init_translation_type (Registration::Transform::Init::none);
     }
 
@@ -739,7 +755,7 @@ void run ()
     } else { // 3D
       if (affine_metric == Registration::NCC){
         Registration::Metric::NormalisedCrossCorrelation metric;
-        std::vector<size_t> extent(3,3);
+        vector<size_t> extent(3,3);
         affine_registration.set_extent (extent);
         affine_registration.run_masked (metric, affine, im1_image, im2_image, im1_mask, im2_mask);
       }
@@ -848,7 +864,7 @@ void run ()
         Registration::Transform::reorient_warp ("reorienting FODs",
                                                 im1_transformed,
                                                 deform_field,
-                                                Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+                                                Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
 
     } else if (do_affine) {
       Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, affine.get_transform(), Adapter::AutoOverSample, 0.0);
@@ -857,7 +873,7 @@ void run ()
                                            im1_transformed,
                                            im1_transformed,
                                            affine.get_transform(),
-                                           Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+                                           Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
     } else { // rigid
       Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
       if (do_reorientation)
@@ -865,7 +881,7 @@ void run ()
                                            im1_transformed,
                                            im1_transformed,
                                            rigid.get_transform(),
-                                           Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+                                           Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
     }
   }
 
@@ -885,7 +901,7 @@ void run ()
       Filter::warp<Interp::Cubic> (im1_image, im1_midway, im1_deform_field, 0.0);
       if (do_reorientation)
         Registration::Transform::reorient_warp ("reorienting FODs", im1_midway, im1_deform_field,
-                                                Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+                                                Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
 
       Image<default_type> im2_deform_field = Image<default_type>::scratch (*(nl_registration.get_im2_to_mid()));
       Registration::Warp::compose_linear_deformation (nl_registration.get_im2_to_mid_linear(), *(nl_registration.get_im2_to_mid()), im2_deform_field);
@@ -893,7 +909,7 @@ void run ()
       Filter::warp<Interp::Cubic> (im2_image, im2_midway, im2_deform_field, 0.0);
       if (do_reorientation)
         Registration::Transform::reorient_warp ("reorienting FODs", im2_midway, im2_deform_field,
-                                                Math::SH::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+                                                Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
 
     } else if (do_affine) {
       affine_registration.write_transformed_images (im1_image, im2_image, affine, im1_midway_transformed_path, im2_midway_transformed_path, do_reorientation);

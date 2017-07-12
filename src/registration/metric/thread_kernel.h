@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __registration_metric_threadkernel_h__
 #define __registration_metric_threadkernel_h__
@@ -30,44 +29,44 @@ namespace MR
       //! \cond skip
       namespace {
         template<class T>
-        struct Void {
-          typedef void type;
+        struct Void { NOMEMALIGN
+          using type = void;
         };
 
         template <class MetricType, typename U = void>
-        struct is_neighbourhood_metric {
-          typedef int no;
+        struct is_neighbourhood_metric { NOMEMALIGN
+          using no = int;
         };
 
         template <class MetricType>
-        struct is_neighbourhood_metric<MetricType, typename Void<typename MetricType::is_neighbourhood>::type> {
-          typedef int yes;
+        struct is_neighbourhood_metric<MetricType, typename Void<typename MetricType::is_neighbourhood>::type> { NOMEMALIGN
+          using yes = int;
         };
 
         template <class MetricType, typename U = void>
-        struct use_processed_image {
-          typedef int no;
+        struct use_processed_image { NOMEMALIGN
+          using no = int;
         };
 
         template <class MetricType>
-        struct use_processed_image<MetricType, typename Void<typename MetricType::requires_precompute>::type> {
-          typedef int yes;
+        struct use_processed_image<MetricType, typename Void<typename MetricType::requires_precompute>::type> { NOMEMALIGN
+          using yes = int;
         };
 
         template <class MetricType, typename U = void>
-        struct cost_is_vector {
-          typedef int no;
+        struct cost_is_vector { NOMEMALIGN
+          using no = int;
         };
 
         template <class MetricType>
-        struct cost_is_vector<MetricType, typename Void<typename MetricType::is_vector_type>::type> {
-          typedef int yes;
+        struct cost_is_vector<MetricType, typename Void<typename MetricType::is_vector_type>::type> { NOMEMALIGN
+          using yes = int;
         };
       }
       //! \endcond
 
       template <class MetricType, class ParamType>
-      class ThreadKernel {
+      class ThreadKernel { MEMALIGN(ThreadKernel)
         public:
           ThreadKernel (
               const MetricType& metric,

@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __dwi_tractography_algorithms_iFOD_calibrator_h__
 #define __dwi_tractography_algorithms_iFOD_calibrator_h__
@@ -30,10 +29,10 @@ namespace MR {
 
       using namespace MR::DWI::Tractography::Tracking;
 
-      std::vector<Eigen::Vector3f> direction_grid (float max_angle, float spacing)
+      vector<Eigen::Vector3f> direction_grid (float max_angle, float spacing)
       {
         const float maxR = Math::pow2 (max_angle / spacing);
-        std::vector<Eigen::Vector3f> list;
+        vector<Eigen::Vector3f> list;
         ssize_t extent = std::ceil (max_angle / spacing);
 
         for (ssize_t i = -extent; i <= extent; ++i) {
@@ -53,7 +52,7 @@ namespace MR {
       }
 
       namespace {
-        class Pair {
+        class Pair { NOMEMALIGN
           public:
             Pair (float elevation, float amplitude) : el (elevation), amp (amplitude) { }
             float el, amp;
@@ -66,7 +65,7 @@ namespace MR {
           typename Method::Calibrate calibrate_func (method);
           const float sqrt3 = std::sqrt (3.0);
 
-          std::vector<Pair> amps;
+          vector<Pair> amps;
           for (float el = 0.0; el < method.S.max_angle; el += 0.001) {
             amps.push_back (Pair (el, calibrate_func (el)));
             if (!std::isfinite (amps.back().amp) || amps.back().amp <= 0.0) break;
