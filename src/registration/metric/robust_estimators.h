@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __registration_metric_robust_estimators_h__
 #define __registration_metric_robust_estimators_h__
@@ -28,7 +27,7 @@ namespace MR
   {
     namespace Metric
     {
-      class L1 {
+      class L1 { NOMEMALIGN
         public:
           void operator() (const default_type& x,
                            default_type& residual,
@@ -49,7 +48,7 @@ namespace MR
           }
       };
 
-      class L2 {
+      class L2 { NOMEMALIGN
         public:
           void operator() (const default_type& x,
                            default_type& residual,
@@ -67,7 +66,7 @@ namespace MR
       };
 
       // least powers: residual = |x|^power with power between 1 and 2
-      class LP {
+      class LP { NOMEMALIGN
         public:
           LP (const default_type p) : power(p) {assert (power>=1.0 && power <= 2.0);}
           LP () : power(1.2) {}

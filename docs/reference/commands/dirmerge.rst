@@ -1,9 +1,14 @@
 .. _dirmerge:
 
 dirmerge
-===========
+===================
 
 Synopsis
+--------
+
+Splice or merge sets of directions over multiple shells into a single set, in such a way as to maintain near-optimality upon truncation
+
+Usage
 --------
 
 ::
@@ -14,13 +19,10 @@ Synopsis
 -  *bvalue files*: the b-value and sets of corresponding files, in order
 -  *out*: the output directions file, with each row listing the X Y Z gradient directions, the b-value, and an index representing the phase encode direction
 
-Description
------------
-
-splice or merge sets of directions over multiple shells into a single set, in such a way as to maintain near-optimality upon truncation.
-
 Options
 -------
+
+-  **-unipolar_weight** set the weight given to the unipolar electrostatic repulsion model compared to the bipolar model (default: 0.2).
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -47,11 +49,16 @@ Standard options
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
 
-This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+MRtrix is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see www.mrtrix.org
+For more details, see http://www.mrtrix.org/.
+
 

@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "registration/nonlinear.h"
 
@@ -51,10 +50,10 @@ namespace MR
                              "for all multi-resolution levels, or a single value for each level. (Default: 50)")
         + Argument ("num").type_sequence_int ()
 
-      + Option ("nl_update_smooth", "regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0 x voxel_size)")
+      + Option ("nl_update_smooth", "regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0)")
         + Argument ("stdev").type_float ()
 
-      + Option ("nl_disp_smooth", "regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)")
+      + Option ("nl_disp_smooth", "regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0)")
         + Argument ("stdev").type_float ()
 
       + Option ("nl_grad_step", "the gradient step size for non-linear registration (Default: 0.5)")

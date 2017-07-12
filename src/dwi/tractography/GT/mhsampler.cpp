@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "dwi/tractography/GT/mhsampler.h"
 
@@ -63,9 +62,10 @@ namespace MR {
           stats.incN('b');
           
           Point_t pos;
+          SpatialLock<float>::Guard spatial_guard (*lock);
           do {
             pos = getRandPosInMask();
-          } while (! lock->lockIfNotLocked(pos));
+          } while (! spatial_guard.try_lock(pos));
           Point_t dir = getRandDir();
           
           double dE = E->stageAdd(pos, dir);
@@ -78,7 +78,6 @@ namespace MR {
           else {
             E->clearChanges();
           }
-          lock->unlock(pos);
         }
         
         
@@ -87,27 +86,24 @@ namespace MR {
           //TRACE;
           stats.incN('d');
           
-          size_t idx;
           Particle* par;
-           do {
-            par = pGrid.getRandom(idx);
+          SpatialLock<float>::Guard spatial_guard (*lock);
+          do {
+            par = pGrid.getRandom();
             if (par == NULL || par->hasPredecessor() || par->hasSuccessor())
               return;
-          } while (! lock->lockIfNotLocked(par->getPosition()));
-          Point_t pos0 = par->getPosition();
+          } while (! spatial_guard.try_lock(par->getPosition()));
           
           double dE = E->stageRemove(par);
           double R = std::exp(-dE) * pGrid.getTotalCount() / props.density * props.p_birth / props.p_death;
           if (R > rng_uniform()) {
             E->acceptChanges();
-            pGrid.remove(idx);
+            pGrid.remove(par);
             stats.incNa('d');
           }
           else {
             E->clearChanges();
           }
-          
-          lock->unlock(pos0);
         }
         
         
@@ -116,20 +112,18 @@ namespace MR {
           //TRACE;
           stats.incN('r');
           
-          size_t idx;
           Particle* par;
+          SpatialLock<float>::Guard spatial_guard (*lock);
           do {
-            par = pGrid.getRandom(idx);
+            par = pGrid.getRandom();
             if (par == NULL)
               return;
-          } while (! lock->lockIfNotLocked(par->getPosition()));
-          Point_t pos0 = par->getPosition();
-          
+          } while (! spatial_guard.try_lock(par->getPosition()));
+
           Point_t pos, dir;
           moveRandom(par, pos, dir);
           
           if (!inMask(T.scanner2voxel.cast<float>() * pos)) {
-            lock->unlock(pos0);
             return;
           }
           double dE = E->stageShift(par, pos, dir);
@@ -142,8 +136,6 @@ namespace MR {
           else {
             E->clearChanges();
           }
-          
-          lock->unlock(pos0);
         }
         
         
@@ -152,19 +144,17 @@ namespace MR {
           //TRACE;
           stats.incN('o');
           
-          size_t idx;
           Particle* par;
+          SpatialLock<float>::Guard spatial_guard (*lock);
           do {
-            par = pGrid.getRandom(idx);
+            par = pGrid.getRandom();
             if (par == NULL)
               return;
-          } while (! lock->lockIfNotLocked(par->getPosition()));
-          Point_t pos0 = par->getPosition();
-          
+          } while (! spatial_guard.try_lock(par->getPosition()));
+
           Point_t pos, dir;
           bool moved = moveOptimal(par, pos, dir);
           if (!moved || !inMask(T.scanner2voxel.cast<float>() * pos)) {
-            lock->unlock(pos0);
             return;
           }
           
@@ -179,8 +169,6 @@ namespace MR {
           else {
             E->clearChanges();
           }
-          
-          lock->unlock(pos0);
         }
         
         
@@ -189,14 +177,14 @@ namespace MR {
           //TRACE;
           stats.incN('c');
           
-          size_t idx;
           Particle* par;
+          SpatialLock<float>::Guard spatial_guard (*lock);
           do {
-            par = pGrid.getRandom(idx);
+            par = pGrid.getRandom();
             if (par == NULL)
               return;
-          } while (! lock->lockIfNotLocked(par->getPosition()));
-          Point_t pos0 = par->getPosition();
+          } while (! spatial_guard.try_lock(par->getPosition()));
+
           int alpha0 = (rng_uniform() < 0.5) ? -1 : 1;
           ParticleEnd pe0;
           pe0.par = par;
@@ -224,8 +212,6 @@ namespace MR {
           else {
             E->clearChanges();
           }
-          
-          lock->unlock(pos0);
         }
         
         

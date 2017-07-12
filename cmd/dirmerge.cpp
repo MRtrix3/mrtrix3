@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -31,9 +29,8 @@ void usage ()
 {
 AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-DESCRIPTION
-  + "splice or merge sets of directions over multiple shells into a single set, "
-    "in such a way as to maintain near-optimality upon truncation.";
+SYNOPSIS = "Splice or merge sets of directions over multiple shells into a single set, "
+           "in such a way as to maintain near-optimality upon truncation";
 
 ARGUMENTS
   + Argument ("subsets", "the number of subsets (phase-encode directions) per b-value").type_integer(1,10000)
@@ -41,14 +38,21 @@ ARGUMENTS
   + Argument ("out", "the output directions file, with each row listing "
       "the X Y Z gradient directions, the b-value, and an index representing "
       "the phase encode direction").type_file_out();
+
+OPTIONS
+  + Option ("unipolar_weight", 
+      "set the weight given to the unipolar electrostatic repulsion model compared to the "
+      "bipolar model (default: 0.2).");
 }
 
 
-typedef double value_type;
-typedef std::array<value_type,3> Direction;
-typedef std::vector<Direction> DirectionSet;
 
-struct OutDir {
+using value_type = double;
+using Direction = Eigen::Matrix<value_type,3,1>;
+using DirectionSet = vector<Direction>;
+
+
+struct OutDir { MEMALIGN(OutDir)
   Direction d;
   size_t b;
   size_t pe;
@@ -63,10 +67,12 @@ inline std::ostream& operator<< (std::ostream& stream, const OutDir& d) {
 void run () 
 {
   size_t num_subsets = argument[0];
+  value_type unipolar_weight = App::get_option_value ("unipolar_weight", 0.2);
+  value_type bipolar_weight = 1.0 - unipolar_weight;
 
 
-  std::vector<std::vector<DirectionSet>> dirs;
-  std::vector<value_type> bvalue ((argument.size() - 2) / (1+num_subsets));
+  vector<vector<DirectionSet>> dirs;
+  vector<value_type> bvalue ((argument.size() - 2) / (1+num_subsets));
   INFO ("expecting " + str(bvalue.size()) + " b-values");
   if (bvalue.size()*(1+num_subsets) + 2 != argument.size())
     throw Exception ("inconsistent number of arguments");
@@ -76,16 +82,16 @@ void run ()
   size_t current = 1, nb = 0;
   while (current < argument.size()-1) {
     bvalue[nb] = to<value_type> (argument[current++]);
-    std::vector<DirectionSet> d;
+    vector<DirectionSet> d;
     for (size_t i = 0; i < num_subsets; ++i) {
       auto m = DWI::Directions::load_cartesian (argument[current++]);
       DirectionSet set;
       for (ssize_t r = 0; r < m.rows(); ++r)
-        set.push_back ({ { m(r,0), m(r,1), m(r,2) } });
+        set.push_back (Direction (m(r,0), m(r,1), m(r,2)));
       d.push_back (set);
     }
     INFO ("found b = " + str(bvalue[nb]) + ", " + 
-        str ([&]{ std::vector<size_t> s; for (auto& n : d) s.push_back (n.size()); return s; }()) + " volumes");
+        str ([&]{ vector<size_t> s; for (auto& n : d) s.push_back (n.size()); return s; }()) + " volumes");
 
     dirs.push_back (d);
     ++nb;
@@ -101,28 +107,22 @@ void run ()
   size_t first = std::uniform_int_distribution<size_t> (0, dirs[0][0].size()-1)(rng);
 
   
-  std::vector<OutDir> merged;
+  vector<OutDir> merged;
 
   auto push = [&](size_t b, size_t p, size_t n) 
   { 
-    merged.push_back ({ { { dirs[b][p][n][0], dirs[b][p][n][1], dirs[b][p][n][2] } }, b, p }); 
+    merged.push_back ({ Direction (dirs[b][p][n][0], dirs[b][p][n][1], dirs[b][p][n][2]), b, p }); 
     dirs[b][p].erase (dirs[b][p].begin()+n); 
   };
 
-  auto energy_pair = [](const Direction& a, const Direction& b) 
+  auto energy_pair = [&](const Direction& a, const Direction& b) 
   {
     // use combination of mono- and bi-polar electrostatic repulsion models 
     // to ensure adequate coverage of eddy-current space as well as 
     // orientation space. Use a moderate bias, favouring the bipolar model.
-    return 1.2 / (
-        Math::pow2 (b[0] - a[0]) + 
-        Math::pow2 (b[1] - a[1]) + 
-        Math::pow2 (b[2] - a[2]) 
-        ) + 1.0 / (
-        Math::pow2 (b[0] + a[0]) + 
-        Math::pow2 (b[1] + a[1]) + 
-        Math::pow2 (b[2] + a[2]) 
-        );
+
+    return (unipolar_weight+bipolar_weight) / (b-a).norm()
+         + bipolar_weight / (b+a).norm();
   };
 
   auto energy = [&](size_t b, size_t p, size_t n) 
@@ -150,7 +150,7 @@ void run ()
 
 
 
-  std::vector<float> fraction;
+  vector<float> fraction;
   for (auto& d : dirs) {
     size_t n = 0;
     for (auto& m : d)
@@ -160,7 +160,7 @@ void run ()
 
   push (0, 0, first);
 
-  std::vector<size_t> counts (bvalue.size(), 0);
+  vector<size_t> counts (bvalue.size(), 0);
   ++counts[0];
 
   auto num_for_b = [&](size_t b) {

@@ -1,1 +1,1 @@
-dwi2mask dwi.mif - | testing_diff_data - dwi2mask/out.mif 0
+dwi2mask dwi.mif - | testing_diff_image - dwi2mask/out.mif

@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -24,7 +22,6 @@
 #include "progressbar.h"
 
 #include "algo/loop.h"
-#include "algo/histogram.h"
 #include "filter/optimal_threshold.h"
 
 
@@ -35,14 +32,14 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
+  SYNOPSIS = "Create bitwise image by thresholding image intensity";
+
   DESCRIPTION
-  + "create bitwise image by thresholding image intensity. By default, an "
-    "optimal threshold is determined using a parameter-free method. "
-    "Alternatively the threshold can be defined manually by the user "
-    "or using a histogram-based analysis to cut out the background.";
+  + "By default, an optimal threshold is determined using a parameter-free method. "
+    "Alternatively the threshold can be defined manually by the user.";
 
   REFERENCES 
-    + "* If not using the -abs option:\n"
+    + "* If not using any manual thresholding option:\n"
     "Ridgway, G. R.; Omar, R.; Ourselin, S.; Hill, D. L.; Warren, J. D. & Fox, N. C. "
     "Issues with threshold masking in voxel-based morphometry of atrophied brains. "
     "NeuroImage, 2009, 44, 99-111";
@@ -55,9 +52,6 @@ void usage ()
   OPTIONS
   + Option ("abs", "specify threshold value as absolute intensity.")
   + Argument ("value").type_float()
-
-  + Option ("histogram", "define the threshold by a histogram analysis to cut out the background. "
-                         "Note that only the first study is used for thresholding.")
 
   + Option ("percentile", "threshold the image at the ith percentile.")
   + Argument ("value").type_float (0.0, 100.0)
@@ -88,18 +82,11 @@ void usage ()
 void run ()
 {
   default_type threshold_value (NaN), percentile (NaN), bottomNpercent (NaN), topNpercent (NaN);
-  bool use_histogram = false;
   size_t topN (0), bottomN (0), nopt (0);
 
   auto opt = get_options ("abs");
   if (opt.size()) {
     threshold_value = opt[0][0];
-    ++nopt;
-  }
-
-  opt = get_options ("histogram");
-  if (opt.size()) {
-    use_histogram = true;
     ++nopt;
   }
 
@@ -178,7 +165,7 @@ void run ()
   }
 
   if (topN || bottomN) {
-    std::multimap<float,std::vector<ssize_t> > list;
+    std::multimap<float,vector<ssize_t> > list;
 
     {
       const std::string msg = "thresholding \"" + shorten (in.name()) + "\" at " + (
@@ -195,10 +182,10 @@ void run ()
             if (val < list.begin()->first) continue;
             list.erase (list.begin());
           }
-          std::vector<ssize_t> pos (in.ndim());
+          vector<ssize_t> pos (in.ndim());
           for (size_t n = 0; n < in.ndim(); ++n)
             pos[n] = in.index(n);
-          list.insert (std::pair<float,std::vector<ssize_t> > (val, pos));
+          list.insert (std::pair<float,vector<ssize_t> > (val, pos));
         }
       }
       else {
@@ -207,15 +194,15 @@ void run ()
           if (!std::isfinite (val)) continue;
           if (ignore_zeroes && val == 0.0) continue;
           if (list.size() == bottomN) {
-            std::multimap<float,std::vector<ssize_t> >::iterator i = list.end();
+            std::multimap<float,vector<ssize_t> >::iterator i = list.end();
             --i;
             if (val > i->first) continue;
             list.erase (i);
           }
-          std::vector<ssize_t> pos (in.ndim());
+          vector<ssize_t> pos (in.ndim());
           for (size_t n = 0; n < in.ndim(); ++n)
             pos[n] = in.index(n);
-          list.insert (std::pair<float,std::vector<ssize_t> > (val, pos));
+          list.insert (std::pair<float,vector<ssize_t> > (val, pos));
         }
       }
     }
@@ -223,24 +210,19 @@ void run ()
     for (auto l = Loop(out) (out); l; ++l)
       out.value() = zero;
 
-    for (std::multimap<float,std::vector<ssize_t> >::const_iterator i = list.begin(); i != list.end(); ++i) {
+    for (std::multimap<float,vector<ssize_t> >::const_iterator i = list.begin(); i != list.end(); ++i) {
       for (size_t n = 0; n < out.ndim(); ++n)
         out.index(n) = i->second[n];
       out.value() = one;
     }
   }
   else {
-    if (use_histogram) {
-      Histogram<decltype(in)> hist (in);
-      threshold_value = hist.first_min();
-    }
-    else if (std::isnan (threshold_value)) {
-      Image<bool> mask;
-      opt = get_options ("mask");
-      if (opt.size())
-        mask = Image<bool>::open (opt[0][0]);
+    Image<bool> mask;
+    opt = get_options ("mask");
+    if (opt.size())
+      mask = Image<bool>::open (opt[0][0]);
+    if (std::isnan (threshold_value))
       threshold_value = Filter::estimate_optimal_threshold (in, mask);
-    }
 
     const std::string msg = "thresholding \"" + shorten (in.name()) + "\" at intensity " + str (threshold_value);
     for (auto l = Loop(msg, in) (in, out); l; ++l) {

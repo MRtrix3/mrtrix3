@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __gt_externalenergy_h__
 #define __gt_externalenergy_h__
@@ -31,7 +30,7 @@ namespace MR {
       namespace GT {
         
         class ExternalEnergyComputer : public EnergyComputer
-        {
+        { MEMALIGN(ExternalEnergyComputer)
         public:
           
           ExternalEnergyComputer(Stats& stat, const Image<float>& dwimage, const Properties& props);
@@ -87,10 +86,10 @@ namespace MR {
           
           Math::ICLS::Problem<double> nnls;
           
-          std::vector<Eigen::Vector3i > changes_vox;
-          std::vector<Eigen::VectorXd > changes_tod;
-          std::vector<Eigen::VectorXd > changes_fiso;
-          std::vector<double> changes_eext;
+          vector<Eigen::Vector3i > changes_vox;
+          vector<Eigen::VectorXd > changes_tod;
+          vector<Eigen::VectorXd > changes_fiso;
+          vector<double> changes_eext;
           
           
           void add(const Point_t& pos, const Point_t& dir, const double factor = 1.);

@@ -1,9 +1,9 @@
-maskfilter components_mask.mif connect - | testing_diff_data - maskfilter/out1.mif 0
-maskfilter components_mask.mif connect -largest - | testing_diff_data - maskfilter/out2.mif 0
-maskfilter components_mask.mif connect -connectivity - | testing_diff_data - maskfilter/out3.mif 0
-maskfilter components_mask.mif connect -connectivity -largest - | testing_diff_data - maskfilter/out4.mif 0
-maskfilter components_mask.mif connect -axes 0,2 - | testing_diff_data - maskfilter/out5.mif 0
-maskfilter components_mask.mif connect -axes 0,2 -connectivity - | testing_diff_data - maskfilter/out6.mif 0
-maskfilter mask.mif dilate -npass 2 - | testing_diff_data - maskfilter/out7.mif 0
-maskfilter mask.mif erode -npass 2 - | testing_diff_data - maskfilter/out8.mif 0
-maskfilter mask.mif median -extent 3,3,3 - | testing_diff_data - maskfilter/out9.mif 0
+maskfilter components_mask.mif connect - | testing_diff_image - maskfilter/out1.mif
+maskfilter components_mask.mif connect -largest - | testing_diff_image - maskfilter/out2.mif
+maskfilter components_mask.mif connect -connectivity - | testing_diff_image - maskfilter/out3.mif
+maskfilter components_mask.mif connect -connectivity -largest - | testing_diff_image - maskfilter/out4.mif
+maskfilter components_mask.mif connect -axes 0,2 - | testing_diff_image - maskfilter/out5.mif
+maskfilter components_mask.mif connect -axes 0,2 -connectivity - | testing_diff_image - maskfilter/out6.mif
+maskfilter mask.mif dilate -npass 2 - | testing_diff_image - maskfilter/out7.mif
+maskfilter mask.mif erode -npass 2 - | testing_diff_image - maskfilter/out8.mif
+maskfilter mask.mif median -extent 3,3,3 - | testing_diff_image - maskfilter/out9.mif

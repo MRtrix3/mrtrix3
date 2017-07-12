@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __gui_mrview_tool_connectome_node_h__
 #define __gui_mrview_tool_connectome_node_h__
@@ -19,7 +18,7 @@
 #include "image.h"
 
 #include "gui/opengl/gl.h"
-#include "mesh/mesh.h"
+#include "surface/mesh.h"
 
 namespace MR
 {
@@ -33,12 +32,12 @@ namespace MR
 
       // Stores all information relating to the drawing of individual nodes, both fixed and variable
       class Node
-      {
+      { MEMALIGN(Node)
         public:
           Node (const Eigen::Vector3f&, const size_t, const size_t, const MR::Image<bool>&);
           Node ();
 
-          void assign_mesh (MR::Mesh::Mesh& in) { clear_mesh(); mesh.reset (new Node::Mesh (in)); }
+          void assign_mesh (MR::Surface::Mesh& in) { clear_mesh(); mesh.reset (new Node::Mesh (in)); }
           void render_mesh() const { if (!mesh) return; mesh->render(); }
           void clear_mesh() { if (mesh) delete mesh.release(); }
 
@@ -73,9 +72,9 @@ namespace MR
           QPixmap pixmap;
 
           // Helper class to manage the storage and display of the mesh for each node
-          class Mesh {
+          class Mesh { MEMALIGN(Mesh)
             public:
-              Mesh (MR::Mesh::Mesh&);
+              Mesh (MR::Surface::Mesh&);
               Mesh (const Mesh&) = delete;
               Mesh (Mesh&&);
               Mesh () = delete;

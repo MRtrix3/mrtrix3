@@ -1,0 +1,55 @@
+#!/usr/bin/env python
+
+# Script that generates a five-tissue-type (5TT) segmented image: the format appropriate for ACT
+#
+# In this script, major stages of processing can be performed in one of two ways:
+#   - Using FSL tools: BET for brain extraction, FAST for tissue segmentation, FIRST for sub-cortical grey matter segmentation
+#   - Using segmentations from FreeSurfer
+# Alternative algorithms for performing this conversion can be added by creating a new file in lib/mrtrix3/_5ttgen/ and
+#   defining the appropriate functions; 5ttgen will automatically make that algorithm available at the command-line
+
+
+# Make the corresponding MRtrix3 Python libraries available
+import inspect, os, sys
+lib_folder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile(inspect.currentframe()))[0], os.pardir, 'lib')))
+if not os.path.isdir(lib_folder):
+  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
+  sys.exit(1)
+sys.path.insert(0, lib_folder)
+
+
+from mrtrix3 import algorithm, app, path, run
+
+app.init('Robert E. Smith (robert.smith@florey.edu.au)', 'Generate a 5TT image suitable for ACT')
+app.cmdline.addCitation('', 'Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. NeuroImage, 2012, 62, 1924-1938', False)
+app.cmdline.addDescription('5ttgen acts as a \'master\' script for generating a five-tissue-type (5TT) segmented tissue image suitable for use in Anatomically-Constrained Tractography (ACT). A range of different algorithms are available for completing this task. When using this script, the name of the algorithm to be used must appear as the first argument on the command-line after \'5ttgen\'. The subsequent compulsory arguments and options available depend on the particular algorithm being invoked.')
+app.cmdline.addDescription('Each algorithm available also has its own help page, including necessary references; e.g. to see the help page of the \'fsl\' algorithm, type \'5ttgen fsl\'.')
+
+common_options = app.cmdline.add_argument_group('Options common to all 5ttgen algorithms')
+common_options.add_argument('-nocrop', action='store_true', default=False, help='Do NOT crop the resulting 5TT image to reduce its size (keep the same dimensions as the input image)')
+common_options.add_argument('-sgm_amyg_hipp', action='store_true', default=False, help='Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image')
+
+# Import the command-line settings for all algorithms found in the relevant directory
+algorithm.initialise()
+
+app.parse()
+
+# Find out which algorithm the user has requested
+alg = algorithm.getModule(app.args.algorithm)
+
+app.checkOutputPath(app.args.output)
+alg.checkOutputPaths()
+
+app.makeTempDir()
+alg.getInputs()
+app.gotoTempDir()
+
+alg.execute()
+
+(stdout,stderr) = run.command('5ttcheck result.mif', False)
+if len(stderr) and 'ERROR' in stderr:
+  app.warn('Generated image does not perfectly conform to 5TT format')
+
+run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + (' -force' if app.force else ''))
+app.complete()
+

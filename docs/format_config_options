@@ -19,9 +19,9 @@ optionlist.sort()
 
 string = '.. _config_file_options:\n'
 string += '\n'
-string += '################\n'
+string += '##########################################\n'
 string += 'List of MRtrix3 configuration file options\n'
-string += '################\n\n'
+string += '##########################################\n\n'
 
 for entry in optionlist:
   string += '*  **' + entry[0] + '**\n'

@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "gui/mrview/tool/view.h"
 
@@ -54,7 +53,7 @@ namespace MR
 
 
         class View::ClipPlaneModel : public QAbstractItemModel
-        {
+        { MEMALIGN(View::ClipPlaneModel)
           public:
 
             ClipPlaneModel (QObject* parent) :
@@ -83,22 +82,22 @@ namespace MR
               return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable;
             }
 
-            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const 
-            { 
+            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const
+            {
               (void) parent; // to suppress warnings about unused parameters
-              return createIndex (row, column); 
+              return createIndex (row, column);
             }
 
             QModelIndex parent (const QModelIndex&) const { return QModelIndex(); }
 
-            int rowCount (const QModelIndex& parent = QModelIndex()) const 
+            int rowCount (const QModelIndex& parent = QModelIndex()) const
             {
               (void) parent; // to suppress warnings about unused parameters
               return planes.size();
             }
 
-            int columnCount (const QModelIndex& parent = QModelIndex()) const 
-            { 
+            int columnCount (const QModelIndex& parent = QModelIndex()) const
+            {
               (void) parent; // to suppress warnings about unused parameters
               return 1;
             }
@@ -115,7 +114,7 @@ namespace MR
                 p.plane[n] = -p.plane[n];
               if (p.name[0] == '-')
                 p.name = p.name.substr (1);
-              else 
+              else
                 p.name = "-" + p.name;
               emit dataChanged (index, index);
             }
@@ -151,13 +150,13 @@ namespace MR
               endInsertRows();
             }
 
-            std::vector<ClipPlane> planes;
+            vector<ClipPlane> planes;
         };
 
 
 
 
-        View::View (Dock* parent) : 
+        View::View (Dock* parent) :
           Base (parent)
         {
           VBoxLayout* main_box = new VBoxLayout (this);
@@ -165,7 +164,7 @@ namespace MR
           HBoxLayout* hlayout  = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
-          
+
           hide_button = new QPushButton ("Hide main image",this);
           hide_button->setToolTip (tr ("Hide all main images"));
           hide_button->setIcon (QIcon (":/hide.svg"));
@@ -173,9 +172,9 @@ namespace MR
           hide_button->setChecked (!window().get_image_visibility());
           connect (hide_button, SIGNAL (clicked(bool)), this, SLOT (hide_image_slot (bool)));
           hlayout->addWidget (hide_button, 1);
-          
+
           main_box->addLayout (hlayout, 0);
-          
+
           // FoV
           QGroupBox* group_box = new QGroupBox ("FOV");
           main_box->addWidget (group_box);
@@ -218,6 +217,13 @@ namespace MR
           connect (voxel_z, SIGNAL (valueChanged()), this, SLOT (onSetVoxel()));
           layout->addWidget (voxel_z, 0, 3);
 
+          copy_voxel_button = new QPushButton ("copy",this);
+          copy_voxel_button->setMinimumWidth(30);
+          copy_voxel_button->setToolTip (tr ("copy voxel to clipboard"));
+          copy_voxel_button->setCheckable (false);
+          connect (copy_voxel_button, SIGNAL (clicked()), this, SLOT (copy_voxel_slot ()));
+          layout->addWidget (copy_voxel_button, 0, 4);
+
           layout->addWidget (new QLabel (tr("Position: ")), 1, 0);
 
           focus_x = new AdjustButton (this);
@@ -234,6 +240,13 @@ namespace MR
           focus_z->setMinimumWidth(focus_button_width);
           connect (focus_z, SIGNAL (valueChanged()), this, SLOT (onSetFocus()));
           layout->addWidget (focus_z, 1, 3);
+
+          copy_focus_button = new QPushButton ("copy",this);
+          copy_focus_button->setMinimumWidth(30);
+          copy_focus_button->setToolTip (tr ("copy position to clipboard"));
+          copy_focus_button->setCheckable (false);
+          connect (copy_focus_button, SIGNAL (clicked()), this, SLOT (copy_focus_slot ()));
+          layout->addWidget (copy_focus_button, 1, 4);
 
           // Volume
           volume_box = new QGroupBox ("Volume");
@@ -326,7 +339,7 @@ namespace MR
           clip_box->setLayout (vlayout);
           hlayout = new HBoxLayout;
           vlayout->addLayout (hlayout);
-          
+
 
           clip_planes_model = new ClipPlaneModel (this);
           connect (clip_planes_model, SIGNAL (dataChanged (const QModelIndex&, const QModelIndex&)),
@@ -343,7 +356,7 @@ namespace MR
           clip_planes_list_view->setToolTip ("Right-click for more options");
           connect (clip_planes_list_view, SIGNAL (customContextMenuRequested (const QPoint&)),
               this, SLOT (clip_planes_right_click_menu_slot (const QPoint&)));
-          connect (clip_planes_list_view->selectionModel(), 
+          connect (clip_planes_list_view->selectionModel(),
               SIGNAL (selectionChanged (const QItemSelection, const QItemSelection)),
               this, SLOT (clip_planes_selection_changed_slot()));
           hlayout->addWidget (clip_planes_list_view, 1);
@@ -354,19 +367,19 @@ namespace MR
           toolbar->setMovable (false);
           toolbar->setIconSize (QSize (16, 16));
           hlayout->addWidget (toolbar);
-          
+
           clip_highlight_check_box = new QCheckBox ("Highlight selected clip planes");
           clip_highlight_check_box->setToolTip ("Helps to identify selected clip planes that can be interacted with.");
           clip_highlight_check_box->setChecked (true);
           connect (clip_highlight_check_box, SIGNAL (toggled(bool)), this, SLOT(clip_planes_toggle_highlight_slot()));
           vlayout->addWidget (clip_highlight_check_box);
-          
+
           clip_intersectionmode_check_box = new QCheckBox ("Intersection mode");
           clip_intersectionmode_check_box->setToolTip ("Generated volume is the intersection of individual clipped volumes, rather than the union.");
           clip_intersectionmode_check_box->setChecked (false);
           connect (clip_intersectionmode_check_box, SIGNAL (toggled(bool)), this, SLOT(clip_planes_toggle_intersectionmode_slot()));
           vlayout->addWidget (clip_intersectionmode_check_box);
-          
+
 
 
           // clip planes handling:
@@ -459,7 +472,7 @@ namespace MR
 
 
 
-        void View::showEvent (QShowEvent*) 
+        void View::showEvent (QShowEvent*)
         {
           connect (&window(), SIGNAL (imageChanged()), this, SLOT (onImageChanged()));
           connect (&window(), SIGNAL (imageVisibilityChanged(bool)), this, SLOT (onImageVisibilityChanged(bool)));
@@ -483,14 +496,14 @@ namespace MR
 
 
 
-        void View::closeEvent (QCloseEvent*) 
+        void View::closeEvent (QCloseEvent*)
         {
           window().disconnect (this);
         }
 
 
 
-        void View::onImageChanged () 
+        void View::onImageChanged ()
         {
           const auto image = window().image();
 
@@ -550,9 +563,36 @@ namespace MR
           window().set_image_visibility(!flag);
         }
 
+        void View::copy_focus_slot ()
+        {
+          if(!window().image())
+            return;
+
+          auto focus (window().focus());
+          std::cout << str(focus[0]) << ", " << str(focus[1]) << ", " << str(focus[2]) << std::endl;
+
+          QClipboard *clip = QApplication::clipboard();
+          QString input = QString::fromStdString(str(focus[0])+", "+str(focus[1])+", "+str(focus[2]));
+          clip->setText(input);
+        }
+
+        void View::copy_voxel_slot ()
+        {
+          if(!window().image())
+            return;
+
+          auto focus (window().focus());
+          focus = window().image()->transform().scanner2voxel.cast<float>() * focus;
+          std::cout << str(focus[0]) << ", " << str(focus[1]) << ", " << str(focus[2]) << std::endl;
+
+          QClipboard *clip = QApplication::clipboard();
+          QString input = QString::fromStdString(str(focus[0])+", "+str(focus[1])+", "+str(focus[2]));
+          clip->setText(input);
+        }
 
 
-        void View::onFocusChanged () 
+
+        void View::onFocusChanged ()
         {
           if(!window().image())
             return;
@@ -570,7 +610,7 @@ namespace MR
 
 
 
-        void View::onFOVChanged () 
+        void View::onFOVChanged ()
         {
           fov->setValue (window().FOV());
           fov->setRate (FOV_RATE_MULTIPLIER * fov->value());
@@ -580,7 +620,7 @@ namespace MR
 
 
 
-        void View::onSetFocus () 
+        void View::onSetFocus ()
         {
           try {
             window().set_focus (Eigen::Vector3f { focus_x->value(), focus_y->value(), focus_z->value() } );
@@ -624,7 +664,7 @@ namespace MR
 
 
 
-        void View::onModeChanged () 
+        void View::onModeChanged ()
         {
           const Mode::Base* mode = window().get_current_mode();
           transparency_box->setVisible (mode->features & Mode::ShaderTransparency);
@@ -639,14 +679,14 @@ namespace MR
 
 
 
-        void View::onSetTransparency () 
+        void View::onSetTransparency ()
         {
-          assert (window().image()); 
+          assert (window().image());
           window().image()->transparent_intensity = transparent_intensity->value();
           window().image()->opaque_intensity = opaque_intensity->value();
           window().image()->alpha = get_alpha_from_slider (opacity->value());
-          window().image()->lessthan = lower_threshold->value(); 
-          window().image()->greaterthan = upper_threshold->value(); 
+          window().image()->lessthan = lower_threshold->value();
+          window().image()->greaterthan = upper_threshold->value();
           window().updateGL();
         }
 
@@ -654,7 +694,7 @@ namespace MR
 
 
 
-        void View::onPlaneChanged () 
+        void View::onPlaneChanged ()
         {
           plane_combobox->setCurrentIndex (window().plane());
         }
@@ -663,7 +703,7 @@ namespace MR
 
 
 
-        void View::onSetPlane (int index) 
+        void View::onSetPlane (int index)
         {
           window().set_plane (index);
           window().updateGL();
@@ -672,7 +712,7 @@ namespace MR
 
 
 
-        void View::onCheckThreshold (bool) 
+        void View::onCheckThreshold (bool)
         {
           assert (window().image());
           assert (threshold_box->isEnabled());
@@ -687,14 +727,14 @@ namespace MR
 
 
 
-        void View::set_transparency_from_image () 
+        void View::set_transparency_from_image ()
         {
           if (!std::isfinite (window().image()->transparent_intensity) ||
               !std::isfinite (window().image()->opaque_intensity) ||
               !std::isfinite (window().image()->alpha) ||
               !std::isfinite (window().image()->lessthan) ||
               !std::isfinite (window().image()->greaterthan)) { // reset:
-            if (!std::isfinite (window().image()->intensity_min()) || 
+            if (!std::isfinite (window().image()->intensity_min()) ||
                 !std::isfinite (window().image()->intensity_max()))
               return;
 
@@ -718,7 +758,7 @@ namespace MR
 
           transparent_intensity->setValue (window().image()->transparent_intensity);
           opaque_intensity->setValue (window().image()->opaque_intensity);
-          opacity->setValue (get_slider_value_from_alpha (window().image()->alpha)); 
+          opacity->setValue (get_slider_value_from_alpha (window().image()->alpha));
           lower_threshold->setValue (window().image()->lessthan);
           upper_threshold->setValue (window().image()->greaterthan);
           lower_threshold_check_box->setChecked (window().image()->use_discard_lower());
@@ -782,19 +822,19 @@ namespace MR
 
 
 
-        void View::clip_planes_add_axial_slot () 
+        void View::clip_planes_add_axial_slot ()
         {
           clip_planes_model->add (*(window().image()), 2);
           window().updateGL();
         }
 
-        void View::clip_planes_add_sagittal_slot () 
+        void View::clip_planes_add_sagittal_slot ()
         {
           clip_planes_model->add (*(window().image()), 0);
           window().updateGL();
         }
 
-        void View::clip_planes_add_coronal_slot () 
+        void View::clip_planes_add_coronal_slot ()
         {
           clip_planes_model->add (*(window().image()), 1);
           window().updateGL();
@@ -802,10 +842,10 @@ namespace MR
 
 
 
-        void View::clip_planes_reset_axial_slot () 
+        void View::clip_planes_reset_axial_slot ()
         {
           QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i) 
+          for (int i = 0; i < indices.size(); ++i)
             clip_planes_model->reset (indices[i], *(window().image()), 2);
           window().updateGL();
         }
@@ -814,7 +854,7 @@ namespace MR
         void View::clip_planes_reset_sagittal_slot ()
         {
           QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i) 
+          for (int i = 0; i < indices.size(); ++i)
             clip_planes_model->reset (indices[i], *(window().image()), 0);
           window().updateGL();
         }
@@ -823,7 +863,7 @@ namespace MR
         void View::clip_planes_reset_coronal_slot ()
         {
           QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i) 
+          for (int i = 0; i < indices.size(); ++i)
             clip_planes_model->reset (indices[i], *(window().image()), 1);
           window().updateGL();
         }
@@ -831,10 +871,10 @@ namespace MR
 
 
 
-        void View::clip_planes_invert_slot () 
+        void View::clip_planes_invert_slot ()
         {
           QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i) 
+          for (int i = 0; i < indices.size(); ++i)
             clip_planes_model->invert (indices[i]);
           window().updateGL();
         }
@@ -851,7 +891,7 @@ namespace MR
         }
 
 
-        void View::clip_planes_clear_slot () 
+        void View::clip_planes_clear_slot ()
         {
           clip_planes_model->clear();
           window().updateGL();
@@ -862,16 +902,16 @@ namespace MR
 
 
 
-        std::vector< std::pair<GL::vec4,bool> > View::get_active_clip_planes () const
+        vector< std::pair<GL::vec4,bool> > View::get_active_clip_planes () const
         {
-          std::vector< std::pair<GL::vec4,bool> > ret;
+          vector< std::pair<GL::vec4,bool> > ret;
           QItemSelectionModel* selection = clip_planes_list_view->selectionModel();
           if (clip_box->isChecked()) {
             for (int i = 0; i < clip_planes_model->rowCount(); ++i) {
               if (clip_planes_model->planes[i].active) {
                 std::pair<GL::vec4,bool> item;
                 item.first = clip_planes_model->planes[i].plane;
-                item.second = selection->isSelected (clip_planes_model->index (i,0)); 
+                item.second = selection->isSelected (clip_planes_model->index (i,0));
                 ret.push_back (item);
               }
             }
@@ -880,12 +920,12 @@ namespace MR
           return ret;
         }
 
-        std::vector<GL::vec4*> View::get_clip_planes_to_be_edited () const
+        vector<GL::vec4*> View::get_clip_planes_to_be_edited () const
         {
-          std::vector<GL::vec4*> ret;
+          vector<GL::vec4*> ret;
           if (clip_box->isChecked()) {
             QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-            for (int i = 0; i < indices.size(); ++i) 
+            for (int i = 0; i < indices.size(); ++i)
               if (clip_planes_model->planes[indices[i].row()].active)
                 ret.push_back (&clip_planes_model->planes[indices[i].row()].plane);
           }
@@ -902,7 +942,7 @@ namespace MR
           return clip_intersectionmode_check_box->isChecked();
         }
 
-        void View::clip_planes_selection_changed_slot () 
+        void View::clip_planes_selection_changed_slot ()
         {
           bool selected = clip_planes_list_view->selectionModel()->selectedIndexes().size();
           clip_planes_reset_submenu->setEnabled (selected);
@@ -917,12 +957,12 @@ namespace MR
         {
           window().updateGL();
         }
-        
+
         void View::clip_planes_toggle_highlight_slot ()
         {
           window().updateGL();
         }
-        
+
         void View::clip_planes_toggle_intersectionmode_slot ()
         {
           window().updateGL();
