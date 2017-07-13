@@ -14,11 +14,11 @@
 
 #include <map>
 #include <string>
-#include <vector>
 
 #include "command.h"
 #include "header.h"
 #include "phase_encoding.h"
+#include "types.h"
 #include "file/json.h"
 #include "dwi/gradient.h"
 
@@ -198,7 +198,7 @@ void keyval2json (const Header& header, JSON& json)
     try {
       const auto M = parse_matrix (kv.second);
       for (size_t row = 0; row != M.rows(); ++row) {
-        std::vector<default_type> data (M.cols());
+        vector<default_type> data (M.cols());
         for (size_t i = 0; i != M.cols(); ++i)
           data[i] = M (row, i);
         if (json.find (kv.first) == json.end())
