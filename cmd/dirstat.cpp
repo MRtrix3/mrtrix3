@@ -98,7 +98,7 @@ void report (const std::string& title, const Eigen::MatrixXd& directions)
       min = std::min (min, e);
       max = std::max (max, e);
     }
-    print ("    energy: total = " + str(total, precision) + ", mean = " + str(total/E.size(), precision) + ", range [ " + str(min, precision) + " - " + str(max, precision) + " ]\n");
+    print ("    energy: total = " + str(0.5*total, precision) + ", mean = " + str(total/E.size(), precision) + ", range [ " + str(min, precision) + " - " + str(max, precision) + " ]\n");
   };
 
 
