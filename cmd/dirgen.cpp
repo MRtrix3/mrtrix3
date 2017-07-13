@@ -15,6 +15,7 @@
 #include "command.h"
 #include "progressbar.h"
 #include "math/rng.h"
+#include "thread.h"
 #include "math/gradient_descent.h"
 #include "math/check_gradient.h"
 #include "dwi/directions/file.h"
@@ -91,13 +92,18 @@ class ProjectedUpdate { MEMALIGN(ProjectedUpdate)
 
 
 
+
+
+
+
 class Energy { MEMALIGN(Energy)
   public:
-    Energy (size_t n_directions, int power, bool bipolar, const Eigen::VectorXd& init_directions) : 
-      ndir (n_directions),
-      power (power),
-      bipolar (bipolar),
-      init_directions (init_directions) { }
+    Energy (ProgressBar& progress) : 
+      progress (progress),
+      ndirs (to<int> (argument[0])),
+      bipolar (!(get_options ("unipolar").size())),
+      power (0),
+      directions (3 * ndirs) { }
 
     FORCE_INLINE double fast_pow (double x, int p) {
       return p == 1 ? x : fast_pow (x*x, p/2);
@@ -105,24 +111,35 @@ class Energy { MEMALIGN(Energy)
 
     using value_type = double;
 
-    size_t size () const { return 3 * ndir; }
+    size_t size () const { return 3 * ndirs; }
 
     // set x to original directions provided in constructor. 
     // The idea is to save the directions from one run to initialise next run
     // at higher power.
-    double init (Eigen::VectorXd& x) {
-      x = init_directions;
+    double init (Eigen::VectorXd& x) 
+    {
+      Math::RNG::Normal<double> rng;
+      for (ssize_t n = 0; n < ndirs; ++n) {
+        auto d = x.segment (3*n,3);
+        d[0] = rng();
+        d[1] = rng();
+        d[2] = rng();
+        d.normalize();
+      }
       return 0.01;
     }
 
+
+
+    // function executed by optimiser at each iteration:
     double operator() (const Eigen::VectorXd& x, Eigen::VectorXd& g) {
       double E = 0.0;
       g.setZero();
 
-      for (size_t i = 0; i < ndir-1; ++i) {
+      for (size_t i = 0; i < ndirs-1; ++i) {
         auto d1 = x.segment (3*i, 3);
         auto g1 = g.segment (3*i, 3);
-        for (size_t j = i+1; j < ndir; ++j) {
+        for (size_t j = i+1; j < ndirs; ++j) {
           auto d2 = x.segment (3*j, 3);
           auto g2 = g.segment (3*j, 3);
 
@@ -148,95 +165,102 @@ class Energy { MEMALIGN(Energy)
       }
 
       // constrain gradients to lie tangent to unit sphere:
-      for (size_t n = 0; n < ndir; ++n) 
+      for (size_t n = 0; n < ndirs; ++n) 
         g.segment(3*n,3) -= x.segment(3*n,3).dot (g.segment(3*n,3)) * x.segment(3*n,3);
 
       return E;
     }
 
 
+
+    // function executed per thread:
+    void execute () 
+    {
+      size_t this_start = 0;
+      while ((this_start = current_start.fetch_add (1)) < restarts) {
+        INFO ("launching start " + str (this_start));
+        double E = 0.0;
+
+        for (power = 1; power <= target_power; power *= 2) {
+          Math::GradientDescent<Energy,ProjectedUpdate> optim (*this, ProjectedUpdate());
+
+          INFO ("start " + str(this_start) + ": setting power = " + str (power));
+          optim.init();
+
+          size_t iter = 0;
+          for (; iter < niter; iter++) {
+            if (!optim.iterate()) 
+              break;
+
+            DEBUG ("start " + str(this_start) + ": [ " + str (iter) + " ] (pow = " + str (power) + ") E = " + str (optim.value(), 8)
+                + ", grad = " + str (optim.gradient_norm(), 8));
+
+            std::lock_guard<std::mutex> lock (mutex);
+            ++progress;
+          }
+
+          directions = optim.state();
+          E = optim.value();
+        }
+
+
+
+        std::lock_guard<std::mutex> lock (mutex);
+        if (E < best_E) {
+          best_E = E;
+          best_directions = directions;
+        }
+      }
+    }
+
+
+    static size_t restarts;
+    static int target_power;
+    static size_t niter;
+    static double best_E;
+    static Eigen::VectorXd best_directions;
+
   protected:
-    size_t ndir;
-    int power;
+    ProgressBar& progress;
+    size_t ndirs;
     bool bipolar;
-    const Eigen::VectorXd& init_directions;
+    int power;
+    Eigen::VectorXd directions;
+    double E;
+
+    static std::mutex mutex;
+    static std::atomic<size_t> current_start;
 };
 
 
-
-void run () {
-  size_t niter = get_option_value ("niter", DEFAULT_NITER);
-  size_t restarts = get_option_value ("restarts", DEFAULT_RESTARTS);
-  int target_power = get_option_value ("power", DEFAULT_POWER);
-  bool bipolar = !(get_options ("unipolar").size());
-  int ndirs = to<int> (argument[0]);
-
-  Eigen::VectorXd directions (3*ndirs);
-  Eigen::VectorXd best_directions (3*ndirs);
-  double best_E = std::numeric_limits<double>::infinity();
-  size_t best_start = 0;
+size_t Energy::restarts (DEFAULT_RESTARTS);
+int Energy::target_power (DEFAULT_POWER);
+size_t Energy::niter (DEFAULT_NITER);
+std::mutex Energy::mutex;
+std::atomic<size_t> Energy::current_start (0);
+double Energy::best_E = std::numeric_limits<double>::infinity();
+Eigen::VectorXd Energy::best_directions;
 
 
-  for (size_t start = 0; start < restarts; ++start) {
 
-    { // random initialisation:
-      Math::RNG::Normal<double> rng;
-      for (ssize_t n = 0; n < ndirs; ++n) {
-        auto d = directions.segment (3*n,3);
-        d[0] = rng();
-        d[1] = rng();
-        d[2] = rng();
-        d.normalize();
-      }
-    }
 
-    double E = 0.0;
+void run () 
+{
+  Energy::restarts = get_option_value ("restarts", DEFAULT_RESTARTS);
+  Energy::target_power = get_option_value ("power", DEFAULT_POWER);
+  Energy::niter = get_option_value ("niter", DEFAULT_NITER);
 
-    // optimisation proper:
-    {
-      ProgressBar progress ("Optimising directions [" + str(start) + "]");
-      for (int power = 1; power <= target_power; power *= 2) {
-        Energy energy (ndirs, power, bipolar, directions);
-
-        Math::GradientDescent<Energy,ProjectedUpdate> optim (energy, ProjectedUpdate());
-
-        INFO ("setting power = " + str (power));
-        optim.init();
-
-        //Math::check_function_gradient (energy, optim.state(), 0.001);
-        //return;
-
-        size_t iter = 0;
-        for (; iter < niter; iter++) {
-          if (!optim.iterate()) 
-            break;
-
-          INFO ("[ " + str (iter) + " ] (pow = " + str (power) + ") E = " + str (optim.value(), 8)
-              + ", grad = " + str (optim.gradient_norm(), 8));
-
-          progress.update ([&]() { return "Optimising directions [" + str(start) + "] (power " + str(power) 
-              + ", energy: " + str(optim.value(), 8) + ", gradient: " + str(optim.gradient_norm(), 8) + ", iteration " + str(iter) + ")"; });
-        }
-
-        directions = optim.state();
-        E = optim.value();
-
-        progress.set_text ("Optimising directions [" + str(start) + "] (power " + str(power) 
-            + ", energy: " + str(optim.value(), 8) + ", gradient: " + str(optim.gradient_norm(), 8) + ", iteration " + str(iter) + ")");
-      }
-    }
-
-    if (E < best_E) {
-      best_start = start;
-      best_E = E;
-      best_directions = directions;
-    }
+  { 
+    ProgressBar progress ("Optimising directions up to power " + str(Energy::target_power) + " (" + str(Energy::restarts) + " restarts)");
+    Energy energy_functor (progress);
+    auto threads = Thread::run (Thread::multi (energy_functor), "energy function");
   }
 
-  CONSOLE ("outputting start " + str(best_start) + " (E = " + str(best_E) + ")");
+  CONSOLE ("final energy = " + str(Energy::best_E) + ")");
+  size_t ndirs = Energy::best_directions.size()/3;
   Eigen::MatrixXd directions_matrix (ndirs, 3);
   for (int n = 0; n < ndirs; ++n) 
-    directions_matrix.row (n) = best_directions.segment (3*n, 3);
+    directions_matrix.row (n) = Energy::best_directions.segment (3*n, 3);
 
   DWI::Directions::save (directions_matrix, argument[1], get_options ("cartesian").size());
 }
