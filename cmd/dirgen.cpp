@@ -256,7 +256,7 @@ void run ()
     auto threads = Thread::run (Thread::multi (energy_functor), "energy function");
   }
 
-  CONSOLE ("final energy = " + str(Energy::best_E) + ")");
+  CONSOLE ("final energy = " + str(Energy::best_E));
   size_t ndirs = Energy::best_directions.size()/3;
   Eigen::MatrixXd directions_matrix (ndirs, 3);
   for (int n = 0; n < ndirs; ++n) 
