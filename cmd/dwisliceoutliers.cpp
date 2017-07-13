@@ -40,7 +40,7 @@ void usage ()
   + Option ("mask", "image mask")
     + Argument ("m").type_file_in()
   + Option ("thr", "RMSE threshold (default = " + str(DEFAULT_THR) + ")")
-    + Argument ("t").type_float(0.0, 1e3);
+    + Argument ("t").type_float(1.0);
 
 }
 
@@ -61,9 +61,14 @@ class RMSEFunctor {
     void operator() (Image<value_type>& data, Image<value_type>& pred) {
       value_type e = 0.0;
       size_t n = 0;
-      for (auto l = Loop(0,2) (data, pred); l; l++, n++) {
+      for (auto l = Loop(0,2) (data, pred); l; l++) {
+        if (mask.valid()) {
+          assign_pos_of(data).to(mask);
+          if (!mask.value()) continue;
+        }
         value_type d = data.value() - pred.value();
         e += d * d;
+        n++;
       }
       (*E)(data.get_index(2), data.get_index(3)) = std::sqrt(e/n);
     }
@@ -96,9 +101,7 @@ void run ()
   RMSEFunctor rmse (data, mask);
   ThreadedLoop("Computing RMSE", data, 2, 4).run(rmse, data, pred);
   Eigen::MatrixXf E = rmse.result();
-
-  Eigen::VectorXf Em = E.rowwise().mean();
-  E.array().colwise() /= Em.array();
+  Eigen::VectorXf Em = E.array().square().rowwise().mean().sqrt();
 
   Eigen::MatrixXf W (E.rows(), E.cols());
   for (size_t i = 0; i < W.rows(); i++) {
