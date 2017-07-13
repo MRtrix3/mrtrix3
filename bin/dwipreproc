@@ -654,8 +654,8 @@ else:
   # Finally the recombined volumes must be concatenated to produce the resulting image series
   run.command('mrcat ' + ' '.join(combined_image_list) + ' - -axis 3 | mrconvert - result.mif -fslgrad bvecs_combined bvals_combined' + stride_option)
 
-  for path in combined_image_list:
-    file.delTempFile(path)
+  for entry in combined_image_list:
+    file.delTempFile(entry)
 
 
 
