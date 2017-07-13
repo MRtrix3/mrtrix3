@@ -38,12 +38,17 @@ ARGUMENTS
   + Argument ("out", "the output directions file, with each row listing "
       "the X Y Z gradient directions, the b-value, and an index representing "
       "the phase encode direction").type_file_out();
+
+OPTIONS
+  + Option ("unipolar_weight", 
+      "set the weight given to the unipolar electrostatic repulsion model compared to the "
+      "bipolar model (default: 0.2).");
 }
 
 
 
 using value_type = double;
-using Direction = std::array<value_type,3>;
+using Direction = Eigen::Matrix<value_type,3,1>;
 using DirectionSet = vector<Direction>;
 
 
@@ -62,6 +67,8 @@ inline std::ostream& operator<< (std::ostream& stream, const OutDir& d) {
 void run () 
 {
   size_t num_subsets = argument[0];
+  value_type unipolar_weight = App::get_option_value ("unipolar_weight", 0.2);
+  value_type bipolar_weight = 1.0 - unipolar_weight;
 
 
   vector<vector<DirectionSet>> dirs;
@@ -80,7 +87,7 @@ void run ()
       auto m = DWI::Directions::load_cartesian (argument[current++]);
       DirectionSet set;
       for (ssize_t r = 0; r < m.rows(); ++r)
-        set.push_back ({ { m(r,0), m(r,1), m(r,2) } });
+        set.push_back (Direction (m(r,0), m(r,1), m(r,2)));
       d.push_back (set);
     }
     INFO ("found b = " + str(bvalue[nb]) + ", " + 
@@ -104,25 +111,18 @@ void run ()
 
   auto push = [&](size_t b, size_t p, size_t n) 
   { 
-    merged.push_back ({ { { dirs[b][p][n][0], dirs[b][p][n][1], dirs[b][p][n][2] } }, b, p }); 
+    merged.push_back ({ Direction (dirs[b][p][n][0], dirs[b][p][n][1], dirs[b][p][n][2]), b, p }); 
     dirs[b][p].erase (dirs[b][p].begin()+n); 
   };
 
-  auto energy_pair = [](const Direction& a, const Direction& b) 
+  auto energy_pair = [&](const Direction& a, const Direction& b) 
   {
     // use combination of mono- and bi-polar electrostatic repulsion models 
     // to ensure adequate coverage of eddy-current space as well as 
     // orientation space. Use a moderate bias, favouring the bipolar model.
 
-    return 1.0 / sqrt(
-        Math::pow2 (b[0] - a[0]) + 
-        Math::pow2 (b[1] - a[1]) + 
-        Math::pow2 (b[2] - a[2]) 
-        ) + 1.0 / sqrt(
-        Math::pow2 (b[0] + a[0]) + 
-        Math::pow2 (b[1] + a[1]) + 
-        Math::pow2 (b[2] + a[2]) 
-        );
+    return (unipolar_weight+bipolar_weight) / (b-a).norm()
+         + bipolar_weight / (b+a).norm();
   };
 
   auto energy = [&](size_t b, size_t p, size_t n) 
