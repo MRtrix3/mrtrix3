@@ -38,9 +38,10 @@ options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass
 options.add_argument('-niter', help='Number of epochs (default = 3)')
 options.add_argument('-shell', help='Shells to be processed (default = all)')
 options.add_argument('-lmax', help='SH basis order for single-shell processing (default = 0)')
-options.add_argument('-rf', help='Basis functions for the radial domain.')
-options.add_argument('-svr', help='Number of slice-to-volume reconstruction epochs (default = 0).')
+options.add_argument('-rf', help='Basis functions for the radial domain')
+options.add_argument('-svr', help='Number of slice-to-volume reconstruction epochs (default = 0)')
 options.add_argument('-mb', help='Multiband factor (default = 1)')
+options.add_argument('-or_thr', help='Outlier rejection threshold (default = 3.0)')
 app.cmdline.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
 app.parse()
 
@@ -120,6 +121,11 @@ mb = 1
 if app.args.mb:
     mb = int(app.args.mb)
 
+# Set OR threshold
+ort = ''
+if app.args.or_thr:
+    ort = ' -thr ' + app.args.or_thr
+
 
 
 #   __________ Motion correction __________
@@ -132,7 +138,8 @@ else:
 dims = list(map(int, image.headerField('shells.mif', 'size').split()))
 
 # initial template
-run.command('dwirecon shells.mif ' + recon_option + ' recon-0.mif -rpred pred.mif')
+run.command('dwirecon shells.mif ' + recon_option + ' recon-0.mif -rpred pred.mif -spred spred.mif')
+run.command('dwisliceoutliers shells.mif spred.mif -mask mask.mif sliceweights.txt' + ort)
 
 # volume-to-volume registration
 for k in range(v2viter):
@@ -153,7 +160,9 @@ for k in range(v2viter):
         f.write(tra + ' ' + rot + '\n')
     f.close()
     # update template
-    run.command('dwirecon shells.mif ' + recon_option + ' recon-'+str(k+1)+'.mif -motion motion.txt -rpred pred.mif'+(' -tpred result-v.mif' if k+1==v2viter else '')+' -force')
+    run.command('dwirecon shells.mif ' + recon_option + ' recon-'+str(k+1)+'.mif -motion motion.txt -weights sliceweights.txt' + 
+                ' -rpred pred.mif -spred spred.mif' + (' -tpred result-v.mif' if k+1==v2viter else '') + ' -force')
+    run.command('dwisliceoutliers shells.mif spred.mif -mask mask.mif sliceweights.txt -force' + ort)
 
 # slice-to-volume registration
 for k in range(s2viter):
@@ -182,7 +191,9 @@ for k in range(s2viter):
             f.write(volmotion)
     f.close()
     # update template
-    run.command('dwirecon shells.mif ' + recon_option + ' recon-'+str(v2viter+k+1)+'.mif -motion motion.txt -rpred pred.mif'+(' -tpred result-s.mif' if k+1==s2viter else '')+' -force')
+    run.command('dwirecon shells.mif ' + recon_option + ' recon-'+str(v2viter+k+1)+'.mif -motion motion.txt -weightd sliceweights.mif' + 
+                ' -rpred pred.mif -spred spred.mif' + (' -tpred result-s.mif' if k+1==s2viter else '') + ' -force')
+    run.command('dwisliceoutliers shells.mif spred.mif -mask mask.mif sliceweights.txt -force' + ort)
 
 
 # Copy result to output path

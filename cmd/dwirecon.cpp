@@ -140,8 +140,8 @@ void run ()
     if (W.rows() != dwi.size(2) || W.cols() != dwi.size(3))
       throw Exception("Weights marix dimensions don't match image dimensions.");
   }
-  Eigen::VectorXf Wm = W.rowwise().mean();   // Normalise slice weights across volumes.
-  W.array().colwise() /= Wm.array();         // (not technically needed, but useful preconditioning for CG)
+  //Eigen::VectorXf Wm = W.rowwise().mean();   // Normalise slice weights across volumes.
+  //W.array().colwise() /= Wm.array();         // (not technically needed, but useful preconditioning for CG)
 
   // Get volume indices 
   vector<size_t> idx;
