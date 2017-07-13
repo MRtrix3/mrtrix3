@@ -121,8 +121,10 @@ namespace MR
           enhancer (enhancer),
           empirical_enhanced_statistics (empirical_enhanced_statistics),
           default_enhanced_statistics (default_enhanced_statistics),
-          statistics (stats_calculator->num_outputs(), stats_calculator->num_elements()),
-          enhanced_statistics (stats_calculator->num_outputs(), stats_calculator->num_elements()),
+          statistics (stats_calculator->num_elements(), stats_calculator->num_outputs()),
+          enhanced_statistics (stats_calculator->num_elements(), stats_calculator->num_outputs()),
+	  // NOTE: uncorrected_pvalue_counter currently transposed with respect to matrices
+	  // TODO Consider changing to Eigen::Array<size_t>
           uncorrected_pvalue_counter (stats_calculator->num_outputs(), vector<size_t> (stats_calculator->num_elements(), 0)),
           perm_dist (perm_dist),
           global_uncorrected_pvalue_counter (global_uncorrected_pvalue_counter),
@@ -136,9 +138,9 @@ namespace MR
       Processor::~Processor ()
       {
         std::lock_guard<std::mutex> lock (*mutex);
-        for (size_t row = 0; row != stats_calculator->num_outputs(); ++row) {
-          for (size_t i = 0; i < stats_calculator->num_elements(); ++i)
-            global_uncorrected_pvalue_counter[row][i] += uncorrected_pvalue_counter[row][i];
+        for (size_t contrast = 0; contrast != stats_calculator->num_outputs(); ++contrast) {
+          for (size_t element = 0; element != stats_calculator->num_elements(); ++element)
+            global_uncorrected_pvalue_counter[contrast][element] += uncorrected_pvalue_counter[contrast][element];
         }
       }
 
@@ -155,12 +157,12 @@ namespace MR
         if (empirical_enhanced_statistics.size())
           enhanced_statistics.array() /= empirical_enhanced_statistics.array();
 
-        perm_dist.col(permutation.index) = enhanced_statistics.rowwise().maxCoeff();
+        perm_dist.row(permutation.index) = enhanced_statistics.colwise().maxCoeff();
 
-        for (ssize_t row = 0; row != enhanced_statistics.rows(); ++row) {
-          for (ssize_t i = 0; i != enhanced_statistics.cols(); ++i) {
-            if (default_enhanced_statistics(row, i) > enhanced_statistics(row, i))
-              uncorrected_pvalue_counter[row][i]++;
+        for (ssize_t contrast = 0; contrast != enhanced_statistics.cols(); ++contrast) {
+          for (ssize_t element = 0; element != enhanced_statistics.rows(); ++element) {
+            if (default_enhanced_statistics(element, contrast) > enhanced_statistics(element, contrast))
+              uncorrected_pvalue_counter[contrast][element]++;
           }
         }
 
@@ -235,9 +237,9 @@ namespace MR
           Thread::run_queue (perm_stack, Permutation(), Thread::multi (processor));
         }
 
-        for (size_t row = 0; row != stats_calculator->num_outputs(); ++row) {
-          for (size_t i = 0; i < stats_calculator->num_elements(); ++i)
-            uncorrected_pvalues(row, i) = global_uncorrected_pvalue_count[row][i] / default_type(perm_stack.num_permutations);
+        for (size_t contrast = 0; contrast != stats_calculator->num_outputs(); ++contrast) {
+          for (size_t element = 0; element != stats_calculator->num_elements(); ++element)
+            uncorrected_pvalues(element, contrast) = global_uncorrected_pvalue_count[contrast][element] / default_type(perm_stack.num_permutations);
         }
       }
 

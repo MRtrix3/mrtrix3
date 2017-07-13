@@ -89,7 +89,7 @@ void run()
   // Load design matrix
   const matrix_type design = load_matrix (argument[1]);
   if (size_t(design.rows()) != filenames.size())
-    throw Exception ("number of subjects does not match number of rows in design matrix");
+    throw Exception ("Number of subjects (" + str(filenames.size()) + ") does not match number of rows in design matrix (" + str(design.rows()) + ")");
 
   // Load permutations file if supplied
   auto opt = get_options("permutations");
@@ -133,16 +133,11 @@ void run()
   }
 
   {
-    const matrix_type betas = Math::Stats::GLM::solve_betas (data, design);
+    matrix_type betas, abs_effects, std_effects, stdevs;
+    Math::Stats::GLM::all_stats (data, design, contrast, betas, abs_effects, std_effects, stdevs);
     save_matrix (betas, output_prefix + "betas.csv");
-
-    const matrix_type abs_effects = Math::Stats::GLM::abs_effect_size (data, design, contrast);
     save_matrix (abs_effects, output_prefix + "abs_effect.csv");
-
-    const matrix_type std_effects = Math::Stats::GLM::std_effect_size (data, design, contrast);
     save_matrix (std_effects, output_prefix + "std_effect.csv");
-
-    const matrix_type stdevs = Math::Stats::GLM::stdev (data, design);
     save_matrix (stdevs, output_prefix + "std_dev.csv");
   }
 
@@ -162,7 +157,8 @@ void run()
   if (!get_options ("notest").size()) {
 
     std::shared_ptr<Stats::EnhancerBase> enhancer;
-    matrix_type null_distribution (num_perms, num_contrasts), uncorrected_pvalues (num_perms, num_contrasts);
+    matrix_type null_distribution (num_perms, num_contrasts);
+    matrix_type uncorrected_pvalues (num_elements, num_contrasts);
     matrix_type empirical_distribution;
 
     if (permutations.size()) {
@@ -173,10 +169,11 @@ void run()
                                          default_tvalues, null_distribution, uncorrected_pvalues);
     }
 
-    matrix_type default_pvalues (num_contrasts, num_elements);
+    matrix_type default_pvalues (num_elements, num_contrasts);
     Math::Stats::Permutation::statistic2pvalue (null_distribution, default_tvalues, default_pvalues);
     save_matrix (default_pvalues, output_prefix + "fwe_pvalue.csv");
     save_matrix (uncorrected_pvalues, output_prefix + "uncorrected_pvalue.csv");
 
   }
 }
+

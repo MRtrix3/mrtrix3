@@ -81,7 +81,11 @@ namespace MR
           //VAR (Math::rank (design));
           stdev = (one_over_dof * residuals).array().sqrt();
           //std::cerr << "stdev: " << stdev.rows() << " x " << stdev.cols() << ", max " << stdev.array().maxCoeff() << "\n";
-          std_effect_size = abs_effect_size.array() / stdev.array();
+	  // TODO Should be a cleaner way of doing this (broadcasting?)
+          matrix_type stdev_fill (abs_effect_size.rows(), abs_effect_size.cols());
+          for (size_t i = 0; i != stdev_fill.rows(); ++i)
+            stdev_fill.row(i) = stdev;
+          std_effect_size = abs_effect_size.array() / stdev_fill.array();
           //std::cerr << "std_effect_size: " << std_effect_size.rows() << " x " << std_effect_size.cols() << ", max " << std_effect_size.array().maxCoeff() << "\n";
           //TRACE;
         }

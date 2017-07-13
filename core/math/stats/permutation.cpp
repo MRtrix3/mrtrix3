@@ -77,24 +77,24 @@ namespace MR
         void statistic2pvalue (const matrix_type& null_dist, const matrix_type& stats, matrix_type& pvalues)
         {
           pvalues.resize (stats.rows(), stats.cols());
-          for (size_t row = 0; row != stats.rows(); ++row) {
+          for (size_t contrast = 0; contrast != stats.cols(); ++contrast) {
             vector<value_type> sorted_null_dist;
-            sorted_null_dist.reserve (null_dist.cols());
-            for (size_t i = 0; i != null_dist.size(); ++i)
-              sorted_null_dist.push_back (null_dist(row, i));
+            sorted_null_dist.reserve (null_dist.rows());
+            for (size_t perm = 0; perm != null_dist.rows(); ++perm)
+              sorted_null_dist.push_back (null_dist(perm, contrast));
             std::sort (sorted_null_dist.begin(), sorted_null_dist.end());
-            for (size_t i = 0; i != size_t(stats.cols()); ++i) {
-              if (stats(row, i) > 0.0) {
+            for (size_t element = 0; element != size_t(stats.rows()); ++element) {
+              if (stats(element, contrast) > 0.0) {
                 value_type pvalue = 1.0;
                 for (size_t j = 0; j < size_t(sorted_null_dist.size()); ++j) {
-                  if (stats(row, i) < sorted_null_dist[j]) {
+                  if (stats(element, contrast) < sorted_null_dist[j]) {
                     pvalue = value_type(j) / value_type(sorted_null_dist.size());
                     break;
                   }
                 }
-                pvalues(row, i) = pvalue;
+                pvalues(element, contrast) = pvalue;
               } else {
-                pvalues(row, i) = 0.0;
+                pvalues(element, contrast) = 0.0;
               }
             }
           }
