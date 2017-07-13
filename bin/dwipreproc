@@ -635,18 +635,28 @@ else:
     run.command('mrcalc ' + jacobian_path + ' ' + jacobian_path + ' -mult weight' + str(index+1) + '.mif')
     file.delTempFile(jacobian_path)
 
+  # If eddy provides its main image output in a compressed format, the code block below will need to
+  #   uncompress that image independently for every volume pair. Instead, if this is the case, let's
+  #   convert it to an uncompressed format before we do anything with it.
+  eddy_output = 'dwi_post_eddy' + fsl_suffix
+  if fsl_suffix.endswith('.gz'):
+    run.command('mrconvert ' + eddy_output + ' dwi_post_eddy.nii')
+    file.delTempFile(eddy_output)
+    eddy_output = 'dwi_post_eddy.nii'
+
   # This section extracts the two volumes corresponding to each reversed phase-encoded volume pair, and
   #   derives a single image volume based on the recombination equation
   combined_image_list = [ ]
   for index, volumes in enumerate(volume_pairs):
     pe_indices = [ eddy_indices[i] for i in volumes ]
-    run.command('mrconvert dwi_post_eddy' + fsl_suffix + ' volume0.mif -coord 3 ' + str(volumes[0]))
-    run.command('mrconvert dwi_post_eddy' + fsl_suffix + ' volume1.mif -coord 3 ' + str(volumes[1]))
+    run.command('mrconvert ' + eddy_output + ' volume0.mif -coord 3 ' + str(volumes[0]))
+    run.command('mrconvert ' + eddy_output + ' volume1.mif -coord 3 ' + str(volumes[1]))
     # Volume recombination equation described in Skare and Bammer 2010
     run.command('mrcalc volume0.mif weight' + str(pe_indices[0]) + '.mif -mult volume1.mif weight' + str(pe_indices[1]) + '.mif -mult -add weight' + str(pe_indices[0]) + '.mif weight' + str(pe_indices[1]) + '.mif -add -divide 0.0 -max combined' + str(index) + '.mif')
     combined_image_list.append('combined' + str(index) + '.mif')
     os.remove('volume0.mif')
     os.remove('volume1.mif')
+  file.delTempFile(eddy_output)
 
   for index in range(0, len(eddy_config)):
     file.delTempFile('weight' + str(index+1) + '.mif')
