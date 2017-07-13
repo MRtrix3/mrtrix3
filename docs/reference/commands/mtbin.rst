@@ -20,7 +20,7 @@ Usage
 Description
 -----------
 
-WARNING: this command is deprecated and may produce inappropriate results in several cases. Please use the new mtnormalise.
+WARNING: this command is deprecated and may produce highly inappropriate results in several cases. Not recommended and at your own discretion. Please use the new mtnormalise command instead for reliable results.
 
 Options
 -------
@@ -36,6 +36,8 @@ Options
 -  **-maxiter number** set the maximum number of iterations. Default(100). It will stop before the max iterations if convergence is detected
 
 -  **-check image** check the final mask used to compute the bias field. This mask excludes outlier regions ignored by the bias field fitting procedure. However, these regions are still corrected for bias fields based on the other image data.
+
+-  **-override** consciously use this deprecated command. Not recommended and at your own discretion.
 
 Standard options
 ^^^^^^^^^^^^^^^^
