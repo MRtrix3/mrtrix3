@@ -81,12 +81,12 @@ namespace MR
 
 
       // Custom API:
-      ReconMatrix(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad, const int lmax, const vector<Eigen::MatrixXf>& rf)
+      ReconMatrix(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad, const int lmax, const vector<Eigen::MatrixXf>& rf, const Eigen::MatrixXf& weights)
         : lmax(lmax),
           nxy (in.size(0)*in.size(1)), nz (in.size(2)), nv (in.size(3)),
           M(nxy*nz*nv, nxy*nz)
       {
-        init_M(in, rigid);
+        init_M(in, rigid, weights);
         init_Y(in, rigid, grad, rf);
       }
 
@@ -164,7 +164,7 @@ namespace MR
       Eigen::MatrixXf Y;
 
 
-      void init_M(const Header& in, const Eigen::MatrixXf& rigid)
+      void init_M(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& W)
       {
         DEBUG("initialise M");
         // Tri-linear interpolation for now.
@@ -174,7 +174,6 @@ namespace MR
         // Special care must be taken when inserting elements and it is advised to reserve appropriate memory in advance.
 
         // reserve memory for 8 elements along each row (outer strides with row-major order).
-
         M.reserve(Eigen::VectorXi::Constant(nv*nz*nxy, 8));
 
         // set up transform
@@ -196,7 +195,7 @@ namespace MR
           for (size_t z = 0; z < nz; z++) {
             if (rigid.rows() == nv*nz)
               T = get_transform(rigid.row(v*nz+z));
-
+            
             for (size_t y = 0; y < in.size(1); y++) {
               for (size_t x = 0; x < in.size(0); x++, i++) {
                 p = T0.scanner2voxel * T * T0.voxel2scanner * Eigen::Vector3(x, y, z);
@@ -204,14 +203,14 @@ namespace MR
                 p0 = pp0.template cast<int>();
                 w = (p - pp0).template cast<float>();
 
-                if (inbounds(in, p0[0]  , p0[1]  , p0[2]  )) M.insert(i, get_idx(in, p0[0]  , p0[1]  , p0[2]  )) = (1 - w[0]) * (1 - w[1]) * (1 - w[2]);
-                if (inbounds(in, p0[0]+1, p0[1]  , p0[2]  )) M.insert(i, get_idx(in, p0[0]+1, p0[1]  , p0[2]  )) =      w[0]  * (1 - w[1]) * (1 - w[2]);
-                if (inbounds(in, p0[0]  , p0[1]+1, p0[2]  )) M.insert(i, get_idx(in, p0[0]  , p0[1]+1, p0[2]  )) = (1 - w[0]) *      w[1]  * (1 - w[2]);
-                if (inbounds(in, p0[0]+1, p0[1]+1, p0[2]  )) M.insert(i, get_idx(in, p0[0]+1, p0[1]+1, p0[2]  )) =      w[0]  *      w[1]  * (1 - w[2]);
-                if (inbounds(in, p0[0]  , p0[1]  , p0[2]+1)) M.insert(i, get_idx(in, p0[0]  , p0[1]  , p0[2]+1)) = (1 - w[0]) * (1 - w[1]) *      w[2] ;
-                if (inbounds(in, p0[0]+1, p0[1]  , p0[2]+1)) M.insert(i, get_idx(in, p0[0]+1, p0[1]  , p0[2]+1)) =      w[0]  * (1 - w[1]) *      w[2] ;
-                if (inbounds(in, p0[0]  , p0[1]+1, p0[2]+1)) M.insert(i, get_idx(in, p0[0]  , p0[1]+1, p0[2]+1)) = (1 - w[0]) *      w[1]  *      w[2] ;
-                if (inbounds(in, p0[0]+1, p0[1]+1, p0[2]+1)) M.insert(i, get_idx(in, p0[0]+1, p0[1]+1, p0[2]+1)) =      w[0]  *      w[1]  *      w[2] ;
+                if (inbounds(in, p0[0]  , p0[1]  , p0[2]  )) M.insert(i, get_idx(in, p0[0]  , p0[1]  , p0[2]  )) = (1 - w[0]) * (1 - w[1]) * (1 - w[2]) * W(z,v);
+                if (inbounds(in, p0[0]+1, p0[1]  , p0[2]  )) M.insert(i, get_idx(in, p0[0]+1, p0[1]  , p0[2]  )) =      w[0]  * (1 - w[1]) * (1 - w[2]) * W(z,v);
+                if (inbounds(in, p0[0]  , p0[1]+1, p0[2]  )) M.insert(i, get_idx(in, p0[0]  , p0[1]+1, p0[2]  )) = (1 - w[0]) *      w[1]  * (1 - w[2]) * W(z,v);
+                if (inbounds(in, p0[0]+1, p0[1]+1, p0[2]  )) M.insert(i, get_idx(in, p0[0]+1, p0[1]+1, p0[2]  )) =      w[0]  *      w[1]  * (1 - w[2]) * W(z,v);
+                if (inbounds(in, p0[0]  , p0[1]  , p0[2]+1)) M.insert(i, get_idx(in, p0[0]  , p0[1]  , p0[2]+1)) = (1 - w[0]) * (1 - w[1]) *      w[2]  * W(z,v);
+                if (inbounds(in, p0[0]+1, p0[1]  , p0[2]+1)) M.insert(i, get_idx(in, p0[0]+1, p0[1]  , p0[2]+1)) =      w[0]  * (1 - w[1]) *      w[2]  * W(z,v);
+                if (inbounds(in, p0[0]  , p0[1]+1, p0[2]+1)) M.insert(i, get_idx(in, p0[0]  , p0[1]+1, p0[2]+1)) = (1 - w[0]) *      w[1]  *      w[2]  * W(z,v);
+                if (inbounds(in, p0[0]+1, p0[1]+1, p0[2]+1)) M.insert(i, get_idx(in, p0[0]+1, p0[1]+1, p0[2]+1)) =      w[0]  *      w[1]  *      w[2]  * W(z,v);
 
               }
             }

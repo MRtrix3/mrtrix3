@@ -57,6 +57,10 @@ void usage ()
             "set the maximum harmonic order for the output series. (default = " + str(DEFAULT_LMAX) + ")")
     + Argument ("order").type_integer(0, 30)
 
+  + Option ("weights",
+            "Slice weights, provided as a matrix of dimensions Nslices x Nvols.")
+    + Argument ("W").type_file_in()
+
   + DWI::GradImportOptions()
 
   + DWI::ShellOption
@@ -128,6 +132,17 @@ void run ()
     rf.push_back(t);
   }
 
+  // Read slice weights
+  Eigen::MatrixXf W = Eigen::MatrixXf::Ones(dwi.size(2), dwi.size(3));
+  opt = get_options("weights");
+  if (opt.size()) {
+    W = load_matrix<float>(opt[0][0]);
+    if (W.rows() != dwi.size(2) || W.cols() != dwi.size(3))
+      throw Exception("Weights marix dimensions don't match image dimensions.");
+  }
+  Eigen::VectorXf Wm = W.rowwise().mean();   // Normalise slice weights across volumes.
+  W.array().colwise() /= Wm.array();         // (not technically needed, but useful preconditioning for CG)
+
   // Get volume indices 
   vector<size_t> idx;
   if (rf.empty()) {
@@ -158,6 +173,10 @@ void run ()
         motionsub.row(i * dwi.size(2) + j) = motion.row(idx[i] * dwi.size(2) + j).template cast<float>();
   }
 
+  Eigen::MatrixXf Wsub (W.rows(), idx.size());
+  for (size_t i = 0; i < idx.size(); i++)
+    Wsub.col(i) = W.col(idx[i]);
+
   // Other parameters
   if (rf.empty())
     lmax = get_option_value("lmax", DEFAULT_LMAX);
@@ -170,13 +189,18 @@ void run ()
 
   // Set up scattered data matrix
   INFO("initialise reconstruction matrix");
-  DWI::ReconMatrix R (dwisub, motionsub, gradsub, lmax, rf);
+  DWI::ReconMatrix R (dwisub, motionsub, gradsub, lmax, rf, Wsub);
 
   // Read input data to vector
   Eigen::VectorXf y (dwisub.size(0)*dwisub.size(1)*dwisub.size(2)*dwisub.size(3));
-  size_t j = 0;
-  for (auto l = Loop("loading image data", {0, 1, 2, 3})(dwisub); l; l++, j++)
-    y[j] = dwisub.value();
+  size_t j = 0, v = 0;
+  for (auto l0 = Loop("loading image data", 3)(dwisub); l0; l0++, v++) {
+    size_t s = 0;
+    for (auto l1 = Loop(2)(dwisub); l1; l1++, s++) {
+      for (auto l = Loop({0, 1})(dwisub); l; l++, j++)
+        y[j] = Wsub(s, v) * dwisub.value();
+    }
+  }
 
   // Fit scattered data in basis...
   INFO("solve with conjugate gradient method");
