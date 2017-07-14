@@ -142,11 +142,13 @@ namespace MR
 
 done_painting:
           update_overlays = false;
+          finished_paintGL ();
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
         void Base::paint (Projection&) { }
+        void Base::finished_paintGL () {}
         void Base::mouse_press_event () { }
         void Base::mouse_release_event () { }
 

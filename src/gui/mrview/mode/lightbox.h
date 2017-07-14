@@ -69,6 +69,7 @@ namespace MR
           protected:
             void draw_plane_primitive(int axis, Displayable::Shader& shader_program,
                                       Projection& with_projection) override;
+            void finished_paintGL() override;
 
           private:
             static size_t slice_index(size_t row, size_t col) {
@@ -92,7 +93,7 @@ namespace MR
 
             bool layout_is_dirty;
             size_t current_slice_index;
-            vector<size_t> volume_indices;
+            vector<ssize_t> volume_indices;
             vector<proj_focusdelta> slices_proj_focusdelta;
 
             GL::VertexBuffer frame_VB;

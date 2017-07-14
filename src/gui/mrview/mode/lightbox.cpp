@@ -39,6 +39,9 @@ namespace MR
         {
           Image* img = image();
 
+          if (render_volumes())
+            current_slice_index = 0;
+
           if(!img || prev_image_name != img->header().name())
             image_changed_event();
           else {
@@ -100,10 +103,13 @@ namespace MR
               n_cols * n_rows,
               proj_focusdelta(projection, 0.f));
 
-          set_current_slice_index((n_rows * n_cols) / 2);
-          update_slices_focusdelta();
-
           update_volume_indices();
+
+          size_t slice_idx = render_volumes() ?
+                std::min(current_slice_index, (n_rows * n_cols) - 1) : (n_rows * n_cols) / 2;
+
+          set_current_slice_index(slice_idx);
+          update_slices_focusdelta();
 
           frame_VB.clear();
           frame_VAO.clear();
@@ -114,11 +120,7 @@ namespace MR
           int prev_index = current_slice_index;
           current_slice_index = slice_index;
 
-          if (render_volumes()) {
-            window().set_image_volume(3, volume_indices[current_slice_index]);
-          }
-
-          else if (prev_index != (int)current_slice_index) {
+          if (!render_volumes() && prev_index != (int)current_slice_index) {
             const Projection& slice_proj = slices_proj_focusdelta[current_slice_index].first;
             float focus_delta = slices_proj_focusdelta[current_slice_index].second;
 
@@ -145,11 +147,10 @@ namespace MR
           if (!is_4d)
             return;
 
-          int n_vols = image()->image.size(3);
           int initial_vol = image()->image.index(3);
 
           for(int i = 0, N = volume_indices.size(); i < N; ++i)
-            volume_indices[i] = std::min(std::max(initial_vol + (int)volume_increment * (i - (int)current_slice_index), 0), n_vols - 1);
+            volume_indices[i] = initial_vol + (int)volume_increment * i;
         }
 
         void LightBox::draw_plane_primitive (int axis, Displayable::Shader& shader_program, Projection& with_projection)
@@ -159,6 +160,17 @@ namespace MR
             image()->render3D (shader_program, with_projection, with_projection.depth_of (focus()));
           render_tools (with_projection, false, axis, slice (axis));
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        }
+
+        void LightBox::finished_paintGL ()
+        {
+          // When rendering volumes, the initial state is always considered to be
+          // the first volume (i.e. top-left slice)
+          // However, for the purposes of correctly rendering voxel information we need the
+          // image volume to correspond to the selected volume
+          // Hence, this is called once paintGL has finished to restore the initial state
+          if(render_volumes())
+            image()->image.index(3) = volume_indices[0];
         }
 
         void LightBox::paint(Projection&)
@@ -182,6 +194,7 @@ namespace MR
           }
 
           bool rend_vols = render_volumes();
+          bool render_plane = true;
 
           size_t slice_idx = 0;
           for(size_t row = 0; row < n_rows; ++row) {
@@ -195,8 +208,13 @@ namespace MR
               // because move_in_out_displacement is reliant on MVP
               setup_projection (plane(), slice_proj);
 
-              if (rend_vols)
-                image()->image.index(3) = volume_indices[slice_idx];
+              if (rend_vols) {
+                int n_vols = image()->image.size(3);
+                if (volume_indices[slice_idx] >= 0 && volume_indices[slice_idx] < n_vols - 1)
+                  image()->image.index(3) = volume_indices[slice_idx];
+                else
+                  render_plane = false;
+              }
 
               else {
                 float focus_delta = slices_proj_focusdelta[slice_idx].second;
@@ -204,7 +222,8 @@ namespace MR
                 set_focus(orig_focus + slice_focus);
               }
 
-              draw_plane_primitive(plane(), slice_shader, slice_proj);
+              if (render_plane)
+                draw_plane_primitive(plane(), slice_shader, slice_proj);
 
               if(slice_idx == current_slice_index) {
                 // Drawing plane may alter the depth test state
