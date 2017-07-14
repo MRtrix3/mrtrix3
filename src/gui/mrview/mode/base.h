@@ -206,6 +206,7 @@ namespace MR
             }
 
             void reset_view ();
+            virtual void finished_paintGL ();
 
             bool visible;
         };
