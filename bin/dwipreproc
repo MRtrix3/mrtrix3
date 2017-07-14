@@ -369,7 +369,7 @@ if app.args.se_epi:
   # - The first b=0 volume in the DWIs should also be the first volume of the DWI series; is basically always the case, but
   #   it wouuld nevertheless be preferable to test for this
   bzero_threshold = 10.0
-  if ['BZeroThreshold'] in app.config:
+  if 'BZeroThreshold' in app.config:
     bzero_threshold = float(app.config['BZeroThreshold'])
   dwi_first_bzero_index = 0
   for line in grad:
@@ -388,28 +388,28 @@ if app.args.se_epi:
              'This may cause issues in estimation of the field, as the first DWI b=0 volume must be additionally used as input to topup for alignment purposes. '
              'SE-EPI images with different contrast to the DWI b=0 images is not yet supported by dwipreproc.')
 
-  # Since image.match() is very basic, and won't accept an image pair with different numbers of volumes,
-  #   need to get just the first volume of each in order to test
-  run.command('mrconvert ' + topup_in_path + ' first_fmap_volume.mif -coord 3 0 -axes 0,1,2')
-  fmap_needs_regrid = not image.match('dwi_first_bzero.mif', 'first_fmap_volume.mif')
-  file.delTempFile('first_fmap_volume.mif')
+  # Don't need to use image.match() here; only require that the dimensions of the first three axes, and
+  #   the first three voxel sizes, to be equivalent
+  dwi_vox = [ float(f) for f in image.headerField('dwi.mif', 'vox').strip().split() ]
+  topup_vox = [ float(f) for f in image.headerField(topup_in_path, 'vox').strip().split() ]
+  fmap_needs_regrid = not (dwi_size[0:3] == topup_size[0:3] and dwi_vox[0:3] == topup_vox[0:3])
   if fmap_needs_regrid:
     app.warn('DWIs and SE-EPI images used for inhomogeneity field estimation are defined on different image grids; '
-             'The latter will be autmoatically re-gridded to match the former to facilitate spatial alignment '
+             'The latter will be automatically re-gridded to match the former to facilitate spatial alignment '
              'between topup and eddy stages')
 
   topup_pe_sum = [ 0, 0, 0 ]
   topup_volume_to_remove = len(topup_pe_scheme)
   for index, line in enumerate(topup_pe_scheme):
     topup_pe_sum = [ i + j for i, j in zip(topup_pe_sum, line[0:3]) ]
-    if line[0:3] == dwi_first_bzero_pe[0:3]:
+    if topup_volume_to_remove == len(topup_pe_scheme) and line[0:3] == dwi_first_bzero_pe[0:3]:
       topup_volume_to_remove = index
   if (topup_pe_sum == [ 0, 0, 0 ]) and (topup_volume_to_remove < len(topup_pe_scheme)):
     app.console('Balanced phase-encoding scheme detected in \'' + app.args.se_epi + '\'; volume ' + str(topup_volume_to_remove) + ' will be removed and replaced with first b=0 from DWIs')
     if fmap_needs_regrid:
-      run.command('mrconvert ' + topup_in_path + ' - -coord 3 ' + ','.join([index for index in range(len(topup_pe_scheme)) if not index == topup_volume_to_remove]) + ' | mrtransform - - -interp sinc -template dwi_first_bzero.mif | mrcat dwi_first_bzero.mif - topup_in_dwibzero.mif -axis 3')
+      run.command('mrconvert ' + topup_in_path + ' - -coord 3 ' + ','.join([str(index) for index in range(len(topup_pe_scheme)) if not index == topup_volume_to_remove]) + ' | mrtransform - - -interp sinc -template dwi_first_bzero.mif | mrcat dwi_first_bzero.mif - topup_in_dwibzero.mif -axis 3')
     else:
-      run.command('mrconvert ' + topup_in_path + ' - -coord 3 ' + ','.join([index for index in range(len(topup_pe_scheme)) if not index == topup_volume_to_remove]) + ' | mrcat dwi_first_bzero.mif - topup_in_dwibzero.mif -axis 3')
+      run.command('mrconvert ' + topup_in_path + ' - -coord 3 ' + ','.join([str(index) for index in range(len(topup_pe_scheme)) if not index == topup_volume_to_remove]) + ' | mrcat dwi_first_bzero.mif - topup_in_dwibzero.mif -axis 3')
     file.delTempFile(topup_in_path)
     # Also need to update the phase-encoding scheme appropriately if it's being set manually
     #   (if embedded within the image headers, should be updated through the command calls)
@@ -422,8 +422,11 @@ if app.args.se_epi:
         if not index == topup_volume_to_remove:
           new_topup_manual_pe_scheme.append(entry)
       topup_manual_pe_scheme = new_topup_manual_pe_scheme
-  else
-    app.console('Unbalanced phase-encoding scheme detected in series provided via -se_epi option; first DWI b=0 volume will be inserted to start of series')
+  else:
+    if topup_pe_sum == [ 0, 0, 0 ] and topup_volume_to_remove == len(topup_pe_scheme):
+      app.console('Phase-encoding scheme of -se_epi image is balanced, but could not find appropriate volume with which to substitute first b=0 volume from DWIs; first b=0 DWI volume will be inserted to start of series')
+    else:
+      app.console('Unbalanced phase-encoding scheme detected in series provided via -se_epi option; first DWI b=0 volume will be inserted to start of series')
     if fmap_needs_regrid:
       run.command('mrtransform ' + topup_in_path + ' - -interp sinc -template dwi_first_bzero.mif | mrcat dwi_first_bzero.mif - topup_in_dwibzero.mif -axis 3')
     else:
@@ -435,10 +438,10 @@ if app.args.se_epi:
       first_line.append(trt)
       topup_manual_pe_scheme = [ first_line, topup_manual_pe_scheme ]
   topup_in_path = 'topup_in_dwibzero.mif'
-  
-  
-  
-  
+
+
+
+
 
 elif not PE_design == 'None': # No SE EPI images explicitly provided: In some cases, can extract appropriate b=0 images from DWI
 
