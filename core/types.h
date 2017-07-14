@@ -276,10 +276,11 @@ namespace MR
 namespace std
 {
   // these are not defined in the standard, but are needed
-  // for use in generic templates:
-  inline uint8_t abs (uint8_t x) { return x; }
-  inline uint16_t abs (uint16_t x) { return x; }
-  inline uint32_t abs (uint32_t x) { return x; }
+  // for use in generic templates
+  FORCE_INLINE uint8_t abs (uint8_t x) { return x; }
+  FORCE_INLINE uint16_t abs (uint16_t x) { return x; }
+  FORCE_INLINE uint32_t abs (uint32_t x) { return x; }
+  FORCE_INLINE uint64_t abs (uint64_t x) { return x; }
 
 
   template <class T> inline ostream& operator<< (ostream& stream, const vector<T>& V)
