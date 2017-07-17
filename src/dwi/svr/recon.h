@@ -82,9 +82,10 @@ namespace MR
 
       // Custom API:
       ReconMatrix(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad, const int lmax, const vector<Eigen::MatrixXf>& rf)
-        : lmax(lmax),
+        : lmax (lmax),
           nxy (in.size(0)*in.size(1)), nz (in.size(2)), nv (in.size(3)),
-          M(nxy*nz*nv, nxy*nz)
+          nc (get_ncoefs(rf)),
+          M (nxy*nz*nv, nxy*nz)
       {
         init_M(in, rigid);
         init_Y(in, rigid, grad, rf);
@@ -112,15 +113,7 @@ namespace MR
         Shells shells (grad.template cast<double>());
         vector<size_t> idx (shells.volumecount());
         vector<Eigen::MatrixXf> shellbasis;
-        int n = 0;
-        if (rf.empty()) {
-          n = Math::SH::NforL(lmax);
-        } else {
-          for (auto& r : rf)
-            n += Math::SH::NforL(std::min(2*(int(r.cols())-1), lmax));
-        }
-
-        Eigen::MatrixXf Y0 (nv, n);
+        Eigen::MatrixXf Y0 (nv, nc);
 
         for (size_t s = 0; s < shells.count(); s++) {
           for (auto v : shells[s].get_volumes())
@@ -131,7 +124,7 @@ namespace MR
             B.setIdentity(Math::SH::NforL(lmax), Math::SH::NforL(lmax));
           }
           else {
-            B.setZero(n, Math::SH::NforL(lmax));
+            B.setZero(nc, Math::SH::NforL(lmax));
             size_t j = 0;
             for (auto& r : rf) {
               for (size_t l = 0; l < r.cols() and 2*l <= lmax; l++)
@@ -165,7 +158,7 @@ namespace MR
 
     private:
       const int lmax;
-      const size_t nxy, nz, nv;
+      const size_t nxy, nz, nv, nc;
       SparseMat M;
       Eigen::MatrixXf Y;
       Eigen::MatrixXf W;
@@ -244,14 +237,8 @@ namespace MR
         Shells shells (grad.template cast<double>());
         vector<size_t> idx (shells.volumecount());
         vector<Eigen::MatrixXf> shellbasis;
-        int n = 0;
-        if (rf.empty()) {
-          n = Math::SH::NforL(lmax);
-        } else {
-          for (auto& r : rf)
-            n += Math::SH::NforL(std::min(2*(int(r.cols())-1), lmax));
-        }
-        Y.resize(nv*nz, n);
+        Y.resize(nv*nz, nc);
+
         for (size_t s = 0; s < shells.count(); s++) {
           for (auto v : shells[s].get_volumes())
             idx[v] = s;
@@ -261,7 +248,7 @@ namespace MR
             B.setIdentity(Math::SH::NforL(lmax), Math::SH::NforL(lmax));
           }
           else { 
-            B.setZero(n, Math::SH::NforL(lmax));
+            B.setZero(nc, Math::SH::NforL(lmax));
             size_t j = 0;
             for (auto& r : rf) {
               for (size_t l = 0; l < r.cols() and 2*l <= lmax; l++)
@@ -332,6 +319,19 @@ namespace MR
         return (x >= 0) && (x < h.size(0))
             && (y >= 0) && (y < h.size(1))
             && (z >= 0) && (z < h.size(2));
+      }
+
+
+      inline size_t get_ncoefs(rf) const
+      {
+        size_t n = 0;
+        if (rf.empty()) {
+          n = Math::SH::NforL(lmax);
+        } else {
+          for (auto& r : rf)
+            n += Math::SH::NforL(std::min(2*(int(r.cols())-1), lmax));
+        }
+        return n;
       }
 
 
