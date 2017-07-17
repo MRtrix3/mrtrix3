@@ -83,13 +83,15 @@ namespace MR
       // Custom API:
       ReconMatrix(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad, const int lmax, const vector<Eigen::MatrixXf>& rf)
         : lmax (lmax),
-          nxy (in.size(0)*in.size(1)), nz (in.size(2)), nv (in.size(3)),
-          nc (get_ncoefs(rf)),
+          nx (in.size(0)), ny (in.size(1)), nz (in.size(2)), nv (in.size(3)),
+          nxy (nx*ny), nc (get_ncoefs(rf)),
+          T0 (in),  // Preserve original resolution.
           shellbasis (init_shellbasis(grad, rf)),
+          motion (rigid),
           M (nxy*nz*nv, nxy*nz)
       {
-        init_M(in, rigid);
-        init_Y(rigid, grad);
+        init_M();
+        init_Y(grad);
       }
 
       const SparseMat&       getM() const { return M; }
@@ -130,15 +132,18 @@ namespace MR
 
     private:
       const int lmax;
-      const size_t nxy, nz, nv, nc;
+      const size_t nx, ny, nz, nv, nxy, nc;
+      Transform T0;
       const vector<Eigen::MatrixXf> shellbasis;
+
+      Eigen::MatrixXf motion;
 
       SparseMat M;
       Eigen::MatrixXf Y;
       Eigen::MatrixXf W;
 
 
-      void init_M(const Header& in, const Eigen::MatrixXf& rigid)
+      void init_M()
       {
         DEBUG("initialise M");
         // Note that this step is highly time and memory critical!
@@ -151,10 +156,7 @@ namespace MR
         // reserve memory for elements along each row (outer strides with row-major order).
         M.reserve(Eigen::VectorXi::Constant(nv*nz*nxy, (n+1)*8*n*n*n));
 
-        // set up transform
-        Transform T0 (in);          // assume output transform = input transform; needs extending for anisotropic voxels
-
-        transform_type Ts2r, Tr2s;
+        transform_type Ts2r;
 
         Eigen::Vector3f ps, pr;
         Eigen::Vector3i p;
@@ -162,20 +164,12 @@ namespace MR
         // fill weights
         size_t i = 0;
         for (size_t v = 0; v < nv; v++) {   // volumes
-          if (rigid.rows() == nv) {
-            Ts2r = T0.scanner2voxel * get_transform(rigid.row(v)) * T0.voxel2scanner;
-            Tr2s = Ts2r.inverse();
-          }
-
           for (size_t z = 0; z < nz; z++) { // slices
-            if (rigid.rows() == nv*nz) {
-              Ts2r = T0.scanner2voxel * get_transform(rigid.row(v*nz+z)) * T0.voxel2scanner;
-              Tr2s = Ts2r.inverse();
-            }
 
+            Ts2r = get_Ts2r(v, z);
             // in-plane
-            for (size_t y = 0; y < in.size(1); y++) {
-              for (size_t x = 0; x < in.size(0); x++, i++) {
+            for (size_t y = 0; y < ny; y++) {
+              for (size_t x = 0; x < nx; x++, i++) {
 
                 for (int s = -n; s <= n; s++) {     // ssp neighbourhood
                   ps = Eigen::Vector3f(x, y, z+s);
@@ -185,8 +179,8 @@ namespace MR
                     for (int ry = -n; ry < n; ry++) {
                       for (int rz = -n; rz < n; rz++) {
                         p = Eigen::Vector3i(std::ceil(pr[0])+rx, std::ceil(pr[1])+ry, std::ceil(pr[2])+rz);
-                        if (inbounds(in, p[0], p[1], p[2])) {
-                          M.coeffRef(i, get_idx(in, p[0], p[1], p[2])) += ssp(s) * psf(pr - p.cast<float>());
+                        if (inbounds(p[0], p[1], p[2])) {
+                          M.coeffRef(i, get_idx(p[0], p[1], p[2])) += ssp(s) * psf(pr - p.cast<float>());
                         }
                       }
                     }
@@ -228,7 +222,7 @@ namespace MR
       }
 
 
-      void init_Y(const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad)
+      void init_Y(const Eigen::MatrixXf& grad)
       {
         DEBUG("initialise Y");
         assert (grad.rows() == nv);     // one gradient per volume
@@ -243,13 +237,13 @@ namespace MR
 
         for (size_t i = 0; i < nv; i++) {
           vec = {grad(i, 0), grad(i, 1), grad(i, 2)};
-          if (rigid.rows() == nv)
-            rot = get_rotation(rigid(i,3), rigid(i,4), rigid(i,5));
+          if (motion.rows() == nv)
+            rot = get_rotation(motion(i,3), motion(i,4), motion(i,5));
 
           for (size_t j = 0; j < nz; j++) {
             // rotate vector with motion parameters
-            if (rigid.rows() == nv*nz)
-              rot = get_rotation(rigid(i*nz+j,3), rigid(i*nz+j,4), rigid(i*nz+j,5));
+            if (motion.rows() == nv*nz)
+              rot = get_rotation(motion(i*nz+j,3), motion(i*nz+j,4), motion(i*nz+j,5));
 
             // evaluate basis functions
             Math::SH::delta(delta, rot*vec, lmax);
@@ -280,17 +274,30 @@ namespace MR
       }
 
 
-      inline size_t get_idx(const Header& h, const int x, const int y, const int z) const
+      inline transform_type get_Ts2r(const size_t v, const size_t z) const
       {
-        return size_t(z*h.size(1)*h.size(0) + y*h.size(0) + x);
+        transform_type Ts2r;
+        if (motion.rows() == nv) {
+          Ts2r = T0.scanner2voxel * get_transform(motion.row(v)) * T0.voxel2scanner;
+        } else {
+          assert (motion.rows(0) == nv*nz);
+          Ts2r = T0.scanner2voxel * get_transform(motion.row(v*nz+z)) * T0.voxel2scanner;
+        }
+        return Ts2r;
       }
 
 
-      inline bool inbounds(const Header& h, const int x, const int y, const int z) const
+      inline size_t get_idx(const int x, const int y, const int z) const
       {
-        return (x >= 0) && (x < h.size(0))
-            && (y >= 0) && (y < h.size(1))
-            && (z >= 0) && (z < h.size(2));
+        return size_t(z*nxy + y*nx + x);
+      }
+
+
+      inline bool inbounds(const int x, const int y, const int z) const
+      {
+        return (x >= 0) && (x < nx)
+            && (y >= 0) && (y < ny)
+            && (z >= 0) && (z < nz);
       }
 
 
