@@ -57,24 +57,36 @@ void usage ()
             "set the maximum harmonic order for the output series. (default = " + str(DEFAULT_LMAX) + ")")
     + Argument ("order").type_integer(0, 30)
 
+  + Option ("weights",
+            "Slice weights, provided as a matrix of dimensions Nslices x Nvols.")
+    + Argument ("W").type_file_in()
+
   + DWI::GradImportOptions()
 
   + DWI::ShellOption
+
+  + OptionGroup ("Output options")
+
+  + Option ("rpred",
+            "output predicted signal in original (rotated) directions. (useful for registration)")
+    + Argument ("out").type_image_out()
+
+  + Option ("spred",
+            "output source prediction of all scattered slices. (useful for diagnostics)")
+    + Argument ("out").type_image_out()
+
+  + Option ("tpred",
+            "output predicted signal in the space of the target reconstruction.")
+    + Argument ("out").type_image_out()
+
+  + OptionGroup ("CG Optimization options")
 
   + Option ("tolerance", "the tolerance on the conjugate gradient solver. (default = " + str(DEFAULT_TOL) + ")")
     + Argument ("t").type_float(0.0, 1.0)
 
   + Option ("maxiter",
             "the maximum number of iterations of the conjugate gradient solver. (default = " + str(DEFAULT_MAXITER) + ")")
-    + Argument ("n").type_integer(1)
-    
-  + Option ("rpred",
-            "output predicted signal in original (rotated) directions. (useful for registration)")
-    + Argument ("out").type_image_out()
-  
-  + Option ("spred",
-            "output source prediction of all scattered slices. (useful for diagnostics)")
-    + Argument ("out").type_image_out();
+    + Argument ("n").type_integer(1);
 
 }
 
@@ -120,6 +132,17 @@ void run ()
     rf.push_back(t);
   }
 
+  // Read slice weights
+  Eigen::MatrixXf W = Eigen::MatrixXf::Ones(dwi.size(2), dwi.size(3));
+  opt = get_options("weights");
+  if (opt.size()) {
+    W = load_matrix<float>(opt[0][0]);
+    if (W.rows() != dwi.size(2) || W.cols() != dwi.size(3))
+      throw Exception("Weights marix dimensions don't match image dimensions.");
+  }
+  //Eigen::VectorXf Wm = W.rowwise().mean();   // Normalise slice weights across volumes.
+  //W.array().colwise() /= Wm.array();         // (not technically needed, but useful preconditioning for CG)
+
   // Get volume indices 
   vector<size_t> idx;
   if (rf.empty()) {
@@ -150,6 +173,10 @@ void run ()
         motionsub.row(i * dwi.size(2) + j) = motion.row(idx[i] * dwi.size(2) + j).template cast<float>();
   }
 
+  Eigen::MatrixXf Wsub (W.rows(), idx.size());
+  for (size_t i = 0; i < idx.size(); i++)
+    Wsub.col(i) = W.col(idx[i]);
+
   // Other parameters
   if (rf.empty())
     lmax = get_option_value("lmax", DEFAULT_LMAX);
@@ -163,12 +190,18 @@ void run ()
   // Set up scattered data matrix
   INFO("initialise reconstruction matrix");
   DWI::ReconMatrix R (dwisub, motionsub, gradsub, lmax, rf);
+  R.setW(Wsub);
 
   // Read input data to vector
   Eigen::VectorXf y (dwisub.size(0)*dwisub.size(1)*dwisub.size(2)*dwisub.size(3));
-  size_t j = 0;
-  for (auto l = Loop("loading image data", {0, 1, 2, 3})(dwisub); l; l++, j++)
-    y[j] = dwisub.value();
+  size_t j = 0, v = 0;
+  for (auto l0 = Loop("loading image data", 3)(dwisub); l0; l0++, v++) {
+    size_t s = 0;
+    for (auto l1 = Loop(2)(dwisub); l1; l1++, s++) {
+      for (auto l = Loop({0, 1})(dwisub); l; l++, j++)
+        y[j] = Wsub(s, v) * dwisub.value();
+    }
+  }
 
   // Fit scattered data in basis...
   INFO("solve with conjugate gradient method");
@@ -190,7 +223,6 @@ void run ()
 
   // Write result to output file
   Header header (dwisub);
-  DWI::stash_DW_scheme (header, gradsub);
   header.size(3) = R.getY().cols();
   Stride::set_from_command_line (header, Stride::contiguous_along_axis (3));
   header.datatype() = DataType::from_command_line (DataType::Float32);
@@ -230,11 +262,37 @@ void run ()
   opt = get_options("spred");
   if (opt.size()) {
     header.size(3) = dwisub.size(3);
+    DWI::stash_DW_scheme (header, gradsub);
     auto spred = Image<value_type>::create(opt[0][0], header);
+    R.setW(Eigen::MatrixXf::Ones(dwisub.size(2), dwisub.size(3)));
     Eigen::VectorXf p = R * x;
     j = 0;
     for (auto l = Loop("saving source prediction", {0, 1, 2, 3})(spred); l; l++, j++) {
       spred.value() = p[j];
+    }
+  }
+
+
+  // Output target prediction
+  opt = get_options("tpred");
+  if (opt.size()) {
+    header.size(3) = dwisub.size(3);
+    DWI::stash_DW_scheme (header, gradsub);
+    Stride::set (header, Stride::contiguous_along_spatial_axes (header));
+    auto tpred = Image<value_type>::create(opt[0][0], header);
+    class PredFunctor {
+    public:
+      PredFunctor (const Eigen::VectorXf& _y) : y(_y) {}
+      void operator () (Image<value_type>& in, Image<value_type>& out) {
+        v = in.row(3);
+        out.value() = y.dot(v);
+      }
+    private:
+      Eigen::VectorXf y, v;
+    };
+    j = 0;
+    for (auto l = Loop("saving registration prediction", 3)(tpred); l; l++, j++) {
+      ThreadedLoop(out, 0, 3).run( PredFunctor (R.getY0(dwisub, gradsub, rf).row(j)) , out , tpred );
     }
   }
 

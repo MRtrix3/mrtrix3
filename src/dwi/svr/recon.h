@@ -60,7 +60,7 @@ namespace MR
       // Required typedefs, constants, and method:
       typedef float Scalar;
       typedef float RealScalar;
-      typedef int StorageIndex;
+      typedef ssize_t StorageIndex;
       enum {
         ColsAtCompileTime = Eigen::Dynamic,
         MaxColsAtCompileTime = Eigen::Dynamic,
@@ -77,7 +77,7 @@ namespace MR
       }
 
 
-      typedef Eigen::SparseMatrix<float, Eigen::RowMajor> SparseMat;
+      typedef Eigen::SparseMatrix<float, Eigen::RowMajor, StorageIndex> SparseMat;
 
 
       // Custom API:
@@ -90,12 +90,77 @@ namespace MR
         init_Y(in, rigid, grad, rf);
       }
 
-      const SparseMat& getM() const { return M; }
+      const SparseMat&       getM() const { return M; }
       const Eigen::MatrixXf& getY() const { return Y; }
+      const Eigen::MatrixXf& getW() const { return W; }
+
+      void setW (const Eigen::MatrixXf& weights)
+      {
+        W = weights;
+      }
 
       inline const size_t get_grad_idx(const size_t idx) const { return idx / nxy; }
 
       const ReconMatrixAdjoint adjoint() const;
+
+
+      const Eigen::MatrixXf getY0(const Header& in, const Eigen::MatrixXf& grad, const vector<Eigen::MatrixXf>& rf) const
+      {
+        DEBUG("initialise Y0");
+        assert (grad.rows() == nv);     // one gradient per volume
+
+        Shells shells (grad.template cast<double>());
+        vector<size_t> idx (shells.volumecount());
+        vector<Eigen::MatrixXf> shellbasis;
+        int n = 0;
+        if (rf.empty()) {
+          n = Math::SH::NforL(lmax);
+        } else {
+          for (auto& r : rf)
+            n += Math::SH::NforL(std::min(2*(int(r.cols())-1), lmax));
+        }
+
+        Eigen::MatrixXf Y0 (nv, n);
+
+        for (size_t s = 0; s < shells.count(); s++) {
+          for (auto v : shells[s].get_volumes())
+            idx[v] = s;
+
+          Eigen::MatrixXf B;
+          if (rf.empty()) {
+            B.setIdentity(Math::SH::NforL(lmax), Math::SH::NforL(lmax));
+          }
+          else {
+            B.setZero(n, Math::SH::NforL(lmax));
+            size_t j = 0;
+            for (auto& r : rf) {
+              for (size_t l = 0; l < r.cols() and 2*l <= lmax; l++)
+                for (size_t i = l*(2*l-1); i < (l+1)*(2*l+1); i++, j++)
+                  B(j,i) = r(s,l);
+            }
+          }
+          shellbasis.push_back(B);
+        }
+
+        Eigen::Vector3f vec;
+        Eigen::VectorXf delta;
+
+        for (size_t i = 0; i < nv; i++) {
+          vec = {grad(i, 0), grad(i, 1), grad(i, 2)};
+
+          // evaluate basis functions
+          Math::SH::delta(delta, vec, lmax);
+          if (rf.empty()) {
+            Y0.row(i) = delta;
+          }
+          else {
+            Y0.row(i) = shellbasis[idx[i]]*delta;
+          }
+
+        }
+
+        return Y0;
+      }
 
 
     private:
@@ -103,6 +168,7 @@ namespace MR
       const size_t nxy, nz, nv;
       SparseMat M;
       Eigen::MatrixXf Y;
+      Eigen::MatrixXf W;
 
 
       void init_M(const Header& in, const Eigen::MatrixXf& rigid)
@@ -278,7 +344,7 @@ namespace MR
       // Required typedefs, constants, and method:
       typedef float Scalar;
       typedef float RealScalar;
-      typedef int StorageIndex;
+      typedef ssize_t StorageIndex;
       enum {
         ColsAtCompileTime = Eigen::Dynamic,
         MaxColsAtCompileTime = Eigen::Dynamic,
@@ -323,7 +389,9 @@ namespace Eigen {
         assert(alpha==Scalar(1) && "scaling is not implemented");
 
         //TRACE;
-        auto Y = lhs.getY();
+        Eigen::MatrixXf W = lhs.getW();
+        Eigen::Map<VectorXf> w (W.data(),W.size());
+        auto Y = w.asDiagonal() * lhs.getY();
         size_t nc = Y.cols();
         size_t nxyz = lhs.getM().cols();
         VectorXf r (lhs.rows());
@@ -352,7 +420,9 @@ namespace Eigen {
         assert(alpha==Scalar(1) && "scaling is not implemented");
 
         //TRACE;
-        auto Y = lhs.R.getY();
+        Eigen::MatrixXf W = lhs.R.getW();
+        Eigen::Map<VectorXf> w (W.data(),W.size());
+        auto Y = w.asDiagonal() * lhs.R.getY();
         size_t nc = Y.cols();
         size_t nxyz = lhs.R.getM().cols();
         VectorXf r (lhs.cols());
