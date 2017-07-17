@@ -81,17 +81,23 @@ namespace MR
 
 
       // Custom API:
-      ReconMatrix(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad, const int lmax, const vector<Eigen::MatrixXf>& rf, const Eigen::MatrixXf& weights)
+      ReconMatrix(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad, const int lmax, const vector<Eigen::MatrixXf>& rf)
         : lmax(lmax),
           nxy (in.size(0)*in.size(1)), nz (in.size(2)), nv (in.size(3)),
           M(nxy*nz*nv, nxy*nz)
       {
-        init_M(in, rigid, weights);
+        init_M(in, rigid);
         init_Y(in, rigid, grad, rf);
       }
 
-      const SparseMat& getM() const { return M; }
+      const SparseMat&       getM() const { return M; }
       const Eigen::MatrixXf& getY() const { return Y; }
+      const Eigen::MatrixXf& getW() const { return W; }
+
+      void setW (const Eigen::MatrixXf& weights)
+      {
+        W = weights;
+      }
 
       inline const size_t get_grad_idx(const size_t idx) const { return idx / nxy; }
 
@@ -162,9 +168,10 @@ namespace MR
       const size_t nxy, nz, nv;
       SparseMat M;
       Eigen::MatrixXf Y;
+      Eigen::MatrixXf W;
 
 
-      void init_M(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& W)
+      void init_M(const Header& in, const Eigen::MatrixXf& rigid)
       {
         DEBUG("initialise M");
         // Tri-linear interpolation for now.
@@ -203,14 +210,14 @@ namespace MR
                 p0 = pp0.template cast<int>();
                 w = (p - pp0).template cast<float>();
 
-                if (inbounds(in, p0[0]  , p0[1]  , p0[2]  )) M.insert(i, get_idx(in, p0[0]  , p0[1]  , p0[2]  )) = (1 - w[0]) * (1 - w[1]) * (1 - w[2]) * W(z,v);
-                if (inbounds(in, p0[0]+1, p0[1]  , p0[2]  )) M.insert(i, get_idx(in, p0[0]+1, p0[1]  , p0[2]  )) =      w[0]  * (1 - w[1]) * (1 - w[2]) * W(z,v);
-                if (inbounds(in, p0[0]  , p0[1]+1, p0[2]  )) M.insert(i, get_idx(in, p0[0]  , p0[1]+1, p0[2]  )) = (1 - w[0]) *      w[1]  * (1 - w[2]) * W(z,v);
-                if (inbounds(in, p0[0]+1, p0[1]+1, p0[2]  )) M.insert(i, get_idx(in, p0[0]+1, p0[1]+1, p0[2]  )) =      w[0]  *      w[1]  * (1 - w[2]) * W(z,v);
-                if (inbounds(in, p0[0]  , p0[1]  , p0[2]+1)) M.insert(i, get_idx(in, p0[0]  , p0[1]  , p0[2]+1)) = (1 - w[0]) * (1 - w[1]) *      w[2]  * W(z,v);
-                if (inbounds(in, p0[0]+1, p0[1]  , p0[2]+1)) M.insert(i, get_idx(in, p0[0]+1, p0[1]  , p0[2]+1)) =      w[0]  * (1 - w[1]) *      w[2]  * W(z,v);
-                if (inbounds(in, p0[0]  , p0[1]+1, p0[2]+1)) M.insert(i, get_idx(in, p0[0]  , p0[1]+1, p0[2]+1)) = (1 - w[0]) *      w[1]  *      w[2]  * W(z,v);
-                if (inbounds(in, p0[0]+1, p0[1]+1, p0[2]+1)) M.insert(i, get_idx(in, p0[0]+1, p0[1]+1, p0[2]+1)) =      w[0]  *      w[1]  *      w[2]  * W(z,v);
+                if (inbounds(in, p0[0]  , p0[1]  , p0[2]  )) M.insert(i, get_idx(in, p0[0]  , p0[1]  , p0[2]  )) = (1 - w[0]) * (1 - w[1]) * (1 - w[2]);
+                if (inbounds(in, p0[0]+1, p0[1]  , p0[2]  )) M.insert(i, get_idx(in, p0[0]+1, p0[1]  , p0[2]  )) =      w[0]  * (1 - w[1]) * (1 - w[2]);
+                if (inbounds(in, p0[0]  , p0[1]+1, p0[2]  )) M.insert(i, get_idx(in, p0[0]  , p0[1]+1, p0[2]  )) = (1 - w[0]) *      w[1]  * (1 - w[2]);
+                if (inbounds(in, p0[0]+1, p0[1]+1, p0[2]  )) M.insert(i, get_idx(in, p0[0]+1, p0[1]+1, p0[2]  )) =      w[0]  *      w[1]  * (1 - w[2]);
+                if (inbounds(in, p0[0]  , p0[1]  , p0[2]+1)) M.insert(i, get_idx(in, p0[0]  , p0[1]  , p0[2]+1)) = (1 - w[0]) * (1 - w[1]) *      w[2] ;
+                if (inbounds(in, p0[0]+1, p0[1]  , p0[2]+1)) M.insert(i, get_idx(in, p0[0]+1, p0[1]  , p0[2]+1)) =      w[0]  * (1 - w[1]) *      w[2] ;
+                if (inbounds(in, p0[0]  , p0[1]+1, p0[2]+1)) M.insert(i, get_idx(in, p0[0]  , p0[1]+1, p0[2]+1)) = (1 - w[0]) *      w[1]  *      w[2] ;
+                if (inbounds(in, p0[0]+1, p0[1]+1, p0[2]+1)) M.insert(i, get_idx(in, p0[0]+1, p0[1]+1, p0[2]+1)) =      w[0]  *      w[1]  *      w[2] ;
 
               }
             }
@@ -375,7 +382,9 @@ namespace Eigen {
         assert(alpha==Scalar(1) && "scaling is not implemented");
 
         //TRACE;
-        auto Y = lhs.getY();
+        Eigen::MatrixXf W = lhs.getW();
+        Eigen::Map<VectorXf> w (W.data(),W.size());
+        auto Y = w.asDiagonal() * lhs.getY();
         size_t nc = Y.cols();
         size_t nxyz = lhs.getM().cols();
         VectorXf r (lhs.rows());
@@ -404,7 +413,9 @@ namespace Eigen {
         assert(alpha==Scalar(1) && "scaling is not implemented");
 
         //TRACE;
-        auto Y = lhs.R.getY();
+        Eigen::MatrixXf W = lhs.R.getW();
+        Eigen::Map<VectorXf> w (W.data(),W.size());
+        auto Y = w.asDiagonal() * lhs.R.getY();
         size_t nc = Y.cols();
         size_t nxyz = lhs.R.getM().cols();
         VectorXf r (lhs.cols());

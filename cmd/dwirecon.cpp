@@ -189,7 +189,8 @@ void run ()
 
   // Set up scattered data matrix
   INFO("initialise reconstruction matrix");
-  DWI::ReconMatrix R (dwisub, motionsub, gradsub, lmax, rf, Wsub);
+  DWI::ReconMatrix R (dwisub, motionsub, gradsub, lmax, rf);
+  R.setW(Wsub);
 
   // Read input data to vector
   Eigen::VectorXf y (dwisub.size(0)*dwisub.size(1)*dwisub.size(2)*dwisub.size(3));
@@ -263,6 +264,7 @@ void run ()
     header.size(3) = dwisub.size(3);
     DWI::stash_DW_scheme (header, gradsub);
     auto spred = Image<value_type>::create(opt[0][0], header);
+    R.setW(Eigen::MatrixXf::Ones(dwisub.size(2), dwisub.size(3)));
     Eigen::VectorXf p = R * x;
     j = 0;
     for (auto l = Loop("saving source prediction", {0, 1, 2, 3})(spred); l; l++, j++) {
