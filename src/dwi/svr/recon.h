@@ -88,7 +88,7 @@ namespace MR
           M (nxy*nz*nv, nxy*nz)
       {
         init_M(in, rigid);
-        init_Y(in, rigid, grad, rf);
+        init_Y(rigid, grad, rf);
       }
 
       const SparseMat&       getM() const { return M; }
@@ -105,7 +105,7 @@ namespace MR
       const ReconMatrixAdjoint adjoint() const;
 
 
-      const Eigen::MatrixXf getY0(const Header& in, const Eigen::MatrixXf& grad, const vector<Eigen::MatrixXf>& rf) const
+      const Eigen::MatrixXf getY0(const Eigen::MatrixXf& grad, const vector<Eigen::MatrixXf>& rf) const
       {
         DEBUG("initialise Y0");
         assert (grad.rows() == nv);     // one gradient per volume
@@ -229,7 +229,7 @@ namespace MR
       }
 
 
-      void init_Y(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad, const vector<Eigen::MatrixXf>& rf)
+      void init_Y(const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad, const vector<Eigen::MatrixXf>& rf)
       {
         DEBUG("initialise Y");
         assert (grad.rows() == nv);     // one gradient per volume
@@ -322,7 +322,7 @@ namespace MR
       }
 
 
-      inline size_t get_ncoefs(rf) const
+      inline size_t get_ncoefs(const vector<Eigen::MatrixXf>& rf) const
       {
         size_t n = 0;
         if (rf.empty()) {
