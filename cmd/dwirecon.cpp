@@ -292,7 +292,7 @@ void run ()
     };
     j = 0;
     for (auto l = Loop("saving registration prediction", 3)(tpred); l; l++, j++) {
-      ThreadedLoop(out, 0, 3).run( PredFunctor (R.getY0(gradsub, rf).row(j)) , out , tpred );
+      ThreadedLoop(out, 0, 3).run( PredFunctor (R.getY0(gradsub).row(j)) , out , tpred );
     }
   }
 

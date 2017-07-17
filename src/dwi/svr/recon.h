@@ -85,10 +85,11 @@ namespace MR
         : lmax (lmax),
           nxy (in.size(0)*in.size(1)), nz (in.size(2)), nv (in.size(3)),
           nc (get_ncoefs(rf)),
+          shellbasis (init_shellbasis(grad, rf)),
           M (nxy*nz*nv, nxy*nz)
       {
         init_M(in, rigid);
-        init_Y(rigid, grad, rf);
+        init_Y(rigid, grad);
       }
 
       const SparseMat&       getM() const { return M; }
@@ -105,51 +106,22 @@ namespace MR
       const ReconMatrixAdjoint adjoint() const;
 
 
-      const Eigen::MatrixXf getY0(const Eigen::MatrixXf& grad, const vector<Eigen::MatrixXf>& rf) const
+      const Eigen::MatrixXf getY0(const Eigen::MatrixXf& grad) const
       {
         DEBUG("initialise Y0");
-        assert (grad.rows() == nv);     // one gradient per volume
 
-        Shells shells (grad.template cast<double>());
-        vector<size_t> idx (shells.volumecount());
-        vector<Eigen::MatrixXf> shellbasis;
-        Eigen::MatrixXf Y0 (nv, nc);
-
-        for (size_t s = 0; s < shells.count(); s++) {
-          for (auto v : shells[s].get_volumes())
-            idx[v] = s;
-
-          Eigen::MatrixXf B;
-          if (rf.empty()) {
-            B.setIdentity(Math::SH::NforL(lmax), Math::SH::NforL(lmax));
-          }
-          else {
-            B.setZero(nc, Math::SH::NforL(lmax));
-            size_t j = 0;
-            for (auto& r : rf) {
-              for (size_t l = 0; l < r.cols() and 2*l <= lmax; l++)
-                for (size_t i = l*(2*l-1); i < (l+1)*(2*l+1); i++, j++)
-                  B(j,i) = r(s,l);
-            }
-          }
-          shellbasis.push_back(B);
-        }
+        vector<size_t> idx = get_shellidx(grad);
+        Eigen::MatrixXf Y0 (grad.rows(), nc);
 
         Eigen::Vector3f vec;
         Eigen::VectorXf delta;
 
-        for (size_t i = 0; i < nv; i++) {
+        for (size_t i = 0; i < grad.rows(); i++) {
           vec = {grad(i, 0), grad(i, 1), grad(i, 2)};
 
           // evaluate basis functions
           Math::SH::delta(delta, vec, lmax);
-          if (rf.empty()) {
-            Y0.row(i) = delta;
-          }
-          else {
-            Y0.row(i) = shellbasis[idx[i]]*delta;
-          }
-
+          Y0.row(i) = shellbasis[idx[i]]*delta;
         }
 
         return Y0;
@@ -159,6 +131,8 @@ namespace MR
     private:
       const int lmax;
       const size_t nxy, nz, nv, nc;
+      const vector<Eigen::MatrixXf> shellbasis;
+
       SparseMat M;
       Eigen::MatrixXf Y;
       Eigen::MatrixXf W;
@@ -229,25 +203,17 @@ namespace MR
       }
 
 
-      void init_Y(const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad, const vector<Eigen::MatrixXf>& rf)
+      const vector<Eigen::MatrixXf>&& init_shellbasis(const Eigen::MatrixXf& grad, const vector<Eigen::MatrixXf>& rf) const
       {
-        DEBUG("initialise Y");
-        assert (grad.rows() == nv);     // one gradient per volume
-
         Shells shells (grad.template cast<double>());
-        vector<size_t> idx (shells.volumecount());
-        vector<Eigen::MatrixXf> shellbasis;
-        Y.resize(nv*nz, nc);
+        vector<Eigen::MatrixXf> basis;
 
         for (size_t s = 0; s < shells.count(); s++) {
-          for (auto v : shells[s].get_volumes())
-            idx[v] = s;
-
           Eigen::MatrixXf B;
           if (rf.empty()) {
             B.setIdentity(Math::SH::NforL(lmax), Math::SH::NforL(lmax));
           }
-          else { 
+          else {
             B.setZero(nc, Math::SH::NforL(lmax));
             size_t j = 0;
             for (auto& r : rf) {
@@ -256,8 +222,19 @@ namespace MR
                   B(j,i) = r(s,l);
             }
           }
-          shellbasis.push_back(B);
+          basis.push_back(B);
         }
+        return std::move(basis);
+      }
+
+
+      void init_Y(const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad)
+      {
+        DEBUG("initialise Y");
+        assert (grad.rows() == nv);     // one gradient per volume
+
+        vector<size_t> idx = get_shellidx(grad);
+        Y.resize(nv*nz, nc);
 
         Eigen::Vector3f vec;
         Eigen::Matrix3f rot;
@@ -276,12 +253,7 @@ namespace MR
 
             // evaluate basis functions
             Math::SH::delta(delta, rot*vec, lmax);
-            if (rf.empty()) {
-              Y.row(i*nz+j) = delta;
-            }
-            else {
-              Y.row(i*nz+j) = shellbasis[idx[i]]*delta;
-            }
+            Y.row(i*nz+j) = shellbasis[idx[i]]*delta;
           }
 
         }
@@ -332,6 +304,19 @@ namespace MR
             n += Math::SH::NforL(std::min(2*(int(r.cols())-1), lmax));
         }
         return n;
+      }
+
+
+      const vector<size_t>&& get_shellidx(const Eigen::MatrixXf& grad) const
+      {
+        Shells shells (grad.template cast<double>());
+        vector<size_t> idx (shells.volumecount());
+
+        for (size_t s = 0; s < shells.count(); s++) {
+          for (auto v : shells[s].get_volumes())
+            idx[v] = s;
+        }
+        return std::move(idx);
       }
 
 
