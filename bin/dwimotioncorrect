@@ -191,7 +191,7 @@ for k in range(s2viter):
             f.write(volmotion)
     f.close()
     # update template
-    run.command('dwirecon shells.mif ' + recon_option + ' recon-'+str(v2viter+k+1)+'.mif -motion motion.txt -weightd sliceweights.mif' + 
+    run.command('dwirecon shells.mif ' + recon_option + ' recon-'+str(v2viter+k+1)+'.mif -motion motion.txt -weights sliceweights.txt' +
                 ' -rpred pred.mif -spred spred.mif' + (' -tpred result-s.mif' if k+1==s2viter else '') + ' -force')
     run.command('dwisliceoutliers shells.mif spred.mif -mask mask.mif sliceweights.txt -force' + ort)
 
