@@ -82,7 +82,7 @@ class Shared { MEMALIGN(Shared)
       vector3_type b = { directions(j,0), directions(j,1), directions(j,2) };
       if (signs[i] < 0) a = -a;
       if (signs[j] < 0) b = -b;
-      return 1.0 / (a-b).squaredNorm();
+      return 1.0 / (a-b).norm();
     }
 
 
