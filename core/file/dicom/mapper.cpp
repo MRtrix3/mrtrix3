@@ -71,7 +71,8 @@ namespace MR {
             if (image_it->frames.size()) {
               std::sort (image_it->frames.begin(), image_it->frames.end(), compare_ptr_contents());
               for (auto frame_it : image_it->frames) 
-                frames.push_back (frame_it.get());
+                if (frame_it->image_type == series_it->image_type)
+                  frames.push_back (frame_it.get());
             }
             // otherwise add image frame:
             else 
@@ -99,7 +100,7 @@ namespace MR {
         default_type slice_separation = Frame::get_slice_separation (frames, dim[1]);
 
         if (series[0]->study->name.size()) 
-          add_line (H.keyval()["comments"], std::string ("study: " + series[0]->study->name));
+          add_line (H.keyval()["comments"], std::string ("study: " + series[0]->study->name + " [ " + series[0]->image_type + " ]"));
 
         if (patient->DOB.size()) 
           add_line (H.keyval()["comments"], std::string ("DOB: " + format_date (patient->DOB)));
