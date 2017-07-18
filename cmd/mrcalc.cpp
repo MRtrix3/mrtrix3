@@ -598,7 +598,7 @@ void get_header (const StackEntry& entry, Header& header)
     const auto entry_grad = DWI::parse_DW_scheme (*entry.image);
     if (entry_grad.rows()) {
       if (!entry_grad.isApprox (header_grad))
-        header.keyval().erase("dw_scheme");
+        DWI::clear_DW_scheme (header);
     }
   }
 

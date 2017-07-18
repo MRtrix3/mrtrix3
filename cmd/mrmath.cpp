@@ -354,7 +354,7 @@ void run ()
         const auto DW_scheme = DWI::parse_DW_scheme (header_out);
         DWI::stash_DW_scheme (header_out, DW_scheme);
       } catch (...) { }
-      header_out.keyval().erase ("dw_scheme");
+      DWI::clear_DW_scheme (header_out);
       PhaseEncoding::clear_scheme (header_out);
     }
 

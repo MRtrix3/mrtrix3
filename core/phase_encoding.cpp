@@ -83,9 +83,10 @@ namespace MR
 
     void clear_scheme (Header& header)
     {
-      header.keyval().erase ("pe_scheme");
-      header.keyval().erase ("PhaseEncodingDirection");
-      header.keyval().erase ("TotalReadoutTime");
+      auto erase = [&] (const std::string& s) { auto it = header.keyval().find (s); if (it != header.keyval().end()) header.keyval().erase (it); };
+      erase ("pe_scheme");
+      erase ("PhaseEncodingDirection");
+      erase ("TotalReadoutTime");
     }
 
 
