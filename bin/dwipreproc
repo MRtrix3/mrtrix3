@@ -367,9 +367,6 @@ if app.args.se_epi:
   # If we are using the -se_epi option, and hence the input images to topup have not come from the DWIs themselves,
   #   we need to insert the first b=0 DWI volume to the start of the topup input image. Otherwise, the field estimated
   #   by topup will not be correctly aligned with the volumes as they are processed by eddy.
-  # TODO Yet to do:
-  # - The first b=0 volume in the DWIs should also be the first volume of the DWI series; is basically always the case, but
-  #   it wouuld nevertheless be preferable to test for this
   bzero_threshold = 10.0
   if 'BZeroThreshold' in app.config:
     bzero_threshold = float(app.config['BZeroThreshold'])
@@ -421,7 +418,7 @@ if app.args.se_epi:
         first_line = list(manual_pe_dir)
         first_line.append(trt)
         new_topup_manual_pe_scheme = [ ]
-        new_topup_manual_pe_scheme.append(line)
+        new_topup_manual_pe_scheme.append(first_line)
         for index, entry in enumerate(topup_manual_pe_scheme):
           if not index == topup_volume_to_remove:
             new_topup_manual_pe_scheme.append(entry)
@@ -451,19 +448,19 @@ if app.args.se_epi:
     # Note: If at a later date, the statistical outputs from eddy are considered (e.g. motion, outliers),
     #   then this volume permutation will need to be taken into account
     if dwi_first_bzero_index:
-      app.console('First b=0 volume in input DWIs is volume ' + str(dwi_first_bzero_index) + ' of ' + str(num_volumes) + '; '
-                  'this will be permuted to be the first volume when eddy is run')
+      app.console('First b=0 volume in input DWIs is volume index ' + str(dwi_first_bzero_index) + '; '
+                  'this will be permuted to be the first volume (index 0) when eddy is run')
       dwi_permute_volumes_pre_eddy_option = ' -coord 3 ' + \
                                             str(dwi_first_bzero_index) + \
                                             ',0' + \
-                                            (':' + str(dwi_first_bzero_index-1) if dwi_first_bzero_index > 1) + \
-                                            (',' + str(dwi_first_bzero_index+1) if dwi_first_bzero_index < num_volumes-1) + \
-                                            (':' + str(num_volumes-1) if dwi_first_bzero_index < num_volumes-2)
+                                            (':' + str(dwi_first_bzero_index-1) if dwi_first_bzero_index > 1 else '') + \
+                                            (',' + str(dwi_first_bzero_index+1) if dwi_first_bzero_index < num_volumes-1 else '') + \
+                                            (':' + str(num_volumes-1) if dwi_first_bzero_index < num_volumes-2 else '')
       dwi_permute_volumes_post_eddy_option = ' -coord 3 1' + \
-                                             (':' + str(dwi_first_bzero_index) if dwi_first_bzero_index > 1) + \
+                                             (':' + str(dwi_first_bzero_index) if dwi_first_bzero_index > 1 else '') + \
                                              ',0' + \
-                                             (',' + str(dwi_first_bzero_index+1) if dwi_first_bzero_index < num_volumes-1) + \
-                                             (':' + str(num_volumes-1) if dwi_first_bzero_index < num_volumes-2)
+                                             (',' + str(dwi_first_bzero_index+1) if dwi_first_bzero_index < num_volumes-1 else '') + \
+                                             (':' + str(num_volumes-1) if dwi_first_bzero_index < num_volumes-2 else '')
 
   # Completed checking for presence of b=0 image in DWIs
 
