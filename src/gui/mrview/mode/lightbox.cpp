@@ -45,7 +45,7 @@ namespace MR
           if(!img || prev_image_name != img->header().name())
             image_changed_event();
           else {
-            set_volume_increment(1);
+            set_volume_increment(volume_increment);
             set_slice_increment(slice_focus_increment);
           }
         }
