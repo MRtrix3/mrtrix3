@@ -67,8 +67,8 @@ namespace MR
         IsRowMajor = true
       };
 
-      Eigen::Index rows() const { return M.rows(); }
-      Eigen::Index cols() const { return M.cols()*Y.cols(); }
+      Eigen::Index rows() const { return nv*nz*nxy; }
+      Eigen::Index cols() const { return nxy*nz*nc; }
 
 
       template<typename Rhs>
@@ -87,28 +87,70 @@ namespace MR
           nxy (nx*ny), nc (get_ncoefs(rf)),
           T0 (in),  // Preserve original resolution.
           shellbasis (init_shellbasis(grad, rf)),
-          motion (rigid),
-          M (nxy*nz*nv, nxy*nz)
+          motion (rigid)
       {
-        init_M();
         init_Y(grad);
       }
 
-      const SparseMat&       getM() const { return M; }
+      //const SparseMat&       getM() const { return M; }
       const Eigen::MatrixXf& getY() const { return Y; }
       const Eigen::MatrixXf& getW() const { return W; }
 
-      void setW (const Eigen::MatrixXf& weights)
+      void setW (const Eigen::MatrixXf& weights) { W = weights; }
+
+      inline size_t get_grad_idx(const size_t idx) const { return idx / nxy; }
+      inline size_t get_grad_idx(const size_t v, const size_t z) const { return v*nz + z; }
+
+      ReconMatrixAdjoint adjoint() const;
+
+      SparseMat get_sliceM(const size_t v, const size_t z) const
       {
-        W = weights;
+        int n = 2;
+        SincPSF<float> sinc (n);
+        SSP<float> ssp {};
+
+        // reserve memory for elements along each row (outer strides with row-major order).
+        SparseMat Ms (nxy, nxy*nz);
+        Ms.reserve(Eigen::VectorXi::Constant(nxy, (n+1)*8*n*n*n));
+
+        Eigen::Vector3f ps, pr;
+        Eigen::Vector3i p;
+
+        // fill weights
+        size_t i = 0;
+        transform_type Ts2r = get_Ts2r(v, z);
+        // in-plane
+        for (size_t y = 0; y < ny; y++) {
+          for (size_t x = 0; x < nx; x++, i++) {
+
+            for (int s = -n; s <= n; s++) {     // ssp neighbourhood
+              ps = Eigen::Vector3f(x, y, z+s);
+              pr = (Ts2r.cast<float>() * ps);
+
+              for (int rx = -n; rx < n; rx++) { // sinc interpolator
+                for (int ry = -n; ry < n; ry++) {
+                  for (int rz = -n; rz < n; rz++) {
+                    p = Eigen::Vector3i(std::ceil(pr[0])+rx, std::ceil(pr[1])+ry, std::ceil(pr[2])+rz);
+                    if (inbounds(p[0], p[1], p[2])) {
+                      Ms.coeffRef(i, get_idx(p[0], p[1], p[2])) += ssp(s) * sinc(pr - p.cast<float>());
+                    }
+                  }
+                }
+              }
+            }
+
+          }
+        }
+
+        return Ms;
       }
 
-      inline const size_t get_grad_idx(const size_t idx) const { return idx / nxy; }
+      Eigen::VectorXf get_sliceY(const size_t v, const size_t z) const
+      {
+        return Y.row(v*nz+z);
+      }
 
-      const ReconMatrixAdjoint adjoint() const;
-
-
-      const Eigen::MatrixXf getY0(const Eigen::MatrixXf& grad) const
+      Eigen::MatrixXf getY0(const Eigen::MatrixXf& grad) const
       {
         DEBUG("initialise Y0");
 
@@ -130,74 +172,74 @@ namespace MR
       }
 
 
-    private:
       const int lmax;
       const size_t nx, ny, nz, nv, nxy, nc;
-      Transform T0;
+      const Transform T0;
       const vector<Eigen::MatrixXf> shellbasis;
 
+    private:
       Eigen::MatrixXf motion;
 
-      SparseMat M;
+      //SparseMat M;
       Eigen::MatrixXf Y;
       Eigen::MatrixXf W;
 
 
-      void init_M()
-      {
-        DEBUG("initialise M");
-        // Note that this step is highly time and memory critical!
-        // Special care must be taken when inserting elements and it is advised to reserve appropriate memory in advance.
+//      void init_M()
+//      {
+//        DEBUG("initialise M");
+//        // Note that this step is highly time and memory critical!
+//        // Special care must be taken when inserting elements and it is advised to reserve appropriate memory in advance.
 
-        int n = 2;
-        SincPSF<float> psf (n);
-        SSP<float> ssp {};
+//        int n = 2;
+//        SincPSF<float> psf (n);
+//        SSP<float> ssp {};
 
-        // reserve memory for elements along each row (outer strides with row-major order).
-        M.reserve(Eigen::VectorXi::Constant(nv*nz*nxy, (n+1)*8*n*n*n));
+//        // reserve memory for elements along each row (outer strides with row-major order).
+//        M.reserve(Eigen::VectorXi::Constant(nv*nz*nxy, (n+1)*8*n*n*n));
 
-        transform_type Ts2r;
+//        transform_type Ts2r;
 
-        Eigen::Vector3f ps, pr;
-        Eigen::Vector3i p;
+//        Eigen::Vector3f ps, pr;
+//        Eigen::Vector3i p;
         
-        // fill weights
-        size_t i = 0;
-        for (size_t v = 0; v < nv; v++) {   // volumes
-          for (size_t z = 0; z < nz; z++) { // slices
+//        // fill weights
+//        size_t i = 0;
+//        for (size_t v = 0; v < nv; v++) {   // volumes
+//          for (size_t z = 0; z < nz; z++) { // slices
 
-            Ts2r = get_Ts2r(v, z);
-            // in-plane
-            for (size_t y = 0; y < ny; y++) {
-              for (size_t x = 0; x < nx; x++, i++) {
+//            Ts2r = get_Ts2r(v, z);
+//            // in-plane
+//            for (size_t y = 0; y < ny; y++) {
+//              for (size_t x = 0; x < nx; x++, i++) {
 
-                for (int s = -n; s <= n; s++) {     // ssp neighbourhood
-                  ps = Eigen::Vector3f(x, y, z+s);
-                  pr = (Ts2r.cast<float>() * ps);
+//                for (int s = -n; s <= n; s++) {     // ssp neighbourhood
+//                  ps = Eigen::Vector3f(x, y, z+s);
+//                  pr = (Ts2r.cast<float>() * ps);
 
-                  for (int rx = -n; rx < n; rx++) { // sinc interpolator
-                    for (int ry = -n; ry < n; ry++) {
-                      for (int rz = -n; rz < n; rz++) {
-                        p = Eigen::Vector3i(std::ceil(pr[0])+rx, std::ceil(pr[1])+ry, std::ceil(pr[2])+rz);
-                        if (inbounds(p[0], p[1], p[2])) {
-                          M.coeffRef(i, get_idx(p[0], p[1], p[2])) += ssp(s) * psf(pr - p.cast<float>());
-                        }
-                      }
-                    }
-                  }
-                }
+//                  for (int rx = -n; rx < n; rx++) { // sinc interpolator
+//                    for (int ry = -n; ry < n; ry++) {
+//                      for (int rz = -n; rz < n; rz++) {
+//                        p = Eigen::Vector3i(std::ceil(pr[0])+rx, std::ceil(pr[1])+ry, std::ceil(pr[2])+rz);
+//                        if (inbounds(p[0], p[1], p[2])) {
+//                          M.coeffRef(i, get_idx(p[0], p[1], p[2])) += ssp(s) * psf(pr - p.cast<float>());
+//                        }
+//                      }
+//                    }
+//                  }
+//                }
 
-              }
-            }
+//              }
+//            }
 
-          }
-        }
+//          }
+//        }
 
-        M.makeCompressed();
-      }
+//        M.makeCompressed();
+//      }
 
 
-      const vector<Eigen::MatrixXf>&& init_shellbasis(const Eigen::MatrixXf& grad, const vector<Eigen::MatrixXf>& rf) const
+      vector<Eigen::MatrixXf> init_shellbasis(const Eigen::MatrixXf& grad, const vector<Eigen::MatrixXf>& rf) const
       {
         Shells shells (grad.template cast<double>());
         vector<Eigen::MatrixXf> basis;
@@ -218,7 +260,8 @@ namespace MR
           }
           basis.push_back(B);
         }
-        return std::move(basis);
+
+        return basis;
       }
 
 
@@ -314,7 +357,7 @@ namespace MR
       }
 
 
-      const vector<size_t>&& get_shellidx(const Eigen::MatrixXf& grad) const
+      vector<size_t> get_shellidx(const Eigen::MatrixXf& grad) const
       {
         Shells shells (grad.template cast<double>());
         vector<size_t> idx (shells.volumecount());
@@ -323,7 +366,7 @@ namespace MR
           for (auto v : shells[s].get_volumes())
             idx[v] = s;
         }
-        return std::move(idx);
+        return idx;
       }
 
 
@@ -380,18 +423,18 @@ namespace Eigen {
         // This method should implement "dst += alpha * lhs * rhs" inplace
         assert(alpha==Scalar(1) && "scaling is not implemented");
 
-        //TRACE;
-        Eigen::MatrixXf W = lhs.getW();
-        Eigen::Map<VectorXf> w (W.data(),W.size());
-        auto Y = w.asDiagonal() * lhs.getY();
-        size_t nc = Y.cols();
-        size_t nxyz = lhs.getM().cols();
-        VectorXf r (lhs.rows());
-
-        for (size_t j = 0; j < nc; j++) {
-          r = lhs.getM() * rhs.segment(j*nxyz, nxyz);
-          for (size_t i = 0; i < lhs.rows(); i++)
-            dst[i] += r[i] * Y(lhs.get_grad_idx(i), j);
+        TRACE;
+        MatrixXf W = lhs.getW();
+        size_t nc = lhs.nc, nxy = lhs.nxy, nxyz = nxy*lhs.nz;
+        size_t i = 0;
+        for (size_t v = 0; v < W.rows(); v++) {
+          for (size_t z = 0; z < W.cols(); z++, i++) {
+            MR::DWI::ReconMatrix::SparseMat M = lhs.get_sliceM(v, z);
+            VectorXf Y = W(v, z) * lhs.get_sliceY(v, z);
+            for (size_t j = 0; j < nc; j++) {
+              dst.segment(i*nxy, nxy) += Y[j] * M * rhs.segment(j*nxyz, nxyz);
+            }
+          }
         }
 
       }
@@ -411,19 +454,20 @@ namespace Eigen {
         // This method should implement "dst += alpha * lhs * rhs" inplace
         assert(alpha==Scalar(1) && "scaling is not implemented");
 
-        //TRACE;
-        Eigen::MatrixXf W = lhs.R.getW();
-        Eigen::Map<VectorXf> w (W.data(),W.size());
-        auto Y = w.asDiagonal() * lhs.R.getY();
-        size_t nc = Y.cols();
-        size_t nxyz = lhs.R.getM().cols();
-        VectorXf r (lhs.cols());
-
-        for (size_t j = 0; j < nc; j++) {
-          r = rhs;
-          for (size_t i = 0; i < lhs.cols(); i++)
-            r[i] *= Y(lhs.R.get_grad_idx(i), j);
-          dst.segment(j*nxyz, nxyz) += lhs.R.getM().adjoint() * r;
+        TRACE;
+        MatrixXf W = lhs.R.getW();
+        size_t nc = lhs.R.nc, nxy = lhs.R.nxy, nxyz = nxy*lhs.R.nz;
+        VectorXf r (nxyz);
+        size_t i = 0;
+        for (size_t v = 0; v < W.rows(); v++) {
+          for (size_t z = 0; z < W.cols(); z++, i++) {
+            MR::DWI::ReconMatrix::SparseMat Mt = lhs.R.get_sliceM(v, z).adjoint();
+            r = Mt * rhs.segment(i*nxy, nxy);
+            VectorXf Y = W(v, z) * lhs.R.get_sliceY(v, z);
+            for (size_t j = 0; j < nc; j++) {
+              dst.segment(j*nxyz, nxyz) += Y[j] * r;
+            }
+          }
         }
 
       }

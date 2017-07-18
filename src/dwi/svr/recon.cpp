@@ -21,7 +21,7 @@ namespace MR
   namespace DWI
   {
 
-    const ReconMatrixAdjoint ReconMatrix::adjoint() const
+    ReconMatrixAdjoint ReconMatrix::adjoint() const
     {
       return ReconMatrixAdjoint(*this);
     }
