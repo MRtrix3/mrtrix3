@@ -62,7 +62,7 @@ namespace MR
       // Required typedefs, constants, and method:
       typedef float Scalar;
       typedef float RealScalar;
-      typedef ssize_t StorageIndex;
+      typedef int StorageIndex;
       enum {
         ColsAtCompileTime = Eigen::Dynamic,
         MaxColsAtCompileTime = Eigen::Dynamic,
@@ -94,7 +94,6 @@ namespace MR
         init_Y(grad);
       }
 
-      //const SparseMat&       getM() const { return M; }
       const Eigen::MatrixXf& getY() const { return Y; }
       const Eigen::MatrixXf& getW() const { return W; }
 
@@ -181,64 +180,8 @@ namespace MR
 
     private:
       Eigen::MatrixXf motion;
-
-      //SparseMat M;
       Eigen::MatrixXf Y;
       Eigen::MatrixXf W;
-
-
-//      void init_M()
-//      {
-//        DEBUG("initialise M");
-//        // Note that this step is highly time and memory critical!
-//        // Special care must be taken when inserting elements and it is advised to reserve appropriate memory in advance.
-
-//        int n = 2;
-//        SincPSF<float> psf (n);
-//        SSP<float> ssp {};
-
-//        // reserve memory for elements along each row (outer strides with row-major order).
-//        M.reserve(Eigen::VectorXi::Constant(nv*nz*nxy, (n+1)*8*n*n*n));
-
-//        transform_type Ts2r;
-
-//        Eigen::Vector3f ps, pr;
-//        Eigen::Vector3i p;
-        
-//        // fill weights
-//        size_t i = 0;
-//        for (size_t v = 0; v < nv; v++) {   // volumes
-//          for (size_t z = 0; z < nz; z++) { // slices
-
-//            Ts2r = get_Ts2r(v, z);
-//            // in-plane
-//            for (size_t y = 0; y < ny; y++) {
-//              for (size_t x = 0; x < nx; x++, i++) {
-
-//                for (int s = -n; s <= n; s++) {     // ssp neighbourhood
-//                  ps = Eigen::Vector3f(x, y, z+s);
-//                  pr = (Ts2r.cast<float>() * ps);
-
-//                  for (int rx = -n; rx < n; rx++) { // sinc interpolator
-//                    for (int ry = -n; ry < n; ry++) {
-//                      for (int rz = -n; rz < n; rz++) {
-//                        p = Eigen::Vector3i(std::ceil(pr[0])+rx, std::ceil(pr[1])+ry, std::ceil(pr[2])+rz);
-//                        if (inbounds(p[0], p[1], p[2])) {
-//                          M.coeffRef(i, get_idx(p[0], p[1], p[2])) += ssp(s) * psf(pr - p.cast<float>());
-//                        }
-//                      }
-//                    }
-//                  }
-//                }
-
-//              }
-//            }
-
-//          }
-//        }
-
-//        M.makeCompressed();
-//      }
 
 
       vector<Eigen::MatrixXf> init_shellbasis(const Eigen::MatrixXf& grad, const vector<Eigen::MatrixXf>& rf) const
@@ -381,7 +324,7 @@ namespace MR
       // Required typedefs, constants, and method:
       typedef float Scalar;
       typedef float RealScalar;
-      typedef ssize_t StorageIndex;
+      typedef int StorageIndex;
       enum {
         ColsAtCompileTime = Eigen::Dynamic,
         MaxColsAtCompileTime = Eigen::Dynamic,
@@ -426,23 +369,17 @@ namespace Eigen {
         assert(alpha==Scalar(1) && "scaling is not implemented");
 
         TRACE;
-//        std::clock_t start;
-
         MatrixXf W = lhs.getW();
         size_t nc = lhs.nc, nxy = lhs.nxy, nxyz = nxy*lhs.nz;
         size_t i = 0;
         for (size_t v = 0; v < W.cols(); v++) {
           VAR(v);
           for (size_t z = 0; z < W.rows(); z++, i++) {
-//            start = std::clock();
             MR::DWI::ReconMatrix::SparseMat M = lhs.get_sliceM(v, z);
-//            VAR(std::clock() - start);
             VectorXf Y = W(z, v) * lhs.get_sliceY(v, z);
-//            start = std::clock();
             for (size_t j = 0; j < nc; j++) {
               dst.segment(i*nxy, nxy) += Y[j] * M * rhs.segment(j*nxyz, nxyz);
             }
-//            VAR(std::clock() - start);
           }
         }
 
