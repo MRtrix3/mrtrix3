@@ -26,6 +26,8 @@
 #include "dwi/shells.h"
 #include "dwi/svr/psf.h"
 
+#include <ctime>
+
 
 namespace MR {
   namespace DWI {
@@ -424,16 +426,23 @@ namespace Eigen {
         assert(alpha==Scalar(1) && "scaling is not implemented");
 
         TRACE;
+//        std::clock_t start;
+
         MatrixXf W = lhs.getW();
         size_t nc = lhs.nc, nxy = lhs.nxy, nxyz = nxy*lhs.nz;
         size_t i = 0;
-        for (size_t v = 0; v < W.rows(); v++) {
-          for (size_t z = 0; z < W.cols(); z++, i++) {
+        for (size_t v = 0; v < W.cols(); v++) {
+          VAR(v);
+          for (size_t z = 0; z < W.rows(); z++, i++) {
+//            start = std::clock();
             MR::DWI::ReconMatrix::SparseMat M = lhs.get_sliceM(v, z);
-            VectorXf Y = W(v, z) * lhs.get_sliceY(v, z);
+//            VAR(std::clock() - start);
+            VectorXf Y = W(z, v) * lhs.get_sliceY(v, z);
+//            start = std::clock();
             for (size_t j = 0; j < nc; j++) {
               dst.segment(i*nxy, nxy) += Y[j] * M * rhs.segment(j*nxyz, nxyz);
             }
+//            VAR(std::clock() - start);
           }
         }
 
@@ -459,11 +468,12 @@ namespace Eigen {
         size_t nc = lhs.R.nc, nxy = lhs.R.nxy, nxyz = nxy*lhs.R.nz;
         VectorXf r (nxyz);
         size_t i = 0;
-        for (size_t v = 0; v < W.rows(); v++) {
-          for (size_t z = 0; z < W.cols(); z++, i++) {
+        for (size_t v = 0; v < W.cols(); v++) {
+          VAR(v);
+          for (size_t z = 0; z < W.rows(); z++, i++) {
             MR::DWI::ReconMatrix::SparseMat Mt = lhs.R.get_sliceM(v, z).adjoint();
             r = Mt * rhs.segment(i*nxy, nxy);
-            VectorXf Y = W(v, z) * lhs.R.get_sliceY(v, z);
+            VectorXf Y = W(z, v) * lhs.R.get_sliceY(v, z);
             for (size_t j = 0; j < nc; j++) {
               dst.segment(j*nxyz, nxyz) += Y[j] * r;
             }
