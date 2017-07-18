@@ -208,7 +208,7 @@ void run ()
 
   Eigen::initParallel();
   Eigen::setNbThreads(Thread::number_of_threads());     // only used when configured with OpenMP
-  //VAR(Eigen::nbThreads());
+  VAR(Eigen::nbThreads());
 
   Eigen::LeastSquaresConjugateGradient<DWI::ReconMatrix, Eigen::IdentityPreconditioner> lscg;
   lscg.compute(R);

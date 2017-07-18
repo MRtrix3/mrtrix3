@@ -27,6 +27,7 @@
 #include "dwi/svr/psf.h"
 
 #include <ctime>
+#include <omp.h>
 
 
 namespace MR {
@@ -133,6 +134,7 @@ namespace MR
                   for (int rz = -n; rz < n; rz++) {
                     p = Eigen::Vector3i(std::ceil(pr[0])+rx, std::ceil(pr[1])+ry, std::ceil(pr[2])+rz);
                     if (inbounds(p[0], p[1], p[2])) {
+                      //Ms.coeffRef(i, get_idx(p[0], p[1], p[2])) += (1.0 - std::abs(pr[0]-p[0])) * (1.0 - std::abs(pr[1]-p[1])) * (1.0 - std::abs(pr[2]-p[2]));
                       Ms.coeffRef(i, get_idx(p[0], p[1], p[2])) += ssp(s) * sinc(pr - p.cast<float>());
                     }
                   }
@@ -369,16 +371,17 @@ namespace Eigen {
         assert(alpha==Scalar(1) && "scaling is not implemented");
 
         TRACE;
+
         MatrixXf W = lhs.getW();
         size_t nc = lhs.nc, nxy = lhs.nxy, nxyz = nxy*lhs.nz;
-        size_t i = 0;
+        #pragma omp parallel for
         for (size_t v = 0; v < W.cols(); v++) {
-          VAR(v);
-          for (size_t z = 0; z < W.rows(); z++, i++) {
+          //VAR(v);
+          for (size_t z = 0; z < W.rows(); z++) {
             MR::DWI::ReconMatrix::SparseMat M = lhs.get_sliceM(v, z);
             VectorXf Y = W(z, v) * lhs.get_sliceY(v, z);
             for (size_t j = 0; j < nc; j++) {
-              dst.segment(i*nxy, nxy) += Y[j] * M * rhs.segment(j*nxyz, nxyz);
+              dst.segment(lhs.get_grad_idx(v,z)*nxy, nxy) += Y[j] * M * rhs.segment(j*nxyz, nxyz);
             }
           }
         }
@@ -401,18 +404,21 @@ namespace Eigen {
         assert(alpha==Scalar(1) && "scaling is not implemented");
 
         TRACE;
+
         MatrixXf W = lhs.R.getW();
         size_t nc = lhs.R.nc, nxy = lhs.R.nxy, nxyz = nxy*lhs.R.nz;
-        VectorXf r (nxyz);
-        size_t i = 0;
+        #pragma omp parallel for
         for (size_t v = 0; v < W.cols(); v++) {
-          VAR(v);
-          for (size_t z = 0; z < W.rows(); z++, i++) {
+          //VAR(v);
+          for (size_t z = 0; z < W.rows(); z++) {
             MR::DWI::ReconMatrix::SparseMat Mt = lhs.R.get_sliceM(v, z).adjoint();
-            r = Mt * rhs.segment(i*nxy, nxy);
+            VectorXf r = Mt * rhs.segment(lhs.R.get_grad_idx(v,z)*nxy, nxy);
             VectorXf Y = W(z, v) * lhs.R.get_sliceY(v, z);
-            for (size_t j = 0; j < nc; j++) {
-              dst.segment(j*nxyz, nxyz) += Y[j] * r;
+            #pragma omp critical
+            {
+              for (size_t j = 0; j < nc; j++) {
+                dst.segment(j*nxyz, nxyz) += Y[j] * r;
+              }
             }
           }
         }
