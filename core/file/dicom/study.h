@@ -35,7 +35,7 @@ namespace MR {
           Patient* patient;
           std::string name, ID, date, time;
 
-          std::shared_ptr<Series> find (const std::string& series_name, size_t series_number,
+          std::shared_ptr<Series> find (const std::string& series_name, size_t series_number, const std::string& image_type,
               const std::string& series_modality = "", const std::string& series_date = "", const std::string& series_time = "");
       };
 
