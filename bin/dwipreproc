@@ -376,8 +376,7 @@ if app.args.se_epi:
       break
     dwi_first_bzero_index += 1
   if dwi_first_bzero_index == len(grad):
-    # TODO Need to test whether different grids between SE-EPI and DWI will crash eddy in this scenario
-    app.warn('Unable to find b=0 volume in input DWIs to provide alignment between topup and eddy; script will proceed on the assumption that motion between the SE-EPI and DWI series is negligible')
+    app.warn('Unable to find b=0 volume in input DWIs to provide alignment between topup and eddy; script will proceed on the assumption that motion between the SE-EPI and DWI series is negligible. Note however that eddy itself may crash in this scenario.')
   else:
     run.command('mrconvert dwi.mif dwi_first_bzero.mif -coord 3 ' + str(dwi_first_bzero_index) + ' -axes 0,1,2')
     dwi_first_bzero_pe = dwi_manual_pe_scheme[dwi_first_bzero_index] if overwrite_dwi_pe_scheme else dwi_pe_scheme[dwi_first_bzero_index]
