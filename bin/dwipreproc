@@ -299,7 +299,7 @@ else:
 
 # This may be required by -rpe_all for extracting b=0 volumes while retaining phase-encoding information
 import_dwi_pe_table_option = ''
-if overwrite_dwi_pe_scheme:
+if dwi_manual_pe_scheme:
   with open('dwi_manual_pe_scheme.txt', 'w') as f:
     for line in dwi_manual_pe_scheme:
       f.write(' '.join( [ str(value) for value in line ] ) + '\n')
@@ -453,16 +453,16 @@ if app.args.se_epi:
     if dwi_first_bzero_index:
       app.console('First b=0 volume in input DWIs is volume ' + str(dwi_first_bzero_index) + ' of ' + str(num_volumes) + '; '
                   'this will be permuted to be the first volume when eddy is run')
-      dwi_permute_volumes_pre_eddy_option = ' -coord 3 ' +
-                                            str(dwi_first_bzero_index) +
-                                            ',0' +
-                                            (':' + str(dwi_first_bzero_index-1) if dwi_first_bero_index > 1) +
-                                            (',' + str(dwi_first_bzero_index+1) if dwi_first_bzero_index < num_volumes-1) +
+      dwi_permute_volumes_pre_eddy_option = ' -coord 3 ' + \
+                                            str(dwi_first_bzero_index) + \
+                                            ',0' + \
+                                            (':' + str(dwi_first_bzero_index-1) if dwi_first_bzero_index > 1) + \
+                                            (',' + str(dwi_first_bzero_index+1) if dwi_first_bzero_index < num_volumes-1) + \
                                             (':' + str(num_volumes-1) if dwi_first_bzero_index < num_volumes-2)
-      dwi_permute_volumes_post_eddy_option = ' -coord 3 1' +
-                                             (':' + str(dwi_first_bzero_index) if dwi_first_bzero_index > 1) +
-                                             ',0' +
-                                             (',' + str(dwi_first_bzero_index+1) if dwi_first_bzero_index < num_volumes-1) +
+      dwi_permute_volumes_post_eddy_option = ' -coord 3 1' + \
+                                             (':' + str(dwi_first_bzero_index) if dwi_first_bzero_index > 1) + \
+                                             ',0' + \
+                                             (',' + str(dwi_first_bzero_index+1) if dwi_first_bzero_index < num_volumes-1) + \
                                              (':' + str(num_volumes-1) if dwi_first_bzero_index < num_volumes-2)
 
   # Completed checking for presence of b=0 image in DWIs
