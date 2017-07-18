@@ -118,7 +118,7 @@ namespace MR {
         if (std::isfinite (frame.echo_time))
           H.keyval()["EchoTime"] = str (0.001 * frame.echo_time, 6);
 
-        size_t nchannels = frames.size() ? 1 : frame.data_size / (frame.dim[0] * frame.dim[1] * (frame.bits_alloc/8));
+        size_t nchannels = image.frames.size() ? 1 : image.data_size / (frame.dim[0] * frame.dim[1] * (frame.bits_alloc/8));
         if (nchannels > 1) 
           INFO ("data segment is larger than expected from image dimensions - interpreting as multi-channel data");
 
