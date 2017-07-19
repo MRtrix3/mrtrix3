@@ -1,9 +1,14 @@
 .. _tckglobal:
 
 tckglobal
-===========
+===================
 
 Synopsis
+--------
+
+Multi-Shell Multi-Tissue Global Tractography
+
+Usage
 --------
 
 ::
@@ -17,13 +22,11 @@ Synopsis
 Description
 -----------
 
-Multi-Shell Multi-Tissue Global Tractography.
-
 This command will reconstruct the global white matter fibre tractogram that best explains the input DWI data, using a multi-tissue spherical convolution model.
 
 Example use: 
 
- $ tckglobal dwi.mif wmr.txt -riso csfr.txt -riso gmr.txt -mask mask.mif    -niter 1e8 -fod fod.mif -fiso fiso.mif tracks.tck 
+ $ tckglobal dwi.mif wmr.txt -riso csfr.txt -riso gmr.txt -mask mask.mif    -niter 1e9 -fod fod.mif -fiso fiso.mif tracks.tck 
 
 in which dwi.mif is the input image, wmr.txt is an anisotropic, multi-shell response function for WM, and csfr.txt and gmr.txt are isotropic response functions for CSF and GM. The output tractogram is saved to tracks.tck. Optional output images fod.mif and fiso.mif contain the predicted WM fODF and isotropic tissue fractions of CSF and GM respectively, estimated as part of the global optimization and thus affected by spatial regularization.
 
@@ -112,7 +115,7 @@ Christiaens, D.; Reisert, M.; Dhollander, T.; Sunaert, S.; Suetens, P. & Maes, F
 
 
 
-**Author:** Daan Christiaens (daan.christiaens@kuleuven.be)
+**Author:** Daan Christiaens (daan.christiaens@kcl.ac.uk)
 
 **Copyright:** Copyright (C) 2015 KU Leuven, Dept. Electrical Engineering, ESAT/PSI,
 Herestraat 49 box 7003, 3000 Leuven, Belgium 

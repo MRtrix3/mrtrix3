@@ -1,13 +1,23 @@
 .. _config_file_options:
 
-################
+##########################################
 List of MRtrix3 configuration file options
-################
+##########################################
+
+*  **AmbientIntensity**
+    *default: 0.5*
+
+     The default intensity for the ambient light in OpenGL renders.
 
 *  **AmbientIntensity**
     *default: 0.6*
 
-     The default intensity for the ambient light in OpenGL renders.
+     The default intensity for the ambient light in OpenGL renders
+
+*  **Analyse.LeftToRight**
+    *default: 0 (false)*
+
+     A boolean value to indicate whether images in Analyse format should be assumed to be in LAS orientation (default) or RAS (when this is option is turned on).
 
 *  **AnalyseLeftToRight**
     *default: 0 (false)*
@@ -19,13 +29,33 @@ List of MRtrix3 configuration file options
 
      Specifies whether the b-values should be scaled by the squared norm of the gradient vectors when loading a DW gradient scheme. This is commonly required to correctly interpret images acquired on scanners that nominally only allow a single b-value, as the common workaround is to scale the gradient vectors to modulate the actual b-value.
 
+*  **BValueScaling**
+    *default: 1 (true)*
+
+     specifies whether the b-values should be scaled by the squared norm of the gradient vectors when loading a DW gradient scheme. This is commonly required to correctly interpret images acquired on scanners that nominally only allow a single b-value, as the common workaround is to scale the gradient vectors to modulate the actual b-value.
+
+*  **BValueScaling**
+    *default: yes*
+
+     specifies whether b-values should be scaled according the DW gradient amplitudes - see the -bvalue_scaling option for details.
+
 *  **BZeroThreshold**
     *default: 10.0*
 
      Specifies the b-value threshold for determining those image volumes that correspond to b=0.
 
+*  **BZeroThreshold**
+    *default: 10.0*
+
+     specifies the b-value threshold for determining those image volumes that correspond to b=0
+
 *  **BackgroundColor**
     *default: 1,1,1 (white)*
+
+     The default colour to use for the background in OpenGL panels, notably the SH viewer.
+
+*  **BackgroundColor**
+    *default: 1.0,1.0,1.0*
 
      The default colour to use for the background in OpenGL panels, notably the SH viewer.
 
@@ -172,7 +202,17 @@ List of MRtrix3 configuration file options
 *  **DiffuseIntensity**
     *default: 0.3*
 
+     The default intensity for the diffuse light in OpenGL renders
+
+*  **DiffuseIntensity**
+    *default: 0.5*
+
      The default intensity for the diffuse light in OpenGL renders.
+
+*  **FailOnWarn**
+    *default: 0 (false)*
+
+     A boolean value specifying whether MRtrix applications should abort as soon as any (otherwise non-fatal) warning is issued.
 
 *  **FailOnWarn**
     *default: 0 (false)*
@@ -184,10 +224,25 @@ List of MRtrix3 configuration file options
 
      The command to use to display each command's help page (leave empty to send directly to the terminal).
 
+*  **HelpCommand**
+    *default: less*
+
+     the command to use to display each command's help page (leave empty to send directly to the terminal).
+
 *  **IconSize**
     *default: 24*
 
      The size of the icons in the main MRView toolbar.
+
+*  **IconSize**
+    *default: 30*
+
+     The size of the icons in the main MRView toolbar.
+
+*  **ImageBackgroundColour**
+    *default: 0,0,0 (black)*
+
+     The default image background colour
 
 *  **ImageInterpolation**
     *default: true*
@@ -204,10 +259,25 @@ List of MRtrix3 configuration file options
 
      The starting position of the MRView toolbar. Valid values are: top, bottom, left, right.
 
+*  **InitialToolBarPosition**
+    *default: top*
+
+     The starting position of the MRView toolbar. Valid values are: top, bottom, left, right.
+
 *  **LightPosition**
     *default: 1,1,3*
 
+     The default position vector to use for the light in OpenGL renders
+
+*  **LightPosition**
+    *default: 1.0,1.0,3.0*
+
      The default position vector to use for the light in OpenGL renders.
+
+*  **MRViewColourBarHeight**
+    *default: 100*
+
+     The height of the colourbar in MRView, in pixels.
 
 *  **MRViewColourBarHeight**
     *default: 100*
@@ -219,6 +289,16 @@ List of MRtrix3 configuration file options
 
      How far away from the edge of the main window to place the colourbar in MRView, in pixels.
 
+*  **MRViewColourBarInset**
+    *default: 20*
+
+     How far away from the edge of the main window to place the colourbar in MRView, in pixels.
+
+*  **MRViewColourBarPosition**
+    *default: bottomright*
+
+     The position of the colourbar within the main window in MRView. Valid values are: bottomleft, bottomright, topleft, topright.
+
 *  **MRViewColourBarPosition**
     *default: bottomright*
 
@@ -228,6 +308,16 @@ List of MRtrix3 configuration file options
     *default: 10*
 
      How far away from the colourbar to place the associated text, in pixels.
+
+*  **MRViewColourBarTextOffset**
+    *default: 10*
+
+     How far away from the colourbar to place the associated text, in pixels.
+
+*  **MRViewColourBarWidth**
+    *default: 20*
+
+     The width of the colourbar in MRView, in pixels.
 
 *  **MRViewColourBarWidth**
     *default: 20*
@@ -244,6 +334,16 @@ List of MRtrix3 configuration file options
 
      Whether MRView tools should start docked in the main window, or floating (detached from the main window).
 
+*  **MRViewDockFloating**
+    *default: 0 (false)*
+
+     Whether Tools should start docked in the main window, or floating (detached from the main window).
+
+*  **MRViewFocusModifierKey**
+    *default: alt (cmd on MacOSX)*
+
+     modifier key to select focus mode in MRView. Valid choices include shift, alt, ctrl, meta (on MacOSX: shift, alt, ctrl, cmd).
+
 *  **MRViewFocusModifierKey**
     *default: meta (cmd on MacOSX)*
 
@@ -253,6 +353,11 @@ List of MRtrix3 configuration file options
     *default: 0,0,0 (black)*
 
      The default image background colour in the main MRView window.
+
+*  **MRViewInitWindowSize**
+    *default: 512,512*
+
+     initial window size of MRView in pixels
 
 *  **MRViewMaxNumColourmapRows**
     *default: 3*
@@ -264,10 +369,25 @@ List of MRtrix3 configuration file options
 
      Modifier key to select move mode in MRView. Valid choices include shift, alt, ctrl, meta (on MacOSX: shift, alt, ctrl, cmd).
 
+*  **MRViewMoveModifierKey**
+    *default: shift*
+
+     modifier key to select move mode in MRView. Valid choices include shift, alt, ctrl, meta (on MacOSX: shift, alt, ctrl, cmd).
+
+*  **MRViewOdfScale**
+    *default: 1.0*
+
+     The factor by which the ODF overlay is scaled
+
 *  **MRViewRotateModifierKey**
     *default: ctrl*
 
      Modifier key to select rotate mode in MRView. Valid choices include shift, alt, ctrl, meta (on MacOSX: shift, alt, ctrl, cmd).
+
+*  **MRViewRotateModifierKey**
+    *default: ctrl*
+
+     modifier key to select rotate mode in MRView. Valid choices include shift, alt, ctrl, meta (on MacOSX: shift, alt, ctrl, cmd).
 
 *  **MRViewShowColourbar**
     *default: true*
@@ -297,6 +417,11 @@ List of MRtrix3 configuration file options
 *  **MRViewToolFontSize**
     *default: 2 points less than the standard system font*
 
+     The point size for the font to use in MRView Tools.
+
+*  **MRViewToolFontSize**
+    *default: 2 points less than the standard system font*
+
      The point size for the font to use in MRView tools.
 
 *  **MRViewToolsColourBarPosition**
@@ -309,10 +434,40 @@ List of MRtrix3 configuration file options
 
      How many samples to use for multi-sample anti-aliasing (to improve display quality).
 
+*  **MSAA**
+    *default: 0 (false)*
+
+     How many samples to use for multi-sample anti-aliasing (to improve display quality).
+
 *  **NIFTI.AllowBitwise**
     *default: 0 (false)*
 
      A boolean value to indicate whether bitwise storage of binary data is permitted (most 3rd party software packages don't support bitwise data). If false (the default), data will be stored using more widely supported unsigned 8-bit integers.
+
+*  **NIFTI.AllowBitwise**
+    *default: 0 (false)*
+
+     A boolean value to indicate whether bitwise storage of binary data is permitted (most 3rd party software packages don't support bitwise data). If false (the default), data will be stored using more widely supported unsigned 8-bit integers.
+
+*  **NIFTI.AlwaysUseVer2**
+    *default: 0 (false)*
+
+     A boolean value to indicate whether NIfTI images should always be written in the new NIfTI-2 format. If false, images will be written in the older NIfTI-1 format by default, with the exception being files where the number of voxels along any axis exceeds the maximum permissible in that format (32767), in which case the output file will automatically switch to the NIfTI-2 format.
+
+*  **NIfTI.AutoLoadJSON**
+    *default: 0 (false)*
+
+     A boolean value to indicate whether, when opening NIfTI images, any corresponding JSON file should be automatically loaded
+
+*  **NIfTI.AutoSaveJSON**
+    *default: 0 (false)*
+
+     A boolean value to indicate whether, when writing NIfTI images, a corresponding JSON file should be automatically created in order to save any header entries that cannot be stored in the NIfTI header
+
+*  **NeedOpenGLCoreProfile**
+    *default: 0 (true on MacOSX, false otherwise)*
+
+     Whether the creation of an OpenGL 3.3 context requires it to be a core profile (needed on newer versions of the ATI drivers on Linux, for instance).
 
 *  **NeedOpenGLCoreProfile**
     *default: 1 (true)*
@@ -324,6 +479,16 @@ List of MRtrix3 configuration file options
 
      Set the default number of CPU threads to use for multi-threading.
 
+*  **NumberOfThreads**
+    *default: number of threads provided by hardware*
+
+     set the default number of CPU threads to use for multi-threading.
+
+*  **NumberOfUndos**
+    *default: 16*
+
+     The number of undo operations permitted in the MRView ROI editor tool
+
 *  **NumberOfUndos**
     *default: 16*
 
@@ -334,20 +499,60 @@ List of MRtrix3 configuration file options
 
      The default colour to use for objects (i.e. SH glyphs) when not colouring by direction.
 
+*  **ObjectColor**
+    *default: 1,1,0 (yellow)*
+
+     The default colour to use for objects (i.e. SH glyphs) when not colouring by direction.
+
+*  **ScriptTmpDir**
+    *default: `.`*
+
+     The location in which to generate the temporary directories to be used by MRtrix Python scripts. By default they will be generated in the working directory.
+
+*  **ScriptTmpPrefix**
+    *default: `<script>-tmp-`*
+
+     The prefix to use when generating a unique name for a Python script temporary directory. By default the name of the invoked script itself will be used, followed by `-tmp-` (six random characters are then appended to produce a unique name in cases where a script may be run multiple times in parallel).
+
 *  **SparseDataInitialSize**
     *default: 16777216*
 
      Initial buffer size for data in MRtrix sparse image format file (in bytes).
 
+*  **SparseDataInitialSize**
+    *default: 16777216*
+
+     initial buffer size for data in MRtrix sparse image format file (in bytes).
+
 *  **SpecularExponent**
     *default: 1*
+
+     The default exponent for the specular light in OpenGL renders
+
+*  **SpecularExponent**
+    *default: 5.0*
 
      The default exponent for the specular light in OpenGL renders.
 
 *  **SpecularIntensity**
     *default: 0.4*
 
+     The default intensity for the specular light in OpenGL renders
+
+*  **SpecularIntensity**
+    *default: 0.5*
+
      The default intensity for the specular light in OpenGL renders.
+
+*  **TckgenEarlyExit**
+    *default: 0 (false)*
+
+     Specifies whether tckgen should be terminated prematurely in cases where it appears as though the target number of accepted streamlines is not going to be met.
+
+*  **TerminalColor**
+    *default: 1 (true)*
+
+     A boolean value to indicate whether colours should be used in the terminal.
 
 *  **TerminalColor**
     *default: 1 (true)*
@@ -359,10 +564,25 @@ List of MRtrix3 configuration file options
 
      The prefix for temporary files (as used in pipelines). By default, these files get written to the current folder, which may cause performance issues when operating over distributed file systems. In this case, it may be better to specify `/tmp/` here.
 
+*  **TmpFileDir**
+    *default: `/tmp` (on Unix), `.` (on Windows)*
+
+     The prefix for temporary files (as used in pipelines). By default, these files get written to the current folder, which may cause performance issues when operating over distributed file systems. In this case, it may be better to specify `/tmp/` here.
+
 *  **TmpFilePrefix**
     *default: `mrtrix-tmp-`*
 
      The prefix to use for the basename of temporary files. This will be used to generate a unique filename for the temporary file, by adding random characters to this prefix, followed by a suitable suffix (depending on file type). Note that this prefix can also be manipulated using the `MRTRIX_TMPFILE_PREFIX` environment variable, without editing the config file.
+
+*  **TmpFilePrefix**
+    *default: `mrtrix-tmp-`*
+
+     The prefix to use for the basename of temporary files. This will be used to generate a unique filename for the temporary file, by adding random characters to this prefix, followed by a suitable suffix (depending on file type). Note that this prefix can also be manipulated using the `MRTRIX_TMPFILE_PREFIX` environment variable, without editing the config file.
+
+*  **ToolbarStyle**
+    *default: 2*
+
+     The style of the main toolbar buttons in MRView. See Qt's documentation for Qt::ToolButtonStyle.
 
 *  **ToolbarStyle**
     *default: 2*
@@ -374,6 +594,16 @@ List of MRtrix3 configuration file options
 
      The size of the write-back buffer (in bytes) to use when writing track files. MRtrix will store the output tracks in a relatively large buffer to limit the number of write() calls, avoid associated issues such as file fragmentation.
 
+*  **TrackWriterBufferSize**
+    *default: 16777216*
+
+     The size of the write-back buffer (in bytes) to use when writing track files. MRtrix will store the output tracks in a relatively large buffer to limit the number of write() calls, avoid associated issues such as file fragmentation.
+
+*  **VSync**
+    *default: 0 (false)*
+
+     Whether the screen update should synchronise with the monitor's vertical refresh (to avoid tearing artefacts).
+
 *  **VSync**
     *default: 0 (false)*
 
@@ -384,15 +614,30 @@ List of MRtrix3 configuration file options
 
      Linear registration: write comma separated gradient descent parameters and gradients to stdout and verbose gradient descent output to stderr
 
-*  **reg_bbgd**
-    *default: 1 (true)*
-
-     Linear registration: use Barzilai Borwein gradient descent
-
 *  **reg_coherence_len**
     *default: 3.0*
 
-     Linear registration: estimated spatial coherence length in voxel
+     Linear registration: estimated spatial coherence length in voxels
+
+*  **reg_gd_convergence_data_smooth**
+    *default: 0.8*
+
+     Linear registration: control point trajectory smoothing value used in convergence check parameter range: [0...1]
+
+*  **reg_gd_convergence_min_iter**
+    *default: 10*
+
+     Linear registration: minimum number of iterations until convergence check is activated
+
+*  **reg_gd_convergence_slope_smooth**
+    *default: 0.1*
+
+     Linear registration: control point trajectory slope smoothing value used in convergence check parameter range: [0...1]
+
+*  **reg_gd_convergence_thresh**
+    *default: 5e-3*
+
+     Linear registration: threshold for convergence check using the smoothed control point trajectories measured in fraction of a voxel
 
 *  **reg_gdweight_matrix**
     *default: 0.0003*
@@ -407,5 +652,5 @@ List of MRtrix3 configuration file options
 *  **reg_stop_len**
     *default: 0.0001*
 
-     Linear registration: smallest step in fraction of voxel at which to stop registration
+     Linear registration: smallest gradient descent step measured in fraction of a voxel at which to stop registration
 

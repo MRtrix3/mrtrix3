@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 
 #ifndef __connectome_lut_h__
@@ -37,7 +34,7 @@ namespace Connectome {
 // Class for storing any useful information regarding a parcellation node that
 //   may be imported from a lookup table
 class LUT_node
-{
+{ MEMALIGN(LUT_node)
 
   public:
 
@@ -93,7 +90,7 @@ class LUT_node
 
 
 class LUT : public std::multimap<node_t, LUT_node>
-{
+{ MEMALIGN(LUT)
     enum file_format { LUT_NONE, LUT_BASIC, LUT_FREESURFER, LUT_AAL, LUT_ITKSNAP, LUT_MRTRIX };
   public:
     using map_type = std::multimap<node_t, LUT_node>;
@@ -122,7 +119,7 @@ class LUT : public std::multimap<node_t, LUT_node>
 // Convenience function for constructing a mapping from one lookup table to another
 // NOTE: If the TARGET LUT contains multiple entries for a particular index, and a
 //   mapping TO that index is required, the conversion is ill-formed.
-std::vector<node_t> get_lut_mapping (const LUT&, const LUT&);
+vector<node_t> get_lut_mapping (const LUT&, const LUT&);
 
 
 

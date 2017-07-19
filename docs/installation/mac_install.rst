@@ -1,7 +1,7 @@
-MacOS X installation
-====================
+macOS installation
+==================
 
-We outline the steps for installing *MRtrix3* on MacOS X. Please consult 
+We outline the steps for installing *MRtrix3* on macOS. Please consult 
 the `MRtrix3 forum <http://community.mrtrix.org/>`__ if you encounter any issues
 with the configure, build or runtime operations of *MRtrix3*.
 
@@ -12,9 +12,9 @@ To install *MRtrix3* , you will need the following:
 
 -  a `C++11 <https://en.wikipedia.org/wiki/C%2B%2B11>`__ compliant
    compiler (e.g. `clang <http://clang.llvm.org/>`__ in Xcode)
--  `Python <https://www.python.org/>`__ version >= 2.7 (already included in MacOS X)
--  The `zlib <http://www.zlib.net/>`__ compression library (already included in MacOS X)
--  `Eigen <http://eigen.tuxfamily.org/>`__ version 3.2 *(do not install the beta version)*
+-  `Python <https://www.python.org/>`__ version >= 2.7 (already included in macOS)
+-  The `zlib <http://www.zlib.net/>`__ compression library (already included in macOS)
+-  `Eigen <http://eigen.tuxfamily.org/>`__ version >= 3.2 
 -  `Qt <http://www.qt.io/>`__ version >= 5.1 *[GUI components only]* -
    important: versions prior to this will *not* work
 
@@ -24,13 +24,16 @@ To install *MRtrix3* , you will need the following:
 
     - an `OpenGL <https://en.wikipedia.org/wiki/OpenGL>`__ 3.3 compliant
       graphics card and corresponding software driver - thankfully OpenGL 3.3
-      is supported across the entire MacOS X range with OS versions >= 10.9.
+      is supported across the entire macOS range with OS versions >= 10.9.
     
 .. NOTE:: 
 
-    If you currently do not plan to contribute to the Mrtrix3 code, the most convenient way to install Mrtrix3 on MacOS X is to install it via homebrew. 
+    If you currently do not plan to contribute to the *MRtrix3* code, the most
+    convenient way to install Mrtrix3 on macOS is to install it via homebrew. 
  
-    - If you do not have homebrew installed, you can install it via: ``/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"``
+    - If you do not have homebrew installed, you can install it via::
+
+        /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     
     - You need to add the MRtrix3 tap to homebrew: ``brew tap MRtrix3/mrtrix3``
     
@@ -45,21 +48,24 @@ To install *MRtrix3* , you will need the following:
 Install Dependencies
 --------------------
 
-1. Update MacOS X to version 10.10 (Yosemite) or higher - OpenGL 3.3 will
+1. Update macOS to version 10.10 (Yosemite) or higher - OpenGL 3.3 will
    typically not work on older versions
 
 2. Install XCode from the Apple Store
 
 3. Install Eigen3 and Qt5. 
 
-   There are several alternatives to do this, depending on your current system setup. 
-   The most convenient is probably to use your favorite package manager (`Homebrew <http://brew.sh/>`__ or 
-   `MacPorts <http://macports.org/>`__), or install one of these if you haven't already. 
+   There are several alternative ways to do this, depending on your current
+   system setup.  The most convenient is probably to use your favorite package
+   manager (`Homebrew <http://brew.sh/>`__ or `MacPorts
+   <http://macports.org/>`__), or install one of these if you haven't already. 
    
-   If you find your first attempt doesn't work, please resist the temptation to try one of the other options: 
-   in our experience, this only leads to further conflicts, which won't help installing MRtrix3 *and* will make things 
-   more difficult to fix later. Once you pick one of these options, we strongly recommend you stick with it, and 
-   consult the `community forum <http://community.mrtrix.org>`__ if needed for advice and troubleshooting. 
+   If you find your first attempt doesn't work, *please* resist the temptation to
+   try one of the other options: in our experience, this only leads to further
+   conflicts, which won't help installing MRtrix3 *and* will make things more
+   difficult to fix later. Once you pick one of these options, we strongly
+   recommend you stick with it, and consult the `community forum
+   <http://community.mrtrix.org>`__ if needed for advice and troubleshooting. 
 
    - With `Homebrew <http://brew.sh/>`__:
 
@@ -80,22 +86,19 @@ Install Dependencies
      you cannot get either `Homebrew <http://brew.sh/>`__ or `MacPorts <http://macports.org/>`__ to work.
 
        - Install Eigen3: download and extract the source code from `eigen.tuxfamily.org <http://eigen.tuxfamily.org/>`__ 
-           Note that *MRtrix3* does not yet fully support the Eigen 3.3 beta,
-           and installation of this version may result in runtime issues. If
-           performing a manual installation, download the latest stable release
-           of Eigen3.
        - Install Qt5: download and install the latest version from `<http://download.qt.io/official_releases/qt/>`__ 
            You need to select the file labelled ``qt-opensource-mac-x64-clang-5.X.X.dmg``.
            Note that you need to use at least Qt 5.1, since earlier versions
            don't support OpenGL 3.3. We advise you to use the latest version
-           (5.5.0 as of the last update). You can choose to install it
+           (5.7.0 as of the last update). You can choose to install it
            system-wide or just in your home folder, whichever suits - just
            remember where you installed it. 
        - Make sure Qt5 tools are in your PATH
            (edit as appropriate) ``export PATH=/path/to/Qt5/5.X.X/clang_64/bin:$PATH``
        - Set the CFLAG variable for eigen
            (edit as appropriate) ``export EIGEN_CFLAGS="-isystem /where/you/extracted/eigen"``
-           Make sure *not* to include the final ``/Eigen`` folder in the path name - use the folder in which it resides instead!
+           Make sure *not* to include the final ``/Eigen`` folder in the path
+           name - use the folder in which it resides instead!
 
 Git setup
 ---------
@@ -130,14 +133,15 @@ Build *MRtrix3*
 Set up *MRtrix3* 
 ----------------
 
-1. Update the shell startup file, so that the locations of *MRtrix3* commands
-   and scripts will be added to your ``PATH`` envionment variable.
+1. Update the shell startup file, so that the shell can locate the *MRtrix3*
+   commands and scripts, by adding the ``bin/`` folder to your ``PATH``
+   environment variable.
    
    If you are not familiar or comfortable with modification of shell files,
-   *MRtrix3* now provides a convenience script that will perform this setup
-   for you (assuming that you are using ``bash`` or equivalent interpreter).
-   From the top level *MRtrix3* directory, run the following::
-   
+   *MRtrix3* provides a convenience script that will perform this setup for you
+   (assuming that you are using ``bash`` or equivalent interpreter).  From the
+   top level *MRtrix3* directory, run the following::
+
        ./set_path
 
 2. Close the terminal and start another one to ensure the startup file
@@ -162,8 +166,8 @@ Set up *MRtrix3*
 Keeping *MRtrix3* up to date
 ----------------------------
 
-1. You can update your installation at any time by opening a Git Bash
-   terminal in the *MRtrix3*  folder, and typing::
+1. You can update your installation at any time by opening a terminal,
+   navigating to the *MRtrix3* folder (e.g. ``cd mrtrix3``), and typing::
 
        git pull
        ./build

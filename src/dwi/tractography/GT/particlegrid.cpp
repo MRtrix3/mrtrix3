@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "dwi/tractography/GT/particlegrid.h"
 
@@ -24,20 +23,15 @@ namespace MR {
         void ParticleGrid::add(const Point_t &pos, const Point_t &dir)
         {
           Particle* p = pool.create(pos, dir);
-          unsigned int gidx = pos2idx(pos);
+          size_t gidx = pos2idx(pos);
           grid[gidx].push_back(p);
         }
         
         void ParticleGrid::shift(Particle *p, const Point_t& pos, const Point_t& dir)
         {
-          unsigned int gidx0 = pos2idx(p->getPosition());
-          unsigned int gidx1 = pos2idx(pos);
-          for (ParticleVectorType::iterator it = grid[gidx0].begin(); it != grid[gidx0].end(); ++it) {
-            if (*it == p) {
-              grid[gidx0].erase(it);
-              break;
-            }
-          }
+          size_t gidx0 = pos2idx(p->getPosition());
+          size_t gidx1 = pos2idx(pos);
+          std::remove (grid[gidx0].begin(), grid[gidx0].end(), p);
           p->setPosition(pos);
           p->setDirection(dir);
           grid[gidx1].push_back(p);
@@ -45,13 +39,8 @@ namespace MR {
         
         void ParticleGrid::remove(Particle* p)
         {
-          unsigned int gidx0 = pos2idx(p->getPosition());
-          for (ParticleVectorType::iterator it = grid[gidx0].begin(); it != grid[gidx0].end(); ++it) {
-            if (*it == p) {
-              grid[gidx0].erase(it);
-              break;
-            }
-          }
+          size_t gidx0 = pos2idx(p->getPosition());
+          std::remove (grid[gidx0].begin(), grid[gidx0].end(), p);
           pool.destroy(p);
         }
         
@@ -75,7 +64,7 @@ namespace MR {
           Particle* par;
           Particle* nextpar;
           int alpha = 0;
-          std::vector<Point_t> track;
+          vector<Point_t> track;
           // Loop through all unvisited particles
           for (ParticleVectorType& gridvox : grid)
           {

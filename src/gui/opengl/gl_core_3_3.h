@@ -1,17 +1,17 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
+
 #ifndef OPENGL_NOLOAD_STYLE_HPP
 #define OPENGL_NOLOAD_STYLE_HPP
 /*
@@ -96,11 +96,11 @@
 #include <cinttypes>
 #if defined(__STDC__)
 #if defined(__arch64__) || defined(_LP64)
-typedef long int int64_t;
-typedef unsigned long int uint64_t;
+using int64_t = long int;
+using uint64_t = unsigned long int;
 #else
-typedef long long int int64_t;
-typedef unsigned long long int uint64_t;
+using int64_t = long long int;
+using uint64_t = unsigned long long int;
 #endif /* __arch64__ */
 #endif /* __STDC__ */
 #elif defined( __VMS ) || defined(__sgi)
@@ -108,61 +108,61 @@ typedef unsigned long long int uint64_t;
 #elif defined(__SCO__) || defined(__USLC__)
 #include <cstdint>
 #elif defined(__UNIXOS2__) || defined(__SOL64__)
-typedef long int int32_t;
-typedef long long int int64_t;
-typedef unsigned long long int uint64_t;
+using int32_t = long int;
+using int64_t = long long int;
+using uint64_t = unsigned long long int;
 #elif defined(_WIN32) && defined(__GNUC__)
 #include <cstdint>
 #elif defined(_WIN32)
-typedef __int32 int32_t;
-typedef __int64 int64_t;
-typedef unsigned __int64 uint64_t;
+using int32_t = __int32;
+using int64_t = __int64;
+using uint64_t = unsigned __int64;
 #else
 /* Fallback if nothing above works */
 #include <cinttypes>
 #endif
 #endif
-	typedef unsigned int GLenum;
-	typedef unsigned char GLboolean;
-	typedef unsigned int GLbitfield;
-	typedef void GLvoid;
-	typedef signed char GLbyte;
-	typedef short GLshort;
-	typedef int GLint;
-	typedef unsigned char GLubyte;
-	typedef unsigned short GLushort;
-	typedef unsigned int GLuint;
-	typedef int GLsizei;
-	typedef float GLfloat;
-	typedef float GLclampf;
-	typedef double GLdouble;
-	typedef double GLclampd;
-	typedef char GLchar;
-	typedef char GLcharARB;
+	using GLenum = unsigned int;
+	using GLboolean = unsigned char;
+	using GLbitfield = unsigned int;
+	using GLvoid = void;
+	using GLbyte = signed char;
+	using GLshort = short;
+	using GLint = int;
+	using GLubyte = unsigned char;
+	using GLushort = unsigned short;
+	using GLuint = unsigned int;
+	using GLsizei = int;
+	using GLfloat = float;
+	using GLclampf = float;
+	using GLdouble = double;
+	using GLclampd = double;
+	using GLchar = char;
+	using GLcharARB = char;
 	#ifdef __APPLE__
-typedef void *GLhandleARB;
+using GLhandleARB = void *;
 #else
-typedef unsigned int GLhandleARB;
+using GLhandleARB = unsigned int;
 #endif
-		typedef unsigned short GLhalfARB;
-		typedef unsigned short GLhalf;
-		typedef GLint GLfixed;
-		typedef ptrdiff_t GLintptr;
-		typedef ptrdiff_t GLsizeiptr;
-		typedef int64_t GLint64;
-		typedef uint64_t GLuint64;
-		typedef ptrdiff_t GLintptrARB;
-		typedef ptrdiff_t GLsizeiptrARB;
-		typedef int64_t GLint64EXT;
-		typedef uint64_t GLuint64EXT;
-		typedef struct __GLsync *GLsync;
+		using GLhalfARB = unsigned short;
+		using GLhalf = unsigned short;
+		using GLfixed = GLint;
+		using GLintptr = ptrdiff_t;
+		using GLsizeiptr = ptrdiff_t;
+		using GLint64 = int64_t;
+		using GLuint64 = uint64_t;
+		using GLintptrARB = ptrdiff_t;
+		using GLsizeiptrARB = ptrdiff_t;
+		using GLint64EXT = int64_t;
+		using GLuint64EXT = uint64_t;
+        using GLsync = struct __GLsync *;
 		struct _cl_context;
 		struct _cl_event;
-		//typedef void (APIENTRY *GLDEBUGPROC)(GLenum source,GLenum type,GLuint id,GLenum severity,GLsizei length,const GLchar *message,const void *userParam);
-		//typedef void (APIENTRY *GLDEBUGPROCARB)(GLenum source,GLenum type,GLuint id,GLenum severity,GLsizei length,const GLchar *message,const void *userParam);
-		//typedef void (APIENTRY *GLDEBUGPROCAMD)(GLuint id,GLenum category,GLenum severity,GLsizei length,const GLchar *message,void *userParam);
-		typedef unsigned short GLhalfNV;
-		typedef GLintptr GLvdpauSurfaceNV;
+        //using GLDEBUGPROC = void (APIENTRY *)(GLenum source,GLenum type,GLuint id,GLenum severity,GLsizei length,const GLchar *message,const void *userParam);
+        //using GLDEBUGPROCARB = void (APIENTRY *)(GLenum source,GLenum type,GLuint id,GLenum severity,GLsizei length,const GLchar *message,const void *userParam);
+        //using GLDEBUGPROCAMD = void (APIENTRY *)(GLuint id,GLenum category,GLenum severity,GLsizei length,const GLchar *message,void *userParam);
+		using GLhalfNV = unsigned short;
+		using GLvdpauSurfaceNV = GLintptr;
 		
 		namespace gl
 		{

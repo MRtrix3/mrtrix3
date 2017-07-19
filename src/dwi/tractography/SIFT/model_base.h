@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 
 #ifndef __dwi_tractography_sift_model_base_h__
@@ -60,7 +57,7 @@ namespace MR
 
 
         class FixelBase
-        {
+        { MEMALIGN(FixelBase)
 
           public:
             FixelBase () :
@@ -69,13 +66,13 @@ namespace MR
               weight (0.0),
               dir () { }
 
-            FixelBase (const double amp) :
+            FixelBase (const default_type amp) :
               FOD (amp),
               TD (0.0),
               weight (1.0),
               dir () { }
 
-            FixelBase (const double amp, const Eigen::Vector3f& d) :
+            FixelBase (const default_type amp, const Eigen::Vector3& d) :
               FOD (amp),
               TD (0.0),
               weight (1.0),
@@ -89,27 +86,26 @@ namespace MR
 
             FixelBase (const FixelBase&) = default;
 
-            double get_FOD()    const { return FOD; }
-            double get_TD()     const { return TD; }
-            float  get_weight() const { return weight; }
-            const Eigen::Vector3f& get_dir() const { return dir; }
+            default_type get_FOD()    const { return FOD; }
+            default_type get_TD()     const { return TD; }
+            default_type get_weight() const { return weight; }
+            const Eigen::Vector3& get_dir() const { return dir; }
 
-            void       scale_FOD  (const float factor)  { FOD *= factor; }
-            void       set_weight (const float w)       { weight = w; }
-            FixelBase& operator+= (const double length) { TD += length; return *this; }
-            void       clear_TD   ()                    { TD = 0.0; }
+            void       scale_FOD  (const default_type factor) { FOD *= factor; }
+            void       set_weight (const default_type w)      { weight = w; }
+            FixelBase& operator+= (const default_type length) { TD += length; return *this; }
 
-            double get_diff (const double mu) const { return ((TD * mu) - FOD); }
-            double get_cost (const double mu) const { return get_cost_unweighted (mu) * weight; }
+            void clear_TD() { TD = 0.0; }
+
+            default_type get_diff (const default_type mu) const { return ((TD * mu) - FOD); }
+            default_type get_cost (const default_type mu) const { return get_cost_unweighted (mu) * weight; }
 
 
           protected:
-            double FOD;
-            double TD;
-            float  weight;
-            Eigen::Vector3f dir;
+            default_type FOD, TD, weight;
+            Eigen::Vector3 dir;
 
-            double get_cost_unweighted (const double mu) const { return Math::pow2 (get_diff (mu)); }
+            default_type get_cost_unweighted (const default_type mu) const { return Math::pow2 (get_diff (mu)); }
 
         };
 
@@ -124,7 +120,7 @@ namespace MR
 
         template <class Fixel>
         class ModelBase : public Mapping::Fixel_TD_map<Fixel>
-        {
+        { MEMALIGN(ModelBase<Fixel>)
 
           protected:
             using MapVoxel = typename Fixel_map<Fixel>::MapVoxel;
@@ -152,9 +148,9 @@ namespace MR
             virtual bool operator() (const FMLS::FOD_lobes& in);
             virtual bool operator() (const Mapping::SetDixel& in);
 
-            double calc_cost_function() const;
+            default_type calc_cost_function() const;
 
-            double mu() const { return FOD_sum / TD_sum; }
+            default_type mu() const { return FOD_sum / TD_sum; }
             bool have_act_data() const { return act_5tt.valid(); }
 
             void output_proc_mask (const std::string&);
@@ -170,7 +166,7 @@ namespace MR
             using Mapping::Fixel_TD_map<Fixel>::dirs;
 
             Image<float> act_5tt, proc_mask;
-            double FOD_sum, TD_sum;
+            default_type FOD_sum, TD_sum;
             bool have_null_lobes;
 
             // The definitions of these functions are located in dwi/tractography/SIFT/output.h
@@ -221,7 +217,7 @@ namespace MR
           FOD_sum = 0.0;
           for (auto l = Loop(v) (v, act_5tt); l; ++l) {
             Tractography::ACT::Tissues tissues (act_5tt);
-            const float multiplier = 1.0 - tissues.get_cgm() - (0.5 * tissues.get_sgm()); // Heuristic
+            const default_type multiplier = 1.0 - tissues.get_cgm() - (0.5 * tissues.get_sgm()); // Heuristic
             for (typename Fixel_map<Fixel>::Iterator i = begin(v); i; ++i) {
               i().scale_FOD (multiplier);
               FOD_sum += i().get_weight() * i().get_FOD();
@@ -286,7 +282,7 @@ namespace MR
         template <class Fixel>
         bool ModelBase<Fixel>::operator() (const Mapping::SetDixel& in)
         {
-          float total_contribution = 0.0;
+          default_type total_contribution = 0.0;
           for (Mapping::SetDixel::const_iterator i = in.begin(); i != in.end(); ++i) {
             const size_t fixel_index = Mapping::Fixel_TD_map<Fixel>::dixel2fixel (*i);
             if (fixel_index) {
@@ -302,10 +298,10 @@ namespace MR
 
 
         template <class Fixel>
-        double ModelBase<Fixel>::calc_cost_function() const
+        default_type ModelBase<Fixel>::calc_cost_function() const
         {
-          const double current_mu = mu();
-          double cost = 0.0;
+          const default_type current_mu = mu();
+          default_type cost = 0.0;
           for (auto i = fixels.cbegin()+1; i != fixels.end(); ++i)
             cost += i->get_cost (current_mu);
           return cost;

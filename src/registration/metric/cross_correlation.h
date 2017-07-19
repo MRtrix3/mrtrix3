@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #ifndef __registration_metric_cross_correlation_h__
 #define __registration_metric_cross_correlation_h__
@@ -25,7 +24,7 @@ namespace MR
   {
     namespace Metric
     {
-      class CrossCorrelationNoGradient {
+      class CrossCorrelationNoGradient { MEMALIGN(CrossCorrelationNoGradient)
 
         private:
           default_type mean1;
@@ -44,7 +43,7 @@ namespace MR
             typename Im1MaskInterpolatorType,
             typename Im2MaskInterpolatorType
             >
-            struct CCNoGradientPrecomputeFunctor {
+            struct CCNoGradientPrecomputeFunctor { MEMALIGN(CCNoGradientPrecomputeFunctor)
               CCNoGradientPrecomputeFunctor (
                 const LinearTrafoType& transformation,
                 ImageType1& im1,
@@ -84,7 +83,6 @@ namespace MR
                 global_cnt += cnt;
               }
 
-              EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
               template <typename ProcessedImageType, typename MaskImageType>
                 void operator() (ProcessedImageType& pimage, MaskImageType& mask) {
@@ -197,8 +195,8 @@ namespace MR
               using Im1ImageInterpolatorType = typename ParamType::Im1InterpType;
               using Im2ImageInterpolatorType = typename ParamType::Im2InterpType;
               using PImageType = typename ParamType::ProcessedImageType;
-              // typedef Interp::LinearInterp<Im1MaskType, Interp::LinearInterpProcessingType::Value> Im1MaskInterpolatorType;
-              // typedef Interp::LinearInterp<Im2MaskType, Interp::LinearInterpProcessingType::Value> Im2MaskInterpolatorType;
+              // using Im1MaskInterpolatorType = Interp::LinearInterp<Im1MaskType, Interp::LinearInterpProcessingType::Value>;
+              // using Im2MaskInterpolatorType = Interp::LinearInterp<Im2MaskType, Interp::LinearInterpProcessingType::Value>;
               using Im1MaskInterpolatorType = typename ParamType::Mask1InterpolatorType;
               using Im2MaskInterpolatorType = typename ParamType::Mask2InterpolatorType;
 

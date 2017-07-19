@@ -1,1 +1,1 @@
-dwi2noise dwi.mif - | testing_diff_data - noise.mif -frac 1e-5
+dwi2noise dwi.mif - | testing_diff_image - noise.mif -frac 1e-5

@@ -1,23 +1,23 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "dwi/tractography/GT/externalenergy.h"
 
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
 #include "math/SH.h"
+#include "math/ZSH.h"
 #include "algo/loop.h"
 
 
@@ -69,16 +69,16 @@ namespace MR {
           Ak.setZero();
           
           Eigen::VectorXd delta_vec (ncols);
-          Eigen::VectorXd wmr_sh (lmax/2+1), wmr_rh (lmax/2+1);
-          wmr_sh.setZero();
+          Eigen::VectorXd wmr_zsh (Math::ZSH::NforL (lmax)), wmr_rh (Math::ZSH::NforL (lmax));
+          wmr_zsh.setZero();
           Eigen::Vector3d unit_dir;
           double wmr0;
           
           for (size_t s = 0; s < shells.count(); s++)
           {
-            for (int l = 0; l <= lmax/2; l++)
-              wmr_sh[l] = (l < props.resp_WM.cols()) ? props.resp_WM(s, l) : 0.0;
-            wmr_rh = Math::SH::SH2RH(wmr_sh);
+            for (int i = 0; i < int(Math::ZSH::NforL (lmax)); ++i)
+              wmr_zsh[i] = (i < props.resp_WM.cols()) ? props.resp_WM(s, i) : 0.0;
+            wmr_rh = Math::ZSH::ZSH2RH (wmr_zsh);
             wmr0 = props.resp_WM(s,0) / std::sqrt(M_4PI);
             
             for (size_t r : shells[s].get_volumes())
@@ -121,14 +121,14 @@ namespace MR {
           dE = 0.0;
           for (auto l = Loop(dwi, 0, 3) (dwi, tod, eext); l; ++l)
           {
-            y = dwi.row(3).cast<double>();
-            t = tod.row(3).cast<double>();
+            y = dwi.row(3);
+            t = tod.row(3);
             e = calcEnergy();
             eext.value() = e;
             dE += e;
             if (fiso.valid()) {
               assign_pos_of(dwi, 0, 3).to(fiso);
-              fiso.row(3) = fk.tail(nf).cast<float>();
+              fiso.row(3) = fk.tail(nf);
             }
           }
           stats.incEextTotal(dE - stats.getEextTotal());
@@ -138,15 +138,19 @@ namespace MR {
         
         void ExternalEnergyComputer::acceptChanges()
         {
+          assert (changes_vox.size() == changes_tod.size());
+          assert (changes_vox.size() == changes_eext.size());
+          assert (!fiso.valid() || changes_vox.size() == changes_fiso.size());
+
           for (size_t k = 0; k != changes_vox.size(); ++k) 
           {
             assign_pos_of(changes_vox[k], 0, 3).to(tod, eext);
-            assert(!is_out_of_bounds(tod));
-            tod.row(3) = changes_tod[k].cast<float>();
+            assert(!is_out_of_bounds(tod, 0, 3));
+            tod.row(3) = changes_tod[k];
             eext.value() = changes_eext[k];
             if (fiso.valid()) {
               assign_pos_of(changes_vox[k], 0, 3).to(fiso);
-              fiso.row(3) = changes_fiso[k].cast<float>();
+              fiso.row(3) = changes_fiso[k];
             }
           }
           stats.incEextTotal(dE);
@@ -196,7 +200,7 @@ namespace MR {
           if (w == 0.0)
             return;
           assign_pos_of(vox, 0, 3).to(tod);
-          if (is_out_of_bounds(tod))
+          if (is_out_of_bounds(tod, 0, 3))
             return;
           t = w * d;
           for (size_t k = 0; k != changes_vox.size(); ++k) {
@@ -206,20 +210,22 @@ namespace MR {
             }
           }
           changes_vox.push_back(vox);
-          t += tod.row(3).cast<double>();
+          t += tod.row(3);
           changes_tod.push_back(t);
         }
         
         
         double ExternalEnergyComputer::eval()
         {
+          assert (changes_vox.size() == changes_tod.size());
+
           dE = 0.0;
           double e;
           for (size_t k = 0; k != changes_vox.size(); ++k) 
           {
             assign_pos_of(changes_vox[k], 0, 3).to(dwi, eext);
-            assert(!is_out_of_bounds(dwi));
-            y = dwi.row(3).cast<double>();
+            assert(!is_out_of_bounds(dwi, 0, 3));
+            y = dwi.row(3);
             t = changes_tod[k];
             e = calcEnergy();
             changes_fiso.push_back(fk.tail(nf));
@@ -229,7 +235,7 @@ namespace MR {
           }
           return dE / stats.getText();
         }
-        
+
         
         double ExternalEnergyComputer::calcEnergy()
         {

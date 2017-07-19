@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 
 #ifndef __dwi_tractography_roi_h__
@@ -38,7 +35,7 @@ namespace MR
       void load_rois (Properties& properties);
 
 
-      class Mask : public Image<bool> {
+      class Mask : public Image<bool> { MEMALIGN(Mask)
         public:
           using transform_type = Eigen::Transform<float, 3, Eigen::AffineCompact>;
           Mask (const Mask&) = default;
@@ -56,7 +53,7 @@ namespace MR
 
 
 
-      class ROI {
+      class ROI { MEMALIGN(ROI)
         public:
           ROI (const Eigen::Vector3f& sphere_pos, float sphere_radius) :
             pos (sphere_pos), radius (sphere_radius), radius2 (Math::pow2 (radius)) { }
@@ -123,7 +120,7 @@ namespace MR
 
 
 
-      class ROISet {
+      class ROISet { MEMALIGN(ROISet)
         public:
           ROISet () { }
 
@@ -138,14 +135,14 @@ namespace MR
             return false;
           }
 
-          void contains (const Eigen::Vector3f& p, std::vector<bool>& retval) const {
+          void contains (const Eigen::Vector3f& p, vector<bool>& retval) const {
             for (size_t n = 0; n < R.size(); ++n)
               if (R[n].contains (p)) retval[n] = true;
           }
 
           friend inline std::ostream& operator<< (std::ostream& stream, const ROISet& R) {
             if (R.R.empty()) return (stream);
-            std::vector<ROI>::const_iterator i = R.R.begin();
+            vector<ROI>::const_iterator i = R.R.begin();
             stream << *i;
             ++i;
             for (; i != R.R.end(); ++i) stream << ", " << *i;
@@ -153,7 +150,7 @@ namespace MR
           }
 
         private:
-          std::vector<ROI> R;
+          vector<ROI> R;
       };
 
 

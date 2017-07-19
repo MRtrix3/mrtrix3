@@ -1,17 +1,16 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
+
 
 #include "gui/mrview/tool/connectome/node_list.h"
 
@@ -173,7 +172,7 @@ namespace MR
       void Node_list::clear_selection_slot()
       {
         node_list_view->clearSelection();
-        std::vector<node_t> empty_node_list;
+        vector<node_t> empty_node_list;
         connectome.node_selection_changed (empty_node_list);
       }
 
@@ -190,7 +189,7 @@ namespace MR
       void Node_list::node_selection_changed_slot (const QItemSelection&, const QItemSelection&)
       {
         QModelIndexList list = node_list_view->selectionModel()->selectedRows();
-        std::vector<node_t> nodes;
+        vector<node_t> nodes;
         for (int i = 0; i != list.size(); ++i)
           nodes.push_back (list[i].row());
         connectome.node_selection_changed (nodes);

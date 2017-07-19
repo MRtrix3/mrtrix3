@@ -1,18 +1,15 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 
 #include <vector>
@@ -48,8 +45,7 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals.";
+  SYNOPSIS = "Filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals";
 
   REFERENCES 
     + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
@@ -127,7 +123,7 @@ void run ()
       sifter.set_csv_path (opt[0][0]);
     opt = get_options ("output_at_counts");
     if (opt.size()) {
-      std::vector<int> counts = parse_ints (opt[0][0]);
+      vector<int> counts = parse_ints (opt[0][0]);
       sifter.set_regular_outputs (counts, out_debug);
     }
 
@@ -142,6 +138,12 @@ void run ()
     if (opt.size())
       sifter.output_selection (opt[0][0]);
 
+  }
+
+  opt = get_options ("out_mu");
+  if (opt.size()) {
+    File::OFStream out_mu (opt[0][0]);
+    out_mu << sifter.mu();
   }
 
 }

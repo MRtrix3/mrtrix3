@@ -1,9 +1,14 @@
 .. _tckedit:
 
 tckedit
-===========
+===================
 
 Synopsis
+--------
+
+Perform various editing operations on track files
+
+Usage
 --------
 
 ::
@@ -16,7 +21,9 @@ Synopsis
 Description
 -----------
 
-perform various editing operations on track files.
+This command can be used to perform various manipulations on track data. This includes: merging data from multiple track files into one; extracting only a finite number of tracks; selecting a subset of tracks based on various criteria, for instance regions of interest.
+
+Note that if multi-threading is used in this command, the ordering of tracks in the output file is unlikely to match the order of the incoming data. If your application explicitly requires that the order of tracks not change, you should run this command with the option -nthreads 0.
 
 Options
 -------
@@ -24,11 +31,11 @@ Options
 Region Of Interest processing options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-include spec** specify an inclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines must traverse ALL inclusion regions to be accepted.
+-  **-include image** specify an inclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines must traverse ALL inclusion regions to be accepted.
 
--  **-exclude spec** specify an exclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines that enter ANY exclude region will be discarded.
+-  **-exclude image** specify an exclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines that enter ANY exclude region will be discarded.
 
--  **-mask spec** specify a masking region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, streamlines exiting the mask will be truncated.
+-  **-mask image** specify a masking region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, streamlines exiting the mask will be truncated.
 
 Streamline length threshold options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -90,11 +97,16 @@ Standard options
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2016 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
 
-This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+MRtrix is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see www.mrtrix.org
+For more details, see http://www.mrtrix.org/.
+
 

@@ -1,16 +1,14 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ *
  * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -27,11 +25,13 @@ using namespace App;
 void usage () {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au), Thijs Dhollander (thijs.dhollander@gmail.com) and Ben Jeurissen (ben.jeurissen@uantwerpen.be)";
 
+SYNOPSIS = "Generates a whole brain mask from a DWI image";
+
 DESCRIPTION
-  + "Generates a whole brain mask from a DWI image. "
-    "All diffusion weighted and b=0 volumes are used to "
-    "obtain a mask that includes both brain tissue and CSF. "
-    "\nIn a second step peninsula-like extensions, where the "
+  + "All diffusion weighted and b=0 volumes are used to "
+    "obtain a mask that includes both brain tissue and CSF."
+
+  + "In a second step peninsula-like extensions, where the "
     "peninsula itself is wider than the bridge connecting it "
     "to the mask, are removed. This may help removing "
     "artefacts and non-brain parts, e.g. eyes, from "
@@ -43,12 +43,12 @@ REFERENCES
     "ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5.";
 
 ARGUMENTS
-   + Argument ("image",
+   + Argument ("input",
     "the input DWI image containing volumes that are both diffusion weighted and b=0")
     .type_image_in ()
 
-   + Argument ("image",
-    "the output whole brain mask image")
+   + Argument ("output",
+    "the output whole-brain mask image")
     .type_image_out ();
 
 OPTIONS
@@ -75,14 +75,23 @@ void run () {
   auto temp_mask = Image<bool>::scratch (dwi_brain_mask_filter, "brain mask");
   dwi_brain_mask_filter (input, temp_mask);
 
-  auto output = Image<bool>::create (argument[1], temp_mask);
+  Header H_out (temp_mask);
+  DWI::stash_DW_scheme (H_out, grad);
+  PhaseEncoding::clear_scheme (H_out);
+  auto output = Image<bool>::create (argument[1], H_out);
 
   unsigned int scale = get_option_value ("clean_scale", DEFAULT_CLEAN_SCALE);
 
   if (scale > 0) {
-    Filter::MaskClean clean_filter (temp_mask, std::string("applying mask cleaning filter"));
-    clean_filter.set_scale(scale);
-    clean_filter (temp_mask, output);
+    try {
+      Filter::MaskClean clean_filter (temp_mask, std::string("applying mask cleaning filter"));
+      clean_filter.set_scale (scale);
+      clean_filter (temp_mask, output);
+    } catch (...) {
+      WARN("Unable to run mask cleaning filter (image is not truly 3D); skipping");
+      for (auto l = Loop (0,3) (temp_mask, output); l; ++l)
+        output.value() = temp_mask.value();
+    }
   }
   else {
     for (auto l = Loop (0,3) (temp_mask, output); l; ++l)
