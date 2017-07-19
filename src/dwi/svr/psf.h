@@ -26,6 +26,18 @@ namespace MR
   namespace DWI
   {
 
+    template <unsigned int p>
+    constexpr float bspline (const float t, const int i = 0) {
+      return (t + float(p+1-i)/2)/p * bspline<p-1>(t, i-1) +
+             (float(p+1+i)/2 - t)/p * bspline<p-1>(t, i+1);
+    }
+
+    template <>
+    constexpr float bspline<0> (const float t, const int i) {
+      return ((2*t >= i-1) && (2*t < i+1)) ? 1.0f : 0.0f;
+    }
+
+
     /**
      * 3-D Sinc Point Spread Function
      */

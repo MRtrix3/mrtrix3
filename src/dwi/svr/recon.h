@@ -120,22 +120,32 @@ namespace MR
 
         // fill weights
         size_t i = 0;
+        float ws, wx, wy, wz, px, py, pz;
         transform_type Ts2r = get_Ts2r(v, z);
         // in-plane
         for (size_t y = 0; y < ny; y++) {
           for (size_t x = 0; x < nx; x++, i++) {
 
             for (int s = -n; s <= n; s++) {     // ssp neighbourhood
+              ws = ssp(s);
+
               ps = Eigen::Vector3f(x, y, z+s);
               pr = (Ts2r.cast<float>() * ps);
 
               for (int rx = -n; rx < n; rx++) { // sinc interpolator
+                px = std::ceil(pr[0]) + rx;
+                wx = bspline<3>(pr[0] - px);
                 for (int ry = -n; ry < n; ry++) {
+                  py = std::ceil(pr[1]) + ry;
+                  wy = bspline<3>(pr[1] - py);
                   for (int rz = -n; rz < n; rz++) {
-                    p = Eigen::Vector3i(std::ceil(pr[0])+rx, std::ceil(pr[1])+ry, std::ceil(pr[2])+rz);
-                    if (inbounds(p[0], p[1], p[2])) {
+                    pz = std::ceil(pr[2]) + rz;
+                    wz = bspline<3>(pr[2] - pz);
+                    //p = Eigen::Vector3i(std::ceil(pr[0])+rx, std::ceil(pr[1])+ry, std::ceil(pr[2])+rz);
+                    if (inbounds(px, py, pz)) {
                       //Ms.coeffRef(i, get_idx(p[0], p[1], p[2])) += (1.0 - std::abs(pr[0]-p[0])) * (1.0 - std::abs(pr[1]-p[1])) * (1.0 - std::abs(pr[2]-p[2]));
-                      Ms.coeffRef(i, get_idx(p[0], p[1], p[2])) += ssp(s) * sinc(pr - p.cast<float>());
+                      //Ms.coeffRef(i, get_idx(p[0], p[1], p[2])) += ssp(s) * sinc(pr - p.cast<float>());
+                      Ms.coeffRef(i, get_idx(px, py, pz)) += ws * wx * wy * wz;
                     }
                   }
                 }
