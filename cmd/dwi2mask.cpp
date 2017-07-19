@@ -75,7 +75,10 @@ void run () {
   auto temp_mask = Image<bool>::scratch (dwi_brain_mask_filter, "brain mask");
   dwi_brain_mask_filter (input, temp_mask);
 
-  auto output = Image<bool>::create (argument[1], temp_mask);
+  Header H_out (temp_mask);
+  DWI::stash_DW_scheme (H_out, grad);
+  PhaseEncoding::clear_scheme (H_out);
+  auto output = Image<bool>::create (argument[1], H_out);
 
   unsigned int scale = get_option_value ("clean_scale", DEFAULT_CLEAN_SCALE);
 
@@ -84,7 +87,7 @@ void run () {
       Filter::MaskClean clean_filter (temp_mask, std::string("applying mask cleaning filter"));
       clean_filter.set_scale (scale);
       clean_filter (temp_mask, output);
-    } catch (Exception& e) {
+    } catch (...) {
       WARN("Unable to run mask cleaning filter (image is not truly 3D); skipping");
       for (auto l = Loop (0,3) (temp_mask, output); l; ++l)
         output.value() = temp_mask.value();

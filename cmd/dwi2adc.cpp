@@ -13,8 +13,9 @@
 
 
 #include "command.h"
-#include "progressbar.h"
 #include "image.h"
+#include "phase_encoding.h"
+#include "progressbar.h"
 #include "algo/threaded_copy.h"
 #include "math/least_squares.h"
 #include "dwi/gradient.h"
@@ -99,6 +100,7 @@ void run () {
   header.ndim() = 4;
   header.size(3) = 2;
   DWI::stash_DW_scheme (header, grad);
+  PhaseEncoding::clear_scheme (header);
 
   auto adc = Image<value_type>::create (argument[1], header);
 
