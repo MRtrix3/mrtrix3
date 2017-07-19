@@ -177,7 +177,7 @@ class Energy { MEMALIGN(Energy)
     void execute () 
     {
       size_t this_start = 0;
-      while ((this_start = current_start.fetch_add (1)) < restarts) {
+      while ((this_start = current_start++) < restarts) {
         INFO ("launching start " + str (this_start));
         double E = 0.0;
 
