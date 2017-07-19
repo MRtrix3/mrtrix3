@@ -356,6 +356,13 @@ namespace MR
 
 
 
+    std::ostream& operator<< (std::ostream& stream, const ParsedName::List& list) 
+    {
+      stream << "parsed name list, size " << list.size() << ", counts " << list.count() << "\n";
+      for (const auto& entry : list.list)
+        stream << *entry << "\n";
+      return stream;
+    }
 
 
 

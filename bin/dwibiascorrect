@@ -118,7 +118,7 @@ elif app.args.ants:
   run.command('mrconvert mean_bzero.mif mean_bzero.nii -stride +1,+2,+3')
   run.command('mrconvert mask.mif mask.nii -stride +1,+2,+3')
   bias_path = 'bias.nii'
-  run.command('N4BiasFieldCorrection -d 3 -i mean_bzero.nii -w mask.nii -o [corrected.nii,' + bias_path + '] -s 2 -b [150] -c [200x200,0.0]')
+  run.command('N4BiasFieldCorrection -d 3 -i mean_bzero.nii -w mask.nii -o [corrected.nii,' + bias_path + '] -b [150,3] -c [1000x1000,0.0]')
   
 run.command('mrcalc in.mif ' + bias_path + ' -div result.mif')
 run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + (' -force' if app.force else ''))

@@ -284,21 +284,24 @@ def debug(text):
   global colourClear, colourDebug
   global _verbosity
   if _verbosity <= 2: return
-  stack = inspect.stack()[1]
-  try:
-    filename = stack.filename
-    fname = stack.function
-  except: # Prior to Version 3.5
-    filename = stack[1]
-    fname = stack[3]
-  funcname = fname + '()'
-  modulename = inspect.getmodulename(filename)
-  if modulename:
-    funcname = modulename + '.' + funcname
-  # If debug() has been called from within some external function (e.g. a library function), it's often to report on the outcome of that function.
-  # In this instance, find the location where that function itself was called from, rather than where debug() was called from.
-  caller = inspect.getframeinfo(inspect.stack()[min(2,len(inspect.stack()))][0])
-  sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourDebug + '[DEBUG] ' + funcname + ' (from ' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + '): ' + text + colourClear + '\n')
+  if len(inspect.stack()) == 2: # debug() called directly from script being executed
+    caller = inspect.getframeinfo(inspect.stack()[1][0])
+    origin = '(' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')'
+  else: # Some function has called debug(): Get location of both that function, and where that function was invoked
+    stack = inspect.stack()[1]
+    try:
+      filename = stack.filename
+      fname = stack.function
+    except: # Prior to Version 3.5
+      filename = stack[1]
+      fname = stack[3]
+    funcname = fname + '()'
+    modulename = inspect.getmodulename(filename)
+    if modulename:
+      funcname = modulename + '.' + funcname
+    caller = inspect.getframeinfo(inspect.stack()[2][0])
+    origin = funcname + ' (from ' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')'
+  sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourDebug + '[DEBUG] ' + origin + ': ' + text + colourClear + '\n')
 
 def error(text):
   import os, sys
