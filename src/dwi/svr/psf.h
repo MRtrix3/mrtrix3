@@ -28,8 +28,8 @@ namespace MR
 
     template <unsigned int p>
     constexpr float bspline (const float t, const int i = 0) {
-      return (t + float(p+1-i)/2)/p * bspline<p-1>(t, i-1) +
-             (float(p+1+i)/2 - t)/p * bspline<p-1>(t, i+1);
+      return (t + (p+1-i)/2.0f)/p * bspline<p-1>(t, i-1) +
+             ((p+1+i)/2.0f - t)/p * bspline<p-1>(t, i+1);
     }
 
     template <>

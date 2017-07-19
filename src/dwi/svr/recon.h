@@ -108,15 +108,13 @@ namespace MR
       SparseMat get_sliceM(const size_t v, const size_t z) const
       {
         int n = 2;
-        SincPSF<float> sinc (n);
         SSP<float> ssp {};
 
         // reserve memory for elements along each row (outer strides with row-major order).
-        SparseMat Ms (nxy, nxy*nz);
-        Ms.reserve(Eigen::VectorXi::Constant(nxy, (n+1)*8*n*n*n));
+        SparseMat M (nxy, nxy*nz);
+        M.reserve(Eigen::VectorXi::Constant(nxy, (n+1)*8*n*n*n));
 
-        Eigen::Vector3f ps, pr;
-        Eigen::Vector3i p;
+        Eigen::Vector3f ps, pr, pg;
 
         // fill weights
         size_t i = 0;
@@ -131,22 +129,22 @@ namespace MR
 
               ps = Eigen::Vector3f(x, y, z+s);
               pr = (Ts2r.cast<float>() * ps);
+              pg = pr.array().ceil();
 
-              for (int rx = -n; rx < n; rx++) { // sinc interpolator
-                px = std::ceil(pr[0]) + rx;
-                wx = bspline<3>(pr[0] - px);
+              for (int rz = -n; rz < n; rz++) { // local neighbourhood interpolation
+                pz = pg[2] + rz;
+                if ((pz < 0) || (pz >= nz)) continue;
+                wz = bspline<3>(pr[2] - pz);
                 for (int ry = -n; ry < n; ry++) {
-                  py = std::ceil(pr[1]) + ry;
+                  py = pg[1] + ry;
+                  if ((py < 0) || (py >= ny)) continue;
                   wy = bspline<3>(pr[1] - py);
-                  for (int rz = -n; rz < n; rz++) {
-                    pz = std::ceil(pr[2]) + rz;
-                    wz = bspline<3>(pr[2] - pz);
-                    //p = Eigen::Vector3i(std::ceil(pr[0])+rx, std::ceil(pr[1])+ry, std::ceil(pr[2])+rz);
-                    if (inbounds(px, py, pz)) {
-                      //Ms.coeffRef(i, get_idx(p[0], p[1], p[2])) += (1.0 - std::abs(pr[0]-p[0])) * (1.0 - std::abs(pr[1]-p[1])) * (1.0 - std::abs(pr[2]-p[2]));
-                      //Ms.coeffRef(i, get_idx(p[0], p[1], p[2])) += ssp(s) * sinc(pr - p.cast<float>());
-                      Ms.coeffRef(i, get_idx(px, py, pz)) += ws * wx * wy * wz;
-                    }
+                  for (int rx = -n; rx < n; rx++) {
+                    px = pg[0] + rx;
+                    if ((px < 0) || (px >= nx)) continue;
+                    wx = bspline<3>(pr[0] - px);
+                    // add to weight matrix.
+                    M.coeffRef(i, get_idx(px, py, pz)) += ws * wx * wy * wz;
                   }
                 }
               }
@@ -155,7 +153,7 @@ namespace MR
           }
         }
 
-        return Ms;
+        return M;
       }
 
       Eigen::VectorXf get_sliceY(const size_t v, const size_t z) const
