@@ -182,6 +182,44 @@ namespace MR
         return Y0;
       }
 
+      template <typename VectorType1, typename VectorType2>
+      void project_x2y(VectorType1& dst, const VectorType1& rhs) const
+      {
+        DEBUG("Forward projection.");
+        size_t nxyz = nxy*nz;
+        #pragma omp parallel for
+        for (size_t v = 0; v < W.cols(); v++) {
+          for (size_t z = 0; z < W.rows(); z++) {
+            MR::DWI::ReconMatrix::SparseMat M = get_sliceM(v, z);
+            Eigen::VectorXf Yw = W(z, v) * get_sliceY(v, z);
+            for (size_t j = 0; j < nc; j++) {
+              dst.segment(get_grad_idx(v,z)*nxy, nxy) += Yw[j] * M * rhs.segment(j*nxyz, nxyz);
+            }
+          }
+        }
+      }
+
+      template <typename VectorType1, typename VectorType2>
+      void project_y2x(VectorType1& dst, const VectorType2& rhs) const
+      {
+        DEBUG("Transpose projection.");
+        size_t nxyz = nxy*nz;
+        #pragma omp parallel for
+        for (size_t v = 0; v < W.cols(); v++) {
+          for (size_t z = 0; z < W.rows(); z++) {
+            MR::DWI::ReconMatrix::SparseMat Mt = get_sliceM(v, z).adjoint();
+            Eigen::VectorXf r = Mt * rhs.segment(get_grad_idx(v,z)*nxy, nxy);
+            Eigen::VectorXf Yw = W(z, v) * get_sliceY(v, z);
+            #pragma omp critical
+            {
+            for (size_t j = 0; j < nc; j++) {
+              dst.segment(j*nxyz, nxyz) += Yw[j] * r;
+            }
+            }
+          }
+        }
+      }
+
 
       const int lmax;
       const size_t nx, ny, nz, nv, nxy, nc;
@@ -378,21 +416,7 @@ namespace Eigen {
         // This method should implement "dst += alpha * lhs * rhs" inplace
         assert(alpha==Scalar(1) && "scaling is not implemented");
 
-        TRACE;
-
-        MatrixXf W = lhs.getW();
-        size_t nc = lhs.nc, nxy = lhs.nxy, nxyz = nxy*lhs.nz;
-        #pragma omp parallel for
-        for (size_t v = 0; v < W.cols(); v++) {
-          //VAR(v);
-          for (size_t z = 0; z < W.rows(); z++) {
-            MR::DWI::ReconMatrix::SparseMat M = lhs.get_sliceM(v, z);
-            VectorXf Y = W(z, v) * lhs.get_sliceY(v, z);
-            for (size_t j = 0; j < nc; j++) {
-              dst.segment(lhs.get_grad_idx(v,z)*nxy, nxy) += Y[j] * M * rhs.segment(j*nxyz, nxyz);
-            }
-          }
-        }
+        lhs.project_x2y<Dest, Rhs>(dst, rhs);
 
       }
 
@@ -411,25 +435,7 @@ namespace Eigen {
         // This method should implement "dst += alpha * lhs * rhs" inplace
         assert(alpha==Scalar(1) && "scaling is not implemented");
 
-        TRACE;
-
-        MatrixXf W = lhs.R.getW();
-        size_t nc = lhs.R.nc, nxy = lhs.R.nxy, nxyz = nxy*lhs.R.nz;
-        #pragma omp parallel for
-        for (size_t v = 0; v < W.cols(); v++) {
-          //VAR(v);
-          for (size_t z = 0; z < W.rows(); z++) {
-            MR::DWI::ReconMatrix::SparseMat Mt = lhs.R.get_sliceM(v, z).adjoint();
-            VectorXf r = Mt * rhs.segment(lhs.R.get_grad_idx(v,z)*nxy, nxy);
-            VectorXf Y = W(z, v) * lhs.R.get_sliceY(v, z);
-            #pragma omp critical
-            {
-              for (size_t j = 0; j < nc; j++) {
-                dst.segment(j*nxyz, nxyz) += Y[j] * r;
-              }
-            }
-          }
-        }
+        lhs.R.project_y2x<Dest, Rhs>(dst, rhs);
 
       }
 
