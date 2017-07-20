@@ -210,15 +210,20 @@ void run ()
   //Eigen::setNbThreads(Thread::number_of_threads());     // only used when configured with OpenMP
   //VAR(Eigen::nbThreads());
 
-  Eigen::LeastSquaresConjugateGradient<DWI::ReconMatrix, Eigen::IdentityPreconditioner> lscg;
-  lscg.compute(R);
+  Eigen::ConjugateGradient<DWI::ReconMatrix, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
+  cg.compute(R);
 
-  lscg.setTolerance(tol);
-  lscg.setMaxIterations(maxiter);
+  cg.setTolerance(tol);
+  cg.setMaxIterations(maxiter);
 
-  Eigen::VectorXf x = lscg.solve(y);
+  // Compute M'y
+  Eigen::VectorXf p (R.cols());
+  R.project_y2x(p, y);
 
-  std::cout << "LSCG: #iterations: " << lscg.iterations() << ", estimated error: " << lscg.error() << std::endl;
+  // Solve M'M x = M'y
+  Eigen::VectorXf x = cg.solve(p);
+
+  std::cout << "CG: #iterations: " << cg.iterations() << ", estimated error: " << cg.error() << std::endl;
 
 
   // Write result to output file
@@ -265,7 +270,8 @@ void run ()
     DWI::stash_DW_scheme (header, gradsub);
     auto spred = Image<value_type>::create(opt[0][0], header);
     R.setW(Eigen::MatrixXf::Ones(dwisub.size(2), dwisub.size(3)));
-    Eigen::VectorXf p = R * x;
+    Eigen::VectorXf p (dwisub.size(0)*dwisub.size(1)*dwisub.size(2)*dwisub.size(3));
+    R.project_x2y(p, x);
     j = 0;
     for (auto l = Loop("saving source prediction", {0, 1, 2, 3})(spred); l; l++, j++) {
       spred.value() = p[j];

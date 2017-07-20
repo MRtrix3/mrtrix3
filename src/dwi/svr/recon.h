@@ -31,7 +31,6 @@
 namespace MR {
   namespace DWI {
     class ReconMatrix;
-    class ReconMatrixAdjoint;
   }
 }
 
@@ -41,10 +40,6 @@ namespace Eigen {
     // ReconMatrix inherits its traits from SparseMatrix
     template<>
     struct traits<MR::DWI::ReconMatrix> : public Eigen::internal::traits<Eigen::SparseMatrix<float,Eigen::RowMajor> >
-    {};
-
-    template<>
-    struct traits<MR::DWI::ReconMatrixAdjoint> : public Eigen::internal::traits<Eigen::SparseMatrix<float,Eigen::RowMajor> >
     {};
   }
 }
@@ -68,7 +63,7 @@ namespace MR
         IsRowMajor = true
       };
 
-      Eigen::Index rows() const { return nv*nz*nxy; }
+      Eigen::Index rows() const { return nxy*nz*nc; }
       Eigen::Index cols() const { return nxy*nz*nc; }
 
       template<typename Rhs>
@@ -96,8 +91,6 @@ namespace MR
       const Eigen::MatrixXf& getW() const { return W; }
 
       void setW (const Eigen::MatrixXf& weights) { W = weights; }
-
-      ReconMatrixAdjoint adjoint() const;
 
       Eigen::MatrixXf getY0(const Eigen::MatrixXf& grad) const
       {
@@ -149,6 +142,28 @@ namespace MR
           std::lock_guard<std::mutex> lock (mutex);
           for (size_t j = 0; j < nc; j++) {
             dst.segment(j*nxyz, nxyz) += Yw[j] * r;
+          }
+        });
+      }
+
+      template <typename VectorType1, typename VectorType2>
+      void project_x2x(VectorType1& dst, const VectorType2& rhs) const
+      {
+        DEBUG("Full projection.");
+        std::mutex mutex;
+        size_t nxyz = nxy*nz;
+        Thread::parallel_for<size_t>(0, nv*nz, [&](size_t idx){
+          size_t v = idx/nz, z = idx%nz;
+          MR::DWI::ReconMatrix::SparseMat M = get_sliceM(v, z);
+          Eigen::VectorXf Yw = W(z, v) * get_sliceY(v, z);
+          Eigen::VectorXf slice = Eigen::VectorXf::Zero(nxy);
+          for (size_t j = 0; j < nc; j++) {
+            slice += Yw[j] * M * rhs.segment(j*nxyz, nxyz);
+          }
+          Eigen::VectorXf proj = M.adjoint() * slice;
+          std::lock_guard<std::mutex> lock (mutex);
+          for (size_t j = 0; j < nc; j++) {
+            dst.segment(j*nxyz, nxyz) += Yw[j] * proj;
           }
         });
       }
@@ -350,36 +365,6 @@ namespace MR
     };
 
 
-    class ReconMatrixAdjoint : public Eigen::EigenBase<ReconMatrixAdjoint>
-    {  MEMALIGN(ReconMatrixAdjoint);
-    public:
-      // Required typedefs, constants, and method:
-      typedef float Scalar;
-      typedef float RealScalar;
-      typedef int StorageIndex;
-      enum {
-        ColsAtCompileTime = Eigen::Dynamic,
-        MaxColsAtCompileTime = Eigen::Dynamic,
-        IsRowMajor = true
-      };
-      Eigen::Index rows() const { return R.cols(); }
-      Eigen::Index cols() const { return R.rows(); }
-
-      template<typename Rhs>
-      Eigen::Product<ReconMatrixAdjoint,Rhs,Eigen::AliasFreeProduct> operator*(const Eigen::MatrixBase<Rhs>& x) const {
-        return Eigen::Product<ReconMatrixAdjoint,Rhs,Eigen::AliasFreeProduct>(*this, x.derived());
-      }
-
-      ReconMatrixAdjoint(const ReconMatrix& R)
-        : R(R)
-      {  }
-
-      const ReconMatrix& R;
-
-    };
-
-
-
   }
 }
 
@@ -400,32 +385,11 @@ namespace Eigen {
         // This method should implement "dst += alpha * lhs * rhs" inplace
         assert(alpha==Scalar(1) && "scaling is not implemented");
 
-        lhs.project_x2y<Dest, Rhs>(dst, rhs);
+        lhs.project_x2x<Dest, Rhs>(dst, rhs);
 
       }
 
     };
-
-
-    template<typename Rhs>
-    struct generic_product_impl<MR::DWI::ReconMatrixAdjoint, Rhs, SparseShape, DenseShape, GemvProduct>
-      : generic_product_impl_base<MR::DWI::ReconMatrixAdjoint,Rhs,generic_product_impl<MR::DWI::ReconMatrixAdjoint,Rhs> >
-    {
-      typedef typename Product<MR::DWI::ReconMatrixAdjoint,Rhs>::Scalar Scalar;
-
-      template<typename Dest>
-      static void scaleAndAddTo(Dest& dst, const MR::DWI::ReconMatrixAdjoint& lhs, const Rhs& rhs, const Scalar& alpha)
-      {
-        // This method should implement "dst += alpha * lhs * rhs" inplace
-        assert(alpha==Scalar(1) && "scaling is not implemented");
-
-        lhs.R.project_y2x<Dest, Rhs>(dst, rhs);
-
-      }
-
-    };
-
-
   }
 }
 
