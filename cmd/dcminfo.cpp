@@ -75,7 +75,7 @@ void run ()
     while (item.read()) {
       for (size_t n = 0; n < opt.size(); ++n)
         if (item.is (tags[n].group, tags[n].element))
-          tags[n].value = item.get_string()[0];
+          tags[n].value = join (item.get_string(), " ");
     }
 
     for (size_t n = 0; n < opt.size(); ++n)
