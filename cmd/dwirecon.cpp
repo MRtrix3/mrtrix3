@@ -233,9 +233,12 @@ void run ()
   header.datatype() = DataType::from_command_line (DataType::Float32);
   auto out = Image<value_type>::create (argument[1], header);
 
+  Eigen::Map< Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > X (x.data(), dwisub.size(0)*dwisub.size(1)*dwisub.size(2), header.size(3));
   j = 0;
-  for (auto l = Loop("writing result to image", {1, 2, 3, 0})(out); l; l++, j++) {
-    out.value() = x[j];
+  for (auto l = Loop("writing result to image", {0, 1, 2})(out); l; l++) {
+    //out.row(3) = X.row(j);
+    for (auto l2 = Loop(3)(out); l2; l2++, j++)
+      out.value() = x[j];
   }
 
 
