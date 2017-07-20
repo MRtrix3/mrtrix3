@@ -118,13 +118,12 @@ namespace MR
       {
         DEBUG("Forward projection.");
         size_t nxyz = nxy*nz;
+        Eigen::Map< const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > X (rhs.data(), nxyz, nc);
         Thread::parallel_for<size_t>(0, nv*nz, [&](size_t idx){
           size_t v = idx/nz, z = idx%nz;
           MR::DWI::ReconMatrix::SparseMat M = get_sliceM(v, z);
           Eigen::VectorXf Yw = W(z, v) * get_sliceY(v, z);
-          for (size_t j = 0; j < nc; j++) {
-            dst.segment(idx*nxy, nxy) += Yw[j] * M * rhs.segment(j*nxyz, nxyz);
-          }
+          dst.segment(idx*nxy, nxy) += M * (X * Yw);
         });
       }
 
@@ -134,15 +133,14 @@ namespace MR
         DEBUG("Transpose projection.");
         std::mutex mutex;
         size_t nxyz = nxy*nz;
+        Eigen::Map< Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > X (dst.data(), nxyz, nc);
         Thread::parallel_for<size_t>(0, nv*nz, [&](size_t idx){
           size_t v = idx/nz, z = idx%nz;
           MR::DWI::ReconMatrix::SparseMat Mt = get_sliceM(v, z).adjoint();
           Eigen::VectorXf r = Mt * rhs.segment(idx*nxy, nxy);
           Eigen::VectorXf Yw = W(z, v) * get_sliceY(v, z);
           std::lock_guard<std::mutex> lock (mutex);
-          for (size_t j = 0; j < nc; j++) {
-            dst.segment(j*nxyz, nxyz) += Yw[j] * r;
-          }
+          X += r * Yw.adjoint();
         });
       }
 
@@ -152,19 +150,16 @@ namespace MR
         DEBUG("Full projection.");
         std::mutex mutex;
         size_t nxyz = nxy*nz;
+        Eigen::Map< const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > Xi (rhs.data(), nxyz, nc);
+        Eigen::Map< Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > Xo (dst.data(), nxyz, nc);
         Thread::parallel_for<size_t>(0, nv*nz, [&](size_t idx){
           size_t v = idx/nz, z = idx%nz;
           MR::DWI::ReconMatrix::SparseMat M = get_sliceM(v, z);
           Eigen::VectorXf Yw = W(z, v) * get_sliceY(v, z);
-          Eigen::VectorXf slice = Eigen::VectorXf::Zero(nxy);
-          for (size_t j = 0; j < nc; j++) {
-            slice += Yw[j] * M * rhs.segment(j*nxyz, nxyz);
-          }
+          Eigen::VectorXf slice = M * (Xi * Yw);
           Eigen::VectorXf proj = M.adjoint() * slice;
           std::lock_guard<std::mutex> lock (mutex);
-          for (size_t j = 0; j < nc; j++) {
-            dst.segment(j*nxyz, nxyz) += Yw[j] * proj;
-          }
+          Xo += proj * Yw.adjoint();
         });
       }
 

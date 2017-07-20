@@ -234,7 +234,7 @@ void run ()
   auto out = Image<value_type>::create (argument[1], header);
 
   j = 0;
-  for (auto l = Loop("writing result to image", {0, 1, 2, 3})(out); l; l++, j++) {
+  for (auto l = Loop("writing result to image", {1, 2, 3, 0})(out); l; l++, j++) {
     out.value() = x[j];
   }
 
