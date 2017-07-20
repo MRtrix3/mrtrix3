@@ -181,7 +181,7 @@ namespace MR
       }
 
       template <typename VectorType1, typename VectorType2>
-      void project_x2y(VectorType1& dst, const VectorType1& rhs) const
+      void project_x2y(VectorType1& dst, const VectorType2& rhs) const
       {
         DEBUG("Forward projection.");
         size_t nxyz = nxy*nz;
