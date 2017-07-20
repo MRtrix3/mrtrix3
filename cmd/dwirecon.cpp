@@ -194,13 +194,9 @@ void run ()
 
   // Read input data to vector
   Eigen::VectorXf y (dwisub.size(0)*dwisub.size(1)*dwisub.size(2)*dwisub.size(3));
-  size_t j = 0, v = 0;
-  for (auto l0 = Loop("loading image data", 3)(dwisub); l0; l0++, v++) {
-    size_t s = 0;
-    for (auto l1 = Loop(2)(dwisub); l1; l1++, s++) {
-      for (auto l = Loop({0, 1})(dwisub); l; l++, j++)
-        y[j] = Wsub(s, v) * dwisub.value();
-    }
+  size_t j = 0;
+  for (auto l = Loop("loading image data", {0, 1, 2, 3})(dwisub); l; l++, j++) {
+    y[j] = dwisub.value();
   }
 
   // Fit scattered data in basis...
@@ -233,10 +229,8 @@ void run ()
   header.datatype() = DataType::from_command_line (DataType::Float32);
   auto out = Image<value_type>::create (argument[1], header);
 
-  Eigen::Map< Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > X (x.data(), dwisub.size(0)*dwisub.size(1)*dwisub.size(2), header.size(3));
   j = 0;
   for (auto l = Loop("writing result to image", {0, 1, 2})(out); l; l++) {
-    //out.row(3) = X.row(j);
     for (auto l2 = Loop(3)(out); l2; l2++, j++)
       out.value() = x[j];
   }
@@ -272,7 +266,6 @@ void run ()
     header.size(3) = dwisub.size(3);
     DWI::stash_DW_scheme (header, gradsub);
     auto spred = Image<value_type>::create(opt[0][0], header);
-    R.setW(Eigen::MatrixXf::Ones(dwisub.size(2), dwisub.size(3)));
     Eigen::VectorXf p (dwisub.size(0)*dwisub.size(1)*dwisub.size(2)*dwisub.size(3));
     R.project_x2y(p, x);
     j = 0;
