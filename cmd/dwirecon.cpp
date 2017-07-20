@@ -206,9 +206,9 @@ void run ()
   // Fit scattered data in basis...
   INFO("solve with conjugate gradient method");
 
-  Eigen::initParallel();
-  Eigen::setNbThreads(Thread::number_of_threads());     // only used when configured with OpenMP
-  VAR(Eigen::nbThreads());
+  //Eigen::initParallel();
+  //Eigen::setNbThreads(Thread::number_of_threads());     // only used when configured with OpenMP
+  //VAR(Eigen::nbThreads());
 
   Eigen::LeastSquaresConjugateGradient<DWI::ReconMatrix, Eigen::IdentityPreconditioner> lscg;
   lscg.compute(R);
