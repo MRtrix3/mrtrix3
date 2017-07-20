@@ -93,7 +93,6 @@ namespace MR
 
             bool layout_is_dirty;
             size_t current_slice_index;
-
             vector<ssize_t> volume_indices;
             vector<proj_focusdelta> slices_proj_focusdelta;
 
