@@ -91,24 +91,30 @@ namespace MR
      *  1-D Gaussian Slice Sensitivity Profile.
      */
     template <typename T = float>
-    class SSP
-    {  MEMALIGN(SSP);
+    struct SSP
+    {  NOMEMALIGN;
     public:
 
-        SSP (T t = 1) : _t(t) {  }
+        SSP (T t = 1)
+         : _t(t),
+           tau (-fwhm*fwhm/(2*_t*_t)),
+           norm (fwhm / (_t * std::sqrt(2*M_PI)))
+        {  }
      
         inline T operator() (const T z) const
         {
-            return gaussian(z, _t/fwhm);
+            return gaussian(z);
         }
 
     private:
-        const T _t;
         const T fwhm = 2 * std::sqrt(2 * M_LN2);
+        const T _t;
+        const T tau;
+        const T norm;
         
-        inline T gaussian (T x, T sig = 1) const
+        inline T gaussian (T x) const
         {
-            return std::exp( -x*x / (2*sig*sig) ) / std::sqrt(2*M_PI*sig*sig);
+            return norm * std::exp(tau * x*x);
         }
 
     };

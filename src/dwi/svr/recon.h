@@ -305,7 +305,7 @@ namespace MR
       SparseMat get_sliceM(const size_t v, const size_t z) const
       {
         int n = 2;
-        SSP<float> ssp {};
+        SSP<float> ssp (2.0f);
 
         // reserve memory for elements along each row (outer strides with row-major order).
         SparseMat M (nxy, nxy*nz);
