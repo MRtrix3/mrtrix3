@@ -72,6 +72,7 @@ namespace MR
       }
 
       typedef Eigen::SparseMatrix<float, Eigen::RowMajor, StorageIndex> SparseMat;
+      typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> RowMatrixXf;
 
 
       // Custom API:
@@ -87,17 +88,17 @@ namespace MR
       }
 
 
-      const Eigen::MatrixXf& getY() const { return Y; }
+      const RowMatrixXf& getY() const { return Y; }
       const Eigen::MatrixXf& getW() const { return W; }
 
       void setW (const Eigen::MatrixXf& weights) { W = weights; }
 
-      Eigen::MatrixXf getY0(const Eigen::MatrixXf& grad) const
+      RowMatrixXf getY0(const Eigen::MatrixXf& grad) const
       {
         DEBUG("initialise Y0");
 
         vector<size_t> idx = get_shellidx(grad);
-        Eigen::MatrixXf Y0 (grad.rows(), nc);
+        RowMatrixXf Y0 (grad.rows(), nc);
 
         Eigen::Vector3f vec;
         Eigen::VectorXf delta;
@@ -118,7 +119,7 @@ namespace MR
       {
         DEBUG("Forward projection.");
         size_t nxyz = nxy*nz;
-        Eigen::Map< const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > X (rhs.data(), nxyz, nc);
+        Eigen::Map<const RowMatrixXf> X (rhs.data(), nxyz, nc);
         Thread::parallel_for<size_t>(0, nv*nz, [&](size_t idx){
           size_t v = idx/nz, z = idx%nz;
           MR::DWI::ReconMatrix::SparseMat M = get_sliceM(v, z);
@@ -132,7 +133,7 @@ namespace MR
         DEBUG("Transpose projection.");
         std::mutex mutex;
         size_t nxyz = nxy*nz;
-        Eigen::Map< Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > X (dst.data(), nxyz, nc);
+        Eigen::Map<RowMatrixXf> X (dst.data(), nxyz, nc);
         Thread::parallel_for<size_t>(0, nv*nz, [&](size_t idx){
           size_t v = idx/nz, z = idx%nz;
           MR::DWI::ReconMatrix::SparseMat Mt = get_sliceM(v, z).adjoint();
@@ -148,8 +149,8 @@ namespace MR
         DEBUG("Full projection.");
         std::mutex mutex;
         size_t nxyz = nxy*nz;
-        Eigen::Map< const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > Xi (rhs.data(), nxyz, nc);
-        Eigen::Map< Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > Xo (dst.data(), nxyz, nc);
+        Eigen::Map<const RowMatrixXf> Xi (rhs.data(), nxyz, nc);
+        Eigen::Map<RowMatrixXf> Xo (dst.data(), nxyz, nc);
         Thread::parallel_for<size_t>(0, nv*nz, [&](size_t idx){
           size_t v = idx/nz, z = idx%nz;
           MR::DWI::ReconMatrix::SparseMat M = get_sliceM(v, z);
@@ -167,8 +168,8 @@ namespace MR
       const Transform T0;
       const vector<Eigen::MatrixXf> shellbasis;
 
-      Eigen::MatrixXf motion;
-      Eigen::MatrixXf Y;
+      RowMatrixXf motion;
+      RowMatrixXf Y;
       Eigen::MatrixXf W;
 
 
