@@ -123,7 +123,7 @@ namespace MR
         Thread::parallel_for<size_t>(0, nv*nz, [&](size_t idx){
           size_t v = idx/nz, z = idx%nz;
           MR::DWI::ReconMatrix::SparseMat M = get_sliceM(v, z);
-          dst.segment(idx*nxy, nxy) += M * (X * Y.row(idx));
+          dst.segment(idx*nxy, nxy) += M * (X * Y.row(idx).adjoint());
         });
       }
 
@@ -139,7 +139,7 @@ namespace MR
           MR::DWI::ReconMatrix::SparseMat Mt = get_sliceM(v, z).adjoint();
           Eigen::VectorXf r = W(z, v) * Mt * rhs.segment(idx*nxy, nxy);
           std::lock_guard<std::mutex> lock (mutex);
-          X += r * Y.row(idx).adjoint();
+          X += r * Y.row(idx);
         });
       }
 
@@ -154,10 +154,10 @@ namespace MR
         Thread::parallel_for<size_t>(0, nv*nz, [&](size_t idx){
           size_t v = idx/nz, z = idx%nz;
           MR::DWI::ReconMatrix::SparseMat M = get_sliceM(v, z);
-          Eigen::VectorXf slice = M * (Xi * Y.row(idx));
+          Eigen::VectorXf slice = M * (Xi * Y.row(idx).adjoint());
           Eigen::VectorXf proj = W(z, v) * M.adjoint() * slice;
           std::lock_guard<std::mutex> lock (mutex);
-          Xo += proj * Y.row(idx).adjoint();
+          Xo += proj * Y.row(idx);
         });
       }
 
