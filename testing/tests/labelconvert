@@ -1,2 +1,4 @@
 labelconvert labelconvert/in_aal.mif.gz labelconvert/ROI_MNI_V4.txt labelconvert/aal.txt - | testing_diff_image - labelconvert/out_aal.mif.gz
 labelconvert labelconvert/in_fs.mif.gz labelconvert/FreeSurferColorLUT.txt labelconvert/fs_default.txt  - | testing_diff_image - labelconvert/out_fs.mif.gz
+labelconvert labelconvert/in_iit.mif.gz labelconvert/LUT_GM.txt labelconvert/fs_a2009s.txt - | testing_diff_image - labelconvert/out_iit.mif.gz
+labelconvert labelconvert/in_lpba40.mif.gz labelconvert/LPBA40-labels.txt lpba40.txt - | testing_diff_image - labelconvert/out_lpba40.mif.gz
