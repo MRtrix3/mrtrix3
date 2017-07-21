@@ -123,6 +123,14 @@ void usage ()
         "set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: cubic).")
     + Argument ("method").type_choice (interp_choices)
 
+    + Option ("oversample",
+        "set the amount of over-sampling (in the target space) to perform when regridding. This is particularly "
+        "relevant when downsamping a high-resolution image to a low-resolution image, to avoid aliasing artefacts. "
+        "This can consist of a single integer, or a comma-separated list of 3 integers if different oversampling "
+        "factors are desired along the different axes. Default is determined from ratio of voxel dimensions (disabled "
+        "for nearest-neighbour interpolation).")
+    + Argument ("factor").type_sequence_int()
+
     + OptionGroup ("Non-linear transformation options")
 
     // TODO point users to a documentation page describing the warp field format
@@ -441,6 +449,25 @@ void run ()
       WARN ("interpolator choice ignored since the input image will not be regridded");
   }
 
+  // over-sampling
+  vector<int> oversample = Adapter::AutoOverSample;
+  opt = get_options ("oversample");
+  if (opt.size()) {
+    oversample = opt[0][0];
+    if (oversample.size() == 1) 
+      oversample.resize (3, oversample[0]);
+    else if (oversample.size() != 3)
+      throw Exception ("-oversample option requires either a single integer, or a comma-separated list of 3 integers");
+    for (const auto x : oversample)
+      if (x < 1) 
+        throw Exception ("-oversample factors must be positive integers");
+  }
+  else if (interp == 0)
+    // default for nearest-neighbour is no oversampling
+    oversample = { 1, 1, 1 };
+
+
+
   // Out of bounds value
   float out_of_bounds_value = 0.0;
   opt = get_options ("nan");
@@ -478,16 +505,16 @@ void run ()
 
     switch (interp) {
       case 0:
-        Filter::reslice<Interp::Nearest> (input, output, linear_transform, { 1, 1, 1 }, out_of_bounds_value);
+        Filter::reslice<Interp::Nearest> (input, output, linear_transform, oversample, out_of_bounds_value);
         break;
       case 1:
-        Filter::reslice<Interp::Linear> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        Filter::reslice<Interp::Linear> (input, output, linear_transform, oversample, out_of_bounds_value);
         break;
       case 2:
-        Filter::reslice<Interp::Cubic> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        Filter::reslice<Interp::Cubic> (input, output, linear_transform, oversample, out_of_bounds_value);
         break;
       case 3:
-        Filter::reslice<Interp::Sinc> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        Filter::reslice<Interp::Sinc> (input, output, linear_transform, oversample, out_of_bounds_value);
         break;
       default:
         assert (0);
