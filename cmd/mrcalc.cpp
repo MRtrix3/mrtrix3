@@ -1050,7 +1050,7 @@ class OpIf : public OpTernary { NOMEMALIGN
 
 class OpReplace : public OpTernary {
   public:
-    OpIf () : OpTernary ("(%1, %2 -> %3)") { }
+    OpReplace () : OpTernary ("(%1, %2 -> %3)") { }
     complex_type R (real_type a, real_type b, real_type c) const { return ((a==b) || (std::isnan(a) && std::isnan(b))) ? c : a; }
     complex_type Z (complex_type a, complex_type b, complex_type c) const { return (a==b) ? c : a; }
 };

@@ -39,7 +39,7 @@ DW gradient table import options
 DW shell selection options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-shells list** specify one (or more) diffusion-weighted gradient shells to use during processing, as a comma-separated list of the desired approximate b-values. Note that some commands are incompatible with multiple shells, and will throw an error if more than one b-value is provided.
+-  **-shells list** specify one or more diffusion-weighted gradient shells to use during processing, as a comma-separated list of the desired approximate b-values. Note that some commands are incompatible with multiple shells, and will throw an error if more than one b-value is provided.
 
 Options common to more than one algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

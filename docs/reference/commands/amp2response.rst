@@ -36,10 +36,10 @@ Options
 
 -  **-directions path** provide an external text file containing the directions along which the amplitudes are sampled
 
-DW Shell selection options
+DW shell selection options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-shell list** specify one or more diffusion-weighted gradient shells to use during processing, as a comma-separated list of the desired approximate b-values. Note that some commands are incompatible with multiple shells, and will throw an error if more than one b-value is provided.
+-  **-shells list** specify one or more diffusion-weighted gradient shells to use during processing, as a comma-separated list of the desired approximate b-values. Note that some commands are incompatible with multiple shells, and will throw an error if more than one b-value is provided.
 
 -  **-lmax values** specify the maximum harmonic degree of the response function to estimate (can be a comma-separated list for multi-shell data)
 
