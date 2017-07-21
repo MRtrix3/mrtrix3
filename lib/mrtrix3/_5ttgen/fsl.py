@@ -83,6 +83,14 @@ def execute():
   if app.args.sgm_amyg_hipp:
     sgm_structures.extend([ 'L_Amyg', 'R_Amyg', 'L_Hipp', 'R_Hipp' ])
 
+  t1_dim = [ float(f) for f in image.headerField('input.mif', 'vox').strip().split() ]
+  upsample_for_first = False
+  if max(t1_dim) > 1.05: #Allow e.g. 1.01mm voxels, if FoV and matrix size are not perfectly equivalent
+    app.warn('Voxel size larger than 1.0mm detected (' + str(t1_dim) + '); '
+             'note that ACT does not require re-gridding of T1 image to DWI space, and indeed '
+             'retaining the original higher resolution of the T1 image is preferable')
+    upsample_for_first = True
+
   run.command('mrconvert input.mif T1.nii -stride -1,+2,+3')
 
   fast_t1_input = 'T1.nii'
@@ -99,8 +107,8 @@ def execute():
       mask_path = 'mask.mif'
     else:
       app.warn('Mask image does not match input image - re-gridding')
-      run.command('mrtransform mask.mif mask_regrid.mif -template T1.nii')
-      run.command('mrcalc T1.nii mask_regrid.mif ' + fast_t1_input)
+      run.command('mrtransform mask.mif mask_regrid.mif -template T1.nii -datatype bit')
+      run.command('mrcalc T1.nii mask_regrid.mif -mult ' + fast_t1_input)
       mask_path = 'mask_regrid.mif'
 
     if os.path.exists('T2.nii'):
@@ -162,10 +170,15 @@ def execute():
   fast_output_prefix = fast_t1_input.split('.')[0]
 
   # FIRST
-  first_input_is_brain_extracted = ''
+  first_input = 'T1.nii'
+  if upsample_for_first:
+    app.warn('Generating 1mm isotropic T1 image for FIRST in hope of preventing failure, since input image is of lower resolution')
+    run.command('mrresize T1.nii T1_1mm.nii -voxel 1.0 -interp sinc')
+    first_input = 'T1_1mm.nii'
+  first_input_brain_extracted_option = ''
   if app.args.premasked:
-    first_input_is_brain_extracted = ' -b'
-  run.command(first_cmd + ' -s ' + ','.join(sgm_structures) + ' -i T1.nii -o first' + first_input_is_brain_extracted)
+    first_input_brain_extracted_option = ' -b'
+  run.command(first_cmd + ' -s ' + ','.join(sgm_structures) + ' -i ' + first_input + ' -o first' + first_input_brain_extracted_option)
 
   # Test to see whether or not FIRST has succeeded
   # However if the expected image is absent, it may be due to FIRST being run
@@ -186,7 +199,7 @@ def execute():
     pve_image_path = 'mesh2pve_' + struct + '.mif'
     vtk_in_path = 'first-' + struct + '_first.vtk'
     vtk_temp_path = struct + '.vtk'
-    run.command('meshconvert ' + vtk_in_path + ' ' + vtk_temp_path + ' -transform first2real T1.nii')
+    run.command('meshconvert ' + vtk_in_path + ' ' + vtk_temp_path + ' -transform first2real ' + first_input)
     run.command('mesh2pve ' + vtk_temp_path + ' ' + fast_t1_input + ' ' + pve_image_path)
     pve_image_list.append(pve_image_path)
   pve_cat = ' '.join(pve_image_list)
