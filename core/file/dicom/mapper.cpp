@@ -71,7 +71,8 @@ namespace MR {
             if (image_it->frames.size()) {
               std::sort (image_it->frames.begin(), image_it->frames.end(), compare_ptr_contents());
               for (auto frame_it : image_it->frames) 
-                frames.push_back (frame_it.get());
+                if (frame_it->image_type == series_it->image_type)
+                  frames.push_back (frame_it.get());
             }
             // otherwise add image frame:
             else 
@@ -99,7 +100,7 @@ namespace MR {
         default_type slice_separation = Frame::get_slice_separation (frames, dim[1]);
 
         if (series[0]->study->name.size()) 
-          add_line (H.keyval()["comments"], std::string ("study: " + series[0]->study->name));
+          add_line (H.keyval()["comments"], std::string ("study: " + series[0]->study->name + " [ " + series[0]->image_type + " ]"));
 
         if (patient->DOB.size()) 
           add_line (H.keyval()["comments"], std::string ("DOB: " + format_date (patient->DOB)));
@@ -112,11 +113,12 @@ namespace MR {
         }
 
         const Image& image (*(*series[0])[0]);
+        const Frame& frame (*frames[0]);
 
-        if (std::isfinite (image.echo_time))
-          H.keyval()["EchoTime"] = str (0.001 * image.echo_time, 6);
+        if (std::isfinite (frame.echo_time))
+          H.keyval()["EchoTime"] = str (0.001 * frame.echo_time, 6);
 
-        size_t nchannels = image.frames.size() ? 1 : image.data_size / (image.dim[0] * image.dim[1] * (image.bits_alloc/8));
+        size_t nchannels = image.frames.size() ? 1 : image.data_size / (frame.dim[0] * frame.dim[1] * (frame.bits_alloc/8));
         if (nchannels > 1) 
           INFO ("data segment is larger than expected from image dimensions - interpreting as multi-channel data");
 
@@ -131,12 +133,12 @@ namespace MR {
         }
 
         H.stride(0) = ++current_axis;
-        H.size(0) = image.dim[0];
-        H.spacing(0) = image.pixel_size[0];
+        H.size(0) = frame.dim[0];
+        H.spacing(0) = frame.pixel_size[0];
 
         H.stride(1) = ++current_axis;
-        H.size(1) = image.dim[1];
-        H.spacing(1) = image.pixel_size[1];
+        H.size(1) = frame.dim[1];
+        H.spacing(1) = frame.pixel_size[1];
 
         H.stride(2) = ++current_axis;
         H.size(2) = dim[1];
@@ -149,42 +151,41 @@ namespace MR {
         }
 
 
-        if (image.bits_alloc == 8) 
+        if (frame.bits_alloc == 8) 
           H.datatype() = DataType::UInt8;
-        else if (image.bits_alloc == 16) {
+        else if (frame.bits_alloc == 16) {
           H.datatype() = DataType::UInt16;
           if (image.is_BE) 
             H.datatype() = DataType::UInt16 | DataType::BigEndian;
           else 
             H.datatype() = DataType::UInt16 | DataType::LittleEndian;
         }
-        else throw Exception ("unexpected number of allocated bits per pixel (" + str (image.bits_alloc) 
+        else throw Exception ("unexpected number of allocated bits per pixel (" + str (frame.bits_alloc) 
             + ") in file \"" + H.name() + "\"");
 
-        H.set_intensity_scaling (image.scale_slope, image.scale_intercept);
+        H.set_intensity_scaling (frame.scale_slope, frame.scale_intercept);
 
 
         // If multi-frame, take the transform information from the sorted frames; the first entry in the
         // vector should be the first slice of the first volume
         {
           transform_type M;
-          const Frame* frame (image.frames.size() ? image.frames[0].get() : &static_cast<const Frame&> (image));
 
-          M(0,0) = -frame->orientation_x[0];
-          M(1,0) = -frame->orientation_x[1];
-          M(2,0) = +frame->orientation_x[2];
+          M(0,0) = -frame.orientation_x[0];
+          M(1,0) = -frame.orientation_x[1];
+          M(2,0) = +frame.orientation_x[2];
 
-          M(0,1) = -frame->orientation_y[0];
-          M(1,1) = -frame->orientation_y[1];
-          M(2,1) = +frame->orientation_y[2];
+          M(0,1) = -frame.orientation_y[0];
+          M(1,1) = -frame.orientation_y[1];
+          M(2,1) = +frame.orientation_y[2];
 
-          M(0,2) = -frame->orientation_z[0];
-          M(1,2) = -frame->orientation_z[1];
-          M(2,2) = +frame->orientation_z[2];
+          M(0,2) = -frame.orientation_z[0];
+          M(1,2) = -frame.orientation_z[1];
+          M(2,2) = +frame.orientation_z[2];
 
-          M(0,3) = -frame->position_vector[0];
-          M(1,3) = -frame->position_vector[1];
-          M(2,3) = +frame->position_vector[2];
+          M(0,3) = -frame.position_vector[0];
+          M(1,3) = -frame.position_vector[1];
+          M(2,3) = +frame.position_vector[2];
 
           H.transform() = M;
           std::string dw_scheme = Frame::get_DW_scheme (frames, dim[1], M);
@@ -205,24 +206,24 @@ namespace MR {
           if (H.size (2) != 1)
             throw Exception ("DICOM mosaic contains multiple slices in image \"" + H.name() + "\"");
 
-          H.size(0) = image.acq_dim[0];
-          H.size(1) = image.acq_dim[1];
+          H.size(0) = frame.acq_dim[0];
+          H.size(1) = frame.acq_dim[1];
           H.size(2) = image.images_in_mosaic;
 
-          if (image.dim[0] % image.acq_dim[0] || image.dim[1] % image.acq_dim[1]) {
-            WARN ("acquisition matrix [ " + str (image.acq_dim[0]) + " " + str (image.acq_dim[1]) 
-                + " ] does not fit into DICOM mosaic [ " + str (image.dim[0]) + " " + str (image.dim[1]) 
+          if (frame.dim[0] % frame.acq_dim[0] || frame.dim[1] % frame.acq_dim[1]) {
+            WARN ("acquisition matrix [ " + str (frame.acq_dim[0]) + " " + str (frame.acq_dim[1]) 
+                + " ] does not fit into DICOM mosaic [ " + str (frame.dim[0]) + " " + str (frame.dim[1]) 
                 + " ] -  adjusting matrix size to suit");
-            H.size(0) = image.dim[0] / size_t (float(image.dim[0]) / float(image.acq_dim[0]));
-            H.size(1) = image.dim[1] / size_t (float(image.dim[1]) / float(image.acq_dim[1]));
+            H.size(0) = frame.dim[0] / size_t (float(frame.dim[0]) / float(frame.acq_dim[0]));
+            H.size(1) = frame.dim[1] / size_t (float(frame.dim[1]) / float(frame.acq_dim[1]));
           }
 
-          float xinc = H.spacing(0) * (image.dim[0] - H.size(0)) / 2.0;
-          float yinc = H.spacing(1) * (image.dim[1] - H.size(1)) / 2.0;
+          float xinc = H.spacing(0) * (frame.dim[0] - H.size(0)) / 2.0;
+          float yinc = H.spacing(1) * (frame.dim[1] - H.size(1)) / 2.0;
           for (size_t i = 0; i < 3; i++) 
             H.transform()(i,3) += xinc * H.transform()(i,0) + yinc * H.transform()(i,1);
 
-          io_handler.reset (new MR::ImageIO::Mosaic (H, image.dim[0], image.dim[1], H.size (0), H.size (1), H.size (2)));
+          io_handler.reset (new MR::ImageIO::Mosaic (H, frame.dim[0], frame.dim[1], H.size (0), H.size (1), H.size (2)));
         }
         else 
           io_handler.reset (new MR::ImageIO::Default (H));
