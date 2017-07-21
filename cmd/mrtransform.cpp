@@ -178,19 +178,20 @@ void usage ()
       "Use NaN as the out of bounds value (Default: 0.0)");
 }
 
-void apply_warp (Image<float>& input, Image<float>& output, Image<default_type>& warp, const int interp, const float out_of_bounds_value) {
+void apply_warp (Image<float>& input, Image<float>& output, Image<default_type>& warp,
+  const int interp, const float out_of_bounds_value, const vector<int>& oversample) {
   switch (interp) {
   case 0:
-    Filter::warp<Interp::Nearest> (input, output, warp, out_of_bounds_value);
+    Filter::warp<Interp::Nearest> (input, output, warp, out_of_bounds_value, oversample);
     break;
   case 1:
-    Filter::warp<Interp::Linear> (input, output, warp, out_of_bounds_value);
+    Filter::warp<Interp::Linear> (input, output, warp, out_of_bounds_value, oversample);
     break;
   case 2:
-    Filter::warp<Interp::Cubic> (input, output, warp, out_of_bounds_value);
+    Filter::warp<Interp::Cubic> (input, output, warp, out_of_bounds_value, oversample);
     break;
   case 3:
-    Filter::warp<Interp::Sinc> (input, output, warp, out_of_bounds_value);
+    Filter::warp<Interp::Sinc> (input, output, warp, out_of_bounds_value, oversample);
     break;
   default:
     assert (0);
@@ -453,13 +454,15 @@ void run ()
   vector<int> oversample = Adapter::AutoOverSample;
   opt = get_options ("oversample");
   if (opt.size()) {
+    if (!template_header.valid() && !warp)
+      throw Exception ("-oversample option applies only to regridding using the template option or to non-linear transformations");
     oversample = opt[0][0];
-    if (oversample.size() == 1) 
+    if (oversample.size() == 1)
       oversample.resize (3, oversample[0]);
     else if (oversample.size() != 3)
       throw Exception ("-oversample option requires either a single integer, or a comma-separated list of 3 integers");
     for (const auto x : oversample)
-      if (x < 1) 
+      if (x < 1)
         throw Exception ("-oversample factors must be positive integers");
   }
   else if (interp == 0)
@@ -550,7 +553,7 @@ void run ()
       } else {
         warp_deform = Registration::Warp::compute_full_deformation (warp, template_header, from);
       }
-      apply_warp (input, output, warp_deform, interp, out_of_bounds_value);
+      apply_warp (input, output, warp_deform, interp, out_of_bounds_value, oversample);
       if (fod_reorientation)
         Registration::Transform::reorient_warp ("reorienting", output, warp_deform, directions_cartesian.transpose(), modulate);
 
@@ -558,13 +561,13 @@ void run ()
     } else if (warp.ndim() == 4 && linear) {
       auto warp_composed = Image<default_type>::scratch (warp);
       Registration::Warp::compose_linear_deformation (linear_transform, warp, warp_composed);
-      apply_warp (input, output, warp_composed, interp, out_of_bounds_value);
+      apply_warp (input, output, warp_composed, interp, out_of_bounds_value, oversample);
       if (fod_reorientation)
         Registration::Transform::reorient_warp ("reorienting", output, warp_composed, directions_cartesian.transpose(), modulate);
 
     // Apply 4D deformation field only
     } else {
-      apply_warp (input, output, warp, interp, out_of_bounds_value);
+      apply_warp (input, output, warp, interp, out_of_bounds_value, oversample);
       if (fod_reorientation)
         Registration::Transform::reorient_warp ("reorienting", output, warp, directions_cartesian.transpose(), modulate);
     }
