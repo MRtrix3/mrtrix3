@@ -1012,7 +1012,7 @@ namespace MR
           grid_layout->addWidget (new QLabel (tr("Columns:")), 3, 0);
           grid_layout->addWidget(light_box_cols, 3, 2);
 
-          light_box_show_4d = new QCheckBox(tr("Show 4d volumes"), this);
+          light_box_show_4d = new QCheckBox(tr("Cycle through volumes"), this);
           grid_layout->addWidget(light_box_show_4d, 4, 0, 1, 2);
 
           light_box_show_grid = new QCheckBox(tr("Show grid"), this);
