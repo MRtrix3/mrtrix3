@@ -280,12 +280,15 @@ void run ()
     mask_img = Image<bool>::open (opt[0][0]);
     check_dimensions (dt_img, mask_img, 0, 3);
   }
+
+  size_t metric_count = 0;
   
   auto adc_img = Image<value_type>();
   opt = get_options ("adc");
   if (opt.size()) {
     header.ndim() = 3;
     adc_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
   }
   
   auto fa_img = Image<value_type>();
@@ -293,6 +296,7 @@ void run ()
   if (opt.size()) {
     header.ndim() = 3;
     fa_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
   }
   
   auto ad_img = Image<value_type>();
@@ -300,6 +304,7 @@ void run ()
   if (opt.size()) {
     header.ndim() = 3;
     ad_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
   }
   
   auto rd_img = Image<value_type>();
@@ -307,6 +312,7 @@ void run ()
   if (opt.size()) {
     header.ndim() = 3;
     rd_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
   }
   
   auto cl_img = Image<value_type>();
@@ -314,6 +320,7 @@ void run ()
   if (opt.size()) {
     header.ndim() = 3;
     cl_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
   }
   
   auto cp_img = Image<value_type>();
@@ -321,6 +328,7 @@ void run ()
   if (opt.size()) {
     header.ndim() = 3;
     cp_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
   }
   
   auto cs_img = Image<value_type>();
@@ -328,6 +336,7 @@ void run ()
   if (opt.size()) {
     header.ndim() = 3;
     cs_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
   }
   
   vector<int> vals = {1};
@@ -352,6 +361,7 @@ void run ()
       header.size (3) = vals.size();
     }
     value_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
   }
   
   auto vector_img = Image<value_type>();
@@ -360,8 +370,12 @@ void run ()
     header.ndim() = 4;
     header.size (3) = vals.size()*3;
     vector_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
   }
+
+  if (!metric_count)
+    throw Exception ("No output specified; must request at least one metric of interest using the available command-line options");
   
-  ThreadedLoop ("computing metrics", dt_img, 0, 3)
+  ThreadedLoop (std::string("computing metric") + (metric_count > 1 ? "s" : ""), dt_img, 0, 3)
     .run (Processor (mask_img, adc_img, fa_img, ad_img, rd_img, cl_img, cp_img, cs_img, value_img, vector_img, vals, modulate), dt_img);
 }
