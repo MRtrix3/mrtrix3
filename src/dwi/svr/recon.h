@@ -85,8 +85,6 @@ namespace MR
           motion (rigid)
       {
         init_Y(grad);
-        for (auto& s : shellbasis) { VAR(s); }
-        VAR(Y);
       }
 
 
@@ -123,9 +121,11 @@ namespace MR
         size_t nxyz = nxy*nz;
         Eigen::Map<const RowMatrixXf> X (rhs.data(), nxyz, nc);
         Thread::parallel_for<size_t>(0, nv*nz, [&](size_t idx){
-          size_t v = idx/nz, z = idx%nz;
-          MR::DWI::ReconMatrix::SparseMat M = get_sliceM(v, z);
-          dst.segment(idx*nxy, nxy) += M * (X * Y.row(idx).adjoint());
+          //size_t v = idx/nz, z = idx%nz;
+          //MR::DWI::ReconMatrix::SparseMat M = get_sliceM(v, z);
+          Eigen::VectorXf q = X * Y.row(idx).adjoint();
+          Eigen::Ref<Eigen::VectorXf> r = dst.segment(idx*nxy, nxy);
+          project_slice_x2y(idx, r, q);
         });
       }
 
@@ -136,13 +136,19 @@ namespace MR
         std::mutex mutex;
         size_t nxyz = nxy*nz;
         Eigen::Map<RowMatrixXf> X (dst.data(), nxyz, nc);
+        Eigen::Map<const Eigen::VectorXf> w (W.data(), W.size());
         Thread::parallel_for<size_t>(0, nv*nz, [&](size_t idx){
-          size_t v = idx/nz, z = idx%nz;
-          MR::DWI::ReconMatrix::SparseMat Mt = get_sliceM(v, z).adjoint();
-          Eigen::VectorXf r = W(z, v) * Mt * rhs.segment(idx*nxy, nxy);
+          //size_t v = idx/nz, z = idx%nz;
+          //MR::DWI::ReconMatrix::SparseMat Mt = get_sliceM(v, z).adjoint();
+          //Eigen::VectorXf r = W(z, v) * Mt * rhs.segment(idx*nxy, nxy);
+          Eigen::VectorXf r = Eigen::VectorXf::Zero(nxyz);
+          project_slice_y2x(idx, r, rhs.segment(idx*nxy, nxy));
           std::lock_guard<std::mutex> lock (mutex);
-          X += r * Y.row(idx);
+          X.noalias() += w(idx) * r * Y.row(idx);
         });
+        VAR(w(0));
+        VAR(w(300));
+        VAR(X.block(get_idx(nx/2,ny/2,nz/2), 0, 10, nc));
       }
 
       template <typename VectorType1, typename VectorType2>
@@ -153,14 +159,18 @@ namespace MR
         size_t nxyz = nxy*nz;
         Eigen::Map<const RowMatrixXf> Xi (rhs.data(), nxyz, nc);
         Eigen::Map<RowMatrixXf> Xo (dst.data(), nxyz, nc);
+        Eigen::Map<const Eigen::VectorXf> w (W.data(), W.size());
         Thread::parallel_for<size_t>(0, nv*nz, [&](size_t idx){
-          size_t v = idx/nz, z = idx%nz;
-          MR::DWI::ReconMatrix::SparseMat M = get_sliceM(v, z);
-          Eigen::VectorXf slice = M * (Xi * Y.row(idx).adjoint());
-          Eigen::VectorXf proj = W(z, v) * M.adjoint() * slice;
+          //size_t v = idx/nz, z = idx%nz;
+          //MR::DWI::ReconMatrix::SparseMat M = get_sliceM(v, z);
+          Eigen::VectorXf q = Xi * Y.row(idx).adjoint();
+          Eigen::VectorXf r = Eigen::VectorXf::Zero(nxyz);
+          project_slice_x2x(idx, r, q);
+          //Eigen::VectorXf proj = W(z, v) * M.adjoint() * slice;
           std::lock_guard<std::mutex> lock (mutex);
-          Xo += proj * Y.row(idx);
+          Xo.noalias() += w(idx) * r * Y.row(idx);
         });
+        VAR(Xo.block(get_idx(nx/2,ny/2,nz/2), 0, 10, nc));
       }
 
 
@@ -357,7 +367,7 @@ namespace MR
       inline size_t get_grad_idx(const size_t v, const size_t z) const { return v*nz + z; }
 
       template <typename VectorType1, typename VectorType2>
-      void project_slice_x2y(const size_t idx, VectorType1& dst, VectorType2& rhs) const
+      void project_slice_x2y(const size_t idx, VectorType1& dst, const VectorType2& rhs) const
       {
         int n = 2;
         SSP<float> ssp (2.0f);
@@ -376,14 +386,14 @@ namespace MR
               ps = Eigen::Vector3f(x, y, z+s);
               pr = (Ts2r.cast<float>() * ps);
               load_sparse_coefs(m, pr);
-              dst[i] += ws * (m.adjoint() * rhs);
+              dst[i] += ws * m.dot(rhs);
             }
           }
         }
       }
 
       template <typename VectorType1, typename VectorType2>
-      void project_slice_y2x(const size_t idx, VectorType1& dst, VectorType2& rhs) const
+      void project_slice_y2x(const size_t idx, VectorType1& dst, const VectorType2& rhs) const
       {
         int n = 2;
         SSP<float> ssp (2.0f);
@@ -402,14 +412,14 @@ namespace MR
               ps = Eigen::Vector3f(x, y, z+s);
               pr = (Ts2r.cast<float>() * ps);
               load_sparse_coefs(m, pr);
-              dst += ws * dst[i] * m;
+              dst += (ws * dst[i]) * m;
             }
           }
         }
       }
 
       template <typename VectorType1, typename VectorType2>
-      void project_slice_x2x(const size_t idx, VectorType1& dst, VectorType2& rhs) const
+      void project_slice_x2x(const size_t idx, VectorType1& dst, const VectorType2& rhs) const
       {
         int n = 2;
         SSP<float> ssp (2.0f);
@@ -428,8 +438,8 @@ namespace MR
               ps = Eigen::Vector3f(x, y, z+s);
               pr = (Ts2r.cast<float>() * ps);
               load_sparse_coefs(m, pr);
-              t = ws * (m.adjoint() * rhs);
-              dst.noalias() += t * m;
+              t = ws * m.dot(rhs);
+              dst += t * m;
             }
           }
         }
