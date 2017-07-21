@@ -85,6 +85,8 @@ namespace MR
           motion (rigid)
       {
         init_Y(grad);
+        for (auto& s : shellbasis) { VAR(s); }
+        VAR(Y);
       }
 
 
@@ -353,6 +355,111 @@ namespace MR
 
       inline size_t get_grad_idx(const size_t idx) const { return idx / nxy; }
       inline size_t get_grad_idx(const size_t v, const size_t z) const { return v*nz + z; }
+
+      template <typename VectorType1, typename VectorType2>
+      void project_slice_x2y(const size_t idx, VectorType1& dst, VectorType2& rhs) const
+      {
+        int n = 2;
+        SSP<float> ssp (2.0f);
+        Eigen::SparseVector<float> m (nxy*nz);
+        m.reserve(8*n*n*n);
+
+        Eigen::Vector3f ps, pr;
+        size_t v = idx/nz, z = idx%nz;
+        float ws;
+        transform_type Ts2r = get_Ts2r(v, z);
+        for (int s = -n; s <= n; s++) {       // ssp neighbourhood
+          ws = ssp(s);
+          size_t i = 0;
+          for (size_t y = 0; y < ny; y++) {   // in-plane
+            for (size_t x = 0; x < nx; x++, i++) {
+              ps = Eigen::Vector3f(x, y, z+s);
+              pr = (Ts2r.cast<float>() * ps);
+              load_sparse_coefs(m, pr);
+              dst[i] += ws * (m.adjoint() * rhs);
+            }
+          }
+        }
+      }
+
+      template <typename VectorType1, typename VectorType2>
+      void project_slice_y2x(const size_t idx, VectorType1& dst, VectorType2& rhs) const
+      {
+        int n = 2;
+        SSP<float> ssp (2.0f);
+        Eigen::SparseVector<float> m (nxy*nz);
+        m.reserve(8*n*n*n);
+
+        Eigen::Vector3f ps, pr;
+        size_t v = idx/nz, z = idx%nz;
+        float ws;
+        transform_type Ts2r = get_Ts2r(v, z);
+        for (int s = -n; s <= n; s++) {       // ssp neighbourhood
+          ws = ssp(s);
+          size_t i = 0;
+          for (size_t y = 0; y < ny; y++) {   // in-plane
+            for (size_t x = 0; x < nx; x++, i++) {
+              ps = Eigen::Vector3f(x, y, z+s);
+              pr = (Ts2r.cast<float>() * ps);
+              load_sparse_coefs(m, pr);
+              dst += ws * dst[i] * m;
+            }
+          }
+        }
+      }
+
+      template <typename VectorType1, typename VectorType2>
+      void project_slice_x2x(const size_t idx, VectorType1& dst, VectorType2& rhs) const
+      {
+        int n = 2;
+        SSP<float> ssp (2.0f);
+        Eigen::SparseVector<float> m (nxy*nz);
+        m.reserve(8*n*n*n);
+
+        Eigen::Vector3f ps, pr;
+        size_t v = idx/nz, z = idx%nz;
+        float ws, t;
+        transform_type Ts2r = get_Ts2r(v, z);
+        for (int s = -n; s <= n; s++) {       // ssp neighbourhood
+          ws = ssp(s);
+          ws *= ws;
+          for (size_t y = 0; y < ny; y++) {   // in-plane
+            for (size_t x = 0; x < nx; x++) {
+              ps = Eigen::Vector3f(x, y, z+s);
+              pr = (Ts2r.cast<float>() * ps);
+              load_sparse_coefs(m, pr);
+              t = ws * (m.adjoint() * rhs);
+              dst.noalias() += t * m;
+            }
+          }
+        }
+      }
+
+      inline void load_sparse_coefs(Eigen::SparseVector<float>& dst, const Eigen::Vector3f& pr) const
+      {
+        dst.setZero();
+        int n = 2;
+        Eigen::Vector3f pg = pr.array().ceil();
+        int px, py, pz;
+        float wx, wy, wz;
+        for (int rz = -n; rz < n; rz++) { // local neighbourhood interpolation
+          pz = pg[2] + rz;
+          if ((pz < 0) || (pz >= nz)) continue;
+          wz = bspline<3>(pr[2] - pz);
+          for (int ry = -n; ry < n; ry++) {
+            py = pg[1] + ry;
+            if ((py < 0) || (py >= ny)) continue;
+            wy = bspline<3>(pr[1] - py);
+            for (int rx = -n; rx < n; rx++) {
+              px = pg[0] + rx;
+              if ((px < 0) || (px >= nx)) continue;
+              wx = bspline<3>(pr[0] - px);
+              // insert in weight vector.
+              dst.insert(pz*nxy + py*nx + px) += wx * wy * wz;
+            }
+          }
+        }
+      }
 
 
     };
