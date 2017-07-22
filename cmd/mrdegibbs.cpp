@@ -237,7 +237,7 @@ void unring_2d (fftw_complex* data1,fftw_complex* tmp2, const size_t* dim_sz, si
 class ComputeSlice
 {
   public:
-    ComputeSlice (const std::vector<size_t>& outer_axes, const std::vector<size_t>& slice_axes, const size_t& nsh, const size_t& minW, const size_t& maxW, Image<value_type>& in, Image<value_type>& out) :
+    ComputeSlice (const vector<size_t>& outer_axes, const vector<size_t>& slice_axes, const size_t& nsh, const size_t& minW, const size_t& maxW, Image<value_type>& in, Image<value_type>& out) :
       outer_axes (outer_axes),
       slice_axes (slice_axes),
       nsh (nsh),
@@ -269,8 +269,8 @@ class ComputeSlice
     }
 
   private:
-    const std::vector<size_t>& outer_axes;
-    const std::vector<size_t>& slice_axes;
+    const vector<size_t>& outer_axes;
+    const vector<size_t>& slice_axes;
     const size_t nsh;
     const size_t minW;
     const size_t maxW;
@@ -286,22 +286,22 @@ class ComputeSlice
 void run ()
 {
   auto in = Image<value_type>::open (argument[0]);
-  auto header = in.header();
+  Header header (in);
 
   header.datatype() = DataType::Float64;
   auto out = Image<value_type>::create (argument[1], header);
 
-  std::vector<size_t> slice_axes = { 0, 1 };
+  vector<size_t> slice_axes = { 0, 1 };
   auto opt = get_options ("axes");
   if (opt.size()) {
-    std::vector<int> axes = opt[0][0];
+    vector<int> axes = opt[0][0];
     if (slice_axes.size() != 2) 
       throw Exception ("slice axes must be specified as a comma-separated 2-vector");
     slice_axes = { size_t(axes[0]), size_t(axes[1]) };
   }
 
   // build vector of outer axes:
-  std::vector<size_t> outer_axes (header.ndim());
+  vector<size_t> outer_axes (header.ndim());
   std::iota (outer_axes.begin(), outer_axes.end(), 0);
   for (const auto axis : slice_axes) {
     auto it = std::find (outer_axes.begin(), outer_axes.end(), axis);
