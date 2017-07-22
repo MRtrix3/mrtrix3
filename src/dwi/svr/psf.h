@@ -15,6 +15,8 @@
 #ifndef __dwi_svr_psf_h__
 #define __dwi_svr_psf_h__
 
+#define FP_FAST_FMAF
+
 
 #include <cmath>
 
@@ -26,17 +28,35 @@ namespace MR
   namespace DWI
   {
 
+    // B-spline (de Boor recursion formula)
     template <unsigned int p>
-    constexpr float bspline (const float t, const int i = 0) {
-      return (t + (p+1-i)/2.0f)/p * bspline<p-1>(t, i-1) +
-             ((p+1+i)/2.0f - t)/p * bspline<p-1>(t, i+1);
+    constexpr float bspline (const float t) {
+      return (0.5f*(p+1) + t)/p * bspline<p-1>(t+0.5f) +
+             (0.5f*(p+1) - t)/p * bspline<p-1>(t-0.5f);
     }
 
+    // Order 0 -- Nearest neighbour interpolation.
     template <>
-    constexpr float bspline<0> (const float t, const int i) {
-      return ((2*t >= i-1) && (2*t < i+1)) ? 1.0f : 0.0f;
+    constexpr float bspline<0> (const float t) {
+      return ((t >= -0.5f) && (t < 0.5f)) ? 1.0f : 0.0f;
     }
 
+    // Order 1 -- Linear interpolation.
+    // Template specialisation redundant but faster. 
+    template <>
+    constexpr float bspline<1> (const float t) {
+      return (t < 0) ? ((t > -1.0f) ? 1.0f+t : 0.0f)
+                     : ((t <  1.0f) ? 1.0f-t : 0.0f);
+    }
+
+    // Order 3 -- Cubic interpolation.
+    // Template specialisation redundant but much faster.
+    template <>
+    constexpr float bspline<3> (const float t) {
+      return (t < 0) ? ((t > -1.0f) ? 2.0f/3 - 0.5f*t*t*(2.0f+t) : ((t > -2.0f) ? (2.0f+t)*(2.0f+t)*(2.0f+t)/6 : 0.0f))
+                     : ((t <  1.0f) ? 2.0f/3 - 0.5f*t*t*(2.0f-t) : ((t <  2.0f) ? (2.0f-t)*(2.0f-t)*(2.0f-t)/6 : 0.0f));
+    }
+    
 
     /**
      * 3-D Sinc Point Spread Function
