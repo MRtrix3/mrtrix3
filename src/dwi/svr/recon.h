@@ -146,9 +146,6 @@ namespace MR
           std::lock_guard<std::mutex> lock (mutex);
           X.noalias() += w(idx) * r * Y.row(idx);
         });
-        VAR(w(0));
-        VAR(w(300));
-        VAR(X.block(get_idx(nx/2,ny/2,nz/2), 0, 10, nc));
       }
 
       template <typename VectorType1, typename VectorType2>
@@ -170,7 +167,6 @@ namespace MR
           std::lock_guard<std::mutex> lock (mutex);
           Xo.noalias() += w(idx) * r * Y.row(idx);
         });
-        VAR(Xo.block(get_idx(nx/2,ny/2,nz/2), 0, 10, nc));
       }
 
 
@@ -412,7 +408,7 @@ namespace MR
               ps = Eigen::Vector3f(x, y, z+s);
               pr = (Ts2r.cast<float>() * ps);
               load_sparse_coefs(m, pr);
-              dst += (ws * dst[i]) * m;
+              dst += (ws * rhs[i]) * m;
             }
           }
         }
