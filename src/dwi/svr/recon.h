@@ -121,8 +121,6 @@ namespace MR
         size_t nxyz = nxy*nz;
         Eigen::Map<const RowMatrixXf> X (rhs.data(), nxyz, nc);
         Thread::parallel_for<size_t>(0, nv*nz, [&](size_t idx){
-          //size_t v = idx/nz, z = idx%nz;
-          //MR::DWI::ReconMatrix::SparseMat M = get_sliceM(v, z);
           Eigen::VectorXf q = X * Y.row(idx).adjoint();
           Eigen::Ref<Eigen::VectorXf> r = dst.segment(idx*nxy, nxy);
           project_slice_x2y(idx, r, q);
@@ -138,9 +136,6 @@ namespace MR
         Eigen::Map<RowMatrixXf> X (dst.data(), nxyz, nc);
         Eigen::Map<const Eigen::VectorXf> w (W.data(), W.size());
         Thread::parallel_for<size_t>(0, nv*nz, [&](size_t idx){
-          //size_t v = idx/nz, z = idx%nz;
-          //MR::DWI::ReconMatrix::SparseMat Mt = get_sliceM(v, z).adjoint();
-          //Eigen::VectorXf r = W(z, v) * Mt * rhs.segment(idx*nxy, nxy);
           Eigen::VectorXf r = Eigen::VectorXf::Zero(nxyz);
           project_slice_y2x(idx, r, rhs.segment(idx*nxy, nxy));
           std::lock_guard<std::mutex> lock (mutex);
@@ -158,12 +153,9 @@ namespace MR
         Eigen::Map<RowMatrixXf> Xo (dst.data(), nxyz, nc);
         Eigen::Map<const Eigen::VectorXf> w (W.data(), W.size());
         Thread::parallel_for<size_t>(0, nv*nz, [&](size_t idx){
-          //size_t v = idx/nz, z = idx%nz;
-          //MR::DWI::ReconMatrix::SparseMat M = get_sliceM(v, z);
           Eigen::VectorXf q = Xi * Y.row(idx).adjoint();
           Eigen::VectorXf r = Eigen::VectorXf::Zero(nxyz);
           project_slice_x2x(idx, r, q);
-          //Eigen::VectorXf proj = W(z, v) * M.adjoint() * slice;
           std::lock_guard<std::mutex> lock (mutex);
           Xo.noalias() += w(idx) * r * Y.row(idx);
         });
@@ -370,7 +362,7 @@ namespace MR
         Eigen::SparseVector<float> m (nxy*nz);
         m.reserve(8*n*n*n);
 
-        Eigen::Vector3f ps, pr;
+        Eigen::Vector3f pr;
         size_t v = idx/nz, z = idx%nz;
         float ws;
         transform_type Ts2r = get_Ts2r(v, z);
@@ -379,8 +371,7 @@ namespace MR
           size_t i = 0;
           for (size_t y = 0; y < ny; y++) {   // in-plane
             for (size_t x = 0; x < nx; x++, i++) {
-              ps = Eigen::Vector3f(x, y, z+s);
-              pr = (Ts2r.cast<float>() * ps);
+              pr = Ts2r.cast<float>() * Eigen::Vector3f(x, y, z+s);
               load_sparse_coefs(m, pr);
               dst[i] += ws * m.dot(rhs);
             }
@@ -396,7 +387,7 @@ namespace MR
         Eigen::SparseVector<float> m (nxy*nz);
         m.reserve(8*n*n*n);
 
-        Eigen::Vector3f ps, pr;
+        Eigen::Vector3f pr;
         size_t v = idx/nz, z = idx%nz;
         float ws;
         transform_type Ts2r = get_Ts2r(v, z);
@@ -405,8 +396,7 @@ namespace MR
           size_t i = 0;
           for (size_t y = 0; y < ny; y++) {   // in-plane
             for (size_t x = 0; x < nx; x++, i++) {
-              ps = Eigen::Vector3f(x, y, z+s);
-              pr = (Ts2r.cast<float>() * ps);
+              pr = Ts2r.cast<float>() * Eigen::Vector3f(x, y, z+s);
               load_sparse_coefs(m, pr);
               dst += (ws * rhs[i]) * m;
             }
@@ -422,7 +412,7 @@ namespace MR
         Eigen::SparseVector<float> m (nxy*nz);
         m.reserve(8*n*n*n);
 
-        Eigen::Vector3f ps, pr;
+        Eigen::Vector3f pr;
         size_t v = idx/nz, z = idx%nz;
         float ws, t;
         transform_type Ts2r = get_Ts2r(v, z);
@@ -431,8 +421,7 @@ namespace MR
           ws *= ws;
           for (size_t y = 0; y < ny; y++) {   // in-plane
             for (size_t x = 0; x < nx; x++) {
-              ps = Eigen::Vector3f(x, y, z+s);
-              pr = (Ts2r.cast<float>() * ps);
+              pr = Ts2r.cast<float>() * Eigen::Vector3f(x, y, z+s);
               load_sparse_coefs(m, pr);
               t = ws * m.dot(rhs);
               dst += t * m;
