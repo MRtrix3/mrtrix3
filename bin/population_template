@@ -629,7 +629,10 @@ if initial_alignment == 'none':
         '-template ' + current_template[c] + ' ' +
         os.path.join('input_transformed'+contrasts[c], i.prefix + '.mif') + datatype)
       if leave_one_out:
+        if n_volumes[c] > 0:
           run.command('mrconvert '+ os.path.join('input_transformed'+i.contrasts[c], '%s.mif' % i.prefix) +' -coord 3 0 - | mrcalc - -finite isfinite%s/%s.mif'%(i.contrasts[c],i.prefix) + ' -force')
+        else:
+          run.command('mrcalc ' + os.path.join('input_transformed'+i.contrasts[c], '%s.mif' % i.prefix) +' -finite isfinite%s/%s.mif'%(i.contrasts[c],i.prefix) + ' -force')
   if leave_one_out:
     for c in range(n_contrasts):
       run.command('mrmath ' + allindir('isfinite%s'%contrasts[c]) + ' sum ' + isfinite_count[c] + ' -force')
@@ -654,7 +657,10 @@ else:
       mask = ' -mask1 ' + i.mask
       if initial_alignment == 'robust_mass':
         if not os.path.isfile('robust/template.mif'):
-          run.command('mrconvert '+current_template[0]+' -coord 3 0 - | mrconvert - -axes 0,1,2 robust/template.mif')
+          if n_volumes[0] > 0:
+            run.command('mrconvert '+current_template[0]+' -coord 3 0 - | mrconvert - -axes 0,1,2 robust/template.mif')
+          else:
+            run.command('mrconvert '+current_template[0]+' robust/template.mif')
         if n_contrasts > 1:
           cmd = ['mrcalc', i.paths_in[0], app.args.mc_weight_initial_alignment[0], '-mult']
           for c in range(1, n_contrasts):
@@ -736,7 +742,10 @@ else:
                  datatype)
       run.function(remove, os.path.join('input_transformed'+i.contrasts[c], i.prefix + '_translated.mif'))
       if leave_one_out:
+        if n_volumes[c] > 0:
           run.command('mrconvert '+ os.path.join('input_transformed'+i.contrasts[c], '%s.mif' % i.prefix) +' -coord 3 0 - | mrcalc - -finite isfinite%s/%s.mif'%(i.contrasts[c],i.prefix) + ' -force')
+        else:
+          run.command(' mrcalc '+ os.path.join('input_transformed'+i.contrasts[c], '%s.mif' % i.prefix) +' -finite isfinite%s/%s.mif'%(i.contrasts[c],i.prefix) + ' -force')
     if leave_one_out:
       run.command('mrmath ' + allindir('isfinite%s'%contrasts[c]) + ' sum ' + isfinite_count[c] + ' -force')
 
@@ -850,7 +859,10 @@ else:
                    datatype +
                    ' -force')
         if leave_one_out:
-          run.command('mrconvert '+ os.path.join('input_transformed'+i.contrasts[c], '%s.mif' % i.prefix) +' -coord 3 0 - | mrcalc - -finite isfinite%s/%s.mif'%(i.contrasts[c],i.prefix) + ' -force')
+          if n_volumes[c] > 0:
+            run.command('mrconvert '+ os.path.join('input_transformed'+i.contrasts[c], '%s.mif' % i.prefix) +' -coord 3 0 - | mrcalc - -finite isfinite%s/%s.mif'%(i.contrasts[c],i.prefix) + ' -force')
+          else:
+            run.command('mrcalc '+ os.path.join('input_transformed'+i.contrasts[c], '%s.mif' % i.prefix) +' -finite isfinite%s/%s.mif'%(i.contrasts[c],i.prefix) + ' -force')
       if leave_one_out:
         run.command('mrmath ' + allindir('isfinite%s'%contrasts[c]) + ' sum ' + isfinite_count[c] + ' -force')
 
@@ -937,7 +949,10 @@ if dononlinear:
         for im_temp in tmpl:
           run.function(remove,im_temp)
         for c in range(n_contrasts):
-          run.command('mrconvert '+ os.path.join('input_transformed'+i.contrasts[c], '%s.mif' % i.prefix) +' -coord 3 0 - | mrcalc - -finite isfinite%s/%s.mif'%(i.contrasts[c],i.prefix) + ' -force')
+          if n_volumes[c] > 0:
+            run.command('mrconvert '+ os.path.join('input_transformed'+i.contrasts[c], '%s.mif' % i.prefix) +' -coord 3 0 - | mrcalc - -finite isfinite%s/%s.mif'%(i.contrasts[c],i.prefix) + ' -force')
+          else:
+            run.command('mrcalc '+ os.path.join('input_transformed'+i.contrasts[c], '%s.mif' % i.prefix) +' -finite isfinite%s/%s.mif'%(i.contrasts[c],i.prefix) + ' -force')
 
       if useMasks:
         run.command('mrtransform ' + i.mask +
