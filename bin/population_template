@@ -369,7 +369,7 @@ if app.args.leave_one_out is not None:
     app.error('leave_one_out not understood:%s' % (leave_one_out))
 
 if leave_one_out == 'auto':
-  leave_one_out = len(input) > 15
+  leave_one_out = len(input) < 15
 else:
   leave_one_out = bool(leave_one_out)
 if leave_one_out:
