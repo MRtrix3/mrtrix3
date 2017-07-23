@@ -197,7 +197,8 @@ nloptions.add_argument('-nl_grad_step', default='0.5', help='The gradient step s
 
 options = app.cmdline.add_argument_group('Input, output and general options')
 options.add_argument('-type', help='Specifiy the types of registration stages to perform. Options are "rigid" (perform rigid registration only which might be useful for intra-subject registration in longitudinal analysis), "affine" (perform affine registration) and "nonlinear" as well as cominations of registration types: %s. Default: rigid_affine_nonlinear' % ', '.join('"'+x+'"' for x in registration_modes if "_" in x), default='rigid_affine_nonlinear')
-options.add_argument('-initial_alignment', default='mass', help='Method of alignment to form the initial template. Options are "mass" (default), "geometric" and "none".')
+options.add_argument('-voxel_size', help='Define the template voxel size in mm. Use either a single value for isotropic voxels or 3 comma separated values.')
+options.add_argument('-initial_alignment', default='mass', help='Method of alignment to form the initial template. Options are "mass" (default), "robust_mass" (requires masks), "geometric" and "none".')
 options.add_argument('-mask_dir', help='Optionally input a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly')
 options.add_argument('-warp_dir', help='Output a directory containing warps from each input to the template. If the folder does not exist it will be created')
 options.add_argument('-transformed_dir', help='Output a directory containing the input images transformed to the template. If the folder does not exist it will be created')
@@ -230,6 +231,17 @@ for t in app.args.input:
   app.args.input_dir.append(relpath(t[0]))
   app.args.template.append(path.fromUser(t[1], True))
 
+voxel_size = None
+if app.args.voxel_size:
+  voxel_size = app.args.voxel_size.split()
+  if len(voxel_size) == 1:
+    voxel_size = voxel_size * 3
+  try:
+    if len(voxel_size) != 3:
+      raise
+    [float(v) for v in voxel_size]
+  except:
+    app.error('voxel size needs to be a single or three comma separated floating point numbers, received: '+str(app.args.voxel_size))
 
 if app.args.mc_weight_initial_alignment:
   if n_contrasts == 1:
@@ -290,8 +302,8 @@ else:
     app.console ('using ' + str(len(inFiles)) + ' contrasts for each input image')
 
 initial_alignment = app.args.initial_alignment
-if initial_alignment not in ["mass", "geometric", "none"]:
-  message.error ('initial_alignment must be one of ' + " ".join(["mass", "geometric", "none"]));
+if initial_alignment not in ["mass", "robust_mass", "geometric", "none"]:
+  app.error ('initial_alignment must be one of ' + " ".join(["mass", "robust_mass", "geometric", "none"]));
 
 linear_estimator = app.args.linear_estimator
 if linear_estimator:
@@ -335,7 +347,7 @@ for ifile, fname in enumerate(inFiles[0]):
   dirs = [abspath(app.args.input_dir[0])]
   if n_contrasts > 1:
     for c in range(1,n_contrasts):
-      image.check3DNonunity(inFiles[c][ifile])
+      image.check3DNonunity(os.path.join(abspath(app.args.input_dir[c]), inFiles[c][ifile]))
       if prefix != inFiles[c][ifile].split(commonPostfix[c])[0]:
         app.error ('no matching image was found for image %s and contrasts %s and %s.' % (fname,app.args.input_dir[0],app.args.input_dir[c]))
       fnames.append(inFiles[c][ifile])
@@ -562,12 +574,20 @@ write_log = (app._verbosity >= 2)
 if write_log:
   file.makeDir('log')
 
+if initial_alignment == 'robust_mass':
+  if not useMasks:
+    app.error('robust_mass initial alignment requires masks')
+  file.makeDir('robust')
+
 # Make initial template in average space using first contrast
 app.console ('Generating initial template')
 input_filenames = []
 for i in input:
   input_filenames.append (i.paths_in[0]);
-run.command('mraverageheader ' + ' '.join(input_filenames) + ' average_header.mif' ' -fill')
+if voxel_size is None:
+  run.command('mraverageheader ' + ' '.join(input_filenames) + ' average_header.mif -fill')
+else:
+  run.command('mraverageheader -fill ' + ' '.join(input_filenames) + ' - | mrresize - -voxel '+','.join(voxel_size)+' average_header.mif')
 
 # crop average space to extent defined by original masks
 if useMasks:
@@ -628,10 +648,25 @@ else:
   else:
     contrast_weight = ''
   for i in input:
-    if useMasks:
-      mask = ' -mask1 ' + i.mask
     output = ' -rigid ' + os.path.join('linear_transforms_initial', i.prefix + '.txt')
     images = ' + '.join( [p+' '+t for p, t in zip(i.paths_in, current_template) ] )
+    if useMasks:
+      mask = ' -mask1 ' + i.mask
+      if initial_alignment == 'robust_mass':
+        if not os.path.isfile('robust/template.mif'):
+          run.command('mrconvert '+current_template[0]+' -coord 3 0 - | mrconvert - -axes 0,1,2 robust/template.mif')
+        if n_contrasts > 1:
+          cmd = ['mrcalc', i.paths_in[0], app.args.mc_weight_initial_alignment[0], '-mult']
+          for c in range(1, n_contrasts):
+            cmd += [i.paths_in[c], app.args.mc_weight_initial_alignment[c], '-mult', '-add']
+          contrast_weight = ''
+          run.command(' '.join(cmd)+' - | mrfilter - zclean -zlower 3 -zupper 3 robust/image_'+i.prefix+'.mif -maskin '+i.mask+' -maskout robust/mask_'+i.prefix+'.mif')
+        else:
+          run.command('mrfilter '+i.paths_in[0]+' zclean -zlower 3 -zupper 3 robust/image_'+i.prefix+'.mif -maskin '+i.mask+' -maskout robust/mask_'+i.prefix+'.mif')
+        images = 'robust/image_'+i.prefix+'.mif robust/template.mif'
+        mask = ' -mask1 ' + 'robust/mask_'+i.prefix+'.mif'
+        lmax = ''
+
     run.command('mrregister ' + images +
                 mask +
                 ' -rigid_scale 1 ' +
@@ -639,7 +674,7 @@ else:
                 ' -type rigid ' +
                 lmax +
                 contrast_weight +
-                ' -rigid_init_translation ' + initial_alignment + ' ' +
+                ' -rigid_init_translation ' + initial_alignment.replace('robust_','') + ' ' +
                 datatype +
                 output)
     # translate input images to centre of mass without interpolation
@@ -656,7 +691,10 @@ else:
 
   # update average space of first contrast to new extent, delete other average space images
   run.command('mraverageheader ' + ' '.join([os.path.join('input_transformed', i.prefix + '_translated.mif') for i in input]) + ' average_header_tight.mif')
-  run.command('mrpad -uniform 10 average_header_tight.mif average_header.mif -force')
+  if voxel_size is None:
+    run.command('mrpad -uniform 10 average_header_tight.mif average_header.mif -force')
+  else:
+    run.command('mrpad -uniform 10 average_header_tight.mif - | mrresize - -voxel '+','.join(voxel_size)+' average_header.mif -force')
   run.function(remove, 'average_header_tight.mif')
   for c in range(1,n_contrasts):
     run.function(remove,'average_header'+contrasts[c]+'.mif')

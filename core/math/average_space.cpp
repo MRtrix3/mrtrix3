@@ -206,18 +206,22 @@ namespace MR
     average_quat.coeffs() = es.eigenvectors().col(3).transpose();
     average_quat.normalize();
     const Eigen::Matrix3d Raverage (average_quat.toRotationMatrix());
-    Eigen::MatrixXd temp = Eigen::MatrixXd (3, num_images);
+    Eigen::MatrixXd rot_vox_size = Eigen::MatrixXd (3, num_images);
     for (size_t itrafo = 0; itrafo < num_images; itrafo++) {
-      temp.col(itrafo) = (Raverage * transformation_matrices[itrafo].linear()).cwiseAbs().rowwise().sum();
+      Eigen::MatrixXd M = (Raverage * transformation_matrices[itrafo].linear()).cwiseAbs();
+      if (voxel_subsampling == 0)
+        rot_vox_size.col(itrafo) = (Raverage * transformation_matrices[itrafo].linear()).cwiseAbs().diagonal();
+      else
+        rot_vox_size.col(itrafo) = (Raverage * transformation_matrices[itrafo].linear()).cwiseAbs().colwise().sum();
     }
 
     switch (voxel_subsampling) {
-      case 0: // maximum voxel size determined by minimum of all projected input image voxel sizes
-          projected_voxel_sizes = temp.transpose().colwise().minCoeff().transpose();
+      case 0: // maximum voxel size determined by minimum of all projected input image voxel sizes, sampling at or above Nyquist limit
+        projected_voxel_sizes = rot_vox_size.rowwise().minCoeff();
         break;
       case 1: // maximum voxel size determined by mean of all projected input image voxel sizes
-          projected_voxel_sizes = temp.transpose().colwise().mean().transpose();
-          break;
+        projected_voxel_sizes = rot_vox_size.rowwise().mean();
+        break;
       default:
         assert( 0 && "compute_average_voxel2scanner: invalid voxel_subsampling option");
         break;
