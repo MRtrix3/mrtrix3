@@ -435,22 +435,21 @@ namespace MR
         dst.setZero();
         int n = 2;
         Eigen::Vector3f pg = pr.array().ceil();
+        std::array<float,4> wx = bsplineweights<3>(1.0f - (pg[0] - pr[0]));
+        std::array<float,4> wy = bsplineweights<3>(1.0f - (pg[1] - pr[1]));
+        std::array<float,4> wz = bsplineweights<3>(1.0f - (pg[2] - pr[2]));
         int px, py, pz;
-        float wx, wy, wz;
         for (int rz = -n; rz < n; rz++) { // local neighbourhood interpolation
           pz = pg[2] + rz;
           if ((pz < 0) || (pz >= nz)) continue;
-          wz = bspline<3>(pr[2] - pz);
           for (int ry = -n; ry < n; ry++) {
             py = pg[1] + ry;
             if ((py < 0) || (py >= ny)) continue;
-            wy = bspline<3>(pr[1] - py);
             for (int rx = -n; rx < n; rx++) {
               px = pg[0] + rx;
               if ((px < 0) || (px >= nx)) continue;
-              wx = bspline<3>(pr[0] - px);
               // insert in weight vector.
-              dst.insert(pz*nxy + py*nx + px) += wx * wy * wz;
+              dst.insert(pz*nxy + py*nx + px) += wx[n+rx] * wy[n+ry] * wz[n+rz];
             }
           }
         }

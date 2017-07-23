@@ -15,8 +15,6 @@
 #ifndef __dwi_svr_psf_h__
 #define __dwi_svr_psf_h__
 
-#define FP_FAST_FMAF
-
 
 #include <cmath>
 
@@ -56,7 +54,26 @@ namespace MR
       return (t < 0) ? ((t > -1.0f) ? 2.0f/3 - 0.5f*t*t*(2.0f+t) : ((t > -2.0f) ? (2.0f+t)*(2.0f+t)*(2.0f+t)/6 : 0.0f))
                      : ((t <  1.0f) ? 2.0f/3 - 0.5f*t*t*(2.0f-t) : ((t <  2.0f) ? (2.0f-t)*(2.0f-t)*(2.0f-t)/6 : 0.0f));
     }
+
     
+    template <size_t p>
+    FORCE_INLINE std::array<float,p+1> bsplineweights (const float t) {
+      throw Exception("Not implemented.");
+    }
+
+    template <>
+    FORCE_INLINE std::array<float,2> bsplineweights<1> (const float t) {
+      assert((t >= 0.0) && (t <= 1.0));
+      return {{ 1.0f-t, t }};
+    }
+
+    template <>
+    FORCE_INLINE std::array<float,4> bsplineweights<3> (const float t) {
+      assert((t >= 0.0) && (t <= 1.0));
+      float u = 1.0f-t, t2 = t*t, u2 = u*u;
+      return {{ u2*u/6, 2.0f/3-t2*(2.0f-t)/2, 2.0f/3-u2*(2.0f-u)/2, t2*t/6 }};
+    }
+
 
     /**
      * 3-D Sinc Point Spread Function
