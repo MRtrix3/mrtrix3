@@ -93,7 +93,7 @@ for i in input:
   run.command('dwi2tensor ' + abspath(i.directory, i.filename) + ' -mask ' + abspath(i.mask_directory, i.mask_filename) + ' - | tensor2metric - -fa ' + os.path.join('fa', i.prefix + '.mif'))
 
 app.console('Generating FA population template')
-run.command('population_template fa -mask_dir ' + maskTempDir + ' fa_template.mif -type rigid_affine_nonlinear -rigid_scale 0.25,0.5,0.8,1.0 -affine_scale 0.7,0.8,1.0,1.0 -nl_scale 0.5,0.75,1.0,1.0,1.0 -nl_niter 5,5,5,5,5 -tempdir population_template -linear_no_pause -nocleanup')
+run.command('population_template fa fa_template.mif -mask_dir ' + maskTempDir + ' -type rigid_affine_nonlinear -rigid_scale 0.25,0.5,0.8,1.0 -affine_scale 0.7,0.8,1.0,1.0 -nl_scale 0.5,0.75,1.0,1.0,1.0 -nl_niter 5,5,5,5,5 -tempdir population_template -linear_no_pause -nocleanup')
 
 run.command('mrthreshold fa_template.mif -abs ' +  app.args.fa_threshold + ' template_wm_mask.mif')
 file.makeDir('wm_mask_warped')
