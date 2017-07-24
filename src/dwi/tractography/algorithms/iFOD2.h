@@ -17,6 +17,7 @@
 
 #include <algorithm>
 
+#include "types.h"
 #include "math/SH.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/tracking/method.h"
@@ -280,7 +281,7 @@ end_init:
             }
 
 
-            float get_metric()
+            FORCE_INLINE float get_metric()
             {
               return FOD (dir);
             }
@@ -349,7 +350,7 @@ end_init:
 
 
 
-            float FOD (const Eigen::Vector3f& direction) const
+            FORCE_INLINE float FOD (const Eigen::Vector3f& direction) const
             {
               return (S.precomputer ?
                   S.precomputer.value (values, direction) :
@@ -357,7 +358,7 @@ end_init:
                   );
             }
 
-            float FOD (const Eigen::Vector3f& position, const Eigen::Vector3f& direction)
+            FORCE_INLINE float FOD (const Eigen::Vector3f& position, const Eigen::Vector3f& direction)
             {
               if (!get_data (source, position))
                 return NaN;
@@ -367,7 +368,7 @@ end_init:
 
 
 
-            float rand_path_prob ()
+            FORCE_INLINE float rand_path_prob ()
             {
               get_path (positions, tangents, rand_dir (dir));
               return path_prob (positions, tangents);
@@ -443,7 +444,7 @@ end_init:
 
 
 
-            Eigen::Vector3f rand_dir (const Eigen::Vector3f& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
+            FORCE_INLINE Eigen::Vector3f rand_dir (const Eigen::Vector3f& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
 
 
 
