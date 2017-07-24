@@ -407,6 +407,12 @@ namespace MR
       template <typename VectorType1, typename VectorType2>
       void project_slice_x2x(const size_t idx, VectorType1& dst, const VectorType2& rhs) const
       {
+        Eigen::VectorXf tmp (nxy);
+        project_slice_x2y(idx, tmp, rhs);
+        project_slice_y2x(idx, dst, tmp);
+        return;                         // Conservative implementation until FIXME below is sorted.
+
+        // ignored...
         int n = 2;
         SSP<float> ssp (2.0f);
         Eigen::SparseVector<float> m (nxy*nz);
@@ -418,13 +424,12 @@ namespace MR
         transform_type Ts2r = get_Ts2r(v, z);
         for (int s = -n; s <= n; s++) {       // ssp neighbourhood
           ws = ssp(s);
-          ws *= ws;
           for (size_t y = 0; y < ny; y++) {   // in-plane
             for (size_t x = 0; x < nx; x++) {
               pr = Ts2r.cast<float>() * Eigen::Vector3f(x, y, z+s);
               load_sparse_coefs(m, pr);
-              t = ws * m.dot(rhs);
-              dst += t * m;
+              t = ws * m.dot(rhs);      // FIXME: not correct for slice profile...
+              dst += (ws * t) * m;
             }
           }
         }
