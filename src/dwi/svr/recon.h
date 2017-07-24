@@ -131,34 +131,34 @@ namespace MR
       void project_y2x(VectorType1& dst, const VectorType2& rhs) const
       {
         DEBUG("Transpose projection.");
-        std::mutex mutex;
         size_t nxyz = nxy*nz;
         Eigen::Map<RowMatrixXf> X (dst.data(), nxyz, nc);
         Eigen::Map<const Eigen::VectorXf> w (W.data(), W.size());
-        Thread::parallel_for<size_t>(0, nv*nz, [&](size_t idx){
-          Eigen::VectorXf r = Eigen::VectorXf::Zero(nxyz);
-          project_slice_y2x(idx, r, rhs.segment(idx*nxy, nxy));
-          std::lock_guard<std::mutex> lock (mutex);
-          X.noalias() += w(idx) * r * Y.row(idx);
-        });
+        RowMatrixXf zero (nxyz, nc); zero.setZero();
+        X = Thread::parallel_sum<RowMatrixXf, size_t>(0, nv*nz,
+          [&](size_t idx, RowMatrixXf& T){
+            Eigen::VectorXf r = Eigen::VectorXf::Zero(nxyz);
+            project_slice_y2x(idx, r, rhs.segment(idx*nxy, nxy));
+            T.noalias() += w(idx) * r * Y.row(idx);
+          }, zero);
       }
 
       template <typename VectorType1, typename VectorType2>
       void project_x2x(VectorType1& dst, const VectorType2& rhs) const
       {
         DEBUG("Full projection.");
-        std::mutex mutex;
         size_t nxyz = nxy*nz;
         Eigen::Map<const RowMatrixXf> Xi (rhs.data(), nxyz, nc);
         Eigen::Map<RowMatrixXf> Xo (dst.data(), nxyz, nc);
         Eigen::Map<const Eigen::VectorXf> w (W.data(), W.size());
-        Thread::parallel_for<size_t>(0, nv*nz, [&](size_t idx){
-          Eigen::VectorXf q = Xi * Y.row(idx).adjoint();
-          Eigen::VectorXf r = Eigen::VectorXf::Zero(nxyz);
-          project_slice_x2x(idx, r, q);
-          std::lock_guard<std::mutex> lock (mutex);
-          Xo.noalias() += w(idx) * r * Y.row(idx);
-        });
+        RowMatrixXf zero (nxyz, nc); zero.setZero();
+        Xo = Thread::parallel_sum<RowMatrixXf, size_t>(0, nv*nz,
+          [&](size_t idx, RowMatrixXf& T){
+            Eigen::VectorXf q = Xi * Y.row(idx).adjoint();
+            Eigen::VectorXf r = Eigen::VectorXf::Zero(nxyz);
+            project_slice_x2x(idx, r, q);
+            T.noalias() += w(idx) * r * Y.row(idx);
+        }, zero);
       }
 
 

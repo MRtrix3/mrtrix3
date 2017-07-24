@@ -63,6 +63,50 @@ namespace MR
     }
 
 
+    /*! \brief Parallel sum.
+     *
+     *  Parallel sum, distributes across the number of threads set in MRtrix.
+     *  Takes a functor of type void(T, R&), where T is the loop index and R
+     *  is a reference to a thread-specific temporary sum. Functor fn should
+     *  internally add its result to R&.
+     *  R must be copy-constructable and must implement operator +=.
+     *
+     */
+    template <typename R, typename T = size_t>
+    R parallel_sum(T begin, T end, std::function<void(T, R&)> fn, const R& zero) {
+      std::atomic<T> idx;
+      idx = begin;
+
+      size_t nthreads = number_of_threads();
+      std::vector<std::future<void>> futures(nthreads);
+      std::vector<R> results(nthreads, zero);
+
+      for (size_t thread = 0; thread < nthreads; ++thread) {
+        futures[thread] = std::async(
+          std::launch::async,
+          [thread, &idx, end, &fn, &results]() {
+            for (;;) {
+              T i = idx++;
+              if (i >= end) break;
+              fn(i, results[thread]);
+            }
+          }
+        );
+      }
+
+      for (size_t thread = 0; thread < nthreads; ++thread) {
+        futures[thread].get();
+      }
+
+      R result {zero};
+      for (size_t thread = 0; thread < nthreads; ++thread) {
+        result += results[thread];
+      }
+
+      return result;
+    }
+
+
   }
 }
 
