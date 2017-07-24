@@ -8,7 +8,7 @@ def check3DNonunity(image_path):
   dim = [ int(i) for i in headerField(image_path, 'size').strip().split() ]
   if len(dim) < 3:
     app.error('Image \'' + image_path + '\' does not contain 3 spatial dimensions')
-  if min(dim) == 1:
+  if min(dim[:3]) == 1:
     app.error('Image \'' + image_path + '\' does not contain 3D spatial information (axis with size 1)')
 
 
