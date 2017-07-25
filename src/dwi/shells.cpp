@@ -96,7 +96,7 @@ namespace MR
 
       BitSet to_retain (count(), false);
 
-      auto opt = App::get_options ("shell");
+      auto opt = App::get_options ("shells");
       if (opt.size()) {
 
         vector<default_type> desired_bvalues = opt[0][0];
@@ -204,7 +204,7 @@ namespace MR
                   }
                   throw Exception ("Unable to robustly select desired shell b=" + str(*b) + " (detected shells are: " + bvalues + ")");
                 } else {
-                  WARN ("User requested shell b=" + str(*b) + "; have selected shell " + str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()));
+                  WARN ("User requested shell b=" + str(*b) + "; have selected nearby shell " + str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()));
                   if (!to_retain[best_shell]) {
                     to_retain[best_shell] = true;
                     nonbzero_selected_count++;
@@ -235,7 +235,7 @@ namespace MR
         if (force_singleshell && !is_single_shell()) {
           if (count() == 1 && has_bzero())
             throw Exception ("No non b=0 data found, but the command requires a non b=0 shell");
-          WARN ("Multiple non-zero b-value shells detected; automatically selecting b=" + str(largest().get_mean()) + " with " + str(largest().count()) + " volumes");
+          WARN ("Multiple non-zero b-value shells detected, automatically selecting largest b-value: b=" + str(largest().get_mean()) + " with " + str(largest().count()) + " volumes");
           to_retain[count()-1] = true;
           if (has_bzero())
             to_retain[0] = true;
