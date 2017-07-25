@@ -308,16 +308,14 @@ namespace MR
 
         Eigen::Vector3f pr;
         size_t v = idx/nz, z = idx%nz;
-        float ws;
-        transform_type Ts2r = get_Ts2r(v, z);
-        for (int s = -ssp.size(); s <= ssp.size(); s++) {       // ssp neighbourhood
-          ws = ssp(s);
-          size_t i = 0;
-          for (size_t y = 0; y < ny; y++) {   // in-plane
-            for (size_t x = 0; x < nx; x++, i++) {
+        transform_type Ts2r = get_Ts2r(v, z); 
+        size_t i = 0;
+        for (size_t y = 0; y < ny; y++) {         // in-plane
+          for (size_t x = 0; x < nx; x++, i++) {
+            for (int s = -2; s <= 2; s++) {       // ssp neighbourhood
               pr = Ts2r.cast<float>() * Eigen::Vector3f(x, y, z+s);
               load_sparse_coefs(m, pr);
-              dst[i] += ws * m.dot(rhs);
+              dst[i] += ssp(s) * m.dot(rhs);
             }
           }
         }
@@ -331,16 +329,14 @@ namespace MR
 
         Eigen::Vector3f pr;
         size_t v = idx/nz, z = idx%nz;
-        float ws;
         transform_type Ts2r = get_Ts2r(v, z);
-        for (int s = -ssp.size(); s <= ssp.size(); s++) {       // ssp neighbourhood
-          ws = ssp(s);
-          size_t i = 0;
-          for (size_t y = 0; y < ny; y++) {   // in-plane
-            for (size_t x = 0; x < nx; x++, i++) {
+        size_t i = 0;
+        for (size_t y = 0; y < ny; y++) {         // in-plane
+          for (size_t x = 0; x < nx; x++, i++) {
+            for (int s = -2; s <= 2; s++) {       // ssp neighbourhood
               pr = Ts2r.cast<float>() * Eigen::Vector3f(x, y, z+s);
               load_sparse_coefs(m, pr);
-              dst += (ws * rhs[i]) * m;
+              dst += (ssp(s) * rhs[i]) * m;
             }
           }
         }
@@ -349,27 +345,31 @@ namespace MR
       template <typename VectorType1, typename VectorType2>
       void project_slice_x2x(const size_t idx, VectorType1& dst, const VectorType2& rhs) const
       {
-        Eigen::VectorXf tmp = Eigen::VectorXf::Zero(nxy);
-        project_slice_x2y(idx, tmp, rhs);
-        project_slice_y2x(idx, dst, tmp);
-        return;                         // Conservative implementation until FIXME below is sorted.
+        //Eigen::VectorXf tmp = Eigen::VectorXf::Zero(nxy);
+        //project_slice_x2y(idx, tmp, rhs);
+        //project_slice_y2x(idx, dst, tmp);
+        //return;
 
         // ignored...
-        Eigen::SparseVector<float> m (nxy*nz);
-        m.reserve(64);
+        Eigen::SparseVector<float> m0 (nxy*nz);
+        m0.reserve(64);
+        std::array<Eigen::SparseVector<float>, 5> m;
+        m.fill(m0);
 
         Eigen::Vector3f pr;
         size_t v = idx/nz, z = idx%nz;
-        float ws, t;
+        float t;
         transform_type Ts2r = get_Ts2r(v, z);
-        for (int s = -ssp.size(); s <= ssp.size(); s++) {       // ssp neighbourhood
-          ws = ssp(s);
-          for (size_t y = 0; y < ny; y++) {   // in-plane
-            for (size_t x = 0; x < nx; x++) {
+        for (size_t y = 0; y < ny; y++) {         // in-plane
+          for (size_t x = 0; x < nx; x++) {
+            t = 0.0f;
+            for (int s = -2; s <= 2; s++) {       // ssp neighbourhood
               pr = Ts2r.cast<float>() * Eigen::Vector3f(x, y, z+s);
-              load_sparse_coefs(m, pr);
-              t = ws * m.dot(rhs);      // FIXME: not correct for slice profile...
-              dst += (ws * t) * m;
+              load_sparse_coefs(m[2+s], pr);
+              t += ssp(s) * m[2+s].dot(rhs);
+            }
+            for (int s = -2; s <= 2; s++) {
+              dst += (ssp(s) * t) * m[2+s];
             }
           }
         }
@@ -394,7 +394,7 @@ namespace MR
               px = pg[0] + rx;
               if ((px < 0) || (px >= nx)) continue;
               // insert in weight vector.
-              dst.insert(pz*nxy + py*nx + px) += wx[n+rx] * wy[n+ry] * wz[n+rz];
+              dst.insert(pz*nxy + py*nx + px) = wx[n+rx] * wy[n+ry] * wz[n+rz];
             }
           }
         }

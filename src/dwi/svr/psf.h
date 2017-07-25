@@ -147,7 +147,7 @@ namespace MR
             return values[n+z];
         }
 
-        inline int size () const
+        constexpr int size () const
         {
             return n;
         }
