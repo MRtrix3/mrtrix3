@@ -55,7 +55,7 @@ void usage ()
   +   Argument ("order").type_integer (0, 30)
 
   + DWI::GradImportOptions()
-  + DWI::ShellOption;
+  + DWI::ShellsOption;
 
 }
 

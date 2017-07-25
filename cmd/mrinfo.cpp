@@ -87,7 +87,7 @@ void usage ()
     + GradExportOptions
     +   Option ("dwgrad", "the diffusion-weighting gradient table, as stored in the header "
           "(i.e. without any interpretation, scaling of b-values, or normalisation of gradient vectors)")
-    +   Option ("shells", "list the average b-value of each shell")
+    +   Option ("shellvalues", "list the average b-value of each shell")
     +   Option ("shellcounts", "list the number of volumes in each shell")
 
     + PhaseEncoding::ExportOptions
@@ -133,10 +133,10 @@ void print_strides (const Header& header)
   std::cout << buffer << "\n";
 }
 
-void print_shells (const Header& header, const bool shells, const bool shellcounts)
+void print_shells (const Header& header, const bool shellvalues, const bool shellcounts)
 {
   DWI::Shells dwshells (DWI::parse_DW_scheme (header));
-  if (shells) {
+  if (shellvalues) {
     for (size_t i = 0; i < dwshells.count(); i++)
       std::cout << dwshells[i].get_mean() << " ";
     std::cout << "\n";
@@ -214,13 +214,13 @@ void run ()
   const auto properties  = get_options("property");
   const bool transform   = get_options("transform")     .size();
   const bool dwgrad      = get_options("dwgrad")        .size();
-  const bool shells      = get_options("shells")        .size();
+  const bool shellvalues = get_options("shellvalues")   .size();
   const bool shellcounts = get_options("shellcounts")   .size();
   const bool raw_dwgrad  = get_options("raw_dwgrad")    .size();
   const bool petable     = get_options("petable")       .size();
 
   const bool print_full_header = !(format || ndim || size || vox || datatype || stride ||
-      offset || multiplier || properties.size() || transform || dwgrad || export_grad || shells || shellcounts || export_pe || petable);
+      offset || multiplier || properties.size() || transform || dwgrad || export_grad || shellvalues || shellcounts || export_pe || petable);
 
   Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "\n");
 
@@ -228,7 +228,7 @@ void run ()
     auto header = Header::open (argument[i]);
     if (raw_dwgrad)
       DWI::set_DW_scheme (header, DWI::get_DW_scheme (header));
-    else if (export_grad || check_option_group (GradImportOptions) || dwgrad || shells || shellcounts)
+    else if (export_grad || check_option_group (GradImportOptions) || dwgrad || shellvalues || shellcounts)
       DWI::set_DW_scheme (header, DWI::get_valid_DW_scheme (header, true));
 
     if (format)     std::cout << header.format() << "\n";
@@ -241,7 +241,7 @@ void run ()
     if (multiplier) std::cout << header.intensity_scale() << "\n";
     if (transform)  print_transform (header);
     if (dwgrad)     std::cout << DWI::get_DW_scheme (header) << "\n";
-    if (shells || shellcounts) print_shells (header, shells, shellcounts);
+    if (shellvalues || shellcounts) print_shells (header, shellvalues, shellcounts);
     if (petable)    std::cout << PhaseEncoding::get_scheme (header) << "\n";
 
     for (size_t n = 0; n < properties.size(); ++n)

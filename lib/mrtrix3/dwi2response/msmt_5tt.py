@@ -49,7 +49,7 @@ def execute():
   run.command('5ttcheck 5tt.mif', False)
 
   # Get shell information
-  shells = [ int(round(float(x))) for x in image.headerField('dwi.mif', 'shells').split() ]
+  shells = [ int(round(float(x))) for x in image.headerField('dwi.mif', 'shellvalues').split() ]
   if len(shells) < 3:
     app.warn('Less than three b-value shells; response functions will not be applicable in resolving three tissues using MSMT-CSD algorithm')
 
@@ -104,7 +104,7 @@ def execute():
     app.error(message)
 
   # For each of the three tissues, generate a multi-shell response
-  bvalues_option = ' -shell ' + ','.join(map(str,shells))
+  bvalues_option = ' -shells ' + ','.join(map(str,shells))
   sfwm_lmax_option = ''
   if wm_lmax:
     sfwm_lmax_option = ' -lmax ' + ','.join(map(str,wm_lmax))

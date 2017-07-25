@@ -32,7 +32,7 @@ def needsSingleShell():
 def execute():
   import os, shutil
   from mrtrix3 import app, image, path, run
-  bvalues = [ int(round(float(x))) for x in image.headerField('dwi.mif', 'shells').split() ]
+  bvalues = [ int(round(float(x))) for x in image.headerField('dwi.mif', 'shellvalues').split() ]
   if len(bvalues) < 2:
     app.error('Need at least 2 unique b-values (including b=0).')
   lmax_option = ''

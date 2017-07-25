@@ -41,7 +41,7 @@ def execute():
 
 
   # Get b-values and number of volumes per b-value.
-  bvalues = [ int(round(float(x))) for x in image.headerField('dwi.mif', 'shells').split() ]
+  bvalues = [ int(round(float(x))) for x in image.headerField('dwi.mif', 'shellvalues').split() ]
   bvolumes = [ int(x) for x in image.headerField('dwi.mif', 'shellcounts').split() ]
   app.console(str(len(bvalues)) + ' unique b-value(s) detected: ' + ','.join(map(str,bvalues)) + ' with ' + ','.join(map(str,bvolumes)) + ' volumes.')
   if len(bvalues) < 2:
@@ -167,7 +167,7 @@ def execute():
 
 
   # Generate single-fibre WM, GM and CSF responses
-  bvalues_option = ' -shell ' + ','.join(map(str,bvalues))
+  bvalues_option = ' -shells ' + ','.join(map(str,bvalues))
   sfwm_lmax_option = ''
   if sfwm_lmax:
     sfwm_lmax_option = ' -lmax ' + ','.join(map(str,sfwm_lmax))

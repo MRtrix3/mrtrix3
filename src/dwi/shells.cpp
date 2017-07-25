@@ -24,7 +24,7 @@ namespace MR
   namespace DWI
   {
 
-    const App::OptionGroup ShellOption = App::OptionGroup ("DW shell selection options")
+    const App::OptionGroup ShellsOption = App::OptionGroup ("DW shell selection options")
       + App::Option ("shells",
           "specify one or more diffusion-weighted gradient shells to use during "
           "processing, as a comma-separated list of the desired approximate b-values. "

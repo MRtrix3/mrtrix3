@@ -38,7 +38,7 @@ def execute():
   import os, shutil
   from mrtrix3 import app, image, path, run
 
-  shells = [ int(round(float(x))) for x in image.headerField('dwi.mif', 'shells').split() ]
+  shells = [ int(round(float(x))) for x in image.headerField('dwi.mif', 'shellvalues').split() ]
 
   # Get lmax information (if provided)
   lmax = [ ]
@@ -57,7 +57,7 @@ def execute():
     run.command('dwi2tensor dwi.mif - -mask in_voxels.mif | tensor2metric - -vector dirs.mif')
 
   # Get response function
-  bvalues_option = ' -shell ' + ','.join(map(str,shells))
+  bvalues_option = ' -shells ' + ','.join(map(str,shells))
   lmax_option = ''
   if lmax:
     lmax_option = ' -lmax ' + ','.join(map(str,lmax))
