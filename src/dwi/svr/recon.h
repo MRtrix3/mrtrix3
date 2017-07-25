@@ -82,6 +82,7 @@ namespace MR
           nxy (nx*ny), nc (get_ncoefs(rf)),
           T0 (in),  // Preserve original resolution.
           shellbasis (init_shellbasis(grad, rf)),
+          ssp (2.0f),
           motion (rigid)
       {
         init_Y(grad);
@@ -167,6 +168,7 @@ namespace MR
       const size_t nx, ny, nz, nv, nxy, nc;
       const Transform T0;
       const vector<Eigen::MatrixXf> shellbasis;
+      const SSP<float,2> ssp;
 
       RowMatrixXf motion;
       RowMatrixXf Y;
@@ -295,78 +297,20 @@ namespace MR
         return idx;
       }
 
-      SparseMat get_sliceM(const size_t v, const size_t z) const
-      {
-        int n = 2;
-        SSP<float> ssp (2.0f);
-
-        // reserve memory for elements along each row (outer strides with row-major order).
-        SparseMat M (nxy, nxy*nz);
-        M.reserve(Eigen::VectorXi::Constant(nxy, (n+1)*8*n*n*n));
-
-        Eigen::Vector3f ps, pr, pg;
-
-        // fill weights
-        size_t i = 0;
-        float ws, wx, wy, wz, px, py, pz;
-        transform_type Ts2r = get_Ts2r(v, z);
-        // in-plane
-        for (size_t y = 0; y < ny; y++) {
-          for (size_t x = 0; x < nx; x++, i++) {
-
-            for (int s = -n; s <= n; s++) {     // ssp neighbourhood
-              ws = ssp(s);
-
-              ps = Eigen::Vector3f(x, y, z+s);
-              pr = (Ts2r.cast<float>() * ps);
-              pg = pr.array().ceil();
-
-              for (int rz = -n; rz < n; rz++) { // local neighbourhood interpolation
-                pz = pg[2] + rz;
-                if ((pz < 0) || (pz >= nz)) continue;
-                wz = bspline<3>(pr[2] - pz);
-                for (int ry = -n; ry < n; ry++) {
-                  py = pg[1] + ry;
-                  if ((py < 0) || (py >= ny)) continue;
-                  wy = bspline<3>(pr[1] - py);
-                  for (int rx = -n; rx < n; rx++) {
-                    px = pg[0] + rx;
-                    if ((px < 0) || (px >= nx)) continue;
-                    wx = bspline<3>(pr[0] - px);
-                    // add to weight matrix.
-                    M.coeffRef(i, get_idx(px, py, pz)) += ws * wx * wy * wz;
-                  }
-                }
-              }
-            }
-
-          }
-        }
-
-        return M;
-      }
-
-      Eigen::VectorXf get_sliceY(const size_t v, const size_t z) const
-      {
-        return Y.row(v*nz+z);
-      }
-
       inline size_t get_grad_idx(const size_t idx) const { return idx / nxy; }
       inline size_t get_grad_idx(const size_t v, const size_t z) const { return v*nz + z; }
 
       template <typename VectorType1, typename VectorType2>
       void project_slice_x2y(const size_t idx, VectorType1& dst, const VectorType2& rhs) const
       {
-        int n = 2;
-        SSP<float> ssp (2.0f);
         Eigen::SparseVector<float> m (nxy*nz);
-        m.reserve(8*n*n*n);
+        m.reserve(64);
 
         Eigen::Vector3f pr;
         size_t v = idx/nz, z = idx%nz;
         float ws;
         transform_type Ts2r = get_Ts2r(v, z);
-        for (int s = -n; s <= n; s++) {       // ssp neighbourhood
+        for (int s = -ssp.size(); s <= ssp.size(); s++) {       // ssp neighbourhood
           ws = ssp(s);
           size_t i = 0;
           for (size_t y = 0; y < ny; y++) {   // in-plane
@@ -382,16 +326,14 @@ namespace MR
       template <typename VectorType1, typename VectorType2>
       void project_slice_y2x(const size_t idx, VectorType1& dst, const VectorType2& rhs) const
       {
-        int n = 2;
-        SSP<float> ssp (2.0f);
         Eigen::SparseVector<float> m (nxy*nz);
-        m.reserve(8*n*n*n);
+        m.reserve(64);
 
         Eigen::Vector3f pr;
         size_t v = idx/nz, z = idx%nz;
         float ws;
         transform_type Ts2r = get_Ts2r(v, z);
-        for (int s = -n; s <= n; s++) {       // ssp neighbourhood
+        for (int s = -ssp.size(); s <= ssp.size(); s++) {       // ssp neighbourhood
           ws = ssp(s);
           size_t i = 0;
           for (size_t y = 0; y < ny; y++) {   // in-plane
@@ -413,16 +355,14 @@ namespace MR
         return;                         // Conservative implementation until FIXME below is sorted.
 
         // ignored...
-        int n = 2;
-        SSP<float> ssp (2.0f);
         Eigen::SparseVector<float> m (nxy*nz);
-        m.reserve(8*n*n*n);
+        m.reserve(64);
 
         Eigen::Vector3f pr;
         size_t v = idx/nz, z = idx%nz;
         float ws, t;
         transform_type Ts2r = get_Ts2r(v, z);
-        for (int s = -n; s <= n; s++) {       // ssp neighbourhood
+        for (int s = -ssp.size(); s <= ssp.size(); s++) {       // ssp neighbourhood
           ws = ssp(s);
           for (size_t y = 0; y < ny; y++) {   // in-plane
             for (size_t x = 0; x < nx; x++) {

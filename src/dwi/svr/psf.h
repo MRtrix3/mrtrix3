@@ -127,31 +127,48 @@ namespace MR
     /**
      *  1-D Gaussian Slice Sensitivity Profile.
      */
-    template <typename T = float>
+    template <typename T = float, int n = 2>
     struct SSP
-    {  NOMEMALIGN;
+    {
     public:
 
-        SSP (T t = 1)
-         : _t(t),
-           tau (-fwhm*fwhm/(2*_t*_t)),
-           norm (fwhm / (_t * std::sqrt(2*M_PI)))
-        {  }
-     
-        inline T operator() (const T z) const
+        SSP (T fwhm = 1)
         {
-            return gaussian(z);
+            T tau = scale/fwhm;
+            tau *= -tau/2;
+            for (int z = -n; z <= n; z++) {
+                values[n+z] = gaussian(T(z), tau);
+            }
+            normalise_values();
+        }
+     
+        inline T operator() (const int z) const
+        {
+            return values[n+z];
         }
 
-    private:
-        const T fwhm = 2 * std::sqrt(2 * M_LN2);
-        const T _t;
-        const T tau;
-        const T norm;
-        
-        inline T gaussian (T x) const
+        inline int size () const
         {
-            return norm * std::exp(tau * x*x);
+            return n;
+        }
+
+
+    private:
+        std::array<T,2*n+1> values;
+        const T scale = 2.35482;     // 2.sqrt(2.ln(2));
+                
+        inline T gaussian (T x, T tau) const
+        {
+            return std::exp(tau * x*x);
+        }
+
+        inline void normalise_values ()
+        {
+            T norm = 0;
+            for (int z = -n; z <= n; z++)
+                norm += values[n+z];
+            for (int z = -n; z <= n; z++)
+                values[n+z] /= norm;
         }
 
     };
