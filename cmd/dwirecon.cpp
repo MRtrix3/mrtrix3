@@ -22,6 +22,7 @@
 #include "dwi/svr/recon.h"
 
 #define DEFAULT_LMAX 4
+#define DEFAULT_REG 0.01
 #define DEFAULT_TOL 1e-4
 #define DEFAULT_MAXITER 100
 
@@ -60,6 +61,10 @@ void usage ()
   + Option ("weights",
             "Slice weights, provided as a matrix of dimensions Nslices x Nvols.")
     + Argument ("W").type_file_in()
+
+  + Option ("reg",
+            "Regularization weight. (default = " + str(DEFAULT_REG) + ")")
+    + Argument ("l").type_float()
 
   + DWI::GradImportOptions()
 
@@ -183,13 +188,15 @@ void run ()
   else
     lmax = std::min(lmax, (int) get_option_value("lmax", lmax));
   
+  float reg = get_option_value("reg", DEFAULT_REG);
+
   value_type tol = get_option_value("tolerance", DEFAULT_TOL);
   size_t maxiter = get_option_value("maxiter", DEFAULT_MAXITER);
 
 
   // Set up scattered data matrix
   INFO("initialise reconstruction matrix");
-  DWI::ReconMatrix R (dwisub, motionsub, gradsub, lmax, rf);
+  DWI::ReconMatrix R (dwisub, motionsub, gradsub, lmax, rf, reg);
   R.setW(Wsub);
 
   // Read input data to vector
@@ -201,10 +208,6 @@ void run ()
 
   // Fit scattered data in basis...
   INFO("solve with conjugate gradient method");
-
-  //Eigen::initParallel();
-  //Eigen::setNbThreads(Thread::number_of_threads());     // only used when configured with OpenMP
-  //VAR(Eigen::nbThreads());
 
   Eigen::ConjugateGradient<DWI::ReconMatrix, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
   cg.compute(R);

@@ -76,7 +76,7 @@ namespace MR
 
 
       // Custom API:
-      ReconMatrix(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad, const int lmax, const vector<Eigen::MatrixXf>& rf)
+      ReconMatrix(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad, const int lmax, const vector<Eigen::MatrixXf>& rf, const float reg)
         : lmax (lmax),
           nx (in.size(0)), ny (in.size(1)), nz (in.size(2)), nv (in.size(3)),
           nxy (nx*ny), nc (get_ncoefs(rf)),
@@ -86,6 +86,7 @@ namespace MR
           motion (rigid)
       {
         init_Y(grad);
+        init_laplacian(reg);
       }
 
 
@@ -160,6 +161,7 @@ namespace MR
             project_slice_x2x(idx, r, q);
             T.noalias() += w(idx) * r * Y.row(idx);
         }, zero);
+        Xo += L.adjoint() * (L * Xi);
       }
 
 
@@ -173,6 +175,7 @@ namespace MR
       RowMatrixXf motion;
       RowMatrixXf Y;
       Eigen::MatrixXf W;
+      SparseMat L;
 
 
       vector<Eigen::MatrixXf> init_shellbasis(const Eigen::MatrixXf& grad, const vector<Eigen::MatrixXf>& rf) const
@@ -398,6 +401,28 @@ namespace MR
             }
           }
         }
+      }
+
+      void init_laplacian(const float lambda)
+      {
+        DEBUG("Initialising Laplacian matrix.");
+        L.resize(nxy*nz, nxy*nz);
+        L.reserve(Eigen::VectorXi::Constant(nxy*nz, 7));
+        for (size_t z = 1; z < nz-1; z++) {
+          for (size_t y = 1; y < ny-1; y++) {
+            for (size_t x = 1; x < nx-1; x++) {
+              L.insert(get_idx(x, y, z), get_idx(x, y, z-1)) = -1;
+              L.insert(get_idx(x, y, z), get_idx(x, y-1, z)) = -1;
+              L.insert(get_idx(x, y, z), get_idx(x-1, y, z)) = -1;
+              L.insert(get_idx(x, y, z), get_idx(x, y, z))   =  6;
+              L.insert(get_idx(x, y, z), get_idx(x+1, y, z)) = -1;
+              L.insert(get_idx(x, y, z), get_idx(x, y+1, z)) = -1;
+              L.insert(get_idx(x, y, z), get_idx(x, y, z+1)) = -1;
+            }
+          }
+        }
+        L *= lambda;
+        L.makeCompressed();
       }
 
 
