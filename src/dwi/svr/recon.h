@@ -407,7 +407,7 @@ namespace MR
       template <typename VectorType1, typename VectorType2>
       void project_slice_x2x(const size_t idx, VectorType1& dst, const VectorType2& rhs) const
       {
-        Eigen::VectorXf tmp (nxy);
+        Eigen::VectorXf tmp = Eigen::VectorXf::Zero(nxy);
         project_slice_x2y(idx, tmp, rhs);
         project_slice_y2x(idx, dst, tmp);
         return;                         // Conservative implementation until FIXME below is sorted.
