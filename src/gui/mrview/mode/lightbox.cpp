@@ -31,16 +31,13 @@ namespace MR
         float LightBox::slice_focus_increment(1.f);
         float LightBox::slice_focus_inc_adjust_rate(0.2f);
         std::string LightBox::prev_image_name;
+        ssize_t LightBox::current_slice_index((LightBox::n_rows*LightBox::n_cols) / 2);
 
         LightBox::LightBox () :
           layout_is_dirty(true),
-          current_slice_index((n_rows*n_cols) / 2),
           slices_proj_focusdelta(n_rows*n_cols, proj_focusdelta(projection, 0.f))
         {
           Image* img = image();
-
-          if (render_volumes())
-            current_slice_index = 0;
 
           if(!img || prev_image_name != img->header().name())
             image_changed_event();
@@ -88,6 +85,9 @@ namespace MR
         void LightBox::set_show_volumes(bool show_vol)
         {
           show_volumes = show_vol;
+          if (show_vol) {
+            update_volume_indices();
+          }
           updateGL();
         }
 
@@ -105,8 +105,7 @@ namespace MR
 
           update_volume_indices();
 
-          size_t slice_idx = render_volumes() ?
-                std::min(current_slice_index, (n_rows * n_cols) - 1) : (n_rows * n_cols) / 2;
+          ssize_t slice_idx = std::min<ssize_t>(current_slice_index, (n_rows * n_cols) - 1);
 
           set_current_slice_index(slice_idx);
           update_slices_focusdelta();
@@ -115,7 +114,7 @@ namespace MR
           frame_VAO.clear();
         }
 
-        void LightBox::set_current_slice_index(size_t slice_index)
+        void LightBox::set_current_slice_index(ssize_t slice_index)
         {
           int prev_index = current_slice_index;
           current_slice_index = slice_index;
@@ -127,7 +126,8 @@ namespace MR
             const Eigen::Vector3f slice_focus = move_in_out_displacement(focus_delta, slice_proj);
             set_focus(focus() + slice_focus);
             update_slices_focusdelta();
-          }
+          } else if (volume_indices[slice_index] == -1)
+              current_slice_index = prev_index;
         }
 
         void LightBox::update_slices_focusdelta()
@@ -147,10 +147,25 @@ namespace MR
           if (!is_4d)
             return;
 
-          int initial_vol = image()->image.index(3);
+          int n_vols = image()->image.size(3);
+          int current_vol = image()->image.index(3);
 
-          for(int i = 0, N = volume_indices.size(); i < N; ++i)
-            volume_indices[i] = initial_vol + (int)volume_increment * i;
+          int initial_vol = current_vol + (int)volume_increment *- (int)current_slice_index;
+          if (initial_vol < 0)
+            current_vol = volume_increment * current_slice_index;
+
+
+          for(int i = 0, N = volume_indices.size(); i < N; ++i) {
+            int vol_index = current_vol + (int)volume_increment * (i - (int)current_slice_index);
+            vol_index = vol_index < 0 || vol_index >= n_vols ? -1 : vol_index;
+            volume_indices[i] = vol_index;
+          }
+
+          for (ssize_t i = current_slice_index; i >= 0; --i) {
+            current_slice_index = i;
+            if (volume_indices[i] >= 0)
+              break;
+          }
         }
 
         void LightBox::draw_plane_primitive (int axis, Displayable::Shader& shader_program, Projection& with_projection)
@@ -160,17 +175,6 @@ namespace MR
             image()->render3D (shader_program, with_projection, with_projection.depth_of (focus()));
           render_tools (with_projection, false, axis, slice (axis));
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
-        }
-
-        void LightBox::finished_paintGL ()
-        {
-          // When rendering volumes, the initial state is always considered to be
-          // the first volume (i.e. top-left slice)
-          // However, for the purposes of correctly rendering voxel information we need the
-          // image volume to correspond to the selected volume
-          // Hence, this is called once paintGL has finished to restore the initial state
-          if(render_volumes())
-            image()->image.index(3) = volume_indices[0];
         }
 
         void LightBox::paint(Projection&)
@@ -194,12 +198,13 @@ namespace MR
           }
 
           bool rend_vols = render_volumes();
-          bool render_plane = true;
 
-          size_t slice_idx = 0;
+          ssize_t slice_idx = 0;
           for(size_t row = 0; row < n_rows; ++row) {
             for(size_t col = 0; col < n_cols; ++col, ++slice_idx) {
               Projection& slice_proj = slices_proj_focusdelta[slice_idx].first;
+
+              bool render_plane = true;
 
               // Place the first slice in the top-left corner
               slice_proj.set_viewport(window(), x + dw * col, y + h - (dh * (row+1)), dw, dh);
@@ -209,8 +214,7 @@ namespace MR
               setup_projection (plane(), slice_proj);
 
               if (rend_vols) {
-                int n_vols = image()->image.size(3);
-                if (volume_indices[slice_idx] >= 0 && volume_indices[slice_idx] < n_vols - 1)
+                if (volume_indices[slice_idx] != -1)
                   image()->image.index(3) = volume_indices[slice_idx];
                 else
                   render_plane = false;
@@ -236,7 +240,7 @@ namespace MR
           }
 
           // Restore view state
-          if(rend_vols)
+          if(rend_vols && volume_indices[current_slice_index] >= 0)
             image()->image.index(3) = volume_indices[current_slice_index];
           set_focus(orig_focus);
           projection.set_viewport(window(), x, y, w, h);
