@@ -220,7 +220,7 @@ namespace MR
             "out vec3 colour;\n";
 
           if (color_type == TrackColourType::ScalarFile || color_type == TrackColourType::Ends)
-            source += "in vec3 fColour;\n";
+            source += using_geom ? "in vec3 fColour;\n" : "in vec3 v_colour;\n";
           if (use_lighting || color_type == TrackColourType::Direction)
             source += using_geom ? "in vec3 g_tangent;\n" : "in vec3 v_tangent;\n";
 
@@ -257,10 +257,12 @@ namespace MR
                                    : "  colour = abs (normalize (v_tangent));\n";
               break;
             case TrackColourType::ScalarFile:
-              source += "  colour = fColour;\n";
+              source += using_geom ? "  colour = fColour;\n"
+                                   : "  colour = v_colour;\n";
               break;
             case TrackColourType::Ends:
-              source += "  colour = fColour;\n";
+              source += using_geom ? "  colour = fColour;\n"
+                                   : "  colour = v_colour;\n";
               break;
             case TrackColourType::Manual:
               source += "  colour = const_colour;\n";
