@@ -168,7 +168,7 @@ DESCRIPTION
     "results to a .mif file or .mih / .dat file pair - this will avoid the allocation "
     "of an additional buffer to store the output for write-out.";
 
-REFERENCES 
+REFERENCES
   + "* For TDI or DEC TDI:\n"
   "Calamante, F.; Tournier, J.-D.; Jackson, G. D. & Connelly, A. " // Internal
   "Track-density imaging (TDI): Super-resolution white matter imaging using whole-brain track-density mapping. "
@@ -188,7 +188,7 @@ REFERENCES
   "Pannek, K., Raffelt, D., Salvado, O., Rose, S. " // Internal
   "Incorporating directional information in diffusion tractography derived maps: angular track imaging (ATI). "
   "In Proc. ISMRM, 2012, 20, 1912"
-  
+
   + "* If using -tod option:\n"
   "Dhollander, T., Emsell, L., Van Hecke, W., Maes, F., Sunaert, S., Suetens, P. " // Internal
   "Track Orientation Density Imaging (TODI) and Track Orientation Distribution (TOD) based tractography. "

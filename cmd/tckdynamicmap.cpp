@@ -326,7 +326,7 @@ void run () {
   if (stat_vox == V_MEAN) {
     counts = Image<uint32_t>::scratch (H_3D, "Track count scratch buffer");
     Tractography::Reader<float> tck_file (tck_path, properties);
-    Mapping::TrackLoader loader (tck_file, num_tracks, "Calculating initial TDI... ");
+    Mapping::TrackLoader loader (tck_file, num_tracks, "Calculating initial TDI");
     Mapping::TrackMapperBase mapper (H_3D);
     mapper.set_upsample_ratio (upsample_ratio);
     Count_receiver receiver (counts);

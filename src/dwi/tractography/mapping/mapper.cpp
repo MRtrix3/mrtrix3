@@ -61,7 +61,7 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
 
         case T_SUM:
           out.factor = 0.0;
-          for (const auto& i : factors) 
+          for (const auto& i : factors)
             if (std::isfinite (i))
               out.factor += i;
           break;

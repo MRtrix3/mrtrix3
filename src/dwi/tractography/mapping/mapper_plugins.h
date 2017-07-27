@@ -79,9 +79,15 @@ namespace MR {
                 interp (input_image),
                 backtrack (false) { }
 
-            TWIImagePluginBase (const TWIImagePluginBase& that) = default;
+            TWIImagePluginBase (const TWIImagePluginBase& that) :
+                statistic (that.statistic),
+                interp (that.interp),
+                backtrack (that.backtrack),
+                backtrack_mask (that.backtrack_mask) { }
 
             virtual ~TWIImagePluginBase() { }
+
+            virtual TWIImagePluginBase* clone() const = 0;
 
             void set_backtrack();
 
@@ -127,10 +133,15 @@ namespace MR {
             }
 
             TWIScalarImagePlugin (const TWIScalarImagePlugin& that) :
-              TWIImagePluginBase (that)
+                TWIImagePluginBase (that)
             {
               if (interp.ndim() == 4)
                 interp.index(3) = 0;
+            }
+
+            TWIScalarImagePlugin* clone() const override
+            {
+              return new TWIScalarImagePlugin (*this);
             }
 
             void load_factors (const Streamline<>&, vector<default_type>&) const override;
@@ -153,6 +164,13 @@ namespace MR {
               precomputer->init (Math::SH::LforN (sh_coeffs.size()));
             }
 
+            TWIFODImagePlugin (const TWIFODImagePlugin& that) = default;
+
+            TWIFODImagePlugin* clone() const override
+            {
+              return new TWIFODImagePlugin (*this);
+            }
+
             void load_factors (const Streamline<>&, vector<default_type>&) const override;
 
           private:
@@ -171,6 +189,13 @@ namespace MR {
                 kernel (kernel),
                 kernel_centre ((kernel.size()-1) / 2),
                 sample_centre (timepoint) { }
+
+            TWDFCImagePlugin (const TWDFCImagePlugin& that) = default;
+
+            TWDFCImagePlugin* clone() const override
+            {
+              return new TWDFCImagePlugin (*this);
+            }
 
             void load_factors (const Streamline<>&, vector<default_type>&) const override;
 

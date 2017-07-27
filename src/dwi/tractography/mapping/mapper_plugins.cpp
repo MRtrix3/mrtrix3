@@ -84,7 +84,7 @@ namespace MR {
             }
 
           } else {
-            if (interp.scanner (tck[index]))
+            if (!interp.scanner (tck[index]))
               return -1;
           }
           return index;
@@ -129,7 +129,7 @@ namespace MR {
             factors.assign (1, NaN);
             vector<float> values[2];
             for (size_t tck_end_index = 0; tck_end_index != 2; ++tck_end_index) {
-              const ssize_t index = get_end_index (tck, tck_end_index);
+              const ssize_t index = get_end_index (tck, bool(tck_end_index));
               if (index < 0)
                 return;
               if (!interp.scanner (tck[index]))
@@ -150,7 +150,7 @@ namespace MR {
             default_type product = 0.0;
             default_type variances[2] = { 0.0, 0.0 };
             for (ssize_t i = 0; i != interp.size(3); ++i) {
-              product += ((values[0][i] - means[0]) * (values[1][i] - means[i]));
+              product += ((values[0][i] - means[0]) * (values[1][i] - means[1]));
               variances[0] += Math::pow2 (values[0][i] - means[0]);
               variances[1] += Math::pow2 (values[1][i] - means[1]);
             }
