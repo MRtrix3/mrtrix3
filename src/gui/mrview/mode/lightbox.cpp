@@ -85,8 +85,13 @@ namespace MR
         void LightBox::set_show_volumes(bool show_vol)
         {
           show_volumes = show_vol;
-          if (show_vol) {
+          if (show_vol)
             update_volume_indices();
+          else {
+            // Force focus update
+            ssize_t prev_index = current_slice_index;
+            current_slice_index = -1;
+            set_current_slice_index(prev_index);
           }
           updateGL();
         }
