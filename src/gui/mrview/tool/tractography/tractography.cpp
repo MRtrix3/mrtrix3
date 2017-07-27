@@ -158,6 +158,22 @@ namespace MR
 
             main_box->addLayout (hlayout);
 
+            hlayout = new HBoxLayout;
+            hlayout->setContentsMargins (0, 0, 0, 0);
+            hlayout->setSpacing (0);
+
+            hlayout->addWidget (new QLabel ("geometry"));
+
+            geom_type_combobox = new ComboBoxWithErrorMsg (this, "(variable)");
+            geom_type_combobox->setToolTip (tr ("Set the tractogram geometry type"));
+            geom_type_combobox->addItem ("Lines");
+            geom_type_combobox->addItem ("Pseudotubes");
+            geom_type_combobox->addItem ("Points");
+            connect (geom_type_combobox, SIGNAL (activated(int)), this, SLOT (geom_type_selection_slot (int)));
+            hlayout->addWidget (geom_type_combobox);
+
+            main_box->addLayout (hlayout);
+
             scalar_file_options = new TrackScalarFileOptions (this);
             main_box->addWidget (scalar_file_options);
 
@@ -179,7 +195,8 @@ namespace MR
             thickness_slider->setRange (-1000,1000);
             thickness_slider->setSliderPosition (0);
             connect (thickness_slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
-            general_opt_grid->addWidget (new QLabel ("line thickness"), 1, 0);
+            thickness_label = new QLabel ("thickness");
+            general_opt_grid->addWidget (thickness_label, 1, 0);
             general_opt_grid->addWidget (thickness_slider, 1, 1);
 
             slab_group_box = new QGroupBox (tr("crop to slab"));
@@ -198,7 +215,7 @@ namespace MR
             connect (slab_entry, SIGNAL (valueChanged()), this, SLOT (on_slab_thickness_slot()));
             slab_layout->addWidget (slab_entry, 0, 1);
 
-            QGroupBox* lighting_group_box = new QGroupBox (tr("use lighting"));
+            lighting_group_box = new QGroupBox (tr("use lighting"));
             lighting_group_box->setCheckable (true);
             lighting_group_box->setChecked (false);
             general_opt_grid->addWidget (lighting_group_box, 5, 0, 1, 2);
@@ -206,7 +223,7 @@ namespace MR
             connect (lighting_group_box, SIGNAL (clicked (bool)), this, SLOT (on_use_lighting_slot (bool)));
 
             VBoxLayout* lighting_layout = new VBoxLayout (lighting_group_box);
-            QPushButton* lighting_button = new QPushButton ("Track lighting...");
+            lighting_button = new QPushButton ("Track lighting...");
             lighting_button->setIcon (QIcon (":/light.svg"));
             connect (lighting_button, SIGNAL (clicked()), this, SLOT (on_lighting_settings()));
             lighting_layout->addWidget (lighting_button);
@@ -236,6 +253,8 @@ namespace MR
             action = new QAction("&Colour by (track) scalar file", this);
             connect (action, SIGNAL(triggered()), this, SLOT (colour_by_scalar_file_slot()));
             track_option_menu->addAction (action);
+
+            update_geometry_type_gui();
         }
 
 
@@ -574,7 +593,7 @@ namespace MR
         }
 
 
-        void Tractography::colour_mode_selection_slot (int /*unused*/)
+        void Tractography::colour_mode_selection_slot (int)
         {
           switch (colour_combobox->currentIndex()) {
             case 0: colour_track_by_direction_slot(); break;
@@ -608,9 +627,37 @@ namespace MR
         }
 
 
+
+        void Tractography::geom_type_selection_slot(int selected_index)
+        {
+          TrackGeometryType geom_type = TrackGeometryType::Line;
+
+          switch (selected_index) {
+          case 1:
+            geom_type = TrackGeometryType::Pseudotubes;
+            break;
+          case 2:
+            geom_type = TrackGeometryType::Points;
+          default:
+            break;
+          }
+
+          QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i)
+            tractogram_list_model->get_tractogram (indices[i])->set_geometry_type (geom_type);
+
+          update_geometry_type_gui();
+
+          window().updateGL();
+        }
+
+
+
         void Tractography::selection_changed_slot (const QItemSelection &, const QItemSelection &)
         {
           update_scalar_options();
+          update_geometry_type_gui();
+
           QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
           if (!indices.size()) {
             colour_combobox->setEnabled (false);
@@ -618,8 +665,11 @@ namespace MR
             return;
           }
           colour_combobox->setEnabled (true);
-          TrackColourType color_type = tractogram_list_model->get_tractogram (indices[0])->get_color_type();
-          Eigen::Array3f color = tractogram_list_model->get_tractogram (indices[0])->colour;
+
+          const Tractogram* first_tractogram = tractogram_list_model->get_tractogram (indices[0]);
+
+          TrackColourType color_type = first_tractogram->get_color_type();
+          Eigen::Array3f color = first_tractogram->colour;
           bool color_type_consistent = true;
           for (int i = 1; i != indices.size(); ++i) {
             const Tractogram* tractogram = tractogram_list_model->get_tractogram (indices[i]);
@@ -654,6 +704,20 @@ namespace MR
           } else {
             colour_combobox->setError();
           }
+
+          TrackGeometryType geom_type = first_tractogram->get_geometry_type();
+          int geom_combobox_index = 0;
+          switch (geom_type) {
+            case TrackGeometryType::Pseudotubes:
+              geom_combobox_index = 1;
+              break;
+            case TrackGeometryType::Points:
+              geom_combobox_index = 2;
+              break;
+            default:
+              break;
+          }
+          geom_type_combobox->setCurrentIndex(geom_combobox_index);
         }
 
 
@@ -666,6 +730,33 @@ namespace MR
           else
             scalar_file_options->set_tractogram (nullptr);
           scalar_file_options->update_UI();
+        }
+
+
+
+        void Tractography::update_geometry_type_gui()
+        {
+          thickness_slider->setHidden (true);
+          thickness_label->setHidden (true);
+          lighting_button->setEnabled (false);
+          lighting_group_box->setEnabled (false);
+          geom_type_combobox->setEnabled (false);
+
+          QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+          if (!indices.size())
+            return;
+
+          geom_type_combobox->setEnabled (true);
+
+          const Tractogram* first_tractogram = tractogram_list_model->get_tractogram (indices[0]);
+          TrackGeometryType geom_type = first_tractogram->get_geometry_type();
+
+          if (geom_type == TrackGeometryType::Pseudotubes) {
+            thickness_slider->setHidden (false);
+            thickness_label->setHidden (false);
+            lighting_button->setEnabled (true);
+            lighting_group_box->setEnabled (true);
+          }
         }
 
 

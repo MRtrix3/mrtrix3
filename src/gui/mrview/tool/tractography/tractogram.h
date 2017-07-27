@@ -36,6 +36,10 @@ namespace MR
       namespace Tool
       {
 
+        enum class TrackColourType { Direction, Ends, Manual, ScalarFile };
+        enum class TrackGeometryType { Line, Pseudotubes, Points };
+        enum class TrackThresholdType { None, UseColourFile, SeparateFile };
+
         class Tractogram : public Displayable
         { MEMALIGN(Tractogram)
           Q_OBJECT
@@ -65,8 +69,10 @@ namespace MR
 
             void set_color_type (const TrackColourType);
             void set_threshold_type (const TrackThresholdType);
+            void set_geometry_type (const TrackGeometryType);
             TrackColourType get_color_type() const { return color_type; }
             TrackThresholdType get_threshold_type() const { return threshold_type; }
+            TrackGeometryType get_geometry_type() const { return geometry_type; }
 
             void set_colour (float c[3]) { colour = { c[0], c[1], c[2] }; }
 
@@ -96,7 +102,8 @@ namespace MR
                     do_crop_to_slab (false),
                     use_lighting (false),
                     color_type (TrackColourType::Direction),
-                    threshold_type (TrackThresholdType::None) { }
+                    threshold_type (TrackThresholdType::None),
+                    geometry_type (TrackGeometryType::Line) { }
                 std::string vertex_shader_source (const Displayable&) override;
                 std::string fragment_shader_source (const Displayable&) override;
                 std::string geometry_shader_source (const Displayable&) override;
@@ -106,6 +113,7 @@ namespace MR
                 bool do_crop_to_slab, use_lighting;
                 TrackColourType color_type;
                 TrackThresholdType threshold_type;
+                TrackGeometryType geometry_type;
 
             } track_shader;
 
@@ -120,6 +128,7 @@ namespace MR
 
             TrackColourType color_type;
             TrackThresholdType threshold_type;
+            TrackGeometryType geometry_type;
 
             // Instead of tracking the file path, pre-calculate the
             //   streamline tangents and store them; then, if colour by

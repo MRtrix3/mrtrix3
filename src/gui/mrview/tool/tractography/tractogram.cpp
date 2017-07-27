@@ -118,6 +118,9 @@ namespace MR
 
         std::string Tractogram::Shader::geometry_shader_source (const Displayable&)
         {
+          if (geometry_type != TrackGeometryType::Pseudotubes)
+            return std::string();
+
           std::string source =
           "layout(lines) in;\n"
           "layout(triangle_strip, max_vertices = 4) out;\n"
@@ -209,6 +212,7 @@ namespace MR
         std::string Tractogram::Shader::fragment_shader_source (const Displayable& displayable)
         {
           const Tractogram& tractogram = dynamic_cast<const Tractogram&>(displayable);
+          bool using_geom = geometry_type == TrackGeometryType::Pseudotubes;
 
           std::string source =
             "uniform float lower, upper;\n"
@@ -219,35 +223,39 @@ namespace MR
           if (color_type == TrackColourType::ScalarFile || color_type == TrackColourType::Ends)
             source += "in vec3 fColour;\n";
           if (use_lighting || color_type == TrackColourType::Direction)
-            source += "in vec3 g_tangent;\n";
+            source += using_geom ? "in vec3 g_tangent;\n" : "in vec3 v_tangent;\n";
 
           if (threshold_type != TrackThresholdType::None)
-            source += "in float g_amp;\n";
+            source += using_geom ? "in float g_amp;\n" : "in vec3 v_amp;\n";
 
-          if (use_lighting)
-            source +=
+          if (use_lighting && using_geom)
+            source += 
               "uniform float ambient, diffuse, specular, shine;\n"
               "uniform vec3 light_pos;\n"
               "in float g_height;\n";
           if (do_crop_to_slab)
-            source += "in float g_include;\n";
+            source += using_geom ? "in float g_include;\n" : "in float v_include;\n";
 
           source += "void main() {\n";
 
           if (do_crop_to_slab)
-            source +=
-              "  if (g_include < 0.0 || g_include > 1.0) discard;\n";
+            source += using_geom ?
+                  "  if (g_include < 0.0 || g_include > 1.0) discard;\n"
+                : "  if (v_include < 0.0 || v_include > 1.0) discard;\n";
 
           if (threshold_type != TrackThresholdType::None) {
             if (tractogram.use_discard_lower())
-              source += "  if (g_amp < lower) discard;\n";
+              source += using_geom ? "  if (g_amp < lower) discard;\n"
+                                   : "  if (v_amp < lower) discard;\n";
             if (tractogram.use_discard_upper())
-              source += "  if (g_amp > upper) discard;\n";
+              source += using_geom ? "  if (g_amp > upper) discard;\n"
+                                   : "  if (v_amp > upper) discard;\n";
           }
 
           switch (color_type) {
             case TrackColourType::Direction:
-              source += "  colour = abs (normalize (g_tangent));\n";
+              source += using_geom ? "  colour = abs (normalize (g_tangent));\n"
+                                   : "  colour = abs (normalize (v_tangent));\n";
               break;
             case TrackColourType::ScalarFile:
               source += "  colour = fColour;\n";
@@ -259,7 +267,7 @@ namespace MR
               source += "  colour = const_colour;\n";
           }
 
-          if (use_lighting)
+          if (use_lighting && using_geom)
             // g_height tells us where we are across the cylinder (0 - PI)
             source +=
               // compute surface normal:
@@ -298,6 +306,8 @@ namespace MR
             return true;
           if (use_lighting != tractogram.tractography_tool.use_lighting)
             return true;
+          if (geometry_type != tractogram.geometry_type)
+            return true;
 
           return Displayable::Shader::need_update (object);
         }
@@ -312,6 +322,7 @@ namespace MR
           use_lighting = tractogram.tractography_tool.use_lighting;
           color_type = tractogram.color_type;
           threshold_type = tractogram.threshold_type;
+          geometry_type = tractogram.geometry_type;
           Displayable::Shader::update (object);
         }
 
@@ -331,6 +342,7 @@ namespace MR
             filename (filename),
             color_type (TrackColourType::Direction),
             threshold_type (TrackThresholdType::None),
+            geometry_type (TrackGeometryType::Line),
             sample_stride (0),
             vao_dirty (true),
             threshold_min (NaN),
@@ -417,7 +429,9 @@ namespace MR
             original_fov = std::pow (dim[0]*dim[1]*dim[2], 1.0f/3.0f);
           }
 
-          line_thickness_screenspace = tractography_tool.line_thickness*original_fov*(transform.width()+transform.height()) / ( 2.0*window().FOV()*transform.width()*transform.height());
+          line_thickness_screenspace = geometry_type != TrackGeometryType::Pseudotubes ? 1.f :
+                tractography_tool.line_thickness*original_fov*(transform.width()+transform.height()) /
+                ( 2.0*window().FOV()*transform.width()*transform.height());
 
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "line_thickness"), line_thickness_screenspace);
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "scale_x"), transform.width());
@@ -502,7 +516,11 @@ namespace MR
                 track_starts[buf][j] = (GLint) (std::ceil (original_track_starts[buf][j] / (float)sample_stride)) - 1;
               }
             }
-            gl::MultiDrawArrays (gl::LINE_STRIP, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
+
+            if (geometry_type == TrackGeometryType::Points)
+              gl::MultiDrawArrays (gl::POINTS, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
+            else
+              gl::MultiDrawArrays (gl::LINE_STRIP, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
           }
 
           vao_dirty = false;
@@ -870,6 +888,11 @@ namespace MR
           }
         }
 
+
+        void Tractogram::set_geometry_type (const TrackGeometryType t)
+        {
+          geometry_type = t;
+        }
 
 
         void Tractogram::load_tracks_onto_GPU (vector<Eigen::Vector3f>& buffer,
