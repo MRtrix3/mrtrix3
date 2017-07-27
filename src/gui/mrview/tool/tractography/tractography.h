@@ -89,6 +89,7 @@ namespace MR
             void colour_by_scalar_file_slot ();
             void colour_mode_selection_slot (int);
             void colour_button_slot();
+            void geom_type_selection_slot (int);
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
 
           protected:
@@ -98,15 +99,21 @@ namespace MR
             ComboBoxWithErrorMsg *colour_combobox;
             QColorButton *colour_button;
 
+            ComboBoxWithErrorMsg *geom_type_combobox;
+
             TrackScalarFileOptions *scalar_file_options;
             LightingDock *lighting_dock;
 
+            QGroupBox* lighting_group_box;
+            QPushButton* lighting_button;
+
             QSlider* opacity_slider;
             QSlider* thickness_slider;
+            QLabel* thickness_label;
             
             void dropEvent (QDropEvent* event) override;
             void update_scalar_options();
-
+            void update_geometry_type_gui();
         };
       }
     }
