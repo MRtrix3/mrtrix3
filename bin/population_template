@@ -251,6 +251,7 @@ if app.args.template_mask and not useMasks:
 commonPostfix = path.commonPostfix(inFiles)
 input = []
 for i in inFiles:
+  image.check3DNonunity(os.path.join(path.fromUser(inputDir, False), i))
   prefix = i.split(commonPostfix)[0]
   if useMasks:
     if prefix not in maskPrefixes:

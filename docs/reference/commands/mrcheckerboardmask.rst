@@ -15,7 +15,7 @@ Usage
 
     mrcheckerboardmask [ options ]  input output
 
--  *input*: the input image to be .
+-  *input*: the input image to be used as a template.
 -  *output*: the output binary image mask.
 
 Options

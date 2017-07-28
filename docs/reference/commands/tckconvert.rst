@@ -21,7 +21,7 @@ Usage
 Description
 -----------
 
-The program currently supports MRtrix .tck files (input/output), ascii text files (input/output), and VTK polydata files (output only).
+The program currently supports MRtrix .tck files (input/output), ascii text files (input/output), VTK polydata files (input/output), and RenderMan RIB (export only).
 
 Note that ascii files will be stored with one streamline per numbered file. To support this, the command will use the multi-file numbering syntax, where square brackets denote the position of the numbering for the files, for example:
 
@@ -43,11 +43,19 @@ Options
 Options specific to PLY writer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-radius radius** radius of the streamlines
-
 -  **-sides sides** number of sides for streamlines
 
 -  **-increment increment** generate streamline points at every (increment) points
+
+Options specific to RIB writer
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-dec** add DEC as a primvar
+
+Options for both PLY and RIB writer
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-radius radius** radius of the streamlines
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -72,7 +80,7 @@ Standard options
 
 
 
-**Author:** Daan Christiaens (daan.christiaens@kcl.ac.uk), J-Donald Tournier (jdtournier@gmail.com), Philip Broser (philip.broser@me.com).
+**Author:** Daan Christiaens (daan.christiaens@kcl.ac.uk), J-Donald Tournier (jdtournier@gmail.com), Philip Broser (philip.broser@me.com), Daniel Blezek (daniel.blezek@gmail.com).
 
 **Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
 

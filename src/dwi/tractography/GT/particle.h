@@ -74,7 +74,15 @@ namespace MR {
               removeSuccessor();
             alive = false;
           }
+
+          // disable copy and assignment
+          Particle(const Particle&) = delete;
+          Particle& operator=(const Particle&) = delete;
           
+          // default move constructor and assignment
+          Particle(Particle&&) = default;
+          Particle& operator=(Particle&&) = default;
+
           
           // Getters and setters ----------------------------------------------------------
           

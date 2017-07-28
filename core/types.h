@@ -20,6 +20,7 @@
 #include <complex>
 #include <iostream>
 #include <vector>
+#include <deque>
 #include <cstddef>
 #include <memory>
 
@@ -244,6 +245,21 @@ namespace MR
         vector() { }
     };
 
+  
+  template <typename X, int N=(alignof(X)>::MR::malloc_align)>
+    class deque : public ::std::deque<X, Eigen::aligned_allocator<X>> { NOMEMALIGN
+      public:
+        using ::std::deque<X,Eigen::aligned_allocator<X>>::deque;
+        deque() { }
+    };
+
+  template <typename X>
+    class deque<X,0> : public ::std::deque<X> { NOMEMALIGN
+      public:
+        using ::std::deque<X>::deque;
+        deque() { }
+    };
+
 
   template <typename X, typename... Args>
     inline std::shared_ptr<X> make_shared (Args&&... args) {
@@ -260,10 +276,11 @@ namespace MR
 namespace std
 {
   // these are not defined in the standard, but are needed
-  // for use in generic templates:
-  inline uint8_t abs (uint8_t x) { return x; }
-  inline uint16_t abs (uint16_t x) { return x; }
-  inline uint32_t abs (uint32_t x) { return x; }
+  // for use in generic templates
+  FORCE_INLINE uint8_t abs (uint8_t x) { return x; }
+  FORCE_INLINE uint16_t abs (uint16_t x) { return x; }
+  FORCE_INLINE uint32_t abs (uint32_t x) { return x; }
+  FORCE_INLINE uint64_t abs (uint64_t x) { return x; }
 
 
   template <class T> inline ostream& operator<< (ostream& stream, const vector<T>& V)
