@@ -781,7 +781,7 @@ class Parser(argparse.ArgumentParser):
 class progressBar:
 
   def _update(self):
-    import sys
+    import os, sys
     global clearLine, colourConsole, colourClear
     sys.stderr.write('\r' + colourConsole + os.path.basename(sys.argv[0]) + ': ' + colourClear + '[{0:>3}%] '.format(int(round(100.0*self.counter/self.target))) + self.message + '...' + clearLine + self.newline)
     sys.stderr.flush()
@@ -803,7 +803,7 @@ class progressBar:
     self._update()
 
   def done(self):
-    import sys
+    import os, sys
     global _verbosity
     global clearLine, colourConsole, colourClear
     self.counter = self.target
