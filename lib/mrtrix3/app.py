@@ -668,7 +668,7 @@ class Parser(argparse.ArgumentParser):
               text += ' '.join(option.metavar)
             else:
               text += option.metavar
-          print ('+ **-' + text + '**<br>' + option.help)
+          print ('+ **' + text + '**<br>' + option.help)
           print ('')
     if self._citationList:
       print ('## References')
