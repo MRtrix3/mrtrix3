@@ -201,7 +201,18 @@ void TrackMapperTWI::add_fod_image (const std::string& path)
   image_plugin.reset (new TWIFODImagePlugin (path, track_statistic));
 }
 
-void TrackMapperTWI::add_twdfc_image (Image<float>& image, const vector<float>& kernel, const ssize_t timepoint)
+void TrackMapperTWI::add_twdfc_static_image (Image<float>& image)
+{
+  if (image_plugin)
+    throw Exception ("Cannot add more than one associated image to TWI");
+  if (contrast != SCALAR_MAP)
+    throw Exception ("For fMRI correlation mapping, mapper must be set to SCALAR_MAP contrast");
+  if (track_statistic != ENDS_CORR)
+    throw Exception ("For fMRI correlation mapping, only the endpoint correlation track-wise statistic is valid");
+  image_plugin.reset (new TWDFCStaticImagePlugin (image));
+}
+
+void TrackMapperTWI::add_twdfc_dynamic_image (Image<float>& image, const vector<float>& kernel, const ssize_t timepoint)
 {
   if (image_plugin)
     throw Exception ("Cannot add more than one associated image to TWI");
@@ -209,7 +220,7 @@ void TrackMapperTWI::add_twdfc_image (Image<float>& image, const vector<float>& 
     throw Exception ("For sliding time-window fMRI mapping, mapper must be set to SCALAR_MAP contrast");
   if (track_statistic != ENDS_CORR)
     throw Exception ("For sliding time-window fMRI mapping, only the endpoint correlation track-wise statistic is valid");
-  image_plugin.reset (new TWDFCImagePlugin (image, kernel, timepoint));
+  image_plugin.reset (new TWDFCDynamicImagePlugin (image, kernel, timepoint));
 }
 
 void TrackMapperTWI::add_vector_data (const std::string& path)

@@ -122,45 +122,6 @@ namespace MR {
               }
             }
 
-          } else if (statistic == ENDS_CORR) {
-
-            // Use trilinear interpolation
-            // Store values into local vectors, since it's a two-pass operation
-            factors.assign (1, NaN);
-            vector<float> values[2];
-            for (size_t tck_end_index = 0; tck_end_index != 2; ++tck_end_index) {
-              const ssize_t index = get_end_index (tck, bool(tck_end_index));
-              if (index < 0)
-                return;
-              if (!interp.scanner (tck[index]))
-                return;
-              values[tck_end_index].reserve (interp.size(3));
-              for (interp.index(3) = 0; interp.index(3) != interp.size(3); ++interp.index(3))
-                values[tck_end_index].push_back (interp.value());
-            }
-
-            // Calculate the Pearson correlation coefficient
-            default_type sums[2] = { 0.0, 0.0 };
-            for (ssize_t i = 0; i != interp.size(3); ++i) {
-              sums[0] += values[0][i];
-              sums[1] += values[1][i];
-            }
-            const default_type means[2] = { sums[0] / default_type(interp.size(3)), sums[1] / default_type(interp.size(3)) };
-
-            default_type product = 0.0;
-            default_type variances[2] = { 0.0, 0.0 };
-            for (ssize_t i = 0; i != interp.size(3); ++i) {
-              product += ((values[0][i] - means[0]) * (values[1][i] - means[1]));
-              variances[0] += Math::pow2 (values[0][i] - means[0]);
-              variances[1] += Math::pow2 (values[1][i] - means[1]);
-            }
-            const default_type product_expectation = product / default_type(interp.size(3));
-            const default_type stdevs[2] = { std::sqrt (variances[0] / default_type(interp.size(3)-1)),
-                                             std::sqrt (variances[1] / default_type(interp.size(3)-1)) };
-
-            if (stdevs[0] && stdevs[1])
-              factors[0] = product_expectation / (stdevs[0] * stdevs[1]);
-
           } else {
 
             // The entire length of the track contributes
@@ -170,7 +131,6 @@ namespace MR {
               else
                 factors.push_back (NaN);
             }
-
 
           }
         }
@@ -222,7 +182,50 @@ namespace MR {
 
 
 
-        void TWDFCImagePlugin::load_factors (const Streamline<>& tck, vector<default_type>& factors) const
+        void TWDFCStaticImagePlugin::load_factors (const Streamline<>& tck, vector<default_type>& factors) const
+        {
+          // Use trilinear interpolation
+          // Store values into local vectors, since it's a two-pass operation
+          factors.assign (1, NaN);
+          vector<float> values[2];
+          for (size_t tck_end_index = 0; tck_end_index != 2; ++tck_end_index) {
+            const ssize_t index = get_end_index (tck, bool(tck_end_index));
+            if (index < 0)
+              return;
+            if (!interp.scanner (tck[index]))
+              return;
+            values[tck_end_index].reserve (interp.size(3));
+            for (interp.index(3) = 0; interp.index(3) != interp.size(3); ++interp.index(3))
+              values[tck_end_index].push_back (interp.value());
+          }
+
+          // Calculate the Pearson correlation coefficient
+          default_type sums[2] = { 0.0, 0.0 };
+          for (ssize_t i = 0; i != interp.size(3); ++i) {
+            sums[0] += values[0][i];
+            sums[1] += values[1][i];
+          }
+          const default_type means[2] = { sums[0] / default_type(interp.size(3)), sums[1] / default_type(interp.size(3)) };
+
+          default_type product = 0.0;
+          default_type variances[2] = { 0.0, 0.0 };
+          for (ssize_t i = 0; i != interp.size(3); ++i) {
+            product += ((values[0][i] - means[0]) * (values[1][i] - means[1]));
+            variances[0] += Math::pow2 (values[0][i] - means[0]);
+            variances[1] += Math::pow2 (values[1][i] - means[1]);
+          }
+          const default_type product_expectation = product / default_type(interp.size(3));
+          const default_type stdevs[2] = { std::sqrt (variances[0] / default_type(interp.size(3)-1)),
+                                           std::sqrt (variances[1] / default_type(interp.size(3)-1)) };
+
+          if (stdevs[0] && stdevs[1])
+            factors[0] = product_expectation / (stdevs[0] * stdevs[1]);
+        }
+
+
+
+
+        void TWDFCDynamicImagePlugin::load_factors (const Streamline<>& tck, vector<default_type>& factors) const
         {
           assert (statistic == ENDS_CORR);
           factors.assign (1, NaN);

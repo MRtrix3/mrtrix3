@@ -45,7 +45,6 @@ using namespace MR::DWI::Tractography::Mapping;
 
 
 
-#define DEFAULT_SLIDING_WINDOW_WIDTH 15
 const char* windows[] = { "rectangle", "triangle", "cosine", "hann", "hamming", "lanczos", NULL };
 
 
@@ -56,10 +55,23 @@ AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 SYNOPSIS = "Perform the Track-Weighted Dynamic Functional Connectivity (TW-dFC) method.";
 
 DESCRIPTION
-  + "This command generates a sliding-window Track-Weighted Image (TWI), where "
-    "the contribution from each streamline to the image at each timepoint is the "
-    "Pearson correlation between the fMRI time series at the streamline endpoints, "
-    "within a sliding temporal window centred at that timepoint.";
+  + "This command generates a Track-Weighted Image (TWI), where the "
+    "contribution from each streamline to the image is the Pearson "
+    "correlation between the fMRI time series at the streamline endpoints."
+
+  + "The output image can be generated in one of two ways "
+    "(note that one of these two command-line options MUST be provided): "
+
+  + "- \"Static\" functional connectivity (-static option): "
+    "Each streamline contributes to a static 3D output image based on the "
+    "correlation between the signals at the streamline endpoints using the "
+    "entirety of the input time series."
+
+  + "- \"Dynamic\" functional connectivity (-dynamic option): "
+    "The output image is a 4D image, with the same number of volumes as "
+    "the input fMRI time series. For each volume, the contribution from "
+    "each streamline is calculated based on a finite-width sliding time "
+    "window, centred at the timepoint corresponding to that volume.";
 
 ARGUMENTS
   + Argument ("tracks", "the input track file.").type_file_in()
@@ -67,6 +79,19 @@ ARGUMENTS
   + Argument ("output", "the output TW-dFC image").type_image_out();
 
 OPTIONS
+  + OptionGroup ("Options for toggling between static and dynamic TW-dFC methods; "
+                 "note that one of these options MUST be provided")
+
+  + Option ("static", "generate a \"static\" (3D) output image.")
+
+  + Option ("dynamic", "generate a \"dynamic\" (4D) output image; "
+                       "must additionally provide the shape and width (in volumes) of the sliding window.")
+    + Argument ("shape").type_choice (windows)
+    + Argument ("width").type_integer (3)
+
+
+  + OptionGroup ("Options for setting the properties of the output image")
+
   + Option ("template",
       "an image file to be used as a template for the output (the output image "
       "will have the same transform and field of view).")
@@ -83,12 +108,8 @@ OPTIONS
       "Options are: " + join(voxel_statistics, ", ") + " (default: mean)")
     + Argument ("type").type_choice (voxel_statistics)
 
-  + Option ("window_shape", "specify the shape of the sliding window weighting function. "
-                            "Options are: rectangle, triangle, cosine, hann, hamming, lanczos (default = rectangle)")
-    + Argument ("shape").type_choice (windows)
 
-  + Option ("window_width", "set the full width of the sliding window (in volumes, not time) (must be an odd number) (default = " + str(DEFAULT_SLIDING_WINDOW_WIDTH) + ")")
-    + Argument ("value").type_integer (3)
+  + OptionGroup ("Other options for affecting the streamline sampling & mapping behaviour")
 
   + Option ("backtrack",
             "if no valid timeseries is found at the streamline endpoint, backtrack along "
@@ -98,6 +119,7 @@ OPTIONS
       "upsample the tracks by some ratio using Hermite interpolation before mappipng \n"
       "(if omitted, an appropriate ratio will be determined automatically)")
     + Argument ("factor").type_integer (1);
+
 
   REFERENCES
   + "Calamante, F.; Smith, R.E.; Liang, X.; Zalesky, A.; Connelly, A " // Internal
@@ -204,7 +226,66 @@ class Count_receiver
 
 
 
-void run () {
+void run ()
+{
+  bool is_static = get_options ("static").size();
+  vector<float> window;
+
+  auto opt = get_options ("dynamic");
+  if (opt.size()) {
+    if (is_static)
+      throw Exception ("Do not specify both -static and -dynamic options");
+
+    // Generate the window filter
+    const int window_shape = opt[0][0];
+    const ssize_t window_width = opt[0][1];
+    if (!(window_width % 2))
+      throw Exception ("Width of sliding time window must be an odd integer");
+
+    window.resize (window_width);
+    const ssize_t halfwidth = (window_width+1) / 2;
+    const ssize_t centre = (window_width-1) / 2; // Element at centre of the window
+
+    switch (window_shape) {
+
+      case 0: // rectangular
+        window.assign (window_width, 1.0);
+        break;
+
+      case 1: // triangle
+        for (ssize_t i = 0; i != window_width; ++i)
+          window[i] = 1.0 - (std::abs (i - centre) / default_type(halfwidth));
+        break;
+
+      case 2: // cosine
+        for (ssize_t i = 0; i != window_width; ++i)
+          window[i] = std::sin (i * Math::pi / default_type(window_width - 1));
+        break;
+
+      case 3: // hann
+        for (ssize_t i = 0; i != window_width; ++i)
+          window[i] = 0.5 * (1.0 - std::cos (2.0 * Math::pi * i / default_type(window_width - 1)));
+        break;
+
+      case 4: // hamming
+        for (ssize_t i = 0; i != window_width; ++i)
+          window[i] = 0.53836 - (0.46164 * std::cos (2.0 * Math::pi * i / default_type(window_width - 1)));
+        break;
+
+      case 5: // lanczos
+        for (ssize_t i = 0; i != window_width; ++i) {
+          const default_type v = 2.0 * Math::pi * std::abs (i - centre) / default_type(window_width - 1);
+          window[i] = v ? std::max (0.0, (std::sin (v) / v)) : 1.0;
+        }
+        break;
+
+      default:
+        throw Exception ("Unsupported sliding window shape");
+    }
+
+  } else if (!is_static) {
+    throw Exception ("Either the -static or -dynamic option must be provided");
+  }
 
   const std::string tck_path = argument[0];
   Tractography::Properties properties;
@@ -218,7 +299,7 @@ void run () {
   Image<float> fmri_image (Image<float>::open (argument[1]).with_direct_io(3));
 
   vector<default_type> voxel_size;
-  auto opt = get_options("vox");
+  opt = get_options("vox");
   if (opt.size())
     voxel_size = parse_floats (opt[0][0]);
 
@@ -244,8 +325,12 @@ void run () {
 
   header.datatype() = DataType::Float32;
   header.datatype().set_byte_order_native();
-  header.ndim() = 4;
-  header.size(3) = fmri_image.size(3);
+  if (is_static) {
+    header.ndim() = 3;
+  } else {
+    header.ndim() = 4;
+    header.size(3) = fmri_image.size(3);
+  }
   add_line (header.keyval()["comments"], "TW-dFC image");
 
   size_t upsample_ratio;
@@ -267,95 +352,57 @@ void run () {
   opt = get_options ("stat_vox");
   const vox_stat_t stat_vox = opt.size() ? vox_stat_t(int(opt[0][0])) : V_MEAN;
 
-  // Generate the window filter
-  const ssize_t window_width = get_option_value ("window_width", DEFAULT_SLIDING_WINDOW_WIDTH);
-  if (!(window_width % 2))
-    throw Exception ("Width of sliding time window must be an odd integer");
-  const int window_shape = get_option_value ("window_shape", 0); // default = rectangular
-
-  vector<float> window (window_width, 0.0);
-  const ssize_t halfwidth = (window_width+1) / 2;
-  const ssize_t centre = (window_width-1) / 2; // Element at centre of the window
-
-  switch (window_shape) {
-
-    case 0: // rectangular
-      window.assign (window_width, 1.0);
-      break;
-
-    case 1: // triangle
-      for (ssize_t i = 0; i != window_width; ++i)
-        window[i] = 1.0 - (std::abs (i - centre) / default_type(halfwidth));
-      break;
-
-    case 2: // cosine
-      for (ssize_t i = 0; i != window_width; ++i)
-        window[i] = std::sin (i * Math::pi / default_type(window_width - 1));
-      break;
-
-    case 3: // hann
-      for (ssize_t i = 0; i != window_width; ++i)
-        window[i] = 0.5 * (1.0 - std::cos (2.0 * Math::pi * i / default_type(window_width - 1)));
-      break;
-
-    case 4: // hamming
-      for (ssize_t i = 0; i != window_width; ++i)
-        window[i] = 0.53836 - (0.46164 * std::cos (2.0 * Math::pi * i / default_type(window_width - 1)));
-      break;
-
-    case 5: // lanczos
-      for (ssize_t i = 0; i != window_width; ++i) {
-        const default_type v = 2.0 * Math::pi * std::abs (i - centre) / default_type(window_width - 1);
-        window[i] = v ? std::max (0.0, (std::sin (v) / v)) : 1.0;
-      }
-      break;
-
-    default:
-      throw Exception ("Unsupported sliding window shape");
-  }
-
-  // TODO Reconsider pre-calculating & storing SetVoxel for each streamline
-  // - Faster, but ups RAM requirements, may become prohibitive with super-resolution
-  // TODO Add voxel-wise statistic V_MEAN_ABS - mean absolute value?
-
-  Image<float> out_image (Image<float>::create (argument[2], header));
   Header H_3D (header);
   H_3D.ndim() = 3;
 
-  Image<uint32_t> counts;
-  if (stat_vox == V_MEAN) {
-    counts = Image<uint32_t>::scratch (H_3D, "Track count scratch buffer");
+  if (is_static) {
+
     Tractography::Reader<float> tck_file (tck_path, properties);
-    Mapping::TrackLoader loader (tck_file, num_tracks, "Calculating initial TDI");
-    Mapping::TrackMapperBase mapper (H_3D);
+    Mapping::TrackLoader loader (tck_file, num_tracks, "Generating (static) TW-dFC image");
+    Mapping::TrackMapperTWI mapper (H_3D, SCALAR_MAP, ENDS_CORR);
     mapper.set_upsample_ratio (upsample_ratio);
-    Count_receiver receiver (counts);
-    Thread::run_queue (loader, Thread::batch (Tractography::Streamline<>()), Thread::multi (mapper), Thread::batch (Mapping::SetVoxel()), receiver);
-  }
+    mapper.add_twdfc_static_image (fmri_image);
+    Mapping::MapWriter<float> writer (header, argument[2], stat_vox);
+    Thread::run_queue (loader, Thread::batch (Tractography::Streamline<>()), Thread::multi (mapper), Thread::batch (Mapping::SetVoxel()), writer);
 
-  ProgressBar progress ("Generating TW-dFC image", header.size(3));
-  for (ssize_t timepoint = 0; timepoint != header.size(3); ++timepoint) {
+  } else {
 
-    {
-      LogLevelLatch latch (0);
+    Image<uint32_t> counts;
+    if (stat_vox == V_MEAN) {
+      counts = Image<uint32_t>::scratch (H_3D, "Track count scratch buffer");
       Tractography::Reader<float> tck_file (tck_path, properties);
-      Mapping::TrackLoader loader (tck_file);
-      Mapping::TrackMapperTWI mapper (H_3D, SCALAR_MAP, ENDS_CORR);
+      Mapping::TrackLoader loader (tck_file, num_tracks, "Calculating initial TDI");
+      Mapping::TrackMapperBase mapper (H_3D);
       mapper.set_upsample_ratio (upsample_ratio);
-      mapper.add_twdfc_image (fmri_image, window, timepoint);
-      Receiver receiver (H_3D, stat_vox);
+      Count_receiver receiver (counts);
       Thread::run_queue (loader, Thread::batch (Tractography::Streamline<>()), Thread::multi (mapper), Thread::batch (Mapping::SetVoxel()), receiver);
-
-      if (stat_vox == V_MEAN)
-        receiver.scale_by_count (counts);
-
-      out_image.index(3) = timepoint;
-      receiver.write (out_image);
     }
 
-    ++progress;
-  }
+    Image<float> out_image (Image<float>::create (argument[2], header));
+    ProgressBar progress ("Generating TW-dFC image", header.size(3));
+    for (ssize_t timepoint = 0; timepoint != header.size(3); ++timepoint) {
 
+      {
+        LogLevelLatch latch (0);
+        Tractography::Reader<float> tck_file (tck_path, properties);
+        Mapping::TrackLoader loader (tck_file);
+        Mapping::TrackMapperTWI mapper (H_3D, SCALAR_MAP, ENDS_CORR);
+        mapper.set_upsample_ratio (upsample_ratio);
+        mapper.add_twdfc_dynamic_image (fmri_image, window, timepoint);
+        Receiver receiver (H_3D, stat_vox);
+        Thread::run_queue (loader, Thread::batch (Tractography::Streamline<>()), Thread::multi (mapper), Thread::batch (Mapping::SetVoxel()), receiver);
+
+        if (stat_vox == V_MEAN)
+          receiver.scale_by_count (counts);
+
+        out_image.index(3) = timepoint;
+        receiver.write (out_image);
+      }
+
+      ++progress;
+    }
+
+  }
 }
 
 

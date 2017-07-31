@@ -91,7 +91,7 @@ List of MRtrix3 commands
     commands/tck2connectome
     commands/tck2fixel
     commands/tckconvert
-    commands/tckdynamicmap
+    commands/tckdfc
     commands/tckedit
     commands/tckgen
     commands/tckglobal
@@ -203,7 +203,7 @@ List of MRtrix3 commands
     :ref:`tck2connectome`, "Generate a connectome matrix from a streamlines file and a node parcellation image"
     :ref:`tck2fixel`, "Compute a fixel TDI map from a tractogram"
     :ref:`tckconvert`, "Convert between different track file formats"
-    :ref:`tckdynamicmap`, "Perform the Track-Weighted Dynamic Functional Connectivity (TW-dFC) method."
+    :ref:`tckdfc`, "Perform the Track-Weighted Dynamic Functional Connectivity (TW-dFC) method."
     :ref:`tckedit`, "Perform various editing operations on track files"
     :ref:`tckgen`, "Perform streamlines tractography"
     :ref:`tckglobal`, "Multi-Shell Multi-Tissue Global Tractography"

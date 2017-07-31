@@ -1,6 +1,6 @@
-.. _tckdynamicmap:
+.. _tckdfc:
 
-tckdynamicmap
+tckdfc
 ===================
 
 Synopsis
@@ -13,7 +13,7 @@ Usage
 
 ::
 
-    tckdynamicmap [ options ]  tracks fmri output
+    tckdfc [ options ]  tracks fmri output
 
 -  *tracks*: the input track file.
 -  *fmri*: the pre-processed fMRI time series
@@ -22,10 +22,26 @@ Usage
 Description
 -----------
 
-This command generates a sliding-window Track-Weighted Image (TWI), where the contribution from each streamline to the image at each timepoint is the Pearson correlation between the fMRI time series at the streamline endpoints, within a sliding temporal window centred at that timepoint.
+This command generates a Track-Weighted Image (TWI), where the contribution from each streamline to the image is the Pearson correlation between the fMRI time series at the streamline endpoints.
+
+The output image can be generated in one of two ways (note that one of these two command-line options MUST be provided): 
+
+- "Static" functional connectivity (-static option): Each streamline contributes to a static 3D output image based on the correlation between the signals at the streamline endpoints using the entirety of the input time series.
+
+- "Dynamic" functional connectivity (-dynamic option): The output image is a 4D image, with the same number of volumes as the input fMRI time series. For each volume, the contribution from each streamline is calculated based on a finite-width sliding time window, centred at the timepoint corresponding to that volume.
 
 Options
 -------
+
+Options for toggling between static and dynamic TW-dFC methods; note that one of these options MUST be provided
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-static** generate a "static" (3D) output image.
+
+-  **-dynamic shape width** generate a "dynamic" (4D) output image; must additionally provide the shape and width (in volumes) of the sliding window.
+
+Options for setting the properties of the output image
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-template image** an image file to be used as a template for the output (the output image will have the same transform and field of view).
 
@@ -33,9 +49,8 @@ Options
 
 -  **-stat_vox type** define the statistic for choosing the final voxel intensities for a given contrast type given the individual values from the tracks passing through each voxelOptions are: sum, min, mean, max (default: mean)
 
--  **-window_shape shape** specify the shape of the sliding window weighting function. Options are: rectangle, triangle, cosine, hann, hamming, lanczos (default = rectangle)
-
--  **-window_width value** set the full width of the sliding window (in volumes, not time) (must be an odd number) (default = 15)
+Other options for affecting the streamline sampling & mapping behaviour
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-backtrack** if no valid timeseries is found at the streamline endpoint, backtrack along the streamline trajectory until a valid timeseries is found
 

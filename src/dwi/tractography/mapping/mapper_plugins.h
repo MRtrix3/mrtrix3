@@ -121,15 +121,11 @@ namespace MR {
             TWIScalarImagePlugin (const std::string& input_image, const tck_stat_t track_statistic) :
                 TWIImagePluginBase (input_image, track_statistic)
             {
-              if (statistic == ENDS_CORR) {
-                if (interp.ndim() != 4)
-                  throw Exception ("Image provided for ends_corr statistic must be a 4D image");
-              } else {
-                if (!((interp.ndim() == 3) || (interp.ndim() == 4 && interp.size(3) == 1)))
-                  throw Exception ("Scalar image used for TWI must be a 3D image");
-                if (interp.ndim() == 4)
-                  interp.index(3) = 0;
-              }
+              assert (statistic != ENDS_CORR);
+              if (!((interp.ndim() == 3) || (interp.ndim() == 4 && interp.size(3) == 1)))
+                throw Exception ("Scalar image used for TWI must be a 3D image");
+              if (interp.ndim() == 4)
+                interp.index(3) = 0;
             }
 
             TWIScalarImagePlugin (const TWIScalarImagePlugin& that) :
@@ -181,20 +177,39 @@ namespace MR {
 
 
 
-        class TWDFCImagePlugin : public TWIImagePluginBase
-        { MEMALIGN(TWDFCImagePlugin)
+        class TWDFCStaticImagePlugin : public TWIImagePluginBase
+        { MEMALIGN(TWDFCStaticImagePlugin)
           public:
-            TWDFCImagePlugin (Image<float>& input_image, const vector<float>& kernel, const ssize_t timepoint) :
+            TWDFCStaticImagePlugin (Image<float>& input_image) :
+                TWIImagePluginBase (input_image, ENDS_CORR) { }
+
+            TWDFCStaticImagePlugin (const TWDFCStaticImagePlugin& that) = default;
+
+            TWDFCStaticImagePlugin* clone() const override
+            {
+              return new TWDFCStaticImagePlugin (*this);
+            }
+
+            void load_factors (const Streamline<>&, vector<default_type>&) const override;
+        };
+
+
+
+
+        class TWDFCDynamicImagePlugin : public TWIImagePluginBase
+        { MEMALIGN(TWDFCDynamicImagePlugin)
+          public:
+            TWDFCDynamicImagePlugin (Image<float>& input_image, const vector<float>& kernel, const ssize_t timepoint) :
                 TWIImagePluginBase (input_image, ENDS_CORR),
                 kernel (kernel),
                 kernel_centre ((kernel.size()-1) / 2),
                 sample_centre (timepoint) { }
 
-            TWDFCImagePlugin (const TWDFCImagePlugin& that) = default;
+            TWDFCDynamicImagePlugin (const TWDFCDynamicImagePlugin& that) = default;
 
-            TWDFCImagePlugin* clone() const override
+            TWDFCDynamicImagePlugin* clone() const override
             {
-              return new TWDFCImagePlugin (*this);
+              return new TWDFCDynamicImagePlugin (*this);
             }
 
             void load_factors (const Streamline<>&, vector<default_type>&) const override;
