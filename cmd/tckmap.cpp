@@ -194,6 +194,11 @@ REFERENCES
   "Track Orientation Density Imaging (TODI) and Track Orientation Distribution (TOD) based tractography. "
   "NeuroImage, 2014, 94, 312-336"
 
+  + "* If using -contrast scalar_map and -stat_tck ends_corr:\n"
+  "Calamante, F.; Smith, R.E.; Liang, X.; Zalesky, A.; Connelly, A " // Internal
+  "Track-weighted dynamic functional connectivity (TW-dFC): a new method to study time-resolved functional connectivity. "
+  "Brain Struct Funct, 2017, doi: 10.1007/s00429-017-1431-1"
+
   + "* If using other contrasts / statistics:\n"
   "Calamante, F.; Tournier, J.-D.; Smith, R. E. & Connelly, A. " // Internal
   "A generalised framework for super-resolution track-weighted imaging. "

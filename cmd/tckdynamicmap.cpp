@@ -99,6 +99,11 @@ OPTIONS
       "(if omitted, an appropriate ratio will be determined automatically)")
     + Argument ("factor").type_integer (1);
 
+  REFERENCES
+  + "Calamante, F.; Smith, R.E.; Liang, X.; Zalesky, A.; Connelly, A " // Internal
+    "Track-weighted dynamic functional connectivity (TW-dFC): a new method to study time-resolved functional connectivity. "
+    "Brain Struct Funct, 2017, doi: 10.1007/s00429-017-1431-1";
+
 }
 
 
@@ -209,11 +214,6 @@ void run () {
     Tractography::Reader<float> tck_file (tck_path, properties);
   }
   const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t> (properties["count"]);
-  float step_size = 0.0;
-  if (properties.find ("output_step_size") != properties.end())
-    step_size = to<float> (properties["output_step_size"]);
-  else
-    step_size = to<float> (properties["step_size"]);
 
   Image<float> fmri_image (Image<float>::open (argument[1]).with_direct_io(3));
 
