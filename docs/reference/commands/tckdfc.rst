@@ -52,7 +52,7 @@ Options for setting the properties of the output image
 Other options for affecting the streamline sampling & mapping behaviour
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-backtrack** if no valid timeseries is found at the streamline endpoint, backtrack along the streamline trajectory until a valid timeseries is found
+-  **-backtrack** if no valid timeseries is found at the streamline endpoint, back-track along the streamline trajectory until a valid timeseries is found. Note that this mechanism is similar, but not precisely equivalent, toback-tracking as can be used with Anatomically-Constrained Tractography (ACT) in the tckgen command. However, here the feature does not change the streamlines trajectories in any way; it simply enables detection of the fact that the input fMRI image may not contain a valid timeseries underneath the streamline endpoint, and where this occurs, searches from the streamline endpoint inwards along the streamline trajectory in search of a valid timeseries to sample from the input image.
 
 -  **-upsample factor** upsample the tracks by some ratio using Hermite interpolation before mappipng (if omitted, an appropriate ratio will be determined automatically)
 
