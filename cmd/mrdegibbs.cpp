@@ -48,9 +48,10 @@ void usage ()
 
 
 typedef double value_type;
+constexpr double pi = 3.1416;
 
 
-void unring_1d (fftw_complex* data, size_t n, size_t numlines, size_t nsh, size_t minW, size_t maxW) 
+void unring_1d (fftw_complex* data, int n, int numlines, int nsh, int minW, int maxW) 
 {
   fftw_complex* in  = (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*n);
   fftw_complex* out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*n);
@@ -60,9 +61,9 @@ void unring_1d (fftw_complex* data, size_t n, size_t numlines, size_t nsh, size_
   fftw_complex* sh2 = (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*n*(2*nsh+1));
 
   double nfac = 1/double(n);
-  size_t* shifts = (size_t*) malloc(sizeof(size_t)*(2*nsh+1));
+  int* shifts = (int*) malloc(sizeof(int)*(2*nsh+1));
   shifts[0] = 0;
-  for (size_t j = 0; j < nsh; j++) {
+  for (int j = 0; j < nsh; j++) {
     shifts[j+1] = j+1;
     shifts[1+nsh+j] = -(j+1);
   }
@@ -70,12 +71,12 @@ void unring_1d (fftw_complex* data, size_t n, size_t numlines, size_t nsh, size_
   double TV1arr[2*nsh+1];
   double TV2arr[2*nsh+1];
 
-  for (size_t k = 0; k < numlines; k++) {
+  for (int k = 0; k < numlines; k++) {
     fftw_execute_dft(p, &(data[n*k]), sh);
-    size_t maxn = (n%2==1) ? (n-1)/2 : n/2-1;
+    int maxn = (n%2==1) ? (n-1)/2 : n/2-1;
 
-    for (size_t j = 1; j < 2*nsh+1; j++) {
-      double phi = Math::pi/double(n) * double(shifts[j])/double(nsh);
+    for (int j = 1; j < 2*nsh+1; j++) {
+      double phi = pi/double(n) * double(shifts[j])/double(nsh);
       fftw_complex u = {cos(phi),sin(phi)};
       fftw_complex e = {1,0};
       sh[j*n ][0] = sh[0][0];
@@ -86,12 +87,12 @@ void unring_1d (fftw_complex* data, size_t n, size_t numlines, size_t nsh, size_
         sh[j*n + n/2][1] = 0;
       }
 
-      for (size_t l = 0; l < maxn; l++) {
+      for (int l = 0; l < maxn; l++) {
         double tmp = e[0];
         e[0] = u[0]*e[0] - u[1]*e[1];
         e[1] = tmp*u[1] + u[0]*e[1];
 
-        size_t L = l+1;
+        int L = l+1;
         sh[j*n +L][0] = (e[0]*sh[L][0] - e[1]*sh[L][1]);
         sh[j*n +L][1] = (e[0]*sh[L][1] + e[1]*sh[L][0]);
         L = n-1-l;
@@ -102,14 +103,14 @@ void unring_1d (fftw_complex* data, size_t n, size_t numlines, size_t nsh, size_
     }
 
 
-    for (size_t j = 0; j < 2*nsh+1; j++)
+    for (int j = 0; j < 2*nsh+1; ++j)
       fftw_execute_dft(pinv, &(sh[j*n]), &sh2[j*n]);
 
-    for (size_t j=0; j < 2*nsh+1; j++) {
+    for (int j = 0; j < 2*nsh+1; ++j) {
       TV1arr[j] = 0;
       TV2arr[j] = 0;
-      const size_t l = 0;
-      for (size_t t = minW; t <= maxW; t++) {
+      const int l = 0;
+      for (int t = minW; t <= maxW; t++) {
         TV1arr[j] += fabs(sh2[j*n + (l-t+n)%n ][0] - sh2[j*n + (l-(t+1)+n)%n ][0]);
         TV1arr[j] += fabs(sh2[j*n + (l-t+n)%n ][1] - sh2[j*n + (l-(t+1)+n)%n ][1]);
         TV2arr[j] += fabs(sh2[j*n + (l+t+n)%n ][0] - sh2[j*n + (l+(t+1)+n)%n ][0]);
@@ -117,10 +118,10 @@ void unring_1d (fftw_complex* data, size_t n, size_t numlines, size_t nsh, size_
       }
     }
 
-    for(size_t l=0; l < n; l++) {
-      double minTV = 999999999999;
-      size_t minidx= 0;
-      for (size_t j=0;j < 2*nsh+1; j++) {
+    for(int l=0; l < n; l++) {
+      double minTV = std::numeric_limits<double>::max();
+      int minidx = 0;
+      for (int j = 0; j < 2*nsh+1; ++j) {
 
         if (TV1arr[j] < minTV) {
           minTV = TV1arr[j];
@@ -176,19 +177,20 @@ void unring_1d (fftw_complex* data, size_t n, size_t numlines, size_t nsh, size_
 
 
 
-void unring_2d (fftw_complex* data1,fftw_complex* tmp2, const size_t* dim_sz, size_t nsh, size_t minW, size_t maxW) 
+void unring_2d (fftw_complex* data1, fftw_complex* tmp2, const int* dim_sz, int nsh, int minW, int maxW) 
 {
   fftw_complex* tmp1  = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * dim_sz[0]*dim_sz[1]);
   fftw_complex* data2 = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * dim_sz[0]*dim_sz[1]);
 
-  fftw_plan p = fftw_plan_dft_2d(dim_sz[1],dim_sz[0], data1, tmp1, FFTW_FORWARD, FFTW_ESTIMATE);
-  fftw_plan pinv = fftw_plan_dft_2d(dim_sz[1],dim_sz[0], data1, tmp1, FFTW_BACKWARD, FFTW_ESTIMATE);
-  fftw_plan p_tr = fftw_plan_dft_2d(dim_sz[0],dim_sz[1], data2, tmp2, FFTW_FORWARD, FFTW_ESTIMATE);
-  fftw_plan pinv_tr = fftw_plan_dft_2d(dim_sz[0],dim_sz[1], data2, tmp2, FFTW_BACKWARD, FFTW_ESTIMATE);
+  fftw_plan p = fftw_plan_dft_2d (dim_sz[1],dim_sz[0], data1, tmp1, FFTW_FORWARD, FFTW_ESTIMATE);
+  fftw_plan pinv = fftw_plan_dft_2d (dim_sz[1],dim_sz[0], data1, tmp1, FFTW_BACKWARD, FFTW_ESTIMATE);
+  fftw_plan p_tr = fftw_plan_dft_2d (dim_sz[0],dim_sz[1], data2, tmp2, FFTW_FORWARD, FFTW_ESTIMATE);
+  fftw_plan pinv_tr = fftw_plan_dft_2d (dim_sz[0],dim_sz[1], data2, tmp2, FFTW_BACKWARD, FFTW_ESTIMATE);
+ 
   double nfac = 1/double(dim_sz[0]*dim_sz[1]);
 
-  for (size_t k = 0; k < dim_sz[1]; k++) {
-    for (size_t j = 0; j < dim_sz[0]; j++) {
+  for (int k = 0; k < dim_sz[1]; k++) {
+    for (int j = 0; j < dim_sz[0]; j++) {
       data2[j*dim_sz[1]+k][0] = data1[k*dim_sz[0]+j][0];
       data2[j*dim_sz[1]+k][1] = data1[k*dim_sz[0]+j][1];
     }
@@ -197,10 +199,10 @@ void unring_2d (fftw_complex* data1,fftw_complex* tmp2, const size_t* dim_sz, si
   fftw_execute_dft(p,data1,tmp1);
   fftw_execute_dft(p_tr,data2,tmp2);
 
-  for (size_t k = 0; k < dim_sz[1]; k++) {
-    double ck = (1+cos(2*Math::pi*(double(k)/dim_sz[1])))*0.5;
-    for (size_t j = 0 ; j < dim_sz[0]; j++) {
-      double cj = (1+cos(2.0*Math::pi*(double(j)/dim_sz[0])))*0.5;
+  for (int k = 0; k < dim_sz[1]; k++) {
+    double ck = (1+cos(2*pi*(double(k)/dim_sz[1])))*0.5;
+    for (int j = 0 ; j < dim_sz[0]; j++) {
+      double cj = (1+cos(2.0*pi*(double(j)/dim_sz[0])))*0.5;
       tmp1[k*dim_sz[0]+j][0] = nfac*(tmp1[k*dim_sz[0]+j][0] * ck) / (ck+cj);
       tmp1[k*dim_sz[0]+j][1] = nfac*(tmp1[k*dim_sz[0]+j][1] * ck) / (ck+cj);
       tmp2[j*dim_sz[1]+k][0] = nfac*(tmp2[j*dim_sz[1]+k][0] * cj) / (ck+cj);
@@ -217,8 +219,8 @@ void unring_2d (fftw_complex* data1,fftw_complex* tmp2, const size_t* dim_sz, si
   fftw_execute_dft(p,data1,tmp1);
   fftw_execute_dft(p_tr,data2,tmp2);
 
-  for (size_t k = 0; k < dim_sz[1]; k++) {
-    for (size_t j = 0; j < dim_sz[0]; j++) {
+  for (int k = 0; k < dim_sz[1]; k++) {
+    for (int j = 0; j < dim_sz[0]; j++) {
       tmp1[k*dim_sz[0]+j][0] = nfac*(tmp1[k*dim_sz[0]+j][0] + tmp2[j*dim_sz[1]+k][0]);
       tmp1[k*dim_sz[0]+j][1] = nfac*(tmp1[k*dim_sz[0]+j][1] + tmp2[j*dim_sz[1]+k][1]);
     }
@@ -237,7 +239,7 @@ void unring_2d (fftw_complex* data1,fftw_complex* tmp2, const size_t* dim_sz, si
 class ComputeSlice
 {
   public:
-    ComputeSlice (const vector<size_t>& outer_axes, const vector<size_t>& slice_axes, const size_t& nsh, const size_t& minW, const size_t& maxW, Image<value_type>& in, Image<value_type>& out) :
+    ComputeSlice (const vector<size_t>& outer_axes, const vector<size_t>& slice_axes, const int& nsh, const int& minW, const int& maxW, Image<value_type>& in, Image<value_type>& out) :
       outer_axes (outer_axes),
       slice_axes (slice_axes),
       nsh (nsh),
@@ -249,31 +251,31 @@ class ComputeSlice
     void operator() (const Iterator& pos)
     {
       assign_pos_of (pos, outer_axes).to (in, out);
-      size_t dims[2];
+      int dims[2];
       dims[0] = in.size(slice_axes[0]);
       dims[1] = in.size(slice_axes[1]);
-      fftw_complex* in_complex = (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*dims[0]*dims[1]);
-      size_t i = 0;
+      fftw_complex* in_complex = (fftw_complex*) fftw_malloc (sizeof(fftw_complex)*dims[0]*dims[1]);
+      int i = 0;
       for (auto l = Loop (slice_axes) (in); l; ++l) {
         in_complex[i][0] = in.value();
-        in_complex[i++][1] = 0;
+        in_complex[i++][1] = 0.0;
       }
-      fftw_complex* out_complex  = (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*dims[0]*dims[1]);
-      unring_2d(in_complex,out_complex,dims,nsh,minW,maxW);
-      fftw_free(in_complex);
+      fftw_complex* out_complex  = (fftw_complex*) fftw_malloc (sizeof(fftw_complex)*dims[0]*dims[1]);
+      unring_2d (in_complex,out_complex,dims,nsh,minW,maxW);
+      fftw_free (in_complex);
       i = 0;
       for (auto l = Loop (slice_axes) (out); l; ++l)
         out.value() = out_complex[i++][0];
 
-      fftw_free(out_complex);
+      fftw_free (out_complex);
     }
 
   private:
     const vector<size_t>& outer_axes;
     const vector<size_t>& slice_axes;
-    const size_t nsh;
-    const size_t minW;
-    const size_t maxW;
+    const int nsh;
+    const int minW;
+    const int maxW;
     Image<value_type> in, out; 
 };
 
