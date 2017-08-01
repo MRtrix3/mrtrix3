@@ -80,13 +80,14 @@ namespace MR {
 
       std::ostream& operator<< (std::ostream& stream, const Series& item)
       {
-        stream << MR::printf ("      %4u - %4u %4s images %10s %8s %s\n", 
+        stream << MR::printf ("      %4u - %4u %4s images %10s %8s %s [ %s ]\n", 
               item.number, 
               item.size(), 
               ( item.modality.size() ? item.modality.c_str() : "(?)" ),
               format_date(item.date).c_str(),
               format_time(item.time).c_str(),
-              item.name.c_str() );
+              item.name.c_str(),
+              item.image_type.c_str() );
 
         for (size_t n = 0; n < item.size(); n++) 
           stream << *item[n];
