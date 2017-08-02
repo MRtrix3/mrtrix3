@@ -66,9 +66,7 @@ class ComputeSlice
       in (in), 
       out (out),
       im1 (in.size(X), in.size(Y)),
-      im2 (im1.rows(), im1.cols()),
-      ft1 (im1.rows(), im1.cols()),
-      ft2 (im1.rows(), im1.cols()) { }
+      im2 (im1.rows(), im1.cols()) { }
 
     void operator() (const Iterator& pos)
     {
@@ -89,41 +87,24 @@ class ComputeSlice
     const int nsh, minW, maxW, X, Y;
     Image<value_type> in, out; 
     Eigen::FFT<double> fftx, ffty;
-    Eigen::MatrixXcd im1, im2, ft1, ft2, shifted;
-    Eigen::VectorXcd vx, vy;
+    Eigen::MatrixXcd im1, im2, shifted;
+    Eigen::VectorXcd v;
 
-    void FFT_2D (const Eigen::MatrixXcd& in, Eigen::MatrixXcd& out) 
+    template <typename Derived> FORCE_INLINE void FFT      (Eigen::MatrixBase<Derived>&& vec) { fftx.fwd (v, vec); vec = v; }
+    template <typename Derived> FORCE_INLINE void FFT      (Eigen::MatrixBase<Derived>& vec) { FFT (std::move (vec)); }
+    template <typename Derived> FORCE_INLINE void iFFT     (Eigen::MatrixBase<Derived>&& vec) { fftx.inv (v, vec); vec = v; } 
+    template <typename Derived> FORCE_INLINE void iFFT     (Eigen::MatrixBase<Derived>& vec) { iFFT (std::move (vec)); }
+    template <typename Derived> FORCE_INLINE void row_FFT  (Eigen::MatrixBase<Derived>& mat) { for (auto n = 0; n < mat.rows(); ++n)  FFT (mat.row(n)); } 
+    template <typename Derived> FORCE_INLINE void row_iFFT (Eigen::MatrixBase<Derived>& mat) { for (auto n = 0; n < mat.rows(); ++n) iFFT (mat.row(n)); }
+    template <typename Derived> FORCE_INLINE void col_FFT  (Eigen::MatrixBase<Derived>& mat) { for (auto n = 0; n < mat.cols(); ++n)  FFT (mat.col(n)); } 
+    template <typename Derived> FORCE_INLINE void col_iFFT (Eigen::MatrixBase<Derived>& mat) { for (auto n = 0; n < mat.cols(); ++n) iFFT (mat.col(n)); }
+
+
+
+    FORCE_INLINE void unring_2d ()
     {
-      for (auto n = 0; n < in.rows(); ++n) {
-        fftx.fwd (vx, in.row(n));
-        out.row(n) = vx;
-      }
-      for (auto n = 0; n < out.cols(); ++n) {
-        ffty.fwd (vy, out.col(n));
-        out.col(n) = vy;
-      }
-    }
-
-    void FFT_2D_inv (const Eigen::MatrixXcd& in, Eigen::MatrixXcd& out) 
-    {
-      for (auto n = 0; n < in.rows(); ++n) {
-        fftx.inv (vx, in.row(n));
-        out.row(n) = vx;
-      }
-      for (auto n = 0; n < out.cols(); ++n) {
-        ffty.inv (vy, out.col(n));
-        out.col(n) = vy;
-      }
-    }
-
-
-
-
-
-
-    void unring_2d ()
-    {
-      FFT_2D (im1, ft1);
+      row_FFT (im1);
+      col_FFT (im1);
 
       for (int k = 0; k < im1.cols(); k++) {
         double ck = (1.0+cos(2.0*Math::pi*(double(k)/im1.cols())))*0.5;
@@ -131,32 +112,29 @@ class ComputeSlice
           double cj = (1.0+cos(2.0*Math::pi*(double(j)/im1.rows())))*0.5;
 
           if (ck+cj != 0.0) {
-            ft2(j,k) = ft1(j,k) * cj / (ck+cj);
-            ft1(j,k) *= ck / (ck+cj);
+            im2(j,k) = im1(j,k) * cj / (ck+cj);
+            im1(j,k) *= ck / (ck+cj);
           }
           else 
-            ft1(j,k) = ft2(j,k) = cdouble(0.0, 0.0);
+            im1(j,k) = im2(j,k) = cdouble(0.0, 0.0);
         }
       }
 
-      FFT_2D_inv (ft1, im1);
-      FFT_2D_inv (ft2, im2);
+      row_iFFT (im1);
+      col_iFFT (im2);
 
       unring_1d (im1);
-      auto im2_t = im2.transpose();
-      unring_1d (im2_t);
+      unring_1d (im2.transpose());
 
-      FFT_2D (im1, ft1);
-      FFT_2D (im2, ft2);
-
-      ft1 += ft2;
-
-      FFT_2D_inv (ft1, im1);
+      im1 += im2;
     }
 
 
+
+
+
     template <typename Derived> 
-      void unring_1d (Eigen::MatrixBase<Derived>& eig)
+      FORCE_INLINE void unring_1d (Eigen::MatrixBase<Derived>&& eig)
       {
         const int n = eig.rows();
         const int numlines = eig.cols();
@@ -173,8 +151,7 @@ class ComputeSlice
         double TV2arr[2*nsh+1];
 
         for (int k = 0; k < numlines; k++) {
-          fftx.fwd (vx, eig.col(k));
-          shifted.col(0) = vx;
+          shifted.col(0) = eig.col(k);
 
           const int maxn = (n&1) ? (n-1)/2 : n/2-1;
 
@@ -195,10 +172,7 @@ class ComputeSlice
           }
 
 
-          for (int j = 0; j < 2*nsh+1; ++j) {
-            fftx.inv (vx, shifted.col(j));
-            shifted.col(j) = vx;
-          }
+          col_iFFT (shifted);
 
           for (int j = 0; j < 2*nsh+1; ++j) {
             TV1arr[j] = 0.0;
@@ -252,6 +226,8 @@ class ComputeSlice
         }
       }
 
+    template <typename Derived> 
+      FORCE_INLINE void unring_1d (Eigen::MatrixBase<Derived>& eig) { unring_1d (std::move (eig)); }
 
 };
 
