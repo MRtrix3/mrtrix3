@@ -184,8 +184,17 @@ do_topup = (not PE_design == 'None')
 
 def grads_match(one, two):
   # Dot product between gradient directions
-  dot_product = one[0]*two[0] + one[1]*two[1] + one[2]*two[2]
-  if abs(dot_product) < 0.999:
+  # First, need to check for zero-norm vectors:
+  # - If both are zero, skip this check
+  # - If one is zero and the other is not, volumes don't match
+  # - If neither is zero, test the dot product
+  if any([val for val in one[0:3]]):
+    if not any([val for val in two[0:3]]):
+      return False
+    dot_product = one[0]*two[0] + one[1]*two[1] + one[2]*two[2]
+    if abs(dot_product) < 0.999:
+      return False
+  elif any([val for val in two[0:3]]):
     return False
   # b-value
   if abs(one[3]-two[3]) > 10.0:
@@ -243,6 +252,7 @@ if manual_pe_dir:
       app.error('If using -rpe_all option, input image must contain an even number of volumes')
     grads_matched = [ num_volumes ] * num_volumes
     grad_pairs = [ ]
+    app.debug('Commencing gradient direction matching; ' + str(num_volumes) + ' volumes')
     for index1 in range(int(num_volumes/2)):
       if grads_matched[index1] == num_volumes: # As yet unpaired
         for index2 in range(int(num_volumes/2), num_volumes):
@@ -251,9 +261,10 @@ if manual_pe_dir:
               grads_matched[index1] = index2;
               grads_matched[index2] = index1;
               grad_pairs.append([index1, index2])
+              app.debug('Matched volume ' + str(index1) + ' with ' + str(index2) + ': ' + str(grad[index1]) + ' ' + str(grad[index2]))
               break
         else:
-          app.error('Unable to determine matching reversed phase-encode direction volume for DWI volume ' + index1)
+          app.error('Unable to determine matching reversed phase-encode direction volume for DWI volume ' + str(index1))
     if not len(grad_pairs) == num_volumes/2:
       app.error('Unable to determine complete matching DWI volume pairs for reversed phase-encode combination')
     # Construct manual PE scheme here:
@@ -523,6 +534,7 @@ if not os.path.isfile(bvecs_path):
 # The phase-encoding scheme needs to be checked also
 volume_matchings = [ num_volumes ] * num_volumes
 volume_pairs = [ ]
+app.debug('Commencing gradient direction matching; ' + str(num_volumes) + ' volumes')
 for index1 in range(num_volumes):
   if volume_matchings[index1] == num_volumes: # As yet unpaired
     for index2 in range(index1+1, num_volumes):
@@ -532,8 +544,10 @@ for index1 in range(num_volumes):
           volume_matchings[index1] = index2;
           volume_matchings[index2] = index1;
           volume_pairs.append([index1, index2])
+          app.debug('Matched volume ' + str(index1) + ' with ' + str(index2) + '\n' +
+                    'Phase encoding: ' + str(dwi_pe_scheme[index1]) + ' ' + str(dwi_pe_scheme[index2]) + '\n' +
+                    'Gradients: ' + str(grad[index1]) + ' ' + str(grad[index2]))
           break
-
 
 
 if not len(volume_pairs) == int(num_volumes/2):
