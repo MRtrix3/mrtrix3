@@ -11,13 +11,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <unsupported/Eigen/FFT>
 
 #include "command.h"
 #include "progressbar.h"
 #include "image.h"
 #include "algo/threaded_loop.h"
 #include <numeric>
-#include <fftw3.h>
 
 using namespace MR;
 using namespace App;
@@ -50,193 +50,6 @@ void usage ()
 typedef double value_type;
 
 
-void unring_1d (fftw_complex* data, int n, int numlines, int nsh, int minW, int maxW) 
-{
-  fftw_complex* in  = (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*n);
-  fftw_complex* out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*n);
-  fftw_plan p    = fftw_plan_dft_1d(n, in, out, FFTW_FORWARD , FFTW_ESTIMATE);
-  fftw_plan pinv = fftw_plan_dft_1d(n, in, out, FFTW_BACKWARD, FFTW_ESTIMATE);
-  fftw_complex* sh  = (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*n*(2*nsh+1));
-  fftw_complex* sh2 = (fftw_complex*) fftw_malloc(sizeof(fftw_complex)*n*(2*nsh+1));
-
-  double nfac = 1/double(n);
-  int* shifts = (int*) malloc(sizeof(int)*(2*nsh+1));
-  shifts[0] = 0;
-  for (int j = 0; j < nsh; j++) {
-    shifts[j+1] = j+1;
-    shifts[1+nsh+j] = -(j+1);
-  }
-
-  double TV1arr[2*nsh+1];
-  double TV2arr[2*nsh+1];
-
-  for (int k = 0; k < numlines; k++) {
-    fftw_execute_dft(p, &(data[n*k]), sh);
-    int maxn = (n%2==1) ? (n-1)/2 : n/2-1;
-
-    for (int j = 1; j < 2*nsh+1; j++) {
-      double phi = Math::pi/double(n) * double(shifts[j])/double(nsh);
-      fftw_complex u = {cos(phi),sin(phi)};
-      fftw_complex e = {1,0};
-      sh[j*n ][0] = sh[0][0];
-      sh[j*n ][1] = sh[0][1];
-
-      if (n%2 == 0) {
-        sh[j*n + n/2][0] = 0;
-        sh[j*n + n/2][1] = 0;
-      }
-
-      for (int l = 0; l < maxn; l++) {
-        double tmp = e[0];
-        e[0] = u[0]*e[0] - u[1]*e[1];
-        e[1] = tmp*u[1] + u[0]*e[1];
-
-        int L = l+1;
-        sh[j*n +L][0] = (e[0]*sh[L][0] - e[1]*sh[L][1]);
-        sh[j*n +L][1] = (e[0]*sh[L][1] + e[1]*sh[L][0]);
-        L = n-1-l;
-        sh[j*n +L][0] = (e[0]*sh[L][0] + e[1]*sh[L][1]);
-        sh[j*n +L][1] = (e[0]*sh[L][1] - e[1]*sh[L][0]);
-
-      }
-    }
-
-
-    for (int j = 0; j < 2*nsh+1; ++j)
-      fftw_execute_dft(pinv, &(sh[j*n]), &sh2[j*n]);
-
-    for (int j = 0; j < 2*nsh+1; ++j) {
-      TV1arr[j] = 0;
-      TV2arr[j] = 0;
-      const int l = 0;
-      for (int t = minW; t <= maxW; t++) {
-        TV1arr[j] += fabs(sh2[j*n + (l-t+n)%n ][0] - sh2[j*n + (l-(t+1)+n)%n ][0]);
-        TV1arr[j] += fabs(sh2[j*n + (l-t+n)%n ][1] - sh2[j*n + (l-(t+1)+n)%n ][1]);
-        TV2arr[j] += fabs(sh2[j*n + (l+t+n)%n ][0] - sh2[j*n + (l+(t+1)+n)%n ][0]);
-        TV2arr[j] += fabs(sh2[j*n + (l+t+n)%n ][1] - sh2[j*n + (l+(t+1)+n)%n ][1]);
-      }
-    }
-
-    for(int l=0; l < n; l++) {
-      double minTV = std::numeric_limits<double>::max();
-      int minidx = 0;
-      for (int j = 0; j < 2*nsh+1; ++j) {
-
-        if (TV1arr[j] < minTV) {
-          minTV = TV1arr[j];
-          minidx = j;
-        }
-        if (TV2arr[j] < minTV) {
-          minTV = TV2arr[j];
-          minidx = j;
-        }
-
-        TV1arr[j] += fabs(sh2[j*n + (l-minW+1+n)%n ][0] - sh2[j*n + (l-(minW)+n)%n ][0]);
-        TV1arr[j] -= fabs(sh2[j*n + (l-maxW+n)%n ][0] - sh2[j*n + (l-(maxW+1)+n)%n ][0]);
-        TV2arr[j] += fabs(sh2[j*n + (l+maxW+1+n)%n ][0] - sh2[j*n + (l+(maxW+2)+n)%n ][0]);
-        TV2arr[j] -= fabs(sh2[j*n + (l+minW+n)%n ][0] - sh2[j*n + (l+(minW+1)+n)%n ][0]);
-
-        TV1arr[j] += fabs(sh2[j*n + (l-minW+1+n)%n ][1] - sh2[j*n + (l-(minW)+n)%n ][1]);
-        TV1arr[j] -= fabs(sh2[j*n + (l-maxW+n)%n ][1] - sh2[j*n + (l-(maxW+1)+n)%n ][1]);
-        TV2arr[j] += fabs(sh2[j*n + (l+maxW+1+n)%n ][1] - sh2[j*n + (l+(maxW+2)+n)%n ][1]);
-        TV2arr[j] -= fabs(sh2[j*n + (l+minW+n)%n ][1] - sh2[j*n + (l+(minW+1)+n)%n ][1]);
-      }
-
-      double a0r = sh2[minidx*n + (l-1+n)%n ][0];
-      double a1r = sh2[minidx*n + l][0];
-      double a2r = sh2[minidx*n + (l+1+n)%n ][0];
-      double a0i = sh2[minidx*n + (l-1+n)%n ][1];
-      double a1i = sh2[minidx*n + l][1];
-      double a2i = sh2[minidx*n + (l+1+n)%n ][1];
-      double s = double(shifts[minidx])/nsh/2;
-
-      if (s>0) {
-        data[k*n + l][0] =  (a1r*(1-s) + a0r*s)*nfac;
-        data[k*n + l][1] =  (a1i*(1-s) + a0i*s)*nfac;
-      }
-      else {
-        s = -s;
-        data[k*n + l][0] =  (a1r*(1-s) + a2r*s)*nfac;
-        data[k*n + l][1] =  (a1i*(1-s) + a2i*s)*nfac;
-      }
-    }
-  }
-  free(shifts);
-  fftw_destroy_plan(p);
-  fftw_destroy_plan(pinv);
-  fftw_free(in);
-  fftw_free(out);
-  fftw_free(sh);
-  fftw_free(sh2);
-}
-
-
-
-
-
-
-
-void unring_2d (fftw_complex* data1, fftw_complex* tmp2, const int* dim_sz, int nsh, int minW, int maxW) 
-{
-  fftw_complex* tmp1  = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * dim_sz[0]*dim_sz[1]);
-  fftw_complex* data2 = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * dim_sz[0]*dim_sz[1]);
-
-  fftw_plan p = fftw_plan_dft_2d (dim_sz[1],dim_sz[0], data1, tmp1, FFTW_FORWARD, FFTW_ESTIMATE);
-  fftw_plan pinv = fftw_plan_dft_2d (dim_sz[1],dim_sz[0], data1, tmp1, FFTW_BACKWARD, FFTW_ESTIMATE);
-  fftw_plan p_tr = fftw_plan_dft_2d (dim_sz[0],dim_sz[1], data2, tmp2, FFTW_FORWARD, FFTW_ESTIMATE);
-  fftw_plan pinv_tr = fftw_plan_dft_2d (dim_sz[0],dim_sz[1], data2, tmp2, FFTW_BACKWARD, FFTW_ESTIMATE);
- 
-  double nfac = 1/double(dim_sz[0]*dim_sz[1]);
-
-  for (int k = 0; k < dim_sz[1]; k++) {
-    for (int j = 0; j < dim_sz[0]; j++) {
-      data2[j*dim_sz[1]+k][0] = data1[k*dim_sz[0]+j][0];
-      data2[j*dim_sz[1]+k][1] = data1[k*dim_sz[0]+j][1];
-    }
-  }
-
-  fftw_execute_dft(p,data1,tmp1);
-  fftw_execute_dft(p_tr,data2,tmp2);
-
-  for (int k = 0; k < dim_sz[1]; k++) {
-    double ck = (1.0+cos(2.0*Math::pi*(double(k)/dim_sz[1])))*0.5;
-    for (int j = 0 ; j < dim_sz[0]; j++) {
-      double cj = (1.0+cos(2.0*Math::pi*(double(j)/dim_sz[0])))*0.5;
-      if (ck + cj != 0.0) {
-        tmp1[k*dim_sz[0]+j][0] = nfac*(tmp1[k*dim_sz[0]+j][0] * ck) / (ck+cj);
-        tmp1[k*dim_sz[0]+j][1] = nfac*(tmp1[k*dim_sz[0]+j][1] * ck) / (ck+cj);
-        tmp2[j*dim_sz[1]+k][0] = nfac*(tmp2[j*dim_sz[1]+k][0] * cj) / (ck+cj);
-        tmp2[j*dim_sz[1]+k][1] = nfac*(tmp2[j*dim_sz[1]+k][1] * cj) / (ck+cj);
-      }
-      else 
-        tmp1[k*dim_sz[0]+j][0] = tmp1[k*dim_sz[0]+j][1] = tmp2[j*dim_sz[1]+k][0] = tmp2[j*dim_sz[1]+k][1] = 0.0;
-    }
-  }
-
-  fftw_execute_dft(pinv,tmp1,data1);
-  fftw_execute_dft(pinv_tr,tmp2,data2);
-
-  unring_1d(data1,dim_sz[0],dim_sz[1],nsh,minW,maxW);
-  unring_1d(data2,dim_sz[1],dim_sz[0],nsh,minW,maxW);
-
-  fftw_execute_dft(p,data1,tmp1);
-  fftw_execute_dft(p_tr,data2,tmp2);
-
-  for (int k = 0; k < dim_sz[1]; k++) {
-    for (int j = 0; j < dim_sz[0]; j++) {
-      tmp1[k*dim_sz[0]+j][0] = nfac*(tmp1[k*dim_sz[0]+j][0] + tmp2[j*dim_sz[1]+k][0]);
-      tmp1[k*dim_sz[0]+j][1] = nfac*(tmp1[k*dim_sz[0]+j][1] + tmp2[j*dim_sz[1]+k][1]);
-    }
-  }
-
-  fftw_execute_dft(pinv,tmp1,tmp2);
-
-  fftw_free(data2);
-  fftw_free(tmp1);
-}
-
-
-
 
 
 class ComputeSlice
@@ -248,38 +61,198 @@ class ComputeSlice
       nsh (nsh),
       minW (minW),
       maxW (maxW),
+      X (slice_axes[0]),
+      Y (slice_axes[1]),
       in (in), 
-      out (out) { }
+      out (out),
+      im1 (in.size(X), in.size(Y)),
+      im2 (im1.rows(), im1.cols()),
+      ft1 (im1.rows(), im1.cols()),
+      ft2 (im1.rows(), im1.cols()) { }
 
     void operator() (const Iterator& pos)
     {
       assign_pos_of (pos, outer_axes).to (in, out);
-      int dims[2];
-      dims[0] = in.size(slice_axes[0]);
-      dims[1] = in.size(slice_axes[1]);
-      fftw_complex* in_complex = (fftw_complex*) fftw_malloc (sizeof(fftw_complex)*dims[0]*dims[1]);
-      int i = 0;
-      for (auto l = Loop (slice_axes) (in); l; ++l) {
-        in_complex[i][0] = in.value();
-        in_complex[i++][1] = 0.0;
-      }
-      fftw_complex* out_complex  = (fftw_complex*) fftw_malloc (sizeof(fftw_complex)*dims[0]*dims[1]);
-      unring_2d (in_complex,out_complex,dims,nsh,minW,maxW);
-      fftw_free (in_complex);
-      i = 0;
-      for (auto l = Loop (slice_axes) (out); l; ++l)
-        out.value() = out_complex[i++][0];
 
-      fftw_free (out_complex);
+      for (auto l = Loop (slice_axes) (in); l; ++l) 
+        im1 (in.index(X), in.index(Y)) = cdouble (in.value(), 0.0);
+      
+      unring_2d ();
+
+      for (auto l = Loop (slice_axes) (out); l; ++l)
+        out.value() = im1 (out.index(X), out.index(Y)).real(); 
     }
 
   private:
     const vector<size_t>& outer_axes;
     const vector<size_t>& slice_axes;
-    const int nsh;
-    const int minW;
-    const int maxW;
+    const int nsh, minW, maxW, X, Y;
     Image<value_type> in, out; 
+    Eigen::FFT<double> fftx, ffty;
+    Eigen::MatrixXcd im1, im2, ft1, ft2, shifted;
+    Eigen::VectorXcd vx, vy;
+
+    void FFT_2D (const Eigen::MatrixXcd& in, Eigen::MatrixXcd& out) 
+    {
+      for (auto n = 0; n < in.rows(); ++n) {
+        fftx.fwd (vx, in.row(n));
+        out.row(n) = vx;
+      }
+      for (auto n = 0; n < out.cols(); ++n) {
+        ffty.fwd (vy, out.col(n));
+        out.col(n) = vy;
+      }
+    }
+
+    void FFT_2D_inv (const Eigen::MatrixXcd& in, Eigen::MatrixXcd& out) 
+    {
+      for (auto n = 0; n < in.rows(); ++n) {
+        fftx.inv (vx, in.row(n));
+        out.row(n) = vx;
+      }
+      for (auto n = 0; n < out.cols(); ++n) {
+        ffty.inv (vy, out.col(n));
+        out.col(n) = vy;
+      }
+    }
+
+
+
+
+
+
+    void unring_2d ()
+    {
+      FFT_2D (im1, ft1);
+
+      for (int k = 0; k < im1.cols(); k++) {
+        double ck = (1.0+cos(2.0*Math::pi*(double(k)/im1.cols())))*0.5;
+        for (int j = 0 ; j < im1.rows(); j++) {
+          double cj = (1.0+cos(2.0*Math::pi*(double(j)/im1.rows())))*0.5;
+
+          if (ck+cj != 0.0) {
+            ft2(j,k) = ft1(j,k) * cj / (ck+cj);
+            ft1(j,k) *= ck / (ck+cj);
+          }
+          else 
+            ft1(j,k) = ft2(j,k) = cdouble(0.0, 0.0);
+        }
+      }
+
+      FFT_2D_inv (ft1, im1);
+      FFT_2D_inv (ft2, im2);
+
+      unring_1d (im1);
+      auto im2_t = im2.transpose();
+      unring_1d (im2_t);
+
+      FFT_2D (im1, ft1);
+      FFT_2D (im2, ft2);
+
+      ft1 += ft2;
+
+      FFT_2D_inv (ft1, im1);
+    }
+
+
+    template <typename Derived> 
+      void unring_1d (Eigen::MatrixBase<Derived>& eig)
+      {
+        const int n = eig.rows();
+        const int numlines = eig.cols();
+        shifted.resize (n, 2*nsh+1);
+
+        int shifts [2*nsh+1];
+        shifts[0] = 0;
+        for (int j = 0; j < nsh; j++) {
+          shifts[j+1] = j+1;
+          shifts[1+nsh+j] = -(j+1);
+        }
+
+        double TV1arr[2*nsh+1];
+        double TV2arr[2*nsh+1];
+
+        for (int k = 0; k < numlines; k++) {
+          fftx.fwd (vx, eig.col(k));
+          shifted.col(0) = vx;
+
+          const int maxn = (n&1) ? (n-1)/2 : n/2-1;
+
+          for (int j = 1; j < 2*nsh+1; j++) {
+            double phi = Math::pi*double(shifts[j])/double(n*nsh);
+            cdouble u (std::cos(phi), std::sin(phi));
+            cdouble e (1.0, 0.0);
+            shifted(0,j) = shifted(0,0);
+
+            if (!(n&1)) 
+              shifted(n/2,j) = cdouble(0.0, 0.0);
+
+            for (int l = 0; l < maxn; l++) {
+              e = u*e;
+              int L = l+1; shifted(L,j) = e * shifted(L,0);
+              L = n-1-l;   shifted(L,j) = std::conj(e) * shifted(L,0);
+            }
+          }
+
+
+          for (int j = 0; j < 2*nsh+1; ++j) {
+            fftx.inv (vx, shifted.col(j));
+            shifted.col(j) = vx;
+          }
+
+          for (int j = 0; j < 2*nsh+1; ++j) {
+            TV1arr[j] = 0.0;
+            TV2arr[j] = 0.0;
+            for (int t = minW; t <= maxW; t++) {
+              TV1arr[j] += std::abs (shifted((n-t)%n,j).real() - shifted((n-t-1)%n,j).real()); 
+              TV1arr[j] += std::abs (shifted((n-t)%n,j).imag() - shifted((n-t-1)%n,j).imag());
+              TV2arr[j] += std::abs (shifted((n+t)%n,j).real() - shifted((n+t+1)%n,j).real());
+              TV2arr[j] += std::abs (shifted((n+t)%n,j).imag() - shifted((n+t+1)%n,j).imag());
+            }
+          }
+
+          for (int l = 0; l < n; ++l) {
+            double minTV = std::numeric_limits<double>::max();
+            int minidx = 0;
+            for (int j = 0; j < 2*nsh+1; ++j) {
+
+              if (TV1arr[j] < minTV) {
+                minTV = TV1arr[j];
+                minidx = j;
+              }
+              if (TV2arr[j] < minTV) {
+                minTV = TV2arr[j];
+                minidx = j;
+              }
+
+              TV1arr[j] += std::abs (shifted((l-minW+1+n)%n,j).real() - shifted((l-(minW  )+n)%n,j).real());
+              TV1arr[j] -= std::abs (shifted((l-maxW  +n)%n,j).real() - shifted((l-(maxW+1)+n)%n,j).real());
+              TV2arr[j] += std::abs (shifted((l+maxW+1+n)%n,j).real() - shifted((l+(maxW+2)+n)%n,j).real());
+              TV2arr[j] -= std::abs (shifted((l+minW  +n)%n,j).real() - shifted((l+(minW+1)+n)%n,j).real());
+
+              TV1arr[j] += std::abs (shifted((l-minW+1+n)%n,j).imag() - shifted((l-(minW  )+n)%n,j).imag());
+              TV1arr[j] -= std::abs (shifted((l-maxW  +n)%n,j).imag() - shifted((l-(maxW+1)+n)%n,j).imag());
+              TV2arr[j] += std::abs (shifted((l+maxW+1+n)%n,j).imag() - shifted((l+(maxW+2)+n)%n,j).imag());
+              TV2arr[j] -= std::abs (shifted((l+minW  +n)%n,j).imag() - shifted((l+(minW+1)+n)%n,j).imag());
+            }
+
+            double a0r = shifted((l-1+n)%n,minidx).real();
+            double a1r = shifted(l,minidx).real();
+            double a2r = shifted((l+1+n)%n,minidx).real();
+            double a0i = shifted((l-1+n)%n,minidx).imag();
+            double a1i = shifted(l,minidx).imag();
+            double a2i = shifted((l+1+n)%n,minidx).imag();
+            double s = double(shifts[minidx])/(2.0*nsh);
+
+            if (s > 0.0) 
+              eig(l,k) = cdouble (a1r*(1.0-s) + a0r*s, a1i*(1.0-s) + a0i*s);
+            else 
+              eig(l,k) = cdouble (a1r*(1.0+s) - a2r*s, a1i*(1.0+s) - a2i*s);
+          }
+        }
+      }
+
+
 };
 
 
