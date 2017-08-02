@@ -69,7 +69,7 @@ typedef double value_type;
 
 
 class ComputeSlice
-{
+{ MEMALIGN (ComputeSlice)
   public:
     ComputeSlice (const vector<size_t>& outer_axes, const vector<size_t>& slice_axes, const int& nsh, const int& minW, const int& maxW, Image<value_type>& in, Image<value_type>& out) :
       outer_axes (outer_axes),
