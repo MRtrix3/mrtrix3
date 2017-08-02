@@ -21,24 +21,26 @@ resulting information. The instructions for doing so are below.
 3. Configure and compile *MRtrix3* in debug mode:
 
    ::
-   
-       ./configure -debug -assert debug; ./build debug
-       
-   Note that this compilation will reside *alongside* your existing *MRtrix3*
-   installation, but will not interfere with it in any way. Commands
-   that are compiled in debug mode will reside in the ``debug/bin``
-   directory.
+
+       ./build select debug
+       ./configure -debug -assert
+       ./build bin/command
+
+   Note that this process will move your existing *MRtrix3*
+   compilation into a temporary directory. This means that your
+   compiled binaries will no longer be in your PATH; but it also
+   means that later we can restore them quickly without re-compiling
+   all of *MRtrix3*. In addition, we only compile the command that we
+   need to test (replace "``command``" with the name of the command
+   you are testing).
 
 4. Execute the problematic command within ``gdb``:
 
    ::
    
-       gdb --args debug/bin/command (arguments) (-options) -debug
-       
-   Note that the version of the command that is compiled in debug mode
-   resides in the ``debug/bin`` directory; you must provide this full
-   path *explicitly* to ensure that this is the version of the command that
-   is executed. The preceding ``gdb --args`` at the beginning of the
+       gdb --args bin/command (arguments) (-options) -debug
+
+   The preceding ``gdb --args`` at the beginning of the
    line is simply the easiest way to execute the command within ``gdb``.
    Include all of the file paths, options etc. that you used previously
    when the problem occurred. It is also recommended to use the *MRtrix3*
@@ -47,9 +49,9 @@ resulting information. The instructions for doing so are below.
 
 5. If running on Windows, once ``gdb`` has loaded, type the following into
    the terminal:
-   
+
    ::
-   
+
        b abort
        b exit
 
@@ -78,8 +80,21 @@ resulting information. The instructions for doing so are below.
    run exceptionally slowly):
    
    ::
-   
-       valgrind debug/bin/command (arguments) (-options)
+
+       valgrind bin/command (arguments) (-options)
+      
+10. When you have finished debugging, restore your default *MRtrix3*
+    compilation:
+
+    ::
+    
+       ./build select default
+
+    Binaries compiled in debug mode run considerably slower than those
+    compiled using the default settings (even if not running within ``gdb``),
+    due to the inclusion of various symbols that assist in debugging and the
+    removal of various optimisations. Therefore it's best to restore the
+    default configuration for your ongoing use.
 
 We greatly appreciate any contribution that the community can make
 toward making *MRtrix3* as robust as possible, so please don't hesitate to
