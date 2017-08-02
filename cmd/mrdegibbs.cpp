@@ -24,12 +24,14 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be)";
+  AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be) & J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Remove Gibbs Ringing Artifact";
 
   DESCRIPTION 
-    + "to be filled in";
+    + "This application attempts to remove Gibbs ringing artefacts from MRI images using the method "
+    "of local subvoxel-shifts proposed by Kellner et al. (see reference below for details).";
+
 
   ARGUMENTS
   + Argument ("in", "the input image.").type_image_in ()
@@ -38,12 +40,26 @@ void usage ()
 
   OPTIONS
   + Option ("axes",
-            "select the slice axes (default: 0,1 - i.e. x-y)")
-  +   Argument ("list").type_sequence_int ();
+            "select the slice axes (default: 0,1 - i.e. x-y).")
+  +   Argument ("list").type_sequence_int ()
+
+  + Option ("nshifts", "discretization of subpixel spacing (default: 20).")
+  +   Argument ("value").type_integer (8, 128)
+
+  + Option ("minW", "left border of window used for TV computation (default: 1).")
+  +   Argument ("value").type_integer (0, 10)
+
+  + Option ("maxW", "right border of window used for TV computation (default: 3).")
+  +   Argument ("value").type_integer (0, 128)
+
+  + DataType::options();
 
 
   REFERENCES
-    + "Kellner ref";
+    + "Kellner, E; Dhital, B; Kiselev, V.G & Reisert, M. "
+    "Gibbs-ringing artifact removal based on local subvoxel-shifts. "
+    "Magnetic Resonance in Medicine, 2016, 76, 1574–1581.";
+
 }
 
 
@@ -239,10 +255,17 @@ class ComputeSlice
 
 void run ()
 {
+  const int nshifts = App::get_option_value ("nshifts", 20);
+  const int minW = App::get_option_value ("minW", 1);
+  const int maxW = App::get_option_value ("maxW", 3);
+
+  if (minW >= maxW) 
+    throw Exception ("minW must be smaller than maxW");
+
   auto in = Image<value_type>::open (argument[0]);
   Header header (in);
 
-  header.datatype() = DataType::Float64;
+  header.datatype() = DataType::from_command_line (DataType::Float32);
   auto out = Image<value_type>::create (argument[1], header);
 
   vector<size_t> slice_axes = { 0, 1 };
@@ -264,7 +287,7 @@ void run ()
     outer_axes.erase (it);
   }
 
-  ThreadedLoop ("computing stuff...", in, outer_axes, slice_axes)
-    .run_outer (ComputeSlice (outer_axes, slice_axes, 30, 1, 3, in, out));
+  ThreadedLoop ("performing Gibbs ringing removal", in, outer_axes, slice_axes)
+    .run_outer (ComputeSlice (outer_axes, slice_axes, nshifts, minW, maxW, in, out));
 }
 
