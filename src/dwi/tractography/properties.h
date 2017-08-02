@@ -106,6 +106,23 @@ namespace MR
 
 
 
+      inline float get_step_size (const Properties& p)
+      {
+        for (size_t index = 0; index != 2; ++index) {
+          const std::string key (index ? "step_size" : "output_step_size");
+          auto it = p.find (key);
+          if (it != p.end()) {
+            try {
+              return to<float> (it->second);
+            } catch (...) { }
+          }
+        }
+        return NaN;
+      }
+
+
+
+
 
       inline std::ostream& operator<< (std::ostream& stream, const Properties& P)
       {
