@@ -22,6 +22,7 @@
 #include "dwi/svr/recon.h"
 
 #define DEFAULT_LMAX 4
+#define DEFAULT_SSPW 1.0f
 #define DEFAULT_REG 0.01
 #define DEFAULT_TOL 1e-4
 #define DEFAULT_MAXITER 100
@@ -54,16 +55,16 @@ void usage ()
                   "rows correspond with shells and columns with SH harmonic bands.").allow_multiple()
     + Argument ("b").type_file_in()
   
-  + Option ("lmax",
-            "set the maximum harmonic order for the output series. (default = " + str(DEFAULT_LMAX) + ")")
+  + Option ("lmax", "The maximum harmonic order for the output series. (default = " + str(DEFAULT_LMAX) + ")")
     + Argument ("order").type_integer(0, 30)
 
-  + Option ("weights",
-            "Slice weights, provided as a matrix of dimensions Nslices x Nvols.")
+  + Option ("weights", "Slice weights, provided as a matrix of dimensions Nslices x Nvols.")
     + Argument ("W").type_file_in()
 
-  + Option ("reg",
-            "Regularization weight. (default = " + str(DEFAULT_REG) + ")")
+  + Option ("sspwidth", "Slice thickness for Gaussian SSP, relative to the voxel size. (default = " + str(DEFAULT_SSPW)  + ")")
+    + Argument ("w").type_float()
+
+  + Option ("reg", "Regularization weight. (default = " + str(DEFAULT_REG) + ")")
     + Argument ("l").type_float()
 
   + DWI::GradImportOptions()
@@ -188,6 +189,7 @@ void run ()
   else
     lmax = std::min(lmax, (int) get_option_value("lmax", lmax));
   
+  float sspwidth = get_option_value("sspwidth", DEFAULT_SSPW);
   float reg = get_option_value("reg", DEFAULT_REG);
 
   value_type tol = get_option_value("tolerance", DEFAULT_TOL);
@@ -196,7 +198,7 @@ void run ()
 
   // Set up scattered data matrix
   INFO("initialise reconstruction matrix");
-  DWI::ReconMatrix R (dwisub, motionsub, gradsub, lmax, rf, reg);
+  DWI::ReconMatrix R (dwisub, motionsub, gradsub, lmax, rf, sspwidth, reg);
   R.setW(Wsub);
 
   // Read input data to vector
