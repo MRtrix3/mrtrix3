@@ -42,11 +42,7 @@ if app.args.fsl:
   if not fsl_path:
     app.error('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
 
-  fast_cmd = 'fast'
-  if not find_executable(fast_cmd):
-    fast_cmd = 'fsl5.0-fast'
-    if not find_executable(fast_cmd):
-      app.error('Could not find FSL program fast; please verify FSL install')
+  fast_cmd = fsl.exeName('fast')
 
   fsl_suffix = fsl.suffix()
   if fast_cmd == 'fast':

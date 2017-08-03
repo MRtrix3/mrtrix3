@@ -40,14 +40,28 @@ def eddyBinary(cuda):
       app.warn('CUDA version of eddy not found; running standard version')
   if find_executable('eddy_openmp'):
     path = 'eddy_openmp'
-  elif find_executable('eddy'):
-    path = 'eddy'
-  elif find_executable('fsl5.0-eddy'):
-    path = 'fsl5.0-eddy'
   else:
-    app.error('Could not find FSL program eddy; please verify FSL install')
+    path = exeName('eddy')
   app.debug(path)
   return path
+
+
+
+# In some FSL installations, all binaries get prepended with "fsl5.0-". This function
+#   makes it more convenient to locate these commands.
+# Note that if FSL 4 and 5 are installed side-by-side, the approach taken in this
+#   function will select the version 5 executable.
+def exeName(name):
+  from mrtrix3 import app
+  from distutils.spawn import find_executable
+  if find_executable('fsl5.0-' + name):
+    output = 'fsl5.0-' + name
+  elif find_executable(name):
+    output = name
+  else:
+    app.error('Could not find FSL program \"' + name + '\"; please verify FSL install')
+  app.debug(output)
+  return output
 
 
 

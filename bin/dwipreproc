@@ -91,18 +91,8 @@ if not PE_design == 'None':
   topup_config_path = os.path.join(fsl_path, 'etc', 'flirtsch', 'b02b0.cnf')
   if not os.path.isfile(topup_config_path):
     app.error('Could not find necessary default config file for FSL\'s topup program\n(expected location: ' + topup_config_path + ')')
-
-  topup_cmd = 'topup'
-  if not find_executable(topup_cmd):
-    topup_cmd = 'fsl5.0-topup'
-    if not find_executable(topup_cmd):
-      app.error('Could not find FSL program topup; please verify FSL install')
-
-  applytopup_cmd = 'applytopup'
-  if not find_executable(applytopup_cmd):
-    applytopup_cmd = 'fsl5.0-applytopup'
-    if not find_executable(applytopup_cmd):
-      app.error('Could not find FSL program applytopup; please verify FSL install')
+  topup_cmd = fsl.exeName('topup')
+  applytopup_cmd = fsl.exeName('applytopup')
 
 eddy_cmd = fsl.eddyBinary(app.args.cuda)
 fsl_suffix = fsl.suffix()

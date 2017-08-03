@@ -48,32 +48,12 @@ def execute():
   if not fsl_path:
     app.error('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
 
-  ssroi_cmd = 'standard_space_roi'
-  if not find_executable(ssroi_cmd):
-    ssroi_cmd = 'fsl5.0-standard_space_roi'
-    if not find_executable(ssroi_cmd):
-      app.error('Could not find FSL program standard_space_roi; please verify FSL install')
-
-  bet_cmd = 'bet'
-  if not find_executable(bet_cmd):
-    bet_cmd = 'fsl5.0-bet'
-    if not find_executable(bet_cmd):
-      app.error('Could not find FSL program bet; please verify FSL install')
-
-  fast_cmd = 'fast'
-  if not find_executable(fast_cmd):
-    fast_cmd = 'fsl5.0-fast'
-    if not find_executable(fast_cmd):
-      app.error('Could not find FSL program fast; please verify FSL install')
-
-  first_cmd = 'run_first_all'
-  if not find_executable(first_cmd):
-    first_cmd = "fsl5.0-run_first_all"
-    if not find_executable(first_cmd):
-      app.error('Could not find FSL program run_first_all; please verify FSL install')
+  bet_cmd = fsl.exeName('bet')
+  fast_cmd = fsl.exeName('fast')
+  first_cmd = fsl.exeName('run_first_all')
+  ssroi_cmd = fsl.exeName('standard_space_roi')
 
   first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
-
   if not os.path.isdir(first_atlas_path):
     app.error('Atlases required for FSL\'s FIRST program not installed; please install fsl-first-data using your relevant package manager')
 

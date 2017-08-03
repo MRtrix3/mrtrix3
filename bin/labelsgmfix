@@ -45,14 +45,9 @@ fsl_path = os.environ.get('FSLDIR', '')
 if not fsl_path:
   app.error('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
 
-first_cmd = 'run_first_all'
-if not find_executable(first_cmd):
-  first_cmd = "fsl5.0-run_first_all"
-  if not find_executable(first_cmd):
-    app.error('Could not find FSL program run_first_all; please verify FSL install')
+first_cmd = fsl.exeName('run_first_all')
 
 first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
-
 if not os.path.isdir(first_atlas_path):
   app.error('Atlases required for FSL\'s FIRST program not installed;\nPlease install fsl-first-data using your relevant package manager')
 
