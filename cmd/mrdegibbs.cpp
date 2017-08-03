@@ -77,15 +77,32 @@ class ComputeSlice
       nsh (nsh),
       minW (minW),
       maxW (maxW),
-      X (slice_axes[0]),
-      Y (slice_axes[1]),
       in (in), 
       out (out),
-      im1 (in.size(X), in.size(Y)),
-      im2 (im1.rows(), im1.cols()) { }
+      im1 (in.size(slice_axes[0]), in.size(slice_axes[1])),
+      im2 (im1.rows(), im1.cols()) { 
+        prealloc_FFT();
+      }
+    
+    ComputeSlice (const ComputeSlice& other) :
+      outer_axes (other.outer_axes),
+      slice_axes (other.slice_axes),
+      nsh (other.nsh),
+      minW (other.minW),
+      maxW (other.maxW),
+      in (other.in), 
+      out (other.out),
+      fft (),
+      im1 (in.size(slice_axes[0]), in.size(slice_axes[1])),
+      im2 (im1.rows(), im1.cols()) { 
+        prealloc_FFT();
+      }
+
 
     void operator() (const Iterator& pos)
     {
+      const int X = slice_axes[0];
+      const int Y = slice_axes[1];
       assign_pos_of (pos, outer_axes).to (in, out);
 
       for (auto l = Loop (slice_axes) (in); l; ++l) 
@@ -100,15 +117,28 @@ class ComputeSlice
   private:
     const vector<size_t>& outer_axes;
     const vector<size_t>& slice_axes;
-    const int nsh, minW, maxW, X, Y;
+    const int nsh, minW, maxW;
     Image<value_type> in, out; 
-    Eigen::FFT<double> fftx, ffty;
+    Eigen::FFT<double> fft;
     Eigen::MatrixXcd im1, im2, shifted;
     Eigen::VectorXcd v;
 
-    template <typename Derived> FORCE_INLINE void FFT      (Eigen::MatrixBase<Derived>&& vec) { fftx.fwd (v, vec); vec = v; }
+    void prealloc_FFT () {
+      // needed to avoid within-thread allocations, 
+      // which aren't thread-safe in FFTW:
+#ifdef EIGEN_FFTW_DEFAULT
+      Eigen::VectorXcd tmp (im1.rows());
+      FFT (tmp);
+      iFFT (tmp);
+      tmp.resize (im1.cols());
+      FFT (tmp);
+      iFFT (tmp);
+#endif
+    }
+
+    template <typename Derived> FORCE_INLINE void FFT      (Eigen::MatrixBase<Derived>&& vec) { fft.fwd (v, vec); vec = v; }
     template <typename Derived> FORCE_INLINE void FFT      (Eigen::MatrixBase<Derived>& vec) { FFT (std::move (vec)); }
-    template <typename Derived> FORCE_INLINE void iFFT     (Eigen::MatrixBase<Derived>&& vec) { fftx.inv (v, vec); vec = v; } 
+    template <typename Derived> FORCE_INLINE void iFFT     (Eigen::MatrixBase<Derived>&& vec) { fft.inv (v, vec); vec = v; } 
     template <typename Derived> FORCE_INLINE void iFFT     (Eigen::MatrixBase<Derived>& vec) { iFFT (std::move (vec)); }
     template <typename Derived> FORCE_INLINE void row_FFT  (Eigen::MatrixBase<Derived>& mat) { for (auto n = 0; n < mat.rows(); ++n)  FFT (mat.row(n)); } 
     template <typename Derived> FORCE_INLINE void row_iFFT (Eigen::MatrixBase<Derived>& mat) { for (auto n = 0; n < mat.rows(); ++n) iFFT (mat.row(n)); }
