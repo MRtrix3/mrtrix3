@@ -36,7 +36,7 @@ def eddyBinary(cuda):
 def findImage(name):
   import os
   from mrtrix3 import app
-  basename = basename.split('.')[0]
+  basename = name.split('.')[0]
   if os.path.isfile(basename + suffix()):
     app.debug('Image at expected location: \"' + basename + suffix() + '\"')
   for suf in ['.nii', '.nii.gz', '.img']:
