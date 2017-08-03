@@ -130,9 +130,10 @@ namespace MR
 
             const Eigen::Vector3f slice_focus = move_in_out_displacement(focus_delta, slice_proj);
             set_focus(focus() + slice_focus);
-            update_slices_focusdelta();
           } else if (volume_indices[slice_index] == -1)
               current_slice_index = prev_index;
+
+          update_slices_focusdelta();
         }
 
         void LightBox::update_slices_focusdelta()
