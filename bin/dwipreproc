@@ -473,6 +473,7 @@ if do_topup:
       run.command('dwiextract dwi.mif' + import_dwi_pe_table_option + ' -pe ' + ','.join(line.split()) + ' - | mrconvert - ' + input_path + ' -json_export ' + json_path)
       run.command(applytopup_cmd + ' --imain=' + input_path + ' --datain=applytopup_config.txt --inindex=' + str(index) + ' --topup=field --out=' + temp_path + ' --method=jac')
       file.delTempFile(input_path)
+      temp_path = fsl.findImage(temp_path)
       run.command('mrconvert ' + temp_path + ' ' + output_path + ' -json_import ' + json_path)
       file.delTempFile(json_path)
       file.delTempFile(temp_path)
@@ -539,7 +540,7 @@ for index1 in range(num_volumes):
 if not len(volume_pairs) == int(num_volumes/2):
 
   # Convert the resulting volume to the output image, and re-insert the diffusion encoding
-  run.command('mrconvert dwi_post_eddy' + fsl_suffix + ' result.mif' + stride_option + ' -fslgrad ' + bvecs_path + ' bvals')
+  run.command('mrconvert ' + fsl.findImage('dwi_post_eddy') + ' result.mif' + stride_option + ' -fslgrad ' + bvecs_path + ' bvals')
 
 else:
   app.console('Detected matching DWI volumes with opposing phase encoding; performing explicit volume recombination')
@@ -569,7 +570,7 @@ else:
     # If one diffusion sensitisation gradient direction is reversed with respect to
     #   the other, still want to enable their recombination; but need to explicitly
     #   account for this when averaging the two directions
-    if norm2 < 0.999:
+    if norm2 < 0.0:
       bvec_sum = [ float(bvecs[0][pair[0]]) - float(bvecs[0][pair[1]]),
                    float(bvecs[1][pair[0]]) - float(bvecs[1][pair[1]]),
                    float(bvecs[2][pair[0]]) - float(bvecs[2][pair[1]]) ]
@@ -600,12 +601,12 @@ else:
   # Detect this, and manually replace the transform if necessary
   #   (even if this doesn't cause an issue with the subsequent mrcalc command, it may in the future, it's better for
   #   visualising the script temporary files, and it gives the user a warning about an out-of-date FSL)
-  field_map_image = 'field_map' + fsl_suffix
+  field_map_image = fsl.findImage('field_map')
   if not image.match('topup_in.nii', field_map_image):
     app.warn('topup output field image has erroneous header; recommend updating FSL to version 5.0.8 or later')
-    run.command('mrtransform ' + field_map_image + ' -replace topup_in.nii field_map_fix' + fsl_suffix)
+    run.command('mrtransform ' + field_map_image + ' -replace topup_in.nii field_map_fix.mif')
     file.delTempFile(field_map_image)
-    field_map_image = 'field_map_fix' + fsl_suffix
+    field_map_image = 'field_map_fix.mif'
 
 
 
@@ -638,8 +639,8 @@ else:
   # If eddy provides its main image output in a compressed format, the code block below will need to
   #   uncompress that image independently for every volume pair. Instead, if this is the case, let's
   #   convert it to an uncompressed format before we do anything with it.
-  eddy_output = 'dwi_post_eddy' + fsl_suffix
-  if fsl_suffix.endswith('.gz'):
+  eddy_output = fsl.findImage('dwi_post_eddy')
+  if eddy_output.endswith('.gz'):
     run.command('mrconvert ' + eddy_output + ' dwi_post_eddy.nii')
     file.delTempFile(eddy_output)
     eddy_output = 'dwi_post_eddy.nii'
