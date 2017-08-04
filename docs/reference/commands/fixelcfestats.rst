@@ -22,6 +22,11 @@ Usage
 -  *tracks*: the tracks used to determine fixel-fixel connectivity
 -  *out_fixel_directory*: the output directory where results will be saved. Will be created if it does not exist
 
+Description
+-----------
+
+Note that if the -mask option is used, the output fixel directory will still contain the same set of fixels as that present in the input fixel template, in order to retain fixel correspondence. However a consequence of this is that all fixels in the template will be initialy visible when the output fixel directory is loaded in mrview. Those fixels outside the processing mask will immediately disappear from view as soon as any data-file-based fixel colouring or thresholding is applied.
+
 Options
 -------
 
@@ -62,6 +67,8 @@ Additional options for fixelcfestats
 
 -  **-angle value** the max angle threshold for assigning streamline tangents to fixels (Default: 45 degrees)
 
+-  **-mask file** provide a fixel data file containing a mask of those fixels to be used during processing
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
@@ -92,7 +99,7 @@ Raffelt, D.; Smith, RE.; Ridgway, GR.; Tournier, JD.; Vaughan, DN.; Rose, S.; He
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au)
+**Author:** David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
 

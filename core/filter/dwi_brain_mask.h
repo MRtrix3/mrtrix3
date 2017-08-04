@@ -17,6 +17,8 @@
 
 #include "memory.h"
 #include "image.h"
+#include "phase_encoding.h"
+#include "progressbar.h"
 #include "filter/base.h"
 #include "filter/connected_components.h"
 #include "filter/median.h"
@@ -25,7 +27,7 @@
 #include "algo/copy.h"
 #include "algo/loop.h"
 #include "dwi/gradient.h"
-#include "progressbar.h"
+
 
 namespace MR
 {
@@ -70,7 +72,6 @@ namespace MR
 
             Header header (input);
             header.ndim() = 3;
-            DWI::stash_DW_scheme (header, grad);
 
             // Generate a 'master' scratch buffer mask, to which all shells will contribute
             auto mask_image = Image<bool>::scratch (header, "DWI mask");

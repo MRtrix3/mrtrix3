@@ -70,7 +70,6 @@ List of MRtrix3 commands
     commands/mrmath
     commands/mrmesh
     commands/mrmetric
-    commands/mrmodelfield
     commands/mrpad
     commands/mrregister
     commands/mrresize
@@ -181,7 +180,6 @@ List of MRtrix3 commands
     :ref:`mrmath`, "Compute summary statistic on image intensities either across images, or along a specified axis of a single image"
     :ref:`mrmesh`, "Generate a mesh file from an image"
     :ref:`mrmetric`, "Computes a dissimilarity metric between two images"
-    :ref:`mrmodelfield`, "Model an input image using low frequency 3D polynomial basis functions"
     :ref:`mrpad`, "Pad an image to increase the FOV"
     :ref:`mrregister`, "Register two images together using a symmetric rigid, affine or non-linear transformation model"
     :ref:`mrresize`, "Resize an image by defining the new image resolution, voxel size or a scale factor"
@@ -189,8 +187,8 @@ List of MRtrix3 commands
     :ref:`mrthreshold`, "Create bitwise image by thresholding image intensity"
     :ref:`mrtransform`, "Apply spatial transformations to an image"
     :ref:`mrview`, "The MRtrix image viewer."
-    :ref:`mtbin`, "Multi-Tissue Bias field correction and Intensity Normalisation (MTBIN)"
-    :ref:`mtnormalise`, "Multi-tissue normalise"
+    :ref:`mtbin`, "Multi-Tissue Bias field correction and Intensity Normalisation (WARNING: deprecated)."
+    :ref:`mtnormalise`, "Multi-tissue informed log-domain intensity normalisation"
     :ref:`peaks2amp`, "Convert peak directions image to amplitudes"
     :ref:`sh2amp`, "Evaluate the amplitude of an image of spherical harmonic functions along specified directions"
     :ref:`sh2peaks`, "Extract the peaks of a spherical harmonic function at each voxel, by commencing a Newton search along a set of specified directions"

@@ -24,13 +24,15 @@ namespace MR {
         bool series_time_mismatch_warning_issued = false;
       }
 
-      std::shared_ptr<Series> Study::find (const std::string& series_name, size_t series_number,
+      std::shared_ptr<Series> Study::find (const std::string& series_name, size_t series_number, const std::string& image_type,
           const std::string& series_modality, const std::string& series_date, const std::string& series_time)
       {
         for (size_t n = 0; n < size(); n++) {
           bool match = true;
           if (series_name == (*this)[n]->name) {
             if (series_number == (*this)[n]->number) {
+              if (image_type != (*this)[n]->image_type)
+                match = false;
               if (series_modality.size() && (*this)[n]->modality.size()) 
                 if (series_modality != (*this)[n]->modality) 
                   match = false;
@@ -59,7 +61,7 @@ namespace MR {
           }
         }
 
-        push_back (std::shared_ptr<Series> (new Series (this, series_name, series_number, series_modality, series_date, series_time)));
+        push_back (std::shared_ptr<Series> (new Series (this, series_name, series_number, image_type, series_modality, series_date, series_time)));
         return back();
       }
 

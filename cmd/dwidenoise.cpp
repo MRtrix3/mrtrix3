@@ -197,6 +197,9 @@ void run ()
 {
   auto dwi_in = Image<value_type>::open (argument[0]).with_direct_io(3);
 
+  if (dwi_in.ndim() != 4 || dwi_in.size(3) <= 1) 
+    throw Exception ("input image must be 4-dimensional");
+
   Image<bool> mask;
   auto opt = get_options ("mask");
   if (opt.size()) {

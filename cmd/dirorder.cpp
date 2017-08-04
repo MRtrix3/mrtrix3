@@ -74,14 +74,8 @@ void run ()
       ssize_t a = remaining[n];
       for (size_t i = 0; i < indices.size(); ++i) {
         ssize_t b = indices[i];
-        E += 1.0 / (
-            Math::pow2 (directions(a,0)-directions(b,0)) + 
-            Math::pow2 (directions(a,1)-directions(b,1)) + 
-            Math::pow2 (directions(a,2)-directions(b,2)));
-        E += 1.0 / (
-            Math::pow2 (directions(a,0)+directions(b,0)) + 
-            Math::pow2 (directions(a,1)+directions(b,1)) + 
-            Math::pow2 (directions(a,2)+directions(b,2)));
+        E += 1.0 / (directions.row(a) - directions.row(b)).norm();
+        E += 1.0 / (directions.row(a) + directions.row(b)).norm();
       }
       if (E < best_E) {
         best_E = E;

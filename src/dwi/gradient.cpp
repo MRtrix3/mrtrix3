@@ -187,6 +187,15 @@ namespace MR
 
 
 
+    void clear_DW_scheme (Header& header)
+    {
+      auto it = header.keyval().find ("dw_scheme");
+      if (it != header.keyval().end())
+        header.keyval().erase (it);
+    }
+
+
+
     Eigen::MatrixXd get_DW_scheme (const Header& header)
     {
       DEBUG ("searching for suitable gradient encoding...");
