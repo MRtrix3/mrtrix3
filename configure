@@ -518,7 +518,7 @@ if system == 'linux':
   runpath = '-Wl,-rpath,$ORIGIN/'
 elif system == 'windows':
   cxx = [ 'g++', 'clang++' ]
-  cpp_flags += [ '-pthread', '-DMRTRIX_WINDOWS', '-mms-bitfields', '-Wa,-mbig-obj' ]
+  cpp_flags += [ '-pthread', '-DMRTRIX_WINDOWS', '-mms-bitfields', '-Wa,-mbig-obj', '-D_FILE_OFFSET_BITS=64' ]
   exe_suffix = '.exe'
   lib_prefix = ''
   lib_suffix = '.dll'

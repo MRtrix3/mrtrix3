@@ -39,7 +39,7 @@ def getInputs():
 def execute():
   import os
   from distutils.spawn import find_executable
-  from mrtrix3 import app, file, fsl, image, run
+  from mrtrix3 import app, file, fsl, image, path, run
 
   if app.isWindows():
     app.error('\'fsl\' algorithm of 5ttgen script cannot be run on Windows: FSL not available on Windows')
@@ -165,7 +165,7 @@ def execute():
   first_input_is_brain_extracted = ''
   if app.args.premasked:
     first_input_is_brain_extracted = ' -b'
-  run.command(first_cmd + ' -s ' + ','.join(sgm_structures) + ' -i T1.nii -o first' + first_input_is_brain_extracted)
+  run.command(first_cmd + ' -m none -s ' + ','.join(sgm_structures) + ' -i T1.nii -o first' + first_input_is_brain_extracted)
 
   # Test to see whether or not FIRST has succeeded
   # However if the expected image is absent, it may be due to FIRST being run
@@ -175,7 +175,7 @@ def execute():
   if not os.path.isfile(combined_image_path):
     if 'SGE_ROOT' in os.environ:
       app.console('FSL FIRST job has been submitted to SGE; awaiting completion')
-      app.console('(note however that FIRST may fail, and hence this script may hang indefinitely)')
+      app.console('(note however that FIRST may fail silently, and hence this script may hang indefinitely)')
       file.waitFor(combined_image_path)
     else:
       app.error('FSL FIRST has failed; not all structures were segmented successfully (check ' + path.toTemp('first.logs', False) + ')')
