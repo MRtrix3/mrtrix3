@@ -174,7 +174,10 @@ def execute():
       app.console('(note however that FIRST may fail silently, and hence this script may hang indefinitely)')
       file.waitFor(combined_image_path)
     else:
-      app.error('FSL FIRST has failed; not all structures were segmented successfully (check ' + path.toTemp('first.logs', False) + ')')
+      combined_image_path = fsl.findImage('first_all_none_firstseg')
+      if not os.path.isfile(combined_image_path):
+        app.error('FSL FIRST has failed; not all structures were segmented successfully (check ' + 
+path.toTemp('first.logs', False) + ')')
 
   # Convert FIRST meshes to partial volume images
   pve_image_list = [ ]
