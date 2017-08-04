@@ -1,1 +1,1 @@
-mrdegibbs dwi.mif - | testing_diff_image - mrdegibbs/dwi.mif -voxel 1e-4
+mrdegibbs b0.nii.gz - | testing_diff_image - mrdegibbs/b0_unring.nii.gz -abs 0.2
