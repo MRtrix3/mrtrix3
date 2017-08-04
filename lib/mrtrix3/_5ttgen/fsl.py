@@ -135,13 +135,10 @@ def execute():
       run.command(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -maskMASK mni_mask.nii' + ssroi_roi_option, False)
     else:
       run.command(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -b', False)
-
-    # For whatever reason, the output file from standard_space_roi may not be
-    #   completed before BET is run
-    file.waitFor('T1_preBET' + fsl_suffix)
+    pre_bet_image = fsl.findImage('T1_preBET')
 
     # BET
-    run.command(bet_cmd + ' T1_preBET' + fsl_suffix + ' T1_BET' + fsl_suffix + ' -f 0.15 -R')
+    run.command(bet_cmd + ' ' + pre_bet_image + ' T1_BET' + fsl_suffix + ' -f 0.15 -R')
     fast_t1_input = fsl.findImage('T1_BET' + fsl_suffix)
 
     if os.path.exists('T2.nii'):

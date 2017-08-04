@@ -481,7 +481,11 @@ if do_topup:
       index += 1
 
   # Use the initial corrected volumes to derive a brain mask for eddy
-  run.command('mrcat ' + ' '.join(applytopup_image_list) + ' - | dwi2mask - - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32 -stride -1,+2,+3')
+  if len(applytopup_image_list) == 1:
+    run.command('dwi2mask ' + applytopup_image_list[0] + ' - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32 -stride -1,+2,+3')
+  else:
+    run.command('mrcat ' + ' '.join(applytopup_image_list) + ' - | dwi2mask - - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32 -stride -1,+2,+3')
+
   for entry in applytopup_image_list:
     file.delTempFile(entry)
 

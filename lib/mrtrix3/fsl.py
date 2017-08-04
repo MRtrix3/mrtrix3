@@ -39,6 +39,7 @@ def findImage(name):
   basename = name.split('.')[0]
   if os.path.isfile(basename + suffix()):
     app.debug('Image at expected location: \"' + basename + suffix() + '\"')
+    return basename + suffix()
   for suf in ['.nii', '.nii.gz', '.img']:
     if os.path.isfile(basename + suf):
       app.debug('Expected image at \"' + basename + suffix() + '\", but found at \"' + basename + suf + '\"')
