@@ -21,6 +21,7 @@
 #include "gui/mrview/volume.h"
 #include "interp/linear.h"
 #include "interp/nearest.h"
+#include <unordered_map>
 
 
 namespace MR
@@ -87,6 +88,7 @@ namespace MR
           friend class Tool::ODF;
 
           std::array<float, 3> slice_min, slice_max;
+          std::unordered_map<size_t, GL::Texture> tex_4d_cache;
 
         private:
           bool volume_unchanged ();
@@ -95,6 +97,8 @@ namespace MR
 
           template <typename T> void copy_texture_3D ();
           void copy_texture_3D_complex ();
+          void lookup_texture_4D_cache ();
+          void update_texture_4D_cache ();
 
           vector<std::string> _comments;
 
