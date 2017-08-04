@@ -16,8 +16,6 @@
 #define __dwi_tractography_streamline_h__
 
 
-#include <vector>
-
 #include "types.h"
 
 

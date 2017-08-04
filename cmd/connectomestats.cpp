@@ -12,10 +12,9 @@
  */
 
 
-#include <vector>
-
 #include "command.h"
 #include "progressbar.h"
+#include "types.h"
 
 #include "file/path.h"
 #include "math/stats/glm.h"

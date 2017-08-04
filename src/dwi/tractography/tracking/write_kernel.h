@@ -15,9 +15,8 @@
 #ifndef __dwi_tractography_tracking_write_kernel_h__
 #define __dwi_tractography_tracking_write_kernel_h__
 
-#include <string>
-#include <vector>
 #include <cinttypes>
+#include <string>
 
 #include "timer.h"
 #include "file/ofstream.h"

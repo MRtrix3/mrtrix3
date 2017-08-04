@@ -16,9 +16,8 @@
 #define __mrtrix_exception_h__
 
 #include <cerrno>
-#include <string>
-#include <vector>
 #include <iostream>
+#include <string>
 
 #include "types.h"
 

@@ -15,9 +15,8 @@
 #include "gui/mrview/window.h"
 #include "gui/mrview/tool/connectome/node.h"
 
-#include <vector>
-
 #include "exception.h"
+#include "types.h"
 #include "gui/mrview/window.h"
 
 namespace MR

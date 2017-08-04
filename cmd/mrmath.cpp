@@ -12,6 +12,8 @@
  */
 
 
+#include <limits>
+
 #include "command.h"
 #include "image.h"
 #include "memory.h"
