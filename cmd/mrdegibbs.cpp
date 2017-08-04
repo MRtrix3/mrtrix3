@@ -26,11 +26,23 @@ void usage ()
 {
   AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be) & J-Donald Tournier (jdtournier@gmail.com)";
 
-  SYNOPSIS = "Remove Gibbs Ringing Artifact";
+  SYNOPSIS = "Remove Gibbs Ringing Artifacts";
 
   DESCRIPTION 
     + "This application attempts to remove Gibbs ringing artefacts from MRI images using the method "
-    "of local subvoxel-shifts proposed by Kellner et al. (see reference below for details).";
+    "of local subvoxel-shifts proposed by Kellner et al. (see reference below for details)."
+    
+    + "This command is designed to run on data directly after it has been reconstructed by the scanner, "
+    "before any interpolation of any kind has taken place. You should not run this command after any "
+    "form of motion correction (e.g. not after dwipreproc). Similarly, if you intend running dwidenoise, "
+    "you should run this command afterwards, since it has the potential to alter the noise structure, "
+    "which would impact on dwidenoise's performance."
+    
+    + "Note that this method is designed to work on images acquired with full k-space coverage. "
+    "Running this method on partial Fourier ('half-scan') data may lead to suboptimal and/or biased "
+    "results, as noted in the original reference below. There is currently no means of dealing with this; "
+    "users should exercise caution when using this method on partial Fourier data, and inspect its output "
+    "for any obvious artefacts. ";
 
 
   ARGUMENTS
