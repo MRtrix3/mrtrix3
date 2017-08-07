@@ -118,6 +118,12 @@ ENVIRONMENT VARIABLES
     TIFF_LDFLAGS
         Any flags required to link with the TIFF library.
 
+    FFTW_CFLAGS
+        Any flags required to compile with the FFTW library.
+    
+    FFTW_LDFLAGS
+        Any flags required to link with the FFTW library.
+
     QMAKE
         The command to invoke Qt's qmake (default: qmake).
 
@@ -252,6 +258,9 @@ zlib_ldflags = [ '-lz' ]
 
 tiff_cflags = []
 tiff_ldflags = [ '-ltiff' ]
+
+fftw_cflags = []
+fftw_ldflags = [ '-lfftw3' ]
 
 
 class TempFile:
@@ -830,6 +839,32 @@ except:
 if not openmp:
   eigen_cflags += [ '-DEIGEN_DONT_PARALLELIZE' ]
 
+
+
+
+# FFTW:
+
+report ('Checking for FFTW library: ')
+
+if 'FFTW_CFLAGS' in os.environ.keys(): fftw_cflags = shlex.split (os.environ['FFTW_CFLAGS'])
+if 'FFTW_LDFLAGS' in os.environ.keys(): fftw_ldflags = shlex.split (os.environ['FFTW_LDFLAGS'])
+
+try:
+  fftw_version = compile ('''
+#include <iostream>
+#include <fftw3.h>
+
+int main() {
+  std::cout << fftw_version << "\\n";
+  return (0);
+}
+''', cpp_flags + fftw_cflags, ld_flags + fftw_ldflags)
+  report (fftw_version.splitlines()[0] + '\n')
+  cpp_flags += [ '-DEIGEN_FFTW_DEFAULT' ] + fftw_cflags
+  ld_flags += fftw_ldflags
+  ld_lib_flags += fftw_ldflags
+except:
+  report ('not found - FFTW support disabled\n');
 
 
 
