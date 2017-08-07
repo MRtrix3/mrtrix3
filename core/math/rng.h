@@ -62,15 +62,8 @@ namespace MR
           if (from_env) 
             return to<std::mt19937::result_type> (from_env);
 
-#ifdef MRTRIX_WINDOWS
-          struct timeval tv;
-          gettimeofday (&tv, nullptr);
-          return tv.tv_sec ^ tv.tv_usec;
-#else 
-          // TODO check whether this does in fact work on Windows...
           std::random_device rd;
           return rd();
-#endif
         }
 
 
