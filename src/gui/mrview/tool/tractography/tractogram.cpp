@@ -212,6 +212,7 @@ namespace MR
         {
           const Tractogram& tractogram = dynamic_cast<const Tractogram&>(displayable);
           bool using_geom = geometry_type == TrackGeometryType::Pseudotubes;
+          bool using_points = geometry_type == TrackGeometryType::Points;
 
           std::string source =
             "uniform float lower, upper;\n"
@@ -236,6 +237,12 @@ namespace MR
             source += using_geom ? "in float g_include;\n" : "in float v_include;\n";
 
           source += "void main() {\n";
+
+
+          if (using_points)
+            source +=
+            "if(dot(gl_PointCoord-0.5,gl_PointCoord-0.5)>0.25)\n"
+            "  discard;\n";
 
           if (do_crop_to_slab)
             source += using_geom ?
@@ -430,13 +437,17 @@ namespace MR
             original_fov = std::pow (dim[0]*dim[1]*dim[2], 1.0f/3.0f);
           }
 
-          line_thickness_screenspace = geometry_type != TrackGeometryType::Pseudotubes ? 1.f :
+          line_thickness_screenspace =
                 tractography_tool.line_thickness*original_fov*(transform.width()+transform.height()) /
                 ( 2.0*window().FOV()*transform.width()*transform.height());
 
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "line_thickness"), line_thickness_screenspace);
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "scale_x"), transform.width());
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "scale_y"), transform.height());
+
+          float point_size_screenspace = tractography_tool.point_size*original_fov / window().FOV();
+
+          glPointSize(point_size_screenspace);
 
           if (tractography_tool.line_opacity < 1.0) {
             gl::Enable (gl::BLEND);
@@ -535,8 +546,12 @@ namespace MR
         {
           // TODO This should perhaps be using "output_step_size" if present?
           float step_size = (properties.find ("step_size") == properties.end() ? 0.0 : to<float>(properties["step_size"]));
-          GLint new_stride = GLint (tractography_tool.line_thickness * original_fov / step_size);
-          new_stride = std::max (1, std::min (max_sample_stride, new_stride));
+          GLint new_stride = 1;
+
+          if (geometry_type == TrackGeometryType::Pseudotubes) {
+            new_stride = GLint (tractography_tool.line_thickness * original_fov / step_size);
+            new_stride = std::max (1, std::min (max_sample_stride, new_stride));
+          }
 
           if (new_stride != sample_stride) {
             sample_stride = new_stride;
@@ -891,6 +906,7 @@ namespace MR
         void Tractogram::set_geometry_type (const TrackGeometryType t)
         {
           geometry_type = t;
+          should_update_stride = true;
         }
 
 

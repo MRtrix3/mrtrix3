@@ -59,6 +59,7 @@ namespace MR
 
             QPushButton* hide_all_button;
             float line_thickness;
+            float point_size;
             bool do_crop_to_slab;
             bool use_lighting;
             bool use_threshold_scalarfile;

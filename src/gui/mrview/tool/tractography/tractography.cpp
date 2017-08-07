@@ -25,6 +25,8 @@
  // as a fraction of the image FOV:
 #define MRTRIX_DEFAULT_LINE_THICKNESS 0.002f
 
+#define MRTRIX_DEFAULT_POINT_SIZE 5.f
+
 namespace MR
 {
   namespace GUI
@@ -67,6 +69,7 @@ namespace MR
         Tractography::Tractography (Dock* parent) :
           Base (parent),
           line_thickness (MRTRIX_DEFAULT_LINE_THICKNESS),
+          point_size (MRTRIX_DEFAULT_POINT_SIZE),
           do_crop_to_slab (true),
           use_lighting (false),
           not_3D (true),
@@ -424,6 +427,7 @@ namespace MR
         void Tractography::line_thickness_slot (int thickness)
         {
           line_thickness = MRTRIX_DEFAULT_LINE_THICKNESS * std::exp (2.0e-3f * thickness);
+          point_size = MRTRIX_DEFAULT_POINT_SIZE * std::exp (2.0e-3f * thickness);
 
           for (size_t i = 0, N = tractogram_list_model->rowCount(); i < N; ++i) {
             Tractogram* tractogram = dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get());
@@ -741,6 +745,11 @@ namespace MR
             thickness_label->setHidden (false);
             lighting_button->setEnabled (true);
             lighting_group_box->setEnabled (true);
+          }
+
+          if (geom_type == TrackGeometryType::Points) {
+            thickness_slider->setHidden (false);
+            thickness_label->setHidden (false);
           }
         }
 
