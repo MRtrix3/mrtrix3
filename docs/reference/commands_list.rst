@@ -61,6 +61,7 @@ List of MRtrix3 commands
     commands/mrclusterstats
     commands/mrconvert
     commands/mrcrop
+    commands/mrdegibbs
     commands/mrdump
     commands/mredit
     commands/mrfilter
@@ -171,6 +172,7 @@ List of MRtrix3 commands
     :ref:`mrclusterstats`, "Voxel-based analysis using permutation testing and threshold-free cluster enhancement"
     :ref:`mrconvert`, "Perform conversion between different file types and optionally extract a subset of the input image"
     :ref:`mrcrop`, "Crop an image to a reduced field of view"
+    :ref:`mrdegibbs`, "Remove Gibbs Ringing Artifacts"
     :ref:`mrdump`, "Print out the values within an image"
     :ref:`mredit`, "Directly edit the intensities within an image from the command-line"
     :ref:`mrfilter`, "Perform filtering operations on 3D / 4D MR images"
