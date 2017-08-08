@@ -12,33 +12,24 @@
  */
 
 
-#ifndef __image_handler_tiff_h__
-#define __image_handler_tiff_h__
-
-#ifdef MRTRIX_TIFF_SUPPORT
-
-#include "types.h"
-#include "image_io/base.h"
+#ifndef __gui_mrview_tool_tractogram_enums_h__
+#define __gui_mrview_tool_tractogram_enums_h__
 
 namespace MR
 {
-  namespace ImageIO
+  namespace GUI
   {
-
-    class TIFF : public Base
-    { MEMALIGN (TIFF)
-      public:
-        TIFF (const Header& header) : Base (header) { } 
-
-      protected:
-        virtual void load (const Header&, size_t);
-        virtual void unload (const Header&);
-    };
-
+    namespace MRView
+    {
+      namespace Tool
+      {
+        enum class TrackColourType { Direction, Ends, Manual, ScalarFile };
+        enum class TrackThresholdType { None, UseColourFile, SeparateFile };
+      }
+    }
   }
 }
 
-#endif
-#endif
 
+#endif
 

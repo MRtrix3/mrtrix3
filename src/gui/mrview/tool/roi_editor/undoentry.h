@@ -17,7 +17,8 @@
 
 #include <array>
 #include <atomic>
-#include <vector>
+
+#include "types.h"
 
 #include "gui/opengl/shader.h"
 #include "gui/opengl/gl.h"

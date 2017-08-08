@@ -16,7 +16,7 @@
 #define __dwi_tractography_sift2_fixel_updater_h__
 
 
-#include <vector>
+#include "types.h"
 
 #include "dwi/tractography/SIFT/track_index_range.h"
 #include "dwi/tractography/SIFT/types.h"

@@ -16,7 +16,6 @@
 #define __dwi_tractography_tracking_shared_h__
 
 #include <atomic>
-#include <vector>
 
 #include "header.h"
 #include "image.h"

@@ -13,14 +13,13 @@
 
 
 #include <mutex>
-#include <vector>
 
 #include "command.h"
+#include "image.h"
 #include "progressbar.h"
 #include "thread_queue.h"
+#include "types.h"
 
-#include "image.h"
-#include "image_helpers.h"
 #include "algo/loop.h"
 #include "adapter/subset.h"
 

@@ -13,7 +13,6 @@
 
 
 #include <memory>
-#include <vector>
 
 #include "image_io/scratch.h"
 #include "header.h"

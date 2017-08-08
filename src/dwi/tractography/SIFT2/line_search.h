@@ -16,7 +16,7 @@
 #define __dwi_tractography_sift2_line_search_h__
 
 
-#include <vector>
+#include "types.h"
 
 #include "dwi/tractography/SIFT/track_contribution.h"
 #include "dwi/tractography/SIFT/types.h"

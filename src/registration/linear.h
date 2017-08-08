@@ -15,10 +15,11 @@
 #ifndef __registration_linear_h__
 #define __registration_linear_h__
 
-#include <vector>
+#include <iostream>
 
 #include "app.h"
 #include "image.h"
+#include "types.h"
 #include "math/average_space.h"
 #include "filter/normalise.h"
 #include "filter/resize.h"
@@ -36,7 +37,7 @@
 // #include "math/check_gradient.h"
 #include "math/rng.h"
 #include "math/math.h"
-#include <iostream>
+
 #include "registration/multi_resolution_lmax.h"
 
 namespace MR

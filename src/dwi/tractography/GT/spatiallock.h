@@ -17,7 +17,8 @@
 
 #include <Eigen/Dense>
 #include <mutex>
-#include <vector>
+
+#include "types.h"
 
 
 namespace MR {

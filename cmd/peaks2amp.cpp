@@ -17,7 +17,6 @@
 #include "algo/loop.h"
 
 
-using namespace std;
 using namespace MR;
 using namespace App;
 

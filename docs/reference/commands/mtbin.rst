@@ -6,7 +6,7 @@ mtbin
 Synopsis
 --------
 
-Multi-Tissue Bias field correction and Intensity Normalisation (MTBIN)
+Multi-Tissue Bias field correction and Intensity Normalisation (WARNING: deprecated).
 
 Usage
 --------
@@ -20,13 +20,7 @@ Usage
 Description
 -----------
 
-This command inputs N number of tissue components (e.g. from multi-tissue CSD), and outputs N corrected tissue components. Intensity normalisation is performed by either determining a common global normalisation factor for all tissue types (default) or by normalising each tissue type independently with a single tissue-specific global scale factor.
-
-The -mask option is mandatory, and is optimally provided with a brain mask, such as the one obtained from dwi2mask earlier in the processing pipeline.
-
-Example usage: mtbin wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif.
-
-The estimated multiplicative bias field is guaranteed to have a mean of 1 over all voxels within the mask.
+WARNING: this command is deprecated and may produce highly inappropriate results in several cases. Not recommended and at your own discretion. Please use the new mtnormalise command instead for reliable results.
 
 Options
 -------
@@ -42,6 +36,8 @@ Options
 -  **-maxiter number** set the maximum number of iterations. Default(100). It will stop before the max iterations if convergence is detected
 
 -  **-check image** check the final mask used to compute the bias field. This mask excludes outlier regions ignored by the bias field fitting procedure. However, these regions are still corrected for bias fields based on the other image data.
+
+-  **-override** consciously use this deprecated command. Not recommended and at your own discretion.
 
 Standard options
 ^^^^^^^^^^^^^^^^

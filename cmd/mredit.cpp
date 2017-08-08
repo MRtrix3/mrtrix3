@@ -13,12 +13,13 @@
 
 
 #include <set>
-#include <vector>
 
 #include "command.h"
 #include "image.h"
 #include "image_helpers.h"
 #include "transform.h"
+#include "types.h"
+
 #include "algo/copy.h"
 
 using namespace MR;
