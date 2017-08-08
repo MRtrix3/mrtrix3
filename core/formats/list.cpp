@@ -58,7 +58,7 @@ namespace MR
       &mgh_handler,
       &mgz_handler,
       &mrtrix_sparse_handler,
-      NULL
+      nullptr
     };
 
 
@@ -79,7 +79,7 @@ namespace MR
       ".msf",
       ".msh",
       ".dcm",
-      NULL
+      nullptr
     };
 
   }
