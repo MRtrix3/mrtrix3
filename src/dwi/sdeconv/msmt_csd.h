@@ -45,7 +45,7 @@ namespace MR
               Shared (const Header& dwi_header) :
                   grad (DWI::get_valid_DW_scheme (dwi_header)),
                   shells (grad),
-                  HR_dirs (DWI::Directions::electrostatic_repulsion_300()) { }
+                  HR_dirs (DWI::Directions::electrostatic_repulsion_300()) { shells.select_shells(false,false,false); }
 
 
               void parse_cmdline_options()
@@ -209,7 +209,7 @@ namespace MR
 
 
               const Eigen::MatrixXd grad;
-              const DWI::Shells shells;
+              DWI::Shells shells;
               Eigen::MatrixXd HR_dirs;
               vector<int> lmax, lmax_response;
               vector<Eigen::MatrixXd> responses;
