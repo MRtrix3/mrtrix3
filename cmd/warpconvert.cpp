@@ -23,7 +23,7 @@
 using namespace MR;
 using namespace App;
 
-const char* conversion_type[] = {"deformation2displacement","displacement2deformation","warpfull2deformation","warpfull2displacement",NULL};
+const char* conversion_type[] = {"deformation2displacement","displacement2deformation","warpfull2deformation","warpfull2displacement",nullptr};
 
 
 void usage ()
@@ -40,13 +40,10 @@ void usage ()
 
   ARGUMENTS
   + Argument ("in", "the input warp image.").type_image_in ()
+  + Argument ("type", "the conversion type required. Valid choices are: " + join(conversion_type, ", ")).type_choice (conversion_type)
   + Argument ("out", "the output warp image.").type_image_out ();
 
   OPTIONS
-  + Option ("type", "the conversion type required. Valid choices are: "
-                    "deformation2displacement, displacement2deformation, warpfull2deformation, warpfull2displacement (Default: deformation2displacement)")
-  + Argument ("choice").type_choice (conversion_type)
-
   + Option ("template", "define a template image when converting a warpfull file (which is defined on a grid in the midway space between image 1 & 2). For example to "
                         "generate the deformation field that maps image1 to image2, then supply image2 as the template image")
   + Argument ("image").type_image_in ()
@@ -65,6 +62,7 @@ void usage ()
 
 void run ()
 {
+  const int conversion_type = argument[1];
   bool midway_space = get_options("midway_space").size() ? true : false;
 
   std::string template_filename;
@@ -77,13 +75,8 @@ void run ()
   if (opt.size())
     from = opt[0][0];
 
-  int registration_type = 0;
-  opt = get_options ("type");
-  if (opt.size())
-    registration_type = opt[0][0];
-
   // deformation2displacement
-  if (registration_type == 0) {
+  if (conversion_type == 0) {
     if (midway_space)
       WARN ("-midway_space option ignored with deformation2displacement conversion type");
     if (get_options ("template").size())
@@ -96,11 +89,11 @@ void run ()
 
     Header header (deformation);
     header.datatype() = DataType::from_command_line (DataType::Float32);
-    Image<default_type> displacement = Image<default_type>::create (argument[1], header).with_direct_io();
+    Image<default_type> displacement = Image<default_type>::create (argument[2], header).with_direct_io();
     Registration::Warp::deformation2displacement (deformation, displacement);
 
   // displacement2deformation
-  } else if (registration_type == 1) {
+  } else if (conversion_type == 1) {
     auto displacement = Image<default_type>::open (argument[0]).with_direct_io (3);
     Registration::Warp::check_warp (displacement);
 
@@ -113,11 +106,11 @@ void run ()
 
     Header header (displacement);
     header.datatype() = DataType::from_command_line (DataType::Float32);
-    Image<default_type> deformation = Image<default_type>::create (argument[1], header).with_direct_io();
+    Image<default_type> deformation = Image<default_type>::create (argument[2], header).with_direct_io();
     Registration::Warp::displacement2deformation (displacement, deformation);
 
    // warpfull2deformation & warpfull2displacement
-  } else if (registration_type == 2 || registration_type == 3) {
+  } else if (conversion_type == 2 || conversion_type == 3) {
 
     auto warp = Image<default_type>::open (argument[0]).with_direct_io (3);
     Registration::Warp::check_warp_full (warp);
@@ -132,13 +125,16 @@ void run ()
       warp_output = Registration::Warp::compute_full_deformation (warp, template_header, from);
     }
 
-    if (registration_type == 3)
+    if (conversion_type == 3)
       Registration::Warp::deformation2displacement (warp_output, warp_output);
 
     Header header (warp_output);
     header.datatype() = DataType::from_command_line (DataType::Float32);
-    Image<default_type> output = Image<default_type>::create (argument[1], header);
+    Image<default_type> output = Image<default_type>::create (argument[2], header);
     threaded_copy_with_progress_message ("converting warp", warp_output, output);
+
+  } else {
+    throw Exception ("Unsupported warp conversion type");
   }
 
 }

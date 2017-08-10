@@ -15,4 +15,4 @@ conventional 4D deformation field format ready for the subsequent steps, run
 
 .. code-block:: console 
 
-    $ foreach ../template/warps/* : warpconvert -type warpfull2deformation -template ../template/fod_template.mif IN PRE/subject2template_warp.mif
+    $ foreach ../template/warps/* : warpconvert -template ../template/fod_template.mif IN warpfull2deformation PRE/subject2template_warp.mif
