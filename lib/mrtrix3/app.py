@@ -136,7 +136,7 @@ def parse():
 
   args = cmdline.parse_args()
 
-  if args.help:
+  if hasattr(args, 'help') and args.help:
     cmdline._printHelp()
     sys.exit(0)
 
@@ -152,20 +152,22 @@ def parse():
     colourExec = '\033[03;36m'
     colourWarn = '\033[00;31m'
 
-  if args.nocleanup:
+  # Need to check for the presence of these keys first, since there's a chance that an external script may have
+  #   erased the standard options
+  if hasattr(args, 'nocleanup') and args.nocleanup:
     _cleanup = False
-  if args.nthreads:
+  if hasattr(args, 'nthreads') and args.nthreads:
     _nthreads = args.nthreads
-  if args.quiet:
+  if hasattr(args, 'quiet') and args.quiet:
     _verbosity = 0
-  elif args.info:
+  elif hasattr(args, 'info') and args.info:
     _verbosity = 2
-  elif args.debug:
+  elif hasattr(args, 'debug') and args.debug:
     _verbosity = 3
 
   cmdline.printCitationWarning()
 
-  if args.cont:
+  if hasattr(args, 'cont') and args.cont:
     _tempDir = os.path.abspath(args.cont[0])
     _lastFile = args.cont[1]
 
