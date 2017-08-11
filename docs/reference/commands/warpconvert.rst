@@ -13,9 +13,10 @@ Usage
 
 ::
 
-    warpconvert [ options ]  in out
+    warpconvert [ options ]  in type out
 
 -  *in*: the input warp image.
+-  *type*: the conversion type required. Valid choices are: deformation2displacement, displacement2deformation, warpfull2deformation, warpfull2displacement
 -  *out*: the output warp image.
 
 Description
@@ -25,8 +26,6 @@ A deformation field is defined as an image where each voxel defines the correspo
 
 Options
 -------
-
--  **-type choice** the conversion type required. Valid choices are: deformation2displacement, displacement2deformation, warpfull2deformation, warpfull2displacement (Default: deformation2displacement)
 
 -  **-template image** define a template image when converting a warpfull file (which is defined on a grid in the midway space between image 1 & 2). For example to generate the deformation field that maps image1 to image2, then supply image2 as the template image
 
