@@ -846,8 +846,27 @@ if not openmp:
 
 report ('Checking for FFTW library: ')
 
-if 'FFTW_CFLAGS' in os.environ.keys(): fftw_cflags = shlex.split (os.environ['FFTW_CFLAGS'])
-if 'FFTW_LDFLAGS' in os.environ.keys(): fftw_ldflags = shlex.split (os.environ['FFTW_LDFLAGS'])
+if 'FFTW_CFLAGS' in os.environ.keys():
+  fftw_cflags = shlex.split (os.environ['FFTW_CFLAGS'])
+else:
+  try:
+    fftw_cflags = []
+    for entry in shlex.split (execute ([ 'pkg-config', '--cflags', 'fftw3' ], RuntimeError)[1]):
+      if entry.startswith ('-I'):
+        fftw_cflags += [ '-isystem', entry[2:] ]
+      else:
+        fftw_cflags += [ entry ]
+  except:
+    log('error running on pkg-config --cflags fftw3\n\n')
+if 'FFTW_LDFLAGS' in os.environ.keys():
+  fftw_ldflags = shlex.split (os.environ['FFTW_LDFLAGS'])
+else:
+  try:
+    fftw_ldflags = []
+    for entry in shlex.split (execute ([ 'pkg-config', '--libs', 'fftw3' ], RuntimeError)[1]):
+      fftw_ldflags += [ entry ]
+  except:
+    log('error running on pkg-config --libs fftw3\n\n')
 
 try:
   fftw_version = compile ('''
