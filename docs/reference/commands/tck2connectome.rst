@@ -64,8 +64,6 @@ Other options for tck2connectome
 
 -  **-out_assignments path** output the node assignments of each streamline to a file; this can be used subsequently e.g. by the command connectome2tck
 
--  **-zero_diagonal** set all diagonal entries in the matrix to zero (these represent streamlines that connect to the same node at both ends)
-
 -  **-vector** output a vector representing connectivities from a given seed point to target nodes, rather than a matrix of node-node connectivities
 
 Standard options

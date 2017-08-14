@@ -69,11 +69,6 @@ void usage ()
                                "this can be used subsequently e.g. by the command connectome2tck")
     + Argument ("path").type_file_out()
 
-  + Option ("zero_diagonal", "set all diagonal entries in the matrix to zero \n"
-                             "(these represent streamlines that connect to the same node at both ends)")
-
-  // TODO Option to make matrix symmetric before output
-
   + Option ("vector", "output a vector representing connectivities from a given seed point to target nodes, "
                       "rather than a matrix of node-node connectivities");
 

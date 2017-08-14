@@ -508,7 +508,7 @@ void run ()
 
     switch (interp) {
       case 0:
-        Filter::reslice<Interp::Nearest> (input, output, linear_transform, { 1, 1, 1 }, out_of_bounds_value);
+        Filter::reslice<Interp::Nearest> (input, output, linear_transform, oversample, out_of_bounds_value);
         break;
       case 1:
         Filter::reslice<Interp::Linear> (input, output, linear_transform, oversample, out_of_bounds_value);
