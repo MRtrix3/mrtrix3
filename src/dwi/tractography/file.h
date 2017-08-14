@@ -16,7 +16,6 @@
 #define __dwi_tractography_file_h__
 
 #include <map>
-#include <vector>
 
 #include "app.h"
 #include "types.h"

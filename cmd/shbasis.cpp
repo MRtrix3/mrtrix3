@@ -12,17 +12,16 @@
  */
 
 
-#include <vector>
-
 #include "app.h"
 #include "bitset.h"
 #include "command.h"
 #include "datatype.h"
-#include "progressbar.h"
-#include "memory.h"
-
 #include "header.h"
 #include "image.h"
+#include "memory.h"
+#include "progressbar.h"
+#include "types.h"
+
 #include "algo/loop.h"
 
 #include "math/SH.h"

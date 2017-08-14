@@ -12,12 +12,12 @@
  */
 
 
-#include <vector>
 #include <set>
 
 #include "command.h"
 #include "image.h"
 #include "thread_queue.h"
+#include "types.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"

@@ -16,12 +16,12 @@
 #define __dwi_directions_set_h__
 
 
-
 #include <cstdint>
-#include <vector>
 
 #include "progressbar.h"
+#include "types.h"
 #include "dwi/directions/predefined.h"
+
 
 namespace MR {
   namespace DWI {

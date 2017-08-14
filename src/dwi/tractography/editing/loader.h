@@ -17,9 +17,10 @@
 
 
 #include <string>
-#include <vector>
 
 #include "memory.h"
+#include "types.h"
+
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"

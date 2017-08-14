@@ -14,6 +14,7 @@
 
 #include "command.h"
 #include "image.h"
+#include "phase_encoding.h"
 #include "adapter/extract.h"
 #include "dwi/gradient.h"
 #include "math/least_squares.h"
@@ -83,6 +84,7 @@ void run ()
   header.ndim() = 3;
   header.datatype() = DataType::Float32;
   DWI::stash_DW_scheme (header, grad);
+  PhaseEncoding::clear_scheme (header);
   auto noise = Image<value_type>::create (argument[1], header);
 
   DWI::estimate_noise (dwi, noise, mapping);

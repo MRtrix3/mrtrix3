@@ -15,8 +15,9 @@
 #ifndef __registration_nonlinear_h__
 #define __registration_nonlinear_h__
 
-#include <vector>
 #include "image.h"
+#include "types.h"
+
 #include "filter/warp.h"
 #include "filter/resize.h"
 #include "registration/transform/reorient.h"

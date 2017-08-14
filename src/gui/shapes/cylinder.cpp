@@ -14,7 +14,7 @@
 
 #include "gui/shapes/cylinder.h"
 
-#include <vector>
+#include "types.h"
 
 #include "math/math.h"
 

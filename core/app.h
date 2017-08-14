@@ -16,17 +16,17 @@
 #define __app_h__
 
 #include <cstring>
-#include <string>
-#include <vector>
 #include <limits>
+#include <string>
 
 #ifdef None
 # undef None
 #endif
 
 #include "cmdline_option.h"
-#include "file/path.h"
 #include "signal_handler.h"
+#include "types.h"
+#include "file/path.h"
 
 
 extern void usage ();

@@ -12,11 +12,9 @@
  */
 
 
-#include <vector>
-
 #include "command.h"
-
 #include "image.h"
+#include "types.h"
 
 #include "math/SH.h"
 

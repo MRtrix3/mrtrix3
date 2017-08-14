@@ -15,10 +15,8 @@
 #ifndef __math_median_h__
 #define __math_median_h__
 
-#include <vector>
-#include <limits>
-
 #include <algorithm>
+#include <limits>
 
 #include "types.h"
 

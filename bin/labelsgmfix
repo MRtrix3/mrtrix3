@@ -93,7 +93,7 @@ if not os.path.isfile(combined_image_path):
   else:
     app.error('FSL FIRST has failed; not all structures were segmented successfully (check ' + path.toTemp('first.logs', False) + ')')
 
-# Generate an empty image that will be used to contruct the new SGM nodes
+# Generate an empty image that will be used to construct the new SGM nodes
 run.command('mrcalc parc.mif 0 -min sgm.mif')
 
 # Read the local connectome LUT file

@@ -14,6 +14,8 @@
 
 #include "dwi/tractography/resampling/resampling.h"
 
+#include "types.h"
+
 #include "dwi/tractography/resampling/arc.h"
 #include "dwi/tractography/resampling/downsampler.h"
 #include "dwi/tractography/resampling/endpoints.h"

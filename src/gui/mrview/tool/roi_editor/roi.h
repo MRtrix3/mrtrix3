@@ -15,10 +15,9 @@
 #ifndef __gui_mrview_tool_roi_editor_roi_h__
 #define __gui_mrview_tool_roi_editor_roi_h__
 
-#include <vector>
-
 #include "memory.h"
 #include "transform.h"
+#include "types.h"
 
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/base.h"
