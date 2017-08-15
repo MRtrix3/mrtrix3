@@ -1,6 +1,5 @@
+#pylint: disable=unused-variable
 def initialise(base_parser, subparsers):
-  import argparse
-  from mrtrix3 import app
   parser = subparsers.add_parser('msmt_5tt', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Derive MSMT-CSD tissue response functions based on a co-registered five-tissue-type (5TT) image', parents=[base_parser])
   parser.addCitation('', 'Jeurissen, B.; Tournier, J.-D.; Dhollander, T.; Connelly, A. & Sijbers, J. Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data. NeuroImage, 2014, 103, 411-426', False)
   parser.add_argument('input', help='The input DWI')
@@ -16,6 +15,7 @@ def initialise(base_parser, subparsers):
 
 
 
+#pylint: disable=unused-variable
 def checkOutputPaths():
   from mrtrix3 import app
   app.checkOutputPath(app.args.out_wm)
@@ -24,8 +24,8 @@ def checkOutputPaths():
 
 
 
+#pylint: disable=unused-variable
 def getInputs():
-  import os
   from mrtrix3 import app, path, run
   run.command('mrconvert ' + path.fromUser(app.args.in_5tt, True) + ' ' + path.toTemp('5tt.mif', True))
   if app.args.dirs:
@@ -33,13 +33,15 @@ def getInputs():
 
 
 
+#pylint: disable=unused-variable
 def needsSingleShell():
   return False
 
 
 
+#pylint: disable=unused-variable
 def execute():
-  import math, os, shutil
+  import os, shutil
   from mrtrix3 import app, image, path, run
 
   # Ideally want to use the oversampling-based regridding of the 5TT image from the SIFT model, not mrtransform
@@ -49,7 +51,7 @@ def execute():
   run.command('5ttcheck 5tt.mif', False)
 
   # Get shell information
-  shells = [ int(round(float(x))) for x in image.headerField('dwi.mif', 'shells').split() ]
+  shells = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shells').split() ]
   if len(shells) < 3:
     app.warn('Less than three b-value shells; response functions will not be applicable in resolving three tissues using MSMT-CSD algorithm')
 
@@ -117,4 +119,3 @@ def execute():
 
   # Generate output 4D binary image with voxel selections; RGB as in MSMT-CSD paper
   run.command('mrcat csf_mask.mif gm_mask.mif wm_sf_mask.mif voxels.mif -axis 3')
-

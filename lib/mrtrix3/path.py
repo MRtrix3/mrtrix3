@@ -3,17 +3,17 @@
 # Determines the common postfix for a list of filenames (including the file extension)
 def commonPostfix(inputFiles):
   from mrtrix3 import app
-  first = inputFiles[0];
+  first = inputFiles[0]
   cursor = 0
-  found = False;
+  found = False
   common = ''
-  for i in reversed(first):
-    if found == False:
+  for dummy_i in reversed(first):
+    if not found:
       for j in inputFiles:
         if j[len(j)-cursor-1] != first[len(first)-cursor-1]:
           found = True
           break
-      if found == False:
+      if not found:
         common = first[len(first)-cursor-1] + common
       cursor += 1
   app.debug('Common postfix of ' + str(len(inputFiles)) + ' is \'' + common + '\'')
@@ -69,10 +69,12 @@ def newTemporary(suffix):
 # This can be algorithm files in lib/mrtrix3, or data files in /share/mrtrix3/
 def scriptSubDirName():
   import inspect, os
+  from mrtrix3 import app
   # TODO Test this on multiple Python versions, with & without softlinking
   name = os.path.basename(inspect.stack()[-1][1])
   if not name[0].isalpha():
     name = '_' + name
+  app.debug(name)
   return name
 
 
@@ -83,7 +85,10 @@ def scriptSubDirName():
 #   need to be used in conjunction with scriptSubDirName()
 def sharedDataPath():
   import os
-  return os.path.realpath(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, os.pardir, 'share', 'mrtrix3')))
+  from mrtrix3 import app
+  result = os.path.realpath(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, os.pardir, 'share', 'mrtrix3')))
+  app.debug(result)
+  return result
 
 
 

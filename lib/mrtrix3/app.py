@@ -75,9 +75,8 @@ _signals = { 'SIGALRM': 'Timer expiration',
 
 
 def init(author, synopsis):
-  import os
+  import os, signal
   global cmdline, config
-  global _signalData, _workingDir
   cmdline = Parser(author=author, synopsis=synopsis)
   _workingDir = os.getcwd()
   # Load the MRtrix configuration files here, and create a dictionary
@@ -88,8 +87,10 @@ def init(author, synopsis):
       f = open (path, 'r')
       for line in f:
         line = line.strip().split(': ')
-        if len(line) != 2: continue
-        if line[0][0] == '#': continue
+        if len(line) != 2:
+          continue
+        if line[0][0] == '#':
+          continue
         config[line[0]] = line[1]
     except IOError:
       pass
@@ -113,29 +114,25 @@ def parse():
     sys.exit(1)
 
   if len(sys.argv) == 1:
-    cmdline._printHelp()
+    cmdline.printHelp()
     sys.exit(0)
-
-  if sys.argv[-1] == '__print_full_usage__':
-    cmdline._printFullUsage()
+  elif sys.argv[-1] == '__print_full_usage__':
+    cmdline.printFullUsage()
     sys.exit(0)
-
-  if sys.argv[-1] == '__print_synopsis__':
+  elif sys.argv[-1] == '__print_synopsis__':
     sys.stdout.write(cmdline.synopsis)
     sys.exit(0)
-
-  if sys.argv[-1] == '__print_usage_markdown__':
-    cmdline._printUsageMarkdown()
+  elif sys.argv[-1] == '__print_usage_markdown__':
+    cmdline.printUsageMarkdown()
     sys.exit(0)
-
-  if sys.argv[-1] == '__print_usage_rst__':
-    cmdline._printUsageRst()
+  elif sys.argv[-1] == '__print_usage_rst__':
+    cmdline.printUsageRst()
     sys.exit(0)
 
   args = cmdline.parse_args()
 
   if args.help:
-    cmdline._printHelp()
+    cmdline.printHelp()
     sys.exit(0)
 
   use_colour = True
@@ -178,16 +175,16 @@ def checkOutputPath(path):
     return
   abspath = os.path.abspath(os.path.join(_workingDir, path))
   if os.path.exists(abspath):
-    type = ''
+    output_type = ''
     if os.path.isfile(abspath):
-      type = ' file'
+      output_type = ' file'
     elif os.path.isdir(abspath):
-      type = ' directory'
+      output_type = ' directory'
     if args.force:
-      warn('Output' + type + ' \'' + path + '\' already exists; will be overwritten at script completion')
+      warn('Output' + output_type + ' \'' + path + '\' already exists; will be overwritten at script completion')
       force = True
     else:
-      error('Output' + type + ' \'' + path + '\' already exists (use -force to override)')
+      error('Output' + output_type + ' \'' + path + '\' already exists (use -force to override)')
 
 
 
@@ -281,7 +278,8 @@ def debug(text):
   import inspect, os, sys
   global colourClear, colourDebug
   global _verbosity
-  if _verbosity <= 2: return
+  if _verbosity <= 2:
+    return
   if len(inspect.stack()) == 2: # debug() called directly from script being executed
     caller = inspect.getframeinfo(inspect.stack()[1][0])
     origin = '(' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')'
@@ -330,32 +328,31 @@ def warn(text):
 import argparse
 class Parser(argparse.ArgumentParser):
 
-  def __init__(self, *args, **kwargs):
-    import sys
+  def __init__(self, *args_in, **kwargs_in):
     global _defaultCopyright
-    if 'author' in kwargs:
-      self._author = kwargs['author']
-      del kwargs['author']
+    if 'author' in kwargs_in:
+      self._author = kwargs_in['author']
+      del kwargs_in['author']
     else:
       self._author = None
     self._citationList = [ ]
-    if 'copyright' in kwargs:
-      self._copyright = kwargs['copyright']
-      del kwargs['copyright']
+    if 'copyright' in kwargs_in:
+      self._copyright = kwargs_in['copyright']
+      del kwargs_in['copyright']
     else:
       self._copyright = _defaultCopyright
     self._description = [ ]
     self._externalCitations = False
-    if 'synopsis' in kwargs:
-      self.synopsis = kwargs['synopsis']
-      del kwargs['synopsis']
+    if 'synopsis' in kwargs_in:
+      self.synopsis = kwargs_in['synopsis']
+      del kwargs_in['synopsis']
     else:
       self.synopsis = None
-    kwargs['add_help'] = False
-    argparse.ArgumentParser.__init__(self, *args, **kwargs)
+    kwargs_in['add_help'] = False
+    argparse.ArgumentParser.__init__(self, *args_in, **kwargs_in)
     self.mutuallyExclusiveOptionGroups = [ ]
-    if 'parents' in kwargs:
-      for parent in kwargs['parents']:
+    if 'parents' in kwargs_in:
+      for parent in kwargs_in['parents']:
         self._citationList.extend(parent._citationList)
         self._externalCitations = self._externalCitations or parent._externalCitations
     else:
@@ -379,26 +376,25 @@ class Parser(argparse.ArgumentParser):
   def addDescription(self, text):
     self._description.append(text)
 
-  def setCopyright(text):
+  def setCopyright(self, text):
     self._copyright = text
 
   # Mutually exclusive options need to be added before the command-line input is parsed
   def flagMutuallyExclusiveOptions(self, options, required=False):
     import sys
-    if not type(options) is list or not type(options[0]) is str:
+    if not isinstance(options, list) or not isinstance(options[0], str):
       sys.stderr.write('Script error: Parser.flagMutuallyExclusiveOptions() only accepts a list of strings\n')
       sys.stderr.flush()
       sys.exit(1)
     self.mutuallyExclusiveOptionGroups.append( (options, required) )
 
   def parse_args(self):
-    import sys
-    args = argparse.ArgumentParser.parse_args(self)
-    self._checkMutuallyExclusiveOptions(args)
+    result = argparse.ArgumentParser.parse_args(self)
+    self._checkMutuallyExclusiveOptions(result)
     if self._subparsers:
       for alg in self._subparsers._group_actions[0].choices:
-        self._subparsers._group_actions[0].choices[alg]._checkMutuallyExclusiveOptions(args)
-    return args
+        self._subparsers._group_actions[0].choices[alg]._checkMutuallyExclusiveOptions(result)
+    return result
 
   def printCitationWarning(self):
     # If a subparser has been invoked, the subparser's function should instead be called,
@@ -422,12 +418,12 @@ class Parser(argparse.ArgumentParser):
   # Overloads argparse.ArgumentParser function to give a better error message on failed parsing
   def error(self, text):
     import shlex, sys
-    for arg in sys.argv:
-      if '-help'.startswith(arg):
-        self._printHelp()
+    for entry in sys.argv:
+      if '-help'.startswith(entry):
+        self.printHelp()
         sys.exit(0)
     if self.prog and len(shlex.split(self.prog)) == len(sys.argv): # No arguments provided to subparser
-      self._printHelp()
+      self.printHelp()
       sys.exit(0)
     usage = self._formatUsage()
     if self._subparsers:
@@ -441,7 +437,7 @@ class Parser(argparse.ArgumentParser):
     sys.stderr.flush()
     sys.exit(1)
 
-  def _checkMutuallyExclusiveOptions(self, args):
+  def _checkMutuallyExclusiveOptions(self, args_in):
     import sys
     for group in self.mutuallyExclusiveOptionGroups:
       count = 0
@@ -449,10 +445,10 @@ class Parser(argparse.ArgumentParser):
         # Checking its presence is not adequate; by default, argparse adds these members to the namespace
         # Need to test if more than one of these options DIFFERS FROM ITS DEFAULT
         # Will need to loop through actions to find it manually
-        if hasattr(args, option):
+        if hasattr(args_in, option):
           for arg in self._actions:
             if arg.dest == option:
-              if not getattr(args, option) == arg.default:
+              if not getattr(args_in, option) == arg.default:
                 count += 1
               break
       if count > 1:
@@ -467,7 +463,6 @@ class Parser(argparse.ArgumentParser):
         sys.exit(1)
 
   def _formatUsage(self):
-    import sys
     argument_list = [ ]
     trailing_ellipsis = ''
     if self._subparsers:
@@ -480,7 +475,7 @@ class Parser(argparse.ArgumentParser):
         argument_list.append(arg.dest)
     return self.prog + ' ' + ' '.join(argument_list) + ' [ options ]' + trailing_ellipsis
 
-  def _printHelp(self):
+  def printHelp(self):
     import subprocess, textwrap
 
     def bold(text):
@@ -602,7 +597,7 @@ class Parser(argparse.ArgumentParser):
     else:
       print (s)
 
-  def _printFullUsage(self):
+  def printFullUsage(self):
     import sys
     print (self.synopsis)
     if self._description:
@@ -633,7 +628,7 @@ class Parser(argparse.ArgumentParser):
             else:
               print ('ARGUMENT ' + option.metavar + ' 0 0')
 
-  def _printUsageMarkdown(self):
+  def printUsageMarkdown(self):
     import os, subprocess, sys
     if self._subparsers and len(sys.argv) == 3:
       for alg in self._subparsers._group_actions[0].choices:
@@ -700,7 +695,7 @@ class Parser(argparse.ArgumentParser):
       for alg in self._subparsers._group_actions[0].choices:
         subprocess.call ([ sys.executable, os.path.realpath(sys.argv[0]), alg, '__print_usage_markdown__' ])
 
-  def _printUsageRst(self):
+  def printUsageRst(self):
     import os, subprocess, sys
     # Need to check here whether it's the documentation for a particular subcmdline that's being requested
     if self._subparsers and len(sys.argv) == 3:
@@ -791,6 +786,7 @@ class Parser(argparse.ArgumentParser):
 class progressBar:
 
   def _update(self):
+    import os, sys
     global clearLine, colourConsole, colourClear
     sys.stderr.write('\r' + colourConsole + os.path.basename(sys.argv[0]) + ': ' + colourClear + '[{0:>3}%] '.format(int(round(100.0*self.counter/self.target))) + self.message + '...' + clearLine + self.newline)
     sys.stderr.flush()
@@ -812,6 +808,7 @@ class progressBar:
     self._update()
 
   def done(self):
+    import os, sys
     global _verbosity
     global clearLine, colourConsole, colourClear
     self.counter = self.target
@@ -832,7 +829,7 @@ def isWindows():
 
 
 # Handler function for dealing with system signals
-def _handler(signum, frame):
+def _handler(signum, _frame):
   import os, signal, sys
   global _signals
   # First, kill any child processes
@@ -859,4 +856,3 @@ def _handler(signum, frame):
   sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourError + msg + colourClear + '\n')
   complete()
   exit(signum)
-

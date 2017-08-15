@@ -1,6 +1,5 @@
+#pylint: disable=unused-variable
 def initialise(base_parser, subparsers):
-  import argparse
-  from mrtrix3 import app
   parser = subparsers.add_parser('fsl', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Use FSL commands to generate the 5TT image based on a T1-weighted image', parents=[base_parser])
   parser.addCitation('', 'Smith, S. M. Fast robust automated brain extraction. Human Brain Mapping, 2002, 17, 143-155', True)
   parser.addCitation('', 'Zhang, Y.; Brady, M. & Smith, S. Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. IEEE Transactions on Medical Imaging, 2001, 20, 45-57', True)
@@ -16,13 +15,14 @@ def initialise(base_parser, subparsers):
 
 
 
+#pylint: disable=unused-variable
 def checkOutputPaths():
   pass
 
 
 
+#pylint: disable=unused-variable
 def getInputs():
-  import os
   from mrtrix3 import app, image, path, run
   image.check3DNonunity(path.fromUser(app.args.input, False))
   run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('input.mif', True))
@@ -36,9 +36,9 @@ def getInputs():
 
 
 
+#pylint: disable=unused-variable
 def execute():
   import os
-  from distutils.spawn import find_executable
   from mrtrix3 import app, file, fsl, image, path, run
 
   if app.isWindows():
@@ -99,13 +99,13 @@ def execute():
     # Also reduce the FoV of the image
     # Using MNI 1mm dilated brain mask rather than the -b option in standard_space_roi (which uses the 2mm mask); the latter looks 'buggy' to me... Unfortunately even with the 1mm 'dilated' mask, it can still cut into some brain areas, hence the explicit dilation
     mni_mask_path = os.path.join(fsl_path, 'data', 'standard', 'MNI152_T1_1mm_brain_mask_dil.nii.gz')
-    mni_mask_dilation = 0;
+    mni_mask_dilation = 0
     if os.path.exists (mni_mask_path):
-      mni_mask_dilation = 4;
+      mni_mask_dilation = 4
     else:
       mni_mask_path = os.path.join(fsl_path, 'data', 'standard', 'MNI152_T1_2mm_brain_mask_dil.nii.gz')
       if os.path.exists (mni_mask_path):
-        mni_mask_dilation = 2;
+        mni_mask_dilation = 2
     if mni_mask_dilation:
       run.command('maskfilter ' + mni_mask_path + ' dilate mni_mask.nii -npass ' + str(mni_mask_dilation))
       if app.args.nocrop:
@@ -156,8 +156,8 @@ def execute():
     else:
       combined_image_path = fsl.findImage('first_all_none_firstseg')
       if not os.path.isfile(combined_image_path):
-        app.error('FSL FIRST has failed; not all structures were segmented successfully (check ' + 
-path.toTemp('first.logs', False) + ')')
+        app.error('FSL FIRST has failed; not all structures were segmented successfully (check ' + \
+                  path.toTemp('first.logs', False) + ')')
 
   # Convert FIRST meshes to partial volume images
   pve_image_list = [ ]
@@ -196,4 +196,3 @@ path.toTemp('first.logs', False) + ')')
     run.command('mrconvert combined_precrop.mif result.mif')
   else:
     run.command('mrmath combined_precrop.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrcrop combined_precrop.mif result.mif -mask -')
-

@@ -1,6 +1,5 @@
+#pylint: disable=unused-variable
 def initialise(base_parser, subparsers):
-  import argparse
-  from mrtrix3 import app
   parser = subparsers.add_parser('manual', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Derive a response function using an input mask image alone (i.e. pre-selected voxels)', parents=[base_parser])
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('in_voxels', help='Input voxel selection mask')
@@ -10,12 +9,14 @@ def initialise(base_parser, subparsers):
 
 
 
+#pylint: disable=unused-variable
 def checkOutputPaths():
   from mrtrix3 import app
   app.checkOutputPath(app.args.output)
 
 
 
+#pylint: disable=unused-variable
 def getInputs():
   import os
   from mrtrix3 import app, path, run
@@ -29,16 +30,18 @@ def getInputs():
 
 
 
+#pylint: disable=unused-variable
 def needsSingleShell():
   return False
 
 
 
+#pylint: disable=unused-variable
 def execute():
   import os, shutil
   from mrtrix3 import app, image, path, run
 
-  shells = [ int(round(float(x))) for x in image.headerField('dwi.mif', 'shells').split() ]
+  shells = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shells').split() ]
 
   # Get lmax information (if provided)
   lmax = [ ]
@@ -65,4 +68,3 @@ def execute():
 
   run.function(shutil.copyfile, 'response.txt', path.fromUser(app.args.output, False))
   run.function(shutil.copyfile, 'in_voxels.mif', 'voxels.mif')
-

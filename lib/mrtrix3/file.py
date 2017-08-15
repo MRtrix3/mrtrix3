@@ -12,20 +12,20 @@ def delTemporary(path):
   if not app._cleanup:
     return
   if os.path.isfile(path):
-    type = 'file'
+    temporary_type = 'file'
     func = os.remove
   elif os.path.isdir(path):
-    type = 'directory'
+    temporary_type = 'directory'
     func = shutil.rmtree
   else:
     app.debug('Unknown target \'' + path + '\'')
     return
   if app._verbosity > 2:
-    app.console('Deleting temporary ' + type + ': \'' + path + '\'')
+    app.console('Deleting temporary ' + temporary_type + ': \'' + path + '\'')
   try:
     func(path)
   except OSError:
-    app.debug('Unable to delete temporary ' + type + ': \'' + path + '\'')
+    app.debug('Unable to delete temporary ' + temporary_type + ': \'' + path + '\'')
 
 
 
@@ -98,7 +98,7 @@ def waitFor(path):
       if not os.access(path, os.W_OK):
         return None
       try:
-        with open(path, 'rb+') as f:
+        with open(path, 'rb+') as dummy_f:
           pass
         return False
       except:

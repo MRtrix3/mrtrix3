@@ -9,11 +9,11 @@ _processes = [ ]
 
 def command(cmd, exitOnError=True):
 
-  import inspect, itertools, os, shlex, subprocess, sys, tempfile
+  import inspect, itertools, shlex, signal, subprocess, sys, tempfile
   from distutils.spawn import find_executable
   from mrtrix3 import app
 
-  global _mrtrix_exe_list
+  global _mrtrix_exe_list, _processes
 
   # Vectorise the command string, preserving anything encased within quotation marks
   cmdsplit = shlex.split(cmd)
@@ -43,7 +43,7 @@ def command(cmd, exitOnError=True):
   #   individual executable (along with its arguments) appears as its own list
   # Note that for Python2 support, it is necessary to convert groupby() output from
   #   a generator to a list before it is passed to filter()
-  cmdstack = [ list(g) for k, g in filter(lambda t : t[0], ((k, list(g)) for k, g in itertools.groupby(cmdsplit, lambda s : s is not '|') ) ) ]
+  cmdstack = [ list(g) for k, g in filter(lambda t : t[0], ((k, list(g)) for k, g in itertools.groupby(cmdsplit, lambda s : s != '|') ) ) ]
 
   for line in cmdstack:
     is_mrtrix_exe = line[0] in _mrtrix_exe_list
@@ -59,7 +59,7 @@ def command(cmd, exitOnError=True):
     else:
       line[0] = exeName(line[0])
     shebang = _shebang(line[0])
-    if len(shebang):
+    if shebang:
       if not is_mrtrix_exe:
         # If a shebang is found, and this call is therefore invoking an
         #   interpreter, can't rely on the interpreter finding the script
@@ -81,7 +81,7 @@ def command(cmd, exitOnError=True):
 
   # Execute all processes
   _processes = [ ]
-  for index, command in enumerate(cmdstack):
+  for index, to_execute in enumerate(cmdstack):
     file_out = None
     file_err = None
     # If there's at least one command prior to this, need to receive the stdout from the prior command
@@ -107,21 +107,20 @@ def command(cmd, exitOnError=True):
       handle_err = file_err.fileno()
     # Set off the processes
     try:
-      process = subprocess.Popen (command, stdin=handle_in, stdout=handle_out, stderr=handle_err)
+      process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err)
       _processes.append(process)
       tempfiles.append( ( file_out, file_err ) )
     # FileNotFoundError not defined in Python 2.7
     except OSError as e:
       if exitOnError:
-        app.error('\'' + command[0] + '\' not executed ("' + str(e) + '"); script cannot proceed')
+        app.error('\'' + to_execute[0] + '\' not executed ("' + str(e) + '"); script cannot proceed')
       else:
-        app.warn('\'' + command[0] + '\' not executed ("' + str(e) + '")')
+        app.warn('\'' + to_execute[0] + '\' not executed ("' + str(e) + '")')
         for p in _processes:
           p.terminate()
         _processes = [ ]
         break
     except (KeyboardInterrupt, SystemExit):
-      import inspect, signal
       app._handler(signal.SIGINT, inspect.currentframe())
 
   return_stdout = ''
@@ -154,7 +153,6 @@ def command(cmd, exitOnError=True):
         process.wait()
 
   except (KeyboardInterrupt, SystemExit):
-    import inspect, signal
     app._handler(signal.SIGINT, inspect.currentframe())
 
   # For any command stdout / stderr data that wasn't either passed to another command or
@@ -179,7 +177,7 @@ def command(cmd, exitOnError=True):
 
   _processes = [ ]
 
-  if (error):
+  if error:
     app._cleanup = False
     if exitOnError:
       caller = inspect.getframeinfo(inspect.stack()[1][0])
@@ -212,7 +210,7 @@ def command(cmd, exitOnError=True):
 
 def function(fn, *args):
 
-  import os, sys
+  import sys
   from mrtrix3 import app
 
   fnstring = fn.__module__ + '.' + fn.__name__ + '(' + ', '.join(args) + ')'
@@ -261,7 +259,6 @@ def function(fn, *args):
 # When running on Windows, add the necessary '.exe' so that hopefully the correct
 #   command is found by subprocess
 def exeName(item):
-  import os
   from distutils.spawn import find_executable
   from mrtrix3 import app
   global _mrtrix_bin_path
@@ -291,7 +288,6 @@ def exeName(item):
 #   (e.g. C:\Windows\system32\mrinfo.exe; On Windows, subprocess uses CreateProcess(),
 #   which checks system32\ before PATH)
 def versionMatch(item):
-  import os
   from distutils.spawn import find_executable
   from mrtrix3 import app
   global _mrtrix_bin_path, _mrtrix_exe_list
@@ -317,7 +313,6 @@ def versionMatch(item):
 # If the target executable is not a binary, but is actually a script, use the
 #   shebang at the start of the file to alter the subprocess call
 def _shebang(item):
-  import os
   from mrtrix3 import app
   from distutils.spawn import find_executable
   # If a complete path has been provided rather than just a file name, don't perform any additional file search

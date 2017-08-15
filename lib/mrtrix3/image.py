@@ -31,12 +31,40 @@ class _Header:
     with open(filename, 'r') as f:
       elements = json.load(f)
     os.remove(filename)
+    self.name = self.format = self.datatype = ''
+    self.size = self.spacing = self.stride = []
+    self.intensity_offset = 0.0
+    self.intensity_scale = 1.0
+    self.transform = [[]]
+    self.keyval = { }
     self.__dict__.update(elements)
-    if not self.keyval:
-      self.keyval = { }
+    #pylint: disable-msg=too-many-boolean-expressions
+    if not self.name or not self.size or not self.spacing or not self.stride or not \
+           self.format or not self.datatype or not self.transform:
+      app.error('Error in reading header information from file \'' + image_path + '\'')
 
 def header(image_path):
   result = _Header(image_path)
+  return result
+
+
+
+# Despite being able to import the entire image header contents using the header()
+# function, there are still some functionalities in mrinfo that can prove useful.
+# Therefore, provide this function to execute mrinfo and get just the information of
+#   interest. Note however that parsing the output of mrinfo e.g. into list / numerical
+#   form is not performed by this function.
+def mrinfo(image_path, field):
+  import subprocess
+  from mrtrix3 import app, run
+  command = [ run.exeName(run.versionMatch('mrinfo')), image_path, '-' + field ]
+  if app._verbosity > 1:
+    app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
+  proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
+  result, dummy_err = proc.communicate()
+  result = result.rstrip().decode('utf-8')
+  if app._verbosity > 1:
+    app.console('Result: ' + result)
   return result
 
 
@@ -47,16 +75,16 @@ def match(image_one, image_two):
   import math
   from mrtrix3 import app
   if not isinstance(image_one, _Header):
-    if not type(image_one) is str:
+    if not isinstance(image_one, str):
       app.error('Error trying to test \'' + str(image_one) + '\': Not an image header or file path')
     image_one = header(image_one)
   if not isinstance(image_two, _Header):
-    if not type(image_two) is str:
+    if not isinstance(image_two, str):
       app.error('Error trying to test \'' + str(image_two) + '\': Not an image header or file path')
     image_two = header(image_two)
   debug_prefix = '\'' + image_one.name + '\' \'' + image_two.name + '\''
   # Image dimensions
-  if not image_one.size == image_two.size:
+  if image_one.size != image_two.size:
     app.debug(debug_prefix + ' dimension mismatch (' + str(image_one.size) + ' ' + str(image_two.size) + ')')
     return False
   # Voxel size
@@ -77,18 +105,19 @@ def match(image_one, image_two):
 
 
 
-def statistic(image_path, statistic, mask_path = ''):
+# TODO Change mask_path to instead receive a string of additional command-line options
+#   (that way, -allvolumes can be used)
+def statistic(image_path, stat, mask_path = ''):
   import subprocess
   from mrtrix3 import app, run
-  command = [ run.exeName(run.versionMatch('mrstats')), image_path, '-output', statistic ]
+  command = [ run.exeName(run.versionMatch('mrstats')), image_path, '-output', stat ]
   if mask_path:
     command.extend([ '-mask', mask_path ])
   if app._verbosity > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
-  result, err = proc.communicate()
+  result, dummy_err = proc.communicate()
   result = result.rstrip().decode('utf-8')
   if app._verbosity > 1:
     app.console('Result: ' + result)
   return result
-

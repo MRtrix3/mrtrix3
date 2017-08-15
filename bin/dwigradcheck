@@ -10,7 +10,7 @@ if not os.path.isdir(lib_folder):
   sys.exit(1)
 sys.path.insert(0, lib_folder)
 
-import copy, decimal, numbers, shutil
+import copy, numbers, shutil
 from mrtrix3 import app, image, run, path
 
 app.init('Robert E. Smith (robert.smith@florey.edu.au)', 'Check the orientation of the diffusion gradient table')
@@ -99,7 +99,7 @@ number_option = ' -select ' + str(app.args.number)
 
 
 #
-# TODO What variations of gradient errors can we conceive?
+# What variations of gradient errors can we conceive?
 
 # Done:
 # * Has an axis been flipped? (none, 0, 1, 2)
@@ -205,4 +205,3 @@ if grad_export_option:
 
 
 app.complete()
-

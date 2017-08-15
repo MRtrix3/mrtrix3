@@ -1,6 +1,5 @@
+#pylint: disable=unused-variable
 def initialise(base_parser, subparsers):
-  import argparse
-  from mrtrix3 import app
   parser = subparsers.add_parser('tax', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Use the Tax et al. (2014) recursive calibration algorithm for single-fibre voxel selection and response function estimation', parents=[base_parser])
   parser.addCitation('', 'Tax, C. M.; Jeurissen, B.; Vos, S. B.; Viergever, M. A. & Leemans, A. Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data. NeuroImage, 2014, 86, 67-80', False)
   parser.add_argument('input', help='The input DWI')
@@ -12,22 +11,26 @@ def initialise(base_parser, subparsers):
 
 
 
+#pylint: disable=unused-variable
 def checkOutputPaths():
   from mrtrix3 import app
   app.checkOutputPath(app.args.output)
 
 
 
+#pylint: disable=unused-variable
 def getInputs():
   pass
 
 
 
+#pylint: disable=unused-variable
 def needsSingleShell():
   return True
 
 
 
+#pylint: disable=unused-variable
 def execute():
   import math, os, shutil
   from mrtrix3 import app, file, image, path, run
@@ -77,7 +80,7 @@ def execute():
     run.command('mrconvert ' + prefix + 'amps.mif ' + prefix + 'second_peaks.mif -coord 3 1 -axes 0,1,2')
     file.delTemporary(prefix + 'amps.mif')
     run.command('fixel2voxel ' + prefix + 'fixel/directions.mif split_dir ' + prefix + 'all_dirs.mif')
-    file.delTempFolder(prefix + 'fixel')
+    file.delTemporary(prefix + 'fixel')
     run.command('mrconvert ' + prefix + 'all_dirs.mif ' + prefix + 'first_dir.mif -coord 3 0:2')
     file.delTemporary(prefix + 'all_dirs.mif')
     # Revise single-fibre voxel selection based on ratio of tallest to second-tallest peak
@@ -125,4 +128,3 @@ def execute():
     run.function(shutil.copyfile, 'iter' + str(app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
 
   run.function(shutil.copyfile, 'response.txt', path.fromUser(app.args.output, False))
-

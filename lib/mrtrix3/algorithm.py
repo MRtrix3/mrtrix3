@@ -15,9 +15,8 @@ def _algorithmsPath():
 
 # This function needs to be safe to run in order to populate the help page; that is, no app initialisation has been run
 def getList():
-  import os, sys
+  import os
   from mrtrix3 import app
-  global _algorithm_list
   algorithm_list = [ ]
   src_file_list = os.listdir(_algorithmsPath())
   for filename in src_file_list:
@@ -39,7 +38,7 @@ def initialise():
   initlist = [ ]
   base_parser = app.Parser(description='Base parser for construction of subparsers', parents=[app.cmdline])
   subparsers = app.cmdline.add_subparsers(title='Algorithm choices', help='Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: ' + ', '.join(getList()), dest='algorithm')
-  for importer, package_name, ispkg in pkgutil.iter_modules( [ _algorithmsPath() ] ):
+  for dummy_importer, package_name, dummy_ispkg in pkgutil.iter_modules( [ _algorithmsPath() ] ):
     module = importlib.import_module('mrtrix3.' + path.scriptSubDirName() + '.' + package_name)
     module.initialise(base_parser, subparsers)
     initlist.extend(package_name)
@@ -52,4 +51,3 @@ def getModule(name):
   import sys
   from mrtrix3 import path
   return sys.modules['mrtrix3.' + path.scriptSubDirName() + '.' + name]
-

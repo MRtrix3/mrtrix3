@@ -74,7 +74,7 @@ if app.args.grad:
   grad_import_option = ' -grad ' + path.fromUser(app.args.grad, True)
 elif app.args.fslgrad:
   grad_import_option = ' -fslgrad ' + path.fromUser(app.args.fslgrad[0], True) + ' ' + path.fromUser(app.args.fslgrad[1], True)
-elif not 'dw_scheme' in image.header(path.fromUser(app.args.input, False)).keyval:
+elif 'dw_scheme' not in image.header(path.fromUser(app.args.input, False)).keyval:
   app.error('Script requires diffusion gradient table: either in image header, or using -grad / -fslgrad option')
 
 app.makeTempDir()
@@ -95,7 +95,7 @@ app.gotoTempDir()
 
 
 # Check that the brain mask is appropriate
-if not image.header('mask.mif').size[:3] == image.header('dwi.mif').size[:3]:
+if image.header('mask.mif').size[:3] != image.header('dwi.mif').size[:3]:
   app.error('Dimensions of provided mask image do not match DWI')
 if int(image.statistic('mask.mif', 'count', 'mask.mif')) == 0:
   app.error('Input mask does not contain any voxels')
@@ -110,4 +110,3 @@ alg.execute()
 if app.args.voxels:
   run.command('mrconvert voxels.mif ' + path.fromUser(app.args.voxels, True) + (' -force' if app.force else ''))
 app.complete()
-

@@ -21,9 +21,9 @@ def eddyBinary(cuda):
       # Therefore, hunt through PATH looking for them; if more than one,
       #   select the one with the highest version number
       binaries = [ ]
-      for dir in os.environ['PATH'].split(os.pathsep):
-        if os.path.isdir(dir):
-          for file in os.listdir(dir):
+      for directory in os.environ['PATH'].split(os.pathsep):
+        if os.path.isdir(directory):
+          for file in os.listdir(directory):
             if file.startswith('eddy_cuda'):
               binaries.append(file)
       max_version = 0.0
@@ -115,4 +115,3 @@ def suffix():
     app.warn('Environment variable FSLOUTPUTTYPE not set; FSL commands may fail, or script may fail to locate FSL command outputs')
     _suffix = '.nii.gz'
   return _suffix
-

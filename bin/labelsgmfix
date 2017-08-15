@@ -119,7 +119,7 @@ run.command('labelconvert sgm_masked.mif ' + sgm_lut_file_path + ' ' + path.from
 # * Figure out what index the structure has been mapped to; this can only be done using mrstats
 # * Strip that index from the parcellation image
 # * Insert the new delineation of that structure
-for struct in structure_map.keys():
+for struct in structure_map:
   image_path = struct + '_mask.mif'
   index = image.statistic('sgm_new_labels.mif', 'median', image_path)
   run.command('mrcalc parc.mif ' + index + ' -eq 0 parc.mif -if parc_removed.mif')
@@ -132,4 +132,3 @@ for struct in structure_map.keys():
 run.command('mrcalc sgm_new_labels.mif 0.5 -gt sgm_new_labels.mif parc.mif -if result.mif -datatype uint32')
 run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + (' -force' if app.force else ''))
 app.complete()
-

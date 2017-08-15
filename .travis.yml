@@ -9,6 +9,8 @@ addons:
       - libqt4-opengl-dev
       - g++-4.8
       - python3
+      - python-pip
+      - python3-pip
 compiler:
   - clang
 env:
@@ -16,15 +18,19 @@ env:
   - py=python3
 install: 
   - export NUMBER_OF_PROCESSORS=4
-  - export PATH=`pwd`/release/bin:`pwd`/scripts:${PATH}
+  - export PATH=`pwd`/bin:${PATH}
+  - export PYTHONPATH=`pwd`/lib:${PYTHONPATH}
   - export EIGEN_CFLAGS=-I`pwd`/../eigen
   - (cd ..; hg clone https://bitbucket.org/eigen/eigen/; cd eigen; hg update 3.3)
+  - pip install pylint
+  - pip3 install pylint
 script:
-  - ./check_memalign && $py ./configure -assert && $py ./build -nowarnings && ./run_tests
+  - ./check_memalign && $py ./configure -assert && PYTHON=$py ./run_pylint && $py ./build -nowarnings && ./run_tests
 
 after_failure: 
   - cat memalign.log
   - cat configure.log
+  - cat pylint.log
   - cat build.log
   - cat testing.log
   - sleep 10

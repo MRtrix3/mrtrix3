@@ -1,7 +1,7 @@
 # Functions relating to handling phase encoding information
 
 # From a user-specified string, determine the axis and direction of phase encoding
-def dir(string):
+def direction(string):
   from mrtrix3 import app
   pe_dir = ''
   try:
@@ -49,21 +49,20 @@ def dir(string):
 
 # Extract a phase-encoding scheme from a pre-loaded image header,
 #   or from a path to the image
-def getScheme(input):
+def getScheme(arg):
   from mrtrix3 import app, image
-  if not isinstance(input, image._Header):
-    if not (type(input) is str):
-      app.error('Error trying to derive phase-encoding scheme from \'' + str(input) + '\': Not an image header or file path')
-    input = image.header(input)
-  if 'pe_scheme' in input.keyval:
-    app.debug(input.keyval['pe_scheme'])
-    return input.keyval['pe_scheme']
-  if not 'PhaseEncodingDirection' in input.keyval:
+  if not isinstance(arg, image._Header):
+    if not isinstance(arg, str):
+      app.error('Error trying to derive phase-encoding scheme from \'' + str(arg) + '\': Not an image header or file path')
+    arg = image.header(arg)
+  if 'pe_scheme' in arg.keyval:
+    app.debug(arg.keyval['pe_scheme'])
+    return arg.keyval['pe_scheme']
+  if 'PhaseEncodingDirection' not in arg.keyval:
     return None
-  line = dir(input.keyval['PhaseEncodingDirection'])
-  if 'TotalReadoutTime' in input.keyval:
-    line.append(input.keyval['TotalReadoutTime'])
-  num_volumes = 1 if len(input.size()) < 4 else input.size[3]
+  line = direction(arg.keyval['PhaseEncodingDirection'])
+  if 'TotalReadoutTime' in arg.keyval:
+    line.append(arg.keyval['TotalReadoutTime'])
+  num_volumes = 1 if len(arg.size) < 4 else arg.size[3]
   app.debug(str(line) + ' x ' + num_volumes + ' rows')
   return line * num_volumes
-

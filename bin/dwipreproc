@@ -139,7 +139,7 @@ if app.args.se_epi:
   if not len(se_epi_header.size) == 4:
     app.error('File provided using -se_epi option must contain more than one image volume')
   topup_pe_scheme = phaseEncoding.getScheme('se_epi.mif')
-if not 'dw_scheme' in dwi_header.keyval:
+if 'dw_scheme' not in dwi_header.keyval:
   app.error('No diffusion gradient table found')
 grad = dwi_header.keyval['dw_scheme']
 if not len(grad) == num_volumes:
@@ -151,7 +151,7 @@ if not len(grad) == num_volumes:
 #   such information is present in the header, let's grab it here
 manual_pe_dir = None
 if app.args.pe_dir:
-  manual_pe_dir = [ float(i) for i in phaseEncoding.dir(app.args.pe_dir) ]
+  manual_pe_dir = [ float(i) for i in phaseEncoding.direction(app.args.pe_dir) ]
 manual_trt = None
 if app.args.readout_time:
   manual_trt = float(app.args.readout_time)
@@ -236,8 +236,8 @@ if manual_pe_dir:
         for index2 in range(int(num_volumes/2), num_volumes):
           if grads_matched[index2] == num_volumes: # Also as yet unpaired
             if grads_match(grad[index1], grad[index2]):
-              grads_matched[index1] = index2;
-              grads_matched[index2] = index1;
+              grads_matched[index1] = index2
+              grads_matched[index2] = index1
               grad_pairs.append([index1, index2])
               app.debug('Matched volume ' + str(index1) + ' with ' + str(index2) + ': ' + str(grad[index1]) + ' ' + str(grad[index2]))
               break
@@ -326,8 +326,6 @@ if app.args.se_epi:
   # 3 possible sources of PE information: DWI header, topup image header, command-line
   # Any pair of these may conflict, and any one could be absent
 
-  topup_auto_trt_warning = False
-
   # Have to switch here based on phase-encoding acquisition design
   if PE_design == 'Pair':
     # Criteria:
@@ -371,7 +369,7 @@ if app.args.se_epi:
     #   * If _not_ present in own header:
     #       Cannot proceed
     if not topup_pe_scheme:
-      app.error('No phase-encoding information present in SE EPI image header');
+      app.error('No phase-encoding information present in SE EPI image header')
 
 elif not PE_design == 'None': # No SE EPI images explicitly provided: In some cases, can extract appropriate b=0 images from DWI
 
@@ -386,7 +384,7 @@ elif not PE_design == 'None': # No SE EPI images explicitly provided: In some ca
   # If there's no contrast remaining in the phase-encoding scheme, it'll be written to
   #   PhaseEncodingDirection and TotalReadoutTime rather than pe_scheme
   # In this scenario, we will be unable to run topup, or volume recombination
-  if not 'pe_scheme' in se_epi_header.keyval:
+  if 'pe_scheme' not in se_epi_header.keyval:
     if PE_design == 'All':
       app.error('DWI header indicates no phase encoding contrast between b=0 images; cannot proceed with volume recombination-based pre-processing')
     else:
@@ -417,7 +415,6 @@ if do_topup:
   # Otherwise, need to call mrcrop with the appropriate options, and pass those to topup
   topup_in_path = 'se_epi.mif'
   # For any non-even axis sizes, crop the first voxel along that dimension
-  # TODO This primarily applies to topup - don't recall if eddy bugs out or not
   crop_option = ''
   for axis, axis_size in enumerate(se_epi_header.size[:3]):
     if int(axis_size)%2:
@@ -497,7 +494,7 @@ run.command(eddy_cmd + ' --imain=dwi.nii --mask=mask.nii --acqp=eddy_config.txt 
 
 
 # Get the axis strides from the input series, so the output image can be modified to match
-stride_option = ' -stride ' + dwi_header.stride.replace(' ', ',')
+stride_option = ' -stride ' + ','.join([str(i) for i in dwi_header.stride])
 
 
 
@@ -523,8 +520,8 @@ for index1 in range(num_volumes):
       if volume_matchings[index2] == num_volumes: # Also as yet unpaired
         # Here, need to check both gradient matching and reversed phase-encode direction
         if not any(dwi_pe_scheme[index1][i] + dwi_pe_scheme[index2][i] for i in range(0,3)) and grads_match(grad[index1], grad[index2]):
-          volume_matchings[index1] = index2;
-          volume_matchings[index2] = index1;
+          volume_matchings[index1] = index2
+          volume_matchings[index2] = index1
           volume_pairs.append([index1, index2])
           app.debug('Matched volume ' + str(index1) + ' with ' + str(index2) + '\n' +
                     'Phase encoding: ' + str(dwi_pe_scheme[index1]) + ' ' + str(dwi_pe_scheme[index2]) + '\n' +
@@ -547,7 +544,6 @@ else:
   #   potentially have subject rotation between them (and therefore the sensitisation direction is
   #   not precisely equivalent), the best we can do is take the mean of the two vectors.
   # Manual recombination of volumes needs to take into account the explicit volume matching
-  # TODO Re-test eddy LSR
 
   bvecs = [ [] for axis in range(3) ]
   with open(bvecs_path, 'r') as f:
@@ -669,4 +665,3 @@ else:
 # Finish!
 run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + grad_export_option + (' -force' if app.force else ''))
 app.complete()
-
