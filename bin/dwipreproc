@@ -23,7 +23,6 @@ if not os.path.isdir(lib_folder):
 sys.path.insert(0, lib_folder)
 
 import math
-from distutils.spawn import find_executable
 from mrtrix3 import app, file, fsl, image, path, phaseEncoding, run
 
 
@@ -461,11 +460,11 @@ if do_topup:
       output_path = 'dwi_pe_' + str(index) + '_topup.mif'
       run.command('dwiextract dwi.mif' + import_dwi_pe_table_option + ' -pe ' + ','.join(line.split()) + ' - | mrconvert - ' + input_path + ' -json_export ' + json_path)
       run.command(applytopup_cmd + ' --imain=' + input_path + ' --datain=applytopup_config.txt --inindex=' + str(index) + ' --topup=field --out=' + temp_path + ' --method=jac')
-      file.delTempFile(input_path)
+      file.delTemporary(input_path)
       temp_path = fsl.findImage(temp_path)
       run.command('mrconvert ' + temp_path + ' ' + output_path + ' -json_import ' + json_path)
-      file.delTempFile(json_path)
-      file.delTempFile(temp_path)
+      file.delTemporary(json_path)
+      file.delTemporary(temp_path)
       applytopup_image_list.append(output_path)
       index += 1
 
@@ -476,7 +475,7 @@ if do_topup:
     run.command('mrcat ' + ' '.join(applytopup_image_list) + ' - | dwi2mask - - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32 -stride -1,+2,+3')
 
   for entry in applytopup_image_list:
-    file.delTempFile(entry)
+    file.delTemporary(entry)
 
   eddy_in_topup_option = ' --topup=field'
 
@@ -498,7 +497,7 @@ run.command(eddy_cmd + ' --imain=dwi.nii --mask=mask.nii --acqp=eddy_config.txt 
 
 
 # Get the axis strides from the input series, so the output image can be modified to match
-stride_option = ' -stride ' + stride.replace(' ', ',')
+stride_option = ' -stride ' + dwi_header.stride.replace(' ', ',')
 
 
 
