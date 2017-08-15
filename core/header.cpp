@@ -12,6 +12,7 @@
  */
 
 
+#include "mrtrix.h"
 #include "header.h"
 #include "phase_encoding.h"
 #include "stride.h"
@@ -66,6 +67,20 @@ namespace MR
   }
 
 
+  namespace {
+
+    std::string short_description (const Header& H) 
+    {
+      vector<std::string> dims;
+      for (size_t n = 0; n < H.ndim(); ++n)
+        dims.push_back (str(H.size(n)));
+      vector<std::string> vox;
+      for (size_t n = 0; n < H.ndim(); ++n)
+        vox.push_back (str(H.spacing(n)));
+
+      return " with dimensions " + join (dims, "x") + ", voxel spacing " + join (vox, "x") + ", datatype " + H.datatype().specifier();
+    }
+  }
 
 
 
@@ -128,11 +143,12 @@ namespace MR
       H.sanitise();
       if (!do_not_realign_transform)
         H.realign_transform();
-
     }
     catch (Exception& E) {
       throw Exception (E, "error opening image \"" + image_name + "\"");
     }
+
+    INFO ("image \"" + H.name() + "\" opened" + short_description (H));
 
     return H;
   }
@@ -290,6 +306,8 @@ namespace MR
       if (new_datatype != previous_datatype) 
         WARN (std::string ("requested datatype (") + previous_datatype.specifier() + ") not supported - substituting with " + H.datatype().specifier());
     }
+
+    INFO ("image \"" + H.name() + "\" created" + short_description (H));
 
     return H;
   }
@@ -457,7 +475,7 @@ namespace MR
           mean_vox_size += spacing(i);
         }
       }
-      mean_vox_size /= num_valid_vox;
+      mean_vox_size = num_valid_vox ? mean_vox_size / num_valid_vox : 1.0;
       for (size_t i = 0; i < 3; ++i)
         if (!std::isfinite(spacing(i)))
           spacing(i) = mean_vox_size;

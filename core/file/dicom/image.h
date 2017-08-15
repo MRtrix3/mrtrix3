@@ -31,21 +31,21 @@ namespace MR {
         public:
           Frame () { 
             acq_dim[0] = acq_dim[1] = dim[0] = dim[1] = instance = series_num = acq = sequence = UINT_MAX;
-            position_vector[0] = position_vector[1] = position_vector[2] = NAN;
-            orientation_x[0] = orientation_x[1] = orientation_x[2] = NAN;
-            orientation_y[0] = orientation_y[1] = orientation_y[2] = NAN;
-            orientation_z[0] = orientation_z[1] = orientation_z[2] = NAN;
-            distance = NAN;
-            pixel_size[0] = pixel_size[1] = slice_thickness = slice_spacing = NAN; 
+            position_vector[0] = position_vector[1] = position_vector[2] = NaN;
+            orientation_x[0] = orientation_x[1] = orientation_x[2] = NaN;
+            orientation_y[0] = orientation_y[1] = orientation_y[2] = NaN;
+            orientation_z[0] = orientation_z[1] = orientation_z[2] = NaN;
+            distance = NaN;
+            pixel_size[0] = pixel_size[1] = slice_thickness = slice_spacing = NaN; 
             scale_intercept = 0.0;
             scale_slope = 1.0;
-            bvalue = G[0] = G[1] = G[2] = NAN;
+            bvalue = G[0] = G[1] = G[2] = NaN;
             data = bits_alloc = data_size = frame_offset = 0;
             DW_scheme_wrt_image = false;
             transfer_syntax_supported = true;
             pe_axis = 3;
             pe_sign = 0;
-            pixel_bandwidth = bandwidth_per_pixel_phase_encode = echo_time = NAN;
+            pixel_bandwidth = bandwidth_per_pixel_phase_encode = echo_time = NaN;
             echo_train_length = 0;
           }
 
@@ -53,7 +53,7 @@ namespace MR {
           Eigen::Vector3 position_vector, orientation_x, orientation_y, orientation_z, G;
           default_type distance, pixel_size[2], slice_thickness, slice_spacing, scale_slope, scale_intercept, bvalue;
           size_t data, bits_alloc, data_size, frame_offset;
-          std::string filename;
+          std::string filename, image_type;
           bool DW_scheme_wrt_image, transfer_syntax_supported;
           size_t pe_axis;
           int pe_sign;
@@ -64,6 +64,8 @@ namespace MR {
           bool operator< (const Frame& frame) const {
             if (series_num != frame.series_num) 
               return series_num < frame.series_num;
+            if (image_type != frame.image_type)
+              return image_type < frame.image_type;
             if (acq != frame.acq) 
               return acq < frame.acq;
             assert (std::isfinite (distance));

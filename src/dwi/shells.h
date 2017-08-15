@@ -18,10 +18,10 @@
 
 #include <fstream>
 #include <limits>
-#include <vector>
 
 #include "app.h"
 #include "bitset.h"
+#include "types.h"
 
 #include "file/config.h"
 

@@ -7,13 +7,11 @@
 # - cmdline.addCitation(), cmdline.addDescription(), cmdline.setCopyright() as needed
 # - Add arguments and options to 'cmdline' as needed
 # - parse()
-# - checkOutputFile() as needed
+# - checkOutputPath() as needed
 # - makeTempDir() if the script requires a temporary directory
 # - gotoTempDir() if the script is using a temporary directory
 # - complete()
 #
-# checkOutputFile() can be called at any time after parse() to check if an intended output
-#   file already exists
 
 
 

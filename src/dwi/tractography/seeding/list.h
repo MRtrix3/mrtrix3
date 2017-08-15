@@ -16,10 +16,9 @@
 #define __dwi_tractography_seeding_list_h__
 
 
+#include "types.h"
+
 #include "dwi/tractography/seeding/base.h"
-
-#include <vector>
-
 
 
 namespace MR

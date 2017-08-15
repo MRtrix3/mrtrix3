@@ -15,9 +15,8 @@
 #ifndef __algo_neighbourhooditerator_h__
 #define __algo_neighbourhooditerator_h__
 
-#include <vector>
-#include "algo/iterator.h"
 #include "types.h"
+#include "algo/iterator.h"
 
 namespace MR
 {

@@ -16,9 +16,9 @@
 #define __dwi_tractography_sift_model_h__
 
 
-#include <vector>
-
 #include "app.h"
+#include "thread_queue.h"
+#include "types.h"
 
 #include "dwi/fixel_map.h"
 
@@ -38,7 +38,7 @@
 #include "dwi/tractography/SIFT/track_index_range.h"
 #include "dwi/tractography/SIFT/types.h"
 
-#include "thread_queue.h"
+
 
 
 

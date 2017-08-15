@@ -114,8 +114,9 @@ namespace MR
           Texture () : id (0) { }
           ~Texture () { clear(); }
           Texture (const Texture&) : id (0) { }
-          Texture (Texture&& t) : id (t.id) { t.id = 0; }
-          Texture& operator= (Texture&& t) { clear(); id = t.id; t.id = 0; return *this; }
+          Texture (Texture&& t) : id (t.id), tex_type (t.tex_type) { t.id = 0; }
+          Texture& operator= (Texture&& t) { clear(); id = t.id; tex_type = t.tex_type; t.id = 0; return *this; }
+          void cache_copy(const Texture& t) { id = t.id; tex_type = t.tex_type; }
           operator GLuint () const { return id; }
           void gen (GLenum target, GLint interp_type = gl::LINEAR) {
             if (!id) {

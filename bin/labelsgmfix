@@ -76,7 +76,7 @@ if app.args.premasked:
   first_input_is_brain_extracted = ' -b'
 run.command(first_cmd + ' -s ' + ','.join(structure_map.keys()) + ' -i T1.nii' + first_input_is_brain_extracted + ' -o first')
 
-# Generate an empty image that will be used to contruct the new SGM nodes
+# Generate an empty image that will be used to construct the new SGM nodes
 run.command('mrcalc parc.mif 0 -min sgm.mif')
 
 # Read the local connectome LUT file

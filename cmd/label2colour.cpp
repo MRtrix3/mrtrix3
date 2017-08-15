@@ -13,7 +13,6 @@
 
 
 #include <map>
-#include <vector>
 
 #include "command.h"
 #include "image.h"

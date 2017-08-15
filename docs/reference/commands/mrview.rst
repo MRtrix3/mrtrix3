@@ -126,6 +126,14 @@ Tractography tool options
 
 -  **-tractography.opacity value** Opacity of tractography display, [0.0, 1.0], default is 1.0.
 
+-  **-tractography.slab value** Slab thickness of tractography display, in mm. -1 to turn off crop to slab.
+
+-  **-tractography.tsf_load tsf** Load the specified tractography scalar file.
+
+-  **-tractography.tsf_range range** Set range for the tractography scalar file. Requires tractography.tsf_load already provided. RangeMin,RangeMax
+
+-  **-tractography.tsf_thresh thresh** Set thresholds for the tractography scalar file. Requires tractography.tsf_load already provided. ThresholdMin,ThesholdMax
+
 ODF tool options
 ^^^^^^^^^^^^^^^^
 

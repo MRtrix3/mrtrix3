@@ -16,8 +16,6 @@
 #define __dwi_tractography_resampling_resampling_h__
 
 
-#include <vector>
-
 #include "app.h"
 
 #include "dwi/tractography/streamline.h"

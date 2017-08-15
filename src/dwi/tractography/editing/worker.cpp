@@ -133,15 +133,8 @@ namespace MR {
           min_length (0.0f),
           max_weight (std::numeric_limits<float>::infinity()),
           min_weight (0.0f),
-          step_size (NaN)
+          step_size (get_step_size (properties))
         {
-
-          std::string step_size_string;
-          if (properties.find ("output_step_size") == properties.end())
-            step_size_string = ((properties.find ("step_size") == properties.end()) ? "0.0" : properties["step_size"]);
-          else
-            step_size_string = properties["output_step_size"];
-
           if (properties.find ("max_dist") != properties.end()) {
             try {
               max_length = to<float>(properties["max_dist"]);
@@ -153,8 +146,7 @@ namespace MR {
             } catch (...) { }
           }
 
-          try {
-            step_size = to<float>(step_size_string);
+          if (std::isfinite (step_size)) {
             // User may set these values to a precise value, which may then fail due to floating-point
             //   calculation of streamline length
             // Therefore throw a bit of error margin in here
@@ -163,14 +155,13 @@ namespace MR {
               error_margin = 0.5 / to<float>(properties["downsample_factor"]);
             max_length += error_margin * step_size;
             min_length -= error_margin * step_size;
-          } catch (...) { }
+          }
 
           if (properties.find ("max_weight") != properties.end())
             max_weight = to<float>(properties["max_weight"]);
 
           if (properties.find ("min_weight") != properties.end())
             min_weight = to<float>(properties["min_weight"]);
-
         }
 
 

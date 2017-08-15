@@ -13,13 +13,13 @@
 
 
 #include <map>
-#include <vector>
 
 #include "command.h"
 #include "image.h"
 #include "image_helpers.h"
 #include "memory.h"
 #include "progressbar.h"
+#include "types.h"
 
 #include "algo/loop.h"
 #include "filter/optimal_threshold.h"

@@ -15,8 +15,7 @@
 #ifndef __math_stats_permutation_h__
 #define __math_stats_permutation_h__
 
-#include <vector>
-
+#include "types.h"
 #include "math/stats/typedefs.h"
 
 namespace MR

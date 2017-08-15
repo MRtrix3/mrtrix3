@@ -15,10 +15,10 @@
 #ifndef __algo_histogram_h__
 #define __algo_histogram_h__
 
-#include <vector>
 #include <cmath>
 
 #include "image_helpers.h"
+#include "types.h"
 #include "algo/loop.h"
 
 namespace MR
