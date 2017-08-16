@@ -49,6 +49,8 @@ def header(image_path):
       self.transform = data['transform']
       if not 'keyval' in data or not data['keyval']:
         self.keyval = { }
+      else:
+        self.keyval = data['keyval']
 
   try:
     result = _Header(elements)

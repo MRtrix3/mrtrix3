@@ -70,8 +70,14 @@ def newTemporary(suffix): #pylint: disable=unused-variable
 def scriptSubDirName(): #pylint: disable=unused-variable
   import inspect, os
   from mrtrix3 import app
-  # TODO Test this on multiple Python versions, with & without softlinking
-  name = os.path.basename(inspect.stack()[-1][1])
+  frameinfo = inspect.stack()[-1]
+  try:
+    frame = frameinfo.frame
+  except: # Prior to Version 3.5
+    frame = frameinfo[0]
+  # If the script has been run through a softlink, we need the name of the original
+  #   script in order to locate the additional data
+  name = os.path.basename(os.path.realpath(inspect.getfile(frame)))
   if not name[0].isalpha():
     name = '_' + name
   app.debug(name)
