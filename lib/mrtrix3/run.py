@@ -7,6 +7,7 @@ _processes = [ ]
 
 
 
+#pylint: disable=unused-variable
 def command(cmd, exitOnError=True):
 
   import inspect, itertools, shlex, signal, subprocess, sys, tempfile
@@ -207,7 +208,7 @@ def command(cmd, exitOnError=True):
 
 
 
-
+#pylint: disable=unused-variable
 def function(fn, *args):
 
   import sys

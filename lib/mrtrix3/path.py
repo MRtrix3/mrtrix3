@@ -1,6 +1,7 @@
 # A collection of functions used to operate upon file and directory paths
 
 # Determines the common postfix for a list of filenames (including the file extension)
+#pylint: disable=unused-variable
 def commonPostfix(inputFiles):
   from mrtrix3 import app
   first = inputFiles[0]
@@ -28,6 +29,7 @@ def commonPostfix(inputFiles):
 #   To add quotation marks where the output path is being interpreted as part of a full command string
 #     (e.g. to be passed to run.command()); without these quotation marks, paths that include spaces would be
 #     erroneously split, subsequently confusing whatever command is being invoked.
+#pylint: disable=unused-variable
 def fromUser(filename, is_command):
   import os
   from mrtrix3 import app
@@ -42,6 +44,7 @@ def fromUser(filename, is_command):
 
 # Get an appropriate location and name for a new temporary file / directory
 # Note: Doesn't actually create anything; just gives a unique name that won't over-write anything
+#pylint: disable=unused-variable
 def newTemporary(suffix):
   import os, random, string, sys
   from mrtrix3 import app
@@ -67,6 +70,7 @@ def newTemporary(suffix):
 
 # Determine the name of a sub-directory containing additional data / source files for a script
 # This can be algorithm files in lib/mrtrix3, or data files in /share/mrtrix3/
+#pylint: disable=unused-variable
 def scriptSubDirName():
   import inspect, os
   from mrtrix3 import app
@@ -83,6 +87,7 @@ def scriptSubDirName():
 # Some scripts come with additional requisite data files; this function makes it easy to find them.
 # For data that is stored in a named sub-directory specifically for a particular script, this function will
 #   need to be used in conjunction with scriptSubDirName()
+#pylint: disable=unused-variable
 def sharedDataPath():
   import os
   from mrtrix3 import app
@@ -93,6 +98,7 @@ def sharedDataPath():
 
 
 # Get the full absolute path to a location in the temporary script directory
+#pylint: disable=unused-variable
 def toTemp(filename, is_command):
   import os
   from mrtrix3 import app

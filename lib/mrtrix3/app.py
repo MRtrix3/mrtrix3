@@ -27,6 +27,7 @@
 args = ''
 cmdline = None
 config = { }
+#pylint: disable=unused-variable
 force = False
 
 
@@ -44,7 +45,9 @@ but WITHOUT ANY WARRANTY; without even the implied warranty
 of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 For more details, see http://www.mrtrix.org/.'''
+#pylint: disable=unused-variable
 _lastFile = ''
+#pylint: disable=unused-variable
 _nthreads = None
 _tempDir = ''
 _verbosity = 1 # 0 = quiet; 1 = default; 2 = info; 3 = debug
@@ -73,7 +76,7 @@ _signals = { 'SIGALRM': 'Timer expiration',
 
 
 
-
+#pylint: disable=unused-variable
 def init(author, synopsis):
   import os, signal
   global cmdline, config
@@ -103,6 +106,7 @@ def init(author, synopsis):
 
 
 
+#pylint: disable=unused-variable
 def parse():
   import os, sys
   global args, cmdline
@@ -166,7 +170,7 @@ def parse():
 
 
 
-
+#pylint: disable=unused-variable
 def checkOutputPath(path):
   import os
   global args, force
@@ -188,7 +192,7 @@ def checkOutputPath(path):
 
 
 
-
+#pylint: disable=unused-variable
 def makeTempDir():
   import os, random, string, sys
   global args, config
@@ -224,6 +228,7 @@ def makeTempDir():
 
 
 
+#pylint: disable=unused-variable
 def gotoTempDir():
   import os
   global _tempDir
@@ -235,6 +240,7 @@ def gotoTempDir():
 
 
 
+#pylint: disable=unused-variable
 def complete():
   import os, shutil, sys
   global _cleanup, _tempDir, _workingDir
@@ -257,7 +263,6 @@ def complete():
 
 
 
-
 # A set of functions and variables for printing various information at the command-line.
 clearLine = ''
 colourClear = ''
@@ -267,6 +272,7 @@ colourError = ''
 colourExec = ''
 colourWarn = ''
 
+#pylint: disable=unused-variable
 def console(text):
   import os, sys
   global colourClear, colourConsole
@@ -274,6 +280,7 @@ def console(text):
   if _verbosity:
     sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourConsole + text + colourClear + '\n')
 
+#pylint: disable=unused-variable
 def debug(text):
   import inspect, os, sys
   global colourClear, colourDebug
@@ -299,6 +306,7 @@ def debug(text):
     origin = funcname + ' (from ' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')'
   sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourDebug + '[DEBUG] ' + origin + ': ' + text + colourClear + '\n')
 
+#pylint: disable=unused-variable
 def error(text):
   import os, sys
   global colourClear, colourError
@@ -308,6 +316,7 @@ def error(text):
   complete()
   sys.exit(1)
 
+#pylint: disable=unused-variable
 def warn(text):
   import os, sys
   global colourClear, colourWarn
@@ -368,18 +377,22 @@ class Parser(argparse.ArgumentParser):
       standard_options.add_argument('-debug', action='store_true', help='Display additional debugging information over and above the output of -info')
       self.flagMutuallyExclusiveOptions( [ 'quiet', 'info', 'debug' ] )
 
+  #pylint: disable=unused-variable
   def addCitation(self, condition, reference, is_external):
     self._citationList.append( (condition, reference) )
     if is_external:
       self._externalCitations = True
 
+  #pylint: disable=unused-variable
   def addDescription(self, text):
     self._description.append(text)
 
+  #pylint: disable=unused-variable
   def setCopyright(self, text):
     self._copyright = text
 
   # Mutually exclusive options need to be added before the command-line input is parsed
+  #pylint: disable=unused-variable
   def flagMutuallyExclusiveOptions(self, options, required=False):
     import sys
     if not isinstance(options, list) or not isinstance(options[0], str):
@@ -820,6 +833,7 @@ class progressBar:
 
 
 # Return a boolean flag to indicate whether or not script is being run on a Windows machine
+#pylint: disable=unused-variable
 def isWindows():
   import platform
   system = platform.system().lower()

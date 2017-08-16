@@ -3,6 +3,7 @@
 #   data, rather than trying to duplicate support for all possible image formats natively
 #   in Python.
 
+#pylint: disable=unused-variable
 def check3DNonunity(image_path):
   from mrtrix3 import app
   dim = header(image_path).size
@@ -43,6 +44,7 @@ class _Header:
            self.format or not self.datatype or not self.transform:
       app.error('Error in reading header information from file \'' + image_path + '\'')
 
+#pylint: disable=unused-variable
 def header(image_path):
   result = _Header(image_path)
   return result
@@ -54,6 +56,7 @@ def header(image_path):
 # Therefore, provide this function to execute mrinfo and get just the information of
 #   interest. Note however that parsing the output of mrinfo e.g. into list / numerical
 #   form is not performed by this function.
+#pylint: disable=unused-variable
 def mrinfo(image_path, field):
   import subprocess
   from mrtrix3 import app, run
@@ -71,6 +74,7 @@ def mrinfo(image_path, field):
 
 # Check to see whether the fundamental header properties of two images match
 # Inputs can be either _Header class instances, or file paths
+#pylint: disable=unused-variable
 def match(image_one, image_two):
   import math
   from mrtrix3 import app
@@ -107,6 +111,7 @@ def match(image_one, image_two):
 
 # TODO Change mask_path to instead receive a string of additional command-line options
 #   (that way, -allvolumes can be used)
+#pylint: disable=unused-variable
 def statistic(image_path, stat, mask_path = ''):
   import subprocess
   from mrtrix3 import app, run

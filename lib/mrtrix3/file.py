@@ -6,6 +6,7 @@
 #   that is no longer required by the script. If the script has been instructed to retain
 #   all temporaries, the resource will be retained; if not, it will be deleted (in particular
 #   to dynamically free up storage space used by the script).
+#pylint: disable=unused-variable
 def delTemporary(path):
   import shutil, os
   from mrtrix3 import app
@@ -30,6 +31,7 @@ def delTemporary(path):
 
 
 # Make a directory if it doesn't exist; don't do anything if it does already exist
+#pylint: disable=unused-variable
 def makeDir(path):
   import errno, os
   from mrtrix3 import app
@@ -45,6 +47,7 @@ def makeDir(path):
 
 # Get an appropriate location and name for a new temporary file
 # Note: Doesn't actually create a file; just gives a unique name that won't over-write anything
+#pylint: disable=unused-variable
 def newTempFile(suffix):
   import os, random, string, sys
   from mrtrix3 import app
@@ -87,6 +90,7 @@ def newTempFile(suffix):
 # Initially, checks for the file once every 1/1000th of a second; this gradually
 #   increases if the file still doesn't exist, until the program is only checking
 #   for the file once a minute.
+#pylint: disable=unused-variable
 def waitFor(path):
   import os, time
   from mrtrix3 import app

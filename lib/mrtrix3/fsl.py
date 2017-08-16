@@ -6,6 +6,7 @@ _suffix = ''
 #   this depends on both whether or not the user has requested that the CUDA
 #   version of eddy be used, and the various names that this command could
 #   conceivably be installed as.
+#pylint: disable=unused-variable
 def eddyBinary(cuda):
   import os
   from mrtrix3 import app
@@ -53,6 +54,7 @@ def eddyBinary(cuda):
 #   makes it more convenient to locate these commands.
 # Note that if FSL 4 and 5 are installed side-by-side, the approach taken in this
 #   function will select the version 5 executable.
+#pylint: disable=unused-variable
 def exeName(name):
   from mrtrix3 import app
   from distutils.spawn import find_executable
@@ -71,6 +73,7 @@ def exeName(name):
 #   FSL commands will generate based on the suffix() function, the FSL binaries themselves
 #   ignore the FSLOUTPUTTYPE environment variable. Therefore, the safest approach is:
 # Whenever receiving an output image from an FSL command, explicitly search for the path
+#pylint: disable=unused-variable
 def findImage(name):
   import os
   from mrtrix3 import app
@@ -90,6 +93,7 @@ def findImage(name):
 #   stored in 'FSLOUTPUTTYPE'. This may even override a filename extension provided
 #   to the relevant command. Therefore use this function to 'guess' what the names
 #   of images provided by FSL commands will be.
+#pylint: disable=unused-variable
 def suffix():
   import os
   from mrtrix3 import app

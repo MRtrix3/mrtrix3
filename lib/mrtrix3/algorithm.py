@@ -14,6 +14,7 @@ def _algorithmsPath():
 
 
 # This function needs to be safe to run in order to populate the help page; that is, no app initialisation has been run
+#pylint: disable=unused-variable
 def getList():
   import os
   from mrtrix3 import app
@@ -32,6 +33,7 @@ def getList():
 # Note: This function essentially duplicates the current state of app.cmdline in order for command-line
 #   options common to all algorithms of a particular script to be applicable once any particular sub-parser
 #   is invoked. Therefore this function must be called _after_ all such options are set up.
+#pylint: disable=unused-variable
 def initialise():
   import importlib, pkgutil
   from mrtrix3 import app, path
@@ -46,7 +48,7 @@ def initialise():
 
 
 
-
+#pylint: disable=unused-variable
 def getModule(name):
   import sys
   from mrtrix3 import path
