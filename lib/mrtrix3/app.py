@@ -24,19 +24,23 @@
 # - 'force' will be True if the user has requested for existing output files to be
 #   re-written, and at least one output target already exists
 # - 'mrtrix' provides functionality for interfacing with other MRtrix3 components
-# TODO Create class for Continue: Have resume() function that mrtrix3.run can call,
-#   rather than directly overwriting the lastFile variable
 # TODO Create named tuple for colours, all settings?
-args = ''
+args = None
 cleanup = True
 cmdline = None
 config = { }
+continueOption = False
 forceOverwrite = False #pylint: disable=unused-variable
-lastFile = '' #pylint: disable=unused-variable
 numThreads = None #pylint: disable=unused-variable
 tempDir = ''
 verbosity = 1 # 0 = quiet; 1 = default; 2 = info; 3 = debug
 workingDir = ''
+
+
+
+
+
+
 
 
 
@@ -120,8 +124,9 @@ def init(author, synopsis): #pylint: disable=unused-variable
 
 def parse(): #pylint: disable=unused-variable
   import os, sys
-  global args, cleanup, cmdline, lastFile, numThreads, tempDir, verbosity
+  global args, cleanup, cmdline, continueOption, numThreads, tempDir, verbosity
   global clearLine, colourClear, colourConsole, colourDebug, colourError, colourExec, colourWarn
+  from mrtrix3 import run
 
   if not cmdline:
     sys.stderr.write('Script error: app.init() must be called before app.parse()\n')
@@ -175,8 +180,9 @@ def parse(): #pylint: disable=unused-variable
   cmdline.printCitationWarning()
 
   if args.cont:
+    continueOption = True
     tempDir = os.path.abspath(args.cont[0])
-    lastFile = args.cont[1] #pylint: disable=unused-variable
+    run.setContinue(args.cont[1])
 
 
 
@@ -202,9 +208,9 @@ def checkOutputPath(path): #pylint: disable=unused-variable
 
 def makeTempDir(): #pylint: disable=unused-variable
   import os, random, string, sys
-  global args, config
+  global args, config, continueOption
   global tempDir, workingDir
-  if args.cont:
+  if continueOption:
     debug('Skipping temporary directory creation due to use of -continue option')
     return
   if tempDir:
@@ -314,7 +320,6 @@ def warn(text): #pylint: disable=unused-variable
   import os, sys
   global colourClear, colourWarn
   sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + '[WARNING] ' + text + colourClear + '\n')
-
 
 
 

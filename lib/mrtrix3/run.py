@@ -5,6 +5,14 @@ _mrtrix_exe_list = [ os.path.splitext(name)[0] for name in os.listdir(_mrtrix_bi
 
 _processes = [ ]
 
+_lastFile = ''
+
+
+
+def setContinue(filename): #pylint: disable=unused-variable
+  _lastFile = filename
+
+
 
 
 def command(cmd, exitOnError=True): #pylint: disable=unused-variable
@@ -18,23 +26,9 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
   # Vectorise the command string, preserving anything encased within quotation marks
   cmdsplit = shlex.split(cmd)
 
-  if app.lastFile:
-    # Check to see if the last file produced in the previous script execution is
-    #   intended to be produced by this command; if it is, this will be the last
-    #   command that gets skipped by the -continue option
-    # It's possible that the file might be defined in a '--option=XXX' style argument
-    #   It's also possible that the filename in the command string has the file extension omitted
-    for entry in cmdsplit:
-      if entry.startswith('--') and '=' in entry:
-        cmdtotest = entry.split('=')[1]
-      else:
-        cmdtotest = entry
-      filetotest = [ app.lastFile, os.path.splitext(app.lastFile)[0] ]
-      if cmdtotest in filetotest:
-        app.debug('Detected last file \'' + app.lastFile + '\' in command \'' + cmd + '\'; this is the last run.command() / run.function() call that will be skipped')
-        #pylint: disable=unused-variable
-        app.lastFile = ''
-        break
+  if _lastFile:
+    if _triggerContinue(cmdsplit):
+      app.debug('Detected last file in command \'' + cmd + '\'; this is the last run.command() / run.function() call that will be skipped')
     if app.verbosity:
       sys.stderr.write(app.colourExec + 'Skipping command:' + app.colourClear + ' ' + cmd + '\n')
       sys.stderr.flush()
@@ -215,23 +209,9 @@ def function(fn, *args): #pylint: disable=unused-variable
 
   fnstring = fn.__module__ + '.' + fn.__name__ + '(' + ', '.join(args) + ')'
 
-  if app.lastFile:
-    # Check to see if the last file produced in the previous script execution is
-    #   intended to be produced by this command; if it is, this will be the last
-    #   command that gets skipped by the -continue option
-    # It's possible that the file might be defined in a '--option=XXX' style argument
-    #  It's also possible that the filename in the command string has the file extension omitted
-    for entry in args:
-      if entry.startswith('--') and '=' in entry:
-        totest = entry.split('=')[1]
-      else:
-        totest = entry
-      filetotest = [ app.lastFile, os.path.splitext(app.lastFile)[0] ]
-      if totest in filetotest:
-        #pylint: disable=unused-variable
-        app.debug('Detected last file \'' + app.lastFile + '\' in function \'' + fnstring + '\'; this is the last run.command() / run.function() call that will be skipped')
-        app.lastFile = ''
-        break
+  if _lastFile:
+    if _triggerContinue(args):
+      app.debug('Detected last file in function \'' + fnstring + '\'; this is the last run.command() / run.function() call that will be skipped')
     if app.verbosity:
       sys.stderr.write(app.colourExec + 'Skipping function:' + app.colourClear + ' ' + fnstring + '\n')
       sys.stderr.flush()
@@ -358,3 +338,25 @@ def _shebang(item):
       return shebang
   app.debug('File \"' + item + '\": No shebang found')
   return []
+
+
+
+# New function for handling the -continue command-line option functionality
+# Check to see if the last file produced in the previous script execution is
+#   intended to be produced by this command; if it is, this will be the last
+#   thing that gets skipped by the -continue option
+def _triggerContinue(entries):
+  global _lastFile
+  if not _lastFile:
+    assert False
+  for entry in entries:
+    # It's possible that the file might be defined in a '--option=XXX' style argument
+    #   It's also possible that the filename in the command string has the file extension omitted
+    if entry.startswith('--') and '=' in entry:
+      totest = entry.split('=')[1]
+    else:
+      totest = entry
+    if totest == _lastFile or totest == os.path.splitext(_lastFile)[0]:
+      _lastFile = ''
+      return True
+  return False
