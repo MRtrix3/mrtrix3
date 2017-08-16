@@ -97,7 +97,7 @@ app.gotoTempDir()
 # Check that the brain mask is appropriate
 if image.header('mask.mif').size[:3] != image.header('dwi.mif').size[:3]:
   app.error('Dimensions of provided mask image do not match DWI')
-if int(image.statistic('mask.mif', 'count', 'mask.mif')) == 0:
+if int(image.statistic('mask.mif', 'count', '-mask mask.mif')) == 0:
   app.error('Input mask does not contain any voxels')
 
 

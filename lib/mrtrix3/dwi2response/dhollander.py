@@ -98,23 +98,23 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrcalc crude_wm.mif 0 safe_mask.mif -if _crudenonwm.mif -datatype bit')
 
   # Crude GM versus CSF separation based on SDM.
-  crudenonwmmedian = image.statistic('safe_sdm.mif', 'median', '_crudenonwm.mif')
+  crudenonwmmedian = image.statistic('safe_sdm.mif', 'median', '-mask _crudenonwm.mif')
   run.command('mrcalc _crudenonwm.mif safe_sdm.mif ' + str(crudenonwmmedian) + ' -subtract 0 -if - | mrthreshold - - -mask _crudenonwm.mif | mrcalc _crudenonwm.mif - 0 -if crude_csf.mif -datatype bit')
   run.command('mrcalc crude_csf.mif 0 _crudenonwm.mif -if crude_gm.mif -datatype bit')
 
 
   # Refine WM: remove high SDM outliers.
-  crudewmmedian = image.statistic('safe_sdm.mif', 'median', 'crude_wm.mif')
+  crudewmmedian = image.statistic('safe_sdm.mif', 'median', '-mask crude_wm.mif')
   run.command('mrcalc crude_wm.mif safe_sdm.mif 0 -if ' + str(crudewmmedian) + ' -gt _crudewmhigh.mif -datatype bit')
   run.command('mrcalc _crudewmhigh.mif 0 crude_wm.mif -if _crudewmlow.mif -datatype bit')
-  crudewmQ1 = float(image.statistic('safe_sdm.mif', 'median', '_crudewmlow.mif'))
-  crudewmQ3 = float(image.statistic('safe_sdm.mif', 'median', '_crudewmhigh.mif'))
+  crudewmQ1 = float(image.statistic('safe_sdm.mif', 'median', '-mask _crudewmlow.mif'))
+  crudewmQ3 = float(image.statistic('safe_sdm.mif', 'median', '-mask _crudewmhigh.mif'))
   crudewmoutlthresh = crudewmQ3 + (crudewmQ3 - crudewmQ1)
   run.command('mrcalc crude_wm.mif safe_sdm.mif 0 -if ' + str(crudewmoutlthresh) + ' -gt _crudewmoutliers.mif -datatype bit')
   run.command('mrcalc _crudewmoutliers.mif 0 crude_wm.mif -if refined_wm.mif -datatype bit')
 
   # Refine GM: separate safer GM from partial volumed voxels.
-  crudegmmedian = image.statistic('safe_sdm.mif', 'median', 'crude_gm.mif')
+  crudegmmedian = image.statistic('safe_sdm.mif', 'median', '-mask crude_gm.mif')
   run.command('mrcalc crude_gm.mif safe_sdm.mif 0 -if ' + str(crudegmmedian) + ' -gt _crudegmhigh.mif -datatype bit')
   run.command('mrcalc _crudegmhigh.mif 0 crude_gm.mif -if _crudegmlow.mif -datatype bit')
   run.command('mrcalc _crudegmhigh.mif safe_sdm.mif ' + str(crudegmmedian) + ' -subtract 0 -if - | mrthreshold - - -mask _crudegmhigh.mif -invert | mrcalc _crudegmhigh.mif - 0 -if _crudegmhighselect.mif -datatype bit')
@@ -122,13 +122,13 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrcalc _crudegmhighselect.mif 1 _crudegmlowselect.mif -if refined_gm.mif -datatype bit')
 
   # Refine CSF: recover lost CSF from crude WM SDM outliers, separate safer CSF from partial volumed voxels.
-  crudecsfmin = image.statistic('safe_sdm.mif', 'min', 'crude_csf.mif')
+  crudecsfmin = image.statistic('safe_sdm.mif', 'min', '-mask crude_csf.mif')
   run.command('mrcalc _crudewmoutliers.mif safe_sdm.mif 0 -if ' + str(crudecsfmin) + ' -gt 1 crude_csf.mif -if _crudecsfextra.mif -datatype bit')
   run.command('mrcalc _crudecsfextra.mif safe_sdm.mif ' + str(crudecsfmin) + ' -subtract 0 -if - | mrthreshold - - -mask _crudecsfextra.mif | mrcalc _crudecsfextra.mif - 0 -if refined_csf.mif -datatype bit')
 
 
   # Get final voxels for single-fibre WM response function estimation from WM using 'tournier' algorithm.
-  refwmcount = float(image.statistic('refined_wm.mif', 'count', 'refined_wm.mif'))
+  refwmcount = float(image.statistic('refined_wm.mif', 'count', '-mask refined_wm.mif'))
   voxsfwmcount = int(round(refwmcount * app.args.sfwm / 100.0))
   app.console('Running \'tournier\' algorithm to select ' + str(voxsfwmcount) + ' single-fibre WM voxels.')
   cleanopt = ''
@@ -137,11 +137,11 @@ def execute(): #pylint: disable=unused-variable
   run.command('dwi2response tournier dwi.mif _respsfwmss.txt -sf_voxels ' + str(voxsfwmcount) + ' -iter_voxels ' + str(voxsfwmcount * 10) + ' -mask refined_wm.mif -voxels voxels_sfwm.mif -tempdir ' + app.tempDir + cleanopt)
 
   # Get final voxels for GM response function estimation from GM.
-  refgmmedian = image.statistic('safe_sdm.mif', 'median', 'refined_gm.mif')
+  refgmmedian = image.statistic('safe_sdm.mif', 'median', '-mask refined_gm.mif')
   run.command('mrcalc refined_gm.mif safe_sdm.mif 0 -if ' + str(refgmmedian) + ' -gt _refinedgmhigh.mif -datatype bit')
   run.command('mrcalc _refinedgmhigh.mif 0 refined_gm.mif -if _refinedgmlow.mif -datatype bit')
-  refgmhighcount = float(image.statistic('_refinedgmhigh.mif', 'count', '_refinedgmhigh.mif'))
-  refgmlowcount = float(image.statistic('_refinedgmlow.mif', 'count', '_refinedgmlow.mif'))
+  refgmhighcount = float(image.statistic('_refinedgmhigh.mif', 'count', '-mask _refinedgmhigh.mif'))
+  refgmlowcount = float(image.statistic('_refinedgmlow.mif', 'count', '-mask _refinedgmlow.mif'))
   voxgmhighcount = int(round(refgmhighcount * app.args.gm / 100.0))
   voxgmlowcount = int(round(refgmlowcount * app.args.gm / 100.0))
   run.command('mrcalc _refinedgmhigh.mif safe_sdm.mif 0 -if - | mrthreshold - - -bottom ' + str(voxgmhighcount) + ' -ignorezero | mrcalc _refinedgmhigh.mif - 0 -if _refinedgmhighselect.mif -datatype bit')
@@ -149,7 +149,7 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrcalc _refinedgmhighselect.mif 1 _refinedgmlowselect.mif -if voxels_gm.mif -datatype bit')
 
   # Get final voxels for CSF response function estimation from CSF.
-  refcsfcount = float(image.statistic('refined_csf.mif', 'count', 'refined_csf.mif'))
+  refcsfcount = float(image.statistic('refined_csf.mif', 'count', '-mask refined_csf.mif'))
   voxcsfcount = int(round(refcsfcount * app.args.csf / 100.0))
   run.command('mrcalc refined_csf.mif safe_sdm.mif 0 -if - | mrthreshold - - -top ' + str(voxcsfcount) + ' -ignorezero | mrcalc refined_csf.mif - 0 -if voxels_csf.mif -datatype bit')
 
@@ -157,10 +157,10 @@ def execute(): #pylint: disable=unused-variable
   # Show summary of voxels counts.
   textarrow = ' --> '
   app.console('Summary of voxel counts:')
-  app.console('Mask: ' + str(int(image.statistic('mask.mif', 'count', 'mask.mif'))) + textarrow + str(int(image.statistic('eroded_mask.mif', 'count', 'eroded_mask.mif'))) + textarrow + str(int(image.statistic('safe_mask.mif', 'count', 'safe_mask.mif'))))
-  app.console('WM: ' + str(int(image.statistic('crude_wm.mif', 'count', 'crude_wm.mif'))) + textarrow + str(int(image.statistic('refined_wm.mif', 'count', 'refined_wm.mif'))) + textarrow + str(int(image.statistic('voxels_sfwm.mif', 'count', 'voxels_sfwm.mif'))) + ' (SF)')
-  app.console('GM: ' + str(int(image.statistic('crude_gm.mif', 'count', 'crude_gm.mif'))) + textarrow + str(int(image.statistic('refined_gm.mif', 'count', 'refined_gm.mif'))) + textarrow + str(int(image.statistic('voxels_gm.mif', 'count', 'voxels_gm.mif'))))
-  app.console('CSF: ' + str(int(image.statistic('crude_csf.mif', 'count', 'crude_csf.mif'))) + textarrow + str(int(image.statistic('refined_csf.mif', 'count', 'refined_csf.mif'))) + textarrow + str(int(image.statistic('voxels_csf.mif', 'count', 'voxels_csf.mif'))))
+  app.console('Mask: ' + str(int(image.statistic('mask.mif', 'count', '-mask mask.mif'))) + textarrow + str(int(image.statistic('eroded_mask.mif', 'count', '-mask eroded_mask.mif'))) + textarrow + str(int(image.statistic('safe_mask.mif', 'count', '-mask safe_mask.mif'))))
+  app.console('WM: ' + str(int(image.statistic('crude_wm.mif', 'count', '-mask crude_wm.mif'))) + textarrow + str(int(image.statistic('refined_wm.mif', 'count', '-mask refined_wm.mif'))) + textarrow + str(int(image.statistic('voxels_sfwm.mif', 'count', '-mask voxels_sfwm.mif'))) + ' (SF)')
+  app.console('GM: ' + str(int(image.statistic('crude_gm.mif', 'count', '-mask crude_gm.mif'))) + textarrow + str(int(image.statistic('refined_gm.mif', 'count', '-mask refined_gm.mif'))) + textarrow + str(int(image.statistic('voxels_gm.mif', 'count', '-mask voxels_gm.mif'))))
+  app.console('CSF: ' + str(int(image.statistic('crude_csf.mif', 'count', '-mask crude_csf.mif'))) + textarrow + str(int(image.statistic('refined_csf.mif', 'count', '-mask refined_csf.mif'))) + textarrow + str(int(image.statistic('voxels_csf.mif', 'count', '-mask voxels_csf.mif'))))
 
 
   # Generate single-fibre WM, GM and CSF responses

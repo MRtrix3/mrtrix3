@@ -48,14 +48,12 @@ def execute(): #pylint: disable=unused-variable
     if iteration == 0:
       RF_in_path = 'init_RF.txt'
       mask_in_path = 'mask.mif'
-      # TODO This can be changed once #71 is implemented (mrstats statistics across volumes)
-      volume_means = [float(x) for x in image.statistic('dwi.mif', 'mean', 'mask.mif').split()]
-      mean = sum(volume_means) / float(len(volume_means))
-      volume_stds = [float(x) for x in image.statistic('dwi.mif', 'std', 'mask.mif').split()]
-      std = sum(volume_stds) / float(len(volume_stds))
-      # Scale these to reflect the fact that we're moving to the SH basis
-      mean *= math.sqrt(4.0 * math.pi)
-      std  *= math.sqrt(4.0 * math.pi)
+
+      # Grab the mean and standard deviation across all volumes in a single mrstats call
+      # Also scale them to reflect the fact that we're moving to the SH basis
+      mean = float(image.statistic('dwi.mif', 'mean', '-mask mask.mif -allvolumes')) * math.sqrt(4.0 * math.pi)
+      std = float(image.statistic('dwi.mif', 'std', '-mask mask.mif -allvolumes')) * math.sqrt(4.0 * math.pi)
+
       # Now produce the initial response function
       # Let's only do it to lmax 4
       init_RF = [ str(mean), str(-0.5*std), str(0.25*std*std/mean) ]
@@ -85,7 +83,7 @@ def execute(): #pylint: disable=unused-variable
     run.command('mrcalc ' + prefix + 'peak_ratio.mif ' + str(app.args.peak_ratio) + ' -lt ' + mask_in_path + ' -mult ' + prefix + 'SF.mif -datatype bit')
     file.delTemporary(prefix + 'peak_ratio.mif')
     # Make sure image isn't empty
-    SF_voxel_count = int(image.statistic(prefix + 'SF.mif', 'count', prefix + 'SF.mif'))
+    SF_voxel_count = int(image.statistic(prefix + 'SF.mif', 'count', '-mask ' + prefix + 'SF.mif'))
     if not SF_voxel_count:
       app.error('Aborting: All voxels have been excluded from single-fibre selection')
     # Generate a new response function

@@ -33,13 +33,30 @@ def header(image_path):
     app.error('Could not access header information for image \'' + image_path + '\'')
   with open(filename, 'r') as f:
     elements = json.load(f)
-  if not hasattr(elements, 'keyval') or not elements.keyval:
-    elements.keyval = {}
-  os.remove(filename)
-  if not isHeader(elements):
+
+  class _Header:
+    def __init__(self, data):
+      #self.__dict__.update(data)
+      # Load the individual header elements manually, so that pylint knows that they'll be there
+      self.name = data['name']
+      self.size = data['size']
+      self.spacing = data['spacing']
+      self.stride = data['stride']
+      self.format = data['format']
+      self.datatype = data['datatype']
+      self.intensity_offset = data['intensity_offset']
+      self.intensity_scale = data['intensity_scale']
+      self.transform = data['transform']
+      if not 'keyval' in data or not data['keyval']:
+        self.keyval = { }
+
+  try:
+    result = _Header(elements)
+  except:
     app.error('Error in reading header information from file \'' + image_path + '\'')
-  app.debug(vars(elements))
-  return elements
+  os.remove(filename)
+  app.debug(str(vars(result)))
+  return result
 
 
 
@@ -115,14 +132,13 @@ def match(image_one, image_two): #pylint: disable=unused-variable
 
 
 
-# TODO Change mask_path to instead receive a string of additional command-line options
-#   (that way, -allvolumes can be used)
-def statistic(image_path, stat, mask_path = ''): #pylint: disable=unused-variable
-  import subprocess
+# Computes image statistics using mrstats.
+def statistic(image_path, stat, options=''): #pylint: disable=unused-variable
+  import shlex, subprocess
   from mrtrix3 import app, run
   command = [ run.exeName(run.versionMatch('mrstats')), image_path, '-output', stat ]
-  if mask_path:
-    command.extend([ '-mask', mask_path ])
+  if options:
+    command.extend(shlex.split(options))
   if app.verbosity > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)

@@ -121,7 +121,7 @@ run.command('labelconvert sgm_masked.mif ' + sgm_lut_file_path + ' ' + path.from
 # * Insert the new delineation of that structure
 for struct in structure_map:
   image_path = struct + '_mask.mif'
-  index = image.statistic('sgm_new_labels.mif', 'median', image_path)
+  index = image.statistic('sgm_new_labels.mif', 'median', '-mask ' + image_path)
   run.command('mrcalc parc.mif ' + index + ' -eq 0 parc.mif -if parc_removed.mif')
   run.function(os.remove, 'parc.mif')
   run.function(os.rename, 'parc_removed.mif', 'parc.mif')

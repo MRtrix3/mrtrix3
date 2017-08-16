@@ -24,7 +24,6 @@
 # - 'force' will be True if the user has requested for existing output files to be
 #   re-written, and at least one output target already exists
 # - 'mrtrix' provides functionality for interfacing with other MRtrix3 components
-# TODO Create named tuple for colours, all settings?
 args = None
 cleanup = True
 cmdline = None
@@ -35,10 +34,6 @@ numThreads = None #pylint: disable=unused-variable
 tempDir = ''
 verbosity = 1 # 0 = quiet; 1 = default; 2 = info; 3 = debug
 workingDir = ''
-
-
-
-
 
 
 
