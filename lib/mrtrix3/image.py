@@ -3,51 +3,59 @@
 #   data, rather than trying to duplicate support for all possible image formats natively
 #   in Python.
 
-#pylint: disable=unused-variable
-def check3DNonunity(image_path):
+def check3DNonunity(image_in): #pylint: disable=unused-variable
   from mrtrix3 import app
-  dim = header(image_path).size
-  if len(dim) < 3:
-    app.error('Image \'' + image_path + '\' does not contain 3 spatial dimensions')
-  if min(dim[:3]) == 1:
-    app.error('Image \'' + image_path + '\' does not contain 3D spatial information (axis with size 1)')
+  if not isHeader(image_in):
+    if not isinstance(image_in, str):
+      app.error('Error trying to test \'' + str(image_in) + '\': Not an image header or file path')
+    image_in = header(image_in)
+  if len(image_in.size) < 3:
+    app.error('Image \'' + image_in.name + '\' does not contain 3 spatial dimensions')
+  if min(image_in.size[:3]) == 1:
+    app.error('Image \'' + image_in.name + '\' does not contain 3D spatial information (has axis with size 1)')
+  app.debug('Image \'' + image_in.name + '\' is >= 3D, and does not contain a unity spatial dimension')
 
 
 
 # Function to grab all contents of an image header
 # Uses mrinfo's new -json_all option in order to grab all header information
 #   from any image format supported by MRtrix3's C++ libraries
-class _Header:
-  def __init__(self, image_path):
-    import json, os, subprocess, tempfile
-    from mrtrix3 import app, path, run
-    filename = path.newTemporary('json')
-    command = [ run.exeName(run.versionMatch('mrinfo')), image_path, '-json_all', filename ]
-    if app._verbosity > 1:
-      app.console('Loading header for image file \'' + image_path + '\'')
-    app.debug(str(command))
-    result = subprocess.call(command, stdout=None, stderr=None)
-    if result:
-      app.error('Could not access header information for image \'' + image_path + '\'')
-    with open(filename, 'r') as f:
-      elements = json.load(f)
-    os.remove(filename)
-    self.name = self.format = self.datatype = ''
-    self.size = self.spacing = self.stride = []
-    self.intensity_offset = 0.0
-    self.intensity_scale = 1.0
-    self.transform = [[]]
-    self.keyval = { }
-    self.__dict__.update(elements)
-    #pylint: disable-msg=too-many-boolean-expressions
-    if not self.name or not self.size or not self.spacing or not self.stride or not \
-           self.format or not self.datatype or not self.transform:
-      app.error('Error in reading header information from file \'' + image_path + '\'')
-
-#pylint: disable=unused-variable
 def header(image_path):
-  result = _Header(image_path)
-  return result
+  import json, os, subprocess
+  from mrtrix3 import app, path, run
+  filename = path.newTemporary('json')
+  command = [ run.exeName(run.versionMatch('mrinfo')), image_path, '-json_all', filename ]
+  if app.verbosity > 1:
+    app.console('Loading header for image file \'' + image_path + '\'')
+  app.debug(str(command))
+  result = subprocess.call(command, stdout=None, stderr=None)
+  if result:
+    app.error('Could not access header information for image \'' + image_path + '\'')
+  with open(filename, 'r') as f:
+    elements = json.load(f)
+  if not hasattr(elements, 'keyval') or not elements.keyval:
+    elements.keyval = {}
+  os.remove(filename)
+  if not isHeader(elements):
+    app.error('Error in reading header information from file \'' + image_path + '\'')
+  app.debug(vars(elements))
+  return elements
+
+
+
+# Function to test whether or not a Python object contains those flags expected
+#   within an image header
+def isHeader(obj):
+  from mrtrix3 import app
+  try:
+    #pylint: disable=pointless-statement,too-many-boolean-expressions
+    obj.name and obj.size and obj.spacing and obj.stride and obj.format and obj.datatype \
+             and obj.intensity_offset and obj.intensity_scale and obj.transform and obj.keyval
+    app.debug('\'' + str(obj) + '\' IS a header object')
+    return True
+  except:
+    app.debug('\'' + str(obj) + '\' is NOT a header object')
+    return False
 
 
 
@@ -56,17 +64,16 @@ def header(image_path):
 # Therefore, provide this function to execute mrinfo and get just the information of
 #   interest. Note however that parsing the output of mrinfo e.g. into list / numerical
 #   form is not performed by this function.
-#pylint: disable=unused-variable
-def mrinfo(image_path, field):
+def mrinfo(image_path, field): #pylint: disable=unused-variable
   import subprocess
   from mrtrix3 import app, run
   command = [ run.exeName(run.versionMatch('mrinfo')), image_path, '-' + field ]
-  if app._verbosity > 1:
+  if app.verbosity > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
   result, dummy_err = proc.communicate()
   result = result.rstrip().decode('utf-8')
-  if app._verbosity > 1:
+  if app.verbosity > 1:
     app.console('Result: ' + result)
   return result
 
@@ -74,15 +81,14 @@ def mrinfo(image_path, field):
 
 # Check to see whether the fundamental header properties of two images match
 # Inputs can be either _Header class instances, or file paths
-#pylint: disable=unused-variable
-def match(image_one, image_two):
+def match(image_one, image_two): #pylint: disable=unused-variable
   import math
   from mrtrix3 import app
-  if not isinstance(image_one, _Header):
+  if not isHeader(image_one):
     if not isinstance(image_one, str):
       app.error('Error trying to test \'' + str(image_one) + '\': Not an image header or file path')
     image_one = header(image_one)
-  if not isinstance(image_two, _Header):
+  if not isHeader(image_two):
     if not isinstance(image_two, str):
       app.error('Error trying to test \'' + str(image_two) + '\': Not an image header or file path')
     image_two = header(image_two)
@@ -111,18 +117,17 @@ def match(image_one, image_two):
 
 # TODO Change mask_path to instead receive a string of additional command-line options
 #   (that way, -allvolumes can be used)
-#pylint: disable=unused-variable
-def statistic(image_path, stat, mask_path = ''):
+def statistic(image_path, stat, mask_path = ''): #pylint: disable=unused-variable
   import subprocess
   from mrtrix3 import app, run
   command = [ run.exeName(run.versionMatch('mrstats')), image_path, '-output', stat ]
   if mask_path:
     command.extend([ '-mask', mask_path ])
-  if app._verbosity > 1:
+  if app.verbosity > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
   result, dummy_err = proc.communicate()
   result = result.rstrip().decode('utf-8')
-  if app._verbosity > 1:
+  if app.verbosity > 1:
     app.console('Result: ' + result)
   return result

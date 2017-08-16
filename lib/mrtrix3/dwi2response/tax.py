@@ -1,5 +1,4 @@
-#pylint: disable=unused-variable
-def initialise(base_parser, subparsers):
+def initialise(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('tax', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Use the Tax et al. (2014) recursive calibration algorithm for single-fibre voxel selection and response function estimation', parents=[base_parser])
   parser.addCitation('', 'Tax, C. M.; Jeurissen, B.; Vos, S. B.; Viergever, M. A. & Leemans, A. Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data. NeuroImage, 2014, 86, 67-80', False)
   parser.add_argument('input', help='The input DWI')
@@ -11,27 +10,23 @@ def initialise(base_parser, subparsers):
 
 
 
-#pylint: disable=unused-variable
-def checkOutputPaths():
+def checkOutputPaths(): #pylint: disable=unused-variable
   from mrtrix3 import app
   app.checkOutputPath(app.args.output)
 
 
 
-#pylint: disable=unused-variable
-def getInputs():
+def getInputs(): #pylint: disable=unused-variable
   pass
 
 
 
-#pylint: disable=unused-variable
-def needsSingleShell():
+def needsSingleShell(): #pylint: disable=unused-variable
   return True
 
 
 
-#pylint: disable=unused-variable
-def execute():
+def execute(): #pylint: disable=unused-variable
   import math, os, shutil
   from mrtrix3 import app, file, image, path, run
 

@@ -1,5 +1,4 @@
-#pylint: disable=unused-variable
-def initialise(base_parser, subparsers):
+def initialise(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('freesurfer', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Generate the 5TT image based on a FreeSurfer parcellation image', parents=[base_parser])
   parser.add_argument('input',  help='The input FreeSurfer parcellation image (any image containing \'aseg\' in its name)')
   parser.add_argument('output', help='The output 5TT image')
@@ -8,14 +7,12 @@ def initialise(base_parser, subparsers):
 
 
 
-#pylint: disable=unused-variable
-def checkOutputPaths():
+def checkOutputPaths(): #pylint: disable=unused-variable
   pass
 
 
 
-#pylint: disable=unused-variable
-def getInputs():
+def getInputs(): #pylint: disable=unused-variable
   import shutil
   from mrtrix3 import app, path, run
   run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('input.mif', True))
@@ -24,9 +21,8 @@ def getInputs():
 
 
 
-#pylint: disable=unused-variable
-def execute():
-  import os, sys
+def execute(): #pylint: disable=unused-variable
+  import os.path #pylint: disable=unused-variable
   from mrtrix3 import app, path, run
 
   lut_input_path = 'LUT.txt'

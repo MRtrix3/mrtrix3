@@ -1,8 +1,7 @@
 # Functions relating to handling phase encoding information
 
 # From a user-specified string, determine the axis and direction of phase encoding
-#pylint: disable=unused-variable
-def direction(string):
+def direction(string): #pylint: disable=unused-variable
   from mrtrix3 import app
   pe_dir = ''
   try:
@@ -50,10 +49,9 @@ def direction(string):
 
 # Extract a phase-encoding scheme from a pre-loaded image header,
 #   or from a path to the image
-#pylint: disable=unused-variable
-def getScheme(arg):
+def getScheme(arg): #pylint: disable=unused-variable
   from mrtrix3 import app, image
-  if not isinstance(arg, image._Header):
+  if not image.isHeader(arg):
     if not isinstance(arg, str):
       app.error('Error trying to derive phase-encoding scheme from \'' + str(arg) + '\': Not an image header or file path')
     arg = image.header(arg)

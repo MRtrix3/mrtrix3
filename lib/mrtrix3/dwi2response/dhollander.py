@@ -1,5 +1,4 @@
-#pylint: disable=unused-variable
-def initialise(base_parser, subparsers):
+def initialise(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('dhollander', author='Thijs Dhollander (thijs.dhollander@gmail.com)', synopsis='Unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof)', parents=[base_parser])
   parser.addCitation('', 'Dhollander, T.; Raffelt, D. & Connelly, A. Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5', False)
   parser.add_argument('input', help='The input DWI')
@@ -15,8 +14,7 @@ def initialise(base_parser, subparsers):
 
 
 
-#pylint: disable=unused-variable
-def checkOutputPaths():
+def checkOutputPaths(): #pylint: disable=unused-variable
   from mrtrix3 import app
   app.checkOutputPath(app.args.out_sfwm)
   app.checkOutputPath(app.args.out_gm)
@@ -24,20 +22,17 @@ def checkOutputPaths():
 
 
 
-#pylint: disable=unused-variable
-def getInputs():
+def getInputs(): #pylint: disable=unused-variable
   pass
 
 
 
-#pylint: disable=unused-variable
-def needsSingleShell():
+def needsSingleShell(): #pylint: disable=unused-variable
   return False
 
 
 
-#pylint: disable=unused-variable
-def execute():
+def execute(): #pylint: disable=unused-variable
   import shutil
   from mrtrix3 import app, image, path, run
 
@@ -137,9 +132,9 @@ def execute():
   voxsfwmcount = int(round(refwmcount * app.args.sfwm / 100.0))
   app.console('Running \'tournier\' algorithm to select ' + str(voxsfwmcount) + ' single-fibre WM voxels.')
   cleanopt = ''
-  if not app._cleanup:
+  if not app.cleanup:
     cleanopt = ' -nocleanup'
-  run.command('dwi2response tournier dwi.mif _respsfwmss.txt -sf_voxels ' + str(voxsfwmcount) + ' -iter_voxels ' + str(voxsfwmcount * 10) + ' -mask refined_wm.mif -voxels voxels_sfwm.mif -tempdir ' + app._tempDir + cleanopt)
+  run.command('dwi2response tournier dwi.mif _respsfwmss.txt -sf_voxels ' + str(voxsfwmcount) + ' -iter_voxels ' + str(voxsfwmcount * 10) + ' -mask refined_wm.mif -voxels voxels_sfwm.mif -tempdir ' + app.tempDir + cleanopt)
 
   # Get final voxels for GM response function estimation from GM.
   refgmmedian = image.statistic('safe_sdm.mif', 'median', 'refined_gm.mif')

@@ -1,5 +1,4 @@
-#pylint: disable=unused-variable
-def initialise(base_parser, subparsers):
+def initialise(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('msmt_5tt', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Derive MSMT-CSD tissue response functions based on a co-registered five-tissue-type (5TT) image', parents=[base_parser])
   parser.addCitation('', 'Jeurissen, B.; Tournier, J.-D.; Dhollander, T.; Connelly, A. & Sijbers, J. Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data. NeuroImage, 2014, 103, 411-426', False)
   parser.add_argument('input', help='The input DWI')
@@ -15,8 +14,7 @@ def initialise(base_parser, subparsers):
 
 
 
-#pylint: disable=unused-variable
-def checkOutputPaths():
+def checkOutputPaths(): #pylint: disable=unused-variable
   from mrtrix3 import app
   app.checkOutputPath(app.args.out_wm)
   app.checkOutputPath(app.args.out_gm)
@@ -24,8 +22,7 @@ def checkOutputPaths():
 
 
 
-#pylint: disable=unused-variable
-def getInputs():
+def getInputs(): #pylint: disable=unused-variable
   from mrtrix3 import app, path, run
   run.command('mrconvert ' + path.fromUser(app.args.in_5tt, True) + ' ' + path.toTemp('5tt.mif', True))
   if app.args.dirs:
@@ -33,14 +30,12 @@ def getInputs():
 
 
 
-#pylint: disable=unused-variable
-def needsSingleShell():
+def needsSingleShell(): #pylint: disable=unused-variable
   return False
 
 
 
-#pylint: disable=unused-variable
-def execute():
+def execute(): #pylint: disable=unused-variable
   import os, shutil
   from mrtrix3 import app, image, path, run
 
@@ -80,9 +75,9 @@ def execute():
   # Revise WM mask to only include single-fibre voxels
   app.console('Calling dwi2response recursively to select WM single-fibre voxels using \'' + app.args.wm_algo + '\' algorithm')
   recursive_cleanup_option=''
-  if not app._cleanup:
+  if not app.cleanup:
     recursive_cleanup_option = ' -nocleanup'
-  run.command('dwi2response ' + app.args.wm_algo + ' dwi.mif wm_ss_response.txt -mask wm_mask.mif -voxels wm_sf_mask.mif -tempdir ' + app._tempDir + recursive_cleanup_option)
+  run.command('dwi2response ' + app.args.wm_algo + ' dwi.mif wm_ss_response.txt -mask wm_mask.mif -voxels wm_sf_mask.mif -tempdir ' + app.tempDir + recursive_cleanup_option)
 
   # Check for empty masks
   wm_voxels  = int(image.statistic('wm_sf_mask.mif', 'count', 'wm_sf_mask.mif'))

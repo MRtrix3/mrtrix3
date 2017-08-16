@@ -36,7 +36,7 @@ def abspath(*arg):
   return os.path.abspath(os.path.join(*arg))
 
 def relpath(*arg):
-  return os.path.relpath(os.path.join(*arg), app._workingDir)
+  return os.path.relpath(os.path.join(*arg), app.workingDir)
 
 def allindir(directory):
   return ' '.join( [ os.path.join(directory, file) for file in os.listdir(directory) ] )
@@ -436,7 +436,7 @@ for level in range(0, len(nl_scales)):
 
 if useMasks:
   file.makeDir('masks_transformed')
-write_log = (app._verbosity >= 2)
+write_log = (app.verbosity >= 2)
 if write_log:
   file.makeDir('log')
 
@@ -574,7 +574,7 @@ else:
           lmax = ' -noreorientation'
         if linear_estimator:
           metric = ' -rigid_metric.diff.estimator ' + linear_estimator
-        if app._verbosity >= 2:
+        if app.verbosity >= 2:
           mrregister_log = ' -info -rigid_log ' + os.path.join('log', i.filename + "_" + str(level) + '.log')
       else:
         scale = ' -affine_scale ' + str(linear_scales[level])
@@ -714,7 +714,7 @@ if dononlinear:
         run.function(move, os.path.join('warps_' + str(level), '%s.mif' % i.prefix), 'warps')
 
 
-run.command('mrconvert ' + current_template + ' ' + path.fromUser(app.args.template, True) + (' -force' if app.force else ''))
+run.command('mrconvert ' + current_template + ' ' + path.fromUser(app.args.template, True) + (' -force' if app.forceOverwrite else ''))
 
 if app.args.warp_dir:
   warp_path = path.fromUser(app.args.warp_dir, False)
@@ -735,6 +735,6 @@ if app.args.transformed_dir:
   run.function(copytree, 'inputs_transformed', transformed_path)
 
 if app.args.template_mask:
-  run.command('mrconvert ' + current_template_mask + ' ' + path.fromUser(app.args.template_mask, True) + (' -force' if app.force else ''))
+  run.command('mrconvert ' + current_template_mask + ' ' + path.fromUser(app.args.template_mask, True) + (' -force' if app.forceOverwrite else ''))
 
 app.complete()

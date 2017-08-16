@@ -24,16 +24,35 @@
 # - 'force' will be True if the user has requested for existing output files to be
 #   re-written, and at least one output target already exists
 # - 'mrtrix' provides functionality for interfacing with other MRtrix3 components
+# TODO Create class for Continue: Have resume() function that mrtrix3.run can call,
+#   rather than directly overwriting the lastFile variable
+# TODO Create named tuple for colours, all settings?
 args = ''
+cleanup = True
 cmdline = None
 config = { }
-#pylint: disable=unused-variable
-force = False
+forceOverwrite = False #pylint: disable=unused-variable
+lastFile = '' #pylint: disable=unused-variable
+numThreads = None #pylint: disable=unused-variable
+tempDir = ''
+verbosity = 1 # 0 = quiet; 1 = default; 2 = info; 3 = debug
+workingDir = ''
 
 
 
-# These are used to configure the script interface and operation, and should not typically be accessed/modified directly
-_cleanup = True
+
+clearLine = ''
+colourClear = ''
+colourConsole = ''
+colourDebug = ''
+colourError = ''
+colourExec = '' #pylint: disable=unused-variable
+colourWarn = ''
+
+
+
+
+
 _defaultCopyright = '''Copyright (c) 2008-2017 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
@@ -45,17 +64,9 @@ but WITHOUT ANY WARRANTY; without even the implied warranty
 of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 For more details, see http://www.mrtrix.org/.'''
-#pylint: disable=unused-variable
-_lastFile = ''
-#pylint: disable=unused-variable
-_nthreads = None
-_tempDir = ''
-_verbosity = 1 # 0 = quiet; 1 = default; 2 = info; 3 = debug
-_workingDir = ''
 
 
 
-# Data used for setting up signal handlers
 _signals = { 'SIGALRM': 'Timer expiration',
              'SIGBUS' : 'Bus error: Accessing invalid address (out of storage space?)',
              'SIGFPE' : 'Floating-point arithmetic exception',
@@ -76,12 +87,13 @@ _signals = { 'SIGALRM': 'Timer expiration',
 
 
 
-#pylint: disable=unused-variable
-def init(author, synopsis):
+
+
+def init(author, synopsis): #pylint: disable=unused-variable
   import os, signal
-  global cmdline, config
+  global cmdline, config, workingDir
   cmdline = Parser(author=author, synopsis=synopsis)
-  _workingDir = os.getcwd()
+  workingDir = os.getcwd()
   # Load the MRtrix configuration files here, and create a dictionary
   # Load system config first, user second: Allows user settings to override
   for path in [ os.path.join(os.path.sep, 'etc', 'mrtrix.conf'),
@@ -100,17 +112,15 @@ def init(author, synopsis):
   # Set up signal handlers
   for s in _signals:
     try:
-      signal.signal(getattr(signal, s), _handler)
+      signal.signal(getattr(signal, s), handler)
     except:
       pass
 
 
 
-#pylint: disable=unused-variable
-def parse():
+def parse(): #pylint: disable=unused-variable
   import os, sys
-  global args, cmdline
-  global _cleanup, _lastFile, _nthreads, _tempDir, _verbosity
+  global args, cleanup, cmdline, lastFile, numThreads, tempDir, verbosity
   global clearLine, colourClear, colourConsole, colourDebug, colourError, colourExec, colourWarn
 
   if not cmdline:
@@ -148,36 +158,34 @@ def parse():
     colourConsole = '\033[03;32m'
     colourDebug = '\033[03;34m'
     colourError = '\033[01;31m'
-    colourExec = '\033[03;36m'
+    colourExec = '\033[03;36m' #pylint: disable=unused-variable
     colourWarn = '\033[00;31m'
 
   if args.nocleanup:
-    _cleanup = False
+    cleanup = False
   if args.nthreads:
-    _nthreads = args.nthreads
+    numThreads = args.nthreads #pylint: disable=unused-variable
   if args.quiet:
-    _verbosity = 0
+    verbosity = 0
   elif args.info:
-    _verbosity = 2
+    verbosity = 2
   elif args.debug:
-    _verbosity = 3
+    verbosity = 3
 
   cmdline.printCitationWarning()
 
   if args.cont:
-    _tempDir = os.path.abspath(args.cont[0])
-    _lastFile = args.cont[1]
+    tempDir = os.path.abspath(args.cont[0])
+    lastFile = args.cont[1] #pylint: disable=unused-variable
 
 
 
-#pylint: disable=unused-variable
-def checkOutputPath(path):
+def checkOutputPath(path): #pylint: disable=unused-variable
   import os
-  global args, force
-  global _workingDir
+  global args, forceOverwrite, workingDir
   if not path:
     return
-  abspath = os.path.abspath(os.path.join(_workingDir, path))
+  abspath = os.path.abspath(os.path.join(workingDir, path))
   if os.path.exists(abspath):
     output_type = ''
     if os.path.isfile(abspath):
@@ -186,21 +194,20 @@ def checkOutputPath(path):
       output_type = ' directory'
     if args.force:
       warn('Output' + output_type + ' \'' + path + '\' already exists; will be overwritten at script completion')
-      force = True
+      forceOverwrite = True #pylint: disable=unused-variable
     else:
       error('Output' + output_type + ' \'' + path + '\' already exists (use -force to override)')
 
 
 
-#pylint: disable=unused-variable
-def makeTempDir():
+def makeTempDir(): #pylint: disable=unused-variable
   import os, random, string, sys
   global args, config
-  global _tempDir, _workingDir
+  global tempDir, workingDir
   if args.cont:
     debug('Skipping temporary directory creation due to use of -continue option')
     return
-  if _tempDir:
+  if tempDir:
     error('Script error: Cannot use multiple temporary directories')
   if args.tempdir:
     dir_path = os.path.abspath(args.tempdir)
@@ -209,83 +216,71 @@ def makeTempDir():
       dir_path = config['ScriptTmpDir']
     else:
       # Defaulting to working directory since too many users have encountered storage issues
-      dir_path = _workingDir
+      dir_path = workingDir
   if 'ScriptTmpPrefix' in config:
     prefix = config['ScriptTmpPrefix']
   else:
     prefix = os.path.basename(sys.argv[0]) + '-tmp-'
-  _tempDir = dir_path
-  while os.path.isdir(_tempDir):
+  tempDir = dir_path
+  while os.path.isdir(tempDir):
     random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
-    _tempDir = os.path.join(dir_path, prefix + random_string) + os.sep
-  os.makedirs(_tempDir)
-  console('Generated temporary directory: ' + _tempDir)
-  with open(os.path.join(_tempDir, 'cwd.txt'), 'w') as outfile:
-    outfile.write(_workingDir + '\n')
-  with open(os.path.join(_tempDir, 'command.txt'), 'w') as outfile:
+    tempDir = os.path.join(dir_path, prefix + random_string) + os.sep
+  os.makedirs(tempDir)
+  console('Generated temporary directory: ' + tempDir)
+  with open(os.path.join(tempDir, 'cwd.txt'), 'w') as outfile:
+    outfile.write(workingDir + '\n')
+  with open(os.path.join(tempDir, 'command.txt'), 'w') as outfile:
     outfile.write(' '.join(sys.argv) + '\n')
-  open(os.path.join(_tempDir, 'log.txt'), 'w').close()
+  open(os.path.join(tempDir, 'log.txt'), 'w').close()
 
 
 
-#pylint: disable=unused-variable
-def gotoTempDir():
+def gotoTempDir(): #pylint: disable=unused-variable
   import os
-  global _tempDir
-  if not _tempDir:
+  global tempDir
+  if not tempDir:
     error('Script error: No temporary directory location set')
-  if _verbosity:
-    console('Changing to temporary directory (' + _tempDir + ')')
-  os.chdir(_tempDir)
+  if verbosity:
+    console('Changing to temporary directory (' + tempDir + ')')
+  os.chdir(tempDir)
 
 
 
-#pylint: disable=unused-variable
-def complete():
+def complete(): #pylint: disable=unused-variable
   import os, shutil, sys
-  global _cleanup, _tempDir, _workingDir
+  global cleanup, tempDir, workingDir
   global colourClear, colourConsole, colourWarn
-  console('Changing back to original directory (' + _workingDir + ')')
-  os.chdir(_workingDir)
-  if _cleanup and _tempDir:
-    console('Deleting temporary directory ' + _tempDir)
-    shutil.rmtree(_tempDir)
-  elif _tempDir:
+  console('Changing back to original directory (' + workingDir + ')')
+  os.chdir(workingDir)
+  if cleanup and tempDir:
+    console('Deleting temporary directory ' + tempDir)
+    shutil.rmtree(tempDir)
+  elif tempDir:
     # This needs to be printed even if the -quiet option is used
-    if os.path.isfile(os.path.join(_tempDir, 'error.txt')):
-      with open(os.path.join(_tempDir, 'error.txt'), 'r') as errortext:
+    if os.path.isfile(os.path.join(tempDir, 'error.txt')):
+      with open(os.path.join(tempDir, 'error.txt'), 'r') as errortext:
         sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'Script failed while executing the command: ' + errortext.readline().rstrip() + colourClear + '\n')
-      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'For debugging, inspect contents of temporary directory: ' + _tempDir + colourClear + '\n')
+      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'For debugging, inspect contents of temporary directory: ' + tempDir + colourClear + '\n')
     else:
-      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourConsole + 'Contents of temporary directory kept, location: ' + _tempDir + colourClear + '\n')
+      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourConsole + 'Contents of temporary directory kept, location: ' + tempDir + colourClear + '\n')
     sys.stderr.flush()
 
 
 
 
 # A set of functions and variables for printing various information at the command-line.
-clearLine = ''
-colourClear = ''
-colourConsole = ''
-colourDebug = ''
-colourError = ''
-colourExec = ''
-colourWarn = ''
-
-#pylint: disable=unused-variable
-def console(text):
+def console(text): #pylint: disable=unused-variable
   import os, sys
   global colourClear, colourConsole
-  global _verbosity
-  if _verbosity:
+  global verbosity
+  if verbosity:
     sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourConsole + text + colourClear + '\n')
 
-#pylint: disable=unused-variable
-def debug(text):
+def debug(text): #pylint: disable=unused-variable
   import inspect, os, sys
   global colourClear, colourDebug
-  global _verbosity
-  if _verbosity <= 2:
+  global verbosity
+  if verbosity <= 2:
     return
   if len(inspect.stack()) == 2: # debug() called directly from script being executed
     caller = inspect.getframeinfo(inspect.stack()[1][0])
@@ -306,18 +301,16 @@ def debug(text):
     origin = funcname + ' (from ' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')'
   sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourDebug + '[DEBUG] ' + origin + ': ' + text + colourClear + '\n')
 
-#pylint: disable=unused-variable
-def error(text):
+def error(text): #pylint: disable=unused-variable
   import os, sys
   global colourClear, colourError
-  global _cleanup
+  global cleanup
   sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourError + '[ERROR] ' + text + colourClear + '\n')
-  _cleanup = False
+  cleanup = False
   complete()
   sys.exit(1)
 
-#pylint: disable=unused-variable
-def warn(text):
+def warn(text): #pylint: disable=unused-variable
   import os, sys
   global colourClear, colourWarn
   sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + '[WARNING] ' + text + colourClear + '\n')
@@ -337,6 +330,8 @@ def warn(text):
 import argparse
 class Parser(argparse.ArgumentParser):
 
+  #pylint: disable=protected-access
+
   def __init__(self, *args_in, **kwargs_in):
     global _defaultCopyright
     if 'author' in kwargs_in:
@@ -344,14 +339,14 @@ class Parser(argparse.ArgumentParser):
       del kwargs_in['author']
     else:
       self._author = None
-    self._citationList = [ ]
+    self.citationList = [ ]
     if 'copyright' in kwargs_in:
       self._copyright = kwargs_in['copyright']
       del kwargs_in['copyright']
     else:
       self._copyright = _defaultCopyright
     self._description = [ ]
-    self._externalCitations = False
+    self.externalCitations = False
     if 'synopsis' in kwargs_in:
       self.synopsis = kwargs_in['synopsis']
       del kwargs_in['synopsis']
@@ -362,8 +357,8 @@ class Parser(argparse.ArgumentParser):
     self.mutuallyExclusiveOptionGroups = [ ]
     if 'parents' in kwargs_in:
       for parent in kwargs_in['parents']:
-        self._citationList.extend(parent._citationList)
-        self._externalCitations = self._externalCitations or parent._externalCitations
+        self.citationList.extend(parent.citationList)
+        self.externalCitations = self.externalCitations or parent.externalCitations
     else:
       standard_options = self.add_argument_group('Standard options')
       standard_options.add_argument('-continue', nargs=2, dest='cont', metavar=('<TempDir>', '<LastFile>'), help='Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file')
@@ -377,23 +372,19 @@ class Parser(argparse.ArgumentParser):
       standard_options.add_argument('-debug', action='store_true', help='Display additional debugging information over and above the output of -info')
       self.flagMutuallyExclusiveOptions( [ 'quiet', 'info', 'debug' ] )
 
-  #pylint: disable=unused-variable
-  def addCitation(self, condition, reference, is_external):
-    self._citationList.append( (condition, reference) )
+  def addCitation(self, condition, reference, is_external): #pylint: disable=unused-variable
+    self.citationList.append( (condition, reference) )
     if is_external:
-      self._externalCitations = True
+      self.externalCitations = True
 
-  #pylint: disable=unused-variable
-  def addDescription(self, text):
+  def addDescription(self, text): #pylint: disable=unused-variable
     self._description.append(text)
 
-  #pylint: disable=unused-variable
-  def setCopyright(self, text):
+  def setCopyright(self, text): #pylint: disable=unused-variable
     self._copyright = text
 
   # Mutually exclusive options need to be added before the command-line input is parsed
-  #pylint: disable=unused-variable
-  def flagMutuallyExclusiveOptions(self, options, required=False):
+  def flagMutuallyExclusiveOptions(self, options, required=False): #pylint: disable=unused-variable
     import sys
     if not isinstance(options, list) or not isinstance(options[0], str):
       sys.stderr.write('Script error: Parser.flagMutuallyExclusiveOptions() only accepts a list of strings\n')
@@ -403,10 +394,10 @@ class Parser(argparse.ArgumentParser):
 
   def parse_args(self):
     result = argparse.ArgumentParser.parse_args(self)
-    self._checkMutuallyExclusiveOptions(result)
+    self.checkMutuallyExclusiveOptions(result)
     if self._subparsers:
       for alg in self._subparsers._group_actions[0].choices:
-        self._subparsers._group_actions[0].choices[alg]._checkMutuallyExclusiveOptions(result)
+        self._subparsers._group_actions[0].choices[alg].checkMutuallyExclusiveOptions(result)
     return result
 
   def printCitationWarning(self):
@@ -419,10 +410,10 @@ class Parser(argparse.ArgumentParser):
         if alg == subparser:
           self._subparsers._group_actions[0].choices[alg].printCitationWarning()
           return
-    if self._citationList:
+    if self.citationList:
       console('')
       citation_warning = 'Note that this script makes use of commands / algorithms that have relevant articles for citation'
-      if self._externalCitations:
+      if self.externalCitations:
         citation_warning += '; INCLUDING FROM EXTERNAL SOFTWARE PACKAGES'
       citation_warning += '. Please consult the help page (-help option) for more information.'
       console(citation_warning)
@@ -438,11 +429,11 @@ class Parser(argparse.ArgumentParser):
     if self.prog and len(shlex.split(self.prog)) == len(sys.argv): # No arguments provided to subparser
       self.printHelp()
       sys.exit(0)
-    usage = self._formatUsage()
+    usage = self.formatUsage()
     if self._subparsers:
       for alg in self._subparsers._group_actions[0].choices:
         if alg == sys.argv[1]:
-          usage = self._subparsers._group_actions[0].choices[alg]._formatUsage()
+          usage = self._subparsers._group_actions[0].choices[alg].formatUsage()
           continue
     sys.stderr.write('\nError: %s\n' % text)
     sys.stderr.write('Usage: ' + usage + '\n')
@@ -450,7 +441,7 @@ class Parser(argparse.ArgumentParser):
     sys.stderr.flush()
     sys.exit(1)
 
-  def _checkMutuallyExclusiveOptions(self, args_in):
+  def checkMutuallyExclusiveOptions(self, args_in):
     import sys
     for group in self.mutuallyExclusiveOptionGroups:
       count = 0
@@ -475,7 +466,7 @@ class Parser(argparse.ArgumentParser):
         sys.stderr.flush()
         sys.exit(1)
 
-  def _formatUsage(self):
+  def formatUsage(self):
     argument_list = [ ]
     trailing_ellipsis = ''
     if self._subparsers:
@@ -588,11 +579,11 @@ class Parser(argparse.ArgumentParser):
     s += '\n'
     s += bold('COPYRIGHT') + '\n'
     s += w.fill(self._copyright) + '\n'
-    if self._citationList:
+    if self.citationList:
       s += '\n'
       s += bold('REFERENCES') + '\n'
       s += '\n'
-      for entry in self._citationList:
+      for entry in self.citationList:
         if entry[0]:
           s += w.fill('* ' + entry[0] + ':') + '\n'
         s += w.fill(entry[1]) + '\n'
@@ -622,7 +613,7 @@ class Parser(argparse.ArgumentParser):
     if self._subparsers and len(sys.argv) == 3:
       for alg in self._subparsers._group_actions[0].choices:
         if alg == sys.argv[1]:
-          self._subparsers._group_actions[0].choices[alg]._printFullUsage()
+          self._subparsers._group_actions[0].choices[alg].printFullUsage()
           return
       self.error('Invalid subparser nominated')
     for arg in self._positionals._group_actions:
@@ -646,7 +637,7 @@ class Parser(argparse.ArgumentParser):
     if self._subparsers and len(sys.argv) == 3:
       for alg in self._subparsers._group_actions[0].choices:
         if alg == sys.argv[-2]:
-          self._subparsers._group_actions[0].choices[alg]._printUsageMarkdown()
+          self._subparsers._group_actions[0].choices[alg].printUsageMarkdown()
           return
       self.error('Invalid subcmdline nominated')
     print ('## Synopsis')
@@ -655,7 +646,7 @@ class Parser(argparse.ArgumentParser):
     print ('')
     print ('## Usage')
     print ('')
-    print ('    ' + self._formatUsage())
+    print ('    ' + self.formatUsage())
     print ('')
     if self._subparsers:
       print ('-  *' + self._subparsers._group_actions[0].dest + '*: ' + self._subparsers._group_actions[0].help)
@@ -688,10 +679,10 @@ class Parser(argparse.ArgumentParser):
               text += option.metavar
           print ('+ **-' + text + '**<br>' + option.help)
           print ('')
-    if self._citationList:
+    if self.citationList:
       print ('## References')
       print ('')
-      for ref in self._citationList:
+      for ref in self.citationList:
         text = ''
         if ref[0]:
           text += ref[0] + ': '
@@ -714,7 +705,7 @@ class Parser(argparse.ArgumentParser):
     if self._subparsers and len(sys.argv) == 3:
       for alg in self._subparsers._group_actions[0].choices:
         if alg == sys.argv[-2]:
-          self._subparsers._group_actions[0].choices[alg]._printUsageRst()
+          self._subparsers._group_actions[0].choices[alg].printUsageRst()
           return
       self.error('Invalid subparser nominated: ' + sys.argv[-2])
     print ('.. _' + self.prog.replace(' ', '_') + ':')
@@ -732,7 +723,7 @@ class Parser(argparse.ArgumentParser):
     print ('')
     print ('::')
     print ('')
-    print ('    ' + self._formatUsage())
+    print ('    ' + self.formatUsage())
     print ('')
     if self._subparsers:
       print ('-  *' + self._subparsers._group_actions[0].dest + '*: ' + self._subparsers._group_actions[0].help)
@@ -767,11 +758,11 @@ class Parser(argparse.ArgumentParser):
               text += option.metavar
           print ('')
           print ('- **' + text + '** ' + option.help.replace('|', '\\|'))
-    if self._citationList:
+    if self.citationList:
       print ('')
       print ('References')
       print ('^^^^^^^^^^')
-      for ref in self._citationList:
+      for ref in self.citationList:
         text = '* '
         if ref[0]:
           text += ref[0] + ': '
@@ -796,7 +787,7 @@ class Parser(argparse.ArgumentParser):
 
 # A class that can be used to display a progress bar on the terminal,
 #   mimicing the behaviour of MRtrix3 binary commands
-class progressBar:
+class progressBar: #pylint: disable=unused-variable
 
   def _update(self):
     import os, sys
@@ -805,13 +796,13 @@ class progressBar:
     sys.stderr.flush()
 
   def __init__(self, msg, target):
-    global _verbosity
+    global verbosity
     self.counter = 0
     self.message = msg
-    self.newline = '\n' if _verbosity > 1 else '' # If any more than default verbosity, may still get details printed in between progress updates
-    self.orig_verbosity = _verbosity
+    self.newline = '\n' if verbosity > 1 else '' # If any more than default verbosity, may still get details printed in between progress updates
+    self.origverbosity = verbosity
     self.target = target
-    _verbosity = _verbosity - 1 if _verbosity else 0
+    verbosity = verbosity - 1 if verbosity else 0
     self._update()
 
   def increment(self, msg=''):
@@ -822,19 +813,18 @@ class progressBar:
 
   def done(self):
     import os, sys
-    global _verbosity
+    global verbosity
     global clearLine, colourConsole, colourClear
     self.counter = self.target
     sys.stderr.write('\r' + colourConsole + os.path.basename(sys.argv[0]) + ': ' + colourClear + '[100%] ' + self.message + clearLine + '\n')
     sys.stderr.flush()
-    _verbosity = self.orig_verbosity
+    verbosity = self.origverbosity
 
 
 
 
 # Return a boolean flag to indicate whether or not script is being run on a Windows machine
-#pylint: disable=unused-variable
-def isWindows():
+def isWindows(): #pylint: disable=unused-variable
   import platform
   system = platform.system().lower()
   return system.startswith('mingw') or system.startswith('msys') or system.startswith('windows')
@@ -843,7 +833,7 @@ def isWindows():
 
 
 # Handler function for dealing with system signals
-def _handler(signum, _frame):
+def handler(signum, _frame):
   import os, signal, sys
   global _signals
   # First, kill any child processes

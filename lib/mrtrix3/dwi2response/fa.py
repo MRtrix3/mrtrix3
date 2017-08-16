@@ -1,5 +1,4 @@
-#pylint: disable=unused-variable
-def initialise(base_parser, subparsers):
+def initialise(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('fa', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Use the old FA-threshold heuristic for single-fibre voxel selection and response function estimation', parents=[base_parser])
   parser.addCitation('', 'Tournier, J.-D.; Calamante, F.; Gadian, D. G. & Connelly, A. Direct estimation of the fiber orientation density function from diffusion-weighted MRI data using spherical deconvolution. NeuroImage, 2004, 23, 1176-1185', False)
   parser.add_argument('input', help='The input DWI')
@@ -12,27 +11,23 @@ def initialise(base_parser, subparsers):
 
 
 
-#pylint: disable=unused-variable
-def checkOutputPaths():
+def checkOutputPaths(): #pylint: disable=unused-variable
   from mrtrix3 import app
   app.checkOutputPath(app.args.output)
 
 
 
-#pylint: disable=unused-variable
-def getInputs():
+def getInputs(): #pylint: disable=unused-variable
   pass
 
 
 
-#pylint: disable=unused-variable
-def needsSingleShell():
+def needsSingleShell(): #pylint: disable=unused-variable
   return False
 
 
 
-#pylint: disable=unused-variable
-def execute():
+def execute(): #pylint: disable=unused-variable
   import shutil
   from mrtrix3 import app, image, path, run
   bvalues = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shells').split() ]

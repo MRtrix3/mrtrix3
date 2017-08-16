@@ -1,5 +1,4 @@
-#pylint: disable=unused-variable
-def initialise(base_parser, subparsers):
+def initialise(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('manual', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Derive a response function using an input mask image alone (i.e. pre-selected voxels)', parents=[base_parser])
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('in_voxels', help='Input voxel selection mask')
@@ -9,15 +8,13 @@ def initialise(base_parser, subparsers):
 
 
 
-#pylint: disable=unused-variable
-def checkOutputPaths():
+def checkOutputPaths(): #pylint: disable=unused-variable
   from mrtrix3 import app
   app.checkOutputPath(app.args.output)
 
 
 
-#pylint: disable=unused-variable
-def getInputs():
+def getInputs(): #pylint: disable=unused-variable
   import os
   from mrtrix3 import app, path, run
   mask_path = path.toTemp('mask.mif', False)
@@ -30,14 +27,12 @@ def getInputs():
 
 
 
-#pylint: disable=unused-variable
-def needsSingleShell():
+def needsSingleShell(): #pylint: disable=unused-variable
   return False
 
 
 
-#pylint: disable=unused-variable
-def execute():
+def execute(): #pylint: disable=unused-variable
   import os, shutil
   from mrtrix3 import app, image, path, run
 

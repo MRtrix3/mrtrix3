@@ -7,8 +7,7 @@ _processes = [ ]
 
 
 
-#pylint: disable=unused-variable
-def command(cmd, exitOnError=True):
+def command(cmd, exitOnError=True): #pylint: disable=unused-variable
 
   import inspect, itertools, shlex, signal, subprocess, sys, tempfile
   from distutils.spawn import find_executable
@@ -19,7 +18,7 @@ def command(cmd, exitOnError=True):
   # Vectorise the command string, preserving anything encased within quotation marks
   cmdsplit = shlex.split(cmd)
 
-  if app._lastFile:
+  if app.lastFile:
     # Check to see if the last file produced in the previous script execution is
     #   intended to be produced by this command; if it is, this will be the last
     #   command that gets skipped by the -continue option
@@ -30,12 +29,13 @@ def command(cmd, exitOnError=True):
         cmdtotest = entry.split('=')[1]
       else:
         cmdtotest = entry
-      filetotest = [ app._lastFile, os.path.splitext(app._lastFile)[0] ]
+      filetotest = [ app.lastFile, os.path.splitext(app.lastFile)[0] ]
       if cmdtotest in filetotest:
-        app.debug('Detected last file \'' + app._lastFile + '\' in command \'' + cmd + '\'; this is the last run.command() / run.function() call that will be skipped')
-        app._lastFile = ''
+        app.debug('Detected last file \'' + app.lastFile + '\' in command \'' + cmd + '\'; this is the last run.command() / run.function() call that will be skipped')
+        #pylint: disable=unused-variable
+        app.lastFile = ''
         break
-    if app._verbosity:
+    if app.verbosity:
       sys.stderr.write(app.colourExec + 'Skipping command:' + app.colourClear + ' ' + cmd + '\n')
       sys.stderr.flush()
     return
@@ -50,12 +50,12 @@ def command(cmd, exitOnError=True):
     is_mrtrix_exe = line[0] in _mrtrix_exe_list
     if is_mrtrix_exe:
       line[0] = versionMatch(line[0])
-      if app._nthreads is not None:
-        line.extend( [ '-nthreads', str(app._nthreads) ] )
+      if app.numThreads is not None:
+        line.extend( [ '-nthreads', str(app.numThreads) ] )
       # Get MRtrix3 binaries to output additional INFO-level information if running in debug mode
-      if app._verbosity == 3:
+      if app.verbosity == 3:
         line.append('-info')
-      elif not app._verbosity:
+      elif not app.verbosity:
         line.append('-quiet')
     else:
       line[0] = exeName(line[0])
@@ -69,7 +69,7 @@ def command(cmd, exitOnError=True):
       for item in reversed(shebang):
         line.insert(0, item)
 
-  if app._verbosity:
+  if app.verbosity:
     sys.stderr.write(app.colourExec + 'Command:' + app.colourClear + '  ' + cmd + '\n')
     sys.stderr.flush()
 
@@ -101,7 +101,7 @@ def command(cmd, exitOnError=True):
     # If we're in debug / info mode, the contents of stderr will be read and printed to the terminal
     #   as the command progresses, hence this needs to go to a pipe; otherwise, write it to a temporary
     #   file so that the contents can be read later
-    if app._verbosity > 1:
+    if app.verbosity > 1:
       handle_err = subprocess.PIPE
     else:
       file_err = tempfile.TemporaryFile()
@@ -122,7 +122,7 @@ def command(cmd, exitOnError=True):
         _processes = [ ]
         break
     except (KeyboardInterrupt, SystemExit):
-      app._handler(signal.SIGINT, inspect.currentframe())
+      app.handler(signal.SIGINT, inspect.currentframe())
 
   return_stdout = ''
   return_stderr = ''
@@ -134,7 +134,7 @@ def command(cmd, exitOnError=True):
 
     # Switch how we monitor running processes / wait for them to complete
     #   depending on whether or not the user has specified -verbose or -debug option
-    if app._verbosity > 1:
+    if app.verbosity > 1:
       for process in _processes:
         stderrdata = ''
         while True:
@@ -154,7 +154,7 @@ def command(cmd, exitOnError=True):
         process.wait()
 
   except (KeyboardInterrupt, SystemExit):
-    app._handler(signal.SIGINT, inspect.currentframe())
+    app.handler(signal.SIGINT, inspect.currentframe())
 
   # For any command stdout / stderr data that wasn't either passed to another command or
   #   printed to the terminal during execution, read it here.
@@ -179,7 +179,7 @@ def command(cmd, exitOnError=True):
   _processes = [ ]
 
   if error:
-    app._cleanup = False
+    app.cleanup = False
     if exitOnError:
       caller = inspect.getframeinfo(inspect.stack()[1][0])
       app.console('')
@@ -187,8 +187,8 @@ def command(cmd, exitOnError=True):
       sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + app.colourConsole + 'Output of failed command:' + app.colourClear + '\n')
       sys.stderr.write(error_text)
       sys.stderr.flush()
-      if app._tempDir:
-        with open(os.path.join(app._tempDir, 'error.txt'), 'w') as outfile:
+      if app.tempDir:
+        with open(os.path.join(app.tempDir, 'error.txt'), 'w') as outfile:
           outfile.write(cmd + '\n\n' + error_text + '\n')
       app.complete()
       sys.exit(1)
@@ -198,8 +198,8 @@ def command(cmd, exitOnError=True):
   # Only now do we append to the script log, since the command has completed successfully
   # Note: Writing the command as it was formed as the input to run.command():
   #   other flags may potentially change if this file is eventually used to resume the script
-  if app._tempDir:
-    with open(os.path.join(app._tempDir, 'log.txt'), 'a') as outfile:
+  if app.tempDir:
+    with open(os.path.join(app.tempDir, 'log.txt'), 'a') as outfile:
       outfile.write(cmd + '\n')
 
   return (return_stdout, return_stderr)
@@ -208,15 +208,14 @@ def command(cmd, exitOnError=True):
 
 
 
-#pylint: disable=unused-variable
-def function(fn, *args):
+def function(fn, *args): #pylint: disable=unused-variable
 
   import sys
   from mrtrix3 import app
 
   fnstring = fn.__module__ + '.' + fn.__name__ + '(' + ', '.join(args) + ')'
 
-  if app._lastFile:
+  if app.lastFile:
     # Check to see if the last file produced in the previous script execution is
     #   intended to be produced by this command; if it is, this will be the last
     #   command that gets skipped by the -continue option
@@ -227,17 +226,18 @@ def function(fn, *args):
         totest = entry.split('=')[1]
       else:
         totest = entry
-      filetotest = [ app._lastFile, os.path.splitext(app._lastFile)[0] ]
+      filetotest = [ app.lastFile, os.path.splitext(app.lastFile)[0] ]
       if totest in filetotest:
-        app.debug('Detected last file \'' + app._lastFile + '\' in function \'' + fnstring + '\'; this is the last run.command() / run.function() call that will be skipped')
-        app._lastFile = ''
+        #pylint: disable=unused-variable
+        app.debug('Detected last file \'' + app.lastFile + '\' in function \'' + fnstring + '\'; this is the last run.command() / run.function() call that will be skipped')
+        app.lastFile = ''
         break
-    if app._verbosity:
+    if app.verbosity:
       sys.stderr.write(app.colourExec + 'Skipping function:' + app.colourClear + ' ' + fnstring + '\n')
       sys.stderr.flush()
     return
 
-  if app._verbosity:
+  if app.verbosity:
     sys.stderr.write(app.colourExec + 'Function:' + app.colourClear + ' ' + fnstring + '\n')
     sys.stderr.flush()
 
@@ -245,8 +245,8 @@ def function(fn, *args):
   result = fn(*args)
 
   # Only now do we append to the script log, since the function has completed successfully
-  if app._tempDir:
-    with open(os.path.join(app._tempDir, 'log.txt'), 'a') as outfile:
+  if app.tempDir:
+    with open(os.path.join(app.tempDir, 'log.txt'), 'a') as outfile:
       outfile.write(fnstring + '\n')
 
   return result

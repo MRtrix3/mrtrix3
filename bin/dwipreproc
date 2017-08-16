@@ -663,5 +663,5 @@ else:
 
 
 # Finish!
-run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + grad_export_option + (' -force' if app.force else ''))
+run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + grad_export_option + (' -force' if app.forceOverwrite else ''))
 app.complete()

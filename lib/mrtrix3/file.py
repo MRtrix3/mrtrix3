@@ -6,11 +6,10 @@
 #   that is no longer required by the script. If the script has been instructed to retain
 #   all temporaries, the resource will be retained; if not, it will be deleted (in particular
 #   to dynamically free up storage space used by the script).
-#pylint: disable=unused-variable
-def delTemporary(path):
+def delTemporary(path): #pylint: disable=unused-variable
   import shutil, os
   from mrtrix3 import app
-  if not app._cleanup:
+  if not app.cleanup:
     return
   if os.path.isfile(path):
     temporary_type = 'file'
@@ -21,7 +20,7 @@ def delTemporary(path):
   else:
     app.debug('Unknown target \'' + path + '\'')
     return
-  if app._verbosity > 2:
+  if app.verbosity > 2:
     app.console('Deleting temporary ' + temporary_type + ': \'' + path + '\'')
   try:
     func(path)
@@ -31,8 +30,7 @@ def delTemporary(path):
 
 
 # Make a directory if it doesn't exist; don't do anything if it does already exist
-#pylint: disable=unused-variable
-def makeDir(path):
+def makeDir(path): #pylint: disable=unused-variable
   import errno, os
   from mrtrix3 import app
   try:
@@ -47,14 +45,13 @@ def makeDir(path):
 
 # Get an appropriate location and name for a new temporary file
 # Note: Doesn't actually create a file; just gives a unique name that won't over-write anything
-#pylint: disable=unused-variable
-def newTempFile(suffix):
-  import os, random, string, sys
+def newTempFile(suffix): #pylint: disable=unused-variable
+  import os.path, random, string
   from mrtrix3 import app
   if 'TmpFileDir' in app.config:
     dir_path = app.config['TmpFileDir']
-  elif app._tempDir:
-    dir_path = app._tempDir
+  elif app.tempDir:
+    dir_path = app.tempDir
   else:
     dir_path = os.getcwd()
   app.debug(dir_path)
@@ -90,8 +87,7 @@ def newTempFile(suffix):
 # Initially, checks for the file once every 1/1000th of a second; this gradually
 #   increases if the file still doesn't exist, until the program is only checking
 #   for the file once a minute.
-#pylint: disable=unused-variable
-def waitFor(path):
+def waitFor(path): #pylint: disable=unused-variable
   import os, time
   from mrtrix3 import app
 
