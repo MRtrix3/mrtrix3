@@ -351,7 +351,7 @@ namespace MR
             filename (filename),
             color_type (TrackColourType::Direction),
             threshold_type (TrackThresholdType::None),
-            geometry_type (TrackGeometryType::Line),
+            geometry_type (TrackGeometryType::Pseudotubes),
             sample_stride (0),
             vao_dirty (true),
             threshold_min (NaN),

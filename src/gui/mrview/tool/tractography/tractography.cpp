@@ -71,7 +71,7 @@ namespace MR
           line_thickness (MRTRIX_DEFAULT_LINE_THICKNESS),
           point_size (MRTRIX_DEFAULT_POINT_SIZE),
           do_crop_to_slab (true),
-          use_lighting (false),
+          use_lighting (true),
           not_3D (true),
           line_opacity (1.0),
           scalar_file_options (nullptr),
@@ -169,8 +169,8 @@ namespace MR
 
             geom_type_combobox = new ComboBoxWithErrorMsg (this, "(variable)");
             geom_type_combobox->setToolTip (tr ("Set the tractogram geometry type"));
-            geom_type_combobox->addItem ("Lines");
             geom_type_combobox->addItem ("Pseudotubes");
+            geom_type_combobox->addItem ("Lines");
             geom_type_combobox->addItem ("Points");
             connect (geom_type_combobox, SIGNAL (activated(int)), this, SLOT (geom_type_selection_slot (int)));
             hlayout->addWidget (geom_type_combobox);
@@ -220,7 +220,7 @@ namespace MR
 
             lighting_group_box = new QGroupBox (tr("use lighting"));
             lighting_group_box->setCheckable (true);
-            lighting_group_box->setChecked (false);
+            lighting_group_box->setChecked (true);
             general_opt_grid->addWidget (lighting_group_box, 5, 0, 1, 2);
 
             connect (lighting_group_box, SIGNAL (clicked (bool)), this, SLOT (on_use_lighting_slot (bool)));
@@ -634,11 +634,11 @@ namespace MR
 
         void Tractography::geom_type_selection_slot(int selected_index)
         {
-          TrackGeometryType geom_type = TrackGeometryType::Line;
+          TrackGeometryType geom_type = TrackGeometryType::Pseudotubes;
 
           switch (selected_index) {
           case 1:
-            geom_type = TrackGeometryType::Pseudotubes;
+            geom_type = TrackGeometryType::Lines;
             break;
           case 2:
             geom_type = TrackGeometryType::Points;
@@ -712,7 +712,7 @@ namespace MR
           TrackGeometryType geom_type = first_tractogram->get_geometry_type();
           int geom_combobox_index = 0;
           switch (geom_type) {
-            case TrackGeometryType::Pseudotubes:
+            case TrackGeometryType::Lines:
               geom_combobox_index = 1;
               break;
             case TrackGeometryType::Points:

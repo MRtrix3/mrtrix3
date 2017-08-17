@@ -98,7 +98,7 @@ namespace MR
                     use_lighting (false),
                     color_type (TrackColourType::Direction),
                     threshold_type (TrackThresholdType::None),
-                    geometry_type (TrackGeometryType::Line) { }
+                    geometry_type (TrackGeometryType::Pseudotubes) { }
                 std::string vertex_shader_source (const Displayable&) override;
                 std::string fragment_shader_source (const Displayable&) override;
                 std::string geometry_shader_source (const Displayable&) override;
