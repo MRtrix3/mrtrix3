@@ -10,7 +10,7 @@ if not os.path.isdir(lib_folder):
   sys.exit(1)
 sys.path.insert(0, lib_folder)
 
-import copy, decimal, numbers, os, sys, shutil
+import copy, decimal, numbers, shutil
 from mrtrix3 import app, image, run, path
 
 app.init('Robert E. Smith (robert.smith@florey.edu.au)', 'Check the orientation of the diffusion gradient table')
@@ -33,11 +33,11 @@ app.cmdline.flagMutuallyExclusiveOptions( ['grad', 'fslgrad' ])
 app.cmdline.flagMutuallyExclusiveOptions( ['export_grad_mrtrix', 'export_grad_fsl' ])
 app.parse()
 
-image_dimensions = [ int(i) for i in image.headerField(app.args.input, 'size').split() ]
+image_dimensions = image.header(path.fromUser(app.args.input, False)).size
 if len(image_dimensions) != 4:
   app.error('Input image must be a 4D image')
 if min(image_dimensions) == 1:
-  app.error('Cannot perform tractography on an image with a unity spatial dimension')
+  app.error('Cannot perform tractography on an image with a unity dimension')
 num_volumes = image_dimensions[3]
 
 app.makeTempDir()
@@ -89,7 +89,7 @@ if not len(grad_mrtrix) == num_volumes:
 if not len(grad_fsl) == 3 or not len(grad_fsl[0]) == num_volumes:
   app.error('Internal error (inconsistent gradient table storage)')
 
-  
+
 # Generate a brain mask if we weren't provided with one
 if not os.path.exists('mask.mif'):
   run.command('dwi2mask data.mif mask.mif')
@@ -98,7 +98,7 @@ if not os.path.exists('mask.mif'):
 number_option = ' -select ' + str(app.args.number)
 
 
-# 
+#
 # TODO What variations of gradient errors can we conceive?
 
 # Done:

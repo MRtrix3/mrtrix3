@@ -8,7 +8,6 @@
 #   node indices that correspond to these structures, and replaces them with estimates
 #   derived from FIRST.
 
-
 # Make the corresponding MRtrix3 Python libraries available
 import inspect, os, sys
 lib_folder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile(inspect.currentframe()))[0], os.pardir, 'lib')))
@@ -18,9 +17,7 @@ if not os.path.isdir(lib_folder):
 sys.path.insert(0, lib_folder)
 
 
-
-from distutils.spawn import find_executable
-from mrtrix3 import app, image, path, run
+from mrtrix3 import app, fsl, image, path, run
 
 
 app.init('Robert E. Smith (robert.smith@florey.edu.au)',
@@ -47,20 +44,15 @@ fsl_path = os.environ.get('FSLDIR', '')
 if not fsl_path:
   app.error('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
 
-first_cmd = 'run_first_all'
-if not find_executable(first_cmd):
-  first_cmd = "fsl5.0-run_first_all"
-  if not find_executable(first_cmd):
-    app.error('Could not find FSL program run_first_all; please verify FSL install')
+first_cmd = fsl.exeName('run_first_all')
 
 first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
-
 if not os.path.isdir(first_atlas_path):
   app.error('Atlases required for FSL\'s FIRST program not installed;\nPlease install fsl-first-data using your relevant package manager')
 
 # Want a mapping between FreeSurfer node names and FIRST structure names
 # Just deal with the 5 that are used in ACT; FreeSurfer's hippocampus / amygdala segmentations look good enough.
-structure_map = { 'L_Accu':'Left-Accumbens-area',  'R_Accu':'Right-Accumbens-area', 
+structure_map = { 'L_Accu':'Left-Accumbens-area',  'R_Accu':'Right-Accumbens-area',
                   'L_Caud':'Left-Caudate',         'R_Caud':'Right-Caudate',
                   'L_Pall':'Left-Pallidum',        'R_Pall':'Right-Pallidum',
                   'L_Puta':'Left-Putamen',         'R_Puta':'Right-Putamen',
@@ -106,7 +98,7 @@ for key, value in structure_map.items():
   mask_list.append(image_path)
   vtk_in_path = 'first-' + key + '_first.vtk'
   if not os.path.exists(vtk_in_path):
-    app.error('Missing .vtk file for structure ' + struct + '; run_first_all must have failed')
+    app.error('Missing .vtk file for structure ' + key + '; run_first_all must have failed')
   run.command('meshconvert ' + vtk_in_path + ' first-' + key + '_transformed.vtk -transform first2real T1.nii')
   run.command('mesh2pve first-' + key + '_transformed.vtk parc.mif - | mrthreshold - ' + image_path + ' -abs 0.5')
   # Add to the SGM image; don't worry about overlap for now

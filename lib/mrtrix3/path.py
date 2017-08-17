@@ -40,16 +40,28 @@ def fromUser(filename, is_command):
 
 
 
-# Get the full absolute path to a location in the temporary script directory
-def toTemp(filename, is_command):
-  import os
+# Get an appropriate location and name for a new temporary file / directory
+# Note: Doesn't actually create anything; just gives a unique name that won't over-write anything
+def newTemporary(suffix):
+  import os, random, string, sys
   from mrtrix3 import app
-  wrapper=''
-  if is_command and filename.count(' '):
-    wrapper='\"'
-  path = wrapper + os.path.abspath(os.path.join(app._tempDir, filename)) + wrapper
-  app.debug(filename + ' -> ' + path)
-  return path
+  if 'TmpFileDir' in app.config:
+    dir_path = app.config['TmpFileDir']
+  elif app._tempDir:
+    dir_path = app._tempDir
+  else:
+    dir_path = os.getcwd()
+  if 'TmpFilePrefix' in app.config:
+    prefix = app.config['TmpFilePrefix']
+  else:
+    prefix = 'mrtrix-tmp-'
+  full_path = dir_path
+  suffix = suffix.lstrip('.')
+  while os.path.exists(full_path):
+    random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
+    full_path = os.path.join(dir_path, prefix + random_string + '.' + suffix)
+  app.debug(full_path)
+  return full_path
 
 
 
@@ -73,3 +85,15 @@ def sharedDataPath():
   import os
   return os.path.realpath(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, os.pardir, 'share', 'mrtrix3')))
 
+
+
+# Get the full absolute path to a location in the temporary script directory
+def toTemp(filename, is_command):
+  import os
+  from mrtrix3 import app
+  wrapper=''
+  if is_command and filename.count(' '):
+    wrapper='\"'
+  path = wrapper + os.path.abspath(os.path.join(app._tempDir, filename)) + wrapper
+  app.debug(filename + ' -> ' + path)
+  return path

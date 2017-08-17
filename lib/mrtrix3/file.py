@@ -2,33 +2,30 @@
 
 
 
-# These functions can (and should in some instances) be called upon any file / directory
+# This function can (and should in some instances) be called upon any file / directory
 #   that is no longer required by the script. If the script has been instructed to retain
 #   all temporaries, the resource will be retained; if not, it will be deleted (in particular
 #   to dynamically free up storage space used by the script).
-def delTempFile(path):
-  import os
+def delTemporary(path):
+  import shutil, os
   from mrtrix3 import app
   if not app._cleanup:
     return
-  if app._verbosity > 2:
-    app.console('Deleting temporary file: ' + path)
-  try:
-    os.remove(path)
-  except OSError:
-    app.debug('Unable to delete temporary file ' + path)
-
-def delTempFolder(path):
-  import shutil
-  from mrtrix3 import app
-  if not app._cleanup:
+  if os.path.isfile(path):
+    type = 'file'
+    func = os.remove
+  elif os.path.isdir(path):
+    type = 'directory'
+    func = shutil.rmtree
+  else:
+    app.debug('Unknown target \'' + path + '\'')
     return
   if app._verbosity > 2:
-    app.console('Deleting temporary folder: ' + path)
+    app.console('Deleting temporary ' + type + ': \'' + path + '\'')
   try:
-    shutil.rmtree(path)
+    func(path)
   except OSError:
-    app.debug('Unable to delete temprary folder ' + path)
+    app.debug('Unable to delete temporary ' + type + ': \'' + path + '\'')
 
 
 
@@ -42,7 +39,7 @@ def makeDir(path):
   except OSError as exception:
     if exception.errno != errno.EEXIST:
       raise
-    app.debug('Directory ' + path + ' already exists')
+    app.debug('Directory \'' + path + '\' already exists')
 
 
 
@@ -53,15 +50,18 @@ def newTempFile(suffix):
   from mrtrix3 import app
   if 'TmpFileDir' in app.config:
     dir_path = app.config['TmpFileDir']
-  else:
+  elif app._tempDir:
     dir_path = app._tempDir
+  else:
+    dir_path = os.getcwd()
+  app.debug(dir_path)
   if 'TmpFilePrefix' in app.config:
     prefix = app.config['TmpFilePrefix']
   else:
     prefix = 'mrtrix-tmp-'
+  app.debug(prefix)
   full_path = dir_path
-  if not suffix:
-    suffix = 'mif'
+  suffix = suffix.lstrip('.')
   while os.path.exists(full_path):
     random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
     full_path = os.path.join(dir_path, prefix + random_string + '.' + suffix)

@@ -47,23 +47,23 @@ def dir(string):
 
 
 
-# Extract a phase-encoding acheme from an image header
-def getScheme(image_path):
-  import subprocess
-  from mrtrix3 import app, run
-  command = [ run.versionMatch('mrinfo'), image_path, '-petable' ]
-  if app._verbosity > 1:
-    app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
-  proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
-  result, err = proc.communicate()
-  result = result.rstrip().decode('utf-8')
-  if result:
-    result = [ [ float(f) for f in line.split() ] for line in result.split('\n') ]
-  if app._verbosity > 1:
-    if not result:
-      app.console('Result: No phase encoding table found')
-    else:
-      app.console('Result: ' + str(len(result)) + ' x ' + str(len(result[0])) + ' table')
-      app.debug(str(result))
-  return result
+# Extract a phase-encoding scheme from a pre-loaded image header,
+#   or from a path to the image
+def getScheme(input):
+  from mrtrix3 import app, image
+  if not isinstance(input, image._Header):
+    if not (type(input) is str):
+      app.error('Error trying to derive phase-encoding scheme from \'' + str(input) + '\': Not an image header or file path')
+    input = image.header(input)
+  if 'pe_scheme' in input.keyval:
+    app.debug(input.keyval['pe_scheme'])
+    return input.keyval['pe_scheme']
+  if not 'PhaseEncodingDirection' in input.keyval:
+    return None
+  line = dir(input.keyval['PhaseEncodingDirection'])
+  if 'TotalReadoutTime' in input.keyval:
+    line.append(input.keyval['TotalReadoutTime'])
+  num_volumes = 1 if len(input.size()) < 4 else input.size[3]
+  app.debug(str(line) + ' x ' + num_volumes + ' rows')
+  return line * num_volumes
 

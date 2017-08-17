@@ -12,20 +12,58 @@ def eddyBinary(cuda):
   from distutils.spawn import find_executable
   if cuda:
     if find_executable('eddy_cuda'):
-      app.debug('Selecting CUDA version of eddy')
+      app.debug('Selected CUDA version (eddy_cuda)')
       return 'eddy_cuda'
     else:
+      # Cuda versions are now provided with a CUDA trailing version number
+      # Users may not necessarily create a softlink to one of these and
+      #   call it "eddy_cuda"
+      # Therefore, hunt through PATH looking for them; if more than one,
+      #   select the one with the highest version number
+      binaries = [ ]
+      for dir in os.environ['PATH'].split(os.pathsep):
+        if os.path.isdir(dir):
+          for file in os.listdir(dir):
+            if file.startswith('eddy_cuda'):
+              binaries.append(file)
+      max_version = 0.0
+      path = ''
+      for file in binaries:
+        try:
+          version = float(file.lstrip('eddy_cuda'))
+          if version > max_version:
+            max_version = version
+            path = file
+        except:
+          pass
+      if path:
+        app.debug('CUDA version ' + str(max_version) + ': ' + path)
+        return path
       app.warn('CUDA version of eddy not found; running standard version')
   if find_executable('eddy_openmp'):
     path = 'eddy_openmp'
-  elif find_executable('eddy'):
-    path = 'eddy'
-  elif find_executable('fsl5.0-eddy'):
-    path = 'fsl5.0-eddy'
   else:
-    app.error('Could not find FSL program eddy; please verify FSL install')
+    path = exeName('eddy')
   app.debug(path)
   return path
+
+
+
+# In some FSL installations, all binaries get prepended with "fsl5.0-". This function
+#   makes it more convenient to locate these commands.
+# Note that if FSL 4 and 5 are installed side-by-side, the approach taken in this
+#   function will select the version 5 executable.
+def exeName(name):
+  from mrtrix3 import app
+  from distutils.spawn import find_executable
+  if find_executable('fsl5.0-' + name):
+    output = 'fsl5.0-' + name
+  elif find_executable(name):
+    output = name
+  else:
+    app.error('Could not find FSL program \"' + name + '\"; please verify FSL install')
+  app.debug(output)
+  return output
 
 
 
