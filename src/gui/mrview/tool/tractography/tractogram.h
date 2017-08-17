@@ -35,11 +35,6 @@ namespace MR
 
       namespace Tool
       {
-
-        enum class TrackColourType { Direction, Ends, Manual, ScalarFile };
-        enum class TrackGeometryType { Line, Pseudotubes, Points };
-        enum class TrackThresholdType { None, UseColourFile, SeparateFile };
-
         class Tractogram : public Displayable
         { MEMALIGN(Tractogram)
           Q_OBJECT
