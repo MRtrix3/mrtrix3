@@ -20,7 +20,7 @@
 # include <sys/param.h>
 # include <sys/mount.h>
 #elif !defined(MRTRIX_WINDOWS)
-# include <sys/vfs.h> 
+# include <sys/vfs.h>
 #endif
 
 #ifdef MRTRIX_WINDOWS
@@ -53,9 +53,9 @@ namespace MR
       mtime = sbuf.st_mtime;
 
 
-      if (msize < 0) 
+      if (msize < 0)
         msize = sbuf.st_size - start;
-      else if (start + msize > sbuf.st_size) 
+      else if (start + msize > sbuf.st_size)
         throw Exception ("file \"" + Entry::name + "\" is smaller than expected");
 
       bool delayed_writeback = false;
@@ -109,18 +109,23 @@ namespace MR
           delayed_writeback = true;
         }
 
-        if (fsbuf.f_type == 0xff534d42 /* CIFS */|| fsbuf.f_type == 0x6969 /* NFS */ || 
-            fsbuf.f_type == 0x65735546 /* FUSE */ || fsbuf.f_type == 0x517b /* SMB */ || 
+        if (fsbuf.f_type == 0xff534d42 /* CIFS */ || fsbuf.f_type == 0x6969 /* NFS */ ||
+            fsbuf.f_type == 0x65735546 /* FUSE */ || fsbuf.f_type == 0x517b /* SMB */ ||
             fsbuf.f_type == 0x47504653 /* GPFS */ || fsbuf.f_type == 0xbd00bd0 /* LUSTRE */
 
 #ifdef MRTRIX_MACOSX
             || fsbuf.f_type == 0x0017 /* OSXFUSE */
-#endif 
+#endif
         ) {
           DEBUG ("\"" + Entry::name + "\" appears to reside on a networked filesystem - using delayed write-back");
           delayed_writeback = true;
         }
 #endif
+
+        if (fsbuf.f_type == 0x2FC12FC1) { /* ZFS */
+          DEBUG ("\"" + Entry::name + "\" appears to reside on a ZFS filesystem - using delayed write-back");
+          delayed_writeback = true;
+        }
 
         if (delayed_writeback) {
           try {
@@ -134,14 +139,14 @@ namespace MR
           if (preload) {
             CONSOLE ("preloading contents of mapped file \"" + Entry::name + "\"...");
             std::ifstream in (Entry::name.c_str(), std::ios::in | std::ios::binary);
-            if (!in) 
+            if (!in)
               throw Exception ("failed to open file \"" + Entry::name + "\": " + strerror (errno));
             in.seekg (start, in.beg);
             in.read ((char*) first, msize);
             if (!in.good())
               throw Exception ("error preloading contents of file \"" + Entry::name + "\": " + strerror(errno));
           }
-          else 
+          else
             memset (first, 0, msize);
           DEBUG ("file \"" + Entry::name + "\" held in RAM at " + str ( (void*) first) + ", size " + str (msize));
 
@@ -218,11 +223,11 @@ namespace MR
     {
       assert (fd >= 0);
       struct stat sbuf;
-      if (fstat (fd, &sbuf)) 
+      if (fstat (fd, &sbuf))
         return false;
-      if (int64_t (msize) != sbuf.st_size) 
+      if (int64_t (msize) != sbuf.st_size)
         return true;
-      if (mtime != sbuf.st_mtime) 
+      if (mtime != sbuf.st_mtime)
         return true;
       return false;
     }
