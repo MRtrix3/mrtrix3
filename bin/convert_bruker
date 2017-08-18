@@ -3,7 +3,7 @@
 import sys, os.path
 
 if len (sys.argv) != 3:
-  print ("usage: convert_bruker 2dseq header.mih")
+  sys.stderr.write("usage: convert_bruker 2dseq header.mih\n")
   sys.exit (0)
 
 
@@ -12,7 +12,7 @@ if len (sys.argv) != 3:
   #sys.exit (1)
 
 if not sys.argv[2].endswith ('.mih'):
-  print ("expected .mih suffix as the second argument")
+  sys.stderr.write("expected .mih suffix as the second argument\n")
   sys.exit (1)
 
 with open (os.path.join (os.path.dirname (sys.argv[1]), 'reco')) as f:

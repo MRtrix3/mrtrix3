@@ -3,9 +3,9 @@ import os
 import sys
 
 if len(sys.argv) <= 1:
-  print ('A script to blend two sets of movie frames together with a desired overlap.')
-  print ('The input arguments are two folders containing the movie frames (eg. output from the MRview screenshot tool), and the desired number of overlapping frames.')
-  print ('eg: blend folder1 folder2 20 output_folder')
+  sys.stderr.write('A script to blend two sets of movie frames together with a desired overlap.\n')
+  sys.stderr.write('The input arguments are two folders containing the movie frames (eg. output from the MRview screenshot tool), and the desired number of overlapping frames.\n')
+  sys.stderr.write('eg: blend folder1 folder2 20 output_folder\n')
   sys.exit(1)
 
 input_folder1 = sys.argv[1]

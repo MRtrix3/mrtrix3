@@ -178,13 +178,13 @@ lengths.reverse()
 
 
 # Provide a printout of the mean streamline length of each gradient table manipulation
-print ('Mean length     Axis flipped    Axis permutations    Axis basis')
+sys.stderr.write('Mean length     Axis flipped    Axis permutations    Axis basis\n')
 for line in lengths:
   if isinstance(line[1], numbers.Number):
     flip_str = "{:4d}".format(line[1])
   else:
     flip_str = line[1]
-  print ("{:5.2f}".format(line[0]) + '         ' + flip_str + '                ' + str(line[2]) + '           ' + line[3])
+  sys.stderr.write("{:5.2f}".format(line[0]) + '         ' + flip_str + '                ' + str(line[2]) + '           ' + line[3] + '\n')
 
 
 # If requested, extract what has been detected as the best gradient table, and

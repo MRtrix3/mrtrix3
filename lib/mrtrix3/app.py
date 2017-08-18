@@ -511,7 +511,7 @@ class Parser(argparse.ArgumentParser):
     return self.prog + ' ' + ' '.join(argument_list) + ' [ options ]' + trailing_ellipsis
 
   def printHelp(self):
-    import subprocess, textwrap
+    import subprocess, sys, textwrap
 
     def bold(text):
       return ''.join( c + chr(0x08) + c for c in text)
@@ -628,19 +628,19 @@ class Parser(argparse.ArgumentParser):
         process = subprocess.Popen(command.split(' '), stdin=subprocess.PIPE)
         process.communicate(s.encode())
       except:
-        print (s)
+        sys.stdout.write(s)
     else:
-      print (s)
+      sys.stdout.write(s)
 
   def printFullUsage(self):
     import sys
-    print (self.synopsis)
+    sys.stdout.write(self.synopsis + '\n')
     if self._description:
       if isinstance(self._description, list):
         for line in self._description:
-          print (line)
+          sys.stdout.write(line + '\n')
       else:
-        print (self._description)
+        sys.stdout.write(self._description + '\n')
     if self._subparsers and len(sys.argv) == 3:
       for alg in self._subparsers._group_actions[0].choices:
         if alg == sys.argv[1]:
@@ -649,19 +649,19 @@ class Parser(argparse.ArgumentParser):
       self.error('Invalid subparser nominated')
     for arg in self._positionals._group_actions:
       # This will need updating if any scripts allow mulitple argument inputs
-      print ('ARGUMENT ' + arg.dest + ' 0 0')
-      print (arg.help)
+      sys.stdout.write('ARGUMENT ' + arg.dest + ' 0 0\n')
+      sys.stdout.write(arg.help + '\n')
     for group in reversed(self._action_groups):
       if group._group_actions and not (len(group._group_actions) == 1 and isinstance(group._group_actions[0], argparse._SubParsersAction)) and not group == self._positionals:
         for option in group._group_actions:
-          print ('OPTION ' + '/'.join(option.option_strings) + ' 1 0')
-          print (option.help)
+          sys.stdout.write('OPTION ' + '/'.join(option.option_strings) + ' 1 0\n')
+          sys.stdout.write(option.help + '\n')
           if option.metavar:
             if isinstance(option.metavar, tuple):
               for arg in option.metavar:
-                print ('ARGUMENT ' + arg + ' 0 0')
+                sys.stdout.write('ARGUMENT ' + arg + ' 0 0\n')
             else:
-              print ('ARGUMENT ' + option.metavar + ' 0 0')
+              sys.stdout.write('ARGUMENT ' + option.metavar + ' 0 0\n')
 
   def printUsageMarkdown(self):
     import os, subprocess, sys
@@ -671,35 +671,26 @@ class Parser(argparse.ArgumentParser):
           self._subparsers._group_actions[0].choices[alg].printUsageMarkdown()
           return
       self.error('Invalid subcmdline nominated')
-    print ('## Synopsis')
-    print ('')
-    print (self.synopsis)
-    print ('')
-    print ('## Usage')
-    print ('')
-    print ('    ' + self.formatUsage())
-    print ('')
+    s = '## Synopsis\n\n'
+    s += self.synopsis + '\n\n'
+    s += '## Usage\n\n'
+    s += '    ' + self.formatUsage() + '\n\n'
     if self._subparsers:
-      print ('-  *' + self._subparsers._group_actions[0].dest + '*: ' + self._subparsers._group_actions[0].help)
+      s += '-  *' + self._subparsers._group_actions[0].dest + '*: ' + self._subparsers._group_actions[0].help + '\n'
     for arg in self._positionals._group_actions:
       if arg.metavar:
         name = arg.metavar
       else:
         name = arg.dest
-      print ('-  *' + name + '*: ' + arg.help)
-    print ('')
+      s += '-  *' + name + '*: ' + arg.help + '\n\n'
     if self._description:
-      print ('## Description')
-      print ('')
+      s += '## Description\n\n'
       for line in self._description:
-        print (line)
-        print ('')
-    print ('## Options')
-    print ('')
+        s += line + '\n\n'
+    s += '## Options\n\n'
     for group in reversed(self._action_groups):
       if group._group_actions and not (len(group._group_actions) == 1 and isinstance(group._group_actions[0], argparse._SubParsersAction)) and not group == self._positionals:
-        print ('#### ' + group.title)
-        print ('')
+        s += '#### ' + group.title + '\n\n'
         for option in group._group_actions:
           text = '/'.join(option.option_strings)
           if option.metavar:
@@ -708,25 +699,21 @@ class Parser(argparse.ArgumentParser):
               text += ' '.join(option.metavar)
             else:
               text += option.metavar
-          print ('+ **-' + text + '**<br>' + option.help)
-          print ('')
+          s += '+ **-' + text + '**<br>' + option.help + '\n\n'
     if self.citationList:
-      print ('## References')
-      print ('')
+      s += '## References\n\n'
       for ref in self.citationList:
         text = ''
         if ref[0]:
           text += ref[0] + ': '
         text += ref[1]
-        print (text)
-        print ('')
-    print ('---')
-    print ('')
-    print ('**Author:** ' + self._author)
-    print ('')
-    print ('**Copyright:** ' + self._copyright)
-    print ('')
+        s += text + '\n\n'
+    s += '---\n\n'
+    s += '**Author:** ' + self._author + '\n\n'
+    s += '**Copyright:** ' + self._copyright + '\n\n'
+    sys.stdout.write(s)
     if self._subparsers:
+      sys.stdout.flush()
       for alg in self._subparsers._group_actions[0].choices:
         subprocess.call ([ sys.executable, os.path.realpath(sys.argv[0]), alg, '__print_usage_markdown__' ])
 
@@ -739,46 +726,37 @@ class Parser(argparse.ArgumentParser):
           self._subparsers._group_actions[0].choices[alg].printUsageRst()
           return
       self.error('Invalid subparser nominated: ' + sys.argv[-2])
-    print ('.. _' + self.prog.replace(' ', '_') + ':')
-    print ('')
-    print (self.prog)
-    print ('='*len(self.prog))
-    print ('')
-    print ('Synopsis')
-    print ('--------')
-    print ('')
-    print (self.synopsis)
-    print ('')
-    print ('Usage')
-    print ('--------')
-    print ('')
-    print ('::')
-    print ('')
-    print ('    ' + self.formatUsage())
-    print ('')
+    s = '.. _' + self.prog.replace(' ', '_') + ':\n\n'
+    s += self.prog + '\n'
+    s += '='*len(self.prog) + '\n\n'
+    s += 'Synopsis\n'
+    s += '--------\n\n'
+    s += self.synopsis + '\n\n'
+    s += 'Usage\n'
+    s += '--------\n\n'
+    s += '::\n\n'
+    s += '    ' + self.formatUsage() + '\n\n'
     if self._subparsers:
-      print ('-  *' + self._subparsers._group_actions[0].dest + '*: ' + self._subparsers._group_actions[0].help)
+      s += '-  *' + self._subparsers._group_actions[0].dest + '*: ' + self._subparsers._group_actions[0].help + '\n'
     for arg in self._positionals._group_actions:
       if arg.metavar:
         name = arg.metavar
       else:
         name = arg.dest
-      print ('-  *' + name + '*: ' + arg.help.replace('|', '\\|'))
-    print ('')
+      s += '-  *' + name + '*: ' + arg.help.replace('|', '\\|') + '\n'
+    s += '\n'
     if self._description:
-      print ('Description')
-      print ('-----------')
-      print ('')
+      s += 'Description\n'
+      s += '-----------\n\n'
       for line in self._description:
-        print (line)
-        print ('')
-    print ('Options')
-    print ('-------')
+        s += line + '\n\n'
+    s += 'Options\n'
+    s += '-------\n'
     for group in reversed(self._action_groups):
       if group._group_actions and not (len(group._group_actions) == 1 and isinstance(group._group_actions[0], argparse._SubParsersAction)) and not group == self._positionals:
-        print ('')
-        print (group.title)
-        print ('^'*len(group.title))
+        s += '\n'
+        s += group.title + '\n'
+        s += '^'*len(group.title) + '\n'
         for option in group._group_actions:
           text = '/'.join(option.option_strings)
           if option.metavar:
@@ -787,28 +765,24 @@ class Parser(argparse.ArgumentParser):
               text += ' '.join(option.metavar)
             else:
               text += option.metavar
-          print ('')
-          print ('- **' + text + '** ' + option.help.replace('|', '\\|'))
+          s += '\n'
+          s += '- **' + text + '** ' + option.help.replace('|', '\\|') + '\n'
     if self.citationList:
-      print ('')
-      print ('References')
-      print ('^^^^^^^^^^')
+      s += '\n'
+      s += 'References\n'
+      s += '^^^^^^^^^^\n'
       for ref in self.citationList:
         text = '* '
         if ref[0]:
           text += ref[0] + ': '
         text += ref[1]
-        print ('')
-        print (text)
-    print ('')
-    print ('--------------')
-    print ('')
-    print ('')
-    print ('')
-    print ('**Author:** ' + self._author)
-    print ('')
-    print ('**Copyright:** ' + self._copyright)
-    print ('')
+        s += '\n'
+        s += text + '\n'
+    s += '\n'
+    s += '--------------\n\n\n\n'
+    s += '**Author:** ' + self._author + '\n\n'
+    s += '**Copyright:** ' + self._copyright + '\n\n'
+    sys.stdout.write(s)
     if self._subparsers:
       sys.stdout.flush()
       for alg in self._subparsers._group_actions[0].choices:
@@ -818,7 +792,7 @@ class Parser(argparse.ArgumentParser):
 
 # A class that can be used to display a progress bar on the terminal,
 #   mimicing the behaviour of MRtrix3 binary commands
-class progressBar: #pylint: disable=unused-variable
+class progressBar(object): #pylint: disable=unused-variable
 
   def _update(self):
     import os, sys

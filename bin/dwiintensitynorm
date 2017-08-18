@@ -10,7 +10,7 @@ if not os.path.isdir(lib_folder):
 sys.path.insert(0, lib_folder)
 
 
-from mrtrix3 import app, file, image, path, run
+from mrtrix3 import app, file, image, path, run #pylint: disable=redefined-builtin
 
 
 def abspath(*arg):
@@ -21,7 +21,7 @@ def relpath(*arg):
 
 
 
-class Input:
+class Input(object):
   def __init__(self, filename, prefix, directory, mask_filename = '', mask_directory = ''):
     self.filename = filename
     self.prefix = prefix

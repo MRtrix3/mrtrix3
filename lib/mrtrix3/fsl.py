@@ -23,29 +23,29 @@ def eddyBinary(cuda): #pylint: disable=unused-variable
       binaries = [ ]
       for directory in os.environ['PATH'].split(os.pathsep):
         if os.path.isdir(directory):
-          for file in os.listdir(directory):
-            if file.startswith('eddy_cuda'):
-              binaries.append(file)
+          for entry in os.listdir(directory):
+            if entry.startswith('eddy_cuda'):
+              binaries.append(entry)
       max_version = 0.0
-      path = ''
-      for file in binaries:
+      exe_path = ''
+      for entry in binaries:
         try:
-          version = float(file.lstrip('eddy_cuda'))
+          version = float(entry.lstrip('eddy_cuda'))
           if version > max_version:
             max_version = version
-            path = file
+            exe_path = entry
         except:
           pass
-      if path:
-        app.debug('CUDA version ' + str(max_version) + ': ' + path)
-        return path
+      if exe_path:
+        app.debug('CUDA version ' + str(max_version) + ': ' + exe_path)
+        return exe_path
       app.warn('CUDA version of eddy not found; running standard version')
   if find_executable('eddy_openmp'):
-    path = 'eddy_openmp'
+    exe_path = 'eddy_openmp'
   else:
-    path = exeName('eddy')
-  app.debug(path)
-  return path
+    exe_path = exeName('eddy')
+  app.debug(exe_path)
+  return exe_path
 
 
 

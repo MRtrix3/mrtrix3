@@ -4,7 +4,7 @@
 #   in Python.
 
 # Class for importing header information from an image file for reading
-class Header:
+class Header(object):
   def __init__(self, image_path):
     import json, os, subprocess
     from mrtrix3 import app, path, run

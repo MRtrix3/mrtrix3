@@ -29,7 +29,7 @@ def needsSingleShell(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import os, shutil
-  from mrtrix3 import app, file, image, path, run
+  from mrtrix3 import app, file, image, path, run #pylint: disable=redefined-builtin
 
   lmax_option = ''
   if app.args.lmax:

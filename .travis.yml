@@ -16,7 +16,7 @@ compiler:
 env:
   - py=python2
   - py=python3
-install: 
+install:
   - export NUMBER_OF_PROCESSORS=4
   - export PATH=`pwd`/bin:${PATH}
   - export PYTHONPATH=`pwd`/lib:${PYTHONPATH}
@@ -25,9 +25,9 @@ install:
   - pip install pylint
   - pip3 install pylint
 script:
-  - ./check_memalign && $py ./configure -assert && PYTHON=$py ./run_pylint && $py ./build -nowarnings && ./run_tests
+  - ./check_memalign && $py ./configure -assert && $py ./build -nowarnings && PYTHON=$py ./run_pylint && ./run_tests
 
-after_failure: 
+after_failure:
   - cat memalign.log
   - cat configure.log
   - cat pylint.log

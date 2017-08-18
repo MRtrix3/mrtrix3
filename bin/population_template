@@ -28,7 +28,7 @@ except NameError:
 
 
 import math
-from mrtrix3 import app, file, image, path, run
+from mrtrix3 import app, file, image, path, run #pylint: disable=redefined-builtin
 
 
 
@@ -39,7 +39,7 @@ def relpath(*arg):
   return os.path.relpath(os.path.join(*arg), app.workingDir)
 
 def allindir(directory):
-  return ' '.join( [ os.path.join(directory, file) for file in os.listdir(directory) ] )
+  return ' '.join( [ os.path.join(directory, filename) for filename in os.listdir(directory) ] )
 
 
 
@@ -49,7 +49,7 @@ except ImportError:
   app.console("numpy not found; using replacement functions")
   def loadtxt(fname, delimiter=" ", dtype=float):
     with open(fname, "r") as f:
-      return [[dtype(x) for x in l.rstrip().split(delimiter)] for l in f.readlines()]
+      return [[dtype(a) for a in l.rstrip().split(delimiter)] for l in f.readlines()]
 
   def savetxt(fname, X, delimiter=" ", fmt="%.14e"):
     try:
@@ -95,12 +95,12 @@ def check_linear_transformation (transformation, cmd, max_scaling = 0.5, max_she
     return True
   data = load_key_value(transformation + 'decomp')
   run.function(remove, transformation + 'decomp')
-  scaling = [float(x) for x in data['scaling']]
-  if any([x < 0 for x in scaling]) or any([x > (1 + max_scaling) for x in scaling]) or any([x < (1 - max_scaling) for x in scaling]):
+  scaling = [float(value) for value in data['scaling']]
+  if any([a < 0 for a in scaling]) or any([a > (1 + max_scaling) for a in scaling]) or any([a < (1 - max_scaling) for a in scaling]):
     app.warn ("large scaling (" + str(scaling) + ") in " + transformation)
     bGood = False
-  shear = [float(x) for x in data['shear']]
-  if any([abs(x) > max_shear for x in shear]):
+  shear = [float(value) for value in data['shear']]
+  if any([abs(a) > max_shear for a in shear]):
     app.warn ("large shear (" + str(shear) + ") in " + transformation)
     bGood = False
   rot_angle = float(data['angle_axis'][0])
@@ -146,7 +146,7 @@ def check_linear_transformation (transformation, cmd, max_scaling = 0.5, max_she
       input("press enter to continue population_template")
   return bGood
 
-class Input:
+class Input(object):
   def __init__(self, filename, prefix, directory, mask_filename = '', mask_directory = ''):
     self.filename = filename
     self.prefix = prefix

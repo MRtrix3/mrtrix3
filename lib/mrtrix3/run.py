@@ -36,9 +36,7 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
 
   # This splits the command string based on the piping character '|', such that each
   #   individual executable (along with its arguments) appears as its own list
-  # Note that for Python2 support, it is necessary to convert groupby() output from
-  #   a generator to a list before it is passed to filter()
-  cmdstack = [ list(g) for k, g in filter(lambda t : t[0], ((k, list(g)) for k, g in itertools.groupby(cmdsplit, lambda s : s != '|') ) ) ]
+  cmdstack = [ list(g) for k, g in itertools.groupby(cmdsplit, lambda s : s != '|') if k ]
 
   for line in cmdstack:
     is_mrtrix_exe = line[0] in _mrtrix_exe_list
