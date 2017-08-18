@@ -416,7 +416,7 @@ if do_topup:
   topup_in_path = 'se_epi.mif'
   # For any non-even axis sizes, crop the first voxel along that dimension
   crop_option = ''
-  for axis, axis_size in enumerate(se_epi_header.size[:3]):
+  for axis, axis_size in enumerate(se_epi_header.size()[:3]):
     if int(axis_size)%2:
       crop_option += ' -axis ' + str(axis) + ' 1 ' + str(int(axis_size)-1)
   if crop_option:

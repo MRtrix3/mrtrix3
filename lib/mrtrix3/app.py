@@ -303,7 +303,7 @@ def debug(text): #pylint: disable=unused-variable
       try:
         origin += ' (from ' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')'
       except: # Prior to Python 3.5
-        origin += ' (from ' + os.path.basename(caller[1]) + ':' + str(caller[3]) + ')'
+        origin += ' (from ' + os.path.basename(caller[1]) + ':' + str(caller[2]) + ')'
       finally:
         del caller
     sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourDebug + '[DEBUG] ' + origin + ': ' + text + colourClear + '\n')

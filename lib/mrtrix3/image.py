@@ -71,11 +71,11 @@ def check3DNonunity(image_in): #pylint: disable=unused-variable
     if not isinstance(image_in, str):
       app.error('Error trying to test \'' + str(image_in) + '\': Not an image header or file path')
     image_in = Header(image_in)
-  if len(image_in.size) < 3:
-    app.error('Image \'' + image_in.name + '\' does not contain 3 spatial dimensions')
-  if min(image_in.size[:3]) == 1:
-    app.error('Image \'' + image_in.name + '\' does not contain 3D spatial information (has axis with size 1)')
-  app.debug('Image \'' + image_in.name + '\' is >= 3D, and does not contain a unity spatial dimension')
+  if len(image_in.size()) < 3:
+    app.error('Image \'' + image_in.name() + '\' does not contain 3 spatial dimensions')
+  if min(image_in.size()[:3]) == 1:
+    app.error('Image \'' + image_in.name() + '\' does not contain 3D spatial information (has axis with size 1)')
+  app.debug('Image \'' + image_in.name() + '\' is >= 3D, and does not contain a unity spatial dimension')
 
 
 
@@ -112,22 +112,22 @@ def match(image_one, image_two): #pylint: disable=unused-variable
     if not isinstance(image_two, str):
       app.error('Error trying to test \'' + str(image_two) + '\': Not an image header or file path')
     image_two = Header(image_two)
-  debug_prefix = '\'' + image_one.name + '\' \'' + image_two.name + '\''
+  debug_prefix = '\'' + image_one.name() + '\' \'' + image_two.name() + '\''
   # Image dimensions
-  if image_one.size != image_two.size:
-    app.debug(debug_prefix + ' dimension mismatch (' + str(image_one.size) + ' ' + str(image_two.size) + ')')
+  if image_one.size() != image_two.size():
+    app.debug(debug_prefix + ' dimension mismatch (' + str(image_one.size()) + ' ' + str(image_two.size()) + ')')
     return False
   # Voxel size
-  for one, two in zip(image_one.spacing, image_two.spacing):
+  for one, two in zip(image_one.spacing(), image_two.spacing()):
     if one and two and not math.isnan(one) and not math.isnan(two):
       if (abs(two-one) / (0.5*(one+two))) > 1e-04:
-        app.debug(debug_prefix + ' voxel size mismatch (' + str(image_one.spacing) + ' ' + str(image_two.spacing) + ')')
+        app.debug(debug_prefix + ' voxel size mismatch (' + str(image_one.spacing()) + ' ' + str(image_two.spacing()) + ')')
         return False
   # Image transform
-  for line_one, line_two in zip(image_one.transform, image_two.transform):
+  for line_one, line_two in zip(image_one.transform(), image_two.transform()):
     for one, two in zip(line_one, line_two):
       if abs(one-two) > 1e-4:
-        app.debug(debug_prefix + ' transform mismatch (' + str(image_one.transform) + ' ' + str(image_two.transform) + ')')
+        app.debug(debug_prefix + ' transform mismatch (' + str(image_one.transform()) + ' ' + str(image_two.transform()) + ')')
         return False
   # Everything matches!
   app.debug(debug_prefix + ' image match')
