@@ -70,17 +70,17 @@ if app.args.mask:
 app.gotoTempDir()
 
 # Make sure it's actually a DWI that's been passed
-dwi_header = image.header('in.mif')
-if len(dwi_header.size) != 4:
+dwi_header = image.Header('in.mif')
+if len(dwi_header.size()) != 4:
   app.error('Input image must be a 4D image')
-if 'dw_scheme' not in dwi_header.keyval:
+if 'dw_scheme' not in dwi_header.keyval():
   app.error('No valid DW gradient scheme provided or present in image header')
-if len(dwi_header.keyval['dw_scheme']) != dwi_header.size[3]:
-  app.error('DW gradient scheme contains different number of entries (' + str(len(dwi_header.keyval['dw_scheme'])) + ' to number of volumes in DWIs (' + dwi_header.size[3] + ')')
+if len(dwi_header.keyval()['dw_scheme']) != dwi_header.size()[3]:
+  app.error('DW gradient scheme contains different number of entries (' + str(len(dwi_header.keyval()['dw_scheme'])) + ' to number of volumes in DWIs (' + dwi_header.size()[3] + ')')
 
 # Generate a brain mask if required, or check the mask if provided
 if app.args.mask:
-  if image.header('mask.mif').size[:3] != dwi_header.size[:3]:
+  if image.Header('mask.mif').size()[:3] != dwi_header.size()[:3]:
     app.error('Provided mask image does not match input DWI')
 else:
   run.command('dwi2mask in.mif mask.mif')

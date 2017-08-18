@@ -307,7 +307,7 @@ if app.args.linear_transformations_dir:
 
 # automatically detect SH series
 do_fod_registration = False
-image_size = image.header(relpath(inputs[0].directory, inputs[0].filename)).size
+image_size = image.Header(relpath(inputs[0].directory, inputs[0].filename)).size()
 if len(image_size) < 3 or len(image_size) > 4:
   app.error('only 3 and 4 dimensional images can be used to build a template')
 if len(image_size) == 4:

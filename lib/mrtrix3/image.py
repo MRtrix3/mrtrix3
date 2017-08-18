@@ -3,78 +3,79 @@
 #   data, rather than trying to duplicate support for all possible image formats natively
 #   in Python.
 
+# Class for importing header information from an image file for reading
+class Header:
+  def __init__(self, image_path):
+    import json, os, subprocess
+    from mrtrix3 import app, path, run
+    filename = path.newTemporary('json')
+    command = [ run.exeName(run.versionMatch('mrinfo')), image_path, '-json_all', filename ]
+    if app.verbosity > 1:
+      app.console('Loading header for image file \'' + image_path + '\'')
+    app.debug(str(command))
+    result = subprocess.call(command, stdout=None, stderr=None)
+    if result:
+      app.error('Could not access header information for image \'' + image_path + '\'')
+    with open(filename, 'r') as f:
+      data = json.load(f)
+    os.remove(filename)
+    try:
+      #self.__dict__.update(data)
+      # Load the individual header elements manually, for a couple of reasons:
+      # - So that pylint knows that they'll be there
+      # - Write to private members, and give read-only access
+      self._name = data['name']
+      self._size = data['size']
+      self._spacing = data['spacing']
+      self._stride = data['stride']
+      self._format = data['format']
+      self._datatype = data['datatype']
+      self._intensity_offset = data['intensity_offset']
+      self._intensity_scale = data['intensity_scale']
+      self._transform = data['transform']
+      if not 'keyval' in data or not data['keyval']:
+        self._keyval = { }
+      else:
+        self._keyval = data['keyval']
+    except:
+      app.error('Error in reading header information from file \'' + image_path + '\'')
+    app.debug(str(vars(self)))
+
+  def name(self):
+    return self._name
+  def size(self):
+    return self._size
+  def spacing(self):
+    return self._spacing
+  def stride(self):
+    return self._stride
+  def format(self):
+    return self._format
+  def datatype(self):
+    return self.datatype
+  def intensity_offset(self):
+    return self._intensity_offset
+  def intensity_scale(self):
+    return self._intensity_scale
+  def keyval(self):
+    return self._keyval
+
+
+
+# Determine whether or not an image contains at least three axes, the first three of which
+#   have dimension greater than one: This means that the data can plausibly represent
+#   spatial information, and 3D interpolation can be performed
 def check3DNonunity(image_in): #pylint: disable=unused-variable
   from mrtrix3 import app
-  if not isHeader(image_in):
+  if not isinstance(image_in, Header):
     if not isinstance(image_in, str):
       app.error('Error trying to test \'' + str(image_in) + '\': Not an image header or file path')
-    image_in = header(image_in)
+    image_in = Header(image_in)
   if len(image_in.size) < 3:
     app.error('Image \'' + image_in.name + '\' does not contain 3 spatial dimensions')
   if min(image_in.size[:3]) == 1:
     app.error('Image \'' + image_in.name + '\' does not contain 3D spatial information (has axis with size 1)')
   app.debug('Image \'' + image_in.name + '\' is >= 3D, and does not contain a unity spatial dimension')
-
-
-
-# Function to grab all contents of an image header
-# Uses mrinfo's new -json_all option in order to grab all header information
-#   from any image format supported by MRtrix3's C++ libraries
-def header(image_path):
-  import json, os, subprocess
-  from mrtrix3 import app, path, run
-  filename = path.newTemporary('json')
-  command = [ run.exeName(run.versionMatch('mrinfo')), image_path, '-json_all', filename ]
-  if app.verbosity > 1:
-    app.console('Loading header for image file \'' + image_path + '\'')
-  app.debug(str(command))
-  result = subprocess.call(command, stdout=None, stderr=None)
-  if result:
-    app.error('Could not access header information for image \'' + image_path + '\'')
-  with open(filename, 'r') as f:
-    elements = json.load(f)
-
-  class _Header:
-    def __init__(self, data):
-      #self.__dict__.update(data)
-      # Load the individual header elements manually, so that pylint knows that they'll be there
-      self.name = data['name']
-      self.size = data['size']
-      self.spacing = data['spacing']
-      self.stride = data['stride']
-      self.format = data['format']
-      self.datatype = data['datatype']
-      self.intensity_offset = data['intensity_offset']
-      self.intensity_scale = data['intensity_scale']
-      self.transform = data['transform']
-      if not 'keyval' in data or not data['keyval']:
-        self.keyval = { }
-      else:
-        self.keyval = data['keyval']
-
-  try:
-    result = _Header(elements)
-  except:
-    app.error('Error in reading header information from file \'' + image_path + '\'')
-  os.remove(filename)
-  app.debug(str(vars(result)))
-  return result
-
-
-
-# Function to test whether or not a Python object contains those flags expected
-#   within an image header
-def isHeader(obj):
-  from mrtrix3 import app
-  try:
-    #pylint: disable=pointless-statement,too-many-boolean-expressions
-    obj.name and obj.size and obj.spacing and obj.stride and obj.format and obj.datatype \
-             and obj.intensity_offset and obj.intensity_scale and obj.transform and obj.keyval
-    app.debug('\'' + str(obj) + '\' IS a header object')
-    return True
-  except:
-    app.debug('\'' + str(obj) + '\' is NOT a header object')
-    return False
 
 
 
@@ -103,14 +104,14 @@ def mrinfo(image_path, field): #pylint: disable=unused-variable
 def match(image_one, image_two): #pylint: disable=unused-variable
   import math
   from mrtrix3 import app
-  if not isHeader(image_one):
+  if not isinstance(image_one, Header):
     if not isinstance(image_one, str):
       app.error('Error trying to test \'' + str(image_one) + '\': Not an image header or file path')
-    image_one = header(image_one)
-  if not isHeader(image_two):
+    image_one = Header(image_one)
+  if not isinstance(image_two, Header):
     if not isinstance(image_two, str):
       app.error('Error trying to test \'' + str(image_two) + '\': Not an image header or file path')
-    image_two = header(image_two)
+    image_two = Header(image_two)
   debug_prefix = '\'' + image_one.name + '\' \'' + image_two.name + '\''
   # Image dimensions
   if image_one.size != image_two.size:

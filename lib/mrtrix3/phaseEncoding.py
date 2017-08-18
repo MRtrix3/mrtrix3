@@ -51,10 +51,10 @@ def direction(string): #pylint: disable=unused-variable
 #   or from a path to the image
 def getScheme(arg): #pylint: disable=unused-variable
   from mrtrix3 import app, image
-  if not image.isHeader(arg):
+  if not isinstance(arg, image.Header):
     if not isinstance(arg, str):
       app.error('Error trying to derive phase-encoding scheme from \'' + str(arg) + '\': Not an image header or file path')
-    arg = image.header(arg)
+    arg = image.Header(arg)
   if 'pe_scheme' in arg.keyval:
     app.debug(arg.keyval['pe_scheme'])
     return arg.keyval['pe_scheme']

@@ -283,24 +283,32 @@ def debug(text): #pylint: disable=unused-variable
   global verbosity
   if verbosity <= 2:
     return
-  if len(inspect.stack()) == 2: # debug() called directly from script being executed
-    caller = inspect.getframeinfo(inspect.stack()[1][0])
-    origin = '(' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')'
-  else: # Some function has called debug(): Get location of both that function, and where that function was invoked
-    stack = inspect.stack()[1]
-    try:
-      filename = stack.filename
-      fname = stack.function
-    except: # Prior to Version 3.5
-      filename = stack[1]
-      fname = stack[3]
-    funcname = fname + '()'
-    modulename = inspect.getmodulename(filename)
-    if modulename:
-      funcname = modulename + '.' + funcname
-    caller = inspect.getframeinfo(inspect.stack()[2][0])
-    origin = funcname + ' (from ' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')'
-  sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourDebug + '[DEBUG] ' + origin + ': ' + text + colourClear + '\n')
+  outer_frames = inspect.getouterframes(inspect.currentframe())
+  nearest = outer_frames[1]
+  try:
+    if len(outer_frames) == 2: # debug() called directly from script being executed
+      origin = '(' + os.path.basename(nearest.filename) + ':' + str(nearest.lineno) + ')'
+    else: # Some function has called debug(): Get location of both that function, and where that function was invoked
+      try:
+        filename = nearest.filename
+        funcname = nearest.function + '()'
+      except: # Prior to Python 3.5
+        filename = nearest[1]
+        funcname = nearest[3] + '()'
+      modulename = inspect.getmodulename(filename)
+      if modulename:
+        funcname = modulename + '.' + funcname
+      origin = funcname
+      caller = outer_frames[2]
+      try:
+        origin += ' (from ' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')'
+      except: # Prior to Python 3.5
+        origin += ' (from ' + os.path.basename(caller[1]) + ':' + str(caller[3]) + ')'
+      finally:
+        del caller
+    sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourDebug + '[DEBUG] ' + origin + ': ' + text + colourClear + '\n')
+  finally:
+    del nearest
 
 def error(text): #pylint: disable=unused-variable
   import os, sys
@@ -310,6 +318,29 @@ def error(text): #pylint: disable=unused-variable
   cleanup = False
   complete()
   sys.exit(1)
+
+def var(*variables): #pylint: disable=unused-variable
+  import inspect, os, sys
+  global colourClear, colourDebug
+  global verbosity
+  if verbosity <= 2:
+    return
+  calling_frame = inspect.getouterframes(inspect.currentframe())[1]
+  try:
+    try:
+      calling_code = calling_frame.code_context[0]
+      filename = calling_frame.filename
+      lineno = calling_frame.lineno
+    except: # Prior to Python 3.5
+      calling_code = calling_frame[4][0]
+      filename = calling_frame[1]
+      lineno = calling_frame[2]
+    var_string = calling_code[calling_code.find('var(')+4:].rstrip('\n').rstrip(' ')[:-1].replace(',', ' ')
+    var_names, var_values = var_string.split(), variables
+    for name, value in zip(var_names, var_values):
+      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourDebug + '[DEBUG] (from ' + os.path.basename(filename) + ':' + str(lineno) + ') \'' + name + '\' = ' + str(value) + colourClear + '\n')
+  finally:
+    del calling_frame
 
 def warn(text): #pylint: disable=unused-variable
   import os, sys
