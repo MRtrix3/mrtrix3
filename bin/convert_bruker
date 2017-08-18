@@ -62,15 +62,13 @@ with open (sys.argv[2], 'w') as f:
     f.write (',' + str(mat_size[2]))
   else:
     try:
-      #pylint: disable=pointless-statement
-      nslices
+      nslices #pylint: disable=pointless-statement
       f.write (',' + str(nslices))
     except:
       pass
 
   try:
-    #pylint: disable=pointless-statement
-    nacq
+    nacq #pylint: disable=pointless-statement
     f.write (',' + str(nacq))
   except:
     pass
@@ -80,14 +78,12 @@ with open (sys.argv[2], 'w') as f:
     f.write (',' + str(res[2]))
   else:
     try:
-      #pylint: disable=pointless-statement
-      slicethick
+      slicethick #pylint: disable=pointless-statement
       f.write (',' + str(slicethick))
     except:
       pass
   try:
-    #pylint: disable=pointless-statement
-    nacq
+    nacq #pylint: disable=pointless-statement
     f.write (',')
   except:
     pass
@@ -105,14 +101,12 @@ with open (sys.argv[2], 'w') as f:
 
   f.write ('\nlayout: +0,+1')
   try:
-    #pylint: disable=pointless-statement
-    nslices
+    nslices #pylint: disable=pointless-statement
     f.write (',+2')
   except:
     pass
   try:
-    #pylint: disable=pointless-statement
-    nacq
+    nacq #pylint: disable=pointless-statement
     f.write (',+3')
   except:
     pass
@@ -122,7 +116,6 @@ with open (sys.argv[2], 'w') as f:
   try:
     #pylint: disable=pointless-statement
     bvec
-    #pylint: disable=pointless-statement
     bval
     for n in range (0, len (bval)):
       f.write ('dw_scheme: ' + bvec[3*n] + ',' + bvec[3*n+1] + ',' + str(-float(bvec[3*n+2])) + ',' + bval[n] + '\n')
