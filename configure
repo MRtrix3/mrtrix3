@@ -774,8 +774,28 @@ ld_lib_flags += zlib_ldflags
 
 report ('Checking for TIFF library: ')
 
-if 'TIFF_CFLAGS' in os.environ.keys(): tiff_cflags = shlex.split (os.environ['TIFF_CFLAGS'])
-if 'TIFF_LDFLAGS' in os.environ.keys(): tiff_ldflags = shlex.split (os.environ['TIFF_LDFLAGS'])
+if 'TIFF_CFLAGS' in os.environ.keys(): 
+  tiff_cflags = shlex.split (os.environ['TIFF_CFLAGS'])
+else:
+  try:
+    tiff_cflags = []
+    for entry in shlex.split (execute ([ 'pkg-config', '--cflags', 'libtiff-4' ], RuntimeError)[1]):
+      if entry.startswith ('-I'):
+        tiff_cflags += [ '-isystem', entry[2:] ]
+      else:
+        tiff_cflags += [ entry ]
+  except:
+    log('error running on pkg-config --cflags libtiff-4\n\n')
+if 'TIFF_LDFLAGS' in os.environ.keys(): \
+  tiff_ldflags = shlex.split (os.environ['TIFF_LDFLAGS'])
+else:
+  try:
+    tiff_ldflags = []
+    for entry in shlex.split (execute ([ 'pkg-config', '--libs', 'libtiff-4' ], RuntimeError)[1]):
+      tiff_ldflags += [ entry ]
+  except:
+    log('error running on pkg-config --libs libtiff-4\n\n')
+
 
 try:
   tiff_version = compile ('''
