@@ -35,7 +35,7 @@ These applications have been written from scratch in C++, using the functionalit
 .. toctree::
    :maxdepth: 1
    :caption: Getting started
-   
+
    getting_started/key_features
    getting_started/commands_and_scripts
    getting_started/beginner_dwi_tutorial
@@ -48,8 +48,8 @@ These applications have been written from scratch in C++, using the functionalit
    :caption: DWI Pre-processing
 
    dwi_preprocessing/denoising
-   dwi_preprocessing/dwipreproc   
-   
+   dwi_preprocessing/dwipreproc
+
 .. toctree::
    :maxdepth: 1
    :caption: Constrained Spherical Deconvolution
@@ -69,7 +69,7 @@ These applications have been written from scratch in C++, using the functionalit
    quantitative_structural_connectivity/labelconvert_tutorial
    quantitative_structural_connectivity/global_tractography
    quantitative_structural_connectivity/ismrm_hcp_tutorial
-   
+
 .. toctree::
    :maxdepth: 1
    :caption: Fixel-Based Analysis
@@ -79,7 +79,7 @@ These applications have been written from scratch in C++, using the functionalit
    fixel_based_analysis/computing_effect_size_wrt_controls
    fixel_based_analysis/displaying_results_with_streamlines
 ..   fixel_based_analysis/fba_of_other_measures
-   
+
 .. toctree::
    :maxdepth: 1
    :caption: Spatial Normalisation
@@ -91,11 +91,11 @@ These applications have been written from scratch in C++, using the functionalit
 .. toctree::
    :maxdepth: 1
    :caption: Concepts
-  
+
    concepts/dw_scheme
    concepts/global_intensity_normalisation
    concepts/orthonormal_basis
-   concepts/dixels_fixels
+   concepts/fixels_dixels
    concepts/afd_connectivity
 
 .. toctree::
@@ -118,7 +118,7 @@ These applications have been written from scratch in C++, using the functionalit
 .. toctree::
    :maxdepth: 1
    :caption: Reference
-   
+
    reference/commands_list
    reference/scripts_list
    reference/config_file_options
