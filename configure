@@ -498,7 +498,13 @@ def get_flags (default=None, env=None, pkg_config_flags=None):
       return shlex.split (os.environ[env])
   if pkg_config_flags:
     try:
-      return shlex.split (execute ([ 'pkg-config' ] + pkg_config_flags.split(), RuntimeError)[1])
+      flags = []
+      for entry in shlex.split (execute ([ 'pkg-config' ] + pkg_config_flags.split(), RuntimeError)[1]):
+        if entry.startswith ('-I'):
+          flags += [ '-isystem', entry[2:] ]
+        else:
+          flags += [ entry ]
+      return flags
     except:
       log('error running "pkg-config ' + pkg_config_flags + '"\n\n')
   return default
