@@ -147,3 +147,60 @@ A few pointers for anybody who encounters this issue:
    store non-linear warp fields across many subjects. This may explain why
    one script crashed when other scripts have completed successfully.
 
+
+``mrview`` unable to open images: "Too many open files"
+-------------------------------------------------------
+
+It is possible to encounter this error message particularly if trying to
+open a large number of DICOM images. In most cases, each slice in a
+DICOM series is stored in an individual file; all of these files must remain
+open while the image is loaded. In addition, the maximum number of files
+open at any time (imposed by the kernel, *not* *MRtrix3*) may be relatively
+small (e.g. 256), such that very few subjects can be opened at once.
+
+There are two ways to solve this issue:
+
+-  *Reduce the number of files opened concurrently*: By converting each series
+   of interest to an alternative format (e.g. (:ref:` ``.mif`` <_mrtrix_image_formats>`))
+   before opening them in ``mrview``, the total number of files open at once
+   will be drastically reduced.
+
+-  *Increase the limit on number of files opened*: If directly opening DICOM
+   images without first converting them is more convenient, then it is
+   possible to instead increase the kernel's upper limit on the number of
+   files that can remain open at once. The specific details on how this is
+   done may vary between different OS's / distributions, but here are a couple
+   of suggestions to try:
+
+   -  The current limit should be reported by:
+
+      ::
+
+         ulimit -n
+
+   -  Try running the following (potentially with the use of ``sudo``):
+
+      ::
+
+         sysctl -w fs.file-max=100000
+
+      If this solves the issue, the change can be made permanent by editing
+      file ``/etc/sysctl.conf``, adding the following line (replacing
+      ``<number>`` with your desired upper limit):
+
+      ::
+
+         fs.file-max = <number>
+
+      On MacOSX, you may instead need to look at the ``kern.maxfiles`` and
+      ``kern.maxfilesperproc`` parameters.
+
+   -  Set the new upper limit using ``ulimit`` (you can try using a number
+      instead of "unlimited" if you choose to):
+
+      ::
+
+         ulimit -n unlimited
+
+      If this works, you will need to add that line to a file such as
+      ``~/.bashrc`` in order for the change to be applied permanently.
