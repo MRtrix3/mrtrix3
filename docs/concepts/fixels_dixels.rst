@@ -12,18 +12,19 @@ that we all know what everyone else is talking about! Anyone using
 throughout the library code, so will need to know what they represent.
 
 All *MRtrix3* users should be familiar with the terms 'pixel' and 'voxel';
-these correspond to 'picture element' and 'volume element' respectively.
-However in Diffusion MRI we also deal with orientation information
-within each image volume element, so we wanted terminology to allow us
-to convey the types of discrete elements that we deal with on a daily
-basis.
+these are abbreviations of "picture element" and "volume element",
+corresponding to the smallest element within a 2D picture and 3D volume
+respectively. However in Diffusion MRI we also deal with *orientation*
+information within each image volume element; so we wanted terminology
+to allow us to convey the types of discrete elements that we deal with
+on a daily basis.
 
 We have settled on the following two terms. The first of these, 'fixel',
-will appear frequently in this documentation and in online discussions,
-and will therefore satisfy the requirements of the majority of users.
-The second, 'dixel', is typically reserved for internal technical
-discussion; however due to its occasional usage (and its conflict with
-prior presentations that used a different meaning for this term), we are
+will appear frequently throughout the *MRtrix3* documentation and in
+online discussions, and will therefore satisfy the requirements of the
+majority of users. The second, 'dixel', is typically reserved for internal
+technical discussion; however due to its occasional usage (and its conflict
+with prior presentations that used a different meaning for this term), we are
 additionally providing its full definition here for interested readers.
 
 'Fixel': *Fibre bundle element*
@@ -31,7 +32,7 @@ additionally providing its full definition here for interested readers.
 
 The term *fixel* refers to a *specific fibre bundle* within a *specific
 voxel*. Alternatively, consistently with the definitions of 'pixel' and
-'voxel', it can be thought of as a 'fibre bundle element': the smallest
+'voxel', it can be thought of as a "fibre bundle element": the smallest
 discrete component of a fibre bundle. Each fixel is parameterized by
 the voxel in which it resides, the estimated mean orientation of the
 underlying fibres attributed to that bundle, a fibre density (or partial
@@ -53,7 +54,7 @@ Historically, in MRtrix we are accustomed to dealing with FODs that are
 of fibre directions in each voxel. However, if the FOD is *segmented* in
 any way (either through peak-finding as shown in `this paper <http://onlinelibrary.wiley.com/doi/10.1002/hbm.22099/abstract>`_
 and implemented in the ``sh2peaks`` command, the segmentation algorithm
-described in the appendices of the `SIFT NeuroImage paper <www.sciencedirect.com/science/article/pii/S1053811912011615>`_
+described in the appendices of the `SIFT NeuroImage paper <http://www.sciencedirect.com/science/article/pii/S1053811912011615>`_
 and provided in the ``fod2fixel`` command, or more advanced methods), each
 discrete feature of a particular FOD can be labelled a 'fixel', as each
 represents a set of fibres within that voxel that form a coherent bundle
@@ -139,12 +140,12 @@ Some observations / contexts in which the term 'dixel' may be useful:
    thought of as converting the FOD from a continuous SH representation,
    to a dixel representation, then finally to a fixel representation.
 
-:: NOTE:
+.. NOTE::
 
    During the development of many of the aforementioned methods,
    `a presentation <http://dev.ismrm.org/2013/0841.html>`_ was made at
    ISMRM demonstrating "Tractographic threshold-free cluster enhancement"
-   (this is now referred to as "Connectivity-based Fixel Enhancement (CFE)".
+   (this is now referred to as "Connectivity-based Fixel Enhancement (CFE)").
    During the presentation itself, the term 'dixel' was used to refer to a
    specific direction within a specific voxel; but a direction that
    corresponds to a particular fible bundle in that voxel. You may observe
@@ -152,4 +153,5 @@ Some observations / contexts in which the term 'dixel' may be useful:
    here as a 'fixel', rather than a 'dixel'; this is because at the time
    when this presentation was made, these two terms had not yet been
    disambiguated. The definitions made within this documentation page are
-   what will be used from now on by the *MRtrix3* developers.
+   what will be used from now on by the *MRtrix3* developers; and we hope
+   by the wider community as well.
