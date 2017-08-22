@@ -100,6 +100,18 @@ Install Dependencies
            Make sure *not* to include the final ``/Eigen`` folder in the path
            name - use the folder in which it resides instead!
 
+4. Install TIFF and FFTW library.
+
+   - With `Homebrew <http://brew.sh/>`__:
+
+       - Install TIFF: ``brew install libtiff``
+       - Install FFTW: ``brew install fftw``
+      
+   - With `MacPorts <http://macports.org/>`__:
+
+       - Install TIFF: ``port install tiff``
+       - Install FFTW: ``port install fftw-3``
+
 Git setup
 ---------
 
