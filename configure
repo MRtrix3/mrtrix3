@@ -104,7 +104,7 @@ ENVIRONMENT VARIABLES
         Any flags required to compile with Eigen3. This may include in
         particular the path to the include files, if not in a standard location
         For example:
-            $ EIGEN_CFLAGS="-isystem /usr/local/include/eigen3" ./configure
+            $ EIGEN_CFLAGS="-I/usr/local/include/eigen3" ./configure
 
     ZLIB_CFLAGS
         Any flags required to compile with the zlib compression library.
@@ -250,17 +250,6 @@ if static:
 
 ld_lib_args = 'OBJECTS LDLIB_FLAGS -o LIB'.split()
 ld_lib_flags = [ ]
-
-eigen_cflags = []
-
-zlib_cflags = []
-zlib_ldflags = [ '-lz' ]
-
-tiff_cflags = []
-tiff_ldflags = [ '-ltiff' ]
-
-fftw_cflags = []
-fftw_ldflags = [ '-lfftw3' ]
 
 
 class TempFile:
@@ -496,6 +485,16 @@ def compare_version (needed, observed):
 
 
 
+def get_flags (default=None, env=None, pkg_config_flags=None):
+  if env: 
+    if env in os.environ.keys():
+      return shlex.split (os.environ[env])
+  if pkg_config_flags:
+    try:
+      return shlex.split (execute ([ 'pkg-config' ] + pkg_config_flags.split(), RuntimeError)[1])
+    except:
+      log('error running "pkg-config ' + pkg_config_flags + '"\n\n')
+  return default
 
 
 
@@ -735,8 +734,8 @@ except:
 
 report ('Checking for zlib compression library: ')
 
-if 'ZLIB_CFLAGS' in os.environ.keys(): zlib_cflags = shlex.split (os.environ['ZLIB_CFLAGS'])
-if 'ZLIB_LDFLAGS' in os.environ.keys(): zlib_ldflags = shlex.split (os.environ['ZLIB_LDFLAGS'])
+zlib_cflags = get_flags ([], 'ZLIB_CFLAGS', '--cflags zlib')
+zlib_ldflags = get_flags ([ '-lz' ], 'ZLIB_LDFLAGS', '--libs zlib')
 
 try:
   zlib_version = compile ('''
@@ -752,7 +751,7 @@ int main() {
 except CompileError:
   error ('''error compiling zlib application!
 
-  MRtrix3 was unable to compile a test program involving zlib.''' + compiler_flags_hint ('zlib', 'ZLIB_CFLAGS', '"-isystem /usr/local/include"'))
+  MRtrix3 was unable to compile a test program involving zlib.''' + compiler_flags_hint ('zlib', 'ZLIB_CFLAGS', '"-I/usr/local/include"'))
 except LinkError:
   error ('''linker error!
 
@@ -774,27 +773,8 @@ ld_lib_flags += zlib_ldflags
 
 report ('Checking for TIFF library: ')
 
-if 'TIFF_CFLAGS' in os.environ.keys(): 
-  tiff_cflags = shlex.split (os.environ['TIFF_CFLAGS'])
-else:
-  try:
-    tiff_cflags = []
-    for entry in shlex.split (execute ([ 'pkg-config', '--cflags', 'libtiff-4' ], RuntimeError)[1]):
-      if entry.startswith ('-I'):
-        tiff_cflags += [ '-isystem', entry[2:] ]
-      else:
-        tiff_cflags += [ entry ]
-  except:
-    log('error running on pkg-config --cflags libtiff-4\n\n')
-if 'TIFF_LDFLAGS' in os.environ.keys(): \
-  tiff_ldflags = shlex.split (os.environ['TIFF_LDFLAGS'])
-else:
-  try:
-    tiff_ldflags = []
-    for entry in shlex.split (execute ([ 'pkg-config', '--libs', 'libtiff-4' ], RuntimeError)[1]):
-      tiff_ldflags += [ entry ]
-  except:
-    log('error running on pkg-config --libs libtiff-4\n\n')
+tiff_cflags = get_flags ([], 'TIFF_CFLAGS', '--cflags libtiff-4')
+tiff_ldflags = get_flags ([ '-ltiff' ], 'TIFF_LDFLAGS', '--libs libtiff-4')
 
 
 try:
@@ -819,18 +799,8 @@ except:
 # Eigen3 flags:
 
 report('Checking for Eigen 3 library: ')
-if 'EIGEN_CFLAGS' in os.environ.keys():
-  eigen_cflags = shlex.split (os.environ['EIGEN_CFLAGS'])
-else:
-  try:
-    eigen_cflags = []
-    for entry in shlex.split (execute ([ 'pkg-config', '--cflags', 'eigen3' ], RuntimeError)[1]):
-      if entry.startswith ('-I'):
-        eigen_cflags += [ '-isystem', entry[2:] ]
-      else:
-        eigen_cflags += [ entry ]
-  except:
-    log('error running on pkg-config --cflags eigen3\n\n')
+
+eigen_cflags = get_flags ([], 'EIGEN_CFLAGS', '--cflags eigen3')
 
 try:
   eigen_version = compile ('''
@@ -848,7 +818,7 @@ int main (int argc, char* argv[]) {
 except CompileError:
   error (''' error compiling Eigen application!
 
-  MRtrix3 was unable to compile a test program involving Eigen3.''' + compiler_flags_hint ('Eigen3', 'EIGEN_CFLAGS', '"-isystem /usr/include/eigen3"'))
+  MRtrix3 was unable to compile a test program involving Eigen3.''' + compiler_flags_hint ('Eigen3', 'EIGEN_CFLAGS', '"-I/usr/include/eigen3"'))
 except ( LinkError, RuntimeError ) as e:
   error (''' error linking Eigen application!
 
@@ -866,27 +836,8 @@ if not openmp:
 
 report ('Checking for FFTW library: ')
 
-if 'FFTW_CFLAGS' in os.environ.keys():
-  fftw_cflags = shlex.split (os.environ['FFTW_CFLAGS'])
-else:
-  try:
-    fftw_cflags = []
-    for entry in shlex.split (execute ([ 'pkg-config', '--cflags', 'fftw3' ], RuntimeError)[1]):
-      if entry.startswith ('-I'):
-        fftw_cflags += [ '-isystem', entry[2:] ]
-      else:
-        fftw_cflags += [ entry ]
-  except:
-    log('error running on pkg-config --cflags fftw3\n\n')
-if 'FFTW_LDFLAGS' in os.environ.keys():
-  fftw_ldflags = shlex.split (os.environ['FFTW_LDFLAGS'])
-else:
-  try:
-    fftw_ldflags = []
-    for entry in shlex.split (execute ([ 'pkg-config', '--libs', 'fftw3' ], RuntimeError)[1]):
-      fftw_ldflags += [ entry ]
-  except:
-    log('error running on pkg-config --libs fftw3\n\n')
+fftw_cflags = get_flags ([], 'FFTW_CFLAGS', '--cflags fftw3')
+fftw_ldflags = get_flags ([ '-lfftw3' ], 'FFTW_LDFLAGS', '--libs fftw3')
 
 try:
   fftw_version = compile ('''
@@ -1240,24 +1191,8 @@ int main() { Foo f; }
 if R_module:
 
   report ('Checking for R library: ')
-  R_cflags = [ '-isystem', '/usr/include/R' ]
-  if 'R_CFLAGS' in os.environ.keys():
-    R_cflags = shlex.split (os.environ['R_CFLAGS'])
-  else:
-    try:
-      R_cflags = shlex.split (execute ([ 'pkg-config', '--cflags', 'libR' ], RuntimeError)[1])
-    except:
-      log ('error running pkg-config --libs libR - assuming defaults for R_CFLAGS\n\n')
-
-  R_ldflags = [ '-L/usr/lib/R/lib', '-lR' ]
-  if 'R_LDFLAGS' in os.environ.keys():
-    R_ldflags = shlex.split (os.environ['R_LDFLAGS'])
-  else:
-    try:
-      R_ldflags = shlex.split (execute ([ 'pkg-config', '--libs', 'libR' ], RuntimeError)[1])
-    except:
-      log ('error running pkg-config --libs libR - assuming defaults for R_LDFLAGS\n\n')
-
+  R_cflags = get_flags (default=[ '-I/usr/include/R' ], env='R_CFLAGS', pkg_config_flags='--cflags libR')
+  R_ldflags = get_flags (default=[ '-L/usr/lib/R/lib', '-lR' ], env='R_LDFLAGS', pkg_config_flags='--libs libR')
 
   try:
     R_version = compile ('''
