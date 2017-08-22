@@ -620,6 +620,43 @@ else:
 
 
 
+# shared library generation:
+if not noshared:
+  report ('Checking shared library generation: ')
+
+  with TempFile ('.cpp') as F:
+    F.fid.write ('int bogus() { return (1); }')
+    F.fid.flush()
+    F.fid.close()
+    with DeleteAfter (F.name[:-4] + '.o') as obj:
+      cmd = fillin (cpp, {
+        'CFLAGS': cpp_flags,
+        'SRC': F.name,
+        'OBJECT': obj.name })
+      try: execute (cmd, CompileError)
+      except CompileError:
+        error ('compiler not found!' + configure_log_hint)
+      except:
+        error ('unexpected exception!' + configure_log_hint)
+      with DeleteAfter (lib_prefix + 'test' + lib_suffix) as lib:
+        cmd = fillin (ld_lib, {
+          'LDLIB_FLAGS': ld_lib_flags,
+          'OBJECTS': obj.name,
+          'LIB': lib.name })
+        try: execute (cmd, LinkError)
+        except LinkError:
+          error ('''linker not found!
+
+  MRtrix3 was unable to employ the linker program for shared library generation.''' + compiler_hint ('shared library linker', 'LDLIB_FLAGS', '"-L/usr/local/lib"', 'LDLIB_ARGS', '"-shared LDLIB_FLAGS OBJECTS -o LIB"'))
+        except:
+          error ('unexpected exception!' + configure_log_hint)
+
+        report ('yes\n')
+
+
+
+
+
 
 report ('Checking for ::max_align_t: ')
 try:
@@ -636,6 +673,9 @@ except (CompileError, LinkError, RuntimeError):
   cpp_flags += [ '-DMRTRIX_MAX_ALIGN_T_NOT_DEFINED' ]
 except:
   error ('unexpected exception!' + configure_log_hint)
+
+
+
 
 report ('Checking for std::max_align_t: ')
 try:
@@ -706,6 +746,8 @@ except:
 
 
 
+
+
 report ('Checking for non-POD variable-length array support: ')
 try:
   compile ('''
@@ -726,6 +768,47 @@ int main(int argc, char* argv[]) {
 except:
   report ('no\n')
   cpp_flags += [ '-DMRTRIX_NO_NON_POD_VLA' ]
+
+
+
+
+
+
+# Eigen3 flags:
+
+report('Checking for Eigen 3 library: ')
+
+eigen_cflags = get_flags ([], 'EIGEN_CFLAGS', '--cflags eigen3')
+
+try:
+  eigen_version = compile ('''
+#include <cstddef>
+#include <Eigen/Core>
+#include <iostream>
+
+int main (int argc, char* argv[]) {
+  std::cout << EIGEN_WORLD_VERSION << "." << EIGEN_MAJOR_VERSION << "." << EIGEN_MINOR_VERSION << "\\n";
+  return 0;
+}
+''', cpp_flags + eigen_cflags, ld_flags)
+
+  report (eigen_version + '\n')
+except CompileError:
+  error (''' error compiling Eigen application!
+
+  MRtrix3 was unable to compile a test program involving Eigen3.''' + compiler_flags_hint ('Eigen3', 'EIGEN_CFLAGS', '"-I/usr/include/eigen3"'))
+except ( LinkError, RuntimeError ) as e:
+  error (''' error linking Eigen application!
+
+  This shouldn't happen!''' + configure_log_hint)
+except:
+  error ('unexpected exception!' + configure_log_hint)
+
+if not openmp:
+  eigen_cflags += [ '-DEIGEN_DONT_PARALLELIZE' ]
+
+
+
 
 
 
@@ -769,6 +852,40 @@ ld_lib_flags += zlib_ldflags
 
 
 
+
+
+
+# Test that JSON for Modern C++ will compile, since it enforces its own requirements
+
+report('Checking JSON for Modern C++ requirements: ')
+try:
+  compile ('''
+#include "''' + os.path.join('file', 'json.h') + '''"
+
+int main (int argc, char* argv[])
+{
+  nlohmann::json json;
+  json["key"] = "value";
+}
+
+''', cpp_flags + [ '-I'+os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), 'core')) ], ld_flags)
+
+
+  report ('OK\n')
+except ( CompileError, LinkError ):
+  error (''' error compiling JSON test application!
+
+  MRtrix3 was unable to compile a test program involving JSON for Modern C++. Your compiler may not be sufficiently up-to-date.''' + configure_log_hint)
+except:
+  error ('unexpected exception!' + configure_log_hint)
+
+
+
+
+
+
+
+
 # TIFF:
 
 report ('Checking for TIFF library: ')
@@ -793,41 +910,6 @@ int main() {
   ld_lib_flags += tiff_ldflags
 except:
   report ('not found - TIFF support disabled\n');
-
-
-
-# Eigen3 flags:
-
-report('Checking for Eigen 3 library: ')
-
-eigen_cflags = get_flags ([], 'EIGEN_CFLAGS', '--cflags eigen3')
-
-try:
-  eigen_version = compile ('''
-#include <cstddef>
-#include <Eigen/Core>
-#include <iostream>
-
-int main (int argc, char* argv[]) {
-  std::cout << EIGEN_WORLD_VERSION << "." << EIGEN_MAJOR_VERSION << "." << EIGEN_MINOR_VERSION << "\\n";
-  return 0;
-}
-''', cpp_flags + eigen_cflags, ld_flags)
-
-  report (eigen_version + '\n')
-except CompileError:
-  error (''' error compiling Eigen application!
-
-  MRtrix3 was unable to compile a test program involving Eigen3.''' + compiler_flags_hint ('Eigen3', 'EIGEN_CFLAGS', '"-I/usr/include/eigen3"'))
-except ( LinkError, RuntimeError ) as e:
-  error (''' error linking Eigen application!
-
-  This shouldn't happen!''' + configure_log_hint)
-except:
-  error ('unexpected exception!' + configure_log_hint)
-
-if not openmp:
-  eigen_cflags += [ '-DEIGEN_DONT_PARALLELIZE' ]
 
 
 
@@ -883,69 +965,6 @@ if openmp:
 
 
 
-
-
-# Test that JSON for Modern C++ will compile, since it enforces its own requirements
-
-report('Checking JSON for Modern C++ requirements: ')
-try:
-  compile ('''
-#include "''' + os.path.join('file', 'json.h') + '''"
-
-int main (int argc, char* argv[])
-{
-  nlohmann::json json;
-  json["key"] = "value";
-}
-
-''', cpp_flags + [ '-I'+os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), 'core')) ], ld_flags)
-
-
-  report ('OK\n')
-except ( CompileError, LinkError ):
-  error (''' error compiling JSON test application!
-
-  MRtrix3 was unable to compile a test program involving JSON for Modern C++. Your compiler may not be sufficiently up-to-date.''' + configure_log_hint)
-except:
-  error ('unexpected exception!' + configure_log_hint)
-
-
-
-
-
-
-# shared library generation:
-if not noshared:
-  report ('Checking shared library generation: ')
-
-  with TempFile ('.cpp') as F:
-    F.fid.write ('int bogus() { return (1); }')
-    F.fid.flush()
-    F.fid.close()
-    with DeleteAfter (F.name[:-4] + '.o') as obj:
-      cmd = fillin (cpp, {
-        'CFLAGS': cpp_flags,
-        'SRC': F.name,
-        'OBJECT': obj.name })
-      try: execute (cmd, CompileError)
-      except CompileError:
-        error ('compiler not found!' + configure_log_hint)
-      except:
-        error ('unexpected exception!' + configure_log_hint)
-      with DeleteAfter (lib_prefix + 'test' + lib_suffix) as lib:
-        cmd = fillin (ld_lib, {
-          'LDLIB_FLAGS': ld_lib_flags,
-          'OBJECTS': obj.name,
-          'LIB': lib.name })
-        try: execute (cmd, LinkError)
-        except LinkError:
-          error ('''linker not found!
-
-  MRtrix3 was unable to employ the linker program for shared library generation.''' + compiler_hint ('shared library linker', 'LDLIB_FLAGS', '"-L/usr/local/lib"', 'LDLIB_ARGS', '"-shared LDLIB_FLAGS OBJECTS -o LIB"'))
-        except:
-          error ('unexpected exception!' + configure_log_hint)
-
-        report ('yes\n')
 
 
 
