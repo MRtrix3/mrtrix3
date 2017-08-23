@@ -49,7 +49,7 @@ The `Multi-Shell Multi-Tissue (MSMT) CSD
 <http://www.sciencedirect.com/science/article/pii/S1053811914006442>`__ method
 has now been incorporated into *MRtrix3*, and is provided as part of the
 :ref:`dwi2fod` command. There are also instructions for its use provided in
-the `documentation <multi_tissue_csd>`__.
+the `documentation <multi_shell_multi_tissue_csd>`__.
 
 The image data include information on gradient non-linearities. Can I make use of this?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
