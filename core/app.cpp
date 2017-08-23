@@ -888,12 +888,8 @@ namespace MR
 
 
 
-
-    void parse ()
+    void parse_special_options () 
     {
-      argument.clear();
-      option.clear();
-
       if (!AUTHOR)
         throw Exception ("No author specified for command " + std::string(NAME));
       if (!SYNOPSIS)
@@ -917,6 +913,14 @@ namespace MR
           throw 0;
         }
       }
+
+    }
+
+
+    void parse ()
+    {
+      argument.clear();
+      option.clear();
 
       sort_arguments (argc, argv);
 

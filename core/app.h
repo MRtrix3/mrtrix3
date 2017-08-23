@@ -147,6 +147,9 @@ namespace MR
      * processing takes place. */
     void init (int argc, const char* const* argv);
 
+    //! option parsing that should happen before GUI creation [used internally]
+    void parse_special_options ();
+
     //! do the actual parsing of the command-line [used internally]
     void parse ();
 

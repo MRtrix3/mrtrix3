@@ -79,12 +79,12 @@ int main (int cmdline_argc, char** cmdline_argv)
   ::MR::App::project_version = MRTRIX_PROJECT_VERSION;
 #endif
   try {
+    ::MR::App::init (cmdline_argc, cmdline_argv); 
+    usage (); 
+    ::MR::App::parse_special_options();
 #ifdef __gui_app_h__
     ::MR::GUI::App app (cmdline_argc, cmdline_argv);
-#else
-    ::MR::App::init (cmdline_argc, cmdline_argv); 
 #endif
-    usage (); 
     ::MR::App::parse (); 
     run ();
   } 
