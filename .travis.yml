@@ -24,7 +24,7 @@ install:
 script:
   - /usr/share/sphinx/scripts/${py}/sphinx-build -n -N -W -w sphinx.log docs/ tmp/
   - ./check_memalign && $py ./configure -assert && $py ./build -nowarnings && ./run_tests
-  - cd docs/ && ./generate_user_docs.sh && git diff --exitcode > gitdiff.log 2>&1 && cd ../
+  - cd docs/ && ./generate_user_docs.sh && git diff --exitcode > ../gitdiff.log 2>&1 && cd ../
 
 after_failure:
   - cat sphinx.log
