@@ -10,9 +10,7 @@ addons:
       - g++-4.8
       - python3
       - python-pip
-      - python-sphinx
       - python3-pip
-      - python3-sphinx
 compiler:
   - clang
 env:
@@ -24,7 +22,9 @@ install:
   - export EIGEN_CFLAGS=-I`pwd`/../eigen
   - (cd ..; hg clone https://bitbucket.org/eigen/eigen/; cd eigen; hg update 3.3)
   - pip install recommonmark
+  - pip install sphinx
   - pip3 install recommonmark
+  - pip3 install sphinx
 script:
   - /usr/share/sphinx/scripts/${py}/sphinx-build -n -N -W -w sphinx.log -c docs/ docs/ tmp/
   - ./check_memalign && $py ./configure -assert && $py ./build -nowarnings && ./run_tests
