@@ -9,7 +9,9 @@ addons:
       - libqt4-opengl-dev
       - g++-4.8
       - python3
+      - python-pip
       - python-sphinx
+      - python3-pip
       - python3-sphinx
 compiler:
   - clang
@@ -21,10 +23,12 @@ install:
   - export PATH=`pwd`/bin:${PATH}
   - export EIGEN_CFLAGS=-I`pwd`/../eigen
   - (cd ..; hg clone https://bitbucket.org/eigen/eigen/; cd eigen; hg update 3.3)
+  - pip install recommonmark
+  - pip3 install recommonmark
 script:
   - /usr/share/sphinx/scripts/${py}/sphinx-build -n -N -W -w sphinx.log docs/ tmp/
   - ./check_memalign && $py ./configure -assert && $py ./build -nowarnings && ./run_tests
-  - cd docs/ && ./generate_user_docs.sh && git diff --exitcode > ../gitdiff.log 2>&1 && cd ../
+  - cd docs/ && ./generate_user_docs.sh && cd ../ && git diff --exit-code -- . ':(exclude)docs/reference/commands/mrview.rst' ':(exclude)docs/reference/commands/shview.rst' > ../gitdiff.log 2>&1
 
 after_failure:
   - cat sphinx.log
