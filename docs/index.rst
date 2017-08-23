@@ -109,10 +109,9 @@ These applications have been written from scratch in C++, using the functionalit
    :maxdepth: 1
    :caption: Troubleshooting
 
-   troubleshooting/FAQ
+   troubleshooting/performance_and_crashes
    troubleshooting/display_issues
-   troubleshooting/compiler_error_during_build
-   troubleshooting/hanging_or_crashing
+   troubleshooting/FAQ
    troubleshooting/advanced_debugging
 
 .. toctree::

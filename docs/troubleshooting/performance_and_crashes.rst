@@ -1,46 +1,43 @@
-Hanging or Crashing
-===================
+Crashes, errors and performance issues
+======================================
+
+Throughout *MRtrix3* we try to provide users with meaningful error messages
+if something does not work or sensible default behaviour cannot be determined.
+However in some cases, feedback to the user can be unavoidably difficult to
+interpret, or non-existent in cases where performance is poor but a command
+does not fail outright; this page is a collection of information of such
+cases.
 
 
-Hanging on network file system when writing images
---------------------------------------------------
+Compiler error during build
+---------------------------
 
-When any *MRtrix3* command must read or write image data, there are two
-primary mechanisms by which this is performed:
+If you encounter an error during the build process that resembles the following:
 
-1. `Memory mapping <https://en.wikipedia.org/wiki/Memory-mapped_file>`_:
-The operating system provides access to the contents of the file as
-though it were simply a block of data in memory, without needing to
-explicitly load all of the image data into RAM.
+.. code-block:: text
 
-2. Preload / delayed write-back: When opening an existing image, the
-entire image contents are loaded into a block of RAM. If an image is
-modified, or a new image created, this occurs entirely within RAM, with
-the image contents written to disk storage only at completion of the
-command.
+    ERROR: (#/#) [CC] release/cmd/command.o
 
-This design ensures that loading images for processing is as fast as
-possible and does not incur unnecessary RAM requirements, and writing
-files to disk is as efficient as possible as all data is written as a
-single contiguous block.
+    /usr/bin/g++-4.8 -c -std=c++11 -pthread -fPIC -I/home/user/mrtrix3/eigen -Wall -O2 -DNDEBUG -Isrc -Icmd -I./lib -Icmd cmd/command.cpp -o release/cmd/command.o
 
-Memory mapping will be used wherever possible. However one circumstance
-where this should *not* be used is when *write access* is required for
-the target file, and it is stored on a *network file system*: in this
-case, the command typically slows to a crawl (e.g. progressbar stays at
-0% indefinitely), as the memory-mapping implementation repeatedly
-performs small data writes and attempts to keep the entire image data
-synchronised.
+    failed with output
 
-*MRtrix3* will now *test* the type of file system that a target image is
-stored on; and if it is a network-based system, it will *not* use
-memory-mapping for images that may be written to. *However*, if you
-experience the aforementioned slowdown in such a circumstance, it is
-possible that the particular configuration you are using is not being
-correctly detected or identified. If you are unfortunate enough to
-encounter this issue, please report to the developers the hardware
-configuration and file system type in use.
+    g++-4.8: internal compiler error: Killed (program cc1plus)
+    Please submit a full bug report,
+    with preprocessed source if appropriate.
+    See for instructions.
 
+
+This is most typically caused by the compiler running out of RAM. This
+can be solved either through installing more RAM into your system, or
+by restricting the number of threads to be used during compilation:
+
+.. code-block:: console
+
+    $ NUMBER_OF_PROCESSORS=1 ./build
+
+
+.. _crash_RAM:
 
 Commands crashing due to memory requirements
 --------------------------------------------
@@ -92,7 +89,7 @@ For CFE, it is the resolution of the *population template image* that affects
 the memory usage; however using higher-resolution images for registration
 when *generating* that population template may still be beneficial. Therefore
 we advocate downsampling the population template image after its generation,
-and otherwise proceed with FIxel-Based Analysis (FBA) using this down-sampled
+and otherwise proceed with Fixel-Based Analysis (FBA) using this down-sampled
 template image.
 
 
@@ -146,6 +143,68 @@ A few pointers for anybody who encounters this issue:
    temporary images per execution; whereas ``population_template`` must
    store non-linear warp fields across many subjects. This may explain why
    one script crashed when other scripts have completed successfully.
+
+
+Hanging on network file system when writing images
+--------------------------------------------------
+
+When any *MRtrix3* command must read or write image data, there are two
+primary mechanisms by which this is performed:
+
+1. `Memory mapping <https://en.wikipedia.org/wiki/Memory-mapped_file>`_:
+The operating system provides access to the contents of the file as
+though it were simply a block of data in memory, without needing to
+explicitly load all of the image data into RAM.
+
+2. Preload / delayed write-back: When opening an existing image, the
+entire image contents are loaded into a block of RAM. If an image is
+modified, or a new image created, this occurs entirely within RAM, with
+the image contents written to disk storage only at completion of the
+command.
+
+This design ensures that loading images for processing is as fast as
+possible and does not incur unnecessary RAM requirements, and writing
+files to disk is as efficient as possible as all data is written as a
+single contiguous block.
+
+Memory mapping will be used wherever possible. However one circumstance
+where this should *not* be used is when *write access* is required for
+the target file, and it is stored on a *network file system*: in this
+case, the command typically slows to a crawl (e.g. progressbar stays at
+0% indefinitely), as the memory-mapping implementation repeatedly
+performs small data writes and attempts to keep the entire image data
+synchronised.
+
+*MRtrix3* will now *test* the type of file system that a target image is
+stored on; and if it is a network-based system, it will *not* use
+memory-mapping for images that may be written to. *However*, if you
+experience the aforementioned slowdown in such a circumstance, it is
+possible that the particular configuration you are using is not being
+correctly detected or identified. If you are unfortunate enough to
+encounter this issue, please report to the developers the hardware
+configuration and file system type in use.
+
+
+Linux: very slow performance when writing large images
+------------------------------------------------------
+
+This might be due to the Linux Disk Caching or the kernel's handling of `dirty
+pages
+<https://lonesysadmin.net/2013/12/22/better-linux-disk-caching-performance-vm-dirty_ratio/>`__.
+
+On Ubuntu, you can get your current dirty page handling settings with ``sysctl -a | grep dirty``.
+Those settings can be modified in ``/etc/sysctl.conf`` by adding the following
+two lines to ``/etc/sysctl.conf``:
+
+.. code-block:: text
+
+    vm.dirty_background_ratio = 60
+    vm.dirty_ratio = 80
+
+``vm.dirty_background_ratio`` is a percentage fraction of your RAM and should
+be larger than the image to be written.  After changing ``/etc/sysctl.conf``,
+execute ``sysctl -p`` to configure the new kernel parameters at runtime.
+Depending on your system, these changes might not be persistent after reboot.
 
 
 ``mrview`` unable to open images: "Too many open files"

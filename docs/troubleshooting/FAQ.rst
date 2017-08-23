@@ -1,6 +1,13 @@
 Frequently Asked Questions (FAQ)
 ================================
 
+This page contains a collection of topics that are frequently raised in
+discussions and on the `community forum <http://community.mrtrix.org>`__.
+If you are seeking an answer to a question that specifically relates to
+*MRtrix3* performance issues or crashes, please check the `relevant
+documentation page <performance_and_crashes>`__.
+
+
 Processing of HCP data
 ----------------------
 
@@ -56,7 +63,7 @@ assumption. To me, there are two possible ways that this could be handled:
 
 - Generate a representation of the response function that can be interpolated
   / extrapolated as a function of b-value, and therefore choose an appropriate
-  response function per voxel.  
+  response function per voxel.
 
 Work is underway to solve these issues, but there's nothing available yet. For
 those wanting to pursue their own solution, bear in mind that the gradient
@@ -105,6 +112,7 @@ Apply the mask:
 .. code-block:: console
 
     $ mrcalc temp.mif mask.mif -mult TWFC.mif
+
 
 Handling SIFT2 weights
 ----------------------
@@ -155,6 +163,7 @@ that must be *explicitly* provided to any commands in order to be used.  The
 track file can also be used *without* taking into account the streamline
 weights, simply by *not* providing the weights.
 
+
 Making use of Python scripts library
 ------------------------------------
 
@@ -180,6 +189,7 @@ location of those libraries; e.g.:
 
 (Replace the path to the *MRtrix3* "lib" directory with the location of your
 own installation)
+
 
 ``tck2connectome`` no longer has the ``-contrast X`` option...?
 -------------------------------------------------------------------------
@@ -231,7 +241,7 @@ old usage.
 
 
 Visualising streamlines terminations
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------------------
 
 I am frequently asked about Figures 5-7 in the `Anatomically-Constrained
 Tractography <http://www.sciencedirect.com/science/article/pii/S1053811912005824>`__
@@ -289,93 +299,4 @@ used in these figures, which I'll explain here in full.
       trick I used in this manuscript was to rotate the hue of the termination
       screenshot by 180 degrees: this provides a pseudo-random coloring of the
       termination points that contrasts well against the tracks.
-
-
-Compiler error during build
----------------------------
-
-If you encounter an error during the build process that resembles the following:
-
-.. code-block:: text
-
-    ERROR: (#/#) [CC] release/cmd/command.o
-
-    /usr/bin/g++-4.8 -c -std=c++11 -pthread -fPIC -I/home/user/mrtrix3/eigen -Wall -O2 -DNDEBUG -Isrc -Icmd -I./lib -Icmd cmd/command.cpp -o release/cmd/command.o
-
-    failed with output
-
-    g++-4.8: internal compiler error: Killed (program cc1plus)
-    Please submit a full bug report,
-    with preprocessed source if appropriate.
-    See for instructions.
-
-
-This is most typically caused by the compiler running out of RAM. This
-can be solved either through installing more RAM into your system, or
-by restricting the number of threads to be used during compilation:
-
-.. code-block:: console
-
-    $ NUMBER_OF_PROCESSORS=1 ./build
-
-
-
-Hanging on network file system when writing images
---------------------------------------------------
-
-When any *MRtrix3* command must read or write image data, there are two
-primary mechanisms by which this is performed:
-
-1. `Memory mapping <https://en.wikipedia.org/wiki/Memory-mapped_file>`_:
-The operating system provides access to the contents of the file as
-though it were simply a block of data in memory, without needing to
-explicitly load all of the image data into RAM.
-
-2. Preload / delayed write-back: When opening an existing image, the
-entire image contents are loaded into a block of RAM. If an image is
-modified, or a new image created, this occurs entirely within RAM, with
-the image contents written to disk storage only at completion of the
-command.
-
-This design ensures that loading images for processing is as fast as
-possible and does not incur unnecessary RAM requirements, and writing
-files to disk is as efficient as possible as all data is written as a
-single contiguous block.
-
-Memory mapping will be used wherever possible. However one circumstance
-where this should *not* be used is when *write access* is required for
-the target file, and it is stored on a *network file system*: in this
-case, the command typically slows to a crawl (e.g. progressbar stays at
-0% indefinitely), as the memory-mapping implementation repeatedly
-performs small data writes and attempts to keep the entire image data
-synchronised.
-
-*MRtrix3* will now *test* the type of file system that a target image is
-stored on; and if it is a network-based system, it will *not* use
-memory-mapping for images that may be written to. *However*, if you
-experience the aforementioned slowdown in such a circumstance, it is
-possible that the particular configuration you are using is not being
-correctly detected or identified. If you are unfortunate enough to
-encounter this issue, please report to the developers the hardware
-configuration and file system type in use.
-
-Linux: very slow performance when writing large images
-------------------------------------------------------
-This might be due to the Linux Disk Caching or the kernel's handling of `dirty
-pages
-<https://lonesysadmin.net/2013/12/22/better-linux-disk-caching-performance-vm-dirty_ratio/>`__.
-
-On Ubuntu, you can get your current dirty page handling settings with ``sysctl -a | grep dirty``.
-Those settings can be modified in ``/etc/sysctl.conf`` by adding the following
-two lines to ``/etc/sysctl.conf``:
-
-.. code-block:: text
-
-    vm.dirty_background_ratio = 60
-    vm.dirty_ratio = 80
-
-``vm.dirty_background_ratio`` is a percentage fraction of your RAM and should
-be larger than the image to be written.  After changing ``/etc/sysctl.conf``,
-execute ``sysctl -p`` to configure the new kernel parameters at runtime.
-Depending on your system, these changes might not be persistent after reboot.
 
