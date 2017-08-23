@@ -26,7 +26,7 @@ install:
   - pip3 install recommonmark
   - pip3 install sphinx
 script:
-  - /usr/share/sphinx/scripts/${py}/sphinx-build -n -N -W -w sphinx.log -c docs/ docs/ tmp/
+  - ${py} -m sphinx -n -N -W -w sphinx.log -c docs/ docs/ tmp/
   - ./check_memalign && $py ./configure -assert && $py ./build -nowarnings && ./run_tests
   - ./docs/generate_user_docs.sh && git diff --exit-code -- . ':(exclude)docs/reference/commands/mrview.rst' ':(exclude)docs/reference/commands/shview.rst' > gitdiff.log 2>&1
 
