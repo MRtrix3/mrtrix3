@@ -21,10 +21,8 @@ install:
   - export PATH=`pwd`/bin:${PATH}
   - export EIGEN_CFLAGS=-I`pwd`/../eigen
   - (cd ..; hg clone https://bitbucket.org/eigen/eigen/; cd eigen; hg update 3.3)
-  - pip install recommonmark
-  - pip install sphinx
-  - pip3 install recommonmark
-  - pip3 install sphinx
+  - pip install recommonmark sphinx sphinx-rtd-theme
+  - pip3 install recommonmark sphinx sphinx-rtd-theme
 script:
   - ${py} -m sphinx -n -N -W -w sphinx.log -c docs/ docs/ tmp/
   - ./check_memalign && $py ./configure -assert && $py ./build -nowarnings && ./run_tests
