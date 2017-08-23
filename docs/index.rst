@@ -55,7 +55,6 @@ These applications have been written from scratch in C++, using the functionalit
    :caption: Constrained Spherical Deconvolution
 
    constrained_spherical_deconvolution/response_function_estimation
-   constrained_spherical_deconvolution/lmax
    constrained_spherical_deconvolution/multi_tissue_csd
 
 .. toctree::
@@ -94,7 +93,8 @@ These applications have been written from scratch in C++, using the functionalit
 
    concepts/dw_scheme
    concepts/global_intensity_normalisation
-   concepts/orthonormal_basis
+   concepts/orthonormal_sh_basis
+   concepts/sh_basis_lmax
    concepts/fixels_dixels
    concepts/afd_connectivity
 
