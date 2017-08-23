@@ -71,7 +71,8 @@ where
 Note that the order of the tissue responses output for this algorithm is always: WM, GM, CSF.
 
 Other methods exist, notably ``dwi2response msmt_5tt``, but this requires a co-registered T1 volume
-and very accurate correction of EPI geometric distortions. (both up to sub-voxel accuracy)
+and very accurate correction of EPI geometric distortions (both up to sub-voxel accuracy), as well as
+accurate segmentation of the T1 volume.
 Even then, still, ``dwi2response msmt_5tt`` may be less accurate than ``dwi2response dhollander``
 in a range of scenarios (`Dhollander et al. (2016) <#references>`__).
 
