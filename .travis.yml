@@ -26,7 +26,7 @@ install:
 script:
   - ${py} -m sphinx -n -N -W -w sphinx.log -c docs/ docs/ tmp/
   - ./check_memalign && $py ./configure -assert && $py ./build -nowarnings && ./run_tests
-  - ./docs/generate_user_docs.sh && git diff --exit-code -- . ':(exclude)docs/reference/commands/mrview.rst' ':(exclude)docs/reference/commands/shview.rst' > gitdiff.log 2>&1
+  - ./docs/generate_user_docs.sh && ! ( git diff -- . ':(exclude)docs/reference/commands/mrview.rst' ':(exclude)docs/reference/commands/shview.rst' | tee gitdiff.log | grep '^-\|^+' | grep -q -v 'commands_list.rst\|mrview\|shview' )
 
 after_failure:
   - cat sphinx.log
