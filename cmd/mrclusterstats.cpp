@@ -17,11 +17,9 @@
 
 #include "algo/loop.h"
 #include "file/path.h"
-#include "math/SH.h"
-
-#include "dwi/directions/predefined.h"
 
 #include "math/stats/glm.h"
+#include "math/stats/import.h"
 #include "math/stats/permutation.h"
 #include "math/stats/typedefs.h"
 

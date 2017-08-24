@@ -19,6 +19,7 @@
 
 #include "file/path.h"
 #include "math/stats/glm.h"
+#include "math/stats/import.h"
 #include "math/stats/permutation.h"
 #include "math/stats/typedefs.h"
 
@@ -27,6 +28,7 @@
 
 using namespace MR;
 using namespace App;
+using namespace MR::Math::Stats;
 
 
 
@@ -62,41 +64,62 @@ using Math::Stats::vector_type;
 
 
 
-// TODO Implement subject data import class, per-datum design matrices
+// Define data importer class that willl obtain data for a
+//   specific subject based on the string path to the data file for
+//   that subject
+//
+// This is far more simple than the equivalent functionality in other
+//   MRtrix3 statistical inference commands, since the data are
+//   already in a vectorised form.
+
+class SubjectVectorImport : public SubjectDataImportBase
+{ MEMALIGN(SubjectVectorImport)
+  public:
+    SubjectVectorImport (const std::string& path) :
+        SubjectDataImportBase (path),
+        data (load_vector (path)) { }
+
+    void operator() (matrix_type::ColXpr column) const override
+    {
+      assert (column.rows() == size());
+      column = data;
+    }
+
+    default_type operator[] (const size_t index) const override
+    {
+      assert (index < size());
+      return data[index];
+    }
+
+    size_t size() const override { return data.size(); }
+
+  private:
+    const vector_type data;
+
+};
 
 
 
 void run()
 {
 
-  // Read filenames
-  vector<std::string> filenames;
-  {
-    std::string folder = Path::dirname (argument[0]);
-    std::ifstream ifs (argument[0].c_str());
-    std::string temp;
-    while (getline (ifs, temp)) {
-      std::string filename (Path::join (folder, temp));
-      size_t p = filename.find_last_not_of(" \t");
-      if (std::string::npos != p)
-        filename.erase(p+1);
-      if (filename.size()) {
-        if (!MR::Path::exists (filename))
-          throw Exception ("Input data vector file not found: \"" + filename + "\"");
-        filenames.push_back (filename);
-      }
-    }
+  CohortDataImport importer;
+  importer.initialise<SubjectVectorImport> (argument[0]);
+  const size_t num_subjects = importer.size();
+  CONSOLE ("Number of subjects: " + str(num_subjects));
+  const size_t num_elements = importer[0]->size();
+  CONSOLE ("Number of elements: " + str(num_elements));
+  for (size_t i = 0; i != importer.size(); ++i) {
+    if (importer[i]->size() != num_elements)
+      throw Exception ("Subject file \"" + importer[i]->name() + "\" contains incorrect number of elements (" + str(importer[i]) + "; expected " + str(num_elements) + ")");
   }
-
-  const vector_type example_data = load_vector (filenames.front());
-  const size_t num_elements = example_data.size();
 
   size_t num_perms = get_option_value ("nperms", DEFAULT_NUMBER_PERMUTATIONS);
 
   // Load design matrix
   const matrix_type design = load_matrix (argument[1]);
-  if (size_t(design.rows()) != filenames.size())
-    throw Exception ("Number of subjects (" + str(filenames.size()) + ") does not match number of rows in design matrix (" + str(design.rows()) + ")");
+  if (size_t(design.rows()) != num_subjects)
+    throw Exception ("Number of subjects (" + str(num_subjects) + ") does not match number of rows in design matrix (" + str(design.rows()) + ")");
 
   // Load permutations file if supplied
   auto opt = get_options("permutations");
@@ -117,28 +140,9 @@ void run()
   const std::string output_prefix = argument[3];
 
   // Load input data
-  // TODO Define subject data import class
-  matrix_type data (num_elements, filenames.size());
-  {
-    ProgressBar progress ("Loading input vector data", filenames.size());
-    for (size_t subject = 0; subject < filenames.size(); subject++) {
-
-      const std::string& path (filenames[subject]);
-      vector_type subject_data;
-      try {
-        subject_data = load_vector (path);
-      } catch (Exception& e) {
-        throw Exception (e, "Error loading vector data for subject #" + str(subject) + " (file \"" + path + "\")");
-      }
-
-      if (size_t(subject_data.size()) != num_elements)
-        throw Exception ("Vector data for subject #" + str(subject) + " (file \"" + path + "\") is wrong length (" + str(subject_data.size()) + " , expected " + str(num_elements) + ")");
-
-      data.col(subject) = subject_data;
-
-      ++progress;
-    }
-  }
+  matrix_type data (num_elements, num_subjects);
+  for (size_t subject = 0; subject != num_subjects; subject++)
+    (*importer[subject]) (data.col(subject));
 
   {
     matrix_type betas, abs_effects, std_effects, stdevs;
@@ -154,8 +158,8 @@ void run()
   // Precompute default statistic
   // Don't use convenience function: No enhancer!
   // Manually construct default permutation
-  vector<size_t> default_permutation (filenames.size());
-  for (size_t i = 0; i != filenames.size(); ++i)
+  vector<size_t> default_permutation (num_subjects);
+  for (size_t i = 0; i != num_subjects; ++i)
     default_permutation[i] = i;
   matrix_type default_tvalues;
   (*glm_ttest) (default_permutation, default_tvalues);
