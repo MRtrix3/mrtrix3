@@ -45,14 +45,14 @@ using namespace MR::DWI::Tractography::Mapping;
 
 
 
-const char* windows[] = { "rectangle", "triangle", "cosine", "hann", "hamming", "lanczos", NULL };
+const char* windows[] = { "rectangle", "triangle", "cosine", "hann", "hamming", "lanczos", nullptr };
 
 
 void usage () {
 
 AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-SYNOPSIS = "Perform the Track-Weighted Dynamic Functional Connectivity (TW-dFC) method.";
+SYNOPSIS = "Perform the Track-Weighted Dynamic Functional Connectivity (TW-dFC) method";
 
 DESCRIPTION
   + "This command generates a Track-Weighted Image (TWI), where the "
@@ -71,7 +71,16 @@ DESCRIPTION
     "The output image is a 4D image, with the same number of volumes as "
     "the input fMRI time series. For each volume, the contribution from "
     "each streamline is calculated based on a finite-width sliding time "
-    "window, centred at the timepoint corresponding to that volume.";
+    "window, centred at the timepoint corresponding to that volume."
+
+  + "Note that the -backtrack option in this command is similar, but not precisely "
+    "equivalent, to back-tracking as can be used with Anatomically-Constrained "
+    "Tractography (ACT) in the tckgen command. However, here the feature does not "
+    "change the streamlines trajectories in any way; it simply enables detection of "
+    "the fact that the input fMRI image may not contain a valid timeseries underneath "
+    "the streamline endpoint, and where this occurs, searches from the streamline "
+    "endpoint inwards along the streamline trajectory in search of a valid "
+    "timeseries to sample from the input image.";
 
 ARGUMENTS
   + Argument ("tracks", "the input track file.").type_file_in()
@@ -113,15 +122,7 @@ OPTIONS
 
   + Option ("backtrack",
             "if no valid timeseries is found at the streamline endpoint, back-track along "
-            "the streamline trajectory until a valid timeseries is found. \n"
-            "Note that this mechanism is similar, but not precisely equivalent, to"
-            "back-tracking as can be used with Anatomically-Constrained Tractography (ACT) "
-            "in the tckgen command. However, here the feature does not change the "
-            "streamlines trajectories in any way; it simply enables detection of the fact "
-            "that the input fMRI image may not contain a valid timeseries underneath the "
-            "streamline endpoint, and where this occurs, searches from the streamline "
-            "endpoint inwards along the streamline trajectory in search of a valid "
-            "timeseries to sample from the input image.")
+            "the streamline trajectory until a valid timeseries is found")
 
   + Option ("upsample",
       "upsample the tracks by some ratio using Hermite interpolation before mappipng \n"

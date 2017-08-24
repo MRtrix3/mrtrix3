@@ -6,7 +6,7 @@ tckdfc
 Synopsis
 --------
 
-Perform the Track-Weighted Dynamic Functional Connectivity (TW-dFC) method.
+Perform the Track-Weighted Dynamic Functional Connectivity (TW-dFC) method
 
 Usage
 --------
@@ -30,6 +30,8 @@ The output image can be generated in one of two ways (note that one of these two
 
 - "Dynamic" functional connectivity (-dynamic option): The output image is a 4D image, with the same number of volumes as the input fMRI time series. For each volume, the contribution from each streamline is calculated based on a finite-width sliding time window, centred at the timepoint corresponding to that volume.
 
+Note that the -backtrack option in this command is similar, but not precisely equivalent, to back-tracking as can be used with Anatomically-Constrained Tractography (ACT) in the tckgen command. However, here the feature does not change the streamlines trajectories in any way; it simply enables detection of the fact that the input fMRI image may not contain a valid timeseries underneath the streamline endpoint, and where this occurs, searches from the streamline endpoint inwards along the streamline trajectory in search of a valid timeseries to sample from the input image.
+
 Options
 -------
 
@@ -52,7 +54,7 @@ Options for setting the properties of the output image
 Other options for affecting the streamline sampling & mapping behaviour
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-backtrack** if no valid timeseries is found at the streamline endpoint, back-track along the streamline trajectory until a valid timeseries is found. Note that this mechanism is similar, but not precisely equivalent, toback-tracking as can be used with Anatomically-Constrained Tractography (ACT) in the tckgen command. However, here the feature does not change the streamlines trajectories in any way; it simply enables detection of the fact that the input fMRI image may not contain a valid timeseries underneath the streamline endpoint, and where this occurs, searches from the streamline endpoint inwards along the streamline trajectory in search of a valid timeseries to sample from the input image.
+-  **-backtrack** if no valid timeseries is found at the streamline endpoint, back-track along the streamline trajectory until a valid timeseries is found
 
 -  **-upsample factor** upsample the tracks by some ratio using Hermite interpolation before mappipng (if omitted, an appropriate ratio will be determined automatically)
 
