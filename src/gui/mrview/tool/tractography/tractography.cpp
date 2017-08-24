@@ -35,6 +35,23 @@ namespace MR
     {
       namespace Tool
       {
+        TrackGeometryType index_to_geometry_type (const int idx) {
+          TrackGeometryType geom_type = TrackGeometryType::Pseudotubes;
+
+          switch (idx) {
+          case 1:
+            geom_type = TrackGeometryType::Lines;
+            break;
+          case 2:
+            geom_type = TrackGeometryType::Points;
+          default:
+            break;
+          }
+
+          return geom_type;
+        }
+
+
 
         class Tractography::Model : public ListModelBase
         { MEMALIGN(Tractography::Model)
@@ -256,6 +273,30 @@ namespace MR
             action = new QAction("&Colour by (track) scalar file", this);
             connect (action, SIGNAL(triggered()), this, SLOT (colour_by_scalar_file_slot()));
             track_option_menu->addAction (action);
+
+            static const constexpr char* geom_config_options[] = { "Pseudotubes", "Lines", "Points", nullptr };
+
+            //CONF option: MRViewDefaultTractGeomType
+            //CONF default: Pseudotubes
+            //CONF The default geometry type used to render tractograms.
+            //CONF Options are Pseudotubes, Lines or Points
+            const std::string default_geom_type = File::Config::get ("MRViewDefaultTractGeomType", geom_config_options[0]);
+
+            if (default_geom_type != geom_config_options[0]) {
+              int index (0);
+              if (default_geom_type == geom_config_options[1])
+                index = 1;
+              else if (default_geom_type == geom_config_options[2])
+                index = 2;
+
+              // In the instance where pseudotubes are not the default, enable lighting
+              if (index) {
+                Tractogram::default_tract_geom =  index_to_geometry_type (index);
+                use_lighting = true;
+                lighting_group_box->setChecked (true);
+                geom_type_combobox->setCurrentIndex (index);
+              }
+            }
 
             update_geometry_type_gui();
         }
@@ -634,17 +675,7 @@ namespace MR
 
         void Tractography::geom_type_selection_slot(int selected_index)
         {
-          TrackGeometryType geom_type = TrackGeometryType::Pseudotubes;
-
-          switch (selected_index) {
-          case 1:
-            geom_type = TrackGeometryType::Lines;
-            break;
-          case 2:
-            geom_type = TrackGeometryType::Points;
-          default:
-            break;
-          }
+          TrackGeometryType geom_type = index_to_geometry_type (selected_index);
 
           QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i)
@@ -767,7 +798,6 @@ namespace MR
             thickness_label->setHidden (false);
           }
         }
-
 
 
 
