@@ -16,10 +16,15 @@ Usage
     mrclusterstats [ options ]  input design contrast mask output
 
 -  *input*: a text file containing the file names of the input images, one file per line
--  *design*: the design matrix, rows should correspond with images in the input image text file
+-  *design*: the design matrix
 -  *contrast*: the contrast matrix, only specify one contrast as it will automatically compute the opposite contrast.
 -  *mask*: a mask used to define voxels included in the analysis.
 -  *output*: the filename prefix for all output.
+
+Description
+-----------
+
+In some software packages, a column of ones is automatically added to the GLM design matrix; the purpose of this column is to estimate the "global intercept", which is the predicted value of the observed variable if all explanatory variables were to be zero. However there are rare situations where including such a column would not be appropriate for a particular experiment al design; hence, in MRtrix3 statistical inference commands, it is up to the user to determine whether or not this column of ones should be included in their design matrix, and add it explicitly if necessary. The contrast matrix must also reflect the presence of this additional column.
 
 Options
 -------
@@ -51,9 +56,9 @@ Options for controlling TFCE behaviour
 Additional options for mrclusterstats
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-negative** automatically test the negative (opposite) contrast. By computing the opposite contrast simultaneously the computation time is reduced.
-
 -  **-threshold value** the cluster-forming threshold to use for a standard cluster-based analysis. This disables TFCE, which is the default otherwise.
+
+-  **-column path** add a column to the design matrix corresponding to subject voxel-wise values (the contrast vector length must include columns for these additions)
 
 -  **-connectivity** use 26-voxel-neighbourhood connectivity (Default: 6)
 

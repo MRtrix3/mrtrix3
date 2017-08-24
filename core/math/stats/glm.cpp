@@ -28,6 +28,19 @@ namespace MR
 
 
 
+      const char* const glm_column_ones_description =
+          "In some software packages, a column of ones is automatically added to the "
+          "GLM design matrix; the purpose of this column is to estimate the \"global "
+          "intercept\", which is the predicted value of the observed variable if all "
+          "explanatory variables were to be zero. However there are rare situations "
+          "where including such a column would not be appropriate for a particular "
+          "experiment al design; hence, in MRtrix3 statistical inference commands, "
+          "it is up to the user to determine whether or not this column of ones should "
+          "be included in their design matrix, and add it explicitly if necessary. "
+          "The contrast matrix must also reflect the presence of this additional column.";
+
+
+
       namespace GLM
       {
 
@@ -81,7 +94,7 @@ namespace MR
           //VAR (Math::rank (design));
           stdev = (one_over_dof * residuals).array().sqrt();
           //std::cerr << "stdev: " << stdev.rows() << " x " << stdev.cols() << ", max " << stdev.array().maxCoeff() << "\n";
-	  // TODO Should be a cleaner way of doing this (broadcasting?)
+          // TODO Should be a cleaner way of doing this (broadcasting?)
           matrix_type stdev_fill (abs_effect_size.rows(), abs_effect_size.cols());
           for (size_t i = 0; i != stdev_fill.rows(); ++i)
             stdev_fill.row(i) = stdev;

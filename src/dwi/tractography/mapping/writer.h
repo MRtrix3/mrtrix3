@@ -125,7 +125,7 @@ namespace MR {
               } else if (voxel_statistic == V_MAX) {
                 for (auto l = loop (buffer); l; ++l )
                   buffer.value() = std::numeric_limits<value_type>::lowest();
-              } 
+              }
 /* shouldn't be needed: scratch IO class memset to zero already:
               else {
                 buffer.zero();
@@ -140,7 +140,7 @@ namespace MR {
                 (type == DEC && voxel_statistic == V_SUM))
             {
               Header H_counts (header);
-              if (type == DEC || type == TOD) 
+              if (type == DEC || type == TOD)
                 H_counts.ndim() = 3;
               counts.reset (new Image<float> (Image<float>::scratch (H_counts, "TWI streamline count buffer")));
             }
@@ -183,14 +183,14 @@ namespace MR {
                     if (counts->value())
                       buffer.value() /= value_type(counts->value());
                   }
-                } 
+                }
                 else if (type == DEC) {
                   for (auto l = loop (buffer); l; ++l) {
                     auto value = get_dec();
-                    if (value.squaredNorm()) 
+                    if (value.squaredNorm())
                       set_dec (value.normalized());
                   }
-                } 
+                }
                 else if (type == TOD) {
                   for (auto l = loop (buffer, *counts); l; ++l) {
                     if (counts->value()) {
@@ -293,7 +293,7 @@ namespace MR {
           void MapWriter<value_type>::receive_greyscale (const Cont& in)
           {
             assert (MapWriterBase::type == GREYSCALE);
-            for (const auto& i : in) { 
+            for (const auto& i : in) {
               assign_pos_of (i).to (buffer);
               const default_type factor = get_factor (i, in);
               const default_type weight = in.weight * i.get_length();
@@ -320,7 +320,7 @@ namespace MR {
           void MapWriter<value_type>::receive_dec (const Cont& in)
           {
             assert (type == DEC);
-            for (const auto& i : in) { 
+            for (const auto& i : in) {
               assign_pos_of (i).to (buffer);
               const default_type factor = get_factor (i, in);
               const default_type weight = in.weight * i.get_length();
@@ -361,7 +361,7 @@ namespace MR {
           void MapWriter<value_type>::receive_dixel (const Cont& in)
           {
             assert (type == DIXEL);
-            for (const auto& i : in) { 
+            for (const auto& i : in) {
               assign_pos_of (i, 0, 3).to (buffer);
               buffer.index(3) = i.get_dir();
               const default_type factor = get_factor (i, in);
@@ -391,7 +391,7 @@ namespace MR {
           {
             assert (type == TOD);
             VoxelTOD::vector_type sh_coefs;
-            for (const auto& i : in) { 
+            for (const auto& i : in) {
               assign_pos_of (i, 0, 3).to (buffer);
               const default_type factor = get_factor (i, in);
               const default_type weight = in.weight * i.get_length();
@@ -440,14 +440,14 @@ namespace MR {
 
 
         template <>
-        void MapWriter<bool>::add (const default_type weight, const default_type factor)
+        inline void MapWriter<bool>::add (const default_type weight, const default_type factor)
         {
           if (weight && factor)
             buffer.value() = true;
         }
 
         template <typename value_type>
-        void MapWriter<value_type>::add (const default_type weight, const default_type factor)
+        inline void MapWriter<value_type>::add (const default_type weight, const default_type factor)
         {
           buffer.value() += weight * factor;
         }
@@ -485,7 +485,7 @@ namespace MR {
           {
             assert (type == TOD);
             sh_coefs.resize (buffer.size(3));
-            for (auto l = Loop (3) (buffer); l; ++l) 
+            for (auto l = Loop (3) (buffer); l; ++l)
               sh_coefs[buffer.index(3)] = buffer.value();
           }
 
@@ -494,7 +494,7 @@ namespace MR {
           {
             assert (type == TOD);
             assert (sh_coefs.size() == buffer.size(3));
-            for (auto l = Loop (3) (buffer); l; ++l) 
+            for (auto l = Loop (3) (buffer); l; ++l)
               buffer.value() = sh_coefs[buffer.index(3)];
           }
 

@@ -55,6 +55,9 @@ void usage ()
 
   SYNOPSIS = "Fixel-based analysis using connectivity-based fixel enhancement and non-parametric permutation testing";
 
+  DESCRIPTION
+      + Math::Stats::glm_column_ones_description;
+
   REFERENCES
   + "Raffelt, D.; Smith, RE.; Ridgway, GR.; Tournier, JD.; Vaughan, DN.; Rose, S.; Henderson, R.; Connelly, A." // Internal
     "Connectivity-based fixel enhancement: Whole-brain statistical analysis of diffusion MRI measures in the presence of crossing fibres. \n"
@@ -71,7 +74,7 @@ void usage ()
   + Argument ("subjects", "a text file listing the subject identifiers (one per line). This should correspond with the filenames "
                           "in the fixel directory (including the file extension), and be listed in the same order as the rows of the design matrix.").type_image_in ()
 
-  + Argument ("design", "the design matrix. Note that a column of 1's will need to be added for correlations.").type_file_in ()
+  + Argument ("design", "the design matrix").type_file_in ()
 
   + Argument ("contrast", "the contrast matrix, specified as rows of weights").type_file_in ()
 

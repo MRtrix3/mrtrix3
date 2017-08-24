@@ -36,15 +36,18 @@ void usage ()
 
   SYNOPSIS = "Statistical testing of vector data using non-parametric permutation testing";
 
+  DESCRIPTION
+      + Math::Stats::glm_column_ones_description;
+
 
   ARGUMENTS
   + Argument ("input", "a text file listing the file names of the input subject data").type_file_in ()
 
-  + Argument ("design", "the design matrix. Note that a column of 1's will need to be added for correlations.").type_file_in ()
+  + Argument ("design", "the design matrix").type_file_in ()
 
-  + Argument ("contrast", "the contrast vector, specified as a single row of weights").type_file_in ()
+  + Argument ("contrast", "the contrast matrix").type_file_in ()
 
-  + Argument ("output", "the filename prefix for all output.").type_text();
+  + Argument ("output", "the filename prefix for all output").type_text();
 
 
   OPTIONS
@@ -56,6 +59,10 @@ void usage ()
 
 using Math::Stats::matrix_type;
 using Math::Stats::vector_type;
+
+
+
+// TODO Implement subject data import class, per-datum design matrices
 
 
 
@@ -110,6 +117,7 @@ void run()
   const std::string output_prefix = argument[3];
 
   // Load input data
+  // TODO Define subject data import class
   matrix_type data (num_elements, filenames.size());
   {
     ProgressBar progress ("Loading input vector data", filenames.size());

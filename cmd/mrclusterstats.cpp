@@ -47,6 +47,9 @@ void usage ()
 
   SYNOPSIS = "Voxel-based analysis using permutation testing and threshold-free cluster enhancement";
 
+  DESCRIPTION
+      + Math::Stats::glm_column_ones_description;
+
   REFERENCES
    + "* If not using the -threshold command-line option:\n"
    "Smith, S. M. & Nichols, T. E. "
@@ -61,7 +64,7 @@ void usage ()
   ARGUMENTS
   + Argument ("input", "a text file containing the file names of the input images, one file per line").type_file_in()
 
-  + Argument ("design", "the design matrix, rows should correspond with images in the input image text file").type_file_in()
+  + Argument ("design", "the design matrix").type_file_in()
 
   + Argument ("contrast", "the contrast matrix, only specify one contrast as it will automatically compute the opposite contrast.").type_file_in()
 

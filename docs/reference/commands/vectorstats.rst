@@ -16,9 +16,14 @@ Usage
     vectorstats [ options ]  input design contrast output
 
 -  *input*: a text file listing the file names of the input subject data
--  *design*: the design matrix. Note that a column of 1's will need to be added for correlations.
--  *contrast*: the contrast vector, specified as a single row of weights
--  *output*: the filename prefix for all output.
+-  *design*: the design matrix
+-  *contrast*: the contrast matrix
+-  *output*: the filename prefix for all output
+
+Description
+-----------
+
+In some software packages, a column of ones is automatically added to the GLM design matrix; the purpose of this column is to estimate the "global intercept", which is the predicted value of the observed variable if all explanatory variables were to be zero. However there are rare situations where including such a column would not be appropriate for a particular experiment al design; hence, in MRtrix3 statistical inference commands, it is up to the user to determine whether or not this column of ones should be included in their design matrix, and add it explicitly if necessary. The contrast matrix must also reflect the presence of this additional column.
 
 Options
 -------

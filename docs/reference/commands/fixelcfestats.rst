@@ -17,10 +17,15 @@ Usage
 
 -  *in_fixel_directory*: the fixel directory containing the data files for each subject (after obtaining fixel correspondence
 -  *subjects*: a text file listing the subject identifiers (one per line). This should correspond with the filenames in the fixel directory (including the file extension), and be listed in the same order as the rows of the design matrix.
--  *design*: the design matrix. Note that a column of 1's will need to be added for correlations.
--  *contrast*: the contrast vector, specified as a single row of weights
+-  *design*: the design matrix
+-  *contrast*: the contrast matrix, specified as rows of weights
 -  *tracks*: the tracks used to determine fixel-fixel connectivity
 -  *out_fixel_directory*: the output directory where results will be saved. Will be created if it does not exist
+
+Description
+-----------
+
+In some software packages, a column of ones is automatically added to the GLM design matrix; the purpose of this column is to estimate the "global intercept", which is the predicted value of the observed variable if all explanatory variables were to be zero. However there are rare situations where including such a column would not be appropriate for a particular experiment al design; hence, in MRtrix3 statistical inference commands, it is up to the user to determine whether or not this column of ones should be included in their design matrix, and add it explicitly if necessary. The contrast matrix must also reflect the presence of this additional column.
 
 Options
 -------
@@ -54,7 +59,7 @@ Parameters for the Connectivity-based Fixel Enhancement algorithm
 Additional options for fixelcfestats
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-negative** automatically test the negative (opposite) contrast. By computing the opposite contrast simultaneously the computation time is reduced.
+-  **-column path** add a column to the design matrix corresponding to subject fixel-wise values (the contrast vector length must include columns for these additions)
 
 -  **-smooth FWHM** smooth the fixel value along the fibre tracts using a Gaussian kernel with the supplied FWHM (default: 10mm)
 
@@ -92,7 +97,7 @@ Raffelt, D.; Smith, RE.; Ridgway, GR.; Tournier, JD.; Vaughan, DN.; Rose, S.; He
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au)
+**Author:** David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors
 

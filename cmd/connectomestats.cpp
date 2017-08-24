@@ -54,6 +54,9 @@ void usage ()
 
   SYNOPSIS = "Connectome group-wise statistics at the edge level using non-parametric permutation testing";
 
+  DESCRIPTION
+      + Math::Stats::glm_column_ones_description;
+
 
   ARGUMENTS
   + Argument ("input", "a text file listing the file names of the input connectomes").type_file_in ()
@@ -61,7 +64,7 @@ void usage ()
   + Argument ("algorithm", "the algorithm to use in network-based clustering/enhancement. "
                            "Options are: " + join(algorithms, ", ")).type_choice (algorithms)
 
-  + Argument ("design", "the design matrix. Note that a column of 1's will need to be added for correlations.").type_file_in ()
+  + Argument ("design", "the design matrix").type_file_in ()
 
   + Argument ("contrast", "the contrast vector, specified as a single row of weights").type_file_in ()
 

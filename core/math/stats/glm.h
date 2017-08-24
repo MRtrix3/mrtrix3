@@ -28,6 +28,10 @@ namespace MR
 
 
 
+      extern const char* const glm_column_ones_description;
+
+
+
       namespace GLM
       {
 
@@ -35,7 +39,7 @@ namespace MR
         @{ */
         /*! Compute a matrix of the beta coefficients
          * @param measurements a matrix storing the measured data for each subject in a column
-         * @param design the design matrix (unlike other packages a column of ones is NOT automatically added to estimate the global intercept)
+         * @param design the design matrix
          * @return the matrix containing the output GLM betas
          */
         matrix_type solve_betas (const matrix_type& measurements, const matrix_type& design);
@@ -44,7 +48,7 @@ namespace MR
 
         /*! Compute the effect of interest
          * @param measurements a matrix storing the measured data for each subject in a column
-         * @param design the design matrix (unlike other packages a column of ones is NOT automatically added to estimate the global intercept)
+         * @param design the design matrix
          * @param contrast a matrix defining the group difference
          * @return the matrix containing the output effect
          */
@@ -54,7 +58,7 @@ namespace MR
 
         /*! Compute the pooled standard deviation
          * @param measurements a matrix storing the measured data for each subject in a column
-         * @param design the design matrix (unlike other packages a column of ones is NOT automatically added to estimate the global intercept)
+         * @param design the design matrix
          * @return the matrix containing the output standard deviation
          */
         matrix_type stdev (const matrix_type& measurements, const matrix_type& design);
@@ -63,7 +67,7 @@ namespace MR
 
         /*! Compute cohen's d, the standardised effect size between two means
          * @param measurements a matrix storing the measured data for each subject in a column
-         * @param design the design matrix (unlike other packages a column of ones is NOT automatically added to estimate the global intercept)
+         * @param design the design matrix
          * @param contrast a matrix defining the group difference
          * @return the matrix containing the output standardised effect size
          */
@@ -73,7 +77,7 @@ namespace MR
 
         /*! Compute all GLM-related statistics
          * @param measurements a matrix storing the measured data for each subject in a column
-         * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
+         * @param design the design matrix
          * @param contrast a matrix defining the group difference
          * @param betas the matrix containing the output GLM betas
          * @param abs_effect_size the matrix containing the output effect
@@ -139,7 +143,7 @@ namespace MR
         public:
           /*!
           * @param measurements a matrix storing the measured data for each subject in a column
-          * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
+          * @param design the design matrix
           * @param contrast a matrix containing the contrast of interest.
           */
           GLMTTestFixed (const matrix_type& measurements, const matrix_type& design, const matrix_type& contrast);
@@ -246,7 +250,7 @@ namespace MR
         public:
           /*!
            * @param measurements a matrix storing the measured data for each subject in a column
-           * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
+           * @param design the design matrix
            * @param contrast a matrix containing the contrast of interest.
            */
           GLMFTestFixed (const matrix_type& measurements, const matrix_type& design, const matrix_type& contrasts, const matrix_type& ftests);

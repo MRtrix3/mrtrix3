@@ -17,9 +17,14 @@ Usage
 
 -  *input*: a text file listing the file names of the input connectomes
 -  *algorithm*: the algorithm to use in network-based clustering/enhancement. Options are: nbs, nbse, none
--  *design*: the design matrix. Note that a column of 1's will need to be added for correlations.
+-  *design*: the design matrix
 -  *contrast*: the contrast vector, specified as a single row of weights
 -  *output*: the filename prefix for all output.
+
+Description
+-----------
+
+In some software packages, a column of ones is automatically added to the GLM design matrix; the purpose of this column is to estimate the "global intercept", which is the predicted value of the observed variable if all explanatory variables were to be zero. However there are rare situations where including such a column would not be appropriate for a particular experiment al design; hence, in MRtrix3 statistical inference commands, it is up to the user to determine whether or not this column of ones should be included in their design matrix, and add it explicitly if necessary. The contrast matrix must also reflect the presence of this additional column.
 
 Options
 -------
@@ -52,6 +57,8 @@ Additional options for connectomestats
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-threshold value** the t-statistic value to use in threshold-based clustering algorithms
+
+-  **-column path** add a column to the design matrix corresponding to subject edge-wise values (the contrast vector length must include columns for these additions)
 
 Standard options
 ^^^^^^^^^^^^^^^^
