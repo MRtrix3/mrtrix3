@@ -35,6 +35,7 @@ namespace MR
       namespace Tool
       {
         const int Tractogram::max_sample_stride;
+        TrackGeometryType Tractogram::default_tract_geom (TrackGeometryType::Pseudotubes);
 
         std::string Tractogram::Shader::vertex_shader_source (const Displayable& displayable)
         {
@@ -351,7 +352,7 @@ namespace MR
             filename (filename),
             color_type (TrackColourType::Direction),
             threshold_type (TrackThresholdType::None),
-            geometry_type (TrackGeometryType::Pseudotubes),
+            geometry_type (default_tract_geom),
             sample_stride (0),
             vao_dirty (true),
             threshold_min (NaN),

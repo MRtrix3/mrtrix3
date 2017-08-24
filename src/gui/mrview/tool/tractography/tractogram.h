@@ -83,6 +83,8 @@ namespace MR
             float get_threshold_min()  const { return threshold_min; }
             float get_threshold_max()  const { return threshold_max; }
 
+            static TrackGeometryType default_tract_geom;
+
             bool scalarfile_by_direction;
             bool show_colour_bar;
             bool should_update_stride;
@@ -98,7 +100,7 @@ namespace MR
                     use_lighting (false),
                     color_type (TrackColourType::Direction),
                     threshold_type (TrackThresholdType::None),
-                    geometry_type (TrackGeometryType::Pseudotubes) { }
+                    geometry_type (Tractogram::default_tract_geom) { }
                 std::string vertex_shader_source (const Displayable&) override;
                 std::string fragment_shader_source (const Displayable&) override;
                 std::string geometry_shader_source (const Displayable&) override;
