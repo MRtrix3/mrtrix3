@@ -56,7 +56,7 @@ namespace MR
         }
         catch (...) { }
       } else {
-        DEBUG ("No config file found at \"" MRTRIX_USER_CONFIG_FILE "\"");
+        DEBUG ("No config file found at \"" + path + "\"");
       }
     }
 
