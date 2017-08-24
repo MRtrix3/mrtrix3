@@ -28,6 +28,8 @@ def headerField(image_path, field):
       app.debug(result)
     else:
       app.console('Result: ' + result)
+  if proc.returncode:
+    app.error('Error trying to read header field \'' + field + '\' from image \'' + image_path + '\'')
   return result
 
 
@@ -43,6 +45,8 @@ def headerKeyValue(image_path, key):
   result = result.rstrip().decode('utf-8')
   if app._verbosity > 1:
     app.console('Result: ' + result)
+  # Don't exit on error; let the calling function determine whether or not
+  #   the absence of the key is an issue
   return result
 
 
@@ -91,5 +95,7 @@ def statistic(image_path, statistic, mask_path = ''):
   result = result.rstrip().decode('utf-8')
   if app._verbosity > 1:
     app.console('Result: ' + result)
+  if proc.returncode:
+    app.error('Error trying to calculate statistic \'' + statistic + '\' from image \'' + image_path + '\'')
   return result
 
