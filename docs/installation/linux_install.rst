@@ -188,24 +188,8 @@ Keeping *MRtrix3* up to date
    and re-run step 1 again.
 
 
-.. _linux_standalone:
-
-Standalone installation on Linux
---------------------------------
-
-In some cases, users need to install *MRtrix3* on systems running older
-distributions, over which they have little or no control, for example
-centrally-managed HPC clusters. In such cases, there genuinely is no way
-to install the dependencies required to compile and run *MRtrix3*. There
-are two ways to address this problem: `static
-executables <#static-build>`__, and the `standalone
-packager <#standalone-packager>`__. With both approaches, you can
-compile *MRtrix3* on a modern distro (within a virtual machine for
-example), package it up, and install it on any Linux system without
-worrying about dependencies.
-
 Setting the CPU architecture for optimal performance
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------------------------------
 
 By default, ``configure`` will cause the build script to produce generic code
 suitable for any current CPU. If you want to ensure optimal performance on your
@@ -235,6 +219,23 @@ For more specific architectures, you can provide any value from the `list of
 specifiers understood by the compiler
 <https://gcc.gnu.org/onlinedocs/gcc-6.2.0/gcc/x86-Options.html#x86-Options>`_,
 for example ``ARCH='sandybridge' ./configure``
+
+
+.. _linux_standalone:
+
+Standalone installation on Linux
+--------------------------------
+
+In some cases, users need to install *MRtrix3* on systems running older
+distributions, over which they have little or no control, for example
+centrally-managed HPC clusters. In such cases, there genuinely is no way
+to install the dependencies required to compile and run *MRtrix3*. There
+are two ways to address this problem: `static
+executables <#static-build>`__, and the `standalone
+packager <#standalone-packager>`__. With both approaches, you can
+compile *MRtrix3* on a modern distro (within a virtual machine for
+example), package it up, and install it on any Linux system without
+worrying about dependencies.
 
 Static build
 ^^^^^^^^^^^^
