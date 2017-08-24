@@ -129,8 +129,7 @@ const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast p
 
   + Option ("backtrack",
       "when using -stat_tck ends_*, if the streamline endpoint is outside the FoV, backtrack along "
-      "the streamline trajectory until an appropriate point is found "
-      "(note: with -stat_tck ends_corr, this will also look for a valid time-series)");
+      "the streamline trajectory until an appropriate point is found");
 
 
 
@@ -415,13 +414,7 @@ void run () {
 
     case SCALAR_MAP:
     case SCALAR_MAP_COUNT:
-      break;
-
     case FOD_AMP:
-      if (stat_tck == ENDS_CORR)
-        throw Exception ("Can't use endpoint-correlation track-wise statistic with FOD_AMP contrast");
-      break;
-
     case CURVATURE:
       break;
 
@@ -553,8 +546,7 @@ void run () {
       case ENDS_MEAN:      msg += "endpoints (mean)"; break;
       case ENDS_MAX:       msg += "endpoints (maximum)"; break;
       case ENDS_PROD:      msg += "endpoints (product)"; break;
-      case ENDS_CORR:      msg += "endpoints (correlation)"; break;
-      default:             msg += "ERROR";   break;
+      default:             throw Exception ("Invalid track-wise statistic detected");
     }
     msg += " per-track statistic";
   }
