@@ -15,10 +15,10 @@
 #include "surface/algo/mesh2image.h"
 
 #include <map>
-#include <vector>
 
 #include "header.h"
 #include "progressbar.h"
+#include "types.h"
 
 #include "surface/types.h"
 #include "surface/utils.h"

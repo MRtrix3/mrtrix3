@@ -16,12 +16,10 @@
 #define __dwi_tractography_mapping_mapper_h__
 
 
-
-#include <vector>
-
 #include "image.h"
-#include "transform.h"
 #include "thread_queue.h"
+#include "transform.h"
+#include "types.h"
 
 #include "dwi/directions/set.h"
 

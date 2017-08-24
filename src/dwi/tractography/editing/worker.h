@@ -17,7 +17,8 @@
 
 
 #include <string>
-#include <vector>
+
+#include "types.h"
 
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"

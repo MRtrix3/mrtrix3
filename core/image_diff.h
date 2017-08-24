@@ -28,7 +28,7 @@ namespace MR
       check_dimensions (in1, in2);
       for (size_t i = 0; i < in1.ndim(); ++i) {
         if (std::isfinite (in1.spacing(i)))
-          if (in1.spacing(i) != in2.spacing(i))
+          if (std::abs ((in1.spacing(i) - in2.spacing(i)) / (in1.spacing(i) + in2.spacing(i))) > 1e-4)
             throw Exception ("images \"" + in1.name() + "\" and \"" + in2.name() + "\" do not have matching voxel spacings " +
                                            str(in1.spacing(i)) + " vs " + str(in2.spacing(i)));
       }

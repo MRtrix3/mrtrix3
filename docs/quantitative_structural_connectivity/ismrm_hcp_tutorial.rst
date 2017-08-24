@@ -7,6 +7,10 @@ connectome for quintessential Human Connectome Project subject 100307.
 Some of these instructions will be specific to HCP data, others will be
 more general recommendations.
 
+Note that this page is being retained as a reference of the steps
+demonstrated during the ISMRM 2015 meeting; it does *not* constitute an
+up-to-date 'recommended' processing pipeline for HCP data.
+
 Necessary files
 ---------------
 

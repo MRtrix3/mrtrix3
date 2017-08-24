@@ -17,9 +17,9 @@
 
 #include <mutex>
 #include <stdint.h>
-#include <vector>
 
 #include "progressbar.h"
+#include "types.h"
 #include "math/stats/permutation.h"
 
 namespace MR

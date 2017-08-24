@@ -39,7 +39,7 @@ namespace MR
             axes_ (axes) {
               for (int i = 0; i < static_cast<int> (parent().ndim()); ++i) {
                 for (size_t a = 0; a < axes_.size(); ++a) {
-                  if (axes_[a] >= parent().ndim())
+                  if (size_t (axes_[a]) >= parent().ndim())
                     throw Exception ("axis " + str(axes_[a]) + " exceeds image dimensionality");
                   if (axes_[a] == i)
                     goto next_axis;

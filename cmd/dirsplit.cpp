@@ -85,7 +85,7 @@ class Shared { MEMALIGN(Shared)
     value_type energy (size_t i, size_t j) const {
       vector3_type a = { directions(i,0), directions(i,1), directions(i,2) };
       vector3_type b = { directions(j,0), directions(j,1), directions(j,2) };
-      return 1.0 / (a-b).squaredNorm() + 1.0 / (a+b).squaredNorm();
+      return 1.0 / (a-b).norm() + 1.0 / (a+b).norm();
     }
 
 

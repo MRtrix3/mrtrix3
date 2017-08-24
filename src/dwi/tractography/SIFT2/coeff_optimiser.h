@@ -16,8 +16,6 @@
 #define __dwi_tractography_sift2_coeff_optimiser_h__
 
 
-#include <vector>
-
 #include "bitset.h"
 
 #include "math/golden_section_search.h"

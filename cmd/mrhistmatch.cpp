@@ -14,12 +14,12 @@
 
 #include <algorithm>
 #include <cmath>
-#include <vector>
 
 #include "command.h"
 #include "datatype.h"
 #include "header.h"
 #include "image.h"
+
 #include "algo/histogram.h"
 #include "algo/loop.h"
 
