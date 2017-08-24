@@ -71,7 +71,7 @@ namespace MR
           line_thickness (MRTRIX_DEFAULT_LINE_THICKNESS),
           point_size (MRTRIX_DEFAULT_POINT_SIZE),
           do_crop_to_slab (true),
-          use_lighting (true),
+          use_lighting (false),
           not_3D (true),
           line_opacity (1.0),
           scalar_file_options (nullptr),
@@ -220,7 +220,7 @@ namespace MR
 
             lighting_group_box = new QGroupBox (tr("use lighting"));
             lighting_group_box->setCheckable (true);
-            lighting_group_box->setChecked (true);
+            lighting_group_box->setChecked (false);
             general_opt_grid->addWidget (lighting_group_box, 5, 0, 1, 2);
 
             connect (lighting_group_box, SIGNAL (clicked (bool)), this, SLOT (on_use_lighting_slot (bool)));
