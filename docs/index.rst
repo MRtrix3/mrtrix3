@@ -30,6 +30,7 @@ These applications have been written from scratch in C++, using the functionalit
    installation/linux_install
    installation/mac_install
    installation/windows_install
+   installation/deployment
    installation/hpc_clusters_install
 
 .. toctree::

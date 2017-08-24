@@ -263,30 +263,8 @@ Qt <http://doc.qt.io/qt-5/linux-deployment.html#building-qt-statically>`__
 beforehand. Use the ``-nogui`` option to skip installation of GUI
 components, which rely on Qt.
 
-You can then copy the contents of the ``bin/``, ``lib/`` and ``share/`` folders
-onto target systems, make sure the ``bin/`` folder location is listed in the
-``PATH``, and start using these commands. For example:
-
-1. Create a single archive of the relevant folders (for easy deployment)::
-   
-     tar cvfz mrtrix3_static.tgz bin/ lib/ share/
-
-2. Copy the resulting ``mrtrix3_static.tgz`` file over to the target system,
-   into a suitable location.
-
-3. Extract the archive in this location::
-
-     tar xvfz mrtrix3_static.tgz
-
-   You can safely remove the ``mrtrix3_static.tgz`` file at this point.
-
-4. Add the ``bin/`` folder to the system ``PATH``, e.g.::
-
-     export PATH="$(pwd)/bin:$PATH"
-
-   Note that the above command will only add *MRtrix3* to the ``PATH`` for the
-   current session. You would need to add the equivalent line to your users'
-   startup scripts, using whichever mechanism is appropriate for your system. 
+You can then deploy the software onto target systems, as described in the
+:ref:`deployment` section. 
 
 
 Standalone packager
