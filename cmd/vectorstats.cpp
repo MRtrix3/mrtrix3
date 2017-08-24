@@ -53,7 +53,13 @@ void usage ()
 
 
   OPTIONS
-  + Stats::PermTest::Options (false);
+  + Stats::PermTest::Options (false)
+
+  + OptionGroup ("Additional options for vectorstats")
+
+    + Option ("column", "add a column to the design matrix corresponding to subject element-wise values "
+                        "(the contrast vector length must include columns for these additions)").allow_multiple()
+      + Argument ("path").type_file_in();
 
 }
 
@@ -134,8 +140,28 @@ void run()
   // Load contrast matrix
   const matrix_type contrast = load_matrix (argument[2]);
   const size_t num_contrasts = contrast.rows();
-  if (contrast.cols() != design.cols())
-    throw Exception ("number of columns in contrast matrix (" + str(contrast.cols()) + ") does not match number of columns in design matrix (" + str(design.cols()) + ")");
+
+  // Before validating the contrast matrix, we first need to see if there are any
+  //   additional design matrix columns coming from voxel-wise subject data
+  vector<CohortDataImport> extra_columns;
+  bool nans_in_columns = false;
+  opt = get_options ("column");
+  for (size_t i = 0; i != opt.size(); ++i) {
+    extra_columns.push_back (CohortDataImport());
+    extra_columns[i].initialise<SubjectVectorImport> (opt[i][0]);
+    if (!extra_columns[i].allFinite())
+      nans_in_columns = true;
+  }
+  if (extra_columns.size()) {
+    CONSOLE ("number of element-wise design matrix columns: " + str(extra_columns.size()));
+    if (nans_in_columns)
+      INFO ("Non-finite values detected in element-wise design matrix columns; individual rows will be removed from voxel-wise design matrices accordingly");
+  }
+
+  if (contrast.cols() != design.cols() + ssize_t(extra_columns.size()))
+    throw Exception ("the number of columns per contrast (" + str(contrast.cols()) + ")"
+                     + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")"
+                     + (extra_columns.size() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
 
   const std::string output_prefix = argument[3];
 
@@ -144,16 +170,122 @@ void run()
   for (size_t subject = 0; subject != num_subjects; subject++)
     (*importer[subject]) (data.col(subject));
 
-  {
-    matrix_type betas, abs_effects, std_effects, stdevs;
-    Math::Stats::GLM::all_stats (data, design, contrast, betas, abs_effects, std_effects, stdevs);
-    save_matrix (betas, output_prefix + "betas.csv");
-    save_matrix (abs_effects, output_prefix + "abs_effect.csv");
-    save_matrix (std_effects, output_prefix + "std_effect.csv");
-    save_matrix (stdevs, output_prefix + "std_dev.csv");
+  const bool nans_in_data = !data.allFinite();
+  if (nans_in_data) {
+    INFO ("Non-finite values present in data; rows will be removed from element-wise design matrices accordingly");
+    if (!extra_columns.size()) {
+      INFO ("(Note that this will result in slower execution than if such values were not present)");
+    }
   }
 
-  std::shared_ptr<Math::Stats::GLMTestBase> glm_ttest (new Math::Stats::GLMTTestFixed (data, design, contrast));
+  // Construct the class for performing the initial statistical tests
+  std::shared_ptr<GLMTestBase> glm_test;
+  if (extra_columns.size() || nans_in_data) {
+    glm_test.reset (new GLMTTestVariable (extra_columns, data, design, contrast, nans_in_data, nans_in_columns));
+  } else {
+    glm_test.reset (new GLMTTestFixed (data, design, contrast));
+  }
+
+
+  // Only add contrast row number to image outputs if there's more than one contrast
+  auto postfix = [&] (const size_t i) { return (num_contrasts > 1) ? ("_" + str(i)) : ""; };
+
+  {
+    matrix_type betas (contrast.cols(), num_elements);
+    matrix_type abs_effect_size (num_contrasts, num_elements), std_effect_size (num_contrasts, num_elements), stdev (num_contrasts, num_elements);
+
+    if (extra_columns.size()) {
+
+      // For each variable of interest (e.g. beta coefficients, effect size etc.) need to:
+      //   Construct the output data vector, with size = num_voxels
+      //   For each voxel:
+      //     Use glm_test to obtain the design matrix for the default permutation for that voxel
+      //     Use the relevant Math::Stats::GLM function to get the value of interest for just that voxel
+      //       (will still however need to come out as a matrix_type)
+      //     Write that value to data vector
+      //   Finally, use write_output() function to write to an image file
+      class Source
+      { NOMEMALIGN
+        public:
+          Source (const size_t num_elements) :
+              num_elements (num_elements),
+              counter (0),
+              progress (new ProgressBar ("calculating basic properties of default permutation", num_elements)) { }
+
+          bool operator() (size_t& index)
+          {
+            index = counter++;
+            if (counter >= num_elements) {
+              progress.reset();
+              return false;
+            }
+            assert (progress);
+            ++(*progress);
+            return true;
+          }
+
+        private:
+          const size_t num_elements;
+          size_t counter;
+          std::unique_ptr<ProgressBar> progress;
+      };
+
+      class Functor
+      { MEMALIGN(Functor)
+        public:
+          Functor (const matrix_type& data, std::shared_ptr<GLMTestBase> glm_test, const matrix_type& contrasts,
+                   matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, matrix_type& stdev) :
+              data (data),
+              glm_test (glm_test),
+              contrasts (contrasts),
+              global_betas (betas),
+              global_abs_effect_size (abs_effect_size),
+              global_std_effect_size (std_effect_size),
+              global_stdev (stdev) { }
+
+          bool operator() (const size_t& index)
+          {
+            const matrix_type data_element = data.row (index);
+            const matrix_type design_element = dynamic_cast<GLMTTestVariable*>(glm_test.get())->default_design (index);
+            Math::Stats::GLM::all_stats (data_element, design_element, contrasts,
+                                         local_betas, local_abs_effect_size, local_std_effect_size, local_stdev);
+            global_betas.col (index) = local_betas;
+            global_abs_effect_size.col(index) = local_abs_effect_size.col(0);
+            global_std_effect_size.col(index) = local_std_effect_size.col(0);
+            global_stdev.col(index) = local_stdev.col(0);
+            return true;
+          }
+
+        private:
+          const matrix_type& data;
+          const std::shared_ptr<GLMTestBase> glm_test;
+          const matrix_type& contrasts;
+          matrix_type& global_betas;
+          matrix_type& global_abs_effect_size;
+          matrix_type& global_std_effect_size;
+          matrix_type& global_stdev;
+          matrix_type local_betas, local_abs_effect_size, local_std_effect_size, local_stdev;
+      };
+
+      Source source (num_elements);
+      Functor functor (data, glm_test, contrast,
+                       betas, abs_effect_size, std_effect_size, stdev);
+      Thread::run_queue (source, Thread::batch (size_t()), Thread::multi (functor));
+
+    } else {
+
+      ProgressBar progress ("calculating basic properties of default permutation");
+      Math::Stats::GLM::all_stats (data, design, contrast,
+                                   betas, abs_effect_size, std_effect_size, stdev);
+    }
+
+    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", 4);
+    save_matrix (betas, output_prefix + "betas.mif"); ++progress;
+    save_matrix (abs_effect_size, output_prefix + "abs_effect.csv"); ++progress;
+    save_matrix (std_effect_size, output_prefix + "std_effect.csv"); ++progress;
+    save_matrix (stdev, output_prefix + "std_dev.csv");
+  }
+
 
   // Precompute default statistic
   // Don't use convenience function: No enhancer!
@@ -162,7 +294,7 @@ void run()
   for (size_t i = 0; i != num_subjects; ++i)
     default_permutation[i] = i;
   matrix_type default_tvalues;
-  (*glm_ttest) (default_permutation, default_tvalues);
+  (*glm_test) (default_permutation, default_tvalues);
   save_matrix (default_tvalues, output_prefix + "tvalue.csv");
 
   // Perform permutation testing
@@ -174,10 +306,10 @@ void run()
     matrix_type empirical_distribution;
 
     if (permutations.size()) {
-      Stats::PermTest::run_permutations (permutations, glm_ttest, enhancer, empirical_distribution,
+      Stats::PermTest::run_permutations (permutations, glm_test, enhancer, empirical_distribution,
                                          default_tvalues, null_distribution, uncorrected_pvalues);
     } else {
-      Stats::PermTest::run_permutations (num_perms, glm_ttest, enhancer, empirical_distribution,
+      Stats::PermTest::run_permutations (num_perms, glm_test, enhancer, empirical_distribution,
                                          default_tvalues, null_distribution, uncorrected_pvalues);
     }
 

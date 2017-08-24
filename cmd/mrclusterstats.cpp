@@ -80,11 +80,11 @@ void usage ()
 
     + Option ("threshold", "the cluster-forming threshold to use for a standard cluster-based analysis. "
                            "This disables TFCE, which is the default otherwise.")
-    + Argument ("value").type_float (1.0e-6)
+      + Argument ("value").type_float (1.0e-6)
 
     + Option ("column", "add a column to the design matrix corresponding to subject voxel-wise values "
                         "(the contrast vector length must include columns for these additions)").allow_multiple()
-    + Argument ("path").type_file_in()
+      + Argument ("path").type_file_in()
 
     + Option ("connectivity", "use 26-voxel-neighbourhood connectivity (Default: 6)");
 
@@ -395,7 +395,7 @@ void run() {
 
     ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", contrast.cols() + (3 * num_contrasts));
     for (ssize_t i = 0; i != contrast.cols(); ++i) {
-      write_output (betas.row(i), v2v, prefix + (use_tfce ? "tfce.mif" : "cluster_sizes.mif"), output_header);
+      write_output (betas.row(i), v2v, prefix + "beta" + str(i) + ".mif", output_header);
       ++progress;
     }
     for (size_t i = 0; i != num_contrasts; ++i) {
