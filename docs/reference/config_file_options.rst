@@ -239,6 +239,11 @@ List of MRtrix3 configuration file options
 
      The width in pixels between horizontally adjacent colour bars.
 
+*  **MRViewDefaultTractGeomType**
+    *default: Pseudotubes*
+
+     The default geometry type used to render tractograms. Options are Pseudotubes, Lines or Points
+
 *  **MRViewDockFloating**
     *default: 0 (false)*
 
