@@ -786,17 +786,13 @@ namespace MR
           const Tractogram* first_tractogram = tractogram_list_model->get_tractogram (indices[0]);
           TrackGeometryType geom_type = first_tractogram->get_geometry_type();
 
-          if (geom_type == TrackGeometryType::Pseudotubes) {
+          if (geom_type == TrackGeometryType::Pseudotubes || geom_type == TrackGeometryType::Points) {
             thickness_slider->setHidden (false);
             thickness_label->setHidden (false);
             lighting_button->setEnabled (true);
             lighting_group_box->setEnabled (true);
           }
 
-          if (geom_type == TrackGeometryType::Points) {
-            thickness_slider->setHidden (false);
-            thickness_label->setHidden (false);
-          }
         }
 
 
