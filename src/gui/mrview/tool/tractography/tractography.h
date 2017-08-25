@@ -120,6 +120,7 @@ namespace MR
             void select_last_added_tractogram();
             bool process_commandline_option_tsf_check_tracto_loaded ();
             bool process_commandline_option_tsf_option (const MR::App::ParsedOption&, uint, vector<default_type>& range);
+            void init_geometry_type(const std::string& type_str);
             void update_geometry_type_gui();
         };
       }
