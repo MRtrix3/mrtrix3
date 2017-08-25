@@ -35,6 +35,8 @@ namespace MR
     {
       namespace Tool
       {
+        const constexpr char* geom_types[] = { "Pseudotubes", "Lines", "Points", nullptr };
+
         TrackGeometryType index_to_geometry_type (const int idx) {
           TrackGeometryType geom_type = TrackGeometryType::Pseudotubes;
 
@@ -274,31 +276,13 @@ namespace MR
             connect (action, SIGNAL(triggered()), this, SLOT (colour_by_scalar_file_slot()));
             track_option_menu->addAction (action);
 
-            static const constexpr char* geom_config_options[] = { "Pseudotubes", "Lines", "Points", nullptr };
-
             //CONF option: MRViewDefaultTractGeomType
             //CONF default: Pseudotubes
             //CONF The default geometry type used to render tractograms.
             //CONF Options are Pseudotubes, Lines or Points
-            const std::string default_geom_type = File::Config::get ("MRViewDefaultTractGeomType", geom_config_options[0]);
+            const std::string default_geom_type = File::Config::get ("MRViewDefaultTractGeomType", geom_types[0]);
 
-            if (default_geom_type != geom_config_options[0]) {
-              int index (0);
-              if (default_geom_type == geom_config_options[1])
-                index = 1;
-              else if (default_geom_type == geom_config_options[2])
-                index = 2;
-
-              // In the instance where pseudotubes are not the default, enable lighting
-              if (index) {
-                Tractogram::default_tract_geom =  index_to_geometry_type (index);
-                use_lighting = true;
-                lighting_group_box->setChecked (true);
-                geom_type_combobox->setCurrentIndex (index);
-              }
-            }
-
-            update_geometry_type_gui();
+            init_geometry_type (default_geom_type);
         }
 
 
@@ -797,6 +781,28 @@ namespace MR
 
 
 
+        inline void Tractography::init_geometry_type(const std::string &type_str) {
+          if (type_str != geom_types[0]) {
+            int index (0);
+            if (type_str == geom_types[1])
+              index = 1;
+            else if (type_str == geom_types[2])
+              index = 2;
+
+            // In the instance where pseudotubes are not the default, enable lighting
+            if (index) {
+              Tractogram::default_tract_geom =  index_to_geometry_type (index);
+              use_lighting = true;
+              lighting_group_box->setChecked (true);
+              geom_type_combobox->setCurrentIndex (index);
+            }
+          }
+
+          update_geometry_type_gui();
+        }
+
+
+
         void Tractography::add_commandline_options (MR::App::OptionList& options)
         {
           using namespace MR::App;
@@ -808,6 +814,9 @@ namespace MR
 
             + Option ("tractography.thickness", "Line thickness of tractography display, [-1.0, 1.0], default is 0.0.").allow_multiple()
             +   Argument("value").type_float ( -1.0, 1.0 )
+
+            + Option ("tractography.geometry_type", "The default geometry type used when rendering tractograms, default is Pseudotubes")
+            +   Argument("value").type_choice (geom_types)
 
             + Option ("tractography.opacity", "Opacity of tractography display, [0.0, 1.0], default is 1.0.").allow_multiple()
             +   Argument("value").type_float ( 0.0, 1.0 )
@@ -916,6 +925,17 @@ namespace MR
             catch (Exception& E) { E.display(); }
             return true;
           }
+
+
+          if (opt.opt-> is ("tractography.geometry_type")) {
+            const std::string geom_type = opt[0];
+            try {
+              init_geometry_type (geom_type);
+            }
+            catch (Exception& E) { E.display(); }
+            return true;
+          }
+
 
           if (opt.opt->is ("tractography.opacity")) {
             // Opacity runs from 0 to 1000, so multiply by 1000
