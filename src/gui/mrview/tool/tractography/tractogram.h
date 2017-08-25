@@ -84,12 +84,15 @@ namespace MR
             float get_threshold_max()  const { return threshold_max; }
 
             static TrackGeometryType default_tract_geom;
+            static constexpr float default_line_thickness = 2e-3f;
+            static constexpr float default_point_size = 6.f;
 
             bool scalarfile_by_direction;
             bool show_colour_bar;
             bool should_update_stride;
             Eigen::Array3f colour;
             float original_fov;
+            float line_thickness;
             std::string intensity_scalar_filename;
             std::string threshold_scalar_filename;
 
@@ -145,7 +148,6 @@ namespace MR
             vector<vector<GLint> > original_track_starts;
             vector<size_t> num_tracks_per_buffer;
             GLint sample_stride;
-            float line_thickness_screenspace;
             bool vao_dirty;
 
             // Extra members now required since different scalar files

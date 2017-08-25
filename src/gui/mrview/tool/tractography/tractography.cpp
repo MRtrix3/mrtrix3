@@ -22,10 +22,6 @@
 #include "gui/opengl/lighting.h"
 #include "gui/lighting_dock.h"
 
- // as a fraction of the image FOV:
-#define MRTRIX_DEFAULT_LINE_THICKNESS 0.002f
-
-#define MRTRIX_DEFAULT_POINT_SIZE 5.f
 
 namespace MR
 {
@@ -87,8 +83,6 @@ namespace MR
 
         Tractography::Tractography (Dock* parent) :
           Base (parent),
-          line_thickness (MRTRIX_DEFAULT_LINE_THICKNESS),
-          point_size (MRTRIX_DEFAULT_POINT_SIZE),
           do_crop_to_slab (true),
           use_lighting (false),
           not_3D (true),
@@ -465,11 +459,10 @@ namespace MR
 
         void Tractography::line_thickness_slot (int thickness)
         {
-          line_thickness = MRTRIX_DEFAULT_LINE_THICKNESS * std::exp (2.0e-3f * thickness);
-          point_size = MRTRIX_DEFAULT_POINT_SIZE * std::exp (2.0e-3f * thickness);
-
-          for (size_t i = 0, N = tractogram_list_model->rowCount(); i < N; ++i) {
-            Tractogram* tractogram = dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get());
+          QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i)  {
+            Tractogram* tractogram = tractogram_list_model->get_tractogram (indices[i]);
+            tractogram->line_thickness = thickness;
             tractogram->should_update_stride = true;
           }
 
@@ -737,6 +730,8 @@ namespace MR
               break;
           }
           geom_type_combobox->setCurrentIndex(geom_combobox_index);
+
+          thickness_slider->setSliderPosition (first_tractogram->line_thickness);
         }
 
 
