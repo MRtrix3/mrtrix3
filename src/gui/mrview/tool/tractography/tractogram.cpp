@@ -230,11 +230,15 @@ namespace MR
           if (threshold_type != TrackThresholdType::None)
             source += using_geom ? "in float g_amp;\n" : "in vec3 v_amp;\n";
 
-          if (use_lighting && using_geom)
+          if (use_lighting && (using_geom || using_points)) {
             source += 
               "uniform float ambient, diffuse, specular, shine;\n"
-              "uniform vec3 light_pos;\n"
-              "in float g_height;\n";
+              "uniform vec3 light_pos;\n";
+
+            if (using_geom)
+              source += "in float g_height;\n";
+          }
+
           if (do_crop_to_slab)
             source += using_geom ? "in float g_include;\n" : "in float v_include;\n";
 
@@ -243,7 +247,9 @@ namespace MR
 
           if (using_points)
             source +=
-            "if(dot(gl_PointCoord-0.5,gl_PointCoord-0.5)>0.25)\n"
+            "vec2 pos = gl_PointCoord-0.5;\n"
+            "float d_pos = dot(pos, pos);\n"
+            "if(d_pos >0.25)\n"
             "  discard;\n";
 
           if (do_crop_to_slab)
@@ -277,18 +283,25 @@ namespace MR
               source += "  colour = const_colour;\n";
           }
 
-          if (use_lighting && using_geom)
-            // g_height tells us where we are across the cylinder (0 - PI)
-            source +=
-              // compute surface normal:
-              "  float s = sin (g_height);\n"
-              "  float c = cos (g_height);\n"
-              "  vec3 tangent = normalize (mat3(MV) * g_tangent);\n"
-              "  vec3 in_plane_x = normalize (vec3(-tangent.y, tangent.x, 0.0f));\n"
-              "  vec3 in_plane_y = normalize (vec3(-tangent.x, -tangent.y, 0.0f));\n"
-              "  vec3 surface_normal = c*in_plane_x +  s*abs(tangent.z)*in_plane_y;\n"
-              "  surface_normal.z -= s * sqrt(tangent.x*tangent.x + tangent.y*tangent.y);\n"
+          if (use_lighting && (using_geom || using_points)) {
 
+            if (using_geom) {
+              // g_height tells us where we are across the cylinder (0 - PI)
+              source +=
+                // compute surface normal:
+                "  float s = sin (g_height);\n"
+                "  float c = cos (g_height);\n"
+                "  vec3 tangent = normalize (mat3(MV) * g_tangent);\n"
+                "  vec3 in_plane_x = normalize (vec3(-tangent.y, tangent.x, 0.0f));\n"
+                "  vec3 in_plane_y = normalize (vec3(-tangent.x, -tangent.y, 0.0f));\n"
+                "  vec3 surface_normal = c*in_plane_x +  s*abs(tangent.z)*in_plane_y;\n"
+                "  surface_normal.z -= s * sqrt(tangent.x*tangent.x + tangent.y*tangent.y);\n";
+             } else if (using_points) {
+               source +=
+               "vec3 surface_normal = normalize(vec3(pos, sin(d_pos - 0.25)));\n";
+             }
+
+             source +=
              "  float light_dot_surfaceN = -dot(light_pos, surface_normal);"
              // Ambient and diffuse component
              "  colour *= ambient + diffuse * clamp(light_dot_surfaceN, 0, 1);\n"
@@ -298,6 +311,7 @@ namespace MR
              "    vec3 reflection = light_pos + 2 * light_dot_surfaceN * surface_normal;\n"
              "    colour += specular * pow(clamp(-reflection.z, 0, 1), shine);\n"
              "  }\n";
+          }
 
           source += "}\n";
 
