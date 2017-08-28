@@ -463,8 +463,9 @@ namespace MR
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "scale_x"), transform.width());
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "scale_y"), transform.height());
 
-          float point_size_screenspace = (Tractogram::default_point_size * std::exp (2.0e-3f * line_thickness)
-            * original_fov) / window().FOV();
+          float point_size_screenspace =
+              Tractogram::default_point_size * std::exp (2.0e-3f * line_thickness) * original_fov *
+              (transform.width()+transform.height()) / ( 2.f * window().FOV());
 
           glPointSize(point_size_screenspace);
 
