@@ -85,7 +85,7 @@ namespace MR
 
             static TrackGeometryType default_tract_geom;
             static constexpr float default_line_thickness = 2e-3f;
-            static constexpr float default_point_size = 6.f;
+            static constexpr float default_point_size = 4e-3f;
 
             bool scalarfile_by_direction;
             bool show_colour_bar;
