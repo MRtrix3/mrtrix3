@@ -298,7 +298,7 @@ namespace MR
                 "  surface_normal.z -= s * sqrt(tangent.x*tangent.x + tangent.y*tangent.y);\n";
              } else if (using_points) {
                source +=
-               "vec3 surface_normal = normalize(vec3(pos, sin(d_pos - 0.25)));\n";
+               "vec3 surface_normal = normalize(vec3(pos, sin((d_pos - 0.25) *" + str(Math::pi_2) + ")));\n";
              }
 
              source +=
