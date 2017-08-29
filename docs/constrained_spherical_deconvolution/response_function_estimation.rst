@@ -20,7 +20,7 @@ although some have proven to be more widely applicable than others.
 Quick advice
 ------------
 
-These options appear to perform well in a wide range of scenarios,
+These algorithms appear to perform well in a wide range of scenarios,
 based on experience and testing from both developers and the
 `MRtrix3 community <http://community.mrtrix.org>`__.:
 
@@ -39,7 +39,27 @@ based on experience and testing from both developers and the
 
       dwi2response dhollander dwi.mif wm_response.txt gm_response.txt csf_response.txt
 
+In general, it's always worthwhile checking your response function(s):
+   ::
 
+      shview wm_response.txt
+      
+Use the left and right arrow (keyboard) keys in this viewer to switch
+between the different b-values ('shells') of the response function, if
+it has more than one (this would for example be the case for the outputs
+of the ``dhollander`` algorithm).
+
+It may also be helpful to check which voxels were selected by the
+algorithm to estimate the response function(s) from. For any :ref:`dwi2response`
+algorithm, this can be done by adding the ``-voxels`` option, which
+stores an image of these voxels for further inspection. For example,
+for the ``tournier`` algorithm:
+   ::
+
+      dwi2response tournier dwi.mif wm_response.txt -voxels voxels.mif
+      
+The resulting ``voxels.mif`` image can be overlaid on the ``dwi.mif``
+dataset using the :ref:`mrview` viewer.
 
 
 More information
