@@ -119,7 +119,7 @@ rf_import_option = ''
 if app.args.rf:
     rf_import_option = ' '.join('-rf ' + path.fromUser(r, True) for r in app.args.rf.split(','))
 
-recon_option = '-maxiter 3 -reg 0.22 '
+recon_option = '-maxiter 3 '
 if rf_import_option is not '':
     recon_option += rf_import_option
 elif shell is not None and len(shell)==1:

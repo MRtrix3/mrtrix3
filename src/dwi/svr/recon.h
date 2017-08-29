@@ -421,7 +421,7 @@ namespace MR
             }
           }
         }
-        L *= lambda;
+        L *= std::sqrt(lambda);
         L.makeCompressed();
       }
 
