@@ -92,7 +92,11 @@ void usage ()
 
   + Option ("maxiter",
             "the maximum number of iterations of the conjugate gradient solver. (default = " + str(DEFAULT_MAXITER) + ")")
-    + Argument ("n").type_integer(1);
+    + Argument ("n").type_integer(1)
+
+  + Option ("init",
+            "initial guess of the reconstruction parameters.")
+    + Argument ("img").type_image_in();
 
 }
 
@@ -222,7 +226,20 @@ void run ()
   R.project_y2x(p, y);
 
   // Solve M'M x = M'y
-  Eigen::VectorXf x = cg.solve(p);
+  Eigen::VectorXf x (R.cols());
+  opt = get_options("init");
+  if (opt.size()) {
+    auto init = Image<value_type>::open(opt[0][0]);
+    Eigen::VectorXf x0 (R.cols());
+    size_t j = 0;
+    for (auto l = Loop("loading initialisation", {3, 0, 1, 2})(init); l; l++, j++) {
+      x0[j] = init.value();
+    }
+    x = cg.solveWithGuess(p, x0);
+  }
+  else {
+    x = cg.solve(p);
+  }
 
   std::cout << "CG: #iterations: " << cg.iterations() << ", estimated error: " << cg.error() << std::endl;
 
