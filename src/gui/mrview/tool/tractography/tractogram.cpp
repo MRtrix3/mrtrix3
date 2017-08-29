@@ -298,7 +298,7 @@ namespace MR
                 "  surface_normal.z -= s * sqrt(tangent.x*tangent.x + tangent.y*tangent.y);\n";
              } else if (using_points) {
                source +=
-               "vec3 surface_normal = normalize(vec3(pos, sin(d_pos - 0.25)));\n";
+               "vec3 surface_normal = normalize(vec3(pos, sin((d_pos - 0.25) *" + str(Math::pi_2) + ")));\n";
              }
 
              source +=
@@ -463,8 +463,9 @@ namespace MR
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "scale_x"), transform.width());
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "scale_y"), transform.height());
 
-          float point_size_screenspace = (Tractogram::default_point_size * std::exp (2.0e-3f * line_thickness)
-            * original_fov) / window().FOV();
+          float point_size_screenspace =
+              Tractogram::default_point_size * std::exp (2.0e-3f * line_thickness) * original_fov *
+              (transform.width()+transform.height()) / ( 2.f * window().FOV());
 
           glPointSize(point_size_screenspace);
 
