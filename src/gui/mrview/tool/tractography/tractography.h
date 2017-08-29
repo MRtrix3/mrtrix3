@@ -37,6 +37,8 @@ namespace MR
       namespace Tool
       {
 
+        extern const char* tractogram_geometry_types[];
+
         class Tractography : public Base
         { MEMALIGN(Tractography)
             Q_OBJECT
@@ -111,14 +113,13 @@ namespace MR
             QSlider* thickness_slider;
 
             QLabel* thickness_label;
-            
+
             void dropEvent (QDropEvent* event) override;
             void update_scalar_options();
             void add_tractogram (vector<std::string>& list);
             void select_last_added_tractogram();
             bool process_commandline_option_tsf_check_tracto_loaded ();
             bool process_commandline_option_tsf_option (const MR::App::ParsedOption&, uint, vector<default_type>& range);
-            void init_geometry_type(const std::string& type_str);
             void update_geometry_type_gui();
         };
       }
