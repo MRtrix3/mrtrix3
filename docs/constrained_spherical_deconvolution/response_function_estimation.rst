@@ -22,20 +22,22 @@ Quick advice
 
 These options appear to perform well in a wide range of scenarios,
 based on experience and testing from both developers and the
-`MRtrix3 community <community.mrtrix.org>`__.:
+`MRtrix3 community <http://community.mrtrix.org>`__.:
 
 -  If you intend to perform *single-tissue* spherical deconvolution,
    the ``tournier`` algorithm is a convenient and reliable way to
-   estimate the single-fibre white matter response function::
+   estimate the single-fibre white matter response function:
+   ::
 
-   dwi2response tournier dwi.mif wm_response.txt
+      dwi2response tournier dwi.mif wm_response.txt
 
 -  If you intend to perform *multi-tissue* spherical deconvolution,
    the ``dhollander`` algorithm is a convenient and reliable way to
    estimate the single-fibre white matter response function as well
-   as the grey matter and CSF response functions::
+   as the grey matter and CSF response functions:
+   ::
 
-   dwi2response dhollander dwi.mif wm_response.txt gm_response.txt csf_response.txt
+      dwi2response dhollander dwi.mif wm_response.txt gm_response.txt csf_response.txt
 
 
 
