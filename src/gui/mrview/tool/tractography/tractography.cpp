@@ -31,22 +31,28 @@ namespace MR
     {
       namespace Tool
       {
-        const constexpr char* geom_types[] = { "Pseudotubes", "Lines", "Points", nullptr };
+        const char* tractogram_geometry_types[] = { "pseudotubes", "lines", "points", nullptr };
 
-        TrackGeometryType index_to_geometry_type (const int idx) {
-          TrackGeometryType geom_type = TrackGeometryType::Pseudotubes;
-
+        TrackGeometryType geometry_index2type (const int idx)
+        {
           switch (idx) {
-          case 1:
-            geom_type = TrackGeometryType::Lines;
-            break;
-          case 2:
-            geom_type = TrackGeometryType::Points;
-          default:
-            break;
+            case 0: return TrackGeometryType::Pseudotubes;
+            case 1: return TrackGeometryType::Lines;
+            case 2: return TrackGeometryType::Points;
+            default: assert (0); return TrackGeometryType::Pseudotubes;
           }
+        }
 
-          return geom_type;
+        size_t geometry_string2index (std::string type_str)
+        {
+          type_str = lowercase (type_str);
+          size_t index = 0;
+          for (const char* const* p = tractogram_geometry_types; *p; ++p, ++index) {
+            if (type_str == *p)
+              return index;
+          }
+          throw Exception ("Unrecognised value for tractogram geometry \"" + type_str + "\" (options are: " + join(tractogram_geometry_types, ", ") + "); ignoring");
+          return 0;
         }
 
 
@@ -274,9 +280,22 @@ namespace MR
             //CONF default: Pseudotubes
             //CONF The default geometry type used to render tractograms.
             //CONF Options are Pseudotubes, Lines or Points
-            const std::string default_geom_type = File::Config::get ("MRViewDefaultTractGeomType", geom_types[0]);
+            const std::string default_geom_type = File::Config::get ("MRViewDefaultTractGeomType", tractogram_geometry_types[0]);
+            try {
+              const size_t default_geom_index = geometry_string2index (default_geom_type);
+              Tractogram::default_tract_geom = geometry_index2type (default_geom_index);
+              geom_type_combobox->setCurrentIndex (default_geom_index);
+            } catch (Exception& e) {
+              e.display();
+            }
 
-            init_geometry_type (default_geom_type);
+            // In the instance where pseudotubes are _not_ the default, enable lighting by default
+            if (Tractogram::default_tract_geom != TrackGeometryType::Pseudotubes) {
+              use_lighting = true;
+              lighting_group_box->setChecked (true);
+            }
+
+            update_geometry_type_gui();
         }
 
 
@@ -332,7 +351,7 @@ namespace MR
           vector<std::string> list = Dialog::File::get_files (this, "Select tractograms to open", "Tractograms (*.tck)");
           add_tractogram(list);
         }
-        
+
 
 
 
@@ -348,7 +367,7 @@ namespace MR
           catch (Exception& E) {
             E.display();
           }
-          
+
         }
 
 
@@ -650,9 +669,9 @@ namespace MR
 
 
 
-        void Tractography::geom_type_selection_slot(int selected_index)
+        void Tractography::geom_type_selection_slot (int selected_index)
         {
-          TrackGeometryType geom_type = index_to_geometry_type (selected_index);
+          TrackGeometryType geom_type = geometry_index2type (selected_index);
 
           QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i)
@@ -720,6 +739,8 @@ namespace MR
           TrackGeometryType geom_type = first_tractogram->get_geometry_type();
           int geom_combobox_index = 0;
           switch (geom_type) {
+            case TrackGeometryType::Pseudotubes:
+              break;
             case TrackGeometryType::Lines:
               geom_combobox_index = 1;
               break;
@@ -727,6 +748,7 @@ namespace MR
               geom_combobox_index = 2;
               break;
             default:
+              assert (0);
               break;
           }
           geom_type_combobox->setCurrentIndex(geom_combobox_index);
@@ -763,7 +785,7 @@ namespace MR
           geom_type_combobox->setEnabled (true);
 
           const Tractogram* first_tractogram = tractogram_list_model->get_tractogram (indices[0]);
-          TrackGeometryType geom_type = first_tractogram->get_geometry_type();
+          const TrackGeometryType geom_type = first_tractogram->get_geometry_type();
 
           if (geom_type == TrackGeometryType::Pseudotubes || geom_type == TrackGeometryType::Points) {
             thickness_slider->setHidden (false);
@@ -776,25 +798,7 @@ namespace MR
 
 
 
-        inline void Tractography::init_geometry_type(const std::string &type_str) {
-          if (type_str != geom_types[0]) {
-            int index (0);
-            if (type_str == geom_types[1])
-              index = 1;
-            else if (type_str == geom_types[2])
-              index = 2;
 
-            // In the instance where pseudotubes are not the default, enable lighting
-            if (index) {
-              Tractogram::default_tract_geom =  index_to_geometry_type (index);
-              use_lighting = true;
-              lighting_group_box->setChecked (true);
-              geom_type_combobox->setCurrentIndex (index);
-            }
-          }
-
-          update_geometry_type_gui();
-        }
 
 
 
@@ -810,8 +814,8 @@ namespace MR
             + Option ("tractography.thickness", "Line thickness of tractography display, [-1.0, 1.0], default is 0.0.").allow_multiple()
             +   Argument("value").type_float ( -1.0, 1.0 )
 
-            + Option ("tractography.geometry_type", "The default geometry type used when rendering tractograms, default is Pseudotubes")
-            +   Argument("value").type_choice (geom_types)
+            + Option ("tractography.geometry", "The geometry type to use when rendering tractograms (options are: " + join(tractogram_geometry_types, ", ") + ")")
+            +   Argument("value").type_choice (tractogram_geometry_types)
 
             + Option ("tractography.opacity", "Opacity of tractography display, [0.0, 1.0], default is 1.0.").allow_multiple()
             +   Argument("value").type_float ( 0.0, 1.0 )
@@ -821,15 +825,12 @@ namespace MR
 
             + Option ("tractography.tsf_load", "Load the specified tractography scalar file.").allow_multiple()
             +  Argument("tsf").type_file_in()
-            
+
             + Option ("tractography.tsf_range", "Set range for the tractography scalar file. Requires tractography.tsf_load already provided. RangeMin,RangeMax").allow_multiple()
             +  Argument("range").type_sequence_float()
 
             + Option ("tractography.tsf_thresh", "Set thresholds for the tractography scalar file. Requires tractography.tsf_load already provided. ThresholdMin,ThesholdMax").allow_multiple()
-            +  Argument("thresh").type_sequence_float()
-            ;
-
-            
+            +  Argument("thresh").type_sequence_float();
         }
 
         /*
@@ -863,21 +864,21 @@ namespace MR
           if (opt.opt->is ("tractography.tsf_load"))
           {
             try {
-              
+
               if (process_commandline_option_tsf_check_tracto_loaded()) {
                 QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-        
+
                 if (indices.size() == 1) {//just in case future edits break this assumption
                   Tractogram* tractogram = tractogram_list_model->get_tractogram (indices[0]);
-                  
+
                   //set its tsf filename and load the tsf file
                   scalar_file_options->set_tractogram (tractogram);
                   scalar_file_options->open_intensity_track_scalar_file_slot (std::string(opt[0]));
-          
+
                   //Set the GUI to use the file for visualisation
                   colour_combobox->setCurrentIndex(4); // Set combobox to "File"
                 }
-              }              
+              }
             }
             catch (Exception& E) { E.display(); }
 
@@ -889,20 +890,20 @@ namespace MR
             try {
               //Set the tsf visualisation range
               vector<default_type> range;
-              if (process_commandline_option_tsf_option(opt,2, range))      
+              if (process_commandline_option_tsf_option(opt,2, range))
                 scalar_file_options->set_scaling (range[0], range[1]);
             }
             catch (Exception& E) { E.display(); }
             return true;
           }
 
-          
+
           if (opt.opt->is ("tractography.tsf_thresh"))
           {
             try {
               //Set the tsf visualisation threshold
               vector<default_type> range;
-              if (process_commandline_option_tsf_option(opt,2, range))      
+              if (process_commandline_option_tsf_option(opt,2, range))
                 scalar_file_options->set_threshold (TrackThresholdType::UseColourFile,range[0], range[1]);
             }
             catch(Exception& E) { E.display(); }
@@ -922,10 +923,18 @@ namespace MR
           }
 
 
-          if (opt.opt-> is ("tractography.geometry_type")) {
-            const std::string geom_type = opt[0];
+
+          if (opt.opt-> is ("tractography.geometry")) {
             try {
-              init_geometry_type (geom_type);
+              const TrackGeometryType geom_type = geometry_index2type (geometry_string2index (opt[0]));
+              QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+              if (indices.size()) {
+                for (int i = 0; i < indices.size(); ++i)
+                  tractogram_list_model->get_tractogram (indices[i])->set_geometry_type (geom_type);
+              } else {
+                Tractogram::default_tract_geom = geom_type;
+              }
+              update_geometry_type_gui();
             }
             catch (Exception& E) { E.display(); }
             return true;
@@ -981,7 +990,7 @@ namespace MR
 
 
 
-      
+
       /*Checks whether legal to apply tsf options and prepares the scalar_file_options to do so. Returns the vector of floats parsed from the options, or null on fail*/
         bool Tractography::process_commandline_option_tsf_option(const MR::App::ParsedOption& opt, uint reqArgSize, vector<default_type>& range)
         {
