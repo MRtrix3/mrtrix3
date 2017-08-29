@@ -38,6 +38,7 @@ options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass
 options.add_argument('-niter', help='Number of epochs (default = 3)')
 options.add_argument('-shell', help='Shells to be processed (default = all)')
 options.add_argument('-lmax', help='SH basis order for single-shell processing (default = 0)')
+options.add_argument('-reg', help='Regularization for dwirecon (default = 0.05)')
 options.add_argument('-rf', help='Basis functions for the radial domain')
 options.add_argument('-svr', help='Number of slice-to-volume reconstruction epochs (default = 0)')
 options.add_argument('-mb', help='Multiband factor (default = 1)')
@@ -119,13 +120,15 @@ rf_import_option = ''
 if app.args.rf:
     rf_import_option = ' '.join('-rf ' + path.fromUser(r, True) for r in app.args.rf.split(','))
 
-recon_option = '-maxiter 3 '
+recon_option = '-maxiter 3'
 if rf_import_option is not '':
     recon_option += rf_import_option
 elif shell is not None and len(shell)==1:
-    recon_option += '-lmax ' + str(lmax)
+    recon_option += ' -lmax ' + str(lmax)
 else:
     app.error('Multi-shell data requires radial basis, single-shell data requires lmax.')
+if app.args.reg:
+    recon_option += ' -reg ' + app.args.reg
 
 # Set SSP width
 if app.args.sspwidth:
