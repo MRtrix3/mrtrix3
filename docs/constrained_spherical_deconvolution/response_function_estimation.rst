@@ -27,6 +27,7 @@ based on experience and testing from both developers and the
 -  If you intend to perform *single-tissue* spherical deconvolution,
    the ``tournier`` algorithm is a convenient and reliable way to
    estimate the single-fibre white matter response function:
+
    ::
 
       dwi2response tournier dwi.mif wm_response.txt
@@ -35,14 +36,16 @@ based on experience and testing from both developers and the
    the ``dhollander`` algorithm is a convenient and reliable way to
    estimate the single-fibre white matter response function as well
    as the grey matter and CSF response functions:
+
    ::
 
       dwi2response dhollander dwi.mif wm_response.txt gm_response.txt csf_response.txt
 
 In general, it's always worthwhile checking your response function(s):
-   ::
 
-      shview wm_response.txt
+::
+
+   shview wm_response.txt
       
 Use the left and right arrow (keyboard) keys in this viewer to switch
 between the different b-values ('shells') of the response function, if
@@ -50,16 +53,17 @@ it has more than one (this would for example be the case for the outputs
 of the ``dhollander`` algorithm).
 
 It may also be helpful to check which voxels were selected by the
-algorithm to estimate the response function(s) from. For any :ref:`dwi2response`
-algorithm, this can be done by adding the ``-voxels`` option, which
-stores an image of these voxels for further inspection. For example,
-for the ``tournier`` algorithm:
-   ::
+algorithm to estimate the response function(s) from. For any
+:ref:`dwi2response` algorithm, this can be done by adding the ``-voxels``
+option, which outputs an image of these voxels. For example, for
+the ``tournier`` algorithm:
 
-      dwi2response tournier dwi.mif wm_response.txt -voxels voxels.mif
+::
+
+   dwi2response tournier dwi.mif wm_response.txt -voxels voxels.mif
       
 The resulting ``voxels.mif`` image can be overlaid on the ``dwi.mif``
-dataset using the :ref:`mrview` viewer.
+dataset using the :ref:`mrview` image viewer for further inspection.
 
 
 More information
