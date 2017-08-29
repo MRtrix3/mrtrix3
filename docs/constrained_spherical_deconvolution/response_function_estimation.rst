@@ -1,47 +1,47 @@
-.. _response_fn_estimation:
+.. _response_function_estimation:
 
 Response function estimation
 ============================
 
-A compulsory step in spherical deconvolution is deriving the 'response
-function (RF)', which is used as the kernel during the deconvolution
-step. For the white matter, this is the signal expected for a voxel
-containing a single, coherently-oriented fibre bundle. While some groups
-prefer to define this function using some *ad-hoc* template function
-(e.g. a diffusion tensor with empirical diffusivities), the MRtrix
-contributors are in preference of deriving this function directly from
-the image data, typically by averaging the diffusion signal from a set
-of empirically-determined 'single-fibre (SF)' voxels.
+A prerequisite for spherical deconvolution is obtaining response
+function(s), which is/are used as the kernel(s) by the deconvolution
+algorithm. For the white matter, the response function is the signal
+expected for a voxel containing a single, coherently oriented bundle
+of axons. In case of multi-tissue variants of spherical deconvolution,
+response functions for other tissue types may be introduced as well;
+the most common ones being grey matter and/or CSF.
 
-The process of estimating this function from the data is however
-non-trivial; there is no single unambiguous way in which this should be
-done. Earlier in the beta version of MRtrix3, we provided a command
-``dwi2response`` that advertised automated determination of the response
-function, based on a `published
-method <http://www.sciencedirect.com/science/article/pii/S1053811913008367>`__
-with a few additional enhancements. Unfortunately user testing showed
-that this algorithm would not produce the desired result in a number of
-circumstances, and the available command-line options for altering its
-behaviour were not intuitive.
+In MRtrix3, the :ref:`dwi2response` script offers a range of algorithms
+to estimate these response function(s) directly from your dataset itself.
+This process of estimating response function(s) from the data is
+non-trivial. No single algorithm works for *any* possible scenario,
+although some have proven to be more widely applicable than others.
 
-As a result, we are now instead providing :ref:`dwi2response` as a
-*script*. This was done for a few reasons. Firstly, it means that we can
-provide multiple different mechanisms / algorithms for response function
-estimation, all accessible within the one script, allowing users to
-experiment with different approaches. Secondly, because these Python
-scripts are more accessible to most users than C++ code, the algorithms
-themselves can be modified, or some may even choose to try devising
-their own heiristics for response function estimation. Thirdly, it
-reinforces the fact that there is unfortunately *not* a black-box,
-one-size-fits-all solution to this problem.
+Quick advice
+------------
 
-Here I will discuss some of the technical aspects of response function
-estimation, and describe the mechanisms by which the currently provided
-algorithms work. If however you are not interested in the nitty-gritty
-of this process, feel free to scroll to the bottom of the page.
+These options appear to perform well in a wide range of scenarios,
+based on experience and testing from both developers and the
+`MRtrix3 community <community.mrtrix.org>`__.:
 
-Necessary steps
----------------
+-  If you intend to perform *single-tissue* spherical deconvolution,
+   the ``tournier`` algorithm is a convenient and reliable way to
+   estimate the single-fibre white matter response function::
+
+   dwi2response tournier dwi.mif wm_response.txt
+
+-  If you intend to perform *multi-tissue* spherical deconvolution,
+   the ``dhollander`` algorithm is a convenient and reliable way to
+   estimate the single-fibre white matter response function as well
+   as the grey matter and CSF response functions::
+
+   dwi2response dhollander dwi.mif wm_response.txt gm_response.txt csf_response.txt
+
+
+
+
+More information
+----------------
 
 Looking at the process of response function estimation in full detail,
 there are four crucial steps. For each of these, I will also briefly
@@ -75,6 +75,11 @@ this process may also change with ongoing development.
 
 ``dwi2response`` algorithms
 ---------------------------
+
+``dhollander``
+^^^^^^^^^^^^^^
+
+TODO: Thijs is working on this documentation page.
 
 ``fa``
 ^^^^^^
@@ -296,24 +301,8 @@ processing of non-human brain images in particular, you may need to
 experiment with the number of single-fibre voxels as the white matter is
 typically smaller.
 
-TL;DR
------
+Writing your own algorithms
+---------------------------
 
-If this document appears far too long for your liking, or you're not
-particularly interested in the details and just want to know what option
-to use so that you can continue with your processing, the following are
-our 'cautious' recommendations. However we emphasize that this script
-may not work flawlessly for all data; if it did, we wouldn't be
-providing a script with so many options! Furthermore, these
-recommendations may change over time, so check in every now and then,
-and make sure to sign up to the new `community
-forum <community.mrtrix.org>`__.
-
--  If you're processing single-shell data, the ``tournier`` algorithm
-   appears to be fairly robust.
-
--  If you're processing multi-shell data, and are able to perform EPI
-   inhomogeneity distortion correction, ``msmt_5tt`` is currently the
-   only fully-automated method for getting multi-shell multi-tissue
-   response functions.
+TODO: Thijs is working on this documentation page.
 
