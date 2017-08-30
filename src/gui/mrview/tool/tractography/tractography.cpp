@@ -671,6 +671,11 @@ namespace MR
 
         void Tractography::geom_type_selection_slot (int selected_index)
         {
+          // Combo box shows the "(variable)" message, and the user has
+          //   re-clicked on it -> nothing to do
+          if (selected_index == 3)
+            return;
+
           TrackGeometryType geom_type = geometry_index2type (selected_index);
 
           QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
@@ -701,13 +706,14 @@ namespace MR
 
           TrackColourType color_type = first_tractogram->get_color_type();
           Eigen::Array3f color = first_tractogram->colour;
-          bool color_type_consistent = true;
+          TrackGeometryType geom_type = first_tractogram->get_geometry_type();
+          bool color_type_consistent = true, geometry_type_consistent = true;
           for (int i = 1; i != indices.size(); ++i) {
             const Tractogram* tractogram = tractogram_list_model->get_tractogram (indices[i]);
-            if (tractogram->get_color_type() != color_type) {
+            if (tractogram->get_color_type() != color_type)
               color_type_consistent = false;
-              break;
-            }
+            if (tractogram->get_geometry_type() != geom_type)
+              geometry_type_consistent = false;
           }
           if (color_type_consistent) {
             colour_combobox->blockSignals (true);
@@ -736,22 +742,24 @@ namespace MR
             colour_combobox->setError();
           }
 
-          TrackGeometryType geom_type = first_tractogram->get_geometry_type();
-          int geom_combobox_index = 0;
-          switch (geom_type) {
-            case TrackGeometryType::Pseudotubes:
-              break;
-            case TrackGeometryType::Lines:
-              geom_combobox_index = 1;
-              break;
-            case TrackGeometryType::Points:
-              geom_combobox_index = 2;
-              break;
-            default:
-              assert (0);
-              break;
+          if (geometry_type_consistent) {
+            geom_type_combobox->blockSignals (true);
+            switch (geom_type) {
+              case TrackGeometryType::Pseudotubes:
+                geom_type_combobox->setCurrentIndex (0);
+                break;
+              case TrackGeometryType::Lines:
+                geom_type_combobox->setCurrentIndex (1);
+                break;
+              case TrackGeometryType::Points:
+                geom_type_combobox->setCurrentIndex (2);
+                break;
+            }
+            geom_type_combobox->clearError();
+            geom_type_combobox->blockSignals (false);
+          } else {
+            geom_type_combobox->setError();
           }
-          geom_type_combobox->setCurrentIndex(geom_combobox_index);
 
           thickness_slider->setSliderPosition (first_tractogram->line_thickness);
         }
