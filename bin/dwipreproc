@@ -121,7 +121,7 @@ elif app.args.export_grad_fsl:
   app.checkOutputPath(path.fromUser(app.args.export_grad_fsl[1], False))
 
 
-# Convert all input images into MRtrix format and store in temprary directory first;
+# Convert all input images into MRtrix format and store in temporary directory first;
 #   that way image.headerField() can be run multiple times without having to repeatedly parse e.g. DICOM data
 app.makeTempDir()
 
