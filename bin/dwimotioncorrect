@@ -120,7 +120,7 @@ rf_import_option = ''
 if app.args.rf:
     rf_import_option = ' '.join('-rf ' + path.fromUser(r, True) for r in app.args.rf.split(','))
 
-recon_option = '-maxiter 3'
+recon_option = '-maxiter 1'
 if rf_import_option is not '':
     recon_option += rf_import_option
 elif shell is not None and len(shell)==1:
@@ -144,14 +144,6 @@ ort = ''
 if app.args.or_thr:
     ort = ' -thr ' + app.args.or_thr
 
-# Define aux functions
-def linrange(a, b, n):
-    if n == 1:
-        return [1.0,]
-    dt = float(b-a)/(n-1)
-    return [a + t*dt for t in range(n)]
-
-
 
 #   __________ Motion correction __________
 
@@ -167,17 +159,16 @@ run.command('dwirecon shells.mif ' + recon_option + ' recon-0.mif -rpred pred.mi
 run.command('dwisliceoutliers shells.mif spred.mif -mask mask.mif sliceweights.txt' + ort)
 
 # volume-to-volume registration
-scale = linrange(0.5, 1.0, v2viter)
 for k in range(v2viter):
     # register template to volumes
     with open('motion.txt', 'w') as f:
-        prog = app.progressBar('Registering recon to data volumes at scale = ' + str(scale[k]), dims[3])
+        prog = app.progressBar('Registering recon to data volumes', dims[3])
         for v in range(dims[3]):
             run.command('mrconvert -coord 3 ' + str(v) + ' pred.mif template.mif -force')
             run.command('mrconvert -coord 3 ' + str(v) + ' shells.mif target.mif -force')
             run.command('mrreg_lin template.mif target.mif -nonsymmetric -mask2 mask.mif' +
                         ' -type rigid ' + ('-affine_init T-'+str(v)+'.txt' if k>0 else '') +
-                        ' -affine_scale ' + str(scale[k]) + ' -affine T-'+str(v)+'.txt -affine_niter 30 -force')
+                        ' -affine_scale 1.0 -affine T-'+str(v)+'.txt -affine_niter 5 -force')
             run.command('transformcalc T-'+str(v)+'.txt decompose trafo.txt -force')
             with open('trafo.txt') as f2:
                 L = f2.readlines()
@@ -193,23 +184,22 @@ for k in range(v2viter):
     run.command('dwisliceoutliers shells.mif spred.mif -mask mask.mif sliceweights.txt -force' + ort)
 
 # slice-to-volume registration
-scale = linrange(0.5, 1.0, s2viter)
 for k in range(s2viter):
     # register template to slices
     with open('motion.txt', 'w') as f:
-        prog = app.progressBar('Registering recon to data slices at scale = ' + str(scale[k]), dims[3]*dims[2])
+        prog = app.progressBar('Registering recon to data slices', dims[3]*dims[2]//mb)
         for v in range(dims[3]):
             volmotion = ''
             if k == 0:
                 run.command('mrconvert -coord 3 ' + str(v) + ' pred.mif template.mif -force')
             run.command('mrconvert -coord 3 ' + str(v) + ' shells.mif target.mif -force')
-            for s in range(dims[2]/mb):
+            for s in range(dims[2]//mb):
                 run.command('maskslice -mb ' + str(mb) + ' mask.mif ' + str(s) + ' slicemask.mif -force')
                 if k > 0:
                     run.command('mrconvert -coord 3 ' + str(v*dims[2] + s) + ' pred.mif template.mif -force')
                 run.command('mrreg_lin template.mif target.mif -nonsymmetric -mask2 slicemask.mif' +
                         ' -type rigid -affine_init ' + ('T-'+str(v)+'-'+str(s)+'.txt' if k>0 else 'T-'+str(v)+'.txt') +
-                        ' -affine_scale ' + str(scale[k]) + ' -affine T-'+str(v)+'-'+str(s)+'.txt -affine_niter 30 -force')
+                        ' -affine_scale 1.0 -affine T-'+str(v)+'-'+str(s)+'.txt -affine_niter 3 -force')
                 run.command('transformcalc T-'+str(v)+'-'+str(s)+'.txt decompose trafo.txt -force')
                 with open('trafo.txt') as f2:
                     L = f2.readlines()
