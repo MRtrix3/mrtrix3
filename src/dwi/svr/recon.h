@@ -162,6 +162,7 @@ namespace MR
             T.noalias() += w(idx) * r * Y.row(idx);
         }, zero);
         Xo += L.adjoint() * (L * Xi);
+        Xo += 0.001f * Xi;
       }
 
 

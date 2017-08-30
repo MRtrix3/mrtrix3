@@ -23,7 +23,7 @@
 
 #define DEFAULT_LMAX 4
 #define DEFAULT_SSPW 1.0f
-#define DEFAULT_REG 0.05
+#define DEFAULT_REG 0.01
 #define DEFAULT_TOL 1e-4
 #define DEFAULT_MAXITER 10
 
