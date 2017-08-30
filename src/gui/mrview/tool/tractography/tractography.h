@@ -102,6 +102,9 @@ namespace MR
 
             ComboBoxWithErrorMsg *geom_type_combobox;
 
+            QLabel* thickness_label;
+            QSlider* thickness_slider;
+
             TrackScalarFileOptions *scalar_file_options;
             LightingDock *lighting_dock;
 
@@ -110,9 +113,6 @@ namespace MR
             QPushButton* lighting_button;
 
             QSlider* opacity_slider;
-            QSlider* thickness_slider;
-
-            QLabel* thickness_label;
 
             void dropEvent (QDropEvent* event) override;
             void update_scalar_options();
