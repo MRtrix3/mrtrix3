@@ -231,7 +231,7 @@ namespace MR
             source += using_geom ? "in float g_amp;\n" : "in vec3 v_amp;\n";
 
           if (use_lighting && (using_geom || using_points)) {
-            source += 
+            source +=
               "uniform float ambient, diffuse, specular, shine;\n"
               "uniform vec3 light_pos;\n";
 
@@ -475,7 +475,7 @@ namespace MR
             gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE);
             gl::Disable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
-            gl::BlendColor (1.0, 1.0, 1.0,  tractography_tool.line_opacity / 0.5);
+            gl::BlendColor (1.0, 1.0, 1.0, tractography_tool.line_opacity / 0.5);
             render_streamlines();
             gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE_MINUS_CONSTANT_ALPHA);
             gl::Enable (gl::DEPTH_TEST);

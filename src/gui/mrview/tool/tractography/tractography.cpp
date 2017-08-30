@@ -196,6 +196,21 @@ namespace MR
 
             main_box->addLayout (hlayout);
 
+            hlayout = new HBoxLayout;
+            hlayout->setContentsMargins (0, 0, 0, 0);
+            hlayout->setSpacing (0);
+
+            thickness_label = new QLabel ("thickness");
+            hlayout->addWidget (thickness_label);
+
+            thickness_slider = new QSlider (Qt::Horizontal);
+            thickness_slider->setRange (-1000,1000);
+            thickness_slider->setSliderPosition (0);
+            connect (thickness_slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
+            hlayout->addWidget (thickness_slider);
+
+            main_box->addLayout (hlayout);
+
             scalar_file_options = new TrackScalarFileOptions (this);
             main_box->addWidget (scalar_file_options);
 
@@ -212,14 +227,6 @@ namespace MR
             connect (opacity_slider, SIGNAL (valueChanged (int)), this, SLOT (opacity_slot (int)));
             general_opt_grid->addWidget (new QLabel ("opacity"), 0, 0);
             general_opt_grid->addWidget (opacity_slider, 0, 1);
-
-            thickness_slider = new QSlider (Qt::Horizontal);
-            thickness_slider->setRange (-1000,1000);
-            thickness_slider->setSliderPosition (0);
-            connect (thickness_slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
-            thickness_label = new QLabel ("thickness");
-            general_opt_grid->addWidget (thickness_label, 1, 0);
-            general_opt_grid->addWidget (thickness_slider, 1, 1);
 
             slab_group_box = new QGroupBox (tr("crop to slab"));
             slab_group_box->setCheckable (true);
@@ -708,12 +715,14 @@ namespace MR
           Eigen::Array3f color = first_tractogram->colour;
           TrackGeometryType geom_type = first_tractogram->get_geometry_type();
           bool color_type_consistent = true, geometry_type_consistent = true;
+          float mean_thickness = first_tractogram->line_thickness;
           for (int i = 1; i != indices.size(); ++i) {
             const Tractogram* tractogram = tractogram_list_model->get_tractogram (indices[i]);
             if (tractogram->get_color_type() != color_type)
               color_type_consistent = false;
             if (tractogram->get_geometry_type() != geom_type)
               geometry_type_consistent = false;
+            mean_thickness += tractogram->line_thickness;
           }
           if (color_type_consistent) {
             colour_combobox->blockSignals (true);
@@ -761,7 +770,9 @@ namespace MR
             geom_type_combobox->setError();
           }
 
-          thickness_slider->setSliderPosition (first_tractogram->line_thickness);
+          thickness_slider->blockSignals (true);
+          thickness_slider->setSliderPosition (mean_thickness / float(indices.size()));
+          thickness_slider->blockSignals (false);
         }
 
 
