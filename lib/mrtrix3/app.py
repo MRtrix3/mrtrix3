@@ -185,7 +185,7 @@ def checkOutputPath(path):
       type = ' file'
     elif os.path.isdir(abspath):
       type = ' directory'
-    if args.force:
+    if hasattr(args, 'force') and args.force:
       warn('Output' + type + ' \'' + path + '\' already exists; will be overwritten at script completion')
       force = True
     else:
@@ -198,12 +198,12 @@ def makeTempDir():
   import os, random, string, sys
   global args, config
   global _tempDir, _workingDir
-  if args.cont:
+  if hasattr(args, 'cont') and args.cont:
     debug('Skipping temporary directory creation due to use of -continue option')
     return
   if _tempDir:
     error('Script error: Cannot use multiple temporary directories')
-  if args.tempdir:
+  if hasattr(args, 'tempdir') and args.tempdir:
     dir_path = os.path.abspath(args.tempdir)
   else:
     if 'ScriptTmpDir' in config:
