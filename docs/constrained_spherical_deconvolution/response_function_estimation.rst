@@ -78,7 +78,7 @@ to what they deliver (as output) and require (as input), notably
    function as well as grey matter and CSF response functions)
 
 -  whether they only output response function(s) for a single b-value
-   (``tournier``, ``tax`` and `fa``) or for all—or a selection—of
+   (``tournier``, ``tax`` and ``fa``) or for all—or a selection—of
    b-values (``dhollander`` and ``msmt_5tt``)
    
 -  whether they only require the DWI dataset as input (``tournier``,
@@ -87,12 +87,12 @@ to what they deliver (as output) and require (as input), notably
    aligned anatomical image)
    
 Beyond these general categories, the algorithms differ mostly in how
-they derive the voxels where to estimate the response function(s) from,
-and to a lesser extent also how they derive the fibre orientation
-for single-fibre voxels.
+they derive the voxels that will be used to estimate the response
+function(s) from, and to a lesser extent also how they derive the fibre
+orientation for single-fibre voxels.
 
-The ``manual`` 'algorithm' is an exception to most of the above, in that
-it allows/*requires* you to provide the voxels yourself, and even allows
+The ``manual`` choice is an exception to most of the above, in that it
+allows/*requires* you to provide the voxels yourself, and even allows
 you to provide single-fibre orientations manually as well. It should
 only be considered in case of exceptional kinds of data, or otherwise
 exceptional requirements. Caution is advised with respect to *interpretation*
