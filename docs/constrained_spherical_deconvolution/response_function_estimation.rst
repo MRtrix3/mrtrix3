@@ -49,8 +49,8 @@ In general, it's always worthwhile checking your response function(s):
       
 Use the left and right arrow (keyboard) keys in this viewer to switch
 between the different b-values ('shells') of the response function, if
-it has more than one (this would for example be the case for the outputs
-of the ``dhollander`` algorithm).
+it has more than one b-value (this would for example be the case for
+the outputs of the ``dhollander`` algorithm).
 
 It may also be helpful to check which voxels were selected by the
 algorithm to estimate the response function(s) from. For any
@@ -65,47 +65,46 @@ the ``tournier`` algorithm:
 The resulting ``voxels.mif`` image can be overlaid on the ``dwi.mif``
 dataset using the :ref:`mrview` image viewer for further inspection.
 
+All available algorithms
+------------------------
 
-More information
-----------------
+The available algorithms differ in a few general properties, related
+to what they deliver (as output) and require (as input), notably
 
-Looking at the process of response function estimation in full detail,
-there are four crucial steps. For each of these, I will also briefly
-mention the typical process used.
+-  whether they only estimate a single-fibre white matter response
+   function (``tournier``, ``tax`` and ``fa``) or also additional
+   response functions for other tissue types (``dhollander`` and
+   ``msmt_5tt`` both output a single-fibre white matter response
+   function as well as grey matter and CSF response functions)
 
-1. Select those image voxels that are to be used when determining the
-   response function - the 'single-fibre mask'. *Typical*: Varies.
+-  whether they only output response function(s) for a single b-value
+   (``tournier``, ``tax`` and `fa``) or for all—or a selection—of
+   b-values (``dhollander`` and ``msmt_5tt``)
+   
+-  whether they only require the DWI dataset as input (``tournier``,
+   ``dhollander``, ``tax`` and ``fa``) or also additional input(s)
+   (``msmt_5tt`` requires a 5TT segmentation from a spatially
+   aligned anatomical image)
+   
+Beyond these general categories, the algorithms differ mostly in how
+they derive the voxels where to estimate the response function(s) from,
+and to a lesser extent also how they derive the fibre orientation
+for single-fibre voxels.
 
-2. Estimate the direction of the underlying fibres in each voxel.
-   *Typical*: Often the diffusion tensor fit is still used for this
-   purpose; though CSD itself can also be used as long as an initial
-   response function estimate is available.
+The ``manual`` 'algorithm' is an exception to most of the above, in that
+it allows/*requires* you to provide the voxels yourself, and even allows
+you to provide single-fibre orientations manually as well. It should
+only be considered in case of exceptional kinds of data, or otherwise
+exceptional requirements. Caution is advised with respect to *interpretation*
+of spherical deconvolution results using manually defined response
+function(s).
 
-3. Rotate the signal measured in each single-fibre voxel in such a way
-   that the estimated fibre direction coincides with the z-axis.
-   *Typical*: This may be done by rotating the diffusion gradient table
-   according to the estimated fibre direction; or if the diffusion
-   signal is converted to spherical harmonics, then a spherical
-   convolution can be used.
-
-4. Combine these signals to produce a single response function.
-   *Typical*: The ``m=0`` terms of the spherical harmonic series (which
-   are rotationally symmetric about the z-axis) are simply averaged
-   across single-fibre voxels.
-
-Of these steps, the first is the one that has caused the greatest
-difficulty, and is also the principle mechanism where the provided
-response function estimation algorithms vary. It will therefore be the
-primary focus of this document, though note that the other aspects of
-this process may also change with ongoing development.
-
-``dwi2response`` algorithms
----------------------------
+The following sections provide more details on each algorithm specifically.
 
 ``dhollander``
 ^^^^^^^^^^^^^^
 
-TODO: Thijs is working on this documentation page.
+TODO: Thijs is working on this documentation section.
 
 ``fa``
 ^^^^^^
@@ -330,5 +329,7 @@ typically smaller.
 Writing your own algorithms
 ---------------------------
 
-TODO: Thijs is working on this documentation page.
+TODO: Thijs is working on this documentation section. Will suggest ``manual``
+as a first (easier) option, and (python) implementation of a ``dwi2response``
+algorithm as another (and mention in which folder the algos sit).
 
