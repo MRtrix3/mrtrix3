@@ -285,7 +285,7 @@ void run ()
   opt = get_options("spred");
   if (opt.size()) {
     header.size(3) = dwisub.size(3);
-    DWI::stash_DW_scheme (header, gradsub);
+    DWI::set_DW_scheme (header, gradsub);
     auto spred = Image<value_type>::create(opt[0][0], header);
     Eigen::VectorXf p (dwisub.size(0)*dwisub.size(1)*dwisub.size(2)*dwisub.size(3));
     R.project_x2y(p, x);
@@ -300,7 +300,7 @@ void run ()
   opt = get_options("tpred");
   if (opt.size()) {
     header.size(3) = dwisub.size(3);
-    DWI::stash_DW_scheme (header, gradsub);
+    DWI::set_DW_scheme (header, gradsub);
     Stride::set (header, Stride::contiguous_along_spatial_axes (header));
     auto tpred = Image<value_type>::create(opt[0][0], header);
     class PredFunctor {
@@ -314,7 +314,7 @@ void run ()
       Eigen::VectorXf y, v;
     };
     j = 0;
-    for (auto l = Loop("saving registration prediction", 3)(tpred); l; l++, j++) {
+    for (auto l = Loop("saving target prediction", 3)(tpred); l; l++, j++) {
       ThreadedLoop(out, 0, 3).run( PredFunctor (R.getY0(gradsub).row(j)) , out , tpred );
     }
   }
