@@ -130,6 +130,12 @@ else:
 if app.args.reg:
     recon_option += ' -reg ' + app.args.reg
 
+# Force max no. threads
+if app.args.nthreads:
+    nthr = ' -nthreads ' + app.args.nthreads
+else:
+    nthr = ''
+
 # Set SSP width
 if app.args.sspwidth:
     recon_option += ' -sspwidth ' + app.args.sspwidth
@@ -155,7 +161,7 @@ else:
 dims = list(map(int, image.headerField('shells.mif', 'size').split()))
 
 # initial template
-run.command('dwirecon shells.mif ' + recon_option + ' recon-0.mif -rpred pred.mif -spred spred.mif')
+run.command('dwirecon shells.mif ' + recon_option + ' recon-0.mif -rpred pred.mif -spred spred.mif' + nthr)
 run.command('dwisliceoutliers shells.mif spred.mif -mask mask.mif sliceweights.txt' + ort)
 
 # volume-to-volume registration
@@ -168,7 +174,7 @@ for k in range(v2viter):
             run.command('mrconvert -coord 3 ' + str(v) + ' shells.mif target.mif -force')
             run.command('mrreg_lin template.mif target.mif -nonsymmetric -mask2 mask.mif' +
                         ' -type rigid ' + ('-affine_init T-'+str(v)+'.txt' if k>0 else '') +
-                        ' -affine_scale 1.0 -affine T-'+str(v)+'.txt -affine_niter 5 -force')
+                        ' -affine_scale 1.0 -affine T-'+str(v)+'.txt -affine_niter 3 -force')
             run.command('transformcalc T-'+str(v)+'.txt decompose trafo.txt -force')
             with open('trafo.txt') as f2:
                 L = f2.readlines()
@@ -180,7 +186,7 @@ for k in range(v2viter):
     # update template
     run.command('dwirecon shells.mif ' + recon_option + ' recon-'+str(k+1)+'.mif -motion motion.txt' +
                 ' -weights sliceweights.txt -init recon-'+str(k)+'.mif -rpred pred.mif' +
-                ' -spred spred.mif' + (' -tpred result-v.mif' if k+1==v2viter else '') + ' -force')
+                ' -spred spred.mif' + (' -tpred result-v.mif' if k+1==v2viter else '') + ' -force' + nthr)
     run.command('dwisliceoutliers shells.mif spred.mif -mask mask.mif sliceweights.txt -force' + ort)
 
 # slice-to-volume registration
@@ -213,7 +219,7 @@ for k in range(s2viter):
     # update template
     run.command('dwirecon shells.mif ' + recon_option + ' recon-'+str(v2viter+k+1)+'.mif -motion motion.txt' +
                 ' -weights sliceweights.txt -init recon-'+str(v2viter+k)+'.mif -rpred pred.mif' +
-                ' -spred spred.mif' + (' -tpred result-s.mif' if k+1==s2viter else '') + ' -force')
+                ' -spred spred.mif' + (' -tpred result-s.mif' if k+1==s2viter else '') + ' -force' + nthr)
     run.command('dwisliceoutliers shells.mif spred.mif -mask mask.mif sliceweights.txt -force' + ort)
 
 
