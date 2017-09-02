@@ -15,7 +15,7 @@ sys.path.insert(0, lib_folder)
 
 import shutil
 move      = shutil.move
-copy      = shutil.copy2
+copy      = shutil.copy
 copytree  = shutil.copytree
 rmtree    = shutil.rmtree
 remove    = os.remove
@@ -544,7 +544,7 @@ current_template = 'initial_template.mif'
 # Optimise template with linear registration
 if not dolinear:
   for i in input:
-    run.function(copy, os.path.join('linear_transforms_initial','%s.txt' % (i.prefix)), 'linear_transforms')
+    run.function(copy, os.path.join('linear_transforms_initial','%s.txt' % (i.prefix)), os.path.join('linear_transforms','%s.txt' % (i.prefix)))
 else:
   app.console('Optimising template with linear registration')
   for level in range(0, len(linear_scales)):
@@ -628,7 +628,7 @@ else:
     current_template = 'linear_template' + str(level) + '.mif'
 
   for filename in os.listdir('linear_transforms_%i' % level):
-    run.function(copy, os.path.join('linear_transforms_%i' % level, filename), 'linear_transforms')
+    run.function(copy, os.path.join('linear_transforms_%i' % level, filename), os.path.join('linear_transforms', filename))
 
 # Create a template mask for nl registration by taking the intersection of all transformed input masks and dilating
 if useMasks and (dononlinear or app.args.template_mask):
