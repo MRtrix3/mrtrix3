@@ -80,7 +80,7 @@ to what they deliver (as output) and require (as input), notably
 
 -  **single versus multiple b-values**: whether they only output
    response function(s) for a single b-value (``tournier``, ``tax``
-   and ``fa``) or for all—or a selection—of b-values (``dhollander``
+   and ``fa``) or for all—or a selection of— b-values (``dhollander``
    and ``msmt_5tt``)
    
 -  **input requirements**: whether they only require the DWI dataset
@@ -103,32 +103,21 @@ function(s).
 
 The following sections provide more details on each algorithm specifically.
 
-``dhollander``
-^^^^^^^^^^^^^^
+``dhollander`` algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 TODO: Thijs is working on this documentation section.
 
-``fa``
-^^^^^^
+``fa`` algorithm
+^^^^^^^^^^^^^^^^
 
-In the previous version of MRtrix ('0.2'), the following heuristic was
-suggested in the documentation for deriving the response function:
-
--  Erode a brain mask by a few voxels, to omit any voxels near the edge
-   of the brain;
-
--  Select those voxels within the mask that have a Fractional Anisotropy
-   (FA) of 0.7 or greater;
-
--  The ``estimate_response`` command would then be used to generate a
-   response function, which would internally perform diffusion tensor
-   estimation to get the fibre directions as well as the gradient
-   reorientation.
-
-Rather than this series of commands, ``dwi2response`` now provides a
-similar heuristic in-built as the ``fa`` algorithm. The primary
-difference is that by default, it will instead select the 300 voxels
-with the highest FA (though this can be modified at the command-line).
+The ``fa`` algorithm is an implementation of the strategy proposed in
+Tournier et al. (2004) to estimate a single b-value (single-shell) response
+function for single-fibre white matter, which can subsequently be used
+in single-tissue (constrained) spherical deconvolution. The algorithm
+estimates this response function from the 300 voxels with the highest FA
+value in an eroded brain mask. There are also options to change this
+number or provide an absolute FA threshold.
 
 This algorithm is provided partly for nostalgic purposes, but it also
 highlights the range of possibilities for single-fbre voxel selection.
@@ -138,8 +127,8 @@ matter regions close to CSF, Gibbs ringing can make the signal in *b=0*
 images erroneously low, which causes an artificial increase in FA, and
 therefore such voxels get included in the single-fibre mask.
 
-``manual``
-^^^^^^^^^^
+``manual`` algorithm
+^^^^^^^^^^^^^^^^^^^^
 
 This algorithm is provided for cases where none of the available
 algorithms give adequate results, for deriving multi-shell multi-tissue
@@ -150,8 +139,8 @@ manual definition of both the single-fibre voxel mask (or just a voxel
 mask for isotropic tissues); the fibre directions can also be provided
 manually if necessary (otherwise a tensor fit will be used).
 
-``msmt_5tt``
-^^^^^^^^^^^^
+``msmt_5tt`` algorithm
+^^^^^^^^^^^^^^^^^^^^^^
 
 This algorithm is intended for deriving multi-shell, multi-tissue
 response functions that are compatible with the new Multi-Shell
@@ -190,8 +179,8 @@ For reference, this algorithm operates as follows:
 4. Derive a multi-shell response for each tissue for each of these three
    tissues. For GM and CSF, use *lmax=0* for all shells.
 
-``tax``
-^^^^^^^
+``tax`` algorithm
+^^^^^^^^^^^^^^^^^
 
 This algorithm is a fairly accurate reimplementation of the approach
 proposed by `Tax et
@@ -288,8 +277,8 @@ that were made to the algorithm as part of the earlier ``dwi2response``
    view, it has been excluded from the new ``dwi2response`` script to
    keep things as simple as possible.
 
-``tournier``
-^^^^^^^^^^^^
+``tournier`` algorithm
+^^^^^^^^^^^^^^^^^^^^^^
 
 Independently and in parallel, Donald also developed a newer method for
 response function estimation based on CSD itself; it was used in `this
