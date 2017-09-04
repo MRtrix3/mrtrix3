@@ -92,21 +92,12 @@ namespace MR
                 mapper.set_upsample_ratio (Mapping::determine_upsample_ratio (fod_data, properties, 0.25));
                 mapper.set_use_precise_mapping (true);
 
-                // If the user has explicitly requested no more than a set number of threads,
-                //   then split that number of threads between the tracking and mapping steps.
-                // If however the number of threads has been implicitly calculated based on
-                //   hardware concurrency, then spawn that number of threads for both stages,
-                //   and let the system deal with balancing the load.
-                const size_t nthreads = MR::Thread::type_nthreads() == MR::Thread::nthreads_t::EXPLICIT ?
-                                        MR::Thread::number_of_threads()/2 :
-                                        MR::Thread::number_of_threads();
-
                 Thread::run_queue (
-                    Thread::multi (tracker, nthreads),
+                    Thread::multi (tracker),
                     Thread::batch (GeneratedTrack(), TRACKING_BATCH_SIZE),
                     writer,
                     Thread::batch (Streamline<>(), TRACKING_BATCH_SIZE),
-                    Thread::multi (mapper, nthreads),
+                    Thread::multi (mapper),
                     Thread::batch (SetDixel(), TRACKING_BATCH_SIZE),
                     *seeder);
 
