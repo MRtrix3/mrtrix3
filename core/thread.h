@@ -244,10 +244,7 @@ namespace MR
     /*! provides information regarding whether the number of threads has been
      * initialised, set explicitly, or determined implicitly. This may affect
      * how particular algorithms choose to launch threads depending on the
-     * presence of a user request. It also prevents repeated testing of
-     * config file / environment variables, since 0 was previously used both
-     * as an indication of being uninitialised as well as being a valid value
-     * (indicates purely single-threaded operation). */
+     * presence of a user request. */
     enum class nthreads_t { UNINITIALISED, EXPLICIT, IMPLICIT };
     nthreads_t type_nthreads ();
 
