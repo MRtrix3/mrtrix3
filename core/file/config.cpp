@@ -32,17 +32,21 @@ namespace MR
 
     void Config::init ()
     {
-      if (Path::is_file (MRTRIX_SYS_CONFIG_FILE)) {
-        INFO ("reading config file \"" MRTRIX_SYS_CONFIG_FILE "\"...");
+      const char* sysconf_location = getenv ("MRTRIX_CONFIGFILE");
+      if (!sysconf_location) 
+        sysconf_location = MRTRIX_SYS_CONFIG_FILE;
+
+      if (Path::is_file (sysconf_location)) {
+        INFO (std::string("reading config file \"") + sysconf_location + "\"...");
         try {
-          KeyValue kv (MRTRIX_SYS_CONFIG_FILE);
+          KeyValue kv (sysconf_location);
           while (kv.next()) {
             config[kv.key()] = kv.value();
           }
         }
         catch (...) { }
       } else {
-        DEBUG ("No config file found at \"" MRTRIX_SYS_CONFIG_FILE "\"");
+        DEBUG (std::string ("No config file found at \"") + sysconf_location + "\"");
       }
 
       std::string path = Path::join (Path::home(), MRTRIX_USER_CONFIG_FILE);
@@ -56,7 +60,7 @@ namespace MR
         }
         catch (...) { }
       } else {
-        DEBUG ("No config file found at \"" MRTRIX_USER_CONFIG_FILE "\"");
+        DEBUG ("No config file found at \"" + path + "\"");
       }
     }
 
