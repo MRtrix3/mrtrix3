@@ -71,20 +71,22 @@ All available algorithms
 The available algorithms differ in a few general properties, related
 to what they deliver (as output) and require (as input), notably
 
--  whether they only estimate a single-fibre white matter response
-   function (``tournier``, ``tax`` and ``fa``) or also additional
-   response functions for other tissue types (``dhollander`` and
-   ``msmt_5tt`` both output a single-fibre white matter response
-   function as well as grey matter and CSF response functions)
+-  **single- versus multi-tissue**: whether they only estimate a
+   single-fibre white matter response function (``tournier``, ``tax``
+   and ``fa``) or also additional response functions for other tissue
+   types (``dhollander`` and ``msmt_5tt`` both output a single-fibre
+   white matter response function as well as grey matter and CSF
+   response functions)
 
--  whether they only output response function(s) for a single b-value
-   (``tournier``, ``tax`` and ``fa``) or for all—or a selection—of
-   b-values (``dhollander`` and ``msmt_5tt``)
+-  **single versus multiple b-values**: whether they only output
+   response function(s) for a single b-value (``tournier``, ``tax``
+   and ``fa``) or for all—or a selection—of b-values (``dhollander``
+   and ``msmt_5tt``)
    
--  whether they only require the DWI dataset as input (``tournier``,
-   ``dhollander``, ``tax`` and ``fa``) or also additional input(s)
-   (``msmt_5tt`` requires a 5TT segmentation from a spatially
-   aligned anatomical image)
+-  **input requirements**: whether they only require the DWI dataset
+   as input (``tournier``, ``dhollander``, ``tax`` and ``fa``) or
+   also additional input(s) (``msmt_5tt`` requires a 5TT segmentation
+   from a spatially aligned anatomical image)
    
 Beyond these general categories, the algorithms differ mostly in how
 they derive the voxels that will be used to estimate the response
