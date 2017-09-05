@@ -32,7 +32,7 @@ namespace MR
       namespace Tool
       {
 
-            
+
 
 
         ROI::ROI (Dock* parent) :
@@ -262,7 +262,7 @@ namespace MR
             QModelIndex index = list_model->index (i, 0);
             ROI_Item* roi = list_model->get (index);
             if (!roi->saved) {
-              if (QMessageBox::question (&window(), tr("ROI not saved"), tr (("Image " + roi->get_filename() + " has been modified. Do you want to save it?").c_str())) == QMessageBox::Yes)
+              if (QMessageBox::question (&window(), tr("ROI not saved"), tr (("Image " + roi->get_filename() + " has been modified. Do you want to save it?").c_str()), QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes)
                 save (roi);
             }
           }
@@ -336,7 +336,7 @@ namespace MR
         void ROI::save (ROI_Item* roi)
         {
           vector<GLubyte> data (roi->header().size(0) * roi->header().size(1) * roi->header().size(2));
-          { 
+          {
             MRView::GrabContext context;
             ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
             roi->texture().bind();
@@ -447,7 +447,7 @@ namespace MR
 
 
 
-        void ROI::undo_slot () 
+        void ROI::undo_slot ()
         {
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
           if (indices.size() != 1) {
@@ -468,7 +468,7 @@ namespace MR
 
 
 
-        void ROI::redo_slot () 
+        void ROI::redo_slot ()
         {
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
           if (indices.size() != 1) {
@@ -496,7 +496,7 @@ namespace MR
             WARN ("FIXME: shouldn't be here!");
             return;
           }
-          
+
           ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[0]));
 
           const Projection* proj = window().get_current_mode()->get_current_projection();
@@ -524,7 +524,7 @@ namespace MR
 
 
 
-        void ROI::select_edit_mode (QAction*) 
+        void ROI::select_edit_mode (QAction*)
         {
           brush_size_button->setEnabled (brush_button->isChecked());
         }
@@ -535,7 +535,7 @@ namespace MR
 
 
 
-        void ROI::hide_all_slot () 
+        void ROI::hide_all_slot ()
         {
           updateGL();
           in_insert_mode = false;
@@ -564,7 +564,7 @@ namespace MR
           for (int i = 0; i < list_model->rowCount(); ++i) {
             if (list_model->items[i]->show && !hide_all_button->isChecked()) {
               ROI_Item* roi = dynamic_cast<ROI_Item*>(list_model->items[i].get());
-              //if (is_3D) 
+              //if (is_3D)
               //window.get_current_mode()->overlays_for_3D.push_back (image);
               //else
               roi->render (shader, projection, projection.depth_of (window().focus()));
@@ -586,11 +586,11 @@ namespace MR
 
 
 
-        void ROI::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2) 
+        void ROI::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2)
         {
           if (index.row() == index2.row()) {
             list_view->setCurrentIndex(index);
-          } 
+          }
           else {
             for (size_t i = 0; i < list_model->items.size(); ++i) {
               if (list_model->items[i]->show) {
@@ -608,7 +608,7 @@ namespace MR
 
 
 
-        void ROI::update_slot () 
+        void ROI::update_slot ()
         {
           updateGL();
         }
@@ -618,7 +618,7 @@ namespace MR
 
 
 
-        void ROI::colour_changed () 
+        void ROI::colour_changed ()
         {
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i) {
@@ -679,13 +679,13 @@ namespace MR
 
 
 
-        void ROI::update_selection () 
+        void ROI::update_selection ()
         {
           if (!window().image()) {
             setEnabled (false);
             return;
           }
-          else 
+          else
             setEnabled (true);
 
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
@@ -725,8 +725,8 @@ namespace MR
 
 
 
-        bool ROI::mouse_press_event () 
-        { 
+        bool ROI::mouse_press_event ()
+        {
           if (in_insert_mode || window().modifiers() != Qt::NoModifier)
             return false;
 
@@ -744,7 +744,7 @@ namespace MR
           }
 
           const Projection* proj = window().get_current_mode()->get_current_projection();
-          if (!proj) 
+          if (!proj)
             return false;
           current_origin = proj->screen_to_model (window().mouse_position(), window().focus());
           window().set_focus (current_origin);
@@ -771,7 +771,7 @@ namespace MR
           window().set_plane (current_axis);
 
           roi->start (ROI_UndoEntry (*roi, current_axis, current_slice));
-         
+
 
           if (brush_button->isChecked()) {
             if (brush_size_button->isMin())
@@ -787,7 +787,7 @@ namespace MR
 
           updateGL();
 
-          return true; 
+          return true;
         }
 
 
@@ -795,8 +795,8 @@ namespace MR
 
 
 
-        bool ROI::mouse_move_event () 
-        { 
+        bool ROI::mouse_move_event ()
+        {
           if (!in_insert_mode)
             return false;
 
@@ -808,7 +808,7 @@ namespace MR
           ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[0]));
 
           const Projection* proj = window().get_current_mode()->get_current_projection();
-          if (!proj) 
+          if (!proj)
             return false;
 
           Eigen::Vector3f pos = proj->screen_to_model (window().mouse_position(), window().focus());
@@ -835,7 +835,7 @@ namespace MR
 
           updateGL();
           prev_pos = pos_adj;
-          return true; 
+          return true;
         }
 
 
@@ -843,12 +843,12 @@ namespace MR
 
 
 
-        bool ROI::mouse_release_event () 
-        { 
+        bool ROI::mouse_release_event ()
+        {
           in_insert_mode = false;
           update_cursor();
           update_undo_redo();
-          return true; 
+          return true;
         }
 
 
@@ -871,8 +871,8 @@ namespace MR
 
 
 
-        void ROI::add_commandline_options (MR::App::OptionList& options) 
-        { 
+        void ROI::add_commandline_options (MR::App::OptionList& options)
+        {
           using namespace MR::App;
           options
             + OptionGroup ("ROI editor tool options")
@@ -889,7 +889,7 @@ namespace MR
 
 
 
-        bool ROI::process_commandline_option (const MR::App::ParsedOption& opt) 
+        bool ROI::process_commandline_option (const MR::App::ParsedOption& opt)
         {
           if (opt.opt->is ("roi.load")) {
             vector<std::unique_ptr<MR::Header>> list;
