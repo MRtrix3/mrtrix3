@@ -112,12 +112,15 @@ TODO: Thijs is working on this documentation section.
 ^^^^^^^^^^^^^^^^
 
 The ``fa`` algorithm is an implementation of the strategy proposed in
-Tournier et al. (2004) to estimate a single b-value (single-shell) response
-function for single-fibre white matter, which can subsequently be used
-in single-tissue (constrained) spherical deconvolution. The algorithm
-estimates this response function from the 300 voxels with the highest FA
-value in an eroded brain mask. There are also options to change this
-number or provide an absolute FA threshold.
+`Tournier et al. (2004) <http://www.sciencedirect.com/science/article/pii/S1053811904004100>`__.
+to estimate a single b-value (single-shell) response function for
+single-fibre white matter, which can subsequently be used in single-tissue
+(constrained) spherical deconvolution. The algorithm estimates this
+response function from the 300 voxels with the highest FA value in an
+eroded brain mask. There are also options to change this number or
+provide an absolute FA threshold.
+
+
 
 This algorithm is provided partly for nostalgic purposes, but it also
 highlights the range of possibilities for single-fbre voxel selection.
@@ -183,8 +186,7 @@ For reference, this algorithm operates as follows:
 ^^^^^^^^^^^^^^^^^
 
 This algorithm is a fairly accurate reimplementation of the approach
-proposed by `Tax et
-al. <http://www.sciencedirect.com/science/article/pii/S1053811913008367>`__.
+proposed by `Tax et al. <http://www.sciencedirect.com/science/article/pii/S1053811913008367>`__.
 The operation of the algorithm can be summarized as follows:
 
 1. Initialise the response function using a relatively 'fat' profile,
