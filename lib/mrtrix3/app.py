@@ -82,7 +82,7 @@ def init(author, synopsis):
   _workingDir = os.getcwd()
   # Load the MRtrix configuration files here, and create a dictionary
   # Load system config first, user second: Allows user settings to override
-  for path in [ os.path.join(os.path.sep, 'etc', 'mrtrix.conf'),
+  for path in [ os.environ.get ('MRTRIX_CONFIGFILE', os.path.join(os.path.sep, 'etc', 'mrtrix.conf')),
                 os.path.join(os.path.expanduser('~'), '.mrtrix.conf') ]:
     try:
       f = open (path, 'r')
