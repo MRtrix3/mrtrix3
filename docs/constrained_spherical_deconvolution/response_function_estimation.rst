@@ -111,7 +111,7 @@ TODO: Thijs is working on this documentation section.
 ``fa`` algorithm
 ^^^^^^^^^^^^^^^^
 
-The ``fa`` algorithm is an implementation of the strategy proposed in
+This algorithm is an implementation of the strategy proposed in
 `Tournier et al. (2004) <http://www.sciencedirect.com/science/article/pii/S1053811904004100>`__.
 to estimate a single b-value (single-shell) response function for
 single-fibre white matter, which can subsequently be used in single-tissue
@@ -120,15 +120,14 @@ response function from the 300 voxels with the highest FA value in an
 eroded brain mask. There are also options to change this number or
 provide an absolute FA threshold.
 
+Due to relying *only* on FA values, this strategy is relatively
+limited in its abilities to select the best voxels. In white matter
+close to CSF, for example, Gibbs ringing can severely affect FA values.
+More advanced iterative strategies, such as the ``tournier`` and ``tax``
+algorithms have been proposed in the mean time.
 
-
-This algorithm is provided partly for nostalgic purposes, but it also
-highlights the range of possibilities for single-fbre voxel selection.
-One of the problems associated with this approach (over and above the
-feeling of uncleanliness from using the tensor model) is that in white
-matter regions close to CSF, Gibbs ringing can make the signal in *b=0*
-images erroneously low, which causes an artificial increase in FA, and
-therefore such voxels get included in the single-fibre mask.
+For more information, refer to the
+:ref:`fa algorithm documentation <dwi2response_fa>`.
 
 ``manual`` algorithm
 ^^^^^^^^^^^^^^^^^^^^
