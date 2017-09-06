@@ -103,16 +103,16 @@ function(s).
 
 The following sections provide more details on each algorithm specifically.
 
-``dhollander`` algorithm
-^^^^^^^^^^^^^^^^^^^^^^^^
+'dhollander' algorithm
+^^^^^^^^^^^^^^^^^^^^^^
 
 TODO: Thijs is working on this documentation section.
 
-``fa`` algorithm
-^^^^^^^^^^^^^^^^
+'fa' algorithm
+^^^^^^^^^^^^^^
 
 This algorithm is an implementation of the strategy proposed in
-`Tournier et al. (2004) <http://www.sciencedirect.com/science/article/pii/S1053811904004100>`__.
+`Tournier et al. (2004) <http://www.sciencedirect.com/science/article/pii/S1053811904004100>`__
 to estimate a single b-value (single-shell) response function for
 single-fibre white matter, which can subsequently be used in single-tissue
 (constrained) spherical deconvolution. The algorithm estimates this
@@ -129,8 +129,8 @@ algorithms have been proposed in the mean time.
 For more information, refer to the
 :ref:`fa algorithm documentation <dwi2response_fa>`.
 
-``manual`` algorithm
-^^^^^^^^^^^^^^^^^^^^
+'manual' algorithm
+^^^^^^^^^^^^^^^^^^
 
 This algorithm is provided for cases where none of the available
 algorithms give adequate results, for deriving multi-shell multi-tissue
@@ -141,8 +141,8 @@ manual definition of both the single-fibre voxel mask (or just a voxel
 mask for isotropic tissues); the fibre directions can also be provided
 manually if necessary (otherwise a tensor fit will be used).
 
-``msmt_5tt`` algorithm
-^^^^^^^^^^^^^^^^^^^^^^
+'msmt_5tt' algorithm
+^^^^^^^^^^^^^^^^^^^^
 
 This algorithm is intended for deriving multi-shell, multi-tissue
 response functions that are compatible with the new Multi-Shell
@@ -181,105 +181,28 @@ For reference, this algorithm operates as follows:
 4. Derive a multi-shell response for each tissue for each of these three
    tissues. For GM and CSF, use *lmax=0* for all shells.
 
-``tax`` algorithm
-^^^^^^^^^^^^^^^^^
+'tax' algorithm
+^^^^^^^^^^^^^^^
 
-This algorithm is a fairly accurate reimplementation of the approach
-proposed by `Tax et al. <http://www.sciencedirect.com/science/article/pii/S1053811913008367>`__.
-The operation of the algorithm can be summarized as follows:
+This algorithm is a reimplementation of the iterative approach proposed in
+`Tax et al. (2014) <http://www.sciencedirect.com/science/article/pii/S1053811913008367>`__
+to estimate a single b-value (single-shell) response function for
+single-fibre white matter, which can subsequently be used in single-tissue
+(constrained) spherical deconvolution. The algorithm iterates between
+performing CSD and estimating a response function from all voxels detected
+as being `single-fibre` from the CSD result itself. The criterium for
+a voxel to be `single-fibre` is based on the ratio of the amplitude of
+second tallest to the first tallest peak. The method is initialised with
+a 'fat' response function; i.e., a response function that is safely deemed
+to be much less 'sharp' than the true response function. 
 
-1. Initialise the response function using a relatively 'fat' profile,
-   and the single-fibre mask using all brain voxels.
 
-2. Perform CSD in all single-fibre voxels.
 
-3. Exclude from the single-fibre voxel mask those voxels where the
-   resulting FOD detects more than one discrete fibre population, e.g.
-   using the ratio of the amplitudes of the first and second tallest
-   peaks.
+For more information, refer to the
+:ref:`tax algorithm documentation <dwi2response_tax>`.
 
-4. Re-calculate the response function using the updated single-fibre
-   voxel mask.
-
-5. Return to step 2, repeating until some termination criterion is
-   achieved.
-
-The following are the differences between the implementation in
-``dwi2response`` and this manuscript:
-
--  Deriving the initial response function. In the manuscript, this is
-   done using a tensor model with a low FA. I wasn't fussed on this
-   approach myself, in part because it's difficult to get the correct
-   intensity sscaling. Instead, the script examines the mean and
-   standard deviation of the raw DWI volumes, and derives an initial
-   *lmax=4* response function based on these.
-
--  The mechanism used to identify the peaks of the FOD. In
-   ``dwi2response``, the FOD segmentation algorithm described in the
-   `SIFT paper (Appendix
-   2) <http://www.sciencedirect.com/science/article/pii/S1053811912011615>`__
-   is used to locate the FOD peaks. The alternative is to use the
-   :ref:`sh2peaks` command, which uses a Newton search from 60 pre-defined
-   directions to locate these peaks. In my experience, the latter is
-   slower, and may fail to identify some FOD peaks because the seeding
-   directions are not sufficiently dense.
-
-For the sake of completeness, the following are further modifications
-that were made to the algorithm as part of the earlier ``dwi2response``
-*binary*, but have been removed from the script as it is now provided:
-
--  Rather than using the ratio of amplitudes between the tallest and
-   second-tallest peaks, this command instead looked at the ratio of the
-   AFD of the largest FOD lobe, and the sum of the AFD of all other
-   (positive) lobes in the voxel. Although this in some way makes more
-   sense from a physical perspective (comparing the volume occupied by
-   the primary fibre bundle to the volume of 'everything else'), it's
-   possible that due to the noisy nature of the FODs at small
-   amplitudes, this may have only introduced variance into the
-   single-fibre voxel identification process. Therefore the script has
-   reverted to the original & simpler peak amplitude ratio calculation.
-
--  A second, more stringent pass of SF voxel exclusion was performed,
-   which introduced two more criteria that single-fibre voxels had to
-   satisfy:
-
--  Dispersion: A measure of dispersion of an FOD lobe can be derived as
-   the ratio between the integral (fibre volume) and the peak amplitude.
-   As fibre dispersion increases, the FOD peak amplitude decreases, but
-   the fibre volume is unaffected; therefore this ratio increases. The
-   goal here was to explicitly exclude voxels from the single-fibre mask
-   if significant orientation dispersion was observed; this can be taken
-   into account somewhat by using the FOD peak amplitudes (as
-   orientation dispersion will decrease the amplitude of the tallest
-   peak), but from my initial experimentation I wanted something more
-   stringent. However as before, given the difficulties that many users
-   experienced with the ``dwi2response`` command, this algorithm in the
-   new script errs on the side of simplicity, so this test is not
-   performed.
-
--  Integral: By testing only the ratio of the tallest to second-tallest
-   FOD peak amplitude, the absolute value of the peak amplitude is
-   effectively ignored. This may or may not be considered problematic,
-   for either small or large FOD amplitudes. If the peak amplitude / AFD
-   is smaller than that of other voxels, it's possible that this voxel
-   experiences partial volume with CSF: this may satisfy the peak ratio
-   requirement, but using such a voxel is not ideal in response function
-   estimation as its noise level will be higher and the Rician noise
-   bias will be different. Conversely, both in certain regions of the
-   brain and in some pathologies, some voxels can appear where the AFD
-   is much higher due to T2 shine-through; it may seem appealing to use
-   such voxels in response function estimation as the SNR is higher, but
-   as for the low-signal case, the Rician noise bias will be different
-   to that in the rest of the brain. The previous ``dwi2response``
-   binary attempted to exclude such voxels by looking at the mean and
-   standard deviation of AFD within the single-fibre mask, and excluding
-   voxels above or below a certain threshold. As before, while this
-   heuristic may or may not seem appropriate depending on your point of
-   view, it has been excluded from the new ``dwi2response`` script to
-   keep things as simple as possible.
-
-``tournier`` algorithm
-^^^^^^^^^^^^^^^^^^^^^^
+'tournier' algorithm
+^^^^^^^^^^^^^^^^^^^^
 
 Independently and in parallel, Donald also developed a newer method for
 response function estimation based on CSD itself; it was used in `this
