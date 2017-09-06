@@ -300,3 +300,113 @@ used in these figures, which I'll explain here in full.
       screenshot by 180 degrees: this provides a pseudo-random coloring of the
       termination points that contrasts well against the tracks.
 
+
+Unusual result following use of ``tcknormalise``
+------------------------------------------------
+
+Sometimes, following the use of the ``tcknormalise`` command, an unusual
+effect may be observed where although the bulk of the streamlines may be
+aligned correctly with the target volume / space, a subset of streamlines
+appear to converge very 'sharply' toward a particular point in space.
+
+This is caused by the presence of zero-filling in the non-linear warp
+field image. In some softwares, voxels for which a proper non-linear
+transformation cannot be determined between the two images will be filled
+with zero values. However, ``tcknormalise`` will interpret these values as
+representing an intended warp for the streamlines, such that streamline
+points within those voxels will be spatially transformed to the point
+[0, 0, 0] in space - this results in the convergence of many streamlines
+toward the singularity point.
+
+The solutioin is to use the ``warpcorrect`` command, which identifies voxels
+that contain the warp [0, 0, 0] and replaces them with [NaN, NaN, NaN]
+("NaN" = "Not a Number"). This causes ``tcknormalise`` to _discard_ those
+streamline points; consistently with the results of registration, where
+appropriate non-linear transformation of these points could not be determined.
+
+
+Encountering errors using ``5ttgen fsl``
+----------------------------------------
+
+The following error messages have frequently been observed from the
+``5ttgen fsl`` script:
+
+.. code-block:: console
+
+    FSL FIRST has failed; not all structures were segmented successfully
+    Waiting for creation of new file "first-L_Accu_first.vtk"
+    FSL FIRST job has been submitted to SGE; awaiting completion
+      (note however that FIRST may fail silently, and hence this script may hang indefinitely)
+
+Error messages that may be found in the log files within the script's
+temporary directory include:
+
+.. code-block:: console
+
+    Cannot open volume first-L_Accu_corr for reading!
+    Image Exception : #22 :: ERROR: Could not open image first_all_none_firstseg
+    WARNING: NO INTERIOR VOXELS TO ESTIMATE MODE
+    vector::_M_range_check
+    terminate called after throwing an instance of 'RBD_COMMON::BaseException'
+    /bin/sh: line 1:  6404 Aborted                 /usr/local/packages/fsl-5.0.1/bin/fslmerge -t first_all_none_firstseg first-L_Accu_corr first-R_Accu_corr first-L_Caud_corr first-R_Caud_corr first-L_Pall_corr first-R_Pall_corr first-L_Puta_corr first-R_Puta_corr first-L_Thal_corr first-R_Thal_corr
+
+These various messages all relate to the fact that this script makes use of
+FSL's FIRST tool to explicitly segment sub-cortical grey matter structures,
+but this segmentation process is not successful in all circumstances.
+Moreover, there are particular details with regards to the implementation of
+the FIRST tool that make it awkward for the `5ttgen fsl`` script to invoke
+this tool and appropriately detect whether or not the segmentation was
+successful.
+
+It appears as though a primary source of this issue is the use of FSL's
+``flirt`` tool to register the T1 image to the DWIs before running
+``5ttgen fsl``. While this is consistent with the recommentation in the
+:ref:`act` documentation, there is an unintended consequence of performing
+this registration step specifically with the ``flirt`` tool prior to
+``5ttgen fsl``. With default usage, ``flirt`` will not only _register_ the
+T1 image to the DWIs, but also _resample_ the T1 to the voxel grid of the
+DWIs, greatly reducing its spatial resolution. This may have a concomitant
+effect during the sub-cortical segmentation by FIRST: The voxel grid is
+so coarse that it is impossible to find any voxels that are entirely
+encapsulated by the surface corresponding to the segmented structure,
+resulting in an error within the FIRST script.
+
+If this is the case, it is highly recommended that the T1 image _not_ be
+resampled to the DWI voxel grid following registration; not only for the
+issue mentioned above, but also because ACT is explicitly designed to take
+full advantage of the higher spatial resolution of the T1 image. If
+``flirt`` is still to be used for registration, the solution is to instruct
+``flirt`` to provide a _transformation matrix_, rather than a translated &
+resampled image:
+
+.. code-block: console
+
+    $ flirt -in T1.nii -ref DWI.nii -omat T12DWI_flirt.mat -dof 6
+
+That transformation matrix should then applied to the T1 image in a manner
+that only influences the transformation stored within the image header, and
+does *not* resample the image to a new voxel grid:
+
+.. code-block: console
+
+    $ transformconvert T12DWI_flirt.mat T1.nii DWI.nii flirt_import T12DWI_mrtrix.txt
+    $ mrtransform T1.nii T1_registered.mif -linear T12DWI_mrtrix.txt
+
+If the T1 image provided to ``5ttgen fsl`` has _not_ been erroneously
+down-sampled, but issues are still encountered with the FIRST step, another
+possible solution is to first obtain an accurate brain extraction, and then
+run ``5ttgen fsl`` using the ``--premasked`` option. This results in the
+registration step of FIRST being performed based on a brain-extracted
+template image, which in some cases may make the process more robust.
+
+For any further issues, the only remaining recommendations are:
+
+-  Investigate the temporary files that are generated within the script's
+   temporary directory, particularly the FIRST log files, and search for
+   any indication of the cause of failure.
+
+-  Try running the FSL ``run_first_all`` script directly on your original
+   T1 image. If this works, then further investigation could be used to
+   determine precisely which images can be successfully segmented and
+   which cannot. If it does not, then it may be necessary to experiment
+   with the command-line options available in the ``run_first_all`` script.
