@@ -125,7 +125,11 @@ const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast p
   + Option ("map_zero",
       "if a streamline has zero contribution based on the contrast & statistic, typically it is not mapped; "
       "use this option to still contribute to the map even if this is the case "
-      "(these non-contributing voxels can then influence the mean value in each voxel of the map)");
+      "(these non-contributing voxels can then influence the mean value in each voxel of the map)")
+
+  + Option ("backtrack",
+      "when using -stat_tck ends_*, if the streamline endpoint is outside the FoV, backtrack along "
+      "the streamline trajectory until an appropriate point is found");
 
 
 
@@ -162,7 +166,7 @@ DESCRIPTION
     "results to a .mif file or .mih / .dat file pair - this will avoid the allocation "
     "of an additional buffer to store the output for write-out.";
 
-REFERENCES 
+REFERENCES
   + "* For TDI or DEC TDI:\n"
   "Calamante, F.; Tournier, J.-D.; Jackson, G. D. & Connelly, A. " // Internal
   "Track-density imaging (TDI): Super-resolution white matter imaging using whole-brain track-density mapping. "
@@ -182,7 +186,7 @@ REFERENCES
   "Pannek, K., Raffelt, D., Salvado, O., Rose, S. " // Internal
   "Incorporating directional information in diffusion tractography derived maps: angular track imaging (ATI). "
   "In Proc. ISMRM, 2012, 20, 1912"
-  
+
   + "* If using -tod option:\n"
   "Dhollander, T., Emsell, L., Van Hecke, W., Maes, F., Sunaert, S., Suetens, P. " // Internal
   "Track Orientation Density Imaging (TODI) and Track Orientation Distribution (TOD) based tractography. "
@@ -320,6 +324,15 @@ void run () {
   }
 
 
+  bool backtrack = false;
+  if (get_options ("backtrack").size()) {
+    if (stat_tck == ENDS_CORR || stat_tck == ENDS_MAX || stat_tck == ENDS_MEAN || stat_tck == ENDS_MIN || stat_tck == ENDS_PROD)
+      backtrack = true;
+    else
+      WARN ("-backtrack option ignored; only applicable to endpoint-based track statistics");
+  }
+
+
   // Determine the dimensionality of the output image
   writer_dim writer_type = GREYSCALE;
 
@@ -401,13 +414,7 @@ void run () {
 
     case SCALAR_MAP:
     case SCALAR_MAP_COUNT:
-      break;
-
     case FOD_AMP:
-      if (stat_tck == ENDS_MIN || stat_tck == ENDS_MEAN || stat_tck == ENDS_MAX || stat_tck == ENDS_PROD)
-        throw Exception ("Can't use endpoint-based track-wise statistics with FOD_AMP contrast");
-      break;
-
     case CURVATURE:
       break;
 
@@ -422,9 +429,12 @@ void run () {
 
   }
 
+
   header.keyval()["twi_contrast"] = contrasts[contrast];
   header.keyval()["twi_vox_stat"] = voxel_statistics[stat_vox];
   header.keyval()["twi_tck_stat"] = track_statistics[stat_tck];
+  if (backtrack)
+    header.keyval()["twi_backtrack"] = "1";
 
 
   // Figure out how the streamlines will be mapped
@@ -536,7 +546,7 @@ void run () {
       case ENDS_MEAN:      msg += "endpoints (mean)"; break;
       case ENDS_MAX:       msg += "endpoints (maximum)"; break;
       case ENDS_PROD:      msg += "endpoints (product)"; break;
-      default:             msg += "ERROR";   break;
+      default:             throw Exception ("Invalid track-wise statistic detected");
     }
     msg += " per-track statistic";
   }
@@ -564,11 +574,13 @@ void run () {
         throw Exception ("If using 'fod_amp' contrast, must provide the relevant spherical harmonic image using -image option");
     }
     const std::string assoc_image (opt[0][0]);
-    const auto H_assoc_image = Header::open (assoc_image);
-    if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)
+    if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT) {
       mapper->add_scalar_image (assoc_image);
-    else
+      if (backtrack)
+        mapper->set_backtrack();
+    } else {
       mapper->add_fod_image (assoc_image);
+    }
     header.keyval()["twi_assoc_image"] = Path::basename (assoc_image);
   } else if (contrast == VECTOR_FILE) {
     opt = get_options ("vector_file");

@@ -61,7 +61,6 @@ namespace MR
           QLocale::setDefault(QLocale::c());
 
           new QApplication (cmdline_argc, cmdline_argv);
-          ::MR::App::init (cmdline_argc, cmdline_argv); 
           qApp->setAttribute (Qt::AA_DontCreateNativeWidgetSiblings);
         }
 
