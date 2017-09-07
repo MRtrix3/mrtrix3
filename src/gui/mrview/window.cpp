@@ -1635,6 +1635,7 @@ namespace MR
           default: return;
         }
         event->accept();
+        glarea->update();
       }
 
 
