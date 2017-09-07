@@ -34,7 +34,7 @@ namespace MR
     {
       namespace Tool
       {
-        const int Tractogram::max_sample_stride;
+        const int Tractogram::track_padding;
         TrackGeometryType Tractogram::default_tract_geom (TrackGeometryType::Pseudotubes);
 
         std::string Tractogram::Shader::vertex_shader_source (const Displayable& displayable)
@@ -544,15 +544,26 @@ namespace MR
               gl::VertexAttribPointer (2, 3, gl::FLOAT, gl::FALSE_, 3*sample_stride*sizeof(float), (void*)(6*sample_stride*sizeof(float)));
 
               for(size_t j = 0, M = track_sizes[buf].size(); j < M; ++j) {
-                track_sizes[buf][j] = (GLint) std::floor (original_track_sizes[buf][j] / (float)sample_stride);
-                track_starts[buf][j] = (GLint) (std::ceil (original_track_starts[buf][j] / (float)sample_stride)) - 1;
+                track_sizes[buf][j] = (GLint) std::ceil (original_track_sizes[buf][j] / (float)sample_stride);
+                track_starts[buf][j] = (GLint) std::floor (original_track_starts[buf][j] / (float)sample_stride);
+
+                // Vertex attributes are packed prev, curr, next
+                // So ensure first curr does indeed correspond to track start
+                if (original_track_starts[buf][j] - sample_stride * track_starts[buf][j] < sample_stride - 1)
+                  --track_starts[buf][j];
+
+                // Ensure final vertex corresponds to track end
+                GLint offset = original_track_starts[buf][j] + original_track_sizes[buf][j]
+                    - (track_starts[buf][j] + track_sizes[buf][j] - 1) * sample_stride;
+
+                track_sizes[buf][j] += (GLint)std::floor(offset / (float)sample_stride);
               }
             }
 
-            if (geometry_type == TrackGeometryType::Points)
-              gl::MultiDrawArrays (gl::POINTS, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
-            else
-              gl::MultiDrawArrays (gl::LINE_STRIP, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
+            auto mode = geometry_type == TrackGeometryType::Points ? gl::POINTS : gl::LINE_STRIP;
+
+            gl::MultiDrawArrays (mode, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
+
           }
 
           vao_dirty = false;
@@ -571,7 +582,10 @@ namespace MR
             const auto geom_size = geometry_type == TrackGeometryType::Pseudotubes ?
                   Tractogram::default_line_thickness : Tractogram::default_point_size;
             new_stride = GLint (geom_size * std::exp (2.0e-3f * line_thickness) * original_fov / step_size);
-            new_stride = std::max (1, std::min (max_sample_stride, new_stride));
+            // We have to ensure that our vertex buffer contains at least two copies
+            // of track start and track end to correctly render our tracks
+            // => Max stride = track_padding / 2
+            new_stride = std::max (1, std::min (track_padding / 2, new_stride));
           }
 
           if (new_stride != sample_stride) {
@@ -608,17 +622,17 @@ namespace MR
             // Pre padding
             // To support downsampling, we want to ensure that the starting track vertex
             // is used even when we're using a stride > 1
-            for (size_t i = 0; i < max_sample_stride; ++i)
+            for (size_t i = 0; i < track_padding; ++i)
               buffer.push_back (tck.front());
 
-            starts.push_back (buffer.size());
+            starts.push_back (buffer.size() - 1);
 
             buffer.insert (buffer.end(), tck.begin(), tck.end());
 
             // Post padding
             // Similarly, to support downsampling, we also want to ensure the final track vertex
             // will be used even we're using a stride > 1
-            for (size_t i = 0; i < max_sample_stride; ++i)
+            for (size_t i = 0; i < track_padding; ++i)
               buffer.push_back(tck.back());
 
             sizes.push_back (N);
@@ -662,7 +676,7 @@ namespace MR
               const size_t tck_length = original_track_sizes[buffer_index][buffer_tck_counter];
 
               // Includes pre- and post-padding to coincide with tracks buffer
-              for (size_t i = 0; i != tck_length + (2 * max_sample_stride); ++i)
+              for (size_t i = 0; i != tck_length + (2 * track_padding); ++i)
                 buffer.push_back (colour);
 
             }
@@ -702,7 +716,7 @@ namespace MR
                 continue;
 
               // Pre padding to coincide with tracks buffer
-              for (size_t i = 0; i < max_sample_stride; ++i)
+              for (size_t i = 0; i < track_padding; ++i)
                 buffer.push_back (tck_scalar.front());
 
               for (size_t i = 0; i < tck_size; ++i) {
@@ -712,7 +726,7 @@ namespace MR
               }
 
               // Post padding to coincide with tracks buffer
-              for (size_t i = 0; i < max_sample_stride; ++i)
+              for (size_t i = 0; i < track_padding; ++i)
                 buffer.push_back (tck_scalar.back());
 
               if (buffer.size() >= MAX_BUFFER_SIZE)
@@ -739,13 +753,13 @@ namespace MR
                 tck_scalar.assign (track_lengths[index], value);
 
                 // Pre padding to coincide with tracks buffer
-                for (size_t i = 0; i < max_sample_stride; ++i)
+                for (size_t i = 0; i < track_padding; ++i)
                   buffer.push_back (tck_scalar.front());
 
                 buffer.insert (buffer.end(), tck_scalar.begin(), tck_scalar.end());
 
                 // Post padding to coincide with tracks buffer
-                for (size_t i = 0; i < max_sample_stride; ++i)
+                for (size_t i = 0; i < track_padding; ++i)
                   buffer.push_back (tck_scalar.back());
 
                 value_max = std::max (value_max, value);
@@ -791,7 +805,7 @@ namespace MR
                 continue;
 
               // Pre padding to coincide with tracks buffer
-              for (size_t i = 0; i < max_sample_stride; ++i)
+              for (size_t i = 0; i < track_padding; ++i)
                 buffer.push_back (tck_scalar.front());
 
               for (size_t i = 0; i < tck_size; ++i) {
@@ -801,7 +815,7 @@ namespace MR
               }
 
               // Post padding to coincide with tracks buffer
-              for (size_t i = 0; i < max_sample_stride; ++i)
+              for (size_t i = 0; i < track_padding; ++i)
                 buffer.push_back (tck_scalar.back());
 
               if (buffer.size() >= MAX_BUFFER_SIZE)
@@ -828,13 +842,13 @@ namespace MR
                 tck_scalar.assign (track_lengths[index], value);
 
                 // Pre padding to coincide with tracks buffer
-                for (size_t i = 0; i < max_sample_stride; ++i)
+                for (size_t i = 0; i < track_padding; ++i)
                   buffer.push_back (tck_scalar.front());
 
                 buffer.insert (buffer.end(), tck_scalar.begin(), tck_scalar.end());
 
                 // Post padding to coincide with tracks buffer
-                for (size_t i = 0; i < max_sample_stride; ++i)
+                for (size_t i = 0; i < track_padding; ++i)
                   buffer.push_back (tck_scalar.back());
 
                 threshold_max = std::max (threshold_max, value);

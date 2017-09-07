@@ -121,7 +121,7 @@ namespace MR
             void scalingChanged ();
 
           private:
-            static const int max_sample_stride = 6;
+            static const int track_padding = 6;
             Tractography& tractography_tool;
 
             const std::string filename;
