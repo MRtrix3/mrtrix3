@@ -174,7 +174,13 @@ def execute():
   first_input_brain_extracted_option = ''
   if app.args.premasked:
     first_input_brain_extracted_option = ' -b'
-  run.command(first_cmd + ' -m none -s ' + ','.join(sgm_structures) + ' -i ' + first_input + ' -o first' + first_input_brain_extracted_option)
+  first_debug_option = ''
+  if not app._cleanup:
+    first_debug_option = ' -d'
+  first_verbosity_option = ''
+  if app._verbosity == 3:
+    first_verbosity_option = ' -v'
+  run.command(first_cmd + ' -m none -s ' + ','.join(sgm_structures) + ' -i ' + first_input + ' -o first' + first_input_brain_extracted_option + first_debug_option + first_verbosity_option)
 
   # Test to see whether or not FIRST has succeeded
   # However if the expected image is absent, it may be due to FIRST being run
@@ -189,8 +195,7 @@ def execute():
     else:
       combined_image_path = fsl.findImage('first_all_none_firstseg')
       if not os.path.isfile(combined_image_path):
-        app.error('FSL FIRST has failed; not all structures were segmented successfully (check ' +
-path.toTemp('first.logs', False) + ')')
+        app.error('FSL FIRST has failed; not all structures were segmented successfully (check ' + path.toTemp('first.logs', False) + ')')
 
   # Convert FIRST meshes to partial volume images
   pve_image_list = [ ]
