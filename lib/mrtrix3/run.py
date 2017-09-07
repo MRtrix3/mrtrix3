@@ -186,7 +186,8 @@ def command(cmd, exitOnError=True):
       app.console('')
       sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + app.colourError + '[ERROR] Command failed: ' + cmd + app.colourClear + app.colourDebug + ' (' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')' + app.colourClear + '\n')
       sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + app.colourConsole + 'Output of failed command:' + app.colourClear + '\n')
-      sys.stderr.write(error_text)
+      for line in error_text.splitlines():
+        sys.stderr.write('  ' + line + '\n')
       sys.stderr.flush()
       if app._tempDir:
         with open(os.path.join(app._tempDir, 'error.txt'), 'w') as outfile:
