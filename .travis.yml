@@ -22,15 +22,18 @@ install:
   - export PYTHONPATH=`pwd`/lib:${PYTHONPATH}
   - export EIGEN_CFLAGS=-I`pwd`/../eigen
   - (cd ..; hg clone https://bitbucket.org/eigen/eigen/; cd eigen; hg update 3.3)
-  - pip install pylint
-  - pip3 install pylint
+  - pip install pylint recommonmark sphinx sphinx-rtd-theme
+  - pip3 install pylint recommonmark sphinx sphinx-rtd-theme
 script:
+  - ${py} -m sphinx -n -N -W -w sphinx.log -c docs/ docs/ tmp/
   - ./check_memalign && $py ./configure -assert && $py ./build -nowarnings && PYTHON=$py ./run_pylint && ./run_tests
-
+  - ./docs/generate_user_docs.sh && git diff --exit-code docs/ > gitdiff.log || echo "Documentation is not up to date; run docs/generate_user_docs.sh and commit changes"
 after_failure:
+  - cat sphinx.log
   - cat memalign.log
   - cat configure.log
   - cat pylint.log
   - cat build.log
   - cat testing.log
+  - cat gitdiff.log
   - sleep 10

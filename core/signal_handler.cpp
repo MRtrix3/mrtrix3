@@ -18,7 +18,7 @@
 #include <iostream>
 #include <signal.h>
 
-#include "exception.h"
+#include "app.h"
 #include "file/path.h"
 
 #ifdef MRTRIX_WINDOWS
@@ -85,7 +85,7 @@ namespace MR
 
       // Try to do a tempfile cleanup before printing the error, since the latter's not guaranteed to work...
       // Don't use File::unlink: may throw an exception
-      for (const auto& i : data) 
+      for (const auto& i : data)
         ::unlink (i.c_str());
 
 
@@ -93,11 +93,11 @@ namespace MR
       const char* msg = nullptr;
       switch (i) {
 
-#define __SIGNAL(SIG,MSG) case SIG: sig = #SIG; msg = MSG; break; 
+#define __SIGNAL(SIG,MSG) case SIG: sig = #SIG; msg = MSG; break;
 #include "signals.h"
 
         default:
-          sig = "UNKNOWN"; 
+          sig = "UNKNOWN";
           msg = "Unknown fatal system signal";
           break;
       }
