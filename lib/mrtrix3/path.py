@@ -1,19 +1,19 @@
 # A collection of functions used to operate upon file and directory paths
 
 # Determines the common postfix for a list of filenames (including the file extension)
-def commonPostfix(inputFiles):
+def commonPostfix(inputFiles): #pylint: disable=unused-variable
   from mrtrix3 import app
-  first = inputFiles[0];
+  first = inputFiles[0]
   cursor = 0
-  found = False;
+  found = False
   common = ''
-  for i in reversed(first):
-    if found == False:
+  for dummy_i in reversed(first):
+    if not found:
       for j in inputFiles:
         if j[len(j)-cursor-1] != first[len(first)-cursor-1]:
           found = True
           break
-      if found == False:
+      if not found:
         common = first[len(first)-cursor-1] + common
       cursor += 1
   app.debug('Common postfix of ' + str(len(inputFiles)) + ' is \'' + common + '\'')
@@ -28,39 +28,59 @@ def commonPostfix(inputFiles):
 #   To add quotation marks where the output path is being interpreted as part of a full command string
 #     (e.g. to be passed to run.command()); without these quotation marks, paths that include spaces would be
 #     erroneously split, subsequently confusing whatever command is being invoked.
-def fromUser(filename, is_command):
+def fromUser(filename, is_command): #pylint: disable=unused-variable
   import os
   from mrtrix3 import app
   wrapper=''
-  if is_command and (filename.count(' ') or app._workingDir.count(' ')):
+  if is_command and (filename.count(' ') or app.workingDir.count(' ')):
     wrapper='\"'
-  path = wrapper + os.path.abspath(os.path.join(app._workingDir, filename)) + wrapper
+  path = wrapper + os.path.abspath(os.path.join(app.workingDir, filename)) + wrapper
   app.debug(filename + ' -> ' + path)
   return path
 
 
 
-# Get the full absolute path to a location in the temporary script directory
-def toTemp(filename, is_command):
-  import os
+# Get an appropriate location and name for a new temporary file / directory
+# Note: Doesn't actually create anything; just gives a unique name that won't over-write anything
+def newTemporary(suffix): #pylint: disable=unused-variable
+  import os.path, random, string
   from mrtrix3 import app
-  wrapper=''
-  if is_command and filename.count(' '):
-    wrapper='\"'
-  path = wrapper + os.path.abspath(os.path.join(app._tempDir, filename)) + wrapper
-  app.debug(filename + ' -> ' + path)
-  return path
+  if 'TmpFileDir' in app.config:
+    dir_path = app.config['TmpFileDir']
+  elif app.tempDir:
+    dir_path = app.tempDir
+  else:
+    dir_path = os.getcwd()
+  if 'TmpFilePrefix' in app.config:
+    prefix = app.config['TmpFilePrefix']
+  else:
+    prefix = 'mrtrix-tmp-'
+  full_path = dir_path
+  suffix = suffix.lstrip('.')
+  while os.path.exists(full_path):
+    random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
+    full_path = os.path.join(dir_path, prefix + random_string + '.' + suffix)
+  app.debug(full_path)
+  return full_path
 
 
 
 # Determine the name of a sub-directory containing additional data / source files for a script
 # This can be algorithm files in lib/mrtrix3, or data files in /share/mrtrix3/
-def scriptSubDirName():
+def scriptSubDirName(): #pylint: disable=unused-variable
   import inspect, os
-  # TODO Test this on multiple Python versions, with & without softlinking
-  name = os.path.basename(inspect.stack()[-1][1])
+  from mrtrix3 import app
+  frameinfo = inspect.stack()[-1]
+  try:
+    frame = frameinfo.frame
+  except: # Prior to Version 3.5
+    frame = frameinfo[0]
+  # If the script has been run through a softlink, we need the name of the original
+  #   script in order to locate the additional data
+  name = os.path.basename(os.path.realpath(inspect.getfile(frame)))
   if not name[0].isalpha():
     name = '_' + name
+  app.debug(name)
   return name
 
 
@@ -69,7 +89,22 @@ def scriptSubDirName():
 # Some scripts come with additional requisite data files; this function makes it easy to find them.
 # For data that is stored in a named sub-directory specifically for a particular script, this function will
 #   need to be used in conjunction with scriptSubDirName()
-def sharedDataPath():
+def sharedDataPath(): #pylint: disable=unused-variable
   import os
-  return os.path.realpath(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, os.pardir, 'share', 'mrtrix3')))
+  from mrtrix3 import app
+  result = os.path.realpath(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, os.pardir, 'share', 'mrtrix3')))
+  app.debug(result)
+  return result
 
+
+
+# Get the full absolute path to a location in the temporary script directory
+def toTemp(filename, is_command): #pylint: disable=unused-variable
+  import os
+  from mrtrix3 import app
+  wrapper=''
+  if is_command and filename.count(' '):
+    wrapper='\"'
+  path = wrapper + os.path.abspath(os.path.join(app.tempDir, filename)) + wrapper
+  app.debug(filename + ' -> ' + path)
+  return path
