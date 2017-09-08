@@ -17,6 +17,7 @@
 #include "gui/mrview/window.h"
 #include "gui/projection.h"
 #include "dwi/tractography/file.h"
+#include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"
 #include "gui/opengl/lighting.h"
 #include "gui/mrview/mode/base.h"
@@ -513,10 +514,12 @@ namespace MR
 
         inline void Tractogram::update_stride ()
         {
-          // TODO This should perhaps be using "output_step_size" if present?
-          float step_size = (properties.find ("step_size") == properties.end() ? 0.0 : to<float>(properties["step_size"]));
-          GLint new_stride = GLint (tractography_tool.line_thickness * original_fov / step_size);
-          new_stride = std::max (1, std::min (max_sample_stride, new_stride));
+          const float step_size = DWI::Tractography::get_step_size (properties);
+          GLint new_stride = 1;
+          if (std::isfinite (step_size)) {
+            new_stride = GLint (tractography_tool.line_thickness * original_fov / step_size);
+            new_stride = std::max (1, std::min (max_sample_stride, new_stride));
+          }
 
           if (new_stride != sample_stride) {
             sample_stride = new_stride;
@@ -872,7 +875,7 @@ namespace MR
         void Tractogram::load_tracks_onto_GPU (vector<Eigen::Vector3f>& buffer,
             vector<GLint>& starts,
             vector<GLint>& sizes,
-            size_t& tck_count) 
+            size_t& tck_count)
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
@@ -900,7 +903,7 @@ namespace MR
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
-        void Tractogram::load_end_colours_onto_GPU (vector<Eigen::Vector3f>& buffer) 
+        void Tractogram::load_end_colours_onto_GPU (vector<Eigen::Vector3f>& buffer)
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 

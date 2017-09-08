@@ -888,35 +888,43 @@ namespace MR
 
 
 
+    void verify_usage ()
+    {
+      if (!AUTHOR)
+        throw Exception ("No author specified for command " + std::string(NAME));
+      if (!SYNOPSIS)
+        throw Exception ("No synopsis specified for command " + std::string(NAME));
+    }
+
+
+
+    void parse_special_options ()
+    {
+      if (argc != 2) return;
+      if (strcmp (argv[1], "__print_full_usage__") == 0) {
+        print (full_usage ());
+        throw 0;
+      }
+      if (strcmp (argv[1], "__print_usage_markdown__") == 0) {
+        print (markdown_usage ());
+        throw 0;
+      }
+      if (strcmp (argv[1], "__print_usage_rst__") == 0) {
+        print (restructured_text_usage ());
+        throw 0;
+      }
+      if (strcmp (argv[1], "__print_synopsis__") == 0) {
+        print (SYNOPSIS);
+        throw 0;
+      }
+    }
+
+
 
     void parse ()
     {
       argument.clear();
       option.clear();
-
-      if (!AUTHOR)
-        throw Exception ("No author specified for command " + std::string(NAME));
-      if (!SYNOPSIS)
-        throw Exception ("No synopsis specified for command " + std::string(NAME));
-
-      if (argc == 2) {
-        if (strcmp (argv[1], "__print_full_usage__") == 0) {
-          print (full_usage ());
-          throw 0;
-        }
-        if (strcmp (argv[1], "__print_usage_markdown__") == 0) {
-          print (markdown_usage ());
-          throw 0;
-        }
-        if (strcmp (argv[1], "__print_usage_rst__") == 0) {
-          print (restructured_text_usage ());
-          throw 0;
-        }
-        if (strcmp (argv[1], "__print_synopsis__") == 0) {
-          print (SYNOPSIS);
-          throw 0;
-        }
-      }
 
       sort_arguments (argc, argv);
 

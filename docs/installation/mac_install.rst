@@ -18,6 +18,12 @@ To install *MRtrix3* , you will need the following:
 -  `Qt <http://www.qt.io/>`__ version >= 5.1 *[GUI components only]* -
    important: versions prior to this will *not* work
 
+and optionally:
+
+- `libTIFF <http://www.libtiff.org/>`__ version >= 4.0 (for TIFF support)
+- `FFTW <http://www.fftw.org/>`__ version >= 3.0 (for improved performance in
+  certain applications, currently only ``mrdegibbs``)
+
 .. WARNING:: 
 
     To run the GUI components of *MRtrix3*  (``mrview`` & ``shview``), you will also need:
@@ -99,6 +105,18 @@ Install Dependencies
            (edit as appropriate) ``export EIGEN_CFLAGS="-isystem /where/you/extracted/eigen"``
            Make sure *not* to include the final ``/Eigen`` folder in the path
            name - use the folder in which it resides instead!
+
+4. Install TIFF and FFTW library.
+
+   - With `Homebrew <http://brew.sh/>`__:
+
+       - Install TIFF: ``brew install libtiff``
+       - Install FFTW: ``brew install fftw``
+      
+   - With `MacPorts <http://macports.org/>`__:
+
+       - Install TIFF: ``port install tiff``
+       - Install FFTW: ``port install fftw-3``
 
 Git setup
 ---------

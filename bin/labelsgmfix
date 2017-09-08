@@ -8,19 +8,16 @@
 #   node indices that correspond to these structures, and replaces them with estimates
 #   derived from FIRST.
 
-
 # Make the corresponding MRtrix3 Python libraries available
 import inspect, os, sys
-lib_folder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile(inspect.currentframe()))[0], os.pardir, 'lib')))
+lib_folder = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
 if not os.path.isdir(lib_folder):
   sys.stderr.write('Unable to locate MRtrix3 Python libraries')
   sys.exit(1)
 sys.path.insert(0, lib_folder)
 
 
-
-from distutils.spawn import find_executable
-from mrtrix3 import app, image, path, run
+from mrtrix3 import app, file, fsl, image, path, run #pylint: disable=redefined-builtin
 
 
 app.init('Robert E. Smith (robert.smith@florey.edu.au)',
@@ -47,14 +44,9 @@ fsl_path = os.environ.get('FSLDIR', '')
 if not fsl_path:
   app.error('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
 
-first_cmd = 'run_first_all'
-if not find_executable(first_cmd):
-  first_cmd = "fsl5.0-run_first_all"
-  if not find_executable(first_cmd):
-    app.error('Could not find FSL program run_first_all; please verify FSL install')
+first_cmd = fsl.exeName('run_first_all')
 
 first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
-
 if not os.path.isdir(first_atlas_path):
   app.error('Atlases required for FSL\'s FIRST program not installed;\nPlease install fsl-first-data using your relevant package manager')
 
@@ -84,7 +76,7 @@ if app.args.premasked:
 run.command(first_cmd + ' -m none -s ' + ','.join(structure_map.keys()) + ' -i T1.nii' + first_input_is_brain_extracted + ' -o first')
 
 # Check output of FIRST, just as is done in 5ttgen fsl
-combined_image_path = 'first_all_none_firstseg' + fsl_suffix
+combined_image_path = 'first_all_none_firstseg' + fsl.suffix()
 if not os.path.isfile(combined_image_path):
   if 'SGE_ROOT' in os.environ:
     app.console('FSL FIRST job has been submitted to SGE; awaiting completion')
@@ -120,7 +112,7 @@ for key, value in structure_map.items():
   # Add to the SGM image; don't worry about overlap for now
   node_index = sgm_lut[value]
   run.command('mrcalc ' + image_path + ' ' + node_index + ' sgm.mif -if sgm_new.mif')
-  if not app._lastFile:
+  if not app.continueOption:
     run.function(os.remove, 'sgm.mif')
     run.function(os.rename, 'sgm_new.mif', 'sgm.mif')
 
@@ -135,17 +127,15 @@ run.command('labelconvert sgm_masked.mif ' + sgm_lut_file_path + ' ' + path.from
 # * Figure out what index the structure has been mapped to; this can only be done using mrstats
 # * Strip that index from the parcellation image
 # * Insert the new delineation of that structure
-for struct in structure_map.keys():
+for struct in structure_map:
   image_path = struct + '_mask.mif'
-  index = image.statistic('sgm_new_labels.mif', 'median', image_path)
+  index = image.statistic('sgm_new_labels.mif', 'median', '-mask ' + image_path)
   run.command('mrcalc parc.mif ' + index + ' -eq 0 parc.mif -if parc_removed.mif')
-  if not app._lastFile:
-    run.function(os.remove, 'parc.mif')
-    run.function(os.rename, 'parc_removed.mif', 'parc.mif')
+  run.function(os.remove, 'parc.mif')
+  run.function(os.rename, 'parc_removed.mif', 'parc.mif')
 
 # Insert the new delineations of all SGM structures in a single call
 # Enforce unsigned integer datatype of output image
 run.command('mrcalc sgm_new_labels.mif 0.5 -gt sgm_new_labels.mif parc.mif -if result.mif -datatype uint32')
-run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + (' -force' if app.force else ''))
+run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + (' -force' if app.forceOverwrite else ''))
 app.complete()
-
