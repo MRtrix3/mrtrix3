@@ -20,9 +20,9 @@ although some have proven to be more widely applicable than others.
 Quick advice
 ------------
 
-These algorithms appear to perform well in a wide range of scenarios,
-based on experience and testing from both developers and the
-`MRtrix3 community <http://community.mrtrix.org>`__.:
+The following algorithms appear to perform well in a wide range of
+scenarios, based on experience and testing from both developers and
+the `MRtrix3 community <http://community.mrtrix.org>`__:
 
 -  If you intend to perform *single-tissue* spherical deconvolution,
    the ``tournier`` algorithm is a convenient and reliable way to
@@ -108,6 +108,9 @@ The following sections provide more details on each algorithm specifically.
 
 TODO: Thijs is working on this documentation section.
 
+For more information, refer to the
+:ref:`dhollander algorithm documentation <dwi2response_dhollander>`.
+
 'fa' algorithm
 ^^^^^^^^^^^^^^
 
@@ -140,6 +143,9 @@ devise their own mechanism for response function estimation. It requires
 manual definition of both the single-fibre voxel mask (or just a voxel
 mask for isotropic tissues); the fibre directions can also be provided
 manually if necessary (otherwise a tensor fit will be used).
+
+For more information, refer to the
+:ref:`manual algorithm documentation <dwi2response_manual>`.
 
 'msmt_5tt' algorithm
 ^^^^^^^^^^^^^^^^^^^^
@@ -181,6 +187,9 @@ For reference, this algorithm operates as follows:
 4. Derive a multi-shell response for each tissue for each of these three
    tissues. For GM and CSF, use *lmax=0* for all shells.
 
+For more information, refer to the
+:ref:`msmt_5tt algorithm documentation <dwi2response_msmt_5tt>`.
+
 'tax' algorithm
 ^^^^^^^^^^^^^^^
 
@@ -195,8 +204,6 @@ a voxel to be `single-fibre` is based on the ratio of the amplitude of
 second tallest to the first tallest peak. The method is initialised with
 a 'fat' response function; i.e., a response function that is safely deemed
 to be much less 'sharp' than the true response function. 
-
-
 
 For more information, refer to the
 :ref:`tax algorithm documentation <dwi2response_tax>`.
@@ -240,6 +247,9 @@ on which it has been tested. However if you are involved in the
 processing of non-human brain images in particular, you may need to
 experiment with the number of single-fibre voxels as the white matter is
 typically smaller.
+
+For more information, refer to the
+:ref:`tournier algorithm documentation <dwi2response_tournier>`.
 
 Writing your own algorithms
 ---------------------------
