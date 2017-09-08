@@ -125,7 +125,7 @@ class CSD_Processor { MEMALIGN(CSD_Processor)
         INFO ("voxel [ " + str (dwi.index(0)) + " " + str (dwi.index(1)) + " " + str (dwi.index(2)) +
             " ] did not reach full convergence");
 
-      write_back (fod);
+      fod.row(3) = sdeconv.FOD();
     }
 
 
@@ -155,11 +155,6 @@ class CSD_Processor { MEMALIGN(CSD_Processor)
     }
 
 
-    void write_back (Image<float>& fod) {
-      for (auto l = Loop (3) (fod); l; ++l)
-        fod.value() = sdeconv.FOD() [fod.index(3)];
-    }
-
 };
 
 
@@ -183,8 +178,7 @@ class MSMT_Processor { MEMALIGN (MSMT_Processor)
           return;
       }
 
-      for (auto l = Loop (3) (dwi_image); l; ++l)
-        dwi_data[dwi_image.index(3)] = dwi_image.value();
+      dwi_data = dwi_image.row(3);
 
       sdeconv (dwi_data, output_data);
       if (sdeconv.niter >= sdeconv.shared.problem.max_niter) {
@@ -198,12 +192,18 @@ class MSMT_Processor { MEMALIGN (MSMT_Processor)
         for (auto l = Loop(3)(odf_images[i]); l; ++l)
           odf_images[i].value() = output_data[j++];
       }
+
+      if (modelled_image.valid()) {
+        assign_pos_of (dwi_image, 0, 3).to (modelled_image);
+        dwi_data = sdeconv.shared.problem.H * output_data;
+        modelled_image.row(3) = dwi_data;
+      }
     }
 
 
   private:
     DWI::SDeconv::MSMT_CSD sdeconv;
-    Image<bool> mask_image;
+    Image<bool> mask_image, modelled_image;
     vector< Image<float> > odf_images;
     Eigen::VectorXd dwi_data;
     Eigen::VectorXd output_data;
