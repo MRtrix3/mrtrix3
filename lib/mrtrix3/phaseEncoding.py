@@ -1,7 +1,7 @@
 # Functions relating to handling phase encoding information
 
 # From a user-specified string, determine the axis and direction of phase encoding
-def dir(string):
+def direction(string): #pylint: disable=unused-variable
   from mrtrix3 import app
   pe_dir = ''
   try:
@@ -47,23 +47,22 @@ def dir(string):
 
 
 
-# Extract a phase-encoding acheme from an image header
-def getScheme(image_path):
-  import subprocess
-  from mrtrix3 import app, run
-  command = [ run.versionMatch('mrinfo'), image_path, '-petable' ]
-  if app._verbosity > 1:
-    app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
-  proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
-  result, err = proc.communicate()
-  result = result.rstrip().decode('utf-8')
-  if result:
-    result = [ [ float(f) for f in line.split() ] for line in result.split('\n') ]
-  if app._verbosity > 1:
-    if not result:
-      app.console('Result: No phase encoding table found')
-    else:
-      app.console('Result: ' + str(len(result)) + ' x ' + str(len(result[0])) + ' table')
-      app.debug(str(result))
-  return result
-
+# Extract a phase-encoding scheme from a pre-loaded image header,
+#   or from a path to the image
+def getScheme(arg): #pylint: disable=unused-variable
+  from mrtrix3 import app, image
+  if not isinstance(arg, image.Header):
+    if not isinstance(arg, str):
+      app.error('Error trying to derive phase-encoding scheme from \'' + str(arg) + '\': Not an image header or file path')
+    arg = image.Header(arg)
+  if 'pe_scheme' in arg.keyval:
+    app.debug(arg.keyval['pe_scheme'])
+    return arg.keyval['pe_scheme']
+  if 'PhaseEncodingDirection' not in arg.keyval:
+    return None
+  line = direction(arg.keyval['PhaseEncodingDirection'])
+  if 'TotalReadoutTime' in arg.keyval:
+    line.append(arg.keyval['TotalReadoutTime'])
+  num_volumes = 1 if len(arg.size) < 4 else arg.size[3]
+  app.debug(str(line) + ' x ' + num_volumes + ' rows')
+  return line * num_volumes
