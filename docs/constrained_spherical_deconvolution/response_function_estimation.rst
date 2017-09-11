@@ -116,8 +116,8 @@ For more information, refer to the
 
 This algorithm is an implementation of the strategy proposed in
 `Tournier et al. (2004) <http://www.sciencedirect.com/science/article/pii/S1053811904004100>`__
-to estimate a single b-value (single-shell) response function for
-single-fibre white matter, which can subsequently be used in single-tissue
+to estimate a single b-value (single-shell) response function of
+single-fibre white matter, which can subsequently be used for single-tissue
 (constrained) spherical deconvolution. The algorithm estimates this
 response function from the 300 voxels with the highest FA value in an
 eroded brain mask. There are also options to change this number or
@@ -195,12 +195,12 @@ For more information, refer to the
 
 This algorithm is a reimplementation of the iterative approach proposed in
 `Tax et al. (2014) <http://www.sciencedirect.com/science/article/pii/S1053811913008367>`__
-to estimate a single b-value (single-shell) response function for
-single-fibre white matter, which can subsequently be used in single-tissue
+to estimate a single b-value (single-shell) response function of
+single-fibre white matter, which can subsequently be used for single-tissue
 (constrained) spherical deconvolution. The algorithm iterates between
 performing CSD and estimating a response function from all voxels detected
-as being `single-fibre` from the CSD result itself. The criterium for
-a voxel to be `single-fibre` is based on the ratio of the amplitude of
+as being 'single-fibre' from the CSD result itself. The criterium for
+a voxel to be 'single-fibre' is based on the ratio of the amplitude of
 second tallest to the first tallest peak. The method is initialised with
 a 'fat' response function; i.e., a response function that is safely deemed
 to be much less 'sharp' than the true response function.
@@ -218,42 +218,50 @@ For more information, refer to the
 'tournier' algorithm
 ^^^^^^^^^^^^^^^^^^^^
 
-Independently and in parallel, Donald also developed a newer method for
-response function estimation based on CSD itself; it was used in `this
-manuscript <http://dx.doi.org/10.1002/nbm.3017>`__. It bears some
-resemblance to the ``tax`` algorithm, but relies on a threshold on the
-number of voxels in the single-fibre mask, rather than the ratio between
-tallest and second-tallest peaks. The operation is as follows:
+This algorithm is an implementation of the iterative approach proposed in
+`Tournier et al. (2013) <http://onlinelibrary.wiley.com/doi/10.1002/nbm.3017/abstract>`__
+to estimate a single b-value (single-shell) response function of
+single-fibre white matter, which can subsequently be used for single-tissue
+(constrained) spherical deconvolution. The algorithm iterates between
+performing CSD and estimating a response function from a set of the best
+'single-fibre' voxels as detected from the CSD result itself. Notable differences
+between this implementation and the algorithm described in `Tournier et al. (2013)
+<http://onlinelibrary.wiley.com/doi/10.1002/nbm.3017/abstract>`__ include:
 
-1. Define an initial response function that is as sharp as possible
-   (ideally a flat disk, but will be fatter due to spherical harmonic
-   truncation). Limit this initial function to *lmax=4*, as this makes
-   the FODs less noisy in the first iteration.
+-  This implementation is initialised by a sharp lmax=4 response function
+   as opposed to one estimated from the 300 brain voxels with the highest FA.
+   
+-  This implementation uses a more complex metric to measure how
+   'single-fibre' FODs are: ``sqrt(|peak1|) * (1 - |peak2| / |peak1|)^2``,
+   as opposed to a simple ratio of the tallest peaks. This new metric has
+   a bias towards FODs with a larger tallest peak, to avoid favouring
+   small, yet low SNR, FODs.
+   
+-  This implementation only performs CSD on the 3000 best 'single-fibre'
+   voxels (of the previous iteration) at each iteration.
 
-2. Run CSD for all voxels within the mask (initially, this is the whole
-   brain).
+While the ``tournier`` algorithm has a similar iterative structure as the
+``tax`` algorithm, it was designed to overcome some occasional instabilities
+and suboptimal solutions resulting from the latter. Notable differences
+between the ``tournier`` and ``tax`` algorithms include:
 
-3. Select the 300 'best' single-fibre voxels. This is not precisely the
-   ratio between tallest and second-tallest peaks; instead, the
-   following equation is used, which also biases toward selection of
-   voxels where the tallest FOD peak is larger:
-   ``sqrt(|peak1|) * (1 - |peak2| / |peak1|)^2``. Use these voxels to
-   generate a new response fuction.
+-  The ``tournier`` algorithm is initialised by a *sharp* (lmax=4) response
+   function, while the ``tax`` algorithm is initialised by a *fat* response
+   function.
 
-4. Test to see if the selection of single-fibre voxels has changed; if
-   not, the script is completed.
+-  This implementation of the ``tournier`` algorithm uses a more complex
+   metric to measure how 'single-fibre' FODs are (see above), while the
+   ``tax`` algorithm uses a simple ratio of the tallest peaks.
+   
+-  The ``tournier`` algorithm estimates the response function at each
+   iteration only from the 300 *best* 'single-fibre' voxels, while the
+   ``tax`` algorithm uses *all* 'single-fibre' voxels.
 
-5. Derive a mask of voxels to test in the next iteration. This is the
-   top 3,000 voxels according to the equation above, and dilated by one
-   voxel.
-
-6. Go back to step 2.
-
-This approach appears to be giving reasonable results for the datasets
-on which it has been tested. However if you are involved in the
-processing of non-human brain images in particular, you may need to
-experiment with the number of single-fibre voxels as the white matter is
-typically smaller.
+Due to these differences, ``tournier`` algorithm is currently believed to
+be more robust and accurate in a wider range of scenarios (for further
+information on this topic, refer to some of the discussions
+`here <https://github.com/MRtrix3/mrtrix3/issues/422>`__
+and `here <https://github.com/MRtrix3/mrtrix3/pull/426>`__).
 
 For more information, refer to the
 :ref:`tournier algorithm documentation <dwi2response_tournier>`.
