@@ -31,6 +31,19 @@ using namespace App;
 const OptionGroup GradImportOptions = DWI::GradImportOptions();
 const OptionGroup GradExportOptions = DWI::GradExportOptions();
 
+const OptionGroup FieldExportOptions = OptionGroup ("Options for exporting image header fields")
+
+    + Option ("property", "any text properties embedded in the image header under the "
+        "specified key (use 'all' to list all keys found)").allow_multiple()
+    +   Argument ("key").type_text()
+
+    + Option ("json_keyval", "export header key/value entries to a JSON file")
+    +   Argument ("file").type_file_out()
+
+    + Option ("json_all", "export all header contents to a JSON file")
+    +   Argument ("file").type_file_out();
+
+
 
 void usage ()
 {
@@ -68,14 +81,9 @@ void usage ()
     +   Option ("multiplier", "image intensity multiplier")
     +   Option ("transform", "the voxel to image transformation")
 
-    +   NoRealignOption
+    + NoRealignOption
 
-    + Option ("property", "any text properties embedded in the image header under the "
-        "specified key (use 'all' to list all keys found)").allow_multiple()
-    +   Argument ("key").type_text()
-
-    + Option ("json_export", "export header key/value entries to a JSON file")
-    +   Argument ("file").type_file_out()
+    + FieldExportOptions
 
     + GradImportOptions
     + Option ("raw_dwgrad",
@@ -181,6 +189,64 @@ void print_properties (const Header& header, const std::string& key, const size_
   }
 }
 
+template <class JSON>
+void keyval2json (const Header& header, JSON& json)
+{
+  for (const auto& kv : header.keyval()) {
+    // Text entries that in fact contain matrix / vector data will be
+    //   converted to numerical matrices / vectors and written as such
+    try {
+      const auto M = parse_matrix (kv.second);
+      for (size_t row = 0; row != M.rows(); ++row) {
+        vector<default_type> data (M.cols());
+        for (size_t i = 0; i != M.cols(); ++i)
+          data[i] = M (row, i);
+        if (json.find (kv.first) == json.end())
+          json[kv.first] = { data };
+        else
+          json[kv.first].push_back (data);
+      }
+    } catch (...) {
+      if (json.find (kv.first) == json.end()) {
+        json[kv.first] = kv.second;
+      } else if (json[kv.first] != kv.second) {
+        // If the value for this key differs between images, turn the JSON entry into an array
+        if (json[kv.first].is_array())
+          json[kv.first].push_back (kv.second);
+        else
+          json[kv.first] = { json[kv.first], kv.second };
+      }
+    }
+  }
+}
+
+void header2json (const Header& header, nlohmann::json& json)
+{
+  // Capture _all_ header fields, not just the optional key-value pairs
+  json["name"] = header.name();
+  vector<size_t> size (header.ndim()), spacing (header.ndim());
+  for (size_t axis = 0; axis != header.ndim(); ++axis) {
+    size[axis] = header.size (axis);
+    spacing[axis] = header.spacing (axis);
+  }
+  json["size"] = size;
+  json["spacing"] = spacing;
+  vector<ssize_t> strides (Stride::get (header));
+  Stride::symbolise (strides);
+  json["stride"] = strides;
+  json["format"] = header.format();
+  json["datatype"] = header.datatype().specifier();
+  json["intensity_offset"] = header.intensity_offset();
+  json["intensity_scale"] = header.intensity_scale();
+  const transform_type& T (header.transform());
+  json["transform"] = { { T(0,0), T(0,1), T(0,2), T(0,3) },
+                        { T(1,0), T(1,1), T(1,2), T(1,3) },
+                        { T(2,0), T(2,1), T(2,2), T(2,3) },
+                        {    0.0,    0.0,    0.0,    1.0 } };
+  // Load key-value entries into a nested keyval.* member
+  keyval2json (header, json["keyval"]);
+}
+
 
 
 
@@ -198,7 +264,8 @@ void run ()
   if (export_pe && argument.size() > 1)
     throw Exception ("can only export phase encoding table to file if a single input image is provided");
 
-  std::unique_ptr<nlohmann::json> json (get_options ("json_export").size() ? new nlohmann::json : nullptr);
+  std::unique_ptr<nlohmann::json> json_keyval (get_options ("json_keyval").size() ? new nlohmann::json : nullptr);
+  std::unique_ptr<nlohmann::json> json_all    (get_options ("json_all").size() ? new nlohmann::json : nullptr);
 
   if (get_options ("norealign").size())
     Header::do_not_realign_transform = true;
@@ -220,7 +287,9 @@ void run ()
   const bool petable     = get_options("petable")       .size();
 
   const bool print_full_header = !(format || ndim || size || vox || datatype || stride ||
-      offset || multiplier || properties.size() || transform || dwgrad || export_grad || shells || shellcounts || export_pe || petable);
+      offset || multiplier || properties.size() || transform ||
+      dwgrad || export_grad || shells || shellcounts || export_pe || petable ||
+      json_keyval || json_all);
 
   Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "\n");
 
@@ -250,29 +319,28 @@ void run ()
     DWI::export_grad_commandline (header);
     PhaseEncoding::export_commandline (header);
 
-    if (json) {
-      for (const auto& kv : header.keyval()) {
-        if (json->find (kv.first) == json->end()) {
-          (*json)[kv.first] = kv.second;
-        } else if ((*json)[kv.first] != kv.second) {
-          // If the value for this key differs between images, turn the JSON entry into an array
-          if ((*json)[kv.first].is_array())
-            (*json)[kv.first].push_back (kv.second);
-          else
-            (*json)[kv.first] = { (*json)[kv.first], kv.second };
-        }
-      }
-    }
+    if (json_keyval)
+      keyval2json (header, *json_keyval);
+
+    if (json_all)
+      header2json (header, *json_all);
 
     if (print_full_header)
       std::cout << header.description (get_options ("all").size());
   }
 
-  if (json) {
-    auto opt = get_options ("json_export");
+  if (json_keyval) {
+    auto opt = get_options ("json_keyval");
     assert (opt.size());
     File::OFStream out (opt[0][0]);
-    out << json->dump(4) << "\n";
+    out << json_keyval->dump(4) << "\n";
+  }
+
+  if (json_all) {
+    auto opt = get_options ("json_all");
+    assert (opt.size());
+    File::OFStream out (opt[0][0]);
+    out << json_all->dump(4) << "\n";
   }
 
 }
