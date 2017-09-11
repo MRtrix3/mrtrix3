@@ -34,7 +34,7 @@ def getInputs(): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  import os
+  import math, os
   from mrtrix3 import app, file, fsl, image, path, run #pylint: disable=redefined-builtin
 
   if app.isWindows():
@@ -61,8 +61,9 @@ def execute(): #pylint: disable=unused-variable
 
   t1_spacing = image.Header('input.mif').spacing()
   upsample_for_first = False
-  if max(t1_spacing) > 1.025: #Allow e.g. 1.01mm voxels, if FoV and matrix size are not perfectly equivalent
-    app.warn('Voxel size larger than 1.0mm detected (' + str(t1_spacing) + '); '
+  # If voxel size is 1.25mm or larger, make a guess that the user has erroneously re-gridded their data
+  if math.pow(t1_spacing[0] * t1_spacing[1] * t1_spacing[2], 1.0/3.0) > 1.225:
+    app.warn('Voxel size larger than expected for T1-weighted images (' + str(t1_spacing) + '); '
              'note that ACT does not require re-gridding of T1 image to DWI space, and indeed '
              'retaining the original higher resolution of the T1 image is preferable')
     upsample_for_first = True

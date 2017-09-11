@@ -146,7 +146,7 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
         process.wait()
 
   except (KeyboardInterrupt, SystemExit):
-    app.handler(signal.SIGINT, inspect.currentframe())
+    raise
 
   # For any command stdout / stderr data that wasn't either passed to another command or
   #   printed to the terminal during execution, read it here.
@@ -174,11 +174,13 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
     app.cleanup = False
     if exitOnError:
       caller = inspect.getframeinfo(inspect.stack()[1][0])
+      script_name = os.path.basename(sys.argv[0])
       app.console('')
-      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + app.colourError + '[ERROR] Command failed: ' + cmd + app.colourClear + app.colourDebug + ' (' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')' + app.colourClear + '\n')
-      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + app.colourConsole + 'Output of failed command:' + app.colourClear + '\n')
+      sys.stderr.write(script_name + ': ' + app.colourError + '[ERROR] Command failed: ' + cmd + app.colourClear + app.colourDebug + ' (' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')' + app.colourClear + '\n')
+      sys.stderr.write(script_name + ': ' + app.colourConsole + 'Output of failed command:' + app.colourClear + '\n')
       for line in error_text.splitlines():
-        sys.stderr.write('  ' + line + '\n')
+        sys.stderr.write(' ' * (len(script_name)+2) + line + '\n')
+      app.console('')
       sys.stderr.flush()
       if app.tempDir:
         with open(os.path.join(app.tempDir, 'error.txt'), 'w') as outfile:
@@ -203,10 +205,10 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
 
 def function(fn, *args): #pylint: disable=unused-variable
 
-  import sys
+  import inspect, sys
   from mrtrix3 import app
 
-  fnstring = fn.__module__ + '.' + fn.__name__ + '(' + ', '.join(args) + ')'
+  fnstring = fn.__module__ + '.' + fn.__name__ + '(' + ', '.join(['\'' + str(a) + '\'' if isinstance(a, str) else str(a) for a in args]) + ')'
 
   if _lastFile:
     if _triggerContinue(args):
@@ -221,7 +223,27 @@ def function(fn, *args): #pylint: disable=unused-variable
     sys.stderr.flush()
 
   # Now we need to actually execute the requested function
-  result = fn(*args)
+  try:
+    result = fn(*args)
+  except (KeyboardInterrupt, SystemExit):
+    raise
+  except Exception as e: # pylint: disable=broad-except
+    app.cleanup = False
+    caller = inspect.getframeinfo(inspect.stack()[1][0])
+    error_text = str(type(e).__name__) + ': ' + str(e)
+    script_name = os.path.basename(sys.argv[0])
+    app.console('')
+    sys.stderr.write(script_name + ': ' + app.colourError + '[ERROR] Function failed: ' + fnstring + app.colourClear + app.colourDebug + ' (' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')' + app.colourClear + '\n')
+    sys.stderr.write(script_name + ': ' + app.colourConsole + 'Information from failed function:' + app.colourClear + '\n')
+    for line in error_text.splitlines():
+      sys.stderr.write(' ' * (len(script_name)+2) + line + '\n')
+    app.console('')
+    sys.stderr.flush()
+    if app.tempDir:
+      with open(os.path.join(app.tempDir, 'error.txt'), 'w') as outfile:
+        outfile.write(fnstring + '\n\n' + error_text + '\n')
+    app.complete()
+    sys.exit(1)
 
   # Only now do we append to the script log, since the function has completed successfully
   if app.tempDir:
