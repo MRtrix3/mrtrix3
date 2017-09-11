@@ -203,7 +203,14 @@ as being `single-fibre` from the CSD result itself. The criterium for
 a voxel to be `single-fibre` is based on the ratio of the amplitude of
 second tallest to the first tallest peak. The method is initialised with
 a 'fat' response function; i.e., a response function that is safely deemed
-to be much less 'sharp' than the true response function. 
+to be much less 'sharp' than the true response function.
+
+This algorithm has occasionally been found to behave unstable and converge
+towards suboptimal solutions. The ``tournier`` algorithm has been engineered
+to overcome some of the issues believed to be the cause of these
+instabilities (see some discussion on this topic
+`here <https://github.com/MRtrix3/mrtrix3/issues/422>`__
+and `here <https://github.com/MRtrix3/mrtrix3/pull/426>`__).
 
 For more information, refer to the
 :ref:`tax algorithm documentation <dwi2response_tax>`.
