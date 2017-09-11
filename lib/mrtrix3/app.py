@@ -252,8 +252,9 @@ def complete(): #pylint: disable=unused-variable
   import os, shutil, sys
   global cleanup, tempDir, workingDir
   global colourClear, colourConsole, colourWarn
-  console('Changing back to original directory (' + workingDir + ')')
-  os.chdir(workingDir)
+  if os.getcwd() != workingDir:
+    console('Changing back to original directory (' + workingDir + ')')
+    os.chdir(workingDir)
   if cleanup and tempDir:
     console('Deleting temporary directory ' + tempDir)
     shutil.rmtree(tempDir)
