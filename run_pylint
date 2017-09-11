@@ -1,0 +1,84 @@
+#!/bin/bash
+
+LOGFILE=pylint.log
+echo logging to \""$LOGFILE"\"
+
+cat > $LOGFILE <<EOD
+-------------------------------------------
+  Testing MRtrix3 Python scripts
+-------------------------------------------
+
+EOD
+
+# generate list of tests to run:
+if [ $# == 0 ]; then
+  for lib_path in lib/mrtrix3/*; do
+    if [[ -d ${lib_path} && ! ( ${lib_path} == *"__pycache__"* ) ]]; then
+      for src_file in ${lib_path}/*.py; do
+        tests="$tests $src_file"
+      done
+    elif [[ ${lib_path} == *.py && ! ( ${lib_path} == *"_"* ) ]]; then
+      tests="$tests $lib_path"
+    fi
+  done
+  for bin_path in bin/*; do
+    if head ${bin_path} -n1 | grep -q "#!/usr/bin/env python"; then
+      tests="$tests $bin_path"
+    fi
+  done
+else
+  tests="$@"
+fi
+
+success=0
+ntests=0
+
+if [ -z $PYTHON ]; then
+  forcepyversion=""
+else
+  echo "Using pylint for "${PYTHON}" (from PYTHON environment variable)"
+  forcepyversion="$PYTHON -m "
+fi
+
+export PYTHONPATH="$(pwd)/lib:$PYTHONPATH"
+for file in $tests; do
+
+  cat >> $LOGFILE <<EOD
+-------------------------------------------
+
+## testing "${file}"...
+EOD
+
+  echo -n 'testing "'${file}'"... '
+
+  eval ${forcepyversion} pylint --rcfile=testing/pylint.rc ${file} > .__tmp.log 2>&1
+
+  if [[ $? -ne 0 ]]; then
+    echo 'ERROR'
+    echo " [ ERROR ]" >> $LOGFILE
+  else
+    echo 'OK'
+    echo " [ ok ]" >> $LOGFILE
+    ((success++))
+  fi
+
+  cat .__tmp.log >> $LOGFILE
+  echo "" >> $LOGFILE
+  ((ntests++))
+
+done
+
+if [[ ${success} -lt ${ntests} ]]; then
+  cat >> $LOGFILE <<EOD
+
+## ERROR: $(($ntests-$success)) of $(($ntests)) tests failed (see \""$LOGFILE"\")
+
+EOD
+  exit 1
+else
+  cat >> $LOGFILE <<EOD
+
+## $ntests tests completed OK
+
+EOD
+fi

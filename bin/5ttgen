@@ -11,7 +11,7 @@
 
 # Make the corresponding MRtrix3 Python libraries available
 import inspect, os, sys
-lib_folder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile(inspect.currentframe()))[0], os.pardir, 'lib')))
+lib_folder = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
 if not os.path.isdir(lib_folder):
   sys.stderr.write('Unable to locate MRtrix3 Python libraries')
   sys.exit(1)
@@ -46,10 +46,9 @@ app.gotoTempDir()
 
 alg.execute()
 
-(stdout,stderr) = run.command('5ttcheck result.mif', False)
-if len(stderr) and 'ERROR' in stderr:
+stderr = run.command('5ttcheck result.mif', False)[1]
+if stderr and 'ERROR' in stderr:
   app.warn('Generated image does not perfectly conform to 5TT format')
 
-run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + (' -force' if app.force else ''))
+run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + (' -force' if app.forceOverwrite else ''))
 app.complete()
-
