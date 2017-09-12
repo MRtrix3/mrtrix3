@@ -572,7 +572,7 @@ if not dolinear:
 else:
   for level in range(0, len(linear_scales)):
     progress = app.progressBar('Optimising template with linear registration (stage {0} of {1})'.format(level+1, len(linear_scales)), len(inputs))
-    for counter, i in enumerate(inputs):
+    for i in inputs:
       initialise = ''
       if useMasks:
         mask = ' -mask1 ' + abspath(i.mask_directory, i.mask_filename)
@@ -678,7 +678,7 @@ if dononlinear:
   file.makeDir('warps')
   for level in range(0, len(nl_scales)):
     progress = app.progressBar('Optimising template with non-linear registration (stage {0} of {1})'.format(level+1, len(nl_scales)), len(inputs))
-    for counter, i in enumerate(inputs):
+    for i in inputs:
       if level > 0:
         initialise = ' -nl_init ' + os.path.join('warps_%i' % (level-1), '%s.mif' % i.prefix)
         scale = ''
