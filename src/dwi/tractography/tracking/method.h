@@ -16,6 +16,7 @@
 #define __dwi_tractography_tracking_method_h__
 
 #include "memory.h"
+#include "types.h"
 #include "dwi/tractography/rng.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/ACT/method.h"
@@ -94,8 +95,12 @@ namespace MR
 
             Eigen::Vector3f random_direction ();
             Eigen::Vector3f random_direction (const float max_angle, const float sin_max_angle);
-            Eigen::Vector3f random_direction (const Eigen::Vector3f& d, const float max_angle, const float sin_max_angle);
             Eigen::Vector3f rotate_direction (const Eigen::Vector3f& reference, const Eigen::Vector3f& direction);
+
+            FORCE_INLINE Eigen::Vector3f random_direction (const Eigen::Vector3f& d, const float max_angle, const float sin_max_angle)
+            {
+              return rotate_direction (d, random_direction (max_angle, sin_max_angle));
+            }
 
         };
 

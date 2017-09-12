@@ -16,6 +16,7 @@
 #define __dwi_tractography_tracking_exec_h__
 
 
+#include "thread.h"
 #include "thread_queue.h"
 #include "dwi/directions/set.h"
 #include "dwi/tractography/streamline.h"
@@ -92,11 +93,11 @@ namespace MR
                 mapper.set_use_precise_mapping (true);
 
                 Thread::run_queue (
-                    Thread::multi (tracker), 
+                    Thread::multi (tracker),
                     Thread::batch (GeneratedTrack(), TRACKING_BATCH_SIZE),
-                    writer, 
+                    writer,
                     Thread::batch (Streamline<>(), TRACKING_BATCH_SIZE),
-                    Thread::multi (mapper), 
+                    Thread::multi (mapper),
                     Thread::batch (SetDixel(), TRACKING_BATCH_SIZE),
                     *seeder);
 
@@ -403,7 +404,7 @@ namespace MR
                 }
 
                 if (S.act().backtrack()) {
-                  for (const auto& i : tck) 
+                  for (const auto& i : tck)
                     S.properties.include.contains (i, track_included);
                 }
 
@@ -443,7 +444,7 @@ namespace MR
               if (!ACT_WM_INT_REQ && !ACT_WM_ABS_REQ)
                 return true;
               float integral = 0.0, max_value = 0.0;
-              for (const auto& i : tck) { 
+              for (const auto& i : tck) {
                 if (method.act().fetch_tissue_data (i)) {
                   const float wm = method.act().tissues().get_wm();
                   max_value = std::max (max_value, wm);
