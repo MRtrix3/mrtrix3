@@ -150,42 +150,23 @@ For more information, refer to the
 'msmt_5tt' algorithm
 ^^^^^^^^^^^^^^^^^^^^
 
-This algorithm is intended for deriving multi-shell, multi-tissue
-response functions that are compatible with the new Multi-Shell
-Multi-Tissue (MSMT) CSD algorithm. The response function estimation
-algorithm is identical to that described in `the
-manuscript <http://linkinghub.elsevier.com/retrieve/pii/S1053-8119(14)00644-2>`__:
-As long as EPI inhomogeneity field correction has been performed, and a
-tissue-segmented anatomical image (prepared in the 5TT format for
-:ref:`ACT <act>`) is provided with good
-prior rigid-body alignment to the diffusion images, then these
-high-resolution tissue segmentations can be used to identify
-single-tissue voxels in the diffusion images. This algorithm is
-hard-wired to provide response functions for the most typical use case
-for MSMT CSD: An isotropic grey matter response, an anisotropic white
-matter response, and an isotropic CSF response; the output response
-functions are provided in the format expected by the :ref:`dwi2fod`
-command. Those wishing to experiment with different multi-tissue
-response function configurations will need to use the ``manual``
-algorithm (which will provide a multi-shell response function if the
-input DWI contains such data).
-
-For reference, this algorithm operates as follows:
-
-1. Resample the 5TT segmented image to diffusion image space.
-
-2. For each of the three tissues (WM, GM, CSF), select those voxels that
-   obey the following criteria:
-
--  The tissue partial volume fraction must be at least 0.95.
-
--  For GM and CSF, the FA must be no larger than 0.2.
-
-3. For WM, use the mask derived from step 2 as the initialisation to the
-   ``tournier`` algorithm, to select single-fibre voxels.
-
-4. Derive a multi-shell response for each tissue for each of these three
-   tissues. For GM and CSF, use *lmax=0* for all shells.
+This algorithm is an implementation of the strategy proposed in
+`Jeurissen et al. (2014) <http://www.sciencedirect.com/science/article/pii/S1053811914006442>`__
+to estimate multi b-value (multi-shell) response functions of
+single-fibre white matter (*anisotropic*), grey matter and CSF
+(both *isotropic*), which can subsequently be used for multi-tissue
+(constrained) spherical deconvolution. The algorithm is primarily
+driven by a prior ('5TT') tissue segmentation, typically obtained
+from a spatially aligned anatomical image. This also requires correction
+for susceptibility-induced (EPI) distortions of the DWI dataset.
+The algorithm selects voxels with a segmentation partial volume of at
+least 0.95 for each tissue type. Grey matter and CSF are further
+constrained by an (upper) 0.2 FA threshold. A notable difference between
+this implementation and the algorithm described in `Jeurissen et al. (2014)
+<http://www.sciencedirect.com/science/article/pii/S1053811914006442>`__
+is the criterium to extract single-fibre voxels from the white matter
+segmentation: this implementation calls upon the ``tournier`` algorithm
+to do so, while the paper uses a simple (lower) 0.7 FA threshold.
 
 For more information, refer to the
 :ref:`msmt_5tt algorithm documentation <dwi2response_msmt_5tt>`.
