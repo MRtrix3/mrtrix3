@@ -67,13 +67,19 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
 
   app.debug('To execute: ' + str(cmdstack))
 
+  # Disable interrupt signal handler while threads are running
+  try:
+    signal.signal(signal.SIGINT, signal.default_int_handler)
+  except:
+    pass
+
   # Construct temporary text files for holding stdout / stderr contents when appropriate
   #   (One entry per process; each is a tuple containing two entries, each of which is either a
   #   file-like object, or None)
   tempfiles = [ ]
 
   # Execute all processes
-  _processes = [ ]
+  assert not _processes
   for index, to_execute in enumerate(cmdstack):
     file_out = None
     file_err = None
@@ -100,7 +106,7 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
       handle_err = file_err.fileno()
     # Set off the processes
     try:
-      process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err)
+      process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, preexec_fn=os.setpgrp)
       _processes.append(process)
       tempfiles.append( ( file_out, file_err ) )
     # FileNotFoundError not defined in Python 2.7
@@ -122,25 +128,33 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
   # Wait for all commands to complete
   # Switch how we monitor running processes / wait for them to complete
   #   depending on whether or not the user has specified -info or -debug option
-  if app.verbosity > 1:
-    for process in _processes:
-      stderrdata = ''
-      while True:
-        # Have to read one character at a time: Waiting for a newline character using e.g. readline() will prevent MRtrix progressbars from appearing
-        line = process.stderr.read(1).decode('utf-8')
-        sys.stderr.write(line)
-        sys.stderr.flush()
-        stderrdata += line
-        if not line and process.poll() is not None:
-          break
-      return_stderr += stderrdata
-      if process.returncode:
-        error = True
-        error_text += stderrdata
-  else:
-    for process in _processes:
-      process.wait()
+  try:
+    if app.verbosity > 1:
+      for process in _processes:
+        stderrdata = ''
+        while True:
+          # Have to read one character at a time: Waiting for a newline character using e.g. readline() will prevent MRtrix progressbars from appearing
+          line = process.stderr.read(1).decode('utf-8')
+          sys.stderr.write(line)
+          sys.stderr.flush()
+          stderrdata += line
+          if not line and process.poll() is not None:
+            break
+        return_stderr += stderrdata
+        if process.returncode:
+          error = True
+          error_text += stderrdata
+    else:
+      for process in _processes:
+        process.wait()
+  except (KeyboardInterrupt, SystemExit):
+    app.handler(signal.SIGINT, inspect.currentframe())
 
+  # Re-enable interrupt signal handler
+  try:
+    signal.signal(signal.SIGINT, app.handler)
+  except:
+    pass
 
   # For any command stdout / stderr data that wasn't either passed to another command or
   #   printed to the terminal during execution, read it here.
