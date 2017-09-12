@@ -892,15 +892,23 @@ def isWindows(): #pylint: disable=unused-variable
 def handler(signum, _frame):
   import os, signal, sys
   global _signals
-  # First, kill any child processes
+  # Ignore any other incoming signals
+  for s in _signals:
+    try:
+      signal.signal(getattr(signal, s), signal.SIG_IGN)
+    except:
+      pass
+  # Kill any child processes in the run module
   try:
     from mrtrix3.run import _processes
     for p in _processes:
       if p:
         p.terminate()
+        p.communicate() # Flushes the I/O buffers
     _processes = [ ]
   except ImportError:
     pass
+  # Generate the error message
   msg = '[SYSTEM FATAL CODE: '
   signal_found = False
   for (key, value) in _signals.items():
@@ -913,6 +921,6 @@ def handler(signum, _frame):
       pass
   if not signal_found:
     msg += '?] Unknown system signal'
-  sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourError + msg + colourClear + '\n')
+  sys.stderr.write('\n' + os.path.basename(sys.argv[0]) + ': ' + colourError + msg + colourClear + '\n')
   complete()
   exit(signum)
