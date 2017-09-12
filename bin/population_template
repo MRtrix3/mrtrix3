@@ -571,7 +571,7 @@ if not dolinear:
     run.function(copy, os.path.join('linear_transforms_initial','%s.txt' % (i.prefix)), os.path.join('linear_transforms','%s.txt' % (i.prefix)))
 else:
   for level in range(0, len(linear_scales)):
-    progress = app.progressBar('Optimising template with linear registration (stage {0} of {1}, 0 of {2} subjects)'.format(level+1, len(linear_scales), len(inputs)), len(inputs))
+    progress = app.progressBar('Optimising template with linear registration (stage {0} of {1})'.format(level+1, len(linear_scales)), len(inputs))
     for counter, i in enumerate(inputs):
       initialise = ''
       if useMasks:
@@ -626,7 +626,7 @@ else:
                 mrregister_log
       run.command(command)
       check_linear_transformation(os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix), command, pause_on_warn=do_pause_on_warn)
-      progress.increment('Optimising template with linear registration (stage {0} of {1}, {2} of {3} subjects)'.format(level+1, len(linear_scales), counter+1, len(inputs)))
+      progress.increment()
     progress.done()
 
     # Here we ensure the template doesn't drift or scale
@@ -677,7 +677,7 @@ if dononlinear:
   # Optimise the template with non-linear registration
   file.makeDir('warps')
   for level in range(0, len(nl_scales)):
-    progress = app.progressBar('Optimising template with non-linear registration (stage {0} of {1}, 0 of {2} subjects)'.format(level+1, len(nl_scales), len(inputs)), len(inputs))
+    progress = app.progressBar('Optimising template with non-linear registration (stage {0} of {1})'.format(level+1, len(nl_scales)), len(inputs))
     for counter, i in enumerate(inputs):
       if level > 0:
         initialise = ' -nl_init ' + os.path.join('warps_%i' % (level-1), '%s.mif' % i.prefix)
@@ -722,7 +722,7 @@ if dononlinear:
                     os.path.join('masks_transformed', i.prefix + '.mif') + ' ' + \
                     '-interp nearest ' +
                     '-force')
-      progress.increment('Optimising template with non-linear registration (stage {0} of {1}, {2} of {3} subjects)'.format(level+1, len(nl_scales), counter+1, len(inputs)))
+      progress.increment()
     progress.done()
 
     run.command('mrmath ' + allindir('inputs_transformed') + ' mean nl_template' + str(level) + '.mif')
