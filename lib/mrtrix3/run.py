@@ -113,8 +113,6 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
           p.terminate()
         _processes = [ ]
         break
-    except (KeyboardInterrupt, SystemExit):
-      app.handler(signal.SIGINT, inspect.currentframe())
 
   return_stdout = ''
   return_stderr = ''
@@ -122,31 +120,27 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
   error_text = ''
 
   # Wait for all commands to complete
-  try:
+  # Switch how we monitor running processes / wait for them to complete
+  #   depending on whether or not the user has specified -info or -debug option
+  if app.verbosity > 1:
+    for process in _processes:
+      stderrdata = ''
+      while True:
+        # Have to read one character at a time: Waiting for a newline character using e.g. readline() will prevent MRtrix progressbars from appearing
+        line = process.stderr.read(1).decode('utf-8')
+        sys.stderr.write(line)
+        sys.stderr.flush()
+        stderrdata += line
+        if not line and process.poll() is not None:
+          break
+      return_stderr += stderrdata
+      if process.returncode:
+        error = True
+        error_text += stderrdata
+  else:
+    for process in _processes:
+      process.wait()
 
-    # Switch how we monitor running processes / wait for them to complete
-    #   depending on whether or not the user has specified -verbose or -debug option
-    if app.verbosity > 1:
-      for process in _processes:
-        stderrdata = ''
-        while True:
-          # Have to read one character at a time: Waiting for a newline character using e.g. readline() will prevent MRtrix progressbars from appearing
-          line = process.stderr.read(1).decode('utf-8')
-          sys.stderr.write(line)
-          sys.stderr.flush()
-          stderrdata += line
-          if not line and process.poll() is not None:
-            break
-        return_stderr += stderrdata
-        if process.returncode:
-          error = True
-          error_text += stderrdata
-    else:
-      for process in _processes:
-        process.wait()
-
-  except (KeyboardInterrupt, SystemExit):
-    raise
 
   # For any command stdout / stderr data that wasn't either passed to another command or
   #   printed to the terminal during execution, read it here.
