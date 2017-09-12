@@ -63,7 +63,7 @@ except ImportError:
       fmt = [fmt, ] * ncol
       row_format = delimiter.join(fmt)
       for row in X:
-        fh.write((row_format % tuple(row) + '\n'))
+        fh.write((row_format % tuple(row) + '\n').encode (errors='ignore'))
     finally:
       fh.close()
 
