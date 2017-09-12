@@ -54,9 +54,6 @@ OptionGroup CommonOptions = OptionGroup ("Options common to more than one algori
               "only perform computation within the specified binary brain mask image.")
       + Argument ("image").type_image_in();
 
-
-
-
 void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and Ben Jeurissen (ben.jeurissen@uantwerpen.be)";
@@ -94,6 +91,7 @@ void usage ()
     + DWI::ShellOption
     + CommonOptions
     + DWI::SDeconv::CSD_options
+    + DWI::SDeconv::MSMT_CSD_options
     + Stride::Options;
 }
 
@@ -162,10 +160,12 @@ class CSD_Processor { MEMALIGN(CSD_Processor)
 
 class MSMT_Processor { MEMALIGN (MSMT_Processor)
   public:
-    MSMT_Processor (const DWI::SDeconv::MSMT_CSD::Shared& shared, Image<bool>& mask_image, vector< Image<float> > odf_images) :
+    MSMT_Processor (const DWI::SDeconv::MSMT_CSD::Shared& shared, Image<bool>& mask_image,
+      vector< Image<float> > odf_images, Image<float> dwi_modelled = Image<float>()) :
         sdeconv (shared),
         mask_image (mask_image),
         odf_images (odf_images),
+        modelled_image (dwi_modelled),
         dwi_data (shared.grad.rows()),
         output_data (shared.problem.H.cols()) { }
 
@@ -203,8 +203,9 @@ class MSMT_Processor { MEMALIGN (MSMT_Processor)
 
   private:
     DWI::SDeconv::MSMT_CSD sdeconv;
-    Image<bool> mask_image, modelled_image;
+    Image<bool> mask_image;
     vector< Image<float> > odf_images;
+    Image<float> modelled_image;
     Eigen::VectorXd dwi_data;
     Eigen::VectorXd output_data;
 };
@@ -290,7 +291,12 @@ void run ()
       odfs.push_back (Image<float> (Image<float>::create (odf_paths[i], header_out)));
     }
 
-    MSMT_Processor processor (shared, mask, odfs);
+    Image<float> dwi_modelled;
+    auto opt = get_options ("modelled");
+    if (opt.size())
+      dwi_modelled = Image<float>::create (opt[0][0], header_in);
+
+    MSMT_Processor processor (shared, mask, odfs, dwi_modelled);
     auto dwi = header_in.get_image<float>().with_direct_io (3);
     ThreadedLoop ("performing multi-shell, multi-tissue CSD", dwi, 0, 3)
         .run (processor, dwi);
