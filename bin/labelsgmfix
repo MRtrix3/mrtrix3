@@ -103,6 +103,7 @@ with open(sgm_lut_file_path) as f:
 # Convert FIRST meshes to node masks
 # In this use case, don't want the PVE images; want to threshold at 0.5
 mask_list = [ ]
+progress = app.progressBar('Generating mask images for SGM structures', len(structure_map))
 for key, value in structure_map.items():
   image_path = key + '_mask.mif'
   mask_list.append(image_path)
@@ -115,6 +116,8 @@ for key, value in structure_map.items():
   if not app.continueOption:
     run.function(os.remove, 'sgm.mif')
     run.function(os.rename, 'sgm_new.mif', 'sgm.mif')
+  progress.increment()
+progress.done()
 
 # Detect any overlapping voxels between the SGM masks, and set to zero
 run.command('mrmath ' + ' '.join(mask_list) + ' sum - | mrcalc - 1 -gt sgm_overlap_mask.mif')
@@ -127,12 +130,15 @@ run.command('labelconvert sgm_masked.mif ' + sgm_lut_file_path + ' ' + path.from
 # * Figure out what index the structure has been mapped to; this can only be done using mrstats
 # * Strip that index from the parcellation image
 # * Insert the new delineation of that structure
+progress = app.progressBar('Replacing SGM parcellations', len(structure_map))
 for struct in structure_map:
   image_path = struct + '_mask.mif'
   index = image.statistic('sgm_new_labels.mif', 'median', '-mask ' + image_path)
   run.command('mrcalc parc.mif ' + index + ' -eq 0 parc.mif -if parc_removed.mif')
   run.function(os.remove, 'parc.mif')
   run.function(os.rename, 'parc_removed.mif', 'parc.mif')
+  progress.increment()
+progress.done()
 
 # Insert the new delineations of all SGM structures in a single call
 # Enforce unsigned integer datatype of output image

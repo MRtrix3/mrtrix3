@@ -115,10 +115,13 @@ number_option = ' -select ' + str(app.args.number)
 axis_flips = [ 'none', 0, 1, 2 ]
 axis_permutations = [ ( 0, 1, 2 ), (0, 2, 1), (1, 0, 2), (1, 2, 0), (2, 0, 1), (2, 1, 0) ]
 grad_basis = [ 'scanner', 'image' ]
+total_tests = len(axis_flips) * len(axis_permutations) * len(grad_basis)
 
 
 # List where the first element is the mean length
 lengths = [ ]
+
+progress = app.progressBar('Testing gradient table alterations (0 of ' + str(total_tests) + ')', total_tests)
 
 for flip in axis_flips:
   for permutation in axis_permutations:
@@ -171,6 +174,10 @@ for flip in axis_flips:
       # Add to the database
       lengths.append([meanlength,flip,permutation,basis])
 
+      # Increament the progress bar
+      progress.increment('Testing gradient table alterations (' + str(len(lengths)) + ' of ' + str(total_tests) + ')')
+
+progress.done()
 
 # Sort the list to find the best gradient configuration(s)
 lengths.sort()
