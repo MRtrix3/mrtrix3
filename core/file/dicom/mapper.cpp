@@ -206,16 +206,15 @@ namespace MR {
           if (H.size (2) != 1)
             throw Exception ("DICOM mosaic contains multiple slices in image \"" + H.name() + "\"");
 
-          H.size(0) = frame.acq_dim[0];
-          H.size(1) = frame.acq_dim[1];
+          size_t mosaic_size = std::ceil (std::sqrt (image.images_in_mosaic));
+          H.size(0) = std::floor (frame.dim[0] / mosaic_size);
+          H.size(1) = std::floor (frame.dim[1] / mosaic_size);
           H.size(2) = image.images_in_mosaic;
 
-          if (frame.dim[0] % frame.acq_dim[0] || frame.dim[1] % frame.acq_dim[1]) {
+          if (frame.acq_dim[0] != H.size(0)|| frame.acq_dim[1] != H.size(1)) {
             WARN ("acquisition matrix [ " + str (frame.acq_dim[0]) + " " + str (frame.acq_dim[1]) 
-                + " ] does not fit into DICOM mosaic [ " + str (frame.dim[0]) + " " + str (frame.dim[1]) 
-                + " ] -  adjusting matrix size to suit");
-            H.size(0) = frame.dim[0] / size_t (float(frame.dim[0]) / float(frame.acq_dim[0]));
-            H.size(1) = frame.dim[1] / size_t (float(frame.dim[1]) / float(frame.acq_dim[1]));
+                + " ] does not fit into DICOM mosaic [ " + str (frame.dim[0]) + " " + str (frame.dim[1]) + " ]");
+            WARN ("  data may have been zero-filled - matrix size has been adjusted to suit");
           }
 
           float xinc = H.spacing(0) * (frame.dim[0] - H.size(0)) / 2.0;
