@@ -23,12 +23,11 @@ install:
   - export PYTHONPATH=`pwd`/lib:${PYTHONPATH}
   - export EIGEN_CFLAGS=-I`pwd`/../eigen
   - (cd ..; hg clone https://bitbucket.org/eigen/eigen/; cd eigen; hg update 3.3)
-  - pip install pylint
   - pip3 install pylint recommonmark sphinx sphinx-rtd-theme
 script:
   - ${py} -m sphinx -n -N -W -w sphinx.log -c docs/ docs/ tmp/
   - ./check_memalign && $py ./configure -assert && $py ./build -nowarnings && ./run_tests
-  - PYTHON=$py ./run_pylint
+  - if [ ${py} == "python3" ]; then PYTHON=$py ./run_pylint
   - if [ ${py} == "python3" ]; then ./docs/generate_user_docs.sh && git diff --exit-code docs/ > gitdiff.log || echo "Documentation is not up to date; run docs/generate_user_docs.sh and commit changes"; fi
 after_failure:
   - cat sphinx.log
