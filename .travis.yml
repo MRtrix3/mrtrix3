@@ -23,6 +23,7 @@ install:
   - export PYTHONPATH=`pwd`/lib:${PYTHONPATH}
   - export EIGEN_CFLAGS=-I`pwd`/../eigen
   - (cd ..; hg clone https://bitbucket.org/eigen/eigen/; cd eigen; hg update 3.3)
+  - pip install urllib3[secure]
   - pip install pylint recommonmark sphinx sphinx-rtd-theme
   - pip3 install pylint recommonmark sphinx sphinx-rtd-theme
 script:
