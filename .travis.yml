@@ -10,7 +10,6 @@ addons:
       - libqt4-opengl-dev
       - g++-4.8
       - python3
-      - python-pip
       - python3-pip
 compiler:
   - clang
@@ -25,10 +24,10 @@ install:
   - (cd ..; hg clone https://bitbucket.org/eigen/eigen/; cd eigen; hg update 3.3)
   - pip3 install pylint recommonmark sphinx sphinx-rtd-theme
 script:
-  - ${py} -m sphinx -n -N -W -w sphinx.log -c docs/ docs/ tmp/
+  - if [ ${py} == "python3" ]; then ${py} -m sphinx -n -N -W -w sphinx.log -c docs/ docs/ tmp/; else touch sphinx.log; fi
   - ./check_memalign && $py ./configure -assert && $py ./build -nowarnings && ./run_tests
-  - if [ ${py} == "python3" ]; then PYTHON=$py ./run_pylint
-  - if [ ${py} == "python3" ]; then ./docs/generate_user_docs.sh && git diff --exit-code docs/ > gitdiff.log || echo "Documentation is not up to date; run docs/generate_user_docs.sh and commit changes"; fi
+  - if [ ${py} == "python3" ]; then PYTHON=$py ./run_pylint; else touch pylint.log; fi
+  - ./docs/generate_user_docs.sh && git diff --exit-code docs/ > gitdiff.log || echo "Documentation is not up to date; run docs/generate_user_docs.sh and commit changes"
 after_failure:
   - cat sphinx.log
   - cat memalign.log
