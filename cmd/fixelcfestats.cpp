@@ -229,9 +229,10 @@ void run() {
     std::ifstream ifs (argument[1].c_str());
     std::string temp;
     while (getline (ifs, temp)) {
-      std::string filename = strip (Path::join (input_fixel_directory, temp));
-      if (filename.empty())
+      temp = strip (temp);
+      if (temp.empty())
         continue;
+      const std::string filename = Path::join (input_fixel_directory, temp);
       if (!MR::Path::exists (filename))
         throw Exception ("input fixel image not found: " + filename);
       header = Header::open (filename);
