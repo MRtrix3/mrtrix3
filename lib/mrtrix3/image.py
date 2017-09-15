@@ -57,6 +57,8 @@ class Header(object):
     return self._intensity_offset
   def intensity_scale(self):
     return self._intensity_scale
+  def transform(self):
+    return self._transform
   def keyval(self):
     return self._keyval
 
