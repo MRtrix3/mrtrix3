@@ -197,9 +197,9 @@ void keyval2json (const Header& header, JSON& json)
     //   converted to numerical matrices / vectors and written as such
     try {
       const auto M = parse_matrix (kv.second);
-      for (size_t row = 0; row != M.rows(); ++row) {
+      for (ssize_t row = 0; row != M.rows(); ++row) {
         vector<default_type> data (M.cols());
-        for (size_t i = 0; i != M.cols(); ++i)
+        for (ssize_t i = 0; i != M.cols(); ++i)
           data[i] = M (row, i);
         if (json.find (kv.first) == json.end())
           json[kv.first] = { data };
