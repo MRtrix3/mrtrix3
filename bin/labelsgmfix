@@ -61,11 +61,23 @@ if app.args.sgm_amyg_hipp:
   structure_map.update({ 'L_Amyg':'Left-Amygdala',    'R_Amyg':'Right-Amygdala',
                          'L_Hipp':'Left-Hippocampus', 'R_Hipp':'Right-Hippocampus' })
 
+t1_spacing = image.Header(path.fromUser(app.args.t1, False)).spacing()
+upsample_for_first = False
+# If voxel size is 1.25mm or larger, make a guess that the user has erroneously re-gridded their data
+if math.pow(t1_spacing[0] * t1_spacing[1] * t1_spacing[2], 1.0/3.0) > 1.225:
+  app.warn('Voxel size of input T1 image larger than expected for T1-weighted images (' + str(t1_spacing) + '); '
+           'image will be resampled to 1mm isotropic in order to maximise chance of '
+           'FSL FIRST script succeeding')
+  upsample_for_first = True
+
 app.makeTempDir()
 
 # Get the parcellation and T1 images into the temporary directory, with conversion of the T1 into the correct format for FSL
 run.command('mrconvert ' + path.fromUser(app.args.parc, True) + ' ' + path.toTemp('parc.mif', True))
-run.command('mrconvert ' + path.fromUser(app.args.t1, True)   + ' ' + path.toTemp('T1.nii', True) + ' -stride -1,+2,+3')
+if upsample_for_first:
+  run.command('mrresize ' + path.fromUser(app.args.t1, True) + ' - -voxel 1.0 -interp sinc | mrcalc - 0.0 -max - | mrconvert - ' + path.toTemp('T1.nii', True) + ' -stride -1,+2,+3')
+else:
+  run.command('mrconvert ' + path.fromUser(app.args.t1, True) + ' ' + path.toTemp('T1.nii', True) + ' -stride -1,+2,+3')
 
 app.gotoTempDir()
 
