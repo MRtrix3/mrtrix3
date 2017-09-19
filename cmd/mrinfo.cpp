@@ -197,6 +197,8 @@ void keyval2json (const Header& header, JSON& json)
     //   converted to numerical matrices / vectors and written as such
     try {
       const auto M = parse_matrix (kv.second);
+      if (M.rows() == 1 && M.cols() == 1)
+        throw Exception ("Single scalar value rather than a matrix");
       for (ssize_t row = 0; row != M.rows(); ++row) {
         vector<default_type> data (M.cols());
         for (ssize_t i = 0; i != M.cols(); ++i)
