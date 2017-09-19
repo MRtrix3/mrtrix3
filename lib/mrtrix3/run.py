@@ -17,7 +17,7 @@ def setContinue(filename): #pylint: disable=unused-variable
 
 def command(cmd, exitOnError=True): #pylint: disable=unused-variable
 
-  import inspect, itertools, shlex, signal, subprocess, sys, tempfile
+  import inspect, itertools, shlex, signal, string, subprocess, sys, tempfile
   from distutils.spawn import find_executable
   from mrtrix3 import app
 
@@ -61,11 +61,11 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
       for item in reversed(shebang):
         line.insert(0, item)
 
+  app.debug('To execute: ' + str(cmdstack))
+
   if app.verbosity:
     sys.stderr.write(app.colourExec + 'Command:' + app.colourClear + '  ' + cmd + '\n')
     sys.stderr.flush()
-
-  app.debug('To execute: ' + str(cmdstack))
 
   # Disable interrupt signal handler while threads are running
   try:
@@ -132,14 +132,20 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
     if app.verbosity > 1:
       for process in _processes:
         stderrdata = ''
+        do_indent = True
         while True:
           # Have to read one character at a time: Waiting for a newline character using e.g. readline() will prevent MRtrix progressbars from appearing
-          line = process.stderr.read(1).decode('utf-8')
-          sys.stderr.write(line)
-          sys.stderr.flush()
-          stderrdata += line
-          if not line and process.poll() is not None:
+          char = process.stderr.read(1).decode('utf-8')
+          if not char and process.poll() is not None:
             break
+          if do_indent and char in string.printable:
+            sys.stderr.write('          ')
+            do_indent = False
+          elif char == '\r' or char == '\n':
+            do_indent = True
+          sys.stderr.write(char)
+          sys.stderr.flush()
+          stderrdata += char
         return_stderr += stderrdata
         if process.returncode:
           error = True

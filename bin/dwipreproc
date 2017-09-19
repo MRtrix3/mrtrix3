@@ -260,7 +260,7 @@ if manual_pe_dir:
         line = [ (-i if i else 0.0) for i in line ]
       line.append(trt)
       dwi_manual_pe_scheme.append(line)
-    appp.var(dwi_manual_pe_scheme)
+    app.var(dwi_manual_pe_scheme)
 
 else: # No manual phase encode direction defined
 
