@@ -51,9 +51,14 @@ Options
 
 -  **-norealign** do not realign transform to near-default RAS coordinate system (the default behaviour on image load). This is useful to inspect the image and/or header contents as they are actually stored in the header, rather than as MRtrix interprets them.
 
+Options for exporting image header fields
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 -  **-property key** any text properties embedded in the image header under the specified key (use 'all' to list all keys found)
 
--  **-json_export file** export header key/value entries to a JSON file
+-  **-json_keyval file** export header key/value entries to a JSON file
+
+-  **-json_all file** export all header contents to a JSON file
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
