@@ -647,6 +647,7 @@ else:
   # This section extracts the two volumes corresponding to each reversed phase-encoded volume pair, and
   #   derives a single image volume based on the recombination equation
   combined_image_list = [ ]
+  progress = app.progressBar('Performing explicit volume recombination', len(volume_pairs))
   for index, volumes in enumerate(volume_pairs):
     pe_indices = [ eddy_indices[i] for i in volumes ]
     run.command('mrconvert ' + eddy_output + ' volume0.mif -coord 3 ' + str(volumes[0]))
@@ -656,6 +657,8 @@ else:
     combined_image_list.append('combined' + str(index) + '.mif')
     run.function(os.remove, 'volume0.mif')
     run.function(os.remove, 'volume1.mif')
+    progress.increment()
+  progress.done()
   file.delTemporary(eddy_output)
 
   for index in range(0, len(eddy_config)):
