@@ -15,10 +15,11 @@
 #ifndef __filter_warp_h__
 #define __filter_warp_h__
 
+#include "datatype.h"
+#include "adapter/reslice.h"
 #include "adapter/warp.h"
 #include "algo/threaded_copy.h"
 #include "algo/threaded_loop.h"
-#include "datatype.h"
 #include "interp/cubic.h"
 #include "filter/reslice.h"
 
@@ -77,8 +78,8 @@ namespace MR
            header.size(3) = 3;
            Stride::set (header, Stride::contiguous_along_axis (3));
            auto warp_resliced = Image<typename WarpType::value_type>::scratch (header);
-           transform_type identity_transform;
-           reslice<Interp::Cubic> (warp, warp_resliced, identity_transform, oversample);
+           reslice<Interp::Cubic> (warp, warp_resliced, Adapter::NoTransform, oversample);
+
            Adapter::Warp<Interpolator, ImageTypeSource, Image<typename WarpType::value_type> > interp (source, warp_resliced, value_when_out_of_bounds);
 
            if (destination.ndim() == 4)
