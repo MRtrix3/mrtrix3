@@ -108,6 +108,9 @@ namespace MR
           grabGesture (Qt::PinchGesture);
           grabGesture (Qt::PanGesture);
           QFont font_ = font();
+          //CONF option: FontSize
+          //CONF the size (in points) of the font to be used in OpenGL viewports (mrview and shview)
+          //CONF default: 10
           font_.setPointSize (MR::File::Config::get_int ("FontSize", 10));
           setFont (font_);
           QSizePolicy policy (QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);

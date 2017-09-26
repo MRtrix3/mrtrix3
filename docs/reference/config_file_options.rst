@@ -179,6 +179,11 @@ List of MRtrix3 configuration file options
 
      A boolean value specifying whether MRtrix applications should abort as soon as any (otherwise non-fatal) warning is issued.
 
+*  **FontSize**
+    *default: 10*
+
+     the size (in points) of the font to be used in OpenGL viewports (mrview and shview)
+
 *  **HelpCommand**
     *default: less*
 
