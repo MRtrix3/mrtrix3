@@ -1,6 +1,4 @@
-def initialise(base_parser, subparsers):
-  import argparse
-  from mrtrix3 import app
+def initialise(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('fsl', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Use FSL commands to generate the 5TT image based on a T1-weighted image', parents=[base_parser])
   parser.addCitation('', 'Smith, S. M. Fast robust automated brain extraction. Human Brain Mapping, 2002, 17, 143-155', True)
   parser.addCitation('', 'Zhang, Y.; Brady, M. & Smith, S. Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. IEEE Transactions on Medical Imaging, 2001, 20, 45-57', True)
@@ -16,13 +14,12 @@ def initialise(base_parser, subparsers):
 
 
 
-def checkOutputPaths():
+def checkOutputPaths(): #pylint: disable=unused-variable
   pass
 
 
 
-def getInputs():
-  import os
+def getInputs(): #pylint: disable=unused-variable
   from mrtrix3 import app, image, path, run
   image.check3DNonunity(path.fromUser(app.args.input, False))
   run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('input.mif', True))
@@ -36,10 +33,9 @@ def getInputs():
 
 
 
-def execute():
+def execute(): #pylint: disable=unused-variable
   import os
-  from distutils.spawn import find_executable
-  from mrtrix3 import app, file, fsl, image, path, run
+  from mrtrix3 import app, file, fsl, image, path, run #pylint: disable=redefined-builtin
 
   if app.isWindows():
     app.error('\'fsl\' algorithm of 5ttgen script cannot be run on Windows: FSL not available on Windows')
@@ -48,32 +44,12 @@ def execute():
   if not fsl_path:
     app.error('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
 
-  ssroi_cmd = 'standard_space_roi'
-  if not find_executable(ssroi_cmd):
-    ssroi_cmd = 'fsl5.0-standard_space_roi'
-    if not find_executable(ssroi_cmd):
-      app.error('Could not find FSL program standard_space_roi; please verify FSL install')
-
-  bet_cmd = 'bet'
-  if not find_executable(bet_cmd):
-    bet_cmd = 'fsl5.0-bet'
-    if not find_executable(bet_cmd):
-      app.error('Could not find FSL program bet; please verify FSL install')
-
-  fast_cmd = 'fast'
-  if not find_executable(fast_cmd):
-    fast_cmd = 'fsl5.0-fast'
-    if not find_executable(fast_cmd):
-      app.error('Could not find FSL program fast; please verify FSL install')
-
-  first_cmd = 'run_first_all'
-  if not find_executable(first_cmd):
-    first_cmd = "fsl5.0-run_first_all"
-    if not find_executable(first_cmd):
-      app.error('Could not find FSL program run_first_all; please verify FSL install')
+  bet_cmd = fsl.exeName('bet')
+  fast_cmd = fsl.exeName('fast')
+  first_cmd = fsl.exeName('run_first_all')
+  ssroi_cmd = fsl.exeName('standard_space_roi')
 
   first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
-
   if not os.path.isdir(first_atlas_path):
     app.error('Atlases required for FSL\'s FIRST program not installed; please install fsl-first-data using your relevant package manager')
 
@@ -119,13 +95,13 @@ def execute():
     # Also reduce the FoV of the image
     # Using MNI 1mm dilated brain mask rather than the -b option in standard_space_roi (which uses the 2mm mask); the latter looks 'buggy' to me... Unfortunately even with the 1mm 'dilated' mask, it can still cut into some brain areas, hence the explicit dilation
     mni_mask_path = os.path.join(fsl_path, 'data', 'standard', 'MNI152_T1_1mm_brain_mask_dil.nii.gz')
-    mni_mask_dilation = 0;
+    mni_mask_dilation = 0
     if os.path.exists (mni_mask_path):
-      mni_mask_dilation = 4;
+      mni_mask_dilation = 4
     else:
       mni_mask_path = os.path.join(fsl_path, 'data', 'standard', 'MNI152_T1_2mm_brain_mask_dil.nii.gz')
       if os.path.exists (mni_mask_path):
-        mni_mask_dilation = 2;
+        mni_mask_dilation = 2
     if mni_mask_dilation:
       run.command('maskfilter ' + mni_mask_path + ' dilate mni_mask.nii -npass ' + str(mni_mask_dilation))
       if app.args.nocrop:
@@ -176,8 +152,8 @@ def execute():
     else:
       combined_image_path = fsl.findImage('first_all_none_firstseg')
       if not os.path.isfile(combined_image_path):
-        app.error('FSL FIRST has failed; not all structures were segmented successfully (check ' + 
-path.toTemp('first.logs', False) + ')')
+        app.error('FSL FIRST has failed; not all structures were segmented successfully (check ' + \
+                  path.toTemp('first.logs', False) + ')')
 
   # Convert FIRST meshes to partial volume images
   pve_image_list = [ ]
@@ -216,4 +192,3 @@ path.toTemp('first.logs', False) + ')')
     run.command('mrconvert combined_precrop.mif result.mif')
   else:
     run.command('mrmath combined_precrop.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrcrop combined_precrop.mif result.mif -mask -')
-

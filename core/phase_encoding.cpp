@@ -14,6 +14,8 @@
 
 #include "phase_encoding.h"
 
+#include "math/math.h"
+
 namespace MR
 {
   namespace PhaseEncoding
@@ -96,18 +98,13 @@ namespace MR
       Eigen::MatrixXd PE;
       const auto it = header.keyval().find ("pe_scheme");
       if (it != header.keyval().end()) {
-        const auto lines = split_lines (it->second);
-        if (ssize_t(lines.size()) != ((header.ndim() > 3) ? header.size(3) : 1))
-          throw Exception ("malformed PE scheme in image \"" + header.name() + "\" - number of rows does not equal number of volumes");
-        for (size_t row = 0; row < lines.size(); ++row) {
-          const auto values = parse_floats (lines[row]);
-          if (PE.cols() == 0)
-            PE.resize (lines.size(), values.size());
-          else if (PE.cols() != ssize_t (values.size()))
-            throw Exception ("malformed PE scheme in image \"" + header.name() + "\" - uneven number of entries per row");
-          for (size_t col = 0; col < values.size(); ++col)
-            PE(row, col) = values[col];
+        try {
+          PE = parse_matrix (it->second);
+        } catch (Exception& e) {
+          throw Exception (e, "malformed PE scheme in image \"" + header.name() + "\"");
         }
+        if (ssize_t(PE.rows()) != ((header.ndim() > 3) ? header.size(3) : 1))
+          throw Exception ("malformed PE scheme in image \"" + header.name() + "\" - number of rows does not equal number of volumes");
       } else {
         // Header entries are cast to lowercase at some point
         const auto it_dir  = header.keyval().find ("PhaseEncodingDirection");

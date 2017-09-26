@@ -206,17 +206,27 @@ namespace MR {
           if (H.size (2) != 1)
             throw Exception ("DICOM mosaic contains multiple slices in image \"" + H.name() + "\"");
 
-          H.size(0) = frame.acq_dim[0];
-          H.size(1) = frame.acq_dim[1];
+          size_t mosaic_size = std::ceil (std::sqrt (image.images_in_mosaic));
+          H.size(0) = std::floor (frame.dim[0] / mosaic_size);
+          H.size(1) = std::floor (frame.dim[1] / mosaic_size);
           H.size(2) = image.images_in_mosaic;
 
-          if (frame.dim[0] % frame.acq_dim[0] || frame.dim[1] % frame.acq_dim[1]) {
+          if (frame.acq_dim[0] > H.size(0) || frame.acq_dim[1] > H.size(1)) {
             WARN ("acquisition matrix [ " + str (frame.acq_dim[0]) + " " + str (frame.acq_dim[1]) 
-                + " ] does not fit into DICOM mosaic [ " + str (frame.dim[0]) + " " + str (frame.dim[1]) 
-                + " ] -  adjusting matrix size to suit");
-            H.size(0) = frame.dim[0] / size_t (float(frame.dim[0]) / float(frame.acq_dim[0]));
-            H.size(1) = frame.dim[1] / size_t (float(frame.dim[1]) / float(frame.acq_dim[1]));
+                + " ] is smaller than expected [ " + str(H.size(0)) + " " + str(H.size(1)) + " ] in DICOM mosaic");
+            WARN ("  image may be incorrectly reformatted");
           }
+
+          if (H.size(0)*mosaic_size != frame.dim[0] || H.size(1)*mosaic_size != frame.dim[1]) {
+            WARN ("dimensions of DICOM mosaic [ " + str(frame.dim[0]) + " " + str(frame.dim[1]) 
+                + " ] do not match expected size [ " + str(H.size(0)*mosaic_size) + " " + str(H.size(0)*mosaic_size) + " ]");
+            WARN ("  assuming data are stored as " + str(mosaic_size)+"x"+str(mosaic_size) + " mosaic of " + str(H.size(0))+"x"+ str(H.size(1)) + " slices.");
+            WARN ("  image may be incorrectly reformatted");
+          }
+
+          if (frame.acq_dim[0] != H.size(0)|| frame.acq_dim[1] != H.size(1)) 
+            INFO ("note: acquisition matrix [ " + str (frame.acq_dim[0]) + " " + str (frame.acq_dim[1]) 
+                + " ] differs from reconstructed matrix [ " + str(H.size(0)) + " " + str(H.size(1)) + " ]");
 
           float xinc = H.spacing(0) * (frame.dim[0] - H.size(0)) / 2.0;
           float yinc = H.spacing(1) * (frame.dim[1] - H.size(1)) / 2.0;
