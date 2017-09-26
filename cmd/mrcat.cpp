@@ -50,7 +50,7 @@ OPTIONS
 }
 
 
-using value_type = float;
+using value_type = cfloat;
 
 
 void run () {
