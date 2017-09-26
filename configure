@@ -243,13 +243,13 @@ cxx_args = '-c CFLAGS SRC -o OBJECT'.split()
 cpp_flags = [ '-std=c++11' ]
 
 ld_args = 'OBJECTS LDFLAGS -o EXECUTABLE'.split()
-ld_flags = [ ]
+ld_flags = [ '-Wl,-O1,--sort-common,--as-needed' ]
 
 if static:
   ld_flags += [ '-static', '-Wl,-u,pthread_cancel,-u,pthread_cond_broadcast,-u,pthread_cond_destroy,-u,pthread_cond_signal,-u,pthread_cond_wait,-u,pthread_create,-u,pthread_detach,-u,pthread_cond_signal,-u,pthread_equal,-u,pthread_join,-u,pthread_mutex_lock,-u,pthread_mutex_unlock,-u,pthread_once,-u,pthread_setcancelstate' ]
 
 ld_lib_args = 'OBJECTS LDLIB_FLAGS -o LIB'.split()
-ld_lib_flags = [ ]
+ld_lib_flags = [ '-Wl,-O1,--sort-common,--as-needed' ]
 
 
 class TempFile:
