@@ -48,7 +48,7 @@ namespace MR
     {
       check_headers (in1, in2);
       ThreadedLoop (in1)
-      .run ([&tol] (const decltype(in1)& a, const decltype(in2)& b) {
+      .run ([&tol] (const ImageType1& a, const ImageType2& b) {
           if (std::abs (cdouble (a.value()) - cdouble (b.value())) > tol)
             throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within absolute precision of " + str(tol)
                  + " (" + str(cdouble (a.value())) + " vs " + str(cdouble (b.value())) + ")");
@@ -62,7 +62,7 @@ namespace MR
 
       check_headers (in1, in2);
       ThreadedLoop (in1)
-      .run ([&tol] (const decltype(in1)& a, const decltype(in2)& b) {
+      .run ([&tol] (const ImageType1& a, const ImageType2& b) {
           if (std::abs ((cdouble (a.value()) - cdouble (b.value())) / (0.5 * (cdouble (a.value()) + cdouble (b.value())))) > tol)
           throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within fractional precision of " + str(tol)
                + " (" + str(cdouble (a.value())) + " vs " + str(cdouble (b.value())) + ")");
@@ -76,7 +76,7 @@ namespace MR
       check_headers (in1, in2);
       check_headers (in1, tol);
       ThreadedLoop (in1)
-      .run ([] (const decltype(in1)& a, const decltype(in2)& b, const decltype(tol)& t) {
+      .run ([] (const ImageType1& a, const ImageType2& b, const ImageTypeTol& t) {
           if (std::abs (cdouble (a.value()) - cdouble (b.value())) > t.value())
           throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within precision of \"" + t.name() + "\""
                + " (" + str(cdouble (a.value())) + " vs " + str(cdouble (b.value())) + ", tolerance " + str(t.value()) + ")");

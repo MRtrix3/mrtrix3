@@ -2,38 +2,35 @@
 
 
 
-# These functions can (and should in some instances) be called upon any file / directory
+# This function can (and should in some instances) be called upon any file / directory
 #   that is no longer required by the script. If the script has been instructed to retain
 #   all temporaries, the resource will be retained; if not, it will be deleted (in particular
 #   to dynamically free up storage space used by the script).
-def delTempFile(path):
-  import os
+def delTemporary(path): #pylint: disable=unused-variable
+  import shutil, os
   from mrtrix3 import app
-  if not app._cleanup:
+  if not app.cleanup:
     return
-  if app._verbosity > 2:
-    app.console('Deleting temporary file: ' + path)
-  try:
-    os.remove(path)
-  except OSError:
-    app.debug('Unable to delete temporary file ' + path)
-
-def delTempFolder(path):
-  import shutil
-  from mrtrix3 import app
-  if not app._cleanup:
+  if os.path.isfile(path):
+    temporary_type = 'file'
+    func = os.remove
+  elif os.path.isdir(path):
+    temporary_type = 'directory'
+    func = shutil.rmtree
+  else:
+    app.debug('Unknown target \'' + path + '\'')
     return
-  if app._verbosity > 2:
-    app.console('Deleting temporary folder: ' + path)
+  if app.verbosity > 2:
+    app.console('Deleting temporary ' + temporary_type + ': \'' + path + '\'')
   try:
-    shutil.rmtree(path)
+    func(path)
   except OSError:
-    app.debug('Unable to delete temprary folder ' + path)
+    app.debug('Unable to delete temporary ' + temporary_type + ': \'' + path + '\'')
 
 
 
 # Make a directory if it doesn't exist; don't do anything if it does already exist
-def makeDir(path):
+def makeDir(path): #pylint: disable=unused-variable
   import errno, os
   from mrtrix3 import app
   try:
@@ -42,26 +39,29 @@ def makeDir(path):
   except OSError as exception:
     if exception.errno != errno.EEXIST:
       raise
-    app.debug('Directory ' + path + ' already exists')
+    app.debug('Directory \'' + path + '\' already exists')
 
 
 
 # Get an appropriate location and name for a new temporary file
 # Note: Doesn't actually create a file; just gives a unique name that won't over-write anything
-def newTempFile(suffix):
-  import os, random, string, sys
+def newTempFile(suffix): #pylint: disable=unused-variable
+  import os.path, random, string
   from mrtrix3 import app
   if 'TmpFileDir' in app.config:
     dir_path = app.config['TmpFileDir']
+  elif app.tempDir:
+    dir_path = app.tempDir
   else:
-    dir_path = app._tempDir
+    dir_path = os.getcwd()
+  app.debug(dir_path)
   if 'TmpFilePrefix' in app.config:
     prefix = app.config['TmpFilePrefix']
   else:
     prefix = 'mrtrix-tmp-'
+  app.debug(prefix)
   full_path = dir_path
-  if not suffix:
-    suffix = 'mif'
+  suffix = suffix.lstrip('.')
   while os.path.exists(full_path):
     random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
     full_path = os.path.join(dir_path, prefix + random_string + '.' + suffix)
@@ -87,7 +87,7 @@ def newTempFile(suffix):
 # Initially, checks for the file once every 1/1000th of a second; this gradually
 #   increases if the file still doesn't exist, until the program is only checking
 #   for the file once a minute.
-def waitFor(path):
+def waitFor(path): #pylint: disable=unused-variable
   import os, time
   from mrtrix3 import app
 
@@ -98,7 +98,7 @@ def waitFor(path):
       if not os.access(path, os.W_OK):
         return None
       try:
-        with open(path, 'rb+') as f:
+        with open(path, 'rb+') as dummy_f:
           pass
         return False
       except:
