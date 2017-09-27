@@ -457,12 +457,12 @@ List of MRtrix3 configuration file options
 *  **reg_gdweight_matrix**
     *default: 0.0003*
 
-     Linear registration: weight for optimisation of linear (3x3) matrix parameters
+     Linear registration: weight for optimisation of linear (3x3) matrix parameters.
 
 *  **reg_gdweight_translation**
     *default: 1*
 
-     Linear registration: weight for optimisation of translation parameters
+     Linear registration: weight for optimisation of translation parameters.
 
 *  **reg_stop_len**
     *default: 0.0001*
