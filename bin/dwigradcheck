@@ -43,7 +43,7 @@ num_volumes = image_dimensions[3]
 app.makeTempDir()
 
 # Make sure the image data can be memory-mapped
-run.command('mrconvert ' + app.args.input + ' ' + path.toTemp('data.mif', True) + ' -stride 0,0,0,1 -datatype float32')
+run.command('mrconvert ' + app.args.input + ' ' + '-grad ' + app.args.grad + ' ' + path.toTemp('data.mif', True) + ' -stride 0,0,0,1 -datatype float32')
 
 if app.args.grad:
   shutil.copy(path.fromUser(app.args.grad, False), path.toTemp('grad.b', False))
