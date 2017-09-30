@@ -38,10 +38,19 @@ def abspath(*arg):
 def relpath(*arg):
   return os.path.relpath(os.path.join(*arg), app.workingDir)
 
-def allindir(directory):
-  return ' '.join( [ os.path.join(directory, filename) for filename in os.listdir(directory) ] )
-
-
+def allindir(directory, dir_path=True, ignore_hidden_files=True):
+  def is_hidden(directory, filename):
+    if os.name== 'nt':
+      import win32api, win32con
+      attribute = win32api.GetFileAttributes(os.path.join(directory, filename))
+      return attribute & (win32con.FILE_ATTRIBUTE_HIDDEN | win32con.FILE_ATTRIBUTE_SYSTEM)
+    else:
+      return filename.startswith('.') 
+  flist = sorted([filename for filename in os.listdir(directory) if (not ignore_hidden_files or not is_hidden (directory, filename)) ])  
+  if dir_path:
+    return [ os.path.join(directory, filename) for filename in flist ]
+  else:
+    return flist
 
 try:
   from numpy import loadtxt, savetxt, dot
@@ -215,7 +224,7 @@ app.args.input_dir = relpath(app.args.input_dir)
 inputDir = app.args.input_dir
 if not os.path.exists(inputDir):
   app.error('input directory not found')
-inFiles = sorted(os.listdir(inputDir))
+inFiles = sorted(allindir(inputDir, dir_path=False))
 if len(inFiles) <= 1:
   app.console('Not enough images found in input directory. More than one image is needed to generate a population template')
 else:
@@ -251,7 +260,7 @@ if app.args.mask_dir:
   maskDir = app.args.mask_dir
   if not os.path.exists(maskDir):
     app.error('mask directory not found')
-  maskFiles = os.listdir(maskDir)
+  maskFiles = allindir(maskDir, dir_path=False)
   if len(maskFiles) < len(inFiles):
     app.error('there are not enough mask images for the number of images in the input directory')
   maskCommonPostfix = path.commonPostfix(maskFiles)
@@ -541,7 +550,7 @@ else:
     run.function(remove, os.path.join('inputs_transformed', i.prefix + '_translated.mif'))
 
 
-run.command('mrmath ' + allindir('inputs_transformed') + ' mean initial_template.mif')
+run.command('mrmath ' + ' '.join(allindir('inputs_transformed')) + ' mean initial_template.mif')
 current_template = 'initial_template.mif'
 
 
@@ -608,7 +617,7 @@ else:
       check_linear_transformation(os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix), command, pause_on_warn=do_pause_on_warn)
 
     # Here we ensure the template doesn't drift or scale
-    run.command('transformcalc ' + allindir('linear_transforms_%i' % level) + ' average linear_transform_average.txt -force -quiet')
+    run.command('transformcalc ' + ' '.join(allindir('linear_transforms_%i' % level)) + ' average linear_transform_average.txt -force -quiet')
     if linear_type[level] == 'rigid':
       run.command('transformcalc linear_transform_average.txt rigid linear_transform_average.txt -force -quiet')
     run.command('transformcalc linear_transform_average.txt invert linear_transform_average_inv.txt -force -quiet')
@@ -628,7 +637,7 @@ else:
                   datatype + ' ' + \
                   '-force')
 
-    run.command('mrmath ' + allindir('inputs_transformed') + ' mean linear_template' + str(level) + '.mif -force')
+    run.command('mrmath ' + ' '.join(allindir('inputs_transformed')) + ' mean linear_template' + str(level) + '.mif -force')
     current_template = 'linear_template' + str(level) + '.mif'
 
   for entry in os.listdir('linear_transforms_%i' % level):
@@ -643,7 +652,7 @@ if useMasks and (dononlinear or app.args.template_mask):
                 '-linear ' + os.path.join('linear_transforms', '%s.txt' % i.prefix) + ' ' + \
                 os.path.join('masks_transformed', '%s.mif' % i.prefix) + ' ' + \
                 '-force')
-  run.command ('mrmath ' + allindir('masks_transformed') + ' min - | maskfilter - median - | maskfilter - dilate -npass 5 init_nl_template_mask.mif -force')
+  run.command ('mrmath ' + ' '.join(allindir('masks_transformed')) + ' min - | maskfilter - median - | maskfilter - dilate -npass 5 init_nl_template_mask.mif -force')
   current_template_mask = 'init_nl_template_mask.mif'
 
 if dononlinear:
@@ -696,11 +705,11 @@ if dononlinear:
                     '-interp nearest ' +
                     '-force')
 
-    run.command('mrmath ' + allindir('inputs_transformed') + ' mean nl_template' + str(level) + '.mif')
+    run.command('mrmath ' + ' '.join(allindir('inputs_transformed')) + ' mean nl_template' + str(level) + '.mif')
     current_template = 'nl_template' + str(level) + '.mif'
 
     if useMasks:
-      run.command ('mrmath ' + allindir('masks_transformed') + ' min - | maskfilter - median - | maskfilter - dilate -npass 5 nl_template_mask' + str(level) + '.mif')
+      run.command ('mrmath ' + ' '.join(allindir('masks_transformed')) + ' min - | maskfilter - median - | maskfilter - dilate -npass 5 nl_template_mask' + str(level) + '.mif')
       current_template_mask = 'nl_template_mask' + str(level) + '.mif'
 
     if level < len(nl_scales) - 1:
