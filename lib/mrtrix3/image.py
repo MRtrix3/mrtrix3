@@ -47,20 +47,29 @@ def headerKeyValue(image_path, key):
 
 
 
-def match(image_one, image_two):
+def match(image_one, image_two, max_dim=0):
   import math
   from mrtrix3 import app
   debug_prefix = '\'' + image_one + '\' \'' + image_two + '\''
   # Image dimensions
-  one_dim = [ int(i) for i in headerField(image_one, 'size').split() ]
-  two_dim = [ int(i) for i in headerField(image_two, 'size').split() ]
-  if not one_dim == two_dim:
-    app.debug(debug_prefix + ' dimension mismatch (' + str(one_dim) + ' ' + str(two_dim) + ')')
+  one_size = [ int(i) for i in headerField(image_one, 'size').split() ]
+  two_size = [ int(i) for i in headerField(image_two, 'size').split() ]
+  if max_dim:
+    if max_dim > min(len(one_size), len(two_size)):
+      app.debug(debug_prefix + ' dimensionality less than specified maximum (' + str(max_dim) + ')')
+      return False
+  else:
+    if not len(one_size) == len(two_size):
+      app.debug(debug_prefix + ' dimensionality mismatch (' + str(len(one_size)) + ' vs. ' + str(len(two_size)) + ')')
+      return False
+    max_dim = len(one_size)
+  if not one_size[:max_dim] == two_size[:max_dim]:
+    app.debug(debug_prefix + ' axis size mismatch (' + str(one_size) + ' ' + str(two_size) + ')')
     return False
   # Voxel size
   one_spacing = [ float(f) for f in headerField(image_one, 'vox').split() ]
   two_spacing = [ float(f) for f in headerField(image_two, 'vox').split() ]
-  for one, two in zip(one_spacing, two_spacing):
+  for one, two in zip(one_spacing[:max_dim], two_spacing[:max_dim]):
     if one and two and not math.isnan(one) and not math.isnan(two):
       if (abs(two-one) / (0.5*(one+two))) > 1e-04:
         app.debug(debug_prefix + ' voxel size mismatch (' + str(one_spacing) + ' ' + str(two_spacing) + ')')

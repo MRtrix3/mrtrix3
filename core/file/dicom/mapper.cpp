@@ -38,7 +38,7 @@ namespace MR {
         sbuf += " " + format_ID (patient->ID);
         if (series[0]->modality.size())
           sbuf += std::string (" [") + series[0]->modality + "]";
-        if (series[0]->name.size()) 
+        if (series[0]->name.size())
           sbuf += std::string (" ") + series[0]->name;
         add_line (H.keyval()["comments"], sbuf);
         H.name() = sbuf;
@@ -51,9 +51,9 @@ namespace MR {
           try {
             series_it->read();
           }
-          catch (Exception& E) { 
+          catch (Exception& E) {
             E.display();
-            throw Exception ("error reading series " + str (series_it->number) + " of DICOM image \"" + H.name() + "\""); 
+            throw Exception ("error reading series " + str (series_it->number) + " of DICOM image \"" + H.name() + "\"");
           }
 
           std::sort (series_it->begin(), series_it->end(), compare_ptr_contents());
@@ -70,11 +70,11 @@ namespace MR {
             // if multi-frame, loop over frames in image:
             if (image_it->frames.size()) {
               std::sort (image_it->frames.begin(), image_it->frames.end(), compare_ptr_contents());
-              for (auto frame_it : image_it->frames) 
+              for (auto frame_it : image_it->frames)
                 frames.push_back (frame_it.get());
             }
             // otherwise add image frame:
-            else 
+            else
               frames.push_back (image_it.get());
           }
         }
@@ -90,23 +90,23 @@ namespace MR {
         if (dim[0] > 1) { // switch axes so slice dim is inner-most:
           vector<Frame*> list (frames);
           vector<Frame*>::iterator it = frames.begin();
-          for (size_t k = 0; k < dim[2]; ++k) 
-            for (size_t i = 0; i < dim[0]; ++i) 
-              for (size_t j = 0; j < dim[1]; ++j) 
+          for (size_t k = 0; k < dim[2]; ++k)
+            for (size_t i = 0; i < dim[0]; ++i)
+              for (size_t j = 0; j < dim[1]; ++j)
                 *(it++) = list[i+dim[0]*(j+dim[1]*k)];
         }
 
         default_type slice_separation = Frame::get_slice_separation (frames, dim[1]);
 
-        if (series[0]->study->name.size()) 
+        if (series[0]->study->name.size())
           add_line (H.keyval()["comments"], std::string ("study: " + series[0]->study->name));
 
-        if (patient->DOB.size()) 
+        if (patient->DOB.size())
           add_line (H.keyval()["comments"], std::string ("DOB: " + format_date (patient->DOB)));
 
         if (series[0]->date.size()) {
           sbuf = "DOS: " + format_date (series[0]->date);
-          if (series[0]->time.size()) 
+          if (series[0]->time.size())
             sbuf += " " + format_time (series[0]->time);
           add_line (H.keyval()["comments"], sbuf);
         }
@@ -115,9 +115,23 @@ namespace MR {
 
         if (std::isfinite (image.echo_time))
           H.keyval()["EchoTime"] = str (0.001 * image.echo_time, 6);
+        if (std::isfinite (image.flip_angle))
+          H.keyval()["FlipAngle"] = str (image.flip_angle, 6);
+        if (image.parallel_inplane_factor)
+          H.keyval()["ParallelReductionFactorInPlane"] = str (image.parallel_inplane_factor);
+        if (std::isfinite (image.partial_fourier_fraction))
+          H.keyval()["PartialFourier"] = str (image.partial_fourier_fraction, 6);
+        // TODO This will need handling with regards to axis permutation
+        switch (image.partial_fourier_axis) {
+          case 0: H.keyval()["PartialFourierDirection"] = "i"; break;
+          case 1: H.keyval()["PartialFourierDirection"] = "j"; break;
+          case 2: H.keyval()["PartialFourierDirection"] = "k"; break;
+        }
+        if (std::isfinite (image.repetition_time))
+          H.keyval()["RepetitionTime"] = str (0.001 * image.repetition_time, 6);
 
         size_t nchannels = image.frames.size() ? 1 : image.data_size / (image.dim[0] * image.dim[1] * (image.bits_alloc/8));
-        if (nchannels > 1) 
+        if (nchannels > 1)
           INFO ("data segment is larger than expected from image dimensions - interpreting as multi-channel data");
 
         H.ndim() = 3 + (dim[0]*dim[2]>1) + (nchannels>1);
@@ -149,16 +163,16 @@ namespace MR {
         }
 
 
-        if (image.bits_alloc == 8) 
+        if (image.bits_alloc == 8)
           H.datatype() = DataType::UInt8;
         else if (image.bits_alloc == 16) {
           H.datatype() = DataType::UInt16;
-          if (image.is_BE) 
+          if (image.is_BE)
             H.datatype() = DataType::UInt16 | DataType::BigEndian;
-          else 
+          else
             H.datatype() = DataType::UInt16 | DataType::LittleEndian;
         }
-        else throw Exception ("unexpected number of allocated bits per pixel (" + str (image.bits_alloc) 
+        else throw Exception ("unexpected number of allocated bits per pixel (" + str (image.bits_alloc)
             + ") in file \"" + H.name() + "\"");
 
         H.set_intensity_scaling (image.scale_slope, image.scale_intercept);
@@ -210,8 +224,8 @@ namespace MR {
           H.size(2) = image.images_in_mosaic;
 
           if (image.dim[0] % image.acq_dim[0] || image.dim[1] % image.acq_dim[1]) {
-            WARN ("acquisition matrix [ " + str (image.acq_dim[0]) + " " + str (image.acq_dim[1]) 
-                + " ] does not fit into DICOM mosaic [ " + str (image.dim[0]) + " " + str (image.dim[1]) 
+            WARN ("acquisition matrix [ " + str (image.acq_dim[0]) + " " + str (image.acq_dim[1])
+                + " ] does not fit into DICOM mosaic [ " + str (image.dim[0]) + " " + str (image.dim[1])
                 + " ] -  adjusting matrix size to suit");
             H.size(0) = image.dim[0] / size_t (float(image.dim[0]) / float(image.acq_dim[0]));
             H.size(1) = image.dim[1] / size_t (float(image.dim[1]) / float(image.acq_dim[1]));
@@ -219,15 +233,15 @@ namespace MR {
 
           float xinc = H.spacing(0) * (image.dim[0] - H.size(0)) / 2.0;
           float yinc = H.spacing(1) * (image.dim[1] - H.size(1)) / 2.0;
-          for (size_t i = 0; i < 3; i++) 
+          for (size_t i = 0; i < 3; i++)
             H.transform()(i,3) += xinc * H.transform()(i,0) + yinc * H.transform()(i,1);
 
           io_handler.reset (new MR::ImageIO::Mosaic (H, image.dim[0], image.dim[1], H.size (0), H.size (1), H.size (2)));
         }
-        else 
+        else
           io_handler.reset (new MR::ImageIO::Default (H));
 
-        for (size_t n = 0; n < frames.size(); ++n) 
+        for (size_t n = 0; n < frames.size(); ++n)
           io_handler->files.push_back (File::Entry (frames[n]->filename, frames[n]->data));
 
         return io_handler;
