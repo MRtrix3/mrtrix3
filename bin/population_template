@@ -31,26 +31,13 @@ import math
 from mrtrix3 import app, file, image, path, run #pylint: disable=redefined-builtin
 
 
+from mrtrix3.path import allindir
 
 def abspath(*arg):
   return os.path.abspath(os.path.join(*arg))
 
 def relpath(*arg):
   return os.path.relpath(os.path.join(*arg), app.workingDir)
-
-def allindir(directory, dir_path=True, ignore_hidden_files=True):
-  def is_hidden(directory, filename):
-    if os.name== 'nt':
-      import win32api, win32con
-      attribute = win32api.GetFileAttributes(os.path.join(directory, filename))
-      return attribute & (win32con.FILE_ATTRIBUTE_HIDDEN | win32con.FILE_ATTRIBUTE_SYSTEM)
-    else:
-      return filename.startswith('.') 
-  flist = sorted([filename for filename in os.listdir(directory) if (not ignore_hidden_files or not is_hidden (directory, filename)) ])  
-  if dir_path:
-    return [ os.path.join(directory, filename) for filename in flist ]
-  else:
-    return flist
 
 try:
   from numpy import loadtxt, savetxt, dot
