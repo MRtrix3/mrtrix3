@@ -20,20 +20,19 @@ def commonPostfix(inputFiles): #pylint: disable=unused-variable
   return common
 
 # List the content of a directory
-def allindir(directory, dir_path=True, ignore_hidden_files=True):
+def allindir(directory, dir_path=True, ignore_hidden_files=True): #pylint: disable=unused-variable
   import os
   def is_hidden(directory, filename):
-    if os.name== 'nt':
-      import win32api, win32con
+    if os.name == 'nt':
+      import win32api, win32con #pylint: disable=import-error
       attribute = win32api.GetFileAttributes(os.path.join(directory, filename))
       return attribute & (win32con.FILE_ATTRIBUTE_HIDDEN | win32con.FILE_ATTRIBUTE_SYSTEM)
-    else:
-      return filename.startswith('.')
-  flist = sorted([filename for filename in os.listdir(directory) if (not ignore_hidden_files or not is_hidden (directory, filename)) ])
+    return filename.startswith('.')
+
+  flist = sorted([filename for filename in os.listdir(directory) if not ignore_hidden_files or not is_hidden (directory, filename) ])
   if dir_path:
     return [ os.path.join(directory, filename) for filename in flist ]
-  else:
-    return flist
+  return flist
 
 # Get the full absolute path to a user-specified location.
 #   This function serves two purposes:
