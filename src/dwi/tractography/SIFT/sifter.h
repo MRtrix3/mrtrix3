@@ -16,10 +16,12 @@
 #define __dwi_tractography_sift_sifter_h__
 
 
-#include <vector>
+
+#include "image.h"
+#include "types.h"
 
 #include "math/rng.h"
-#include "image.h"
+
 #include "dwi/fixel_map.h"
 #include "dwi/directions/set.h"
 #include "dwi/tractography/SIFT/fixel.h"

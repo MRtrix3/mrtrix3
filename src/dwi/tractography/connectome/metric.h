@@ -16,9 +16,8 @@
 #define __dwi_tractography_connectome_metric_h__
 
 
-#include <vector>
-
 #include "image.h"
+#include "types.h"
 #include "algo/loop.h"
 #include "interp/linear.h"
 

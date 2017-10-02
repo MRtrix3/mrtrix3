@@ -194,6 +194,24 @@ namespace MR
       return M;
     }
 
+  //! read matrix data from a text string \a spec
+  template <class ValueType = default_type>
+    Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> parse_matrix (const std::string& spec)
+    {
+      Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> M;
+      const auto lines = split_lines (spec);
+      for (size_t row = 0; row < lines.size(); ++row) {
+        const auto values = parse_floats (lines[row]);
+        if (M.cols() == 0)
+          M.resize (lines.size(), values.size());
+        else if (M.cols() != ssize_t (values.size()))
+          throw Exception ("error converting string to matrix - uneven number of entries per row");
+        for (size_t col = 0; col < values.size(); ++col)
+          M(row, col) = values[col];
+      }
+      return M;
+    }
+
   //! read matrix data from \a filename into an Eigen::Tranform class
   inline transform_type load_transform (const std::string& filename)
   {

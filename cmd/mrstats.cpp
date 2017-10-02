@@ -13,17 +13,19 @@
 
 
 #include <iomanip>
-#include <vector>
 
 #include "command.h"
 #include "datatype.h"
 #include "image.h"
 #include "image_helpers.h"
 #include "memory.h"
+#include "stats.h"
+#include "types.h"
+
 #include "algo/histogram.h"
 #include "algo/loop.h"
 #include "file/ofstream.h"
-#include "stats.h"
+
 
 
 using namespace MR;

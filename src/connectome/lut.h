@@ -15,14 +15,14 @@
 #ifndef __connectome_lut_h__
 #define __connectome_lut_h__
 
+#include <map>
+#include <string>
 
 #include "app.h"
+#include "types.h"
 
 #include "connectome/connectome.h"
 
-#include <map>
-#include <string>
-#include <vector>
 
 
 namespace MR {

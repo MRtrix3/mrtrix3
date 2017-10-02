@@ -43,6 +43,10 @@ namespace MR {
         // process image-specific or per-frame items here:
         if (is_toplevel) {
           switch (item.group) {
+            case 0x0008U:
+              if (item.element == 0x0008U)
+                image_type = join (item.get_string(), " ");
+              return;
             case 0x0018U:
               switch (item.element) {
                 case 0x0024U:

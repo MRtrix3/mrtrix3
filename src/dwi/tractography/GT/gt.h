@@ -20,12 +20,12 @@
 #define FRAC_PHASEOUT 10
 
 #include <iostream>
-#include <vector>
 #include <mutex>
 
 #include <Eigen/Dense>
 
 #include "progressbar.h"
+#include "types.h"
 
 
 namespace MR {

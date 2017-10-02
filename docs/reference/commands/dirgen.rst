@@ -18,12 +18,19 @@ Usage
 -  *ndir*: the number of directions to generate.
 -  *dirs*: the text file to write the directions to, as [ az el ] pairs.
 
+Description
+-----------
+
+Directions are distributed by analogy to an electrostatic repulsion system, with each direction corresponding to a single electrostatic charge (for -unipolar), or a pair of diametrically opposed charges (for the default bipolar case). The energy of the system is determined based on the Coulomb repulsion, which assumes the form 1/r^power, where r is the distance between any pair of charges, and p is the power assumed for the repulsion law (default: 1). The minimum energy state is obtained by gradient descent.
+
 Options
 -------
 
--  **-power exp** specify exponent to use for repulsion power law (default: 2). This must be a power of 2 (i.e. 2, 4, 8, 16, ...).
+-  **-power exp** specify exponent to use for repulsion power law (default: 1). This must be a power of 2 (i.e. 1, 2, 4, 8, 16, ...).
 
 -  **-niter num** specify the maximum number of iterations to perform (default: 10000).
+
+-  **-restarts num** specify the number of restarts to perform (default: 10).
 
 -  **-unipolar** optimise assuming a unipolar electrostatic repulsion model rather than the bipolar model normally assumed in DWI
 

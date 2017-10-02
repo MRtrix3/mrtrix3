@@ -19,6 +19,14 @@ To install *MRtrix3*, you will need the following:
 -  `Eigen <http://eigen.tuxfamily.org>`__ version >= 3.2 
 -  `Qt <http://www.qt.io/>`__ version >= 4.7 *[GUI components only]*
 
+and optionally:
+
+- `libTIFF <http://www.libtiff.org/>`__ version >= 4.0 (for TIFF support)
+- `FFTW <http://www.fftw.org/>`__ version >= 3.0 (for improved performance in
+  certain applications, currently only ``mrdegibbs``)
+  
+  
+
 .. WARNING:: 
 
     To run the GUI components of *MRtrix3* (``mrview`` &
@@ -41,20 +49,20 @@ for hints on how to proceed in this case.
 
 -  Ubuntu Linux (and derivatives, e.g. Linux Mint)::
 
-       sudo apt-get install git g++ python python-numpy libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev
+       sudo apt-get install git g++ python python-numpy libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev libfftw3-dev libtiff5-dev
 
 -  RPM-based distros (Fedora, CentOS)::
 
-       sudo yum install git g++ python numpy eigen3-devel zlib-devel libqt4-devel libgl1-mesa-dev
+       sudo yum install git g++ python numpy eigen3-devel zlib-devel libqt4-devel libgl1-mesa-dev fftw-devel libtiff-devel
 
    on Fedora 24, this is reported to work::
 
-           sudo yum install git gcc-c++ python numpy eigen3-devel zlib-devel qt-devel mesa-libGL-devel
+           sudo yum install git gcc-c++ python numpy eigen3-devel zlib-devel qt-devel mesa-libGL-devel fftw-devel libtiff-devel
 
 
 -  Arch Linux::
 
-       sudo pacman -Syu git python python-numpy gcc zlib eigen qt5-svg
+       sudo pacman -Syu git python python-numpy gcc zlib eigen qt5-svg fftw libtiff
 
 If this doesn't work
 ^^^^^^^^^^^^^^^^^^^^

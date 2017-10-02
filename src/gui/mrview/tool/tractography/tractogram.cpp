@@ -17,6 +17,7 @@
 #include "gui/mrview/window.h"
 #include "gui/projection.h"
 #include "dwi/tractography/file.h"
+#include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"
 #include "gui/opengl/lighting.h"
 #include "gui/mrview/mode/base.h"
@@ -39,7 +40,7 @@ namespace MR
         {
           const Tractogram& tractogram = dynamic_cast<const Tractogram&>(displayable);
 
-          std::string source = 
+          std::string source =
             "layout (location = 0) in vec3 vertex;\n"
             "layout (location = 1) in vec3 prev_vertex;\n"
             "layout (location = 2) in vec3 next_vertex;\n";
@@ -140,7 +141,7 @@ namespace MR
             source += "out vec3 g_tangent;\n";
 
           if (color_type == TrackColourType::ScalarFile || color_type == TrackColourType::Ends)
-            source += 
+            source +=
               "in vec3 v_colour[];\n"
               "out vec3 fColour;\n";
 
@@ -151,8 +152,8 @@ namespace MR
 
           source += "void main() {\n";
 
-          if (do_crop_to_slab) 
-            source += 
+          if (do_crop_to_slab)
+            source +=
               "  if (v_include[0] < 0.0 && v_include[1] < 0.0) return;\n"
               "  if (v_include[0] > 1.0 && v_include[1] > 1.0) return;\n";
 
@@ -168,7 +169,7 @@ namespace MR
 
           if (use_lighting)
             source += "  g_height = 0.0;\n";
-          source += 
+          source +=
             "  gl_Position = gl_in[0].gl_Position - vec4(v_end[0],0,0);\n"
             "  EmitVertex();\n";
 
@@ -196,7 +197,7 @@ namespace MR
 
           if (use_lighting)
             source += "  g_height = PI;\n";
-          source += 
+          source +=
             "  gl_Position = gl_in[1].gl_Position + vec4 (v_end[1],0,0);\n"
             "  EmitVertex();\n"
             "}\n";
@@ -224,7 +225,7 @@ namespace MR
             source += "in float g_amp;\n";
 
           if (use_lighting)
-            source += 
+            source +=
               "uniform float ambient, diffuse, specular, shine;\n"
               "uniform vec3 light_pos;\n"
               "in float g_height;\n";
@@ -304,7 +305,7 @@ namespace MR
 
 
 
-        void Tractogram::Shader::update (const Displayable& object) 
+        void Tractogram::Shader::update (const Displayable& object)
         {
           const Tractogram& tractogram (dynamic_cast<const Tractogram&> (object));
           do_crop_to_slab = tractogram.tractography_tool.crop_to_slab();
@@ -513,10 +514,12 @@ namespace MR
 
         inline void Tractogram::update_stride ()
         {
-          // TODO This should perhaps be using "output_step_size" if present?
-          float step_size = (properties.find ("step_size") == properties.end() ? 0.0 : to<float>(properties["step_size"]));
-          GLint new_stride = GLint (tractography_tool.line_thickness * original_fov / step_size);
-          new_stride = std::max (1, std::min (max_sample_stride, new_stride));
+          const float step_size = DWI::Tractography::get_step_size (properties);
+          GLint new_stride = 1;
+          if (std::isfinite (step_size)) {
+            new_stride = GLint (tractography_tool.line_thickness * original_fov / step_size);
+            new_stride = std::max (1, std::min (max_sample_stride, new_stride));
+          }
 
           if (new_stride != sample_stride) {
             sample_stride = new_stride;
@@ -578,10 +581,10 @@ namespace MR
           file.close();
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
-        
-        
-        
-        
+
+
+
+
         void Tractogram::load_end_colours()
         {
           // These data are now retained in memory - no need to re-scan track file
@@ -794,9 +797,9 @@ namespace MR
 
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
-        
-        
-        
+
+
+
         void Tractogram::erase_colour_data()
         {
           MRView::GrabContext context;
@@ -872,7 +875,7 @@ namespace MR
         void Tractogram::load_tracks_onto_GPU (vector<Eigen::Vector3f>& buffer,
             vector<GLint>& starts,
             vector<GLint>& sizes,
-            size_t& tck_count) 
+            size_t& tck_count)
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
@@ -899,12 +902,8 @@ namespace MR
           tck_count = 0;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
-        
-        
-        
-        
-        
-        void Tractogram::load_end_colours_onto_GPU (vector<Eigen::Vector3f>& buffer) 
+
+        void Tractogram::load_end_colours_onto_GPU (vector<Eigen::Vector3f>& buffer)
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 

@@ -158,6 +158,9 @@ public:
       std::string line;
       int number_of_points;
       while ( std::getline(input,line) ) {
+        if ( line.find ( "ASCII") == 0 ) {
+          throw Exception("VTK Reader only supports ASCII input");
+        }
         if ( sscanf ( line.c_str(), "POINTS %d float", &number_of_points ) == 1) {
           points = new float[3*number_of_points];
           input.read((char*) points, 3*number_of_points * sizeof(float) );

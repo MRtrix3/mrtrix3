@@ -12,11 +12,10 @@
  */
 
 
-#include <vector>
-
 #include "command.h"
-#include "progressbar.h"
 #include "memory.h"
+#include "progressbar.h"
+#include "types.h"
 
 #include "file/ofstream.h"
 
@@ -119,14 +118,13 @@ void run ()
     if (properties.find ("count") != properties.end())
       header_count = to<size_t> (properties["count"]);
 
-    if (properties.find ("output_step_size") != properties.end())
-      step_size = to<float> (properties["output_step_size"]);
-    else
-      step_size = to<float> (properties["step_size"]);
+    step_size = get_step_size (properties);
+
     if (!std::isfinite (step_size) || !step_size) {
-      WARN ("Streamline step size undefined in header");
-      if (get_options ("histogram").size())
-        WARN ("Histogram will be henerated using a 1mm interval");
+      INFO ("Streamline step size undefined in header; lengths will be calculated manually");
+      if (get_options ("histogram").size()) {
+        WARN ("Do not have streamline step size with which to construct histogram; histogram will be generated using 1mm bin widths");
+      }
     }
 
     std::unique_ptr<File::OFStream> dump;

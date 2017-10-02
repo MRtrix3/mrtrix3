@@ -15,7 +15,8 @@
 #include "gui/mrview/tool/connectome/node_overlay.h"
 
 #include <limits>
-#include <vector>
+
+#include "types.h"
 
 namespace MR
 {

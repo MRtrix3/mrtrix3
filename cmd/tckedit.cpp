@@ -13,13 +13,12 @@
 
 
 #include <string>
-#include <vector>
 
 #include "command.h"
 #include "exception.h"
 #include "mrtrix.h"
-
 #include "thread_queue.h"
+#include "types.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"

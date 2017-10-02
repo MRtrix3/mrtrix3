@@ -175,10 +175,10 @@ location of those libraries; e.g.:
 
 .. code-block:: console
 
-    $ export PYTHONPATH=/home/user/mrtrix3/scripts:$PYTHONPATH
+    $ export PYTHONPATH=/home/user/mrtrix3/lib:$PYTHONPATH
     $ ./my_script [arguments] (options)
 
-(Replace the path to the *MRtrix3* scripts directory with the location of your
+(Replace the path to the *MRtrix3* "lib" directory with the location of your
 own installation)
 
 ``tck2connectome`` no longer has the ``-contrast X`` option...?

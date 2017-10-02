@@ -16,8 +16,6 @@
 #define __dwi_tractography_resampling_upsampler_h__
 
 
-#include <vector>
-
 #include "dwi/tractography/resampling/resampling.h"
 
 
