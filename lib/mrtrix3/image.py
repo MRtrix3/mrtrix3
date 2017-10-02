@@ -125,10 +125,10 @@ def match(image_one, image_two, max_dim=0): #pylint: disable=unused-variable
     max_dim = len(image_one.size())
   # Image dimensions
   if not image_one.size()[:max_dim] == image_two.size()[:max_dim]:
-    app.debug(debug_prefix + ' axis size mismatch (' + str(iamge_one.size()) + ' ' + str(image_two.size()) + ')')
+    app.debug(debug_prefix + ' axis size mismatch (' + str(image_one.size()) + ' ' + str(image_two.size()) + ')')
     return False
   # Voxel size
-  for one, two in zip(image_one.spacing()[:max_dim], iamge_two.spacing()[:max_dim]):
+  for one, two in zip(image_one.spacing()[:max_dim], image_two.spacing()[:max_dim]):
     if one and two and not math.isnan(one) and not math.isnan(two):
       if (abs(two-one) / (0.5*(one+two))) > 1e-04:
         app.debug(debug_prefix + ' voxel size mismatch (' + str(image_one.spacing()) + ' ' + str(image_two.spacing()) + ')')

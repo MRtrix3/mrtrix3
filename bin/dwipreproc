@@ -133,18 +133,19 @@ app.gotoTempDir()
 dwi_header = image.Header('dwi.mif')
 if not len(dwi_header.size()) == 4:
   app.error('Input DWI must be a 4D image')
-num_volumes = dwi_header.size()[3]
+dwi_num_volumes = dwi_header.size()[3]
 dwi_pe_scheme = phaseEncoding.getScheme(dwi_header)
 if app.args.se_epi:
   se_epi_header = image.Header('se_epi.mif')
-  if not len(se_epi_header.size()) == 4:
-    app.error('File provided using -se_epi option must contain more than one image volume')
-  topup_pe_scheme = phaseEncoding.getScheme(se_epi_header)
+  # This doesn't necessarily apply any more: May be able to combine e.g. a P>>A from -se_epi with an A>>P b=0 image from the DWIs
+#  if not len(se_epi_header.size()) == 4:
+#    app.error('File provided using -se_epi option must contain more than one image volume')
+  se_epi_pe_scheme = phaseEncoding.getScheme(se_epi_header)
 if 'dw_scheme' not in dwi_header.keyval():
   app.error('No diffusion gradient table found')
 grad = dwi_header.keyval()['dw_scheme']
-if not len(grad) == num_volumes:
-  app.error('Number of lines in gradient table (' + str(len(grad)) + ') does not match input image (' + str(num_volumes) + ' volumes); check your input data')
+if not len(grad) == dwi_num_volumes:
+  app.error('Number of lines in gradient table (' + str(len(grad)) + ') does not match input image (' + str(dwi_num_volumes) + ' volumes); check your input data')
 
 
 
@@ -184,7 +185,7 @@ def grads_match(one, two):
 
 # Manually generate a phase-encoding table for the input DWI based on user input
 dwi_manual_pe_scheme = None
-topup_manual_pe_scheme = None
+se_epi_manual_pe_scheme = None
 auto_trt = 0.1
 dwi_auto_trt_warning = False
 if manual_pe_dir:
@@ -200,22 +201,22 @@ if manual_pe_dir:
   if PE_design == 'None':
     line = list(manual_pe_dir)
     line.append(trt)
-    dwi_manual_pe_scheme = [ line ] * num_volumes
+    dwi_manual_pe_scheme = [ line ] * dwi_num_volumes
 
   # With 'Pair', also need to construct the manual scheme for SE EPIs
   elif PE_design == 'Pair':
     line = list(manual_pe_dir)
     line.append(trt)
-    dwi_manual_pe_scheme = [ line ] * num_volumes
-    num_topup_volumes = se_epi_header.size()[3]
-    if num_topup_volumes%2:
+    dwi_manual_pe_scheme = [ line ] * dwi_num_volumes
+    se_epi_num_volumes = se_epi_header.size()[3]
+    if se_epi_num_volumes%2:
       app.error('If using -rpe_pair option, image provided using -se_epi must contain an even number of volumes')
     # Assume that first half of volumes have same direction as series;
     #   second half have the opposite direction
-    topup_manual_pe_scheme = [ line ] * int(num_topup_volumes/2)
+    se_epi_manual_pe_scheme = [ line ] * int(se_epi_num_volumes/2)
     line = [ (-i if i else 0.0) for i in manual_pe_dir ]
     line.append(trt)
-    topup_manual_pe_scheme.extend( [ line ] * int(num_topup_volumes/2) )
+    se_epi_manual_pe_scheme.extend( [ line ] * int(se_epi_num_volumes/2) )
 
   # If -rpe_all, need to scan through grad and figure out the pairings
   # This will be required if relying on user-specified phase encode direction
@@ -227,15 +228,15 @@ if manual_pe_dir:
   #   despite having the same phase-encoding direction. Instead, explicitly enforce
   #   that volumes must be matched between the first and second halves of the DWI data.
   elif PE_design == 'All':
-    if num_volumes%2:
+    if dwi_num_volumes%2:
       app.error('If using -rpe_all option, input image must contain an even number of volumes')
-    grads_matched = [ num_volumes ] * num_volumes
+    grads_matched = [ dwi_num_volumes ] * dwi_num_volumes
     grad_pairs = [ ]
-    app.debug('Commencing gradient direction matching; ' + str(num_volumes) + ' volumes')
-    for index1 in range(int(num_volumes/2)):
-      if grads_matched[index1] == num_volumes: # As yet unpaired
-        for index2 in range(int(num_volumes/2), num_volumes):
-          if grads_matched[index2] == num_volumes: # Also as yet unpaired
+    app.debug('Commencing gradient direction matching; ' + str(dwi_num_volumes) + ' volumes')
+    for index1 in range(int(dwi_num_volumes/2)):
+      if grads_matched[index1] == dwi_num_volumes: # As yet unpaired
+        for index2 in range(int(dwi_num_volumes/2), dwi_num_volumes):
+          if grads_matched[index2] == dwi_num_volumes: # Also as yet unpaired
             if grads_match(grad[index1], grad[index2]):
               grads_matched[index1] = index2
               grads_matched[index2] = index1
@@ -244,15 +245,15 @@ if manual_pe_dir:
               break
         else:
           app.error('Unable to determine matching reversed phase-encode direction volume for DWI volume ' + str(index1))
-    if not len(grad_pairs) == num_volumes/2:
+    if not len(grad_pairs) == dwi_num_volumes/2:
       app.error('Unable to determine complete matching DWI volume pairs for reversed phase-encode combination')
     # Construct manual PE scheme here:
     #   Regardless of whether or not there's a scheme in the header, need to have it:
     #   if there's one in the header, want to compare to the manually-generated one
     dwi_manual_pe_scheme = [ ]
-    for index in range(0, num_volumes):
+    for index in range(0, dwi_num_volumes):
       line = list(manual_pe_dir)
-      if index >= int(num_volumes/2):
+      if index >= int(dwi_num_volumes/2):
         line = [ (-i if i else 0.0) for i in line ]
       line.append(trt)
       dwi_manual_pe_scheme.append(line)
@@ -321,20 +322,22 @@ if dwi_manual_pe_scheme:
 
 
 # Deal with the phase-encoding of the images to be fed to topup (if applicable)
-overwrite_topup_pe_scheme = False
-topup_in_path = 'topup_in.mif'
+overwrite_se_epi_pe_scheme = False
+se_epi_path = 'se_epi.mif'
 dwi_permute_volumes_pre_eddy_option = ''
 dwi_permute_volumes_post_eddy_option = ''
-dwi_bzero_added_to_topup = False
+dwi_bzero_added_to_se_epi = False
 if app.args.se_epi:
 
   # Newest version of eddy requires that topup field be on the same grid as the eddy input DWI
-  if not image.match('dwi.mif', 'topup_in.mif', 3):
+  if not image.match(dwi_header, se_epi_header, 3):
     app.console('DWIs and SE-EPI images used for inhomogeneity field estimation are defined on different image grids; '
                 'the latter will be automatically re-gridded to match the former')
-    run.command('mrtransform ' + topup_in_path + ' - -interp sinc -template dwi.mif | mrcalc - 0.0 -max topup_in_regrid.mif')
-    file.delTempFile(topup_in_path)
-    topup_in_path = 'topup_in_regrid.mif'
+    new_se_epi_path = 'se_epi_regrid.mif'
+    run.command('mrtransform ' + se_epi_path + ' - -interp sinc -template dwi.mif | mrcalc - 0.0 -max ' + new_se_epi_path)
+    file.delTemporary(se_epi_path)
+    se_epi_path = new_se_epi_path
+    se_epi_header = image.Header(se_epi_path)
 
   # 3 possible sources of PE information: DWI header, topup image header, command-line
   # Any pair of these may conflict, and any one could be absent
@@ -348,22 +351,22 @@ if app.args.se_epi:
     #   * If _not_ present in own header:
     #     - If provided at command-line, infer appropriately
     #     - If not provided at command-line, but the DWI header has that information, infer appropriately
-    if topup_pe_scheme:
+    if se_epi_pe_scheme:
       if manual_pe_dir:
-        if not scheme_dirs_match(topup_pe_scheme, topup_manual_pe_scheme):
+        if not scheme_dirs_match(se_epi_pe_scheme, se_epi_manual_pe_scheme):
           app.warn('User-defined phase-encoding direction design does not match what is stored in SE EPI image header; proceeding with user specification')
-          overwrite_topup_pe_scheme = True
+          overwrite_se_epi_pe_scheme = True
       if manual_trt:
-        if not scheme_times_match(topup_pe_scheme, topup_manual_pe_scheme):
+        if not scheme_times_match(se_epi_pe_scheme, se_epi_manual_pe_scheme):
           app.warn('User-defined total readout time does not match what is stored in SE EPI image header; proceeding with user specification')
-          overwrite_topup_pe_scheme = True
-      if overwrite_topup_pe_scheme:
-        topup_pe_scheme = topup_manual_pe_scheme
+          overwrite_se_epi_pe_scheme = True
+      if overwrite_se_epi_pe_scheme:
+        se_epi_pe_scheme = se_epi_manual_pe_scheme
       else:
-        topup_manual_pe_scheme = None # To guarantee that these data are never used
+        se_epi_manual_pe_scheme = None # To guarantee that these data are never used
     else:
-      overwrite_topup_pe_scheme = True
-      topup_pe_scheme = topup_manual_pe_scheme
+      overwrite_se_epi_pe_scheme = True
+      se_epi_pe_scheme = se_epi_manual_pe_scheme
 
   elif PE_design == 'All':
     # Criteria:
@@ -372,7 +375,7 @@ if app.args.se_epi:
     #   * If _not_ present in own header:
     #     - Don't have enough information to proceed
     #     - Is this too harsh? (e.g. Have rules by which it may be inferred from the DWI header / command-line)
-    if not topup_pe_scheme:
+    if not se_epi_pe_scheme:
       app.error('If explicitly including SE EPI images when using -rpe_all option, they must come with their own associated phase-encoding information in the image header')
 
   elif PE_design == 'Header':
@@ -381,33 +384,32 @@ if app.args.se_epi:
     #       Nothing to do (-pe_dir option is mutually exclusive)
     #   * If _not_ present in own header:
     #       Cannot proceed
-    if not topup_pe_scheme:
+    if not se_epi_pe_scheme:
       app.error('No phase-encoding information present in SE EPI image header')
-<<<<<<< HEAD
     # If there is no phase encoding contrast within the SE-EPI series,
     #   try combining it with the DWI b=0 volumes, see if that produces some contrast
     # However, this should probably only be permitted if the -align_seepi option is defined
-    topup_pe_scheme_has_contrast = 'pe_scheme' in se_epi_header.keyval()
-    if not topup_pe_scheme_has_contrast:
+    se_epi_pe_scheme_has_contrast = 'pe_scheme' in se_epi_header.keyval()
+    if not se_epi_pe_scheme_has_contrast:
       if app.args.align_seepi:
         app.console('No phase-encoding contrast present in SE-EPI images; will examine again after combining with DWI b=0 images')
-        run.command('dwiextract dwi.mif - -bzero | mrcat - topup_in.mif topup_in_dwibzero.mif -axis 3')
-        new_topup_in_path = os.path.splitext(topup_in_path)[0] + '_dwibzero.mif'
-        se_epi_header = image.Header(new_topup_in_path)
-        topup_pe_scheme_has_contrast = 'pe_scheme' in se_epi_header.keyval()
-        if topup_pe_scheme_has_contrast:
-          file.delTempFile(topup_in_path)
-          topup_in_path = new_topup_in_path
-          topup_pe_scheme = phaseEncoding.getScheme(se_epi_header)
-          dwi_bzero_added_to_topup = True
+        new_se_epi_path = os.path.splitext(se_epi_path)[0] + '_dwibzeros.mif'
+        run.command('dwiextract dwi.mif - -bzero | mrcat - se_epi.mif ' + new_se_epi_path + ' -axis 3')
+        se_epi_header = image.Header(new_se_epi_path)
+        se_epi_pe_scheme_has_contrast = 'pe_scheme' in se_epi_header.keyval()
+        if se_epi_pe_scheme_has_contrast:
+          file.delTemporary(se_epi_path)
+          se_epi_path = new_se_epi_path
+          se_epi_pe_scheme = phaseEncoding.getScheme(se_epi_header)
+          dwi_bzero_added_to_se_epi = True
         else:
-          app.error('No phase-encoding contrast present in SE-EPI images, even after concatenating with b=0 images; '
+          app.error('No phase-encoding contrast present in SE-EPI images, even after concatenating with b=0 images due to -align_seepi option; '
                     'cannot perform inhomogeneity field estimation')
       else:
         app.error('No phase-encoding contrast present in SE-EPI images; cannot perform inhomogeneity field estimation')
 
   if app.args.align_seepi:
-  
+
     # If we are using the -se_epi option, and hence the input images to topup have not come from the DWIs themselves,
     #   we need to insert the first b=0 DWI volume to the start of the topup input image. Otherwise, the field estimated
     #   by topup will not be correctly aligned with the volumes as they are processed by eddy.
@@ -426,22 +428,22 @@ if app.args.se_epi:
       dwi_first_bzero_pe = dwi_manual_pe_scheme[dwi_first_bzero_index] if overwrite_dwi_pe_scheme else dwi_pe_scheme[dwi_first_bzero_index]
 
       dwi_te = dwi_header.keyval().get('EchoTime')
-      fmap_te = se_epi_header.keyval().get('EchoTime') # TODO Rename to se_epi_te
-      if dwi_te and fmap_te and not dwi_te == fmap_te:
+      se_epi_te = se_epi_header.keyval().get('EchoTime')
+      if dwi_te and se_epi_te and dwi_te != se_epi_te:
         app.warn('It appears that the spin-echo EPI images used for inhomogeneity field estimation have a different echo time to the DWIs being corrected. '
                  'This may cause issues in estimation of the field, as the first DWI b=0 volume will be added to the input series to topup '
                  'due to use of the -align_seepi option.')
 
       dwi_tr = dwi_header.keyval().get('RepetitionTime')
-      fmap_tr = se_epi_header.keyval().get('RepetitionTime')
-      if dwi_tr and fmap_tr and not dwi_tr == fmap_tr:
+      se_epi_tr = se_epi_header.keyval().get('RepetitionTime')
+      if dwi_tr and se_epi_tr and dwi_tr != se_epi_tr:
         app.warn('It appears that the spin-echo EPI images used for inhomogeneity field estimation have a different repetition time to the DWIs being corrected. '
                  'This may cause issues in estimation of the field, as the first DWI b=0 volume will be added to the input series to topup '
                  'due to use of the -align_seepi option.')
 
       dwi_flip = dwi_header.keyval().get('FlipAngle')
-      fmap_flip = se_epi_header.keyval().get('FlipAngle')
-      if dwi_flip and fmap_flip and not dwi_flip == fmap_flip:
+      se_epi_flip = se_epi_header.keyval().get('FlipAngle')
+      if dwi_flip and se_epi_flip and dwi_flip != se_epi_flip:
         app.warn('It appears that the spin-echo EPI images used for inhomogeneity field estimation have a different flip angle to the DWIs being corrected. '
                  'This may cause issues in estimation of the field, as the first DWI b=0 volume will be added to the input series to topup '
                  'due to use of the -align_seepi option.')
@@ -453,43 +455,44 @@ if app.args.se_epi:
       # Note however that in this instance it may still be necessary to permute the volumes within the
       #   DWI series if the first volume is not a b=0 volume; but the first b=0 volume will inherently
       #   already be the first volume in the input to topup
-      if not dwi_bzero_added_to_topup:
-        topup_pe_sum = [ 0, 0, 0 ]
-        topup_volume_to_remove = len(topup_pe_scheme)
-        for index, line in enumerate(topup_pe_scheme):
-          topup_pe_sum = [ i + j for i, j in zip(topup_pe_sum, line[0:3]) ]
-          if topup_volume_to_remove == len(topup_pe_scheme) and line[0:3] == dwi_first_bzero_pe[0:3]:
-            topup_volume_to_remove = index
-        if (topup_pe_sum == [ 0, 0, 0 ]) and (topup_volume_to_remove < len(topup_pe_scheme)):
-          app.console('Balanced phase-encoding scheme detected in \'' + app.args.se_epi + '\'; volume ' + str(topup_volume_to_remove) + ' will be removed and replaced with first b=0 from DWIs')
-          run.command('mrconvert ' + topup_in_path + ' - -coord 3 ' + ','.join([str(index) for index in range(len(topup_pe_scheme)) if not index == topup_volume_to_remove]) + ' | mrcat dwi_first_bzero.mif - topup_in_dwibzero.mif -axis 3')
+      if not dwi_bzero_added_to_se_epi:
+        se_epi_pe_sum = [ 0, 0, 0 ]
+        se_epi_volume_to_remove = len(se_epi_pe_scheme)
+        for index, line in enumerate(se_epi_pe_scheme):
+          se_epi_pe_sum = [ i + j for i, j in zip(se_epi_pe_sum, line[0:3]) ]
+          if se_epi_volume_to_remove == len(se_epi_pe_scheme) and line[0:3] == dwi_first_bzero_pe[0:3]:
+            se_epi_volume_to_remove = index
+        new_se_epi_path = os.path.splitext(se_epi_path)[0] + '_firstdwibzero.mif'
+        if (se_epi_pe_sum == [ 0, 0, 0 ]) and (se_epi_volume_to_remove < len(se_epi_pe_scheme)):
+          app.console('Balanced phase-encoding scheme detected in \'' + app.args.se_epi + '\'; volume ' + str(se_epi_volume_to_remove) + ' will be removed and replaced with first b=0 from DWIs')
+          run.command('mrconvert ' + se_epi_path + ' - -coord 3 ' + ','.join([str(index) for index in range(len(se_epi_pe_scheme)) if not index == se_epi_volume_to_remove]) + ' | mrcat dwi_first_bzero.mif - ' + new_se_epi_path + ' -axis 3')
           # Also need to update the phase-encoding scheme appropriately if it's being set manually
           #   (if embedded within the image headers, should be updated through the command calls)
-          if topup_manual_pe_scheme:
+          if se_epi_manual_pe_scheme:
             first_line = list(manual_pe_dir)
             first_line.append(trt)
-            new_topup_manual_pe_scheme = [ ]
-            new_topup_manual_pe_scheme.append(first_line)
-            for index, entry in enumerate(topup_manual_pe_scheme):
-              if not index == topup_volume_to_remove:
-                new_topup_manual_pe_scheme.append(entry)
-            topup_manual_pe_scheme = new_topup_manual_pe_scheme
+            new_se_epi_manual_pe_scheme = [ ]
+            new_se_epi_manual_pe_scheme.append(first_line)
+            for index, entry in enumerate(se_epi_manual_pe_scheme):
+              if not index == se_epi_volume_to_remove:
+                new_se_epi_manual_pe_scheme.append(entry)
+            se_epi_manual_pe_scheme = new_se_epi_manual_pe_scheme
         else:
-          if topup_pe_sum == [ 0, 0, 0 ] and topup_volume_to_remove == len(topup_pe_scheme):
+          if se_epi_pe_sum == [ 0, 0, 0 ] and se_epi_volume_to_remove == len(se_epi_pe_scheme):
             app.console('Phase-encoding scheme of -se_epi image is balanced, but could not find appropriate volume with which to substitute first b=0 volume from DWIs; first b=0 DWI volume will be inserted to start of series, resulting in an unbalanced scheme')
           else:
             app.console('Unbalanced phase-encoding scheme detected in series provided via -se_epi option; first DWI b=0 volume will be inserted to start of series')
-          run.command('mrcat dwi_first_bzero.mif ' + topup_in_path + ' topup_in_dwibzero.mif -axis 3')
+          run.command('mrcat dwi_first_bzero.mif ' + se_epi_path + ' ' + new_se_epi_path + ' -axis 3')
           # Also need to update the phase-encoding scheme appropriately
-          if topup_manual_pe_scheme:
+          if se_epi_manual_pe_scheme:
             first_line = list(manual_pe_dir)
             first_line.append(trt)
-            topup_manual_pe_scheme = [ first_line, topup_manual_pe_scheme ]
+            se_epi_manual_pe_scheme = [ first_line, se_epi_manual_pe_scheme ]
 
         # Ended branching based on balanced-ness of PE acquisition scheme within SE-EPI volumes
-        file.delTemporary(topup_in_path)
-        topup_in_path = 'topup_in_dwibzero.mif'
-      
+        file.delTemporary(se_epi_path)
+        se_epi_path = new_se_epi_path
+
       # Ended branching based on prior merge of SE-EPI and DWI b=0 volumes due to no phase-encoding contrast in SE-EPI
 
       # If the first b=0 volume in the DWIs is in fact not the volume (i.e. index zero), we're going to
@@ -504,13 +507,13 @@ if app.args.se_epi:
                                               str(dwi_first_bzero_index) + \
                                               ',0' + \
                                               (':' + str(dwi_first_bzero_index-1) if dwi_first_bzero_index > 1 else '') + \
-                                              (',' + str(dwi_first_bzero_index+1) if dwi_first_bzero_index < num_volumes-1 else '') + \
-                                              (':' + str(num_volumes-1) if dwi_first_bzero_index < num_volumes-2 else '')
+                                              (',' + str(dwi_first_bzero_index+1) if dwi_first_bzero_index < dwi_num_volumes-1 else '') + \
+                                              (':' + str(dwi_num_volumes-1) if dwi_first_bzero_index < dwi_num_volumes-2 else '')
         dwi_permute_volumes_post_eddy_option = ' -coord 3 1' + \
                                                (':' + str(dwi_first_bzero_index) if dwi_first_bzero_index > 1 else '') + \
                                                ',0' + \
-                                               (',' + str(dwi_first_bzero_index+1) if dwi_first_bzero_index < num_volumes-1 else '') + \
-                                               (':' + str(num_volumes-1) if dwi_first_bzero_index < num_volumes-2 else '')
+                                               (',' + str(dwi_first_bzero_index+1) if dwi_first_bzero_index < dwi_num_volumes-1 else '') + \
+                                               (':' + str(dwi_num_volumes-1) if dwi_first_bzero_index < dwi_num_volumes-2 else '')
 
     # Completed checking for presence of b=0 image in DWIs
 
@@ -522,8 +525,8 @@ elif not PE_design == 'None': # No SE EPI images explicitly provided: In some ca
   # Preferably also make sure that there's some phase-encoding contrast in there...
   # With -rpe_all, need to write inferred phase-encoding to file and import before using dwiextract so that the phase-encoding
   #   of the extracted b=0's is propagated to the generated b=0 series
-  run.command('mrconvert dwi.mif' + import_dwi_pe_table_option + ' - | dwiextract - se_epi.mif -bzero')
-  se_epi_header = image.Header('se_epi.mif')
+  run.command('mrconvert dwi.mif' + import_dwi_pe_table_option + ' - | dwiextract - ' + se_epi_path + ' -bzero')
+  se_epi_header = image.Header(se_epi_path)
 
   # If there's no contrast remaining in the phase-encoding scheme, it'll be written to
   #   PhaseEncodingDirection and TotalReadoutTime rather than pe_scheme
@@ -534,17 +537,18 @@ elif not PE_design == 'None': # No SE EPI images explicitly provided: In some ca
     else:
       app.warn('DWI header indicates no phase encoding contrast between b=0 images; proceeding without inhomogeneity field estimation')
       do_topup = False
-      run.function(os.remove, 'se_epi.mif')
+      run.function(os.remove, se_epi_path)
+      se_epi_path = None
       se_epi_header = None
 
 
 # This may be required when setting up the topup call
-import_topup_pe_table_option = ''
-if topup_manual_pe_scheme:
-  with open('topup_manual_pe_scheme.txt', 'w') as f:
-    for line in topup_manual_pe_scheme:
+import_se_epi_manual_pe_table_option = ''
+if se_epi_manual_pe_scheme:
+  with open('se_epi_manual_pe_scheme.txt', 'w') as f:
+    for line in se_epi_manual_pe_scheme:
       f.write(' '.join([str(value) for value in line]) + '\n')
-  import_topup_pe_table_option = ' -import_pe_table topup_manual_pe_scheme.txt'
+  import_se_epi_manual_pe_table_option = ' -import_pe_table se_epi_manual_pe_scheme.txt'
 
 
 # Need gradient table if running dwi2mask after applytopup to derive a brain mask for eddy
@@ -554,10 +558,9 @@ run.command('mrinfo dwi.mif -export_grad_mrtrix grad.b')
 
 eddy_in_topup_option = ''
 dwi_post_eddy_crop_option = ''
-dwi_padded = 'dwi.mif'
+dwi_path = 'dwi.mif'
 if do_topup:
 
-<<<<<<< HEAD
   # topup will crash if its input image has a spatial dimension with a non-even size;
   #   presumably due to a downsampling by a factor of 2 in a multi-resolution scheme
   # The newest eddy also requires the output from topup and the input DWIs to have the same size;
@@ -565,9 +568,8 @@ if do_topup:
   # Rather than crop in this case (which would result in a cropped output image),
   #   duplicate the last slice on any problematic axis, and then crop that extra
   #   slice at the output step
-  # By this point, if the SE-EPI images and DWIs are not on the same image grid, the
+  # By this point, if the input SE-EPI images and DWIs are not on the same image grid, the
   #   SE-EPI images have already been re-gridded to DWI image space;
-  #   therefore 'topup_size' is out of date, and we need to test 'dwi_size'
   odd_axis_count = 0
   for axis_size in dwi_header.size()[:3]:
     if int(axis_size%2):
@@ -577,20 +579,19 @@ if do_topup:
                 'this will be automatically padded for compatibility with topup, and the extra slice' + ('s' if odd_axis_count > 1 else '') + ' erased afterwards')
     for axis, axis_size in enumerate(dwi_header.size()[:3]):
       if int(axis_size%2):
-        new_topup_in_path = os.path.splitext(topup_in_path)[0] + '_pad' + str(axis) + '.mif'
-        run.command('mrconvert ' + topup_in_path + ' -coord ' + str(axis) + ' ' + str(axis_size-1) + ' - | mrcat ' + topup_in_path + ' - ' + new_topup_in_path + ' -axis ' + str(axis))
-        file.delTemporary(topup_in_path)
-        topup_in_path = new_topup_in_path
-        new_dwi_padded = os.path.splitext(dwi_padded)[0] + '_pad' + str(axis) + '.mif'
-        run.command('mrconvert ' + dwi_padded + ' -coord ' + str(axis) + ' ' + str(axis_size-1) + ' - | mrcat ' + dwi_padded + ' - ' + new_dwi_padded + ' - axis ' + str(axis))
-        file.delTemporary(dwi_padded)
-        dwi_padded = new_dwi_padded
+        new_se_epi_path = os.path.splitext(se_epi_path)[0] + '_pad' + str(axis) + '.mif'
+        run.command('mrconvert ' + se_epi_path + ' -coord ' + str(axis) + ' ' + str(axis_size-1) + ' - | mrcat ' + se_epi_path + ' - ' + new_se_epi_path + ' -axis ' + str(axis))
+        file.delTemporary(se_epi_path)
+        se_epi_path = new_se_epi_path
+        new_dwi_path = os.path.splitext(dwi_path)[0] + '_pad' + str(axis) + '.mif'
+        run.command('mrconvert ' + dwi_path + ' -coord ' + str(axis) + ' ' + str(axis_size-1) + ' - | mrcat ' + dwi_path + ' - ' + new_dwi_path + ' - axis ' + str(axis))
+        file.delTemporary(dwi_path)
+        dwi_path = new_dwi_path
         dwi_post_eddy_crop_option += ' -coord ' + str(axis) + ' 0:' + str(axis_size-1)
 
-
   # Do the conversion in preparation for topup
-  run.command('mrconvert ' + topup_in_path + ' topup_in.nii' + import_topup_pe_table_option + ' -stride -1,+2,+3,+4 -export_pe_table topup_datain.txt')
-  file.delTemporary(topup_in_path)
+  run.command('mrconvert ' + se_epi_path + ' topup_in.nii' + import_se_epi_manual_pe_table_option + ' -stride -1,+2,+3,+4 -export_pe_table topup_datain.txt')
+  file.delTemporary(se_epi_path)
 
   # Run topup
   topup_manual_options = ''
@@ -602,9 +603,9 @@ if do_topup:
   # applytopup can't receive the complete DWI input and correct it as a whole, because the phase-encoding
   #   details may vary between volumes
   if dwi_manual_pe_scheme:
-    run.command('mrconvert ' + dwi_padded + import_dwi_pe_table_option + ' - | mrinfo - -export_pe_eddy applytopup_config.txt applytopup_indices.txt')
+    run.command('mrconvert ' + dwi_path + import_dwi_pe_table_option + ' - | mrinfo - -export_pe_eddy applytopup_config.txt applytopup_indices.txt')
   else:
-    run.command('mrinfo ' + dwi_padded + ' -export_pe_eddy applytopup_config.txt applytopup_indices.txt')
+    run.command('mrinfo ' + dwi_path + ' -export_pe_eddy applytopup_config.txt applytopup_indices.txt')
 
   # Update: Call applytopup separately for each unique phase-encoding
   # This should be the most compatible option with more complex phase-encoding acquisition designs,
@@ -616,9 +617,9 @@ if do_topup:
     for line in f:
       input_path = 'dwi_pe_' + str(index) + '.nii'
       json_path = 'dwi_pe_' + str(index) + '.json'
-      temp_path = 'dwi_pe_' + str(index) + '_topup' + fsl_suffix
-      output_path = 'dwi_pe_' + str(index) + '_topup.mif'
-      run.command('dwiextract ' + dwi_padded + ' ' + import_dwi_pe_table_option + ' -pe ' + ','.join(line.split()) + ' - | mrconvert - ' + input_path + ' -json_export ' + json_path)
+      temp_path = 'dwi_pe_' + str(index) + '_applytopup' + fsl_suffix
+      output_path = 'dwi_pe_' + str(index) + '_applytopup.mif'
+      run.command('dwiextract ' + dwi_path + ' ' + import_dwi_pe_table_option + ' -pe ' + ','.join(line.split()) + ' - | mrconvert - ' + input_path + ' -json_export ' + json_path)
       run.command(applytopup_cmd + ' --imain=' + input_path + ' --datain=applytopup_config.txt --inindex=' + str(index) + ' --topup=field --out=' + temp_path + ' --method=jac')
       file.delTemporary(input_path)
       temp_path = fsl.findImage(temp_path)
@@ -629,10 +630,7 @@ if do_topup:
       index += 1
 
   # Use the initial corrected volumes to derive a brain mask for eddy
-  if len(applytopup_image_list) == 1:
-    run.command('dwi2mask ' + applytopup_image_list[0] + ' - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32 -stride -1,+2,+3')
-  else:
-    run.command('mrcat ' + ' '.join(applytopup_image_list) + ' - | dwi2mask - - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32 -stride -1,+2,+3')
+  run.command('mrcat ' + ' '.join(applytopup_image_list) + ' - | dwi2mask - - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32 -stride -1,+2,+3')
 
   for entry in applytopup_image_list:
     file.delTemporary(entry)
@@ -642,13 +640,13 @@ if do_topup:
 else:
 
   # Generate a processing mask for eddy based on the uncorrected input DWIs
-  run.command('dwi2mask ' + dwi_padded + ' - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32 -stride -1,+2,+3')
+  run.command('dwi2mask ' + dwi_path + ' - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32 -stride -1,+2,+3')
 
 
 
 # Run eddy
-run.command('mrconvert ' + dwi_padded + import_dwi_pe_table_option + dwi_permute_volumes_pre_eddy_option + ' dwi.nii -stride -1,+2,+3,+4 -export_grad_fsl bvecs bvals -export_pe_eddy eddy_config.txt eddy_indices.txt')
-file.delTemporary(dwi_padded)
+run.command('mrconvert ' + dwi_path + import_dwi_pe_table_option + dwi_permute_volumes_pre_eddy_option + ' dwi.nii -stride -1,+2,+3,+4 -export_grad_fsl bvecs bvals -export_pe_eddy eddy_config.txt eddy_indices.txt')
+file.delTemporary(dwi_path)
 eddy_manual_options = ''
 if app.args.eddy_options:
   eddy_manual_options = ' ' + app.args.eddy_options.strip()
@@ -674,13 +672,13 @@ if not os.path.isfile(bvecs_path):
 # This could be either due to use of -rpe_all option, or just due to the data provided with -rpe_header
 # Rather than trying to re-use the code that was used in the case of -rpe_all, run fresh code
 # The phase-encoding scheme needs to be checked also
-volume_matchings = [ num_volumes ] * num_volumes
+volume_matchings = [ dwi_num_volumes ] * dwi_num_volumes
 volume_pairs = [ ]
-app.debug('Commencing gradient direction matching; ' + str(num_volumes) + ' volumes')
-for index1 in range(num_volumes):
-  if volume_matchings[index1] == num_volumes: # As yet unpaired
-    for index2 in range(index1+1, num_volumes):
-      if volume_matchings[index2] == num_volumes: # Also as yet unpaired
+app.debug('Commencing gradient direction matching; ' + str(dwi_num_volumes) + ' volumes')
+for index1 in range(dwi_num_volumes):
+  if volume_matchings[index1] == dwi_num_volumes: # As yet unpaired
+    for index2 in range(index1+1, dwi_num_volumes):
+      if volume_matchings[index2] == dwi_num_volumes: # Also as yet unpaired
         # Here, need to check both gradient matching and reversed phase-encode direction
         if not any(dwi_pe_scheme[index1][i] + dwi_pe_scheme[index2][i] for i in range(0,3)) and grads_match(grad[index1], grad[index2]):
           volume_matchings[index1] = index2
@@ -692,7 +690,7 @@ for index1 in range(num_volumes):
           break
 
 
-if not len(volume_pairs) == int(num_volumes/2):
+if not len(volume_pairs) == int(dwi_num_volumes/2):
 
   # Convert the resulting volume to the output image, and re-insert the diffusion encoding
   run.command('mrconvert ' + fsl.findImage('dwi_post_eddy') + ' result.mif' + dwi_permute_volumes_post_eddy_option + dwi_post_eddy_crop_option + stride_option + ' -fslgrad ' + bvecs_path + ' bvals')
@@ -741,7 +739,7 @@ else:
   with open('bvecs_combined', 'w') as f:
     for axis in range(0, 3):
       axis_data = [ ]
-      for volume in range(0, int(num_volumes/2)):
+      for volume in range(0, int(dwi_num_volumes/2)):
         axis_data.append(str(bvecs_combined_transpose[volume][axis]))
       f.write(' '.join(axis_data) + '\n')
 
@@ -758,9 +756,10 @@ else:
   field_map_image = fsl.findImage('field_map')
   if not image.match('topup_in.nii', field_map_image):
     app.warn('topup output field image has erroneous header; recommend updating FSL to version 5.0.8 or later')
-    run.command('mrtransform ' + field_map_image + ' -replace topup_in.nii field_map_fix.mif')
+    new_field_map_image = 'field_map_fix.mif'
+    run.command('mrtransform ' + field_map_image + ' -replace topup_in.nii ' + new_field_map_image)
     file.delTemporary(field_map_image)
-    field_map_image = 'field_map_fix.mif'
+    field_map_image = new_field_map_image
   file.delTemporary('topup_in.nii')
 
 
@@ -796,34 +795,35 @@ else:
   #   convert it to an uncompressed format before we do anything with it.
   eddy_output = fsl.findImage('dwi_post_eddy')
   if eddy_output.endswith('.gz'):
-    run.command('mrconvert ' + eddy_output + ' dwi_post_eddy.nii')
+    new_eddy_output = 'dwi_post_eddy_uncompressed.mif'
+    run.command('mrconvert ' + eddy_output + ' ' + new_eddy_output)
     file.delTemporary(eddy_output)
-    eddy_output = 'dwi_post_eddy.nii'
+    eddy_output = new_eddy_output
 
   # If the DWI volumes were permuted prior to running eddy, then the simplest approach is to permute them
   #   back to their original positions; otherwise, the stored gradient vector directions / phase encode
   #   directions / matched volume pairs are no longer appropriate
-  volume_recombination_input = 'dwi_post_eddy' + fsl_suffix
   if dwi_permute_volumes_post_eddy_option:
-    run.command('mrconvert ' + volume_recombination_input + dwi_permute_volumes_post_eddy_option + 'dwi_post_eddy.mif')
-    file.delTempFile(volume_recombination_input)
-    volume_recombination_input = 'dwi_post_eddy.mif'
+    new_eddy_output = os.path.splitext(eddy_output)[0] + '_volpermuteundo.mif'
+    run.command('mrconvert ' + eddy_output + dwi_permute_volumes_post_eddy_option + ' ' + new_eddy_output)
+    file.delTemporary(eddy_output)
+    eddy_output = new_eddy_output
 
   # This section extracts the two volumes corresponding to each reversed phase-encoded volume pair, and
   #   derives a single image volume based on the recombination equation
   combined_image_list = [ ]
   for index, volumes in enumerate(volume_pairs):
     pe_indices = [ eddy_indices[i] for i in volumes ]
-    run.command('mrconvert ' + volume_recombination_input + ' volume0.mif -coord 3 ' + str(volumes[0]))
-    run.command('mrconvert ' + volume_recombination_input + ' volume1.mif -coord 3 ' + str(volumes[1]))
+    run.command('mrconvert ' + eddy_output + ' volume0.mif -coord 3 ' + str(volumes[0]))
+    run.command('mrconvert ' + eddy_output + ' volume1.mif -coord 3 ' + str(volumes[1]))
     # Volume recombination equation described in Skare and Bammer 2010
-    run.command('mrcalc volume0.mif weight' + str(pe_indices[0]) + '.mif -mult volume1.mif weight' + str(pe_indices[1]) + '.mif -mult -add weight' + str(pe_indices[0]) + '.mif weight' + str(pe_indices[1]) + '.mif -add -divide 0.0 -max combined' + str(index) + '.mif')
-    combined_image_list.append('combined' + str(index) + '.mif')
+    combined_image_path = 'combined' + str(index) + '.mif'
+    run.command('mrcalc volume0.mif weight' + str(pe_indices[0]) + '.mif -mult volume1.mif weight' + str(pe_indices[1]) + '.mif -mult -add weight' + str(pe_indices[0]) + '.mif weight' + str(pe_indices[1]) + '.mif -add -divide 0.0 -max ' + combined_image_path)
+    combined_image_list.append(combined_image_path)
     run.function(os.remove, 'volume0.mif')
     run.function(os.remove, 'volume1.mif')
-  file.delTemporary(eddy_output)
 
-  file.delTempFile(volume_recombination_input)
+  file.delTemporary(eddy_output)
   for index in range(0, len(eddy_config)):
     file.delTemporary('weight' + str(index+1) + '.mif')
 
@@ -833,7 +833,8 @@ else:
     file.delTemporary(entry)
 
 
-# TODO Should header key-values only in place for the purposes of pre-processing (i.e. TE, TR, flip angle, in-plane acceleration) be erased?
+# Should header key-values only in place for the purposes of pre-processing (i.e. TE, TR, flip angle, in-plane acceleration) be erased?
+
 
 # Finish!
 run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + grad_export_option + (' -force' if app.forceOverwrite else ''))
