@@ -26,7 +26,7 @@ def allindir(directory, dir_path=True, ignore_hidden_files=True): #pylint: disab
   def is_hidden(directory, filename):
     if app.isWindows():
       try:
-        attrs = ctypes.windll.kernel32.GetFileAttributesW(unicode(os.path.join(directory, filename)))
+        attrs = ctypes.windll.kernel32.GetFileAttributesW(u"%s" % str(os.path.join(directory, filename)))
         assert attrs != -1
         return bool(attrs & 2)
       except (AttributeError, AssertionError):
