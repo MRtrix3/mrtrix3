@@ -118,35 +118,37 @@ namespace MR
                "void main() {\n";
 
           if (fixel.use_discard_lower())
-            source += "  if (v_threshold[0] < lower) return;\n";
+            source += "  if (v_threshold[0] < lower || isnan(v_threshold[0])) return;\n";
           if (fixel.use_discard_upper())
-            source += "  if (v_threshold[0] > upper) return;\n";
+            source += "  if (v_threshold[0] > upper || isnan(v_threshold[0])) return;\n";
 
           switch (scale_type) {
             case Unity:
-              source += "   vec4 line_offset = length_mult * vec4 (v_dir[0], 0);\n";
+              source += "  vec4 line_offset = length_mult * vec4 (v_dir[0], 0);\n";
               break;
             case Value:
-              source += "   vec4 line_offset = length_mult * v_scale[0] * vec4 (v_dir[0], 0);\n";
+              source += "  if (isnan(v_scale[0])) return;\n"
+                        "  vec4 line_offset = length_mult * v_scale[0] * vec4 (v_dir[0], 0);\n";
               break;
           }
 
           switch (color_type) {
             case CValue:
               if (!ColourMap::maps[colourmap].special) {
-                source += "    float amplitude = clamp (";
+                source += "  if (isnan(v_colour[0])) return;\n"
+                          "  float amplitude = clamp (";
                 if (fixel.scale_inverted())
                   source += "1.0 -";
                 source += " scale * (v_colour[0] - offset), 0.0, 1.0);\n";
               }
               source +=
-                std::string ("    vec3 color;\n") +
+                std::string ("  vec3 color;\n") +
                 ColourMap::maps[colourmap].glsl_mapping +
-                "   fColour = color;\n";
+                "  fColour = color;\n";
               break;
             case Direction:
               source +=
-                "   fColour = normalize (abs (v_dir[0]));\n";
+                "  fColour = normalize (abs (v_dir[0]));\n";
               break;
             default:
               break;

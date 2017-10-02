@@ -27,7 +27,7 @@ namespace MR
     {
       OptionGroup group ("DW gradient table import options");
 
-      group 
+      group
         + Option ("grad",
             "Provide the diffusion-weighted gradient scheme used in the acquisition "
             "in a text file. This should be supplied as a 4xN text file with each line "
@@ -44,8 +44,8 @@ namespace MR
         +   Argument ("bvecs").type_file_in()
         +   Argument ("bvals").type_file_in();
 
-      if (include_bvalue_scaling) 
-        group 
+      if (include_bvalue_scaling)
+        group
           + Option ("bvalue_scaling",
               "specifies whether the b-values should be scaled by the square of "
               "the corresponding DW gradient norm, as often required for "
@@ -58,7 +58,7 @@ namespace MR
     }
 
 
-    OptionGroup GradExportOptions() 
+    OptionGroup GradExportOptions()
     {
       return OptionGroup ("DW gradient table export options")
 
@@ -78,15 +78,10 @@ namespace MR
       Eigen::MatrixXd G;
       const auto it = header.keyval().find ("dw_scheme");
       if (it != header.keyval().end()) {
-        const auto lines = split_lines (it->second);
-        for (size_t row = 0; row < lines.size(); ++row) {
-          const auto values = parse_floats (lines[row]);
-          if (G.cols() == 0)
-            G.resize (lines.size(), values.size());
-          else if (G.cols() != ssize_t (values.size()))
-            throw Exception ("malformed DW scheme in image \"" + header.name() + "\" - uneven number of entries per row");
-          for (size_t col = 0; col < values.size(); ++col)
-            G(row, col) = values[col];
+        try {
+          G = parse_matrix (it->second);
+        } catch (Exception& e) {
+          throw Exception (e, "malformed DW scheme in image \"" + header.name() + "\"");
         }
       }
       return G;
@@ -129,7 +124,7 @@ namespace MR
       // transform have negative determinant:
       vector<size_t> order;
       auto adjusted_transform = File::NIfTI::adjust_transform (header, order);
-      if (adjusted_transform.linear().determinant() > 0.0) 
+      if (adjusted_transform.linear().determinant() > 0.0)
         bvecs.row(0) = -bvecs.row(0);
 
       // account for the fact that bvecs are specified wrt original image axes,
@@ -178,11 +173,20 @@ namespace MR
       // bvecs format actually assumes a LHS coordinate system even if image is
       // stored using RHS - x axis is flipped to make linear 3x3 part of
       // transform have negative determinant:
-      if (adjusted_transform.linear().determinant() > 0.0) 
+      if (adjusted_transform.linear().determinant() > 0.0)
         bvecs.row(0) = -bvecs.row(0);
 
       save_matrix (bvecs, bvecs_path);
       save_matrix (bvals, bvals_path);
+    }
+
+
+
+    void clear_DW_scheme (Header& header)
+    {
+      auto it = header.keyval().find ("dw_scheme");
+      if (it != header.keyval().end())
+        header.keyval().erase (it);
     }
 
 
@@ -227,7 +231,7 @@ namespace MR
 
     void validate_DW_scheme (Eigen::MatrixXd& grad, const Header& header, bool nofail)
     {
-      if (grad.rows() == 0) 
+      if (grad.rows() == 0)
         throw Exception ("no diffusion encoding information found in image \"" + header.name() + "\"");
 
       //CONF option: BValueScaling
@@ -240,7 +244,7 @@ namespace MR
       //CONF the actual b-value.
       bool scale_bvalues = true;
       auto opt = App::get_options ("bvalue_scaling");
-      if (opt.size()) 
+      if (opt.size())
         scale_bvalues = opt[0][0];
       else
         scale_bvalues = File::Config::get_bool ("BValueScaling", scale_bvalues);
@@ -260,7 +264,7 @@ namespace MR
 
 
 
-    void export_grad_commandline (const Header& header) 
+    void export_grad_commandline (const Header& header)
     {
       auto check = [](const Header& h) -> const Header& {
         if (h.keyval().find("dw_scheme") == h.keyval().end())
@@ -269,11 +273,11 @@ namespace MR
       };
 
       auto opt = get_options ("export_grad_mrtrix");
-      if (opt.size()) 
+      if (opt.size())
         save_matrix (parse_DW_scheme (check (header)), opt[0][0]);
 
       opt = get_options ("export_grad_fsl");
-      if (opt.size()) 
+      if (opt.size())
         save_bvecs_bvals (check (header), opt[0][0], opt[0][1]);
     }
 

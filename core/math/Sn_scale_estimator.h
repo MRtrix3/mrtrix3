@@ -15,8 +15,6 @@
 #ifndef __math_Sn_scale_estimator_h__
 #define __math_Sn_scale_estimator_h__
 
-#include <vector>
-
 #include "types.h"
 #include "math/median.h"
 

@@ -16,7 +16,7 @@
 #define __surface_mesh_multi_h__
 
 
-#include <vector>
+#include "types.h"
 
 #include "surface/mesh.h"
 

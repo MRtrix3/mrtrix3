@@ -61,6 +61,7 @@ List of MRtrix3 commands
     commands/mrclusterstats
     commands/mrconvert
     commands/mrcrop
+    commands/mrdegibbs
     commands/mrdump
     commands/mredit
     commands/mrfilter
@@ -70,7 +71,6 @@ List of MRtrix3 commands
     commands/mrmath
     commands/mrmesh
     commands/mrmetric
-    commands/mrmodelfield
     commands/mrpad
     commands/mrregister
     commands/mrresize
@@ -91,6 +91,7 @@ List of MRtrix3 commands
     commands/tck2connectome
     commands/tck2fixel
     commands/tckconvert
+    commands/tckdfc
     commands/tckedit
     commands/tckgen
     commands/tckglobal
@@ -173,6 +174,7 @@ List of MRtrix3 commands
     :ref:`mrclusterstats`, "Voxel-based analysis using permutation testing and threshold-free cluster enhancement"
     :ref:`mrconvert`, "Perform conversion between different file types and optionally extract a subset of the input image"
     :ref:`mrcrop`, "Crop an image to a reduced field of view"
+    :ref:`mrdegibbs`, "Remove Gibbs Ringing Artifacts"
     :ref:`mrdump`, "Print out the values within an image"
     :ref:`mredit`, "Directly edit the intensities within an image from the command-line"
     :ref:`mrfilter`, "Perform filtering operations on 3D / 4D MR images"
@@ -182,7 +184,6 @@ List of MRtrix3 commands
     :ref:`mrmath`, "Compute summary statistic on image intensities either across images, or along a specified axis of a single image"
     :ref:`mrmesh`, "Generate a mesh file from an image"
     :ref:`mrmetric`, "Computes a dissimilarity metric between two images"
-    :ref:`mrmodelfield`, "Model an input image using low frequency 3D polynomial basis functions"
     :ref:`mrpad`, "Pad an image to increase the FOV"
     :ref:`mrregister`, "Register two images together using a symmetric rigid, affine or non-linear transformation model"
     :ref:`mrresize`, "Resize an image by defining the new image resolution, voxel size or a scale factor"
@@ -190,8 +191,8 @@ List of MRtrix3 commands
     :ref:`mrthreshold`, "Create bitwise image by thresholding image intensity"
     :ref:`mrtransform`, "Apply spatial transformations to an image"
     :ref:`mrview`, "The MRtrix image viewer."
-    :ref:`mtbin`, "Multi-Tissue Bias field correction and Intensity Normalisation (MTBIN)"
-    :ref:`mtnormalise`, "Multi-tissue normalise"
+    :ref:`mtbin`, "Multi-Tissue Bias field correction and Intensity Normalisation (WARNING: deprecated)."
+    :ref:`mtnormalise`, "Multi-tissue informed log-domain intensity normalisation"
     :ref:`peaks2amp`, "Convert peak directions image to amplitudes"
     :ref:`sh2amp`, "Evaluate the amplitude of an image of spherical harmonic functions along specified directions"
     :ref:`sh2peaks`, "Extract the peaks of a spherical harmonic function at each voxel, by commencing a Newton search along a set of specified directions"
@@ -203,6 +204,7 @@ List of MRtrix3 commands
     :ref:`tck2connectome`, "Generate a connectome matrix from a streamlines file and a node parcellation image"
     :ref:`tck2fixel`, "Compute a fixel TDI map from a tractogram"
     :ref:`tckconvert`, "Convert between different track file formats"
+    :ref:`tckdfc`, "Perform the Track-Weighted Dynamic Functional Connectivity (TW-dFC) method"
     :ref:`tckedit`, "Perform various editing operations on track files"
     :ref:`tckgen`, "Perform streamlines tractography"
     :ref:`tckglobal`, "Multi-Shell Multi-Tissue Global Tractography"

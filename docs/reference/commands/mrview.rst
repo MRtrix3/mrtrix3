@@ -126,6 +126,14 @@ Tractography tool options
 
 -  **-tractography.opacity value** Opacity of tractography display, [0.0, 1.0], default is 1.0.
 
+-  **-tractography.slab value** Slab thickness of tractography display, in mm. -1 to turn off crop to slab.
+
+-  **-tractography.tsf_load tsf** Load the specified tractography scalar file.
+
+-  **-tractography.tsf_range range** Set range for the tractography scalar file. Requires tractography.tsf_load already provided. RangeMin,RangeMax
+
+-  **-tractography.tsf_thresh thresh** Set thresholds for the tractography scalar file. Requires tractography.tsf_load already provided. ThresholdMin,ThesholdMax
+
 ODF tool options
 ^^^^^^^^^^^^^^^^
 
@@ -184,7 +192,7 @@ Tournier, J.-D.; Calamante, F. & Connelly, A. MRtrix: Diffusion tractography in 
 
 
 
-**Author:** J-Donald Tournier (jdtournier@gmail.com), Dave Raffelt (david.raffelt@florey.edu.au), Robert E. Smith (robert.smith@florey.edu.au), Max Pietsch (maximilian.pietsch@kcl.ac.uk), Thijs Dhollander (thijs.dhollander@gmail.com)
+**Author:** J-Donald Tournier (jdtournier@gmail.com), Dave Raffelt (david.raffelt@florey.edu.au), Robert E. Smith (robert.smith@florey.edu.au), Rami Tabbara (rami.tabbara@florey.edu.au), Max Pietsch (maximilian.pietsch@kcl.ac.uk), Thijs Dhollander (thijs.dhollander@gmail.com)
 
 **Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
 

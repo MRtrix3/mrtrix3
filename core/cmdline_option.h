@@ -16,15 +16,15 @@
 #define __cmdline_option_h__
 
 #include <cassert>
-#include <string>
-#include <vector>
 #include <limits>
+#include <string>
 
 #ifdef None
 # undef None
 #endif
 
 #include "mrtrix.h"
+#include "types.h"
 
 namespace MR
 {

@@ -40,11 +40,11 @@ namespace MR
     void display_func_terminal (ProgressInfo& p)
     {
       __need_newline = true;
-      if (p.multiplier) 
-        __print_stderr (printf ("\r%s: [%3zu%%] %s%s" CLEAR_LINE_CODE, 
+      if (p.multiplier)
+        __print_stderr (printf ("\r%s: [%3zu%%] %s%s" CLEAR_LINE_CODE,
               App::NAME.c_str(), p.value, p.text.c_str(), p.ellipsis.c_str()));
       else
-        __print_stderr (printf ("\r%s: [%s] %s%s" CLEAR_LINE_CODE, 
+        __print_stderr (printf ("\r%s: [%s] %s%s" CLEAR_LINE_CODE,
               App::NAME.c_str(), busy[p.value%6], p.text.c_str(), p.ellipsis.c_str()));
     }
 
@@ -52,10 +52,10 @@ namespace MR
     void done_func_terminal (ProgressInfo& p)
     {
       if (p.multiplier)
-        __print_stderr (printf ("\r%s: [100%%] %s" CLEAR_LINE_CODE "\n", 
+        __print_stderr (printf ("\r%s: [100%%] %s" CLEAR_LINE_CODE "\n",
               App::NAME.c_str(), p.text.c_str()));
       else
-        __print_stderr (printf ("\r%s: [done] %s" CLEAR_LINE_CODE "\n", 
+        __print_stderr (printf ("\r%s: [done] %s" CLEAR_LINE_CODE "\n",
               App::NAME.c_str(), p.text.c_str()));
       __need_newline = false;
     }
@@ -77,16 +77,16 @@ namespace MR
           count = next_update_at = 0;
         if (count++ == next_update_at) {
           if (p.multiplier) {
-            __print_stderr (printf ("%s: [%3zu%%] %s%s\n", 
+            __print_stderr (printf ("%s: [%3zu%%] %s%s\n",
                   App::NAME.c_str(), p.value, p.text.c_str(), p.ellipsis.c_str()));;
           }
           else {
-            __print_stderr (printf ("%s: [%s] %s%s\n", 
+            __print_stderr (printf ("%s: [%s] %s%s\n",
                   App::NAME.c_str(), busy[p.value%6], p.text.c_str(), p.ellipsis.c_str()));
           }
           if (next_update_at)
-            next_update_at *= 2; 
-          else 
+            next_update_at *= 2;
+          else
             next_update_at = 1;
         }
       }
@@ -95,7 +95,7 @@ namespace MR
         __need_newline = true;
         if (p.multiplier) {
           if (p.value == 0) {
-            __print_stderr (printf ("%s: %s%s [", 
+            __print_stderr (printf ("%s: %s%s [",
                   App::NAME.c_str(), p.text.c_str(), p.ellipsis.c_str()));;
           }
           else if (p.value%2 == 0) {
@@ -104,7 +104,7 @@ namespace MR
         }
         else {
           if (p.value == 0) {
-            __print_stderr (printf ("%s: %s%s ", 
+            __print_stderr (printf ("%s: %s%s ",
                   App::NAME.c_str(), p.text.c_str(), p.ellipsis.c_str()));;
           }
           else if (!(p.value & (p.value-1))) {
@@ -126,7 +126,7 @@ namespace MR
         }
       }
       else {
-        if (p.multiplier) 
+        if (p.multiplier)
           __print_stderr (printf ("]\n"));
         else
           __print_stderr (printf (" done\n"));
@@ -145,16 +145,15 @@ namespace MR
 
 
 
-  bool ProgressBar::set_update_method () 
+  bool ProgressBar::set_update_method ()
   {
     bool stderr_to_file = false;
 
     struct stat buf;
-    if (fstat (STDERR_FILENO, &buf)) {
-      DEBUG ("Unable to determine nature of stderr; assuming socket");
+    if (fstat (STDERR_FILENO, &buf))
+      // unable to determine nature of stderr; assuming socket
       stderr_to_file = false;
-    }
-    else 
+    else
       stderr_to_file = S_ISREG (buf.st_mode);
 
 

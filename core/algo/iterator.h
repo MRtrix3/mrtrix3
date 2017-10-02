@@ -15,8 +15,6 @@
 #ifndef __algo_iterator_h__
 #define __algo_iterator_h__
 
-#include <vector>
-
 #include "types.h"
 
 namespace MR

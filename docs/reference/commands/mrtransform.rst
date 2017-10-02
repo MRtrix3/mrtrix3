@@ -54,6 +54,8 @@ Regridding options
 
 -  **-interp method** set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: cubic).
 
+-  **-oversample factor** set the amount of over-sampling (in the target space) to perform when regridding. This is particularly relevant when downsamping a high-resolution image to a low-resolution image, to avoid aliasing artefacts. This can consist of a single integer, or a comma-separated list of 3 integers if different oversampling factors are desired along the different axes. Default is determined from ratio of voxel dimensions (disabled for nearest-neighbour interpolation).
+
 Non-linear transformation options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
