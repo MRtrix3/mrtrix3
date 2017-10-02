@@ -65,9 +65,12 @@ class Warper { MEMALIGN(Warper)
       interp (warp) { }
 
     bool operator () (const TrackType& in, TrackType& out) {
-      out.resize (in.size());
-      for (size_t n = 0; n < in.size(); ++n) 
-        out[n] = pos(in[n]);
+      out.clear();
+      for (size_t n = 0; n < in.size(); ++n) {
+        auto vertex = pos(in[n]);
+        if (vertex.allFinite())
+          out.push_back (vertex);
+      }
       return true;
     }
 
