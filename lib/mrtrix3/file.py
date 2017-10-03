@@ -145,7 +145,7 @@ def waitFor(paths):
   # Wait until all files exist
   num_exist = numExist(paths)
   if num_exist != len(paths):
-    progress = app.progressBar('Waiting for creation of ' + (('new item \"' + paths[0] + '\"') if len(paths) == 1 else (str(len(paths) + ' new items'))))
+    progress = app.progressBar('Waiting for creation of ' + (('new item \"' + paths[0] + '\"') if len(paths) == 1 else (str(len(paths)) + ' new items')), len(paths))
     for _ in range(num_exist):
       progress.increment()
     delay = 1.0/1024.0
