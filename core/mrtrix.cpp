@@ -128,6 +128,8 @@ namespace MR
     vector<std::string> V;
     std::string::size_type start = 0, end;
     try {
+      if (ignore_empty_fields)
+        start = string.find_first_not_of (delimiters);
       do {
         end = string.find_first_of (delimiters, start);
         V.push_back (string.substr (start, end-start));
