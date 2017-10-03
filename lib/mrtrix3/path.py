@@ -30,7 +30,7 @@ def allindir(directory, dir_path=True, ignore_hidden_files=True): #pylint: disab
         assert attrs != -1
         return bool(attrs & 2)
       except (AttributeError, AssertionError):
-        return False
+        return filename.startswith('.')
     return filename.startswith('.')
 
   flist = sorted([filename for filename in os.listdir(directory) if not ignore_hidden_files or not is_hidden(directory, filename) ])
