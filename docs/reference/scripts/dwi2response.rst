@@ -30,7 +30,7 @@ Options
 Options common to all dwi2response algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-shell** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+- **-shells** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
 
 - **-lmax** The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
 
@@ -122,7 +122,7 @@ Options specific to the 'dhollander' algorithm
 Options common to all dwi2response algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-shell** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+- **-shells** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
 
 - **-lmax** The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
 
@@ -213,7 +213,7 @@ Options specific to the 'fa' algorithm
 Options common to all dwi2response algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-shell** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+- **-shells** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
 
 - **-lmax** The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
 
@@ -301,7 +301,7 @@ Options specific to the 'manual' algorithm
 Options common to all dwi2response algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-shell** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+- **-shells** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
 
 - **-lmax** The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
 
@@ -392,7 +392,7 @@ Options specific to the 'msmt_5tt' algorithm
 Options common to all dwi2response algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-shell** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+- **-shells** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
 
 - **-lmax** The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
 
@@ -483,7 +483,7 @@ Options specific to the 'tax' algorithm
 Options common to all dwi2response algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-shell** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+- **-shells** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
 
 - **-lmax** The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
 
@@ -576,7 +576,7 @@ Options specific to the 'tournier' algorithm
 Options common to all dwi2response algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-shell** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+- **-shells** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
 
 - **-lmax** The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
 
