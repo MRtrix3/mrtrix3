@@ -212,7 +212,7 @@ namespace MR
           //CONF option: NIfTI.AutoLoadJSON
           //CONF default: 0 (false)
           //CONF A boolean value to indicate whether, when opening NIfTI images,
-          //CONF any corresponding JSON file should be automatically loaded
+          //CONF any corresponding JSON file should be automatically loaded.
           if (File::Config::get_bool ("NIfTI.AutoLoadJSON", false)) {
             std::string json_path = H.name();
             if (Path::has_suffix (json_path, ".nii.gz"))
@@ -416,7 +416,7 @@ namespace MR
         //CONF A boolean value to indicate whether, when writing NIfTI images,
         //CONF a corresponding JSON file should be automatically created in order
         //CONF to save any header entries that cannot be stored in the NIfTI
-        //CONF header
+        //CONF header.
         if (single_file && File::Config::get_bool ("NIfTI.AutoSaveJSON", false)) {
           std::string json_path = H.name();
           if (Path::has_suffix (json_path, ".nii.gz"))
