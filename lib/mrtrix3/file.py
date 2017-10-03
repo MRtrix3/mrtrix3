@@ -184,7 +184,7 @@ def waitFor(paths):
     app.debug('Item' + ('s' if len(paths) > 1 else '') + ' immediately ready')
     return
 
-  progress = app.progressBar('Waiting for finalization of ' + (('new file \"' + paths[0] + '\"') if len(paths) == 1 else (str(len(paths) + ' new files'))))
+  progress = app.progressBar('Waiting for finalization of ' + (('new file \"' + paths[0] + '\"') if len(paths) == 1 else (str(len(paths)) + ' new files')))
   for _ in range(len(paths) - num_in_use):
     progress.increment()
   delay = 1.0/1024.0
