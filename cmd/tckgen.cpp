@@ -205,6 +205,8 @@ void usage ()
 
   + DWI::Tractography::ACT::ACTOption
 
+  + DWI::Tractography::Algorithms::iFOD2Option
+
   + DWI::GradImportOptions();
 
 }
@@ -232,6 +234,9 @@ void run ()
 
   Seeding::load_seed_mechanisms (properties);
   Seeding::load_seed_parameters (properties);
+
+  if (algorithm == 2)
+    Algorithms::load_iFOD2_options (properties);
 
   // Check validity of options -select and -seeds; these are meaningless if seeds are number-limited
   // By over-riding the values in properties, the progress bar should still be valid

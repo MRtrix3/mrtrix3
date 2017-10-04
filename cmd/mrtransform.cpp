@@ -39,7 +39,7 @@
 using namespace MR;
 using namespace App;
 
-const char* interp_choices[] = { "nearest", "linear", "cubic", "sinc", NULL };
+const char* interp_choices[] = { "nearest", "linear", "cubic", "sinc", nullptr };
 
 void usage ()
 {

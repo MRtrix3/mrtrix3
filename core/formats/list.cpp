@@ -64,7 +64,7 @@ namespace MR
       &tiff_handler,
 #endif
       &mrtrix_sparse_handler,
-      NULL
+      nullptr
     };
 
 
@@ -89,7 +89,7 @@ namespace MR
       ".tif",
       ".TIFF",
       ".TIF",
-      NULL
+      nullptr
     };
 
   }

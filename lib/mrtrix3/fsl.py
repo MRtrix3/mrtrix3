@@ -74,14 +74,14 @@ def exeName(name): #pylint: disable=unused-variable
 def findImage(name): #pylint: disable=unused-variable
   import os
   from mrtrix3 import app
-  basename = name.split('.')[0]
-  if os.path.isfile(basename + suffix()):
-    app.debug('Image at expected location: \"' + basename + suffix() + '\"')
-    return basename + suffix()
+  prefix = os.path.join(os.path.dirname(name), os.path.basename(name).split('.')[0])
+  if os.path.isfile(prefix + suffix()):
+    app.debug('Image at expected location: \"' + prefix + suffix() + '\"')
+    return prefix + suffix()
   for suf in ['.nii', '.nii.gz', '.img']:
-    if os.path.isfile(basename + suf):
-      app.debug('Expected image at \"' + basename + suffix() + '\", but found at \"' + basename + suf + '\"')
-      return basename + suf
+    if os.path.isfile(prefix + suf):
+      app.debug('Expected image at \"' + prefix + suffix() + '\", but found at \"' + prefix + suf + '\"')
+      return prefix + suf
   app.error('Unable to find FSL output file for path \"' + name + '\"')
 
 
