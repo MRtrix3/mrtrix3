@@ -16,11 +16,12 @@
 
 #include <fstream>
 
+#include "mrtrix.h" // For strip()
+
 
 
 namespace MR {
 namespace Connectome {
-
 
 
 
@@ -206,7 +207,7 @@ void LUT::parse_line_basic (const std::string& line)
   char name [80];
   sscanf (line.c_str(), "%u %s", &index, name);
   if (index != std::numeric_limits<node_t>::max()) {
-    const std::string strname (name);
+    const std::string strname (strip(name, " \t\n\""));
     check_and_insert (index, LUT_node (strname));
   }
 }
@@ -219,7 +220,7 @@ void LUT::parse_line_freesurfer (const std::string& line)
   if (index != std::numeric_limits<node_t>::max()) {
     if (std::max ({r, g, b}) > 255)
       throw Exception ("Lookup table is malformed");
-    const std::string strname (name);
+    const std::string strname (strip(name, " \t\n\""));
     check_and_insert (index, LUT_node (strname, r, g, b, a));
   }
 }
@@ -229,8 +230,8 @@ void LUT::parse_line_aal (const std::string& line)
   char short_name[20], name [80];
   sscanf (line.c_str(), "%s %s %u", short_name, name, &index);
   if (index != std::numeric_limits<node_t>::max()) {
-    const std::string strshortname (short_name);
-    const std::string strname (name);
+    const std::string strshortname (strip(short_name, " \t\n\""));
+    const std::string strname (strip(name, " \t\n\""));
     check_and_insert (index, LUT_node (strname, strshortname));
   }
 }
@@ -243,14 +244,7 @@ void LUT::parse_line_itksnap (const std::string& line)
   char name [80];
   sscanf (line.c_str(), "%u %u %u %u %f %u %u %s", &index, &r, &g, &b, &a, &label_vis, &mesh_vis, name);
   if (index != std::numeric_limits<node_t>::max()) {
-    std::string strname (name);
-    size_t first = strname.find_first_not_of ('\"');
-    if (first == std::string::npos)
-      first = 0;
-    size_t last = strname.find_last_not_of ('\"');
-    if (last == std::string::npos)
-      last = strname.size() - 1;
-    strname = strname.substr (first, last - first + 1);
+    std::string strname (strip(name, " \t\n\""));
     check_and_insert (index, LUT_node (strname, r, g, b, uint8_t(a*255.0)));
   }
 }
@@ -263,8 +257,8 @@ void LUT::parse_line_mrtrix (const std::string& line)
   if (index != std::numeric_limits<node_t>::max()) {
     if (std::max ({r, g, b}) > 255)
       throw Exception ("Lookup table is malformed");
-    const std::string strshortname (short_name);
-    const std::string strname (name);
+    const std::string strshortname (strip(short_name, " \t\n\""));
+    const std::string strname (strip(name, " \t\n\""));
     check_and_insert (index, LUT_node (strname, strshortname, r, g, b, a));
   }
 }

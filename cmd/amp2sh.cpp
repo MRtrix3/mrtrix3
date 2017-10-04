@@ -68,7 +68,7 @@ void usage ()
   +   Argument ("noise").type_image_in()
 
   + DWI::GradImportOptions()
-  + DWI::ShellOption
+  + DWI::ShellsOption
   + Stride::Options;
 }
 
