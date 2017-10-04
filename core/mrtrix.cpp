@@ -126,6 +126,8 @@ namespace MR
   vector<std::string> split (const std::string& string, const char* delimiters, bool ignore_empty_fields, size_t num)
   {
     vector<std::string> V;
+    if (!string.size())
+      return V;
     std::string::size_type start = 0, end;
     try {
       if (ignore_empty_fields)
