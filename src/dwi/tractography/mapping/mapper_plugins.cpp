@@ -64,7 +64,7 @@ namespace MR {
 
               for (; index >= 0 && index < ssize_t(tck.size()); index += step) {
                 const Eigen::Vector3 p = interp.scanner2voxel * tck[index].cast<default_type>();
-                const Eigen::Array3i v ( { std::round (p[0]), std::round (p[1]), std::round (p[2]) } );
+                const Eigen::Array3i v ( { int(std::round (p[0])), int(std::round (p[1])), int(std::round (p[2])) } );
                 if (!is_out_of_bounds (backtrack_mask, v)) {
                   assign_pos_of (v, 0, 3).to (backtrack_mask);
                   if (backtrack_mask.value())
@@ -240,7 +240,7 @@ namespace MR {
             if (!interp.scanner (tck[index]))
               return;
             values[tck_end_index].reserve (kernel.size());
-            for (ssize_t i = 0; i != kernel.size(); ++i) {
+            for (size_t i = 0; i != kernel.size(); ++i) {
               interp.index(3) = sample_centre - kernel_centre + i;
               if (interp.index(3) >= 0 && interp.index(3) < interp.size(3))
                 values[tck_end_index].push_back (interp.value());

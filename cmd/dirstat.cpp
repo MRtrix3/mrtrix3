@@ -45,7 +45,7 @@ void usage ()
     + Option ("mean", "output mean of statistic (affects -nearest_neighbour or -energy only)")
     + Option ("range", "output range of statistic (affects -nearest_neighbour or -energy only)")
     + DWI::GradImportOptions()
-    + DWI::ShellOption;
+    + DWI::ShellsOption;
 }
 
 
