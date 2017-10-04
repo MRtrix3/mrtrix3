@@ -54,8 +54,16 @@ namespace MR
             H.keyval().insert (std::make_pair (i.key(), str<float>(i.value())));
           } else if (i->is_array()) {
             vector<std::string> s;
-            for (auto j = i->cbegin(); j != i->cend(); ++j)
-              s.push_back (str(*j));
+            for (auto j = i->cbegin(); j != i->cend(); ++j) {
+              if (j->is_array()) {
+                vector<std::string> line;
+                for (auto k : *j)
+                  line.push_back (str(k));
+                s.push_back (join(line, ","));
+              } else {
+                s.push_back (str(*j));
+              }
+            }
             H.keyval().insert (std::make_pair (i.key(), join(s, "\n")));
           } else if (i->is_string()) {
             const std::string s = i.value();
