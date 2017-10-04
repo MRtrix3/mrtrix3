@@ -91,7 +91,7 @@ void usage ()
 
   OPTIONS
     + DWI::GradImportOptions()
-    + DWI::ShellOption
+    + DWI::ShellsOption
     + CommonOptions
     + DWI::SDeconv::CSD_options
     + Stride::Options;

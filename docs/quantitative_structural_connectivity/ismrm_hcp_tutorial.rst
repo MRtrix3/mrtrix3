@@ -168,7 +168,7 @@ hardware can successfully execute the :ref:`tcksift` command, e.g.:
 ``tckedit 100M.tck 50M.tck -number 50M``
 
 Alternatively, if you're feeling brave, you can give
-`SIFT2 <Handling-SIFT2-weights>`__ a try...
+`SIFT2 <FAQ/Handling-SIFT2-weights>`__ a try...
 
 3. Map streamlines to the parcellated image to produce a connectome:
 

@@ -55,14 +55,15 @@ def getScheme(arg): #pylint: disable=unused-variable
     if not isinstance(arg, str):
       app.error('Error trying to derive phase-encoding scheme from \'' + str(arg) + '\': Not an image header or file path')
     arg = image.Header(arg)
-  if 'pe_scheme' in arg.keyval:
-    app.debug(arg.keyval['pe_scheme'])
-    return arg.keyval['pe_scheme']
-  if 'PhaseEncodingDirection' not in arg.keyval:
+  if 'pe_scheme' in arg.keyval():
+    app.debug(str(arg.keyval()['pe_scheme']))
+    return arg.keyval()['pe_scheme']
+  if 'PhaseEncodingDirection' not in arg.keyval():
     return None
-  line = direction(arg.keyval['PhaseEncodingDirection'])
-  if 'TotalReadoutTime' in arg.keyval:
-    line.append(arg.keyval['TotalReadoutTime'])
-  num_volumes = 1 if len(arg.size) < 4 else arg.size[3]
-  app.debug(str(line) + ' x ' + num_volumes + ' rows')
-  return line * num_volumes
+  line = direction(arg.keyval()['PhaseEncodingDirection'])
+  if 'TotalReadoutTime' in arg.keyval():
+    line = [ float(value) for value in line ]
+    line.append(float(arg.keyval()['TotalReadoutTime']))
+  num_volumes = 1 if len(arg.size()) < 4 else arg.size()[3]
+  app.debug(str(line) + ' x ' + str(num_volumes) + ' rows')
+  return [ line ] * num_volumes

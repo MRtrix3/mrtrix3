@@ -21,7 +21,7 @@ app.cmdline.addDescription('Each algorithm available also has its own help page,
 
 # General options
 common_options = app.cmdline.add_argument_group('Options common to all dwi2response algorithms')
-common_options.add_argument('-shell', help='The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)')
+common_options.add_argument('-shells', help='The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)')
 common_options.add_argument('-lmax', help='The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)')
 common_options.add_argument('-mask', help='Provide an initial mask for response voxel selection')
 common_options.add_argument('-voxels', help='Output an image showing the final voxel selection(s)')
@@ -56,15 +56,15 @@ if app.args.lmax:
     app.error('Parameter lmax must be a number')
   if alg.needsSingleShell() and not len(lmax) == 1:
     app.error('Can only specify a single lmax value for single-shell algorithms')
-shell_option = ''
-if app.args.shell:
+shells_option = ''
+if app.args.shells:
   try:
-    shell_values = [ int(x) for x in app.args.shell.split(',') ]
+    shells_values = [ int(x) for x in app.args.shells.split(',') ]
   except:
-    app.error('-shell option should provide a comma-separated list of b-values')
-  if alg.needsSingleShell() and not len(shell_values) == 1:
+    app.error('-shells option should provide a comma-separated list of b-values')
+  if alg.needsSingleShell() and not len(shells_values) == 1:
     app.error('Can only specify a single b-value shell for single-shell algorithms')
-  shell_option = ' -shell ' + app.args.shell
+  shells_option = ' -shells ' + app.args.shells
 singleshell_option = ''
 if alg.needsSingleShell():
   singleshell_option = ' -singleshell -no_bzero'
@@ -80,8 +80,8 @@ elif 'dw_scheme' not in image.Header(path.fromUser(app.args.input, False)).keyva
 app.makeTempDir()
 
 # Get standard input data into the temporary directory
-if alg.needsSingleShell() or shell_option:
-  run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' - -stride 0,0,0,1' + grad_import_option + ' | dwiextract - ' + path.toTemp('dwi.mif', True) + shell_option + singleshell_option)
+if alg.needsSingleShell() or shells_option:
+  run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' - -stride 0,0,0,1' + grad_import_option + ' | dwiextract - ' + path.toTemp('dwi.mif', True) + shells_option + singleshell_option)
 else: # Don't discard b=0 in multi-shell algorithms
   run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('dwi.mif', True) + ' -stride 0,0,0,1' + grad_import_option)
 if app.args.mask:
