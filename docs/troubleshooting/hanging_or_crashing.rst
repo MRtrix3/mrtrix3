@@ -42,6 +42,8 @@ encounter this issue, please report to the developers the hardware
 configuration and file system type in use.
 
 
+.. _crash_ram:
+
 Commands crashing due to memory requirements
 --------------------------------------------
 

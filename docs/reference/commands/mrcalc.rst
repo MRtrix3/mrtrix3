@@ -136,6 +136,8 @@ Ternary operators
 
 -  **-if** if first operand is true (non-zero), return second operand, otherwise return third operand
 
+-  **-replace** Wherever first operand is equal to the second operand, replace with third operand
+
 Data type options
 ^^^^^^^^^^^^^^^^^
 

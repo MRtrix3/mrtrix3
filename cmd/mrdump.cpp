@@ -47,7 +47,6 @@ void usage ()
 template <typename T, class StreamType>
 void write (Image<T>& image, StreamType& out)
 {
-  TRACE;
   for (auto l = Loop(image) (image); l; ++l)
     out << image.value() << "\n";
 }
