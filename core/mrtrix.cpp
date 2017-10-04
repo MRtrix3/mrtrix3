@@ -76,7 +76,10 @@ namespace MR
     int i = 0;
     try {
       do {
-        end = spec.find_first_of (",:", start);
+        start = spec.find_first_not_of (" \t", start);
+        if (start == std::string::npos)
+          break;
+        end = spec.find_first_of (" \t,:", start);
         std::string token (strip (spec.substr (start, end-start)));
         if (lowercase (token) == "end") {
           if (last == std::numeric_limits<int>::max())
