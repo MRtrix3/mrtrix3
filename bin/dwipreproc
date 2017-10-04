@@ -314,7 +314,7 @@ else:
   if not manual_pe_dir:
     app.error('No phase encoding information provided either in header or at command-line')
   if dwi_auto_trt_warning:
-    app.warn('Total readout time not provided at command-line; assuming sane default of ' + str(auto_trt))
+    app.console('Total readout time not provided at command-line; assuming sane default of ' + str(auto_trt))
   dwi_pe_scheme = dwi_manual_pe_scheme # May be needed later for triggering volume recombination
 
 # This may be required by -rpe_all for extracting b=0 volumes while retaining phase-encoding information
@@ -400,6 +400,7 @@ if app.args.se_epi:
       if app.args.align_seepi:
         app.console('No phase-encoding contrast present in SE-EPI images; will examine again after combining with DWI b=0 images')
         new_se_epi_path = os.path.splitext(se_epi_path)[0] + '_dwibzeros.mif'
+        # TODO Should a balanced scheme be produced if possible?
         run.command('dwiextract dwi.mif - -bzero | mrcat - se_epi.mif ' + new_se_epi_path + ' -axis 3')
         se_epi_header = image.Header(new_se_epi_path)
         se_epi_pe_scheme_has_contrast = 'pe_scheme' in se_epi_header.keyval()
@@ -408,6 +409,8 @@ if app.args.se_epi:
           se_epi_path = new_se_epi_path
           se_epi_pe_scheme = phaseEncoding.getScheme(se_epi_header)
           dwi_bzero_added_to_se_epi = True
+          # Delay testing appropriateness of the concatenation of these images
+          #   (i.e. differences in contrast) to later
         else:
           app.error('No phase-encoding contrast present in SE-EPI images, even after concatenating with b=0 images due to -align_seepi option; '
                     'cannot perform inhomogeneity field estimation')
@@ -416,9 +419,40 @@ if app.args.se_epi:
 
   if app.args.align_seepi:
 
+    dwi_te = dwi_header.keyval().get('EchoTime')
+    se_epi_te = se_epi_header.keyval().get('EchoTime')
+    if dwi_te and se_epi_te and dwi_te != se_epi_te:
+      app.warn('It appears that the spin-echo EPI images used for inhomogeneity field estimation have a different echo time to the DWIs being corrected. '
+               'This may cause issues in estimation of the field, as the first DWI b=0 volume will be added to the input series to topup '
+               'due to use of the -align_seepi option.')
+
+    dwi_tr = dwi_header.keyval().get('RepetitionTime')
+    se_epi_tr = se_epi_header.keyval().get('RepetitionTime')
+    if dwi_tr and se_epi_tr and dwi_tr != se_epi_tr:
+      app.warn('It appears that the spin-echo EPI images used for inhomogeneity field estimation have a different repetition time to the DWIs being corrected. '
+               'This may cause issues in estimation of the field, as the first DWI b=0 volume will be added to the input series to topup '
+               'due to use of the -align_seepi option.')
+
+    dwi_flip = dwi_header.keyval().get('FlipAngle')
+    se_epi_flip = se_epi_header.keyval().get('FlipAngle')
+    if dwi_flip and se_epi_flip and dwi_flip != se_epi_flip:
+      app.warn('It appears that the spin-echo EPI images used for inhomogeneity field estimation have a different flip angle to the DWIs being corrected. '
+               'This may cause issues in estimation of the field, as the first DWI b=0 volume will be added to the input series to topup '
+               'due to use of the -align_seepi option.')
+    
     # If we are using the -se_epi option, and hence the input images to topup have not come from the DWIs themselves,
     #   we need to insert the first b=0 DWI volume to the start of the topup input image. Otherwise, the field estimated
     #   by topup will not be correctly aligned with the volumes as they are processed by eddy.
+    #
+    # However, there's also a code path by which we may have already performed this addition.
+    # If we have already apliced the b=0 volumes from the DWI input with the SE-EPI image
+    #   (due to the absence of phase-encoding contrast in the SE-EPI series), we don't want to
+    #   re-attempt such a concatenation; the fact that the DWI b=0 images were inserted ahead of
+    #   the SE-EPI images means the alignment issue should be dealt with.
+    # Note however that in this instance it may still be necessary to permute the volumes within the
+    #   DWI series if the first volume is not a b=0 volume; but the first b=0 volume will inherently
+    #   already be the first volume in the input to topup
+
     bzero_threshold = 10.0
     if 'BZeroThreshold' in app.config:
       bzero_threshold = float(app.config['BZeroThreshold'])
@@ -427,41 +461,37 @@ if app.args.se_epi:
       if line[3] <= bzero_threshold:
         break
       dwi_first_bzero_index += 1
-    if dwi_first_bzero_index == len(grad):
+    if dwi_first_bzero_index == len(grad) and not dwi_bzero_added_to_se_epi:
       app.warn('Unable to find b=0 volume in input DWIs to provide alignment between topup and eddy; script will proceed as though the -align_seepi option were not provided')
     else:
-      run.command('mrconvert dwi.mif dwi_first_bzero.mif -coord 3 ' + str(dwi_first_bzero_index) + ' -axes 0,1,2')
-      dwi_first_bzero_pe = dwi_manual_pe_scheme[dwi_first_bzero_index] if overwrite_dwi_pe_scheme else dwi_pe_scheme[dwi_first_bzero_index]
 
-      dwi_te = dwi_header.keyval().get('EchoTime')
-      se_epi_te = se_epi_header.keyval().get('EchoTime')
-      if dwi_te and se_epi_te and dwi_te != se_epi_te:
-        app.warn('It appears that the spin-echo EPI images used for inhomogeneity field estimation have a different echo time to the DWIs being corrected. '
-                 'This may cause issues in estimation of the field, as the first DWI b=0 volume will be added to the input series to topup '
-                 'due to use of the -align_seepi option.')
+      # If the first b=0 volume in the DWIs is in fact not the volume (i.e. index zero), we're going to
+      #   manually place it at the start of the DWI volumes when they are input to eddy, so that the
+      #   first input volume to topup and the first input volume to eddy are one and the same.
+      # Note: If at a later date, the statistical outputs from eddy are considered (e.g. motion, outliers),
+      #   then this volume permutation will need to be taken into account
+      if dwi_first_bzero_index:
+        app.console('First b=0 volume in input DWIs is volume index ' + str(dwi_first_bzero_index) + '; '
+                    'this will be permuted to be the first volume (index 0) when eddy is run')
+        dwi_permute_volumes_pre_eddy_option = ' -coord 3 ' + \
+                                              str(dwi_first_bzero_index) + \
+                                              ',0' + \
+                                              (':' + str(dwi_first_bzero_index-1) if dwi_first_bzero_index > 1 else '') + \
+                                              (',' + str(dwi_first_bzero_index+1) if dwi_first_bzero_index < dwi_num_volumes-1 else '') + \
+                                              (':' + str(dwi_num_volumes-1) if dwi_first_bzero_index < dwi_num_volumes-2 else '')
+        dwi_permute_volumes_post_eddy_option = ' -coord 3 1' + \
+                                               (':' + str(dwi_first_bzero_index) if dwi_first_bzero_index > 1 else '') + \
+                                               ',0' + \
+                                               (',' + str(dwi_first_bzero_index+1) if dwi_first_bzero_index < dwi_num_volumes-1 else '') + \
+                                               (':' + str(dwi_num_volumes-1) if dwi_first_bzero_index < dwi_num_volumes-2 else '')
 
-      dwi_tr = dwi_header.keyval().get('RepetitionTime')
-      se_epi_tr = se_epi_header.keyval().get('RepetitionTime')
-      if dwi_tr and se_epi_tr and dwi_tr != se_epi_tr:
-        app.warn('It appears that the spin-echo EPI images used for inhomogeneity field estimation have a different repetition time to the DWIs being corrected. '
-                 'This may cause issues in estimation of the field, as the first DWI b=0 volume will be added to the input series to topup '
-                 'due to use of the -align_seepi option.')
-
-      dwi_flip = dwi_header.keyval().get('FlipAngle')
-      se_epi_flip = se_epi_header.keyval().get('FlipAngle')
-      if dwi_flip and se_epi_flip and dwi_flip != se_epi_flip:
-        app.warn('It appears that the spin-echo EPI images used for inhomogeneity field estimation have a different flip angle to the DWIs being corrected. '
-                 'This may cause issues in estimation of the field, as the first DWI b=0 volume will be added to the input series to topup '
-                 'due to use of the -align_seepi option.')
-
-      # If we have already apliced the b=0 volumes from the DWI input with the SE-EPI image
-      #   (due to the absence of phase-encoding contrast in the SE-EPI series), we don't want to
-      #   re-attempt such a concatenation; the fact that the DWI b=0 images were inserted ahead of
-      #   the SE-EPI images means the alignment issue should be dealt with.
-      # Note however that in this instance it may still be necessary to permute the volumes within the
-      #   DWI series if the first volume is not a b=0 volume; but the first b=0 volume will inherently
-      #   already be the first volume in the input to topup
+      # If b=0 volumes from the DWIs have already been added to the SE-EPI image due to an
+      #   absence of phase-encoding contrast in the latter, we don't need to perform the following
       if not dwi_bzero_added_to_se_epi:
+
+        run.command('mrconvert dwi.mif dwi_first_bzero.mif -coord 3 ' + str(dwi_first_bzero_index) + ' -axes 0,1,2')
+        dwi_first_bzero_pe = dwi_manual_pe_scheme[dwi_first_bzero_index] if overwrite_dwi_pe_scheme else dwi_pe_scheme[dwi_first_bzero_index]
+
         se_epi_pe_sum = [ 0, 0, 0 ]
         se_epi_volume_to_remove = len(se_epi_pe_scheme)
         for index, line in enumerate(se_epi_pe_scheme):
@@ -501,28 +531,9 @@ if app.args.se_epi:
 
       # Ended branching based on prior merge of SE-EPI and DWI b=0 volumes due to no phase-encoding contrast in SE-EPI
 
-      # If the first b=0 volume in the DWIs is in fact not the volume (i.e. index zero), we're going to
-      #   manually place it at the start of the DWI volumes when they are input to eddy, so that the
-      #   first input volume to topup and the first input volume to eddy are one and the same.
-      # Note: If at a later date, the statistical outputs from eddy are considered (e.g. motion, outliers),
-      #   then this volume permutation will need to be taken into account
-      if dwi_first_bzero_index:
-        app.console('First b=0 volume in input DWIs is volume index ' + str(dwi_first_bzero_index) + '; '
-                    'this will be permuted to be the first volume (index 0) when eddy is run')
-        dwi_permute_volumes_pre_eddy_option = ' -coord 3 ' + \
-                                              str(dwi_first_bzero_index) + \
-                                              ',0' + \
-                                              (':' + str(dwi_first_bzero_index-1) if dwi_first_bzero_index > 1 else '') + \
-                                              (',' + str(dwi_first_bzero_index+1) if dwi_first_bzero_index < dwi_num_volumes-1 else '') + \
-                                              (':' + str(dwi_num_volumes-1) if dwi_first_bzero_index < dwi_num_volumes-2 else '')
-        dwi_permute_volumes_post_eddy_option = ' -coord 3 1' + \
-                                               (':' + str(dwi_first_bzero_index) if dwi_first_bzero_index > 1 else '') + \
-                                               ',0' + \
-                                               (',' + str(dwi_first_bzero_index+1) if dwi_first_bzero_index < dwi_num_volumes-1 else '') + \
-                                               (':' + str(dwi_num_volumes-1) if dwi_first_bzero_index < dwi_num_volumes-2 else '')
-
     # Completed checking for presence of b=0 image in DWIs
 
+  # Completed checking for presence of -se_epi option
 
 elif not PE_design == 'None': # No SE EPI images explicitly provided: In some cases, can extract appropriate b=0 images from DWI
 
@@ -625,7 +636,7 @@ if do_topup:
       json_path = 'dwi_pe_' + str(index) + '.json'
       temp_path = 'dwi_pe_' + str(index) + '_applytopup' + fsl_suffix
       output_path = 'dwi_pe_' + str(index) + '_applytopup.mif'
-      run.command('dwiextract ' + dwi_path + ' ' + import_dwi_pe_table_option + ' -pe ' + ','.join(line.split()) + ' - | mrconvert - ' + input_path + ' -json_export ' + json_path)
+      run.command('dwiextract ' + dwi_path + import_dwi_pe_table_option + ' -pe ' + ','.join(line.split()) + ' - | mrconvert - ' + input_path + ' -json_export ' + json_path)
       run.command(applytopup_cmd + ' --imain=' + input_path + ' --datain=applytopup_config.txt --inindex=' + str(index) + ' --topup=field --out=' + temp_path + ' --method=jac')
       file.delTemporary(input_path)
       temp_path = fsl.findImage(temp_path)
@@ -636,7 +647,10 @@ if do_topup:
       index += 1
 
   # Use the initial corrected volumes to derive a brain mask for eddy
-  run.command('mrcat ' + ' '.join(applytopup_image_list) + ' - | dwi2mask - - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32 -stride -1,+2,+3')
+  if len(applytopup_image_list) == 1:
+    run.command('dwi2mask ' + applytopup_image_list[0] + ' - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32 -stride -1,+2,+3')
+  else:
+    run.command('mrcat ' + ' '.join(applytopup_image_list) + ' - -axis 3 | dwi2mask - - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32 -stride -1,+2,+3')
 
   for entry in applytopup_image_list:
     file.delTemporary(entry)

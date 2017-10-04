@@ -139,10 +139,13 @@ def match(image_one, image_two, max_dim=0): #pylint: disable=unused-variable
         return False
   # Image transform
   for line_one, line_two in zip(image_one.transform(), image_two.transform()):
-    for one, two in zip(line_one, line_two):
+    for one, two in zip(line_one[:3], line_two[:3]):
       if abs(one-two) > 1e-4:
-        app.debug(debug_prefix + ' transform mismatch (' + str(image_one.transform()) + ' ' + str(image_two.transform()) + ')')
+        app.debug(debug_prefix + ' transform (rotation) mismatch (' + str(image_one.transform()) + ' ' + str(image_two.transform()) + ')')
         return False
+    if abs(line_one[3]-line_two[3]) > 1e-2:
+      app.debug(debug_prefix + ' transform (translation) mismatch (' + str(image_one.transform()) + ' ' + str(image_two.transform()) + ')')
+      return False
   # Everything matches!
   app.debug(debug_prefix + ' image match')
   return True
