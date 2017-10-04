@@ -117,8 +117,14 @@ void setup_metric (Metric& metric, Image<node_t>& nodes_data)
   if (get_options ("scale_invnodevol").size())
     metric.set_scale_invnodevol (nodes_data);
   auto opt = get_options ("scale_file");
-  if (opt.size())
-    metric.set_scale_file (opt[0][0]);
+  if (opt.size()) {
+    try {
+      metric.set_scale_file (opt[0][0]);
+    } catch (Exception& e) {
+      throw Exception (e, "-scale_file option expects a file containing a list of numbers (one for each streamline); "
+                          "file \"" + std::string(opt[0][0]) + "\" does not appear to contain this");
+    }
+  }
 }
 
 

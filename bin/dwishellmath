@@ -22,7 +22,7 @@ HELP_PAGE
 fi
 
 tmpfiles=""
-for b in $(mrinfo "$1" -shells);
+for b in $(mrinfo "$1" -shellvalues);
 do
   echo "Extracting $2 of the b=$b shell."
   tmpfiles="$tmpfiles "$(dwiextract -shell $b "$1" - -quiet | mrmath -axis 3 - $2 - -quiet)

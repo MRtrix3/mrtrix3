@@ -3,15 +3,13 @@
 # Script for estimating response functions for spherical deconvolution
 # A number of different approaches are available within this script for performing response function estimation.
 
-
 # Make the corresponding MRtrix3 Python libraries available
 import inspect, os, sys
-lib_folder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile(inspect.currentframe()))[0], os.pardir, 'lib')))
+lib_folder = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
 if not os.path.isdir(lib_folder):
   sys.stderr.write('Unable to locate MRtrix3 Python libraries')
   sys.exit(1)
 sys.path.insert(0, lib_folder)
-
 
 from mrtrix3 import algorithm, app, image, path, run
 
@@ -23,7 +21,7 @@ app.cmdline.addDescription('Each algorithm available also has its own help page,
 
 # General options
 common_options = app.cmdline.add_argument_group('Options common to all dwi2response algorithms')
-common_options.add_argument('-shell', help='The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)')
+common_options.add_argument('-shells', help='The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)')
 common_options.add_argument('-lmax', help='The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)')
 common_options.add_argument('-mask', help='Provide an initial mask for response voxel selection')
 common_options.add_argument('-voxels', help='Output an image showing the final voxel selection(s)')
@@ -58,15 +56,15 @@ if app.args.lmax:
     app.error('Parameter lmax must be a number')
   if alg.needsSingleShell() and not len(lmax) == 1:
     app.error('Can only specify a single lmax value for single-shell algorithms')
-shell_option = ''
-if app.args.shell:
+shells_option = ''
+if app.args.shells:
   try:
-    shell_values = [ int(x) for x in app.args.shell.split(',') ]
+    shells_values = [ int(x) for x in app.args.shells.split(',') ]
   except:
-    app.error('-shell option should provide a comma-separated list of b-values')
-  if alg.needsSingleShell() and not len(shell_values) == 1:
+    app.error('-shells option should provide a comma-separated list of b-values')
+  if alg.needsSingleShell() and not len(shells_values) == 1:
     app.error('Can only specify a single b-value shell for single-shell algorithms')
-  shell_option = ' -shell ' + app.args.shell
+  shells_option = ' -shells ' + app.args.shells
 singleshell_option = ''
 if alg.needsSingleShell():
   singleshell_option = ' -singleshell -no_bzero'
@@ -76,35 +74,31 @@ if app.args.grad:
   grad_import_option = ' -grad ' + path.fromUser(app.args.grad, True)
 elif app.args.fslgrad:
   grad_import_option = ' -fslgrad ' + path.fromUser(app.args.fslgrad[0], True) + ' ' + path.fromUser(app.args.fslgrad[1], True)
-elif not image.headerField(path.fromUser(app.args.input, False), 'dwgrad'):
+elif 'dw_scheme' not in image.Header(path.fromUser(app.args.input, False)).keyval():
   app.error('Script requires diffusion gradient table: either in image header, or using -grad / -fslgrad option')
 
 app.makeTempDir()
 
 # Get standard input data into the temporary directory
-if alg.needsSingleShell() or shell_option:
-  run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' - -stride 0,0,0,1' + grad_import_option + ' | dwiextract - ' + path.toTemp('dwi.mif', True) + shell_option + singleshell_option)
+if alg.needsSingleShell() or shells_option:
+  run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' - -stride 0,0,0,1' + grad_import_option + ' | dwiextract - ' + path.toTemp('dwi.mif', True) + shells_option + singleshell_option)
 else: # Don't discard b=0 in multi-shell algorithms
   run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('dwi.mif', True) + ' -stride 0,0,0,1' + grad_import_option)
 if app.args.mask:
   run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit')
+else:
+  run.command('dwi2mask ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('mask.mif', True))
 
 alg.getInputs()
 
 app.gotoTempDir()
 
 
-# Generate a brain mask (if necessary)
-# Otherwise, check that the mask provided is appropriate
-if os.path.exists('mask.mif'):
-  dwi_size = [ int(x) for x in image.headerField('dwi.mif', 'size').split() ]
-  mask_size = [ int(x) for x in image.headerField('mask.mif', 'size').split() ]
-  if not mask_size[:3] == dwi_size[:3]:
-    app.error('Dimensions of provided mask image do not match DWI')
-  if int(image.statistic('mask.mif', 'count', 'mask.mif')) == 0:
-    app.error('Input mask does not contain any voxels')
-else:
-  run.command('dwi2mask dwi.mif mask.mif')
+# Check that the brain mask is appropriate
+if image.Header('mask.mif').size()[:3] != image.Header('dwi.mif').size()[:3]:
+  app.error('Dimensions of provided mask image do not match DWI')
+if int(image.statistic('mask.mif', 'count', '-mask mask.mif')) == 0:
+  app.error('Input mask does not contain any voxels')
 
 
 # From here, the script splits depending on what estimation algorithm is being used
@@ -113,6 +107,5 @@ alg.execute()
 
 # Finalize for all algorithms
 if app.args.voxels:
-  run.command('mrconvert voxels.mif ' + path.fromUser(app.args.voxels, True) + (' -force' if app.force else ''))
+  run.command('mrconvert voxels.mif ' + path.fromUser(app.args.voxels, True) + (' -force' if app.forceOverwrite else ''))
 app.complete()
-
