@@ -105,7 +105,7 @@ def mrinfo(image_path, field): #pylint: disable=unused-variable
 
 # Check to see whether the fundamental header properties of two images match
 # Inputs can be either _Header class instances, or file paths
-def match(image_one, image_two, max_dim=0): #pylint: disable=unused-variable
+def match(image_one, image_two, max_dim=0): #pylint: disable=unused-variable, too-many-return-statements
   import math
   from mrtrix3 import app
   if not isinstance(image_one, Header):

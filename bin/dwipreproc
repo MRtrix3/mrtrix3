@@ -419,7 +419,7 @@ if app.args.se_epi:
       if app.args.align_seepi:
         app.console('No phase-encoding contrast present in SE-EPI images; will examine again after combining with DWI b=0 images')
         new_se_epi_path = os.path.splitext(se_epi_path)[0] + '_dwibzeros.mif'
-        # TODO Should a balanced scheme be produced if possible?
+        # Don't worry about trying to produce a balanced scheme here
         run.command('dwiextract dwi.mif - -bzero | mrcat - se_epi.mif ' + new_se_epi_path + ' -axis 3')
         se_epi_header = image.Header(new_se_epi_path)
         se_epi_pe_scheme_has_contrast = 'pe_scheme' in se_epi_header.keyval()
@@ -458,7 +458,7 @@ if app.args.se_epi:
       app.warn('It appears that the spin-echo EPI images used for inhomogeneity field estimation have a different flip angle to the DWIs being corrected. '
                'This may cause issues in estimation of the field, as the first DWI b=0 volume will be added to the input series to topup '
                'due to use of the -align_seepi option.')
-    
+
     # If we are using the -se_epi option, and hence the input images to topup have not come from the DWIs themselves,
     #   we need to insert the first b=0 DWI volume to the start of the topup input image. Otherwise, the field estimated
     #   by topup will not be correctly aligned with the volumes as they are processed by eddy.
