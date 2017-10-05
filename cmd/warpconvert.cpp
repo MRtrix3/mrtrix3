@@ -23,7 +23,7 @@
 using namespace MR;
 using namespace App;
 
-const char* conversion_type[] = {"deformation2displacement","displacement2deformation","warpfull2deformation","warpfull2displacement",nullptr};
+const char* conversion_types[] = {"deformation2displacement","displacement2deformation","warpfull2deformation","warpfull2displacement",nullptr};
 
 
 void usage ()
@@ -40,7 +40,7 @@ void usage ()
 
   ARGUMENTS
   + Argument ("in", "the input warp image.").type_image_in ()
-  + Argument ("type", "the conversion type required. Valid choices are: " + join(conversion_type, ", ")).type_choice (conversion_type)
+  + Argument ("type", "the conversion type required. Valid choices are: " + join(conversion_types, ", ")).type_choice (conversion_types)
   + Argument ("out", "the output warp image.").type_image_out ();
 
   OPTIONS
@@ -62,7 +62,7 @@ void usage ()
 
 void run ()
 {
-  const int conversion_type = argument[1];
+  const int type = argument[1];
   bool midway_space = get_options("midway_space").size() ? true : false;
 
   std::string template_filename;
@@ -76,7 +76,7 @@ void run ()
     from = opt[0][0];
 
   // deformation2displacement
-  if (conversion_type == 0) {
+  if (type == 0) {
     if (midway_space)
       WARN ("-midway_space option ignored with deformation2displacement conversion type");
     if (get_options ("template").size())
@@ -93,7 +93,7 @@ void run ()
     Registration::Warp::deformation2displacement (deformation, displacement);
 
   // displacement2deformation
-  } else if (conversion_type == 1) {
+  } else if (type == 1) {
     auto displacement = Image<default_type>::open (argument[0]).with_direct_io (3);
     Registration::Warp::check_warp (displacement);
 
@@ -110,7 +110,7 @@ void run ()
     Registration::Warp::displacement2deformation (displacement, deformation);
 
    // warpfull2deformation & warpfull2displacement
-  } else if (conversion_type == 2 || conversion_type == 3) {
+  } else if (type == 2 || type == 3) {
 
     auto warp = Image<default_type>::open (argument[0]).with_direct_io (3);
     Registration::Warp::check_warp_full (warp);
@@ -125,7 +125,7 @@ void run ()
       warp_output = Registration::Warp::compute_full_deformation (warp, template_header, from);
     }
 
-    if (conversion_type == 3)
+    if (type == 3)
       Registration::Warp::deformation2displacement (warp_output, warp_output);
 
     Header header (warp_output);
