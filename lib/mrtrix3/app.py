@@ -883,7 +883,7 @@ class progressBar(object): #pylint: disable=unused-variable
 def isWindows(): #pylint: disable=unused-variable
   import platform
   system = platform.system().lower()
-  return system.startswith('mingw') or system.startswith('msys') or system.startswith('windows')
+  return system.startswith('mingw') or system.startswith('msys') or system.startswith('nt') or system.startswith('windows')
 
 
 
