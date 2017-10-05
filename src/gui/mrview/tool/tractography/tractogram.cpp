@@ -578,7 +578,7 @@ namespace MR
           const float step_size = DWI::Tractography::get_step_size (properties);
           GLint new_stride = 1;
 
-          if (geometry_type != TrackGeometryType::Lines && std::isfinite (step_size)) {
+          if (geometry_type == TrackGeometryType::Pseudotubes && std::isfinite (step_size)) {
             const auto geom_size = geometry_type == TrackGeometryType::Pseudotubes ?
                   Tractogram::default_line_thickness : Tractogram::default_point_size;
             new_stride = GLint (geom_size * std::exp (2.0e-3f * line_thickness) * original_fov / step_size);
