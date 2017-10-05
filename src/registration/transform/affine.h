@@ -104,11 +104,11 @@ namespace MR
           Affine () : Base (12) {
             //CONF option: reg_gdweight_matrix
             //CONF default: 0.0003
-            //CONF Linear registration: weight for optimisation of linear (3x3) matrix parameters
+            //CONF Linear registration: weight for optimisation of linear (3x3) matrix parameters.
             default_type w1 (MR::File::Config::get_float ("reg_gdweight_matrix", 0.0003f));
             //CONF option: reg_gdweight_translation
             //CONF default: 1
-            //CONF Linear registration: weight for optimisation of translation parameters
+            //CONF Linear registration: weight for optimisation of translation parameters.
             default_type w2 (MR::File::Config::get_float ("reg_gdweight_translation", 1.0f));
             const Eigen::Vector4d weights (w1, w1, w1, w2);
             this->optimiser_weights << weights, weights, weights;
