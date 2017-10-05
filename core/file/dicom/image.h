@@ -45,9 +45,8 @@ namespace MR {
             transfer_syntax_supported = true;
             pe_axis = 3;
             pe_sign = 0;
-            pixel_bandwidth = bandwidth_per_pixel_phase_encode = echo_time = repetition_time = flip_angle = partial_fourier_fraction = NaN;
-            echo_train_length = parallel_inplane_factor = 0;
-            partial_fourier_axis = -1;
+            pixel_bandwidth = bandwidth_per_pixel_phase_encode = echo_time = repetition_time = flip_angle = NaN;
+            echo_train_length = 0;
           }
 
           size_t acq_dim[2], dim[2], series_num, instance, acq, sequence;
@@ -58,9 +57,8 @@ namespace MR {
           bool DW_scheme_wrt_image, transfer_syntax_supported;
           size_t pe_axis;
           int pe_sign;
-          default_type pixel_bandwidth, bandwidth_per_pixel_phase_encode, echo_time, repetition_time, flip_angle, partial_fourier_fraction;
-          size_t echo_train_length, parallel_inplane_factor;
-          int partial_fourier_axis;
+          default_type pixel_bandwidth, bandwidth_per_pixel_phase_encode, echo_time, repetition_time, flip_angle;
+          size_t echo_train_length;
           vector<uint32_t> index;
 
           bool operator< (const Frame& frame) const {

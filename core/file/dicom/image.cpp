@@ -96,19 +96,6 @@ namespace MR {
                 case 0x1314U:
                   flip_angle = item.get_float()[0];
                   return;
-                case 0x9036U:
-                  if (item.get_string()[0] == "PHASE")
-                    partial_fourier_axis = 0;
-                  else if (item.get_string()[0] == "FREQUENCY")
-                    partial_fourier_axis = 1;
-                  else if (item.get_string()[0] == "SLICE_SELECT")
-                    partial_fourier_axis = 2;
-                  else if (item.get_string()[0] == "COMBINATION")
-                    partial_fourier_axis = -2;
-                  return;
-                case 0x9069U:
-                  parallel_inplane_factor = item.get_int()[0];
-                  return;
                 case 0x9087U:
                   bvalue = item.get_float()[0];
                   return;
@@ -116,9 +103,6 @@ namespace MR {
                   G[0] = item.get_float()[0];
                   G[1] = item.get_float()[1];
                   G[2] = item.get_float()[2];
-                  return;
-                case 0x9081U:
-                  partial_fourier_fraction = item.get_float()[0];
                   return;
               }
               return;
