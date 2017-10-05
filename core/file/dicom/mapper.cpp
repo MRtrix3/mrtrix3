@@ -119,16 +119,6 @@ namespace MR {
           H.keyval()["EchoTime"] = str (0.001 * image.echo_time, 6);
         if (std::isfinite (image.flip_angle))
           H.keyval()["FlipAngle"] = str (image.flip_angle, 6);
-        if (image.parallel_inplane_factor)
-          H.keyval()["ParallelReductionFactorInPlane"] = str (image.parallel_inplane_factor);
-        if (std::isfinite (image.partial_fourier_fraction))
-          H.keyval()["PartialFourier"] = str (image.partial_fourier_fraction, 6);
-        // TODO This will need handling with regards to axis permutation
-        switch (image.partial_fourier_axis) {
-          case 0: H.keyval()["PartialFourierDirection"] = "i"; break;
-          case 1: H.keyval()["PartialFourierDirection"] = "j"; break;
-          case 2: H.keyval()["PartialFourierDirection"] = "k"; break;
-        }
         if (std::isfinite (image.repetition_time))
           H.keyval()["RepetitionTime"] = str (0.001 * image.repetition_time, 6);
 
