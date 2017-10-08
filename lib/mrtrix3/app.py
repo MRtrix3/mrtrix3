@@ -145,13 +145,15 @@ def parse(): #pylint: disable=unused-variable
 
   args = cmdline.parse_args()
 
-  if args.help:
+  if hasattr(args, 'help') and args.help:
     cmdline.printHelp()
     sys.exit(0)
 
   use_colour = True
   if 'TerminalColor' in config:
     use_colour = config['TerminalColor'].lower() in ('yes', 'true', '1')
+  if not sys.stderr.isatty():
+    use_colour = False
   if use_colour:
     clearLine = '\033[0K'
     colourClear = '\033[0m'
@@ -161,20 +163,22 @@ def parse(): #pylint: disable=unused-variable
     colourExec = '\033[03;36m' #pylint: disable=unused-variable
     colourWarn = '\033[00;31m'
 
-  if args.nocleanup:
+  # Need to check for the presence of these keys first, since there's a chance that an external script may have
+  #   erased the standard options
+  if hasattr(args, 'nocleanup') and args.nocleanup:
     cleanup = False
-  if args.nthreads:
+  if hasattr(args, 'nthreads') and args.nthreads:
     numThreads = args.nthreads #pylint: disable=unused-variable
-  if args.quiet:
+  if hasattr(args, 'quiet') and args.quiet:
     verbosity = 0
-  elif args.info:
+  elif hasattr(args, 'info') and args.info:
     verbosity = 2
-  elif args.debug:
+  elif hasattr(args, 'debug') and args.debug:
     verbosity = 3
 
   cmdline.printCitationWarning()
 
-  if args.cont:
+  if hasattr(args, 'cont') and args.cont:
     continueOption = True
     tempDir = os.path.abspath(args.cont[0])
     run.setContinue(args.cont[1])
@@ -193,7 +197,7 @@ def checkOutputPath(path): #pylint: disable=unused-variable
       output_type = ' file'
     elif os.path.isdir(abspath):
       output_type = ' directory'
-    if args.force:
+    if hasattr(args, 'force') and args.force:
       warn('Output' + output_type + ' \'' + path + '\' already exists; will be overwritten at script completion')
       forceOverwrite = True #pylint: disable=unused-variable
     else:
@@ -203,14 +207,13 @@ def checkOutputPath(path): #pylint: disable=unused-variable
 
 def makeTempDir(): #pylint: disable=unused-variable
   import os, random, string, sys
-  global args, config, continueOption
-  global tempDir, workingDir
+  global args, config, continueOption, tempDir, workingDir
   if continueOption:
     debug('Skipping temporary directory creation due to use of -continue option')
     return
   if tempDir:
     error('Script error: Cannot use multiple temporary directories')
-  if args.tempdir:
+  if hasattr(args, 'tempdir') and args.tempdir:
     dir_path = os.path.abspath(args.tempdir)
   else:
     if 'ScriptTmpDir' in config:
@@ -251,8 +254,9 @@ def complete(): #pylint: disable=unused-variable
   import os, shutil, sys
   global cleanup, tempDir, workingDir
   global colourClear, colourConsole, colourWarn
-  console('Changing back to original directory (' + workingDir + ')')
-  os.chdir(workingDir)
+  if os.getcwd() != workingDir:
+    console('Changing back to original directory (' + workingDir + ')')
+    os.chdir(workingDir)
   if cleanup and tempDir:
     console('Deleting temporary directory ' + tempDir)
     shutil.rmtree(tempDir)
@@ -629,8 +633,10 @@ class Parser(argparse.ArgumentParser):
         process.communicate(s.encode())
       except:
         sys.stdout.write(s)
+        sys.stdout.flush()
     else:
       sys.stdout.write(s)
+      sys.stdout.flush()
 
   def printFullUsage(self):
     import sys
@@ -662,6 +668,7 @@ class Parser(argparse.ArgumentParser):
                 sys.stdout.write('ARGUMENT ' + arg + ' 0 0\n')
             else:
               sys.stdout.write('ARGUMENT ' + option.metavar + ' 0 0\n')
+    sys.stdout.flush()
 
   def printUsageMarkdown(self):
     import os, subprocess, sys
@@ -712,8 +719,8 @@ class Parser(argparse.ArgumentParser):
     s += '**Author:** ' + self._author + '\n\n'
     s += '**Copyright:** ' + self._copyright + '\n\n'
     sys.stdout.write(s)
+    sys.stdout.flush()
     if self._subparsers:
-      sys.stdout.flush()
       for alg in self._subparsers._group_actions[0].choices:
         subprocess.call ([ sys.executable, os.path.realpath(sys.argv[0]), alg, '__print_usage_markdown__' ])
 
@@ -783,8 +790,8 @@ class Parser(argparse.ArgumentParser):
     s += '**Author:** ' + self._author + '\n\n'
     s += '**Copyright:** ' + self._copyright + '\n\n'
     sys.stdout.write(s)
+    sys.stdout.flush()
     if self._subparsers:
-      sys.stdout.flush()
       for alg in self._subparsers._group_actions[0].choices:
         subprocess.call ([ sys.executable, os.path.realpath(sys.argv[0]), alg, '__print_usage_rst__' ])
 
@@ -794,34 +801,78 @@ class Parser(argparse.ArgumentParser):
 #   mimicing the behaviour of MRtrix3 binary commands
 class progressBar(object): #pylint: disable=unused-variable
 
+  _busy = [ '.   ',
+            ' .  ',
+            '  . ',
+            '   .',
+            '  . ',
+            ' .  ' ]
+
   def _update(self):
-    import os, sys
-    global clearLine, colourConsole, colourClear
-    sys.stderr.write('\r' + colourConsole + os.path.basename(sys.argv[0]) + ': ' + colourClear + '[{0:>3}%] '.format(int(round(100.0*self.counter/self.target))) + self.message + '...' + clearLine + self.newline)
+    import sys
+    global clearLine, colourConsole, colourClear, colourExec
+    assert not self.iscomplete
+    if self.isatty:
+      sys.stderr.write('\r' + self.scriptname + ': ' + colourExec + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else progressBar._busy[self.counter%6]) + '] ' + colourConsole + self.message + '... ' + colourClear + clearLine + self.newline)
+    else:
+      if self.newline:
+        sys.stderr.write(self.scriptname + ': ' + self.message + '... [' + ('=' * int(self.value/2)) + self.newline)
+      else:
+        sys.stderr.write('=' * (int(self.value/2) - int(self.old_value/2)))
     sys.stderr.flush()
 
-  def __init__(self, msg, target):
-    global verbosity
-    self.counter = 0
-    self.message = msg
-    self.newline = '\n' if verbosity > 1 else '' # If any more than default verbosity, may still get details printed in between progress updates
-    self.origverbosity = verbosity
-    self.target = target
-    verbosity = verbosity - 1 if verbosity else 0
-    self._update()
-
-  def increment(self, msg=''):
-    if msg:
-      self.message = msg
-    self.counter += 1
-    self._update()
-
-  def done(self):
+  def __init__(self, msg, target=0):
     import os, sys
     global verbosity
-    global clearLine, colourConsole, colourClear
-    self.counter = self.target
-    sys.stderr.write('\r' + colourConsole + os.path.basename(sys.argv[0]) + ': ' + colourClear + '[100%] ' + self.message + clearLine + '\n')
+    self.counter = 0
+    self.isatty = sys.stderr.isatty()
+    self.iscomplete = False
+    self.message = msg
+    self.multiplier = 100.0/target if target else 0
+    self.newline = '\n' if verbosity > 1 else '' # If any more than default verbosity, may still get details printed in between progress updates
+    self.old_value = 0
+    self.origverbosity = verbosity
+    self.scriptname = os.path.basename(sys.argv[0])
+    self.value = 0
+    verbosity = verbosity - 1 if verbosity else 0
+    if self.isatty:
+      sys.stderr.write(self.scriptname + ': ' + colourExec + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else progressBar._busy[0]) + '] ' + colourConsole + self.message + '... ' + colourClear + clearLine + self.newline)
+    else:
+      sys.stderr.write(self.scriptname + ': ' + self.message + '... [' + self.newline)
+    sys.stderr.flush()
+
+  def increment(self, msg=''):
+    import math
+    assert not self.iscomplete
+    self.counter += 1
+    force_update = False
+    if msg:
+      self.message = msg
+      force_update = True
+    if self.multiplier:
+      new_value = int(round(self.counter * self.multiplier))
+    else:
+      new_value = math.log(self.counter, 2)
+    if new_value != self.value:
+      self.old_value = self.value
+      self.value = new_value
+      force_update = True
+    if force_update:
+      self._update()
+
+  def done(self):
+    import sys
+    global verbosity
+    global clearLine, colourConsole, colourClear, colourExec
+    self.iscomplete = True
+    self.value = 100
+    if self.isatty:
+      sys.stderr.write('\r' + self.scriptname + ': ' + colourExec + '[' + ('100%' if self.multiplier else 'done') + '] ' + colourConsole + self.message + colourClear + clearLine + '\n')
+    else:
+      if self.newline:
+        sys.stderr.write(self.scriptname + ': ' + self.message + ' [' + ('=' * (self.value/2)) + ']\n')
+      else:
+        sys.stderr.write('=' * (int(self.value/2) - int(self.old_value/2)) + ']\n')
     sys.stderr.flush()
     verbosity = self.origverbosity
 
@@ -832,7 +883,7 @@ class progressBar(object): #pylint: disable=unused-variable
 def isWindows(): #pylint: disable=unused-variable
   import platform
   system = platform.system().lower()
-  return system.startswith('mingw') or system.startswith('msys') or system.startswith('windows')
+  return system.startswith('mingw') or system.startswith('msys') or system.startswith('nt') or system.startswith('windows')
 
 
 
@@ -841,15 +892,23 @@ def isWindows(): #pylint: disable=unused-variable
 def handler(signum, _frame):
   import os, signal, sys
   global _signals
-  # First, kill any child processes
+  # Ignore any other incoming signals
+  for s in _signals:
+    try:
+      signal.signal(getattr(signal, s), signal.SIG_IGN)
+    except:
+      pass
+  # Kill any child processes in the run module
   try:
     from mrtrix3.run import _processes
     for p in _processes:
       if p:
         p.terminate()
+        p.communicate() # Flushes the I/O buffers
     _processes = [ ]
   except ImportError:
     pass
+  # Generate the error message
   msg = '[SYSTEM FATAL CODE: '
   signal_found = False
   for (key, value) in _signals.items():
@@ -862,6 +921,6 @@ def handler(signum, _frame):
       pass
   if not signal_found:
     msg += '?] Unknown system signal'
-  sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourError + msg + colourClear + '\n')
+  sys.stderr.write('\n' + os.path.basename(sys.argv[0]) + ': ' + colourError + msg + colourClear + '\n')
   complete()
   exit(signum)

@@ -70,7 +70,7 @@ namespace MR
                 const std::string& fod_path (properties["seed_dynamic"]);
                 const std::string max_num_tracks = properties["max_num_tracks"];
                 if (max_num_tracks.empty())
-                  throw Exception ("Dynamic seeding requires setting the desired number of tracks using the -number option");
+                  throw Exception ("Dynamic seeding requires setting the desired number of tracks using the -select option");
                 const size_t num_tracks = to<size_t>(max_num_tracks);
 
                 using SetDixel = Mapping::SetDixel;

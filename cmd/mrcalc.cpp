@@ -35,7 +35,7 @@ DESCRIPTION
   + "This command will only compute per-voxel operations. "
   "Use 'mrmath' to compute summary statistics across images or "
   "along image axes."
-  
+
   + "This command uses a stack-based syntax, with operators "
   "(specified using options) operating on the top-most entries "
   "(i.e. images or values) in the stack. Operands (values or "
@@ -44,20 +44,20 @@ DESCRIPTION
   "as options) operate on and consume the top-most entries in "
   "the stack, and push their output as a new entry on the stack. "
   "For example:"
-  
+
   + "    $ mrcalc a.mif 2 -mult r.mif"
-  
+
   + "performs the operation r = 2*a for every voxel a,r in "
   "images a.mif and r.mif respectively. Similarly:"
-  
+
   + "    $ mrcalc a.mif -neg b.mif -div -exp 9.3 -mult r.mif"
-  
+
   + "performs the operation r = 9.3*exp(-a/b), and:"
-  
+
   + "    $ mrcalc a.mif b.mif -add c.mif d.mif -mult 4.2 -add -div r.mif"
-  
+
   + "performs r = (a+b)/(c*d+4.2)."
-  
+
   + "As an additional feature, this command will allow images with different "
   "dimensions to be processed, provided they satisfy the following "
   "conditions: for each axis, the dimensions match if they are the same size, "
@@ -130,6 +130,7 @@ OPTIONS
   + OptionGroup ("Ternary operators")
 
   + Option ("if", "if first operand is true (non-zero), return second operand, otherwise return third operand").allow_multiple()
+  + Option ("replace", "Wherever first operand is equal to the second operand, replace with third operand").allow_multiple()
 
 
   + DataType::options();
@@ -213,15 +214,15 @@ class LoadedImage { NOMEMALIGN
 class StackEntry { NOMEMALIGN
   public:
 
-    StackEntry (const char* entry) : 
+    StackEntry (const char* entry) :
       arg (entry) { }
 
-    StackEntry (Evaluator* evaluator_p) : 
+    StackEntry (Evaluator* evaluator_p) :
       arg (nullptr),
       evaluator (evaluator_p) { }
 
     void load () {
-      if (!arg) 
+      if (!arg)
         return;
       auto search = image_list.find (arg);
       if (search != image_list.end()) {
@@ -242,8 +243,8 @@ class StackEntry { NOMEMALIGN
           else if (a == "-nan")  { value = -std::numeric_limits<real_type>::quiet_NaN(); }
           else if (a ==  "inf")  { value =  std::numeric_limits<real_type>::infinity(); }
           else if (a == "-inf")  { value = -std::numeric_limits<real_type>::infinity(); }
-          else if (a == "rand")  { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = false; } 
-          else if (a == "randn") { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = true; } 
+          else if (a == "rand")  { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = false; }
+          else if (a == "randn") { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = true; }
           else                   { value =  to<complex_type> (arg); }
         }
       }
@@ -269,8 +270,8 @@ std::map<std::string, LoadedImage> StackEntry::image_list;
 
 
 class Evaluator { NOMEMALIGN
-  public: 
-    Evaluator (const std::string& name, const char* format_string, bool complex_maps_to_real = false, bool real_maps_to_complex = false) : 
+  public:
+    Evaluator (const std::string& name, const char* format_string, bool complex_maps_to_real = false, bool real_maps_to_complex = false) :
       id (name),
       format (format_string),
       ZtoR (complex_maps_to_real),
@@ -294,8 +295,8 @@ class Evaluator { NOMEMALIGN
     virtual Chunk& evaluate (Chunk& a, Chunk& b, Chunk& c) const { throw Exception ("operation \"" + id + "\" not supported!"); return a; }
 
     virtual bool is_complex () const {
-      for (size_t n = 0; n < operands.size(); ++n) 
-        if (operands[n].is_complex())  
+      for (size_t n = 0; n < operands.size(); ++n)
+        if (operands[n].is_complex())
           return !ZtoR;
       return RtoZ;
     }
@@ -360,7 +361,7 @@ inline void replace (std::string& orig, size_t n, const std::string& value)
 // to make sure full operation is recorded, even for scalar operations that
 // get evaluated there and then and so get left out if the string is created
 // later:
-std::string operation_string (const StackEntry& entry) 
+std::string operation_string (const StackEntry& entry)
 {
   if (entry.image)
     return entry.image->name();
@@ -368,7 +369,7 @@ std::string operation_string (const StackEntry& entry)
     return entry.rng_gausssian ? "randn()" : "rand()";
   else if (entry.evaluator) {
     std::string s = entry.evaluator->format;
-    for (size_t n = 0; n < entry.evaluator->operands.size(); ++n) 
+    for (size_t n = 0; n < entry.evaluator->operands.size(); ++n)
       replace (s, n, operation_string (entry.evaluator->operands[n]));
     return s;
   }
@@ -382,23 +383,23 @@ std::string operation_string (const StackEntry& entry)
 template <class Operation>
 class UnaryEvaluator : public Evaluator { NOMEMALIGN
   public:
-    UnaryEvaluator (const std::string& name, Operation operation, const StackEntry& operand) : 
-      Evaluator (name, operation.format, operation.ZtoR, operation.RtoZ), 
-      op (operation) { 
+    UnaryEvaluator (const std::string& name, Operation operation, const StackEntry& operand) :
+      Evaluator (name, operation.format, operation.ZtoR, operation.RtoZ),
+      op (operation) {
         operands.push_back (operand);
       }
 
     Operation op;
 
-    virtual Chunk& evaluate (Chunk& in) const { 
-      if (operands[0].is_complex()) 
+    virtual Chunk& evaluate (Chunk& in) const {
+      if (operands[0].is_complex())
         for (size_t n = 0; n < in.size(); ++n)
           in[n] = op.Z (in[n]);
-      else 
+      else
         for (size_t n = 0; n < in.size(); ++n)
           in[n] = op.R (in[n].real());
 
-      return in; 
+      return in;
     }
 };
 
@@ -410,9 +411,9 @@ class UnaryEvaluator : public Evaluator { NOMEMALIGN
 template <class Operation>
 class BinaryEvaluator : public Evaluator { NOMEMALIGN
   public:
-    BinaryEvaluator (const std::string& name, Operation operation, const StackEntry& operand1, const StackEntry& operand2) : 
+    BinaryEvaluator (const std::string& name, Operation operation, const StackEntry& operand1, const StackEntry& operand2) :
       Evaluator (name, operation.format, operation.ZtoR, operation.RtoZ),
-      op (operation) { 
+      op (operation) {
         operands.push_back (operand1);
         operands.push_back (operand2);
       }
@@ -422,15 +423,15 @@ class BinaryEvaluator : public Evaluator { NOMEMALIGN
     virtual Chunk& evaluate (Chunk& a, Chunk& b) const {
       Chunk& out (a.size() ? a : b);
       if (operands[0].is_complex() || operands[1].is_complex()) {
-        for (size_t n = 0; n < out.size(); ++n) 
+        for (size_t n = 0; n < out.size(); ++n)
           out[n] = op.Z (
-              a.size() ? a[n] : a.value, 
+              a.size() ? a[n] : a.value,
               b.size() ? b[n] : b.value );
       }
       else {
-        for (size_t n = 0; n < out.size(); ++n) 
+        for (size_t n = 0; n < out.size(); ++n)
           out[n] = op.R (
-              a.size() ? a[n].real() : a.value.real(), 
+              a.size() ? a[n].real() : a.value.real(),
               b.size() ? b[n].real() : b.value.real() );
       }
       return out;
@@ -443,9 +444,9 @@ class BinaryEvaluator : public Evaluator { NOMEMALIGN
 template <class Operation>
 class TernaryEvaluator : public Evaluator { NOMEMALIGN
   public:
-    TernaryEvaluator (const std::string& name, Operation operation, const StackEntry& operand1, const StackEntry& operand2, const StackEntry& operand3) : 
+    TernaryEvaluator (const std::string& name, Operation operation, const StackEntry& operand1, const StackEntry& operand2, const StackEntry& operand3) :
       Evaluator (name, operation.format, operation.ZtoR, operation.RtoZ),
-      op (operation) { 
+      op (operation) {
         operands.push_back (operand1);
         operands.push_back (operand2);
         operands.push_back (operand3);
@@ -456,17 +457,17 @@ class TernaryEvaluator : public Evaluator { NOMEMALIGN
     virtual Chunk& evaluate (Chunk& a, Chunk& b, Chunk& c) const {
       Chunk& out (a.size() ? a : (b.size() ? b : c));
       if (operands[0].is_complex() || operands[1].is_complex() || operands[2].is_complex()) {
-        for (size_t n = 0; n < out.size(); ++n) 
+        for (size_t n = 0; n < out.size(); ++n)
           out[n] = op.Z (
               a.size() ? a[n] : a.value,
               b.size() ? b[n] : b.value,
               c.size() ? c[n] : c.value );
       }
       else {
-        for (size_t n = 0; n < out.size(); ++n) 
+        for (size_t n = 0; n < out.size(); ++n)
           out[n] = op.R (
-              a.size() ? a[n].real() : a.value.real(), 
-              b.size() ? b[n].real() : b.value.real(), 
+              a.size() ? a[n].real() : a.value.real(),
+              b.size() ? b[n].real() : b.value.real(),
               c.size() ? c[n].real() : c.value.real() );
       }
       return out;
@@ -481,7 +482,7 @@ class TernaryEvaluator : public Evaluator { NOMEMALIGN
 template <class Operation>
 void unary_operation (const std::string& operation_name, vector<StackEntry>& stack, Operation operation)
 {
-  if (stack.empty()) 
+  if (stack.empty())
     throw Exception ("no operand in stack for operation \"" + operation_name + "\"!");
   StackEntry& a (stack[stack.size()-1]);
   a.load();
@@ -506,7 +507,7 @@ void unary_operation (const std::string& operation_name, vector<StackEntry>& sta
 template <class Operation>
 void binary_operation (const std::string& operation_name, vector<StackEntry>& stack, Operation operation)
 {
-  if (stack.size() < 2) 
+  if (stack.size() < 2)
     throw Exception ("not enough operands in stack for operation \"" + operation_name + "\"");
   StackEntry& a (stack[stack.size()-2]);
   StackEntry& b (stack[stack.size()-1]);
@@ -518,7 +519,7 @@ void binary_operation (const std::string& operation_name, vector<StackEntry>& st
     stack.back() = entry;
   }
   else {
-    a.value = ( a.value.imag() == 0.0  && b.value.imag() == 0.0 ? 
+    a.value = ( a.value.imag() == 0.0  && b.value.imag() == 0.0 ?
       operation.R (a.value.real(), b.value.real()) :
       operation.Z (a.value, b.value) );
     stack.pop_back();
@@ -531,7 +532,7 @@ void binary_operation (const std::string& operation_name, vector<StackEntry>& st
 template <class Operation>
 void ternary_operation (const std::string& operation_name, vector<StackEntry>& stack, Operation operation)
 {
-  if (stack.size() < 3) 
+  if (stack.size() < 3)
     throw Exception ("not enough operands in stack for operation \"" + operation_name + "\"");
   StackEntry& a (stack[stack.size()-3]);
   StackEntry& b (stack[stack.size()-2]);
@@ -546,7 +547,7 @@ void ternary_operation (const std::string& operation_name, vector<StackEntry>& s
     stack.back() = entry;
   }
   else {
-    a.value = ( a.value.imag() == 0.0  && b.value.imag() == 0.0  && c.value.imag() == 0.0 ? 
+    a.value = ( a.value.imag() == 0.0  && b.value.imag() == 0.0  && c.value.imag() == 0.0 ?
       operation.R (a.value.real(), b.value.real(), c.value.real()) :
       operation.Z (a.value, b.value, c.value) );
     stack.pop_back();
@@ -563,7 +564,7 @@ void ternary_operation (const std::string& operation_name, vector<StackEntry>& s
  **********************************************************************/
 
 
-void get_header (const StackEntry& entry, Header& header) 
+void get_header (const StackEntry& entry, Header& header)
 {
   if (entry.evaluator) {
     for (size_t n = 0; n < entry.evaluator->operands.size(); ++n)
@@ -571,7 +572,7 @@ void get_header (const StackEntry& entry, Header& header)
     return;
   }
 
-  if (!entry.image) 
+  if (!entry.image)
     return;
 
   if (header.ndim() == 0) {
@@ -579,7 +580,7 @@ void get_header (const StackEntry& entry, Header& header)
     return;
   }
 
-  if (header.ndim() < entry.image->ndim()) 
+  if (header.ndim() < entry.image->ndim())
     header.ndim() = entry.image->ndim();
   for (size_t n = 0; n < std::min<size_t> (header.ndim(), entry.image->ndim()); ++n) {
     if (header.size(n) > 1 && entry.image->size(n) > 1 && header.size(n) != entry.image->size(n))
@@ -589,7 +590,7 @@ void get_header (const StackEntry& entry, Header& header)
       transform_mis_match_reported = true;
     }
     header.size(n) = std::max (header.size(n), entry.image->size(n));
-    if (!std::isfinite (header.spacing(n))) 
+    if (!std::isfinite (header.spacing(n)))
       header.spacing(n) = entry.image->spacing(n);
   }
 
@@ -621,7 +622,7 @@ class ThreadFunctor { NOMEMALIGN
   public:
     ThreadFunctor (
         const vector<size_t>& inner_axes,
-        const StackEntry& top_of_stack, 
+        const StackEntry& top_of_stack,
         Image<complex_type>& output_image) :
       top_entry (top_of_stack),
       image (output_image),
@@ -660,7 +661,7 @@ class ThreadFunctor { NOMEMALIGN
       Chunk& chunk = top_entry.evaluate (storage);
 
       auto value = chunk.cbegin();
-      for (auto l = loop (image); l; ++l) 
+      for (auto l = loop (image); l; ++l)
         image.value() = *(value++);
     }
 
@@ -677,14 +678,14 @@ class ThreadFunctor { NOMEMALIGN
 
 
 
-void run_operations (const vector<StackEntry>& stack) 
+void run_operations (const vector<StackEntry>& stack)
 {
   Header header;
   get_header (stack[0], header);
 
   if (header.ndim() == 0) {
     DEBUG ("no valid images supplied - assuming calculator mode");
-    if (stack.size() != 1) 
+    if (stack.size() != 1)
       throw Exception ("too many operands left on stack!");
 
     assert (!stack[0].evaluator);
@@ -694,10 +695,10 @@ void run_operations (const vector<StackEntry>& stack)
     return;
   }
 
-  if (stack.size() == 1) 
+  if (stack.size() == 1)
     throw Exception ("output image not specified");
 
-  if (stack.size() > 2) 
+  if (stack.size() > 2)
     throw Exception ("too many operands left on stack!");
 
   if (!stack[1].arg)
@@ -785,7 +786,7 @@ class OpNeg : public OpUnary { NOMEMALIGN
 
 class OpSqrt : public OpUnary { NOMEMALIGN
   public:
-    OpSqrt () : OpUnary ("sqrt (%1)") { } 
+    OpSqrt () : OpUnary ("sqrt (%1)") { }
     complex_type R (real_type v) const { return std::sqrt (v); }
     complex_type Z (complex_type v) const { return std::sqrt (v); }
 };
@@ -813,14 +814,14 @@ class OpLog10 : public OpUnary { NOMEMALIGN
 
 class OpCos : public OpUnary { NOMEMALIGN
   public:
-    OpCos () : OpUnary ("cos (%1)") { } 
+    OpCos () : OpUnary ("cos (%1)") { }
     complex_type R (real_type v) const { return std::cos (v); }
     complex_type Z (complex_type v) const { return std::cos (v); }
 };
 
 class OpSin : public OpUnary { NOMEMALIGN
   public:
-    OpSin () : OpUnary ("sin (%1)") { } 
+    OpSin () : OpUnary ("sin (%1)") { }
     complex_type R (real_type v) const { return std::sin (v); }
     complex_type Z (complex_type v) const { return std::sin (v); }
 };
@@ -848,7 +849,7 @@ class OpSinh : public OpUnary { NOMEMALIGN
 
 class OpTanh : public OpUnary { NOMEMALIGN
   public:
-    OpTanh () : OpUnary ("tanh (%1)") { } 
+    OpTanh () : OpUnary ("tanh (%1)") { }
     complex_type R (real_type v) const { return std::tanh (v); }
     complex_type Z (complex_type v) const { return std::tanh (v); }
 };
@@ -861,7 +862,7 @@ class OpAcos : public OpUnary { NOMEMALIGN
 
 class OpAsin : public OpUnary { NOMEMALIGN
   public:
-    OpAsin () : OpUnary ("asin (%1)") { } 
+    OpAsin () : OpUnary ("asin (%1)") { }
     complex_type R (real_type v) const { return std::asin (v); }
 };
 
@@ -873,7 +874,7 @@ class OpAtan : public OpUnary { NOMEMALIGN
 
 class OpAcosh : public OpUnary { NOMEMALIGN
   public:
-    OpAcosh () : OpUnary ("acosh (%1)") { } 
+    OpAcosh () : OpUnary ("acosh (%1)") { }
     complex_type R (real_type v) const { return std::acosh (v); }
 };
 
@@ -892,13 +893,13 @@ class OpAtanh : public OpUnary { NOMEMALIGN
 
 class OpRound : public OpUnary { NOMEMALIGN
   public:
-    OpRound () : OpUnary ("round (%1)") { } 
+    OpRound () : OpUnary ("round (%1)") { }
     complex_type R (real_type v) const { return std::round (v); }
 };
 
 class OpCeil : public OpUnary { NOMEMALIGN
   public:
-    OpCeil () : OpUnary ("ceil (%1)") { } 
+    OpCeil () : OpUnary ("ceil (%1)") { }
     complex_type R (real_type v) const { return std::ceil (v); }
 };
 
@@ -928,7 +929,7 @@ class OpPhase : public OpUnary { NOMEMALIGN
 
 class OpConj : public OpUnary { NOMEMALIGN
   public:
-    OpConj () : OpUnary ("conj (%1)") { } 
+    OpConj () : OpUnary ("conj (%1)") { }
     complex_type Z (complex_type v) const { return std::conj (v); }
 };
 
@@ -960,14 +961,14 @@ class OpFinite : public OpUnary { NOMEMALIGN
 
 class OpAdd : public OpBinary { NOMEMALIGN
   public:
-    OpAdd () : OpBinary ("(%1 + %2)") { } 
+    OpAdd () : OpBinary ("(%1 + %2)") { }
     complex_type R (real_type a, real_type b) const { return a+b; }
     complex_type Z (complex_type a, complex_type b) const { return a+b; }
 };
 
 class OpSubtract : public OpBinary { NOMEMALIGN
   public:
-    OpSubtract () : OpBinary ("(%1 - %2)") { } 
+    OpSubtract () : OpBinary ("(%1 - %2)") { }
     complex_type R (real_type a, real_type b) const { return a-b; }
     complex_type Z (complex_type a, complex_type b) const { return a-b; }
 };
@@ -981,7 +982,7 @@ class OpMultiply : public OpBinary { NOMEMALIGN
 
 class OpDivide : public OpBinary { NOMEMALIGN
   public:
-    OpDivide () : OpBinary ("(%1 / %2)") { } 
+    OpDivide () : OpBinary ("(%1 / %2)") { }
     complex_type R (real_type a, real_type b) const { return a/b; }
     complex_type Z (complex_type a, complex_type b) const { return a/b; }
 };
@@ -1001,7 +1002,7 @@ class OpMin : public OpBinary { NOMEMALIGN
 
 class OpMax : public OpBinary { NOMEMALIGN
   public:
-    OpMax () : OpBinary ("max (%1, %2)") { } 
+    OpMax () : OpBinary ("max (%1, %2)") { }
     complex_type R (real_type a, real_type b) const { return std::max (a, b); }
 };
 
@@ -1013,7 +1014,7 @@ class OpLessThan : public OpBinary { NOMEMALIGN
 
 class OpGreaterThan : public OpBinary { NOMEMALIGN
   public:
-    OpGreaterThan () : OpBinary ("(%1 > %2)") { } 
+    OpGreaterThan () : OpBinary ("(%1 > %2)") { }
     complex_type R (real_type a, real_type b) const { return a > b; }
 };
 
@@ -1025,7 +1026,7 @@ class OpLessThanOrEqual : public OpBinary { NOMEMALIGN
 
 class OpGreaterThanOrEqual : public OpBinary { NOMEMALIGN
   public:
-    OpGreaterThanOrEqual () : OpBinary ("(%1 >= %2)") { } 
+    OpGreaterThanOrEqual () : OpBinary ("(%1 >= %2)") { }
     complex_type R (real_type a, real_type b) const { return a >= b; }
 };
 
@@ -1066,6 +1067,13 @@ class OpIf : public OpTernary { NOMEMALIGN
     complex_type Z (complex_type a, complex_type b, complex_type c) const { return a.real() ? b : c; }
 };
 
+class OpReplace : public OpTernary { NOMEMALIGN
+  public:
+    OpReplace () : OpTernary ("(%1, %2 -> %3)") { }
+    complex_type R (real_type a, real_type b, real_type c) const { return ((a==b) || (std::isnan(a) && std::isnan(b))) ? c : a; }
+    complex_type Z (complex_type a, complex_type b, complex_type c) const { return (a==b) ? c : a; }
+};
+
 
 
 /**********************************************************************
@@ -1079,7 +1087,7 @@ void run () {
 
     const Option* opt = match_option (App::argv[n]);
     if (opt) {
-      if (opt->is ("abs")) unary_operation (opt->id, stack, OpAbs()); 
+      if (opt->is ("abs")) unary_operation (opt->id, stack, OpAbs());
       else if (opt->is ("neg")) unary_operation (opt->id, stack, OpNeg());
       else if (opt->is ("sqrt")) unary_operation (opt->id, stack, OpSqrt());
       else if (opt->is ("exp")) unary_operation (opt->id, stack, OpExp());
@@ -1133,13 +1141,14 @@ void run () {
       else if (opt->is ("complex")) binary_operation (opt->id, stack, OpComplex());
 
       else if (opt->is ("if")) ternary_operation (opt->id, stack, OpIf());
+      else if (opt->is ("replace")) ternary_operation (opt->id, stack, OpReplace());
 
       else if (opt->is ("datatype")) ++n;
       else if (opt->is ("nthreads")) ++n;
       else if (opt->is ("force") || opt->is ("info") || opt->is ("debug") || opt->is ("quiet"))
         continue;
 
-      else 
+      else
         throw Exception (std::string ("operation \"") + opt->id + "\" not yet implemented!");
 
     }

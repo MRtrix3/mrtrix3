@@ -75,7 +75,7 @@ void usage ()
     + Option ("directions", "provide an external text file containing the directions along which the amplitudes are sampled")
       + Argument("path").type_file_in()
 
-    + DWI::ShellOption
+    + DWI::ShellsOption
 
     + Option ("lmax", "specify the maximum harmonic degree of the response function to estimate "
                       "(can be a comma-separated list for multi-shell data)")
