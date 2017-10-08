@@ -133,12 +133,13 @@ dwi_header = image.Header('dwi.mif')
 if not len(dwi_header.size()) == 4:
   app.error('Input DWI must be a 4D image')
 num_volumes = dwi_header.size()[3]
-dwi_pe_scheme = phaseEncoding.getScheme('dwi.mif')
+app.var(num_volumes)
+dwi_pe_scheme = phaseEncoding.getScheme(dwi_header)
 if app.args.se_epi:
   se_epi_header = image.Header('se_epi.mif')
   if not len(se_epi_header.size()) == 4:
     app.error('File provided using -se_epi option must contain more than one image volume')
-  topup_pe_scheme = phaseEncoding.getScheme('se_epi.mif')
+  topup_pe_scheme = phaseEncoding.getScheme(se_epi_header)
 if 'dw_scheme' not in dwi_header.keyval():
   app.error('No diffusion gradient table found')
 grad = dwi_header.keyval()['dw_scheme']
@@ -152,10 +153,11 @@ if not len(grad) == num_volumes:
 manual_pe_dir = None
 if app.args.pe_dir:
   manual_pe_dir = [ float(i) for i in phaseEncoding.direction(app.args.pe_dir) ]
+app.var(manual_pe_dir)
 manual_trt = None
 if app.args.readout_time:
   manual_trt = float(app.args.readout_time)
-
+app.var(manual_trt)
 
 
 do_topup = (not PE_design == 'None')
@@ -200,12 +202,14 @@ if manual_pe_dir:
     line = list(manual_pe_dir)
     line.append(trt)
     dwi_manual_pe_scheme = [ line ] * num_volumes
+    app.var(dwi_manual_pe_scheme)
 
   # With 'Pair', also need to construct the manual scheme for SE EPIs
   elif PE_design == 'Pair':
     line = list(manual_pe_dir)
     line.append(trt)
     dwi_manual_pe_scheme = [ line ] * num_volumes
+    app.var(dwi_manual_pe_scheme)
     num_topup_volumes = se_epi_header.size()[3]
     if num_topup_volumes%2:
       app.error('If using -rpe_pair option, image provided using -se_epi must contain an even number of volumes')
@@ -215,6 +219,7 @@ if manual_pe_dir:
     line = [ (-i if i else 0.0) for i in manual_pe_dir ]
     line.append(trt)
     topup_manual_pe_scheme.extend( [ line ] * int(num_topup_volumes/2) )
+    app.var(topup_manual_pe_scheme)
 
   # If -rpe_all, need to scan through grad and figure out the pairings
   # This will be required if relying on user-specified phase encode direction
@@ -255,6 +260,7 @@ if manual_pe_dir:
         line = [ (-i if i else 0.0) for i in line ]
       line.append(trt)
       dwi_manual_pe_scheme.append(line)
+    app.var(dwi_manual_pe_scheme)
 
 else: # No manual phase encode direction defined
 
@@ -421,7 +427,7 @@ if do_topup:
       crop_option += ' -axis ' + str(axis) + ' 1 ' + str(int(axis_size)-1)
   if crop_option:
     app.warn('Topup images contain at least one non-even dimension; cropping images for topup compatibility')
-    run.command('mrcrop se_epi.mif topup_in_crop.mif' + crop_option)
+    run.command('mrcrop se_epi.mif se_epi_crop.mif' + crop_option)
     file.delTemporary('se_epi.mif')
     topup_in_path = 'se_epi_crop.mif'
 
@@ -612,6 +618,8 @@ else:
 
   eddy_config  = [ [ float(f) for f in line.split() ] for line in open('eddy_config.txt', 'r').read().split('\n')[:-1] ]
   eddy_indices = [ int(i) for i in open('eddy_indices.txt', 'r').read().split() ]
+  app.var(eddy_config)
+  app.var(eddy_indices)
 
   # This section derives, for each phase encoding configuration present, the 'weight' to be applied
   #   to the image during volume recombination, which is based on the Jacobian of the field in the
@@ -639,6 +647,7 @@ else:
   # This section extracts the two volumes corresponding to each reversed phase-encoded volume pair, and
   #   derives a single image volume based on the recombination equation
   combined_image_list = [ ]
+  progress = app.progressBar('Performing explicit volume recombination', len(volume_pairs))
   for index, volumes in enumerate(volume_pairs):
     pe_indices = [ eddy_indices[i] for i in volumes ]
     run.command('mrconvert ' + eddy_output + ' volume0.mif -coord 3 ' + str(volumes[0]))
@@ -648,6 +657,8 @@ else:
     combined_image_list.append('combined' + str(index) + '.mif')
     run.function(os.remove, 'volume0.mif')
     run.function(os.remove, 'volume1.mif')
+    progress.increment()
+  progress.done()
   file.delTemporary(eddy_output)
 
   for index in range(0, len(eddy_config)):

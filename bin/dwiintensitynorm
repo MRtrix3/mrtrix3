@@ -12,6 +12,7 @@ sys.path.insert(0, lib_folder)
 
 from mrtrix3 import app, file, image, path, run #pylint: disable=redefined-builtin
 
+from mrtrix3.path import allindir
 
 def abspath(*arg):
   return os.path.abspath(os.path.join(*arg))
@@ -45,7 +46,7 @@ app.args.input_dir = relpath(app.args.input_dir)
 inputDir = app.args.input_dir
 if not os.path.exists(inputDir):
   app.error('input directory not found')
-inFiles = os.listdir(inputDir)
+inFiles = allindir(inputDir, dir_path=False)
 if len(inFiles) <= 1:
   app.console('not enough images found in input directory. More than one image is needed to perform a group-wise intensity normalisation')
 else:
@@ -55,7 +56,7 @@ app.args.mask_dir = relpath(app.args.mask_dir)
 maskDir = app.args.mask_dir
 if not os.path.exists(maskDir):
   app.error('mask directory not found')
-maskFiles = os.listdir(maskDir)
+maskFiles = allindir(maskDir, dir_path=False)
 if len(maskFiles) != len(inFiles):
   app.error('the number of images in the mask directory does not equal the number of images in the input directory')
 maskCommonPostfix = path.commonPostfix(maskFiles)
@@ -81,24 +82,32 @@ file.makeDir(app.args.output_dir)
 app.makeTempDir()
 
 maskTempDir = os.path.join(app.tempDir, os.path.basename(os.path.normpath(maskDir)))
-run.command ('cp -R -L ' + maskDir + ' ' + maskTempDir)
+run.command('cp -R -L ' + maskDir + ' ' + maskTempDir)
 
 app.gotoTempDir()
 
 file.makeDir('fa')
-app.console('Computing FA images')
+progress = app.progressBar('Computing FA images', len(input_list))
 for i in input_list:
   run.command('dwi2tensor ' + abspath(i.directory, i.filename) + ' -mask ' + abspath(i.mask_directory, i.mask_filename) + ' - | tensor2metric - -fa ' + os.path.join('fa', i.prefix + '.mif'))
+  progress.increment()
+progress.done()
 
 app.console('Generating FA population template')
 run.command('population_template fa -mask_dir ' + maskTempDir + ' fa_template.mif -type rigid_affine_nonlinear -rigid_scale 0.25,0.5,0.8,1.0 -affine_scale 0.7,0.8,1.0,1.0 -nl_scale 0.5,0.75,1.0,1.0,1.0 -nl_niter 5,5,5,5,5 -tempdir population_template -linear_no_pause -nocleanup')
 
+app.console('Generating WM mask in template space')
 run.command('mrthreshold fa_template.mif -abs ' +  app.args.fa_threshold + ' template_wm_mask.mif')
+
+progress = app.progressBar('Intensity normalising subject images', len(input_list))
 file.makeDir('wm_mask_warped')
 for i in input_list:
   run.command('mrtransform template_wm_mask.mif -interp nearest -warp_full ' + os.path.join('population_template', 'warps', i.prefix + '.mif') + ' ' + os.path.join('wm_mask_warped', i.prefix + '.mif') + ' -from 2 -template ' + os.path.join('fa', i.prefix + '.mif'))
   run.command('dwinormalise ' + abspath(i.directory, i.filename) + ' ' + os.path.join('wm_mask_warped', i.prefix + '.mif') + ' ' + path.fromUser(os.path.join(app.args.output_dir, i.filename), True) + (' -force' if app.forceOverwrite else ''))
+  progress.increment()
+progress.done()
 
+app.console('Exporting template images to user locations')
 run.command('mrconvert template_wm_mask.mif ' + path.fromUser(app.args.wm_mask, True) + (' -force' if app.forceOverwrite else ''))
 run.command('mrconvert fa_template.mif ' + path.fromUser(app.args.fa_template, True) + (' -force' if app.forceOverwrite else ''))
 

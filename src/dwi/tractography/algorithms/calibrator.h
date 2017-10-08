@@ -15,6 +15,7 @@
 #ifndef __dwi_tractography_algorithms_iFOD_calibrator_h__
 #define __dwi_tractography_algorithms_iFOD_calibrator_h__
 
+#include "types.h"
 #include "math/SH.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/types.h"
@@ -29,7 +30,7 @@ namespace MR {
 
       using namespace MR::DWI::Tractography::Tracking;
 
-      vector<Eigen::Vector3f> direction_grid (float max_angle, float spacing)
+      FORCE_INLINE vector<Eigen::Vector3f> direction_grid (float max_angle, float spacing)
       {
         const float maxR = Math::pow2 (max_angle / spacing);
         vector<Eigen::Vector3f> list;
