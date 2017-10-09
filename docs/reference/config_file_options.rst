@@ -179,6 +179,11 @@ List of MRtrix3 configuration file options
 
      A boolean value specifying whether MRtrix applications should abort as soon as any (otherwise non-fatal) warning is issued.
 
+*  **FontSize**
+    *default: 10*
+
+     The size (in points) of the font to be used in OpenGL viewports (mrview and shview).
+
 *  **HelpCommand**
     *default: less*
 
@@ -197,7 +202,7 @@ List of MRtrix3 configuration file options
 *  **ImageInterpolation**
     *default: true*
 
-     Interpolation switched on in the main image
+     Interpolation switched on in the main image.
 
 *  **InitialToolBarPosition**
     *default: top*
@@ -239,6 +244,11 @@ List of MRtrix3 configuration file options
 
      The width in pixels between horizontally adjacent colour bars.
 
+*  **MRViewDefaultTractGeomType**
+    *default: Pseudotubes*
+
+     The default geometry type used to render tractograms. Options are Pseudotubes, Lines or Points
+
 *  **MRViewDockFloating**
     *default: 0 (false)*
 
@@ -257,7 +267,7 @@ List of MRtrix3 configuration file options
 *  **MRViewInitWindowSize**
     *default: 512,512*
 
-     initial window size of MRView in pixels
+     Initial window size of MRView in pixels.
 
 *  **MRViewMaxNumColourmapRows**
     *default: 3*
@@ -272,7 +282,7 @@ List of MRtrix3 configuration file options
 *  **MRViewOdfScale**
     *default: 1.0*
 
-     The factor by which the ODF overlay is scaled
+     The factor by which the ODF overlay is scaled.
 
 *  **MRViewRotateModifierKey**
     *default: ctrl*
@@ -282,27 +292,27 @@ List of MRtrix3 configuration file options
 *  **MRViewShowColourbar**
     *default: true*
 
-     Colourbar shown in main image overlay
+     Colourbar shown in main image overlay.
 
 *  **MRViewShowComments**
     *default: true*
 
-     Comments shown in main image overlay
+     Comments shown in main image overlay.
 
 *  **MRViewShowFocus**
     *default: true*
 
-     Focus cross hair shown in main image
+     Focus cross hair shown in main image.
 
 *  **MRViewShowOrientationLabel**
     *default: true*
 
-     Anatomical orientation information shown in main image overlay
+     Anatomical orientation information shown in main image overlay.
 
 *  **MRViewShowVoxelInformation**
     *default: true*
 
-     Voxel information shown in main image overlay
+     Voxel information shown in main image overlay.
 
 *  **MRViewToolFontSize**
     *default: 2 points less than the standard system font*
@@ -332,12 +342,12 @@ List of MRtrix3 configuration file options
 *  **NIfTI.AutoLoadJSON**
     *default: 0 (false)*
 
-     A boolean value to indicate whether, when opening NIfTI images, any corresponding JSON file should be automatically loaded
+     A boolean value to indicate whether, when opening NIfTI images, any corresponding JSON file should be automatically loaded.
 
 *  **NIfTI.AutoSaveJSON**
     *default: 0 (false)*
 
-     A boolean value to indicate whether, when writing NIfTI images, a corresponding JSON file should be automatically created in order to save any header entries that cannot be stored in the NIfTI header
+     A boolean value to indicate whether, when writing NIfTI images, a corresponding JSON file should be automatically created in order to save any header entries that cannot be stored in the NIfTI header.
 
 *  **NeedOpenGLCoreProfile**
     *default: 1 (true)*
@@ -422,45 +432,45 @@ List of MRtrix3 configuration file options
 *  **reg_analyse_descent**
     *default: 0 (false)*
 
-     Linear registration: write comma separated gradient descent parameters and gradients to stdout and verbose gradient descent output to stderr
+     Linear registration: write comma separated gradient descent parameters and gradients to stdout and verbose gradient descent output to stderr.
 
 *  **reg_coherence_len**
     *default: 3.0*
 
-     Linear registration: estimated spatial coherence length in voxels
+     Linear registration: estimated spatial coherence length in voxels.
 
 *  **reg_gd_convergence_data_smooth**
     *default: 0.8*
 
-     Linear registration: control point trajectory smoothing value used in convergence check parameter range: [0...1]
+     Linear registration: control point trajectory smoothing value used in convergence check parameter range: [0...1].
 
 *  **reg_gd_convergence_min_iter**
     *default: 10*
 
-     Linear registration: minimum number of iterations until convergence check is activated
+     Linear registration: minimum number of iterations until convergence check is activated.
 
 *  **reg_gd_convergence_slope_smooth**
     *default: 0.1*
 
-     Linear registration: control point trajectory slope smoothing value used in convergence check parameter range: [0...1]
+     Linear registration: control point trajectory slope smoothing value used in convergence check parameter range: [0...1].
 
 *  **reg_gd_convergence_thresh**
     *default: 5e-3*
 
-     Linear registration: threshold for convergence check using the smoothed control point trajectories measured in fraction of a voxel
+     Linear registration: threshold for convergence check using the smoothed control point trajectories measured in fraction of a voxel.
 
 *  **reg_gdweight_matrix**
     *default: 0.0003*
 
-     Linear registration: weight for optimisation of linear (3x3) matrix parameters
+     Linear registration: weight for optimisation of linear (3x3) matrix parameters.
 
 *  **reg_gdweight_translation**
     *default: 1*
 
-     Linear registration: weight for optimisation of translation parameters
+     Linear registration: weight for optimisation of translation parameters.
 
 *  **reg_stop_len**
     *default: 0.0001*
 
-     Linear registration: smallest gradient descent step measured in fraction of a voxel at which to stop registration
+     Linear registration: smallest gradient descent step measured in fraction of a voxel at which to stop registration.
 
