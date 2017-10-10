@@ -407,7 +407,7 @@ List of MRtrix3 configuration file options
 *  **TmpFileDir**
     *default: `/tmp` (on Unix), `.` (on Windows)*
 
-     The prefix for temporary files (as used in pipelines). By default, these files get written to the current folder, which may cause performance issues when operating over distributed file systems. In this case, it may be better to specify `/tmp/` here.
+     The prefix for temporary files (as used in pipelines). By default, these files get written to the current folder on Windows machines, which may cause performance issues, particularly when operating over distributed file systems. On Unix machines, the default is /tmp/, which is typically a RAM file system and should therefore be fast; but may cause issues on machines with little RAM capacity or where write-access to this location is not permitted.
 
 *  **TmpFilePrefix**
     *default: `mrtrix-tmp-`*
