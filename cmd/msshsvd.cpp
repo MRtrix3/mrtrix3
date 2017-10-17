@@ -20,6 +20,7 @@
 #include <Eigen/SVD>
 
 #define DEFAULT_LMAX 4
+#define DEFAULT_NSUB 10000
 
 using namespace MR;
 using namespace App;
@@ -31,8 +32,13 @@ void usage ()
   SYNOPSIS = "Low-rank SH-SVD projection of multi-shell SH data.";
 
   DESCRIPTION
-  + "This command takes multi-shell SH data and computes the reduced "
-    "rank projection with SH-SVD.";
+  + "This command expects a 5-D MSSH image (shells on 4th dimension; "
+    "SH coefficients in the 5th). The command will compute a low-rank "
+    "approximation of the input data using the singular value decomposition "
+    "across shells and SH frequency bands (SH-SVD)."
+
+  + "The rank is set with the parameter -lmax. For lmax=4 (default), the data "
+    "is projected onto components of order 4, 2, and 0, leading to a rank = 22.";
 
   ARGUMENTS
   + Argument ("in", "the input MSSH data.").type_image_in()
@@ -42,7 +48,9 @@ void usage ()
   + Option ("mask", "image mask")
     + Argument ("m").type_file_in()
   + Option ("lmax", "maximum SH order (default = " + str(DEFAULT_LMAX) + ")")
-    + Argument ("order").type_integer(0, 30);
+    + Argument ("order").type_integer(0, 30)
+  + Option ("nsub", "number of voxels in subsampling (default = " + str(DEFAULT_NSUB) + ")")
+    + Argument ("order").type_integer(0);
 
 }
 
@@ -82,7 +90,6 @@ class SHSVDProject
   private:
     const int l;
     const Eigen::MatrixXf& P;
-
 };
 
 
@@ -100,12 +107,15 @@ void run ()
     check_dimensions(in, mask, 0, 3);
   }
 
-  size_t nshells = in.size(3);
+  int nshells = in.size(3);
 
   int lmax = get_option_value("lmax", DEFAULT_LMAX);
-  // TODO: check image dimensions...
+  if (Math::SH::NforL(lmax) > in.size(4)) {
+    throw Exception("lmax too large for input image dimension.");
+  }
 
-  size_t nsub = 1000;
+  // Select voxel subset
+  size_t nsub = get_option_value("nsub", DEFAULT_NSUB);
   vector<Eigen::Vector3i> pos;
   for (size_t i = 0; i < nsub; i++) {
     pos.push_back(getRandomPosInMask(in, mask));
@@ -127,7 +137,7 @@ void run ()
     }
     // low-rank project
     Eigen::JacobiSVD<Eigen::MatrixXf> svd (Sl, Eigen::ComputeThinU | Eigen::ComputeThinV);
-    int rank = (lmax-l)/2 + 1;
+    int rank = std::min((lmax-l)/2 + 1, nshells);
     Eigen::MatrixXf U = svd.matrixU().block(0,0,nshells,rank);
     Eigen::MatrixXf P = U * U.adjoint();
     // save to output
