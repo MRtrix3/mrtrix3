@@ -99,12 +99,12 @@ namespace MR
              QSlider *opacity_slider;
 
              void update_selection ();
-             void updateGL() { 
+             void updateGL() {
                window().get_current_mode()->update_overlays = true;
                window().updateGL();
              }
-             
-             void add_images (vector<std::unique_ptr<MR::Header>>& list);
+
+             void add_images (vector<std::unique_ptr<MR::Header>>& list, bool clear = false);
              void dropEvent (QDropEvent* event) override;
         };
 
