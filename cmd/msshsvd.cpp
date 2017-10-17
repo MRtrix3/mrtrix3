@@ -47,10 +47,15 @@ void usage ()
   OPTIONS
   + Option ("mask", "image mask")
     + Argument ("m").type_file_in()
+
   + Option ("lmax", "maximum SH order (default = " + str(DEFAULT_LMAX) + ")")
     + Argument ("order").type_integer(0, 30)
+
   + Option ("nsub", "number of voxels in subsampling (default = " + str(DEFAULT_NSUB) + ")")
-    + Argument ("order").type_integer(0);
+    + Argument ("vox").type_integer(0)
+
+  + Option ("weights", "vector of weights per shell (default = ones)")
+    + Argument ("w").type_file_in();
 
 }
 
@@ -114,6 +119,15 @@ void run ()
     throw Exception("lmax too large for input image dimension.");
   }
 
+  opt = get_options("weights");
+  Eigen::VectorXf W (nshells);
+  W.setOnes();
+  if (opt.size()) {
+    W = load_vector<float>(opt[0][0]).cwiseSqrt();
+    if (W.size() != nshells)
+      throw Exception("provided weights do not match the no. shells.");
+  }
+
   // Select voxel subset
   size_t nsub = get_option_value("nsub", DEFAULT_NSUB);
   vector<Eigen::Vector3i> pos;
@@ -136,10 +150,10 @@ void run ()
       }
     }
     // low-rank project
-    Eigen::JacobiSVD<Eigen::MatrixXf> svd (Sl, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    Eigen::JacobiSVD<Eigen::MatrixXf> svd (W.asDiagonal() * Sl, Eigen::ComputeThinU | Eigen::ComputeThinV);
     int rank = std::min((lmax-l)/2 + 1, nshells);
     Eigen::MatrixXf U = svd.matrixU().block(0,0,nshells,rank);
-    Eigen::MatrixXf P = U * U.adjoint();
+    Eigen::MatrixXf P = W.asDiagonal().inverse() * U * U.adjoint() * W.asDiagonal();
     // save to output
     SHSVDProject func (in, l, P);
     ThreadedLoop(in, {0, 1, 2}).run(func, in, out);
