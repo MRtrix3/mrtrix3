@@ -157,7 +157,7 @@ List of MRtrix3 commands
     :ref:`fixelcrop`, "Crop/remove fixels from sparse fixel image using a binary fixel mask"
     :ref:`fixelreorient`, "Reorient fixel directions"
     :ref:`fod2dec`, "Generate FOD-based DEC maps, with optional panchromatic sharpening and/or luminance/perception correction"
-    :ref:`fod2fixel`, "Use a fast-marching level-set method to segment fibre orientation distributions, and save parameters of interest as fixel images"
+    :ref:`fod2fixel`, "Perform segmentation of continuous Fibre Orientation Distributions (FODs) to produce discrete fixels"
     :ref:`label2colour`, "Convert a parcellated image (where values are node indices) into a colour image"
     :ref:`label2mesh`, "Generate meshes from a label image"
     :ref:`labelconvert`, "Convert a connectome node image from one lookup table to another"
