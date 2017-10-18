@@ -241,7 +241,8 @@ void run ()
     x = cg.solve(p);
   }
 
-  std::cout << "CG: #iterations: " << cg.iterations() << ", estimated error: " << cg.error() << std::endl;
+  INFO("CG: #iterations: " + str(cg.iterations()));
+  INFO("CG: estimated error: " + str(cg.error()));
 
 
   // Write result to output file
