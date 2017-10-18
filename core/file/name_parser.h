@@ -166,7 +166,9 @@ namespace MR
 
             size_t size () const { return list.size(); }
 
-            const ParsedName& operator[] (size_t index) const { return *list[index]; }
+            const ParsedName& operator[] (size_t index) const { return *(list[index]); }
+
+            friend std::ostream& operator<< (std::ostream& stream, const List& list);
 
           protected:
             vector<std::shared_ptr<ParsedName>> list;

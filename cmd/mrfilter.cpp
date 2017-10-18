@@ -103,7 +103,7 @@ const OptionGroup SmoothOption = OptionGroup ("Options for smooth filter")
 const OptionGroup ZcleanOption = OptionGroup ("Options for zclean filter")
 + Option ("zupper", "define high intensity outliers: default: 2.5")
   + Argument ("num").type_float(0.1, std::numeric_limits<float>::infinity())
-+ Option ("zlower", "define low intensity outliers: default: -2.5")
++ Option ("zlower", "define low intensity outliers: default: 2.5")
   + Argument ("num").type_float(0.1, std::numeric_limits<float>::infinity())
 + Option ("bridge", "number of voxels to gap to fill holes in mask: default: 4")
   + Argument ("num").type_integer(0)
@@ -121,7 +121,7 @@ void usage ()
   SYNOPSIS = "Perform filtering operations on 3D / 4D MR images";
 
   DESCRIPTION
-  + "The available filters are: fft, gradient, median, smooth, normalise."
+  + "The available filters are: fft, gradient, median, smooth, normalise, zclean."
   + "Each filter has its own unique set of optional parameters."
   + "For 4D images, each 3D volume is processed independently.";
 
