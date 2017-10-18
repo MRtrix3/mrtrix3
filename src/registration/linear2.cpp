@@ -156,8 +156,8 @@ namespace MR
         + Argument ("type").type_choice (linear_robust_estimator_choices)
 
       + Option ("type", "Valid choices are: "
-                                  "rigid"
-                                  "affine"
+                                  "rigid, "
+                                  "affine or"
                                   "affine_nonsym"
                                   "Default: affine")
         + Argument ("type").type_choice (transformProjectionTypeName)
