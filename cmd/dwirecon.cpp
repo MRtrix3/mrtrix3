@@ -238,10 +238,14 @@ void run ()
   opt = get_options("init");
   if (opt.size()) {
     auto init = Image<value_type>::open(opt[0][0]);
+    check_dimensions(dwi, init, 0, 3);
+    if (init.size(3) < ncoefs)
+      throw Exception("dimensions of init image don't match.");
     Eigen::VectorXf x0 (R.cols());
     size_t j = 0;
-    for (auto l = Loop("loading initialisation", {3, 0, 1, 2})(init); l; l++, j++) {
-      x0[j] = init.value();
+    for (auto l = Loop("loading initialisation", {3, 0, 1, 2})(init); l; l++) {
+      if (init.index(3) < ncoefs)
+        x0[j++] = init.value();
     }
     x = cg.solveWithGuess(p, x0);
   }
