@@ -371,12 +371,12 @@ so coarse that it is impossible to find any voxels that are entirely
 encapsulated by the surface corresponding to the segmented structure,
 resulting in an error within the FIRST script.
 
-If this is the case, it is highly recommended that the T1 image _not_ be
+If this is the case, it is highly recommended that the T1 image *not* be
 resampled to the DWI voxel grid following registration; not only for the
 issue mentioned above, but also because ACT is explicitly designed to take
 full advantage of the higher spatial resolution of the T1 image. If
 ``flirt`` is still to be used for registration, the solution is to instruct
-``flirt`` to provide a _transformation matrix_, rather than a translated &
+``flirt`` to provide a *transformation matrix*, rather than a translated &
 resampled image:
 
 .. code-block: console
