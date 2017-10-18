@@ -26,9 +26,11 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk) & David Raffelt (david.raffelt@florey.edu.au)";
+  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk) and "
+           "David Raffelt (david.raffelt@florey.edu.au)";
 
-  SYNOPSIS = "Evaluate the amplitude of an image of spherical harmonic functions along specified directions";
+  SYNOPSIS = "Evaluate the amplitude of a 5-D image of multi-shell "
+             "spherical harmonic functions along specified directions.";
 
   ARGUMENTS
     + Argument ("input",
@@ -85,19 +87,15 @@ class MSSH2Amp { MEMALIGN(MSSH2Amp)
     Eigen::Matrix<value_type, Eigen::Dynamic, 1> sh, amp;
 };
 
-
-size_t get_bidx (vector<default_type> bvals, default_type min, default_type max)
+template <class VectorType>
+inline vector<size_t> get_indices(const VectorType& blist, const value_type bval)
 {
-  size_t idx = 0;
-  for (auto b : bvals) {
-    if ((b >= min - 1.0) && (b <= max + 1.0))
-      return idx;
-    else
-      idx++;
-  }
-  throw Exception ("b-value not found.");
+  vector<size_t> indices;
+  for (size_t j = 0; j < blist.size(); j++)
+    if ((blist[j] > bval - DWI_SHELLS_EPSILON) && (blist[j] < bval + DWI_SHELLS_EPSILON))
+      indices.push_back(j);
+  return indices;
 }
-
 
 
 void run ()
@@ -111,7 +109,6 @@ void run ()
 
   Eigen::MatrixXd grad;
   grad = load_matrix(argument[1]);
-  DWI::Shells shells (grad);
 
   // Apply rigid rotation to gradient table.
   transform_type T;
@@ -131,11 +128,15 @@ void run ()
 
   auto amp_data = Image<value_type>::create(argument[2], header);
 
-  for (size_t k = 0; k < shells.count(); k++) {
-    mssh.index(3) = get_bidx(bvals, shells[k].get_min(), shells[k].get_max());
-    auto directions = DWI::gen_direction_matrix (grad, shells[k].get_volumes());
+  // Loop through shells
+  for (size_t k = 0; k < bvals.size(); k++) {
+    mssh.index(3) = k;
+    auto idx = get_indices(grad.col(3), bvals[k]);
+    if (idx.empty())
+      continue;
+    auto directions = DWI::gen_direction_matrix (grad, idx);
     MSSH2Amp mssh2amp (directions, Math::SH::LforN (mssh.size(4)),
-                       shells[k].get_volumes(), get_options("nonnegative").size());
+                       idx, get_options("nonnegative").size());
     ThreadedLoop("computing amplitudes", mssh, 0, 3, 2).run(mssh2amp, mssh, amp_data);
   }
 
