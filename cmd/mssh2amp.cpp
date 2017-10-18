@@ -95,9 +95,6 @@ size_t get_bidx (vector<default_type> bvals, default_type min, default_type max)
     else
       idx++;
   }
-  VAR(bvals);
-  VAR(min);
-  VAR(max);
   throw Exception ("b-value not found.");
 }
 
@@ -116,6 +113,7 @@ void run ()
   grad = load_matrix(argument[1]);
   DWI::Shells shells (grad);
 
+  // Apply rigid rotation to gradient table.
   transform_type T;
   T.setIdentity();
   auto opt = get_options("transform");
@@ -124,19 +122,10 @@ void run ()
 
   grad.block(0,0,grad.rows(),3) = grad.block(0,0,grad.rows(),3) * T.rotation().transpose();
 
-
-
-//  if (!directions.rows())
-//    throw Exception ("no directions found in input directions file");
-
-//  std::stringstream dir_stream;
-//  for (ssize_t d = 0; d < directions.rows() - 1; ++d)
-//    dir_stream << directions(d,0) << "," << directions(d,1) << "\n";
-//  dir_stream << directions(directions.rows() - 1,0) << "," << directions(directions.rows() - 1,1);
-//  amp_header.keyval().insert(std::pair<std::string, std::string> ("directions", dir_stream.str()));
-
+  // Save output
   header.ndim() = 4;
   header.size(3) = grad.rows();
+  DWI::set_DW_scheme (header, grad);
   Stride::set_from_command_line (header, Stride::contiguous_along_axis (3));
   header.datatype() = DataType::from_command_line (DataType::Float32);
 
@@ -150,9 +139,6 @@ void run ()
     ThreadedLoop("computing amplitudes", mssh, 0, 3, 2).run(mssh2amp, mssh, amp_data);
   }
 
-
-
-  
 }
 
 
