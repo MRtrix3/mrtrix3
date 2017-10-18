@@ -85,6 +85,9 @@ void usage ()
             "output predicted signal in the space of the target reconstruction.")
     + Argument ("out").type_image_out()
 
+  + Option ("padding", "zero-padding output coefficients to given dimension.")
+    + Argument ("rank").type_integer(0)
+
   + OptionGroup ("CG Optimization options")
 
   + Option ("tolerance", "the tolerance on the conjugate gradient solver. (default = " + str(DEFAULT_TOL) + ")")
@@ -205,6 +208,11 @@ void run ()
   DWI::ReconMatrix R (dwisub, motionsub, gradsub, lmax, rf, sspwidth, reg);
   R.setW(Wsub);
 
+  size_t ncoefs = R.getY().cols();
+  size_t padding = get_option_value("padding", ncoefs);
+  if (padding < ncoefs)
+    throw Exception("user-provided padding too small.");
+
   // Read input data to vector
   Eigen::VectorXf y (dwisub.size(0)*dwisub.size(1)*dwisub.size(2)*dwisub.size(3));
   size_t j = 0;
@@ -247,14 +255,15 @@ void run ()
 
   // Write result to output file
   Header header (dwisub);
-  header.size(3) = R.getY().cols();
+  header.size(3) = padding;
   Stride::set_from_command_line (header, Stride::contiguous_along_axis (3));
   header.datatype() = DataType::from_command_line (DataType::Float32);
   auto out = Image<value_type>::create (argument[1], header);
 
   j = 0;
-  for (auto l = Loop("writing result to image", {3, 0, 1, 2})(out); l; l++, j++) {
-    out.value() = x[j];
+  for (auto l = Loop("writing result to image", {3, 0, 1, 2})(out); l; l++) {
+    if (out.index(3) < ncoefs)
+      out.value() = x[j++];
   }
 
 
