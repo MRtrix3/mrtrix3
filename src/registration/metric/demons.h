@@ -38,7 +38,7 @@ namespace MR
                        thread_voxel_count (0),
                        mutex (new std::mutex),
                        normaliser (0.0),
-                       robustness_parameter (-1.e12),
+                       robustness_parameter (1.e-12),
                        intensity_difference_threshold (0.001),
                        denominator_threshold (1e-9),
                        im1_gradient (im1_image, true), im2_gradient (im2_image, true),
