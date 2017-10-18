@@ -21,7 +21,6 @@ if not os.path.isdir(lib_folder):
     sys.stderr.write('Unable to locate MRtrix3 Python libraries')
     sys.exit(1)
 sys.path.insert(0, lib_folder)
-
 from mrtrix3 import app, fsl, image, path, run
 
 
@@ -36,10 +35,10 @@ options.add_argument('-mask', help='Manually provide a mask image for motion cor
 options.add_argument('-grad', help='Pass the diffusion gradient table in MRtrix format')
 options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
 options.add_argument('-niter', help='Number of epochs (default = 3)')
-options.add_argument('-shell', help='Shells to be processed (default = all)')
+options.add_argument('-shells', help='Shells to be processed (default = all)')
 options.add_argument('-lmax', help='SH basis order for single-shell processing (default = 0)')
-options.add_argument('-reg', help='Regularization for dwirecon (default = 0.05)')
-options.add_argument('-rf', help='Basis functions for the radial domain')
+options.add_argument('-reg', help='Regularization for dwirecon (default = 0.01)')
+#options.add_argument('-rf', help='Basis functions for the radial domain')
 options.add_argument('-svr', help='Number of slice-to-volume reconstruction epochs (default = 0)')
 options.add_argument('-mb', help='Multiband factor (default = 1)')
 options.add_argument('-sspwidth', help='Slice thickness for Gaussian SSP. (default = 1)')
@@ -89,7 +88,7 @@ if len(DW_scheme) != int(dwi_sizes[3]):
 if app.args.mask:
     mask_sizes = image.headerField('mask.mif', 'size').split()
     if not mask_sizes[:3] == dwi_sizes[:3]:
-      app.error('Provided mask image does not match input DWI')
+        app.error('Provided mask image does not match input DWI')
 else:
     run.command('dwi2mask in.mif mask.mif')
 
@@ -103,42 +102,46 @@ if app.args.svr:
     s2viter = int(app.args.svr)
 niter = v2viter + s2viter
 
-# Set shells
-shell = None
-if app.args.shell:
-    shell = app.args.shell.split(',')
+# Select shells
+shells = image.headerField('in.mif', 'shells').split()
+if app.args.shells:
+    shells = app.args.shells.split(',')
 
 # Set lmax
-lmax = 0
+lmax = [0,]
 if app.args.lmax:
-    lmax = int(app.args.lmax)
-if shell=='0' and lmax>0:
-    app.error('Option -lmax ' + str(lmax) + ' incompatible with b=0 shell.')
+    lmax = [int(l) for l in app.args.lmax]
+if len(lmax) != len(shells):
+    app.error('No. lmax must match no. shells.')
+
+
+#if shell=='0' and lmax>0:
+#    app.error('Option -lmax ' + str(lmax) + ' incompatible with b=0 shell.')
 
 # Radial basis
-rf_import_option = ''
-if app.args.rf:
-    rf_import_option = ' '.join('-rf ' + path.fromUser(r, True) for r in app.args.rf.split(','))
+#rf_import_option = ''
+#if app.args.rf:
+#    rf_import_option = ' '.join('-rf ' + path.fromUser(r, True) for r in app.args.rf.split(','))
 
+# Shared reconstruction options
 recon_option = '-maxiter 1'
-if rf_import_option is not '':
-    recon_option += rf_import_option
-elif shell is not None and len(shell)==1:
-    recon_option += ' -lmax ' + str(lmax)
-else:
-    app.error('Multi-shell data requires radial basis, single-shell data requires lmax.')
 if app.args.reg:
     recon_option += ' -reg ' + app.args.reg
+if app.args.sspwidth:
+    recon_option += ' -sspwidth ' + app.args.sspwidth
+
+#if rf_import_option is not '':
+#    recon_option += rf_import_option
+#elif shell is not None and len(shell)==1:
+#    recon_option += ' -lmax ' + str(lmax)
+#else:
+#    app.error('Multi-shell data requires radial basis, single-shell data requires lmax.')
 
 # Force max no. threads
 if app.args.nthreads:
     nthr = ' -nthreads ' + app.args.nthreads
 else:
     nthr = ''
-
-# Set SSP width
-if app.args.sspwidth:
-    recon_option += ' -sspwidth ' + app.args.sspwidth
 
 # Set multiband factor
 mb = 1
@@ -151,8 +154,48 @@ if app.args.or_thr:
     ort = ' -thr ' + app.args.or_thr
 
 
+#   __________ Function definitions __________
+
+def reconstep(iter):
+    n = max(lmax)
+    n = (n+1)*(n+2)//2
+    tmpsh = ['sh-b' + s + '.mif' for s in shells]
+    for s, l, fn in zip(shells, lmax, tmpsh):
+        run.command('dwirecon in.mif -shell ' + s + ' -lmax ' + str(l) + ' -motion motion.txt ' +
+                    fn + ('' if iter==0 else ' -weights sliceweights.txt -init ' + fn) +
+                    ' -spred spred-b' + s + '.mif -pad ' + str(n) + ' ' + recon_option + ' -force' + nthr)
+    run.command('mrcat -axis 5 ' + ' '.join(tmpsh) + ' - | mrconvert -axes 0,1,2,4,3 -set_property shells ' +
+                ','.join(shells) + ' - recon-' + str(iter) + '.mif')
+    run.command('mrmath ' + ' '.join(['spred-b' + s + '.mif' for s in shells]) + ' sum spred.mif -force')
+
+
+def sliceweightstep():
+    run.command('dwisliceoutliers in.mif spred.mif -mask mask.mif sliceweights.txt -force' + ort)
+
+
+def rankreduxstep(iter):
+    run.command('msshsvd recon-' + str(iter) + '.mif -mask mask.mif -lmax 4 msshredux.mif -force')
+
+
+def registrationstep(iter):
+    pass
+
+
 #   __________ Motion correction __________
 
+# Split shells for SH recon
+for s in shells:
+    run.command('dwiextract -shell ' + s + ' in.mif in-b' + s + '.mif')
+
+# Image dimensions
+dims = list(map(int, image.headerField('in.mif', 'size').split()))
+
+
+
+
+
+
+shell = None
 # select shells
 if shell is not None:
     run.command('dwiextract -shell ' + ','.join(shell) + ' in.mif shells.mif')
@@ -223,7 +266,8 @@ for k in range(s2viter):
     run.command('dwisliceoutliers shells.mif spred.mif -mask mask.mif sliceweights.txt -force' + ort)
 
 
-# Copy result to output path
+#   __________ Copy outputs __________
+
 run.command('mrconvert result-v.mif ' + path.fromUser(outvi, True) + (' -force' if app.force else ''))
 run.command('mrconvert recon-'+str(v2viter)+'.mif ' + path.fromUser(outvc, True) + (' -force' if app.force else ''))
 if s2viter > 0:
@@ -231,4 +275,7 @@ if s2viter > 0:
     run.command('mrconvert recon-'+str(v2viter+s2viter)+'.mif ' + path.fromUser(outsc, True) + (' -force' if app.force else ''))
 
 app.complete()
+
+
+
 
