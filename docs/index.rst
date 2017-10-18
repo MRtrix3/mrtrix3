@@ -93,6 +93,7 @@ These applications have been written from scratch in C++, using the functionalit
    :caption: Concepts
 
    concepts/dw_scheme
+   concepts/pe_scheme
    concepts/global_intensity_normalisation
    concepts/orthonormal_sh_basis
    concepts/sh_basis_lmax
