@@ -35,7 +35,7 @@ options.add_argument('-mask', help='Manually provide a mask image for motion cor
 options.add_argument('-grad', help='Pass the diffusion gradient table in MRtrix format')
 options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
 options.add_argument('-niter', help='Number of epochs (default = 3)')
-options.add_argument('-shells', help='Shells to be processed (default = all)')
+#options.add_argument('-shells', help='Shells to be processed (default = all)')
 options.add_argument('-lmax', help='SH basis order for single-shell processing (default = 0)')
 options.add_argument('-reg', help='Regularization for dwirecon (default = 0.01)')
 #options.add_argument('-rf', help='Basis functions for the radial domain')
@@ -103,14 +103,14 @@ if app.args.svr:
 niter = v2viter + s2viter
 
 # Select shells
-shells = image.headerField('in.mif', 'shells').split()
-if app.args.shells:
-    shells = app.args.shells.split(',')
+shells = [s.split('.')[0] for s in image.headerField('in.mif', 'shells').split()]
+#if app.args.shells:
+#    shells = app.args.shells.split(',')
 
 # Set lmax
 lmax = [0,]
 if app.args.lmax:
-    lmax = [int(l) for l in app.args.lmax]
+    lmax = [int(l) for l in app.args.lmax.split(',')]
 if len(lmax) != len(shells):
     app.error('No. lmax must match no. shells.')
 
@@ -166,10 +166,10 @@ def reconstep(k):
     n = (n+1)*(n+2)//2
     tmpsh = ['sh-b' + s + '.mif' for s in shells]
     for s, l, fn in zip(shells, lmax, tmpsh):
-        run.command('dwirecon in.mif -shell ' + s + ' -lmax ' + str(l) + ' -motion motion.txt ' +
-                    fn + ('' if i==0 else ' -weights sliceweights.txt -init ' + fn) +
-                    ' -spred spred-b' + s + '.mif -pad ' + str(n) + ' ' + recon_option + ' -force' + nthr)
-    run.command('mrcat -axis 5 ' + ' '.join(tmpsh) + ' - | mrconvert -axes 0,1,2,4,3 -set_property shells ' +
+        run.command('dwirecon in.mif -shell ' + s + ' -lmax ' + str(l) + ' ' + fn +
+                    ('' if k==0 else ' -motion motion.txt -weights sliceweights.txt -init ' + fn) + ' -pad ' + str(n) +
+                    ' -spred spred-b' + s + '.mif -complete ' + recon_option + ' -force' + nthr)
+    run.command('mrcat -axis 4 ' + ' '.join(tmpsh) + ' - | mrconvert -axes 0,1,2,4,3 -set_property shells ' +
                 ','.join(shells) + ' - recon-' + str(k) + '.mif')
     run.command('mrmath ' + ' '.join(['spred-b' + s + '.mif' for s in shells]) + ' sum spred.mif -force')
 
@@ -188,9 +188,9 @@ def v2vregstep(k):
         prog = app.progressBar('Registering recon to data volumes', dims[3])
         for v in range(dims[3]):
             run.command('mrconvert -coord 3 ' + str(v) + ' in.mif target.mif -export_grad_mrtrix grad1.txt -force')
-            run.command('mssh2amp msshredux.mif grad1.txt template.mif -transform T-' + str(v) + '.txt -force')
-            run.command('mrreg_lin template.mif target.mif -mask2 slicemask.mif' +
-                        ' -affine_init ' + ('T-'+str(v)+'.txt' if k>0 else '') +
+            run.command('mssh2amp msshredux.mif grad1.txt template.mif ' + ('' if k==0 else '-transform T-' + str(v) + '.txt ') + '-force')
+            run.command('mrreg_lin template.mif target.mif -mask2 mask.mif' +
+                        (' -affine_init T-'+str(v)+'.txt' if k>0 else '') +
                         ' -affine T-'+str(v)+'.txt ' + reg_option + ' -force')
             run.command('transformcalc T-'+str(v)+'.txt decompose trafo.txt -force')
             with open('trafo.txt') as f2:
@@ -230,13 +230,12 @@ def s2vregstep(k):
         prog.done()
 
 
-
 #   __________ Motion correction __________
-
 
 # initial template
 reconstep(0)
 sliceweightstep()
+rankreduxstep(0)
 
 # volume-to-volume registration
 for k in range(v2viter):
@@ -245,6 +244,7 @@ for k in range(v2viter):
     # update template
     reconstep(k+1)
     sliceweightstep()
+    rankreduxstep(k+1)
 
 
 # slice-to-volume registration
@@ -254,6 +254,7 @@ for k in range(s2viter):
     # update template
     reconstep(v2viter+k+1)
     sliceweightstep()
+    rankreduxstep(v2viter+k+1)
 
 
 #   __________ Copy outputs __________

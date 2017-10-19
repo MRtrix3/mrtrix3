@@ -88,6 +88,8 @@ void usage ()
   + Option ("padding", "zero-padding output coefficients to given dimension.")
     + Argument ("rank").type_integer(0)
 
+  + Option ("complete", "complete (zero-filled) source prediction.")
+
   + OptionGroup ("CG Optimization options")
 
   + Option ("tolerance", "the tolerance on the conjugate gradient solver. (default = " + str(DEFAULT_TOL) + ")")
@@ -296,16 +298,23 @@ void run ()
 
 
   // Output source prediction
+  bool complete = get_options("complete").size();
   opt = get_options("spred");
   if (opt.size()) {
-    header.size(3) = dwisub.size(3);
+    header.size(3) = (complete) ? dwi.size(3) : dwisub.size(3);
     DWI::set_DW_scheme (header, gradsub);
     auto spred = Image<value_type>::create(opt[0][0], header);
     Eigen::VectorXf p (dwisub.size(0)*dwisub.size(1)*dwisub.size(2)*dwisub.size(3));
     R.project_x2y(p, x);
     j = 0;
-    for (auto l = Loop("saving source prediction", {0, 1, 2, 3})(spred); l; l++, j++) {
-      spred.value() = p[j];
+    auto ii = idx.begin();
+    for (auto l = Loop("saving source prediction", 3)(spred); l; l++) {
+      auto iii = std::find(ii, idx.end(), spred.index(3));
+      if (!complete || iii != idx.end()) {
+        ii = iii;
+        for (auto l2 = Loop({0, 1, 2})(spred); l2; l2++)
+          spred.value() = p[j++];
+      }
     }
   }
 
