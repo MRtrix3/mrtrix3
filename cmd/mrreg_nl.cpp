@@ -299,6 +299,11 @@ void run () {
     nl_registration.set_init_grad_step (opt[0][0]);
   }
 
+  opt = get_options ("diagnostics_image");
+  if (opt.size()) {
+    nl_registration.set_diagnostics_image (opt[0][0]);
+  }
+
   opt = get_options ("nl_lmax");
   vector<int> nl_lmax;
   if (opt.size()) {

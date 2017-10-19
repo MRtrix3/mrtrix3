@@ -64,7 +64,11 @@ namespace MR
       + Argument ("num").type_sequence_int ()
 
       + Option("cc", "use cc metric with radius")
-      + Argument ("radius").type_integer (1,100);
+      + Argument ("radius").type_integer (1,100)
+
+      + Option("diagnostics_image", "use cc metric with radius")
+      + Argument("path");
+
 
   }
 }

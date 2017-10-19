@@ -55,7 +55,8 @@ namespace MR
           gradient_step (0.5),
           do_reorientation (false),
           fod_lmax (3),
-          use_cc (false) {
+          use_cc (false),
+          diagnostics_image_prefix ("") {
             scale_factor[0] = 0.25;
             scale_factor[1] = 0.5;
             scale_factor[2] = 1.0;
@@ -322,6 +323,25 @@ namespace MR
 
                 if (++iteration > max_iter[level])
                   converged = true;
+
+                // write debug image
+                if (converged && diagnostics_image_prefix.size()) {
+                  std::ostringstream oss;
+                  oss << diagnostics_image_prefix << "_stage-" << level + 1 << ".mif";
+                  // if (Path::exists(oss.str()) && !App::overwrite_files)
+                  //   throw Exception ("diagnostics image file \"" + oss.str() + "\" already exists (use -force option to force overwrite)");
+                  Header hc (warped_header);
+                  hc.ndim() = 4;
+                  hc.size(3) = 3;
+                  INFO("writing debug image: "+oss.str());
+                  auto check = Image<default_type>::create (oss.str(), hc);
+                  for (auto i = Loop(check, 0, 3) (check, im1_warped, im2_warped ); i; ++i) {
+                    check.value() = im1_warped.value();
+                    check.index(3) = 1;
+                    check.value() = im2_warped.value();
+                    check.index(3) = 0;
+                  }
+                }
               }
             }
             // Convert all warps to deformation field format for output
@@ -502,6 +522,9 @@ namespace MR
             cc_extent = vector<size_t>(3, radius * 2 + 1);
           }
 
+          void set_diagnostics_image (const std::basic_string<char>& path) {
+            diagnostics_image_prefix = path;
+          }
 
 
         protected:
@@ -533,6 +556,7 @@ namespace MR
           bool do_reorientation;
           vector<int> fod_lmax;
           bool use_cc;
+          std::basic_string<char> diagnostics_image_prefix;
 
           vector<size_t> cc_extent;
 

@@ -128,8 +128,8 @@ namespace MR
             Eigen::Matrix<typename Im1ImageType::value_type, 3, 1> grad =  2.0 * sfm / (sff * smm) * (
               (i2 - sfm / smm * i1 ) * im1_gradient.value() - (i1 - sfm / sff * i2 ) * im2_gradient.value());
 
-            im1_update.row(3) = grad * 10; // TODO: how do to normalise the update?
-            im2_update.row(3) = -grad * 10;
+            im1_update.row(3) = grad * 10.0; // TODO: normalise the update?
+            im2_update.row(3) = -grad * 10.0;
           }
 
           protected:
