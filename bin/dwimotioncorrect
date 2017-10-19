@@ -161,7 +161,7 @@ dims = list(map(int, image.headerField('in.mif', 'size').split()))
 
 #   __________ Function definitions __________
 
-def reconstep(i):
+def reconstep(k):
     n = max(lmax)
     n = (n+1)*(n+2)//2
     tmpsh = ['sh-b' + s + '.mif' for s in shells]
@@ -170,7 +170,7 @@ def reconstep(i):
                     fn + ('' if i==0 else ' -weights sliceweights.txt -init ' + fn) +
                     ' -spred spred-b' + s + '.mif -pad ' + str(n) + ' ' + recon_option + ' -force' + nthr)
     run.command('mrcat -axis 5 ' + ' '.join(tmpsh) + ' - | mrconvert -axes 0,1,2,4,3 -set_property shells ' +
-                ','.join(shells) + ' - recon-' + str(i) + '.mif')
+                ','.join(shells) + ' - recon-' + str(k) + '.mif')
     run.command('mrmath ' + ' '.join(['spred-b' + s + '.mif' for s in shells]) + ' sum spred.mif -force')
 
 
@@ -178,11 +178,11 @@ def sliceweightstep():
     run.command('dwisliceoutliers in.mif spred.mif -mask mask.mif sliceweights.txt -force' + ort)
 
 
-def rankreduxstep(i):
-    run.command('msshsvd recon-' + str(i) + '.mif -mask mask.mif -lmax 4 msshredux.mif -force')
+def rankreduxstep(k):
+    run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax 4 msshredux.mif -force')
 
 
-def v2vstep(k):
+def v2vregstep(k):
     # register template to slices
     with open('motion.txt', 'w') as f:
         prog = app.progressBar('Registering recon to data volumes', dims[3])
@@ -202,7 +202,7 @@ def v2vstep(k):
         prog.done()
 
 
-def s2vstep(k):
+def s2vregstep(k):
     # register template to slices
     with open('motion.txt', 'w') as f:
         prog = app.progressBar('Registering recon to data slices', dims[3]*dims[2]//mb)
@@ -233,93 +233,35 @@ def s2vstep(k):
 
 #   __________ Motion correction __________
 
-# Split shells for SH recon
-for s in shells:
-    run.command('dwiextract -shell ' + s + ' in.mif in-b' + s + '.mif')
-
-
-
-
-
-
-shell = None
-# select shells
-if shell is not None:
-    run.command('dwiextract -shell ' + ','.join(shell) + ' in.mif shells.mif')
-else:
-    run.command('mrconvert in.mif shells.mif')
-dims = list(map(int, image.headerField('shells.mif', 'size').split()))
 
 # initial template
-run.command('dwirecon shells.mif ' + recon_option + ' recon-0.mif -rpred pred.mif -spred spred.mif' + nthr)
-run.command('dwisliceoutliers shells.mif spred.mif -mask mask.mif sliceweights.txt' + ort)
+reconstep(0)
+sliceweightstep()
 
 # volume-to-volume registration
 for k in range(v2viter):
     # register template to volumes
-    with open('motion.txt', 'w') as f:
-        prog = app.progressBar('Registering recon to data volumes', dims[3])
-        for v in range(dims[3]):
-            run.command('mrconvert -coord 3 ' + str(v) + ' pred.mif template.mif -force')
-            run.command('mrconvert -coord 3 ' + str(v) + ' shells.mif target.mif -force')
-            run.command('mrreg_lin template.mif target.mif -nonsymmetric -mask2 mask.mif' +
-                        ' -type rigid ' + ('-affine_init T-'+str(v)+'.txt' if k>0 else '') +
-                        ' -affine_scale 1.0 -affine T-'+str(v)+'.txt -affine_niter 3 -force')
-            run.command('transformcalc T-'+str(v)+'.txt decompose trafo.txt -force')
-            with open('trafo.txt') as f2:
-                L = f2.readlines()
-            tra = L[4].strip().split(':')[1].strip()    # translation
-            rot = L[2].strip().split(':')[1].strip()    # rotation
-            f.write(tra + ' ' + rot + '\n')
-            prog.increment()
-        prog.done()
+    v2vregstep(k)
     # update template
-    run.command('dwirecon shells.mif ' + recon_option + ' recon-'+str(k+1)+'.mif -motion motion.txt' +
-                ' -weights sliceweights.txt -init recon-'+str(k)+'.mif -rpred pred.mif' +
-                ' -spred spred.mif' + (' -tpred result-v.mif' if k+1==v2viter else '') + ' -force' + nthr)
-    run.command('dwisliceoutliers shells.mif spred.mif -mask mask.mif sliceweights.txt -force' + ort)
+    reconstep(k+1)
+    sliceweightstep()
+
 
 # slice-to-volume registration
 for k in range(s2viter):
     # register template to slices
-    with open('motion.txt', 'w') as f:
-        prog = app.progressBar('Registering recon to data slices', dims[3]*dims[2]//mb)
-        for v in range(dims[3]):
-            volmotion = ''
-            if k == 0:
-                run.command('mrconvert -coord 3 ' + str(v) + ' pred.mif template.mif -force')
-            run.command('mrconvert -coord 3 ' + str(v) + ' shells.mif target.mif -force')
-            for s in range(dims[2]//mb):
-                run.command('maskslice -mb ' + str(mb) + ' mask.mif ' + str(s) + ' slicemask.mif -force')
-                if k > 0:
-                    run.command('mrconvert -coord 3 ' + str(v*dims[2] + s) + ' pred.mif template.mif -force')
-                run.command('mrreg_lin template.mif target.mif -nonsymmetric -mask2 slicemask.mif' +
-                        ' -type rigid -affine_init ' + ('T-'+str(v)+'-'+str(s)+'.txt' if k>0 else 'T-'+str(v)+'.txt') +
-                        ' -affine_scale 1.0 -affine T-'+str(v)+'-'+str(s)+'.txt -affine_niter 3 -force')
-                run.command('transformcalc T-'+str(v)+'-'+str(s)+'.txt decompose trafo.txt -force')
-                with open('trafo.txt') as f2:
-                    L = f2.readlines()
-                tra = L[4].strip().split(':')[1].strip()    # translation
-                rot = L[2].strip().split(':')[1].strip()    # rotation
-                volmotion += tra + ' ' + rot + '\n'
-                prog.increment()
-            for m in range(mb):
-                f.write(volmotion)
-        prog.done()
+    s2vregstep(k)
     # update template
-    run.command('dwirecon shells.mif ' + recon_option + ' recon-'+str(v2viter+k+1)+'.mif -motion motion.txt' +
-                ' -weights sliceweights.txt -init recon-'+str(v2viter+k)+'.mif -rpred pred.mif' +
-                ' -spred spred.mif' + (' -tpred result-s.mif' if k+1==s2viter else '') + ' -force' + nthr)
-    run.command('dwisliceoutliers shells.mif spred.mif -mask mask.mif sliceweights.txt -force' + ort)
+    reconstep(v2viter+k+1)
+    sliceweightstep()
 
 
 #   __________ Copy outputs __________
 
-run.command('mrconvert result-v.mif ' + path.fromUser(outvi, True) + (' -force' if app.force else ''))
 run.command('mrconvert recon-'+str(v2viter)+'.mif ' + path.fromUser(outvc, True) + (' -force' if app.force else ''))
 if s2viter > 0:
-    run.command('mrconvert result-s.mif ' + path.fromUser(outsi, True) + (' -force' if app.force else ''))
     run.command('mrconvert recon-'+str(v2viter+s2viter)+'.mif ' + path.fromUser(outsc, True) + (' -force' if app.force else ''))
+
 
 app.complete()
 
