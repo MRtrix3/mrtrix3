@@ -137,6 +137,8 @@ if app.args.sspwidth:
 #else:
 #    app.error('Multi-shell data requires radial basis, single-shell data requires lmax.')
 
+reg_option = '-type rigid -nonsymmetric -affine_scale 1.0 -affine_niter 3'
+
 # Force max no. threads
 if app.args.nthreads:
     nthr = ' -nthreads ' + app.args.nthreads
@@ -153,19 +155,22 @@ ort = ''
 if app.args.or_thr:
     ort = ' -thr ' + app.args.or_thr
 
+# Image dimensions
+dims = list(map(int, image.headerField('in.mif', 'size').split()))
+
 
 #   __________ Function definitions __________
 
-def reconstep(iter):
+def reconstep(i):
     n = max(lmax)
     n = (n+1)*(n+2)//2
     tmpsh = ['sh-b' + s + '.mif' for s in shells]
     for s, l, fn in zip(shells, lmax, tmpsh):
         run.command('dwirecon in.mif -shell ' + s + ' -lmax ' + str(l) + ' -motion motion.txt ' +
-                    fn + ('' if iter==0 else ' -weights sliceweights.txt -init ' + fn) +
+                    fn + ('' if i==0 else ' -weights sliceweights.txt -init ' + fn) +
                     ' -spred spred-b' + s + '.mif -pad ' + str(n) + ' ' + recon_option + ' -force' + nthr)
     run.command('mrcat -axis 5 ' + ' '.join(tmpsh) + ' - | mrconvert -axes 0,1,2,4,3 -set_property shells ' +
-                ','.join(shells) + ' - recon-' + str(iter) + '.mif')
+                ','.join(shells) + ' - recon-' + str(i) + '.mif')
     run.command('mrmath ' + ' '.join(['spred-b' + s + '.mif' for s in shells]) + ' sum spred.mif -force')
 
 
@@ -173,12 +178,57 @@ def sliceweightstep():
     run.command('dwisliceoutliers in.mif spred.mif -mask mask.mif sliceweights.txt -force' + ort)
 
 
-def rankreduxstep(iter):
-    run.command('msshsvd recon-' + str(iter) + '.mif -mask mask.mif -lmax 4 msshredux.mif -force')
+def rankreduxstep(i):
+    run.command('msshsvd recon-' + str(i) + '.mif -mask mask.mif -lmax 4 msshredux.mif -force')
 
 
-def registrationstep(iter):
-    pass
+def v2vstep(k):
+    # register template to slices
+    with open('motion.txt', 'w') as f:
+        prog = app.progressBar('Registering recon to data volumes', dims[3])
+        for v in range(dims[3]):
+            run.command('mrconvert -coord 3 ' + str(v) + ' in.mif target.mif -export_grad_mrtrix grad1.txt -force')
+            run.command('mssh2amp msshredux.mif grad1.txt template.mif -transform T-' + str(v) + '.txt -force')
+            run.command('mrreg_lin template.mif target.mif -mask2 slicemask.mif' +
+                        ' -affine_init ' + ('T-'+str(v)+'.txt' if k>0 else '') +
+                        ' -affine T-'+str(v)+'.txt ' + reg_option + ' -force')
+            run.command('transformcalc T-'+str(v)+'.txt decompose trafo.txt -force')
+            with open('trafo.txt') as f2:
+                L = f2.readlines()
+            tra = L[4].strip().split(':')[1].strip()    # translation
+            rot = L[2].strip().split(':')[1].strip()    # rotation
+            f.write(tra + ' ' + rot + '\n')
+            prog.increment()
+        prog.done()
+
+
+def s2vstep(k):
+    # register template to slices
+    with open('motion.txt', 'w') as f:
+        prog = app.progressBar('Registering recon to data slices', dims[3]*dims[2]//mb)
+        for v in range(dims[3]):
+            volmotion = ''
+            run.command('mrconvert -coord 3 ' + str(v) + ' in.mif target.mif -export_grad_mrtrix grad1.txt -force')
+            if k == 0:
+                run.command('mssh2amp msshredux.mif grad1.txt template.mif -transform T-' + str(v) + '.txt -force')
+            for s in range(dims[2]//mb):
+                run.command('maskslice -mb ' + str(mb) + ' mask.mif ' + str(s) + ' slicemask.mif -force')
+                if k > 0:
+                    run.command('mssh2amp msshredux.mif grad1.txt template.mif -transform T-' + str(v) + '-' + str(s) + '.txt -force')
+                run.command('mrreg_lin template.mif target.mif -mask2 slicemask.mif' +
+                        ' -affine_init ' + ('T-'+str(v)+'-'+str(s)+'.txt' if k>0 else 'T-'+str(v)+'.txt') +
+                        ' -affine T-'+str(v)+'-'+str(s)+'.txt ' + reg_option + ' -force')
+                run.command('transformcalc T-'+str(v)+'-'+str(s)+'.txt decompose trafo.txt -force')
+                with open('trafo.txt') as f2:
+                    L = f2.readlines()
+                tra = L[4].strip().split(':')[1].strip()    # translation
+                rot = L[2].strip().split(':')[1].strip()    # rotation
+                volmotion += tra + ' ' + rot + '\n'
+                prog.increment()
+            for m in range(mb):
+                f.write(volmotion)
+        prog.done()
+
 
 
 #   __________ Motion correction __________
@@ -186,9 +236,6 @@ def registrationstep(iter):
 # Split shells for SH recon
 for s in shells:
     run.command('dwiextract -shell ' + s + ' in.mif in-b' + s + '.mif')
-
-# Image dimensions
-dims = list(map(int, image.headerField('in.mif', 'size').split()))
 
 
 
