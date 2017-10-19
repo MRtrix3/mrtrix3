@@ -29,14 +29,14 @@ namespace MR {
 
       class Frame { MEMALIGN(Frame)
         public:
-          Frame () { 
+          Frame () {
             acq_dim[0] = acq_dim[1] = dim[0] = dim[1] = instance = series_num = acq = sequence = UINT_MAX;
             position_vector[0] = position_vector[1] = position_vector[2] = NaN;
             orientation_x[0] = orientation_x[1] = orientation_x[2] = NaN;
             orientation_y[0] = orientation_y[1] = orientation_y[2] = NaN;
             orientation_z[0] = orientation_z[1] = orientation_z[2] = NaN;
             distance = NaN;
-            pixel_size[0] = pixel_size[1] = slice_thickness = slice_spacing = NaN; 
+            pixel_size[0] = pixel_size[1] = slice_thickness = slice_spacing = NaN;
             scale_intercept = 0.0;
             scale_slope = 1.0;
             bvalue = G[0] = G[1] = G[2] = NaN;
@@ -45,7 +45,7 @@ namespace MR {
             transfer_syntax_supported = true;
             pe_axis = 3;
             pe_sign = 0;
-            pixel_bandwidth = bandwidth_per_pixel_phase_encode = echo_time = NaN;
+            pixel_bandwidth = bandwidth_per_pixel_phase_encode = echo_time = time_after_start = NaN;
             echo_train_length = 0;
           }
 
@@ -57,27 +57,28 @@ namespace MR {
           bool DW_scheme_wrt_image, transfer_syntax_supported;
           size_t pe_axis;
           int pe_sign;
-          default_type pixel_bandwidth, bandwidth_per_pixel_phase_encode, echo_time;
+          default_type pixel_bandwidth, bandwidth_per_pixel_phase_encode, echo_time, time_after_start;
+          Time acquisition_time;
           size_t echo_train_length;
           vector<uint32_t> index;
 
           bool operator< (const Frame& frame) const {
-            if (series_num != frame.series_num) 
+            if (series_num != frame.series_num)
               return series_num < frame.series_num;
             if (image_type != frame.image_type)
               return image_type < frame.image_type;
-            if (acq != frame.acq) 
+            if (acq != frame.acq)
               return acq < frame.acq;
             assert (std::isfinite (distance));
             assert (std::isfinite (frame.distance));
-            if (distance != frame.distance) 
+            if (distance != frame.distance)
               return distance < frame.distance;
             for (size_t n = index.size(); n--;)
               if (index[n] != frame.index[n])
                 return index[n] < frame.index[n];
-            if (sequence != frame.sequence) 
+            if (sequence != frame.sequence)
               return sequence < frame.sequence;
-            if (instance != frame.instance) 
+            if (instance != frame.instance)
               return instance < frame.instance;
             return false;
           }
@@ -85,13 +86,13 @@ namespace MR {
 
           void calc_distance ()
           {
-            if (!std::isfinite (orientation_z[0])) 
+            if (!std::isfinite (orientation_z[0]))
               orientation_z = orientation_x.cross (orientation_y);
             else {
               Eigen::Vector3 normal = orientation_x.cross (orientation_y);
               if (normal.dot (orientation_z) < 0.0)
                 orientation_z = -normal;
-              else 
+              else
                 orientation_z = normal;
             }
 
@@ -120,16 +121,17 @@ namespace MR {
       class Image : public Frame { MEMALIGN(Image)
 
         public:
-          Image (Series* parent = NULL) : 
-            series (parent), 
+          Image (Series* parent = nullptr) :
+            series (parent),
             images_in_mosaic (0),
             is_BE (false),
             in_frames (false) { }
 
           Series* series;
           size_t images_in_mosaic;
-          std::string  sequence_name, manufacturer;
+          std::string sequence_name, manufacturer;
           bool is_BE, in_frames;
+          vector<float> mosaic_slices_timing;
 
           vector<uint32_t> frame_dim;
           vector<std::shared_ptr<Frame>> frames;
