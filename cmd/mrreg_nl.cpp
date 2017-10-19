@@ -20,6 +20,7 @@
 #include "registration/nonlinear.h"
 #include "registration/shared.h"
 #include "registration/metric/demons.h"
+#include "registration/metric/demons_cc.h"
 #include "registration/transform/affine.h"
 #include "dwi/directions/predefined.h"
 #include "math/average_space.h"
@@ -218,7 +219,6 @@ void run () {
     check_dimensions (input2[0], im2_mask, 0, 3);
   }
 
-
   Registration::Transform::Affine affine;
   opt = get_options ("affine");
   bool init_affine_matrix_set = false;
@@ -278,6 +278,10 @@ void run () {
       throw Exception ("when initialising the non-linear registration the max number of iterations can only be defined for a single level");
     else
       nl_registration.set_max_iter (iterations_per_level);
+  }
+  opt = get_options ("cc");
+  if (opt.size()) {
+    nl_registration.metric_cc((int)opt[0][0]);
   }
 
   opt = get_options ("nl_update_smooth");
