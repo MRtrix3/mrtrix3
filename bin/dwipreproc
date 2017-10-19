@@ -22,7 +22,7 @@ if not os.path.isdir(lib_folder):
   sys.exit(1)
 sys.path.insert(0, lib_folder)
 
-import math
+import math, itertools
 from mrtrix3 import app, file, fsl, image, path, phaseEncoding, run #pylint: disable=redefined-builtin
 
 
@@ -146,6 +146,43 @@ grad = dwi_header.keyval()['dw_scheme']
 if not len(grad) == num_volumes:
   app.error('Number of lines in gradient table (' + str(len(grad)) + ') does not match input image (' + str(num_volumes) + ' volumes); check your input data')
 
+
+# Check the manual options being passed to eddy, ensure they make sense
+eddy_manual_options = ''
+if app.args.eddy_options:
+  # Initially process as a list; we'll convert back to a string later
+  eddy_manual_options = app.args.eddy_options.strip().split()
+  if '--resamp=lsr' in eddy_manual_options:
+    app.error('dwipreproc does not currently support least-squares reconstruction; this cannot be simply passed via -eddy_options')
+  if any(s.startswith('--mporder') for s in eddy_manual_options):
+    slspec_option = [ s for s in eddy_manual_options if s.startswith('--slspec') ]
+    if len(slspec_option) > 1:
+      app.error('--slspec option appears more than once in -eddy_options input; cannot import slice timing')
+    elif len(slspec_option) == 1:
+      slspec_file_path = path.fromUser(slspec_option[0][9:], False)
+      if os.path.isfile(slspec_file_path):
+        run.function(shutil.copy, slspec_file_path, 'slspec.txt')
+        eddy_manual_options = [ s for s in eddy_manual_options if not s.startswith('--slspec') ]
+        eddy_manual_options.append('--slspec=slspec.txt')
+      else:
+        app.error('Unable to find \'slspec\' file provided via -eddy_options \" ... --slspec=/path/to/file ... \" (expected location: ' + slspec_file_path + ')')
+    else:
+      if not 'SliceTiming' in dwi_header.keyval():
+        app.error('Cannot perform slice-to-volume correction in eddy: No slspec file provided, and no slice timing information present in header')
+      slice_timing = dwi_header.keyval()['SliceTiming'][0]
+      if len(slice_timing) != dwi_header.size()[2]:
+        app.error('Cannot use slice timing information in image header for slice-to-volume correction: Number of entries (' + len(slice_timing) + ') does not match number of slices (' + dwi_header.size()[2] + ')')
+      # This list contains, for each slice, the timing offset between acquisition of the
+      #   first slice in the volume, and acquisition of that slice
+      # Eddy however requires a text file where each row contains those slices that were
+      #   acquired with a single readout, in ordered rows from first slice (group)
+      #   acquired to last slice (group) acquired
+      slspec = [ [ x[0] for x in g ] for k, g in itertools.groupby(sorted(enumerate(slice_timing), key=lambda x:x[1]), key=lambda x:x[1]) ]
+      with open('slspec.txt', 'w') as f:
+        for line in slspec:
+          f.write(' '.join(str(value) for value in line) + '\n')
+      eddy_manual_options.append('--slspec=slspec.txt')
+  eddy_manual_options = ' ' + ' '.join(eddy_manual_options)
 
 
 # Since we want to access user-defined phase encoding information regardless of whether or not
@@ -492,9 +529,6 @@ else:
 # Run eddy
 run.command('mrconvert dwi.mif' + import_dwi_pe_table_option + ' dwi.nii -stride -1,+2,+3,+4 -export_grad_fsl bvecs bvals -export_pe_eddy eddy_config.txt eddy_indices.txt')
 file.delTemporary('dwi.mif')
-eddy_manual_options = ''
-if app.args.eddy_options:
-  eddy_manual_options = ' ' + app.args.eddy_options.strip()
 run.command(eddy_cmd + ' --imain=dwi.nii --mask=mask.nii --acqp=eddy_config.txt --index=eddy_indices.txt --bvecs=bvecs --bvals=bvals' + eddy_in_topup_option + eddy_manual_options + ' --out=dwi_post_eddy')
 
 
