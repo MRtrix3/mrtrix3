@@ -178,6 +178,7 @@ if app.args.eddy_options:
       #   acquired with a single readout, in ordered rows from first slice (group)
       #   acquired to last slice (group) acquired
       slspec = [ [ x[0] for x in g ] for k, g in itertools.groupby(sorted(enumerate(slice_timing), key=lambda x:x[1]), key=lambda x:x[1]) ]
+      app.var(slice_timing, slspec)
       with open('slspec.txt', 'w') as f:
         for line in slspec:
           f.write(' '.join(str(value) for value in line) + '\n')
@@ -707,6 +708,14 @@ else:
 
 
 
+# Build a list of header key-value entries that we want to _remove_ from the
+#   output image, as they may have been useful for controlling pre-processing
+#   but are no longer required, and will just bloat the key-value listings of
+#   all subsequent derived images
+keys_to_remove = [ 'EchoTime', 'FlipAngle', 'MultibandAccelerationFactor', 'PhaseEncodingDirection', 'RepetitionTime', 'SliceTiming', 'TotalReadoutTime', 'pe_scheme' ]
+clear_property_options = ' ' + ' '.join(['-clear_property '+key for key in keys_to_remove if key in dwi_header.keyval() ])
+
+
 # Finish!
-run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + grad_export_option + (' -force' if app.forceOverwrite else ''))
+run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + grad_export_option + clear_property_options + (' -force' if app.forceOverwrite else ''))
 app.complete()
