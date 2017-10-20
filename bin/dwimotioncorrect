@@ -158,6 +158,10 @@ if app.args.or_thr:
 # Image dimensions
 dims = list(map(int, image.headerField('in.mif', 'size').split()))
 
+# Shell weights
+with open('svdweights.txt', 'w') as f:
+    f.write(image.headerField('in.mif', 'shellcount'))
+
 
 #   __________ Function definitions __________
 
@@ -179,7 +183,7 @@ def sliceweightstep():
 
 
 def rankreduxstep(k):
-    run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax 4 msshredux.mif -force')
+    run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax 4 -weights svdweights.txt msshredux.mif -force')
 
 
 def v2vregstep(k):
