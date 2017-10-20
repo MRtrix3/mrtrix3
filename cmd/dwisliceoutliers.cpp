@@ -21,6 +21,9 @@
 using namespace MR;
 using namespace App;
 
+const char* const lossfunc[] = { "linear", "softl1", "cauchy", "arctan", NULL };
+
+
 void usage ()
 {
   AUTHOR = "Daan Christiaens";
@@ -29,7 +32,7 @@ void usage ()
 
   DESCRIPTION
   + "This command takes DWI data and a signal prediction to calculate slice weights, "
-    "using a Soft-L1 loss function of given scaling.";
+    "using Linear, Soft-L1, Cauchy, or Arctan loss function with given scaling.";
 
   ARGUMENTS
   + Argument ("in", "the input DWI data.").type_image_in()
@@ -39,8 +42,12 @@ void usage ()
   OPTIONS
   + Option ("mask", "image mask")
     + Argument ("m").type_file_in()
+
+  + Option ("loss", "loss function (options: " + join(lossfunc, ", ") + ")")
+    + Argument ("f").type_choice(lossfunc)
+
   + Option ("scale", "residual scaling (default = " + str(DEFAULT_SCALE) + ")")
-    + Argument ("t").type_float(0.0);
+    + Argument ("s").type_float(0.0);
 
 }
 
@@ -95,6 +102,7 @@ void run ()
     check_dimensions(data, mask, 0, 3);
   }
 
+  int loss = get_option_value("loss", 1);
   float scale = get_option_value("scale", DEFAULT_SCALE);
 
   // Compute RMSE of each slice
@@ -106,11 +114,18 @@ void run ()
   Eigen::MatrixXf W (E.rows(), E.cols());
   for (size_t i = 0; i < W.rows(); i++) {
     for (size_t j = 0; j < W.cols(); j++) {
-      //W(i,j) = (E(i,j) < thr*Em[i]) ? 1.0 : 0.0;
-      //W(i,j) = (E(i,j) < thr*Em[i]) ? 1.0 : Em[i]/(thr*E(i,j));
       float e = E(i,j)/scale;
       float e2 = e*e;
-      W(i,j) = 2 * (std::sqrt(1 + e2) - 1) / e2;
+      switch (loss) {
+        case 0:
+          W(i,j) = 1; break;
+        case 1:
+          W(i,j) = 2 * (std::sqrt(1 + e2) - 1) / e2; break;
+        case 2:
+          W(i,j) = std::log1p(e2) / e2; break;
+        case 3:
+          W(i,j) = std::atan(e2) / e2; break;
+      }
     }
   }
 
