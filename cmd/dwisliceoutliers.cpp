@@ -16,7 +16,7 @@
 #include "image.h"
 #include "algo/threaded_loop.h"
 
-#define DEFAULT_THR 3.0
+#define DEFAULT_SCALE 1.0
 
 using namespace MR;
 using namespace App;
@@ -28,8 +28,8 @@ void usage ()
   SYNOPSIS = "Detect outlier slices in DWI image.";
 
   DESCRIPTION
-  + "This command takes DWI data and a signal prediction to detect slices "
-    "with RMS error beyond 3.0 (default) times the average RMSE.";
+  + "This command takes DWI data and a signal prediction to calculate slice weights, "
+    "using a Soft-L1 loss function of given scaling.";
 
   ARGUMENTS
   + Argument ("in", "the input DWI data.").type_image_in()
@@ -39,8 +39,8 @@ void usage ()
   OPTIONS
   + Option ("mask", "image mask")
     + Argument ("m").type_file_in()
-  + Option ("thr", "RMSE threshold (default = " + str(DEFAULT_THR) + ")")
-    + Argument ("t").type_float(1.0);
+  + Option ("scale", "residual scaling (default = " + str(DEFAULT_SCALE) + ")")
+    + Argument ("t").type_float(0.0);
 
 }
 
@@ -95,7 +95,7 @@ void run ()
     check_dimensions(data, mask, 0, 3);
   }
 
-  float thr = get_option_value("thr", DEFAULT_THR);
+  float scale = get_option_value("scale", DEFAULT_SCALE);
 
   // Compute RMSE of each slice
   RMSEFunctor rmse (data, mask);
@@ -106,7 +106,11 @@ void run ()
   Eigen::MatrixXf W (E.rows(), E.cols());
   for (size_t i = 0; i < W.rows(); i++) {
     for (size_t j = 0; j < W.cols(); j++) {
-      W(i,j) = (E(i,j) < thr*Em[i]) ? 1.0 : 0.0;
+      //W(i,j) = (E(i,j) < thr*Em[i]) ? 1.0 : 0.0;
+      //W(i,j) = (E(i,j) < thr*Em[i]) ? 1.0 : Em[i]/(thr*E(i,j));
+      float e = E(i,j)/scale;
+      float e2 = e*e;
+      W(i,j) = 2 * (std::sqrt(1 + e2) - 1) / e2;
     }
   }
 
