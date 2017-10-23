@@ -12,6 +12,7 @@ sys.path.insert(0, lib_folder)
 
 from mrtrix3 import app, file, image, path, run #pylint: disable=redefined-builtin
 
+from mrtrix3.path import allindir
 
 def abspath(*arg):
   return os.path.abspath(os.path.join(*arg))
@@ -45,7 +46,7 @@ app.args.input_dir = relpath(app.args.input_dir)
 inputDir = app.args.input_dir
 if not os.path.exists(inputDir):
   app.error('input directory not found')
-inFiles = os.listdir(inputDir)
+inFiles = allindir(inputDir, dir_path=False)
 if len(inFiles) <= 1:
   app.console('not enough images found in input directory. More than one image is needed to perform a group-wise intensity normalisation')
 else:
@@ -55,7 +56,7 @@ app.args.mask_dir = relpath(app.args.mask_dir)
 maskDir = app.args.mask_dir
 if not os.path.exists(maskDir):
   app.error('mask directory not found')
-maskFiles = os.listdir(maskDir)
+maskFiles = allindir(maskDir, dir_path=False)
 if len(maskFiles) != len(inFiles):
   app.error('the number of images in the mask directory does not equal the number of images in the input directory')
 maskCommonPostfix = path.commonPostfix(maskFiles)
