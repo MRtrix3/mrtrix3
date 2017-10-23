@@ -12,8 +12,9 @@
  */
 
 
-#include "mrtrix.h"
+#include "axes.h"
 #include "header.h"
+#include "mrtrix.h"
 #include "phase_encoding.h"
 #include "stride.h"
 #include "transform.h"
@@ -69,7 +70,7 @@ namespace MR
 
   namespace {
 
-    std::string short_description (const Header& H) 
+    std::string short_description (const Header& H)
     {
       vector<std::string> dims;
       for (size_t n = 0; n < H.ndim(); ++n)
@@ -303,7 +304,7 @@ namespace MR
     if (new_datatype != previous_datatype) {
       new_datatype.unset_flag (DataType::BigEndian);
       new_datatype.unset_flag (DataType::LittleEndian);
-      if (new_datatype != previous_datatype) 
+      if (new_datatype != previous_datatype)
         WARN (std::string ("requested datatype (") + previous_datatype.specifier() + ") not supported - substituting with " + H.datatype().specifier());
     }
 
@@ -576,6 +577,17 @@ namespace MR
       PhaseEncoding::set_scheme (*this, pe_scheme);
       INFO ("Phase encoding scheme has been modified according to internal header transform realignment");
     }
+
+    // If there's any slice encoding direction information present in the
+    //   header, that's also necessary to update here
+    auto slice_encoding_it = keyval().find ("SliceEncodingDirection");
+    if (slice_encoding_it != keyval().end()) {
+      const Eigen::Vector3 orig_dir (Axes::id2dir (slice_encoding_it->second));
+      const Eigen::Vector3 new_dir (orig_dir[perm[0]], orig_dir[perm[1]], orig_dir[perm[2]]);
+      slice_encoding_it->second = Axes::dir2id (new_dir);
+      INFO ("Slice encoding direction has been modified according to internal header transform realignment");
+    }
+
   }
 
 

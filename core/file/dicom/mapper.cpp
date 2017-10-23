@@ -213,8 +213,6 @@ namespace MR {
             // CSA mosaic defines these in ms; we want them in s
             for (auto f : image.mosaic_slices_timing)
               slices_timing.push_back (0.001 * f);
-            H.keyval()["SliceTiming"] = join (slices_timing, ",");
-            H.keyval()["MultibandAccelerationFactor"] = str (std::count (slices_timing.begin(), slices_timing.end(), 0.0f));
           }
         } else if (std::isfinite (frame.time_after_start)) {
           DEBUG ("Taking slice timing information from CSA TimeAfterStart field");
@@ -237,8 +235,9 @@ namespace MR {
           if (slices_acquired_at_zero < (image.images_in_mosaic ? image.images_in_mosaic : dim[1])) {
             H.keyval()["SliceTiming"] = join (slices_timing, ",");
             H.keyval()["MultibandAccelerationFactor"] = str (slices_acquired_at_zero);
+            H.keyval()["SliceEncodingDirection"] = "k";
           } else {
-            DEBUG ("All slices acquired at same time; not writing slice timing information");
+            DEBUG ("All slices acquired at same time; not writing slice encoding information");
           }
         } else {
           DEBUG ("No slice timing information obtained");
