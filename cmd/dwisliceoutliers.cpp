@@ -15,24 +15,32 @@
 #include "command.h"
 #include "image.h"
 #include "algo/threaded_loop.h"
+#include "math/median.h"
+#include "dwi/gradient.h"
+#include "dwi/shells.h"
 
-#define DEFAULT_SCALE 1.0
 
 using namespace MR;
 using namespace App;
 
+
 const char* const lossfunc[] = { "linear", "softl1", "cauchy", "arctan", NULL };
+
+static constexpr float EPS = std::numeric_limits<float>::epsilon();
 
 
 void usage ()
 {
-  AUTHOR = "Daan Christiaens";
+  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk)";
 
-  SYNOPSIS = "Detect outlier slices in DWI image.";
+  SYNOPSIS = "Detect and reweigh outlier slices in DWI image.";
 
   DESCRIPTION
-  + "This command takes DWI data and a signal prediction to calculate slice weights, "
-    "using Linear, Soft-L1, Cauchy, or Arctan loss function with given scaling.";
+  + "This command takes DWI data and a signal prediction to calculate slice "
+    "weights, using Linear, Soft-L1 (default), Cauchy, or Arctan loss functions."
+
+  + "Unless set otherwise, the errors are scaled with a robust estimate "
+    "of standard error based on the median absolute deviation (MAD).";
 
   ARGUMENTS
   + Argument ("in", "the input DWI data.").type_image_in()
@@ -46,13 +54,15 @@ void usage ()
   + Option ("loss", "loss function (options: " + join(lossfunc, ", ") + ")")
     + Argument ("f").type_choice(lossfunc)
 
-  + Option ("scale", "residual scaling (default = " + str(DEFAULT_SCALE) + ")")
-    + Argument ("s").type_float(0.0);
+  + Option ("scale", "residual scaling (default = 1.4826 * MAD per shell)")
+    + Argument ("s").type_float(0.0)
+
+  + DWI::GradImportOptions();
 
 }
 
 
-typedef float value_type;
+using value_type = float;
 
 
 class RMSEFunctor {
@@ -77,7 +87,8 @@ class RMSEFunctor {
         e += d * d;
         n++;
       }
-      (*E)(data.get_index(2), data.get_index(3)) = std::sqrt(e/n);
+      if (n > 0)
+        (*E)(data.get_index(2), data.get_index(3)) = std::sqrt(e/n);
     }
 
     Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> result() const { return *E; }
@@ -103,28 +114,56 @@ void run ()
   }
 
   int loss = get_option_value("loss", 1);
-  float scale = get_option_value("scale", DEFAULT_SCALE);
 
   // Compute RMSE of each slice
   RMSEFunctor rmse (data, mask);
   ThreadedLoop("Computing RMSE", data, 2, 4).run(rmse, data, pred);
   Eigen::MatrixXf E = rmse.result();
-  Eigen::VectorXf Em = E.array().square().rowwise().mean().sqrt();
 
+  // Calculate scale
+  Eigen::VectorXf scale (data.size(3));
+  scale.setOnes();
+  opt = get_options("scale");
+  if (opt.size()) {
+    scale *= float(opt[0][0]);
+  }
+  else {
+    // Select shells
+    auto grad = DWI::get_valid_DW_scheme (data);
+    DWI::Shells shells (grad);
+    vector<value_type> e;
+    for (size_t k = 0; k < shells.count(); k++) {
+      // Compute scale
+      e.clear();
+      for (size_t j : shells[k].get_volumes()) {
+        for (size_t i = 0; i < E.rows(); i++)
+          e.push_back(E(i,j));
+      }
+      value_type s = Math::median(e) * 1.4826;
+      // Update scale vector
+      for (size_t i : shells[k].get_volumes())
+        scale[i] = s;
+    }
+  }
+
+  // Compute weights
   Eigen::MatrixXf W (E.rows(), E.cols());
   for (size_t i = 0; i < W.rows(); i++) {
     for (size_t j = 0; j < W.cols(); j++) {
-      float e = E(i,j)/scale;
-      float e2 = e*e;
+      float e2 = Math::pow2( E(i,j)/scale[j] );
       switch (loss) {
         case 0:
-          W(i,j) = 1; break;
+          W(i,j) = 1.0;
+          break;
         case 1:
-          W(i,j) = 2 * (std::sqrt(1 + e2) - 1) / e2; break;
+          W(i,j) = (e2 <= EPS) ? 0 : 2 * (std::sqrt(1.0 + e2) - 1.0) / e2;
+          break;
         case 2:
-          W(i,j) = std::log1p(e2) / e2; break;
+          W(i,j) = (e2 <= EPS) ? 0 : std::log1p(e2) / e2;
+          break;
         case 3:
-          W(i,j) = std::atan(e2) / e2; break;
+          W(i,j) = (e2 <= EPS) ? 0 : std::atan(e2) / e2;
+          break;
       }
     }
   }
@@ -132,8 +171,5 @@ void run ()
   save_matrix(W, argument[2]);
 
 }
-
-
-
 
 

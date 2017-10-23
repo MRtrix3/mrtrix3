@@ -41,8 +41,8 @@ options.add_argument('-reg', help='Regularization for dwirecon (default = 0.01)'
 #options.add_argument('-rf', help='Basis functions for the radial domain')
 options.add_argument('-svr', help='Number of slice-to-volume reconstruction epochs (default = 0)')
 options.add_argument('-mb', help='Multiband factor (default = 1)')
-options.add_argument('-sspwidth', help='Slice thickness for Gaussian SSP. (default = 1)')
-options.add_argument('-or_thr', help='Outlier rejection threshold (default = 3.0)')
+options.add_argument('-sspwidth', help='Slice thickness for Gaussian SSP (default = 1)')
+options.add_argument('-or_loss', help='Outlier rejection loss function (default = softl1)')
 app.cmdline.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
 app.parse()
 
@@ -150,10 +150,10 @@ mb = 1
 if app.args.mb:
     mb = int(app.args.mb)
 
-# Set OR threshold
-ort = ''
-if app.args.or_thr:
-    ort = ' -thr ' + app.args.or_thr
+# Set OR loss
+or_option = ''
+if app.args.or_loss:
+    ort = ' -loss ' + app.args.or_loss
 
 # Image dimensions
 dims = list(map(int, image.headerField('in.mif', 'size').split()))
@@ -179,7 +179,7 @@ def reconstep(k):
 
 
 def sliceweightstep():
-    run.command('dwisliceoutliers in.mif spred.mif -mask mask.mif sliceweights.txt -force' + ort)
+    run.command('dwisliceoutliers in.mif spred.mif -mask mask.mif sliceweights.txt' + or_option + ' -force')
 
 
 def rankreduxstep(k):
