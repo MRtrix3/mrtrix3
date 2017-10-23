@@ -24,6 +24,7 @@ namespace MR
       namespace Tool
       {
         enum class TrackColourType { Direction, Ends, Manual, ScalarFile };
+        enum class TrackGeometryType { Pseudotubes, Lines , Points };
         enum class TrackThresholdType { None, UseColourFile, SeparateFile };
       }
     }

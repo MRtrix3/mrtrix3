@@ -124,6 +124,8 @@ Tractography tool options
 
 -  **-tractography.thickness value** Line thickness of tractography display, [-1.0, 1.0], default is 0.0.
 
+-  **-tractography.geometry value** The geometry type to use when rendering tractograms (options are: pseudotubes, lines, points)
+
 -  **-tractography.opacity value** Opacity of tractography display, [0.0, 1.0], default is 1.0.
 
 -  **-tractography.slab value** Slab thickness of tractography display, in mm. -1 to turn off crop to slab.
