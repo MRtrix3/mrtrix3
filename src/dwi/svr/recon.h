@@ -343,9 +343,11 @@ namespace MR
               // get slice position in recon space
               pr = Ts2r * ps;
               if (field.valid()) {
-                interp->voxel(Tf * pr);
-                ps += interp->value() * peoffset;
-                pr = Ts2r * wrap_around(ps);
+                for (int j = 0; j < 5; j++) {
+                  interp->voxel(Tf * pr);
+                  //ps += interp->value() * peoffset;
+                  pr = Ts2r * (ps - interp->value() * peoffset);
+                }
               }
               // update motion matrix
               load_sparse_coefs(m, pr.cast<float>());
@@ -382,9 +384,11 @@ namespace MR
               // get slice position in recon space
               pr = Ts2r * ps;
               if (field.valid()) {
-                interp->voxel(Tf * pr);
-                ps += interp->value() * peoffset;
-                pr = Ts2r * wrap_around(ps);
+                for (int j = 0; j < 5; j++) {
+                  interp->voxel(Tf * pr);
+                  //ps += interp->value() * peoffset;
+                  pr = Ts2r * (ps - interp->value() * peoffset);
+                }
               }
               // update motion matrix
               load_sparse_coefs(m, pr.cast<float>());
@@ -424,9 +428,11 @@ namespace MR
               // get slice position in recon space
               pr = Ts2r * ps;
               if (field.valid()) {
-                interp->voxel(Tf * pr);
-                ps += interp->value() * peoffset;
-                pr = Ts2r * wrap_around(ps);
+                for (int j = 0; j < 5; j++) {
+                  interp->voxel(Tf * pr);
+                  //ps += interp->value() * peoffset;
+                  pr = Ts2r * (ps - interp->value() * peoffset);
+                }
               }
               // update motion matrix
               load_sparse_coefs(m[2+s], pr.cast<float>());
