@@ -46,6 +46,8 @@ Other options for the dwipreproc script
 
 - **-se_epi file** Provide an additional image series consisting of spin-echo EPI images, which is to be used exclusively by topup for estimating the inhomogeneity field (i.e. it will not form part of the output image series)
 
+- **-align_seepi** Achieve alignment between the SE-EPI images used for inhomogeneity field estimation, and the DWIs, by inserting the first DWI b=0 volume to the SE-EPI series. Only use this option if the input SE-EPI images have identical image contrast to the b=0 images present in the DWI series.
+
 - **-json_import JSON_file** Import image header information from an associated JSON file (may be necessary to determine phase encoding information)
 
 - **-topup_options TopupOptions** Manually provide additional command-line options to the topup command (provide a string within quotation marks that contains at least one space, even if only passing a single command-line option to topup)
