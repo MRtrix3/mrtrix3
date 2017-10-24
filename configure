@@ -145,6 +145,11 @@ ENVIRONMENT VARIABLES
 
 import subprocess, sys, os, platform, tempfile, shutil, shlex, re, copy
 
+# on Windows, need to use MSYS2 version of python - not MinGW version:
+if sys.executable.lower().startswith('c:/'):
+  python_cmd = subprocess.check_output ([ 'cygpath.exe', '-w', '/usr/bin/python' ]).splitlines()[0].strip()
+  sys.exit (subprocess.call ([ python_cmd ] + sys.argv))
+
 
 debug = False
 asserts = False
