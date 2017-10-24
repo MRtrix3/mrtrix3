@@ -1216,6 +1216,7 @@ except:
 while len(todo): 
   
   stop = False
+  main_cindex = 0
   num_todo_previous = len(todo)
 
   log ('''
@@ -1244,7 +1245,8 @@ stopping despite errors as no jobs completed successfully
 ''')
     break
 
-  disp ('''
+  if len(todo): 
+    disp ('''
 retrying as running in persistent mode
 
 ''')
