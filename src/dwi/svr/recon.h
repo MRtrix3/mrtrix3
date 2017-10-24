@@ -95,6 +95,12 @@ namespace MR
 
       void setWeights(const Eigen::MatrixXf& weights) { W = weights; }
 
+      void setField(const Image<float>& fieldmap, const Eigen::MatrixXf petable)
+      {
+        field = fieldmap;
+        pe = petable;
+      }
+
       RowMatrixXf getY0(const Eigen::MatrixXf& grad) const
       {
         DEBUG("initialise Y0");
@@ -177,6 +183,9 @@ namespace MR
       RowMatrixXf Y;
       Eigen::MatrixXf W;
       SparseMat L;
+
+      Image<float> field;
+      Eigen::MatrixXf pe;
 
 
       vector<Eigen::MatrixXf> init_shellbasis(const Eigen::MatrixXf& grad, const vector<Eigen::MatrixXf>& rf) const
@@ -312,7 +321,7 @@ namespace MR
 
         Eigen::Vector3f pr;
         size_t v = idx/nz, z = idx%nz;
-        transform_type Ts2r = get_Ts2r(v, z); 
+        transform_type Ts2r = get_Ts2r(v, z);
         size_t i = 0;
         for (size_t y = 0; y < ny; y++) {         // in-plane
           for (size_t x = 0; x < nx; x++, i++) {

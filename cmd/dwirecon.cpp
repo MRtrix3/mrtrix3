@@ -17,6 +17,7 @@
 #include "image.h"
 #include "math/SH.h"
 #include "dwi/gradient.h"
+#include "phase_encoding.h"
 #include "dwi/shells.h"
 #include "adapter/extract.h"
 #include "dwi/svr/recon.h"
@@ -27,8 +28,10 @@
 #define DEFAULT_TOL 1e-4
 #define DEFAULT_MAXITER 10
 
+
 using namespace MR;
 using namespace App;
+
 
 void usage ()
 {
@@ -67,7 +70,12 @@ void usage ()
   + Option ("reg", "Regularization weight. (default = " + str(DEFAULT_REG) + ")")
     + Argument ("l").type_float()
 
+  + Option ("field", "Static susceptibility field, aligned in recon space.")
+    + Argument ("map").type_image_in()
+
   + DWI::GradImportOptions()
+
+  + PhaseEncoding::ImportOptions
 
   + DWI::ShellOption
 
@@ -156,6 +164,18 @@ void run ()
       throw Exception("Weights marix dimensions don't match image dimensions.");
   }
 
+  // Read field map and PE scheme
+  opt = get_options("field");
+  bool hasfield = opt.size();
+  auto field = Image<value_type>();
+  Eigen::MatrixXf PE;
+  if (hasfield) {
+    auto petable = PhaseEncoding::get_scheme(dwi).cast<float>();
+    PE = petable.leftCols<3>();
+    PE.array().colwise() *= petable.col(3).array();
+    field = Image<value_type>::open(opt[0][0]);
+  }
+
   // Get volume indices 
   vector<size_t> idx;
   if (rf.empty()) {
@@ -190,6 +210,13 @@ void run ()
   for (size_t i = 0; i < idx.size(); i++)
     Wsub.col(i) = W.col(idx[i]);
 
+  Eigen::MatrixXf PEsub;
+  if (hasfield) {
+    PEsub.resize(idx.size(), PE.cols());
+    for (size_t i = 0; i < idx.size(); i++)
+      PEsub.row(i) = PE.row(idx[i]);
+  }
+
   // Other parameters
   if (rf.empty())
     lmax = get_option_value("lmax", DEFAULT_LMAX);
@@ -207,6 +234,8 @@ void run ()
   INFO("initialise reconstruction matrix");
   DWI::ReconMatrix R (dwisub, motionsub, gradsub, lmax, rf, sspwidth, reg);
   R.setWeights(Wsub);
+  if (hasfield)
+    R.setField(field, PEsub);
 
   size_t ncoefs = R.getY().cols();
   size_t padding = get_option_value("padding", ncoefs);
