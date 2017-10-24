@@ -18,7 +18,7 @@ env:
   - py=python2
   - py=python3
 install:
-  - export NUMBER_OF_PROCESSORS=2
+  - export NUMBER_OF_PROCESSORS=4
   - export PATH=`pwd`/bin:${PATH}
   - export PYTHONPATH=`pwd`/lib:${PYTHONPATH}
   - export EIGEN_CFLAGS=-I`pwd`/../eigen
