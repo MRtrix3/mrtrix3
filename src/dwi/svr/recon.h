@@ -26,6 +26,7 @@
 #include "dwi/shells.h"
 #include "dwi/svr/psf.h"
 #include "parallel_for.h"
+#include "interp/linear.h"
 
 
 namespace MR {
@@ -95,10 +96,11 @@ namespace MR
 
       void setWeights(const Eigen::MatrixXf& weights) { W = weights; }
 
-      void setField(const Image<float>& fieldmap, const Eigen::MatrixXf petable)
+      void setField(const Image<float>& fieldmap, const Eigen::MatrixXf& petable)
       {
         field = fieldmap;
         pe = petable;
+        Tf = Transform(field).scanner2voxel * T0.voxel2scanner;
       }
 
       RowMatrixXf getY0(const Eigen::MatrixXf& grad) const
@@ -186,6 +188,7 @@ namespace MR
 
       Image<float> field;
       Eigen::MatrixXf pe;
+      transform_type Tf;
 
 
       vector<Eigen::MatrixXf> init_shellbasis(const Eigen::MatrixXf& grad, const vector<Eigen::MatrixXf>& rf) const
@@ -319,15 +322,33 @@ namespace MR
         Eigen::SparseVector<float> m (nxy*nz);
         m.reserve(64);
 
-        Eigen::Vector3f pr;
+        std::unique_ptr< Interp::Linear<decltype(field)> > interp;
+        if (field.valid())
+          interp = make_unique< Interp::Linear<decltype(field)> >(field, 0.0f);
+
+        Eigen::Vector3 ps, pr, peoffset;
         size_t v = idx/nz, z = idx%nz;
         transform_type Ts2r = get_Ts2r(v, z);
+        if (field.valid()) {
+          peoffset = pe.block<1,3>(v, 0).transpose().cast<double>();
+        }
+
         size_t i = 0;
         for (size_t y = 0; y < ny; y++) {         // in-plane
+          ps[1] = y;
           for (size_t x = 0; x < nx; x++, i++) {
+            ps[0] = x;
             for (int s = -2; s <= 2; s++) {       // ssp neighbourhood
-              pr = Ts2r.cast<float>() * Eigen::Vector3f(x, y, z+s);
-              load_sparse_coefs(m, pr);
+              ps[2] = z+s;
+              // get slice position in recon space
+              pr = Ts2r * ps;
+              if (field.valid()) {
+                interp->voxel(Tf * pr);
+                ps += interp->value() * peoffset;
+                pr = Ts2r * wrap_around(ps);
+              }
+              // update motion matrix
+              load_sparse_coefs(m, pr.cast<float>());
               dst[i] += ssp(s) * m.dot(rhs);
             }
           }
@@ -340,15 +361,33 @@ namespace MR
         Eigen::SparseVector<float> m (nxy*nz);
         m.reserve(64);
 
-        Eigen::Vector3f pr;
-        size_t v = idx/nz, z = idx%nz;
+        std::unique_ptr< Interp::Linear<decltype(field)> > interp;
+        if (field.valid())
+          interp = make_unique< Interp::Linear<decltype(field)> >(field, 0.0f);
+
+        Eigen::Vector3 ps, pr, peoffset;
+        int v = idx/nz, z = idx%nz;
         transform_type Ts2r = get_Ts2r(v, z);
+        if (field.valid()) {
+          peoffset = pe.block<1,3>(v, 0).transpose().cast<double>();
+        }
+
         size_t i = 0;
         for (size_t y = 0; y < ny; y++) {         // in-plane
+          ps[1] = y;
           for (size_t x = 0; x < nx; x++, i++) {
+            ps[0] = x;
             for (int s = -2; s <= 2; s++) {       // ssp neighbourhood
-              pr = Ts2r.cast<float>() * Eigen::Vector3f(x, y, z+s);
-              load_sparse_coefs(m, pr);
+              ps[2] = z+s;
+              // get slice position in recon space
+              pr = Ts2r * ps;
+              if (field.valid()) {
+                interp->voxel(Tf * pr);
+                ps += interp->value() * peoffset;
+                pr = Ts2r * wrap_around(ps);
+              }
+              // update motion matrix
+              load_sparse_coefs(m, pr.cast<float>());
               dst += (ssp(s) * rhs[i]) * m;
             }
           }
@@ -363,16 +402,34 @@ namespace MR
         std::array<Eigen::SparseVector<float>, 5> m;
         m.fill(m0);
 
-        Eigen::Vector3f pr;
-        size_t v = idx/nz, z = idx%nz;
+        std::unique_ptr< Interp::Linear<decltype(field)> > interp;
+        if (field.valid())
+          interp = make_unique< Interp::Linear<decltype(field)> >(field, 0.0f);
+
+        Eigen::Vector3 ps, pr, peoffset;
+        int v = idx/nz, z = idx%nz;
         float t;
         transform_type Ts2r = get_Ts2r(v, z);
+        if (field.valid()) {
+          peoffset = pe.block<1,3>(v, 0).transpose().cast<double>();
+        }
+
         for (size_t y = 0; y < ny; y++) {         // in-plane
+          ps[1] = y;
           for (size_t x = 0; x < nx; x++) {
+            ps[0] = x;
             t = 0.0f;
             for (int s = -2; s <= 2; s++) {       // ssp neighbourhood
-              pr = Ts2r.cast<float>() * Eigen::Vector3f(x, y, z+s);
-              load_sparse_coefs(m[2+s], pr);
+              ps[2] = z+s;
+              // get slice position in recon space
+              pr = Ts2r * ps;
+              if (field.valid()) {
+                interp->voxel(Tf * pr);
+                ps += interp->value() * peoffset;
+                pr = Ts2r * wrap_around(ps);
+              }
+              // update motion matrix
+              load_sparse_coefs(m[2+s], pr.cast<float>());
               t += ssp(s) * m[2+s].dot(rhs);
             }
             for (int s = -2; s <= 2; s++) {
@@ -429,6 +486,14 @@ namespace MR
         L.makeCompressed();
       }
 
+      inline Eigen::Vector3 wrap_around(const Eigen::Vector3 p) const
+      {
+        Eigen::Vector3 q;
+        q[0] = std::fmod(p[0]+0.5, double(nx)) - 0.5;
+        q[1] = std::fmod(p[1]+0.5, double(ny)) - 0.5;
+        q[2] = std::fmod(p[2]+0.5, double(nz)) - 0.5;
+        return q;
+      }
 
     };
 

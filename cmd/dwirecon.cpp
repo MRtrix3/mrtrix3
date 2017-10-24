@@ -170,9 +170,9 @@ void run ()
   auto field = Image<value_type>();
   Eigen::MatrixXf PE;
   if (hasfield) {
-    auto petable = PhaseEncoding::get_scheme(dwi).cast<float>();
-    PE = petable.leftCols<3>();
-    PE.array().colwise() *= petable.col(3).array();
+    auto petable = PhaseEncoding::get_scheme(dwi);
+    PE = petable.leftCols<3>().cast<float>();
+    PE.array().colwise() *= petable.col(3).array().cast<float>();
     field = Image<value_type>::open(opt[0][0]);
   }
 
