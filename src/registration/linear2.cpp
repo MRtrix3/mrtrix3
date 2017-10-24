@@ -21,7 +21,7 @@ namespace MR
 
     using namespace App;
 
-    const char* linear_metric_choices[] = { "diff", "ncc", nullptr };
+    const char* linear_metric_choices[] = { "diff", "lcc", nullptr };
     const char* linear_robust_estimator_choices[] = { "l1", "l2", "lp", nullptr };
     const char* linear_optimisation_algo_choices[] = { "bbgd", "gd", "bbgd_robust", nullptr };
     const char* optim_algo_names[] = { "BBGD", "GD", "BBGD_robust", nullptr };
@@ -144,7 +144,7 @@ namespace MR
 
       + Option ("affine_metric", "valid choices are: "
                                  "diff (intensity differences), "
-                                 // "ncc (normalised cross-correlation) " TODO
+                                 "lcc (local cross-correlation) "
                                  "Default: diff")
         + Argument ("type").type_choice (linear_metric_choices)
 

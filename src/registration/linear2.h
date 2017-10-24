@@ -28,7 +28,7 @@
 #include "interp/linear.h"
 #include "interp/nearest.h"
 #include "registration/metric/params.h"
-#include "registration/metric/normalised_cross_correlation.h"
+#include "registration/metric/local_cross_correlation.h"
 #include "registration/metric/evaluate.h"
 #include "math/gradient_descent.h"
 #include "math/gradient_descent_bb.h"
@@ -53,7 +53,7 @@ namespace MR
     extern const App::OptionGroup fod_options;
     extern const char* optim_algo_names[];
 
-    enum LinearMetricType {Diff, NCC};
+    enum LinearMetricType {Diff, LCC};
     enum LinearRobustMetricEstimatorType {L1, L2, LP, None};
     enum OptimiserAlgoType {bbgd, gd, bbgd_robust, none};
 

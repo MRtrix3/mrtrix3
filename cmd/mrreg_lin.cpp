@@ -21,7 +21,7 @@
 #include "registration/linear2.h"
 #include "registration/metric/mean_squared.h"
 #include "registration/metric/difference_robust.h"
-#include "registration/metric/normalised_cross_correlation.h"
+#include "registration/metric/local_cross_correlation.h"
 #include "registration/transform/affine.h"
 #include "dwi/directions/predefined.h"
 #include "math/average_space.h"
@@ -304,15 +304,13 @@ void run () {
         affine_metric = Registration::Diff;
         break;
       case 1:
-        affine_metric = Registration::NCC;
+        affine_metric = Registration::LCC;
         break;
       default:
         break;
     }
   }
 
-  if (affine_metric == Registration::NCC)
-    throw Exception ("TODO cross correlation metric not yet implemented");
 
   opt = get_options ("affine_metric.diff.estimator");
   Registration::LinearRobustMetricEstimatorType affine_estimator = Registration::None;
@@ -453,8 +451,9 @@ void run () {
   if (images2.ndim() == 4) {
     if (do_reorientation)
       affine_registration.set_directions (directions_cartesian);
-    // if (affine_metric == Registration::NCC) // TODO
-    if (affine_metric == Registration::Diff) {
+    if (affine_metric == Registration::LCC) {
+      throw Exception ("TODO local CC for 4D"); // TODO
+    } else if (affine_metric == Registration::Diff) {
       if (affine_estimator == Registration::None) {
         if (do_nonsymmetric) {
           Registration::Metric::MeanSquared4DNonSymmetric<Image<value_type>, Image<value_type>> metric;
@@ -478,8 +477,8 @@ void run () {
       } else throw Exception ("FIXME: estimator selection");
     } else throw Exception ("FIXME: metric selection");
   } else { // 3D
-    if (affine_metric == Registration::NCC){
-      Registration::Metric::NormalisedCrossCorrelation metric;
+    if (affine_metric == Registration::LCC){
+      Registration::Metric::LocalCrossCorrelation metric;
       vector<size_t> extent(3,3);
       affine_registration.set_extent (extent);
       affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
