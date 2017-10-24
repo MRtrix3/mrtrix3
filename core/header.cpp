@@ -583,7 +583,9 @@ namespace MR
     auto slice_encoding_it = keyval().find ("SliceEncodingDirection");
     if (slice_encoding_it != keyval().end()) {
       const Eigen::Vector3 orig_dir (Axes::id2dir (slice_encoding_it->second));
-      const Eigen::Vector3 new_dir (orig_dir[perm[0]], orig_dir[perm[1]], orig_dir[perm[2]]);
+      Eigen::Vector3 new_dir;
+      for (size_t axis = 0; axis != 3; ++axis)
+        new_dir[axis] = orig_dir[perm[axis]] * (flip[axis] ? -1.0 : 1.0);
       slice_encoding_it->second = Axes::dir2id (new_dir);
       INFO ("Slice encoding direction has been modified according to internal header transform realignment");
     }
