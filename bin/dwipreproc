@@ -114,6 +114,12 @@ elif app.args.export_grad_fsl:
   app.checkOutputPath(path.fromUser(app.args.export_grad_fsl[1], False))
 
 
+eddy_manual_options = ''
+if app.args.eddy_options:
+  # Initially process as a list; we'll convert back to a string later
+  eddy_manual_options = app.args.eddy_options.strip().split()
+
+
 # Convert all input images into MRtrix format and store in temprary directory first
 app.makeTempDir()
 
@@ -150,7 +156,7 @@ if app.args.se_epi:
 if 'dw_scheme' not in dwi_header.keyval():
   app.error('No diffusion gradient table found')
 grad = dwi_header.keyval()['dw_scheme']
-if not len(grad) == num_volumes:
+if not len(grad) == dwi_num_volumes:
   app.error('Number of lines in gradient table (' + str(len(grad)) + ') does not match input image (' + str(dwi_num_volumes) + ' volumes); check your input data')
 if any(s.startswith('--mporder') for s in eddy_manual_options):
   slice_encoding_direction = ''
@@ -162,44 +168,43 @@ if any(s.startswith('--mporder') for s in eddy_manual_options):
 
 
 # Check the manual options being passed to eddy, ensure they make sense
-eddy_manual_options = ''
-if app.args.eddy_options:
-  # Initially process as a list; we'll convert back to a string later
-  eddy_manual_options = app.args.eddy_options.strip().split()
-  if '--resamp=lsr' in eddy_manual_options:
-    app.error('dwipreproc does not currently support least-squares reconstruction; this cannot be simply passed via -eddy_options')
-  if any(s.startswith('--mporder') for s in eddy_manual_options):
-    slspec_option = [ s for s in eddy_manual_options if s.startswith('--slspec') ]
-    if len(slspec_option) > 1:
-      app.error('--slspec option appears more than once in -eddy_options input; cannot import slice timing')
-    elif len(slspec_option) == 1:
-      slspec_file_path = path.fromUser(slspec_option[0][9:], False)
-      if os.path.isfile(slspec_file_path):
-        run.function(shutil.copy, slspec_file_path, 'slspec.txt')
-        eddy_manual_options = [ s for s in eddy_manual_options if not s.startswith('--slspec') ]
-        eddy_manual_options.append('--slspec=slspec.txt')
-      else:
-        app.error('Unable to find \'slspec\' file provided via -eddy_options \" ... --slspec=/path/to/file ... \" (expected location: ' + slspec_file_path + ')')
-    else:
-      if 'SliceTiming' not in dwi_header.keyval():
-        app.error('Cannot perform slice-to-volume correction in eddy: No slspec file provided, and no slice timing information present in header')
-      slice_timing = dwi_header.keyval()['SliceTiming'][0]
-      if len(slice_timing) != dwi_header.size()[2]:
-        app.error('Cannot use slice timing information in image header for slice-to-volume correction: Number of entries (' + len(slice_timing) + ') does not match number of slices (' + dwi_header.size()[2] + ')')
-      # This list contains, for each slice, the timing offset between acquisition of the
-      #   first slice in the volume, and acquisition of that slice
-      # Eddy however requires a text file where each row contains those slices that were
-      #   acquired with a single readout, in ordered rows from first slice (group)
-      #   acquired to last slice (group) acquired
-      if '-' in slice_encoding_direction:
-        slice_timing = reversed(slice_timing)
-      slspec = [ [ x[0] for x in g ] for _, g in itertools.groupby(sorted(enumerate(slice_timing), key=lambda x:x[1]), key=lambda x:x[1]) ] #pylint: disable=unused-variable
-      app.var(slice_timing, slspec)
-      with open('slspec.txt', 'w') as f:
-        for line in slspec:
-          f.write(' '.join(str(value) for value in line) + '\n')
+if '--resamp=lsr' in eddy_manual_options:
+  app.error('dwipreproc does not currently support least-squares reconstruction; this cannot be simply passed via -eddy_options')
+if any(s.startswith('--mporder') for s in eddy_manual_options):
+  slspec_option = [ s for s in eddy_manual_options if s.startswith('--slspec') ]
+  if len(slspec_option) > 1:
+    app.error('--slspec option appears more than once in -eddy_options input; cannot import slice timing')
+  elif len(slspec_option) == 1:
+    slspec_file_path = path.fromUser(slspec_option[0][9:], False)
+    if os.path.isfile(slspec_file_path):
+      run.function(shutil.copy, slspec_file_path, 'slspec.txt')
+      eddy_manual_options = [ s for s in eddy_manual_options if not s.startswith('--slspec') ]
       eddy_manual_options.append('--slspec=slspec.txt')
-  eddy_manual_options = ' ' + ' '.join(eddy_manual_options)
+    else:
+      app.error('Unable to find \'slspec\' file provided via -eddy_options \" ... --slspec=/path/to/file ... \" (expected location: ' + slspec_file_path + ')')
+  else:
+    if 'SliceTiming' not in dwi_header.keyval():
+      app.error('Cannot perform slice-to-volume correction in eddy: No slspec file provided, and no slice timing information present in header')
+    slice_timing = dwi_header.keyval()['SliceTiming'][0]
+    if len(slice_timing) != dwi_header.size()[2]:
+      app.error('Cannot use slice timing information in image header for slice-to-volume correction: Number of entries (' + len(slice_timing) + ') does not match number of slices (' + dwi_header.size()[2] + ')')
+    # This list contains, for each slice, the timing offset between acquisition of the
+    #   first slice in the volume, and acquisition of that slice
+    # Eddy however requires a text file where each row contains those slices that were
+    #   acquired with a single readout, in ordered rows from first slice (group)
+    #   acquired to last slice (group) acquired
+    if '-' in slice_encoding_direction:
+      slice_timing = reversed(slice_timing)
+    slspec = [ [ x[0] for x in g ] for _, g in itertools.groupby(sorted(enumerate(slice_timing), key=lambda x:x[1]), key=lambda x:x[1]) ] #pylint: disable=unused-variable
+    app.var(slice_timing, slspec)
+    with open('slspec.txt', 'w') as f:
+      for line in slspec:
+        f.write(' '.join(str(value) for value in line) + '\n')
+    eddy_manual_options.append('--slspec=slspec.txt')
+
+
+# Revert eddy_manual_options from a list back to a single string
+eddy_manual_options = (' ' + ' '.join(eddy_manual_options)) if eddy_manual_options else ''
 
 
 # Since we want to access user-defined phase encoding information regardless of whether or not
