@@ -155,8 +155,6 @@ void run ()
     if (W.rows() != dwi.size(2) || W.cols() != dwi.size(3))
       throw Exception("Weights marix dimensions don't match image dimensions.");
   }
-  //Eigen::VectorXf Wm = W.rowwise().mean();   // Normalise slice weights across volumes.
-  //W.array().colwise() /= Wm.array();         // (not technically needed, but useful preconditioning for CG)
 
   // Get volume indices 
   vector<size_t> idx;
@@ -208,7 +206,7 @@ void run ()
   // Set up scattered data matrix
   INFO("initialise reconstruction matrix");
   DWI::ReconMatrix R (dwisub, motionsub, gradsub, lmax, rf, sspwidth, reg);
-  R.setW(Wsub);
+  R.setWeights(Wsub);
 
   size_t ncoefs = R.getY().cols();
   size_t padding = get_option_value("padding", ncoefs);

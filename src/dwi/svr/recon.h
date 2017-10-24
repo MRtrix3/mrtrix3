@@ -93,7 +93,7 @@ namespace MR
       const RowMatrixXf& getY() const { return Y; }
       const Eigen::MatrixXf& getW() const { return W; }
 
-      void setW (const Eigen::MatrixXf& weights) { W = weights; }
+      void setWeights(const Eigen::MatrixXf& weights) { W = weights; }
 
       RowMatrixXf getY0(const Eigen::MatrixXf& grad) const
       {
@@ -349,12 +349,6 @@ namespace MR
       template <typename VectorType1, typename VectorType2>
       void project_slice_x2x(const size_t idx, VectorType1& dst, const VectorType2& rhs) const
       {
-        //Eigen::VectorXf tmp = Eigen::VectorXf::Zero(nxy);
-        //project_slice_x2y(idx, tmp, rhs);
-        //project_slice_y2x(idx, dst, tmp);
-        //return;
-
-        // ignored...
         Eigen::SparseVector<float> m0 (nxy*nz);
         m0.reserve(64);
         std::array<Eigen::SparseVector<float>, 5> m;
@@ -398,7 +392,7 @@ namespace MR
               px = pg[0] + rx;
               if ((px < 0) || (px >= nx)) continue;
               // insert in weight vector.
-              dst.insert(pz*nxy + py*nx + px) = wx[n+rx] * wy[n+ry] * wz[n+rz];
+              dst.insert(get_idx(px, py, pz)) = wx[n+rx] * wy[n+ry] * wz[n+rz];
             }
           }
         }
