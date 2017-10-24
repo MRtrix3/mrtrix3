@@ -18,7 +18,7 @@ env:
   - py=python2
   - py=python3
 install:
-  - export NUMBER_OF_PROCESSORS=8
+  - export NUMBER_OF_PROCESSORS=2
   - export PATH=`pwd`/bin:${PATH}
   - export PYTHONPATH=`pwd`/lib:${PYTHONPATH}
   - export EIGEN_CFLAGS=-I`pwd`/../eigen
@@ -27,7 +27,6 @@ install:
   - pip install --user pylint recommonmark sphinx sphinx-rtd-theme
   - pip3 install --user pylint recommonmark sphinx sphinx-rtd-theme
 script:
-  - lscpu
   - ${py} -m sphinx -n -N -W -w sphinx.log -c docs/ docs/ tmp/
   - ./check_memalign && $py ./configure -assert && time $py ./build -nowarnings -persistent && ./run_tests
   - PYTHON=$py ./run_pylint
