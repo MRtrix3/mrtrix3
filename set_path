@@ -20,7 +20,7 @@
 import sys, os, platform, subprocess
 
 # on Windows, need to use MSYS2 version of python - not MinGW version:
-if sys.executable.lower().startswith('c:/'):
+if sys.executable[0].isalpha() and sys.executable[1] == ':':
   python_cmd = subprocess.check_output ([ 'cygpath.exe', '-w', '/usr/bin/python' ]).splitlines()[0].strip()
   sys.exit (subprocess.call ([ python_cmd ] + sys.argv))
 
