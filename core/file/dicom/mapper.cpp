@@ -117,8 +117,12 @@ namespace MR {
         const Image& image (*(*series[0])[0]);
         const Frame& frame (*frames[0]);
 
-        if (std::isfinite (frame.echo_time))
-          H.keyval()["EchoTime"] = str (0.001 * frame.echo_time, 6);
+        if (std::isfinite (image.echo_time))
+          H.keyval()["EchoTime"] = str (0.001 * image.echo_time, 6);
+        if (std::isfinite (image.flip_angle))
+          H.keyval()["FlipAngle"] = str (image.flip_angle, 6);
+        if (std::isfinite (image.repetition_time))
+          H.keyval()["RepetitionTime"] = str (0.001 * image.repetition_time, 6);
 
         size_t nchannels = image.frames.size() ? 1 : image.data_size / (frame.dim[0] * frame.dim[1] * (frame.bits_alloc/8));
         if (nchannels > 1)
@@ -282,6 +286,7 @@ namespace MR {
         } else {
 
           io_handler.reset (new MR::ImageIO::Default (H));
+
         }
 
         for (size_t n = 0; n < frames.size(); ++n)

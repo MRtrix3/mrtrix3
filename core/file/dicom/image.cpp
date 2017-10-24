@@ -57,18 +57,6 @@ namespace MR {
 
             case 0x0018U:
               switch (item.element) {
-                case 0x0050U:
-                  slice_thickness = item.get_float()[0];
-                  return;
-                case 0x0088U:
-                  slice_spacing = item.get_float()[0];
-                  return;
-                case 0x1310U:
-                  acq_dim[0] = std::max (item.get_uint()[0], item.get_uint()[1]);
-                  acq_dim[1] = std::max (item.get_uint()[2], item.get_uint()[3]);
-                  if (item.get_uint()[0] == 0 && item.get_uint()[3] == 0)
-                    std::swap (acq_dim[0], acq_dim[1]);
-                  return;
                 case 0x0024U:
                   sequence_name = item.get_string()[0];
                   if (!sequence_name.size())
@@ -83,13 +71,29 @@ namespace MR {
                     sequence = to<size_t> (sequence_name.substr (c));
                   }
                   return;
-                case 0x9087U:
-                  bvalue = item.get_float()[0];
+                case 0x0050U:
+                  slice_thickness = item.get_float()[0];
                   return;
-                case 0x9089U:
-                  G[0] = item.get_float()[0];
-                  G[1] = item.get_float()[1];
-                  G[2] = item.get_float()[2];
+                case 0x0080U:
+                  repetition_time = item.get_float()[0];
+                  return;
+                case 0x0081U:
+                  echo_time = item.get_float()[0];
+                  return;
+                case 0x0088U:
+                  slice_spacing = item.get_float()[0];
+                  return;
+                case 0x0091U:
+                  echo_train_length = item.get_int()[0];
+                  return;
+                case 0x0095U:
+                  pixel_bandwidth = item.get_float()[0];
+                  return;
+                case 0x1310U:
+                  acq_dim[0] = std::max (item.get_uint()[0], item.get_uint()[1]);
+                  acq_dim[1] = std::max (item.get_uint()[2], item.get_uint()[3]);
+                  if (item.get_uint()[0] == 0 && item.get_uint()[3] == 0)
+                    std::swap (acq_dim[0], acq_dim[1]);
                   return;
                 case 0x1312U:
                   if (item.get_string()[0] == "ROW")
@@ -97,14 +101,16 @@ namespace MR {
                   else if (item.get_string()[0] == "COL")
                     pe_axis = 1;
                   return;
-                case 0x0095U:
-                  pixel_bandwidth = item.get_float()[0];
+                case 0x1314U:
+                  flip_angle = item.get_float()[0];
                   return;
-                case 0x0081U:
-                  echo_time = item.get_float()[0];
+                case 0x9087U:
+                  bvalue = item.get_float()[0];
                   return;
-                case 0x0091:
-                  echo_train_length = item.get_int()[0];
+                case 0x9089U:
+                  G[0] = item.get_float()[0];
+                  G[1] = item.get_float()[1];
+                  G[2] = item.get_float()[2];
                   return;
               }
               return;
