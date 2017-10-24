@@ -147,9 +147,13 @@ if 'dw_scheme' not in dwi_header.keyval():
 grad = dwi_header.keyval()['dw_scheme']
 if not len(grad) == num_volumes:
   app.error('Number of lines in gradient table (' + str(len(grad)) + ') does not match input image (' + str(num_volumes) + ' volumes); check your input data')
-if if any(s.startswith('--mporder') for s in eddy_manual_options) and 'SliceEncodingDirection' in dwi_header.keyval():
-  if dwi_header.keyval()['SliceEncodingDirection'] != 'k':
-    app.error('DWI header indicates that 3rd spatial axis is not the slice axis; this is not yet compatible with --mporder option in eddy')
+if if any(s.startswith('--mporder') for s in eddy_manual_options):
+  slice_encoding_direction = ''
+  if 'SliceEncodingDirection' in dwi_header.keyval():
+    slice_encoding_direction = dwi_header.keyval()['SliceEncodingDirection']
+    app.var(slice_encoding_direction)
+    if not slice_encoding_direction.startswith('k'):
+      app.error('DWI header indicates that 3rd spatial axis is not the slice axis; this is not yet compatible with --mporder option in eddy, nor supported in dwipreproc')
 
 
 # Check the manual options being passed to eddy, ensure they make sense
@@ -182,6 +186,8 @@ if app.args.eddy_options:
       # Eddy however requires a text file where each row contains those slices that were
       #   acquired with a single readout, in ordered rows from first slice (group)
       #   acquired to last slice (group) acquired
+      if '-' in slice_encoding_direction:
+        slice_timing = reversed(slice_timing)
       slspec = [ [ x[0] for x in g ] for _, g in itertools.groupby(sorted(enumerate(slice_timing), key=lambda x:x[1]), key=lambda x:x[1]) ] #pylint: disable=unused-variable
       app.var(slice_timing, slspec)
       with open('slspec.txt', 'w') as f:

@@ -14,9 +14,10 @@
 
 #include <unsupported/Eigen/FFT>
 
+#include "axes.h"
 #include "command.h"
-#include "progressbar.h"
 #include "image.h"
+#include "progressbar.h"
 #include "algo/threaded_loop.h"
 #include <numeric>
 
@@ -29,16 +30,16 @@ void usage ()
 
   SYNOPSIS = "Remove Gibbs Ringing Artifacts";
 
-  DESCRIPTION 
+  DESCRIPTION
     + "This application attempts to remove Gibbs ringing artefacts from MRI images using the method "
     "of local subvoxel-shifts proposed by Kellner et al. (see reference below for details)."
-    
+
     + "This command is designed to run on data directly after it has been reconstructed by the scanner, "
     "before any interpolation of any kind has taken place. You should not run this command after any "
     "form of motion correction (e.g. not after dwipreproc). Similarly, if you intend running dwidenoise, "
     "you should run this command afterwards, since it has the potential to alter the noise structure, "
     "which would impact on dwidenoise's performance."
-    
+
     + "Note that this method is designed to work on images acquired with full k-space coverage. "
     "Running this method on partial Fourier ('half-scan') data may lead to suboptimal and/or biased "
     "results, as noted in the original reference below. There is currently no means of dealing with this; "
@@ -90,24 +91,24 @@ class ComputeSlice
       nsh (nsh),
       minW (minW),
       maxW (maxW),
-      in (in), 
+      in (in),
       out (out),
       im1 (in.size(slice_axes[0]), in.size(slice_axes[1])),
-      im2 (im1.rows(), im1.cols()) { 
+      im2 (im1.rows(), im1.cols()) {
         prealloc_FFT();
       }
-    
+
     ComputeSlice (const ComputeSlice& other) :
       outer_axes (other.outer_axes),
       slice_axes (other.slice_axes),
       nsh (other.nsh),
       minW (other.minW),
       maxW (other.maxW),
-      in (other.in), 
+      in (other.in),
       out (other.out),
       fft (),
       im1 (in.size(slice_axes[0]), in.size(slice_axes[1])),
-      im2 (im1.rows(), im1.cols()) { 
+      im2 (im1.rows(), im1.cols()) {
         prealloc_FFT();
       }
 
@@ -118,26 +119,26 @@ class ComputeSlice
       const int Y = slice_axes[1];
       assign_pos_of (pos, outer_axes).to (in, out);
 
-      for (auto l = Loop (slice_axes) (in); l; ++l) 
+      for (auto l = Loop (slice_axes) (in); l; ++l)
         im1 (in.index(X), in.index(Y)) = cdouble (in.value(), 0.0);
-      
+
       unring_2d ();
 
       for (auto l = Loop (slice_axes) (out); l; ++l)
-        out.value() = im1 (out.index(X), out.index(Y)).real(); 
+        out.value() = im1 (out.index(X), out.index(Y)).real();
     }
 
   private:
     const vector<size_t>& outer_axes;
     const vector<size_t>& slice_axes;
     const int nsh, minW, maxW;
-    Image<value_type> in, out; 
+    Image<value_type> in, out;
     Eigen::FFT<double> fft;
     Eigen::MatrixXcd im1, im2, shifted;
     Eigen::VectorXcd v;
 
     void prealloc_FFT () {
-      // needed to avoid within-thread allocations, 
+      // needed to avoid within-thread allocations,
       // which aren't thread-safe in FFTW:
 #ifdef EIGEN_FFTW_DEFAULT
       Eigen::VectorXcd tmp (im1.rows());
@@ -151,11 +152,11 @@ class ComputeSlice
 
     template <typename Derived> FORCE_INLINE void FFT      (Eigen::MatrixBase<Derived>&& vec) { fft.fwd (v, vec); vec = v; }
     template <typename Derived> FORCE_INLINE void FFT      (Eigen::MatrixBase<Derived>& vec) { FFT (std::move (vec)); }
-    template <typename Derived> FORCE_INLINE void iFFT     (Eigen::MatrixBase<Derived>&& vec) { fft.inv (v, vec); vec = v; } 
+    template <typename Derived> FORCE_INLINE void iFFT     (Eigen::MatrixBase<Derived>&& vec) { fft.inv (v, vec); vec = v; }
     template <typename Derived> FORCE_INLINE void iFFT     (Eigen::MatrixBase<Derived>& vec) { iFFT (std::move (vec)); }
-    template <typename Derived> FORCE_INLINE void row_FFT  (Eigen::MatrixBase<Derived>& mat) { for (auto n = 0; n < mat.rows(); ++n)  FFT (mat.row(n)); } 
+    template <typename Derived> FORCE_INLINE void row_FFT  (Eigen::MatrixBase<Derived>& mat) { for (auto n = 0; n < mat.rows(); ++n)  FFT (mat.row(n)); }
     template <typename Derived> FORCE_INLINE void row_iFFT (Eigen::MatrixBase<Derived>& mat) { for (auto n = 0; n < mat.rows(); ++n) iFFT (mat.row(n)); }
-    template <typename Derived> FORCE_INLINE void col_FFT  (Eigen::MatrixBase<Derived>& mat) { for (auto n = 0; n < mat.cols(); ++n)  FFT (mat.col(n)); } 
+    template <typename Derived> FORCE_INLINE void col_FFT  (Eigen::MatrixBase<Derived>& mat) { for (auto n = 0; n < mat.cols(); ++n)  FFT (mat.col(n)); }
     template <typename Derived> FORCE_INLINE void col_iFFT (Eigen::MatrixBase<Derived>& mat) { for (auto n = 0; n < mat.cols(); ++n) iFFT (mat.col(n)); }
 
 
@@ -174,7 +175,7 @@ class ComputeSlice
             im2(j,k) = im1(j,k) * cj / (ck+cj);
             im1(j,k) *= ck / (ck+cj);
           }
-          else 
+          else
             im1(j,k) = im2(j,k) = cdouble(0.0, 0.0);
         }
       }
@@ -192,7 +193,7 @@ class ComputeSlice
 
 
 
-    template <typename Derived> 
+    template <typename Derived>
       FORCE_INLINE void unring_1d (Eigen::MatrixBase<Derived>&& eig)
       {
         const int n = eig.rows();
@@ -220,7 +221,7 @@ class ComputeSlice
             cdouble e (1.0, 0.0);
             shifted(0,j) = shifted(0,0);
 
-            if (!(n&1)) 
+            if (!(n&1))
               shifted(n/2,j) = cdouble(0.0, 0.0);
 
             for (int l = 0; l < maxn; l++) {
@@ -237,7 +238,7 @@ class ComputeSlice
             TV1arr[j] = 0.0;
             TV2arr[j] = 0.0;
             for (int t = minW; t <= maxW; t++) {
-              TV1arr[j] += std::abs (shifted((n-t)%n,j).real() - shifted((n-t-1)%n,j).real()); 
+              TV1arr[j] += std::abs (shifted((n-t)%n,j).real() - shifted((n-t-1)%n,j).real());
               TV1arr[j] += std::abs (shifted((n-t)%n,j).imag() - shifted((n-t-1)%n,j).imag());
               TV2arr[j] += std::abs (shifted((n+t)%n,j).real() - shifted((n+t+1)%n,j).real());
               TV2arr[j] += std::abs (shifted((n+t)%n,j).imag() - shifted((n+t+1)%n,j).imag());
@@ -277,15 +278,15 @@ class ComputeSlice
             double a2i = shifted((l+1+n)%n,minidx).imag();
             double s = double(shifts[minidx])/(2.0*nsh);
 
-            if (s > 0.0) 
+            if (s > 0.0)
               eig(l,k) = cdouble (a1r*(1.0-s) + a0r*s, a1i*(1.0-s) + a0i*s);
-            else 
+            else
               eig(l,k) = cdouble (a1r*(1.0+s) - a2r*s, a1i*(1.0+s) - a2i*s);
           }
         }
       }
 
-    template <typename Derived> 
+    template <typename Derived>
       FORCE_INLINE void unring_1d (Eigen::MatrixBase<Derived>& eig) { unring_1d (std::move (eig)); }
 
 };
@@ -302,7 +303,7 @@ void run ()
   const int minW = App::get_option_value ("minW", 1);
   const int maxW = App::get_option_value ("maxW", 3);
 
-  if (minW >= maxW) 
+  if (minW >= maxW)
     throw Exception ("minW must be smaller than maxW");
 
   auto in = Image<value_type>::open (argument[0]);
@@ -313,11 +314,44 @@ void run ()
 
   vector<size_t> slice_axes = { 0, 1 };
   auto opt = get_options ("axes");
+  const bool axes_set_manually = opt.size();
   if (opt.size()) {
     vector<int> axes = opt[0][0];
-    if (slice_axes.size() != 2) 
+    if (slice_axes.size() != 2)
       throw Exception ("slice axes must be specified as a comma-separated 2-vector");
     slice_axes = { size_t(axes[0]), size_t(axes[1]) };
+  }
+
+  auto slice_encoding_it = header.keyval().find ("SliceEncodingDirection");
+  if (slice_encoding_it != header.keyval().end()) {
+    try {
+      const Eigen::Vector3 slice_endocing_axis_onehot = Axes::id2dir (slice_encoding_it->second);
+      vector<size_t> auto_slice_axes = { 0, 0 };
+      if (slice_endocing_axis_onehot[0])
+        auto_slice_axes = { 1, 2 };
+      else if (slice_endocing_axis_onehot[1])
+        auto_slice_axes = { 0, 2 };
+      else if (slice_endocing_axis_onehot[2])
+        auto_slice_axes = { 0, 1 };
+      else
+        throw Exception ("Fatal error: Invalid slice axis one-hot encoding [ " + str(slice_endocing_axis_onehot.transpose()) + " ]");
+      if (axes_set_manually) {
+        if (slice_axes == auto_slice_axes) {
+          INFO ("User's manual selection of within-slice axes consistent with \"SliceEncodingDirection\" field in image header");
+        } else {
+          WARN ("Within-slice axes set using -axes option will be used, but is inconsistent with SliceEncodingDirection field present in image header (" + slice_encoding_it->second + ")");
+        }
+      } else {
+        if (slice_axes == auto_slice_axes) {
+          INFO ("\"SliceEncodingDirection\" field in image header is consistent with default selection of first two axes as being within-slice");
+        } else {
+          slice_axes = auto_slice_axes;
+          CONSOLE ("Using axes { " + str(slice_axes[0]) + ", " + str(slice_axes[1]) + " } for Gibbs ringing removal based on \"SliceEncodingDirection\" field in image header");
+        }
+      }
+    } catch (...) {
+      WARN ("Invalid value for field \"SliceEncodingDirection\" in image header (" + slice_encoding_it->second + "); ignoring");
+    }
   }
 
   // build vector of outer axes:
