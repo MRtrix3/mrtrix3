@@ -17,13 +17,25 @@
 # particular). This will not work for the C shell and derivatives. 
 
 
-import sys, os, platform
+import sys, os, platform, codecs
 
 # check whether we are in the right location:
+config_file = 'config'
+
+try:
+  # load config file:
+  exec (codecs.open (config_file, mode='r', encoding='utf-8').read())
+except IOError:
+  sys.stderr.write ('''no configuration file found!
+please run "./configure"  and "./build" prior to invoking this script
+
+''')
+  sys.exit (1)
+
 basedir = os.getcwd()
-if not os.path.isfile (os.path.join(basedir, 'bin', 'mrinfo')):
+if not os.path.isfile (os.path.join(basedir, 'bin', 'mrinfo'+exe_suffix)):
   basedir = os.path.dirname (os.path.abspath(__file__))
-  if not os.path.isfile (os.path.join(basedir, 'bin', 'mrinfo')):
+  if not os.path.isfile (os.path.join(basedir, 'bin', 'mrinfo'+exe_suffix)):
     print ('''
 ERROR: MRtrix3 executables not found in expected location.
 
