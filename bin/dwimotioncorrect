@@ -208,7 +208,11 @@ def v2vregstep(k):
     with open('motion.txt', 'w') as f:
         prog = app.progressBar('Registering recon to data volumes', dims[3])
         for v in range(dims[3]):
-            run.command('mrconvert -coord 3 ' + str(v) + ' in.mif target.mif -export_grad_mrtrix grad1.txt -force')
+            if app.args.fieldmap:
+                run.command('mrconvert -coord 3 ' + str(v) + ' in.mif - -export_grad_mrtrix grad1.txt -force | ' +
+                            'mrfieldunwrap - field1.mif' + (' -transform T-'+str(v)+'.txt' if k>0 else '') + ' target.mif -force')
+            else:
+                run.command('mrconvert -coord 3 ' + str(v) + ' in.mif target.mif -export_grad_mrtrix grad1.txt -force')
             run.command('mssh2amp msshredux.mif grad1.txt template.mif ' + ('' if k==0 else '-transform T-' + str(v) + '.txt ') + '-force')
             run.command('mrreg_lin template.mif target.mif -mask2 mask.mif' +
                         (' -affine_init T-'+str(v)+'.txt' if k>0 else '') +
@@ -229,7 +233,11 @@ def s2vregstep(k):
         prog = app.progressBar('Registering recon to data slices', dims[3]*dims[2]//mb)
         for v in range(dims[3]):
             volmotion = ''
-            run.command('mrconvert -coord 3 ' + str(v) + ' in.mif target.mif -export_grad_mrtrix grad1.txt -force')
+            if app.args.fieldmap:
+                run.command('mrconvert -coord 3 ' + str(v) + ' in.mif - -export_grad_mrtrix grad1.txt -force | ' +
+                            'mrfieldunwrap - field1.mif -transform T-' + str(v) + '.txt target.mif -force')
+            else:
+                run.command('mrconvert -coord 3 ' + str(v) + ' in.mif target.mif -export_grad_mrtrix grad1.txt -force')
             if k == 0:
                 run.command('mssh2amp msshredux.mif grad1.txt template.mif -transform T-' + str(v) + '.txt -force')
             for s in range(dims[2]//mb):
@@ -256,10 +264,7 @@ def fieldalignstep(k):
         if (k == 0):
             run.command('mrconvert field.mif field1.mif')
         else:
-            if app.args.fieldidx:
-                idx = app.args.fieldidx
-            else:
-                idx = '0'
+            idx = '0' if not app.args.fieldidx else app.args.fieldidx
             run.command('mrtransform field.mif -linear T-'+idx+'.txt -inverse field1.mif -force')
 
 
