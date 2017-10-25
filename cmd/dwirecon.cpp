@@ -173,6 +173,9 @@ void run ()
     auto petable = PhaseEncoding::get_scheme(dwi);
     PE = petable.leftCols<3>().cast<float>();
     PE.array().colwise() *= petable.col(3).array().cast<float>();
+    // -----------------------  // TODO: Eddy uses a reverse LR axis for storing
+    PE.col(0) *= -1;            // the PE table, akin to the gradient table.
+    // -----------------------  // Fix in the eddy import/export functions in core.
     field = Image<value_type>::open(opt[0][0]);
   }
 

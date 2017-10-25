@@ -343,10 +343,14 @@ namespace MR
               // get slice position in recon space
               pr = Ts2r * ps;
               if (field.valid()) {
-                for (int j = 0; j < 5; j++) {
+                float b0, b1 = 0.0f;
+                for (int j = 0; j < 10; j++) {
                   interp->voxel(Tf * pr);
-                  //ps += interp->value() * peoffset;
-                  pr = Ts2r * (ps - interp->value() * peoffset);
+                  b0 = interp->value();
+                  if (b0 == 0) break;
+                  pr = Ts2r * (ps - b0 * peoffset);
+                  if (std::abs(b1-b0) < 0.01f) break;
+                  b1 = b0;
                 }
               }
               // update motion matrix
@@ -384,10 +388,14 @@ namespace MR
               // get slice position in recon space
               pr = Ts2r * ps;
               if (field.valid()) {
-                for (int j = 0; j < 5; j++) {
+                float b0, b1 = 0.0f;
+                for (int j = 0; j < 10; j++) {
                   interp->voxel(Tf * pr);
-                  //ps += interp->value() * peoffset;
-                  pr = Ts2r * (ps - interp->value() * peoffset);
+                  b0 = interp->value();
+                  if (b0 == 0) break;
+                  pr = Ts2r * (ps - b0 * peoffset);
+                  if (std::abs(b1-b0) < 0.01f) break;
+                  b1 = b0;
                 }
               }
               // update motion matrix
@@ -428,10 +436,14 @@ namespace MR
               // get slice position in recon space
               pr = Ts2r * ps;
               if (field.valid()) {
-                for (int j = 0; j < 5; j++) {
+                float b0, b1 = 0.0f;
+                for (int j = 0; j < 10; j++) {
                   interp->voxel(Tf * pr);
-                  //ps += interp->value() * peoffset;
-                  pr = Ts2r * (ps - interp->value() * peoffset);
+                  b0 = interp->value();
+                  if (b0 == 0) break;
+                  pr = Ts2r * (ps - b0 * peoffset);
+                  if (std::abs(b1-b0) < 0.01f) break;
+                  b1 = b0;
                 }
               }
               // update motion matrix
