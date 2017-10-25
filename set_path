@@ -17,25 +17,18 @@
 # particular). This will not work for the C shell and derivatives. 
 
 
-import sys, os, platform, codecs
+import sys, os, platform, subprocess
+
+# on Windows, need to use MSYS2 version of python - not MinGW version:
+if sys.executable[0].isalpha() and sys.executable[1] == ':':
+  python_cmd = subprocess.check_output ([ 'cygpath.exe', '-w', '/usr/bin/python' ]).splitlines()[0].strip()
+  sys.exit (subprocess.call ([ python_cmd ] + sys.argv))
 
 # check whether we are in the right location:
-config_file = 'config'
-
-try:
-  # load config file:
-  exec (codecs.open (config_file, mode='r', encoding='utf-8').read())
-except IOError:
-  sys.stderr.write ('''no configuration file found!
-please run "./configure"  and "./build" prior to invoking this script
-
-''')
-  sys.exit (1)
-
 basedir = os.getcwd()
-if not os.path.isfile (os.path.join(basedir, 'bin', 'mrinfo'+exe_suffix)):
+if not os.path.isfile (os.path.join(basedir, 'bin', 'mrinfo')):
   basedir = os.path.dirname (os.path.abspath(__file__))
-  if not os.path.isfile (os.path.join(basedir, 'bin', 'mrinfo'+exe_suffix)):
+  if not os.path.isfile (os.path.join(basedir, 'bin', 'mrinfo')):
     print ('''
 ERROR: MRtrix3 executables not found in expected location.
 
