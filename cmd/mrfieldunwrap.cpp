@@ -63,7 +63,7 @@ class FieldUnwrap {
       dinterp (data, 0.0f),
       finterp (field, 0.0f),
       PE (petable.leftCols<3>()),
-      Tf (Transform(field).scanner2voxel * T)
+      Tf (Transform(field).scanner2voxel * T * Transform(data).voxel2scanner)
     {
       PE.array().colwise() *= petable.col(3).array();
     }
@@ -72,20 +72,13 @@ class FieldUnwrap {
     {
       Eigen::Vector3 vox, pos;
       assign_pos_of(out).to(vox);
+      finterp.voxel(Tf * vox);
+      double b0 = finterp.value();
       for (size_t v = 0; v < out.size(3); v++) {
-        pos = vox;
-        double b0, b1 = 0;
-        for (size_t j = 0; j < 5; j++) {
-          finterp.voxel(Tf * pos);
-          b0 = finterp.value();
-          if (b0 == 0) break;
-          pos = vox - b0 * PE.block<1,3>(v, 0).transpose();
-          if (std::abs(b1-b0) < 0.25f) break;
-          b1 = b0;
-        }
+        pos = vox + b0 * PE.block<1,3>(v, 0).transpose();
         dinterp.index(3) = out.index(3) = v;
         dinterp.voxel(pos);
-        out.value() = dinterp.value();
+        out.value() = dinterp.value();      // TODO: Jacobian modulation.
       }
     }
 
@@ -113,7 +106,6 @@ void run ()
   auto opt = get_options("transform");
   if (opt.size())
     T = load_transform(opt[0][0]);
-  T = T * Transform(data).voxel2scanner;
 
   // Save output
   Header header (data);
