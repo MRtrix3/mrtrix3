@@ -94,7 +94,7 @@ if len(DW_scheme) != int(dwi_sizes[3]):
 
 # Check PE table if field map is passed.
 if app.args.fieldmap:
-    PE_scheme = image.headerField('in.mif', 'pe_scheme').split('\n')
+    PE_scheme = image.headerField('in.mif', 'petable').split('\n')
     if len(PE_scheme) != int(dwi_sizes[3]):
         app.error('Input image does not contain valid phase encoding scheme')
 
@@ -259,8 +259,8 @@ def fieldalignstep(k):
             if app.args.fieldidx:
                 idx = app.args.fieldidx
             else:
-                idx = 0
-            run.command('mrtransfom field.mif -linear T-'+idx+'.txt field1.mif -force')
+                idx = '0'
+            run.command('mrtransform field.mif -linear T-'+idx+'.txt -inverse field1.mif -force')
 
 
 

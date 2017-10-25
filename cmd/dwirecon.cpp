@@ -294,6 +294,7 @@ void run ()
   header.size(3) = padding;
   Stride::set_from_command_line (header, Stride::contiguous_along_axis (3));
   header.datatype() = DataType::from_command_line (DataType::Float32);
+  PhaseEncoding::set_scheme (header, Eigen::MatrixXf());
   auto out = Image<value_type>::create (argument[1], header);
 
   j = 0;
