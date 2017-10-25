@@ -31,16 +31,7 @@ install:
   - pip install --user pylint recommonmark sphinx sphinx-rtd-theme
   - pip3 install --user pylint recommonmark sphinx sphinx-rtd-theme
 script:
-  - if [ ${test} = "sphinx" ]; then
-        ${py} -m sphinx -n -N -W -w sphinx.log -c docs/ docs/ tmp/ || travis_terminate 1;
-    elif [ ${test} = "memalign" ]; then
-        ./check_memalign || travis_terminate 1;
-    elif [ ${test} = "pylint" ]; then
-        PYTHON=$py ./run_pylint || travis_terminate 1;
-    else
-        $py ./configure -assert && $py ./build -nowarnings && ./run_tests || travis_terminate 1;
-        ./docs/generate_user_docs.sh && git diff --exit-code docs/ > gitdiff.log || travis_terminate 1;
-    fi
+  - ./travis.sh
 after_failure:
   - if [ ${test} = "sphinx" ]; then
         cat sphinx.log;
