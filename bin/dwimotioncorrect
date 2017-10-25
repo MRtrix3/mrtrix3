@@ -43,6 +43,10 @@ options.add_argument('-svr', help='Number of slice-to-volume reconstruction epoc
 options.add_argument('-mb', help='Multiband factor (default = 1)')
 options.add_argument('-sspwidth', help='Slice thickness for Gaussian SSP (default = 1)')
 options.add_argument('-or_loss', help='Outlier rejection loss function (default = softl1)')
+options.add_argument('-fieldmap', help='B0 field map for distortion correction')
+options.add_argument('-fieldidx', help='Index of volume to which field map is aligned (default = 0)')
+options.add_argument('-pe_table', help='Phase encoding table in MRtrix format')
+options.add_argument('-pe_eddy', nargs=2, help='Phase encoding table in FSL acqp/index format')
 options.add_argument('-export_motion', help='Export rigid motion parameters')
 options.add_argument('-export_weights', help='Export slice weights')
 app.cmdline.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
@@ -55,6 +59,12 @@ if app.args.grad:
 elif app.args.fslgrad:
     grad_import_option = ' -fslgrad ' + path.fromUser(app.args.fslgrad[0], True) + ' ' + path.fromUser(app.args.fslgrad[1], True)
 
+pe_import_option = ''
+if app.args.pe_table:
+    pe_import_option = ' -import_pe_table ' + path.fromUser(app.args.pe_table, True)
+elif app.args.pe_eddy:
+    pe_import_option = ' -import_pe_eddy ' + path.fromUser(app.args.pe_eddy[0], True) + ' ' + path.fromUser(app.args.pe_eddy[1], True)
+
 
 app.checkOutputPath(app.args.output)
 if app.args.export_motion:
@@ -65,9 +75,11 @@ if app.args.export_weights:
 
 app.makeTempDir()
 
-run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('in.mif', True) + grad_import_option)
+run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('in.mif', True) + grad_import_option + pe_import_option)
 if app.args.mask:
     run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True))
+if app.args.fieldmap:
+    run.command('mrconvert ' + path.fromUser(app.args.fieldmap, True) + ' ' + path.toTemp('field.mif', True))
 
 app.gotoTempDir()
 
@@ -79,6 +91,12 @@ if len(dwi_sizes) != 4:
 DW_scheme = image.headerField('in.mif', 'dwgrad').split('\n')
 if len(DW_scheme) != int(dwi_sizes[3]):
     app.error('Input image does not contain valid DW gradient scheme')
+
+# Check PE table if field map is passed.
+if app.args.fieldmap:
+    PE_scheme = image.headerField('in.mif', 'pe_scheme').split('\n')
+    if len(PE_scheme) != int(dwi_sizes[3]):
+        app.error('Input image does not contain valid phase encoding scheme')
 
 
 # Generate a brain mask if required, or check the mask if provided
@@ -126,6 +144,8 @@ if app.args.reg:
     recon_option += ' -reg ' + app.args.reg
 if app.args.sspwidth:
     recon_option += ' -sspwidth ' + app.args.sspwidth
+if app.args.fieldmap:
+    recon_option += ' -field field1.mif'
 
 #if rf_import_option is not '':
 #    recon_option += rf_import_option
@@ -231,9 +251,23 @@ def s2vregstep(k):
         prog.done()
 
 
+def fieldalignstep(k):
+    if app.args.fieldmap:
+        if (k == 0):
+            run.command('mrconvert field.mif field1.mif')
+        else:
+            if app.args.fieldidx:
+                idx = app.args.fieldidx
+            else:
+                idx = 0
+            run.command('mrtransfom field.mif -linear T-'+idx+'.txt field1.mif -force')
+
+
+
 #   __________ Motion correction __________
 
 # initial template
+fieldalignstep(0)
 reconstep(0)
 sliceweightstep()
 rankreduxstep(0)
@@ -242,6 +276,7 @@ rankreduxstep(0)
 for k in range(v2viter):
     # register template to volumes
     v2vregstep(k)
+    fieldalignstep(k+1)
     # update template
     reconstep(k+1)
     sliceweightstep()
