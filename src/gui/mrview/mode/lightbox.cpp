@@ -177,21 +177,21 @@ namespace MR
         void LightBox::draw_plane_primitive (int axis, Displayable::Shader& shader_program, Projection& with_projection)
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
-          if (visible)
-            image()->render3D (shader_program, with_projection, with_projection.depth_of (focus()));
-          render_tools (with_projection, false, axis, slice (axis));
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
-        }
-
-        void LightBox::paint(Projection&)
-        {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           // Setup OpenGL environment:
           gl::Disable (gl::BLEND);
           gl::Disable (gl::DEPTH_TEST);
           gl::DepthMask (gl::FALSE_);
           gl::ColorMask (gl::TRUE_, gl::TRUE_, gl::TRUE_, gl::TRUE_);
 
+          if (visible)
+            image()->render3D (shader_program, with_projection, with_projection.depth_of (focus()));
+
+          render_tools (with_projection, false, axis, slice (axis));
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        }
+
+        void LightBox::paint(Projection&)
+        {
           GLint x = projection.x_position(), y = projection.y_position();
           GLint w = projection.width(), h = projection.height();
           GLfloat dw = w / (float)n_cols, dh = h / (float)n_rows;
