@@ -490,6 +490,16 @@ def compare_version (needed, observed):
 
 
 
+
+
+
+def MSYS2_translate_path (path):
+  try:
+    return execute ([ 'cygpath.exe', '-w', path ], RuntimeError)[1]
+  except:
+    return path
+
+
 def get_flags (default=None, env=None, pkg_config_flags=None):
   """Return a list of the flags required for a given packagei
   
@@ -506,7 +516,7 @@ def get_flags (default=None, env=None, pkg_config_flags=None):
       flags = []
       for entry in shlex.split (execute ([ 'pkg-config' ] + pkg_config_flags.split(), RuntimeError)[1]):
         if entry.startswith ('-I'):
-          flags += [ '-isystem', entry[2:] ]
+          flags += [ '-isystem', MSYS2_translate_path (entry[2:]) ]
         else:
           flags += [ entry ]
       return flags
@@ -607,7 +617,7 @@ exe_suffix = ''
 lib_prefix = 'lib'
 
 system = platform.system().lower()
-if system.startswith('mingw') or system.startswith('msys'):
+if system.startswith('mingw') or system.startswith('msys') or system.startswith('windows'):
   system = 'windows'
 report ('Detecting OS: ' + system + '\n')
 if system == 'linux':
