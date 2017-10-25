@@ -74,7 +74,7 @@ void usage ()
     +   Option ("format", "image file format")
     +   Option ("ndim", "number of image dimensions")
     +   Option ("size", "image size along each axis")
-    +   Option ("vox", "voxel size along each image dimension")
+    +   Option ("spacing", "voxel spacing along each image dimension")
     +   Option ("datatype", "data type used for image data storage")
     +   Option ("stride", "data strides i.e. order and direction of axes data layout")
     +   Option ("offset", "image intensity offset")
@@ -119,7 +119,7 @@ void print_dimensions (const Header& header)
   std::cout << buffer << "\n";
 }
 
-void print_vox (const Header& header)
+void print_spacing (const Header& header)
 {
   std::string buffer;
   for (size_t i = 0; i < header.ndim(); ++i) {
@@ -226,7 +226,8 @@ void header2json (const Header& header, nlohmann::json& json)
 {
   // Capture _all_ header fields, not just the optional key-value pairs
   json["name"] = header.name();
-  vector<size_t> size (header.ndim()), spacing (header.ndim());
+  vector<size_t> size (header.ndim());
+  vector<default_type> spacing (header.ndim());
   for (size_t axis = 0; axis != header.ndim(); ++axis) {
     size[axis] = header.size (axis);
     spacing[axis] = header.spacing (axis);
@@ -275,7 +276,7 @@ void run ()
   const bool format      = get_options("format")        .size();
   const bool ndim        = get_options("ndim")          .size();
   const bool size        = get_options("size")          .size();
-  const bool vox         = get_options("vox")           .size();
+  const bool spacing     = get_options("spacing")       .size();
   const bool datatype    = get_options("datatype")      .size();
   const bool stride      = get_options("stride")        .size();
   const bool offset      = get_options("offset")        .size();
@@ -288,12 +289,10 @@ void run ()
   const bool raw_dwgrad  = get_options("raw_dwgrad")    .size();
   const bool petable     = get_options("petable")       .size();
 
-  const bool print_full_header = !(format || ndim || size || vox || datatype || stride ||
+  const bool print_full_header = !(format || ndim || size || spacing || datatype || stride ||
       offset || multiplier || properties.size() || transform ||
       dwgrad || export_grad || shellvalues || shellcounts || export_pe || petable ||
       json_keyval || json_all);
-
-  Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "\n");
 
   for (size_t i = 0; i < argument.size(); ++i) {
     auto header = Header::open (argument[i]);
@@ -305,7 +304,7 @@ void run ()
     if (format)     std::cout << header.format() << "\n";
     if (ndim)       std::cout << header.ndim() << "\n";
     if (size)       print_dimensions (header);
-    if (vox)        print_vox (header);
+    if (spacing)    print_spacing (header);
     if (datatype)   std::cout << (header.datatype().specifier() ? header.datatype().specifier() : "invalid") << "\n";
     if (stride)     print_strides (header);
     if (offset)     std::cout << header.intensity_offset() << "\n";
