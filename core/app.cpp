@@ -1087,6 +1087,10 @@ namespace MR
 #endif
 
       srand (time (nullptr));
+      
+
+      if (getenv ("MRTRIX_QUIET"))
+        log_level = 0;
     }
 
 
