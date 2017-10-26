@@ -7,44 +7,72 @@ addons:
       - ubuntu-toolchain-r-test
       - llvm-toolchain-trusty-5.0
     packages:
-      - gcc-7
+      - g++-7
       - clang-5.0
       - zlib1g-dev
       - libqt4-opengl-dev
       - python3
       - python-pip
       - python3-pip
-compiler:
-  - clang-5.0
-  - gcc-7
-env:
-  - py=python2 test=sphinx
-  - py=python3 test=sphinx
-  - py=null test=memalign
-  - py=python2 test=pylint
-  - py=python3 test=pylint
-  - py=python2 test=build
-  - py=python3 test=build
 matrix:
-  exclude:
-    - compiler: gcc-7
-      env: test=sphinx
-    - compiler: gcc-7
-      env: test=memalign
-    - compiler: gcc-7
-      env: test=pylint
-    - compiler: gcc-7
-      env: py=python2
-      env: test=build
+  include:
+    #######################################################################
+    # Generate documentation through Sphinx; Use both Python2 and Python3 #
+    #######################################################################
+    - compiler: clang-5.0
+      env: py=python2 test=sphinx
+    - compiler: clang-5.0
+      env: py=python3 test=sphinx
+    #############################################################
+    # Run the check_memalign script; only needs to be done once #
+    #############################################################
+    - compiler: clang-5.0
+      env: py= test=memalign
+    ##############################################
+    # Run PyLint tests; both Python2 and Python3 #
+    ##############################################
+    - compiler: clang-5.0
+      env: py=python2 test=pylint
+    - compiler: clang-5.0
+      env: py=python3 test=pylint
+    #################################################################################
+    # Build binaries, run tests and check documentation: Clang, Python2 and Python3 #
+    #################################################################################
+    - compiler: clang-5.0
+      env: py=python2 test=build
+    - compiler: clang-5.0
+      env: py=python3 test=build
+    ################################################################
+    # Test build using GCC; no need to use both versions of Python #
+    ################################################################
+    - compiler: g++-7
+      env: py=python2 test=build
 install:
   - export NUMBER_OF_PROCESSORS=4
   - export PATH=`pwd`/bin:${PATH}
   - export PYTHONPATH=`pwd`/lib:${PYTHONPATH}
-  - export EIGEN_CFLAGS=-I`pwd`/../eigen
-  - (cd ..; hg clone https://bitbucket.org/eigen/eigen/; cd eigen; hg update 3.3)
-  - pip install urllib3[secure]
-  - pip install --user pylint recommonmark sphinx sphinx-rtd-theme
-  - pip3 install --user pylint recommonmark sphinx sphinx-rtd-theme
+  - if [[ ${test} == "sphinx" ]]; then
+        if [[ ${py} == "python2" ]]; then
+            pip install urllib3[secure]
+            pip install --user recommonmark sphinx sphinx-rtd-theme
+        else
+            pip3 install --user recommonmark sphinx sphinx-rtd-theme
+        fi
+    fi
+  - if [[ ${test} == "pylint" ]]; then
+        if [[ ${py} == "python2" ]]; then
+            pip install --user pylint
+        else
+            pip3 install --user pylint
+        fi
+    fi
+  - if [[ "${test} == "build" ]]; then
+        export EIGEN_CFLAGS=-I`pwd`/../eigen
+        cd ..
+        hg clone https://bitbucket.org/eigen/eigen/
+        cd eigen
+        hg update 3.3
+    fi
 script:
   - ./travis.sh
 after_failure:
