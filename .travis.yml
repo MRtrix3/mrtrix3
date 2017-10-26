@@ -5,14 +5,18 @@ addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
+      - llvm-toolchain-trusty-5.0
     packages:
+      - gcc-8
+      - clang-5.0
       - zlib1g-dev
       - libqt4-opengl-dev
       - python3
       - python-pip
       - python3-pip
 compiler:
-  - clang
+  - clang-5.0
+  - gcc-8
 env:
   - py=python2 test=sphinx
   - py=python3 test=sphinx
@@ -30,6 +34,17 @@ install:
   - pip install urllib3[secure]
   - pip install --user pylint recommonmark sphinx sphinx-rtd-theme
   - pip3 install --user pylint recommonmark sphinx sphinx-rtd-theme
+matrix:
+  exclude:
+    - compiler: gcc-8
+      env: test=sphinx
+    - compiler: gcc-8
+      env: test=memalign
+    - compiler: gcc-8
+      env: test=pylint
+    - compiler: gcc-8
+      env: py=python2
+      env: test=build
 script:
   - ./travis.sh
 after_failure:
