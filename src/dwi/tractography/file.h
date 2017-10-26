@@ -50,8 +50,8 @@ namespace MR
           virtual bool operator() (Streamline<ValueType>&) = 0;
           virtual ~ReaderInterface() { }
       };
-      
-      
+
+
       template <class ValueType>
       class WriterInterface
       { NOMEMALIGN
@@ -140,10 +140,10 @@ namespace MR
           //! takes care of byte ordering issues
 
             Eigen::Matrix<ValueType,3,1> get_next_point ()
-            { 
+            {
               using namespace ByteOrder;
               switch (dtype()) {
-                case DataType::Float32LE: 
+                case DataType::Float32LE:
                   {
                     float p[3];
                     in.read ((char*) p, sizeof (p));
@@ -265,7 +265,7 @@ namespace MR
 
               commit (buffer, tck.size()+1);
 
-              if (weights_name.size()) 
+              if (weights_name.size())
                 write_weights (str(tck.weight) + "\n");
 
               ++count;
@@ -280,7 +280,7 @@ namespace MR
             if (weights_name.size())
               throw Exception ("Cannot change output streamline weights file path");
             weights_name = path;
-            App::check_overwrite (name);
+            App::check_overwrite (weights_name);
             File::OFStream out (weights_name, std::ios::out | std::ios::binary | std::ios::trunc);
           }
 
@@ -296,7 +296,7 @@ namespace MR
           //! perform per-point byte-swapping if required
           void format_point (const vector_type& src, vector_type& dest) {
             using namespace ByteOrder;
-            if (dtype.is_little_endian()) 
+            if (dtype.is_little_endian())
               dest = { LE(src[0]), LE(src[1]), LE(src[2]) };
             else
               dest = { BE(src[0]), BE(src[1]), BE(src[2]) };
@@ -352,7 +352,7 @@ namespace MR
        * It also helps reduce file fragmentation when multiple processes write
        * to file concurrently. The size of the write-back buffer defaults to
        * 16MB, and can be set in the config file using the
-       * TrackWriterBufferSize field (in bytes). 
+       * TrackWriterBufferSize field (in bytes).
        * */
       template <typename ValueType = float>
         class Writer : public WriterUnbuffered<ValueType>
@@ -376,9 +376,9 @@ namespace MR
           //CONF The size of the write-back buffer (in bytes) to use when
           //CONF writing track files. MRtrix will store the output tracks in a
           //CONF relatively large buffer to limit the number of write() calls,
-          //CONF avoid associated issues such as file fragmentation. 
+          //CONF avoid associated issues such as file fragmentation.
           Writer (const std::string& file, const Properties& properties, size_t default_buffer_capacity = 16777216) :
-            WriterUnbuffered<ValueType> (file, properties), 
+            WriterUnbuffered<ValueType> (file, properties),
             buffer_capacity (File::Config::get_int ("TrackWriterBufferSize", default_buffer_capacity) / sizeof (vector_type)),
             buffer (new vector_type [buffer_capacity]),
             buffer_size (0) { }
@@ -416,7 +416,7 @@ namespace MR
           size_t buffer_size;
           std::string weights_buffer;
 
-          //! add point to buffer and increment buffer_size accordingly 
+          //! add point to buffer and increment buffer_size accordingly
           void add_point (const vector_type& p) {
             format_point (p, buffer[buffer_size++]);
           }
