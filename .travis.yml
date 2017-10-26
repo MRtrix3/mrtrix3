@@ -19,34 +19,26 @@ matrix:
     #######################################################################
     # Generate documentation through Sphinx; Use both Python2 and Python3 #
     #######################################################################
-    - compiler: clang-5.0
-      env: py=python2 test=sphinx
-    - compiler: clang-5.0
-      env: py=python3 test=sphinx
+    - env: py=python2 test=sphinx
+    - env: py=python3 test=sphinx
     #############################################################
     # Run the check_memalign script; only needs to be done once #
     #############################################################
-    - compiler: clang-5.0
-      env: py= test=memalign
+    - env: test=memalign
     ##############################################
     # Run PyLint tests; both Python2 and Python3 #
     ##############################################
-    - compiler: clang-5.0
-      env: py=python2 test=pylint
-    - compiler: clang-5.0
-      env: py=python3 test=pylint
+    - env: py=python2 test=pylint
+    - env: py=python3 test=pylint
     #################################################################################
     # Build binaries, run tests and check documentation: Clang, Python2 and Python3 #
     #################################################################################
-    - compiler: clang-5.0
-      env: py=python2 test=build
-    - compiler: clang-5.0
-      env: py=python3 test=build
+    - env: CXX=clang++-5.0 py=python2 test=build
+    - env: CXX=clang++-5.0 py=python3 test=build
     ################################################################
     # Test build using GCC; no need to use both versions of Python #
     ################################################################
-    - compiler: g++-7
-      env: py=python2 test=build
+    - env: CXX=g++-7 py=python2 test=build
 install:
   - export NUMBER_OF_PROCESSORS=4
   - export PATH=`pwd`/bin:${PATH}
