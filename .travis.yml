@@ -3,16 +3,19 @@ dist: trusty
 language: cpp
 cache:
   apt: true
+  packages: true
   directories:
     - $HOME/.cache/pip
-    - $HOME/.cache/pip3
 addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
       - llvm-toolchain-trusty-5.0
     packages:
-      - g++-7
+      ######################################################################
+      # G++ currently disabled as it runs out of memory during compilation #
+      # - g++-7                                                            #
+      ######################################################################
       - clang-5.0
       - zlib1g-dev
       - libqt4-opengl-dev
@@ -42,8 +45,10 @@ matrix:
     - env: TRAVIS_CXX=clang++-5.0 py=python3 test=build
     ################################################################
     # Test build using GCC; no need to use both versions of Python #
+    # - env: TRAVIS_CXX=g++-7 py=python2 test=build                #
+    # Disabled for now: g++ runs out of memory...                  #
     ################################################################
-    - env: TRAVIS_CXX=g++-7 py=python2 test=build
+
 before_install:
   #####################################################################################################################
   # TravisCI sets CXX based on what it thinks the compiler should be; therefore we need to set it as late as possible #
@@ -80,6 +85,8 @@ install:
     fi
 script:
   - ./travis.sh
+before_cache:
+  - rm -f $HOME/.cache/pip/log/debug.log
 after_failure:
   - |
     if [[ "${test}" == "sphinx" ]]; then
