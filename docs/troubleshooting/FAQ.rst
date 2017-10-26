@@ -56,7 +56,7 @@ assumption. To me, there are two possible ways that this could be handled:
 
 - Generate a representation of the response function that can be interpolated
   / extrapolated as a function of b-value, and therefore choose an appropriate
-  response function per voxel.  
+  response function per voxel.
 
 Work is underway to solve these issues, but there's nothing available yet. For
 those wanting to pursue their own solution, bear in mind that the gradient
@@ -249,46 +249,53 @@ used in these figures, which I'll explain here in full.
 
 -  Figures 5 and 7 display large dots at the streamline endpoints lying within
    the displayed slab, in conjunction with the streamlines themselves and a
-   background image. Unfortunately this functionality is not yet
-   implemented within *MRtrix3*, so duplicating this type of visualisation
-   requires a bit of manual manipulation and software gymnastics:
+   background image. This can be achieved as follows:
 
-   -  Use the new ``tckresample`` command, with the ``-endpoints`` option,
-      to generate a new track file that contains only the two endpoints of
+   -  Use the ``tckresample`` command with the ``-endpoints`` option to
+      generate a new track file that contains only the two endpoints of
       each streamline.
 
-   -  Load this track file into the *old MRtrix 0.2 version of ``mrview``*.
-      This software can be acquired `here <https://github.com/jdtournier/mrtrix-0.2>`__.
-      Note that you will likely want to *not* run the installation component
-      of the build for this software; that way you should not encounter
-      issues with conflicting commmand names between MRtrix versions. This
-      does however mean that you will need to provide the full path to the
-      MRtrix 0.2 ``mrview`` executable in order to run it.
+   -  Load this track file into ``mrview``.
 
-   -  Within the ``mrview`` tractography tool, enable the 'depth blend'
-      option. This will display each streamline point as a dot, rather than
-      drawing lines between the streamline points.
+   -  Within the ``mrview`` tractography tool, for the "Geometry" option,
+      select "Points".
+
+This will display each streamline point as a dot, rather than drawing lines
+between each streamline point. Since this track file contains only two points
+per streamline, corresponding to the streamline endpoints, this means that a
+dot is drawn at each streamline endpoint.
+
+In Figure 7, each streamline endpointis coloured red. Figure 5 is slightly
+trickier, and requires some image editing trickery:
+
+   -  Display *only* the streamline endpoints track file.
+
+   -  Colour each "track" according to direction (this will colour each point
+      according to the "direction" between the two endpoints).
 
    -  Adjust the brightness / contrast of the background image so that it is
-      completely black.
+      completely black, and disable all other tools/geometry (so that only the
+      termination points are visible).
 
    -  Take a screenshot.
 
-   -  Remove the streamline endpoints track file from the tractography tool,
-      and disable the 'depth blend' option (it's best to disable the 'depth
-      blend' option before opening any larger track file).
+   -  Disable the streamline endpoints track file within the tractography tool,
+      set up whatever background image / tracks you wish to combine within
+      your image, and take another screenshot. Make sure to not move the
+      view focus or resize the ``mrview`` window, so that the two screenshots
+      will overlay directly on top of one another.
 
-   -  Reset the windowing of the main image, and/or load the complete tracks
-      file, and take an additional screenshot, making sure not to move the
-      view focus or resize the ``mrview`` window (so that the two screenshots
-      overlay on top of one another).
+   -  Open the two screenshots using image editing software such as GIMP.
 
-   -  The two screenshots are then combined using image editing software such
-      as GIMP. The colors of the termination points can also be modified
-      independently before they are combined with the second screenshot. One
-      trick I used in this manuscript was to rotate the hue of the termination
-      screenshot by 180 degrees: this provides a pseudo-random coloring of the
-      termination points that contrasts well against the tracks.
+   -  In Figure 5, a trick I used was to take the endpoint termination
+      screenshot, and *rotate the hue* by 180 degrees: this provides a
+      pseudo-random coloring of the termination points that contrasts well
+      against the surrounding tracks.
+
+   -  Within the image editing software, make the termination point screenshot
+      *transparent* where the termination points are not drawn, and then overlay
+      it with the second screenshot (in GIMP, you can use "Copy" -> "Paste as
+      new layer").
 
 
 Compiler error during build

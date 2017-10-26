@@ -813,7 +813,7 @@ class progressBar(object): #pylint: disable=unused-variable
     global clearLine, colourConsole, colourClear, colourExec
     assert not self.iscomplete
     if self.isatty:
-      sys.stderr.write('\r' + self.scriptname + ': ' + colourExec + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else progressBar._busy[self.counter%6]) + '] ' + colourConsole + self.message + '... ' + colourClear + clearLine + self.newline)
+      sys.stderr.write('\r' + self.scriptname + ': ' + colourExec + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else progressBar._busy[self.counter%6]) + ']' + colourClear + ' ' + colourConsole + self.message + '... ' + colourClear + clearLine + self.newline)
     else:
       if self.newline:
         sys.stderr.write(self.scriptname + ': ' + self.message + '... [' + ('=' * int(self.value/2)) + self.newline)
@@ -836,7 +836,7 @@ class progressBar(object): #pylint: disable=unused-variable
     self.value = 0
     verbosity = verbosity - 1 if verbosity else 0
     if self.isatty:
-      sys.stderr.write(self.scriptname + ': ' + colourExec + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else progressBar._busy[0]) + '] ' + colourConsole + self.message + '... ' + colourClear + clearLine + self.newline)
+      sys.stderr.write(self.scriptname + ': ' + colourExec + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else progressBar._busy[0]) + ']' + colourClear + ' ' + colourConsole + self.message + '... ' + colourClear + clearLine + self.newline)
     else:
       sys.stderr.write(self.scriptname + ': ' + self.message + '... [' + self.newline)
     sys.stderr.flush()
@@ -867,7 +867,7 @@ class progressBar(object): #pylint: disable=unused-variable
     self.iscomplete = True
     self.value = 100
     if self.isatty:
-      sys.stderr.write('\r' + self.scriptname + ': ' + colourExec + '[' + ('100%' if self.multiplier else 'done') + '] ' + colourConsole + self.message + colourClear + clearLine + '\n')
+      sys.stderr.write('\r' + self.scriptname + ': ' + colourExec + '[' + ('100%' if self.multiplier else 'done') + ']' + colourClear + ' ' + colourConsole + self.message + colourClear + clearLine + '\n')
     else:
       if self.newline:
         sys.stderr.write(self.scriptname + ': ' + self.message + ' [' + ('=' * (self.value/2)) + ']\n')
@@ -883,7 +883,7 @@ class progressBar(object): #pylint: disable=unused-variable
 def isWindows(): #pylint: disable=unused-variable
   import platform
   system = platform.system().lower()
-  return system.startswith('mingw') or system.startswith('msys') or system.startswith('windows')
+  return system.startswith('mingw') or system.startswith('msys') or system.startswith('nt') or system.startswith('windows')
 
 
 
