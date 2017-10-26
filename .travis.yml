@@ -7,7 +7,7 @@ addons:
       - ubuntu-toolchain-r-test
       - llvm-toolchain-trusty-5.0
     packages:
-      - gcc-8
+      - gcc-7
       - clang-5.0
       - zlib1g-dev
       - libqt4-opengl-dev
@@ -16,7 +16,7 @@ addons:
       - python3-pip
 compiler:
   - clang-5.0
-  - gcc-8
+  - gcc-7
 env:
   - py=python2 test=sphinx
   - py=python3 test=sphinx
@@ -25,6 +25,17 @@ env:
   - py=python3 test=pylint
   - py=python2 test=build
   - py=python3 test=build
+matrix:
+  exclude:
+    - compiler: gcc-7
+      env: test=sphinx
+    - compiler: gcc-7
+      env: test=memalign
+    - compiler: gcc-7
+      env: test=pylint
+    - compiler: gcc-7
+      env: py=python2
+      env: test=build
 install:
   - export NUMBER_OF_PROCESSORS=4
   - export PATH=`pwd`/bin:${PATH}
@@ -34,17 +45,6 @@ install:
   - pip install urllib3[secure]
   - pip install --user pylint recommonmark sphinx sphinx-rtd-theme
   - pip3 install --user pylint recommonmark sphinx sphinx-rtd-theme
-matrix:
-  exclude:
-    - compiler: gcc-8
-      env: test=sphinx
-    - compiler: gcc-8
-      env: test=memalign
-    - compiler: gcc-8
-      env: test=pylint
-    - compiler: gcc-8
-      env: py=python2
-      env: test=build
 script:
   - ./travis.sh
 after_failure:
