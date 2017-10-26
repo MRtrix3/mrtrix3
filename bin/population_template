@@ -30,17 +30,13 @@ import math
 from mrtrix3 import app, file, image, path, run #pylint: disable=redefined-builtin
 
 
+from mrtrix3.path import allindir
 
 def abspath(*arg):
   return os.path.abspath(os.path.join(*arg))
 
 def relpath(*arg):
   return os.path.relpath(os.path.join(*arg), app.workingDir)
-
-def allindir(directory):
-  return ' '.join( [ os.path.join(directory, filename) for filename in os.listdir(directory) ] )
-
-
 
 try:
   from numpy import loadtxt, savetxt, dot
@@ -214,7 +210,7 @@ app.args.input_dir = relpath(app.args.input_dir)
 inputDir = app.args.input_dir
 if not os.path.exists(inputDir):
   app.error('input directory not found')
-inFiles = sorted(os.listdir(inputDir))
+inFiles = sorted(allindir(inputDir, dir_path=False))
 if len(inFiles) <= 1:
   app.console('Not enough images found in input directory. More than one image is needed to generate a population template')
 else:
@@ -249,7 +245,7 @@ if app.args.mask_dir:
   maskDir = app.args.mask_dir
   if not os.path.exists(maskDir):
     app.error('mask directory not found')
-  maskFiles = os.listdir(maskDir)
+  maskFiles = allindir(maskDir, dir_path=False)
   if len(maskFiles) < len(inFiles):
     app.error('there are not enough mask images for the number of images in the input directory')
   maskCommonPostfix = path.commonPostfix(maskFiles)
@@ -561,7 +557,7 @@ else:
   progress.done()
 
 
-run.command('mrmath ' + allindir('inputs_transformed') + ' mean initial_template.mif')
+run.command('mrmath ' + ' '.join(allindir('inputs_transformed')) + ' mean initial_template.mif')
 current_template = 'initial_template.mif'
 
 
@@ -630,7 +626,7 @@ else:
     progress.done()
 
     # Here we ensure the template doesn't drift or scale
-    run.command('transformcalc ' + allindir('linear_transforms_%i' % level) + ' average linear_transform_average.txt -force -quiet')
+    run.command('transformcalc ' + ' '.join(allindir('linear_transforms_%i' % level)) + ' average linear_transform_average.txt -force -quiet')
     if linear_type[level] == 'rigid':
       run.command('transformcalc linear_transform_average.txt rigid linear_transform_average.txt -force -quiet')
     run.command('transformcalc linear_transform_average.txt invert linear_transform_average_inv.txt -force -quiet')
@@ -652,7 +648,7 @@ else:
       progress.increment()
     progress.done()
 
-    run.command('mrmath ' + allindir('inputs_transformed') + ' mean linear_template' + str(level) + '.mif -force')
+    run.command('mrmath ' + ' '.join(allindir('inputs_transformed')) + ' mean linear_template' + str(level) + '.mif -force')
     current_template = 'linear_template' + str(level) + '.mif'
 
   for entry in os.listdir('linear_transforms_%i' % level):
@@ -670,7 +666,7 @@ if useMasks and (dononlinear or app.args.template_mask):
                 '-force')
     progress.increment()
   progress.done()
-  run.command ('mrmath ' + allindir('masks_transformed') + ' min - | maskfilter - median - | maskfilter - dilate -npass 5 init_nl_template_mask.mif -force')
+  run.command ('mrmath ' + ' '.join(allindir('masks_transformed')) + ' min - | maskfilter - median - | maskfilter - dilate -npass 5 init_nl_template_mask.mif -force')
   current_template_mask = 'init_nl_template_mask.mif'
 
 if dononlinear:
@@ -725,11 +721,11 @@ if dononlinear:
       progress.increment()
     progress.done()
 
-    run.command('mrmath ' + allindir('inputs_transformed') + ' mean nl_template' + str(level) + '.mif')
+    run.command('mrmath ' + ' '.join(allindir('inputs_transformed')) + ' mean nl_template' + str(level) + '.mif')
     current_template = 'nl_template' + str(level) + '.mif'
 
     if useMasks:
-      run.command ('mrmath ' + allindir('masks_transformed') + ' min - | maskfilter - median - | maskfilter - dilate -npass 5 nl_template_mask' + str(level) + '.mif')
+      run.command ('mrmath ' + ' '.join(allindir('masks_transformed')) + ' min - | maskfilter - median - | maskfilter - dilate -npass 5 nl_template_mask' + str(level) + '.mif')
       current_template_mask = 'nl_template_mask' + str(level) + '.mif'
 
     if level < len(nl_scales) - 1:

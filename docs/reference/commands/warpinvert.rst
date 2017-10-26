@@ -1,26 +1,34 @@
-.. _shview:
+.. _warpinvert:
 
-shview
+warpinvert
 ===================
 
 Synopsis
 --------
 
-View spherical harmonics surface plots
+Invert a non-linear warp field
 
 Usage
 --------
 
 ::
 
-    shview [ options ] [ coefs ]
+    warpinvert [ options ]  in out
 
--  *coefs*: a text file containing the even order spherical harmonics coefficients to display.
+-  *in*: the input warp image.
+-  *out*: the output warp image.
+
+Description
+-----------
+
+By default, this command assumes that the input warp field is a deformation field, i.e. each voxel stores the corresponding position in the other image (in scanner space), and the calculated output warp image will also be a deformation field. If the input warp field is instead a displacment field, i.e. where each voxel stores an offset from which to sample the other image (but still in scanner space), then the -displacement option should be used; the output warp field will additionally be calculated as a displacement field in this case.
 
 Options
 -------
 
--  **-response** assume SH coefficients file only contains m=0 terms (zonal harmonics). Used to display the response function as produced by estimate_response
+-  **-template image** define a template image grid for the output warp
+
+-  **-displacement** indicates that the input warp field is a displacement field; the output will also be a displacement field
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -43,7 +51,7 @@ Standard options
 
 
 
-**Author:** J-Donald Tournier (jdtournier@gmail.com)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
 
