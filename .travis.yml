@@ -51,22 +51,22 @@ install:
   - export NUMBER_OF_PROCESSORS=4
   - export PATH=`pwd`/bin:${PATH}
   - export PYTHONPATH=`pwd`/lib:${PYTHONPATH}
-  - if [[ ${test} == "sphinx" ]]; then
-        if [[ ${py} == "python2" ]]; then
+  - if [[ "${test}" == "sphinx" ]]; then
+        if [[ "${py}" == "python2" ]]; then
             pip install urllib3[secure]
             pip install --user recommonmark sphinx sphinx-rtd-theme
         else
             pip3 install --user recommonmark sphinx sphinx-rtd-theme
         fi
     fi
-  - if [[ ${test} == "pylint" ]]; then
-        if [[ ${py} == "python2" ]]; then
+  - if [[ "${test}" == "pylint" ]]; then
+        if [[ "${py}" == "python2" ]]; then
             pip install --user pylint
         else
             pip3 install --user pylint
         fi
     fi
-  - if [[ "${test} == "build" ]]; then
+  - if [[ "${test}" == "build" ]]; then
         export EIGEN_CFLAGS=-I`pwd`/../eigen
         cd ..
         hg clone https://bitbucket.org/eigen/eigen/
@@ -76,11 +76,11 @@ install:
 script:
   - ./travis.sh
 after_failure:
-  - if [ ${test} = "sphinx" ]; then
+  - if [[ "${test}" == "sphinx" ]]; then
         cat sphinx.log;
-    elif [ ${test} = "memalign" ]; then
+    elif [[ "${test}" == "memalign" ]]; then
         cat memalign.log;
-    elif [ ${test} = "pylint" ]; then
+    elif [[ "${test}" == "pylint" ]]; then
         cat pylint.log;
     else
         cat configure.log;
