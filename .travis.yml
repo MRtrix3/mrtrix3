@@ -1,6 +1,11 @@
 sudo: false
 dist: trusty
 language: cpp
+cache:
+  apt: true
+  directories:
+    - $HOME/.cache/pip
+    - $HOME/.cache/pip3
 addons:
   apt:
     sources:
@@ -33,12 +38,20 @@ matrix:
     #################################################################################
     # Build binaries, run tests and check documentation: Clang, Python2 and Python3 #
     #################################################################################
-    - env: CXX=clang++-5.0 py=python2 test=build
-    - env: CXX=clang++-5.0 py=python3 test=build
+    - env: TRAVIS_CXX=clang++-5.0 py=python2 test=build
+    - env: TRAVIS_CXX=clang++-5.0 py=python3 test=build
     ################################################################
     # Test build using GCC; no need to use both versions of Python #
     ################################################################
-    - env: CXX=g++-7 py=python2 test=build
+    - env: TRAVIS_CXX=g++-7 py=python2 test=build
+before_install:
+  #####################################################################################################################
+  # TravisCI sets CXX based on what it thinks the compiler should be; therefore we need to set it as late as possible #
+  #####################################################################################################################
+  - |
+    if [[ -v TRAVIS_CXX ]]; then
+      export CXX=${TRAVIS_CXX}
+    fi
 install:
   - export NUMBER_OF_PROCESSORS=4
   - export PATH=`pwd`/bin:${PATH}
