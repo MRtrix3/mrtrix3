@@ -29,8 +29,7 @@ void usage ()
 {
   AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk)";
 
-  SYNOPSIS = "Evaluate the amplitude of a 5-D image of multi-shell "
-             "spherical harmonic functions along specified directions.";
+  SYNOPSIS = "Unwarp an EPI image according to its susceptibility field.";
 
   ARGUMENTS
     + Argument ("input",
@@ -54,11 +53,11 @@ void usage ()
 using value_type = float;
 
 
-class FieldUnwrap {
-  MEMALIGN(FieldUnwrap)
+class FieldUnwarp {
+  MEMALIGN(FieldUnwarp)
   public:
 
-    FieldUnwrap (const Image<value_type>& data, const Image<value_type>& field,
+    FieldUnwarp (const Image<value_type>& data, const Image<value_type>& field,
                  const Eigen::MatrixXd& petable, const transform_type& T) :
       dinterp (data, 0.0f),
       finterp (field, 0.0f),
@@ -114,8 +113,8 @@ void run ()
   auto out = Image<value_type>::create(argument[2], header);
 
   // Loop through shells
-  FieldUnwrap func (data, field, petable, T);
-  ThreadedLoop("unwrapping field", out, 0, 3).run(func, out);
+  FieldUnwarp func (data, field, petable, T);
+  ThreadedLoop("unwarping field", out, 0, 3).run(func, out);
 
 }
 

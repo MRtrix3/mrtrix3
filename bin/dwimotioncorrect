@@ -210,7 +210,7 @@ def v2vregstep(k):
         for v in range(dims[3]):
             if app.args.fieldmap:
                 run.command('mrconvert -coord 3 ' + str(v) + ' in.mif - -export_grad_mrtrix grad1.txt -force | ' +
-                            'mrfieldunwrap - field1.mif' + (' -transform T-'+str(v)+'.txt' if k>0 else '') + ' target.mif -force')
+                            'mrfieldunwarp - field1.mif' + (' -transform T-'+str(v)+'.txt' if k>0 else '') + ' target.mif -force')
             else:
                 run.command('mrconvert -coord 3 ' + str(v) + ' in.mif target.mif -export_grad_mrtrix grad1.txt -force')
             run.command('mssh2amp msshredux.mif grad1.txt template.mif ' + ('' if k==0 else '-transform T-' + str(v) + '.txt ') + '-force')
@@ -235,7 +235,7 @@ def s2vregstep(k):
             volmotion = ''
             if app.args.fieldmap:
                 run.command('mrconvert -coord 3 ' + str(v) + ' in.mif - -export_grad_mrtrix grad1.txt -force | ' +
-                            'mrfieldunwrap - field1.mif -transform T-' + str(v) + '.txt target.mif -force')
+                            'mrfieldunwarp - field1.mif -transform T-' + str(v) + '.txt target.mif -force')
             else:
                 run.command('mrconvert -coord 3 ' + str(v) + ' in.mif target.mif -export_grad_mrtrix grad1.txt -force')
             if k == 0:
