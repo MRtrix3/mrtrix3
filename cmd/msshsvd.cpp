@@ -173,7 +173,7 @@ void run ()
     Eigen::MatrixXf U = svd.matrixU().block(0,0,nshells,rank);
     // save basis functions
     for (int n = 0; n < rank; n++) {
-      rf[n].col(l/2) = U.col(n);
+      rf[n].col(l/2) = W.asDiagonal().inverse() * U.col(n);
     }
     // save low-rank projection
     if (pout) {
