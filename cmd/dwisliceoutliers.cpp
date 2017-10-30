@@ -168,6 +168,10 @@ void run ()
     }
   }
 
+  // Truncate small weights
+  W = (W.array() < 0.5).select(0.0f, W);
+
+  // Output
   save_matrix(W, argument[2]);
 
 }
