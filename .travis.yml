@@ -24,6 +24,11 @@ addons:
       - python3-pip
 matrix:
   include:
+    #####################################################################
+    # Build binaries, run tests and check documentation: Clang, Python3 #
+    # (Note: Run this one first, since it'll be the longest job)        #
+    #####################################################################
+    - env: TRAVIS_CXX=clang++-5.0 py=python3 test=run
     #######################################################################
     # Generate documentation through Sphinx; Use both Python2 and Python3 #
     #######################################################################
@@ -43,10 +48,6 @@ matrix:
     ###############################################################
     - env: TRAVIS_CXX=g++-5.0 py=python2 test=build
     - env: TRAVIS_CXX=clang++-5.0 py=python2 test=build
-    #####################################################################
-    # Build binaries, run tests and check documentation: Clang, Python3 #
-    #####################################################################
-    - env: TRAVIS_CXX=clang++-5.0 py=python3 test=run
 
 before_install:
   #####################################################################################################################
