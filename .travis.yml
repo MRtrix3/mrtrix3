@@ -12,10 +12,7 @@ addons:
       - ubuntu-toolchain-r-test
       - llvm-toolchain-trusty-5.0
     packages:
-      ######################################################################
-      # G++ currently disabled as it runs out of memory during compilation #
-      # - g++-7                                                            #
-      ######################################################################
+      - g++-7
       - clang-5.0
       - zlib1g-dev
       - libqt4-opengl-dev
@@ -43,11 +40,10 @@ matrix:
     ##############################################
     - env: py=python2 test=pylint
     - env: py=python3 test=pylint
-    ###############################################################
-    # Build binaries (without optimisation): Clang & GCC, Python2 #
-    ###############################################################
-    - env: TRAVIS_CXX=g++-5.0 py=python2 test=build
-    - env: TRAVIS_CXX=clang++-5.0 py=python2 test=build
+    #######################################################
+    # Build binaries (without optimisation): GCC, Python2 #
+    #######################################################
+    - env: TRAVIS_CXX=g++-7.0 py=python2 test=build
 
 before_install:
   #####################################################################################################################
@@ -79,7 +75,7 @@ install:
         fi
     fi
   - |
-    if [[ "${test}" == "build" ]]; then
+    if [[ "${test}" == "build" || "${test}" == "run" ]]; then
         export EIGEN_CFLAGS=-I`pwd`/../eigen;
         (cd ..; hg clone https://bitbucket.org/eigen/eigen/; cd eigen; hg update 3.3);
     fi
