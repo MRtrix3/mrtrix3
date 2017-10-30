@@ -200,7 +200,8 @@ def sliceweightstep():
 
 
 def rankreduxstep(k):
-    run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax 4 -weights svdweights.txt msshredux.mif -force')
+    run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax 4 -weights svdweights.txt ' +
+                'rf1.txt rf2.txt rf3.txt -proj msshredux.mif -force')
 
 
 def v2vregstep(k):
