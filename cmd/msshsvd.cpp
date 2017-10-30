@@ -88,7 +88,7 @@ class SHSVDProject
       for (size_t k = Math::SH::NforL(l-2); k < Math::SH::NforL(l); k++) {
         in.index(4) = k;
         out.index(4) = k;
-        out.row(3) = P * Eigen::Vector3f(in.row(3));
+        out.row(3) = P * Eigen::VectorXf(in.row(3));
       }
     }
 
