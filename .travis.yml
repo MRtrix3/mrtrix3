@@ -38,16 +38,15 @@ matrix:
     ##############################################
     - env: py=python2 test=pylint
     - env: py=python3 test=pylint
-    #################################################################################
-    # Build binaries, run tests and check documentation: Clang, Python2 and Python3 #
-    #################################################################################
+    ###############################################################
+    # Build binaries (without optimisation): Clang & GCC, Python2 #
+    ###############################################################
+    - env: TRAVIS_CXX=g++-5.0 py=python2 test=build
     - env: TRAVIS_CXX=clang++-5.0 py=python2 test=build
-    - env: TRAVIS_CXX=clang++-5.0 py=python3 test=build
-    ################################################################
-    # Test build using GCC; no need to use both versions of Python #
-    # - env: TRAVIS_CXX=g++-7 py=python2 test=build                #
-    # Disabled for now: g++ runs out of memory...                  #
-    ################################################################
+    #####################################################################
+    # Build binaries, run tests and check documentation: Clang, Python3 #
+    #####################################################################
+    - env: TRAVIS_CXX=clang++-5.0 py=python3 test=run
 
 before_install:
   #####################################################################################################################
@@ -58,7 +57,7 @@ before_install:
       export CXX=${TRAVIS_CXX}
     fi
 install:
-  - export NUMBER_OF_PROCESSORS=4
+  - export NUMBER_OF_PROCESSORS=2
   - export PATH=`pwd`/bin:${PATH}
   - export PYTHONPATH=`pwd`/lib:${PYTHONPATH}
   - |
@@ -95,6 +94,9 @@ after_failure:
         cat memalign.log;
     elif [[ "${test}" == "pylint" ]]; then
         cat pylint.log;
+    elif [[ "${test}" == "build" ]]; then
+        cat configure.log;
+        cat build.log;
     else
         cat configure.log;
         cat build.log;

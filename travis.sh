@@ -10,11 +10,16 @@ elif [ ${test} = "memalign" ]; then
     ./check_memalign;
 elif [ ${test} = "pylint" ]; then
     # Normally rely on build script to create this file
-    echo "__version__ = pylint_testing" > ./lib/mrtrix3/_version.py
+    echo "__version__ = pylint_testing" > ./lib/mrtrix3/_version.py;
     PYTHON=$py ./run_pylint;
-else
+elif [ ${test} = "build" ]; then
+    $py ./configure -assert -nooptim && $py ./build -nowarnings;
+elif [ ${test} = "run" ]; then
     $py ./configure -assert && $py ./build -nowarnings && ./run_tests;
     ./docs/generate_user_docs.sh && git diff --exit-code docs/ > gitdiff.log;
+else
+    echo "Envvar \"test\" not defined";
+    exit 1
 fi
 
 exit 0
