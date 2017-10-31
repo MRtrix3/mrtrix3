@@ -128,7 +128,7 @@ namespace MR
             const Projection& slice_proj = slices_proj_focusdelta[current_slice_index].first;
             float focus_delta = slices_proj_focusdelta[current_slice_index].second;
 
-            const Eigen::Vector3f slice_focus = move_in_out_displacement(focus_delta, slice_proj);
+            const Eigen::Vector3f slice_focus = get_through_plane_translation (focus_delta, slice_proj);
             set_focus(focus() + slice_focus);
           } else if (volume_indices[slice_index] == -1)
               current_slice_index = prev_index;
@@ -216,7 +216,7 @@ namespace MR
               slice_proj.set_viewport(window(), x + dw * col, y + h - (dh * (row+1)), dw, dh);
 
               // We need to setup the modelview/proj matrices before we set the new focus
-              // because move_in_out_displacement is reliant on MVP
+              // because get_through_plane_translation is reliant on MVP
               setup_projection (plane(), slice_proj);
 
               if (rend_vols) {
@@ -228,8 +228,8 @@ namespace MR
 
               else {
                 float focus_delta = slices_proj_focusdelta[slice_idx].second;
-                Eigen::Vector3f slice_focus = move_in_out_displacement(focus_delta, slice_proj);
-                set_focus(orig_focus + slice_focus);
+                auto move = get_through_plane_translation (focus_delta, slice_proj);
+                set_focus (orig_focus + move);
               }
 
               if (render_plane)

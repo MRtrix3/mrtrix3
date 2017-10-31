@@ -62,6 +62,12 @@ namespace MR
         bool Base::process_commandline_option (const MR::App::ParsedOption&) { return false; }
         void Base::add_commandline_options (MR::App::OptionList&) { }
 
+        void CameraInteractor::deactivate () { }
+        bool CameraInteractor::slice_move_event (float) { return false; }
+        bool CameraInteractor::pan_event () { return false; }
+        bool CameraInteractor::panthrough_event () { return false; }
+        bool CameraInteractor::tilt_event () { return false; }
+        bool CameraInteractor::rotate_event () { return false; }
       }
     }
   }

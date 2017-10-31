@@ -234,6 +234,7 @@ namespace MR
         colourbar_position (ColourMap::Position::BottomRight),
         tools_colourbar_position (ColourMap::Position::TopRight),
         snap_to_image_axes_and_voxel (true),
+        camera_interactor (nullptr),
         tool_has_focus (nullptr),
         best_FPS (NAN),
         show_FPS (false),
@@ -1758,6 +1759,12 @@ namespace MR
 
 
 
+      void Window::register_camera_interactor (Tool::CameraInteractor* agent) 
+      {
+        if (camera_interactor)
+          camera_interactor->deactivate();
+        camera_interactor = agent;
+      }
 
 
       void Window::process_commandline_option ()

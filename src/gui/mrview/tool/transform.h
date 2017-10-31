@@ -29,18 +29,17 @@ namespace MR
       {
 
 
-        class Transform : public Base, public Mode::ModeGuiVisitor
+        class Transform : public Base
         { MEMALIGN(Transform)
           Q_OBJECT
           public:
             Transform (Dock* parent);
 
           private slots:
-            void onImageChanged ();
-            void onImageVisibilityChanged (bool);
+            void onActivate (bool);
 
           private:
-            QPushButton *activated;
+            QPushButton *activate_button;
         };
 
       }

@@ -41,7 +41,7 @@ namespace MR
             std::string name;
         };
 
-        class View : public Base, public Mode::ModeGuiVisitor
+        class View : public Base, public Mode::ModeGuiVisitor, public Tool::CameraInteractor
         { MEMALIGN(View)
           Q_OBJECT
           public:
@@ -55,6 +55,13 @@ namespace MR
             bool get_clipintersectionmodestate () const;
 
             void update_lightbox_mode_gui(const Mode::LightBox &mode) override;
+            void deactivate () override;
+            bool slice_move_event (float inc) override;
+            bool pan_event () override;
+            bool panthrough_event () override;
+            bool tilt_event () override;
+            bool rotate_event () override;
+
 
           protected:
             virtual void showEvent (QShowEvent* event) override;
@@ -136,6 +143,8 @@ namespace MR
             void reset_light_box_gui_controls ();
             void set_transparency_from_image ();
 
+            void move_clip_planes_in_out (vector<GL::vec4*>& clip, float distance);
+            void rotate_clip_planes (vector<GL::vec4*>& clip, const Math::Versorf& rot);
         };
 
       }
