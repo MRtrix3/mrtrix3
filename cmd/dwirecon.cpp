@@ -270,7 +270,7 @@ void run ()
   opt = get_options("init");
   if (opt.size()) {
     // load initialisation
-    auto init = Image<value_type>::open(opt[0][0]);
+    auto init = Image<value_type>::open(opt[0][0]).with_direct_io({3, 4, 5, 2, 1});
     check_dimensions(dwi, init, 0, 3);
     if ((init.size(3) != shells.count()) || (init.size(4) < Math::SH::NforL(lmax)))
       throw Exception("dimensions of init image don't match.");
@@ -281,9 +281,7 @@ void run ()
     Eigen::MatrixXf x2mssh (c.size(), ncoefs);
     for (int k = 0; k < shells.count(); k++)
       x2mssh.middleRows(k*Math::SH::NforL(lmax), Math::SH::NforL(lmax)) = R.getShellBasis(k).transpose();
-    VAR(x2mssh);
-    auto mssh2x = x2mssh.colPivHouseholderQr().inverse();
-    VAR(mssh2x);
+    auto mssh2x = x2mssh.colPivHouseholderQr();
     // copy from image
     size_t j = 0, k = 0;
     for (auto l = Loop("loading initialisation", {0, 1, 2})(init); l; l++, j+=ncoefs) {
@@ -292,7 +290,7 @@ void run ()
         if (init.index(4) < Math::SH::NforL(lmax))
           c[k++] = init.value();
       }
-      x0.segment(j, ncoefs) = mssh2x * c;
+      x0.segment(j, ncoefs) = mssh2x.solve(c);
     }
     INFO("solve from given starting point");
     x = cg.solveWithGuess(p, x0);
@@ -311,7 +309,7 @@ void run ()
   header.ndim() = 5;
   header.size(3) = shells.count();
   header.size(4) = padding;
-  Stride::set_from_command_line (header, Stride::contiguous_along_axis (4));
+  Stride::set_from_command_line (header, {3, 4, 5, 2, 1});
   header.datatype() = DataType::from_command_line (DataType::Float32);
   PhaseEncoding::set_scheme (header, Eigen::MatrixXf());
   auto out = Image<value_type>::create (argument[1], header);
