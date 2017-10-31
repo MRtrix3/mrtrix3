@@ -670,6 +670,10 @@ namespace MR
           transparency_box->setVisible (mode->features & Mode::ShaderTransparency);
           threshold_box->setVisible (mode->features & Mode::ShaderTransparency);
           clip_box->setVisible (mode->features & Mode::ShaderClipping);
+          if (mode->features & Mode::ShaderClipping) 
+            clip_planes_selection_changed_slot();
+          else
+            window().register_camera_interactor();
           lightbox_box->setVisible (false);
           mode->request_update_mode_gui(*this);
         }
@@ -949,6 +953,7 @@ namespace MR
           clip_planes_invert_action->setEnabled (selected);
           clip_planes_remove_action->setEnabled (selected);
           clip_planes_clear_action->setEnabled (clip_planes_model->rowCount());
+          window().register_camera_interactor (selected ? this : nullptr);
           window().updateGL();
         }
 
@@ -1048,7 +1053,7 @@ namespace MR
 
 
 
-        // Called in respose to a request_update_mode_gui(ModeGuiVisitor& visitor) call
+        // Called in response to a request_update_mode_gui(ModeGuiVisitor& visitor) call
         void View::update_lightbox_mode_gui(const Mode::LightBox &mode)
         {
           lightbox_box->setVisible(true);
@@ -1065,6 +1070,105 @@ namespace MR
           connect(&window(), SIGNAL (volumeChanged(size_t)), &mode, SLOT (image_volume_changed_slot()));
 
           reset_light_box_gui_controls();
+        }
+
+        void View::move_clip_planes_in_out (vector<GL::vec4*>& clip, float distance)
+        {
+          Eigen::Vector3f d = window().get_current_mode()->get_current_projection()->screen_normal();
+          for (size_t n = 0; n < clip.size(); ++n) {
+            GL::vec4& p (*clip[n]);
+            p[3] += distance * (p[0]*d[0] + p[1]*d[1] + p[2]*d[2]);
+          }
+          window().updateGL();
+        }
+
+
+        void View::rotate_clip_planes (vector<GL::vec4*>& clip, const Math::Versorf& rot)
+        {
+          const auto& focus (window().focus());
+          for (size_t n = 0; n < clip.size(); ++n) {
+            GL::vec4& p (*clip[n]);
+            float distance_to_focus = p[0]*focus[0] + p[1]*focus[1] + p[2]*focus[2] - p[3];
+            const Math::Versorf norm (0.0f, p[0], p[1], p[2]);
+            const Math::Versorf rotated = norm * rot;
+            p[0] = rotated.x();
+            p[1] = rotated.y();
+            p[2] = rotated.z();
+            p[3] = p[0]*focus[0] + p[1]*focus[1] + p[2]*focus[2] - distance_to_focus;
+          }
+          window().updateGL();
+        }
+
+
+        void View::deactivate () 
+        { 
+          clip_planes_list_view->selectionModel()->clear();
+        }
+
+
+        bool View::slice_move_event (float x) 
+        {
+         
+          vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
+          if (clip.size()) {
+            const auto &header = window().image()->header();
+            float increment = x * std::pow (header.spacing (0) * header.spacing (1) * header.spacing (2), 1.0f/3.0f);
+            move_clip_planes_in_out (clip, increment);
+          } 
+          return true;
+        }
+
+
+
+        bool View::pan_event () 
+        {
+          vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
+          if (clip.size()) {
+            Eigen::Vector3f move = window().get_current_mode()->get_current_projection()->screen_to_model_direction (window().mouse_displacement(), window().target());
+            for (size_t n = 0; n < clip.size(); ++n) {
+              GL::vec4& p (*clip[n]);
+              p[3] += (p[0]*move[0] + p[1]*move[1] + p[2]*move[2]);
+            }
+            window().updateGL();
+          }
+          return true;
+        }
+
+
+        bool View::panthrough_event () 
+        {
+          vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
+          if (clip.size()) 
+            move_clip_planes_in_out (clip, MOVE_IN_OUT_FOV_MULTIPLIER * window().mouse_displacement().y() * window().FOV());
+          return true;
+        }
+
+
+
+        bool View::tilt_event () 
+        {
+          vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
+          if (clip.size()) {
+            const Math::Versorf rot = window().get_current_mode()->get_tilt_rotation();
+            if (!rot)
+              return true;
+            rotate_clip_planes (clip, rot);
+          }
+          return true;
+        }
+
+
+
+        bool View::rotate_event () 
+        {
+          vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
+          if (clip.size()) {
+            const Math::Versorf rot = window().get_current_mode()->get_rotate_rotation();
+            if (!rot)
+              return true;
+            rotate_clip_planes (clip, rot);
+          }
+          return true;
         }
 
       }

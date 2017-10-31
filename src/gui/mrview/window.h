@@ -46,6 +46,7 @@ namespace MR
       {
         class Base;
         class ODF;
+        class CameraInteractor;
       }
 
 
@@ -155,6 +156,9 @@ namespace MR
           GL::Lighting& lighting () { return *lighting_; }
           ColourMap::Renderer colourbar_renderer;
 
+          void register_camera_interactor (Tool::CameraInteractor* agent = nullptr);
+          Tool::CameraInteractor* active_camera_interactor () { return camera_interactor; }
+
           static void add_commandline_options (MR::App::OptionList& options);
           static Window* main;
 
@@ -250,6 +254,8 @@ namespace MR
           bool snap_to_image_axes_and_voxel;
 
           float background_colour[3];
+
+          Tool::CameraInteractor* camera_interactor;
 
           QMenu *image_menu;
 

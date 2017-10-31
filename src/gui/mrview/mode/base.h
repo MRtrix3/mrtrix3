@@ -141,21 +141,15 @@ namespace MR
               return reinterpret_cast <GL::Area*> (window().glarea);
             }
 
-            Eigen::Vector3f move_in_out_displacement (float distance, const Projection& projection) const {
+            Eigen::Vector3f get_through_plane_translation (float distance, const Projection& projection) const {
               Eigen::Vector3f move (projection.screen_normal());
               move.normalize();
               move *= distance;
               return move;
             }
 
-            void move_in_out (float distance, const Projection& projection) {
-              if (!image()) return;
-              Eigen::Vector3f move = move_in_out_displacement (distance, projection);
-              set_focus (focus() + move);
-            }
-
-            void move_in_out_FOV (int increment, const Projection& projection) {
-              move_in_out (MOVE_IN_OUT_FOV_MULTIPLIER * increment * FOV(), projection);
+            Eigen::Vector3f get_through_plane_translation_FOV (int increment, const Projection& projection) {
+              return get_through_plane_translation (MOVE_IN_OUT_FOV_MULTIPLIER * increment * FOV(), projection);
             }
 
             void render_tools (const Projection& projection, bool is_3D = false, int axis = 0, int slice = 0) {

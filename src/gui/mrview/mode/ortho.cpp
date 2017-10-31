@@ -141,22 +141,32 @@ namespace MR
 
         void Ortho::slice_move_event (float x) 
         {
+          if (window().active_camera_interactor() && window().active_camera_interactor()->slice_move_event(x))
+            return;
+
           const Projection* proj = get_current_projection();
           if (!proj) return;
           const auto &header = image()->header();
           float increment = snap_to_image() ?
             x * header.spacing (current_plane) :
             x * std::pow (header.spacing(0) * header.spacing(1) * header.spacing(2), 1/3.f);
-          move_in_out (increment, *proj);
+          auto move = get_through_plane_translation (increment, *proj);
+
+          set_focus (focus() + move);
           updateGL();
         }
 
 
         void Ortho::panthrough_event ()
         {
+          if (window().active_camera_interactor() && window().active_camera_interactor()->panthrough_event())
+            return;
+
           const Projection* proj = get_current_projection();
           if (!proj) return;
-          move_in_out_FOV (window().mouse_displacement().y(), *proj);
+          auto move = get_through_plane_translation_FOV (window().mouse_displacement().y(), *proj);
+
+          set_focus (focus() + move);
           updateGL();
         }
 

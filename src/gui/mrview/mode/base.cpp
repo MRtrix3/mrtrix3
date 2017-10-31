@@ -31,7 +31,6 @@ namespace MR
           update_overlays (false),
           visible (true) { }
 
-
         Base::~Base ()
         {
           glarea()->setCursor (Cursor::crosshair);
@@ -152,13 +151,18 @@ done_painting:
 
         void Base::slice_move_event (float x) 
         {
+          if (window().active_camera_interactor() && window().active_camera_interactor()->slice_move_event (x))
+            return;
+
           const Projection* proj = get_current_projection();
           if (!proj) return;
           const auto &header = image()->header();
           float increment = snap_to_image() ?
             x * header.spacing (plane()) :
             x * std::pow (header.spacing(0) * header.spacing(1) * header.spacing(2), 1/3.f);
-          move_in_out (increment, *proj);
+          auto move = get_through_plane_translation (increment, *proj);
+
+          set_focus (focus() + move);
           move_target_to_focus_plane (*proj);
           updateGL();
         }
@@ -188,9 +192,14 @@ done_painting:
 
         void Base::pan_event ()
         {
+          if (window().active_camera_interactor() && window().active_camera_interactor()->pan_event())
+            return;
+
           const Projection* proj = get_current_projection();
           if (!proj) return;
-          set_target (target() - proj->screen_to_model_direction (window().mouse_displacement(), target()));
+
+          auto move = -proj->screen_to_model_direction (window().mouse_displacement(), target());
+          set_target (target() + move);
           updateGL();
         }
 
@@ -198,9 +207,14 @@ done_painting:
 
         void Base::panthrough_event ()
         {
+          if (window().active_camera_interactor() && window().active_camera_interactor()->panthrough_event())
+            return;
+
           const Projection* proj = get_current_projection();
           if (!proj) return;
-          move_in_out_FOV (window().mouse_displacement().y(), *proj);
+          auto move = get_through_plane_translation_FOV (window().mouse_displacement().y(), *proj);
+
+          set_focus (focus() + move);
           move_target_to_focus_plane (*proj);
           updateGL();
         }
@@ -296,12 +310,16 @@ done_painting:
 
         void Base::tilt_event ()
         {
+          if (window().active_camera_interactor() && window().active_camera_interactor()->tilt_event())
+            return;
+
           if (snap_to_image()) 
             window().set_snap_to_image (false);
 
           const Math::Versorf rot = get_tilt_rotation();
           if (!rot)
             return;
+
           Math::Versorf orient = rot * orientation();
           set_orientation (orient);
           updateGL();
@@ -313,12 +331,16 @@ done_painting:
 
         void Base::rotate_event ()
         {
+          if (window().active_camera_interactor() && window().active_camera_interactor()->rotate_event())
+            return;
+
           if (snap_to_image()) 
             window().set_snap_to_image (false);
 
           const Math::Versorf rot = get_rotate_rotation();
           if (!rot)
             return;
+
           Math::Versorf orient = rot * orientation();
           set_orientation (orient);
           updateGL();

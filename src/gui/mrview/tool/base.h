@@ -41,6 +41,22 @@ namespace MR
         class Base;
 
 
+        class CameraInteractor 
+        { NOMEMALIGN
+          public:
+            CameraInteractor () : _active (false) { } 
+            bool active () const { return _active; }
+            virtual void deactivate ();
+            virtual bool slice_move_event (float inc);
+            virtual bool pan_event ();
+            virtual bool panthrough_event ();
+            virtual bool tilt_event ();
+            virtual bool rotate_event ();
+          protected:
+            bool _active;
+            void set_active (bool onoff) { _active = onoff; }
+        };
+
 
 
         class Dock : public QDockWidget
