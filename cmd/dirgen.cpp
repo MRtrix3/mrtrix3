@@ -105,7 +105,11 @@ class Energy { MEMALIGN(Energy)
       power (0),
       directions (3 * ndirs) { }
 
-    FORCE_INLINE double fast_pow (double x, int p) {
+// Non-optimised compilation can't handle recursive inline functions
+#ifdef __OPTIMIZE__
+FORCE_INLINE
+#endif
+    double fast_pow (double x, int p) {
       return p == 1 ? x : fast_pow (x*x, p/2);
     }
 
