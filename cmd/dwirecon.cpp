@@ -253,7 +253,7 @@ void run ()
   }
 
   // Fit scattered data in basis...
-  INFO("solve with conjugate gradient method");
+  INFO("initialise conjugate gradient solver");
 
   Eigen::ConjugateGradient<DWI::ReconMatrix, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
   cg.compute(R);
@@ -269,19 +269,36 @@ void run ()
   Eigen::VectorXf x (R.cols());
   opt = get_options("init");
   if (opt.size()) {
+    // load initialisation
     auto init = Image<value_type>::open(opt[0][0]);
     check_dimensions(dwi, init, 0, 3);
-    if (init.size(3) < ncoefs)
+    if ((init.size(3) != shells.count()) || (init.size(4) < Math::SH::NforL(lmax)))
       throw Exception("dimensions of init image don't match.");
+    // init vector
     Eigen::VectorXf x0 (R.cols());
-    size_t j = 0;
-    for (auto l = Loop("loading initialisation", {3, 0, 1, 2})(init); l; l++) {
-      if (init.index(3) < ncoefs)
-        x0[j++] = init.value();
+    // convert from mssh
+    Eigen::VectorXf c (shells.count() * Math::SH::NforL(lmax));
+    Eigen::MatrixXf x2mssh (c.size(), ncoefs);
+    for (int k = 0; k < shells.count(); k++)
+      x2mssh.middleRows(k*Math::SH::NforL(lmax), Math::SH::NforL(lmax)) = R.getShellBasis(k).transpose();
+    VAR(x2mssh);
+    auto mssh2x = x2mssh.colPivHouseholderQr().inverse();
+    VAR(mssh2x);
+    // copy from image
+    size_t j = 0, k = 0;
+    for (auto l = Loop("loading initialisation", {0, 1, 2})(init); l; l++, j+=ncoefs) {
+      k = 0;
+      for (auto l2 = Loop({4,3})(init); l2; l2++) {
+        if (init.index(4) < Math::SH::NforL(lmax))
+          c[k++] = init.value();
+      }
+      x0.segment(j, ncoefs) = mssh2x * c;
     }
+    INFO("solve from given starting point");
     x = cg.solveWithGuess(p, x0);
   }
   else {
+    INFO("solve from zero starting point");
     x = cg.solve(p);
   }
 
@@ -294,7 +311,7 @@ void run ()
   header.ndim() = 5;
   header.size(3) = shells.count();
   header.size(4) = padding;
-  Stride::set_from_command_line (header, Stride::contiguous_along_axis (3));
+  Stride::set_from_command_line (header, Stride::contiguous_along_axis (4));
   header.datatype() = DataType::from_command_line (DataType::Float32);
   PhaseEncoding::set_scheme (header, Eigen::MatrixXf());
   auto out = Image<value_type>::create (argument[1], header);
