@@ -12,6 +12,7 @@
  */
 
 #include <algorithm>
+#include <sstream>
 
 #include "command.h"
 #include "image.h"
@@ -312,6 +313,14 @@ void run ()
   Stride::set_from_command_line (header, {3, 4, 5, 2, 1});
   header.datatype() = DataType::from_command_line (DataType::Float32);
   PhaseEncoding::set_scheme (header, Eigen::MatrixXf());
+  std::stringstream ss;
+  for (auto b : shells.get_bvalues())
+    ss << b << ",";
+  std::string key = "shells";
+  std::string val = ss.str();
+  val.erase(val.length()-1);
+  header.keyval()[key] = val;
+
   auto out = Image<value_type>::create (argument[1], header);
 
   j = 0;
