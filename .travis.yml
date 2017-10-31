@@ -43,7 +43,7 @@ matrix:
     #######################################################
     # Build binaries (without optimisation): GCC, Python2 #
     #######################################################
-    - env: TRAVIS_CXX=g++-7.0 py=python2 test=build
+    - env: TRAVIS_CXX=g++-7 py=python2 test=build
 
 before_install:
   #####################################################################################################################

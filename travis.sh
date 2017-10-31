@@ -15,11 +15,8 @@ elif [ ${test} = "pylint" ]; then
 elif [ ${test} = "build" ]; then
     $py ./configure -nooptim && $py ./build -nowarnings;
 elif [ ${test} = "run" ]; then
-    $py ./configure -assert && $py ./build -nowarnings && ./run_tests;
-    ./docs/generate_user_docs.sh && git diff --exit-code docs/ > gitdiff.log;
+    $py ./configure -assert && $py ./build -nowarnings && ./run_tests && ./docs/generate_user_docs.sh && git diff --exit-code docs/ > gitdiff.log;
 else
     echo "Envvar \"test\" not defined";
     exit 1
 fi
-
-exit 0
