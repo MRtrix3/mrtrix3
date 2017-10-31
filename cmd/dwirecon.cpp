@@ -282,14 +282,13 @@ void run ()
     Eigen::MatrixXf x2mssh (c.size(), ncoefs);
     for (int k = 0; k < shells.count(); k++)
       x2mssh.middleRows(k*Math::SH::NforL(lmax), Math::SH::NforL(lmax)) = R.getShellBasis(k).transpose();
-    auto mssh2x = x2mssh.colPivHouseholderQr();
-    // copy from image
+    auto mssh2x = x2mssh.fullPivHouseholderQr();
     size_t j = 0, k = 0;
     for (auto l = Loop("loading initialisation", {0, 1, 2})(init); l; l++, j+=ncoefs) {
       k = 0;
       for (auto l2 = Loop({4,3})(init); l2; l2++) {
         if (init.index(4) < Math::SH::NforL(lmax))
-          c[k++] = init.value();
+          c[k++] = std::isfinite(init.value()) ? init.value() : 0.0f;
       }
       x0.segment(j, ncoefs) = mssh2x.solve(c);
     }
@@ -324,11 +323,14 @@ void run ()
   auto out = Image<value_type>::create (argument[1], header);
 
   j = 0;
+  Eigen::VectorXf c (ncoefs);
+  Eigen::VectorXf sh (padding); sh.setZero();
   for (auto l = Loop("writing result to image", {0, 1, 2})(out); l; l++, j+=ncoefs) {
-    Eigen::VectorXf c = x.segment(j, ncoefs);
+    c = x.segment(j, ncoefs);
     for (int k = 0; k < shells.count(); k++) {
       out.index(3) = k;
-      out.row(4) = R.getShellBasis(k).transpose() * c;
+      sh.head(Math::SH::NforL(lmax)) = R.getShellBasis(k).transpose() * c;
+      out.row(4) = sh;
     }
   }
 
