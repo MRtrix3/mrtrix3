@@ -92,9 +92,12 @@ namespace MR
 
 
       const RowMatrixXf& getY() const { return Y; }
-      const Eigen::MatrixXf& getW() const { return W; }
+
+      const Eigen::MatrixXf& getWeights() const { return W; }
 
       void setWeights(const Eigen::MatrixXf& weights) { W = weights; }
+
+      const Eigen::MatrixXf& getShellBasis(const int shellidx) const { return shellbasis[shellidx]; }
 
       void setField(const Image<float>& fieldmap, const Eigen::MatrixXf& petable)
       {
@@ -170,7 +173,7 @@ namespace MR
             T.noalias() += w(idx) * r * Y.row(idx);
         }, zero);
         Xo += L.adjoint() * (L * Xi);
-        Xo += 0.0001f * Xi;
+        //Xo += 0.0001f * Xi;
       }
 
 

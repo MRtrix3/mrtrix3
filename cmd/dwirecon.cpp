@@ -241,8 +241,8 @@ void run ()
     R.setField(field, PEsub);
 
   size_t ncoefs = R.getY().cols();
-  size_t padding = get_option_value("padding", ncoefs);
-  if (padding < ncoefs)
+  size_t padding = get_option_value("padding", Math::SH::NforL(lmax));
+  if (padding < Math::SH::NforL(lmax))
     throw Exception("user-provided padding too small.");
 
   // Read input data to vector
@@ -291,20 +291,25 @@ void run ()
 
   // Write result to output file
   Header header (dwisub);
-  header.size(3) = padding;
+  header.ndim() = 5;
+  header.size(3) = shells.count();
+  header.size(4) = padding;
   Stride::set_from_command_line (header, Stride::contiguous_along_axis (3));
   header.datatype() = DataType::from_command_line (DataType::Float32);
   PhaseEncoding::set_scheme (header, Eigen::MatrixXf());
   auto out = Image<value_type>::create (argument[1], header);
 
   j = 0;
-  for (auto l = Loop("writing result to image", {3, 0, 1, 2})(out); l; l++) {
-    if (out.index(3) < ncoefs)
-      out.value() = x[j++];
+  for (auto l = Loop("writing result to image", {0, 1, 2})(out); l; l++, j+=ncoefs) {
+    Eigen::VectorXf c = x.segment(j, ncoefs);
+    for (int k = 0; k < shells.count(); k++) {
+      out.index(3) = k;
+      out.row(4) = R.getShellBasis(k).transpose() * c;
+    }
   }
 
 
-  // Output registration prediction
+/*  // Output registration prediction
   opt = get_options("rpred");
   if (opt.size()) {
     header.size(3) = motionsub.rows();
@@ -326,12 +331,13 @@ void run ()
       ThreadedLoop(out, 0, 3).run( PredFunctor (R.getY().row(j)) , out , rpred );
     }
   }
-
+*/
 
   // Output source prediction
   bool complete = get_options("complete").size();
   opt = get_options("spred");
   if (opt.size()) {
+    Header header (dwisub);
     header.size(3) = (complete) ? dwi.size(3) : dwisub.size(3);
     DWI::set_DW_scheme (header, gradsub);
     auto spred = Image<value_type>::create(opt[0][0], header);
@@ -350,7 +356,7 @@ void run ()
   }
 
 
-  // Output target prediction
+/*  // Output target prediction
   opt = get_options("tpred");
   if (opt.size()) {
     header.size(3) = dwisub.size(3);
@@ -372,7 +378,7 @@ void run ()
       ThreadedLoop(out, 0, 3).run( PredFunctor (R.getY0(gradsub).row(j)) , out , tpred );
     }
   }
-
+*/
 
 }
 
