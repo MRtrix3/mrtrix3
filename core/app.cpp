@@ -73,7 +73,7 @@ namespace MR
     std::string NAME;
     vector<ParsedArgument> argument;
     vector<ParsedOption> option;
-    int log_level = 1;
+    int log_level = getenv("MRTRIX_QUIET") ? 0 : 1;
     bool fail_on_warn = false;
     bool terminal_use_colour = true;
 
@@ -1087,10 +1087,6 @@ namespace MR
 #endif
 
       srand (time (nullptr));
-      
-
-      if (getenv ("MRTRIX_QUIET"))
-        log_level = 0;
     }
 
 
