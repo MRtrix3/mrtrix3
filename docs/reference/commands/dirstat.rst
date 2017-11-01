@@ -17,29 +17,38 @@ Usage
 
 -  *dirs*: the text file or image containing the directions.
 
+Description
+-----------
+
+This command will accept as inputs:
+
+- directions file in spherical coordinates (ASCII text, [ az el ] space-separated values, one per line);
+
+- directions file in Cartesian coordinates (ASCII text, [ x y z ] space-separated values, one per line);
+
+- DW gradient files (MRtrix format: ASCII text, [ x y z b ] space-separated values, one per line);
+
+- image files, using the DW gradient scheme found in the header (or provided using the appropriate command line options below).
+
+By default, this produces all relevant metrics for the direction set provided. If the direction set contains multiple shells, metrics are provided for each shell separately.
+
+Metrics are produced assuming a unipolar or bipolar electrostatic repulsion model, producing the potential energy (total, mean, min & max), and the nearest-neighbour angles (mean, min & max). The condition number is also produced for the spherical harmonic fits up to the highest harmonic order supported by the number of volumes. Finally, the norm of the mean direction vector is provided as a measure of the overall symmetry of the direction set (important with respect to eddy-current resilience).
+
+Specific metrics can also be queried independently via the "-output" option, using these shorthands: U/B for unipolar/bipolar model, E/N for energy and nearest-neighbour respectively, t/-/+ for total/min/max respectively (mean implied otherwise); SHn for condition number of SH fit at order n (with n an even integer); ASYM for asymmetry index (norm of mean direction vector); and N for the number of directions. For example:
+
+-output BN,BN-,BN+   requests the mean, min and max nearest-neighour angles assuming a bipolar model.
+
+-output UE,SH8,SYM   requests the mean unipolar electrostatic energy, condition number of SH fit at order 8, and the asymmetry index.
+
 Options
 -------
 
-Output options
-^^^^^^^^^^^^^^
+-  **-output list** output selected metrics as a space-delimited list, suitable for use in scripts. This will produce one line of values per selected shell. Valid metrics are as specified in the description above.
 
--  **-bipolar** output statistics for bipolar electrostatic repulsion model
+DW shell selection options
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-unipolar** output statistics for unipolar electrostatic repulsion model
-
--  **-shfit** output statistics for spherical harmonics fit
-
--  **-symmetry** output measure of symmetry of spherical coverage (as given by the norm of mean direction vector). This is important to ensure minimal bias due to eddy-currents.
-
--  **-nearest_neighour** output nearest-neighbour angle statistics
-
--  **-energy** output energy statistics
-
--  **-total** output total of statistic (affects -energy only)
-
--  **-mean** output mean of statistic (affects -nearest_neighbour or -energy only)
-
--  **-range** output range of statistic (affects -nearest_neighbour or -energy only)
+-  **-shells list** specify one or more diffusion-weighted gradient shells to use during processing, as a comma-separated list of the desired approximate b-values. Note that some commands are incompatible with multiple shells, and will throw an error if more than one b-value is provided.
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -49,11 +58,6 @@ DW gradient table import options
 -  **-fslgrad bvecs bvals** Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
 -  **-bvalue_scaling mode** specifies whether the b-values should be scaled by the square of the corresponding DW gradient norm, as often required for multi-shell or DSI DW acquisition schemes. The default action can also be set in the MRtrix config file, under the BValueScaling entry. Valid choices are yes/no, true/false, 0/1 (default: true).
-
-DW shell selection options
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
--  **-shells list** specify one or more diffusion-weighted gradient shells to use during processing, as a comma-separated list of the desired approximate b-values. Note that some commands are incompatible with multiple shells, and will throw an error if more than one b-value is provided.
 
 Standard options
 ^^^^^^^^^^^^^^^^
