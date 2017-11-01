@@ -134,6 +134,7 @@ void run ()
   W.setOnes();
   if (opt.size()) {
     W = load_vector<float>(opt[0][0]).cwiseSqrt();
+    W /= W.sum();
     if (W.size() != nshells)
       throw Exception("provided weights do not match the no. shells.");
   }
