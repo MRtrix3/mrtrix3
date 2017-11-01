@@ -152,6 +152,24 @@ if not len(grad) == dwi_num_volumes:
   app.error('Number of lines in gradient table (' + str(len(grad)) + ') does not match input image (' + str(dwi_num_volumes) + ' volumes); check your input data')
 
 
+# Use new features of dirstat to query the quality of the diffusion acquisition scheme
+# Need to know the mean b-value in each shell, and the asymmetry value of each shell
+# But don't bother testing / warning the user if they're already controlling for this
+if not app.args.eddy_options or not any(s.startswith('--slm=') for s in app.args.eddy_options.split()):
+  shell_bvalues = [ int(round(float(value))) for value in image.mrinfo('dwi.mif', 'shellvalues').split() ]
+  shell_asymmetry = [ float(value) for value in run.command('dirstat dwi.mif -output asym')[0].splitlines() ]
+  # dirstat will skip any b=0 shell by default; therefore for correspondence between
+  #   shell_bvalues and shell_symmetry, need to remove any b=0 from the former
+  if len(shell_bvalues) == len(shell_asymmetry) + 1:
+    shell_bvalues = shell_bvalues[1:]
+  elif len(shell_bvalues) != len(shell_asymmetry):
+    app.error('Number of b-values reported by mrinfo (' + len(shell_bvalues) + ') does not match number of outputs provided by dirstat (' + len(shell_asymmetry) + ')')
+  for b, s in zip(shell_bvalues, shell_asymmetry):
+    if s >= 0.1:
+      app.warn('sampling of b=' + str(b) + ' shell is ' + ('strongly' if s >= 0.4 else 'moderately') + \
+               ' asymmetric; distortion correction may benefit from use of: ' + \
+               '-eddy_options " ... --slm=linear ... "')
+
 
 # Since we want to access user-defined phase encoding information regardless of whether or not
 #   such information is present in the header, let's grab it here
