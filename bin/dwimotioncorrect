@@ -134,7 +134,7 @@ if app.args.lmax:
 
 
 # Shared reconstruction options
-recon_option = '-maxiter 1'
+recon_option = '-maxiter 3'
 if app.args.reg:
     recon_option += ' -reg ' + app.args.reg
 if app.args.sspwidth:
