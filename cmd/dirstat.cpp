@@ -165,7 +165,8 @@ vector<default_type> summarise_E (const vector<double>& E)
 
 
 
-class Metrics {
+class Metrics 
+{ MEMALIGN (Metrics)
   public:
     vector<default_type> BN, UN, BE, UE, SH;
     default_type ASYM;
