@@ -288,7 +288,7 @@ void run ()
       k = 0;
       for (auto l2 = Loop({4,3})(init); l2; l2++) {
         if (init.index(4) < Math::SH::NforL(lmax))
-          c[k++] = std::isfinite(init.value()) ? init.value() : 0.0f;
+          c[k++] = std::isfinite((float) init.value()) ? init.value() : 0.0f;
       }
       x0.segment(j, ncoefs) = mssh2x.solve(c);
     }

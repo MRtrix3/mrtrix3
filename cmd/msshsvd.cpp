@@ -19,7 +19,6 @@
 #include <Eigen/Dense>
 #include <Eigen/SVD>
 
-#define DEFAULT_LMAX 4
 #define DEFAULT_NSUB 10000
 
 using namespace MR;
@@ -38,7 +37,7 @@ void usage ()
     "value decomposition across shells and SH frequency bands (SH-SVD)."
 
   + "Optionally, the command can output the low-rank projection of the input. "
-    "The rank is set with the parameter -lmax. For lmax=4 (default), the data "
+    "The rank is set with the parameter -lmax. For lmax=4,2,0 (default), the data "
     "is projected onto components of order 4, 2, and 0, leading to a rank = 22.";
 
   ARGUMENTS
@@ -50,9 +49,9 @@ void usage ()
   + Option ("mask", "image mask")
     + Argument ("m").type_file_in()
 
-  + Option ("lmax", "maximum SH order (default = " + str(DEFAULT_LMAX) + ")")
-    + Argument ("order").type_integer(0, 30)
-
+  + Option ("lmax", "maximum SH order per component (default = 4,2,0)")
+    + Argument ("order").type_sequence_int()
+    
   + Option ("nsub", "number of voxels in subsampling (default = " + str(DEFAULT_NSUB) + ")")
     + Argument ("vox").type_integer(0)
 
@@ -116,17 +115,25 @@ void run ()
 
   int nshells = in.size(3);
 
-  int lmax = get_option_value("lmax", DEFAULT_LMAX);
-  if (Math::SH::NforL(lmax) > in.size(4)) {
-    throw Exception("lmax too large for input image dimension.");
+  vector<int> lmax;
+  opt = get_options("lmax");
+  if (opt.size()) {
+    lmax = opt[0][0].as_sequence_int();
+  } else {
+    lmax = {4,2,0};
   }
+  std::sort(lmax.begin(), lmax.end(), std::greater<int>());   // sort in place
+  if (Math::SH::NforL(lmax[0]) > in.size(4)) 
+    throw Exception("lmax too large for input dimension.");
 
-  int nrf = std::min(lmax/2 + 1, nshells);
+  int nrf = lmax.size();
   if (argument.size() != nrf+1)
     throw Exception("no. output arguments does not match desired lmax.");
+  if (nrf > nshells)
+    throw Exception("no. basis functions can't exceed no. shells.");
   vector<Eigen::MatrixXf> rf;
-  for (int n = 0; n < nrf; n++) {
-    rf.push_back( Eigen::MatrixXf::Zero(nshells, lmax/2+1-n) );
+  for (int l : lmax) {
+    rf.push_back( Eigen::MatrixXf::Zero(nshells, l/2+1) );
   }
 
   opt = get_options("weights");
@@ -156,7 +163,7 @@ void run ()
 
   // Compute SVD per SH order l
   Eigen::MatrixXf Sl;
-  for (int l = 0; l <= lmax; l+=2)
+  for (int l = 0; l <= lmax[0]; l+=2)
   {
     // load data to matrix
     Sl.resize(nshells, nsub*(2*l+1));
@@ -170,8 +177,8 @@ void run ()
     }
     // low-rank SVD
     Eigen::JacobiSVD<Eigen::MatrixXf> svd (W.asDiagonal() * Sl, Eigen::ComputeThinU | Eigen::ComputeThinV);
-    int rank = std::min((lmax-l)/2 + 1, nshells);
-    Eigen::MatrixXf U = svd.matrixU().block(0,0,nshells,rank);
+    int rank = std::upper_bound(lmax.begin(), lmax.end(), l, std::greater<int>()) - lmax.begin();
+    Eigen::MatrixXf U = svd.matrixU().leftCols(rank);
     // save basis functions
     for (int n = 0; n < rank; n++) {
       rf[n].col(l/2) = W.asDiagonal().inverse() * U.col(n);

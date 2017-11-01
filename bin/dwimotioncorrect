@@ -36,7 +36,7 @@ options.add_argument('-grad', help='Pass the diffusion gradient table in MRtrix 
 options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
 options.add_argument('-niter', help='Number of epochs (default = 3)')
 #options.add_argument('-shells', help='Shells to be processed (default = all)')
-options.add_argument('-lmax', help='SH basis order (default = 6)')
+options.add_argument('-lmax', help='SH basis order per shell (default = 0,4,4,...)')
 options.add_argument('-reg', help='Regularization for dwirecon (default = 0.01)')
 #options.add_argument('-rf', help='Basis functions for the radial domain')
 options.add_argument('-svr', help='Number of slice-to-volume reconstruction epochs (default = 0)')
@@ -123,14 +123,12 @@ shells = [s.split('.')[0] for s in image.headerField('in.mif', 'shells').split()
 #    shells = app.args.shells.split(',')
 
 # Set lmax
-lmax = 6
+lmax = [4,]*len(shells)
+lmax[0] = 0
 if app.args.lmax:
-    lmax = int(app.args.lmax)
-#if len(lmax) != len(shells):
-#    app.error('No. lmax must match no. shells.')
-
-#if shell=='0' and lmax>0:
-#    app.error('Option -lmax ' + str(lmax) + ' incompatible with b=0 shell.')
+    lmax = [int(l) for l in app.args.lmax.split(',')]
+if len(lmax) != len(shells):
+    app.error('No. lmax must match no. shells.')
 
 
 # Shared reconstruction options
@@ -142,19 +140,18 @@ if app.args.sspwidth:
 if app.args.fieldmap:
     recon_option += ' -field field1.mif'
 
-rf_option = ''.join([' -rf rf'+str(k)+'.txt' for k in range(1,min(lmax//2+1, len(shells))+1)])
 
-# Radial basis
-#rf_import_option = ''
-#if app.args.rf:
-#    rf_import_option = ' '.join('-rf ' + path.fromUser(r, True) for r in app.args.rf.split(','))
-
-#if rf_import_option is not '':
-#    recon_option += rf_import_option
-#elif shell is not None and len(shell)==1:
-#    recon_option += ' -lmax ' + str(lmax)
-#else:
-#    app.error('Multi-shell data requires radial basis, single-shell data requires lmax.')
+# Initialise radial basis with RF per shell.
+rfs = []
+for k, l in enumerate(lmax):
+    fn = 'rf'+str(k+1)+'.txt'
+    with open(fn, 'w') as f:
+        for s in range(len(shells)):
+            if k==s:
+                f.write(' '.join(['1',]*(l//2+1)) + '\n')
+            else:
+                f.write(' '.join(['0',]*(l//2+1)) + '\n')
+    rfs += [fn,]
 
 
 # Registration options
@@ -181,23 +178,14 @@ dims = list(map(int, image.headerField('in.mif', 'size').split()))
 
 # Shell weights
 with open('svdweights.txt', 'w') as f:
-    f.write(image.headerField('in.mif', 'shellcount'))
+    f.write(image.headerField('in.mif', 'shellcount') + '\n')
 
 
 #   __________ Function definitions __________
 
 def reconstep(k):
-    run.command('dwirecon in.mif recon-' + str(k+1) + '.mif -spred spred.mif ' + recon_option + rf_option +
-                ' -motion motion.txt -weights sliceweights.txt -init recon-' + str(k) + '.mif -force' + nthr)
-
-def reconinitstep():
-    n = (lmax+1)*(lmax+2)//2
-    tmpsh = ['sh-b' + s + '.mif' for s in shells]
-    for s, fn in zip(shells, tmpsh):
-        run.command('dwirecon in.mif -shell ' + s + ' -lmax ' + str(lmax if int(s)>100 else 0) + ' ' + fn + ' -pad ' + str(n) +
-                    ' -spred spred-b' + s + '.mif -complete ' + recon_option + ' -force' + nthr)
-    run.command('mrcat -axis 3 ' + ' '.join(tmpsh) + ' - | mrconvert -set_property shells ' + ','.join(shells) + ' - recon-0.mif')
-    run.command('mrmath ' + ' '.join(['spred-b' + s + '.mif' for s in shells]) + ' sum spred.mif -force')
+    run.command('dwirecon in.mif recon-' + str(k) + '.mif -spred spred.mif ' + recon_option + ' -rf ' + ' -rf '.join(rfs) +
+            ('' if k==0 else ' -motion motion.txt -weights sliceweights.txt -init recon-' + str(k-1) + '.mif') + ' -force' + nthr)
 
 
 def sliceweightstep():
@@ -205,8 +193,8 @@ def sliceweightstep():
 
 
 def basisupdatestep(k):
-    run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax ' + str(lmax) + ' -weights svdweights.txt' +
-                ''.join([' rf'+str(k)+'.txt' for k in range(1,min(lmax//2+1, len(shells))+1)]) + ' -force')
+    run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax ' + ','.join([str(l) for l in sorted(lmax)]) + 
+                ' -weights svdweights.txt ' + ' '.join(rfs) + ' -force')
 
 
 def v2vregstep(k):
@@ -277,7 +265,7 @@ def fieldalignstep():
 # initial template
 if app.args.fieldmap:
     run.command('mrconvert field.mif field1.mif')
-reconinitstep()
+reconstep(0)
 
 # volume-to-volume registration
 for k in range(v2viter):
@@ -287,7 +275,7 @@ for k in range(v2viter):
     v2vregstep(k)
     fieldalignstep()
     # update template
-    reconstep(k)
+    reconstep(k+1)
 
 # slice-to-volume registration
 for k in range(s2viter):
@@ -296,7 +284,7 @@ for k in range(s2viter):
     basisupdatestep(v2viter+k)
     s2vregstep(k)
     # update template
-    reconstep(v2viter+k)
+    reconstep(v2viter+k+1)
 
 
 #   __________ Copy outputs __________
