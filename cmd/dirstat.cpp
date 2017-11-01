@@ -30,7 +30,7 @@ void usage ()
 
   SYNOPSIS = "Report statistics on a direction set";
 
-  DESCRIPTION 
+  DESCRIPTION
     + "This command will accept as inputs:"
     + "- directions file in spherical coordinates (ASCII text, [ az el ] space-separated values, one per line);"
     + "- directions file in Cartesian coordinates (ASCII text, [ x y z ] space-separated values, one per line);"
@@ -40,7 +40,7 @@ void usage ()
     + "By default, this produces all relevant metrics for the direction set "
     "provided. If the direction set contains multiple shells, metrics are "
     "provided for each shell separately."
-    
+
     + "Metrics are produced assuming a unipolar or bipolar electrostatic "
     "repulsion model, producing the potential energy (total, mean, min & max), "
     "and the nearest-neighbour angles (mean, min & max). The condition "
@@ -53,12 +53,12 @@ void usage ()
     "option, using these shorthands: U/B for unipolar/bipolar model, E/N "
     "for energy and nearest-neighbour respectively, t/-/+ for total/min/max "
     "respectively (mean implied otherwise); SHn for condition number of SH fit "
-    "at order n (with n an even integer); SYM for symmetry index (norm of "
+    "at order n (with n an even integer); ASYM for asymmetry index (norm of "
     "mean direction vector); and N for the number of directions. For example:"
     + "-output BN,BN-,BN+   requests the mean, min and max nearest-neighour "
-    "angles assuming a bipolar model." 
+    "angles assuming a bipolar model."
     + "-output UE,SH8,SYM   requests the mean unipolar electrostatic energy, "
-    "condition number of SH fit at order 8, and the symmetry index.";
+    "condition number of SH fit at order 8, and the asymmetry index.";
 
   ARGUMENTS
     + Argument ("dirs", "the text file or image containing the directions.").type_file_in();
@@ -81,7 +81,7 @@ void report (const std::string& title, Eigen::MatrixXd& directions);
 
 
 
-void run () 
+void run ()
 {
   Eigen::MatrixXd directions;
 
@@ -112,14 +112,14 @@ void run ()
 
     for (size_t n = n_start; n < shells.count(); ++n) {
       dirs.resize (shells[n].count(), 3);
-      for (size_t idx = 0; idx < shells[n].count(); ++idx) 
+      for (size_t idx = 0; idx < shells[n].count(); ++idx)
         dirs.row (idx) = directions.row (shells[n].get_volumes()[idx]).head (3);
 
       report (std::string (argument[0]) + " (b=" + str(shells[n].get_mean()) + ")", dirs);
     }
 
   }
-  else 
+  else
     report (argument[0], directions);
 }
 
@@ -128,7 +128,7 @@ void run ()
 
 
 vector<default_type> summarise_NN (const vector<double>& NN)
-{ 
+{
   double NN_min = std::numeric_limits<double>::max();
   double NN_mean = 0.0;
   double NN_max = 0.0;
@@ -149,7 +149,7 @@ vector<default_type> summarise_NN (const vector<double>& NN)
 
 
 
-vector<default_type> summarise_E (const vector<double>& E) 
+vector<default_type> summarise_E (const vector<double>& E)
 {
   double E_min = std::numeric_limits<double>::max();
   double E_total = 0.0;
@@ -168,7 +168,7 @@ vector<default_type> summarise_E (const vector<double>& E)
 class Metrics {
   public:
     vector<default_type> BN, UN, BE, UE, SH;
-    default_type SYM;
+    default_type ASYM;
     size_t ndirs;
 };
 
@@ -179,7 +179,7 @@ class Metrics {
 
 Metrics compute (Eigen::MatrixXd& directions)
 {
-  if (directions.cols() < 3) 
+  if (directions.cols() < 3)
     throw Exception ("unexpected matrix size for scheme \"" + str(argument[0]) + "\"");
   DWI::normalise_grad (directions);
 
@@ -218,10 +218,10 @@ Metrics compute (Eigen::MatrixXd& directions)
   metrics.UE = summarise_E (E_unipolar);
   metrics.BE = summarise_E (E_bipolar);
 
-  for (size_t lmax = 2; lmax <= Math::SH::LforN (directions.rows()); lmax += 2) 
+  for (size_t lmax = 2; lmax <= Math::SH::LforN (directions.rows()); lmax += 2)
     metrics.SH.push_back (DWI::condition_number_for_lmax (directions, lmax));
 
-  metrics.SYM = directions.leftCols(3).colwise().mean().norm();
+  metrics.ASYM = directions.leftCols(3).colwise().mean().norm();
 
   return metrics;
 }
@@ -232,25 +232,26 @@ Metrics compute (Eigen::MatrixXd& directions)
 void output_selected (const Metrics& metrics, const std::string& selection)
 {
   auto select = split (selection, ", \t\n", true);
-  
+
   for (const auto& x : select) {
-    if (x == "UEt") std::cout << metrics.UE[0] << " ";
-    else if (x == "UE") std::cout << metrics.UE[1] << " ";
-    else if (x == "UE-") std::cout << metrics.UE[2] << " ";
-    else if (x == "UE+") std::cout << metrics.UE[3] << " ";
-    else if (x == "BEt") std::cout << metrics.BE[0] << " ";
-    else if (x == "BE") std::cout << metrics.BE[1] << " ";
-    else if (x == "BE-") std::cout << metrics.BE[2] << " ";
-    else if (x == "BE+") std::cout << metrics.BE[3] << " ";
-    else if (x == "UN") std::cout << metrics.UN[0] << " ";
-    else if (x == "UN-") std::cout << metrics.UN[1] << " ";
-    else if (x == "UN+") std::cout << metrics.UN[2] << " ";
-    else if (x == "BN") std::cout << metrics.BN[0] << " ";
-    else if (x == "BN-") std::cout << metrics.BN[1] << " ";
-    else if (x == "BN+") std::cout << metrics.BN[2] << " ";
-    else if (x == "SYM") std::cout << metrics.SYM << " ";
-    else if (x == "N") std::cout << metrics.ndirs << " ";
-    else if (x.substr(0,2) == "SH") {
+    const auto xl = lowercase(x);
+    if (xl == "uet")       std::cout << metrics.UE[0] << " ";
+    else if (xl == "ue")   std::cout << metrics.UE[1] << " ";
+    else if (xl == "ue-")  std::cout << metrics.UE[2] << " ";
+    else if (xl == "ue+")  std::cout << metrics.UE[3] << " ";
+    else if (xl == "bet")  std::cout << metrics.BE[0] << " ";
+    else if (xl == "be")   std::cout << metrics.BE[1] << " ";
+    else if (xl == "be-")  std::cout << metrics.BE[2] << " ";
+    else if (xl == "be+")  std::cout << metrics.BE[3] << " ";
+    else if (xl == "un")   std::cout << metrics.UN[0] << " ";
+    else if (xl == "un-")  std::cout << metrics.UN[1] << " ";
+    else if (xl == "un+")  std::cout << metrics.UN[2] << " ";
+    else if (xl == "bn")   std::cout << metrics.BN[0] << " ";
+    else if (xl == "bn-")  std::cout << metrics.BN[1] << " ";
+    else if (xl == "bn+")  std::cout << metrics.BN[2] << " ";
+    else if (xl == "asym") std::cout << metrics.ASYM << " ";
+    else if (xl == "n")    std::cout << metrics.ndirs << " ";
+    else if (xl.substr(0,2) == "sh") {
       size_t order = to<size_t>(x.substr(2));
       if (order & 1U || order < 2)
         throw Exception ("spherical harmonic order must be an even positive integer");
@@ -259,7 +260,7 @@ void output_selected (const Metrics& metrics, const std::string& selection)
         throw Exception ("spherical harmonic order requested is too large given number of directions");
       std::cout << metrics.SH[order] << " ";
     }
-    else 
+    else
       throw Exception ("unknown output specifier \"" + x + "\"");
   }
 
@@ -291,9 +292,9 @@ void report (const std::string& title, Eigen::MatrixXd& directions)
 
   output += "\n  Spherical Harmonic fit:\n    condition numbers for lmax = 2 -> " + str(metrics.SH.size()*2) + ": " + str(metrics.SH, precision) + "\n";
 
-  output += "\n  Symmetry of sampling:\n    norm of mean direction vector = " + str(metrics.SYM, precision) + "\n";
-  if (metrics.SYM >= 0.1)
-    output += std::string("    WARNING: sampling is ") + ( metrics.SYM >= 0.4 ? "strongly" : "moderately" ) 
+  output += "\n  Asymmetry of sampling:\n    norm of mean direction vector = " + str(metrics.ASYM, precision) + "\n";
+  if (metrics.ASYM >= 0.1)
+    output += std::string("    WARNING: sampling is ") + ( metrics.ASYM >= 0.4 ? "strongly" : "moderately" )
             + " asymmetric - this may affect resiliance to eddy-current distortions\n";
 
   output += "\n";
