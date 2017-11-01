@@ -64,6 +64,9 @@ void usage ()
   + Option ("dump", "dump the streamlines lengths to a text file")
     + Argument ("path").type_file_out()
 
+  + Option ("explicit", "explicitly calculate the length of each streamline, "
+                        "ignoring any step size information present in the header")
+
   + Option ("ignorezero", "do not generate a warning if the track file contains streamlines with zero length")
 
   + Tractography::TrackWeightsInOption;
@@ -118,12 +121,13 @@ void run ()
     if (properties.find ("count") != properties.end())
       header_count = to<size_t> (properties["count"]);
 
-    step_size = get_step_size (properties);
-
-    if (!std::isfinite (step_size) || !step_size) {
-      INFO ("Streamline step size undefined in header; lengths will be calculated manually");
-      if (get_options ("histogram").size()) {
-        WARN ("Do not have streamline step size with which to construct histogram; histogram will be generated using 1mm bin widths");
+    if (!get_options ("explicit").size()) {
+      step_size = get_step_size (properties);
+      if (!std::isfinite (step_size) || !step_size) {
+        INFO ("Streamline step size undefined in header; lengths will be calculated manually");
+        if (get_options ("histogram").size()) {
+          WARN ("Do not have streamline step size with which to construct histogram; histogram will be generated using 1mm bin widths");
+        }
       }
     }
 
