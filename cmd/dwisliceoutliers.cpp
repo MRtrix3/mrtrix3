@@ -24,7 +24,7 @@ using namespace MR;
 using namespace App;
 
 
-const char* const lossfunc[] = { "linear", "softl1", "cauchy", "arctan", NULL };
+const char* const lossfunc[] = { "linear", "softl1", "cauchy", "arctan", "asym", NULL };
 
 static constexpr float EPS = std::numeric_limits<float>::epsilon();
 
@@ -84,11 +84,11 @@ class RMSEFunctor {
           if (!mask.value()) continue;
         }
         value_type d = data.value() - pred.value();
-        e += d * d;
+        e += d ;//* d;
         n++;
       }
       if (n > 0)
-        (*E)(data.get_index(2), data.get_index(3)) = std::sqrt(e/n);
+        (*E)(data.get_index(2), data.get_index(3)) = e / n; //std::sqrt(e/n);
     }
 
     Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> result() const { return *E; }
@@ -137,7 +137,7 @@ void run ()
       e.clear();
       for (size_t j : shells[k].get_volumes()) {
         for (size_t i = 0; i < E.rows(); i++)
-          e.push_back(E(i,j));
+          e.push_back(std::fabs(E(i,j)));
       }
       value_type s = Math::median(e) * 1.4826;
       // Update scale vector
@@ -150,7 +150,7 @@ void run ()
   Eigen::MatrixXf W (E.rows(), E.cols());
   for (size_t i = 0; i < W.rows(); i++) {
     for (size_t j = 0; j < W.cols(); j++) {
-      float e2 = Math::pow2( E(i,j)/scale[j] );
+      value_type e2 = Math::pow2( E(i,j)/scale[j] );
       switch (loss) {
         case 0:
           W(i,j) = 1.0;
@@ -164,12 +164,15 @@ void run ()
         case 3:
           W(i,j) = (e2 <= EPS) ? 0 : std::atan(e2) / e2;
           break;
+        case 4:
+          W(i,j) = (e2 <= EPS) ? 0 : ((E(i,j) < 0) ? std::atan(e2) : 2 * (std::sqrt(1.0 + e2) - 1.0)) / e2;
+          break;
       }
     }
   }
 
   // Truncate small weights
-  W = (W.array() < 0.5).select(0.0f, W);
+  //W = (W.array() < 0.5).select(0.0f, W);
 
   // Output
   save_matrix(W, argument[2]);
