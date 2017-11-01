@@ -41,6 +41,10 @@ namespace MR
         class ODF;
       }
 
+
+
+
+
       class ImageBase : public Volume
       { MEMALIGN(ImageBase)
         public:
@@ -60,6 +64,11 @@ namespace MR
           vector<ssize_t> tex_positions;
 
       };
+
+
+
+
+
 
       class Image : public ImageBase
       { MEMALIGN(Image)
