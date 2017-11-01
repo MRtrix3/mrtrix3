@@ -142,7 +142,7 @@ if app.args.sspwidth:
 if app.args.fieldmap:
     recon_option += ' -field field1.mif'
 
-rf_option = ''.join([' -rf rf'+str(k)+'.txt' for k in range(1,lmax//2+2)])
+rf_option = ''.join([' -rf rf'+str(k)+'.txt' for k in range(1,min(lmax//2+1, len(shells))+1)])
 
 # Radial basis
 #rf_import_option = ''
@@ -206,7 +206,7 @@ def sliceweightstep():
 
 def basisupdatestep(k):
     run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax ' + str(lmax) + ' -weights svdweights.txt' +
-                ''.join([' rf'+str(k)+'.txt' for k in range(1,lmax//2+2)]) + ' -force')
+                ''.join([' rf'+str(k)+'.txt' for k in range(1,min(lmax//2+1, len(shells))+1)]) + ' -force')
 
 
 def v2vregstep(k):
