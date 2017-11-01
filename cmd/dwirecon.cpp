@@ -279,7 +279,7 @@ void run ()
     Eigen::VectorXf x0 (R.cols());
     // convert from mssh
     Eigen::VectorXf c (shells.count() * Math::SH::NforL(lmax));
-    Eigen::MatrixXf x2mssh (c.size(), ncoefs);
+    Eigen::MatrixXf x2mssh (c.size(), ncoefs); x2mssh.setZero();
     for (int k = 0; k < shells.count(); k++)
       x2mssh.middleRows(k*Math::SH::NforL(lmax), Math::SH::NforL(lmax)) = R.getShellBasis(k).transpose();
     auto mssh2x = x2mssh.fullPivHouseholderQr();
