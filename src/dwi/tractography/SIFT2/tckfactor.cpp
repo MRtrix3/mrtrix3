@@ -167,8 +167,12 @@ namespace MR {
                   const float length = tckcont[f].get_length();
                   sum_afd += fixel.get_weight() * fixel.get_FOD() * (length / fixel.get_orig_TD());
                 }
-                const double afcsa = sum_afd / tckcont.get_total_contribution();
-                master.coefficients[track_index] = std::log (afcsa / fixed_mu);
+                if (sum_afd && tckcont.get_total_contribution()) {
+                  const double afcsa = sum_afd / tckcont.get_total_contribution();
+                  master.coefficients[track_index] = std::max (master.min_coeff, std::log (afcsa / fixed_mu));
+                } else {
+                  master.coefficients[track_index] = master.min_coeff;
+                }
               }
               return true;
             }
@@ -181,23 +185,6 @@ namespace MR {
           Functor functor (*this);
           Thread::run_queue (writer, SIFT::TrackIndexRange(), Thread::multi (functor));
         }
-
-        // Single-threaded version
-/*
-        const double fixed_mu = mu();
-        for (SIFT::track_t i = 0; i != num_tracks(); ++i) {
-          const SIFT::TrackContribution& tckcont = *contributions[i];
-          double sum_afd = 0.0;
-          for (size_t f = 0; f != tckcont.dim(); ++f) {
-            const size_t fixel_index = tckcont[f].get_fixel_index();
-            const Fixel& fixel = fixels[fixel_index];
-            const float length = tckcont[f].get_length();
-            sum_afd += fixel.get_weight() * fixel.get_FOD() * (length / fixel.get_orig_TD());
-          }
-          const double afcsa = sum_afd / tckcont.get_total_contribution();
-          coefficients[i] = std::log (afcsa / fixed_mu);
-        }
-*/
 
         for (vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i) {
           i->clear_TD();
@@ -361,7 +348,9 @@ namespace MR {
         try {
           decltype(coefficients) weights (coefficients.size());
           for (SIFT::track_t i = 0; i != num_tracks(); ++i)
-            weights[i] = std::exp (coefficients[i]);
+            weights[i] = (coefficients[i] == min_coeff || !std::isfinite(coefficients[i])) ?
+                         0.0 :
+                         std::exp (coefficients[i]);
           save_vector (weights, path);
         } catch (...) {
           WARN ("Unable to assign memory for output factor file: \"" + Path::basename(path) + "\" not created");
