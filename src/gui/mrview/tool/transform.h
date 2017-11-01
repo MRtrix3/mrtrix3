@@ -29,12 +29,23 @@ namespace MR
       {
 
 
-        class Transform : public Base
+        class Transform : public Base, public Tool::CameraInteractor
         { MEMALIGN(Transform)
           Q_OBJECT
           public:
             Transform (Dock* parent);
 
+            void deactivate () override;
+            bool slice_move_event (float inc) override;
+            bool pan_event () override;
+            bool panthrough_event () override;
+            bool tilt_event () override;
+            bool rotate_event () override;
+
+          protected:
+            virtual void showEvent (QShowEvent* event) override;
+            virtual void closeEvent (QCloseEvent* event) override;
+            
           private slots:
             void onActivate (bool);
 
