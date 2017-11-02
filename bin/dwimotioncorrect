@@ -193,12 +193,12 @@ def sliceweightstep():
 
 
 def basisupdatestep(k):
-    run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax ' + ','.join([str(l) for l in sorted(lmax)]) + 
+    run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax ' + ','.join([str(l) for l in sorted(lmax)[::-1]]) +
                 ' -weights svdweights.txt ' + ' '.join(rfs) + ' -force')
 
 
 def rankreduxstep(k):
-    run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax ' + ','.join([str(l//2) for l in sorted(lmax)]) + 
+    run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax ' + ','.join([str(2*(l//4)) for l in sorted(lmax)[::-1]]) +
                 ' -weights svdweights.txt tmp' + ' tmp'.join(rfs) + ' -proj rankredux.mif -force')
 
 
