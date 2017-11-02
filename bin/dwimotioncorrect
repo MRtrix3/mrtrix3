@@ -197,6 +197,11 @@ def basisupdatestep(k):
                 ' -weights svdweights.txt ' + ' '.join(rfs) + ' -force')
 
 
+def rankreduxstep(k):
+    run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax ' + ','.join([str(l//2) for l in sorted(lmax)]) + 
+                ' -weights svdweights.txt tmp' + ' tmp'.join(rfs) + ' -proj rankredux.mif -force')
+
+
 def v2vregstep(k):
     # register template to slices
     with open('motion.txt', 'w') as f:
@@ -207,7 +212,7 @@ def v2vregstep(k):
                             'mrfieldunwarp - field1.mif' + (' -transform T-'+str(v)+'.txt' if k>0 else '') + ' target.mif -force')
             else:
                 run.command('mrconvert -coord 3 ' + str(v) + ' in.mif target.mif -export_grad_mrtrix grad1.txt -force')
-            run.command('mssh2amp recon-'+str(k)+'.mif grad1.txt template.mif ' + ('' if k==0 else '-transform T-' + str(v) + '.txt ') + '-force')
+            run.command('mssh2amp rankredux.mif grad1.txt template.mif ' + ('' if k==0 else '-transform T-' + str(v) + '.txt ') + '-force')
             run.command('mrreg_lin template.mif target.mif -mask2 mask.mif' +
                         (' -affine_init T-'+str(v)+'.txt' if k>0 else '') +
                         ' -affine T-'+str(v)+'.txt ' + reg_option + ' -force')
@@ -233,11 +238,11 @@ def s2vregstep(k):
             else:
                 run.command('mrconvert -coord 3 ' + str(v) + ' in.mif target.mif -export_grad_mrtrix grad1.txt -force')
             if k == 0:
-                run.command('mssh2amp recon-'+str(v2viter+k)+'.mif grad1.txt template.mif -transform T-' + str(v) + '.txt -force')
+                run.command('mssh2amp rankredux.mif grad1.txt template.mif -transform T-' + str(v) + '.txt -force')
             for s in range(dims[2]//mb):
                 run.command('maskslice -mb ' + str(mb) + ' mask.mif ' + str(s) + ' slicemask.mif -force')
                 if k > 0:
-                    run.command('mssh2amp recon-'+str(v2viter+k)+'.mif grad1.txt template.mif -transform T-' + str(v) + '-' + str(s) + '.txt -force')
+                    run.command('mssh2amp rankredux.mif grad1.txt template.mif -transform T-' + str(v) + '-' + str(s) + '.txt -force')
                 run.command('mrreg_lin template.mif target.mif -mask2 slicemask.mif' +
                         ' -affine_init ' + ('T-'+str(v)+'-'+str(s)+'.txt' if k>0 else 'T-'+str(v)+'.txt') +
                         ' -affine T-'+str(v)+'-'+str(s)+'.txt ' + reg_option + ' -force')
@@ -270,8 +275,9 @@ reconstep(0)
 # volume-to-volume registration
 for k in range(v2viter):
     sliceweightstep()
-    # register template to volumes
     basisupdatestep(k)
+    # register template to volumes
+    rankreduxstep(k)
     v2vregstep(k)
     fieldalignstep()
     # update template
@@ -280,8 +286,9 @@ for k in range(v2viter):
 # slice-to-volume registration
 for k in range(s2viter):
     sliceweightstep()
-    # register template to slices
     basisupdatestep(v2viter+k)
+    # register template to slices
+    rankreduxstep(v2viter+k)
     s2vregstep(k)
     # update template
     reconstep(v2viter+k+1)
