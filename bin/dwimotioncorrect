@@ -37,6 +37,7 @@ options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass
 options.add_argument('-niter', help='Number of epochs (default = 3)')
 #options.add_argument('-shells', help='Shells to be processed (default = all)')
 options.add_argument('-lmax', help='SH basis order per shell (default = 0,4,4,...)')
+options.add_argument('-rlmax', help='Reduced basis order per component for registration (default = 2,2,0)')
 options.add_argument('-reg', help='Regularization for dwirecon (default = 0.01)')
 #options.add_argument('-rf', help='Basis functions for the radial domain')
 options.add_argument('-svr', help='Number of slice-to-volume reconstruction epochs (default = 0)')
@@ -130,6 +131,12 @@ if app.args.lmax:
 if len(lmax) != len(shells):
     app.error('No. lmax must match no. shells.')
 
+rlmax = [2,2,0]
+if app.args.rlmax:
+    rlmax = [int(l) for l in app.args.rlmax.split(',')]
+if len(rlmax) > len(lmax) or max(rlmax) > max(lmax):
+    app.error('-rlmax invalid.')
+
 
 # Shared reconstruction options
 recon_option = '-maxiter 3'
@@ -153,6 +160,7 @@ for k, l in enumerate(lmax):
                 f.write(' '.join(['0',]*(l//2+1)) + '\n')
     rfs += [fn,]
 
+redrfs = ['redrf'+str(k+1)+'.txt' for k in range(len(rlmax))]
 
 # Registration options
 reg_option = '-type rigid -nonsymmetric -affine_scale 1.0 -affine_niter 3'
@@ -198,8 +206,8 @@ def basisupdatestep(k):
 
 
 def rankreduxstep(k):
-    run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax ' + ','.join([str(2*(l//4)) for l in sorted(lmax)[::-1]]) +
-                ' -weights svdweights.txt tmp' + ' tmp'.join(rfs) + ' -proj rankredux.mif -force')
+    run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax ' + ','.join([str(2*(l//4)) for l in rlmax]) +
+                ' -weights svdweights.txt ' + ' '.join(redrfs) + ' -proj rankredux.mif -force')
 
 
 def v2vregstep(k):
