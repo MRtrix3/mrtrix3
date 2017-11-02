@@ -210,7 +210,7 @@ def basisupdatestep(k):
 
 
 def rankreduxstep(k):
-    run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax ' + ','.join([str(2*(l//4)) for l in rlmax]) +
+    run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax ' + ','.join([str(l) for l in rlmax]) +
                 ' -weights svdweights.txt ' + ' '.join(redrfs) + ' -proj irankredux.mif -force')
     run.command('mrfilter irankredux.mif smooth rankredux.mif -fwhm 0,0,' + str(vz) + ' -force')
 
