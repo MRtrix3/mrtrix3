@@ -20,6 +20,7 @@
 #include "progressbar.h"
 #include "file/path.h"
 #include "file/config.h"
+#include "signal_handler.h"
 
 #define MRTRIX_HELP_COMMAND "less -X"
 
@@ -79,8 +80,6 @@ namespace MR
 
     const char* project_version = nullptr;
     const char* build_date = __DATE__;
-
-    SignalHandler signal_handler;
 
     int argc = 0;
     const char* const* argv = nullptr;
@@ -1062,6 +1061,7 @@ namespace MR
         }
       }
 
+      SignalHandler::init();
     }
 
 
