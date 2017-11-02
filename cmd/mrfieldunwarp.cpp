@@ -72,18 +72,22 @@ class FieldUnwarp {
       Eigen::Vector3 vox, pos;
       assign_pos_of(out).to(vox);
       finterp.voxel(Tf * vox);
-      double b0 = finterp.value();
+      value_type B0, jac = 1;
+      Eigen::RowVector3f dB0;
+      finterp.value_and_gradient(B0, dB0);
+      //Eigen::Vector3 RdB0 = Tf.rotation() * dB0.transpose().cast<double>();
       for (size_t v = 0; v < out.size(3); v++) {
-        pos = vox + b0 * PE.block<1,3>(v, 0).transpose();
+        pos = vox + B0 * PE.row(v).transpose();
         dinterp.index(3) = out.index(3) = v;
         dinterp.voxel(pos);
-        out.value() = dinterp.value();      // TODO: Jacobian modulation.
+        //jac = std::fabs( 1 + PE.row(v) * RdB0);
+        out.value() = jac * dinterp.value();      // TODO: Jacobian modulation.
       }
     }
 
   private:
     Interp::Linear<Image<value_type>> dinterp;
-    Interp::Linear<Image<value_type>> finterp;
+    Interp::LinearInterp<Image<value_type>, Interp::LinearInterpProcessingType::ValueAndDerivative> finterp;
     Eigen::Matrix<double, Eigen::Dynamic, 3> PE;
     transform_type Tf;
 };
