@@ -48,9 +48,8 @@ namespace MR
       + Option ("debug", "display debugging messages.")
       + Option ("force", "force overwrite of output files. "
           "Caution: Using the same file as input and output might cause unexpected behaviour.")
-      + Option ("nthreads", "use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)")
+      + Option ("nthreads", "use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).")
         + Argument ("number").type_integer (0)
-      + Option ("failonwarn", "terminate program if a warning is produced")
       + Option ("help", "display this information page and exit.")
       + Option ("version", "display version information and exit.");
 
@@ -882,8 +881,6 @@ namespace MR
         WARN ("existing output files will be overwritten");
         overwrite_files = true;
       }
-      if (get_options ("failonwarn").size())
-        fail_on_warn = true;
     }
 
 
@@ -1034,8 +1031,7 @@ namespace MR
       //CONF default: 0 (false)
       //CONF A boolean value specifying whether MRtrix applications should
       //CONF abort as soon as any (otherwise non-fatal) warning is issued.
-      if (File::Config::get_bool ("FailOnWarn", false))
-        fail_on_warn = true;
+      fail_on_warn = File::Config::get_bool ("FailOnWarn", false);
 
       //CONF option: TerminalColor
       //CONF default: 1 (true)
