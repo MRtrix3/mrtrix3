@@ -981,10 +981,14 @@ else:
 #   output image, as they may have been useful for controlling pre-processing
 #   but are no longer required, and will just bloat the key-value listings of
 #   all subsequent derived images
-keys_to_remove = [ 'EchoTime', 'FlipAngle', 'MultibandAccelerationFactor', 'PhaseEncodingDirection', 'RepetitionTime', 'SliceEncodingDirection', 'SliceTiming', 'TotalReadoutTime', 'pe_scheme' ]
-clear_property_options = ' ' + ' '.join(['-clear_property '+key for key in keys_to_remove if key in dwi_header.keyval() ])
+# Disabled this for now: The output from eddy is a NIfTI, so all these fields
+#   have been lost. For now just neglect to re-introduce them; in the future,
+#   this may be combined with GitHub Issue #1188 (proper behaviour of
+#   command_history header key-value entry when running a Python script)
+#keys_to_remove = [ 'EchoTime', 'FlipAngle', 'MultibandAccelerationFactor', 'PhaseEncodingDirection', 'RepetitionTime', 'SliceEncodingDirection', 'SliceTiming', 'TotalReadoutTime', 'pe_scheme' ]
+#clear_property_options = ' ' + ' '.join(['-clear_property '+key for key in keys_to_remove if key in dwi_header.keyval() ])
 
 
 # Finish!
-run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + grad_export_option + clear_property_options + (' -force' if app.forceOverwrite else ''))
+run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + grad_export_option + (' -force' if app.forceOverwrite else ''))
 app.complete()
