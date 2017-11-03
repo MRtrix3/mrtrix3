@@ -187,7 +187,9 @@ if eddy_mporder:
       #   to the temporary directory...
       with open(slspec_file_path, 'r') as f:
         for line in f:
-          slice_groups.append(int(value) for value in line.split())
+          line = line.strip()
+          if line:
+            slice_groups.append([int(value) for value in line.split()])
       app.var(slice_groups)
       # Remove this entry from eddy_manual_options; it'll be inserted later, with the
       #   path to the new slspec file
