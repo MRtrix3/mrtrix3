@@ -87,6 +87,8 @@ namespace MR
           cfloat nearest_neighbour_value (const Eigen::Vector3f&) const;
 
           const MR::Transform& transform() const { return linear_interp; }
+          void set_tranform (const transform_type& transform);
+
           const vector<std::string>& comments() const { return _comments; }
 
           void reset_windowing (const int, const bool);

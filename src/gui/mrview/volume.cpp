@@ -55,6 +55,16 @@ namespace MR
       }
 
 
+
+
+      void Volume::set_tranform (const transform_type& new_transform) 
+      {
+        _header.transform() = new_transform;
+        _transform = new MR::Transform (_header);
+      }
+
+
+
     }
   }
 }
