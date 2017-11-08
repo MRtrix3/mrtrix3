@@ -93,6 +93,7 @@ namespace MR
           const MR::Header& header () const { return _header; }
           MR::Header& header () { return _header; }
           const MR::Transform& transform () const { return _transform; }
+          void set_tranform (const transform_type& new_transform);
 
           void min_max_set() {
             update_levels();

@@ -640,6 +640,18 @@ namespace MR
       }
 
 
+
+
+
+      void Image::set_tranform (const transform_type& new_transform) 
+      {
+        Volume::set_tranform (new_transform);
+
+        linear_interp = decltype (linear_interp) (image);
+        nearest_interp = decltype (nearest_interp) (image);
+      }
+
+
     }
   }
 }
