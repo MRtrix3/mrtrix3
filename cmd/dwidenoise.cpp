@@ -223,6 +223,7 @@ void run ()
       if (!(e & 1))
         throw Exception ("-extent must be a (list of) odd numbers");
   }
+  INFO ("using extent = " + str(extent));
   
   Image<value_type> noise;
   opt = get_options("noise");
