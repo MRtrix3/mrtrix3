@@ -42,8 +42,23 @@ def tr2euler(T):
     return np.array([T[0,3], T[1,3], T[2,3], yaw, pitch, roll])
 
 
-def filtermotion(M):
-    return M
+def filtermotion(M, reg=1.):
+    from cvxopt import matrix, spmatrix, sparse
+    from cvxopt.solvers import qp
+    nr, nc = M.shape
+    x0 = matrix(M, (nr*nc, 1))
+    q = matrix([-x0, matrix(reg, ((nr-1)*nc, 1))])
+    P = spmatrix(1, range(nr*nc), range(nr*nc), size=(nc*(2*nr-1), nc*(2*nr-1)))
+    D = spmatrix(-1, range(nr-1), range(nr-1), size=(nr-1, nr))
+    D += spmatrix(1, range(nr-1), range(1,nr), size=(nr-1, nr))
+    Z = spmatrix([], [], [], size=(nr-1, nr))
+    T1 = sparse([[D if c2==c else -D if c2==c+nc else Z for c2 in range(2*nc)] for c in range(nc)])
+    T2 = sparse([spmatrix(-1, range(nc*(nr-1)), range(nc*(nr-1))), spmatrix(-1, range(nc*(nr-1)), range(nc*(nr-1)))])
+    G = sparse([[T1], [T2]])
+    h = matrix(0.0, (2*nc*(nr-1), 1))
+    res = qp(P, q, G, h)
+    X = matrix(res['x'][:nr*nc], size=(nr, nc))
+    return np.array(X)
 
 
 
@@ -57,6 +72,7 @@ if __name__ == '__main__':
     parser.add_argument('-mb', type=int, default=1, help='multiband factor')
     parser.add_argument('-packs', type=int, default=2, help='no. slice packs')
     parser.add_argument('-shift', type=int, default=1, help='slice shift')
+    parser.add_argument('-reg', type=float, default=1.0, help='TV regularization weight')
     args = parser.parse_args()
     # set up slice order
     nv, nz, mb = args.vols, args.slices, args.mb
@@ -64,7 +80,7 @@ if __name__ == '__main__':
     ne = nz//mb
     sliceorder = getsliceorder(ne, args.packs, args.shift)
     # import and filter motion
-    M0 = [tr2lie(np.loadtxt(args.prefix + '-' + str(v) + '-' + str(z) + '.txt')) for v in range(nv) for z in sliceorder]
+    M0 = np.array([tr2lie(np.loadtxt(args.prefix + '-' + str(v) + '-' + str(z) + '.txt')) for v in range(nv) for z in sliceorder])
     Mf = filtermotion(M0)
     # output
     M1 = np.zeros((nv*nz, 6))
