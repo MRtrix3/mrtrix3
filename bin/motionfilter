@@ -1,0 +1,76 @@
+#!/usr/bin/env python
+
+import argparse
+import numpy as np
+from scipy.linalg import logm, expm
+
+
+def getsliceorder(n, p=2, s=1):
+    return np.array([j for k in range(0,p) for j in range((k*s)%p,n,p)], dtype=int)
+
+
+def tr2lie(T):
+    L = logm(T)
+    R = 0.5 * (L - L.T)
+    r = np.zeros((6,))
+    r[:3] = L[:3,3]
+    r[3:] = R[2,1], R[0,2], R[1,0]
+    return r
+
+
+def lie2tr(r):
+    L = np.zeros((4,4))
+    L[:3,3] = r[:3]
+    L[2,1] = r[3] ; L[1,2] = -r[3]
+    L[0,2] = r[4] ; L[2,0] = -r[4]
+    L[1,0] = r[5] ; L[0,1] = -r[5]
+    T = expm(L)
+    return T
+
+
+def tr2euler(T):
+    sy = np.hypot(T[0,0], T[1,0])
+    if sy > 1e-6:
+        roll = np.atan2(T[2,1], T[2,2])
+        pitch = np.atan2(-T[2,0], sy)
+        yaw = np.atan2(T[1,0], T[0,0])
+    else:
+        roll = np.atan2(-T[1,2], T[1,1])
+        pitch = np.atan2(-T[2,0], sy)
+        yaw = 0.0
+    return np.array([T[0,3], T[1,3], T[2,3], roll, pitch, yaw])
+
+
+def filtermotion(M):
+    return M
+
+
+
+if __name__ == '__main__':
+    # arguments
+    parser = argparse.ArgumentParser(description='Filtering a series of rigid motion parameters.')
+    parser.add_argument('prefix', type=str, help='transformation file name prefix')
+    parser.add_argument('vols', type=int, help='no. volumes')
+    parser.add_argument('slices', type=int, help='no. slices')
+    parser.add_argument('out', type=int, help='output motion file')
+    parser.add_argument('-mb', type=int, default=1, help='multiband factor')
+    parser.add_argument('-packs', type=int, default=2, help='no. slice packs')
+    parser.add_argument('-shift', type=int, default=1, help='slice shift')
+    args = parser.parse_args()
+    # set up slice order
+    nv, nz, mb = args.vols, args.slices, args.mb
+    sliceorder = getsliceorder(nz/mb, args.packs, args.shift)
+    # import and filter motion
+    M0 = [tr2lie(np.loadtxt(args.prefix + '-' + str(v) + '-' + str(z) + '.txt')) for v in range(nv) for z in sliceorder]
+    Mf = filtermotion(M0)
+    # output
+    M1 = np.zeros((nv*nz, 6))
+    for m, (v,z) in zip(Mf, [(v,z) for v in range(nv) for z in sliceorder]):
+        T = lie2tr(m)
+        np.savetxt(args.prefix + '-' + str(v) + '-' + str(z) + '.txt', T, fmt='%.5f')
+        M1[v*nz+z:(v+1)*nz+z:nz/mb,:] = tr2euler(T)
+    np.savetxt(args.out, M1, fmt='%.5f')
+
+
+
+
