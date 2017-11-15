@@ -35,8 +35,8 @@ namespace MR
             }
             writer (tck);
             switch (tck.get_status()) {
-              case GeneratedTrack::status_t::INVALID: assert (0); break;
-              // Note intentiional lack of break usage
+              case GeneratedTrack::status_t::UNDEFINED: assert (0); break;
+              // Note intentional lack of break usage
               case GeneratedTrack::status_t::ACCEPTED: ++selected;
               case GeneratedTrack::status_t::TRACK_REJECTED: ++streamlines;
               case GeneratedTrack::status_t::SEED_REJECTED: ++seeds;

@@ -34,10 +34,23 @@ namespace MR
 
         enum term_t { CONTINUE, ENTER_CGM, CALIBRATOR, EXIT_IMAGE, ENTER_CSF, BAD_SIGNAL, HIGH_CURVATURE, LENGTH_EXCEED, TERM_IN_SGM, EXIT_SGM, EXIT_MASK, ENTER_EXCLUDE, TRAVERSE_ALL_INCLUDE };
 #define TERMINATION_REASON_COUNT 13
+        const char* const termination_descriptions[] = { "Unknown",
+                                                         "Entered cortical grey matter",
+                                                         "Calibrator sub-threshold",
+                                                         "Exited image",
+                                                         "Entered CSF",
+                                                         "Bad diffusion signal",
+                                                         "Excessive curvature",
+                                                         "Max length exceeded",
+                                                         "Terminated in subcortex",
+                                                         "Exiting sub-cortical GM",
+                                                         "Exited mask",
+                                                         "Entered exclusion region",
+                                                         "Traversed all include regions" };
 
         // This lookup table specifies whether or not the most recent position should be added to the end of the streamline,
         //   based on what mechanism caused the termination
-        const uint8_t term_add_to_tck[TERMINATION_REASON_COUNT] = { 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1 };
+        const uint8_t term_add_to_tck[TERMINATION_REASON_COUNT] = { 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1 };
 
         enum reject_t { INVALID_SEED, NO_PROPAGATION_FROM_SEED, TRACK_TOO_SHORT, TRACK_TOO_LONG, ENTER_EXCLUDE_REGION, MISSED_INCLUDE_REGION, ACT_POOR_TERMINATION, ACT_FAILED_WM_REQUIREMENT };
 #define REJECTION_REASON_COUNT 8

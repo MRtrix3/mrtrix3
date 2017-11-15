@@ -57,7 +57,7 @@ namespace MR
             dir = (tck[1] - tck[0]).normalized();
           else
             dir = (tck[new_size] - tck[new_size - 2]).normalized();
-          tck.resize (length_to_revert_from - revert_step);
+          tck.resize (new_size);
           pos = tck.back();
           if (S.is_act())
             act().sgm_depth = (act().sgm_depth > revert_step) ? act().sgm_depth - revert_step : 0;

@@ -40,10 +40,10 @@ namespace MR
 
             using BaseType = vector<Eigen::Vector3f>;
 
-            enum class status_t { INVALID, SEED_REJECTED, TRACK_REJECTED, ACCEPTED };
+            enum class status_t { UNDEFINED, SEED_REJECTED, TRACK_REJECTED, ACCEPTED };
 
-            GeneratedTrack() : seed_index (0), status (status_t::INVALID) { }
-            void clear() { BaseType::clear(); seed_index = 0; status = status_t::INVALID; }
+            GeneratedTrack() : seed_index (0), status (status_t::UNDEFINED) { }
+            void clear() { BaseType::clear(); seed_index = 0; status = status_t::UNDEFINED; }
             size_t get_seed_index() const { return seed_index; }
             status_t get_status() const { return status; }
             void reverse() { std::reverse (begin(), end()); seed_index = size()-1; }
@@ -55,6 +55,8 @@ namespace MR
             status_t status;
 
         };
+
+        std::ostream& operator<< (std::ostream& stream, GeneratedTrack::status_t status);
 
 
       }

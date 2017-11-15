@@ -127,25 +127,24 @@ namespace MR
           INFO ("Total number of track terminations: " + str (sum_terminations));
           INFO ("Termination reason probabilities:");
           for (size_t i = 0; i != TERMINATION_REASON_COUNT; ++i) {
-            std::string term_type;
-            bool to_print = false;
+            bool to_print;
             switch (i) {
-              case CONTINUE:             term_type = "Unknown";                       to_print = false;    break;
-              case ENTER_CGM:            term_type = "Entered cortical grey matter";  to_print = is_act(); break;
-              case CALIBRATOR:           term_type = "Calibrator sub-threshold";      to_print = true;     break;
-              case EXIT_IMAGE:           term_type = "Exited image";                  to_print = true;     break;
-              case ENTER_CSF:            term_type = "Entered CSF";                   to_print = is_act(); break;
-              case BAD_SIGNAL:           term_type = "Bad diffusion signal";          to_print = true;     break;
-              case HIGH_CURVATURE:       term_type = "Excessive curvature";           to_print = true;     break;
-              case LENGTH_EXCEED:        term_type = "Max length exceeded";           to_print = true;     break;
-              case TERM_IN_SGM:          term_type = "Terminated in subcortex";       to_print = is_act(); break;
-              case EXIT_SGM:             term_type = "Exiting sub-cortical GM";       to_print = is_act(); break;
-              case EXIT_MASK:            term_type = "Exited mask";                   to_print = properties.mask.size(); break;
-              case ENTER_EXCLUDE:        term_type = "Entered exclusion region";      to_print = properties.exclude.size(); break;
-              case TRAVERSE_ALL_INCLUDE: term_type = "Traversed all include regions"; to_print = stop_on_all_include; break;
+              case CONTINUE:             to_print = false;    break;
+              case ENTER_CGM:            to_print = is_act(); break;
+              case CALIBRATOR:           to_print = true;     break;
+              case EXIT_IMAGE:           to_print = true;     break;
+              case ENTER_CSF:            to_print = is_act(); break;
+              case BAD_SIGNAL:           to_print = true;     break;
+              case HIGH_CURVATURE:       to_print = true;     break;
+              case LENGTH_EXCEED:        to_print = true;     break;
+              case TERM_IN_SGM:          to_print = is_act(); break;
+              case EXIT_SGM:             to_print = is_act(); break;
+              case EXIT_MASK:            to_print = properties.mask.size(); break;
+              case ENTER_EXCLUDE:        to_print = properties.exclude.size(); break;
+              case TRAVERSE_ALL_INCLUDE: to_print = stop_on_all_include; break;
             }
             if (to_print)
-              INFO ("  " + term_type + ": " + str (100.0 * terminations[i] / (double)sum_terminations, 3) + "\%");
+              INFO ("  " + std::string(termination_descriptions[i]) + ": " + str (100.0 * terminations[i] / (double)sum_terminations, 3) + "\%");
           }
 
           INFO ("Track rejection counts:");

@@ -56,7 +56,7 @@ namespace MR
                 seeds (0),
                 streamlines (0),
                 selected (0),
-                progress (printf ("       0 seeds,        0 streamlines,        0 selected", 0, 0), always_increment ? S.max_num_seeds : S.max_num_tracks),
+                progress (printf ("%8" PRIu64 " seeds, %8" PRIu64 " streamlines, %8" PRIu64 " selected", 0, 0, 0), always_increment ? S.max_num_seeds : S.max_num_tracks),
                 early_exit (shared)
           {
             const auto p = properties.find ("seed_output");
