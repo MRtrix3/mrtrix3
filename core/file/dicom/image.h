@@ -45,7 +45,7 @@ namespace MR {
             transfer_syntax_supported = true;
             pe_axis = 3;
             pe_sign = 0;
-            pixel_bandwidth = bandwidth_per_pixel_phase_encode = echo_time = repetition_time = flip_angle = NaN;
+            pixel_bandwidth = bandwidth_per_pixel_phase_encode = echo_time = repetition_time = flip_angle = time_after_start = NaN;
             echo_train_length = 0;
           }
 
@@ -57,7 +57,8 @@ namespace MR {
           bool DW_scheme_wrt_image, transfer_syntax_supported;
           size_t pe_axis;
           int pe_sign;
-          default_type pixel_bandwidth, bandwidth_per_pixel_phase_encode, echo_time, repetition_time, flip_angle;
+          Time acquisition_time;
+          default_type pixel_bandwidth, bandwidth_per_pixel_phase_encode, echo_time, repetition_time, flip_angle, time_after_start;
           size_t echo_train_length;
           vector<uint32_t> index;
 
@@ -120,16 +121,17 @@ namespace MR {
       class Image : public Frame { MEMALIGN(Image)
 
         public:
-          Image (Series* parent = NULL) :
-            series (parent),
-            images_in_mosaic (0),
-            is_BE (false),
-            in_frames (false) { }
+          Image (Series* parent = nullptr) :
+              series (parent),
+              images_in_mosaic (0),
+              is_BE (false),
+              in_frames (false) { }
 
           Series* series;
           size_t images_in_mosaic;
-          std::string  sequence_name, manufacturer;
+          std::string sequence_name, manufacturer;
           bool is_BE, in_frames;
+          vector<float> mosaic_slices_timing;
 
           vector<uint32_t> frame_dim;
           vector<std::shared_ptr<Frame>> frames;
