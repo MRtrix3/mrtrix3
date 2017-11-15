@@ -12,25 +12,36 @@
  */
 
 
-#ifndef __gui_mrview_tool_tractogram_enums_h__
-#define __gui_mrview_tool_tractogram_enums_h__
+#ifndef __axes_h__
+#define __axes_h__
+
+
+#include <string>
+
+#include "types.h"
+
+
 
 namespace MR
 {
-  namespace GUI
+  namespace Axes
   {
-    namespace MRView
-    {
-      namespace Tool
-      {
-        enum class TrackColourType { Direction, Ends, Manual, ScalarFile };
-        enum class TrackGeometryType { Pseudotubes, Lines , Points };
-        enum class TrackThresholdType { None, UseColourFile, SeparateFile };
-      }
-    }
+
+
+
+    //! convert axis directions between formats
+    /*! these helper functions convert the definition of
+       *  phase-encoding direction between a 3-vector (e.g.
+       *  [0 1 0] ) and a NIfTI axis identifier (e.g. 'i-')
+       */
+    std::string    dir2id (const Eigen::Vector3&);
+    Eigen::Vector3 id2dir (const std::string&);
+
+
+
+
   }
 }
-
 
 #endif
 

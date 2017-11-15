@@ -75,7 +75,8 @@ class Worker
         resampler (that.resampler->clone()) { }
 
     bool operator() (const Streamline<value_type>& in, Streamline<value_type>& out) const {
-      return (*resampler) (in, out);
+      (*resampler) (in, out);
+      return true;
     }
 
   private:
