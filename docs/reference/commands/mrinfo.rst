@@ -37,7 +37,7 @@ Options
 
 -  **-size** image size along each axis
 
--  **-vox** voxel size along each image dimension
+-  **-spacing** voxel spacing along each image dimension
 
 -  **-datatype** data type used for image data storage
 
