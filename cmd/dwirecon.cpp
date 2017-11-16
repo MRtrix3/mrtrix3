@@ -51,7 +51,7 @@ void usage ()
   OPTIONS
   + Option ("motion", "The motion parameters associated with input slices or volumes. "
                       "These are supplied as a matrix of 6 columns that encode respectively "
-                      "the x-y-z translation and 0-1-2 rotation Euler angles for each volume "
+                      "the x-y-z translation and Z-Y-X rotation Euler angles for each volume "
                       "or slice in the image. All transformations are w.r.t. scanner space." )
     + Argument ("file").type_file_in()
 

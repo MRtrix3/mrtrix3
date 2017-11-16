@@ -254,9 +254,9 @@ namespace MR
       inline Eigen::Matrix3f get_rotation(const float a1, const float a2, const float a3) const
       {
         Eigen::Matrix3f m;
-        m = Eigen::AngleAxisf(a1, Eigen::Vector3f::UnitX())
+        m = Eigen::AngleAxisf(a1, Eigen::Vector3f::UnitZ())
           * Eigen::AngleAxisf(a2, Eigen::Vector3f::UnitY())
-          * Eigen::AngleAxisf(a3, Eigen::Vector3f::UnitZ());
+          * Eigen::AngleAxisf(a3, Eigen::Vector3f::UnitX());
         return m;
       }
 
