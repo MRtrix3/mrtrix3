@@ -325,9 +325,9 @@ namespace MR
         Eigen::SparseVector<float> m (nxy*nz);
         m.reserve(64);
 
-        std::unique_ptr< Interp::Linear<decltype(field)> > interp;
+        std::unique_ptr< Interp::Linear<decltype(field)> > finterp;
         if (field.valid())
-          interp = make_unique< Interp::Linear<decltype(field)> >(field, 0.0f);
+          finterp = make_unique< Interp::Linear<decltype(field)> >(field, 0.0f);
 
         Eigen::Vector3 ps, pr, peoffset;
         size_t v = idx/nz, z = idx%nz;
@@ -344,18 +344,7 @@ namespace MR
             for (int s = -2; s <= 2; s++) {       // ssp neighbourhood
               ps[2] = z+s;
               // get slice position in recon space
-              pr = Ts2r * ps;
-              if (field.valid()) {
-                float b0, b1 = 0.0f;
-                for (int j = 0; j < 10; j++) {
-                  interp->voxel(Tf * pr);
-                  b0 = interp->value();
-                  if (b0 == 0) break;
-                  pr = Ts2r * (ps - b0 * peoffset);
-                  if (std::abs(b1-b0) < 0.01f) break;
-                  b1 = b0;
-                }
-              }
+              ps2pr(ps, pr, Ts2r, finterp, peoffset);
               // update motion matrix
               load_sparse_coefs(m, pr.cast<float>());
               dst[i] += ssp(s) * m.dot(rhs);
@@ -370,9 +359,9 @@ namespace MR
         Eigen::SparseVector<float> m (nxy*nz);
         m.reserve(64);
 
-        std::unique_ptr< Interp::Linear<decltype(field)> > interp;
+        std::unique_ptr< Interp::Linear<decltype(field)> > finterp;
         if (field.valid())
-          interp = make_unique< Interp::Linear<decltype(field)> >(field, 0.0f);
+          finterp = make_unique< Interp::Linear<decltype(field)> >(field, 0.0f);
 
         Eigen::Vector3 ps, pr, peoffset;
         int v = idx/nz, z = idx%nz;
@@ -389,18 +378,7 @@ namespace MR
             for (int s = -2; s <= 2; s++) {       // ssp neighbourhood
               ps[2] = z+s;
               // get slice position in recon space
-              pr = Ts2r * ps;
-              if (field.valid()) {
-                float b0, b1 = 0.0f;
-                for (int j = 0; j < 10; j++) {
-                  interp->voxel(Tf * pr);
-                  b0 = interp->value();
-                  if (b0 == 0) break;
-                  pr = Ts2r * (ps - b0 * peoffset);
-                  if (std::abs(b1-b0) < 0.01f) break;
-                  b1 = b0;
-                }
-              }
+              ps2pr(ps, pr, Ts2r, finterp, peoffset);
               // update motion matrix
               load_sparse_coefs(m, pr.cast<float>());
               dst += (ssp(s) * rhs[i]) * m;
@@ -417,9 +395,9 @@ namespace MR
         std::array<Eigen::SparseVector<float>, 5> m;
         m.fill(m0);
 
-        std::unique_ptr< Interp::Linear<decltype(field)> > interp;
+        std::unique_ptr< Interp::Linear<decltype(field)> > finterp;
         if (field.valid())
-          interp = make_unique< Interp::Linear<decltype(field)> >(field, 0.0f);
+          finterp = make_unique< Interp::Linear<decltype(field)> >(field, 0.0f);
 
         Eigen::Vector3 ps, pr, peoffset;
         int v = idx/nz, z = idx%nz;
@@ -437,18 +415,7 @@ namespace MR
             for (int s = -2; s <= 2; s++) {       // ssp neighbourhood
               ps[2] = z+s;
               // get slice position in recon space
-              pr = Ts2r * ps;
-              if (field.valid()) {
-                float b0, b1 = 0.0f;
-                for (int j = 0; j < 10; j++) {
-                  interp->voxel(Tf * pr);
-                  b0 = interp->value();
-                  if (b0 == 0) break;
-                  pr = Ts2r * (ps - b0 * peoffset);
-                  if (std::abs(b1-b0) < 0.01f) break;
-                  b1 = b0;
-                }
-              }
+              ps2pr(ps, pr, Ts2r, finterp, peoffset);
               // update motion matrix
               load_sparse_coefs(m[2+s], pr.cast<float>());
               t += ssp(s) * m[2+s].dot(rhs);
@@ -456,6 +423,23 @@ namespace MR
             for (int s = -2; s <= 2; s++) {
               dst += (ssp(s) * t) * m[2+s];
             }
+          }
+        }
+      }
+
+      template <typename InterpolatorType>
+      inline void ps2pr(const Eigen::Vector3& ps, Eigen::Vector3& pr, const transform_type& Ts2r,
+                        std::unique_ptr<InterpolatorType>& field, const Eigen::Vector3 pe) const
+      {
+        pr = Ts2r * ps;
+        if (field) {
+          float b0, b1 = 0.0f;
+          for (int j = 0; j < 100; j++) {
+            field->voxel(Tf * pr);
+            b0 = field->value();
+            pr = Ts2r * (ps - b0 * pe);
+            if (std::abs(b1-b0) < 0.1f) break;
+            b1 = b0;
           }
         }
       }
