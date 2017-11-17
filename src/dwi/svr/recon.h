@@ -331,6 +331,7 @@ namespace MR
 
         Eigen::Vector3 ps, pr, peoffset;
         size_t v = idx/nz, z = idx%nz;
+        float iJac;
         transform_type Ts2r = get_Ts2r(v, z);
         if (field.valid()) {
           peoffset = pe.block<1,3>(v, 0).transpose().cast<double>();
@@ -344,10 +345,10 @@ namespace MR
             for (int s = -2; s <= 2; s++) {       // ssp neighbourhood
               ps[2] = z+s;
               // get slice position in recon space
-              ps2pr(ps, pr, Ts2r, finterp, peoffset);
+              ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac);
               // update motion matrix
               load_sparse_coefs(m, pr.cast<float>());
-              dst[i] += ssp(s) * m.dot(rhs);
+              dst[i] += (ssp(s)*iJac) * m.dot(rhs);
             }
           }
         }
@@ -365,6 +366,7 @@ namespace MR
 
         Eigen::Vector3 ps, pr, peoffset;
         int v = idx/nz, z = idx%nz;
+        float iJac;
         transform_type Ts2r = get_Ts2r(v, z);
         if (field.valid()) {
           peoffset = pe.block<1,3>(v, 0).transpose().cast<double>();
@@ -378,10 +380,10 @@ namespace MR
             for (int s = -2; s <= 2; s++) {       // ssp neighbourhood
               ps[2] = z+s;
               // get slice position in recon space
-              ps2pr(ps, pr, Ts2r, finterp, peoffset);
+              ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac);
               // update motion matrix
               load_sparse_coefs(m, pr.cast<float>());
-              dst += (ssp(s) * rhs[i]) * m;
+              dst += ((ssp(s)*iJac) * rhs[i]) * m;
             }
           }
         }
@@ -401,7 +403,7 @@ namespace MR
 
         Eigen::Vector3 ps, pr, peoffset;
         int v = idx/nz, z = idx%nz;
-        float t;
+        float t, iJac;
         transform_type Ts2r = get_Ts2r(v, z);
         if (field.valid()) {
           peoffset = pe.block<1,3>(v, 0).transpose().cast<double>();
@@ -415,13 +417,13 @@ namespace MR
             for (int s = -2; s <= 2; s++) {       // ssp neighbourhood
               ps[2] = z+s;
               // get slice position in recon space
-              ps2pr(ps, pr, Ts2r, finterp, peoffset);
+              ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac);
               // update motion matrix
               load_sparse_coefs(m[2+s], pr.cast<float>());
-              t += ssp(s) * m[2+s].dot(rhs);
+              t += (ssp(s)*iJac) * m[2+s].dot(rhs);
             }
             for (int s = -2; s <= 2; s++) {
-              dst += (ssp(s) * t) * m[2+s];
+              dst += ((ssp(s)*iJac) * t) * m[2+s];
             }
           }
         }
@@ -429,18 +431,26 @@ namespace MR
 
       template <typename InterpolatorType>
       inline void ps2pr(const Eigen::Vector3& ps, Eigen::Vector3& pr, const transform_type& Ts2r,
-                        std::unique_ptr<InterpolatorType>& field, const Eigen::Vector3 pe) const
+                        std::unique_ptr<InterpolatorType>& field, const Eigen::Vector3 pe, float& invjac) const
       {
         pr = Ts2r * ps;
+        invjac = 1.0;
         if (field) {
           float b0, b1 = 0.0f;
+          // fixed point inversion
           for (int j = 0; j < 100; j++) {
             field->voxel(Tf * pr);
             b0 = field->value();
             pr = Ts2r * (ps - b0 * pe);
-            if (std::abs(b1-b0) < 0.1f) break;
+            if (std::fabs(b1-b0) < 0.1f) break;
             b1 = b0;
           }
+          // approximate jacobian
+          field->voxel(Tf * Ts2r * (ps + 0.5 * pe.normalized() - b0 * pe));
+          double df = pe.norm() * field->value();
+          field->voxel(Tf * Ts2r * (ps - 0.5 * pe.normalized() - b0 * pe));
+          df -= pe.norm() * field->value();
+          invjac = float(1.0 / (1.0 + df));
         }
       }
 
