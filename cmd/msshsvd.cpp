@@ -19,7 +19,6 @@
 #include <Eigen/Dense>
 #include <Eigen/SVD>
 
-#define DEFAULT_LMAX 4
 #define DEFAULT_NSUB 10000
 
 using namespace MR;
@@ -27,35 +26,40 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "Daan Christiaens";
+  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk)";
 
-  SYNOPSIS = "Low-rank SH-SVD projection of multi-shell SH data.";
+  SYNOPSIS = "SH-SVD decomposition of multi-shell SH data.";
 
   DESCRIPTION
   + "This command expects a 5-D MSSH image (shells on 4th dimension; "
-    "SH coefficients in the 5th). The command will compute a low-rank "
-    "approximation of the input data using the singular value decomposition "
-    "across shells and SH frequency bands (SH-SVD)."
+    "SH coefficients in the 5th). The command will compute the optimal "
+    "orthonormal basis for representing the input data using the singular "
+    "value decomposition across shells and SH frequency bands (SH-SVD)."
 
-  + "The rank is set with the parameter -lmax. For lmax=4 (default), the data "
+  + "Optionally, the command can output the low-rank projection of the input. "
+    "The rank is set with the parameter -lmax. For lmax=4,2,0 (default), the data "
     "is projected onto components of order 4, 2, and 0, leading to a rank = 22.";
 
   ARGUMENTS
   + Argument ("in", "the input MSSH data.").type_image_in()
-  + Argument ("out", "the output MSSH data.").type_file_out();
+
+  + Argument ("rf", "the output basis functions.").type_file_out().allow_multiple();
 
   OPTIONS
   + Option ("mask", "image mask")
     + Argument ("m").type_file_in()
 
-  + Option ("lmax", "maximum SH order (default = " + str(DEFAULT_LMAX) + ")")
-    + Argument ("order").type_integer(0, 30)
-
+  + Option ("lmax", "maximum SH order per component (default = 4,2,0)")
+    + Argument ("order").type_sequence_int()
+    
   + Option ("nsub", "number of voxels in subsampling (default = " + str(DEFAULT_NSUB) + ")")
     + Argument ("vox").type_integer(0)
 
   + Option ("weights", "vector of weights per shell (default = ones)")
-    + Argument ("w").type_file_in();
+    + Argument ("w").type_file_in()
+
+  + Option ("proj", "output low-rank MSSH projection")
+    + Argument ("mssh").type_image_out();
 
 }
 
@@ -102,9 +106,6 @@ void run ()
 {
   auto in = Image<value_type>::open(argument[0]);
 
-  Header header (in);
-  auto out = Image<value_type>::create(argument[1], header);
-
   auto mask = Image<bool>();
   auto opt = get_options("mask");
   if (opt.size()) {
@@ -114,9 +115,25 @@ void run ()
 
   int nshells = in.size(3);
 
-  int lmax = get_option_value("lmax", DEFAULT_LMAX);
-  if (Math::SH::NforL(lmax) > in.size(4)) {
-    throw Exception("lmax too large for input image dimension.");
+  vector<int> lmax;
+  opt = get_options("lmax");
+  if (opt.size()) {
+    lmax = opt[0][0].as_sequence_int();
+  } else {
+    lmax = {4,2,0};
+  }
+  std::sort(lmax.begin(), lmax.end(), std::greater<int>());   // sort in place
+  if (Math::SH::NforL(lmax[0]) > in.size(4)) 
+    throw Exception("lmax too large for input dimension.");
+
+  int nrf = lmax.size();
+  if (argument.size() != nrf+1)
+    throw Exception("no. output arguments does not match desired lmax.");
+  if (nrf > nshells)
+    throw Exception("no. basis functions can't exceed no. shells.");
+  vector<Eigen::MatrixXf> rf;
+  for (int l : lmax) {
+    rf.push_back( Eigen::MatrixXf::Zero(nshells, l/2+1) );
   }
 
   opt = get_options("weights");
@@ -124,8 +141,17 @@ void run ()
   W.setOnes();
   if (opt.size()) {
     W = load_vector<float>(opt[0][0]).cwiseSqrt();
+    W /= W.sum();
     if (W.size() != nshells)
       throw Exception("provided weights do not match the no. shells.");
+  }
+
+  auto proj = Image<value_type>();
+  opt = get_options("proj");
+  bool pout = opt.size();
+  if (pout) {
+    Header header (in);
+    proj = Image<value_type>::create(opt[0][0], header);
   }
 
   // Select voxel subset
@@ -137,7 +163,7 @@ void run ()
 
   // Compute SVD per SH order l
   Eigen::MatrixXf Sl;
-  for (int l = 0; l <= lmax; l+=2)
+  for (int l = 0; l <= lmax[0]; l+=2)
   {
     // load data to matrix
     Sl.resize(nshells, nsub*(2*l+1));
@@ -149,14 +175,25 @@ void run ()
         Sl.col(i) = Eigen::VectorXf(in.row(3));
       }
     }
-    // low-rank project
+    // low-rank SVD
     Eigen::JacobiSVD<Eigen::MatrixXf> svd (W.asDiagonal() * Sl, Eigen::ComputeThinU | Eigen::ComputeThinV);
-    int rank = std::min((lmax-l)/2 + 1, nshells);
-    Eigen::MatrixXf U = svd.matrixU().block(0,0,nshells,rank);
-    Eigen::MatrixXf P = W.asDiagonal().inverse() * U * U.adjoint() * W.asDiagonal();
-    // save to output
-    SHSVDProject func (in, l, P);
-    ThreadedLoop(in, {0, 1, 2}).run(func, in, out);
+    int rank = std::upper_bound(lmax.begin(), lmax.end(), l, std::greater<int>()) - lmax.begin();
+    Eigen::MatrixXf U = svd.matrixU().leftCols(rank);
+    // save basis functions
+    for (int n = 0; n < rank; n++) {
+      rf[n].col(l/2) = W.asDiagonal().inverse() * U.col(n);
+    }
+    // save low-rank projection
+    if (pout) {
+      Eigen::MatrixXf P = W.asDiagonal().inverse() * U * U.adjoint() * W.asDiagonal();
+      SHSVDProject func (in, l, P);
+      ThreadedLoop(in, {0, 1, 2}).run(func, in, proj);
+    }
+  }
+
+  // Write basis functions to file
+  for (int n = 0; n < nrf; n++) {
+    save_matrix(rf[n], argument[n+1]);
   }
 
 }

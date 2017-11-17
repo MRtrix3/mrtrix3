@@ -36,7 +36,8 @@ options.add_argument('-grad', help='Pass the diffusion gradient table in MRtrix 
 options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
 options.add_argument('-niter', help='Number of epochs (default = 3)')
 #options.add_argument('-shells', help='Shells to be processed (default = all)')
-options.add_argument('-lmax', help='SH basis order for single-shell processing (default = 0)')
+options.add_argument('-lmax', help='SH basis order per shell (default = 0,4,4,...)')
+options.add_argument('-rlmax', help='Reduced basis order per component for registration (default = 2,2,0)')
 options.add_argument('-reg', help='Regularization for dwirecon (default = 0.01)')
 #options.add_argument('-rf', help='Basis functions for the radial domain')
 options.add_argument('-svr', help='Number of slice-to-volume reconstruction epochs (default = 0)')
@@ -123,23 +124,22 @@ shells = [s.split('.')[0] for s in image.headerField('in.mif', 'shells').split()
 #    shells = app.args.shells.split(',')
 
 # Set lmax
-lmax = [0,]
+lmax = [4,]*len(shells)
+lmax[0] = 0
 if app.args.lmax:
     lmax = [int(l) for l in app.args.lmax.split(',')]
 if len(lmax) != len(shells):
     app.error('No. lmax must match no. shells.')
 
+rlmax = [2,2,0]
+if app.args.rlmax:
+    rlmax = [int(l) for l in app.args.rlmax.split(',')]
+if len(rlmax) > len(lmax) or max(rlmax) > max(lmax):
+    app.error('-rlmax invalid.')
 
-#if shell=='0' and lmax>0:
-#    app.error('Option -lmax ' + str(lmax) + ' incompatible with b=0 shell.')
-
-# Radial basis
-#rf_import_option = ''
-#if app.args.rf:
-#    rf_import_option = ' '.join('-rf ' + path.fromUser(r, True) for r in app.args.rf.split(','))
 
 # Shared reconstruction options
-recon_option = '-maxiter 1'
+recon_option = '-maxiter 3'
 if app.args.reg:
     recon_option += ' -reg ' + app.args.reg
 if app.args.sspwidth:
@@ -147,13 +147,22 @@ if app.args.sspwidth:
 if app.args.fieldmap:
     recon_option += ' -field field1.mif'
 
-#if rf_import_option is not '':
-#    recon_option += rf_import_option
-#elif shell is not None and len(shell)==1:
-#    recon_option += ' -lmax ' + str(lmax)
-#else:
-#    app.error('Multi-shell data requires radial basis, single-shell data requires lmax.')
 
+# Initialise radial basis with RF per shell.
+rfs = []
+for k, l in enumerate(lmax):
+    fn = 'rf'+str(k+1)+'.txt'
+    with open(fn, 'w') as f:
+        for s in range(len(shells)):
+            if k==s:
+                f.write(' '.join(['1',]*(l//2+1)) + '\n')
+            else:
+                f.write(' '.join(['0',]*(l//2+1)) + '\n')
+    rfs += [fn,]
+
+redrfs = ['redrf'+str(k+1)+'.txt' for k in range(len(rlmax))]
+
+# Registration options
 reg_option = '-type rigid -nonsymmetric -affine_scale 1.0 -affine_niter 3'
 
 # Force max no. threads
@@ -175,32 +184,35 @@ if app.args.or_loss:
 # Image dimensions
 dims = list(map(int, image.headerField('in.mif', 'size').split()))
 
+vz = float(image.headerField('in.mif', 'vox').split()[2])
+if app.args.sspwidth:
+    vz *= float(app.args.sspwidth)
+
 # Shell weights
 with open('svdweights.txt', 'w') as f:
-    f.write(image.headerField('in.mif', 'shellcount'))
+    f.write(image.headerField('in.mif', 'shellcount') + '\n')
 
 
 #   __________ Function definitions __________
 
 def reconstep(k):
-    n = max(lmax)
-    n = (n+1)*(n+2)//2
-    tmpsh = ['sh-b' + s + '.mif' for s in shells]
-    for s, l, fn in zip(shells, lmax, tmpsh):
-        run.command('dwirecon in.mif -shell ' + s + ' -lmax ' + str(l) + ' ' + fn +
-                    ('' if k==0 else ' -motion motion.txt -weights sliceweights.txt -init ' + fn) + ' -pad ' + str(n) +
-                    ' -spred spred-b' + s + '.mif -complete ' + recon_option + ' -force' + nthr)
-    run.command('mrcat -axis 4 ' + ' '.join(tmpsh) + ' - | mrconvert -axes 0,1,2,4,3 -set_property shells ' +
-                ','.join(shells) + ' - recon-' + str(k) + '.mif')
-    run.command('mrmath ' + ' '.join(['spred-b' + s + '.mif' for s in shells]) + ' sum spred.mif -force')
+    run.command('dwirecon in.mif recon-' + str(k) + '.mif -spred spred.mif ' + recon_option + ' -rf ' + ' -rf '.join(rfs) +
+            ('' if k==0 else ' -motion motion.txt -weights sliceweights.txt -init recon-' + str(k-1) + '.mif') + ' -force' + nthr)
 
 
 def sliceweightstep():
     run.command('dwisliceoutliers in.mif spred.mif -mask mask.mif sliceweights.txt' + or_option + ' -force')
 
 
+def basisupdatestep(k):
+    run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax ' + ','.join([str(l) for l in sorted(lmax)[::-1]]) +
+                ' -weights svdweights.txt ' + ' '.join(rfs) + ' -force')
+
+
 def rankreduxstep(k):
-    run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax 4 -weights svdweights.txt msshredux.mif -force')
+    run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax ' + ','.join([str(l) for l in rlmax]) +
+                ' -weights svdweights.txt ' + ' '.join(redrfs) + ' -proj irankredux.mif -force')
+    run.command('mrfilter irankredux.mif smooth rankredux.mif -fwhm 0,0,' + str(vz) + ' -force')
 
 
 def v2vregstep(k):
@@ -213,7 +225,7 @@ def v2vregstep(k):
                             'mrfieldunwarp - field1.mif' + (' -transform T-'+str(v)+'.txt' if k>0 else '') + ' target.mif -force')
             else:
                 run.command('mrconvert -coord 3 ' + str(v) + ' in.mif target.mif -export_grad_mrtrix grad1.txt -force')
-            run.command('mssh2amp msshredux.mif grad1.txt template.mif ' + ('' if k==0 else '-transform T-' + str(v) + '.txt ') + '-force')
+            run.command('mssh2amp rankredux.mif grad1.txt template.mif ' + ('' if k==0 else '-transform T-' + str(v) + '.txt ') + '-force')
             run.command('mrreg_lin template.mif target.mif -mask2 mask.mif' +
                         (' -affine_init T-'+str(v)+'.txt' if k>0 else '') +
                         ' -affine T-'+str(v)+'.txt ' + reg_option + ' -force')
@@ -239,11 +251,11 @@ def s2vregstep(k):
             else:
                 run.command('mrconvert -coord 3 ' + str(v) + ' in.mif target.mif -export_grad_mrtrix grad1.txt -force')
             if k == 0:
-                run.command('mssh2amp msshredux.mif grad1.txt template.mif -transform T-' + str(v) + '.txt -force')
+                run.command('mssh2amp rankredux.mif grad1.txt template.mif -transform T-' + str(v) + '.txt -force')
             for s in range(dims[2]//mb):
                 run.command('maskslice -mb ' + str(mb) + ' mask.mif ' + str(s) + ' slicemask.mif -force')
                 if k > 0:
-                    run.command('mssh2amp msshredux.mif grad1.txt template.mif -transform T-' + str(v) + '-' + str(s) + '.txt -force')
+                    run.command('mssh2amp rankredux.mif grad1.txt template.mif -transform T-' + str(v) + '-' + str(s) + '.txt -force')
                 run.command('mrreg_lin template.mif target.mif -mask2 slicemask.mif' +
                         ' -affine_init ' + ('T-'+str(v)+'-'+str(s)+'.txt' if k>0 else 'T-'+str(v)+'.txt') +
                         ' -affine T-'+str(v)+'-'+str(s)+'.txt ' + reg_option + ' -force')
@@ -259,43 +271,40 @@ def s2vregstep(k):
         prog.done()
 
 
-def fieldalignstep(k):
+def fieldalignstep():
     if app.args.fieldmap:
-        if (k == 0):
-            run.command('mrconvert field.mif field1.mif')
-        else:
-            idx = '0' if not app.args.fieldidx else app.args.fieldidx
-            run.command('mrtransform field.mif -linear T-'+idx+'.txt -inverse field1.mif -force')
+        idx = '0' if not app.args.fieldidx else app.args.fieldidx
+        run.command('mrtransform field.mif -linear T-'+idx+'.txt -inverse field1.mif -force')
 
 
 
 #   __________ Motion correction __________
 
 # initial template
-fieldalignstep(0)
+if app.args.fieldmap:
+    run.command('mrconvert field.mif field1.mif')
 reconstep(0)
-sliceweightstep()
-rankreduxstep(0)
 
 # volume-to-volume registration
 for k in range(v2viter):
+    sliceweightstep()
+    basisupdatestep(k)
     # register template to volumes
+    rankreduxstep(k)
     v2vregstep(k)
-    fieldalignstep(k+1)
+    fieldalignstep()
     # update template
     reconstep(k+1)
-    sliceweightstep()
-    rankreduxstep(k+1)
-
 
 # slice-to-volume registration
 for k in range(s2viter):
+    sliceweightstep()
+    basisupdatestep(v2viter+k)
     # register template to slices
+    rankreduxstep(v2viter+k)
     s2vregstep(k)
     # update template
     reconstep(v2viter+k+1)
-    sliceweightstep()
-    rankreduxstep(v2viter+k+1)
 
 
 #   __________ Copy outputs __________

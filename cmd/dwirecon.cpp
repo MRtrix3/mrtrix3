@@ -12,6 +12,7 @@
  */
 
 #include <algorithm>
+#include <sstream>
 
 #include "command.h"
 #include "image.h"
@@ -241,8 +242,8 @@ void run ()
     R.setField(field, PEsub);
 
   size_t ncoefs = R.getY().cols();
-  size_t padding = get_option_value("padding", ncoefs);
-  if (padding < ncoefs)
+  size_t padding = get_option_value("padding", Math::SH::NforL(lmax));
+  if (padding < Math::SH::NforL(lmax))
     throw Exception("user-provided padding too small.");
 
   // Read input data to vector
@@ -253,7 +254,7 @@ void run ()
   }
 
   // Fit scattered data in basis...
-  INFO("solve with conjugate gradient method");
+  INFO("initialise conjugate gradient solver");
 
   Eigen::ConjugateGradient<DWI::ReconMatrix, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
   cg.compute(R);
@@ -269,19 +270,33 @@ void run ()
   Eigen::VectorXf x (R.cols());
   opt = get_options("init");
   if (opt.size()) {
-    auto init = Image<value_type>::open(opt[0][0]);
+    // load initialisation
+    auto init = Image<value_type>::open(opt[0][0]).with_direct_io({3, 4, 5, 2, 1});
     check_dimensions(dwi, init, 0, 3);
-    if (init.size(3) < ncoefs)
+    if ((init.size(3) != shells.count()) || (init.size(4) < Math::SH::NforL(lmax)))
       throw Exception("dimensions of init image don't match.");
+    // init vector
     Eigen::VectorXf x0 (R.cols());
-    size_t j = 0;
-    for (auto l = Loop("loading initialisation", {3, 0, 1, 2})(init); l; l++) {
-      if (init.index(3) < ncoefs)
-        x0[j++] = init.value();
+    // convert from mssh
+    Eigen::VectorXf c (shells.count() * Math::SH::NforL(lmax));
+    Eigen::MatrixXf x2mssh (c.size(), ncoefs); x2mssh.setZero();
+    for (int k = 0; k < shells.count(); k++)
+      x2mssh.middleRows(k*Math::SH::NforL(lmax), Math::SH::NforL(lmax)) = R.getShellBasis(k).transpose();
+    auto mssh2x = x2mssh.fullPivHouseholderQr();
+    size_t j = 0, k = 0;
+    for (auto l = Loop("loading initialisation", {0, 1, 2})(init); l; l++, j+=ncoefs) {
+      k = 0;
+      for (auto l2 = Loop({4,3})(init); l2; l2++) {
+        if (init.index(4) < Math::SH::NforL(lmax))
+          c[k++] = std::isfinite((float) init.value()) ? init.value() : 0.0f;
+      }
+      x0.segment(j, ncoefs) = mssh2x.solve(c);
     }
+    INFO("solve from given starting point");
     x = cg.solveWithGuess(p, x0);
   }
   else {
+    INFO("solve from zero starting point");
     x = cg.solve(p);
   }
 
@@ -291,20 +306,36 @@ void run ()
 
   // Write result to output file
   Header header (dwisub);
-  header.size(3) = padding;
-  Stride::set_from_command_line (header, Stride::contiguous_along_axis (3));
+  header.ndim() = 5;
+  header.size(3) = shells.count();
+  header.size(4) = padding;
+  Stride::set_from_command_line (header, {3, 4, 5, 2, 1});
   header.datatype() = DataType::from_command_line (DataType::Float32);
   PhaseEncoding::set_scheme (header, Eigen::MatrixXf());
+  std::stringstream ss;
+  for (auto b : shells.get_bvalues())
+    ss << b << ",";
+  std::string key = "shells";
+  std::string val = ss.str();
+  val.erase(val.length()-1);
+  header.keyval()[key] = val;
+
   auto out = Image<value_type>::create (argument[1], header);
 
   j = 0;
-  for (auto l = Loop("writing result to image", {3, 0, 1, 2})(out); l; l++) {
-    if (out.index(3) < ncoefs)
-      out.value() = x[j++];
+  Eigen::VectorXf c (ncoefs);
+  Eigen::VectorXf sh (padding); sh.setZero();
+  for (auto l = Loop("writing result to image", {0, 1, 2})(out); l; l++, j+=ncoefs) {
+    c = x.segment(j, ncoefs);
+    for (int k = 0; k < shells.count(); k++) {
+      out.index(3) = k;
+      sh.head(Math::SH::NforL(lmax)) = R.getShellBasis(k).transpose() * c;
+      out.row(4) = sh;
+    }
   }
 
 
-  // Output registration prediction
+/*  // Output registration prediction
   opt = get_options("rpred");
   if (opt.size()) {
     header.size(3) = motionsub.rows();
@@ -326,12 +357,13 @@ void run ()
       ThreadedLoop(out, 0, 3).run( PredFunctor (R.getY().row(j)) , out , rpred );
     }
   }
-
+*/
 
   // Output source prediction
   bool complete = get_options("complete").size();
   opt = get_options("spred");
   if (opt.size()) {
+    Header header (dwisub);
     header.size(3) = (complete) ? dwi.size(3) : dwisub.size(3);
     DWI::set_DW_scheme (header, gradsub);
     auto spred = Image<value_type>::create(opt[0][0], header);
@@ -350,7 +382,7 @@ void run ()
   }
 
 
-  // Output target prediction
+/*  // Output target prediction
   opt = get_options("tpred");
   if (opt.size()) {
     header.size(3) = dwisub.size(3);
@@ -372,7 +404,7 @@ void run ()
       ThreadedLoop(out, 0, 3).run( PredFunctor (R.getY0(gradsub).row(j)) , out , tpred );
     }
   }
-
+*/
 
 }
 
