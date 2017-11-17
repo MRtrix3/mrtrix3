@@ -212,7 +212,7 @@ namespace MR
               } else if (c[ic].is_F()) {
                 output (iF, ic) = F[iF];
               } else {
-                assert (betahats.cols() == 1);
+                assert (betahat.cols() == 1);
                 output (iF, ic) = std::sqrt (F[iF]) * (betahat (iF, 0) > 0 ? 1.0 : -1.0);
               }
             }
@@ -243,7 +243,7 @@ namespace MR
         {
           // Make sure that the specified contrasts reflect the full design matrix (with additional
           //   data loaded)
-          assert (contrasts.cols() == M.cols() + ssize_t(importers.size()));
+          assert (contrasts[0].cols() == M.cols() + ssize_t(importers.size()));
         }
 
 
@@ -379,7 +379,7 @@ namespace MR
                 } else if (c[ic].is_F()) {
                   output (iF, ic) = F[iF];
                 } else {
-                  assert (betahats.cols() == 1);
+                  assert (betahat.cols() == 1);
                   output (iF, ic) = std::sqrt (F[iF]) * (betahat (iF, 0) > 0 ? 1.0 : -1.0);
                 }
               }
