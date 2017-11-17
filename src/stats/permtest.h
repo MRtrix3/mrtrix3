@@ -56,7 +56,7 @@ namespace MR
       /*! A class to pre-compute the empirical enhanced statistic image for non-stationarity correction */
       class PreProcessor { MEMALIGN (PreProcessor)
         public:
-          PreProcessor (const std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator,
+          PreProcessor (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                         const std::shared_ptr<EnhancerBase> enhancer,
                         matrix_type& global_enhanced_sum,
                         vector<vector<size_t>>& global_enhanced_count);
@@ -66,7 +66,7 @@ namespace MR
           bool operator() (const Permutation&);
 
         protected:
-          std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator;
+          std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator;
           std::shared_ptr<EnhancerBase> enhancer;
           matrix_type& global_enhanced_sum;
           vector<vector<size_t>>& global_enhanced_count;
@@ -83,7 +83,7 @@ namespace MR
       /*! A class to perform the permutation testing */
       class Processor { MEMALIGN (Processor)
         public:
-          Processor (const std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator,
+          Processor (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                      const std::shared_ptr<EnhancerBase> enhancer,
                      const matrix_type& empirical_enhanced_statistics,
                      const matrix_type& default_enhanced_statistics,
@@ -95,7 +95,7 @@ namespace MR
           bool operator() (const Permutation&);
 
         protected:
-          std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator;
+          std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator;
           std::shared_ptr<EnhancerBase> enhancer;
           const matrix_type& empirical_enhanced_statistics;
           const matrix_type& default_enhanced_statistics;
@@ -111,7 +111,7 @@ namespace MR
 
 
       // Precompute the empircal test statistic for non-stationarity adjustment
-      void precompute_empirical_stat (const std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator,
+      void precompute_empirical_stat (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                                       const std::shared_ptr<EnhancerBase> enhancer,
                                       PermutationStack& perm_stack, matrix_type& empirical_statistic);
 
@@ -119,7 +119,7 @@ namespace MR
 
 
       // Precompute the default statistic image and enhanced statistic. We need to precompute this for calculating the uncorrected p-values.
-      void precompute_default_permutation (const std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator,
+      void precompute_default_permutation (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                                            const std::shared_ptr<EnhancerBase> enhancer,
                                            const matrix_type& empirical_enhanced_statistic,
                                            matrix_type& default_enhanced_statistics,
@@ -133,7 +133,7 @@ namespace MR
       // - Pre-defined permutations (likely provided via a command-line option)
       // - A requested number of permutations
       void run_permutations (PermutationStack& perm_stack,
-                             const std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator,
+                             const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                              const std::shared_ptr<EnhancerBase> enhancer,
                              const matrix_type& empirical_enhanced_statistic,
                              const matrix_type& default_enhanced_statistics,
@@ -142,7 +142,7 @@ namespace MR
 
 
       void run_permutations (const vector<vector<size_t>>& permutations,
-                             const std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator,
+                             const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                              const std::shared_ptr<EnhancerBase> enhancer,
                              const matrix_type& empirical_enhanced_statistic,
                              const matrix_type& default_enhanced_statistics,
@@ -151,7 +151,7 @@ namespace MR
 
 
       void run_permutations (const size_t num_permutations,
-                             const std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator,
+                             const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                              const std::shared_ptr<EnhancerBase> enhancer,
                              const matrix_type& empirical_enhanced_statistic,
                              const matrix_type& default_enhanced_statistics,

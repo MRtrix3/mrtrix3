@@ -25,24 +25,24 @@ namespace MR
   {
     namespace Stats
     {
-
-
-
-      const char* const glm_column_ones_description =
-          "In some software packages, a column of ones is automatically added to the "
-          "GLM design matrix; the purpose of this column is to estimate the \"global "
-          "intercept\", which is the predicted value of the observed variable if all "
-          "explanatory variables were to be zero. However there are rare situations "
-          "where including such a column would not be appropriate for a particular "
-          "experiment al design; hence, in MRtrix3 statistical inference commands, "
-          "it is up to the user to determine whether or not this column of ones should "
-          "be included in their design matrix, and add it explicitly if necessary. "
-          "The contrast matrix must also reflect the presence of this additional column.";
-
-
-
       namespace GLM
       {
+
+
+
+        const char* const column_ones_description =
+            "In some software packages, a column of ones is automatically added to the "
+            "GLM design matrix; the purpose of this column is to estimate the \"global "
+            "intercept\", which is the predicted value of the observed variable if all "
+            "explanatory variables were to be zero. However there are rare situations "
+            "where including such a column would not be appropriate for a particular "
+            "experimental design. Hence, in MRtrix3 statistical inference commands, "
+            "it is up to the user to determine whether or not this column of ones should "
+            "be included in their design matrix, and add it explicitly if necessary. "
+            "The contrast matrix must also reflect the presence of this additional column.";
+
+
+
 
         matrix_type solve_betas (const matrix_type& measurements, const matrix_type& design)
         {
@@ -50,42 +50,66 @@ namespace MR
         }
 
 
-        matrix_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const matrix_type& contrasts)
+
+        vector_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const Contrast& contrast)
         {
-          return contrasts * solve_betas (measurements, design);
+          return matrix_type(contrast) * solve_betas (measurements, design);
+        }
+
+        matrix_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Contrast>& contrasts)
+        {
+          matrix_type result (measurements.rows(), contrasts.size());
+          for (size_t ic = 0; ic != contrasts.size(); ++ic)
+            result.col (ic) = abs_effect_size (measurements, design, contrasts[ic]);
+          return result;
         }
 
 
-        matrix_type stdev (const matrix_type& measurements, const matrix_type& design)
+
+        vector_type stdev (const matrix_type& measurements, const matrix_type& design)
         {
-          matrix_type residuals = measurements.transpose() - design * solve_betas (measurements, design); //TODO
-          residuals = residuals.array().pow(2.0);
-          matrix_type one_over_dof (1, measurements.cols());  //TODO supply transposed measurements
+          matrix_type residuals = measurements.transpose() - design * solve_betas (measurements, design);
+          residuals = residuals.array().pow (2.0);
+          matrix_type one_over_dof (1, measurements.cols());
           one_over_dof.fill (1.0 / value_type(design.rows()-Math::rank (design)));
           return (one_over_dof * residuals).array().sqrt();
         }
 
 
-        matrix_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const matrix_type& contrasts)
+
+        vector_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const Contrast& contrast)
         {
-          return abs_effect_size (measurements, design, contrasts).array() / stdev (measurements, design).array();
+          return abs_effect_size (measurements, design, contrast).array() / stdev (measurements, design).array();
         }
+
+        matrix_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Contrast>& contrasts)
+        {
+          const auto stdev_reciprocal = vector_type::Ones (measurements.rows()).array() / stdev (measurements, design).array();
+          matrix_type result (measurements.rows(), contrasts.size());
+          for (size_t ic = 0; ic != contrasts.size(); ++ic)
+            result.col (ic) = abs_effect_size (measurements, design, contrasts[ic]) * stdev_reciprocal;
+          return result;
+        }
+
 
 
         void all_stats (const matrix_type& measurements,
                         const matrix_type& design,
-                        const matrix_type& contrasts,
+                        const vector<Contrast>& contrasts,
                         matrix_type& betas,
                         matrix_type& abs_effect_size,
                         matrix_type& std_effect_size,
-                        matrix_type& stdev)
+                        vector_type& stdev)
         {
           betas = solve_betas (measurements, design);
           //std::cerr << "Betas: " << betas.rows() << " x " << betas.cols() << ", max " << betas.array().maxCoeff() << "\n";
-          abs_effect_size = contrasts * betas;
+          abs_effect_size.resize (measurements.rows(), contrasts.size());
+          // TESTME Surely this doesn't make sense for an F-test?
+          for (size_t ic = 0; ic != contrasts.size(); ++ic)
+            abs_effect_size.col (ic) = matrix_type (contrasts[ic]) * betas;
           //std::cerr << "abs_effect_size: " << abs_effect_size.rows() << " x " << abs_effect_size.cols() << ", max " << abs_effect_size.array().maxCoeff() << "\n";
           matrix_type residuals = measurements.transpose() - design * betas;
-          residuals = residuals.array().pow(2.0);
+          residuals = residuals.array().pow (2.0);
           //std::cerr << "residuals: " << residuals.rows() << " x " << residuals.cols() << ", max " << residuals.array().maxCoeff() << "\n";
           matrix_type one_over_dof (1, measurements.cols());
           one_over_dof.fill (1.0 / value_type(design.rows()-Math::rank (design)));
@@ -96,317 +120,289 @@ namespace MR
           //std::cerr << "stdev: " << stdev.rows() << " x " << stdev.cols() << ", max " << stdev.array().maxCoeff() << "\n";
           // TODO Should be a cleaner way of doing this (broadcasting?)
           matrix_type stdev_fill (abs_effect_size.rows(), abs_effect_size.cols());
-          for (size_t i = 0; i != stdev_fill.rows(); ++i)
+          for (ssize_t i = 0; i != stdev_fill.rows(); ++i)
             stdev_fill.row(i) = stdev;
           std_effect_size = abs_effect_size.array() / stdev_fill.array();
           //std::cerr << "std_effect_size: " << std_effect_size.rows() << " x " << std_effect_size.cols() << ", max " << std_effect_size.array().maxCoeff() << "\n";
-          //TRACE;
         }
 
-      }
 
 
 
 
 
-
-
-
-      GLMTTestFixed::GLMTTestFixed (const matrix_type& measurements, const matrix_type& design, const matrix_type& contrasts) :
-          GLMTestBase (measurements, design, contrasts),
-          pinvX (Math::pinv (X)),
-          scaled_contrasts_t (calc_scaled_contrasts().transpose())
-      {
-        assert (contrasts.cols() == design.cols());
-      }
-
-
-
-      void GLMTTestFixed::operator() (const vector<size_t>& perm_labelling, matrix_type& output) const
-      {
-        output = matrix_type::Zero (num_elements(), num_outputs());
-        matrix_type tvalues, betas, residuals_t, SX_t, pinvSX_t;
-
-        // TODO Currently the entire design matrix is permuted;
-        //   we may instead prefer Freedman-Lane
-        // This however would be different for each row in the contrasts matrix,
-        //   since the columns that correspond to nuisance variables
-        //   varies between rows
-
-        SX_t.resize (X.rows(), X.cols());
-        pinvSX_t.resize (pinvX.rows(), pinvX.cols());
-        for (ssize_t i = 0; i < X.rows(); ++i) {
-          SX_t.row(i) = X.row (perm_labelling[i]);
-          pinvSX_t.col(i) = pinvX.col (perm_labelling[i]);
-        }
-
-        SX_t.transposeInPlace();
-        pinvSX_t.transposeInPlace();
-        for (ssize_t i = 0; i < y.rows(); i += GLM_BATCH_SIZE) {
-          const auto tmp = y.block (i, 0, std::min (GLM_BATCH_SIZE, (int)(y.rows()-i)), y.cols());
-          ttest (tvalues, SX_t, pinvSX_t, tmp, betas, residuals_t);
-          for (size_t col = 0; col != num_outputs(); ++col) {
-            for (size_t n = 0; n != size_t(tvalues.rows()); ++n) {
-              value_type val = tvalues(n, col);
-              if (!std::isfinite (val))
-                val = value_type(0);
-              output(i+n, col) = val;
-            }
+        Contrast::Partition Contrast::operator() (const matrix_type& design) const
+        {
+          // For now, let's do the most basic partitioning possible:
+          //   Split design matrix column-wise depending on whether entries in the contrast matrix are all zero
+          // TODO Later, may include config variables / compiler flags to change model partitioning technique
+          matrix_type X, Z;
+          const size_t nonzero_column_count = c.colwise().any().count();
+          X.resize (design.rows(), nonzero_column_count);
+          Z.resize (design.rows(), design.cols() - nonzero_column_count);
+          ssize_t ix = 0, iz = 0;
+          for (ssize_t ic = 0; ic != c.cols(); ++ic) {
+            if (c.col (ic).any())
+              X.col (ix++) = design.col (ic);
+            else
+              Z.col (iz++) = design.col (ic);
           }
+          return Partition (X, Z);
         }
-      }
-
-
-
-      void GLMTTestFixed::ttest (matrix_type& tvalues,
-                                 const matrix_type& design_t,
-                                 const matrix_type& pinv_design_t,
-                                 Eigen::Block<const matrix_type> measurements,
-                                 matrix_type& betas,
-                                 matrix_type& residuals_t) const
-      {
-        betas.noalias() = measurements * pinv_design_t;
-        residuals_t.noalias() = measurements - betas * design_t;
-        tvalues.noalias() = betas * scaled_contrasts_t;
-        for (size_t n = 0; n < size_t(tvalues.rows()); ++n)
-          tvalues.row(n).array() /= residuals_t.row(n).norm();
-      }
 
 
 
 
-      // scale contrasts for use in ttest() member function
-      /* This function pre-scales the contrast matrix in order to make conversion from GLM betas
-       * to t-values more computationally efficient.
-       *
-       * For design matrix X, contrast matrix c, beta vector b and variance o^2, the t-value is calculated as:
-       *               c^T.b
-       * t = --------------------------
-       *     sqrt(o^2.c^T.(X^T.X)^-1.c)
-       *
-       * Definition of variance (for vector of residuals e):
-       *       e^T.e
-       * o^2 = ------
-       *       DOF(X)
-       *
-       * (Note that the above equations are used directly in GLMTTestVariable)
-       *
-       * This function will generate scaled contrasts c' from c, such that:
-       *                   DOF(X)
-       * c' = c.sqrt(------------------)
-       *              c^T.(X^T.X)^-1.c
-       *
-       *       c'^T.b
-       * t = -----------
-       *     sqrt(e^T.e)
-       *
-       * Note each row of the contrast matrix will still be treated as an independent contrast. The number
-       * of elements in each contrast vector must equal the number of columns in the design matrix.
-       */
-      matrix_type GLMTTestFixed::calc_scaled_contrasts() const
-      {
-        const size_t dof = X.rows() - Math::rank(X);
-        const matrix_type XtX = X.transpose() * X;
-        const matrix_type pinv_XtX = (XtX.transpose() * XtX).fullPivLu().solve (XtX.transpose());
-        matrix_type result = c;
-        for (size_t n = 0; n < size_t(c.rows()); ++n) {
-          auto pinv_XtX_c = pinv_XtX * c.row(n).transpose();
-          result.row(n) *= std::sqrt (value_type(dof) / c.row(n).dot (pinv_XtX_c));
+
+
+
+
+        TestFixed::TestFixed (const matrix_type& measurements, const matrix_type& design, const vector<Contrast>& contrasts) :
+            TestBase (measurements, design, contrasts),
+            pinvM (Math::pinv (M)),
+            Rm (matrix_type::Identity (num_subjects(), num_subjects()) - (M*pinvM))
+        {
+          assert (contrasts[0].cols() == design.cols());
+          // When the design matrix is fixed, we can pre-calculate the model partitioning for each contrast
+          for (const auto c : contrasts)
+            partitions.emplace_back (c (design));
         }
-        return result;
-      }
 
 
 
+        void TestFixed::operator() (const vector<size_t>& perm_labelling, matrix_type& output) const
+        {
+          assert (perm_labelling.size() == num_subjects());
+          if (!(size_t(output.rows()) == num_elements() && size_t(output.cols()) == num_outputs()))
+            output.resize (num_elements(), num_outputs());
 
 
+          // TODO Re-express the permutation labelling as a permutation matrix
+          //   (we'll deal with altering how these permutations are provided
+          //   to the GLM code later)
+          matrix_type perm_matrix (matrix_type::Zero (num_subjects(), num_subjects()));
+          for (size_t i = 0; i != num_subjects(); ++i)
+            perm_matrix (i, perm_labelling[i]) = value_type(1); // TESTME
 
+          matrix_type beta, betahat;
+          vector_type F;
 
+          // Implement Freedman-Lane for fixed design matrix case
+          // Each contrast needs to be handled explicitly on its own
+          for (size_t ic = 0; ic != c.size(); ++ic) {
 
+            // First, we perform permutation of the input data
+            // In Freedman-Lane, the initial 'effective' regression against the nuisance
+            //   variables, and permutation of the data, are done in a single step
+            const matrix_type Sy = perm_matrix * partitions[ic].Rz * y;
 
-      GLMTTestVariable::GLMTTestVariable (const vector<CohortDataImport>& importers, const matrix_type& measurements, const matrix_type& design, const matrix_type& contrasts, const bool nans_in_data, const bool nans_in_columns) :
-          GLMTestBase (measurements, design, contrasts),
-          importers (importers),
-          nans_in_data (nans_in_data),
-          nans_in_columns (nans_in_columns)
-      {
-        // Make sure that the specified contrasts reflect the full design matrix (with additional
-        //   data loaded)
-        assert (contrasts.cols() == X.cols() + ssize_t(importers.size()));
-      }
+            // Now, we regress this shuffled data against the full model
+            //ttest (tvalues, X.transpose(), pinvX.transpose(), Sy, betas, residuals_t);
+            beta.noalias() = Sy * pinvM;
+            betahat.noalias() = beta * matrix_type(c[ic]);
+            F = (betahat.transpose() * (partitions[ic].X.inverse()*partitions[ic].X) * betahat / c[ic].rank()) /
+                ((Rm*Sy).squaredNorm() / (num_subjects() - partitions[ic].rank_x - partitions[ic].rank_z));
 
-
-
-      void GLMTTestVariable::operator() (const vector<size_t>& perm_labelling, matrix_type& output) const
-      {
-        output = matrix_type::Zero (num_elements(), num_outputs());
-        matrix_type tvalues, betas, residuals;
-
-        // Set the size of the permuted design matrix to include the additional columns
-        //   that will be imported from external files
-        matrix_type SX (X.rows(), X.cols() + importers.size());
-
-        // Pre-permute the fixed contents of the design matrix
-        for (ssize_t row = 0; row != X.rows(); ++row)
-          SX.block(row, 0, 1, X.cols()) = X.row (perm_labelling[row]);
-
-        // Loop over all elements in the input image
-        for (ssize_t element = 0; element != y.rows(); ++element) {
-
-          // For each element (row in y), need to load the additional data for that element
-          //   for all subjects in order to construct the design matrix
-          // Would it be preferable to pre-calculate and store these per-element design matrices,
-          //   rather than re-generating them each time? (More RAM, less CPU)
-          // No, most of the time that subject data will be memory-mapped, so pre-loading (in
-          //   addition to the duplication of the fixed design matrix contents) would hurt bad
-          matrix_type extra_data (X.rows(), importers.size());
-          for (ssize_t col = 0; col != ssize_t(importers.size()); ++col)
-            extra_data.col(col) = importers[col] (element);
-
-          // If there are non-finite values present either in the input
-          //   data or the element-wise design matrix columns (or both),
-          //   need to track which rows are being kept / discarded
-          BitSet element_mask (X.rows(), true);
-          if (nans_in_data) {
-            for (ssize_t row = 0; row != y.rows(); ++row) {
-              if (!std::isfinite (y (row, element)))
-                element_mask[row] = false;
-            }
-          }
-          if (nans_in_columns) {
-            // Bear in mind that we need to test for finite values in the
-            //   row in which this data is going to be written to based on
-            //   the permutation labelling
-            for (ssize_t row = 0; row != extra_data.rows(); ++row) {
-              if (!extra_data.row (perm_labelling[row]).allFinite())
-                element_mask[row] = false;
-            }
-          }
-
-          // Do we need to reduce the size of our matrices / vectors
-          //   based on the presence of non-finite values?
-          if (element_mask.full()) {
-
-            // Make sure the data from the additional columns is appropriately permuted
-            //   (i.e. in the same way as what the fixed portion of the design matrix experienced)
-            for (ssize_t row = 0; row != X.rows(); ++row)
-              SX.block(row, X.cols(), 1, importers.size()) = extra_data.row (perm_labelling[row]);
-
-            ttest (tvalues, SX, y.row(element), betas, residuals);
-
-          } else {
-
-            const ssize_t new_num_elements = element_mask.count();
-            matrix_type y_masked (1, new_num_elements);
-            matrix_type SX_masked (new_num_elements, X.cols() + importers.size());
-            ssize_t new_index = 0;
-            for (ssize_t old_index = 0; old_index != X.rows(); ++old_index) {
-              if (element_mask[old_index]) {
-                y_masked(0, new_index) = y(old_index, element);
-                SX_masked.block (new_index, 0, 1, X.cols()) = SX.block (old_index, 0, 1, X.cols());
-                SX_masked.block (new_index, X.cols(), 1, importers.size()) = extra_data.row (perm_labelling[old_index]);
-                ++new_index;
+            // Put the results into the output matrix, replacing NaNs with zeroes
+            // TODO Check again to see if this new statistic produces NaNs when input data are all zeroes
+            // We also need to convert F to t if necessary
+            for (ssize_t iF = 0; iF != F.size(); ++iF) {
+              if (!std::isfinite (F[iF])) {
+                output (iF, ic) = value_type(0);
+              } else if (c[ic].is_F()) {
+                output (iF, ic) = F[iF];
+              } else {
+                assert (betahats.cols() == 1);
+                output (iF, ic) = std::sqrt (F[iF]) * (betahat (iF, 0) > 0 ? 1.0 : -1.0);
               }
             }
-            assert (new_index == new_num_elements);
-
-            // const_cast required as Eigen does not know how to convert from RowXpr to ConstRowXpr
-            ttest (tvalues, SX_masked, const_cast<const matrix_type*>(&y_masked)->row(0), betas, residuals);
 
           }
-
-          for (size_t col = 0; col != num_outputs(); ++col) {
-            value_type val = tvalues (element, col);
-            if (!std::isfinite (val))
-              val = value_type(0);
-            output(element, col) = val;
-          }
-
         }
-      }
 
 
 
-      void GLMTTestVariable::ttest (matrix_type& tvalues,
+
+
+
+
+
+
+
+
+        TestVariable::TestVariable (const vector<CohortDataImport>& importers,
+                                    const matrix_type& measurements,
                                     const matrix_type& design,
-                                    matrix_type::ConstRowXpr measurements,
-                                    matrix_type& betas,
-                                    matrix_type& residuals) const
-      {
-        //std::cerr << "Design: " << design.rows() << " x " << design.cols() << ", max " << design.array().maxCoeff() << "\n";
-        //std::cerr << "Measurements: " << measurements.rows() << " x " << measurements.cols() << ", max " << measurements.array().maxCoeff() << "\n";
-        matrix_type pinv_design = Math::pinv (design);
-        //std::cerr << "PINV Design: " << pinv_design.rows() << " x " << pinv_design.cols() << ", max " << pinv_design.array().maxCoeff() << "\n";
-        const matrix_type XtX = design.transpose() * design;
-        //std::cerr << "XtX: " << XtX.rows() << " x " << XtX.cols() << ", max " << XtX.array().maxCoeff() << "\n";
-        const matrix_type pinv_XtX = (XtX.transpose() * XtX).fullPivLu().solve (XtX.transpose());
-        //std::cerr << "PINV XtX: " << pinv_XtX.rows() << " x " << pinv_XtX.cols() << ", max " << pinv_XtX.array().maxCoeff() << "\n";
-        betas = pinv_design * measurements.matrix();
-        //std::cerr << "Betas: " << betas.rows() << " x " << betas.cols() << ", max " << betas.array().maxCoeff() << "\n";
-        residuals = measurements - (design * betas);
-        //std::cerr << "Residuals: " << residuals.rows() << " x " << residuals.cols() << ", max " << residuals.array().maxCoeff() << "\n";
-        tvalues = c * betas;
-        //std::cerr << "T-values: " << tvalues.rows() << " x " << tvalues.cols() << ", max " << tvalues.array().maxCoeff() << "\n";
-        //VAR (Math::rank (design));
-        const default_type variance = residuals.matrix().squaredNorm() / default_type(design.rows() - Math::rank(design));
-        //VAR (variance);
-        // The fact that we're only able to test one element at a time here should be
-        //   placing a restriction on the dimensionality of tvalues
-        // Previously, could be (number of elements) * (number of contrasts);
-        //   now can only reflect the number of contrasts
-        for (size_t n = 0; n != num_outputs(); ++n) {
-          const default_type ct_pinv_XtX_c = c.row(n).dot (pinv_XtX * c.row(n).transpose());
-          //VAR (ct_pinv_XtX_c);
-          tvalues.row(n) /= std::sqrt (variance * ct_pinv_XtX_c);
+                                    const vector<Contrast>& contrasts,
+                                    const bool nans_in_data,
+                                    const bool nans_in_columns) :
+            TestBase (measurements, design, contrasts),
+            importers (importers),
+            nans_in_data (nans_in_data),
+            nans_in_columns (nans_in_columns)
+        {
+          // Make sure that the specified contrasts reflect the full design matrix (with additional
+          //   data loaded)
+          assert (contrasts.cols() == M.cols() + ssize_t(importers.size()));
         }
-        //std::cerr << "T-values: " << tvalues.rows() << " x " << tvalues.cols() << ", max " << tvalues.array().maxCoeff() << "\n";
+
+
+
+        void TestVariable::operator() (const vector<size_t>& perm_labelling, matrix_type& output) const
+        {
+          if (!(size_t(output.rows()) == num_elements() && size_t(output.cols()) == num_outputs()))
+            output.resize (num_elements(), num_outputs());
+
+          // Convert permutation labelling to a matrix, as for the fixed design matrix case
+          matrix_type perm_matrix (matrix_type::Zero (num_subjects(), num_subjects()));
+          for (size_t i = 0; i != num_subjects(); ++i)
+            perm_matrix (i, perm_labelling[i]) = value_type(1);
+
+          // Let's loop over elements first, then contrasts in the inner loop
+          for (ssize_t element = 0; element != y.rows(); ++element) {
+
+            // For each element (row in y), need to load the additional data for that element
+            //   for all subjects in order to construct the design matrix
+            // Would it be preferable to pre-calculate and store these per-element design matrices,
+            //   rather than re-generating them each time? (More RAM, less CPU)
+            // No, most of the time that subject data will be memory-mapped, so pre-loading (in
+            //   addition to the duplication of the fixed design matrix contents) would hurt bad
+            matrix_type extra_data (num_subjects(), importers.size());
+            for (ssize_t col = 0; col != ssize_t(importers.size()); ++col)
+              extra_data.col(col) = importers[col] (element);
+
+            // What can we do here that's common across all contrasts?
+            // - Import the element-wise data
+            // - Identify rows to be excluded based on NaNs in the design matrix
+            // - Identify rows to be excluded based on NaNs in the input data
+            //
+            // Note that this is going to have to operate slightly differently to
+            //   how it used to be done, i.e. via the permutation labelling vector,
+            //   if we are to support taking the shuffling matrix as input to this functor
+            // I think the approach will have to be:
+            //   - Both NaNs in design matrix and NaNs in input data need to be removed
+            //     in order to perform the initial regression against nuisance variables
+            //   - Can then remove the corresponding _columns_ of the permutation matrix?
+            //     No, don't think it's removal of columns; think it's removal of any rows
+            //     that contain non-zero values in those columns
+            //
+            BitSet element_mask (M.rows(), true);
+            if (nans_in_data) {
+              for (ssize_t row = 0; row != y.rows(); ++row) {
+                if (!std::isfinite (y (row, element)))
+                  element_mask[row] = false;
+              }
+            }
+            if (nans_in_columns) {
+              for (ssize_t row = 0; row != extra_data.rows(); ++row) {
+                if (!extra_data.row (row).allFinite())
+                  element_mask[row] = false;
+              }
+            }
+            const size_t finite_count = element_mask.count();
+
+            // Do we need to reduce the size of our matrices / vectors
+            //   based on the presence of non-finite values?
+            matrix_type Mfull_masked;
+            matrix_type perm_matrix_masked;
+            vector_type y_masked;
+            if (finite_count == num_subjects()) {
+
+              Mfull_masked.resize (num_subjects(), num_factors());
+              Mfull_masked.block (0, 0, num_subjects(), M.cols()) = M;
+              Mfull_masked.block (0, M.cols(), num_subjects(), extra_data.cols()) = extra_data;
+              perm_matrix_masked = perm_matrix;
+              y_masked = y.row (element);
+
+            } else {
+
+              Mfull_masked.resize (finite_count, num_factors());
+              y_masked.resize (finite_count);
+              BitSet perm_matrix_mask (num_subjects(), true);
+              ssize_t out_index = 0;
+              for (size_t in_index = 0; in_index != num_subjects(); ++in_index) {
+                if (element_mask[in_index]) {
+                  Mfull_masked.block (out_index, 0, 1, M.cols()) = M.row (in_index);
+                  Mfull_masked.block (out_index, M.cols(), 1, extra_data.cols()) = extra_data.row (in_index);
+                  y_masked[out_index] = y (element, in_index);
+                  ++out_index;
+                } else {
+                  // Any row in the permutation matrix that contains a non-zero entry
+                  //   in the column corresponding to in_row needs to be removed
+                  //   from the permutation matrix
+                  for (ssize_t perm_row = 0; perm_row != perm_matrix.rows(); ++perm_row) {
+                    if (perm_matrix (perm_row, in_index))
+                      perm_matrix_mask[perm_row] = false;
+                  }
+                }
+              }
+              assert (out_index == finite_count);
+              assert (perm_matrix_mask.count() == finite_count);
+              // Only after we've reduced the design matrix do we now reduce the permutation matrix
+              perm_matrix_masked.resize (finite_count, num_subjects());
+              out_index = 0;
+              for (size_t in_index = 0; in_index != num_subjects(); ++in_index) {
+                if (perm_matrix_mask[in_index])
+                  perm_matrix_masked.row (out_index++) = perm_matrix.row (in_index);
+              }
+              assert (out_index == finite_count);
+
+            }
+            assert (Mfull_masked.allFinite());
+
+            const matrix_type pinvMfull_masked = Math::pinv (Mfull_masked);
+
+            const matrix_type Rm = matrix_type::Identity (finite_count, finite_count) - (Mfull_masked*pinvMfull_masked);
+
+            matrix_type beta, betahat;
+            vector_type F;
+
+            // We now have our permutation (shuffling) matrix and design matrix prepared,
+            //   and can commence regressing the partitioned model of each contrast
+            for (size_t ic = 0; ic != c.size(); ++ic) {
+
+              const auto partition = c[ic] (Mfull_masked);
+
+              // Now that we have the individual contrast model partition for these data,
+              //   the rest of this function should proceed similarly to the fixed
+              //   design matrix case
+              // TODO Consider functionalising the below; should be consistent between fixed and variable
+              const matrix_type Sy = perm_matrix_masked * partition.Rz * y_masked.matrix();
+              beta.noalias() = Sy * pinvMfull_masked;
+              betahat.noalias() = beta * matrix_type(c[ic]);
+              F = (betahat.transpose() * (partition.X.inverse()*partition.X) * betahat / c[ic].rank()) /
+                  ((Rm*Sy).squaredNorm() / (finite_count - partition.rank_x - partition.rank_z));
+
+              for (ssize_t iF = 0; iF != F.size(); ++iF) {
+                if (!std::isfinite (F[iF])) {
+                  output (iF, ic) = value_type(0);
+                } else if (c[ic].is_F()) {
+                  output (iF, ic) = F[iF];
+                } else {
+                  assert (betahats.cols() == 1);
+                  output (iF, ic) = std::sqrt (F[iF]) * (betahat (iF, 0) > 0 ? 1.0 : -1.0);
+                }
+              }
+
+            } // End looping over contrasts
+
+          } // End looping over elements
+        }
+
+
+
+        matrix_type TestVariable::default_design (const size_t index) const
+        {
+          matrix_type output (M.rows(), M.cols() + importers.size());
+          output.block (0, 0, M.rows(), M.cols()) = M;
+          for (size_t i = 0; i != importers.size(); ++i)
+            output.col (M.cols() + i) = importers[i] (index);
+          return output;
+        }
+
+
+
       }
-
-
-
-      matrix_type GLMTTestVariable::default_design (const size_t index) const
-      {
-        matrix_type output (X.rows(), X.cols() + importers.size());
-        output.block (0, 0, X.rows(), X.cols()) = X;
-        for (size_t i = 0; i != importers.size(); ++i)
-          output.col (X.cols() + i) = importers[i] (index);
-        return output;
-      }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      GLMFTestFixed::GLMFTestFixed (const matrix_type& measurements, const matrix_type& design, const matrix_type& contrasts, const matrix_type& ftests) :
-        GLMTestBase (measurements, design, contrasts),
-        ftests (ftests) { }
-
-
-
-      void GLMFTestFixed::operator() (const vector<size_t>& perm_labelling, matrix_type& output) const
-      {
-
-      }
-
-
-
-
-
-
-
-
-
     }
   }
 }

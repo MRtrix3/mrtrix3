@@ -32,6 +32,7 @@
 using namespace MR;
 using namespace App;
 using namespace MR::Math::Stats;
+using namespace MR::Math::Stats::GLM;
 
 using Math::Stats::matrix_type;
 using Math::Stats::vector_type;
@@ -55,7 +56,7 @@ void usage ()
   SYNOPSIS = "Connectome group-wise statistics at the edge level using non-parametric permutation testing";
 
   DESCRIPTION
-      + Math::Stats::glm_column_ones_description;
+      + Math::Stats::GLM::column_ones_description;
 
 
   ARGUMENTS
@@ -109,8 +110,8 @@ void usage ()
 void load_tfce_parameters (Stats::TFCE::Wrapper& enhancer)
 {
   const default_type dH = get_option_value ("tfce_dh", TFCE_DH_DEFAULT);
-  const default_type E  = get_option_value ("tfce_e", TFCE_E_DEFAULT);
-  const default_type H  = get_option_value ("tfce_h", TFCE_H_DEFAULT);
+  const default_type E  = get_option_value ("tfce_e",  TFCE_E_DEFAULT);
+  const default_type H  = get_option_value ("tfce_h",  TFCE_H_DEFAULT);
   enhancer.set_tfce_parameters (dH, E, H);
 }
 
@@ -212,8 +213,15 @@ void run()
     throw Exception ("number of subjects (" + str(importer.size()) + ") does not match number of rows in design matrix (" + str(design.rows()) + ")");
 
   // Load contrast matrix
-  const matrix_type contrast = load_matrix (argument[3]);
-  const size_t num_contrasts = contrast.rows();
+  // TODO Eventually this should be functionalised, and include F-tests
+  // TODO Eventually will want ability to disable t-test output, and output F-tests only
+  vector<Contrast> contrasts;
+  {
+    const matrix_type contrast_matrix = load_matrix (argument[3]);
+    for (ssize_t row = 0; row != contrast_matrix.rows(); ++row)
+      contrasts.emplace_back (Contrast (contrast_matrix.row (row)));
+  }
+  const size_t num_contrasts = contrasts.size();
 
   // Before validating the contrast matrix, we first need to see if there are any
   //   additional design matrix columns coming from fixel-wise subject data
@@ -233,20 +241,22 @@ void run()
   }
 
   // Now we can check the contrast matrix
-  if (contrast.cols() != design.cols() + ssize_t(extra_columns.size()))
-    throw Exception ("the number of columns per contrast (" + str(contrast.cols()) + ")"
+  const ssize_t num_factors = design.cols() + extra_columns.size();
+  if (contrasts[0].cols() != num_factors)
+    // TODO Re-word this error message
+    throw Exception ("the number of columns per contrast (" + str(contrasts[0].cols()) + ")"
                      + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")"
                      + (extra_columns.size() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
 
 
   // Load permutations file if supplied
   opt = get_options ("permutations");
-  vector<vector<size_t> > permutations;
+  vector< vector<size_t> > permutations;
   if (opt.size()) {
     permutations = Permutation::load_permutations_file (opt[0][0]);
     num_perms = permutations.size();
     if (permutations[0].size() != (size_t)design.rows())
-      throw Exception ("number of rows in the permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix");
+      throw Exception ("number of rows in the permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix (" + str(design.rows()) + ")");
   }
 
   // Load non-stationary correction permutations file if supplied
@@ -256,7 +266,7 @@ void run()
     permutations_nonstationary = Permutation::load_permutations_file (opt[0][0]);
     nperms_nonstationary = permutations.size();
     if (permutations_nonstationary[0].size() != (size_t)design.rows())
-      throw Exception ("number of rows in the nonstationary permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix");
+      throw Exception ("number of rows in the nonstationary permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix (" + str(design.rows()) + ")");
   }
 
   const std::string output_prefix = argument[4];
@@ -276,19 +286,21 @@ void run()
   const bool nans_in_data = data.allFinite();
 
   // Construct the class for performing the initial statistical tests
-  std::shared_ptr<GLMTestBase> glm_test;
+  std::shared_ptr<GLM::TestBase> glm_test;
   if (extra_columns.size() || nans_in_data) {
-    glm_test.reset (new GLMTTestVariable (extra_columns, data, design, contrast, nans_in_data, nans_in_columns));
+    glm_test.reset (new GLM::TestVariable (extra_columns, data, design, contrasts, nans_in_data, nans_in_columns));
   } else {
-    glm_test.reset (new GLMTTestFixed (data, design, contrast));
+    glm_test.reset (new GLM::TestFixed (data, design, contrasts));
   }
 
   // Only add contrast row number to image outputs if there's more than one contrast
   auto postfix = [&] (const size_t i) { return (num_contrasts > 1) ? ("_" + str(i)) : ""; };
 
   {
-    matrix_type betas (contrast.cols(), num_edges);
-    matrix_type abs_effect_size (num_contrasts, num_edges), std_effect_size (num_contrasts, num_edges), stdev (num_contrasts, num_edges);
+    matrix_type betas (num_factors, num_edges);
+    // TODO Pretty sure these are transposed with respect to what I'd prefer them to be
+    matrix_type abs_effect_size (num_contrasts, num_edges), std_effect_size (num_contrasts, num_edges);
+    vector_type stdev (num_edges);
 
     if (extra_columns.size()) {
 
@@ -329,8 +341,8 @@ void run()
       class Functor
       { MEMALIGN(Functor)
         public:
-          Functor (const matrix_type& data, std::shared_ptr<GLMTestBase> glm_test, const matrix_type& contrasts,
-                   matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, matrix_type& stdev) :
+          Functor (const matrix_type& data, std::shared_ptr<GLM::TestBase> glm_test, const vector<Contrast>& contrasts,
+                   matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, vector_type& stdev) :
               data (data),
               glm_test (glm_test),
               contrasts (contrasts),
@@ -342,29 +354,30 @@ void run()
           bool operator() (const size_t& edge_index)
           {
             const matrix_type data_edge = data.row (edge_index);
-            const matrix_type design_edge = dynamic_cast<GLMTTestVariable*>(glm_test.get())->default_design (edge_index);
+            const matrix_type design_edge = dynamic_cast<const GLM::TestVariable* const>(glm_test.get())->default_design (edge_index);
             Math::Stats::GLM::all_stats (data_edge, design_edge, contrasts,
                                          local_betas, local_abs_effect_size, local_std_effect_size, local_stdev);
             global_betas.col (edge_index) = local_betas;
             global_abs_effect_size.col(edge_index) = local_abs_effect_size.col(0);
             global_std_effect_size.col(edge_index) = local_std_effect_size.col(0);
-            global_stdev.col(edge_index) = local_stdev.col(0);
+            global_stdev[edge_index] = local_stdev[0];
             return true;
           }
 
         private:
           const matrix_type& data;
-          const std::shared_ptr<GLMTestBase> glm_test;
-          const matrix_type& contrasts;
+          const std::shared_ptr<GLM::TestBase> glm_test;
+          const vector<Contrast>& contrasts;
           matrix_type& global_betas;
           matrix_type& global_abs_effect_size;
           matrix_type& global_std_effect_size;
-          matrix_type& global_stdev;
-          matrix_type local_betas, local_abs_effect_size, local_std_effect_size, local_stdev;
+          vector_type& global_stdev;
+          matrix_type local_betas, local_abs_effect_size, local_std_effect_size;
+          vector_type local_stdev;
       };
 
       Source source (num_edges);
-      Functor functor (data, glm_test, contrast,
+      Functor functor (data, glm_test, contrasts,
                        betas, abs_effect_size, std_effect_size, stdev);
       Thread::run_queue (source, Thread::batch (size_t()), Thread::multi (functor));
 
@@ -372,20 +385,23 @@ void run()
     } else {
 
       ProgressBar progress ("calculating basic properties of default permutation");
-      Math::Stats::GLM::all_stats (data, design, contrast,
+      Math::Stats::GLM::all_stats (data, design, contrasts,
                                    betas, abs_effect_size, std_effect_size, stdev);
     }
 
-    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", contrast.cols() + (3 * num_contrasts));
-    for (ssize_t i = 0; i != contrast.cols(); ++i) {
+    // TODO Contrasts should be somehow named, in order to differentiate between t-tests and F-tests
+
+    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_contrasts) + 1);
+    for (ssize_t i = 0; i != num_factors; ++i) {
       save_matrix (mat2vec.V2M (betas.row(i)), "beta" + str(i) + ".csv");
       ++progress;
     }
     for (size_t i = 0; i != num_contrasts; ++i) {
       save_matrix (mat2vec.V2M (abs_effect_size.row(i)), "abs_effect" + postfix(i) + ".csv"); ++progress;
       save_matrix (mat2vec.V2M (std_effect_size.row(i)), "std_effect" + postfix(i) + ".csv"); ++progress;
-      save_matrix (mat2vec.V2M (stdev.row(i)), "std_dev" + postfix(i) + ".csv"); ++progress;
     }
+    save_matrix (mat2vec.V2M (stdev), "std_dev.csv");
+
   }
 
 

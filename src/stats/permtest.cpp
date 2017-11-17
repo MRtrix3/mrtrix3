@@ -56,7 +56,7 @@ namespace MR
 
 
 
-      PreProcessor::PreProcessor (const std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator,
+      PreProcessor::PreProcessor (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                                   const std::shared_ptr<EnhancerBase> enhancer,
                                   matrix_type& global_enhanced_sum,
                                   vector<vector<size_t>>& global_enhanced_count) :
@@ -111,7 +111,7 @@ namespace MR
 
 
 
-      Processor::Processor (const std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator,
+      Processor::Processor (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                             const std::shared_ptr<EnhancerBase> enhancer,
                             const matrix_type& empirical_enhanced_statistics,
                             const matrix_type& default_enhanced_statistics,
@@ -123,8 +123,8 @@ namespace MR
           default_enhanced_statistics (default_enhanced_statistics),
           statistics (stats_calculator->num_elements(), stats_calculator->num_outputs()),
           enhanced_statistics (stats_calculator->num_elements(), stats_calculator->num_outputs()),
-	  // NOTE: uncorrected_pvalue_counter currently transposed with respect to matrices
-	  // TODO Consider changing to Eigen::Array<size_t>
+    // NOTE: uncorrected_pvalue_counter currently transposed with respect to matrices
+    // TODO Consider changing to Eigen::Array<size_t>
           uncorrected_pvalue_counter (stats_calculator->num_outputs(), vector<size_t> (stats_calculator->num_elements(), 0)),
           perm_dist (perm_dist),
           global_uncorrected_pvalue_counter (global_uncorrected_pvalue_counter),
@@ -175,7 +175,7 @@ namespace MR
 
 
 
-      void precompute_empirical_stat (const std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator,
+      void precompute_empirical_stat (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                                       const std::shared_ptr<EnhancerBase> enhancer,
                                       PermutationStack& perm_stack, matrix_type& empirical_statistic)
       {
@@ -195,7 +195,7 @@ namespace MR
 
 
 
-      void precompute_default_permutation (const std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator,
+      void precompute_default_permutation (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                                            const std::shared_ptr<EnhancerBase> enhancer,
                                            const matrix_type& empirical_enhanced_statistic,
                                            matrix_type& default_enhanced_statistics,
@@ -220,7 +220,7 @@ namespace MR
 
 
       void run_permutations (PermutationStack& perm_stack,
-                             const std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator,
+                             const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                              const std::shared_ptr<EnhancerBase> enhancer,
                              const matrix_type& empirical_enhanced_statistic,
                              const matrix_type& default_enhanced_statistics,
@@ -247,7 +247,7 @@ namespace MR
 
 
       void run_permutations (const vector<vector<size_t>>& permutations,
-                             const std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator,
+                             const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                              const std::shared_ptr<EnhancerBase> enhancer,
                              const matrix_type& empirical_enhanced_statistic,
                              const matrix_type& default_enhanced_statistics,
@@ -264,7 +264,7 @@ namespace MR
 
 
       void run_permutations (const size_t num_permutations,
-                             const std::shared_ptr<Math::Stats::GLMTestBase> stats_calculator,
+                             const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                              const std::shared_ptr<EnhancerBase> enhancer,
                              const matrix_type& empirical_enhanced_statistic,
                              const matrix_type& default_enhanced_statistics,

@@ -29,6 +29,7 @@
 using namespace MR;
 using namespace App;
 using namespace MR::Math::Stats;
+using namespace MR::Math::Stats::GLM;
 
 
 
@@ -39,7 +40,13 @@ void usage ()
   SYNOPSIS = "Statistical testing of vector data using non-parametric permutation testing";
 
   DESCRIPTION
-      + Math::Stats::glm_column_ones_description;
+  + "This command can be used to perform permutation testing of any form of data. "
+    "The data for each input subject must be stored in a text file, with one value per row. "
+    "The data for each row across subjects will be tested independently, i.e. there is no "
+    "statistical enhancement that occurs between the data; however family-wise error control "
+    "will be used."
+
+  + Math::Stats::GLM::column_ones_description;
 
 
   ARGUMENTS
@@ -138,8 +145,13 @@ void run()
   }
 
   // Load contrast matrix
-  const matrix_type contrast = load_matrix (argument[2]);
-  const size_t num_contrasts = contrast.rows();
+  vector<Contrast> contrasts;
+  {
+    const matrix_type contrast_matrix = load_matrix (argument[2]);
+    for (ssize_t row = 0; row != contrast_matrix.rows(); ++row)
+      contrasts.emplace_back (Contrast (contrast_matrix.row (row)));
+  }
+  const size_t num_contrasts = contrasts.size();
 
   // Before validating the contrast matrix, we first need to see if there are any
   //   additional design matrix columns coming from voxel-wise subject data
@@ -158,8 +170,9 @@ void run()
       INFO ("Non-finite values detected in element-wise design matrix columns; individual rows will be removed from voxel-wise design matrices accordingly");
   }
 
-  if (contrast.cols() != design.cols() + ssize_t(extra_columns.size()))
-    throw Exception ("the number of columns per contrast (" + str(contrast.cols()) + ")"
+  const ssize_t num_factors = design.cols() + extra_columns.size();
+  if (contrasts[0].cols() != num_factors)
+    throw Exception ("the number of columns per contrast (" + str(contrasts[0].cols()) + ")"
                      + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")"
                      + (extra_columns.size() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
 
@@ -179,11 +192,11 @@ void run()
   }
 
   // Construct the class for performing the initial statistical tests
-  std::shared_ptr<GLMTestBase> glm_test;
+  std::shared_ptr<GLM::TestBase> glm_test;
   if (extra_columns.size() || nans_in_data) {
-    glm_test.reset (new GLMTTestVariable (extra_columns, data, design, contrast, nans_in_data, nans_in_columns));
+    glm_test.reset (new GLM::TestVariable (extra_columns, data, design, contrasts, nans_in_data, nans_in_columns));
   } else {
-    glm_test.reset (new GLMTTestFixed (data, design, contrast));
+    glm_test.reset (new GLM::TestFixed (data, design, contrasts));
   }
 
 
@@ -191,8 +204,9 @@ void run()
   auto postfix = [&] (const size_t i) { return (num_contrasts > 1) ? ("_" + str(i)) : ""; };
 
   {
-    matrix_type betas (contrast.cols(), num_elements);
-    matrix_type abs_effect_size (num_contrasts, num_elements), std_effect_size (num_contrasts, num_elements), stdev (num_contrasts, num_elements);
+    matrix_type betas (num_factors, num_elements);
+    matrix_type abs_effect_size (num_contrasts, num_elements), std_effect_size (num_contrasts, num_elements);
+    vector_type stdev (num_elements);
 
     if (extra_columns.size()) {
 
@@ -233,8 +247,8 @@ void run()
       class Functor
       { MEMALIGN(Functor)
         public:
-          Functor (const matrix_type& data, std::shared_ptr<GLMTestBase> glm_test, const matrix_type& contrasts,
-                   matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, matrix_type& stdev) :
+          Functor (const matrix_type& data, std::shared_ptr<GLM::TestBase> glm_test, const vector<Contrast>& contrasts,
+                   matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, vector_type& stdev) :
               data (data),
               glm_test (glm_test),
               contrasts (contrasts),
@@ -246,44 +260,47 @@ void run()
           bool operator() (const size_t& index)
           {
             const matrix_type data_element = data.row (index);
-            const matrix_type design_element = dynamic_cast<GLMTTestVariable*>(glm_test.get())->default_design (index);
+            const matrix_type design_element = dynamic_cast<const GLM::TestVariable* const>(glm_test.get())->default_design (index);
             Math::Stats::GLM::all_stats (data_element, design_element, contrasts,
                                          local_betas, local_abs_effect_size, local_std_effect_size, local_stdev);
             global_betas.col (index) = local_betas;
             global_abs_effect_size.col(index) = local_abs_effect_size.col(0);
             global_std_effect_size.col(index) = local_std_effect_size.col(0);
-            global_stdev.col(index) = local_stdev.col(0);
+            global_stdev[index] = local_stdev[0];
             return true;
           }
 
         private:
           const matrix_type& data;
-          const std::shared_ptr<GLMTestBase> glm_test;
-          const matrix_type& contrasts;
+          const std::shared_ptr<GLM::TestBase> glm_test;
+          const vector<Contrast>& contrasts;
           matrix_type& global_betas;
           matrix_type& global_abs_effect_size;
           matrix_type& global_std_effect_size;
-          matrix_type& global_stdev;
-          matrix_type local_betas, local_abs_effect_size, local_std_effect_size, local_stdev;
+          vector_type& global_stdev;
+          matrix_type local_betas, local_abs_effect_size, local_std_effect_size;
+          vector_type local_stdev;
       };
 
       Source source (num_elements);
-      Functor functor (data, glm_test, contrast,
+      Functor functor (data, glm_test, contrasts,
                        betas, abs_effect_size, std_effect_size, stdev);
       Thread::run_queue (source, Thread::batch (size_t()), Thread::multi (functor));
 
     } else {
 
       ProgressBar progress ("calculating basic properties of default permutation");
-      Math::Stats::GLM::all_stats (data, design, contrast,
+      Math::Stats::GLM::all_stats (data, design, contrasts,
                                    betas, abs_effect_size, std_effect_size, stdev);
     }
 
-    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", 4);
-    save_matrix (betas, output_prefix + "betas.mif"); ++progress;
-    save_matrix (abs_effect_size, output_prefix + "abs_effect.csv"); ++progress;
-    save_matrix (std_effect_size, output_prefix + "std_effect.csv"); ++progress;
-    save_matrix (stdev, output_prefix + "std_dev.csv");
+    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", 2 + (2 * num_contrasts));
+    save_matrix (betas, output_prefix + "betas.csv"); ++progress;
+    for (size_t i = 0; i != num_contrasts; ++i) {
+      save_vector (abs_effect_size.row(i), output_prefix + "abs_effect" + postfix(i) + ".csv"); ++progress;
+      save_vector (std_effect_size.row(i), output_prefix + "std_effect" + postfix(i) + ".csv"); ++progress;
+    }
+    save_vector (stdev, output_prefix + "std_dev.csv");
   }
 
 
@@ -295,7 +312,8 @@ void run()
     default_permutation[i] = i;
   matrix_type default_tvalues;
   (*glm_test) (default_permutation, default_tvalues);
-  save_matrix (default_tvalues, output_prefix + "tvalue.csv");
+  for (size_t i = 0; i != num_contrasts; ++i)
+    save_matrix (default_tvalues.row(i), output_prefix + "tvalue" + postfix(i) + ".csv");
 
   // Perform permutation testing
   if (!get_options ("notest").size()) {
@@ -315,8 +333,10 @@ void run()
 
     matrix_type default_pvalues (num_elements, num_contrasts);
     Math::Stats::Permutation::statistic2pvalue (null_distribution, default_tvalues, default_pvalues);
-    save_matrix (default_pvalues, output_prefix + "fwe_pvalue.csv");
-    save_matrix (uncorrected_pvalues, output_prefix + "uncorrected_pvalue.csv");
+    for (size_t i = 0; i != num_contrasts; ++i) {
+      save_vector (default_pvalues.row(i), output_prefix + "fwe_pvalue.csv");
+      save_vector (uncorrected_pvalues.row(i), output_prefix + "uncorrected_pvalue.csv");
+    }
 
   }
 }
