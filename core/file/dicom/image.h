@@ -68,9 +68,7 @@ namespace MR {
               return image_type < frame.image_type;
             if (acq != frame.acq) 
               return acq < frame.acq;
-            assert (std::isfinite (distance));
-            assert (std::isfinite (frame.distance));
-            if (distance != frame.distance) 
+            if (std::isfinite (distance) && std::isfinite (frame.distance) && distance != frame.distance) 
               return distance < frame.distance;
             for (size_t n = index.size(); n--;)
               if (index[n] != frame.index[n])
