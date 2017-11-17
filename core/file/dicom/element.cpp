@@ -354,7 +354,23 @@ namespace MR {
       }
 
 
+      void Element::error_in_get (size_t idx) const
+      {
+        const std::string& name (tag_name());
+        DEBUG ("value not found for DICOM tag " + printf("%04X %04X ", group, element) + ( name.size() ? name.substr(2) : "unknown" ) + " (at index " + str(idx) + ")");
+      }
 
+      void Element::error_in_check_size (size_t min_size, size_t actual_size) const
+      {
+        const std::string& name (tag_name());
+        throw Exception ("not enough items in for DICOM tag " + printf("%04X %04X ", group, element) + ( name.size() ? name.substr(2) : "unknown" ) + " (expected " + str(min_size) + ", got " + str(actual_size) + ")");
+      }
+
+      void Element::report_unknown_tag_with_implicit_syntax () const
+      {
+        DEBUG (MR::printf ("attempt to read data of unknown value representation "
+              "in DICOM implicit syntax for tag (%02X %02X) - ignored", group, element));
+      }
 
 
 
