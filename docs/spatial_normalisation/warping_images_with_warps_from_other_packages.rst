@@ -13,7 +13,7 @@ However, you can also use :code:`mrtransform` to apply warps generated from othe
 
     for i in {0..2}; 
     do;
-      WarpImageMultiTransform 3 identity_warp${i}.nii mrtrix_warp{i}.nii -R template.nii ants_warp.nii ants_affine.txt;
+      WarpImageMultiTransform 3 identity_warp${i}.nii mrtrix_warp${i}.nii -R template.nii ants_warp.nii ants_affine.txt;
     done;
 
 
