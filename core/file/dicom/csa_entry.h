@@ -32,17 +32,9 @@ namespace MR {
                 cnum (0)
             {
               if (strncmp ("SV10", (const char*) start, 4)) {
-                num = Raw::fetch_LE<uint32_t> (start);
-                if (num < 1 || num > 128) {
-                  DEBUG ("WARNING: CSA1 format with invalid number of tags (" + str(num) + "); ignoring");
-                  cnum = num;
-                  next = end;
-                } else {
-                  const uint32_t unused = Raw::fetch_LE<uint32_t> (start+4);
-                  if (unused != 77)
-                    DEBUG ("CSA1 \'unused\' integer field contains " + str(unused) + "; expected 77");
-                  next = start + 8;
-                }
+                DEBUG ("Siemens CSA entry does not start with \"SV10\"; ignoring");
+                cnum = num = 0;
+                next = end;
               } else {
                 const uint8_t* const unused1 = start+4;
                 if (unused1[0] != 0x04U || unused1[1] != 0x03U || unused1[2] != 0x02U || unused1[3] != 0x01U)
