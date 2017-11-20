@@ -144,8 +144,8 @@ if app.args.reg:
     recon_option += ' -reg ' + app.args.reg
 if app.args.sspwidth:
     recon_option += ' -sspwidth ' + app.args.sspwidth
-if app.args.fieldmap:
-    recon_option += ' -field field1.mif'
+#if app.args.fieldmap:
+#    recon_option += ' -field field1.mif'
 
 
 # Initialise radial basis with RF per shell.
@@ -196,12 +196,12 @@ with open('svdweights.txt', 'w') as f:
 #   __________ Function definitions __________
 
 def reconstep(k):
-    run.command('dwirecon in.mif recon-' + str(k) + '.mif -spred spred.mif ' + recon_option + ' -rf ' + ' -rf '.join(rfs) +
+    run.command('dwirecon in1.mif recon-' + str(k) + '.mif -spred spred.mif ' + recon_option + ' -rf ' + ' -rf '.join(rfs) +
             ('' if k==0 else ' -motion motion.txt -weights sliceweights.txt -init recon-' + str(k-1) + '.mif') + ' -force' + nthr)
 
 
 def sliceweightstep():
-    run.command('dwisliceoutliers in.mif spred.mif -mask mask.mif sliceweights.txt' + or_option + ' -force')
+    run.command('dwisliceoutliers in1.mif spred.mif -mask mask.mif sliceweights.txt' + or_option + ' -force')
 
 
 def basisupdatestep(k):
@@ -220,11 +220,7 @@ def v2vregstep(k):
     with open('motion.txt', 'w') as f:
         prog = app.progressBar('Registering recon to data volumes', dims[3])
         for v in range(dims[3]):
-            if app.args.fieldmap:
-                run.command('mrconvert -coord 3 ' + str(v) + ' in.mif - -export_grad_mrtrix grad1.txt -force | ' +
-                            'mrfieldunwarp - field1.mif' + (' -transform T-'+str(v)+'.txt' if k>0 else '') + ' target.mif -force')
-            else:
-                run.command('mrconvert -coord 3 ' + str(v) + ' in.mif target.mif -export_grad_mrtrix grad1.txt -force')
+            run.command('mrconvert -coord 3 ' + str(v) + ' in1.mif target.mif -export_grad_mrtrix grad1.txt -force')
             run.command('mssh2amp rankredux.mif grad1.txt template.mif ' + ('' if k==0 else '-transform T-' + str(v) + '.txt ') + '-force')
             run.command('mrreg_lin template.mif target.mif -mask2 mask.mif' +
                         (' -affine_init T-'+str(v)+'.txt' if k>0 else '') +
@@ -245,11 +241,7 @@ def s2vregstep(k):
         prog = app.progressBar('Registering recon to data slices', dims[3]*dims[2]//mb)
         for v in range(dims[3]):
             volmotion = ''
-            if app.args.fieldmap:
-                run.command('mrconvert -coord 3 ' + str(v) + ' in.mif - -export_grad_mrtrix grad1.txt -force | ' +
-                            'mrfieldunwarp - field1.mif -transform T-' + str(v) + '.txt target.mif -force')
-            else:
-                run.command('mrconvert -coord 3 ' + str(v) + ' in.mif target.mif -export_grad_mrtrix grad1.txt -force')
+            run.command('mrconvert -coord 3 ' + str(v) + ' in1.mif target.mif -export_grad_mrtrix grad1.txt -force')
             if k == 0:
                 run.command('mssh2amp rankredux.mif grad1.txt template.mif -transform T-' + str(v) + '.txt -force')
             for s in range(dims[2]//mb):
@@ -271,18 +263,24 @@ def s2vregstep(k):
         prog.done()
 
 
-def fieldalignstep():
+def fieldalignstep(k):
     if app.args.fieldmap:
-        idx = '0' if not app.args.fieldidx else app.args.fieldidx
-        run.command('mrtransform field.mif -linear T-'+idx+'.txt -inverse field1.mif -force')
+        if k == 0:
+            run.command('mrfieldunwarp in.mif field.mif in1.mif')
+        else:
+            idx = '0' if not app.args.fieldidx else app.args.fieldidx
+            run.command('mrtransform field.mif -linear T-'+idx+'.txt -inverse field1.mif -force')
+            run.command('mrfieldunwarp in.mif field1.mif -motion motion.txt in1.mif -force')
+    else:
+        if k == 0:
+            run.command('mrconvert in.mif in1.mif')
 
 
 
 #   __________ Motion correction __________
 
 # initial template
-if app.args.fieldmap:
-    run.command('mrconvert field.mif field1.mif')
+fieldalignstep(0)
 reconstep(0)
 
 # volume-to-volume registration
@@ -292,7 +290,7 @@ for k in range(v2viter):
     # register template to volumes
     rankreduxstep(k)
     v2vregstep(k)
-    fieldalignstep()
+    fieldalignstep(k+1)
     # update template
     reconstep(k+1)
 
@@ -303,6 +301,7 @@ for k in range(s2viter):
     # register template to slices
     rankreduxstep(v2viter+k)
     s2vregstep(k)
+    fieldalignstep(v2viter+k+1)
     # update template
     reconstep(v2viter+k+1)
 
