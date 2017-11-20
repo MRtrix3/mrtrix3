@@ -326,6 +326,22 @@ namespace MR {
             pe_sign = (entry.get_int() > 0) ? 1 : -1;
           else if (strcmp ("BandwidthPerPixelPhaseEncode", entry.key()) == 0)
             bandwidth_per_pixel_phase_encode = entry.get_float();
+          else if (strcmp ("ImagePositionPatient", entry.key()) == 0) {
+            Eigen::Matrix<default_type,3,1> v;
+            entry.get_float (v); 
+            if (v.allFinite())
+              position_vector = v;
+          }
+          else if (strcmp ("ImageOrientationPatient", entry.key()) == 0) {
+            Eigen::Matrix<default_type,6,1> v;
+            entry.get_float (v);
+            if (v.allFinite()) {
+              orientation_x = v.head(3);
+              orientation_y = v.tail(3);
+              orientation_x.normalize();
+              orientation_y.normalize();
+            }
+          }
         }
 
         if (G[0] && bvalue)
