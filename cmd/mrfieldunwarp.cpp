@@ -19,6 +19,7 @@
 #include "transform.h"
 #include "phase_encoding.h"
 #include "interp/linear.h"
+#include "interp/cubic.h"
 
 
 using namespace MR;
@@ -84,13 +85,13 @@ class FieldUnwarp {
         RdB0 = Ts2r.rotation().transpose() * dB0.transpose().cast<double>();
         pos = vox + B0 * PE.row(v).transpose();
         dinterp.voxel(pos);
-        jac = 1.0 + PE.row(v) * RdB0;
+        jac = 1.0 + 2. * PE.row(v) * RdB0;
         out.value() = jac * dinterp.value();
       }
     }
 
   private:
-    Interp::Linear<Image<value_type>> dinterp;
+    Interp::Cubic<Image<value_type>> dinterp;
     Interp::LinearInterp<Image<value_type>, Interp::LinearInterpProcessingType::ValueAndDerivative> finterp;
     Eigen::Matrix<double, Eigen::Dynamic, 3> PE;
     Eigen::Matrix<double, Eigen::Dynamic, 6> motion;
