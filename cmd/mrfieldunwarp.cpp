@@ -101,9 +101,9 @@ class FieldUnwarp {
     inline Eigen::Matrix3d get_rotation(const double a1, const double a2, const double a3) const
     {
       Eigen::Matrix3d m;
-      m = Eigen::AngleAxisd(a1, Eigen::Vector3d::UnitX())
+      m = Eigen::AngleAxisd(a1, Eigen::Vector3d::UnitZ())
         * Eigen::AngleAxisd(a2, Eigen::Vector3d::UnitY())
-        * Eigen::AngleAxisd(a3, Eigen::Vector3d::UnitZ());
+        * Eigen::AngleAxisd(a3, Eigen::Vector3d::UnitX());
       return m;
     }
 
