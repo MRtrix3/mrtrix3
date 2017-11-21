@@ -27,16 +27,26 @@ namespace MR {
         class CSAEntry { NOMEMALIGN
           public:
             CSAEntry (const uint8_t* start_p, const uint8_t* end_p, bool output_fields = false) :
-              start (start_p),
-              end (end_p),
-              print (output_fields) {
-                if (strncmp ("SV10", (const char*) start, 4))
-                  DEBUG ("WARNING: CSA data is not in SV10 format");
-
-                cnum = 0;
+                start (start_p),
+                end (end_p),
+                print (output_fields),
+                cnum (0)
+            {
+              if (strncmp ("SV10", (const char*) start, 4)) {
+                DEBUG ("Siemens CSA entry does not start with \"SV10\"; ignoring");
+                num = 0;
+                next = end;
+              } else {
+                const uint8_t* const unused1 = start+4;
+                if (unused1[0] != 0x04U || unused1[1] != 0x03U || unused1[2] != 0x02U || unused1[3] != 0x01U)
+                  DEBUG ("WARNING: CSA2 \'unused1\' int8 field contains unexpected data");
                 num = Raw::fetch_LE<uint32_t> (start+8);
+                const uint32_t unused2 = Raw::fetch_LE<uint32_t> (start+12);
+                if (unused2 != 77)
+                  DEBUG ("CSA2 \'unused2\' integer field contains " + str(unused2) + "; expected 77");
                 next = start + 16;
               }
+            }
 
 
             bool parse () {
@@ -50,6 +60,9 @@ namespace MR {
               strncpy (vr, (const char*) start+68, 4);
               Raw::fetch_LE<uint32_t> (start+72); // syngodt
               nitems = Raw::fetch_LE<uint32_t> (start+76);
+              const int32_t xx = Raw::fetch_LE<int32_t> (start+80);
+              if (!(xx == 77 || xx == 205))
+                DEBUG ("CSA tag \'xx\' integer field contains " + str(xx) + "; expected 77 or 205");
               if (print)
                 fprintf (stdout, "    [CSA] %s: ", name);
               next = start + 84;
