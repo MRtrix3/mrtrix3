@@ -44,9 +44,17 @@ namespace MR {
         if (is_toplevel) {
           switch (item.group) {
             case 0x0008U:
-              if (item.element == 0x0008U)
-                image_type = join (item.get_string(), " ");
-              return;
+              switch (item.element) {
+                case 0x0008U:
+                  image_type = join (item.get_string(), " ");
+                  return;
+                case 0x0032U:
+                  acquisition_time = item.get_time();
+                  return;
+                default:
+                  return;
+              }
+
             case 0x0018U:
               switch (item.element) {
                 case 0x0024U:
@@ -324,6 +332,10 @@ namespace MR {
             pe_sign = (entry.get_int() > 0) ? 1 : -1;
           else if (strcmp ("BandwidthPerPixelPhaseEncode", entry.key()) == 0)
             bandwidth_per_pixel_phase_encode = entry.get_float();
+          else if (strcmp ("MosaicRefAcqTimes", entry.key()) == 0)
+            entry.get_float (mosaic_slices_timing);
+          else if (strcmp ("TimeAfterStart", entry.key()) == 0)
+            time_after_start = entry.get_float();
         }
 
         if (G[0] && bvalue)
@@ -351,7 +363,6 @@ namespace MR {
             stream << ", G = [ " << item.G[0] << " " << item.G[1] << " " << item.G[2] << " ]";
         }
         stream << " (\"" << item.filename << "\", " << item.data << ")";
-
 
         return stream;
       }
