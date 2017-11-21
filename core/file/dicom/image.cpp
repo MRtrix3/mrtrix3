@@ -261,8 +261,14 @@ namespace MR {
             }
             return;
           case 0x0029U: // Siemens CSA entry
-            if (item.element == 0x1010U || item.element == 0x1020U)
+            if (item.element == 0x1010U ||
+                item.element == 0x1020U ||
+                item.element == 0x1110U ||
+                item.element == 0x1120U ||
+                item.element == 0x1210U ||
+                item.element == 0x1220U) {
               decode_csa (item.data, item.data + item.size);
+            }
             return;
           case 0x0043U: // GEMS_PARMS_01 block
             if (item.element == 0x1039U) {
@@ -367,7 +373,6 @@ namespace MR {
         if (G[0] && bvalue)
           if (fabs(G[0]) > 1.0 && fabs(G[1]) > 1.0 && fabs(G[2]) > 1.0)
             bvalue = G[0] = G[1] = G[2] = 0.0;
-
       }
 
 
