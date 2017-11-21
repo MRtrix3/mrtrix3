@@ -85,19 +85,24 @@ before_cache:
   - rm -f $HOME/.cache/pip/log/debug.log
 after_failure:
   - |
-    if [[ "${test}" == "sphinx" ]]; then
-        cat sphinx.log;
-    elif [[ "${test}" == "memalign" ]]; then
-        cat memalign.log;
-    elif [[ "${test}" == "pylint" ]]; then
-        cat pylint.log;
-    elif [[ "${test}" == "build" ]]; then
-        cat configure.log;
-        cat build.log;
-    else
-        cat configure.log;
-        cat build.log;
-        cat testing.log;
-        cat gitdiff.log;
-    fi
+    case "${test}" in
+      "sphinx")
+        cat sphinx.log
+        ;;
+      "memalign")
+        cat memalign.log
+        ;
+      "pylint")
+        cat pylint.log
+        ;;
+      "build")
+        cat configure.log
+        cat build.log
+        ;;
+      *)
+        cat configure.log
+        cat build.log
+        cat testing.log
+        cat gitdiff.log
+    esac
   - sleep 10
