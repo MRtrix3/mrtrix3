@@ -15,7 +15,7 @@
 #include <limits>
 #include <unistd.h>
 
-#include "app.h"
+#include "signal_handler.h"
 #include "header.h"
 #include "image_io/pipe.h"
 
@@ -54,7 +54,7 @@ namespace MR
       if (!is_new && files.size() == 1) {
         DEBUG ("deleting piped image file \"" + files[0].name + "\"...");
         unlink (files[0].name.c_str());
-        App::signal_handler -= files[0].name;
+        SignalHandler::unmark_file_for_deletion (files[0].name);
       }
 
     }
