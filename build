@@ -69,10 +69,6 @@ OPTIONS
 
     -tree
        [only used with -showdep] print full dependency tree for each file
-
-    -persistent
-       keep trying to build regardless of failures, until none of the remaining
-       jobs succeed.
 '''
 
 
@@ -105,7 +101,6 @@ system = None
 dependencies = 0
 dep_recursive = False
 verbose = False
-persistent = False
 nowarnings = False
 targets = []
 use_multiple_cores = True
@@ -285,8 +280,6 @@ for arg in sys.argv[1:]:
     exit (0)
   elif '-verbose'.startswith(arg): 
     verbose = True
-  elif '-persistent'.startswith(arg): 
-    persistent = True
   elif '-nowarnings'.startswith(arg):
     nowarnings = True
   elif '-showdep'.startswith(arg): 
@@ -964,7 +957,6 @@ def build_next (id):
   
       target = todo[current]
       if target.execute(cindex, formatstr):
-        todo[item].currently_being_processed = False
         stop = 2
         return
 
@@ -1200,15 +1192,13 @@ log ('TODO list contains ' + str(len(todo)) + ''' items
 
 
 #for entry in todo.values(): entry.display()
-try: num_processors = int(os.environ['NUMBER_OF_PROCESSORS'])
-except:
-  try: num_processors = os.sysconf('SC_NPROCESSORS_ONLN')
-  except: num_processors = 1
 
-while len(todo): 
+if len(todo): 
   
-  stop = False
-  num_todo_previous = len(todo)
+  try: num_processors = int(os.environ['NUMBER_OF_PROCESSORS'])
+  except:
+    try: num_processors = os.sysconf('SC_NPROCESSORS_ONLN')
+    except: num_processors = 1
 
   log ('''
   
@@ -1225,21 +1215,6 @@ while len(todo):
   build_next(0)
   
   for t in threads: t.join()
-
-  if not persistent:
-    break
-
-  if len(todo) == num_todo_previous:
-    disp ('''
-stopping despite errors as no jobs completed successfully
-
-''')
-    break
-
-  disp ('''
-retrying as running in persistent mode
-
-''')
 
 
 # generate development-specific files (if needed)
