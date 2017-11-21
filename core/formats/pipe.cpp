@@ -12,7 +12,7 @@
  */
 
 
-#include "app.h"
+#include "signal_handler.h"
 #include "file/utils.h"
 #include "file/path.h"
 #include "header.h"
@@ -39,7 +39,7 @@ namespace MR
       if (H.name().empty())
         throw Exception ("no filename supplied to standard input (broken pipe?)");
 
-      App::signal_handler += H.name();
+      SignalHandler::mark_file_for_deletion (H.name());
 
       if (!Path::has_suffix (H.name(), ".mif"))
         throw Exception ("MRtrix only supports the .mif format for command-line piping");
@@ -60,7 +60,7 @@ namespace MR
 
       H.name() = File::create_tempfile (0, "mif");
 
-      App::signal_handler += H.name();
+      SignalHandler::mark_file_for_deletion (H.name());
 
       return mrtrix_handler.check (H, num_axes);
     }
