@@ -144,6 +144,11 @@ namespace MR {
           Time get_time () const;
           vector<std::string> get_string () const;
 
+          int32_t     get_int (size_t idx, int32_t default_value = 0)                    const { auto v (get_int());    return check_get (idx, v.size()) ? v[idx] : default_value; }
+          uint32_t    get_uint (size_t idx, uint32_t default_value = 0)                  const { auto v (get_uint());   return check_get (idx, v.size()) ? v[idx] : default_value; }
+          double      get_float (size_t idx, double default_value = 0.0)                 const { auto v (get_float());  return check_get (idx, v.size()) ? v[idx] : default_value; }
+          std::string get_string (size_t idx, std::string default_value = std::string()) const { auto v (get_string()); return check_get (idx, v.size()) ? v[idx] : default_value; }
+
           size_t level () const { return parents.size(); }
 
           friend std::ostream& operator<< (std::ostream& stream, const Element& item);
@@ -152,6 +157,12 @@ namespace MR {
                     "----- ---- ---- --  -------  -------   -------------------------------------  ---------------------------------------\n";
           }
 
+
+          template <typename VectorType> 
+            FORCE_INLINE void check_size (const VectorType v, size_t min_size = 1) { 
+              if (v.size() < min_size)
+                error_in_check_size (min_size, v.size());
+            }
 
         protected:
 
@@ -177,10 +188,10 @@ namespace MR {
           static std::unordered_map<uint32_t, const char*> dict;
           static void init_dict();
 
-          void report_unknown_tag_with_implicit_syntax () const {
-            DEBUG (MR::printf ("attempt to read data of unknown value representation "
-                  "in DICOM implicit syntax for tag (%02X %02X) - ignored", group, element));
-          }
+          bool check_get (size_t idx, size_t size) const { if (idx >= size) { error_in_get (idx); return false; } return true; }
+          void error_in_get (size_t idx) const; 
+          void error_in_check_size (size_t min_size, size_t actual_size) const; 
+          void report_unknown_tag_with_implicit_syntax () const;
       };
 
 
