@@ -107,8 +107,8 @@ void run ()
   Header header (mssh);
   auto bvals = parse_floats (header.keyval().find("shells")->second);
 
-  Eigen::MatrixXd grad;
-  grad = load_matrix(argument[1]);
+  Eigen::Matrix<double, Eigen::Dynamic, 4> grad;
+  grad = load_matrix(argument[1]).leftCols<4>();
 
   // Apply rigid rotation to gradient table.
   transform_type T;
@@ -117,7 +117,7 @@ void run ()
   if (opt.size())
     T = load_transform(opt[0][0]);
 
-  grad.block(0,0,grad.rows(),3) = grad.block(0,0,grad.rows(),3) * T.rotation().transpose();
+  grad.leftCols<3>() = grad.leftCols<3>() * T.rotation().transpose();
 
   // Save output
   header.ndim() = 4;
