@@ -68,7 +68,7 @@ class Selector
 
 
 
-class WriterExemplars 
+class WriterExemplars
 { MEMALIGN(WriterExemplars)
   public:
     WriterExemplars (const Tractography::Properties&, const vector<node_t>&, const bool, const node_t, const vector<Eigen::Vector3f>&);
@@ -102,7 +102,6 @@ class WriterExtraction
 
   public:
     WriterExtraction (const Tractography::Properties&, const vector<node_t>&, const bool, const bool);
-    ~WriterExtraction();
 
     void add (const node_t, const std::string&, const std::string);
     void add (const node_t, const node_t, const std::string&, const std::string);
@@ -122,7 +121,7 @@ class WriterExtraction
     const bool exclusive;
     const bool keep_self;
     vector< Selector > selectors;
-    vector< Tractography::WriterUnbuffered<float>* > writers;
+    vector< std::unique_ptr< Tractography::WriterUnbuffered<float> > > writers;
     Tractography::Streamline<> empty_tck;
 
 };
