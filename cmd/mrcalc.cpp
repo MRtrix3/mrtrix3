@@ -611,6 +611,12 @@ void get_header (const StackEntry& entry, Header& header)
         PhaseEncoding::clear_scheme (header);
     }
   }
+
+  auto slice_encoding_it = entry.image->keyval().find ("SliceEncodingDirection");
+  if (slice_encoding_it != entry.image->keyval().end()) {
+    if (header.keyval()["SliceEncodingDirection"] != slice_encoding_it->second)
+      header.keyval().erase (header.keyval().find ("SliceEncodingDirection"));
+  }
 }
 
 
