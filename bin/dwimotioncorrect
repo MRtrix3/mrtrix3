@@ -240,7 +240,7 @@ def v2vregstep(k):
 
 def s2vregstep(k):
     # register template to slices
-    prog = app.progressBar('Registering recon to data slices', dims[3]*dims[2]//mb)
+    prog = app.progressBar('Registering recon to data slices', dims[3])
     for v in range(dims[3]):
         volmotion = ''
         run.command('mrconvert -coord 3 ' + str(v) + ' in1.mif target.mif -export_grad_mrtrix grad1.txt -force')
@@ -253,7 +253,7 @@ def s2vregstep(k):
             run.command('mrreg_lin template.mif target.mif -mask2 slicemask.mif' +
                         ' -affine_init ' + ('T-'+str(v)+'-'+str(s)+'.txt' if k>0 else 'T-'+str(v)+'.txt') +
                         ' -affine T-'+str(v)+'-'+str(s)+'.txt ' + reg_option + ' -force')
-            prog.increment()
+        prog.increment()
     prog.done()
     run.command('motionfilter T ' + str(dims[3]) + ' ' + str(dims[2]) + ' motion.txt' + motfilt_option)
 
