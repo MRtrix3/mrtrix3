@@ -60,6 +60,12 @@ if __name__ == '__main__':
     parser.add_argument('-packs', type=int, default=2, help='no. slice packs')
     parser.add_argument('-shift', type=int, default=1, help='slice shift')
     parser.add_argument('-extent', type=int, default=1, help='median filter window extent')
+    # mandatory MRtrix options (unused)
+    parser.add_argument('-nthreads', type=int, default=1, help='no. threads (unused)')
+    parser.add_argument('-info', help='(unused)')
+    parser.add_argument('-debug', help='(unused)')
+    parser.add_argument('-quiet', help='(unused)')
+    parser.add_argument('-force', help='(unused)')
     args = parser.parse_args()
     # set up slice order
     nv, nz, mb = args.vols, args.slices, args.mb
