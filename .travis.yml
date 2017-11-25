@@ -91,7 +91,7 @@ after_failure:
         ;;
       "memalign")
         cat memalign.log
-        ;
+        ;;
       "pylint")
         cat pylint.log
         ;;
