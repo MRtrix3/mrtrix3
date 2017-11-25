@@ -1,5 +1,5 @@
-# 10 subjects per group
-N=10 && SNR=2 && \
+# 16 subjects per group
+N=16 && SNR=5 && \
 python -c """
 import random;
 subj_files = []

@@ -102,28 +102,33 @@ namespace MR
                         vector_type& stdev)
         {
           betas = solve_betas (measurements, design);
-          //std::cerr << "Betas: " << betas.rows() << " x " << betas.cols() << ", max " << betas.array().maxCoeff() << "\n";
+          std::cerr << "Betas: " << betas.rows() << " x " << betas.cols() << ", max " << betas.array().maxCoeff() << "\n";
           abs_effect_size.resize (measurements.rows(), contrasts.size());
           // TESTME Surely this doesn't make sense for an F-test?
-          for (size_t ic = 0; ic != contrasts.size(); ++ic)
-            abs_effect_size.col (ic) = matrix_type (contrasts[ic]) * betas;
-          //std::cerr << "abs_effect_size: " << abs_effect_size.rows() << " x " << abs_effect_size.cols() << ", max " << abs_effect_size.array().maxCoeff() << "\n";
+          for (size_t ic = 0; ic != contrasts.size(); ++ic) {
+            if (contrasts[ic].is_F()) {
+              abs_effect_size.col (ic).setZero();
+            } else {
+              abs_effect_size.col (ic) = (matrix_type (contrasts[ic]) * betas).row (0);
+            }
+          }
+          std::cerr << "abs_effect_size: " << abs_effect_size.rows() << " x " << abs_effect_size.cols() << ", max " << abs_effect_size.array().maxCoeff() << "\n";
           matrix_type residuals = measurements.transpose() - design * betas;
           residuals = residuals.array().pow (2.0);
-          //std::cerr << "residuals: " << residuals.rows() << " x " << residuals.cols() << ", max " << residuals.array().maxCoeff() << "\n";
+          std::cerr << "residuals: " << residuals.rows() << " x " << residuals.cols() << ", max " << residuals.array().maxCoeff() << "\n";
           matrix_type one_over_dof (1, measurements.cols());
           one_over_dof.fill (1.0 / value_type(design.rows()-Math::rank (design)));
-          //std::cerr << "one_over_dof: " << one_over_dof.rows() << " x " << one_over_dof.cols() << ", max " << one_over_dof.array().maxCoeff() << "\n";
-          //VAR (design.rows());
-          //VAR (Math::rank (design));
-          stdev = (one_over_dof * residuals).array().sqrt();
-          //std::cerr << "stdev: " << stdev.rows() << " x " << stdev.cols() << ", max " << stdev.array().maxCoeff() << "\n";
+          std::cerr << "one_over_dof: " << one_over_dof.rows() << " x " << one_over_dof.cols() << ", max " << one_over_dof.array().maxCoeff() << "\n";
+          VAR (design.rows());
+          VAR (Math::rank (design));
+          stdev = (one_over_dof * residuals).array().sqrt().row(0);
+          std::cerr << "stdev: " << stdev.size() << ", max " << stdev.array().maxCoeff() << "\n";
           // TODO Should be a cleaner way of doing this (broadcasting?)
           matrix_type stdev_fill (abs_effect_size.rows(), abs_effect_size.cols());
-          for (ssize_t i = 0; i != stdev_fill.rows(); ++i)
-            stdev_fill.row(i) = stdev;
+          for (ssize_t i = 0; i != stdev_fill.cols(); ++i)
+            stdev_fill.col(i) = stdev;
           std_effect_size = abs_effect_size.array() / stdev_fill.array();
-          //std::cerr << "std_effect_size: " << std_effect_size.rows() << " x " << std_effect_size.cols() << ", max " << std_effect_size.array().maxCoeff() << "\n";
+          std::cerr << "std_effect_size: " << std_effect_size.rows() << " x " << std_effect_size.cols() << ", max " << std_effect_size.array().maxCoeff() << "\n";
         }
 
 
@@ -194,14 +199,59 @@ namespace MR
             // First, we perform permutation of the input data
             // In Freedman-Lane, the initial 'effective' regression against the nuisance
             //   variables, and permutation of the data, are done in a single step
-            const matrix_type Sy = perm_matrix * partitions[ic].Rz * y;
+            //VAR (perm_matrix.rows());
+            //VAR (perm_matrix.cols());
+            //VAR (partitions[ic].Rz.rows());
+            //VAR (partitions[ic].Rz.cols());
+            //VAR (y.rows());
+            //VAR (y.cols());
+            auto temp = perm_matrix * partitions[ic].Rz;
+            //VAR (temp.rows());
+            //VAR (temp.cols());
+            //const matrix_type Sy = perm_matrix * partitions[ic].Rz * y.rowwise();
+
+            // TODO Re-attempt performing this as a single matrix multiplication across all elements
+            matrix_type Sy (y.rows(), y.cols());
+            for (size_t ie = 0; ie != y.rows(); ++ie)
+              Sy.row (ie) = temp * y.row (ie).transpose();
+            //VAR (Sy.rows());
+            //VAR (Sy.cols());
 
             // Now, we regress this shuffled data against the full model
-            //ttest (tvalues, X.transpose(), pinvX.transpose(), Sy, betas, residuals_t);
-            beta.noalias() = Sy * pinvM;
-            betahat.noalias() = beta * matrix_type(c[ic]);
-            F = (betahat.transpose() * (partitions[ic].X.inverse()*partitions[ic].X) * betahat / c[ic].rank()) /
-                ((Rm*Sy).squaredNorm() / (num_subjects() - partitions[ic].rank_x - partitions[ic].rank_z));
+            //VAR (pinvM.rows());
+            //VAR (pinvM.cols());
+            beta.noalias() = pinvM * Sy.transpose();
+            //VAR (beta.rows());
+            //VAR (beta.cols());
+            //VAR (matrix_type(c[ic]).rows());
+            //VAR (matrix_type(c[ic]).cols());
+            betahat = matrix_type(c[ic]) * beta;
+            //VAR (betahat.rows());
+            //VAR (betahat.cols());
+            //VAR (partitions[ic].X.rows());
+            //VAR (partitions[ic].X.cols());
+            //VAR (Rm.rows());
+            //VAR (Rm.cols());
+            F.resize (y.rows());
+            auto temp1 = partitions[ic].X.transpose()*partitions[ic].X;
+            //VAR (temp1.rows());
+            //VAR (temp1.cols());
+            const default_type one_over_dof = num_subjects() - partitions[ic].rank_x - partitions[ic].rank_z;
+            for (size_t ie = 0; ie != y.rows(); ++ie) {
+              vector_type this_betahat = betahat.col (ie);
+              //VAR (this_betahat.size());
+              auto temp2 = this_betahat.matrix() * (temp1 * this_betahat.matrix()) / c[ic].rank();
+              //VAR (temp2.rows());
+              //VAR (temp2.cols());
+              auto temp3 = Rm*Sy.transpose().col (ie);
+              //VAR (temp3.rows());
+              //VAR (temp3.cols());
+              F[ie] = temp2 (0, 0) / (temp3.squaredNorm() / (num_subjects() - partitions[ic].rank_x - partitions[ic].rank_z));
+            }
+            // TODO Try to use broadcasting here; it doesn't like having colwise() as the RHS argument
+            //F = (betahat.transpose().rowwise() * ((partitions[ic].X.transpose()*partitions[ic].X) * betahat.colwise()) / c[ic].rank()) /
+            //    ((Rm*Sy.transpose()).colwise().squaredNorm() / (num_subjects() - partitions[ic].rank_x - partitions[ic].rank_z));
+            //VAR (F.size());
 
             // Put the results into the output matrix, replacing NaNs with zeroes
             // TODO Check again to see if this new statistic produces NaNs when input data are all zeroes
@@ -212,8 +262,8 @@ namespace MR
               } else if (c[ic].is_F()) {
                 output (iF, ic) = F[iF];
               } else {
-                assert (betahat.cols() == 1);
-                output (iF, ic) = std::sqrt (F[iF]) * (betahat (iF, 0) > 0 ? 1.0 : -1.0);
+                assert (betahat.rows() == 1);
+                output (iF, ic) = std::sqrt (F[iF]) * (betahat (0, iF) > 0 ? 1.0 : -1.0);
               }
             }
 

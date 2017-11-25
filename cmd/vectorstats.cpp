@@ -152,6 +152,7 @@ void run()
       contrasts.emplace_back (Contrast (contrast_matrix.row (row)));
   }
   const size_t num_contrasts = contrasts.size();
+  CONSOLE ("Number of contrasts: " + str(num_contrasts));
 
   // Before validating the contrast matrix, we first need to see if there are any
   //   additional design matrix columns coming from voxel-wise subject data
@@ -175,6 +176,7 @@ void run()
     throw Exception ("the number of columns per contrast (" + str(contrasts[0].cols()) + ")"
                      + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")"
                      + (extra_columns.size() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
+  CONSOLE ("Number of factors: " + str(num_factors));
 
   const std::string output_prefix = argument[3];
 
@@ -297,8 +299,8 @@ void run()
     ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", 2 + (2 * num_contrasts));
     save_matrix (betas, output_prefix + "betas.csv"); ++progress;
     for (size_t i = 0; i != num_contrasts; ++i) {
-      save_vector (abs_effect_size.row(i), output_prefix + "abs_effect" + postfix(i) + ".csv"); ++progress;
-      save_vector (std_effect_size.row(i), output_prefix + "std_effect" + postfix(i) + ".csv"); ++progress;
+      save_vector (abs_effect_size.col(i), output_prefix + "abs_effect" + postfix(i) + ".csv"); ++progress;
+      save_vector (std_effect_size.col(i), output_prefix + "std_effect" + postfix(i) + ".csv"); ++progress;
     }
     save_vector (stdev, output_prefix + "std_dev.csv");
   }
@@ -313,7 +315,7 @@ void run()
   matrix_type default_tvalues;
   (*glm_test) (default_permutation, default_tvalues);
   for (size_t i = 0; i != num_contrasts; ++i)
-    save_matrix (default_tvalues.row(i), output_prefix + "tvalue" + postfix(i) + ".csv");
+    save_matrix (default_tvalues.col(i), output_prefix + "tvalue" + postfix(i) + ".csv");
 
   // Perform permutation testing
   if (!get_options ("notest").size()) {
@@ -334,8 +336,8 @@ void run()
     matrix_type default_pvalues (num_elements, num_contrasts);
     Math::Stats::Permutation::statistic2pvalue (null_distribution, default_tvalues, default_pvalues);
     for (size_t i = 0; i != num_contrasts; ++i) {
-      save_vector (default_pvalues.row(i), output_prefix + "fwe_pvalue.csv");
-      save_vector (uncorrected_pvalues.row(i), output_prefix + "uncorrected_pvalue.csv");
+      save_vector (default_pvalues.col(i), output_prefix + "fwe_pvalue" + postfix(i) + ".csv");
+      save_vector (uncorrected_pvalues.col(i), output_prefix + "uncorrected_pvalue" + postfix(i) + ".csv");
     }
 
   }
