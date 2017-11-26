@@ -68,9 +68,7 @@ namespace MR {
               return image_type < frame.image_type;
             if (acq != frame.acq) 
               return acq < frame.acq;
-            assert (std::isfinite (distance));
-            assert (std::isfinite (frame.distance));
-            if (distance != frame.distance) 
+            if (std::isfinite (distance) && std::isfinite (frame.distance) && distance != frame.distance) 
               return distance < frame.distance;
             for (size_t n = index.size(); n--;)
               if (index[n] != frame.index[n])
@@ -88,12 +86,17 @@ namespace MR {
             if (!std::isfinite (orientation_z[0])) 
               orientation_z = orientation_x.cross (orientation_y);
             else {
+              if (!orientation_x.allFinite() || !orientation_y.allFinite()) 
+                throw Exception ("slice orientation information missing from DICOM header!");
               Eigen::Vector3 normal = orientation_x.cross (orientation_y);
               if (normal.dot (orientation_z) < 0.0)
                 orientation_z = -normal;
               else 
                 orientation_z = normal;
             }
+
+            if (!position_vector.allFinite()) 
+              throw Exception ("slice position information missing from DICOM header!");
 
             orientation_z.normalize();
             distance = orientation_z.dot (position_vector);
