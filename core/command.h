@@ -22,49 +22,19 @@
 
 #define MRTRIX_UPDATED_API
 
+
 #ifdef MRTRIX_AS_R_LIBRARY
-
-extern "C" void R_main (int* cmdline_argc, char** cmdline_argv) 
-{ 
-  ::MR::App::build_date = __DATE__; 
-#ifdef MRTRIX_PROJECT_VERSION
-  ::MR::App::project_version = MRTRIX_PROJECT_VERSION;
-#endif
-  SET_MRTRIX_PROJECT_VERSION 
-  ::MR::App::AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au)"; 
-  ::MR::App::DESCRIPTION.clear(); 
-  ::MR::App::ARGUMENTS.clear(); 
-  ::MR::App::OPTIONS.clear(); 
-  try { 
-    usage(); 
-    ::MR::App::init (*cmdline_argc, cmdline_argv); 
-    ::MR::App::parse (); 
-    run (); 
-  } 
-  catch (MR::Exception& E) { 
-    E.display(); 
-    return; 
-  } 
-  catch (int retval) { 
-    return; 
-  } 
-} 
-
-extern "C" void R_usage (char** output) 
-{ 
-  ::MR::App::DESCRIPTION.clear(); 
-  ::MR::App::ARGUMENTS.clear(); 
-  ::MR::App::OPTIONS.clear(); 
-  usage(); 
-  std::string s = MR::App::full_usage(); 
-  *output = new char [s.size()+1]; 
-  strncpy(*output, s.c_str(), s.size()+1); 
-}
-
+#define MAIN R_main_internal
 #else
+#define MAIN main
+#endif 
 
-int main (int cmdline_argc, char** cmdline_argv) 
+
+
+
+int MAIN (int cmdline_argc, char** cmdline_argv) 
 {
+
 #ifdef FLUSH_TO_ZERO
   // use gcc switches: -msse -mfpmath=sse -ffast-math
   int mxcsr = _mm_getcsr ();
@@ -74,10 +44,13 @@ int main (int cmdline_argc, char** cmdline_argv)
   mxcsr |= (1<<6); // denormals-are-zero
   _mm_setcsr (mxcsr);
 #endif
+
   ::MR::App::build_date = __DATE__; 
+
 #ifdef MRTRIX_PROJECT_VERSION
   ::MR::App::project_version = MRTRIX_PROJECT_VERSION;
 #endif
+
   try {
 #ifdef __gui_app_h__
     ::MR::GUI::App app (cmdline_argc, cmdline_argv);
@@ -95,11 +68,37 @@ int main (int cmdline_argc, char** cmdline_argv)
   catch (int retval) { 
     return retval; 
   } 
+
   return 0; 
 }
 
+
+
+#ifdef MRTRIX_AS_R_LIBRARY
+extern "C" void R_main (int* cmdline_argc, char** cmdline_argv) 
+{
+  ::MR::App::AUTHOR = nullptr;
+  ::MR::App::SYNOPSIS = nullptr;
+  ::MR::App::DESCRIPTION.clear(); 
+  ::MR::App::ARGUMENTS.clear(); 
+  ::MR::App::OPTIONS.clear(); 
+  MAIN (*cmdline_argc, cmdline_argv);
+}
+
+extern "C" void R_usage (char** output) 
+{ 
+  ::MR::App::AUTHOR = nullptr;
+  ::MR::App::SYNOPSIS = nullptr;
+  ::MR::App::DESCRIPTION.clear(); 
+  ::MR::App::ARGUMENTS.clear(); 
+  ::MR::App::OPTIONS.clear(); 
+  usage(); 
+  std::string s = MR::App::full_usage(); 
+  *output = new char [s.size()+1]; 
+  strncpy(*output, s.c_str(), s.size()+1); 
+}
 #endif
 
+#undef MAIN
+
 #endif
-
-

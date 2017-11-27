@@ -31,7 +31,7 @@ namespace MR
 
       Header* R_header = (Header*) to<size_t> (H.name().substr (0, H.name().size()-2));
       H = *R_header;
-      return R_header->__get_handler(); 
+      return R_header->__get_io_handler(); 
     }
 
 
@@ -51,8 +51,7 @@ namespace MR
       Header* R_header = (Header*) to<size_t> (H.name().substr (0, H.name().size()-2));
       *R_header = H;
       std::unique_ptr<ImageIO::RAM> io_handler (new ImageIO::RAM (H));
-      R_header->__set_handler (io_handler);
-      return io_handler;
+      return std::move (io_handler);
     }
 
 

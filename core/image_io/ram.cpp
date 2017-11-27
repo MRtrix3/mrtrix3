@@ -19,6 +19,7 @@
 
 #include "app.h"
 #include "image_io/ram.h"
+#include "header.h"
 
 namespace MR
 {
@@ -30,7 +31,7 @@ namespace MR
     {
       DEBUG ("allocating RAM buffer for image \"" + header.name() + "\"...");
       int64_t bytes_per_segment = (header.datatype().bits() * segsize + 7) / 8;
-      addresses.push_back (new uint8_t [bytes_per_segment]);
+      addresses.emplace_back (std::unique_ptr<uint8_t[]> (new uint8_t [bytes_per_segment]));
     }
 
 
@@ -38,7 +39,7 @@ namespace MR
     {
       if (addresses.size()) {
         DEBUG ("deleting RAM buffer for image \"" + header.name() + "\"...");
-        delete [] addresses[0];
+        addresses[0].release();
       }
     }
 

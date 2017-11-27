@@ -339,6 +339,9 @@ namespace MR
       //! print out debugging information
       friend std::ostream& operator<< (std::ostream& stream, const Header& H);
 
+#ifdef MRTRIX_AS_R_LIBRARY
+      std::unique_ptr<ImageIO::Base> __get_io_handler() { return std::move (io); }
+#endif
     protected:
       vector<Axis> axes_;
       transform_type transform_;
