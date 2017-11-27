@@ -415,11 +415,11 @@ namespace MR
 
   template <class HeaderType1, class HeaderType2>
     inline bool transforms_match (const HeaderType1 in1, const HeaderType2 in2, const double tol = 0.0) {
-      double bounds[] = {
+      Eigen::Vector3  bounds (
         0.5 * ( in1.spacing(0)*in1.size(0) + in2.spacing(0)*in2.size(0) ),
         0.5 * ( in1.spacing(1)*in1.size(1) + in2.spacing(1)*in2.size(1) ),
         0.5 * ( in1.spacing(2)*in1.size(2) + in2.spacing(2)*in2.size(2) )
-      };
+      );
       Eigen::Vector4 diffs (
         (in1.transform()*Eigen::Vector3 (0.0, 0.0, 0.0) - in2.transform()*Eigen::Vector3 (0.0, 0.0, 0.0)).norm(),
         (in1.transform()*Eigen::Vector3 (bounds[0], bounds[1], 0.0) - in2.transform()*Eigen::Vector3 (bounds[0], bounds[1], 0.0)).norm(),
@@ -427,9 +427,7 @@ namespace MR
         (in1.transform()*Eigen::Vector3 (0.0, bounds[1], bounds[2]) - in2.transform()*Eigen::Vector3 (0.0, bounds[1], bounds[2])).norm()
       );
 
-      double range = std::pow (bounds[0]*bounds[1]*bounds[2], 1.0/3.0);
-
-      return diffs.maxCoeff() < range * tol;
+      return diffs.maxCoeff() < bounds.maxCoeff() * tol;
     }
 
   template <class HeaderType>
