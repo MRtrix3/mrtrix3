@@ -17,6 +17,7 @@
 
 #include "datatype.h"
 #include "apply.h"
+#include "debug.h"
 
 namespace MR
 {
@@ -32,19 +33,19 @@ namespace MR
       FORCE_INLINE auto __ndim (const AxesType& axes) -> decltype (axes.ndim(), size_t()) { return axes.ndim(); }
 
     template <class AxesType>
-      FORCE_INLINE auto __get_index (const AxesType& axes, size_t axis) -> decltype (axes.size(), ssize_t()) 
+      FORCE_INLINE auto __get_index (const AxesType& axes, size_t axis) -> decltype (axes.size(), ssize_t())
       { return axes[axis]; }
 
     template <class AxesType>
-      FORCE_INLINE auto __get_index (const AxesType& axes, size_t axis) -> decltype (axes.ndim(), ssize_t()) 
+      FORCE_INLINE auto __get_index (const AxesType& axes, size_t axis) -> decltype (axes.ndim(), ssize_t())
       { return axes.index(axis); }
 
     template <class AxesType>
-      FORCE_INLINE auto __set_index (AxesType& axes, size_t axis, ssize_t index) -> decltype (axes.size(), void()) 
+      FORCE_INLINE auto __set_index (AxesType& axes, size_t axis, ssize_t index) -> decltype (axes.size(), void())
       { axes[axis] = index; }
 
     template <class AxesType>
-      FORCE_INLINE auto __set_index (AxesType& axes, size_t axis, ssize_t index) -> decltype (axes.ndim(), void()) 
+      FORCE_INLINE auto __set_index (AxesType& axes, size_t axis, ssize_t index) -> decltype (axes.ndim(), void())
       { axes.index(axis) = index; }
 
 
@@ -53,7 +54,7 @@ namespace MR
         __assign (size_t axis, ssize_t index) : axis (axis), index (index) { }
         const size_t axis;
         const ssize_t index;
-        template <class ImageType> 
+        template <class ImageType>
           FORCE_INLINE void operator() (ImageType& x) { __set_index (x, axis, index); }
       };
 
@@ -62,7 +63,7 @@ namespace MR
         __assign (size_t axis, ssize_t index) : axis (axis), index (index) { }
         const size_t axis;
         const ssize_t index;
-        template <class ImageType> 
+        template <class ImageType>
           FORCE_INLINE void operator() (ImageType& x) { apply (__assign<DestImageType...> (axis, index), x); }
       };
 
@@ -70,7 +71,7 @@ namespace MR
       struct __max_axis { NOMEMALIGN
         __max_axis (size_t& axis) : axis (axis) { }
         size_t& axis;
-        template <class ImageType> 
+        template <class ImageType>
           FORCE_INLINE void operator() (ImageType& x) { if (axis > __ndim(x)) axis = __ndim(x); }
       };
 
@@ -78,7 +79,7 @@ namespace MR
       struct __max_axis<std::tuple<DestImageType...>> { NOMEMALIGN
         __max_axis (size_t& axis) : axis (axis) { }
         size_t& axis;
-        template <class ImageType> 
+        template <class ImageType>
           FORCE_INLINE void operator() (ImageType& x) { apply (__max_axis<DestImageType...> (axis), x); }
       };
 
@@ -100,7 +101,7 @@ namespace MR
       struct __assign_pos_axes { NOMEMALIGN
         template <class... DestImageType>
           FORCE_INLINE void to (DestImageType&... dest) const {
-            for (auto a : axes) 
+            for (auto a : axes)
               apply (__assign<DestImageType...> (a, __get_index (ref, a)), std::tie (dest...));
           }
         const ImageType& ref;
@@ -116,9 +117,9 @@ namespace MR
   template <class HeaderType, typename ReturnType>
     struct enable_if_header_type { NOMEMALIGN
       typedef decltype ((void) (
-            std::declval<HeaderType>().ndim() + 
-            std::declval<HeaderType>().size(0) + 
-            std::declval<HeaderType>().name().size() 
+            std::declval<HeaderType>().ndim() +
+            std::declval<HeaderType>().size(0) +
+            std::declval<HeaderType>().name().size()
         ), std::declval<ReturnType>()) type;
     };
 
@@ -126,8 +127,8 @@ namespace MR
   template<typename HeaderType>
     class is_header_type { NOMEMALIGN
       typedef char yes[1], no[2];
-      template<typename C> static yes& test(typename enable_if_header_type<HeaderType,int>::type); 
-      template<typename C> static no&  test(...); 
+      template<typename C> static yes& test(typename enable_if_header_type<HeaderType,int>::type);
+      template<typename C> static no&  test(...);
       public:
       static bool const value = sizeof(test<HeaderType>(0)) == sizeof(yes);
     };
@@ -139,8 +140,8 @@ namespace MR
   template <class ImageType, typename ReturnType>
     struct enable_if_image_type { NOMEMALIGN
       typedef decltype ((void) (
-            std::declval<ImageType>().ndim() + 
-            std::declval<ImageType>().size(0) + 
+            std::declval<ImageType>().ndim() +
+            std::declval<ImageType>().size(0) +
             std::declval<ImageType>().name().size() +
             std::declval<ImageType>().value() +
             std::declval<ImageType>().index(0)
@@ -152,8 +153,8 @@ namespace MR
   template<typename ImageType>
     class is_image_type { NOMEMALIGN
       typedef char yes[1], no[2];
-      template<typename C> static yes& test(typename enable_if_image_type<ImageType,int>::type); 
-      template<typename C> static no&  test(...); 
+      template<typename C> static yes& test(typename enable_if_image_type<ImageType,int>::type);
+      template<typename C> static no&  test(...);
       public:
       static bool const value = sizeof(test<ImageType>(0)) == sizeof(yes);
     };
@@ -182,14 +183,14 @@ namespace MR
   /*! this can be used as follows:
    * \code
    * assign_pos_of (src_image, 0, 3).to (dest_image1, dest_image2);
-   * \endcode 
-   * 
+   * \endcode
+   *
    * This function will accept both ImageType objects (i.e. with ndim() &
    * index(size_t) methods) or VectorType objects (i.e. with size() &
    * operator[](size_t) methods). */
   template <class ImageType>
-    FORCE_INLINE __assign_pos_axis_range<ImageType> 
-    assign_pos_of (const ImageType& reference, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) 
+    FORCE_INLINE __assign_pos_axis_range<ImageType>
+    assign_pos_of (const ImageType& reference, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
     {
       return { reference, from_axis, to_axis };
     }
@@ -199,21 +200,21 @@ namespace MR
    * \code
    * vector<int> axes = { 0, 3, 4 };
    * assign_pos (src_image, axes) (dest_image1, dest_image2);
-   * \endcode 
-   * 
+   * \endcode
+   *
    * This function will accept both ImageType objects (i.e. with ndim() &
    * index(size_t) methods) or VectorType objects (i.e. with size() &
    * operator[](size_t) methods). */
   template <class ImageType, typename IntType>
-    FORCE_INLINE __assign_pos_axes<ImageType, IntType> 
-    assign_pos_of (const ImageType& reference, const vector<IntType>& axes) 
+    FORCE_INLINE __assign_pos_axes<ImageType, IntType>
+    assign_pos_of (const ImageType& reference, const vector<IntType>& axes)
     {
       return { reference, axes };
     }
 
   template <class ImageType, typename IntType>
-    FORCE_INLINE __assign_pos_axes<ImageType, IntType> 
-    assign_pos_of (const ImageType& reference, const vector<IntType>&& axes) 
+    FORCE_INLINE __assign_pos_axes<ImageType, IntType>
+    assign_pos_of (const ImageType& reference, const vector<IntType>&& axes)
     {
       return assign_pos_of (reference, axes);
     }
@@ -221,7 +222,7 @@ namespace MR
 
 
   template <class ImageType>
-    FORCE_INLINE bool is_out_of_bounds (const ImageType& image, 
+    FORCE_INLINE bool is_out_of_bounds (const ImageType& image,
         size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
     {
       for (size_t n = from_axis; n < std::min<size_t> (to_axis, image.ndim()); ++n)
@@ -252,7 +253,7 @@ namespace MR
     }
 
   //! returns the number of voxel in the data set, or a relevant subvolume
-  template <class HeaderType> 
+  template <class HeaderType>
     inline size_t voxel_count (const HeaderType& in, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
     {
       if (to_axis > in.ndim()) to_axis = in.ndim();
@@ -264,7 +265,7 @@ namespace MR
     }
 
   //! returns the number of voxel in the relevant subvolume of the data set
-  template <class HeaderType> 
+  template <class HeaderType>
     inline size_t voxel_count (const HeaderType& in, const char* specifier)
     {
       size_t fp = 1;
@@ -274,7 +275,7 @@ namespace MR
     }
 
   //! returns the number of voxel in the relevant subvolume of the data set
-  template <class HeaderType> 
+  template <class HeaderType>
     inline size_t voxel_count (const HeaderType& in, const std::initializer_list<size_t> axes)
     {
       size_t fp = 1;
@@ -284,7 +285,7 @@ namespace MR
     }
 
   //! returns the number of voxel in the relevant subvolume of the data set
-  template <class HeaderType> 
+  template <class HeaderType>
     inline int64_t voxel_count (const HeaderType& in, const vector<size_t>& axes)
     {
       int64_t fp = 1;
@@ -295,12 +296,12 @@ namespace MR
       return fp;
     }
 
-  template <typename ValueType> 
+  template <typename ValueType>
     inline int64_t footprint (int64_t count) {
       return count * sizeof(ValueType);
     }
 
-  template <> 
+  template <>
     inline int64_t footprint<bool> (int64_t count) {
       return (count+7)/8;
     }
@@ -310,13 +311,13 @@ namespace MR
   }
 
   //! returns the memory footprint of an Image
-  template <class HeaderType> 
+  template <class HeaderType>
     inline typename std::enable_if<std::is_class<HeaderType>::value, int64_t>::type footprint (const HeaderType& in, size_t from_dim = 0, size_t up_to_dim = std::numeric_limits<size_t>::max()) {
       return footprint (voxel_count (in, from_dim, up_to_dim), in.datatype());
     }
 
   //! returns the memory footprint of an Image
-  template <class HeaderType> 
+  template <class HeaderType>
     inline typename std::enable_if<std::is_class<HeaderType>::value, int64_t>::type footprint (const HeaderType& in, const char* specifier) {
       return footprint (voxel_count (in, specifier), in.datatype());
     }
@@ -406,29 +407,33 @@ namespace MR
 
   template <class HeaderType1, class HeaderType2>
     inline void check_transform (const HeaderType1& in1, const HeaderType2& in2, const double tol = 0.0) {
-      for (size_t i  = 0; i < 3; ++i) {
-        for (size_t j  = 0; j < 4; ++j) {
-          if (std::abs (in1.transform().matrix()(i,j) - in2.transform().matrix()(i,j)) > tol)
-            throw Exception ("images \"" + in1.name() + "\" and \"" + in2.name() + "\" do not have matching header transforms "
+      if (!transforms_match (in1, in2, tol))
+        throw Exception ("images \"" + in1.name() + "\" and \"" + in2.name() + "\" do not have matching header transforms "
                                + "\n" + str(in1.transform().matrix()) + "vs \n " + str(in2.transform().matrix()) + ")");
-        }
-      }
     }
 
 
   template <class HeaderType1, class HeaderType2>
     inline bool transforms_match (const HeaderType1 in1, const HeaderType2 in2, const double tol = 0.0) {
-      for (size_t i  = 0; i < 3; ++i) {
-        for (size_t j  = 0; j < 4; ++j) {
-          if (std::abs (in1.transform().matrix()(i,j) - in2.transform().matrix()(i,j)) > tol)
-            return false;
-        }
-      }
-      return true;
+      double bounds[] = {
+        0.5 * ( in1.spacing(0)*in1.size(0) + in2.spacing(0)*in2.size(0) ),
+        0.5 * ( in1.spacing(1)*in1.size(1) + in2.spacing(1)*in2.size(1) ),
+        0.5 * ( in1.spacing(2)*in1.size(2) + in2.spacing(2)*in2.size(2) )
+      };
+      Eigen::Vector4 diffs (
+        (in1.transform()*Eigen::Vector3 (0.0, 0.0, 0.0) - in2.transform()*Eigen::Vector3 (0.0, 0.0, 0.0)).norm(),
+        (in1.transform()*Eigen::Vector3 (bounds[0], bounds[1], 0.0) - in2.transform()*Eigen::Vector3 (bounds[0], bounds[1], 0.0)).norm(),
+        (in1.transform()*Eigen::Vector3 (bounds[0], 0.0, bounds[2]) - in2.transform()*Eigen::Vector3 (bounds[0], 0.0, bounds[2])).norm(),
+        (in1.transform()*Eigen::Vector3 (0.0, bounds[1], bounds[2]) - in2.transform()*Eigen::Vector3 (0.0, bounds[1], bounds[2])).norm()
+      );
+
+      double range = std::pow (bounds[0]*bounds[1]*bounds[2], 1.0/3.0);
+
+      return diffs.maxCoeff() < range * tol;
     }
 
   template <class HeaderType>
-    inline void squeeze_dim (HeaderType& in, size_t from_axis = 3) 
+    inline void squeeze_dim (HeaderType& in, size_t from_axis = 3)
     {
       size_t n = in.ndim();
       while (in.size(n-1) <= 1 && n > from_axis) --n;
@@ -466,7 +471,7 @@ namespace MR
       };
 
 
-    template <class ImageType> 
+    template <class ImageType>
       class Value { NOMEMALIGN
         public:
           using value_type = typename ImageType::value_type;
@@ -508,7 +513,7 @@ namespace MR
 
     template <class ImageType>
       class Row :
-        public ConstRow<ImageType> 
+        public ConstRow<ImageType>
     { NOMEMALIGN
       public:
 
@@ -518,11 +523,11 @@ namespace MR
 
         template <class OtherImageType>
           Row (ConstRow<OtherImageType>&& other) {
-            assert (image.size(axis) == other.image.size(other.axis)); 
-            for (image.index(axis) = 0, other.image.index(other.axis); 
+            assert (image.size(axis) == other.image.size(other.axis));
+            for (image.index(axis) = 0, other.image.index(other.axis);
                 image.index(axis) < image.size(axis);
-                ++image.index(axis), ++other.image.index(other.axis))  
-              image.value() = typename OtherImageType::value_type (other.image.value()); 
+                ++image.index(axis), ++other.image.index(other.axis))
+              image.value() = typename OtherImageType::value_type (other.image.value());
           }
 
         using ConstRow<ImageType>::image;
@@ -553,12 +558,12 @@ namespace MR
         MRTRIX_OP(/=);
 #undef MRTRIX_OP
 
-        FORCE_INLINE void operator= (Row&& other) { 
-          assert (image.size(axis) == other.image.size(other.axis));  
-            for (image.index(axis) = 0, other.image.index(other.axis) = 0;  
-                image.index(axis) < image.size(axis); 
-                ++image.index(axis), ++other.image.index(other.axis))   
-              image.value() = other.image.value();  
+        FORCE_INLINE void operator= (Row&& other) {
+          assert (image.size(axis) == other.image.size(other.axis));
+            for (image.index(axis) = 0, other.image.index(other.axis) = 0;
+                image.index(axis) < image.size(axis);
+                ++image.index(axis), ++other.image.index(other.axis))
+              image.value() = other.image.value();
         }
 
 #define MRTRIX_OP(ARG) \
@@ -583,7 +588,7 @@ namespace MR
 
 
   template <class Derived, typename ValueType>
-    class ImageBase 
+    class ImageBase
     { MEMALIGN (ImageBase<Derived,ValueType>)
       public:
         using value_type = ValueType;
