@@ -406,28 +406,38 @@ namespace MR
     }
 
   template <class HeaderType1, class HeaderType2>
-    inline void check_transform (const HeaderType1& in1, const HeaderType2& in2, const double tol = 0.0) {
-      if (!transforms_match (in1, in2, tol))
+    inline void check_transform (const HeaderType1& in1, const HeaderType2& in2,
+      const double tol_fov = 1.0e-6,
+      const double tol_vox = 1.0e-4) {
+      if (!transforms_match (in1, in2, tol_fov, tol_vox))
         throw Exception ("images \"" + in1.name() + "\" and \"" + in2.name() + "\" do not have matching header transforms "
                                + "\n" + str(in1.transform().matrix()) + "vs \n " + str(in2.transform().matrix()) + ")");
     }
 
-
+  //! returns true if the image to scanner transformation and voxel sizes of in1 and in2 are within tolerance
+  //! tol_vox: relative difference in voxel sizes
+  //! tol_fov: tolerance of FOV corner displacement in voxel units
   template <class HeaderType1, class HeaderType2>
-    inline bool transforms_match (const HeaderType1 in1, const HeaderType2 in2, const double tol = 0.0) {
-      Eigen::Vector3  bounds (
-        0.5 * ( in1.spacing(0)*in1.size(0) + in2.spacing(0)*in2.size(0) ),
-        0.5 * ( in1.spacing(1)*in1.size(1) + in2.spacing(1)*in2.size(1) ),
-        0.5 * ( in1.spacing(2)*in1.size(2) + in2.spacing(2)*in2.size(2) )
-      );
-      Eigen::Vector4 diffs (
-        (in1.transform()*Eigen::Vector3 (0.0, 0.0, 0.0) - in2.transform()*Eigen::Vector3 (0.0, 0.0, 0.0)).norm(),
-        (in1.transform()*Eigen::Vector3 (bounds[0], bounds[1], 0.0) - in2.transform()*Eigen::Vector3 (bounds[0], bounds[1], 0.0)).norm(),
-        (in1.transform()*Eigen::Vector3 (bounds[0], 0.0, bounds[2]) - in2.transform()*Eigen::Vector3 (bounds[0], 0.0, bounds[2])).norm(),
-        (in1.transform()*Eigen::Vector3 (0.0, bounds[1], bounds[2]) - in2.transform()*Eigen::Vector3 (0.0, bounds[1], bounds[2])).norm()
-      );
+    inline bool transforms_match (const HeaderType1 in1, const HeaderType2 in2,
+      const double tol_fov = 1.0e-4, const double tol_vox = 1.0e-4) {
 
-      return diffs.maxCoeff() < bounds.maxCoeff() * tol;
+      const Eigen::Vector3 vs1 (in1.spacing(0), in1.spacing(1), in1.spacing(2));
+      const Eigen::Vector3 vs2 (in2.spacing(0), in2.spacing(1), in2.spacing(2));
+      const Eigen::Vector3 vs_average (0.5*(vs1+vs2));
+      if ((vs1-vs2).cwiseAbs().cwiseQuotient(vs_average).maxCoeff() > tol_vox) {
+        DEBUG ("transforms_match: absolute difference in voxel sizes: "+str((vs1-vs2).cwiseAbs()));
+        return false;
+      }
+
+      Eigen::MatrixXd voxel_coord = Eigen::MatrixXd::Zero(4,4);
+      voxel_coord.row(3).fill(1.0);
+      voxel_coord(0,1) = voxel_coord(0,2) = 0.5 * (in1.size(0) + in2.size(0));
+      voxel_coord(1,1) = voxel_coord(1,3) = 0.5 * (in1.size(1) + in2.size(1));
+      voxel_coord(2,2) = voxel_coord(2,3) = 0.5 * (in1.size(2) + in2.size(2));
+
+      double diff_in_scannercoord = std::sqrt((in1.transform().matrix() * voxel_coord - in2.transform().matrix() * voxel_coord).colwise().squaredNorm().maxCoeff());
+      DEBUG ("transforms_match: FOV difference in scanner coordinates: "+str(diff_in_scannercoord));
+      return diff_in_scannercoord < vs_average.minCoeff() * tol_fov;
     }
 
   template <class HeaderType>
