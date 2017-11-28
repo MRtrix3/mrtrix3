@@ -23,7 +23,7 @@
 #include "fixel/loop.h"
 #include "math/stats/glm.h"
 #include "math/stats/import.h"
-#include "math/stats/permutation.h"
+#include "math/stats/shuffle.h"
 #include "math/stats/typedefs.h"
 #include "stats/cfe.h"
 #include "stats/enhance.h"
@@ -86,7 +86,7 @@ void usage ()
 
   OPTIONS
 
-  + Stats::PermTest::Options (true)
+  + Math::Stats::shuffle_options (true)
 
   + OptionGroup ("Parameters for the Connectivity-based Fixel Enhancement algorithm")
 
@@ -186,11 +186,9 @@ void run()
   const value_type cfe_h = get_option_value ("cfe_h", DEFAULT_CFE_H);
   const value_type cfe_e = get_option_value ("cfe_e", DEFAULT_CFE_E);
   const value_type cfe_c = get_option_value ("cfe_c", DEFAULT_CFE_C);
-  int num_perms = get_option_value ("nperms", DEFAULT_NUMBER_PERMUTATIONS);
   const value_type smooth_std_dev = get_option_value ("smooth", DEFAULT_SMOOTHING_STD) / 2.3548;
   const value_type connectivity_threshold = get_option_value ("connectivity", DEFAULT_CONNECTIVITY_THRESHOLD);
   const bool do_nonstationary_adjustment = get_options ("nonstationary").size();
-  int nperms_nonstationary = get_option_value ("nperms_nonstationary", DEFAULT_NUMBER_PERMUTATIONS_NONSTATIONARITY);
   const value_type angular_threshold = get_option_value ("angle", DEFAULT_ANGLE_THRESHOLD);
 
 
@@ -238,30 +236,6 @@ void run()
   if (design.rows() != (ssize_t)importer.size())
     throw Exception ("number of input files does not match number of rows in design matrix");
 
-  // Load permutations file if supplied
-  auto opt = get_options("permutations");
-  vector<vector<size_t> > permutations;
-  if (opt.size()) {
-    permutations = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
-    num_perms = permutations.size();
-    if (permutations[0].size() != (size_t)design.rows())
-      throw Exception ("number of rows in the permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix");
-  }
-
-  // Load non-stationary correction permutations file if supplied
-  opt = get_options("permutations_nonstationary");
-  vector<vector<size_t> > permutations_nonstationary;
-  if (opt.size()) {
-    if (do_nonstationary_adjustment) {
-      permutations_nonstationary = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
-      nperms_nonstationary = permutations_nonstationary.size();
-      if (permutations_nonstationary[0].size() != (size_t)design.rows())
-        throw Exception ("number of rows in the nonstationary permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix");
-    } else {
-      WARN ("-permutations_nonstationary option ignored: nonstationarity correction is not being performed (-nonstationary option)");
-    }
-  }
-
   // Load contrast matrix
   vector<Contrast> contrasts;
   {
@@ -275,7 +249,7 @@ void run()
   //   additional design matrix columns coming from fixel-wise subject data
   vector<CohortDataImport> extra_columns;
   bool nans_in_columns = false;
-  opt = get_options ("column");
+  auto opt = get_options ("column");
   for (size_t i = 0; i != opt.size(); ++i) {
     extra_columns.push_back (CohortDataImport());
     extra_columns[i].initialise<SubjectFixelImport> (opt[i][0]);
@@ -374,7 +348,7 @@ void run()
   }
 
   Header output_header (dynamic_cast<SubjectFixelImport*>(importer[0].get())->header());
-  output_header.keyval()["num permutations"] = str(num_perms);
+  //output_header.keyval()["num permutations"] = str(num_perms);
   output_header.keyval()["dh"] = str(cfe_dh);
   output_header.keyval()["cfe_e"] = str(cfe_e);
   output_header.keyval()["cfe_h"] = str(cfe_h);
@@ -546,14 +520,7 @@ void run()
   // If performing non-stationarity adjustment we need to pre-compute the empirical CFE statistic
   matrix_type empirical_cfe_statistic;
   if (do_nonstationary_adjustment) {
-    empirical_cfe_statistic = vector_type::Zero (num_fixels);
-    if (permutations_nonstationary.size()) {
-      Stats::PermTest::PermutationStack permutations (permutations_nonstationary, "precomputing empirical statistic for non-stationarity adjustment");
-      Stats::PermTest::precompute_empirical_stat (glm_test, cfe_integrator, permutations, empirical_cfe_statistic);
-    } else {
-      Stats::PermTest::PermutationStack permutations (nperms_nonstationary, design.rows(), "precomputing empirical statistic for non-stationarity adjustment", false);
-      Stats::PermTest::precompute_empirical_stat (glm_test, cfe_integrator, permutations, empirical_cfe_statistic);
-    }
+    Stats::PermTest::precompute_empirical_stat (glm_test, cfe_integrator, empirical_cfe_statistic);
     output_header.keyval()["nonstationary adjustment"] = str(true);
     for (size_t i = 0; i != num_contrasts; ++i)
       write_fixel_output (Path::join (output_fixel_directory, "cfe_empirical" + postfix(i) + ".mif"), empirical_cfe_statistic.row(i), output_header);
@@ -574,16 +541,11 @@ void run()
 
   // Perform permutation testing
   if (!get_options ("notest").size()) {
-    matrix_type perm_distribution (num_contrasts, num_perms);
-    matrix_type uncorrected_pvalues (num_contrasts, num_fixels);
 
-    if (permutations.size()) {
-      Stats::PermTest::run_permutations (permutations, glm_test, cfe_integrator, empirical_cfe_statistic,
-                                         cfe_output, perm_distribution, uncorrected_pvalues);
-    } else {
-      Stats::PermTest::run_permutations (num_perms, glm_test, cfe_integrator, empirical_cfe_statistic,
-                                         cfe_output, perm_distribution, uncorrected_pvalues);
-    }
+    matrix_type perm_distribution, uncorrected_pvalues;
+
+    Stats::PermTest::run_permutations (glm_test, cfe_integrator, empirical_cfe_statistic,
+                                       cfe_output, perm_distribution, uncorrected_pvalues);
 
     ProgressBar progress ("outputting final results");
     for (size_t i = 0; i != num_contrasts; ++i) {
@@ -592,7 +554,7 @@ void run()
     }
 
     matrix_type pvalue_output (num_contrasts, num_fixels);
-    Math::Stats::Permutation::statistic2pvalue (perm_distribution, cfe_output, pvalue_output);
+    Math::Stats::statistic2pvalue (perm_distribution, cfe_output, pvalue_output);
     ++progress;
     for (size_t i = 0; i != num_contrasts; ++i) {
       write_fixel_output (Path::join (output_fixel_directory, "fwe_pvalue" + postfix(i) + ".mif"), pvalue_output.row(i), output_header);

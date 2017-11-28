@@ -23,39 +23,6 @@ namespace MR
 
 
 
-      const App::OptionGroup Options (const bool include_nonstationarity)
-      {
-        using namespace App;
-
-        OptionGroup result = OptionGroup ("Options for permutation testing")
-          + Option ("notest", "don't perform permutation testing and only output population statistics (effect size, stdev etc)")
-          + Option ("nperms", "the number of permutations (Default: " + str(DEFAULT_NUMBER_PERMUTATIONS) + ")")
-            + Argument ("num").type_integer (1)
-          + Option ("permutations", "manually define the permutations (relabelling). The input should be a text file defining a m x n matrix, "
-                                    "where each relabelling is defined as a column vector of size    m, and the number of columns, n, defines "
-                                    "the number of permutations. Can be generated with the palm_quickperms function in PALM (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM). "
-                                    "Overrides the nperms option.")
-            + Argument ("file").type_file_in();
-
-        if (include_nonstationarity) {
-          result
-          + Option ("nonstationary", "perform non-stationarity correction")
-          + Option ("nperms_nonstationary", "the number of permutations used when precomputing the empirical statistic image for nonstationary correction (Default: " + str(DEFAULT_NUMBER_PERMUTATIONS_NONSTATIONARITY) + ")")
-            + Argument ("num").type_integer (1)
-          + Option ("permutations_nonstationary", "manually define the permutations (relabelling) for computing the emprical statistic image for nonstationary correction. "
-                                                  "The input should be a text file defining a m x n matrix, where each relabelling is defined as a column vector of size m, "
-                                                  "and the number of columns, n, defines the number of permutations. Can be generated with the palm_quickperms function in PALM "
-                                                  "(http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM) "
-                                                  "Overrides the nperms_nonstationary option.")
-            + Argument ("file").type_file_in();
-        }
-
-
-        return result;
-      }
-
-
-
       PreProcessor::PreProcessor (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                                   const std::shared_ptr<EnhancerBase> enhancer,
                                   matrix_type& global_enhanced_sum,
@@ -88,11 +55,11 @@ namespace MR
 
 
 
-      bool PreProcessor::operator() (const Permutation& permutation)
+      bool PreProcessor::operator() (const Math::Stats::Shuffle& shuffle)
       {
-        if (permutation.data.empty())
+        if (!shuffle.data.rows())
           return false;
-        (*stats_calculator) (permutation.data, stats);
+        (*stats_calculator) (shuffle.data, stats);
         (*enhancer) (stats, enhanced_stats);
         for (ssize_t c = 0; c != enhanced_stats.rows(); ++c) {
           for (ssize_t i = 0; i < enhanced_stats.cols(); ++i) {
@@ -146,9 +113,9 @@ namespace MR
 
 
 
-      bool Processor::operator() (const Permutation& permutation)
+      bool Processor::operator() (const Math::Stats::Shuffle& shuffle)
       {
-        (*stats_calculator) (permutation.data, statistics);
+        (*stats_calculator) (shuffle.data, statistics);
         if (enhancer)
           (*enhancer) (statistics, enhanced_statistics);
         else
@@ -157,7 +124,7 @@ namespace MR
         if (empirical_enhanced_statistics.size())
           enhanced_statistics.array() /= empirical_enhanced_statistics.array();
 
-        perm_dist.row(permutation.index) = enhanced_statistics.colwise().maxCoeff();
+        perm_dist.row(shuffle.index) = enhanced_statistics.colwise().maxCoeff();
 
         for (ssize_t contrast = 0; contrast != enhanced_statistics.cols(); ++contrast) {
           for (ssize_t element = 0; element != enhanced_statistics.rows(); ++element) {
@@ -177,12 +144,14 @@ namespace MR
 
       void precompute_empirical_stat (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                                       const std::shared_ptr<EnhancerBase> enhancer,
-                                      PermutationStack& perm_stack, matrix_type& empirical_statistic)
+                                      matrix_type& empirical_statistic)
       {
+        assert (stats_calculator);
         vector<vector<size_t>> global_enhanced_count (empirical_statistic.rows(), vector<size_t> (empirical_statistic.cols(), 0));
         {
+          Math::Stats::Shuffler shuffler (stats_calculator->num_subjects(), true, "Pre-computing empirical statistic for non-stationarity correction");
           PreProcessor preprocessor (stats_calculator, enhancer, empirical_statistic, global_enhanced_count);
-          Thread::run_queue (perm_stack, Permutation(), Thread::multi (preprocessor));
+          Thread::run_queue (shuffler, Math::Stats::Shuffle(), Thread::multi (preprocessor));
         }
         for (ssize_t row = 0; row != empirical_statistic.rows(); ++row) {
           for (ssize_t i = 0; i != empirical_statistic.cols(); ++i) {
@@ -201,11 +170,9 @@ namespace MR
                                            matrix_type& default_enhanced_statistics,
                                            matrix_type& default_statistics)
       {
-        vector<size_t> default_labelling (stats_calculator->num_subjects());
-        for (size_t i = 0; i < default_labelling.size(); ++i)
-          default_labelling[i] = i;
-
-        (*stats_calculator) (default_labelling, default_statistics);
+        assert (stats_calculator);
+        const matrix_type default_shuffle (matrix_type::Identity (stats_calculator->num_subjects(), stats_calculator->num_subjects()));
+        (*stats_calculator) (default_shuffle, default_statistics);
 
         if (enhancer)
           (*enhancer) (default_statistics, default_enhanced_statistics);
@@ -219,14 +186,17 @@ namespace MR
 
 
 
-      void run_permutations (PermutationStack& perm_stack,
-                             const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
+      void run_permutations (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                              const std::shared_ptr<EnhancerBase> enhancer,
                              const matrix_type& empirical_enhanced_statistic,
                              const matrix_type& default_enhanced_statistics,
                              matrix_type& perm_dist,
                              matrix_type& uncorrected_pvalues)
       {
+        assert (stats_calculator);
+        Math::Stats::Shuffler shuffler (stats_calculator->num_subjects(), false, "Running permutations");
+        perm_dist.resize (stats_calculator->num_outputs(), shuffler.size());
+        uncorrected_pvalues.resize (stats_calculator->num_outputs(), stats_calculator->num_elements());
         vector<vector<size_t>> global_uncorrected_pvalue_count (stats_calculator->num_outputs(), vector<size_t> (stats_calculator->num_elements(), 0));
         {
           Processor processor (stats_calculator, enhancer,
@@ -234,47 +204,13 @@ namespace MR
                                default_enhanced_statistics,
                                perm_dist,
                                global_uncorrected_pvalue_count);
-          Thread::run_queue (perm_stack, Permutation(), Thread::multi (processor));
+          Thread::run_queue (shuffler, Math::Stats::Shuffle(), Thread::multi (processor));
         }
 
         for (size_t contrast = 0; contrast != stats_calculator->num_outputs(); ++contrast) {
           for (size_t element = 0; element != stats_calculator->num_elements(); ++element)
-            uncorrected_pvalues(element, contrast) = global_uncorrected_pvalue_count[contrast][element] / default_type(perm_stack.num_permutations);
+            uncorrected_pvalues(element, contrast) = global_uncorrected_pvalue_count[contrast][element] / default_type(shuffler.size());
         }
-      }
-
-
-
-
-      void run_permutations (const vector<vector<size_t>>& permutations,
-                             const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
-                             const std::shared_ptr<EnhancerBase> enhancer,
-                             const matrix_type& empirical_enhanced_statistic,
-                             const matrix_type& default_enhanced_statistics,
-                             matrix_type& perm_dist,
-                             matrix_type& uncorrected_pvalues)
-      {
-        PermutationStack perm_stack (permutations, "running " + str(permutations.size()) + " permutations");
-
-        run_permutations (perm_stack, stats_calculator, enhancer, empirical_enhanced_statistic,
-                          default_enhanced_statistics, perm_dist, uncorrected_pvalues);
-      }
-
-
-
-
-      void run_permutations (const size_t num_permutations,
-                             const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
-                             const std::shared_ptr<EnhancerBase> enhancer,
-                             const matrix_type& empirical_enhanced_statistic,
-                             const matrix_type& default_enhanced_statistics,
-                             matrix_type& perm_dist,
-                             matrix_type& uncorrected_pvalues)
-      {
-        PermutationStack perm_stack (num_permutations, stats_calculator->num_subjects(), "running " + str(num_permutations) + " permutations");
-
-        run_permutations (perm_stack, stats_calculator, enhancer, empirical_enhanced_statistic,
-                          default_enhanced_statistics, perm_dist, uncorrected_pvalues);
       }
 
 

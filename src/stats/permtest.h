@@ -24,11 +24,10 @@
 #include "thread_queue.h"
 #include "math/math.h"
 #include "math/stats/glm.h"
-#include "math/stats/permutation.h"
+#include "math/stats/shuffle.h"
 #include "math/stats/typedefs.h"
 
 #include "stats/enhance.h"
-#include "stats/permstack.h"
 
 
 #define DEFAULT_NUMBER_PERMUTATIONS 5000
@@ -50,9 +49,6 @@ namespace MR
 
 
 
-      const App::OptionGroup Options (const bool include_nonstationarity);
-
-
       /*! A class to pre-compute the empirical enhanced statistic image for non-stationarity correction */
       class PreProcessor { MEMALIGN (PreProcessor)
         public:
@@ -63,7 +59,7 @@ namespace MR
 
           ~PreProcessor();
 
-          bool operator() (const Permutation&);
+          bool operator() (const Math::Stats::Shuffle&);
 
         protected:
           std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator;
@@ -92,7 +88,7 @@ namespace MR
 
           ~Processor();
 
-          bool operator() (const Permutation&);
+          bool operator() (const Math::Stats::Shuffle&);
 
         protected:
           std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator;
@@ -113,7 +109,7 @@ namespace MR
       // Precompute the empircal test statistic for non-stationarity adjustment
       void precompute_empirical_stat (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                                       const std::shared_ptr<EnhancerBase> enhancer,
-                                      PermutationStack& perm_stack, matrix_type& empirical_statistic);
+                                      matrix_type& empirical_statistic);
 
 
 
@@ -128,36 +124,12 @@ namespace MR
 
 
       // Functions for running a large number of permutations
-      // Different interfaces depending on how the permutations themselves are constructed:
-      // - A pre-existing permutation stack class
-      // - Pre-defined permutations (likely provided via a command-line option)
-      // - A requested number of permutations
-      void run_permutations (PermutationStack& perm_stack,
-                             const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
+      void run_permutations (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                              const std::shared_ptr<EnhancerBase> enhancer,
                              const matrix_type& empirical_enhanced_statistic,
                              const matrix_type& default_enhanced_statistics,
                              matrix_type& perm_dist,
                              matrix_type& uncorrected_pvalues);
-
-
-      void run_permutations (const vector<vector<size_t>>& permutations,
-                             const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
-                             const std::shared_ptr<EnhancerBase> enhancer,
-                             const matrix_type& empirical_enhanced_statistic,
-                             const matrix_type& default_enhanced_statistics,
-                             matrix_type& perm_dist,
-                             matrix_type& uncorrected_pvalues);
-
-
-      void run_permutations (const size_t num_permutations,
-                             const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
-                             const std::shared_ptr<EnhancerBase> enhancer,
-                             const matrix_type& empirical_enhanced_statistic,
-                             const matrix_type& default_enhanced_statistics,
-                             matrix_type& perm_dist,
-                             matrix_type& uncorrected_pvalues);
-
 
       //! @}
 

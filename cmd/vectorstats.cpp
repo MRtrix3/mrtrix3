@@ -20,7 +20,7 @@
 #include "file/path.h"
 #include "math/stats/glm.h"
 #include "math/stats/import.h"
-#include "math/stats/permutation.h"
+#include "math/stats/shuffle.h"
 #include "math/stats/typedefs.h"
 
 #include "stats/permtest.h"
@@ -60,7 +60,7 @@ void usage ()
 
 
   OPTIONS
-  + Stats::PermTest::Options (false)
+  + Math::Stats::shuffle_options (false)
 
   + OptionGroup ("Additional options for vectorstats")
 
@@ -127,22 +127,10 @@ void run()
       throw Exception ("Subject file \"" + importer[i]->name() + "\" contains incorrect number of elements (" + str(importer[i]) + "; expected " + str(num_elements) + ")");
   }
 
-  size_t num_perms = get_option_value ("nperms", DEFAULT_NUMBER_PERMUTATIONS);
-
   // Load design matrix
   const matrix_type design = load_matrix (argument[1]);
   if (size_t(design.rows()) != num_subjects)
     throw Exception ("Number of subjects (" + str(num_subjects) + ") does not match number of rows in design matrix (" + str(design.rows()) + ")");
-
-  // Load permutations file if supplied
-  auto opt = get_options("permutations");
-  vector<vector<size_t> > permutations;
-  if (opt.size()) {
-    permutations = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
-    num_perms = permutations.size();
-    if (permutations[0].size() != (size_t)design.rows())
-      throw Exception ("number of rows in the permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix");
-  }
 
   // Load contrast matrix
   vector<Contrast> contrasts;
@@ -158,7 +146,7 @@ void run()
   //   additional design matrix columns coming from voxel-wise subject data
   vector<CohortDataImport> extra_columns;
   bool nans_in_columns = false;
-  opt = get_options ("column");
+  auto opt = get_options ("column");
   for (size_t i = 0; i != opt.size(); ++i) {
     extra_columns.push_back (CohortDataImport());
     extra_columns[i].initialise<SubjectVectorImport> (opt[i][0]);
@@ -308,12 +296,10 @@ void run()
 
   // Precompute default statistic
   // Don't use convenience function: No enhancer!
-  // Manually construct default permutation
-  vector<size_t> default_permutation (num_subjects);
-  for (size_t i = 0; i != num_subjects; ++i)
-    default_permutation[i] = i;
+  // Manually construct default shuffling matrix
+  const matrix_type default_shuffle (matrix_type::Identity (num_subjects, num_subjects));
   matrix_type default_tvalues;
-  (*glm_test) (default_permutation, default_tvalues);
+  (*glm_test) (default_shuffle, default_tvalues);
   for (size_t i = 0; i != num_contrasts; ++i)
     save_matrix (default_tvalues.col(i), output_prefix + "tvalue" + postfix(i) + ".csv");
 
@@ -321,20 +307,14 @@ void run()
   if (!get_options ("notest").size()) {
 
     std::shared_ptr<Stats::EnhancerBase> enhancer;
-    matrix_type null_distribution (num_perms, num_contrasts);
-    matrix_type uncorrected_pvalues (num_elements, num_contrasts);
-    matrix_type empirical_distribution;
+    matrix_type null_distribution, uncorrected_pvalues;
+    matrix_type empirical_distribution; // unused
 
-    if (permutations.size()) {
-      Stats::PermTest::run_permutations (permutations, glm_test, enhancer, empirical_distribution,
-                                         default_tvalues, null_distribution, uncorrected_pvalues);
-    } else {
-      Stats::PermTest::run_permutations (num_perms, glm_test, enhancer, empirical_distribution,
-                                         default_tvalues, null_distribution, uncorrected_pvalues);
-    }
+    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_distribution,
+                                       default_tvalues, null_distribution, uncorrected_pvalues);
 
     matrix_type default_pvalues (num_elements, num_contrasts);
-    Math::Stats::Permutation::statistic2pvalue (null_distribution, default_tvalues, default_pvalues);
+    Math::Stats::statistic2pvalue (null_distribution, default_tvalues, default_pvalues);
     for (size_t i = 0; i != num_contrasts; ++i) {
       save_vector (default_pvalues.col(i), output_prefix + "fwe_pvalue" + postfix(i) + ".csv");
       save_vector (uncorrected_pvalues.col(i), output_prefix + "uncorrected_pvalue" + postfix(i) + ".csv");

@@ -173,10 +173,10 @@ namespace MR
             }
 
             /*! Compute the statistics
-             * @param perm_labelling a vector to shuffle the rows in the design matrix (for permutation testing)
-             * @param output the matrix containing the output statistics (one vector per contrast)
+             * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
+             * @param output the matrix containing the output statistics (one column per contrast)
              */
-            virtual void operator() (const vector<size_t>& perm_labelling, matrix_type& output) const = 0;
+            virtual void operator() (const matrix_type& shuffling_matrix, matrix_type& output) const = 0;
 
             size_t num_elements () const { return y.rows(); }
             size_t num_outputs  () const { return c.size(); }
@@ -212,10 +212,10 @@ namespace MR
             TestFixed (const matrix_type& measurements, const matrix_type& design, const vector<Contrast>& contrasts);
 
             /*! Compute the statistics
-             * @param perm_labelling a vector to shuffle the rows in the design matrix (for permutation testing)
+             * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
              * @param output the vector containing the output t-statistics (one column per contrast)
              */
-            void operator() (const vector<size_t>& perm_labelling, matrix_type& output) const override;
+            void operator() (const matrix_type& shuffling_matrix, matrix_type& output) const override;
 
           protected:
             // New classes to store information relevant to Freedman-Lane implementation
@@ -251,13 +251,13 @@ namespace MR
                           const bool nans_in_columns);
 
             /*! Compute the statistics
-             * @param perm_labelling a vector to shuffle the rows in the design matrix (for permutation testing)
+             * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
              * @param output the vector containing the output statistics
              *
              * In TestVariable, this function additionally needs to import the
              * extra external data individually for each element tested.
              */
-            void operator() (const vector<size_t>& perm_labelling, matrix_type& output) const override;
+            void operator() (const matrix_type& shuffling_matrix, matrix_type& output) const override;
 
             /*! Acquire the design matrix for the default permutation
              * (note that this needs to be re-run for each element being tested)

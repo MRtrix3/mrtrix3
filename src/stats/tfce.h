@@ -17,7 +17,6 @@
 
 #include "thread_queue.h"
 #include "filter/connected_components.h"
-#include "math/stats/permutation.h"
 #include "math/stats/typedefs.h"
 
 #include "stats/enhance.h"

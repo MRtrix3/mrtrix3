@@ -20,7 +20,7 @@
 
 #include "math/stats/glm.h"
 #include "math/stats/import.h"
-#include "math/stats/permutation.h"
+#include "math/stats/shuffle.h"
 #include "math/stats/typedefs.h"
 
 #include "stats/cluster.h"
@@ -73,7 +73,7 @@ void usage ()
 
 
   OPTIONS
-  + Stats::PermTest::Options (true)
+  + Math::Stats::shuffle_options (true)
 
   + Stats::TFCE::Options (DEFAULT_TFCE_DH, DEFAULT_TFCE_E, DEFAULT_TFCE_H)
 
@@ -180,9 +180,6 @@ void run() {
   const value_type tfce_H = get_option_value ("tfce_h", DEFAULT_TFCE_H);
   const value_type tfce_E = get_option_value ("tfce_e", DEFAULT_TFCE_E);
   const bool use_tfce = !std::isfinite (cluster_forming_threshold);
-  int num_perms = get_option_value ("nperms", DEFAULT_NUMBER_PERMUTATIONS);
-  int nperms_nonstationary = get_option_value ("nperms_nonstationary", DEFAULT_NUMBER_PERMUTATIONS_NONSTATIONARITY);
-
   const bool do_26_connectivity = get_options("connectivity").size();
   const bool do_nonstationary_adjustment = get_options ("nonstationary").size();
 
@@ -242,26 +239,6 @@ void run() {
                      + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")"
                      + (extra_columns.size() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
 
-  // Load permutations file if supplied
-  opt = get_options("permutations");
-  vector<vector<size_t> > permutations;
-  if (opt.size()) {
-    permutations = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
-    num_perms = permutations.size();
-    if (permutations[0].size() != (size_t)design.rows())
-       throw Exception ("number of rows in the permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix");
-  }
-
-  // Load non-stationary correction permutations file if supplied
-  opt = get_options("permutations_nonstationary");
-  vector<vector<size_t> > permutations_nonstationary;
-  if (opt.size()) {
-    permutations_nonstationary = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
-    nperms_nonstationary = permutations.size();
-    if (permutations_nonstationary[0].size() != (size_t)design.rows())
-      throw Exception ("number of rows in the nonstationary permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix");
-  }
-
   matrix_type data (num_voxels, importer.size());
   bool nans_in_data = false;
   {
@@ -283,7 +260,7 @@ void run() {
 
   Header output_header (mask_header);
   output_header.datatype() = DataType::Float32;
-  output_header.keyval()["num permutations"] = str(num_perms);
+  //output_header.keyval()["num permutations"] = str(num_perms);
   output_header.keyval()["26 connectivity"] = str(do_26_connectivity);
   output_header.keyval()["nonstationary adjustment"] = str(do_nonstationary_adjustment);
   if (use_tfce) {
@@ -425,30 +402,17 @@ void run() {
   if (do_nonstationary_adjustment) {
     if (!use_tfce)
       throw Exception ("nonstationary adjustment is not currently implemented for threshold-based cluster analysis");
-    if (permutations_nonstationary.size()) {
-      Stats::PermTest::PermutationStack permutations (permutations_nonstationary, "precomputing empirical statistic for non-stationarity adjustment...");
-      Stats::PermTest::precompute_empirical_stat (glm_test, enhancer, permutations, empirical_enhanced_statistic);
-    } else {
-      Stats::PermTest::PermutationStack permutations (nperms_nonstationary, design.rows(), "precomputing empirical statistic for non-stationarity adjustment...", false);
-      Stats::PermTest::precompute_empirical_stat (glm_test, enhancer, permutations, empirical_enhanced_statistic);
-    }
-
+    Stats::PermTest::precompute_empirical_stat (glm_test, enhancer, empirical_enhanced_statistic);
     for (size_t i = 0; i != num_contrasts; ++i)
       save_vector (empirical_enhanced_statistic.row(i), prefix + "empirical" + postfix(i) + ".txt");
   }
 
   if (!get_options ("notest").size()) {
 
-    matrix_type perm_distribution (num_contrasts, num_perms);
-    matrix_type uncorrected_pvalue (num_contrasts, num_voxels);
+    matrix_type perm_distribution, uncorrected_pvalue;
 
-    if (permutations.size()) {
-      Stats::PermTest::run_permutations (permutations, glm_test, enhancer, empirical_enhanced_statistic,
-                                         default_cluster_output, perm_distribution, uncorrected_pvalue);
-    } else {
-      Stats::PermTest::run_permutations (num_perms, glm_test, enhancer, empirical_enhanced_statistic,
-                                         default_cluster_output, perm_distribution, uncorrected_pvalue);
-    }
+    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_enhanced_statistic,
+                                       default_cluster_output, perm_distribution, uncorrected_pvalue);
 
     for (size_t i = 0; i != num_contrasts; ++i)
       save_vector (perm_distribution.row(i), prefix + "perm_dist" + postfix(i) + ".txt");
@@ -459,7 +423,7 @@ void run() {
       ++progress;
     }
     matrix_type fwe_pvalue_output (num_contrasts, num_voxels);
-    Math::Stats::Permutation::statistic2pvalue (perm_distribution, default_cluster_output, fwe_pvalue_output);
+    Math::Stats::statistic2pvalue (perm_distribution, default_cluster_output, fwe_pvalue_output);
     ++progress;
     for (size_t i = 0; i != num_contrasts; ++i) {
       write_output (fwe_pvalue_output.row(i), v2v, prefix + "fwe_pvalue" + postfix(i) + ".mif", output_header);

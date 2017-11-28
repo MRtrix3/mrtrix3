@@ -175,19 +175,11 @@ namespace MR
 
 
 
-        void TestFixed::operator() (const vector<size_t>& perm_labelling, matrix_type& output) const
+        void TestFixed::operator() (const matrix_type& shuffling_matrix, matrix_type& output) const
         {
-          assert (perm_labelling.size() == num_subjects());
+          assert (shuffling_matrix.rows() == num_subjects());
           if (!(size_t(output.rows()) == num_elements() && size_t(output.cols()) == num_outputs()))
             output.resize (num_elements(), num_outputs());
-
-
-          // TODO Re-express the permutation labelling as a permutation matrix
-          //   (we'll deal with altering how these permutations are provided
-          //   to the GLM code later)
-          matrix_type perm_matrix (matrix_type::Zero (num_subjects(), num_subjects()));
-          for (size_t i = 0; i != num_subjects(); ++i)
-            perm_matrix (i, perm_labelling[i]) = value_type(1); // TESTME
 
           matrix_type beta, betahat;
           vector_type F;
@@ -205,17 +197,17 @@ namespace MR
             //VAR (partitions[ic].Rz.cols());
             //VAR (y.rows());
             //VAR (y.cols());
-            auto temp = perm_matrix * partitions[ic].Rz;
-            //VAR (temp.rows());
-            //VAR (temp.cols());
-            //const matrix_type Sy = perm_matrix * partitions[ic].Rz * y.rowwise();
-
+            auto PRz = shuffling_matrix * partitions[ic].Rz;
+            //VAR (PRz.rows());
+            //VAR (PRz.cols());
             // TODO Re-attempt performing this as a single matrix multiplication across all elements
             matrix_type Sy (y.rows(), y.cols());
-            for (size_t ie = 0; ie != y.rows(); ++ie)
-              Sy.row (ie) = temp * y.row (ie).transpose();
+            for (ssize_t ie = 0; ie != y.rows(); ++ie)
+              Sy.row (ie) = PRz * y.row (ie).transpose();
             //VAR (Sy.rows());
             //VAR (Sy.cols());
+            // TODO Change measurements matrix convention to store data for each subject in a row;
+            //   means data across subjects for a particular element appear in a column, which is contiguous
 
             // Now, we regress this shuffled data against the full model
             //VAR (pinvM.rows());
@@ -232,21 +224,29 @@ namespace MR
             //VAR (partitions[ic].X.cols());
             //VAR (Rm.rows());
             //VAR (Rm.cols());
+            auto XtX = partitions[ic].X.transpose()*partitions[ic].X;
+            //VAR (XtX.rows());
+            //VAR (XtX.cols());
+            const default_type one_over_dof = 1.0 / (num_subjects() - partitions[ic].rank_x - partitions[ic].rank_z);
+            auto residuals = Rm*Sy.transpose();
+            //VAR (residuals.rows());
+            //VAR (residuals.cols());
+            vector_type temp3 = residuals.colwise().squaredNorm();
+            //VAR (temp3.rows());
+            //VAR (temp3.cols());
+            // FIXME This should be giving a vector, not a matrix
+            //auto temp4 = betahat.transpose() * (XtX * betahat) / c[ic].rank();
+            //VAR (temp4.rows());
+            //VAR (temp4.cols());
+            //std::cerr << temp4 << "\n";
             F.resize (y.rows());
-            auto temp1 = partitions[ic].X.transpose()*partitions[ic].X;
-            //VAR (temp1.rows());
-            //VAR (temp1.cols());
-            const default_type one_over_dof = num_subjects() - partitions[ic].rank_x - partitions[ic].rank_z;
-            for (size_t ie = 0; ie != y.rows(); ++ie) {
+            for (ssize_t ie = 0; ie != y.rows(); ++ie) {
               vector_type this_betahat = betahat.col (ie);
               //VAR (this_betahat.size());
-              auto temp2 = this_betahat.matrix() * (temp1 * this_betahat.matrix()) / c[ic].rank();
-              //VAR (temp2.rows());
-              //VAR (temp2.cols());
-              auto temp3 = Rm*Sy.transpose().col (ie);
-              //VAR (temp3.rows());
-              //VAR (temp3.cols());
-              F[ie] = temp2 (0, 0) / (temp3.squaredNorm() / (num_subjects() - partitions[ic].rank_x - partitions[ic].rank_z));
+              auto temp2 = this_betahat.matrix() * (XtX * this_betahat.matrix()) / c[ic].rank();
+              assert (temp2.rows() == 1);
+              assert (temp2.cols() == 1);
+              F[ie] = temp2 (0, 0) / (one_over_dof * temp3[ie]);
             }
             // TODO Try to use broadcasting here; it doesn't like having colwise() as the RHS argument
             //F = (betahat.transpose().rowwise() * ((partitions[ic].X.transpose()*partitions[ic].X) * betahat.colwise()) / c[ic].rank()) /
@@ -298,15 +298,10 @@ namespace MR
 
 
 
-        void TestVariable::operator() (const vector<size_t>& perm_labelling, matrix_type& output) const
+        void TestVariable::operator() (const matrix_type& shuffling_matrix, matrix_type& output) const
         {
           if (!(size_t(output.rows()) == num_elements() && size_t(output.cols()) == num_outputs()))
             output.resize (num_elements(), num_outputs());
-
-          // Convert permutation labelling to a matrix, as for the fixed design matrix case
-          matrix_type perm_matrix (matrix_type::Zero (num_subjects(), num_subjects()));
-          for (size_t i = 0; i != num_subjects(); ++i)
-            perm_matrix (i, perm_labelling[i]) = value_type(1);
 
           // Let's loop over elements first, then contrasts in the inner loop
           for (ssize_t element = 0; element != y.rows(); ++element) {
@@ -361,7 +356,7 @@ namespace MR
               Mfull_masked.resize (num_subjects(), num_factors());
               Mfull_masked.block (0, 0, num_subjects(), M.cols()) = M;
               Mfull_masked.block (0, M.cols(), num_subjects(), extra_data.cols()) = extra_data;
-              perm_matrix_masked = perm_matrix;
+              perm_matrix_masked = shuffling_matrix;
               y_masked = y.row (element);
 
             } else {
@@ -380,20 +375,20 @@ namespace MR
                   // Any row in the permutation matrix that contains a non-zero entry
                   //   in the column corresponding to in_row needs to be removed
                   //   from the permutation matrix
-                  for (ssize_t perm_row = 0; perm_row != perm_matrix.rows(); ++perm_row) {
-                    if (perm_matrix (perm_row, in_index))
+                  for (ssize_t perm_row = 0; perm_row != shuffling_matrix.rows(); ++perm_row) {
+                    if (shuffling_matrix (perm_row, in_index))
                       perm_matrix_mask[perm_row] = false;
                   }
                 }
               }
-              assert (out_index == finite_count);
-              assert (perm_matrix_mask.count() == finite_count);
+              assert (out_index == ssize_t(finite_count));
+              assert (perm_matrix_mask.count() == ssize_t(finite_count));
               // Only after we've reduced the design matrix do we now reduce the permutation matrix
               perm_matrix_masked.resize (finite_count, num_subjects());
               out_index = 0;
               for (size_t in_index = 0; in_index != num_subjects(); ++in_index) {
                 if (perm_matrix_mask[in_index])
-                  perm_matrix_masked.row (out_index++) = perm_matrix.row (in_index);
+                  perm_matrix_masked.row (out_index++) = shuffling_matrix.row (in_index);
               }
               assert (out_index == finite_count);
 
