@@ -48,10 +48,7 @@ except ImportError:
   def savetxt(fname, X, delimiter=" ", fmt="%.14e"):
     import sys
     try:
-      if sys.version_info[0] >= 3:
-        fh = open(fname, 'wb')
-      else:
-        fh = open(fname, 'w')
+      fh = open(fname, 'w')
       if len(X) == 1:
           ncol = 1
       else:
