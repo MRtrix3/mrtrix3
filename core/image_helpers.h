@@ -325,30 +325,30 @@ namespace MR
 
 
   template <class HeaderType1, class HeaderType2>
-    inline bool spacings_match (const HeaderType1& in1, const HeaderType2& in2)
+    inline bool spacings_match (const HeaderType1& in1, const HeaderType2& in2, const double tol=0.0)
     {
       if (in1.ndim() != in2.ndim()) return false;
       for (size_t n = 0; n < in1.ndim(); ++n)
-        if (in1.spacing (n) != in2.spacing(n)) return false;
+        if (std::abs(in1.spacing (n) - in2.spacing (n)) > tol * 0.5 * (in1.spacing (n) + in2.spacing (n))) return false;
       return true;
     }
 
   template <class HeaderType1, class HeaderType2>
-    inline bool spacings_match (const HeaderType1& in1, const HeaderType2& in2, size_t from_axis, size_t to_axis)
+    inline bool spacings_match (const HeaderType1& in1, const HeaderType2& in2, size_t from_axis, size_t to_axis, const double tol=0.0)
     {
       assert (from_axis < to_axis);
       if (to_axis > in1.ndim() || to_axis > in2.ndim()) return false;
       for (size_t n = from_axis; n < to_axis; ++n)
-        if (in1.spacing (n) != in2.spacing (n)) return false;
+        if (std::abs(in1.spacing (n) - in2.spacing (n)) > tol * 0.5 * (in1.spacing (n) + in2.spacing (n))) return false;
       return true;
     }
 
   template <class HeaderType1, class HeaderType2>
-    inline bool spacings_match (const HeaderType1& in1, const HeaderType2& in2, const vector<size_t>& axes)
+    inline bool spacings_match (const HeaderType1& in1, const HeaderType2& in2, const vector<size_t>& axes, const double tol=0.0)
     {
       for (size_t n = 0; n < axes.size(); ++n) {
         if (in1.ndim() <= axes[n] || in2.ndim() <= axes[n]) return false;
-        if (in1.spacing (axes[n]) != in2.spacing (axes[n])) return false;
+        if (std::abs(in1.spacing (axes[n]) - in2.spacing(axes[n])) > tol * 0.5 * (in1.spacing (axes[n]) + in2.spacing(axes[n]))) return false;
       }
       return true;
     }
@@ -406,28 +406,24 @@ namespace MR
     }
 
   template <class HeaderType1, class HeaderType2>
-    inline void check_transform (const HeaderType1& in1, const HeaderType2& in2,
-      const double tol_fov = 1.0e-6,
-      const double tol_vox = 1.0e-4) {
-      if (!transforms_match (in1, in2, tol_fov, tol_vox))
+    inline void check_voxel_grids_match_in_scanner_space (const HeaderType1& in1, const HeaderType2& in2, const double tol = 1.0e-4) {
+      Eigen::IOFormat FullPrecFmt(Eigen::FullPrecision, 0, ", ", "\n", "[", "]");
+      if (!voxel_grids_match_in_scanner_space (in1, in2, tol))
         throw Exception ("images \"" + in1.name() + "\" and \"" + in2.name() + "\" do not have matching header transforms "
-                               + "\n" + str(in1.transform().matrix()) + "vs \n " + str(in2.transform().matrix()) + ")");
+                               + "\n" + str(in1.transform().matrix().format(FullPrecFmt))
+                               + "\nvs\n" + str(in2.transform().matrix().format(FullPrecFmt)) + ")");
     }
 
   //! returns true if the image to scanner transformation and voxel sizes of in1 and in2 are within tolerance
-  //! tol_vox: relative difference in voxel sizes
-  //! tol_fov: tolerance of FOV corner displacement in voxel units
+  //! tol: tolerance of FOV corner displacement in voxel units
   template <class HeaderType1, class HeaderType2>
-    inline bool transforms_match (const HeaderType1 in1, const HeaderType2 in2,
-      const double tol_fov = 1.0e-4, const double tol_vox = 1.0e-4) {
+    inline bool voxel_grids_match_in_scanner_space (const HeaderType1 in1, const HeaderType2 in2,
+      const double tol = 1.0e-4) {
+      if (!dimensions_match(in1, in2))
+        return false;
 
       const Eigen::Vector3 vs1 (in1.spacing(0), in1.spacing(1), in1.spacing(2));
       const Eigen::Vector3 vs2 (in2.spacing(0), in2.spacing(1), in2.spacing(2));
-      const Eigen::Vector3 vs_average (0.5*(vs1+vs2));
-      if ((vs1-vs2).cwiseAbs().cwiseQuotient(vs_average).maxCoeff() > tol_vox) {
-        DEBUG ("transforms_match: absolute difference in voxel sizes: "+str((vs1-vs2).cwiseAbs()));
-        return false;
-      }
 
       Eigen::MatrixXd voxel_coord = Eigen::MatrixXd::Zero(4,4);
       voxel_coord.row(3).fill(1.0);
@@ -435,9 +431,10 @@ namespace MR
       voxel_coord(1,1) = voxel_coord(1,3) = 0.5 * (in1.size(1) + in2.size(1));
       voxel_coord(2,2) = voxel_coord(2,3) = 0.5 * (in1.size(2) + in2.size(2));
 
-      double diff_in_scannercoord = std::sqrt((in1.transform().matrix() * voxel_coord - in2.transform().matrix() * voxel_coord).colwise().squaredNorm().maxCoeff());
+      double diff_in_scannercoord = std::sqrt((vs1.asDiagonal() * in1.transform().matrix() * voxel_coord -
+        vs2.asDiagonal() * in2.transform().matrix() * voxel_coord).colwise().squaredNorm().maxCoeff());
       DEBUG ("transforms_match: FOV difference in scanner coordinates: "+str(diff_in_scannercoord));
-      return diff_in_scannercoord < vs_average.minCoeff() * tol_fov;
+      return diff_in_scannercoord < (0.5*(vs1+vs2)).minCoeff() * tol;
     }
 
   template <class HeaderType>
