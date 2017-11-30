@@ -179,10 +179,13 @@ namespace MR
             M(2,2) = Raw::fetch_<float32> (&NH.srow_z[2], is_BE);
             M(2,3) = Raw::fetch_<float32> (&NH.srow_z[3], is_BE);
 
-            // get voxel sizes:
+            // check voxel sizes:
             for (size_t axis = 0; axis != 3; ++axis) {
               if (size_t(ndim) > axis)
-                H.spacing(axis) = std::sqrt (Math::pow2 (M(0,axis)) + Math::pow2 (M(1,axis)) + Math::pow2 (M(2,axis)));
+                if (std::abs(H.spacing(axis) - std::sqrt (Math::pow2 (M(0,axis)) + Math::pow2 (M(1,axis)) + Math::pow2 (M(2,axis)))) > 1e-4) {
+                    WARN ("voxel spacings inconsistent between NIFTI s-form and header field pixdim");
+                    break;
+                }
             }
 
             // normalize each transform axis:
