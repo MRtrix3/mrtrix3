@@ -419,7 +419,7 @@ namespace MR
   template <class HeaderType1, class HeaderType2>
     inline bool voxel_grids_match_in_scanner_space (const HeaderType1 in1, const HeaderType2 in2,
       const double tol = 1.0e-4) {
-      if (!dimensions_match(in1, in2))
+      if (!dimensions_match(in1, in2, 0, 3))
         return false;
 
       const Eigen::Vector3 vs1 (in1.spacing(0), in1.spacing(1), in1.spacing(2));
