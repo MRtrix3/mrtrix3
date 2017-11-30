@@ -12,6 +12,7 @@ addons:
       - python3
       - python-pip
       - python3-pip
+      - ca-certificates
 compiler:
   - clang
 env:
