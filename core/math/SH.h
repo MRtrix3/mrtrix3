@@ -19,6 +19,7 @@
 # warning using non-orthonormal SH basis
 #endif
 
+#include "debug.h"
 #include "math/legendre.h"
 #include "math/least_squares.h"
 
@@ -496,8 +497,12 @@ namespace MR
             derivatives (sh, lmax, el, az, amplitude, dSH_del, dSH_daz, d2SH_del2, d2SH_deldaz, d2SH_daz2, precomputer);
 
             value_type del = sqrt (dSH_del*dSH_del + dSH_daz*dSH_daz);
-            value_type daz = dSH_daz/del;
-            del = dSH_del/del;
+            value_type daz = 0.0;
+            if (del != 0.0) {
+              daz = dSH_daz/del;
+              del = dSH_del/del;
+            }
+
 
             value_type dSH_dt = daz*dSH_daz + del*dSH_del;
             value_type d2SH_dt2 = daz*daz*d2SH_daz2 + 2.0*daz*del*d2SH_deldaz + del*del*d2SH_del2;
