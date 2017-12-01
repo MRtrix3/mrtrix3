@@ -397,7 +397,7 @@ namespace MR
               for (int m = 0; m <= lmax; m++) {
                 Legendre::Plm_sph (buf, lmax, m, cos_el);
                 for (int l = ( (m&1) ?m+1:m); l <= lmax; l+=2)
-                  p[index_mpos (l,m)] = SH_NON_M0_SCALE_FACTOR buf[l];
+                  p[index_mpos (l,m)] = buf[l];
               }
             }
           }
