@@ -18,7 +18,7 @@ install:
   - export NUMBER_OF_PROCESSORS=4
   - export PATH=`pwd`/release/bin:`pwd`/scripts:${PATH}
   - export EIGEN_CFLAGS=-I`pwd`/../eigen
-  - (cd ..; hg clone https://bitbucket.org/eigen/eigen/; cd eigen; hg update 3.3)
+  - (cd ..; hg clone --insecure https://bitbucket.org/eigen/eigen/; cd eigen; hg update 3.3)
 script:
   - ./check_memalign && $py ./configure -assert && $py ./build -nowarnings && ./run_tests
 
