@@ -110,9 +110,9 @@ namespace MR
      {
        if (!dimensions_match (in1, in2))
          return false;
-       if (!spacings_match (in1, in2))
+       if (!spacings_match (in1, in2, 1e-6)) // implicitly checked in voxel_grids_match_in_scanner_space but with different tolerance 
          return false;
-       if (!transforms_match (in1, in2))
+       if (!voxel_grids_match_in_scanner_space (in1, in2))
          return false;
        return true;
      }
