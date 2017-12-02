@@ -57,21 +57,24 @@ namespace MR
 
     
     template <size_t p>
-    FORCE_INLINE std::array<float,p+1> bsplineweights (const float t) {
+    FORCE_INLINE std::array<float,p+1> interpweights (const float t) {
       throw Exception("Not implemented.");
     }
 
     template <>
-    FORCE_INLINE std::array<float,2> bsplineweights<1> (const float t) {
+    FORCE_INLINE std::array<float,2> interpweights<1> (const float t) {
       assert((t >= 0.0) && (t <= 1.0));
       return {{ 1.0f-t, t }};
     }
 
     template <>
-    FORCE_INLINE std::array<float,4> bsplineweights<3> (const float t) {
+    FORCE_INLINE std::array<float,4> interpweights<3> (const float t) {
       assert((t >= 0.0) && (t <= 1.0));
-      float u = 1.0f-t, t2 = t*t, u2 = u*u;
-      return {{ u2*u/6, 2.0f/3-t2*(2.0f-t)/2, 2.0f/3-u2*(2.0f-u)/2, t2*t/6 }};
+      float u = 1.0f-t, t1 = t+1.0f, u1 = u+1.0f;
+      return {{ -0.5f*t1*t1*t1 + 2.5f*t1*t1 - 4*t1 + 2.0f,
+                 1.5f*t*t*t - 2.5f*t*t + 1.0f,
+                 1.5f*u*u*u - 2.5f*u*u + 1.0f,
+                -0.5f*u1*u1*u1 + 2.5f*u1*u1 - 4*u1 + 2.0f }};
     }
 
 

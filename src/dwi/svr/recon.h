@@ -459,9 +459,9 @@ namespace MR
         dst.setZero();
         int n = 2;
         Eigen::Vector3f pg = pr.array().ceil();
-        std::array<float,4> wx = bsplineweights<3>(1.0f - (pg[0] - pr[0]));
-        std::array<float,4> wy = bsplineweights<3>(1.0f - (pg[1] - pr[1]));
-        std::array<float,4> wz = bsplineweights<3>(1.0f - (pg[2] - pr[2]));
+        std::array<float,4> wx = interpweights<3>(1.0f - (pg[0] - pr[0]));
+        std::array<float,4> wy = interpweights<3>(1.0f - (pg[1] - pr[1]));
+        std::array<float,4> wz = interpweights<3>(1.0f - (pg[2] - pr[2]));
         int px, py, pz;
         for (int rz = -n; rz < n; rz++) { // local neighbourhood interpolation
           pz = pg[2] + rz;
