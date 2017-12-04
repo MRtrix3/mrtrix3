@@ -277,14 +277,6 @@ void run() {
   matrix_type tvalue_output (num_contrasts, num_voxels);
   matrix_type empirical_enhanced_statistic;
 
-  // Construct the class for performing the initial statistical tests
-  std::shared_ptr<GLM::TestBase> glm_test;
-  if (extra_columns.size() || nans_in_data) {
-    glm_test.reset (new GLM::TestVariable (extra_columns, data, design, contrasts, nans_in_data, nans_in_columns));
-  } else {
-    glm_test.reset (new GLM::TestFixed (data, design, contrasts));
-  }
-
   // Only add contrast row number to image outputs if there's more than one contrast
   auto postfix = [&] (const size_t i) { return (num_contrasts > 1) ? ("_" + str(i)) : ""; };
 
@@ -293,91 +285,8 @@ void run() {
     matrix_type abs_effect_size (num_contrasts, num_voxels), std_effect_size (num_contrasts, num_voxels);
     vector_type stdev (num_voxels);
 
-    if (extra_columns.size()) {
-
-      // For each variable of interest (e.g. beta coefficients, effect size etc.) need to:
-      //   Construct the output data vector, with size = num_voxels
-      //   For each voxel:
-      //     Use glm_test to obtain the design matrix for the default permutation for that voxel
-      //     Use the relevant Math::Stats::GLM function to get the value of interest for just that voxel
-      //       (will still however need to come out as a matrix_type)
-      //     Write that value to data vector
-      //   Finally, use write_output() function to write to an image file
-      class Source
-      { NOMEMALIGN
-        public:
-          Source (const size_t num_voxels) :
-              num_voxels (num_voxels),
-              counter (0),
-              progress (new ProgressBar ("calculating basic properties of default permutation", num_voxels)) { }
-
-          bool operator() (size_t& voxel_index)
-          {
-            voxel_index = counter++;
-            if (counter >= num_voxels) {
-              progress.reset();
-              return false;
-            }
-            assert (progress);
-            ++(*progress);
-            return true;
-          }
-
-        private:
-          const size_t num_voxels;
-          size_t counter;
-          std::unique_ptr<ProgressBar> progress;
-      };
-
-      class Functor
-      { MEMALIGN(Functor)
-        public:
-          Functor (const matrix_type& data, std::shared_ptr<GLM::TestBase> glm_test, const vector<Contrast>& contrasts,
-                   matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, vector_type& stdev) :
-              data (data),
-              glm_test (glm_test),
-              contrasts (contrasts),
-              global_betas (betas),
-              global_abs_effect_size (abs_effect_size),
-              global_std_effect_size (std_effect_size),
-              global_stdev (stdev) { }
-
-          bool operator() (const size_t& voxel_index)
-          {
-            const matrix_type data_voxel = data.row (voxel_index);
-            const matrix_type design_voxel = dynamic_cast<const GLM::TestVariable* const>(glm_test.get())->default_design (voxel_index);
-            Math::Stats::GLM::all_stats (data_voxel, design_voxel, contrasts,
-                                         local_betas, local_abs_effect_size, local_std_effect_size, local_stdev);
-            global_betas.col (voxel_index) = local_betas;
-            global_abs_effect_size.col(voxel_index) = local_abs_effect_size.col(0);
-            global_std_effect_size.col(voxel_index) = local_std_effect_size.col(0);
-            global_stdev[voxel_index] = local_stdev[0];
-            return true;
-          }
-
-        private:
-          const matrix_type& data;
-          const std::shared_ptr<GLM::TestBase> glm_test;
-          const vector<Contrast>& contrasts;
-          matrix_type& global_betas;
-          matrix_type& global_abs_effect_size;
-          matrix_type& global_std_effect_size;
-          vector_type& global_stdev;
-          matrix_type local_betas, local_abs_effect_size, local_std_effect_size;
-          vector_type local_stdev;
-      };
-
-      Source source (num_voxels);
-      Functor functor (data, glm_test, contrasts,
-                       betas, abs_effect_size, std_effect_size, stdev);
-      Thread::run_queue (source, Thread::batch (size_t()), Thread::multi (functor));
-
-    } else {
-
-      ProgressBar progress ("calculating basic properties of default permutation");
-      Math::Stats::GLM::all_stats (data, design, contrasts,
-                                   betas, abs_effect_size, std_effect_size, stdev);
-    }
+    Math::Stats::GLM::all_stats (data, design, extra_columns, contrasts,
+                                 betas, abs_effect_size, std_effect_size, stdev);
 
     ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_contrasts) + 1);
     for (ssize_t i = 0; i != num_factors; ++i) {
@@ -389,6 +298,14 @@ void run() {
       write_output (std_effect_size.row(i), v2v, prefix + "std_effect" + postfix(i) + ".mif", output_header); ++progress;
     }
     write_output (stdev, v2v, prefix + "std_dev.mif", output_header);
+  }
+
+  // Construct the class for performing the initial statistical tests
+  std::shared_ptr<GLM::TestBase> glm_test;
+  if (extra_columns.size() || nans_in_data) {
+    glm_test.reset (new GLM::TestVariable (extra_columns, data, design, contrasts, nans_in_data, nans_in_columns));
+  } else {
+    glm_test.reset (new GLM::TestFixed (data, design, contrasts));
   }
 
   std::shared_ptr<Stats::EnhancerBase> enhancer;

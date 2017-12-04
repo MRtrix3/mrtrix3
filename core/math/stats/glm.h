@@ -109,7 +109,7 @@ namespace MR
         /*! Compute the effect of interest
          * @param measurements a matrix storing the measured data for each subject in a column
          * @param design the design matrix
-         * @param contrast a matrix defining the group difference
+         * @param contrast a Contrast class instance defining the contrast of interest
          * @return the matrix containing the output effect
          */
         vector_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const Contrast& contrast);
@@ -129,7 +129,7 @@ namespace MR
         /*! Compute cohen's d, the standardised effect size between two means
          * @param measurements a matrix storing the measured data for each subject in a column
          * @param design the design matrix
-         * @param contrast a matrix defining the group difference
+         * @param contrast a Contrast class instance defining the contrast of interest
          * @return the matrix containing the output standardised effect size
          */
         vector_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const Contrast& contrast);
@@ -138,9 +138,11 @@ namespace MR
 
 
         /*! Compute all GLM-related statistics
+         * This function can be used when the design matrix remains fixed for all
+         * elements to be tested.
          * @param measurements a matrix storing the measured data for each subject in a column
          * @param design the design matrix
-         * @param contrast a matrix defining the group difference
+         * @param contrasts a vector of Contrast class instances defining the contrasts of interest
          * @param betas the matrix containing the output GLM betas
          * @param abs_effect_size the matrix containing the output effect
          * @param std_effect_size the matrix containing the output standardised effect size
@@ -148,6 +150,22 @@ namespace MR
          */
         void all_stats (const matrix_type& measurements, const matrix_type& design, const vector<Contrast>& contrasts,
                         matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, vector_type& stdev);
+
+        /*! Compute all GLM-related statistics
+         * This function can be used when the design matrix varies between elements,
+         * due to importing external data for each element from external files
+         * @param measurements a matrix storing the measured data for each subject in a column
+         * @param design the fixed portion of the design matrix
+         * @param extra_columns the variable columns of the design matrix
+         * @param contrasts a vector of Contrast class instances defining the contrasts of interest
+         * @param betas the matrix containing the output GLM betas
+         * @param abs_effect_size the matrix containing the output effect
+         * @param std_effect_size the matrix containing the output standardised effect size
+         * @param stdev the matrix containing the output standard deviation
+         */
+        void all_stats (const matrix_type& measurements, const matrix_type& design, const vector<CohortDataImport>& extra_columns,
+                        const vector<Contrast>& contrasts, matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, vector_type& stdev);
+
         //! @}
 
 

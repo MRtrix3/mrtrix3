@@ -16,6 +16,7 @@
 
 #include "debug.h"
 #include "misc/bitset.h"
+#include "thread_queue.h"
 
 #define GLM_BATCH_SIZE 1024
 
@@ -53,7 +54,10 @@ namespace MR
 
         vector_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const Contrast& contrast)
         {
-          return matrix_type(contrast) * solve_betas (measurements, design);
+          if (contrast.is_F())
+            return vector_type::Constant (measurements.rows(), NaN);
+          else
+            return matrix_type(contrast) * solve_betas (measurements, design);
         }
 
         matrix_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Contrast>& contrasts)
@@ -79,7 +83,10 @@ namespace MR
 
         vector_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const Contrast& contrast)
         {
-          return abs_effect_size (measurements, design, contrast).array() / stdev (measurements, design).array();
+          if (contrast.is_F())
+            return vector_type::Constant (measurements.rows(), NaN);
+          else
+            return abs_effect_size (measurements, design, contrast).array() / stdev (measurements, design).array();
         }
 
         matrix_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Contrast>& contrasts)
@@ -101,34 +108,123 @@ namespace MR
                         matrix_type& std_effect_size,
                         vector_type& stdev)
         {
-          betas = solve_betas (measurements, design);
+          ProgressBar progress ("calculating basic properties of default permutation");
+          betas = solve_betas (measurements, design); ++progress;
           std::cerr << "Betas: " << betas.rows() << " x " << betas.cols() << ", max " << betas.array().maxCoeff() << "\n";
           abs_effect_size.resize (measurements.rows(), contrasts.size());
-          // TESTME Surely this doesn't make sense for an F-test?
           for (size_t ic = 0; ic != contrasts.size(); ++ic) {
             if (contrasts[ic].is_F()) {
-              abs_effect_size.col (ic).setZero();
+              abs_effect_size.col (ic).fill (NaN);
             } else {
               abs_effect_size.col (ic) = (matrix_type (contrasts[ic]) * betas).row (0);
             }
           }
+          ++progress;
           std::cerr << "abs_effect_size: " << abs_effect_size.rows() << " x " << abs_effect_size.cols() << ", max " << abs_effect_size.array().maxCoeff() << "\n";
           matrix_type residuals = measurements.transpose() - design * betas;
-          residuals = residuals.array().pow (2.0);
+          residuals = residuals.array().pow (2.0); ++progress;
           std::cerr << "residuals: " << residuals.rows() << " x " << residuals.cols() << ", max " << residuals.array().maxCoeff() << "\n";
           matrix_type one_over_dof (1, measurements.cols());
           one_over_dof.fill (1.0 / value_type(design.rows()-Math::rank (design)));
           std::cerr << "one_over_dof: " << one_over_dof.rows() << " x " << one_over_dof.cols() << ", max " << one_over_dof.array().maxCoeff() << "\n";
           VAR (design.rows());
           VAR (Math::rank (design));
-          stdev = (one_over_dof * residuals).array().sqrt().row(0);
+          stdev = (one_over_dof * residuals).array().sqrt().row(0); ++progress;
           std::cerr << "stdev: " << stdev.size() << ", max " << stdev.array().maxCoeff() << "\n";
-          // TODO Should be a cleaner way of doing this (broadcasting?)
-          matrix_type stdev_fill (abs_effect_size.rows(), abs_effect_size.cols());
-          for (ssize_t i = 0; i != stdev_fill.cols(); ++i)
-            stdev_fill.col(i) = stdev;
-          std_effect_size = abs_effect_size.array() / stdev_fill.array();
+          std_effect_size = abs_effect_size.array() / stdev.array();  ++progress;
           std::cerr << "std_effect_size: " << std_effect_size.rows() << " x " << std_effect_size.cols() << ", max " << std_effect_size.array().maxCoeff() << "\n";
+        }
+
+
+
+        void all_stats (const matrix_type& measurements,
+                        const matrix_type& fixed_design,
+                        const vector<CohortDataImport>& extra_columns,
+                        const vector<Contrast>& contrasts,
+                        matrix_type& betas,
+                        matrix_type& abs_effect_size,
+                        matrix_type& std_effect_size,
+                        vector_type& stdev)
+        {
+          if (extra_columns.empty()) {
+            all_stats (measurements, fixed_design, contrasts, betas, abs_effect_size, std_effect_size, stdev);
+            return;
+          }
+
+          class Source
+          { NOMEMALIGN
+            public:
+              Source (const size_t num_elements) :
+                  num_elements (num_elements),
+                  counter (0),
+                  progress (new ProgressBar ("calculating basic properties of default permutation", num_elements)) { }
+              bool operator() (size_t& element_index)
+              {
+                element_index = counter++;
+                if (counter >= num_elements) {
+                  progress.reset();
+                  return false;
+                }
+                assert (progress);
+                ++(*progress);
+                return true;
+              }
+            private:
+              const size_t num_elements;
+              size_t counter;
+              std::unique_ptr<ProgressBar> progress;
+          };
+
+          class Functor
+          { MEMALIGN(Functor)
+            public:
+              Functor (const matrix_type& data, const matrix_type& design_fixed, const vector<CohortDataImport>& extra_columns, const vector<Contrast>& contrasts,
+                       matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, vector_type& stdev) :
+                  data (data),
+                  design_fixed (design_fixed),
+                  extra_columns (extra_columns),
+                  contrasts (contrasts),
+                  global_betas (betas),
+                  global_abs_effect_size (abs_effect_size),
+                  global_std_effect_size (std_effect_size),
+                  global_stdev (stdev)
+              {
+                assert (design_fixed.cols() + extra_columns.size() == contrasts[0].cols());
+              }
+              bool operator() (const size_t& element_index)
+              {
+                const matrix_type element_data = data.row (element_index);
+                matrix_type element_design (design_fixed.rows(), design_fixed.cols() + extra_columns.size());
+                element_design.leftCols (design_fixed.cols()) = design_fixed;
+                // For each element-wise design matrix column,
+                //   acquire the data for this particular element, without permutation
+                for (size_t col = 0; col != extra_columns.size(); ++col)
+                  element_design.col (design_fixed.cols() + col) = (extra_columns[col]) (element_index);
+                Math::Stats::GLM::all_stats (element_data, element_design, contrasts,
+                                             local_betas, local_abs_effect_size, local_std_effect_size, local_stdev);
+                global_betas.col (element_index) = local_betas;
+                global_abs_effect_size.col (element_index) = local_abs_effect_size.col(0);
+                global_std_effect_size.col (element_index) = local_std_effect_size.col(0);
+                global_stdev[element_index] = local_stdev[0];
+                return true;
+              }
+            private:
+              const matrix_type& data;
+              const matrix_type& design_fixed;
+              const vector<CohortDataImport>& extra_columns;
+              const vector<Contrast>& contrasts;
+              matrix_type& global_betas;
+              matrix_type& global_abs_effect_size;
+              matrix_type& global_std_effect_size;
+              vector_type& global_stdev;
+              matrix_type local_betas, local_abs_effect_size, local_std_effect_size;
+              vector_type local_stdev;
+          };
+
+          Source source (measurements.rows());
+          Functor functor (measurements, fixed_design, extra_columns, contrasts,
+                           betas, abs_effect_size, std_effect_size, stdev);
+          Thread::run_queue (source, Thread::batch (size_t()), Thread::multi (functor));
         }
 
 
