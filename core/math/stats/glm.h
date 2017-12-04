@@ -16,6 +16,7 @@
 #define __math_stats_glm_h__
 
 #include "app.h"
+#include "types.h"
 
 #include "math/least_squares.h"
 #include "math/stats/import.h"
@@ -97,6 +98,11 @@ namespace MR
             const size_t r;
             const bool F;
         };
+
+
+
+
+        vector<Contrast> load_contrasts (const std::string& file_path);
 
 
 

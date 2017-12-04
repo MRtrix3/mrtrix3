@@ -204,16 +204,12 @@ void run() {
   if (design.rows() != (ssize_t)importer.size())
     throw Exception ("number of input files does not match number of rows in design matrix");
 
-  // Load contrast matrix
-  vector<Contrast> contrasts;
-  {
-    const matrix_type contrast_matrix = load_matrix (argument[2]);
-    for (ssize_t row = 0; row != contrast_matrix.rows(); ++row)
-      contrasts.emplace_back (Contrast (contrast_matrix.row (row)));
-  }
+  // Load contrasts
+  const vector<Contrast> contrasts = Math::Stats::GLM::load_contrasts (argument[2]);
   const size_t num_contrasts = contrasts.size();
+  CONSOLE ("Number of contrasts: " + str(num_contrasts));
 
-  // Before validating the contrast matrix, we first need to see if there are any
+  // Before validating the contrasts, we first need to see if there are any
   //   additional design matrix columns coming from voxel-wise subject data
   // TODO Functionalise this
   vector<CohortDataImport> extra_columns;

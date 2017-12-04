@@ -206,19 +206,13 @@ void run()
   if (size_t(design.rows()) != importer.size())
     throw Exception ("number of subjects (" + str(importer.size()) + ") does not match number of rows in design matrix (" + str(design.rows()) + ")");
 
-  // Load contrast matrix
-  // TODO Eventually this should be functionalised, and include F-tests
-  // TODO Eventually will want ability to disable t-test output, and output F-tests only
-  vector<Contrast> contrasts;
-  {
-    const matrix_type contrast_matrix = load_matrix (argument[3]);
-    for (ssize_t row = 0; row != contrast_matrix.rows(); ++row)
-      contrasts.emplace_back (Contrast (contrast_matrix.row (row)));
-  }
+  // Load contrasts
+  const vector<Contrast> contrasts = Math::Stats::GLM::load_contrasts (argument[3]);
   const size_t num_contrasts = contrasts.size();
+  CONSOLE ("Number of contrasts: " + str(num_contrasts));
 
-  // Before validating the contrast matrix, we first need to see if there are any
-  //   additional design matrix columns coming from fixel-wise subject data
+  // Before validating the contrasts, we first need to see if there are any
+  //   additional design matrix columns coming from edge-wise subject data
   vector<CohortDataImport> extra_columns;
   bool nans_in_columns = false;
   auto opt = get_options ("column");

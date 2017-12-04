@@ -43,15 +43,64 @@ namespace MR
             "The contrast matrix must also reflect the presence of this additional column.";
 
 
+
         App::OptionGroup glm_options (const std::string& element_name)
         {
           using namespace App;
           OptionGroup result = OptionGroup ("Options related to the General Linear Model (GLM)")
+
+            + Option ("ftests", "perform F-tests; input text file should contain, for each F-test, a column containing "
+                                "ones and zeros, where ones indicate those rows of the contrast matrix to be included "
+                                "in the F-test.")
+              + Argument ("path").type_file_in()
+
+            + Option ("fonly", "only assess F-tests; do not perform statistical inference on entries in the contrast matrix")
+
             + Option ("column", "add a column to the design matrix corresponding to subject " + element_name + "-wise values "
                                 "(note that the contrast matrix must include an additional column for each use of this option); "
                                 "the text file provided via this option should contain a file name for each subject").allow_multiple()
               + Argument ("path").type_file_in();
+
           return result;
+        }
+
+
+
+
+        vector<Contrast> load_contrasts (const std::string& file_path)
+        {
+          vector<Contrast> contrasts;
+          const matrix_type contrast_matrix = load_matrix (file_path);
+          for (ssize_t row = 0; row != contrast_matrix.rows(); ++row)
+            contrasts.emplace_back (Contrast (contrast_matrix.row (row)));
+          auto opt = App::get_options ("ftests");
+          if (opt.size()) {
+            const matrix_type ftest_matrix = load_matrix (opt[0][0]);
+            if (ftest_matrix.rows() != contrast_matrix.rows())
+              throw Exception ("Number of rows in F-test matrix (" + str(ftest_matrix.rows()) + ") does not match number of rows in contrast matrix (" + str(contrast_matrix.rows()) + ")");
+            if (!((ftest_matrix.array() == 0.0) + (ftest_matrix.array() == 1.0)).all())
+              throw Exception ("F-test array must contain ones and zeros only");
+            for (ssize_t ftest_index = 0; ftest_index != ftest_matrix.cols(); ++ftest_index) {
+              if (!ftest_matrix.col (ftest_index).count())
+                throw Exception ("Column " + sstr(ftest_index+1) + " of F-test matrix does not contain any ones");
+              matrix_type this_f_matrix (ftest_matrix.col (ftest_index).count(), contrast_matrix.cols());
+              ssize_t ftest_row = 0;
+              for (ssize_t contrast_row = 0; contrast_row != contrast_matrix.rows(); ++contrast_row) {
+                if (ftest_matrix (contrast_row, ftest_index))
+                  this_f_matrix.row (ftest_row++) = contrast_matrix.row (contrast_row);
+              }
+              contrasts.emplace_back (Contrast (this_f_matrix));
+            }
+            if (App::get_options ("fonly").size()) {
+              vector<Contrast> new_contrasts;
+              for (size_t index = contrast_matrix.rows(); index != contrasts.size(); ++index)
+                new_contrasts.push_back (std::move (contrasts[index]));
+              std::swap (contrasts, new_contrasts);
+            }
+          } else if (App::get_options ("fonly").size()) {
+            throw Exception ("Cannot perform F-tests exclusively: No F-test matrix was provided");
+          }
+          return contrasts;
         }
 
 

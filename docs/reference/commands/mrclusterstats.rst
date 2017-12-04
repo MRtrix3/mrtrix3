@@ -60,6 +60,10 @@ Options for controlling TFCE behaviour
 Options related to the General Linear Model (GLM)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+-  **-ftests path** perform F-tests; input text file should contain, for each F-test, a column containing ones and zeros, where ones indicate those rows of the contrast matrix to be included in the F-test.
+
+-  **-fonly** only assess F-tests; do not perform statistical inference on entries in the contrast matrix
+
 -  **-column path** add a column to the design matrix corresponding to subject voxel-wise values (note that the contrast matrix must include an additional column for each use of this option); the text file provided via this option should contain a file name for each subject
 
 Additional options for mrclusterstats
