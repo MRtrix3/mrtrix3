@@ -62,11 +62,7 @@ void usage ()
   OPTIONS
   + Math::Stats::shuffle_options (false)
 
-  + OptionGroup ("Additional options for vectorstats")
-
-    + Option ("column", "add a column to the design matrix corresponding to subject element-wise values "
-                        "(the contrast vector length must include columns for these additions)").allow_multiple()
-      + Argument ("path").type_file_in();
+  + Math::Stats::GLM::glm_options ("element");
 
 }
 

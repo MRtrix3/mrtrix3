@@ -102,11 +102,9 @@ void usage ()
   + Option ("cfe_c", "cfe connectivity exponent (default: " + str(DEFAULT_CFE_C, 2) + ")")
   + Argument ("value").type_float (0.0, 100.0)
 
-  + OptionGroup ("Additional options for fixelcfestats")
+  + Math::Stats::GLM::glm_options ("fixel")
 
-  + Option ("column", "add a column to the design matrix corresponding to subject fixel-wise values "
-                      "(the contrast vector length must include columns for these additions)").allow_multiple()
-  + Argument ("path").type_file_in()
+  + OptionGroup ("Additional options for fixelcfestats")
 
   + Option ("smooth", "smooth the fixel value along the fibre tracts using a Gaussian kernel with the supplied FWHM (default: " + str(DEFAULT_SMOOTHING_STD, 2) + "mm)")
   + Argument ("FWHM").type_float (0.0, 200.0)

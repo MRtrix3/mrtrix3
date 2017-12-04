@@ -77,15 +77,13 @@ void usage ()
 
   + Stats::TFCE::Options (DEFAULT_TFCE_DH, DEFAULT_TFCE_E, DEFAULT_TFCE_H)
 
+  + Math::Stats::GLM::glm_options ("voxel")
+
   + OptionGroup ("Additional options for mrclusterstats")
 
     + Option ("threshold", "the cluster-forming threshold to use for a standard cluster-based analysis. "
                            "This disables TFCE, which is the default otherwise.")
       + Argument ("value").type_float (1.0e-6)
-
-    + Option ("column", "add a column to the design matrix corresponding to subject voxel-wise values "
-                        "(the contrast vector length must include columns for these additions)").allow_multiple()
-      + Argument ("path").type_file_in()
 
     + Option ("connectivity", "use 26-voxel-neighbourhood connectivity (Default: 6)");
 

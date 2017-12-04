@@ -43,6 +43,20 @@ namespace MR
             "The contrast matrix must also reflect the presence of this additional column.";
 
 
+        App::OptionGroup glm_options (const std::string& element_name)
+        {
+          using namespace App;
+          OptionGroup result = OptionGroup ("Options related to the General Linear Model (GLM)")
+            + Option ("column", "add a column to the design matrix corresponding to subject " + element_name + "-wise values "
+                                "(note that the contrast matrix must include an additional column for each use of this option); "
+                                "the text file provided via this option should contain a file name for each subject").allow_multiple()
+              + Argument ("path").type_file_in();
+          return result;
+        }
+
+
+
+
 
 
         matrix_type solve_betas (const matrix_type& measurements, const matrix_type& design)

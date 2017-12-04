@@ -79,16 +79,12 @@ void usage ()
   // TODO OptionGroup these, and provide a generic loader function
   + Stats::TFCE::Options (TFCE_DH_DEFAULT, TFCE_E_DEFAULT, TFCE_H_DEFAULT)
 
+  + Math::Stats::GLM::glm_options ("edge")
+
   + OptionGroup ("Additional options for connectomestats")
 
   + Option ("threshold", "the t-statistic value to use in threshold-based clustering algorithms")
-  + Argument ("value").type_float (0.0)
-
-  // TODO Generalise this across commands
-  + Option ("column", "add a column to the design matrix corresponding to subject edge-wise values "
-                      "(the contrast vector length must include columns for these additions)").allow_multiple()
-  + Argument ("path").type_file_in();
-
+  + Argument ("value").type_float (0.0);
 
   REFERENCES + "* If using the NBS algorithm: \n"
                "Zalesky, A.; Fornito, A. & Bullmore, E. T. Network-based statistic: Identifying differences in brain networks. \n"

@@ -15,6 +15,8 @@
 #ifndef __math_stats_glm_h__
 #define __math_stats_glm_h__
 
+#include "app.h"
+
 #include "math/least_squares.h"
 #include "math/stats/import.h"
 #include "math/stats/typedefs.h"
@@ -27,6 +29,13 @@ namespace MR
     {
       namespace GLM
       {
+
+
+
+        extern const char* const column_ones_description;
+
+        App::OptionGroup glm_options (const std::string& element_name);
+
 
 
         // TODO Define a base class to contain information regarding an individual contrast, and
@@ -88,10 +97,6 @@ namespace MR
             const size_t r;
             const bool F;
         };
-
-
-
-        extern const char* const column_ones_description;
 
 
 
