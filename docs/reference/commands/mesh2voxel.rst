@@ -1,6 +1,6 @@
-.. _mesh2pve:
+.. _mesh2voxel:
 
-mesh2pve
+mesh2voxel
 ===================
 
 Synopsis
@@ -13,7 +13,7 @@ Usage
 
 ::
 
-    mesh2pve [ options ]  source template output
+    mesh2voxel [ options ]  source template output
 
 -  *source*: the mesh file; note vertices must be defined in realspace coordinates
 -  *template*: the template image

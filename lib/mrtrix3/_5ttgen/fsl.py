@@ -178,11 +178,11 @@ def execute(): #pylint: disable=unused-variable
   pve_image_list = [ ]
   progress = app.progressBar('Generating partial volume images for SGM structures', len(sgm_structures))
   for struct in sgm_structures:
-    pve_image_path = 'mesh2pve_' + struct + '.mif'
+    pve_image_path = 'mesh2voxel_' + struct + '.mif'
     vtk_in_path = 'first-' + struct + '_first.vtk'
     vtk_temp_path = struct + '.vtk'
     run.command('meshconvert ' + vtk_in_path + ' ' + vtk_temp_path + ' -transform first2real ' + first_input)
-    run.command('mesh2pve ' + vtk_temp_path + ' ' + fast_t1_input + ' ' + pve_image_path)
+    run.command('mesh2voxel ' + vtk_temp_path + ' ' + fast_t1_input + ' ' + pve_image_path)
     pve_image_list.append(pve_image_path)
     progress.increment()
   progress.done()

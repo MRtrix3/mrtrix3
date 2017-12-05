@@ -121,7 +121,7 @@ for key, value in structure_map.items():
   mask_list.append(image_path)
   vtk_in_path = 'first-' + key + '_first.vtk'
   run.command('meshconvert ' + vtk_in_path + ' first-' + key + '_transformed.vtk -transform first2real T1.nii')
-  run.command('mesh2pve first-' + key + '_transformed.vtk parc.mif - | mrthreshold - ' + image_path + ' -abs 0.5')
+  run.command('mesh2voxel first-' + key + '_transformed.vtk parc.mif - | mrthreshold - ' + image_path + ' -abs 0.5')
   # Add to the SGM image; don't worry about overlap for now
   node_index = sgm_lut[value]
   run.command('mrcalc ' + image_path + ' ' + node_index + ' sgm.mif -if sgm_new.mif')
