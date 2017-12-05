@@ -49,22 +49,22 @@ namespace MR {
 
           while (item.read()) {
             if      (item.is (0x0008U, 0x0008U)) current_image_type = join (item.get_string(), " ");
-            else if (item.is (0x0008U, 0x0020U)) study_date = item.get_string()[0];
-            else if (item.is (0x0008U, 0x0021U)) series_date = item.get_string()[0];
-            else if (item.is (0x0008U, 0x0030U)) study_time = item.get_string()[0];
-            else if (item.is (0x0008U, 0x0031U)) series_time = item.get_string()[0];
-            else if (item.is (0x0008U, 0x0060U)) modality = item.get_string()[0];
-            else if (item.is (0x0008U, 0x1030U)) study = item.get_string()[0];
-            else if (item.is (0x0008U, 0x103EU)) series = item.get_string()[0];
-            else if (item.is (0x0010U, 0x0010U)) patient = item.get_string()[0];
-            else if (item.is (0x0010U, 0x0020U)) patient_ID = item.get_string()[0];
-            else if (item.is (0x0010U, 0x0030U)) patient_DOB = item.get_string()[0];
-            else if (item.is (0x0018U, 0x0024U)) sequence = item.get_string()[0];
-            else if (item.is (0x0020U, 0x0010U)) study_ID = item.get_string()[0];
-            else if (item.is (0x0020U, 0x0011U)) series_number = item.get_uint()[0];
-            else if (item.is (0x0028U, 0x0010U)) dim[1] = item.get_uint()[0];
-            else if (item.is (0x0028U, 0x0011U)) dim[0] = item.get_uint()[0];
-            else if (item.is (0x0028U, 0x0100U)) bits_alloc = item.get_uint()[0];
+            else if (item.is (0x0008U, 0x0020U)) study_date = item.get_string (0);
+            else if (item.is (0x0008U, 0x0021U)) series_date = item.get_string (0);
+            else if (item.is (0x0008U, 0x0030U)) study_time = item.get_string (0);
+            else if (item.is (0x0008U, 0x0031U)) series_time = item.get_string (0);
+            else if (item.is (0x0008U, 0x0060U)) modality = item.get_string (0);
+            else if (item.is (0x0008U, 0x1030U)) study = item.get_string (0);
+            else if (item.is (0x0008U, 0x103EU)) series = item.get_string (0);
+            else if (item.is (0x0010U, 0x0010U)) patient = item.get_string (0);
+            else if (item.is (0x0010U, 0x0020U)) patient_ID = item.get_string (0);
+            else if (item.is (0x0010U, 0x0030U)) patient_DOB = item.get_string (0);
+            else if (item.is (0x0018U, 0x0024U)) sequence = item.get_string (0);
+            else if (item.is (0x0020U, 0x0010U)) study_ID = item.get_string (0);
+            else if (item.is (0x0020U, 0x0011U)) series_number = item.get_uint (0);
+            else if (item.is (0x0028U, 0x0010U)) dim[1] = item.get_uint (0);
+            else if (item.is (0x0028U, 0x0011U)) dim[0] = item.get_uint (0);
+            else if (item.is (0x0028U, 0x0100U)) bits_alloc = item.get_uint (0);
             else if (item.is (0x7FE0U, 0x0010U)) data = item.offset (item.data);
             else if (item.is (0xFFFEU, 0xE000U)) {
               if (item.parents.size() &&

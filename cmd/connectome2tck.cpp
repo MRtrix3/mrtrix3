@@ -294,7 +294,7 @@ void run ()
               writer.add (one, two, prefix + str(one) + "-" + str(two) + ".tck", weights_prefix.size() ? (weights_prefix + str(one) + "-" + str(two) + ".csv") : "");
             }
           } else {
-            // Allow duplication of edges; want to have a set of files for each node
+            // Allow duplication of edges; want to have an exhaustive set of files for each node
             for (node_t two = first_node; two <= max_node_index; ++two)
               writer.add (one, two, prefix + str(one) + "-" + str(two) + ".tck", weights_prefix.size() ? (weights_prefix + str(one) + "-" + str(two) + ".csv") : "");
           }
