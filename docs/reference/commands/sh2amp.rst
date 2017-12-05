@@ -29,7 +29,7 @@ Options
 Stride options
 ^^^^^^^^^^^^^^
 
--  **-stride spec** specify the strides of the output data in memory, as a comma-separated list. The actual strides produced will depend on whether the output image format can support it.
+-  **-strides spec** specify the strides of the output data in memory, as a comma-separated list. The actual strides produced will depend on whether the output image format can support it.
 
 Data type options
 ^^^^^^^^^^^^^^^^^

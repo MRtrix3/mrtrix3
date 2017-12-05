@@ -75,9 +75,9 @@ app.makeTempDir()
 # Get the parcellation and T1 images into the temporary directory, with conversion of the T1 into the correct format for FSL
 run.command('mrconvert ' + path.fromUser(app.args.parc, True) + ' ' + path.toTemp('parc.mif', True))
 if upsample_for_first:
-  run.command('mrresize ' + path.fromUser(app.args.t1, True) + ' - -voxel 1.0 -interp sinc | mrcalc - 0.0 -max - | mrconvert - ' + path.toTemp('T1.nii', True) + ' -stride -1,+2,+3')
+  run.command('mrresize ' + path.fromUser(app.args.t1, True) + ' - -voxel 1.0 -interp sinc | mrcalc - 0.0 -max - | mrconvert - ' + path.toTemp('T1.nii', True) + ' -strides -1,+2,+3')
 else:
-  run.command('mrconvert ' + path.fromUser(app.args.t1, True) + ' ' + path.toTemp('T1.nii', True) + ' -stride -1,+2,+3')
+  run.command('mrconvert ' + path.fromUser(app.args.t1, True) + ' ' + path.toTemp('T1.nii', True) + ' -strides -1,+2,+3')
 
 app.gotoTempDir()
 

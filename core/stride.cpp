@@ -23,7 +23,7 @@ namespace MR
     using namespace App;
 
     const OptionGroup Options = OptionGroup ("Stride options")
-      + Option ("stride",
+      + Option ("strides",
           "specify the strides of the output data in memory, as a comma-separated list. "
           "The actual strides produced will depend on whether the output image "
           "format can support it.")
@@ -84,7 +84,7 @@ namespace MR
 
 
       if (strides.size() > current.size())
-        WARN ("too many axes supplied to -stride option - ignoring remaining strides");
+        WARN ("too many axes supplied to -strides option - ignoring remaining strides");
       strides.resize (current.size(), 0);
 
       for (const auto x : strides)
@@ -95,7 +95,7 @@ namespace MR
         if (!strides[1]) continue;
         for (size_t j = i+1; j < strides.size(); ++j) 
           if (std::abs (strides[i]) == std::abs (strides[j])) 
-            throw Exception ("duplicate entries provided to \"-stride\" option: " + str(opt[0][0]));
+            throw Exception ("duplicate entries provided to \"-strides\" option: " + str(opt[0][0]));
       }
 
       List prev = get_symbolic (current);
