@@ -164,7 +164,7 @@ for k, l in enumerate(lmax):
 redrfs = ['redrf'+str(k+1)+'.txt' for k in range(len(rlmax))]
 
 # Registration options
-reg_option = '-type rigid -nonsymmetric -affine_scale 1.0 -affine_niter 3'
+reg_option = '-type rigid -nonsymmetric -affine_niter 3'
 
 # Force max no. threads
 if app.args.nthreads:
@@ -232,7 +232,7 @@ def v2vregstep(k):
         run.command('mrconvert -coord 3 ' + str(v) + ' in1.mif target.mif -export_grad_mrtrix grad1.txt -force')
         run.command('mssh2amp rankredux.mif grad1.txt template.mif ' + ('' if k==0 else '-transform T-' + str(v) + '.txt ') + '-force')
         run.command('mrreg_lin template.mif target.mif -mask2 mask.mif' + (' -affine_init T-'+str(v)+'.txt' if k>0 else '') +
-                    ' -affine T-'+str(v)+'.txt ' + reg_option + ' -force')
+                    ' -affine T-'+str(v)+'.txt ' + reg_option + ' -affine_scale ' + str(float(k+1)/v2viter) + ' -force')
         prog.increment()
     prog.done()
     run.command('motionfilter T ' + str(dims[3]) + ' 0 motion.txt -extent 1')
@@ -252,7 +252,7 @@ def s2vregstep(k):
                 run.command('mssh2amp rankredux.mif grad1.txt template.mif -transform T-' + str(v) + '-' + str(s) + '.txt -force')
             run.command('mrreg_lin template.mif target.mif -mask2 slicemask.mif' +
                         ' -affine_init ' + ('T-'+str(v)+'-'+str(s)+'.txt' if k>0 else 'T-'+str(v)+'.txt') +
-                        ' -affine T-'+str(v)+'-'+str(s)+'.txt ' + reg_option + ' -force')
+                        ' -affine T-'+str(v)+'-'+str(s)+'.txt ' + reg_option + ' -affine_scale ' + str(float(v2viter+k+1)/(v2viter+s2viter)) + ' -force')
         prog.increment()
     prog.done()
     run.command('motionfilter T ' + str(dims[3]) + ' ' + str(dims[2]) + ' motion.txt' + motfilt_option)
