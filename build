@@ -79,6 +79,11 @@ OPTIONS
 
 import platform, sys, os, time, threading, subprocess, copy, codecs, glob, atexit, tempfile, shutil
 
+# on Windows, need to use MSYS2 version of python - not MinGW version:
+if sys.executable[0].isalpha() and sys.executable[1] == ':':
+  python_cmd = subprocess.check_output ([ 'cygpath.exe', '-w', '/usr/bin/python' ]).splitlines()[0].strip()
+  sys.exit (subprocess.call ([ python_cmd ] + sys.argv))
+
 global todo, headers, object_deps, file_flags, lock, print_lock, stop, main_cindex
 global include_paths
 
