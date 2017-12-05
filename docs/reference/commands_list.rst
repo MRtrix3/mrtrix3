@@ -51,7 +51,7 @@ List of MRtrix3 commands
     commands/labelconvert
     commands/maskdump
     commands/maskfilter
-    commands/mesh2pve
+    commands/mesh2voxel
     commands/meshconvert
     commands/meshfilter
     commands/mraverageheader
@@ -164,7 +164,7 @@ List of MRtrix3 commands
     :ref:`labelconvert`, "Convert a connectome node image from one lookup table to another"
     :ref:`maskdump`, "Print out the locations of all non-zero voxels in a mask image"
     :ref:`maskfilter`, "Perform filtering operations on 3D / 4D mask images"
-    :ref:`mesh2pve`, "Convert a mesh surface to a partial volume estimation image"
+    :ref:`mesh2voxel`, "Convert a mesh surface to a partial volume estimation image"
     :ref:`meshconvert`, "Convert meshes between different formats, and apply transformations"
     :ref:`meshfilter`, "Apply filter operations to meshes"
     :ref:`mraverageheader`, "Calculate the average (unbiased) coordinate space of all input images"
