@@ -41,7 +41,7 @@ Options
 
 -  **-datatype** data type used for image data storage
 
--  **-stride** data strides i.e. order and direction of axes data layout
+-  **-strides** data strides i.e. order and direction of axes data layout
 
 -  **-offset** image intensity offset
 

@@ -91,7 +91,7 @@ run.command('dwiextract in.mif - -bzero | mrmath - mean mean_bzero.mif -axis 3')
 if app.args.fsl:
 
   # FAST doesn't accept a mask input; therefore need to explicitly mask the input image
-  run.command('mrcalc mean_bzero.mif mask.mif -mult - | mrconvert - mean_bzero_masked.nii -stride -1,+2,+3')
+  run.command('mrcalc mean_bzero.mif mask.mif -mult - | mrconvert - mean_bzero_masked.nii -strides -1,+2,+3')
   run.command(fast_cmd + ' -t 2 -o fast -n 3 -b mean_bzero_masked.nii')
   bias_path = fsl.findImage('fast_bias')
 
@@ -105,8 +105,8 @@ elif app.args.ants:
 
   # Use the brain mask as a weights image rather than a mask; means that voxels at the edge of the mask
   #   will have a smoothly-varying bias field correction applied, rather than multiplying by 1.0 outside the mask
-  run.command('mrconvert mean_bzero.mif mean_bzero.nii -stride +1,+2,+3')
-  run.command('mrconvert mask.mif mask.nii -stride +1,+2,+3')
+  run.command('mrconvert mean_bzero.mif mean_bzero.nii -strides +1,+2,+3')
+  run.command('mrconvert mask.mif mask.nii -strides +1,+2,+3')
   bias_path = 'bias.nii'
   run.command('N4BiasFieldCorrection -d 3 -i mean_bzero.nii -w mask.nii -o [corrected.nii,' + bias_path + '] -s 4 -b [100,3] -c [1000,0.0]')
 

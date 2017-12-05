@@ -76,7 +76,7 @@ void usage ()
     +   Option ("size", "image size along each axis")
     +   Option ("spacing", "voxel spacing along each image dimension")
     +   Option ("datatype", "data type used for image data storage")
-    +   Option ("stride", "data strides i.e. order and direction of axes data layout")
+    +   Option ("strides", "data strides i.e. order and direction of axes data layout")
     +   Option ("offset", "image intensity offset")
     +   Option ("multiplier", "image intensity multiplier")
     +   Option ("transform", "the voxel to image transformation")
@@ -236,7 +236,7 @@ void header2json (const Header& header, nlohmann::json& json)
   json["spacing"] = spacing;
   vector<ssize_t> strides (Stride::get (header));
   Stride::symbolise (strides);
-  json["stride"] = strides;
+  json["strides"] = strides;
   json["format"] = header.format();
   json["datatype"] = header.datatype().specifier();
   json["intensity_offset"] = header.intensity_offset();
@@ -278,7 +278,7 @@ void run ()
   const bool size        = get_options("size")          .size();
   const bool spacing     = get_options("spacing")       .size();
   const bool datatype    = get_options("datatype")      .size();
-  const bool stride      = get_options("stride")        .size();
+  const bool strides     = get_options("strides")       .size();
   const bool offset      = get_options("offset")        .size();
   const bool multiplier  = get_options("multiplier")    .size();
   const auto properties  = get_options("property");
@@ -289,7 +289,7 @@ void run ()
   const bool raw_dwgrad  = get_options("raw_dwgrad")    .size();
   const bool petable     = get_options("petable")       .size();
 
-  const bool print_full_header = !(format || ndim || size || spacing || datatype || stride ||
+  const bool print_full_header = !(format || ndim || size || spacing || datatype || strides ||
       offset || multiplier || properties.size() || transform ||
       dwgrad || export_grad || shellvalues || shellcounts || export_pe || petable ||
       json_keyval || json_all);
@@ -306,7 +306,7 @@ void run ()
     if (size)       print_dimensions (header);
     if (spacing)    print_spacing (header);
     if (datatype)   std::cout << (header.datatype().specifier() ? header.datatype().specifier() : "invalid") << "\n";
-    if (stride)     print_strides (header);
+    if (strides)    print_strides (header);
     if (offset)     std::cout << header.intensity_offset() << "\n";
     if (multiplier) std::cout << header.intensity_scale() << "\n";
     if (transform)  print_transform (header);

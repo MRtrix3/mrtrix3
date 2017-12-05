@@ -733,7 +733,7 @@ if do_topup:
 
 
   # Do the conversion in preparation for topup
-  run.command('mrconvert ' + se_epi_path + ' topup_in.nii' + import_se_epi_manual_pe_table_option + ' -stride -1,+2,+3,+4 -export_pe_table topup_datain.txt')
+  run.command('mrconvert ' + se_epi_path + ' topup_in.nii' + import_se_epi_manual_pe_table_option + ' -strides -1,+2,+3,+4 -export_pe_table topup_datain.txt')
   file.delTemporary(se_epi_path)
 
   # Run topup
@@ -788,7 +788,7 @@ if do_topup:
 else:
 
   # Generate a processing mask for eddy based on the uncorrected input DWIs
-  run.command('dwi2mask ' + dwi_path + ' - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32 -stride -1,+2,+3')
+  run.command('dwi2mask ' + dwi_path + ' - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32 -strides -1,+2,+3')
 
 
 # Generate the text file containing slice timing / grouping information if necessary
@@ -827,7 +827,7 @@ eddy_manual_options = (' ' + ' '.join(eddy_manual_options)) if eddy_manual_optio
 
 
 # Run eddy
-run.command('mrconvert ' + dwi_path + import_dwi_pe_table_option + dwi_permute_volumes_pre_eddy_option + ' eddy_in.nii -stride -1,+2,+3,+4 -export_grad_fsl bvecs bvals -export_pe_eddy eddy_config.txt eddy_indices.txt')
+run.command('mrconvert ' + dwi_path + import_dwi_pe_table_option + dwi_permute_volumes_pre_eddy_option + ' eddy_in.nii -strides -1,+2,+3,+4 -export_grad_fsl bvecs bvals -export_pe_eddy eddy_config.txt eddy_indices.txt')
 file.delTemporary(dwi_path)
 run.command(eddy_cmd + ' --imain=eddy_in.nii --mask=eddy_mask.nii --acqp=eddy_config.txt --index=eddy_indices.txt --bvecs=bvecs --bvals=bvals' + eddy_in_topup_option + eddy_manual_options + ' --out=dwi_post_eddy')
 file.delTemporary('eddy_in.nii')
@@ -838,7 +838,7 @@ eddy_output_image_path = fsl.findImage('dwi_post_eddy')
 
 
 # Get the axis strides from the input series, so the output image can be modified to match
-stride_option = ' -stride ' + ','.join([str(i) for i in dwi_header.stride()])
+stride_option = ' -strides ' + ','.join([str(i) for i in dwi_header.stride()])
 
 
 # Check to see whether or not eddy has provided a rotated bvecs file;
