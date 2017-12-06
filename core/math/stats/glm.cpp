@@ -332,6 +332,24 @@ namespace MR
 
 
 
+        matrix_type Contrast::check_rank (const matrix_type& in, const size_t index) const
+        {
+          // FullPivLU.image() provides column-space of matrix;
+          //   here we want the row-space (since it's degeneracy in contrast matrix rows
+          //   that has led to the rank-deficiency, whereas we can't exclude factors).
+          //   Hence the transposing.
+          Eigen::FullPivLU<matrix_type> decomp (in.transpose());
+          if (decomp.rank() == in.rows())
+            return in;
+          WARN ("F-test " + str(index+1) + " is rank-deficient; row-space matrix decomposition will instead be used");
+          INFO ("Original matrix: " + str(in));
+          const matrix_type result = decomp.image (in.transpose()).transpose();
+          INFO ("Decomposed matrix: " + str(result));
+          return result;
+        }
+
+
+
 
 
 
@@ -402,14 +420,11 @@ namespace MR
             //VAR (temp4.cols());
             //std::cerr << temp4 << "\n";
             for (ssize_t ie = 0; ie != num_elements(); ++ie) {
-              // FIXME Pretty sure that if rank(c)>1, this would need to be three-dimensional
-              //   (2D matrix per element)
               c_lambda.noalias() = matrix_type(c[ic]) * beta.col (ie);
               //VAR (c_lambda.rows());
               //VAR (c_lambda.cols());
               //VAR (partitions[ic].X.rows());
               //VAR (partitions[ic].X.cols());
-              // FIXME Issue here if rank of this_c_lambda is greater than rank of XtX
               const auto numerator = (c_lambda.transpose() * XtX * c_lambda) / c[ic].rank();
               assert (numerator.rows() == 1);
               assert (numerator.cols() == 1);

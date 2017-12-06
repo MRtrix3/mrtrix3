@@ -85,7 +85,7 @@ namespace MR
                 i (index) { }
 
             Contrast (const matrix_type& in, const size_t index) :
-                c (in),
+                c (check_rank (in, index)),
                 r (Math::rank (c)),
                 F (true),
                 i (index) { }
@@ -103,6 +103,8 @@ namespace MR
             const size_t r;
             const bool F;
             const size_t i;
+
+            matrix_type check_rank (const matrix_type&, const size_t) const;
         };
 
 
