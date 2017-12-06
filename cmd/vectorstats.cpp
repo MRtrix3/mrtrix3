@@ -177,7 +177,7 @@ void run()
 
   {
     matrix_type betas (num_factors, num_elements);
-    matrix_type abs_effect_size (num_contrasts, num_elements), std_effect_size (num_contrasts, num_elements);
+    matrix_type abs_effect_size (num_elements, num_contrasts), std_effect_size (num_elements, num_contrasts);
     vector_type stdev (num_elements);
 
     Math::Stats::GLM::all_stats (data, design, extra_columns, contrasts,

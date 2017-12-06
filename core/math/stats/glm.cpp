@@ -268,7 +268,7 @@ namespace MR
               }
               bool operator() (const size_t& element_index)
               {
-                const matrix_type element_data = data.row (element_index);
+                const matrix_type element_data = data.col (element_index);
                 matrix_type element_design (design_fixed.rows(), design_fixed.cols() + extra_columns.size());
                 element_design.leftCols (design_fixed.cols()) = design_fixed;
                 // For each element-wise design matrix column,
@@ -278,8 +278,8 @@ namespace MR
                 Math::Stats::GLM::all_stats (element_data, element_design, contrasts,
                                              local_betas, local_abs_effect_size, local_std_effect_size, local_stdev);
                 global_betas.col (element_index) = local_betas;
-                global_abs_effect_size.col (element_index) = local_abs_effect_size.col(0);
-                global_std_effect_size.col (element_index) = local_std_effect_size.col(0);
+                global_abs_effect_size.row (element_index) = local_abs_effect_size.row (0);
+                global_std_effect_size.row (element_index) = local_std_effect_size.row (0);
                 global_stdev[element_index] = local_stdev[0];
                 return true;
               }
@@ -296,7 +296,7 @@ namespace MR
               vector_type local_stdev;
           };
 
-          Source source (measurements.rows());
+          Source source (measurements.cols());
           Functor functor (measurements, fixed_design, extra_columns, contrasts,
                            betas, abs_effect_size, std_effect_size, stdev);
           Thread::run_queue (source, Thread::batch (size_t()), Thread::multi (functor));
@@ -461,7 +461,7 @@ namespace MR
             output.resize (num_elements(), num_outputs());
 
           // Let's loop over elements first, then contrasts in the inner loop
-          for (ssize_t element = 0; element != y.cols(); ++element) {
+          for (ssize_t ie = 0; ie != y.cols(); ++ie) {
 
             // For each element (row in y), need to load the additional data for that element
             //   for all subjects in order to construct the design matrix
@@ -471,7 +471,7 @@ namespace MR
             //   addition to the duplication of the fixed design matrix contents) would hurt bad
             matrix_type extra_data (num_subjects(), importers.size());
             for (ssize_t col = 0; col != ssize_t(importers.size()); ++col)
-              extra_data.col (col) = importers[col] (element);
+              extra_data.col (col) = importers[col] (ie);
 
             // What can we do here that's common across all contrasts?
             // - Import the element-wise data
@@ -491,7 +491,7 @@ namespace MR
             BitSet element_mask (M.rows(), true);
             if (nans_in_data) {
               for (ssize_t row = 0; row != y.rows(); ++row) {
-                if (!std::isfinite (y (row, element)))
+                if (!std::isfinite (y (row, ie)))
                   element_mask[row] = false;
               }
             }
@@ -514,7 +514,7 @@ namespace MR
               Mfull_masked.block (0, 0, num_subjects(), M.cols()) = M;
               Mfull_masked.block (0, M.cols(), num_subjects(), extra_data.cols()) = extra_data;
               perm_matrix_masked = shuffling_matrix;
-              y_masked = y.col (element);
+              y_masked = y.col (ie);
 
             } else {
 
@@ -526,7 +526,7 @@ namespace MR
                 if (element_mask[in_index]) {
                   Mfull_masked.block (out_index, 0, 1, M.cols()) = M.row (in_index);
                   Mfull_masked.block (out_index, M.cols(), 1, extra_data.cols()) = extra_data.row (in_index);
-                  y_masked[out_index++] = y (in_index, element);
+                  y_masked[out_index++] = y (in_index, ie);
                 } else {
                   // Any row in the permutation matrix that contains a non-zero entry
                   //   in the column corresponding to in_row needs to be removed
@@ -555,34 +555,33 @@ namespace MR
 
             const matrix_type Rm = matrix_type::Identity (finite_count, finite_count) - (Mfull_masked*pinvMfull_masked);
 
-            matrix_type beta, betahat;
-            vector_type F;
+            matrix_type beta, c_lambda;
 
             // We now have our permutation (shuffling) matrix and design matrix prepared,
             //   and can commence regressing the partitioned model of each contrast
             for (size_t ic = 0; ic != c.size(); ++ic) {
 
               const auto partition = c[ic] (Mfull_masked);
+              const matrix_type XtX = partition.X.transpose()*partition.X;
 
               // Now that we have the individual contrast model partition for these data,
               //   the rest of this function should proceed similarly to the fixed
               //   design matrix case
-              // TODO Consider functionalising the below; should be consistent between fixed and variable
               const matrix_type Sy = perm_matrix_masked * partition.Rz * y_masked.matrix();
-              beta.noalias() = Sy * pinvMfull_masked;
-              betahat.noalias() = beta * matrix_type(c[ic]);
-              F = (betahat.transpose() * (partition.X.inverse()*partition.X) * betahat / c[ic].rank()) /
-                  ((Rm*Sy).squaredNorm() / (finite_count - partition.rank_x - partition.rank_z));
+              beta.noalias() = pinvMfull_masked * Sy;
+              c_lambda.noalias() = matrix_type(c[ic]) * beta;
+              const default_type sse = (Rm*Sy).squaredNorm();
 
-              for (ssize_t iF = 0; iF != F.size(); ++iF) {
-                if (!std::isfinite (F[iF])) {
-                  output (iF, ic) = value_type(0);
-                } else if (c[ic].is_F()) {
-                  output (iF, ic) = F[iF];
-                } else {
-                  assert (betahat.cols() == 1);
-                  output (iF, ic) = std::sqrt (F[iF]) * (betahat (iF, 0) > 0 ? 1.0 : -1.0);
-                }
+              const default_type F = ((c_lambda.transpose() * XtX * c_lambda) / c[ic].rank()) (0, 0) /
+                                     (sse / value_type (finite_count - partition.rank_x - partition.rank_z));
+
+              if (!std::isfinite (F)) {
+                output (ie, ic) = value_type(0);
+              } else if (c[ic].is_F()) {
+                output (ie, ic) = F;
+              } else {
+                assert (c_lambda.rows() == 1);
+                output (ie, ic) = std::sqrt (F) * (c_lambda.sum() > 0 ? 1.0 : -1.0);
               }
 
             } // End looping over contrasts
