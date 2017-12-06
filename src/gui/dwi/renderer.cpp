@@ -50,7 +50,7 @@ namespace MR
 
 
 
-      void Renderer::start (const Projection& projection, const GL::Lighting& lighting, float scale, 
+      void Renderer::start (const Projection& projection, const GL::Lighting& lighting, float scale,
           bool use_lighting, bool colour_by_direction, bool hide_neg_values, bool orthographic)
       {
         switch (mode) {
@@ -437,7 +437,7 @@ namespace MR
           for (int l = 0; l <= lmax; l+=2) {
             for (int m = 0; m <= l; m++) {
               const int idx (Math::SH::index (l,m));
-              transform (3*n, idx) = transform(3*n, idx-2*m) = SH_NON_M0_SCALE_FACTOR Math::Legendre::Plm_sph<float> (l, m, vertices[n][2]);
+              transform (3*n, idx) = transform(3*n, idx-2*m) = (m ? Math::sqrt2 : 1.0) * Math::Legendre::Plm_sph<float> (l, m, vertices[n][2]);
             }
           }
 
@@ -455,7 +455,7 @@ namespace MR
             for (int l = 2* ( (m+1) /2); l <= lmax; l+=2) {
               const int idx (Math::SH::index (l,m));
               transform (3*n+1, idx) = - transform (3*n, idx-1) * sqrt (float ( (l+m) * (l-m+1)));
-              if (l > m) 
+              if (l > m)
                 transform (3*n+1,idx) += transform (3*n, idx+1) * sqrt (float ( (l-m) * (l+m+1)));
               transform (3*n+1, idx) /= 2.0;
 
