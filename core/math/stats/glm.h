@@ -60,10 +60,12 @@ namespace MR
                 Partition (const matrix_type& x, const matrix_type& z) :
                     X (x),
                     Z (z),
-                    Hz (Z * Math::pinv (Z)),
-                    Rz (matrix_type::Identity (Z.rows(), Z.rows()) - Hz),
+                    Hz (Z.cols() ?
+                       (Z * Math::pinv (Z)) :
+                       matrix_type (matrix_type::Zero (X.rows(), X.rows()))),
+                    Rz (matrix_type::Identity (X.rows(), X.rows()) - Hz),
                     rank_x (Math::rank (X)),
-                    rank_z (Math::rank (Z)) { }
+                    rank_z (Z.cols() ? Math::rank (Z) : 0) { }
                 // X = Component of design matrix related to effect of interest
                 // Z = Component of design matrix related to nuisance regressors
                 const matrix_type X, Z;
