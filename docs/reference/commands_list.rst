@@ -78,7 +78,6 @@ List of MRtrix3 commands
     commands/mrthreshold
     commands/mrtransform
     commands/mrview
-    commands/mtbin
     commands/mtnormalise
     commands/peaks2amp
     commands/sh2amp
@@ -191,7 +190,6 @@ List of MRtrix3 commands
     :ref:`mrthreshold`, "Create bitwise image by thresholding image intensity"
     :ref:`mrtransform`, "Apply spatial transformations to an image"
     :ref:`mrview`, "The MRtrix image viewer."
-    :ref:`mtbin`, "Multi-Tissue Bias field correction and Intensity Normalisation (WARNING: deprecated)."
     :ref:`mtnormalise`, "Multi-tissue informed log-domain intensity normalisation"
     :ref:`peaks2amp`, "Convert peak directions image to amplitudes"
     :ref:`sh2amp`, "Evaluate the amplitude of an image of spherical harmonic functions along specified directions"
