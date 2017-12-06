@@ -61,7 +61,7 @@ namespace MR
                 dwis = DWI::Shells (grad).select_shells (true, false, true).largest().get_volumes();
                 DW_dirs = DWI::gen_direction_matrix (grad, dwis);
 
-                lmax_data = Math::SH::LforN (dwis.size()); 
+                lmax_data = Math::SH::LforN (dwis.size());
               }
 
 
@@ -188,19 +188,7 @@ namespace MR
               // min-norm constraint:
               if (norm_lambda) {
                 norm_lambda *= NORM_LAMBDA_MULTIPLIER * Mt_M (0,0);
-#ifndef USE_NON_ORTHONORMAL_SH_BASIS
                 Mt_M.diagonal().array() += norm_lambda;
-#else
-                int l = 0;
-                for (size_t i = 0; i < Mt_M.rows(); ++i) {
-                  if (Math::SH::index (l,0) == i) {
-                    Mt_M(i,i) += norm_lambda;
-                    l+=2;
-                  }
-                  else 
-                    Mt_M(i,i) += 0.5 * norm_lambda;
-                }
-#endif
               }
 
               INFO ("constrained spherical deconvolution initialised successfully");
@@ -267,7 +255,7 @@ namespace MR
             for (size_t i = 0; i < neg.size(); i++)
               HR_T.row (i) = shared.HR_trans.row (neg[i]);
             auto HR_T_view = HR_T.topRows (neg.size());
-            work.triangularView<Eigen::Lower>() += HR_T_view.transpose() * HR_T_view; 
+            work.triangularView<Eigen::Lower>() += HR_T_view.transpose() * HR_T_view;
           }
 
           F.noalias() = llt.compute (work.triangularView<Eigen::Lower>()).solve (Mt_b);
