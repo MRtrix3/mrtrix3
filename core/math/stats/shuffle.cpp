@@ -313,10 +313,10 @@ namespace MR
             vector<value_type> sorted_null_dist;
             sorted_null_dist.reserve (null_dist.rows());
             for (ssize_t perm = 0; perm != null_dist.rows(); ++perm)
-              sorted_null_dist.push_back (null_dist(perm, contrast));
+              sorted_null_dist.push_back (null_dist (perm, contrast));
             std::sort (sorted_null_dist.begin(), sorted_null_dist.end());
             for (ssize_t element = 0; element != stats.rows(); ++element) {
-              if (stats(element, contrast) > 0.0) {
+              if (stats (element, contrast) > 0.0) {
                 value_type pvalue = 1.0;
                 for (size_t j = 0; j < size_t(sorted_null_dist.size()); ++j) {
                   if (stats(element, contrast) < sorted_null_dist[j]) {

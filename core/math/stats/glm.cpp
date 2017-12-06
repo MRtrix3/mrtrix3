@@ -49,8 +49,8 @@ namespace MR
           using namespace App;
           OptionGroup result = OptionGroup ("Options related to the General Linear Model (GLM)")
 
-            + Option ("ftests", "perform F-tests; input text file should contain, for each F-test, a column containing "
-                                "ones and zeros, where ones indicate those rows of the contrast matrix to be included "
+            + Option ("ftests", "perform F-tests; input text file should contain, for each F-test, a row containing "
+                                "ones and zeros, where ones indicate the rows of the contrast matrix to be included "
                                 "in the F-test.")
               + Argument ("path").type_file_in()
 
@@ -76,17 +76,17 @@ namespace MR
           auto opt = App::get_options ("ftests");
           if (opt.size()) {
             const matrix_type ftest_matrix = load_matrix (opt[0][0]);
-            if (ftest_matrix.rows() != contrast_matrix.rows())
-              throw Exception ("Number of rows in F-test matrix (" + str(ftest_matrix.rows()) + ") does not match number of rows in contrast matrix (" + str(contrast_matrix.rows()) + ")");
+            if (ftest_matrix.cols() != contrast_matrix.rows())
+              throw Exception ("Number of columns in F-test matrix (" + str(ftest_matrix.rows()) + ") does not match number of rows in contrast matrix (" + str(contrast_matrix.rows()) + ")");
             if (!((ftest_matrix.array() == 0.0) + (ftest_matrix.array() == 1.0)).all())
               throw Exception ("F-test array must contain ones and zeros only");
-            for (ssize_t ftest_index = 0; ftest_index != ftest_matrix.cols(); ++ftest_index) {
-              if (!ftest_matrix.col (ftest_index).count())
-                throw Exception ("Column " + str(ftest_index+1) + " of F-test matrix does not contain any ones");
-              matrix_type this_f_matrix (ftest_matrix.col (ftest_index).count(), contrast_matrix.cols());
+            for (ssize_t ftest_index = 0; ftest_index != ftest_matrix.rows(); ++ftest_index) {
+              if (!ftest_matrix.row (ftest_index).count())
+                throw Exception ("Row " + str(ftest_index+1) + " of F-test matrix does not contain any ones");
+              matrix_type this_f_matrix (ftest_matrix.row (ftest_index).count(), contrast_matrix.cols());
               ssize_t ftest_row = 0;
               for (ssize_t contrast_row = 0; contrast_row != contrast_matrix.rows(); ++contrast_row) {
-                if (ftest_matrix (contrast_row, ftest_index))
+                if (ftest_matrix (ftest_index, contrast_row))
                   this_f_matrix.row (ftest_row++) = contrast_matrix.row (contrast_row);
               }
               contrasts.emplace_back (Contrast (this_f_matrix, ftest_index));
@@ -110,7 +110,7 @@ namespace MR
 
         matrix_type solve_betas (const matrix_type& measurements, const matrix_type& design)
         {
-          return design.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(measurements);
+          return design.jacobiSvd (Eigen::ComputeThinU | Eigen::ComputeThinV).solve (measurements);
         }
 
 

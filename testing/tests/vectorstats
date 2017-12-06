@@ -1,2 +1,2 @@
-N=16 && SNR=5 && vectorstats/gen0.py && vectorstats tmpsubjects.txt tmpdesign.csv tmpcontrast.csv tmpout -force && vectorstats/test0.py
-N=16 && SNR=5 && vectorstats/gen1.py && vectorstats tmpsubjects.txt tmpdesign.csv tmpcontrast.csv tmpout -errors ise -force && vectorstats/test1.py
+N=16 SNR=5 vectorstats/gen0.py && vectorstats tmpsubjects.txt tmpdesign.csv tmpcontrast.csv tmpout -ftests tmpftests.csv -force && vectorstats/test0.py
+N=16 SNR=5 vectorstats/gen1.py && vectorstats tmpsubjects.txt tmpdesign.csv tmpcontrast.csv tmpout -errors ise -force && vectorstats/test1.py

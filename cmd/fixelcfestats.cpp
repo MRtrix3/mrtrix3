@@ -447,7 +447,7 @@ void run()
 
   for (size_t i = 0; i != num_contrasts; ++i) {
     write_fixel_output (Path::join (output_fixel_directory, "cfe" + postfix(i) + ".mif"), cfe_output.row(i), output_header);
-    write_fixel_output (Path::join (output_fixel_directory, (contrasts[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".mif"), tvalue_output.row(i), output_header);
+    write_fixel_output (Path::join (output_fixel_directory, std::string(contrasts[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".mif"), tvalue_output.row(i), output_header);
   }
 
   // Perform permutation testing
