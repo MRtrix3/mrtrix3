@@ -76,15 +76,17 @@ namespace MR
                 const size_t rank_x, rank_z;
             };
 
-            Contrast (matrix_type::ConstRowXpr& in) :
+            Contrast (matrix_type::ConstRowXpr& in, const size_t index) :
                 c (in),
                 r (Math::rank (c)),
-                F (false) { }
+                F (false),
+                i (index) { }
 
-            Contrast (const matrix_type& in) :
+            Contrast (const matrix_type& in, const size_t index) :
                 c (in),
                 r (Math::rank (c)),
-                F (true) { }
+                F (true),
+                i (index) { }
 
             Partition operator() (const matrix_type&) const;
 
@@ -92,11 +94,13 @@ namespace MR
             ssize_t cols() const { return c.cols(); }
             size_t rank() const { return r; }
             bool is_F() const { return F; }
+            std::string name() const { return std::string(F ? "F" : "c") + str(i+1); }
 
           private:
             const matrix_type c;
             const size_t r;
             const bool F;
+            const size_t i;
         };
 
 
@@ -109,19 +113,19 @@ namespace MR
         /** \addtogroup Statistics
           @{ */
         /*! Compute a matrix of the beta coefficients
-           * @param measurements a matrix storing the measured data for each subject in a column
+           * @param measurements a matrix storing the measured data across subjects in each column
            * @param design the design matrix
-           * @return the matrix containing the output GLM betas
+           * @return the matrix containing the output GLM betas (one column of factor betas per element)
            */
         matrix_type solve_betas (const matrix_type& measurements, const matrix_type& design);
 
 
 
         /*! Compute the effect of interest
-         * @param measurements a matrix storing the measured data for each subject in a column
+         * @param measurements a matrix storing the measured data across subjects in each column
          * @param design the design matrix
          * @param contrast a Contrast class instance defining the contrast of interest
-         * @return the matrix containing the output effect
+         * @return the matrix containing the output absolute effect sizes (one column of element effect sizes per contrast)
          */
         vector_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const Contrast& contrast);
         matrix_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Contrast>& contrasts);
@@ -129,19 +133,19 @@ namespace MR
 
 
         /*! Compute the pooled standard deviation
-         * @param measurements a matrix storing the measured data for each subject in a column
+         * @param measurements a matrix storing the measured data across subjects in each column
          * @param design the design matrix
-         * @return the matrix containing the output standard deviation
+         * @return the vector containing the output standard deviation for each element
          */
         vector_type stdev (const matrix_type& measurements, const matrix_type& design);
 
 
 
         /*! Compute cohen's d, the standardised effect size between two means
-         * @param measurements a matrix storing the measured data for each subject in a column
+         * @param measurements a matrix storing the measured data across subjects in each column
          * @param design the design matrix
          * @param contrast a Contrast class instance defining the contrast of interest
-         * @return the matrix containing the output standardised effect size
+         * @return the matrix containing the output standardised effect sizes (one column of element effect sizes per contrast)
          */
         vector_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const Contrast& contrast);
         matrix_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Contrast>& contrasts);
@@ -185,8 +189,6 @@ namespace MR
 
 
         // Define a base class for GLM tests
-        // Should support both T-tests and F-tests
-        // The latter will always produce 1 column only, whereas the former will produce the same number of columns as there are contrasts
         class TestBase
         { MEMALIGN(TestBase)
           public:
@@ -195,7 +197,7 @@ namespace MR
                 M (design),
                 c (contrasts)
             {
-              assert (y.cols() == M.rows());
+              assert (y.rows() == M.rows());
               // Can no longer apply this assertion here; GLMTTestVariable later
               //   expands the number of columns in M
               //assert (c.cols() == M.cols());
@@ -207,7 +209,7 @@ namespace MR
              */
             virtual void operator() (const matrix_type& shuffling_matrix, matrix_type& output) const = 0;
 
-            size_t num_elements () const { return y.rows(); }
+            size_t num_elements () const { return y.cols(); }
             size_t num_outputs  () const { return c.size(); }
             size_t num_subjects () const { return M.rows(); }
             virtual size_t num_factors() const { return M.cols(); }
@@ -234,9 +236,9 @@ namespace MR
         { MEMALIGN(TestFixed)
           public:
             /*!
-             * @param measurements a matrix storing the measured data for each subject in a column
+             * @param measurements a matrix storing the measured data across subjects in each column
              * @param design the design matrix
-             * @param contrast a matrix containing the contrast of interest.
+             * @param contrasts a vector of Contrast instances
              */
             TestFixed (const matrix_type& measurements, const matrix_type& design, const vector<Contrast>& contrasts);
 
@@ -293,7 +295,7 @@ namespace MR
              * @param index the index of the element for which the design matrix is requested
              * @return the design matrix for that element, including imported data for extra columns
              */
-            matrix_type default_design (const size_t index) const;
+            //matrix_type default_design (const size_t index) const;
 
             size_t num_factors() const override { return M.cols() + importers.size(); }
 

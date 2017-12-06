@@ -90,7 +90,6 @@ namespace MR
           default_enhanced_statistics (default_enhanced_statistics),
           statistics (stats_calculator->num_elements(), stats_calculator->num_outputs()),
           enhanced_statistics (stats_calculator->num_elements(), stats_calculator->num_outputs()),
-    // NOTE: uncorrected_pvalue_counter currently transposed with respect to matrices
     // TODO Consider changing to Eigen::Array<size_t>
           uncorrected_pvalue_counter (stats_calculator->num_outputs(), vector<size_t> (stats_calculator->num_elements(), 0)),
           perm_dist (perm_dist),
@@ -195,8 +194,8 @@ namespace MR
       {
         assert (stats_calculator);
         Math::Stats::Shuffler shuffler (stats_calculator->num_subjects(), false, "Running permutations");
-        perm_dist.resize (stats_calculator->num_outputs(), shuffler.size());
-        uncorrected_pvalues.resize (stats_calculator->num_outputs(), stats_calculator->num_elements());
+        perm_dist.resize (shuffler.size(), stats_calculator->num_outputs());
+        uncorrected_pvalues.resize (stats_calculator->num_elements(), stats_calculator->num_outputs());
         vector<vector<size_t>> global_uncorrected_pvalue_count (stats_calculator->num_outputs(), vector<size_t> (stats_calculator->num_elements(), 0));
         {
           Processor processor (stats_calculator, enhancer,

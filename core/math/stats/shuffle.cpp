@@ -156,15 +156,22 @@ namespace MR
           output.data.resize (0, 0);
           return false;
         }
-        output.data = matrix_type::Zero (rows, rows);
         if (permutations.size()) {
+          output.data = matrix_type::Zero (rows, rows);
           for (size_t i = 0; i != rows; ++i)
             output.data (i, permutations[counter][i]) = 1.0;
+        } else {
+          output.data = matrix_type::Identity (rows, rows);
         }
         if (signflips.size()) {
-          for (size_t i = 0; i != rows; ++i) {
-            if (signflips[counter][i])
-              output.data.row (i) *= -1.0;
+          for (size_t r = 0; r != rows; ++r) {
+            if (signflips[counter][r]) {
+              //output.data.row (r) *= -1.0;
+              for (size_t c = 0; c != rows; ++c) {
+                if (output.data (r, c))
+                  output.data (r, c) *= -1.0;
+              }
+            }
           }
         }
         ++counter;

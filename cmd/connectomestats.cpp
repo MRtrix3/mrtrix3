@@ -131,10 +131,10 @@ class SubjectConnectomeImport : public SubjectDataImportBase
       mat2vec.M2V (M, data);
     }
 
-    void operator() (matrix_type::ColXpr column) const override
+    void operator() (matrix_type::RowXpr row) const override
     {
-      assert (column.rows() == data.size());
-      column = data;
+      assert (row.size() == data.size());
+      row = data;
     }
 
     default_type operator[] (const size_t index) const override
@@ -243,22 +243,22 @@ void run()
   // For compatibility with existing statistics code, symmetric matrix data is adjusted
   //   into vector form - one row per edge in the symmetric connectome. This has already
   //   been performed when the CohortDataImport class is initialised.
-  matrix_type data (num_edges, importer.size());
+  matrix_type data (importer.size(), num_edges);
   {
     ProgressBar progress ("Agglomerating input connectome data", importer.size());
     for (size_t subject = 0; subject < importer.size(); subject++) {
-      (*importer[subject]) (data.col (subject));
+      (*importer[subject]) (data.row (subject));
       ++progress;
     }
   }
   const bool nans_in_data = data.allFinite();
 
   // Only add contrast row number to image outputs if there's more than one contrast
-  auto postfix = [&] (const size_t i) { return (num_contrasts > 1) ? ("_" + str(i)) : ""; };
+  auto postfix = [&] (const size_t i) { return (num_contrasts > 1) ? ("_" + contrasts[i].name()) : ""; };
 
   {
     matrix_type betas (num_factors, num_edges);
-    matrix_type abs_effect_size (num_contrasts, num_edges), std_effect_size (num_contrasts, num_edges);
+    matrix_type abs_effect_size (num_edges, num_contrasts), std_effect_size (num_edges, num_contrasts);
     vector_type stdev (num_edges);
 
     Math::Stats::GLM::all_stats (data, design, extra_columns, contrasts,
@@ -271,8 +271,10 @@ void run()
       ++progress;
     }
     for (size_t i = 0; i != num_contrasts; ++i) {
-      save_matrix (mat2vec.V2M (abs_effect_size.row(i)), "abs_effect" + postfix(i) + ".csv"); ++progress;
-      save_matrix (mat2vec.V2M (std_effect_size.row(i)), "std_effect" + postfix(i) + ".csv"); ++progress;
+      if (!contrasts[i].is_F()) {
+        save_matrix (mat2vec.V2M (abs_effect_size.row(i)), "abs_effect" + postfix(i) + ".csv"); ++progress;
+        save_matrix (mat2vec.V2M (std_effect_size.row(i)), "std_effect" + postfix(i) + ".csv"); ++progress;
+      }
     }
     save_matrix (mat2vec.V2M (stdev), "std_dev.csv");
   }
@@ -300,7 +302,7 @@ void run()
   Stats::PermTest::precompute_default_permutation (glm_test, enhancer, empirical_statistic, enhanced_output, tvalue_output);
 
   for (size_t i = 0; i != num_contrasts; ++i) {
-    save_matrix (mat2vec.V2M (tvalue_output.row(i)),   output_prefix + "_tvalue" + postfix(i) + ".csv");
+    save_matrix (mat2vec.V2M (tvalue_output.row(i)),   output_prefix + "_" + (contrasts[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".csv");
     save_matrix (mat2vec.V2M (enhanced_output.row(i)), output_prefix + "_enhanced" + postfix(i) + ".csv");
   }
 

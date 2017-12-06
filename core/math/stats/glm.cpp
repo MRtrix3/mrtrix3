@@ -72,7 +72,7 @@ namespace MR
           vector<Contrast> contrasts;
           const matrix_type contrast_matrix = load_matrix (file_path);
           for (ssize_t row = 0; row != contrast_matrix.rows(); ++row)
-            contrasts.emplace_back (Contrast (contrast_matrix.row (row)));
+            contrasts.emplace_back (Contrast (contrast_matrix.row (row), row));
           auto opt = App::get_options ("ftests");
           if (opt.size()) {
             const matrix_type ftest_matrix = load_matrix (opt[0][0]);
@@ -82,14 +82,14 @@ namespace MR
               throw Exception ("F-test array must contain ones and zeros only");
             for (ssize_t ftest_index = 0; ftest_index != ftest_matrix.cols(); ++ftest_index) {
               if (!ftest_matrix.col (ftest_index).count())
-                throw Exception ("Column " + sstr(ftest_index+1) + " of F-test matrix does not contain any ones");
+                throw Exception ("Column " + str(ftest_index+1) + " of F-test matrix does not contain any ones");
               matrix_type this_f_matrix (ftest_matrix.col (ftest_index).count(), contrast_matrix.cols());
               ssize_t ftest_row = 0;
               for (ssize_t contrast_row = 0; contrast_row != contrast_matrix.rows(); ++contrast_row) {
                 if (ftest_matrix (contrast_row, ftest_index))
                   this_f_matrix.row (ftest_row++) = contrast_matrix.row (contrast_row);
               }
-              contrasts.emplace_back (Contrast (this_f_matrix));
+              contrasts.emplace_back (Contrast (this_f_matrix, ftest_index));
             }
             if (App::get_options ("fonly").size()) {
               vector<Contrast> new_contrasts;
@@ -98,7 +98,7 @@ namespace MR
               std::swap (contrasts, new_contrasts);
             }
           } else if (App::get_options ("fonly").size()) {
-            throw Exception ("Cannot perform F-tests exclusively: No F-test matrix was provided");
+            throw Exception ("Cannot perform F-tests exclusively (-fonly option): No F-test matrix was provided (-ftests option)");
           }
           return contrasts;
         }
@@ -110,7 +110,7 @@ namespace MR
 
         matrix_type solve_betas (const matrix_type& measurements, const matrix_type& design)
         {
-          return design.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(measurements.transpose());
+          return design.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(measurements);
         }
 
 
@@ -125,7 +125,7 @@ namespace MR
 
         matrix_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Contrast>& contrasts)
         {
-          matrix_type result (measurements.rows(), contrasts.size());
+          matrix_type result (measurements.cols(), contrasts.size());
           for (size_t ic = 0; ic != contrasts.size(); ++ic)
             result.col (ic) = abs_effect_size (measurements, design, contrasts[ic]);
           return result;
@@ -135,11 +135,8 @@ namespace MR
 
         vector_type stdev (const matrix_type& measurements, const matrix_type& design)
         {
-          matrix_type residuals = measurements.transpose() - design * solve_betas (measurements, design);
-          residuals = residuals.array().pow (2.0);
-          matrix_type one_over_dof (1, measurements.cols());
-          one_over_dof.fill (1.0 / value_type(design.rows()-Math::rank (design)));
-          return (one_over_dof * residuals).array().sqrt();
+          const vector_type sse = (measurements - design * solve_betas (measurements, design)).colwise().squaredNorm();
+          return (sse / value_type(design.rows()-Math::rank (design))).sqrt();
         }
 
 
@@ -147,21 +144,23 @@ namespace MR
         vector_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const Contrast& contrast)
         {
           if (contrast.is_F())
-            return vector_type::Constant (measurements.rows(), NaN);
+            return vector_type::Constant (measurements.cols(), NaN);
           else
-            return abs_effect_size (measurements, design, contrast).array() / stdev (measurements, design).array();
+            return abs_effect_size (measurements, design, contrast).array() / stdev (measurements, design);
         }
 
         matrix_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Contrast>& contrasts)
         {
-          const auto stdev_reciprocal = vector_type::Ones (measurements.rows()).array() / stdev (measurements, design).array();
-          matrix_type result (measurements.rows(), contrasts.size());
+          const auto stdev_reciprocal = vector_type::Ones (measurements.cols()) / stdev (measurements, design);
+          matrix_type result (measurements.cols(), contrasts.size());
           for (size_t ic = 0; ic != contrasts.size(); ++ic)
             result.col (ic) = abs_effect_size (measurements, design, contrasts[ic]) * stdev_reciprocal;
           return result;
         }
 
 
+
+#define GLM_ALL_STATS_DEBUG
 
         void all_stats (const matrix_type& measurements,
                         const matrix_type& design,
@@ -171,10 +170,16 @@ namespace MR
                         matrix_type& std_effect_size,
                         vector_type& stdev)
         {
+#ifndef GLM_ALL_STATS_DEBUG
           ProgressBar progress ("calculating basic properties of default permutation");
-          betas = solve_betas (measurements, design); ++progress;
+#endif
+          betas = solve_betas (measurements, design);
+#ifdef GLM_ALL_STATS_DEBUG
           std::cerr << "Betas: " << betas.rows() << " x " << betas.cols() << ", max " << betas.array().maxCoeff() << "\n";
-          abs_effect_size.resize (measurements.rows(), contrasts.size());
+#else
+          ++progress;
+#endif
+          abs_effect_size.resize (measurements.cols(), contrasts.size());
           for (size_t ic = 0; ic != contrasts.size(); ++ic) {
             if (contrasts[ic].is_F()) {
               abs_effect_size.col (ic).fill (NaN);
@@ -182,20 +187,27 @@ namespace MR
               abs_effect_size.col (ic) = (matrix_type (contrasts[ic]) * betas).row (0);
             }
           }
-          ++progress;
+#ifdef GLM_ALL_STATS_DEBUG
           std::cerr << "abs_effect_size: " << abs_effect_size.rows() << " x " << abs_effect_size.cols() << ", max " << abs_effect_size.array().maxCoeff() << "\n";
-          matrix_type residuals = measurements.transpose() - design * betas;
-          residuals = residuals.array().pow (2.0); ++progress;
-          std::cerr << "residuals: " << residuals.rows() << " x " << residuals.cols() << ", max " << residuals.array().maxCoeff() << "\n";
-          matrix_type one_over_dof (1, measurements.cols());
-          one_over_dof.fill (1.0 / value_type(design.rows()-Math::rank (design)));
-          std::cerr << "one_over_dof: " << one_over_dof.rows() << " x " << one_over_dof.cols() << ", max " << one_over_dof.array().maxCoeff() << "\n";
-          VAR (design.rows());
-          VAR (Math::rank (design));
-          stdev = (one_over_dof * residuals).array().sqrt().row(0); ++progress;
-          std::cerr << "stdev: " << stdev.size() << ", max " << stdev.array().maxCoeff() << "\n";
-          std_effect_size = abs_effect_size.array() / stdev.array();  ++progress;
+#else
+          ++progress;
+#endif
+          vector_type sse = (measurements - design * betas).colwise().squaredNorm();
+#ifdef GLM_ALL_STATS_DEBUG
+          std::cerr << "sse: " << sse.size() << ", max " << sse.maxCoeff() << "\n";
+#else
+          ++progress;
+#endif
+          stdev = (sse / value_type(design.rows()-Math::rank (design))).sqrt();
+#ifdef GLM_ALL_STATS_DEBUG
+          std::cerr << "stdev: " << stdev.size() << ", max " << stdev.maxCoeff() << "\n";
+#else
+          ++progress;
+#endif
+          std_effect_size = abs_effect_size.array().colwise() / stdev;
+#ifdef GLM_ALL_STATS_DEBUG
           std::cerr << "std_effect_size: " << std_effect_size.rows() << " x " << std_effect_size.cols() << ", max " << std_effect_size.array().maxCoeff() << "\n";
+#endif
         }
 
 
@@ -301,7 +313,9 @@ namespace MR
           //   Split design matrix column-wise depending on whether entries in the contrast matrix are all zero
           // TODO Later, may include config variables / compiler flags to change model partitioning technique
           matrix_type X, Z;
+          //std::cerr << "Design:\n" << design << "\nContrast: " << c << "\n";
           const size_t nonzero_column_count = c.colwise().any().count();
+          //VAR (nonzero_column_count);
           X.resize (design.rows(), nonzero_column_count);
           Z.resize (design.rows(), design.cols() - nonzero_column_count);
           ssize_t ix = 0, iz = 0;
@@ -311,6 +325,8 @@ namespace MR
             else
               Z.col (iz++) = design.col (ic);
           }
+          //std::cerr << X << "\n";
+          //std::cerr << Z << "\n";
           return Partition (X, Z);
         }
 
@@ -340,11 +356,13 @@ namespace MR
           if (!(size_t(output.rows()) == num_elements() && size_t(output.cols()) == num_outputs()))
             output.resize (num_elements(), num_outputs());
 
-          matrix_type beta, betahat;
-          vector_type F;
+          matrix_type PRz, Sy, beta, c_lambda, XtX;
+          vector_type sse;
 
           // Implement Freedman-Lane for fixed design matrix case
           // Each contrast needs to be handled explicitly on its own
+          // TESTME Need to see how an F-test goes here
+          // This may have an interaction with the model partitioning approach
           for (size_t ic = 0; ic != c.size(); ++ic) {
 
             // First, we perform permutation of the input data
@@ -356,73 +374,53 @@ namespace MR
             //VAR (partitions[ic].Rz.cols());
             //VAR (y.rows());
             //VAR (y.cols());
-            auto PRz = shuffling_matrix * partitions[ic].Rz;
+            PRz.noalias() = shuffling_matrix * partitions[ic].Rz;
             //VAR (PRz.rows());
             //VAR (PRz.cols());
-            // TODO Re-attempt performing this as a single matrix multiplication across all elements
-            matrix_type Sy (y.rows(), y.cols());
-            for (ssize_t ie = 0; ie != y.rows(); ++ie)
-              Sy.row (ie) = PRz * y.row (ie).transpose();
+            Sy.noalias() = PRz * y;
             //VAR (Sy.rows());
             //VAR (Sy.cols());
-            // TODO Change measurements matrix convention to store data for each subject in a row;
-            //   means data across subjects for a particular element appear in a column, which is contiguous
-
             // Now, we regress this shuffled data against the full model
             //VAR (pinvM.rows());
             //VAR (pinvM.cols());
-            beta.noalias() = pinvM * Sy.transpose();
+            beta.noalias() = pinvM * Sy;
             //VAR (beta.rows());
             //VAR (beta.cols());
             //VAR (matrix_type(c[ic]).rows());
             //VAR (matrix_type(c[ic]).cols());
-            betahat = matrix_type(c[ic]) * beta;
-            //VAR (betahat.rows());
-            //VAR (betahat.cols());
-            //VAR (partitions[ic].X.rows());
-            //VAR (partitions[ic].X.cols());
             //VAR (Rm.rows());
             //VAR (Rm.cols());
-            auto XtX = partitions[ic].X.transpose()*partitions[ic].X;
+            XtX.noalias() = partitions[ic].X.transpose()*partitions[ic].X;
             //VAR (XtX.rows());
             //VAR (XtX.cols());
             const default_type one_over_dof = 1.0 / (num_subjects() - partitions[ic].rank_x - partitions[ic].rank_z);
-            auto residuals = Rm*Sy.transpose();
-            //VAR (residuals.rows());
-            //VAR (residuals.cols());
-            vector_type temp3 = residuals.colwise().squaredNorm();
-            //VAR (temp3.rows());
-            //VAR (temp3.cols());
+            sse = (Rm*Sy).colwise().squaredNorm();
+            //VAR (sse.size());
             // FIXME This should be giving a vector, not a matrix
-            //auto temp4 = betahat.transpose() * (XtX * betahat) / c[ic].rank();
+            //auto temp4 = c_lambda.transpose() * (XtX * c_lambda);
             //VAR (temp4.rows());
             //VAR (temp4.cols());
             //std::cerr << temp4 << "\n";
-            F.resize (y.rows());
-            for (ssize_t ie = 0; ie != y.rows(); ++ie) {
-              vector_type this_betahat = betahat.col (ie);
-              //VAR (this_betahat.size());
-              auto temp2 = this_betahat.matrix() * (XtX * this_betahat.matrix()) / c[ic].rank();
-              assert (temp2.rows() == 1);
-              assert (temp2.cols() == 1);
-              F[ie] = temp2 (0, 0) / (one_over_dof * temp3[ie]);
-            }
-            // TODO Try to use broadcasting here; it doesn't like having colwise() as the RHS argument
-            //F = (betahat.transpose().rowwise() * ((partitions[ic].X.transpose()*partitions[ic].X) * betahat.colwise()) / c[ic].rank()) /
-            //    ((Rm*Sy.transpose()).colwise().squaredNorm() / (num_subjects() - partitions[ic].rank_x - partitions[ic].rank_z));
-            //VAR (F.size());
-
-            // Put the results into the output matrix, replacing NaNs with zeroes
-            // TODO Check again to see if this new statistic produces NaNs when input data are all zeroes
-            // We also need to convert F to t if necessary
-            for (ssize_t iF = 0; iF != F.size(); ++iF) {
-              if (!std::isfinite (F[iF])) {
-                output (iF, ic) = value_type(0);
+            for (ssize_t ie = 0; ie != num_elements(); ++ie) {
+              // FIXME Pretty sure that if rank(c)>1, this would need to be three-dimensional
+              //   (2D matrix per element)
+              c_lambda.noalias() = matrix_type(c[ic]) * beta.col (ie);
+              //VAR (c_lambda.rows());
+              //VAR (c_lambda.cols());
+              //VAR (partitions[ic].X.rows());
+              //VAR (partitions[ic].X.cols());
+              // FIXME Issue here if rank of this_c_lambda is greater than rank of XtX
+              const auto numerator = (c_lambda.transpose() * XtX * c_lambda) / c[ic].rank();
+              assert (numerator.rows() == 1);
+              assert (numerator.cols() == 1);
+              const value_type F = numerator (0, 0) / (one_over_dof * sse[ie]);
+              if (!std::isfinite (F)) {
+                output (ie, ic) = value_type(0);
               } else if (c[ic].is_F()) {
-                output (iF, ic) = F[iF];
+                output (ie, ic) = F;
               } else {
-                assert (betahat.rows() == 1);
-                output (iF, ic) = std::sqrt (F[iF]) * (betahat (0, iF) > 0 ? 1.0 : -1.0);
+                assert (c_lambda.rows() == 1);
+                output (ie, ic) = std::sqrt (F) * (c_lambda.row(0).sum() > 0.0 ? 1.0 : -1.0);
               }
             }
 
@@ -463,7 +461,7 @@ namespace MR
             output.resize (num_elements(), num_outputs());
 
           // Let's loop over elements first, then contrasts in the inner loop
-          for (ssize_t element = 0; element != y.rows(); ++element) {
+          for (ssize_t element = 0; element != y.cols(); ++element) {
 
             // For each element (row in y), need to load the additional data for that element
             //   for all subjects in order to construct the design matrix
@@ -473,7 +471,7 @@ namespace MR
             //   addition to the duplication of the fixed design matrix contents) would hurt bad
             matrix_type extra_data (num_subjects(), importers.size());
             for (ssize_t col = 0; col != ssize_t(importers.size()); ++col)
-              extra_data.col(col) = importers[col] (element);
+              extra_data.col (col) = importers[col] (element);
 
             // What can we do here that's common across all contrasts?
             // - Import the element-wise data
@@ -516,7 +514,7 @@ namespace MR
               Mfull_masked.block (0, 0, num_subjects(), M.cols()) = M;
               Mfull_masked.block (0, M.cols(), num_subjects(), extra_data.cols()) = extra_data;
               perm_matrix_masked = shuffling_matrix;
-              y_masked = y.row (element);
+              y_masked = y.col (element);
 
             } else {
 
@@ -528,8 +526,7 @@ namespace MR
                 if (element_mask[in_index]) {
                   Mfull_masked.block (out_index, 0, 1, M.cols()) = M.row (in_index);
                   Mfull_masked.block (out_index, M.cols(), 1, extra_data.cols()) = extra_data.row (in_index);
-                  y_masked[out_index] = y (element, in_index);
-                  ++out_index;
+                  y_masked[out_index++] = y (in_index, element);
                 } else {
                   // Any row in the permutation matrix that contains a non-zero entry
                   //   in the column corresponding to in_row needs to be removed
@@ -595,14 +592,14 @@ namespace MR
 
 
 
-        matrix_type TestVariable::default_design (const size_t index) const
+        /*matrix_type TestVariable::default_design (const size_t index) const
         {
           matrix_type output (M.rows(), M.cols() + importers.size());
           output.block (0, 0, M.rows(), M.cols()) = M;
           for (size_t i = 0; i != importers.size(); ++i)
             output.col (M.cols() + i) = importers[i] (index);
           return output;
-        }
+        }*/
 
 
 

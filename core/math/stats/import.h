@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 #ifndef __math_stats_import_h__
 #define __math_stats_import_h__
@@ -53,10 +53,10 @@ namespace MR
               path (path) { }
 
           /*!
-          * @param column the column of a matrix into which the data from this
+          * @param row the row of a matrix into which the data from this
           * particular file should be loaded
           */
-          virtual void operator() (matrix_type::ColXpr column) const = 0;
+          virtual void operator() (matrix_type::RowXpr column) const = 0;
 
           /*!
            * @param index extract the data from this file corresponding to a particular

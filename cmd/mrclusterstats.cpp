@@ -130,14 +130,14 @@ class SubjectVoxelImport : public SubjectDataImportBase
         H (Header::open (path)),
         data (H.get_image<float>()) { }
 
-    void operator() (matrix_type::ColXpr column) const override
+    void operator() (matrix_type::RowXpr row) const override
     {
       assert (v2v);
-      assert (column.rows() == size());
+      assert (row.size() == size());
       Image<float> temp (data); // For thread-safety
       for (size_t i = 0; i != size(); ++i) {
         assign_pos_of ((*v2v)[i]).to (temp);
-        column[i] = temp.value();
+        row[i] = temp.value();
       }
     }
 
@@ -233,18 +233,16 @@ void run() {
                      + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")"
                      + (extra_columns.size() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
 
-  matrix_type data (num_voxels, importer.size());
-  bool nans_in_data = false;
+  matrix_type data (importer.size(), num_voxels);
   {
     // Load images
     ProgressBar progress ("loading input images", importer.size());
     for (size_t subject = 0; subject < importer.size(); subject++) {
-      (*importer[subject]) (data.col (subject));
-      if (!data.col (subject).allFinite())
-        nans_in_data = true;
+      (*importer[subject]) (data.row (subject));
       progress++;
     }
   }
+  const bool nans_in_data = !data.allFinite();
   if (nans_in_data) {
     INFO ("Non-finite values present in data; rows will be removed from voxel-wise design matrices accordingly");
     if (!extra_columns.size()) {
@@ -267,16 +265,12 @@ void run() {
 
   const std::string prefix (argument[4]);
 
-  matrix_type default_cluster_output (num_contrasts, num_voxels);
-  matrix_type tvalue_output (num_contrasts, num_voxels);
-  matrix_type empirical_enhanced_statistic;
-
   // Only add contrast row number to image outputs if there's more than one contrast
-  auto postfix = [&] (const size_t i) { return (num_contrasts > 1) ? ("_" + str(i)) : ""; };
+  auto postfix = [&] (const size_t i) { return (num_contrasts > 1) ? ("_" + contrasts[i].name()) : ""; };
 
   {
-    matrix_type betas (num_contrasts, num_voxels);
-    matrix_type abs_effect_size (num_contrasts, num_voxels), std_effect_size (num_contrasts, num_voxels);
+    matrix_type betas (num_factors, num_voxels);
+    matrix_type abs_effect_size (num_voxels, num_contrasts), std_effect_size (num_voxels, num_contrasts);
     vector_type stdev (num_voxels);
 
     Math::Stats::GLM::all_stats (data, design, extra_columns, contrasts,
@@ -288,8 +282,10 @@ void run() {
       ++progress;
     }
     for (size_t i = 0; i != num_contrasts; ++i) {
-      write_output (abs_effect_size.row(i), v2v, prefix + "abs_effect" + postfix(i) + ".mif", output_header); ++progress;
-      write_output (std_effect_size.row(i), v2v, prefix + "std_effect" + postfix(i) + ".mif", output_header); ++progress;
+      if (!contrasts[i].is_F()) {
+        write_output (abs_effect_size.row(i), v2v, prefix + "abs_effect" + postfix(i) + ".mif", output_header); ++progress;
+        write_output (std_effect_size.row(i), v2v, prefix + "std_effect" + postfix(i) + ".mif", output_header); ++progress;
+      }
     }
     write_output (stdev, v2v, prefix + "std_dev.mif", output_header);
   }
@@ -310,6 +306,7 @@ void run() {
     enhancer.reset (new Stats::Cluster::ClusterSize (connector, cluster_forming_threshold));
   }
 
+  matrix_type empirical_enhanced_statistic;
   if (do_nonstationary_adjustment) {
     if (!use_tfce)
       throw Exception ("nonstationary adjustment is not currently implemented for threshold-based cluster analysis");
@@ -321,6 +318,7 @@ void run() {
   if (!get_options ("notest").size()) {
 
     matrix_type perm_distribution, uncorrected_pvalue;
+    matrix_type default_cluster_output (num_contrasts, num_voxels);
 
     Stats::PermTest::run_permutations (glm_test, enhancer, empirical_enhanced_statistic,
                                        default_cluster_output, perm_distribution, uncorrected_pvalue);

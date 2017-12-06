@@ -150,11 +150,11 @@ class SubjectFixelImport : public SubjectDataImportBase
       }
     }
 
-    void operator() (matrix_type::ColXpr column) const override
+    void operator() (matrix_type::RowXpr row) const override
     {
-      assert (column.rows() == size());
+      assert (row.size() == size());
       Image<float> temp (data); // For thread-safety
-      column = temp.row(0);
+      row = temp.row(0);
     }
 
     default_type operator[] (const size_t index) const override
@@ -353,21 +353,21 @@ void run()
 
 
   // Load input data
-  matrix_type data = matrix_type::Zero (num_fixels, importer.size());
+  matrix_type data = matrix_type::Zero (importer.size(), num_fixels);
   bool nans_in_data = false;
   {
     ProgressBar progress ("loading input images", importer.size());
     for (size_t subject = 0; subject < importer.size(); subject++) {
-      (*importer[subject]) (data.col (subject));
+      (*importer[subject]) (data.row (subject));
       // Smooth the data
       vector_type smoothed_data (vector_type::Zero (num_fixels));
       for (size_t fixel = 0; fixel < num_fixels; ++fixel) {
-        if (std::isfinite (data (fixel, subject))) {
+        if (std::isfinite (data (subject, fixel))) {
           value_type value = 0.0, sum_weights = 0.0;
           std::map<uint32_t, connectivity_value_type>::const_iterator it = smoothing_weights[fixel].begin();
           for (; it != smoothing_weights[fixel].end(); ++it) {
-            if (std::isfinite (data (it->first, subject))) {
-              value += data (it->first, subject) * it->second;
+            if (std::isfinite (data (subject, it->first))) {
+              value += data (subject, it->first) * it->second;
               sum_weights += it->second;
             }
           }
@@ -379,7 +379,7 @@ void run()
           smoothed_data (fixel) = NaN;
         }
       }
-      data.col (subject) = smoothed_data;
+      data.row (subject) = smoothed_data;
       if (!smoothed_data.allFinite())
         nans_in_data = true;
     }
@@ -393,11 +393,11 @@ void run()
   }
 
   // Only add contrast row number to image outputs if there's more than one contrast
-  auto postfix = [&] (const size_t i) { return (num_contrasts > 1) ? ("_" + str(i)) : ""; };
+  auto postfix = [&] (const size_t i) { return (num_contrasts > 1) ? ("_" + contrasts[i].name()) : ""; };
 
   {
     matrix_type betas (num_factors, num_fixels);
-    matrix_type abs_effect_size (num_contrasts, num_fixels), std_effect_size (num_contrasts, num_fixels);
+    matrix_type abs_effect_size (num_fixels, num_contrasts), std_effect_size (num_fixels, num_contrasts);
     vector_type stdev (num_fixels);
 
     Math::Stats::GLM::all_stats (data, design, extra_columns, contrasts,
@@ -409,8 +409,10 @@ void run()
       ++progress;
     }
     for (size_t i = 0; i != num_contrasts; ++i) {
-      write_fixel_output (Path::join (output_fixel_directory, "abs_effect" + postfix(i) + ".mif"), abs_effect_size.row(i), output_header); ++progress;
-      write_fixel_output (Path::join (output_fixel_directory, "std_effect" + postfix(i) + ".mif"), std_effect_size.row(i), output_header); ++progress;
+      if (!contrasts[i].is_F()) {
+        write_fixel_output (Path::join (output_fixel_directory, "abs_effect" + postfix(i) + ".mif"), abs_effect_size.row(i), output_header); ++progress;
+        write_fixel_output (Path::join (output_fixel_directory, "std_effect" + postfix(i) + ".mif"), std_effect_size.row(i), output_header); ++progress;
+      }
     }
     write_fixel_output (Path::join (output_fixel_directory, "std_dev.mif"), stdev, output_header);
   }
@@ -445,7 +447,7 @@ void run()
 
   for (size_t i = 0; i != num_contrasts; ++i) {
     write_fixel_output (Path::join (output_fixel_directory, "cfe" + postfix(i) + ".mif"), cfe_output.row(i), output_header);
-    write_fixel_output (Path::join (output_fixel_directory, "tvalue" + postfix(i) + ".mif"), tvalue_output.row(i), output_header);
+    write_fixel_output (Path::join (output_fixel_directory, (contrasts[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".mif"), tvalue_output.row(i), output_header);
   }
 
   // Perform permutation testing

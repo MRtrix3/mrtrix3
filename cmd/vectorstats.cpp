@@ -88,10 +88,10 @@ class SubjectVectorImport : public SubjectDataImportBase
         SubjectDataImportBase (path),
         data (load_vector (path)) { }
 
-    void operator() (matrix_type::ColXpr column) const override
+    void operator() (matrix_type::RowXpr row) const override
     {
-      assert (column.rows() == size());
-      column = data;
+      assert (row.size() == size());
+      row = data;
     }
 
     default_type operator[] (const size_t index) const override
@@ -160,9 +160,9 @@ void run()
   const std::string output_prefix = argument[3];
 
   // Load input data
-  matrix_type data (num_elements, num_subjects);
+  matrix_type data (num_subjects, num_elements);
   for (size_t subject = 0; subject != num_subjects; subject++)
-    (*importer[subject]) (data.col(subject));
+    (*importer[subject]) (data.row(subject));
 
   const bool nans_in_data = !data.allFinite();
   if (nans_in_data) {
@@ -173,7 +173,7 @@ void run()
   }
 
   // Only add contrast row number to image outputs if there's more than one contrast
-  auto postfix = [&] (const size_t i) { return (num_contrasts > 1) ? ("_" + str(i)) : ""; };
+  auto postfix = [&] (const size_t i) { return (num_contrasts > 1) ? ("_" + contrasts[i].name()) : ""; };
 
   {
     matrix_type betas (num_factors, num_elements);
@@ -186,8 +186,10 @@ void run()
     ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", 2 + (2 * num_contrasts));
     save_matrix (betas, output_prefix + "betas.csv"); ++progress;
     for (size_t i = 0; i != num_contrasts; ++i) {
-      save_vector (abs_effect_size.col(i), output_prefix + "abs_effect" + postfix(i) + ".csv"); ++progress;
-      save_vector (std_effect_size.col(i), output_prefix + "std_effect" + postfix(i) + ".csv"); ++progress;
+      if (!contrasts[i].is_F()) {
+        save_vector (abs_effect_size.col(i), output_prefix + "abs_effect" + postfix(i) + ".csv"); ++progress;
+        save_vector (std_effect_size.col(i), output_prefix + "std_effect" + postfix(i) + ".csv"); ++progress;
+      }
     }
     save_vector (stdev, output_prefix + "std_dev.csv");
   }
@@ -207,7 +209,7 @@ void run()
   matrix_type default_tvalues;
   (*glm_test) (default_shuffle, default_tvalues);
   for (size_t i = 0; i != num_contrasts; ++i)
-    save_matrix (default_tvalues.col(i), output_prefix + "tvalue" + postfix(i) + ".csv");
+    save_matrix (default_tvalues.col(i), output_prefix + (contrasts[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".csv");
 
   // Perform permutation testing
   if (!get_options ("notest").size()) {
