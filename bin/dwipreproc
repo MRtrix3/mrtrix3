@@ -776,9 +776,9 @@ if do_topup:
 
   # Use the initial corrected volumes to derive a brain mask for eddy
   if len(applytopup_image_list) == 1:
-    run.command('dwi2mask ' + applytopup_image_list[0] + ' - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32 -stride -1,+2,+3')
+    run.command('dwi2mask ' + applytopup_image_list[0] + ' - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32 -strides -1,+2,+3')
   else:
-    run.command('mrcat ' + ' '.join(applytopup_image_list) + ' - -axis 3 | dwi2mask - - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32 -stride -1,+2,+3')
+    run.command('mrcat ' + ' '.join(applytopup_image_list) + ' - -axis 3 | dwi2mask - - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32 -strides -1,+2,+3')
 
   for entry in applytopup_image_list:
     file.delTemporary(entry)
@@ -838,7 +838,7 @@ eddy_output_image_path = fsl.findImage('dwi_post_eddy')
 
 
 # Get the axis strides from the input series, so the output image can be modified to match
-stride_option = ' -strides ' + ','.join([str(i) for i in dwi_header.stride()])
+stride_option = ' -strides ' + ','.join([str(i) for i in dwi_header.strides()])
 
 
 # Check to see whether or not eddy has provided a rotated bvecs file;
