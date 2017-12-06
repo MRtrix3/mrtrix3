@@ -230,9 +230,9 @@ void run()
 
   // Load design matrix:
   const matrix_type design = load_matrix (argument[2]);
-  CONSOLE ("design matrix dimensions: " + str(design.rows()) + " x " + str(design.cols()));
+  CONSOLE ("Design matrix dimensions: " + str(design.rows()) + " x " + str(design.cols()));
   if (design.rows() != (ssize_t)importer.size())
-    throw Exception ("number of input files does not match number of rows in design matrix");
+    throw Exception ("Number of input files does not match number of rows in design matrix");
 
   // Load contrasts
   const vector<Contrast> contrasts = Math::Stats::GLM::load_contrasts (argument[3]);
@@ -251,14 +251,14 @@ void run()
       nans_in_columns = true;
   }
   if (extra_columns.size()) {
-    CONSOLE ("number of element-wise design matrix columns: " + str(extra_columns.size()));
+    CONSOLE ("Number of element-wise design matrix columns: " + str(extra_columns.size()));
     if (nans_in_columns)
       INFO ("Non-finite values detected in element-wise design matrix columns; individual rows will be removed from fixel-wise design matrices accordingly");
   }
 
   const ssize_t num_factors = design.cols() + extra_columns.size();
   if (contrasts[0].cols() != num_factors)
-    throw Exception ("the number of columns per contrast (" + str(contrasts[0].cols()) + ")"
+    throw Exception ("The number of columns per contrast (" + str(contrasts[0].cols()) + ")"
                      + (extra_columns.size() ? " (in addition to the " + str(extra_columns.size()) + " uses of -column)" : "")
                      + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")");
 
@@ -271,9 +271,9 @@ void run()
   // Read in tracts, and compute whole-brain fixel-fixel connectivity
   const size_t num_tracks = properties["count"].empty() ? 0 : to<int> (properties["count"]);
   if (!num_tracks)
-    throw Exception ("no tracks found in input file");
+    throw Exception ("No tracks found in input file");
   if (num_tracks < 1000000) {
-    WARN ("more than 1 million tracks is preferable to ensure robust fixel-fixel connectivity; file \"" + track_filename + "\" contains only " + str(num_tracks));
+    WARN ("More than 1 million tracks is preferable to ensure robust fixel-fixel connectivity; file \"" + track_filename + "\" contains only " + str(num_tracks));
   }
   {
     typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
@@ -304,7 +304,7 @@ void run()
 
   {
     // TODO This could trivially be multi-threaded; fixels are handled independently
-    ProgressBar progress ("normalising and thresholding fixel-fixel connectivity matrix", num_fixels);
+    ProgressBar progress ("Normalising and thresholding fixel-fixel connectivity matrix", num_fixels);
     for (uint32_t fixel = 0; fixel < num_fixels; ++fixel) {
 
       auto it = connectivity_matrix[fixel].begin();
@@ -356,7 +356,7 @@ void run()
   matrix_type data = matrix_type::Zero (importer.size(), num_fixels);
   bool nans_in_data = false;
   {
-    ProgressBar progress ("loading input images", importer.size());
+    ProgressBar progress ("Loading input images", importer.size());
     for (size_t subject = 0; subject < importer.size(); subject++) {
       (*importer[subject]) (data.row (subject));
       // Smooth the data
@@ -403,7 +403,7 @@ void run()
     Math::Stats::GLM::all_stats (data, design, extra_columns, contrasts,
                                  betas, abs_effect_size, std_effect_size, stdev);
 
-    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_contrasts) + 1);
+    ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_contrasts) + 1);
     for (ssize_t i = 0; i != num_factors; ++i) {
       write_fixel_output (Path::join (output_fixel_directory, "beta" + str(i) + ".mif"), betas.row(i), output_header);
       ++progress;
@@ -458,7 +458,7 @@ void run()
     Stats::PermTest::run_permutations (glm_test, cfe_integrator, empirical_cfe_statistic,
                                        cfe_output, perm_distribution, uncorrected_pvalues);
 
-    ProgressBar progress ("outputting final results");
+    ProgressBar progress ("Outputting final results");
     for (size_t i = 0; i != num_contrasts; ++i) {
       save_vector (perm_distribution.row(i), Path::join (output_fixel_directory, "perm_dist" + postfix(i) + ".txt"));
       ++progress;

@@ -223,7 +223,7 @@ void run()
       nans_in_columns = true;
   }
   if (extra_columns.size()) {
-    CONSOLE ("number of element-wise design matrix columns: " + str(extra_columns.size()));
+    CONSOLE ("Number of element-wise design matrix columns: " + str(extra_columns.size()));
     if (nans_in_columns)
       INFO ("Non-finite values detected in element-wise design matrix columns; individual rows will be removed from edge-wise design matrices accordingly");
   }

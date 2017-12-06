@@ -160,7 +160,7 @@ namespace MR
 
 
 
-#define GLM_ALL_STATS_DEBUG
+//#define GLM_ALL_STATS_DEBUG
 
         void all_stats (const matrix_type& measurements,
                         const matrix_type& design,
@@ -236,7 +236,7 @@ namespace MR
               bool operator() (size_t& element_index)
               {
                 element_index = counter++;
-                if (counter >= num_elements) {
+                if (element_index >= num_elements) {
                   progress.reset();
                   return false;
                 }

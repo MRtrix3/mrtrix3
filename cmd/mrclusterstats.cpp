@@ -202,7 +202,7 @@ void run() {
   // Load design matrix
   const matrix_type design = load_matrix<value_type> (argument[1]);
   if (design.rows() != (ssize_t)importer.size())
-    throw Exception ("number of input files does not match number of rows in design matrix");
+    throw Exception ("Number of input files does not match number of rows in design matrix");
 
   // Load contrasts
   const vector<Contrast> contrasts = Math::Stats::GLM::load_contrasts (argument[2]);
@@ -222,14 +222,14 @@ void run() {
       nans_in_columns = true;
   }
   if (extra_columns.size()) {
-    CONSOLE ("number of element-wise design matrix columns: " + str(extra_columns.size()));
+    CONSOLE ("Number of element-wise design matrix columns: " + str(extra_columns.size()));
     if (nans_in_columns)
       INFO ("Non-finite values detected in element-wise design matrix columns; individual rows will be removed from voxel-wise design matrices accordingly");
   }
 
   const ssize_t num_factors = design.cols() + extra_columns.size();
   if (contrasts[0].cols() != num_factors)
-    throw Exception ("the number of columns per contrast (" + str(contrasts[0].cols()) + ")"
+    throw Exception ("The number of columns per contrast (" + str(contrasts[0].cols()) + ")"
                      + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")"
                      + (extra_columns.size() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
 
@@ -276,7 +276,7 @@ void run() {
     Math::Stats::GLM::all_stats (data, design, extra_columns, contrasts,
                                  betas, abs_effect_size, std_effect_size, stdev);
 
-    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_contrasts) + 1);
+    ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_contrasts) + 1);
     for (ssize_t i = 0; i != num_factors; ++i) {
       write_output (betas.row(i), v2v, prefix + "beta" + str(i) + ".mif", output_header);
       ++progress;
@@ -309,7 +309,7 @@ void run() {
   matrix_type empirical_enhanced_statistic;
   if (do_nonstationary_adjustment) {
     if (!use_tfce)
-      throw Exception ("nonstationary adjustment is not currently implemented for threshold-based cluster analysis");
+      throw Exception ("Nonstationary adjustment is not currently implemented for threshold-based cluster analysis");
     Stats::PermTest::precompute_empirical_stat (glm_test, enhancer, empirical_enhanced_statistic);
     for (size_t i = 0; i != num_contrasts; ++i)
       save_vector (empirical_enhanced_statistic.row(i), prefix + "empirical" + postfix(i) + ".txt");
@@ -326,7 +326,7 @@ void run() {
     for (size_t i = 0; i != num_contrasts; ++i)
       save_vector (perm_distribution.row(i), prefix + "perm_dist" + postfix(i) + ".txt");
 
-    ProgressBar progress ("generating output", 1 + (2 * num_contrasts));
+    ProgressBar progress ("Generating output images", 1 + (2 * num_contrasts));
     for (size_t i = 0; i != num_contrasts; ++i) {
       write_output (uncorrected_pvalue.row(i), v2v, prefix + "uncorrected_pvalue" + postfix(i) + ".mif", output_header);
       ++progress;

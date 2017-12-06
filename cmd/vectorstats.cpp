@@ -145,14 +145,14 @@ void run()
       nans_in_columns = true;
   }
   if (extra_columns.size()) {
-    CONSOLE ("number of element-wise design matrix columns: " + str(extra_columns.size()));
+    CONSOLE ("Number of element-wise design matrix columns: " + str(extra_columns.size()));
     if (nans_in_columns)
       INFO ("Non-finite values detected in element-wise design matrix columns; individual rows will be removed from voxel-wise design matrices accordingly");
   }
 
   const ssize_t num_factors = design.cols() + extra_columns.size();
   if (contrasts[0].cols() != num_factors)
-    throw Exception ("the number of columns per contrast (" + str(contrasts[0].cols()) + ")"
+    throw Exception ("The number of columns per contrast (" + str(contrasts[0].cols()) + ")"
                      + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")"
                      + (extra_columns.size() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
   CONSOLE ("Number of factors: " + str(num_factors));
@@ -183,7 +183,7 @@ void run()
     Math::Stats::GLM::all_stats (data, design, extra_columns, contrasts,
                                  betas, abs_effect_size, std_effect_size, stdev);
 
-    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", 2 + (2 * num_contrasts));
+    ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", 2 + (2 * num_contrasts));
     save_matrix (betas, output_prefix + "betas.csv"); ++progress;
     for (size_t i = 0; i != num_contrasts; ++i) {
       if (!contrasts[i].is_F()) {
