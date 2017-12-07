@@ -95,12 +95,12 @@ List of MRtrix3 commands
     commands/tckglobal
     commands/tckinfo
     commands/tckmap
-    commands/tcknormalise
     commands/tckresample
     commands/tcksample
     commands/tcksift2
     commands/tcksift
     commands/tckstats
+    commands/tcktransform
     commands/tensor2metric
     commands/transformcalc
     commands/transformcompose
@@ -206,12 +206,12 @@ List of MRtrix3 commands
     :ref:`tckglobal`, "Multi-Shell Multi-Tissue Global Tractography"
     :ref:`tckinfo`, "Print out information about a track file"
     :ref:`tckmap`, "Use track data as a form of contrast for producing a high-resolution image"
-    :ref:`tcknormalise`, "Apply a normalisation map to a tracks file"
     :ref:`tckresample`, "Resample each streamline in a track file to a new set of vertices"
     :ref:`tcksample`, "Sample values of an associated image along tracks"
     :ref:`tcksift2`, "Successor to the SIFT method; instead of removing streamlines, use an EM framework to find an appropriate cross-section multiplier for each streamline"
     :ref:`tcksift`, "Filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals"
     :ref:`tckstats`, "Calculate statistics on streamlines length"
+    :ref:`tcktransform`, "Apply a spatial transformation to a tracks file"
     :ref:`tensor2metric`, "Generate maps of tensor-derived parameters"
     :ref:`transformcalc`, "Perform calculations on linear transformation matrices"
     :ref:`transformcompose`, "Compose any number of linear transformations and/or warps into a single transformation"

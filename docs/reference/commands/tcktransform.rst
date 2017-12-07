@@ -1,19 +1,19 @@
-.. _tcknormalise:
+.. _tcktransform:
 
-tcknormalise
+tcktransform
 ===================
 
 Synopsis
 --------
 
-Apply a normalisation map to a tracks file
+Apply a spatial transformation to a tracks file
 
 Usage
 --------
 
 ::
 
-    tcknormalise [ options ]  tracks transform output
+    tcktransform [ options ]  tracks transform output
 
 -  *tracks*: the input track file.
 -  *transform*: the image containing the transform.
