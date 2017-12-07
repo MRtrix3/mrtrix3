@@ -145,7 +145,7 @@ namespace MR
           if (!std::isfinite (H.intensity_offset()))
             H.intensity_offset() = 0.0;
         }
-        else 
+        else
           H.reset_intensity_scaling();
 
         size_t data_offset = (size_t) Raw::fetch_<float32> (&NH.vox_offset, is_BE);
@@ -161,7 +161,8 @@ namespace MR
         }
 
         if (is_nifti) {
-          if (Raw::fetch_<int16_t> (&NH.sform_code, is_BE)) {
+          bool sform_code = Raw::fetch_<int16_t> (&NH.sform_code, is_BE);
+          if (sform_code) {
             auto& M (H.transform().matrix());
 
             M(0,0) = Raw::fetch_<float32> (&NH.srow_x[0], is_BE);
@@ -195,21 +196,31 @@ namespace MR
             }
 
           }
-          else if (Raw::fetch_<int16_t> (&NH.qform_code, is_BE)) {
-            { // TODO update with Eigen3 Quaternions
-              Eigen::Quaterniond Q (0.0, Raw::fetch_<float32> (&NH.quatern_b, is_BE), Raw::fetch_<float32> (&NH.quatern_c, is_BE), Raw::fetch_<float32> (&NH.quatern_d, is_BE));
-              Q.w() = std::sqrt (std::max (1.0 - Q.squaredNorm(), 0.0));
-              H.transform().matrix().topLeftCorner<3,3>() = Q.matrix();
-            }
 
-            H.transform().translation()[0] = Raw::fetch_<float32> (&NH.qoffset_x, is_BE);
-            H.transform().translation()[1] = Raw::fetch_<float32> (&NH.qoffset_y, is_BE);
-            H.transform().translation()[2] = Raw::fetch_<float32> (&NH.qoffset_z, is_BE);
+          if (Raw::fetch_<int16_t> (&NH.qform_code, is_BE)) {
+            transform_type M_qform;
+
+            Eigen::Quaterniond Q (0.0, Raw::fetch_<float32> (&NH.quatern_b, is_BE), Raw::fetch_<float32> (&NH.quatern_c, is_BE), Raw::fetch_<float32> (&NH.quatern_d, is_BE));
+            Q.w() = std::sqrt (std::max (1.0 - Q.squaredNorm(), 0.0));
+            M_qform.matrix().topLeftCorner<3,3>() = Q.matrix();
+
+            M_qform.translation()[0] = Raw::fetch_<float32> (&NH.qoffset_x, is_BE);
+            M_qform.translation()[1] = Raw::fetch_<float32> (&NH.qoffset_y, is_BE);
+            M_qform.translation()[2] = Raw::fetch_<float32> (&NH.qoffset_z, is_BE);
 
             // qfac:
             float qfac = Raw::fetch_<float32> (&NH.pixdim[0], is_BE) >= 0.0 ? 1.0 : -1.0;
-            if (qfac < 0.0) 
-              H.transform().matrix().col(2) *= qfac;
+            if (qfac < 0.0)
+              M_qform.matrix().col(2) *= qfac;
+
+            if (sform_code) {
+              Header header2 (H);
+              header2.transform() = M_qform;
+              if (!voxel_grids_match_in_scanner_space (H, header2))
+                WARN ("sform and qform are inconsistent in NIfTI image \"" + H.name() + "\" - using sform");
+            }
+            else
+              H.transform() = M_qform;
           }
 
           //CONF option: NIfTI.AutoLoadJSON
@@ -287,7 +298,7 @@ namespace MR
 
           // pad out the other dimensions with 1, fix for fslview
           ++i;
-          for (; i < 8; i++) 
+          for (; i < 8; i++)
             Raw::store<int16_t> (1, &NH.dim[i], is_BE);
         }
 
@@ -383,7 +394,7 @@ namespace MR
         }
         Eigen::Quaterniond Q (R);
 
-        if (Q.w() < 0.0) 
+        if (Q.w() < 0.0)
           Q.vec() = -Q.vec();
 
         Raw::store<float32> (Q.x(), &NH.quatern_b, is_BE);

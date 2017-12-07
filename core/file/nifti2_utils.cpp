@@ -155,7 +155,8 @@ namespace MR
         //   don't have to worry about whether or not the file is in
         //   Analyse format; we can treat it as a NIfTI regardless of
         //   whether the hedaer & data are in the same file or not.
-        if (Raw::fetch_<int32_t> (&NH.sform_code, is_BE)) {
+        bool sform_code = Raw::fetch_<int32_t> (&NH.sform_code, is_BE);
+        if (sform_code) {
           auto& M (H.transform().matrix());
 
           M(0,0) = Raw::fetch_<float64> (&NH.srow_x[0], is_BE);
@@ -188,21 +189,32 @@ namespace MR
               M.col(axis).array() /= H.spacing (axis);
           }
 
-        } else if (Raw::fetch_<int32_t> (&NH.qform_code, is_BE)) {
-          { // TODO update with Eigen3 Quaternions
-            Eigen::Quaterniond Q (0.0, Raw::fetch_<float64> (&NH.quatern_b, is_BE), Raw::fetch_<float64> (&NH.quatern_c, is_BE), Raw::fetch_<float64> (&NH.quatern_d, is_BE));
-            Q.w() = std::sqrt (std::max (1.0 - Q.squaredNorm(), 0.0));
-            H.transform().matrix().topLeftCorner<3,3>() = Q.matrix();
-          }
+        }
 
-          H.transform().translation()[0] = Raw::fetch_<float64> (&NH.qoffset_x, is_BE);
-          H.transform().translation()[1] = Raw::fetch_<float64> (&NH.qoffset_y, is_BE);
-          H.transform().translation()[2] = Raw::fetch_<float64> (&NH.qoffset_z, is_BE);
+        if (Raw::fetch_<int32_t> (&NH.qform_code, is_BE)) {
+          transform_type M_qform;
+
+          Eigen::Quaterniond Q (0.0, Raw::fetch_<float64> (&NH.quatern_b, is_BE), Raw::fetch_<float64> (&NH.quatern_c, is_BE), Raw::fetch_<float64> (&NH.quatern_d, is_BE));
+          Q.w() = std::sqrt (std::max (1.0 - Q.squaredNorm(), 0.0));
+          M_qform.matrix().topLeftCorner<3,3>() = Q.matrix();
+
+          M_qform.translation()[0] = Raw::fetch_<float64> (&NH.qoffset_x, is_BE);
+          M_qform.translation()[1] = Raw::fetch_<float64> (&NH.qoffset_y, is_BE);
+          M_qform.translation()[2] = Raw::fetch_<float64> (&NH.qoffset_z, is_BE);
 
           // qfac:
           const float64 qfac = Raw::fetch_<float64> (&NH.pixdim[0], is_BE) >= 0.0 ? 1.0 : -1.0;
           if (qfac < 0.0)
-            H.transform().matrix().col(2) *= qfac;
+            M_qform.matrix().col(2) *= qfac;
+
+          if (sform_code) {
+            Header header2 (H);
+            header2.transform() = M_qform;
+            if (!voxel_grids_match_in_scanner_space (H, header2))
+              WARN ("sform and qform are inconsistent in NIfTI image \"" + H.name() + "\" - using sform");
+          }
+          else
+            H.transform() = M_qform;
         }
 
         if (File::Config::get_bool ("NIfTI.AutoLoadJSON", false)) {
