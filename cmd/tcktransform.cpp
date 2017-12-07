@@ -29,7 +29,7 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  SYNOPSIS = "Apply a normalisation map to a tracks file";
+  SYNOPSIS = "Apply a spatial transformation to a tracks file";
 
   ARGUMENTS
   + Argument ("tracks", "the input track file.").type_tracks_in()
@@ -91,7 +91,7 @@ class Warper { MEMALIGN(Warper)
 class Writer { MEMALIGN(Writer)
   public:
     Writer (const std::string& file, const Tractography::Properties& properties) :
-      progress ("normalising tracks"),
+      progress ("applying spatial transformation to tracks"),
       writer (file, properties) { }
 
     bool operator() (const TrackType& item) {
