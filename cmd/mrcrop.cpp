@@ -88,7 +88,7 @@ void run ()
           overall_bounds[axis][1] = std::max (bounds[axis][1], overall_bounds[axis][1]);
         }
       }
-      void operator() (const decltype(mask)& m) { 
+      void operator() (const decltype(mask)& m) {
         if (m.value()) {
           for (size_t axis = 0; axis != 3; ++axis) {
             bounds[axis][0] = std::min (bounds[axis][0], m.index(axis));
@@ -136,6 +136,6 @@ void run ()
 
   auto cropped = Adapter::make<Adapter::Subset> (in, from, size);
   auto out = Image<float>::create (argument[1], cropped);
-  threaded_copy_with_progress_message ("cropping image...", cropped, out);
+  threaded_copy_with_progress_message ("cropping image", cropped, out);
 }
 

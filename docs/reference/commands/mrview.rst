@@ -124,6 +124,8 @@ Tractography tool options
 
 -  **-tractography.thickness value** Line thickness of tractography display, [-1.0, 1.0], default is 0.0.
 
+-  **-tractography.geometry value** The geometry type to use when rendering tractograms (options are: pseudotubes, lines, points)
+
 -  **-tractography.opacity value** Opacity of tractography display, [0.0, 1.0], default is 1.0.
 
 -  **-tractography.slab value** Slab thickness of tractography display, in mm. -1 to turn off crop to slab.
@@ -169,15 +171,13 @@ Standard options
 
 -  **-info** display information messages.
 
--  **-quiet** do not display information messages or progress status.
+-  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages.
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
-
--  **-failonwarn** terminate program if a warning is produced
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
 -  **-help** display this information page and exit.
 

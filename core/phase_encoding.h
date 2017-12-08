@@ -19,8 +19,10 @@
 #include <Eigen/Dense>
 
 #include "app.h"
+#include "axes.h"
 #include "header.h"
 #include "file/ofstream.h"
+
 
 
 namespace MR
@@ -68,13 +70,7 @@ namespace MR
 
 
 
-    //! convert phase encoding direction between formats
-    /*! these helper functions convert the definition of
-       *  phase-encoding direction between a 3-vector (e.g.
-       *  [0 1 0] ) and a NIfTI axis identifier (e.g. 'i-')
-       */
-    std::string    dir2id (const Eigen::Vector3&);
-    Eigen::Vector3 id2dir (const std::string&);
+
 
 
 
@@ -118,7 +114,7 @@ namespace MR
       } else {
         erase ("pe_scheme");
         const Eigen::Vector3 dir { PE(0, 0), PE(0, 1), PE(0, 2) };
-        header.keyval()["PhaseEncodingDirection"] = dir2id (dir);
+        header.keyval()["PhaseEncodingDirection"] = Axes::dir2id (dir);
         if (PE.cols() >= 4)
           header.keyval()["TotalReadoutTime"] = str(PE(0, 3), 3);
         else

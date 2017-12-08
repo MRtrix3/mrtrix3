@@ -91,6 +91,7 @@ List of MRtrix3 commands
     commands/tck2connectome
     commands/tck2fixel
     commands/tckconvert
+    commands/tckdfc
     commands/tckedit
     commands/tckgen
     commands/tckglobal
@@ -117,6 +118,7 @@ List of MRtrix3 commands
     commands/warpconvert
     commands/warpcorrect
     commands/warpinit
+    commands/warpinvert
 
 
 .. csv-table::
@@ -156,7 +158,7 @@ List of MRtrix3 commands
     :ref:`fixelcrop`, "Crop/remove fixels from sparse fixel image using a binary fixel mask"
     :ref:`fixelreorient`, "Reorient fixel directions"
     :ref:`fod2dec`, "Generate FOD-based DEC maps, with optional panchromatic sharpening and/or luminance/perception correction"
-    :ref:`fod2fixel`, "Use a fast-marching level-set method to segment fibre orientation distributions, and save parameters of interest as fixel images"
+    :ref:`fod2fixel`, "Perform segmentation of continuous Fibre Orientation Distributions (FODs) to produce discrete fixels"
     :ref:`label2colour`, "Convert a parcellated image (where values are node indices) into a colour image"
     :ref:`label2mesh`, "Generate meshes from a label image"
     :ref:`labelconvert`, "Convert a connectome node image from one lookup table to another"
@@ -202,6 +204,7 @@ List of MRtrix3 commands
     :ref:`tck2connectome`, "Generate a connectome matrix from a streamlines file and a node parcellation image"
     :ref:`tck2fixel`, "Compute a fixel TDI map from a tractogram"
     :ref:`tckconvert`, "Convert between different track file formats"
+    :ref:`tckdfc`, "Perform the Track-Weighted Dynamic Functional Connectivity (TW-dFC) method"
     :ref:`tckedit`, "Perform various editing operations on track files"
     :ref:`tckgen`, "Perform streamlines tractography"
     :ref:`tckglobal`, "Multi-Shell Multi-Tissue Global Tractography"
@@ -228,3 +231,4 @@ List of MRtrix3 commands
     :ref:`warpconvert`, "Convert between different representations of a non-linear warp"
     :ref:`warpcorrect`, "Replaces voxels in a deformation field that point to 0,0,0 with nan,nan,nan"
     :ref:`warpinit`, "Create an initial warp image, representing an identity transformation"
+    :ref:`warpinvert`, "Invert a non-linear warp field"

@@ -5,61 +5,54 @@ _mrtrix_exe_list = [ os.path.splitext(name)[0] for name in os.listdir(_mrtrix_bi
 
 _processes = [ ]
 
+_lastFile = ''
 
 
-def command(cmd, exitOnError=True):
 
-  import inspect, itertools, os, shlex, subprocess, sys, tempfile
+def setContinue(filename): #pylint: disable=unused-variable
+  _lastFile = filename
+
+
+
+
+def command(cmd, exitOnError=True): #pylint: disable=unused-variable
+
+  import inspect, itertools, shlex, signal, string, subprocess, sys, tempfile
   from distutils.spawn import find_executable
   from mrtrix3 import app
 
-  global _mrtrix_exe_list
+  global _mrtrix_exe_list, _processes
 
   # Vectorise the command string, preserving anything encased within quotation marks
   cmdsplit = shlex.split(cmd)
 
-  if app._lastFile:
-    # Check to see if the last file produced in the previous script execution is
-    #   intended to be produced by this command; if it is, this will be the last
-    #   command that gets skipped by the -continue option
-    # It's possible that the file might be defined in a '--option=XXX' style argument
-    #   It's also possible that the filename in the command string has the file extension omitted
-    for entry in cmdsplit:
-      if entry.startswith('--') and '=' in entry:
-        cmdtotest = entry.split('=')[1]
-      else:
-        cmdtotest = entry
-      filetotest = [ app._lastFile, os.path.splitext(app._lastFile)[0] ]
-      if cmdtotest in filetotest:
-        app.debug('Detected last file \'' + app._lastFile + '\' in command \'' + cmd + '\'; this is the last run.command() / run.function() call that will be skipped')
-        app._lastFile = ''
-        break
-    if app._verbosity:
+  if _lastFile:
+    if _triggerContinue(cmdsplit):
+      app.debug('Detected last file in command \'' + cmd + '\'; this is the last run.command() / run.function() call that will be skipped')
+    if app.verbosity:
       sys.stderr.write(app.colourExec + 'Skipping command:' + app.colourClear + ' ' + cmd + '\n')
       sys.stderr.flush()
     return
 
   # This splits the command string based on the piping character '|', such that each
   #   individual executable (along with its arguments) appears as its own list
-  # Note that for Python2 support, it is necessary to convert groupby() output from
-  #   a generator to a list before it is passed to filter()
-  cmdstack = [ list(g) for k, g in filter(lambda t : t[0], ((k, list(g)) for k, g in itertools.groupby(cmdsplit, lambda s : s is not '|') ) ) ]
+  cmdstack = [ list(g) for k, g in itertools.groupby(cmdsplit, lambda s : s != '|') if k ]
 
   for line in cmdstack:
     is_mrtrix_exe = line[0] in _mrtrix_exe_list
     if is_mrtrix_exe:
       line[0] = versionMatch(line[0])
-      if app._nthreads is not None:
-        line.extend( [ '-nthreads', str(app._nthreads) ] )
+      if app.numThreads is not None:
+        line.extend( [ '-nthreads', str(app.numThreads) ] )
       # Get MRtrix3 binaries to output additional INFO-level information if running in debug mode
-      if app._verbosity == 3:
+      if app.verbosity == 3:
         line.append('-info')
-      elif not app._verbosity:
+      elif not app.verbosity:
         line.append('-quiet')
     else:
       line[0] = exeName(line[0])
     shebang = _shebang(line[0])
-    if len(shebang):
+    if shebang:
       if not is_mrtrix_exe:
         # If a shebang is found, and this call is therefore invoking an
         #   interpreter, can't rely on the interpreter finding the script
@@ -68,11 +61,17 @@ def command(cmd, exitOnError=True):
       for item in reversed(shebang):
         line.insert(0, item)
 
-  if app._verbosity:
+  app.debug('To execute: ' + str(cmdstack))
+
+  if app.verbosity:
     sys.stderr.write(app.colourExec + 'Command:' + app.colourClear + '  ' + cmd + '\n')
     sys.stderr.flush()
 
-  app.debug('To execute: ' + str(cmdstack))
+  # Disable interrupt signal handler while threads are running
+  try:
+    signal.signal(signal.SIGINT, signal.default_int_handler)
+  except:
+    pass
 
   # Construct temporary text files for holding stdout / stderr contents when appropriate
   #   (One entry per process; each is a tuple containing two entries, each of which is either a
@@ -80,8 +79,8 @@ def command(cmd, exitOnError=True):
   tempfiles = [ ]
 
   # Execute all processes
-  _processes = [ ]
-  for index, command in enumerate(cmdstack):
+  assert not _processes
+  for index, to_execute in enumerate(cmdstack):
     file_out = None
     file_err = None
     # If there's at least one command prior to this, need to receive the stdout from the prior command
@@ -100,29 +99,26 @@ def command(cmd, exitOnError=True):
     # If we're in debug / info mode, the contents of stderr will be read and printed to the terminal
     #   as the command progresses, hence this needs to go to a pipe; otherwise, write it to a temporary
     #   file so that the contents can be read later
-    if app._verbosity > 1:
+    if app.verbosity > 1:
       handle_err = subprocess.PIPE
     else:
       file_err = tempfile.TemporaryFile()
       handle_err = file_err.fileno()
     # Set off the processes
     try:
-      process = subprocess.Popen (command, stdin=handle_in, stdout=handle_out, stderr=handle_err)
+      process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, preexec_fn=os.setpgrp)
       _processes.append(process)
       tempfiles.append( ( file_out, file_err ) )
     # FileNotFoundError not defined in Python 2.7
     except OSError as e:
       if exitOnError:
-        app.error('\'' + command[0] + '\' not executed ("' + str(e) + '"); script cannot proceed')
+        app.error('\'' + to_execute[0] + '\' not executed ("' + str(e) + '"); script cannot proceed')
       else:
-        app.warn('\'' + command[0] + '\' not executed ("' + str(e) + '")')
+        app.warn('\'' + to_execute[0] + '\' not executed ("' + str(e) + '")')
         for p in _processes:
           p.terminate()
         _processes = [ ]
         break
-    except (KeyboardInterrupt, SystemExit):
-      import inspect, signal
-      app._handler(signal.SIGINT, inspect.currentframe())
 
   return_stdout = ''
   return_stderr = ''
@@ -130,21 +126,26 @@ def command(cmd, exitOnError=True):
   error_text = ''
 
   # Wait for all commands to complete
+  # Switch how we monitor running processes / wait for them to complete
+  #   depending on whether or not the user has specified -info or -debug option
   try:
-
-    # Switch how we monitor running processes / wait for them to complete
-    #   depending on whether or not the user has specified -verbose or -debug option
-    if app._verbosity > 1:
+    if app.verbosity > 1:
       for process in _processes:
         stderrdata = ''
+        do_indent = True
         while True:
           # Have to read one character at a time: Waiting for a newline character using e.g. readline() will prevent MRtrix progressbars from appearing
-          line = process.stderr.read(1).decode('utf-8')
-          sys.stderr.write(line)
-          sys.stderr.flush()
-          stderrdata += line
-          if not line and process.poll() is not None:
+          char = process.stderr.read(1).decode('utf-8')
+          if not char and process.poll() is not None:
             break
+          if do_indent and char in string.printable:
+            sys.stderr.write('          ')
+            do_indent = False
+          elif char == '\r' or char == '\n':
+            do_indent = True
+          sys.stderr.write(char)
+          sys.stderr.flush()
+          stderrdata += char
         return_stderr += stderrdata
         if process.returncode:
           error = True
@@ -152,10 +153,14 @@ def command(cmd, exitOnError=True):
     else:
       for process in _processes:
         process.wait()
-
   except (KeyboardInterrupt, SystemExit):
-    import inspect, signal
-    app._handler(signal.SIGINT, inspect.currentframe())
+    app.handler(signal.SIGINT, inspect.currentframe())
+
+  # Re-enable interrupt signal handler
+  try:
+    signal.signal(signal.SIGINT, app.handler)
+  except:
+    pass
 
   # For any command stdout / stderr data that wasn't either passed to another command or
   #   printed to the terminal during execution, read it here.
@@ -179,17 +184,20 @@ def command(cmd, exitOnError=True):
 
   _processes = [ ]
 
-  if (error):
-    app._cleanup = False
+  if error:
+    app.cleanup = False
     if exitOnError:
       caller = inspect.getframeinfo(inspect.stack()[1][0])
+      script_name = os.path.basename(sys.argv[0])
       app.console('')
-      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + app.colourError + '[ERROR] Command failed: ' + cmd + app.colourClear + app.colourDebug + ' (' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')' + app.colourClear + '\n')
-      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + app.colourConsole + 'Output of failed command:' + app.colourClear + '\n')
-      sys.stderr.write(error_text)
+      sys.stderr.write(script_name + ': ' + app.colourError + '[ERROR] Command failed: ' + cmd + app.colourClear + app.colourDebug + ' (' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')' + app.colourClear + '\n')
+      sys.stderr.write(script_name + ': ' + app.colourConsole + 'Output of failed command:' + app.colourClear + '\n')
+      for line in error_text.splitlines():
+        sys.stderr.write(' ' * (len(script_name)+2) + line + '\n')
+      app.console('')
       sys.stderr.flush()
-      if app._tempDir:
-        with open(os.path.join(app._tempDir, 'error.txt'), 'w') as outfile:
+      if app.tempDir:
+        with open(os.path.join(app.tempDir, 'error.txt'), 'w') as outfile:
           outfile.write(cmd + '\n\n' + error_text + '\n')
       app.complete()
       sys.exit(1)
@@ -199,8 +207,8 @@ def command(cmd, exitOnError=True):
   # Only now do we append to the script log, since the command has completed successfully
   # Note: Writing the command as it was formed as the input to run.command():
   #   other flags may potentially change if this file is eventually used to resume the script
-  if app._tempDir:
-    with open(os.path.join(app._tempDir, 'log.txt'), 'a') as outfile:
+  if app.tempDir:
+    with open(os.path.join(app.tempDir, 'log.txt'), 'a') as outfile:
       outfile.write(cmd + '\n')
 
   return (return_stdout, return_stderr)
@@ -209,45 +217,51 @@ def command(cmd, exitOnError=True):
 
 
 
+def function(fn, *args): #pylint: disable=unused-variable
 
-def function(fn, *args):
-
-  import os, sys
+  import inspect, sys
   from mrtrix3 import app
 
-  fnstring = fn.__module__ + '.' + fn.__name__ + '(' + ', '.join(args) + ')'
+  fnstring = fn.__module__ + '.' + fn.__name__ + '(' + ', '.join(['\'' + str(a) + '\'' if isinstance(a, str) else str(a) for a in args]) + ')'
 
-  if app._lastFile:
-    # Check to see if the last file produced in the previous script execution is
-    #   intended to be produced by this command; if it is, this will be the last
-    #   command that gets skipped by the -continue option
-    # It's possible that the file might be defined in a '--option=XXX' style argument
-    #  It's also possible that the filename in the command string has the file extension omitted
-    for entry in args:
-      if entry.startswith('--') and '=' in entry:
-        totest = entry.split('=')[1]
-      else:
-        totest = entry
-      filetotest = [ app._lastFile, os.path.splitext(app._lastFile)[0] ]
-      if totest in filetotest:
-        app.debug('Detected last file \'' + app._lastFile + '\' in function \'' + fnstring + '\'; this is the last run.command() / run.function() call that will be skipped')
-        app._lastFile = ''
-        break
-    if app._verbosity:
+  if _lastFile:
+    if _triggerContinue(args):
+      app.debug('Detected last file in function \'' + fnstring + '\'; this is the last run.command() / run.function() call that will be skipped')
+    if app.verbosity:
       sys.stderr.write(app.colourExec + 'Skipping function:' + app.colourClear + ' ' + fnstring + '\n')
       sys.stderr.flush()
     return
 
-  if app._verbosity:
+  if app.verbosity:
     sys.stderr.write(app.colourExec + 'Function:' + app.colourClear + ' ' + fnstring + '\n')
     sys.stderr.flush()
 
   # Now we need to actually execute the requested function
-  result = fn(*args)
+  try:
+    result = fn(*args)
+  except (KeyboardInterrupt, SystemExit):
+    raise
+  except Exception as e: # pylint: disable=broad-except
+    app.cleanup = False
+    caller = inspect.getframeinfo(inspect.stack()[1][0])
+    error_text = str(type(e).__name__) + ': ' + str(e)
+    script_name = os.path.basename(sys.argv[0])
+    app.console('')
+    sys.stderr.write(script_name + ': ' + app.colourError + '[ERROR] Function failed: ' + fnstring + app.colourClear + app.colourDebug + ' (' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')' + app.colourClear + '\n')
+    sys.stderr.write(script_name + ': ' + app.colourConsole + 'Information from failed function:' + app.colourClear + '\n')
+    for line in error_text.splitlines():
+      sys.stderr.write(' ' * (len(script_name)+2) + line + '\n')
+    app.console('')
+    sys.stderr.flush()
+    if app.tempDir:
+      with open(os.path.join(app.tempDir, 'error.txt'), 'w') as outfile:
+        outfile.write(fnstring + '\n\n' + error_text + '\n')
+    app.complete()
+    sys.exit(1)
 
   # Only now do we append to the script log, since the function has completed successfully
-  if app._tempDir:
-    with open(os.path.join(app._tempDir, 'log.txt'), 'a') as outfile:
+  if app.tempDir:
+    with open(os.path.join(app.tempDir, 'log.txt'), 'a') as outfile:
       outfile.write(fnstring + '\n')
 
   return result
@@ -261,7 +275,6 @@ def function(fn, *args):
 # When running on Windows, add the necessary '.exe' so that hopefully the correct
 #   command is found by subprocess
 def exeName(item):
-  import os
   from distutils.spawn import find_executable
   from mrtrix3 import app
   global _mrtrix_bin_path
@@ -291,7 +304,6 @@ def exeName(item):
 #   (e.g. C:\Windows\system32\mrinfo.exe; On Windows, subprocess uses CreateProcess(),
 #   which checks system32\ before PATH)
 def versionMatch(item):
-  import os
   from distutils.spawn import find_executable
   from mrtrix3 import app
   global _mrtrix_bin_path, _mrtrix_exe_list
@@ -317,7 +329,6 @@ def versionMatch(item):
 # If the target executable is not a binary, but is actually a script, use the
 #   shebang at the start of the file to alter the subprocess call
 def _shebang(item):
-  import os
   from mrtrix3 import app
   from distutils.spawn import find_executable
   # If a complete path has been provided rather than just a file name, don't perform any additional file search
@@ -362,3 +373,25 @@ def _shebang(item):
       return shebang
   app.debug('File \"' + item + '\": No shebang found')
   return []
+
+
+
+# New function for handling the -continue command-line option functionality
+# Check to see if the last file produced in the previous script execution is
+#   intended to be produced by this command; if it is, this will be the last
+#   thing that gets skipped by the -continue option
+def _triggerContinue(entries):
+  global _lastFile
+  if not _lastFile:
+    assert False
+  for entry in entries:
+    # It's possible that the file might be defined in a '--option=XXX' style argument
+    #   It's also possible that the filename in the command string has the file extension omitted
+    if entry.startswith('--') and '=' in entry:
+      totest = entry.split('=')[1]
+    else:
+      totest = entry
+    if totest == _lastFile or totest == os.path.splitext(_lastFile)[0]:
+      _lastFile = ''
+      return True
+  return False
