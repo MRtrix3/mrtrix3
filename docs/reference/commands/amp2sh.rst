@@ -47,10 +47,10 @@ DW gradient table import options
 
 -  **-bvalue_scaling mode** specifies whether the b-values should be scaled by the square of the corresponding DW gradient norm, as often required for multi-shell or DSI DW acquisition schemes. The default action can also be set in the MRtrix config file, under the BValueScaling entry. Valid choices are yes/no, true/false, 0/1 (default: true).
 
-DW Shell selection options
+DW shell selection options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-shell list** specify one or more diffusion-weighted gradient shells to use during processing, as a comma-separated list of the desired approximate b-values. Note that some commands are incompatible with multiple shells, and will throw an error if more than one b-value is provided.
+-  **-shells list** specify one or more diffusion-weighted gradient shells to use during processing, as a comma-separated list of the desired approximate b-values. Note that some commands are incompatible with multiple shells, and will throw an error if more than one b-value is provided.
 
 Stride options
 ^^^^^^^^^^^^^^
@@ -62,15 +62,13 @@ Standard options
 
 -  **-info** display information messages.
 
--  **-quiet** do not display information messages or progress status.
+-  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages.
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
-
--  **-failonwarn** terminate program if a warning is produced
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
 -  **-help** display this information page and exit.
 

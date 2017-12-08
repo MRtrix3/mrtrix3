@@ -23,6 +23,7 @@ namespace Mapping {
 
 const char* contrasts[] = { "tdi", "length", "invlength", "scalar_map", "scalar_map_count", "fod_amp", "curvature", "vector_file", 0 };
 const char* voxel_statistics[] = { "sum", "min", "mean", "max", 0 };
+// Note: ENDS_CORR not provided as a command-line option
 const char* track_statistics[] = { "sum", "min", "mean", "max", "median", "mean_nonzero", "gaussian", "ends_min", "ends_mean", "ends_max", "ends_prod", 0 };
 
 

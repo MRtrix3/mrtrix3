@@ -65,10 +65,6 @@ Streamlines tractography options
 
 -  **-noprecomputed** do NOT pre-compute legendre polynomial values. Warning: this will slow down the algorithm by a factor of approximately 4.
 
--  **-power value** raise the FOD to the power specified (default is 1/nsamples).
-
--  **-samples number** set the number of FOD samples to take per step for the 2nd order (iFOD2) method (Default: 4).
-
 -  **-rk4** use 4th-order Runge-Kutta integration (slower, but eliminates curvature overshoot in 1st-order deterministic methods)
 
 -  **-stop** stop propagating a streamline once it has traversed all include regions
@@ -125,6 +121,13 @@ Anatomically-Constrained Tractography options
 
 -  **-crop_at_gmwmi** crop streamline endpoints more precisely as they cross the GM-WM interface
 
+Options specific to the iFOD2 tracking algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-samples number** set the number of FOD samples to take per step (Default: 4).
+
+-  **-power value** raise the FOD to the power specified (default is 1/nsamples).
+
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -139,15 +142,13 @@ Standard options
 
 -  **-info** display information messages.
 
--  **-quiet** do not display information messages or progress status.
+-  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages.
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
-
--  **-failonwarn** terminate program if a warning is produced
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
 -  **-help** display this information page and exit.
 

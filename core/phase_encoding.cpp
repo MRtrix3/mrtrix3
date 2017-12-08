@@ -14,6 +14,8 @@
 
 #include "phase_encoding.h"
 
+#include "math/math.h"
+
 namespace MR
 {
   namespace PhaseEncoding
@@ -43,41 +45,7 @@ namespace MR
 
 
 
-    std::string dir2id (const Eigen::Vector3& axis)
-    {
-      if (axis[0] == -1) {
-        assert (!axis[1]); assert (!axis[2]); return "i-";
-      } else if (axis[0] == 1) {
-        assert (!axis[1]); assert (!axis[2]); return "i";
-      } else if (axis[1] == -1) {
-        assert (!axis[0]); assert (!axis[2]); return "j-";
-      } else if (axis[1] == 1) {
-        assert (!axis[0]); assert (!axis[2]); return "j";
-      } else if (axis[2] == -1) {
-        assert (!axis[0]); assert (!axis[1]); return "k-";
-      } else if (axis[2] == 1) {
-        assert (!axis[0]); assert (!axis[1]); return "k";
-      } else {
-        throw Exception ("Malformed phase-encode direction: \"" + str(axis.transpose()) + "\"");
-      }
-    }
-    Eigen::Vector3 id2dir (const std::string& id)
-    {
-      if (id == "i-")
-        return { -1,  0,  0 };
-      else if (id == "i")
-        return {  1,  0,  0 };
-      else if (id == "j-")
-        return {  0, -1,  0 };
-      else if (id == "j")
-        return {  0,  1,  0 };
-      else if (id == "k-")
-        return {  0,  0, -1 };
-      else if (id == "k")
-        return {  0,  0,  1 };
-      else
-        throw Exception ("Malformed phase-encode identifier: \"" + id + "\"");
-    }
+
 
 
 
@@ -96,25 +64,20 @@ namespace MR
       Eigen::MatrixXd PE;
       const auto it = header.keyval().find ("pe_scheme");
       if (it != header.keyval().end()) {
-        const auto lines = split_lines (it->second);
-        if (ssize_t(lines.size()) != ((header.ndim() > 3) ? header.size(3) : 1))
-          throw Exception ("malformed PE scheme in image \"" + header.name() + "\" - number of rows does not equal number of volumes");
-        for (size_t row = 0; row < lines.size(); ++row) {
-          const auto values = parse_floats (lines[row]);
-          if (PE.cols() == 0)
-            PE.resize (lines.size(), values.size());
-          else if (PE.cols() != ssize_t (values.size()))
-            throw Exception ("malformed PE scheme in image \"" + header.name() + "\" - uneven number of entries per row");
-          for (size_t col = 0; col < values.size(); ++col)
-            PE(row, col) = values[col];
+        try {
+          PE = parse_matrix (it->second);
+        } catch (Exception& e) {
+          throw Exception (e, "malformed PE scheme in image \"" + header.name() + "\"");
         }
+        if (ssize_t(PE.rows()) != ((header.ndim() > 3) ? header.size(3) : 1))
+          throw Exception ("malformed PE scheme in image \"" + header.name() + "\" - number of rows does not equal number of volumes");
       } else {
         // Header entries are cast to lowercase at some point
         const auto it_dir  = header.keyval().find ("PhaseEncodingDirection");
         const auto it_time = header.keyval().find ("TotalReadoutTime");
         if (it_dir != header.keyval().end() && it_time != header.keyval().end()) {
           Eigen::Matrix<default_type, 4, 1> row;
-          row.head<3>() = id2dir (it_dir->second);
+          row.head<3>() = Axes::id2dir (it_dir->second);
           row[3] = to<default_type>(it_time->second);
           PE.resize ((header.ndim() > 3) ? header.size(3) : 1, 4);
           PE.rowwise() = row.transpose();

@@ -45,8 +45,8 @@ namespace MR
   inline std::istream& getline (std::istream& stream, std::string& string)
   {
     std::getline (stream, string);
-    if (string.size() > 0) 
-      if (string[string.size()-1] == 015) 
+    if (string.size() > 0)
+      if (string[string.size()-1] == 015)
         string.resize (string.size()-1);
     return stream;
   }
@@ -97,12 +97,12 @@ namespace MR
   }
 
 
-  //! convert a long string to 'beginningofstring...endofstring' for display 
+  //! convert a long string to 'beginningofstring...endofstring' for display
   inline std::string shorten (const std::string& text, size_t longest = 40, size_t prefix = 10)
   {
     if (text.size() > longest)
       return (text.substr (0,prefix) + "..." + text.substr (text.size()-longest+prefix+3));
-    else 
+    else
       return text;
   }
 
@@ -163,7 +163,7 @@ namespace MR
   inline std::string strip (const std::string& string, const char* ws = " \t\n", bool left = true, bool right = true)
   {
     std::string::size_type start = (left ? string.find_first_not_of (ws) : 0);
-    if (start == std::string::npos) 
+    if (start == std::string::npos)
       return "";
     std::string::size_type end = (right ? string.find_last_not_of (ws) + 1 : std::string::npos);
     return string.substr (start, end - start);
@@ -171,19 +171,19 @@ namespace MR
 
 
 
-  inline void  replace (std::string& string, char orig, char final)
+  inline void replace (std::string& string, char orig, char final)
   {
     for (std::string::iterator i = string.begin(); i != string.end(); ++i)
       if (*i == orig) *i = final;
   }
 
-  inline void  replace (std::string& str, const std::string& from, const std::string& to)
+  inline void replace (std::string& str, const std::string& from, const std::string& to)
   {
     if (from.empty()) return;
     size_t start_pos = 0;
     while((start_pos = str.find(from, start_pos)) != std::string::npos) {
       str.replace (start_pos, from.length(), to);
-      start_pos += to.length(); 
+      start_pos += to.length();
     }
   }
 
@@ -197,7 +197,8 @@ namespace MR
   inline vector<std::string> split_lines (
       const std::string& string,
       bool ignore_empty_fields = true,
-      size_t num = std::numeric_limits<size_t>::max()) {
+      size_t num = std::numeric_limits<size_t>::max())
+  {
     return split (string, "\n", ignore_empty_fields, num);
   }
 
@@ -212,19 +213,31 @@ namespace MR
     return ret;
   }
 
+  template <typename T>
+  inline std::string join (const vector<T>& V, const std::string& delimiter)
+  {
+    std::string ret;
+    if (V.empty())
+      return ret;
+    ret = str(V[0]);
+    for (typename vector<T>::const_iterator i = V.begin() +1; i != V.end(); ++i)
+      ret += delimiter + str(*i);
+    return ret;
+  }
+
   inline std::string join (const char* const* null_terminated_array, const std::string& delimiter)
   {
     std::string ret;
     if (!null_terminated_array)
       return ret;
     ret = null_terminated_array[0];
-    for (const char* const* p = null_terminated_array+1; *p; ++p) 
+    for (const char* const* p = null_terminated_array+1; *p; ++p)
       ret += delimiter + *p;
     return ret;
   }
 
   vector<default_type> parse_floats (const std::string& spec);
-  vector<int>   parse_ints (const std::string& spec, int last = std::numeric_limits<int>::max());
+  vector<int> parse_ints (const std::string& spec, int last = std::numeric_limits<int>::max());
 
   /*
   inline int round (default_type x)
@@ -242,10 +255,10 @@ namespace MR
   template <> inline std::string str<cfloat> (const cfloat& value, int precision)
   {
     std::ostringstream stream;
-    if (precision > 0) 
+    if (precision > 0)
       stream.precision (precision);
     stream << value.real();
-    if (value.imag()) 
+    if (value.imag())
       stream << std::showpos << value.imag() << "i";
     if (stream.fail())
       throw Exception ("error converting value to string");
@@ -267,7 +280,7 @@ namespace MR
       return cfloat (0.0f, real);
 
     stream >> imag;
-    if (stream.fail()) 
+    if (stream.fail())
       return cfloat (real, 0.0f);
     else if (stream.peek() != 'i' && stream.peek() != 'j')
       throw Exception ("error converting string \"" + string + "\"");
@@ -280,10 +293,10 @@ namespace MR
   template <> inline std::string str<cdouble> (const cdouble& value, int precision)
   {
     std::ostringstream stream;
-    if (precision > 0) 
+    if (precision > 0)
       stream.precision (precision);
     stream << value.real();
-    if (value.imag()) 
+    if (value.imag())
       stream << std::showpos << value.imag() << "i";
     if (stream.fail())
       throw Exception ("error converting value to string");
@@ -301,11 +314,11 @@ namespace MR
     if (stream.eof())
       return cdouble (real, 0.0);
 
-    if (stream.peek() == 'i' || stream.peek() == 'j') 
+    if (stream.peek() == 'i' || stream.peek() == 'j')
       return cdouble (0.0, real);
 
     stream >> imag;
-    if (stream.fail()) 
+    if (stream.fail())
       return cdouble (real, 0.0);
     else if (stream.peek() != 'i' && stream.peek() != 'j')
       throw Exception ("error converting string \"" + string + "\"");
@@ -317,9 +330,9 @@ namespace MR
   template <> inline bool to<bool> (const std::string& string)
   {
     std::string value = lowercase (string);
-    if (value == "true" || value == "yes") 
+    if (value == "true" || value == "yes")
       return true;
-    if (value == "false" || value == "no") 
+    if (value == "false" || value == "no")
       return false;
     return to<int> (value);
   }

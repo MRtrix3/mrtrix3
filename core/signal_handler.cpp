@@ -17,8 +17,10 @@
 #include <cstdlib>
 #include <iostream>
 #include <signal.h>
+#include <atomic>
+#include <vector>
 
-#include "exception.h"
+#include "app.h"
 #include "file/path.h"
 
 #ifdef MRTRIX_WINDOWS
@@ -28,92 +30,103 @@
 
 namespace MR
 {
+  namespace SignalHandler {
 
-  std::vector<std::string> SignalHandler::data;
-  std::atomic_flag SignalHandler::flag = ATOMIC_FLAG_INIT;
+    namespace {
+      std::vector<std::string> marked_files;
+      std::atomic_flag flag = ATOMIC_FLAG_INIT;
 
-  SignalHandler::SignalHandler()
-  {
+
+
+
+      void handler (int i) noexcept
+      {
+        // Only process this once if using multi-threading:
+        if (!flag.test_and_set()) {
+
+          // Try to do a tempfile cleanup before printing the error, since the latter's not guaranteed to work...
+          // Don't use File::unlink: may throw an exception
+          for (const auto& i : marked_files) 
+            ::unlink (i.c_str());
+
+
+          const char* sig = nullptr;
+          const char* msg = nullptr;
+          switch (i) {
+
+#define __SIGNAL(SIG,MSG) case SIG: sig = #SIG; msg = MSG; break; 
+#include "signals.h"
+#undef __SIGNAL
+
+            default:
+              sig = "UNKNOWN"; 
+              msg = "Unknown fatal system signal";
+              break;
+          }
+
+          // Don't use std::cerr << here: Use basic C string-handling functions and a write() call to STDERR_FILENO
+          // Don't attempt to use any terminal colouring
+          char str[256];
+          str[255] = '\0';
+          snprintf (str, 255, "\n%s: [SYSTEM FATAL CODE: %s (%d)] %s\n", App::NAME.c_str(), sig, i, msg);
+          if (write (STDERR_FILENO, str, strnlen(str,256)) == 0)
+            std::_Exit (i);
+          else
+            std::_Exit (i);
+        }
+      }
+
+    }
+
+
+
+
+
+
+
+
+
+    void init()
+    {
 #ifdef MRTRIX_WINDOWS
-    // Use signal() rather than sigaction() for Windows, as the latter is not supported
+      // Use signal() rather than sigaction() for Windows, as the latter is not supported
 # define __SIGNAL(SIG,MSG) signal (SIG, handler)
 #else
-    // Construct the signal structure
-    struct sigaction act;
-    act.sa_handler = &handler;
-    // Since we're _Exit()-ing for any of these signals, block them all
-    sigfillset (&act.sa_mask);
-    act.sa_flags = 0;
+      // Construct the signal structure
+      struct sigaction act;
+      act.sa_handler = &handler;
+      // Since we're _Exit()-ing for any of these signals, block them all
+      sigfillset (&act.sa_mask);
+      act.sa_flags = 0;
 # define __SIGNAL(SIG,MSG) sigaction (SIG, &act, nullptr)
 #endif
 
 #include "signals.h"
-
-#undef __SIGNAL
-  }
-
-
-
-
-  void SignalHandler::operator+= (const std::string& s)
-  {
-    while (!flag.test_and_set());
-    data.push_back (s);
-    flag.clear();
-  }
-
-  void SignalHandler::operator-= (const std::string& s)
-  {
-    while (!flag.test_and_set());
-    auto i = data.begin();
-    while (i != data.end()) {
-      if (*i == s)
-        i = data.erase (i);
-      else
-        ++i;
     }
-    flag.clear();
-  }
 
 
 
 
-  void SignalHandler::handler (int i) noexcept
-  {
-    // Only process this once if using multi-threading:
-    if (!flag.test_and_set()) {
+    void mark_file_for_deletion (const std::string& s)
+    {
+      while (!flag.test_and_set());
+      marked_files.push_back (s);
+      flag.clear();
+    }
 
-      // Try to do a tempfile cleanup before printing the error, since the latter's not guaranteed to work...
-      // Don't use File::unlink: may throw an exception
-      for (const auto& i : data) 
-        ::unlink (i.c_str());
-
-
-      const char* sig = nullptr;
-      const char* msg = nullptr;
-      switch (i) {
-
-#define __SIGNAL(SIG,MSG) case SIG: sig = #SIG; msg = MSG; break; 
-#include "signals.h"
-
-        default:
-          sig = "UNKNOWN"; 
-          msg = "Unknown fatal system signal";
-          break;
+    void unmark_file_for_deletion (const std::string& s)
+    {
+      while (!flag.test_and_set());
+      auto i = marked_files.begin();
+      while (i != marked_files.end()) {
+        if (*i == s)
+          i = marked_files.erase (i);
+        else
+          ++i;
       }
-
-      // Don't use std::cerr << here: Use basic C string-handling functions and a write() call to STDERR_FILENO
-      // Don't attempt to use any terminal colouring
-      char str[256];
-      str[255] = '\0';
-      snprintf (str, 255, "\n%s: [SYSTEM FATAL CODE: %s (%d)] %s\n", App::NAME.c_str(), sig, i, msg);
-      if (write (STDERR_FILENO, str, strnlen(str,256)) == 0)
-        std::_Exit (i);
-      else
-        std::_Exit (i);
+      flag.clear();
     }
+
   }
-
-
-
 }
+

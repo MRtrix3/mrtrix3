@@ -20,6 +20,7 @@
 #include "progressbar.h"
 #include "file/path.h"
 #include "file/config.h"
+#include "signal_handler.h"
 
 #define MRTRIX_HELP_COMMAND "less -X"
 
@@ -44,13 +45,12 @@ namespace MR
 
     OptionGroup __standard_options = OptionGroup ("Standard options")
       + Option ("info", "display information messages.")
-      + Option ("quiet", "do not display information messages or progress status.")
+      + Option ("quiet", "do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.")
       + Option ("debug", "display debugging messages.")
       + Option ("force", "force overwrite of output files. "
           "Caution: Using the same file as input and output might cause unexpected behaviour.")
-      + Option ("nthreads", "use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)")
+      + Option ("nthreads", "use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).")
         + Argument ("number").type_integer (0)
-      + Option ("failonwarn", "terminate program if a warning is produced")
       + Option ("help", "display this information page and exit.")
       + Option ("version", "display version information and exit.");
 
@@ -73,14 +73,12 @@ namespace MR
     std::string NAME;
     vector<ParsedArgument> argument;
     vector<ParsedOption> option;
-    int log_level = 1;
+    int log_level = getenv("MRTRIX_QUIET") ? 0 : 1;
     bool fail_on_warn = false;
     bool terminal_use_colour = true;
 
     const char* project_version = nullptr;
     const char* build_date = __DATE__;
-
-    SignalHandler signal_handler;
 
     int argc = 0;
     const char* const* argv = nullptr;
@@ -882,10 +880,40 @@ namespace MR
         WARN ("existing output files will be overwritten");
         overwrite_files = true;
       }
-      if (get_options ("failonwarn").size())
-        fail_on_warn = true;
     }
 
+
+
+    void verify_usage ()
+    {
+      if (!AUTHOR)
+        throw Exception ("No author specified for command " + std::string(NAME));
+      if (!SYNOPSIS)
+        throw Exception ("No synopsis specified for command " + std::string(NAME));
+    }
+
+
+
+    void parse_special_options ()
+    {
+      if (argc != 2) return;
+      if (strcmp (argv[1], "__print_full_usage__") == 0) {
+        print (full_usage ());
+        throw 0;
+      }
+      if (strcmp (argv[1], "__print_usage_markdown__") == 0) {
+        print (markdown_usage ());
+        throw 0;
+      }
+      if (strcmp (argv[1], "__print_usage_rst__") == 0) {
+        print (restructured_text_usage ());
+        throw 0;
+      }
+      if (strcmp (argv[1], "__print_synopsis__") == 0) {
+        print (SYNOPSIS);
+        throw 0;
+      }
+    }
 
 
 
@@ -893,30 +921,6 @@ namespace MR
     {
       argument.clear();
       option.clear();
-
-      if (!AUTHOR)
-        throw Exception ("No author specified for command " + std::string(NAME));
-      if (!SYNOPSIS)
-        throw Exception ("No synopsis specified for command " + std::string(NAME));
-
-      if (argc == 2) {
-        if (strcmp (argv[1], "__print_full_usage__") == 0) {
-          print (full_usage ());
-          throw 0;
-        }
-        if (strcmp (argv[1], "__print_usage_markdown__") == 0) {
-          print (markdown_usage ());
-          throw 0;
-        }
-        if (strcmp (argv[1], "__print_usage_rst__") == 0) {
-          print (restructured_text_usage ());
-          throw 0;
-        }
-        if (strcmp (argv[1], "__print_synopsis__") == 0) {
-          print (SYNOPSIS);
-          throw 0;
-        }
-      }
 
       sort_arguments (argc, argv);
 
@@ -1026,8 +1030,7 @@ namespace MR
       //CONF default: 0 (false)
       //CONF A boolean value specifying whether MRtrix applications should
       //CONF abort as soon as any (otherwise non-fatal) warning is issued.
-      if (File::Config::get_bool ("FailOnWarn", false))
-        fail_on_warn = true;
+      fail_on_warn = File::Config::get_bool ("FailOnWarn", false);
 
       //CONF option: TerminalColor
       //CONF default: 1 (true)
@@ -1062,6 +1065,7 @@ namespace MR
         }
       }
 
+      SignalHandler::init();
     }
 
 

@@ -37,7 +37,7 @@ Options
 
 -  **-size** image size along each axis
 
--  **-vox** voxel size along each image dimension
+-  **-spacing** voxel spacing along each image dimension
 
 -  **-datatype** data type used for image data storage
 
@@ -51,9 +51,14 @@ Options
 
 -  **-norealign** do not realign transform to near-default RAS coordinate system (the default behaviour on image load). This is useful to inspect the image and/or header contents as they are actually stored in the header, rather than as MRtrix interprets them.
 
+Options for exporting image header fields
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 -  **-property key** any text properties embedded in the image header under the specified key (use 'all' to list all keys found)
 
--  **-json_export file** export header key/value entries to a JSON file
+-  **-json_keyval file** export header key/value entries to a JSON file
+
+-  **-json_all file** export all header contents to a JSON file
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -75,7 +80,7 @@ DW gradient table export options
 
 -  **-dwgrad** the diffusion-weighting gradient table, as stored in the header (i.e. without any interpretation, scaling of b-values, or normalisation of gradient vectors)
 
--  **-shells** list the average b-value of each shell
+-  **-shellvalues** list the average b-value of each shell
 
 -  **-shellcounts** list the number of volumes in each shell
 
@@ -93,15 +98,13 @@ Standard options
 
 -  **-info** display information messages.
 
--  **-quiet** do not display information messages or progress status.
+-  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages.
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
-
--  **-failonwarn** terminate program if a warning is produced
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
 -  **-help** display this information page and exit.
 

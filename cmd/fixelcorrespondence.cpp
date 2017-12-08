@@ -75,7 +75,7 @@ void run ()
   output_data_header.size(1) = 1;
   auto output_data = Image<float>::create (Path::join (output_fixel_directory, argument[3]), output_data_header);
 
-  for (auto i = Loop ("mapping subject fixels data to template fixels", template_index, 0, 3)(template_index, subject_index); i; ++i) {
+  for (auto i = Loop ("mapping subject fixel data to template fixels", template_index, 0, 3)(template_index, subject_index); i; ++i) {
     template_index.index(3) = 0;
     uint32_t nfixels_template = template_index.value();
     template_index.index(3) = 1;
