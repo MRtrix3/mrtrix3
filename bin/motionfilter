@@ -12,11 +12,14 @@ def getsliceorder(n, p=2, s=1):
 
 
 def tr2lie(T):
-    L = logm(T)
-    R = 0.5 * (L - L.T)
     r = np.zeros((6,))
-    r[:3] = L[:3,3]
-    r[3:] = R[2,1], R[0,2], R[1,0]
+    try:
+        L = logm(T)
+        R = 0.5 * (L - L.T)
+        r[:3] = L[:3,3]
+        r[3:] = R[2,1], R[0,2], R[1,0]
+    except:
+        pass
     return r
 
 
