@@ -104,7 +104,7 @@ namespace MR
             if (!image())
               return -1;
             else
-              return std::round ((image()->transform().scanner2voxel.cast<float>() * focus())[anatomical_plane]);
+              return std::round ((image()->image.transform().inverse().cast<float>() * focus()) (anatomical_plane) / image()->image.spacing (anatomical_plane));
           }
 
           Mode::Base* get_current_mode () const { return mode.get(); }

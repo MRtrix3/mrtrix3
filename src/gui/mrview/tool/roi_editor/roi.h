@@ -106,7 +106,7 @@ namespace MR
              void load (vector<std::unique_ptr<MR::Header>>& list);
              void save (ROI_Item*);
 
-             int normal2axis (const Eigen::Vector3f&, const MR::Transform&) const;
+             int normal2axis (const Eigen::Vector3f&, const ROI_Item&) const;
 
              void dropEvent (QDropEvent* event) override;
         };

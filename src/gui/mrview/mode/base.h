@@ -110,7 +110,7 @@ namespace MR
                 else
                   return Math::Versorf::unit();
               }
-              return window().orientation(); 
+              return window().orientation();
             }
 
             int width () const { return glarea()->width(); }
@@ -173,7 +173,7 @@ namespace MR
 
             Eigen::Vector3f voxel_at (const Eigen::Vector3f& pos) const {
               if (!image()) return Eigen::Vector3f { NAN, NAN, NAN };
-              const Eigen::Vector3f result = image()->transform().scanner2voxel.cast<float>() * pos;
+              const Eigen::Vector3f result = image()->scanner2voxel() * pos;
               return result;
             }
 
@@ -190,13 +190,13 @@ namespace MR
             int slice (int axis) const { return std::round (voxel_at (focus())[axis]); }
             int slice () const { return slice (plane()); }
 
-            void updateGL () { window().updateGL(); } 
+            void updateGL () { window().updateGL(); }
 
           protected:
 
             GL::mat4 adjust_projection_matrix (const GL::mat4& Q, int proj) const;
-            GL::mat4 adjust_projection_matrix (const GL::mat4& Q) const { 
-              return adjust_projection_matrix (Q, plane()); 
+            GL::mat4 adjust_projection_matrix (const GL::mat4& Q) const {
+              return adjust_projection_matrix (Q, plane());
             }
 
             void reset_view ();

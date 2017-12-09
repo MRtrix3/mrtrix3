@@ -29,7 +29,7 @@ namespace MR
 
 
         std::unique_ptr<ROI_UndoEntry::Shared> ROI_UndoEntry::shared;
-            
+
 
         ROI_UndoEntry::Shared::Shared() :
             count (1)
@@ -205,8 +205,8 @@ namespace MR
         void ROI_UndoEntry::draw_line (ROI_Item& roi, const Eigen::Vector3f& prev_pos, const Eigen::Vector3f& pos, const bool insert_mode_value)
         {
           const GLubyte value = insert_mode_value ? 1 : 0;
-          Eigen::Vector3f p = roi.transform().scanner2voxel.cast<float>() * prev_pos;
-          const Eigen::Vector3f final_pos = roi.transform().scanner2voxel.cast<float>() * pos;
+          Eigen::Vector3f p = roi.scanner2voxel() * prev_pos;
+          const Eigen::Vector3f final_pos = roi.scanner2voxel() * pos;
           const Eigen::Vector3f dir ((final_pos - p).normalized());
           Eigen::Array3i v (int(std::round (p[0])), int(std::round (p[1])), int(std::round (p[2])));
           const Eigen::Array3i final_vox (int(std::round (final_pos[0])), int(std::round (final_pos[1])), int(std::round (final_pos[2])));
@@ -249,8 +249,8 @@ namespace MR
           const float radius = 0.5f * diameter;
           const float radius_sq = Math::pow2 (radius);
           const GLubyte value = insert_mode_value ? 1 : 0;
-          const Eigen::Vector3f start = roi.transform().scanner2voxel.cast<float>() * prev_pos;
-          const Eigen::Vector3f end = roi.transform().scanner2voxel.cast<float>() * pos;
+          const Eigen::Vector3f start = roi.scanner2voxel() * prev_pos;
+          const Eigen::Vector3f end = roi.scanner2voxel() * pos;
           const Eigen::Vector3f offset (end - start);
           const float offset_norm (offset.norm());
           const Eigen::Vector3f dir (Eigen::Vector3f(offset).normalized());
@@ -291,7 +291,7 @@ namespace MR
 
         void ROI_UndoEntry::draw_circle (ROI_Item& roi, const Eigen::Vector3f& pos, const bool insert_mode_value, const float diameter)
         {
-          Eigen::Vector3f vox = roi.transform().scanner2voxel.cast<float>() * pos;
+          Eigen::Vector3f vox = roi.scanner2voxel() * pos;
           roi.brush_size = diameter;
           const float radius = 0.5f * diameter;
           const float radius_sq = Math::pow2 (radius);
@@ -326,10 +326,10 @@ namespace MR
 
         void ROI_UndoEntry::draw_rectangle (ROI_Item& roi, const Eigen::Vector3f& from_pos, const Eigen::Vector3f& to_pos, const bool insert_mode_value)
         {
-          Eigen::Vector3f vox = roi.transform().scanner2voxel.cast<float>() * from_pos;
+          Eigen::Vector3f vox = roi.scanner2voxel() * from_pos;
           const GLubyte value = insert_mode_value ? 1 : 0;
           std::array<int,3> a = { { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) } };
-          vox = roi.transform().scanner2voxel.cast<float>() * to_pos;
+          vox = roi.scanner2voxel() * to_pos;
           std::array<int,3> b = { { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) } };
 
           if (a[0] > b[0]) std::swap (a[0], b[0]);
@@ -358,7 +358,7 @@ namespace MR
 
         void ROI_UndoEntry::draw_fill (ROI_Item& roi, const Eigen::Vector3f& pos, const bool insert_mode_value)
         {
-          const Eigen::Vector3f vox = roi.transform().scanner2voxel.cast<float>() * pos;
+          const Eigen::Vector3f vox = roi.scanner2voxel() * pos;
           const std::array<int,3> seed_voxel = { { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) } };
           for (size_t axis = 0; axis != 3; ++axis) {
             if (seed_voxel[axis] < 0) return;
@@ -402,7 +402,7 @@ namespace MR
 
 
 
-        void ROI_UndoEntry::undo (ROI_Item& roi) 
+        void ROI_UndoEntry::undo (ROI_Item& roi)
         {
           MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
@@ -411,7 +411,7 @@ namespace MR
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
-        void ROI_UndoEntry::redo (ROI_Item& roi) 
+        void ROI_UndoEntry::redo (ROI_Item& roi)
         {
           MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
@@ -420,7 +420,7 @@ namespace MR
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
-        void ROI_UndoEntry::copy (ROI_Item& roi, ROI_UndoEntry& source) 
+        void ROI_UndoEntry::copy (ROI_Item& roi, ROI_UndoEntry& source)
         {
           MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;

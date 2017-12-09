@@ -86,18 +86,11 @@ namespace MR
           cfloat trilinear_value (const Eigen::Vector3f&) const;
           cfloat nearest_neighbour_value (const Eigen::Vector3f&) const;
 
-          const MR::Transform& transform() const { return linear_interp; }
-          void set_tranform (const transform_type& transform);
-
           const vector<std::string>& comments() const { return _comments; }
 
           void reset_windowing (const int, const bool);
 
         protected:
-          mutable MR::Interp::Linear <MR::Image<cfloat>> linear_interp;
-          mutable MR::Interp::Nearest<MR::Image<cfloat>> nearest_interp;
-          friend class Tool::ODF;
-
           std::array<float, 3> slice_min, slice_max;
           std::unordered_map<size_t, GL::Texture> tex_4d_cache;
 

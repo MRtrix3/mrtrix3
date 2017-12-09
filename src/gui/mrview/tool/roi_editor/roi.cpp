@@ -365,11 +365,11 @@ namespace MR
 
 
 
-        int ROI::normal2axis (const Eigen::Vector3f& normal, const MR::Transform& transform) const
+        int ROI::normal2axis (const Eigen::Vector3f& normal, const ROI_Item& roi) const
         {
-          float x_dot_n = std::abs ((transform.image2scanner.rotation().cast<float>() * Eigen::Vector3f { 1.0f, 0.0f, 0.0f }).dot (normal));
-          float y_dot_n = std::abs ((transform.image2scanner.rotation().cast<float>() * Eigen::Vector3f { 0.0f, 1.0f, 0.0f }).dot (normal));
-          float z_dot_n = std::abs ((transform.image2scanner.rotation().cast<float>() * Eigen::Vector3f { 0.0f, 0.0f, 1.0f }).dot (normal));
+          float x_dot_n = std::abs ((roi.image2scanner().rotation() * Eigen::Vector3f { 1.0f, 0.0f, 0.0f }).dot (normal));
+          float y_dot_n = std::abs ((roi.image2scanner().rotation() * Eigen::Vector3f { 0.0f, 1.0f, 0.0f }).dot (normal));
+          float z_dot_n = std::abs ((roi.image2scanner().rotation() * Eigen::Vector3f { 0.0f, 0.0f, 1.0f }).dot (normal));
           if (x_dot_n > y_dot_n)
             return x_dot_n > z_dot_n ? 0 : 2;
           else
@@ -502,8 +502,8 @@ namespace MR
           const Projection* proj = window().get_current_mode()->get_current_projection();
           if (!proj) return;
           const Eigen::Vector3f current_origin = proj->screen_to_model (window().mouse_position(), window().focus());
-          current_axis = normal2axis (proj->screen_normal(), roi->transform());
-          current_slice = std::lround ((roi->transform().scanner2voxel.cast<float>() * current_origin)[current_axis]);
+          current_axis = normal2axis (proj->screen_normal(), *roi);
+          current_slice = std::lround ((roi->scanner2voxel() * current_origin)[current_axis]);
 
           roi->start (ROI_UndoEntry (*roi, current_axis, current_slice));
 
@@ -753,19 +753,19 @@ namespace MR
 
           // figure out the closest ROI axis, and lock to it:
           ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[0]));
-          current_axis = normal2axis (proj->screen_normal(), roi->transform());
+          current_axis = normal2axis (proj->screen_normal(), *roi);
 
           // figure out current slice in ROI:
-          current_slice = std::lround ((roi->transform().scanner2voxel.cast<float>() * current_origin)[current_axis]);
+          current_slice = std::lround ((roi->scanner2voxel() * current_origin)[current_axis]);
 
           // floating-point version of slice location to keep it consistent on
           // mouse move:
           Eigen::Vector3f slice_axis { 0.0, 0.0, 0.0 };
           slice_axis[current_axis] = current_axis == 2 ? 1.0 : -1.0;
-          slice_axis = roi->transform().image2scanner.rotation().cast<float>() * slice_axis;
+          slice_axis = roi->image2scanner().rotation() * slice_axis;
           current_slice_loc = current_origin.dot (slice_axis);
 
-          const Math::Versorf orient (roi->header().transform().rotation().cast<float>());
+          const Math::Versorf orient (roi->image2scanner().rotation());
           window().set_snap_to_image (false);
           window().set_orientation (orient);
           window().set_plane (current_axis);
@@ -814,7 +814,7 @@ namespace MR
           Eigen::Vector3f pos = proj->screen_to_model (window().mouse_position(), window().focus());
           Eigen::Vector3f slice_axis (0.0, 0.0, 0.0);
           slice_axis[current_axis] = current_axis == 2 ? 1.0 : -1.0;
-          slice_axis = roi->transform().image2scanner.rotation().cast<float>() * slice_axis;
+          slice_axis = roi->image2scanner().rotation() * slice_axis;
           float l = (current_slice_loc - pos.dot (slice_axis)) / proj->screen_normal().dot (slice_axis);
           window().set_focus (window().focus() + l * proj->screen_normal());
           const Eigen::Vector3f pos_adj = pos + l * proj->screen_normal();
