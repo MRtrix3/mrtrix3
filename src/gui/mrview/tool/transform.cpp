@@ -46,7 +46,7 @@ namespace MR
         }
 
 
-        void Transform::closeEvent (QCloseEvent*) 
+        void Transform::closeEvent (QCloseEvent*)
         {
           if (window().active_camera_interactor() == this)
             window().register_camera_interactor();
@@ -59,16 +59,17 @@ namespace MR
         }
 
 
-        void Transform::deactivate () 
-        { 
+        void Transform::deactivate ()
+        {
           activate_button->setChecked (false);
         }
 
-        bool Transform::slice_move_event (float x) 
+        bool Transform::slice_move_event (float x)
         {
           const Projection* proj = window().get_current_mode()->get_current_projection();
-          if (!proj) 
+          if (!proj)
             return true;
+
           const auto &header = window().image()->header();
           float increment = window().snap_to_image() ?
             x * header.spacing (window().plane()) :
@@ -79,6 +80,9 @@ namespace MR
           VAR (M.matrix());
           M.translate (move.cast<double>());
           VAR(M.matrix());
+
+          window().image()->header().transform() = M;
+          window().image()->image.buffer->transform() = M;
           window().updateGL();
           return true;
         }
@@ -114,7 +118,7 @@ namespace MR
 
         bool Transform::tilt_event ()
         {
-          /*if (snap_to_image()) 
+          /*if (snap_to_image())
             window().set_snap_to_image (false);
 
           const Math::Versorf rot = get_tilt_rotation();
@@ -133,7 +137,7 @@ namespace MR
 
         bool Transform::rotate_event ()
         {
-          /*if (snap_to_image()) 
+          /*if (snap_to_image())
             window().set_snap_to_image (false);
 
           const Math::Versorf rot = get_rotate_rotation();
