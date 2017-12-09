@@ -1759,7 +1759,7 @@ namespace MR
 
 
 
-      void Window::register_camera_interactor (Tool::CameraInteractor* agent) 
+      void Window::register_camera_interactor (Tool::CameraInteractor* agent)
       {
         if (camera_interactor)
           camera_interactor->deactivate();
@@ -1844,7 +1844,7 @@ namespace MR
               vector<default_type> pos = parse_floats (opt[0]);
               if (pos.size() != 3)
                 throw Exception ("-voxel option expects a comma-separated list of 3 floating-point values");
-              set_focus (image()->transform().voxel2scanner.cast<float>() *  Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
+              set_focus (image()->voxel2scanner() *  Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
               glarea->update();
             }
             return;

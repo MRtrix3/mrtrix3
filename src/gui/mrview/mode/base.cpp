@@ -68,7 +68,7 @@ namespace MR
 
             projection.setup_render_text();
             if (window().show_voxel_info()) {
-              Eigen::Vector3f voxel (image()->transform().scanner2voxel.cast<float>() * focus());
+              Eigen::Vector3f voxel (image()->scanner2voxel() * focus());
               ssize_t vox [] = { ssize_t(std::round (voxel[0])), ssize_t(std::round (voxel[1])), ssize_t(std::round (voxel[2])) };
 
               std::string vox_str = printf ("voxel: [ %d %d %d ", vox[0], vox[1], vox[2]);
@@ -149,7 +149,7 @@ done_painting:
         void Base::mouse_press_event () { }
         void Base::mouse_release_event () { }
 
-        void Base::slice_move_event (float x) 
+        void Base::slice_move_event (float x)
         {
           if (window().active_camera_interactor() && window().active_camera_interactor()->slice_move_event (x))
             return;
@@ -224,7 +224,7 @@ done_painting:
 
         void Base::setup_projection (const int axis, Projection& with_projection) const
         {
-          const GL::mat4 M = snap_to_image() ? GL::mat4 (image()->transform().image2scanner.matrix()) : GL::mat4 (orientation());
+          const GL::mat4 M = snap_to_image() ? GL::mat4 (image()->image2scanner().matrix()) : GL::mat4 (orientation());
           setup_projection (adjust_projection_matrix (GL::transpose (M), axis), with_projection);
         }
 
@@ -279,18 +279,18 @@ done_painting:
         Math::Versorf Base::get_rotate_rotation () const
         {
           const Projection* proj = get_current_projection();
-          if (!proj) 
+          if (!proj)
             return Math::Versorf();
 
           QPoint dpos = window().mouse_displacement();
-          if (dpos.x() == 0 && dpos.y() == 0) 
+          if (dpos.x() == 0 && dpos.y() == 0)
             return Math::Versorf();
 
           Eigen::Vector3f x1 (window().mouse_position().x() - proj->x_position() - proj->width()/2,
                               window().mouse_position().y() - proj->y_position() - proj->height()/2,
                               0.0);
 
-          if (x1.norm() < 16.0f) 
+          if (x1.norm() < 16.0f)
             return Math::Versorf();
 
           Eigen::Vector3f x0 (dpos.x() - x1[0], dpos.y() - x1[1], 0.0);
@@ -313,7 +313,7 @@ done_painting:
           if (window().active_camera_interactor() && window().active_camera_interactor()->tilt_event())
             return;
 
-          if (snap_to_image()) 
+          if (snap_to_image())
             window().set_snap_to_image (false);
 
           const Math::Versorf rot = get_tilt_rotation();
@@ -334,7 +334,7 @@ done_painting:
           if (window().active_camera_interactor() && window().active_camera_interactor()->rotate_event())
             return;
 
-          if (snap_to_image()) 
+          if (snap_to_image())
             window().set_snap_to_image (false);
 
           const Math::Versorf rot = get_rotate_rotation();
@@ -352,14 +352,14 @@ done_painting:
 
 
 
-        void Base::reset_event () 
-        { 
+        void Base::reset_event ()
+        {
           reset_view();
           updateGL();
         }
 
 
-        void Base::reset_view () 
+        void Base::reset_view ()
         {
           if (!image()) return;
           const Projection* proj = get_current_projection();
@@ -383,7 +383,7 @@ done_painting:
               std::floor ((image()->header().size(2)-1)/2.0f)
               );
 
-          set_focus (image()->transform().voxel2scanner.cast<float>() * p);
+          set_focus (image()->voxel2scanner() * p);
           set_target (focus());
           reset_orientation();
 

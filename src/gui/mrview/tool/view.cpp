@@ -129,7 +129,7 @@ namespace MR
               p.plane[1] = M (proj, 1);
               p.plane[2] = M (proj, 2);
 
-              const Eigen::Vector3f centre = image.transform().voxel2scanner.cast<float>() * Eigen::Vector3f { image.header().size(0)/2.0f, image.header().size(1)/2.0f, image.header().size(2)/2.0f };
+              const Eigen::Vector3f centre = image.voxel2scanner() * Eigen::Vector3f { image.header().size(0)/2.0f, image.header().size(1)/2.0f, image.header().size(2)/2.0f };
               p.plane[3] = centre[0]*p.plane[0] + centre[1]*p.plane[1] + centre[2]*p.plane[2];
               p.active = true;
 
@@ -582,7 +582,7 @@ namespace MR
             return;
 
           auto focus (window().focus());
-          focus = window().image()->transform().scanner2voxel.cast<float>() * focus;
+          focus = window().image()->scanner2voxel() * focus;
           std::cout << str(focus[0]) << ", " << str(focus[1]) << ", " << str(focus[2]) << std::endl;
 
           QClipboard *clip = QApplication::clipboard();
@@ -602,7 +602,7 @@ namespace MR
           focus_y->setValue (focus[1]);
           focus_z->setValue (focus[2]);
 
-          focus = window().image()->transform().scanner2voxel.cast<float>() * focus;
+          focus = window().image()->scanner2voxel() * focus;
           voxel_x->setValue (focus[0]);
           voxel_y->setValue (focus[1]);
           voxel_z->setValue (focus[2]);
@@ -636,7 +636,7 @@ namespace MR
         {
           try {
             Eigen::Vector3f focus { voxel_x->value(), voxel_y->value(), voxel_z->value() };
-            focus = window().image()->transform().voxel2scanner.cast<float>() * focus;
+            focus = window().image()->voxel2scanner() * focus;
             window().set_focus (focus);
             window().updateGL();
           }
@@ -670,7 +670,7 @@ namespace MR
           transparency_box->setVisible (mode->features & Mode::ShaderTransparency);
           threshold_box->setVisible (mode->features & Mode::ShaderTransparency);
           clip_box->setVisible (mode->features & Mode::ShaderClipping);
-          if (mode->features & Mode::ShaderClipping) 
+          if (mode->features & Mode::ShaderClipping)
             clip_planes_selection_changed_slot();
           else
             window().register_camera_interactor();
@@ -1100,27 +1100,27 @@ namespace MR
         }
 
 
-        void View::deactivate () 
-        { 
+        void View::deactivate ()
+        {
           clip_planes_list_view->selectionModel()->clear();
         }
 
 
-        bool View::slice_move_event (float x) 
+        bool View::slice_move_event (float x)
         {
-         
+
           vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) {
             const auto &header = window().image()->header();
             float increment = x * std::pow (header.spacing (0) * header.spacing (1) * header.spacing (2), 1.0f/3.0f);
             move_clip_planes_in_out (clip, increment);
-          } 
+          }
           return true;
         }
 
 
 
-        bool View::pan_event () 
+        bool View::pan_event ()
         {
           vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) {
@@ -1135,17 +1135,17 @@ namespace MR
         }
 
 
-        bool View::panthrough_event () 
+        bool View::panthrough_event ()
         {
           vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
-          if (clip.size()) 
+          if (clip.size())
             move_clip_planes_in_out (clip, MOVE_IN_OUT_FOV_MULTIPLIER * window().mouse_displacement().y() * window().FOV());
           return true;
         }
 
 
 
-        bool View::tilt_event () 
+        bool View::tilt_event ()
         {
           vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) {
@@ -1159,7 +1159,7 @@ namespace MR
 
 
 
-        bool View::rotate_event () 
+        bool View::rotate_event ()
         {
           vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) {
