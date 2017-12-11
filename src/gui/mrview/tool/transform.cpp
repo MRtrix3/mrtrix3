@@ -40,10 +40,17 @@ namespace MR
         }
 
 
+
+
+
+
         void Transform::showEvent (QShowEvent*)
         {
           activate_button->setChecked (false);
         }
+
+
+
 
 
         void Transform::closeEvent (QCloseEvent*)
@@ -53,16 +60,24 @@ namespace MR
         }
 
 
+
+
+
         void Transform::onActivate (bool onoff)
         {
           window().register_camera_interactor (onoff ? this : nullptr);
         }
 
 
+
+
         void Transform::deactivate ()
         {
           activate_button->setChecked (false);
         }
+
+
+
 
         bool Transform::slice_move_event (float x)
         {
@@ -77,9 +92,7 @@ namespace MR
           auto move = window().get_current_mode()->get_through_plane_translation (increment, *proj);
 
           transform_type M = header.transform();
-          VAR (M.matrix());
-          M.translate (move.cast<double>());
-          VAR(M.matrix());
+          M.translate (-move.cast<double>());
 
           window().image()->header().transform() = M;
           window().image()->image.buffer->transform() = M;
@@ -92,43 +105,63 @@ namespace MR
 
         bool Transform::pan_event ()
         {
-          /*const Projection* proj = get_current_projection();
-          if (!proj) return;
+          const Projection* proj = window().get_current_mode()->get_current_projection();
+          if (!proj)
+            return true;
 
-          auto move = -proj->screen_to_model_direction (window().mouse_displacement(), target());
-          set_target (target() + move);
-          updateGL();*/
-          return false;
+          auto move = proj->screen_to_model_direction (window().mouse_displacement(), window().target());
+
+          transform_type M = window().image()->header().transform();
+          M.translate (move.cast<double>());
+
+          window().image()->header().transform() = M;
+          window().image()->image.buffer->transform() = M;
+          window().updateGL();
+
+          return true;
         }
 
 
 
         bool Transform::panthrough_event ()
         {
-          /*const Projection* proj = get_current_projection();
-          if (!proj) return;
-          auto move = get_through_plane_translation_FOV (window().mouse_displacement().y(), *proj);
+          const Projection* proj = window().get_current_mode()->get_current_projection();
+          if (!proj)
+            return true;
 
-          set_focus (focus() + move);
-          move_target_to_focus_plane (*proj);
-          updateGL();*/
-          return false;
+          auto move = window().get_current_mode()->get_through_plane_translation_FOV (window().mouse_displacement().y(), *proj);
+
+          transform_type M = window().image()->header().transform();
+          M.translate (move.cast<double>());
+
+          window().image()->header().transform() = M;
+          window().image()->image.buffer->transform() = M;
+          window().updateGL();
+
+          return true;
         }
+
+
+
 
 
         bool Transform::tilt_event ()
         {
-          /*if (snap_to_image())
+          if (window().snap_to_image())
             window().set_snap_to_image (false);
 
+          transform_type M = window().image()->header().transform();
+
+          //M =
           const Math::Versorf rot = get_tilt_rotation();
           if (!rot)
             return;
 
           Math::Versorf orient = rot * orientation();
           set_orientation (orient);
-          updateGL();*/
-          return false;
+          window().updateGL();
+
+          return true;
         }
 
 
