@@ -151,16 +151,18 @@ namespace MR
             window().set_snap_to_image (false);
 
           transform_type M = window().image()->header().transform();
-
+/*
           //M =
-          const Math::Versorf rot = get_tilt_rotation();
+          const auto rot = window().get_current_mode()->get_tilt_rotation().cast<double>();
           if (!rot)
-            return;
+            return true;
+
+          M = transform_type(rot);
 
           Math::Versorf orient = rot * orientation();
           set_orientation (orient);
           window().updateGL();
-
+*/
           return true;
         }
 

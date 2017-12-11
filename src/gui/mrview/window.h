@@ -17,7 +17,6 @@
 
 #include "image.h"
 #include "memory.h"
-#include "math/versor.h"
 #include "gui/cursor.h"
 #include "gui/gui.h"
 #include "gui/mrview/gui_image.h"
@@ -112,7 +111,7 @@ namespace MR
           const Eigen::Vector3f& target () const { return camera_target; }
           float FOV () const { return field_of_view; }
           int plane () const { return anatomical_plane; }
-          const Math::Versorf& orientation () const { return orient; }
+          const Eigen::Quaternionf& orientation () const { return orient; }
           bool snap_to_image () const { return snap_to_image_axes_and_voxel; }
           Image* image () { return static_cast<Image*> (image_group->checkedAction()); }
 
@@ -120,7 +119,7 @@ namespace MR
           void set_target (const Eigen::Vector3f& p) { camera_target = p; emit targetChanged(); }
           void set_FOV (float value) { field_of_view = value; emit fieldOfViewChanged(); }
           void set_plane (int p) { anatomical_plane = p; emit planeChanged(); }
-          void set_orientation (const Math::Versorf& V) { orient = V; emit orientationChanged(); }
+          void set_orientation (const Eigen::Quaternionf& V) { orient = V; emit orientationChanged(); }
           void set_scaling (float min, float max) { if (!image()) return; image()->set_windowing (min, max); }
           void set_snap_to_image (bool onoff) { snap_to_image_axes_and_voxel = onoff; snap_to_image_action->setChecked(onoff);  emit focusChanged(); }
 
@@ -247,7 +246,7 @@ namespace MR
           MouseAction mouse_action;
 
           Eigen::Vector3f focal_point, camera_target;
-          Math::Versorf orient;
+          Eigen::Quaternionf orient;
           float field_of_view;
           int anatomical_plane, annotations;
           ColourMap::Position colourbar_position, tools_colourbar_position;

@@ -15,7 +15,6 @@
 #include "gui/mrview/tool/connectome/edge.h"
 
 #include "math/rng.h"
-#include "math/versor.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -62,7 +61,7 @@ namespace MR
             // Now, a rotation angle
             const float angle = std::acos (z_axis.dot (dir));
             // Convert to rotation matrix representation
-            const Eigen::Matrix<float, 3, 3> matrix (Math::Versorf (Eigen::AngleAxisf (angle, v)).matrix());
+            const Eigen::Matrix<float, 3, 3> matrix (Eigen::Quaternionf (Eigen::AngleAxisf (angle, v)).matrix());
             // Put into the GLfloat array
             rot_matrix[0] = matrix(0,0); rot_matrix[1] = matrix(0,1); rot_matrix[2] = matrix(0,2);
             rot_matrix[3] = matrix(1,0); rot_matrix[4] = matrix(1,1); rot_matrix[5] = matrix(1,2);

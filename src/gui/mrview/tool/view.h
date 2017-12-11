@@ -144,7 +144,7 @@ namespace MR
             void set_transparency_from_image ();
 
             void move_clip_planes_in_out (vector<GL::vec4*>& clip, float distance);
-            void rotate_clip_planes (vector<GL::vec4*>& clip, const Math::Versorf& rot);
+            void rotate_clip_planes (vector<GL::vec4*>& clip, const Eigen::Quaternionf& rot);
         };
 
       }

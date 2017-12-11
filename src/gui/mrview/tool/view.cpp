@@ -1083,14 +1083,14 @@ namespace MR
         }
 
 
-        void View::rotate_clip_planes (vector<GL::vec4*>& clip, const Math::Versorf& rot)
+        void View::rotate_clip_planes (vector<GL::vec4*>& clip, const Eigen::Quaternionf& rot)
         {
           const auto& focus (window().focus());
           for (size_t n = 0; n < clip.size(); ++n) {
             GL::vec4& p (*clip[n]);
             float distance_to_focus = p[0]*focus[0] + p[1]*focus[1] + p[2]*focus[2] - p[3];
-            const Math::Versorf norm (0.0f, p[0], p[1], p[2]);
-            const Math::Versorf rotated = norm * rot;
+            const Eigen::Quaternionf norm (0.0f, p[0], p[1], p[2]);
+            const Eigen::Quaternionf rotated = norm * rot;
             p[0] = rotated.x();
             p[1] = rotated.y();
             p[2] = rotated.z();
@@ -1149,8 +1149,8 @@ namespace MR
         {
           vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) {
-            const Math::Versorf rot = window().get_current_mode()->get_tilt_rotation();
-            if (!rot)
+            const Eigen::Quaternionf rot = window().get_current_mode()->get_tilt_rotation();
+            if (!rot.coeffs().allFinite())
               return true;
             rotate_clip_planes (clip, rot);
           }
@@ -1163,8 +1163,8 @@ namespace MR
         {
           vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) {
-            const Math::Versorf rot = window().get_current_mode()->get_rotate_rotation();
-            if (!rot)
+            const Eigen::Quaternionf rot = window().get_current_mode()->get_rotate_rotation();
+            if (!rot.coeffs().allFinite())
               return true;
             rotate_clip_planes (clip, rot);
           }

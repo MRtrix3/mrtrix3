@@ -16,7 +16,6 @@
 #define __gui_mrview_mode_volume_h__
 
 #include "app.h"
-#include "math/versor.h"
 #include "gui/mrview/mode/base.h"
 #include "gui/opengl/transformation.h"
 
@@ -38,7 +37,7 @@ namespace MR
           public:
             Volume () :
               Base (FocusContrast | MoveTarget | TiltRotate | ShaderTransparency | ShaderThreshold | ShaderClipping),
-              volume_shader (*this) { 
+              volume_shader (*this) {
               }
 
             virtual void paint (Projection& projection);
