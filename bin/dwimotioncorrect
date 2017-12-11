@@ -45,6 +45,7 @@ options.add_argument('-mb', help='Multiband factor (default = 1)')
 options.add_argument('-sorder', help='Slice order (default = 2,1, for odd-even)')
 options.add_argument('-sspwidth', help='Slice thickness for Gaussian SSP (default = 1)')
 options.add_argument('-or_loss', help='Outlier rejection loss function (default = softl1)')
+options.add_argument('-matchintensity', help='Activate intensity matching (default = off)')
 options.add_argument('-fieldmap', help='B0 field map for distortion correction')
 options.add_argument('-fieldidx', help='Index of volume to which field map is aligned (default = 0)')
 options.add_argument('-pe_table', help='Phase encoding table in MRtrix format')
@@ -211,6 +212,9 @@ def reconstep(k):
 
 
 def sliceweightstep():
+    if app.args.matchintensity:
+        run.command('mrcalc spred.mif in1.mif -divide 2 -min .5 -max -log - | mrfilter - smooth - -stdev 15,15,0 | mrcalc - -exp biasfield.mif -force')
+        run.command('mrcalc in1.mif biasfield.mif -mult - | mrconvert - in1.mif -force')
     run.command('dwisliceoutliers in1.mif spred.mif -mask mask.mif sliceweights.txt' + or_option + ' -force')
 
 
