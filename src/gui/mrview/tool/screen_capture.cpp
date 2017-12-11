@@ -346,10 +346,10 @@ namespace MR
               win.captureGL (Path::join (folder, prefix + printf ("%04d.png", i)));
 
             // Rotation
-            Math::Versorf orientation (win.orientation());
+            Eigen::Quaternionf orientation (win.orientation());
             Eigen::Vector3f axis { rotation_axis_x->value(), rotation_axis_y->value(), rotation_axis_z->value() };
             axis.normalize();
-            const Math::Versorf rotation (Eigen::AngleAxisf (radians, axis));
+            const Eigen::Quaternionf rotation (Eigen::AngleAxisf (radians, axis));
 
             switch (rotation_type) {
               case RotationType::World:

@@ -228,7 +228,7 @@ done_painting:
           setup_projection (adjust_projection_matrix (GL::transpose (M), axis), with_projection);
         }
 
-        void Base::setup_projection (const Math::Versorf& V, Projection& with_projection) const
+        void Base::setup_projection (const Eigen::Quaternionf& V, Projection& with_projection) const
         {
           setup_projection (adjust_projection_matrix (GL::transpose (GL::mat4 (V))), with_projection);
         }
@@ -252,15 +252,15 @@ done_painting:
 
 
 
-        Math::Versorf Base::get_tilt_rotation () const
+        Eigen::Quaternionf Base::get_tilt_rotation () const
         {
           const Projection* proj = get_current_projection();
           if (!proj)
-            return Math::Versorf();
+            return Eigen::Quaternionf();
 
           QPoint dpos = window().mouse_displacement();
           if (dpos.x() == 0 && dpos.y() == 0)
-            return Math::Versorf();
+            return Eigen::Quaternionf();
 
           const Eigen::Vector3f x = proj->screen_to_model_direction (dpos, target());
           const Eigen::Vector3f z = proj->screen_normal();
@@ -268,7 +268,7 @@ done_painting:
           float angle = -ROTATION_INC * std::sqrt (float (Math::pow2 (dpos.x()) + Math::pow2 (dpos.y())));
           if (angle > Math::pi_2)
             angle = Math::pi_2;
-          return Math::Versorf (Eigen::AngleAxisf (angle, v));
+          return Eigen::Quaternionf (Eigen::AngleAxisf (angle, v));
         }
 
 
@@ -276,22 +276,22 @@ done_painting:
 
 
 
-        Math::Versorf Base::get_rotate_rotation () const
+        Eigen::Quaternionf Base::get_rotate_rotation () const
         {
           const Projection* proj = get_current_projection();
           if (!proj)
-            return Math::Versorf();
+            return Eigen::Quaternionf();
 
           QPoint dpos = window().mouse_displacement();
           if (dpos.x() == 0 && dpos.y() == 0)
-            return Math::Versorf();
+            return Eigen::Quaternionf();
 
           Eigen::Vector3f x1 (window().mouse_position().x() - proj->x_position() - proj->width()/2,
                               window().mouse_position().y() - proj->y_position() - proj->height()/2,
                               0.0);
 
           if (x1.norm() < 16.0f)
-            return Math::Versorf();
+            return Eigen::Quaternionf();
 
           Eigen::Vector3f x0 (dpos.x() - x1[0], dpos.y() - x1[1], 0.0);
 
@@ -301,7 +301,7 @@ done_painting:
           const Eigen::Vector3f n = x1.cross (x0);
           const float angle = n[2];
           Eigen::Vector3f v = (proj->screen_normal()).normalized();
-          return Math::Versorf (Eigen::AngleAxisf (angle, v));
+          return Eigen::Quaternionf (Eigen::AngleAxisf (angle, v));
         }
 
 
@@ -316,11 +316,11 @@ done_painting:
           if (snap_to_image())
             window().set_snap_to_image (false);
 
-          const Math::Versorf rot = get_tilt_rotation();
-          if (!rot)
+          const Eigen::Quaternionf rot = get_tilt_rotation();
+          if (!rot.coeffs().allFinite())
             return;
 
-          Math::Versorf orient = rot * orientation();
+          Eigen::Quaternionf orient = rot * orientation();
           set_orientation (orient);
           updateGL();
         }
@@ -337,11 +337,11 @@ done_painting:
           if (snap_to_image())
             window().set_snap_to_image (false);
 
-          const Math::Versorf rot = get_rotate_rotation();
-          if (!rot)
+          const Eigen::Quaternionf rot = get_rotate_rotation();
+          if (!rot.coeffs().allFinite())
             return;
 
-          Math::Versorf orient = rot * orientation();
+          Eigen::Quaternionf orient = rot * orientation();
           set_orientation (orient);
           updateGL();
         }

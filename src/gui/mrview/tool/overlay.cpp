@@ -35,14 +35,14 @@ namespace MR
         class Overlay::Item : public Image { MEMALIGN(Overlay::Item)
           public:
             Item (MR::Header&& H) : Image (std::move (H)) { }
-            Mode::Slice::Shader slice_shader; 
+            Mode::Slice::Shader slice_shader;
         };
 
 
-        class Overlay::Model : public ListModelBase 
+        class Overlay::Model : public ListModelBase
         { MEMALIGN(Overlay::Model)
           public:
-            Model (QObject* parent) : 
+            Model (QObject* parent) :
               ListModelBase (parent) { }
 
             void add_items (vector<std::unique_ptr<MR::Header>>& list);
@@ -59,7 +59,7 @@ namespace MR
           for (size_t i = 0; i < list.size(); ++i) {
             Item* overlay = new Item (std::move (*list[i]));
             overlay->set_allowed_features (true, true, false);
-            if (!overlay->colourmap) 
+            if (!overlay->colourmap)
               overlay->colourmap = 1;
             overlay->alpha = 1.0f;
             overlay->set_use_transparency (true);
@@ -72,7 +72,7 @@ namespace MR
 
 
         Overlay::Overlay (Dock* parent) :
-          Base (parent) { 
+          Base (parent) {
             VBoxLayout* main_box = new VBoxLayout (this);
             HBoxLayout* layout = new HBoxLayout;
             layout->setContentsMargins (0, 0, 0, 0);
@@ -258,7 +258,7 @@ namespace MR
         }
 
 
-        void Overlay::hide_all_slot () 
+        void Overlay::hide_all_slot ()
         {
           updateGL();
         }
@@ -283,7 +283,7 @@ namespace MR
               Overlay::Item* image = dynamic_cast<Overlay::Item*>(image_list_model->items[i].get());
               need_to_update |= !std::isfinite (image->intensity_min());
               image->transparent_intensity = image->opaque_intensity = image->intensity_min();
-              if (is_3D) 
+              if (is_3D)
                 window().get_current_mode()->overlays_for_3D.push_back (image);
               else
                 image->render3D (image->slice_shader, projection, projection.depth_of (window().focus()));
@@ -574,7 +574,7 @@ namespace MR
 
 
 
-        void Overlay::update_selection () 
+        void Overlay::update_selection ()
         {
           QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
           volume_label->setEnabled (false);
@@ -609,7 +609,7 @@ namespace MR
             if (colourmap_index != int(overlay->colourmap)) {
               if (colourmap_index == -2)
                 colourmap_index = overlay->colourmap;
-              else 
+              else
                 colourmap_index = -1;
             }
             rate += overlay->scaling_rate();
@@ -618,11 +618,11 @@ namespace MR
             num_lower_threshold += overlay->use_discard_lower();
             num_upper_threshold += overlay->use_discard_upper();
             opacity += overlay->alpha;
-            if (overlay->interpolate()) 
+            if (overlay->interpolate())
               ++num_interp;
             if (!std::isfinite (overlay->lessthan))
               overlay->lessthan = overlay->intensity_min();
-            if (!std::isfinite (overlay->greaterthan)) 
+            if (!std::isfinite (overlay->greaterthan))
               overlay->greaterthan = overlay->intensity_max();
             lower_threshold_val += overlay->lessthan;
             upper_threshold_val += overlay->greaterthan;
@@ -654,7 +654,7 @@ namespace MR
             interpolate_check_box->setCheckState (Qt::Unchecked);
           else if (num_interp == indices.size())
             interpolate_check_box->setCheckState (Qt::Checked);
-          else 
+          else
             interpolate_check_box->setCheckState (Qt::PartiallyChecked);
 
           min_value->setRate (rate);
@@ -666,7 +666,7 @@ namespace MR
           lower_threshold_check_box->setCheckState (num_lower_threshold ?
               ( num_lower_threshold == indices.size() ?
                 Qt::Checked :
-                Qt::PartiallyChecked ) : 
+                Qt::PartiallyChecked ) :
               Qt::Unchecked);
           lower_threshold->setRate (rate);
 
@@ -674,7 +674,7 @@ namespace MR
           upper_threshold_check_box->setCheckState (num_upper_threshold ?
               ( num_upper_threshold == indices.size() ?
                 Qt::Checked :
-                Qt::PartiallyChecked ) : 
+                Qt::PartiallyChecked ) :
               Qt::Unchecked);
           upper_threshold->setRate (rate);
         }
@@ -682,8 +682,8 @@ namespace MR
 
 
 
-        void Overlay::add_commandline_options (MR::App::OptionList& options) 
-        { 
+        void Overlay::add_commandline_options (MR::App::OptionList& options)
+        {
           using namespace MR::App;
           options
             + OptionGroup ("Overlay tool options")
@@ -700,10 +700,10 @@ namespace MR
 
             + Option ("overlay.colourmap", "Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.").allow_multiple()
             +   Argument ("index").type_integer();
-            
+
         }
 
-        bool Overlay::process_commandline_option (const MR::App::ParsedOption& opt) 
+        bool Overlay::process_commandline_option (const MR::App::ParsedOption& opt)
         {
           if (opt.opt->is ("overlay.load")) {
             vector<std::unique_ptr<MR::Header>> list;
@@ -742,7 +742,7 @@ namespace MR
             catch (Exception& e) { e.display(); }
             return true;
           }
-          
+
 
           return false;
         }

@@ -228,7 +228,7 @@ namespace MR
         mouse_action (NoAction),
         focal_point { NAN, NAN, NAN },
         camera_target { NAN, NAN, NAN },
-        orient (),
+        orient (NaN, NaN, NaN, NaN),
         field_of_view (100.0),
         anatomical_plane (2),
         colourbar_position (ColourMap::Position::BottomRight),
