@@ -80,9 +80,9 @@ DW gradient table export options
 
 -  **-dwgrad** the diffusion-weighting gradient table, as stored in the header (i.e. without any interpretation, scaling of b-values, or normalisation of gradient vectors)
 
--  **-shellvalues** list the average b-value of each shell
+-  **-shell_bvalues** list the average b-value of each shell
 
--  **-shellcounts** list the number of volumes in each shell
+-  **-shell_sizes** list the number of volumes in each shell
 
 Options for exporting phase-encode tables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
