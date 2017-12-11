@@ -46,7 +46,7 @@ def execute(): #pylint: disable=unused-variable
   run.command('5ttcheck 5tt.mif', False)
 
   # Get shell information
-  shells = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shellvalues').split() ]
+  shells = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shell_bvalues').split() ]
   if len(shells) < 3:
     app.warn('Less than three b-value shells; response functions will not be applicable in resolving three tissues using MSMT-CSD algorithm')
 
