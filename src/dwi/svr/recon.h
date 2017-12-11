@@ -403,7 +403,8 @@ namespace MR
 
         Eigen::Vector3 ps, pr, peoffset;
         int v = idx/nz, z = idx%nz;
-        float t, iJac;
+        float t;
+        std::array<float, 5> iJac;
         transform_type Ts2r = get_Ts2r(v, z);
         if (field.valid()) {
           peoffset = pe.block<1,3>(v, 0).transpose().cast<double>();
@@ -417,13 +418,13 @@ namespace MR
             for (int s = -2; s <= 2; s++) {       // ssp neighbourhood
               ps[2] = z+s;
               // get slice position in recon space
-              ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac);
+              ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac[2+s]);
               // update motion matrix
               load_sparse_coefs(m[2+s], pr.cast<float>());
-              t += (ssp(s)*iJac) * m[2+s].dot(rhs);
+              t += (ssp(s)*iJac[2+s]) * m[2+s].dot(rhs);
             }
             for (int s = -2; s <= 2; s++) {
-              dst += ((ssp(s)*iJac) * t) * m[2+s];
+              dst += ((ssp(s)*iJac[2+s]) * t) * m[2+s];
             }
           }
         }
