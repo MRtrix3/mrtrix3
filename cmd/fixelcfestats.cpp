@@ -124,6 +124,7 @@ void write_fixel_output (const std::string& filename,
                          const VectorType& data,
                          const Header& header)
 {
+  assert (data.size() == header.size (0));
   auto output = Image<float>::create (filename, header);
   for (uint32_t i = 0; i < data.size(); ++i) {
     output.index(0) = i;
@@ -410,8 +411,8 @@ void run()
     }
     for (size_t i = 0; i != num_contrasts; ++i) {
       if (!contrasts[i].is_F()) {
-        write_fixel_output (Path::join (output_fixel_directory, "abs_effect" + postfix(i) + ".mif"), abs_effect_size.row(i), output_header); ++progress;
-        write_fixel_output (Path::join (output_fixel_directory, "std_effect" + postfix(i) + ".mif"), std_effect_size.row(i), output_header); ++progress;
+        write_fixel_output (Path::join (output_fixel_directory, "abs_effect" + postfix(i) + ".mif"), abs_effect_size.col(i), output_header); ++progress;
+        write_fixel_output (Path::join (output_fixel_directory, "std_effect" + postfix(i) + ".mif"), std_effect_size.col(i), output_header); ++progress;
       }
     }
     write_fixel_output (Path::join (output_fixel_directory, "std_dev.mif"), stdev, output_header);
@@ -434,7 +435,7 @@ void run()
     Stats::PermTest::precompute_empirical_stat (glm_test, cfe_integrator, empirical_cfe_statistic);
     output_header.keyval()["nonstationary adjustment"] = str(true);
     for (size_t i = 0; i != num_contrasts; ++i)
-      write_fixel_output (Path::join (output_fixel_directory, "cfe_empirical" + postfix(i) + ".mif"), empirical_cfe_statistic.row(i), output_header);
+      write_fixel_output (Path::join (output_fixel_directory, "cfe_empirical" + postfix(i) + ".mif"), empirical_cfe_statistic.col(i), output_header);
   } else {
     output_header.keyval()["nonstationary adjustment"] = str(false);
   }
@@ -446,8 +447,8 @@ void run()
   Stats::PermTest::precompute_default_permutation (glm_test, cfe_integrator, empirical_cfe_statistic, cfe_output, tvalue_output);
 
   for (size_t i = 0; i != num_contrasts; ++i) {
-    write_fixel_output (Path::join (output_fixel_directory, "cfe" + postfix(i) + ".mif"), cfe_output.row(i), output_header);
-    write_fixel_output (Path::join (output_fixel_directory, std::string(contrasts[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".mif"), tvalue_output.row(i), output_header);
+    write_fixel_output (Path::join (output_fixel_directory, "cfe" + postfix(i) + ".mif"), cfe_output.col(i), output_header);
+    write_fixel_output (Path::join (output_fixel_directory, std::string(contrasts[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".mif"), tvalue_output.col(i), output_header);
   }
 
   // Perform permutation testing
@@ -460,7 +461,7 @@ void run()
 
     ProgressBar progress ("Outputting final results");
     for (size_t i = 0; i != num_contrasts; ++i) {
-      save_vector (perm_distribution.row(i), Path::join (output_fixel_directory, "perm_dist" + postfix(i) + ".txt"));
+      save_vector (perm_distribution.col(i), Path::join (output_fixel_directory, "perm_dist" + postfix(i) + ".txt"));
       ++progress;
     }
 
@@ -468,9 +469,9 @@ void run()
     Math::Stats::statistic2pvalue (perm_distribution, cfe_output, pvalue_output);
     ++progress;
     for (size_t i = 0; i != num_contrasts; ++i) {
-      write_fixel_output (Path::join (output_fixel_directory, "fwe_pvalue" + postfix(i) + ".mif"), pvalue_output.row(i), output_header);
+      write_fixel_output (Path::join (output_fixel_directory, "fwe_pvalue" + postfix(i) + ".mif"), pvalue_output.col(i), output_header);
       ++progress;
-      write_fixel_output (Path::join (output_fixel_directory, "uncorrected_pvalue" + postfix(i) + ".mif"), uncorrected_pvalues.row(i), output_header);
+      write_fixel_output (Path::join (output_fixel_directory, "uncorrected_pvalue" + postfix(i) + ".mif"), uncorrected_pvalues.col(i), output_header);
       ++progress;
     }
 

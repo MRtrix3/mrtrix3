@@ -272,8 +272,8 @@ void run()
     }
     for (size_t i = 0; i != num_contrasts; ++i) {
       if (!contrasts[i].is_F()) {
-        save_matrix (mat2vec.V2M (abs_effect_size.row(i)), "abs_effect" + postfix(i) + ".csv"); ++progress;
-        save_matrix (mat2vec.V2M (std_effect_size.row(i)), "std_effect" + postfix(i) + ".csv"); ++progress;
+        save_matrix (mat2vec.V2M (abs_effect_size.col(i)), "abs_effect" + postfix(i) + ".csv"); ++progress;
+        save_matrix (mat2vec.V2M (std_effect_size.col(i)), "std_effect" + postfix(i) + ".csv"); ++progress;
       }
     }
     save_matrix (mat2vec.V2M (stdev), "std_dev.csv");
@@ -292,7 +292,7 @@ void run()
   if (do_nonstationary_adjustment) {
     Stats::PermTest::precompute_empirical_stat (glm_test, enhancer, empirical_statistic);
     for (size_t i = 0; i != num_contrasts; ++i)
-      save_matrix (mat2vec.V2M (empirical_statistic.row(i)), output_prefix + "_empirical" + postfix(i) + ".csv");
+      save_matrix (mat2vec.V2M (empirical_statistic.col(i)), output_prefix + "_empirical" + postfix(i) + ".csv");
   }
 
   // Precompute default statistic and enhanced statistic
@@ -302,8 +302,8 @@ void run()
   Stats::PermTest::precompute_default_permutation (glm_test, enhancer, empirical_statistic, enhanced_output, tvalue_output);
 
   for (size_t i = 0; i != num_contrasts; ++i) {
-    save_matrix (mat2vec.V2M (tvalue_output.row(i)),   output_prefix + "_" + (contrasts[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".csv");
-    save_matrix (mat2vec.V2M (enhanced_output.row(i)), output_prefix + "_enhanced" + postfix(i) + ".csv");
+    save_matrix (mat2vec.V2M (tvalue_output.col(i)),   output_prefix + "_" + (contrasts[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".csv");
+    save_matrix (mat2vec.V2M (enhanced_output.col(i)), output_prefix + "_enhanced" + postfix(i) + ".csv");
   }
 
   // Perform permutation testing
@@ -315,13 +315,13 @@ void run()
                                        enhanced_output, null_distribution, uncorrected_pvalues);
 
     for (size_t i = 0; i != num_contrasts; ++i)
-      save_vector (null_distribution.row(i), output_prefix + "_null_dist" + postfix(i) + ".txt");
+      save_vector (null_distribution.col(i), output_prefix + "_null_dist" + postfix(i) + ".txt");
 
     matrix_type pvalue_output (num_contrasts, num_edges);
     Math::Stats::statistic2pvalue (null_distribution, enhanced_output, pvalue_output);
     for (size_t i = 0; i != num_contrasts; ++i) {
-      save_matrix (mat2vec.V2M (pvalue_output.row(i)),       output_prefix + "_fwe_pvalue" + postfix(i) + ".csv");
-      save_matrix (mat2vec.V2M (uncorrected_pvalues.row(i)), output_prefix + "_uncorrected_pvalue" + postfix(i) + ".csv");
+      save_matrix (mat2vec.V2M (pvalue_output.col(i)),       output_prefix + "_fwe_pvalue" + postfix(i) + ".csv");
+      save_matrix (mat2vec.V2M (uncorrected_pvalues.col(i)), output_prefix + "_uncorrected_pvalue" + postfix(i) + ".csv");
     }
 
   }

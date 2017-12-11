@@ -283,8 +283,8 @@ void run() {
     }
     for (size_t i = 0; i != num_contrasts; ++i) {
       if (!contrasts[i].is_F()) {
-        write_output (abs_effect_size.row(i), v2v, prefix + "abs_effect" + postfix(i) + ".mif", output_header); ++progress;
-        write_output (std_effect_size.row(i), v2v, prefix + "std_effect" + postfix(i) + ".mif", output_header); ++progress;
+        write_output (abs_effect_size.col(i), v2v, prefix + "abs_effect" + postfix(i) + ".mif", output_header); ++progress;
+        write_output (std_effect_size.col(i), v2v, prefix + "std_effect" + postfix(i) + ".mif", output_header); ++progress;
       }
     }
     write_output (stdev, v2v, prefix + "std_dev.mif", output_header);
@@ -312,30 +312,31 @@ void run() {
       throw Exception ("Nonstationary adjustment is not currently implemented for threshold-based cluster analysis");
     Stats::PermTest::precompute_empirical_stat (glm_test, enhancer, empirical_enhanced_statistic);
     for (size_t i = 0; i != num_contrasts; ++i)
-      save_vector (empirical_enhanced_statistic.row(i), prefix + "empirical" + postfix(i) + ".txt");
+      save_vector (empirical_enhanced_statistic.col(i), prefix + "empirical" + postfix(i) + ".txt");
   }
 
   if (!get_options ("notest").size()) {
 
     matrix_type perm_distribution, uncorrected_pvalue;
-    matrix_type default_cluster_output (num_contrasts, num_voxels);
+    // FIXME This shouldn't be empty...
+    matrix_type default_cluster_output (num_voxels, num_contrasts);
 
     Stats::PermTest::run_permutations (glm_test, enhancer, empirical_enhanced_statistic,
                                        default_cluster_output, perm_distribution, uncorrected_pvalue);
 
     for (size_t i = 0; i != num_contrasts; ++i)
-      save_vector (perm_distribution.row(i), prefix + "perm_dist" + postfix(i) + ".txt");
+      save_vector (perm_distribution.col(i), prefix + "perm_dist" + postfix(i) + ".txt");
 
     ProgressBar progress ("Generating output images", 1 + (2 * num_contrasts));
     for (size_t i = 0; i != num_contrasts; ++i) {
-      write_output (uncorrected_pvalue.row(i), v2v, prefix + "uncorrected_pvalue" + postfix(i) + ".mif", output_header);
+      write_output (uncorrected_pvalue.col(i), v2v, prefix + "uncorrected_pvalue" + postfix(i) + ".mif", output_header);
       ++progress;
     }
-    matrix_type fwe_pvalue_output (num_contrasts, num_voxels);
+    matrix_type fwe_pvalue_output (num_voxels, num_contrasts);
     Math::Stats::statistic2pvalue (perm_distribution, default_cluster_output, fwe_pvalue_output);
     ++progress;
     for (size_t i = 0; i != num_contrasts; ++i) {
-      write_output (fwe_pvalue_output.row(i), v2v, prefix + "fwe_pvalue" + postfix(i) + ".mif", output_header);
+      write_output (fwe_pvalue_output.col(i), v2v, prefix + "fwe_pvalue" + postfix(i) + ".mif", output_header);
       ++progress;
     }
 
