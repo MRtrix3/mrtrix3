@@ -107,13 +107,6 @@ namespace MR
 
 
 
-      // TODO Some of these should be vector_type's?
-      // - No, represent multiple contrasts
-      // TODO Should live elsewhere?
-      void statistic2pvalue (const matrix_type& null_dist, const matrix_type& stats, matrix_type& pvalues);
-
-
-
     }
   }
 }

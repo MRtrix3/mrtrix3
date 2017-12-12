@@ -123,6 +123,8 @@ namespace MR
         ProgressBar progress ("Importing data from files listed in \"" + Path::basename (path) + "\"");
         const std::string directory = Path::dirname (path);
         std::ifstream ifs (path.c_str());
+        if (!ifs)
+          throw Exception ("Unable to open subject file list \"" + path + "\"");
         std::string line;
         while (getline (ifs, line)) {
           size_t p = line.find_last_not_of(" \t");

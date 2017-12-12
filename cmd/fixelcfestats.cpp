@@ -21,6 +21,7 @@
 #include "fixel/helpers.h"
 #include "fixel/keys.h"
 #include "fixel/loop.h"
+#include "math/stats/fwe.h"
 #include "math/stats/glm.h"
 #include "math/stats/import.h"
 #include "math/stats/shuffle.h"
@@ -142,7 +143,7 @@ class SubjectFixelImport : public SubjectDataImportBase
   public:
     SubjectFixelImport (const std::string& path) :
         SubjectDataImportBase (path),
-        H (Header::open (path)),
+        H (Header::open (find_image (path))),
         data (H.get_image<float>())
     {
       for (size_t axis = 1; axis < data.ndim(); ++axis) {
@@ -155,7 +156,10 @@ class SubjectFixelImport : public SubjectDataImportBase
     {
       assert (row.size() == size());
       Image<float> temp (data); // For thread-safety
-      row = temp.row(0);
+      // Doesn't work
+      //row = temp.row(0);
+      for (temp.index(0) = 0; temp.index(0) != temp.size(0); ++temp.index(0))
+        row (temp.index(0)) = temp.value();
     }
 
     default_type operator[] (const size_t index) const override
@@ -170,11 +174,34 @@ class SubjectFixelImport : public SubjectDataImportBase
 
     const Header& header() const { return H; }
 
+
+    static void set_fixel_directory (const std::string& s) { fixel_directory = s; }
+
+
   private:
     Header H;
     const Image<float> data;
 
+    // Enable input image paths to be either absolute, relative to CWD, or
+    //   relative to input fixel template directory
+    std::string find_image (const std::string& path) const
+    {
+      const std::string cat_path = Path::join (fixel_directory, path);
+      if (Path::is_file (cat_path))
+        return cat_path;
+      if (Path::is_file (path))
+        return path;
+      throw Exception ("Unable to find subject image \"" + path +
+                       "\" either in input fixel diretory \"" + fixel_directory +
+                       "\" or in current working directory");
+      return "";
+    }
+
+    static std::string fixel_directory;
+
 };
+
+std::string SubjectFixelImport::fixel_directory;
 
 
 
@@ -192,6 +219,7 @@ void run()
 
 
   const std::string input_fixel_directory = argument[0];
+  SubjectFixelImport::set_fixel_directory (input_fixel_directory);
   Header index_header = Fixel::find_index_header (input_fixel_directory);
   auto index_image = index_header.get_image<uint32_t>();
 
@@ -441,8 +469,8 @@ void run()
   }
 
   // Precompute default statistic and CFE statistic
-  matrix_type cfe_output (num_contrasts, num_fixels);
-  matrix_type tvalue_output (num_contrasts, num_fixels);
+  matrix_type cfe_output (num_fixels, num_contrasts);
+  matrix_type tvalue_output (num_fixels, num_contrasts);
 
   Stats::PermTest::precompute_default_permutation (glm_test, cfe_integrator, empirical_cfe_statistic, cfe_output, tvalue_output);
 
@@ -465,8 +493,7 @@ void run()
       ++progress;
     }
 
-    matrix_type pvalue_output (num_contrasts, num_fixels);
-    Math::Stats::statistic2pvalue (perm_distribution, cfe_output, pvalue_output);
+    const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue (perm_distribution, cfe_output);
     ++progress;
     for (size_t i = 0; i != num_contrasts; ++i) {
       write_fixel_output (Path::join (output_fixel_directory, "fwe_pvalue" + postfix(i) + ".mif"), pvalue_output.col(i), output_header);

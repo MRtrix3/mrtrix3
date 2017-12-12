@@ -18,6 +18,7 @@
 #include "progressbar.h"
 
 #include "file/path.h"
+#include "math/stats/fwe.h"
 #include "math/stats/glm.h"
 #include "math/stats/import.h"
 #include "math/stats/shuffle.h"
@@ -205,6 +206,7 @@ void run()
   // Precompute default statistic
   // Don't use convenience function: No enhancer!
   // Manually construct default shuffling matrix
+  // TODO Change to use convenience function; we make an empty enhancer later anyway
   const matrix_type default_shuffle (matrix_type::Identity (num_subjects, num_subjects));
   matrix_type default_tvalues;
   (*glm_test) (default_shuffle, default_tvalues);
@@ -221,10 +223,9 @@ void run()
     Stats::PermTest::run_permutations (glm_test, enhancer, empirical_distribution,
                                        default_tvalues, null_distribution, uncorrected_pvalues);
 
-    matrix_type default_pvalues (num_elements, num_contrasts);
-    Math::Stats::statistic2pvalue (null_distribution, default_tvalues, default_pvalues);
+    const matrix_type fwe_pvalues = MR::Math::Stats::fwe_pvalue (null_distribution, default_tvalues);
     for (size_t i = 0; i != num_contrasts; ++i) {
-      save_vector (default_pvalues.col(i), output_prefix + "fwe_pvalue" + postfix(i) + ".csv");
+      save_vector (fwe_pvalues.col(i), output_prefix + "fwe_pvalue" + postfix(i) + ".csv");
       save_vector (uncorrected_pvalues.col(i), output_prefix + "uncorrected_pvalue" + postfix(i) + ".csv");
     }
 

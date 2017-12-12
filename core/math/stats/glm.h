@@ -22,6 +22,8 @@
 #include "math/stats/import.h"
 #include "math/stats/typedefs.h"
 
+#include "misc/bitset.h"
+
 namespace MR
 {
   namespace Math
@@ -69,12 +71,11 @@ namespace MR
                 // X = Component of design matrix related to effect of interest
                 // Z = Component of design matrix related to nuisance regressors
                 const matrix_type X, Z;
-                // We would also like to automatically calculate, on creation of a partition:
                 // Hz: Projection matrix of nuisance regressors only
                 // Rz: Residual-forming matrix due to nuisance regressors only
+                const matrix_type Hz, Rz;
                 // rank_x: Rank of X
                 // rank_z: Rank of Z
-                const matrix_type Hz, Rz;
                 const size_t rank_x, rank_z;
             };
 
@@ -90,9 +91,9 @@ namespace MR
                 F (true),
                 i (index) { }
 
-            Partition operator() (const matrix_type&) const;
+            Partition partition (const matrix_type&) const;
 
-            operator const matrix_type& () const { return c; }
+            const matrix_type& matrix() const { return c; }
             ssize_t cols() const { return c.cols(); }
             size_t rank() const { return r; }
             bool is_F() const { return F; }
@@ -293,13 +294,6 @@ namespace MR
              * extra external data individually for each element tested.
              */
             void operator() (const matrix_type& shuffling_matrix, matrix_type& output) const override;
-
-            /*! Acquire the design matrix for the default permutation
-             * (note that this needs to be re-run for each element being tested)
-             * @param index the index of the element for which the design matrix is requested
-             * @return the design matrix for that element, including imported data for extra columns
-             */
-            //matrix_type default_design (const size_t index) const;
 
             size_t num_factors() const override { return M.cols() + importers.size(); }
 

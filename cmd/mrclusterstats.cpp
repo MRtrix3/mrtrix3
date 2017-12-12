@@ -18,6 +18,7 @@
 #include "algo/loop.h"
 #include "file/path.h"
 
+#include "math/stats/fwe.h"
 #include "math/stats/glm.h"
 #include "math/stats/import.h"
 #include "math/stats/shuffle.h"
@@ -332,8 +333,7 @@ void run() {
       write_output (uncorrected_pvalue.col(i), v2v, prefix + "uncorrected_pvalue" + postfix(i) + ".mif", output_header);
       ++progress;
     }
-    matrix_type fwe_pvalue_output (num_voxels, num_contrasts);
-    Math::Stats::statistic2pvalue (perm_distribution, default_cluster_output, fwe_pvalue_output);
+    const matrix_type fwe_pvalue_output = MR::Math::Stats::fwe_pvalue (perm_distribution, default_cluster_output);
     ++progress;
     for (size_t i = 0; i != num_contrasts; ++i) {
       write_output (fwe_pvalue_output.col(i), v2v, prefix + "fwe_pvalue" + postfix(i) + ".mif", output_header);

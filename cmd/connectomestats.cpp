@@ -18,6 +18,7 @@
 #include "progressbar.h"
 
 #include "file/path.h"
+#include "math/stats/fwe.h"
 #include "math/stats/glm.h"
 #include "math/stats/import.h"
 #include "math/stats/shuffle.h"
@@ -296,8 +297,8 @@ void run()
   }
 
   // Precompute default statistic and enhanced statistic
-  matrix_type tvalue_output   (num_contrasts, num_edges);
-  matrix_type enhanced_output (num_contrasts, num_edges);
+  matrix_type tvalue_output   (num_edges, num_contrasts);
+  matrix_type enhanced_output (num_edges, num_contrasts);
 
   Stats::PermTest::precompute_default_permutation (glm_test, enhancer, empirical_statistic, enhanced_output, tvalue_output);
 
@@ -317,8 +318,7 @@ void run()
     for (size_t i = 0; i != num_contrasts; ++i)
       save_vector (null_distribution.col(i), output_prefix + "_null_dist" + postfix(i) + ".txt");
 
-    matrix_type pvalue_output (num_contrasts, num_edges);
-    Math::Stats::statistic2pvalue (null_distribution, enhanced_output, pvalue_output);
+    const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, enhanced_output);
     for (size_t i = 0; i != num_contrasts; ++i) {
       save_matrix (mat2vec.V2M (pvalue_output.col(i)),       output_prefix + "_fwe_pvalue" + postfix(i) + ".csv");
       save_matrix (mat2vec.V2M (uncorrected_pvalues.col(i)), output_prefix + "_uncorrected_pvalue" + postfix(i) + ".csv");
