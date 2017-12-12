@@ -35,7 +35,6 @@ namespace MR
           public:
             Transform (Dock* parent);
 
-            void deactivate () override;
             bool slice_move_event (float inc) override;
             bool pan_event () override;
             bool panthrough_event () override;
@@ -45,12 +44,7 @@ namespace MR
           protected:
             virtual void showEvent (QShowEvent* event) override;
             virtual void closeEvent (QCloseEvent* event) override;
-
-          private slots:
-            void onActivate (bool);
-
-          private:
-            QPushButton *activate_button;
+            virtual void hideEvent (QHideEvent* event) override;
         };
 
       }

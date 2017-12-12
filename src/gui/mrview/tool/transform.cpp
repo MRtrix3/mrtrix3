@@ -27,14 +27,15 @@ namespace MR
           Base (parent)
         {
           VBoxLayout* main_box = new VBoxLayout (this);
+          QLabel* label = new QLabel (
+              "<b><font color='red'>The transform tool is currently active</font><b><br><br>"
+              "Close this tool to deactivate.<br><hr>"
+              "All camera view manipulations will now apply "
+              "to the main image, rather than to the camera");
+          label->setWordWrap (true);
+          label->setAlignment (Qt::AlignHCenter);
 
-          activate_button = new QPushButton ("Activate",this);
-          activate_button->setToolTip (tr ("Activate transform manipulation mode\nAll camera move operations will now apply to the main image"));
-          activate_button->setIcon (QIcon (":/rotate.svg"));
-          activate_button->setCheckable (true);
-          activate_button->setChecked (!window().get_image_visibility());
-          connect (activate_button, SIGNAL (clicked(bool)), this, SLOT (onActivate (bool)));
-          main_box->addWidget (activate_button, 0);
+          main_box->addWidget (label, 0);
 
           main_box->addStretch ();
         }
@@ -46,7 +47,8 @@ namespace MR
 
         void Transform::showEvent (QShowEvent*)
         {
-          activate_button->setChecked (false);
+          if (isVisible())
+            window().register_camera_interactor (this);
         }
 
 
@@ -62,19 +64,14 @@ namespace MR
 
 
 
-
-        void Transform::onActivate (bool onoff)
+        void Transform::hideEvent (QHideEvent*)
         {
-          window().register_camera_interactor (onoff ? this : nullptr);
+          if (window().active_camera_interactor() == this)
+            window().register_camera_interactor();
         }
 
 
 
-
-        void Transform::deactivate ()
-        {
-          activate_button->setChecked (false);
-        }
 
 
 
@@ -112,7 +109,7 @@ namespace MR
           auto move = proj->screen_to_model_direction (window().mouse_displacement(), window().target());
 
           transform_type M = window().image()->header().transform();
-          M.translate (move.cast<double>());
+          M.pretranslate (move.cast<double>());
 
           window().image()->header().transform() = M;
           window().image()->image.buffer->transform() = M;
@@ -132,7 +129,7 @@ namespace MR
           auto move = window().get_current_mode()->get_through_plane_translation_FOV (window().mouse_displacement().y(), *proj);
 
           transform_type M = window().image()->header().transform();
-          M.translate (move.cast<double>());
+          M.pretranslate (-move.cast<double>());
 
           window().image()->header().transform() = M;
           window().image()->image.buffer->transform() = M;
@@ -150,19 +147,17 @@ namespace MR
           if (window().snap_to_image())
             window().set_snap_to_image (false);
 
-          transform_type M = window().image()->header().transform();
-/*
-          //M =
           const auto rot = window().get_current_mode()->get_tilt_rotation().cast<double>();
-          if (!rot)
+          if (!rot.coeffs().allFinite())
             return true;
 
-          M = transform_type(rot);
+          const Eigen::Vector3d origin = window().focus().cast<double>();
+          transform_type M = transform_type (rot).pretranslate (origin).translate (-origin) * window().image()->header().transform();
 
-          Math::Versorf orient = rot * orientation();
-          set_orientation (orient);
+          window().image()->header().transform() = M;
+          window().image()->image.buffer->transform() = M;
           window().updateGL();
-*/
+
           return true;
         }
 
@@ -172,17 +167,21 @@ namespace MR
 
         bool Transform::rotate_event ()
         {
-          /*if (snap_to_image())
+          if (window().snap_to_image())
             window().set_snap_to_image (false);
 
-          const Math::Versorf rot = get_rotate_rotation();
-          if (!rot)
-            return;
+          const auto rot = window().get_current_mode()->get_rotate_rotation().cast<double>();
+          if (!rot.coeffs().allFinite())
+            return true;
 
-          Math::Versorf orient = rot * orientation();
-          set_orientation (orient);
-          updateGL();*/
-          return false;
+          const Eigen::Vector3d origin = window().target().cast<double>();
+          transform_type M = transform_type (rot).inverse().pretranslate (origin).translate (-origin) * window().image()->header().transform();
+
+          window().image()->header().transform() = M;
+          window().image()->image.buffer->transform() = M;
+          window().updateGL();
+
+          return true;
         }
 
 
