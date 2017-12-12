@@ -135,8 +135,8 @@ void run ()
   // Check dimensions
   if (motion.size() && motion.cols() != 6)
     throw Exception("No. columns in motion parameters must equal 6.");
-  if (motion.size() && (motion.rows() != dwi.size(3)) && (motion.rows() != dwi.size(3) * dwi.size(2)))
-    throw Exception("No. rows in motion parameters must equal the number of DWI volumes or slices.");
+  if (motion.size() && ((dwi.size(3) * dwi.size(2)) % motion.rows()))
+    throw Exception("No. rows in motion parameters does not match image dimensions.");
 
 
   // Select shells
@@ -197,18 +197,11 @@ void run ()
   for (size_t i = 0; i < idx.size(); i++)
     gradsub.row(i) = grad.row(idx[i]).template cast<float>();
 
-  Eigen::MatrixXf motionsub;
-  if (motion.rows() == dwi.size(3)) {   // per-volume rigid motion
-    motionsub.resize(idx.size(), motion.cols());
-    for (size_t i = 0; i < idx.size(); i++)
-      motionsub.row(i) = motion.row(idx[i]).template cast<float>();
-  }
-  else {                                // per-slice rigid motion
-    motionsub.resize(idx.size() * dwi.size(2), motion.cols());
-    for (size_t i = 0; i < idx.size(); i++)
-      for (size_t j = 0; j < dwi.size(2); j++)
-        motionsub.row(i * dwi.size(2) + j) = motion.row(idx[i] * dwi.size(2) + j).template cast<float>();
-  }
+  size_t ne = motion.rows()/dwi.size(3);
+  Eigen::MatrixXf motionsub (ne * idx.size(), 6);
+  for (size_t i = 0; i < idx.size(); i++)
+    for (size_t j = 0; j < ne; j++)
+      motionsub.row(i * ne + j) = motion.row(idx[i] * ne + j);
 
   Eigen::MatrixXf Wsub (W.rows(), idx.size());
   for (size_t i = 0; i < idx.size(); i++)
