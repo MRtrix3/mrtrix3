@@ -198,8 +198,8 @@ done_painting:
           const Projection* proj = get_current_projection();
           if (!proj) return;
 
-          auto move = -proj->screen_to_model_direction (window().mouse_displacement(), target());
-          set_target (target() + move);
+          auto move = proj->screen_to_model_direction (window().mouse_displacement(), target());
+          set_target (target() - move);
           updateGL();
         }
 
