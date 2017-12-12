@@ -83,11 +83,11 @@ if __name__ == '__main__':
     Mf = filtermotion(M0, args.extent)
     # output
     if nz > 0:
-        M1 = np.zeros((nv*nz, 6))
+        M1 = np.zeros((nv*ne, 6))
         for m, (v,z) in zip(Mf, [(v,z) for v in range(nv) for z in sliceorder]):
             T = lie2tr(m)
             np.savetxt(args.prefix + '-' + str(v) + '-' + str(z) + '.txt', T, fmt='%.6f')
-            M1[v*nz+z:(v+1)*nz+z:ne,:] = tr2euler(T)
+            M1[v*ne+z,:] = tr2euler(T)
     else:
         M1 = np.zeros((nv, 6))
         for m, v in zip(Mf, range(nv)):
