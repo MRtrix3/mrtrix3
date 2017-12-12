@@ -89,6 +89,7 @@ namespace MR
         INFO("Multiband factor " + str(nz/ne) + " detected.");
         init_Y(grad);
         init_laplacian(reg);
+        assert (motion.rows() == nv*ne);
       }
 
 
@@ -243,14 +244,14 @@ namespace MR
         rot.setIdentity();
         Eigen::VectorXf delta;
 
-        for (size_t i = 0; i < nv; i++) {
-          vec = {grad(i, 0), grad(i, 1), grad(i, 2)};
-          for (size_t j = 0; j < ne; j++) {
+        for (size_t v = 0; v < nv; v++) {
+          vec = {grad(v, 0), grad(v, 1), grad(v, 2)};
+          for (size_t e = 0; e < ne; e++) {
             // rotate vector with motion parameters
-            rot = get_rotation(motion(i*ne+j,3), motion(i*ne+j,4), motion(i*ne+j,5));
+            rot = get_rotation(motion(v*ne+e,3), motion(v*ne+e,4), motion(v*ne+e,5));
             // evaluate basis functions
             Math::SH::delta(delta, rot*vec, lmax);
-            Y.row(i*ne+j) = shellbasis[idx[i]]*delta;
+            Y.row(v*ne+e) = shellbasis[idx[v]]*delta;
           }
 
         }
@@ -276,8 +277,7 @@ namespace MR
 
       inline transform_type get_Ts2r(const size_t v, const size_t z) const
       {
-        assert (motion.rows() == nv*ne);
-        transform_type Ts2r = T0.scanner2voxel * get_transform(motion.row(v*ne+z)) * T0.voxel2scanner;
+        transform_type Ts2r = T0.scanner2voxel * get_transform(motion.row( (v*ne) + (z%ne) )) * T0.voxel2scanner;
         return Ts2r;
       }
 
