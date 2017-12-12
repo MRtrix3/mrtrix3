@@ -277,7 +277,7 @@ namespace MR
 
       inline transform_type get_Ts2r(const size_t v, const size_t z) const
       {
-        transform_type Ts2r = T0.scanner2voxel * get_transform(motion.row( (v*ne) + (z%ne) )) * T0.voxel2scanner;
+        transform_type Ts2r = T0.scanner2voxel * get_transform(motion.row(v*ne+z%ne)) * T0.voxel2scanner;
         return Ts2r;
       }
 

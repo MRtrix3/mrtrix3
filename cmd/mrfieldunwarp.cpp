@@ -63,10 +63,10 @@ class FieldUnwarp {
       dinterp (data, 0.0f), finterp (field, 0.0f),
       PE (petable.leftCols<3>()), motion (motion.leftCols<6>()),
       T0 (data), Tf (field),
-      nv (data.size(3)), nz (data.size(2))
+      nv (data.size(3)), nz (data.size(2)), ne (motion.rows() / nv)
     {
       PE.array().colwise() *= petable.col(3).array();
-      if (motion.rows() != nv && motion.rows() != nv*nz)
+      if ((nv*nz) % motion.rows())
         throw Exception("Motion parameters incompatible with data dimensions.");
     }
 
@@ -96,7 +96,7 @@ class FieldUnwarp {
     Eigen::Matrix<double, Eigen::Dynamic, 3> PE;
     Eigen::Matrix<double, Eigen::Dynamic, 6> motion;
     Transform T0, Tf;
-    size_t nv, nz;
+    size_t nv, nz, ne;
 
     inline Eigen::Matrix3d get_rotation(const double a1, const double a2, const double a3) const
     {
@@ -117,13 +117,7 @@ class FieldUnwarp {
 
     inline transform_type get_Ts2r(const size_t v, const size_t z) const
     {
-      transform_type Ts2r;
-      if (motion.rows() == nv) {
-        Ts2r = Tf.scanner2voxel * get_transform(motion.row(v)) * T0.voxel2scanner;
-      } else {
-        assert (motion.rows() == nv*nz);
-        Ts2r = Tf.scanner2voxel * get_transform(motion.row(v*nz+z)) * T0.voxel2scanner;
-      }
+      transform_type Ts2r = Tf.scanner2voxel * get_transform(motion.row(v*ne+z%ne)) * T0.voxel2scanner;
       return Ts2r;
     }
 
