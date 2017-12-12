@@ -139,7 +139,7 @@ namespace MR
           [&](size_t idx) {
             size_t v = idx/ne;
             Eigen::VectorXf q = X * Y.row(idx).adjoint();
-            for (size_t z = idx%nv; z < nz; z += ne) {
+            for (size_t z = idx%ne; z < nz; z += ne) {
               Eigen::Ref<Eigen::VectorXf> r = dst.segment((nz*v+z)*nxy, nxy);
               project_slice_x2y(v, z, r, q);
             }
@@ -158,7 +158,7 @@ namespace MR
           [&](size_t idx, RowMatrixXf& T) {
             size_t v = idx/ne;
             Eigen::VectorXf r = Eigen::VectorXf::Zero(nxyz);
-            for (size_t z = idx%nv; z < nz; z += ne) {
+            for (size_t z = idx%ne; z < nz; z += ne) {
               project_slice_y2x(v, z, r, W(z,v) * rhs.segment((nz*v+z)*nxy, nxy));
             }
             T.noalias() += r * Y.row(idx);
@@ -179,7 +179,7 @@ namespace MR
             size_t v = idx/ne;
             Eigen::VectorXf q = Xi * Y.row(idx).adjoint();
             Eigen::VectorXf r = Eigen::VectorXf::Zero(nxyz);
-            for (size_t z = idx%nv; z < nz; z += ne) {
+            for (size_t z = idx%ne; z < nz; z += ne) {
               project_slice_x2x(v, z, r, W(z, v) * q);
             }
             T.noalias() += r * Y.row(idx);
