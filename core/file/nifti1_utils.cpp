@@ -212,11 +212,11 @@ namespace MR
               H.transform().matrix().col(2) *= qfac;
           }
 
-          //CONF option: NIfTI.AutoLoadJSON
+          //CONF option: NIfTIAutoLoadJSON
           //CONF default: 0 (false)
           //CONF A boolean value to indicate whether, when opening NIfTI images,
           //CONF any corresponding JSON file should be automatically loaded.
-          if (File::Config::get_bool ("NIfTI.AutoLoadJSON", false)) {
+          if (File::Config::get_bool ("NIfTIAutoLoadJSON", false)) {
             std::string json_path = H.name();
             if (Path::has_suffix (json_path, ".nii.gz"))
               json_path = json_path.substr (0, json_path.size()-7);
@@ -414,13 +414,13 @@ namespace MR
 
         strncpy ( (char*) &NH.magic, single_file ? "n+1\0" : "ni1\0", 4);
 
-        //CONF option: NIfTI.AutoSaveJSON
+        //CONF option: NIfTIAutoSaveJSON
         //CONF default: 0 (false)
         //CONF A boolean value to indicate whether, when writing NIfTI images,
         //CONF a corresponding JSON file should be automatically created in order
         //CONF to save any header entries that cannot be stored in the NIfTI
         //CONF header.
-        if (single_file && File::Config::get_bool ("NIfTI.AutoSaveJSON", false)) {
+        if (single_file && File::Config::get_bool ("NIfTIAutoSaveJSON", false)) {
           std::string json_path = H.name();
           if (Path::has_suffix (json_path, ".nii.gz"))
             json_path = json_path.substr (0, json_path.size()-7);

@@ -205,7 +205,7 @@ namespace MR
             H.transform().matrix().col(2) *= qfac;
         }
 
-        if (File::Config::get_bool ("NIfTI.AutoLoadJSON", false)) {
+        if (File::Config::get_bool ("NIfTIAutoLoadJSON", false)) {
           std::string json_path = H.name();
           if (Path::has_suffix (json_path, ".nii.gz"))
             json_path = json_path.substr (0, json_path.size()-7);
