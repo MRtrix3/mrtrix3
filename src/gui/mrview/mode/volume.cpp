@@ -321,6 +321,18 @@ namespace MR
 
 
 
+        void Volume::tilt_event()
+        {
+          Base::tilt_event();
+
+          auto MV = adjust_projection_matrix (GL::transpose (GL::mat4 (orientation())));
+          Eigen::Vector3f screen_normal (MV(2,0), MV(2,1), MV(2,2));
+          screen_normal.normalize();
+
+          window().set_target (window().target() + screen_normal * screen_normal.dot (window().focus() - window().target()));
+        }
+
+
 
 
 
@@ -331,7 +343,6 @@ namespace MR
           GL_CHECK_ERROR;
           setup_projection (orientation(), projection);
           GL_CHECK_ERROR;
-
 
           overlays_for_3D.clear();
           render_tools (projection, true);
