@@ -289,9 +289,9 @@ namespace MR
           {
             const auto V2S = image.voxel2scanner();
             const Eigen::Vector3f pos   = V2S * Eigen::Vector3f { -0.5f, -0.5f, -0.5f };
-            const Eigen::Vector3f vec_X = V2S.rotation() * Eigen::Vector3f { float(image.header().size(0)), 0.0f, 0.0f };
-            const Eigen::Vector3f vec_Y = V2S.rotation() * Eigen::Vector3f { 0.0f, float(image.header().size(1)), 0.0f };
-            const Eigen::Vector3f vec_Z = V2S.rotation() * Eigen::Vector3f { 0.0f, 0.0f, float(image.header().size(2)) };
+            const Eigen::Vector3f vec_X = V2S.linear() * Eigen::Vector3f { float(image.header().size(0)), 0.0f, 0.0f };
+            const Eigen::Vector3f vec_Y = V2S.linear() * Eigen::Vector3f { 0.0f, float(image.header().size(1)), 0.0f };
+            const Eigen::Vector3f vec_Z = V2S.linear() * Eigen::Vector3f { 0.0f, 0.0f, float(image.header().size(2)) };
             GL::mat4 T2S;
             T2S(0,0) = vec_X[0];
             T2S(1,0) = vec_X[1];
@@ -354,7 +354,7 @@ namespace MR
           GL::mat4 S2T = GL::inv (T2S);
 
           float step_size = 0.5f * std::min ( { float(image()->header().spacing (0)), float(image()->header().spacing (1)), float(image()->header().spacing (2)) } );
-          Eigen::Vector3f ray = image()->scanner2voxel().rotation() * projection.screen_normal();
+          Eigen::Vector3f ray = image()->scanner2voxel().linear() * projection.screen_normal();
           Eigen::Vector3f ray_real_space = ray;
           ray *= step_size;
           ray[0] /= image()->header().size(0);
