@@ -33,9 +33,9 @@ namespace MR
     class Projection
     { MEMALIGN(Projection)
       public:
-        Projection (GL::Area* parent, const GL::Font& font) : 
-          glarea (parent), 
-          font (font) { } 
+        Projection (GL::Area* parent, const GL::Font& font) :
+          glarea (parent),
+          font (font) { }
 
         void set_viewport (const QWidget& frame, int x, int y, int w, int h) {
           viewport[0] = x;
@@ -95,8 +95,8 @@ namespace MR
               MVP(2,0)*x[0] + MVP(2,1)*x[1] + MVP(2,2)*x[2] + MVP(2,3));
           if (MVP(3,2))
             S /= MVP(3,0)*x[0] + MVP(3,1)*x[1] + MVP(3,2)*x[2] + MVP(3,3);
-          S[0] = viewport[0] + 0.5f*viewport[2]*(1.0f+S[0]); 
-          S[1] = viewport[1] + 0.5f*viewport[3]*(1.0f+S[1]); 
+          S[0] = viewport[0] + 0.5f*viewport[2]*(1.0f+S[0]);
+          S[1] = viewport[1] + 0.5f*viewport[3]*(1.0f+S[1]);
           return S;
         }
 
@@ -117,7 +117,7 @@ namespace MR
               iMVP(0,0)*x + iMVP(0,1)*y + iMVP(0,2)*depth + iMVP(0,3),
               iMVP(1,0)*x + iMVP(1,1)*y + iMVP(1,2)*depth + iMVP(1,3),
               iMVP(2,0)*x + iMVP(2,1)*y + iMVP(2,2)*depth + iMVP(2,3));
-          if (MVP(3,2)) 
+          if (MVP(3,2))
             S /= iMVP(3,0)*x + iMVP(3,1)*y + iMVP(3,2)*depth + iMVP(3,3);
           return S;
         }
@@ -150,7 +150,7 @@ namespace MR
           x *= 2.0f/viewport[2];
           y *= 2.0f/viewport[3];
           Eigen::Vector3f S (iMVP(0,0)*x + iMVP(0,1)*y, iMVP(1,0)*x + iMVP(1,1)*y, iMVP(2,0)*x + iMVP(2,1)*y);
-          if (MVP(3,2)) 
+          if (MVP(3,2))
             S /= iMVP(3,2)*depth + iMVP(3,3);
           return S;
         }
@@ -174,8 +174,8 @@ namespace MR
 
         void render_crosshairs (const Eigen::Vector3f& focus) const;
 
-        void setup_render_text (float red = 1.0, float green = 1.0, float blue = 0.0) const { 
-          font.start (width(), height(), red, green, blue); 
+        void setup_render_text (float red = 1.0, float green = 1.0, float blue = 0.0) const {
+          font.start (width(), height(), red, green, blue);
         }
         void done_render_text () const { font.stop(); }
 
@@ -196,13 +196,13 @@ namespace MR
 
         void render_text_inset (int x, int y, const std::string& text, int inset = -1) const {
           QString s (text.c_str());
-          if (inset < 0) 
+          if (inset < 0)
             inset = font.metric.height() / 2;
-          if (x < inset) 
+          if (x < inset)
             x = inset;
-          if (x + font.metric.width (s) + inset > width()) 
+          if (x + font.metric.width (s) + inset > width())
             x = width() - font.metric.width (s) - inset;
-          if (y < inset) 
+          if (y < inset)
             y = inset;
           if (y + font.metric.height() + inset > height())
             y = height() - font.metric.height() - inset;
