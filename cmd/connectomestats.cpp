@@ -297,11 +297,8 @@ void run()
   }
 
   // Precompute default statistic and enhanced statistic
-  matrix_type tvalue_output   (num_edges, num_contrasts);
-  matrix_type enhanced_output (num_edges, num_contrasts);
-
+  matrix_type tvalue_output, enhanced_output;
   Stats::PermTest::precompute_default_permutation (glm_test, enhancer, empirical_statistic, enhanced_output, tvalue_output);
-
   for (size_t i = 0; i != num_contrasts; ++i) {
     save_matrix (mat2vec.V2M (tvalue_output.col(i)),   output_prefix + "_" + (contrasts[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".csv");
     save_matrix (mat2vec.V2M (enhanced_output.col(i)), output_prefix + "_enhanced" + postfix(i) + ".csv");
@@ -311,7 +308,6 @@ void run()
   if (!get_options ("notest").size()) {
 
     matrix_type null_distribution, uncorrected_pvalues;
-
     Stats::PermTest::run_permutations (glm_test, enhancer, empirical_statistic,
                                        enhanced_output, null_distribution, uncorrected_pvalues);
 

@@ -149,10 +149,9 @@ namespace MR
       bool Shuffler::operator() (Shuffle& output)
       {
         output.index = counter;
-        if (counter + 1 >= nshuffles) {
+        if (counter >= nshuffles) {
           if (progress)
             progress.reset (nullptr);
-          counter = nshuffles;
           output.data.resize (0, 0);
           return false;
         }

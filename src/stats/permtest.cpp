@@ -170,6 +170,9 @@ namespace MR
                                            matrix_type& default_statistics)
       {
         assert (stats_calculator);
+        default_statistics.resize (stats_calculator->num_elements(), stats_calculator->num_outputs());
+        default_enhanced_statistics.resize (stats_calculator->num_elements(), stats_calculator->num_outputs());
+
         const matrix_type default_shuffle (matrix_type::Identity (stats_calculator->num_subjects(), stats_calculator->num_subjects()));
         (*stats_calculator) (default_shuffle, default_statistics);
 
@@ -196,6 +199,7 @@ namespace MR
         Math::Stats::Shuffler shuffler (stats_calculator->num_subjects(), false, "Running permutations");
         perm_dist.resize (shuffler.size(), stats_calculator->num_outputs());
         uncorrected_pvalues.resize (stats_calculator->num_elements(), stats_calculator->num_outputs());
+
         vector<vector<size_t>> global_uncorrected_pvalue_count (stats_calculator->num_outputs(), vector<size_t> (stats_calculator->num_elements(), 0));
         {
           Processor processor (stats_calculator, enhancer,

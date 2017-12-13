@@ -154,7 +154,7 @@ class SubjectFixelImport : public SubjectDataImportBase
 
     void operator() (matrix_type::RowXpr row) const override
     {
-      assert (row.size() == size());
+      assert (size_t(row.size()) == size());
       Image<float> temp (data); // For thread-safety
       // Doesn't work
       //row = temp.row(0);
@@ -224,7 +224,7 @@ void run()
   auto index_image = index_header.get_image<uint32_t>();
 
   const uint32_t num_fixels = Fixel::get_number_of_fixels (index_header);
-  CONSOLE ("number of fixels: " + str(num_fixels));
+  CONSOLE ("Number of fixels: " + str(num_fixels));
 
   vector<Eigen::Vector3> positions (num_fixels);
   vector<direction_type> directions (num_fixels);
@@ -259,7 +259,6 @@ void run()
 
   // Load design matrix:
   const matrix_type design = load_matrix (argument[2]);
-  CONSOLE ("Design matrix dimensions: " + str(design.rows()) + " x " + str(design.cols()));
   if (design.rows() != (ssize_t)importer.size())
     throw Exception ("Number of input files does not match number of rows in design matrix");
 
@@ -286,6 +285,7 @@ void run()
   }
 
   const ssize_t num_factors = design.cols() + extra_columns.size();
+  CONSOLE ("Number of factors: " + str(num_factors));
   if (contrasts[0].cols() != num_factors)
     throw Exception ("The number of columns per contrast (" + str(contrasts[0].cols()) + ")"
                      + (extra_columns.size() ? " (in addition to the " + str(extra_columns.size()) + " uses of -column)" : "")
@@ -469,11 +469,8 @@ void run()
   }
 
   // Precompute default statistic and CFE statistic
-  matrix_type cfe_output (num_fixels, num_contrasts);
-  matrix_type tvalue_output (num_fixels, num_contrasts);
-
+  matrix_type cfe_output, tvalue_output;
   Stats::PermTest::precompute_default_permutation (glm_test, cfe_integrator, empirical_cfe_statistic, cfe_output, tvalue_output);
-
   for (size_t i = 0; i != num_contrasts; ++i) {
     write_fixel_output (Path::join (output_fixel_directory, "cfe" + postfix(i) + ".mif"), cfe_output.col(i), output_header);
     write_fixel_output (Path::join (output_fixel_directory, std::string(contrasts[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".mif"), tvalue_output.col(i), output_header);
@@ -483,7 +480,6 @@ void run()
   if (!get_options ("notest").size()) {
 
     matrix_type perm_distribution, uncorrected_pvalues;
-
     Stats::PermTest::run_permutations (glm_test, cfe_integrator, empirical_cfe_statistic,
                                        cfe_output, perm_distribution, uncorrected_pvalues);
 

@@ -18,8 +18,6 @@
 #include "misc/bitset.h"
 #include "thread_queue.h"
 
-#define GLM_BATCH_SIZE 1024
-
 namespace MR
 {
   namespace Math
@@ -264,7 +262,7 @@ namespace MR
                   global_std_effect_size (std_effect_size),
                   global_stdev (stdev)
               {
-                assert (design_fixed.cols() + extra_columns.size() == contrasts[0].cols());
+                assert (size_t(design_fixed.cols()) + extra_columns.size() == size_t(contrasts[0].cols()));
               }
               bool operator() (const size_t& element_index)
               {
@@ -314,14 +312,17 @@ namespace MR
         // Same model partitioning as is used in FSL randomise
         Contrast::Partition Contrast::partition (const matrix_type& design) const
         {
-          const matrix_type D = Math::pinv (design.transpose() * design);
+          // eval() calls necessary for older versions of Eigen / compiler to work:
+          //   can't seem to map Eigen template result to const matrix_type& as the Math::pinv() input
+          // TODO See if some better template trickery can be done
+          const matrix_type D = Math::pinv ((design.transpose() * design).eval());
           // Note: Cu is transposed with respect to how contrast matrices are stored elsewhere
           const matrix_type Cu = Eigen::FullPivLU<matrix_type> (c).kernel();
-          const auto inv_cDc = Math::pinv (c * D * c.transpose());
+          const matrix_type inv_cDc = Math::pinv ((c * D * c.transpose()).eval());
           // Note: Cv is transposed with respect to convention just as Cu is
           const matrix_type Cv = Cu - c.transpose() * inv_cDc * c * D * Cu;
           const matrix_type X = design * D * c.transpose() * inv_cDc;
-          const matrix_type Z = design * D * Cv * Math::pinv (Cv.transpose() * D * Cv);
+          const matrix_type Z = design * D * Cv * Math::pinv ((Cv.transpose() * D * Cv).eval());
           return Partition (X, Z);
         }
 
@@ -369,7 +370,7 @@ namespace MR
 
         void TestFixed::operator() (const matrix_type& shuffling_matrix, matrix_type& output) const
         {
-          assert (shuffling_matrix.rows() == num_subjects());
+          assert (size_t(shuffling_matrix.rows()) == num_subjects());
           if (!(size_t(output.rows()) == num_elements() && size_t(output.cols()) == num_outputs()))
             output.resize (num_elements(), num_outputs());
 
@@ -408,7 +409,7 @@ namespace MR
             const default_type one_over_dof = 1.0 / (num_subjects() - partitions[ic].rank_x - partitions[ic].rank_z);
             sse = (Rm*Sy).colwise().squaredNorm();
             //VAR (sse.size());
-            for (ssize_t ie = 0; ie != num_elements(); ++ie) {
+            for (size_t ie = 0; ie != num_elements(); ++ie) {
               beta.noalias() = c[ic].matrix() * lambdas.col (ie);
               //VAR (beta.rows());
               //VAR (beta.cols());
@@ -525,7 +526,7 @@ namespace MR
               Mfull_masked.resize (finite_count, num_factors());
               y_masked.resize (finite_count);
               perm_matrix_mask.clear (true);
-              ssize_t out_index = 0;
+              size_t out_index = 0;
               for (size_t in_index = 0; in_index != num_subjects(); ++in_index) {
                 if (element_mask[in_index]) {
                   Mfull_masked.block (out_index, 0, 1, M.cols()) = M.row (in_index);
@@ -542,7 +543,7 @@ namespace MR
                 }
               }
               assert (out_index == ssize_t(finite_count));
-              assert (perm_matrix_mask.count() == ssize_t(finite_count));
+              assert (perm_matrix_mask.count() == finite_count);
               // Only after we've reduced the design matrix do we now reduce the permutation matrix
               perm_matrix_masked.resize (finite_count, num_subjects());
               out_index = 0;

@@ -219,7 +219,6 @@ void run()
     std::shared_ptr<Stats::EnhancerBase> enhancer;
     matrix_type null_distribution, uncorrected_pvalues;
     matrix_type empirical_distribution; // unused
-
     Stats::PermTest::run_permutations (glm_test, enhancer, empirical_distribution,
                                        default_tvalues, null_distribution, uncorrected_pvalues);
 
