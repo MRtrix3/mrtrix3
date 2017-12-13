@@ -11,7 +11,6 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-
 #include "misc/bitset.h"
 
 
@@ -25,6 +24,7 @@ namespace MR {
   const char BitSet::dbyte_to_hex[16] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 
 
+
   BitSet::BitSet (const size_t b, const bool allocator) :
       bits  (b),
       bytes ((bits + 7) / 8),
@@ -32,6 +32,7 @@ namespace MR {
   {
     memset (data, (allocator ? 0xFF : 0x00), bytes);
   }
+
 
 
   BitSet::BitSet (const BitSet& that) :
@@ -43,6 +44,7 @@ namespace MR {
   }
 
 
+
   BitSet::~BitSet() {
     delete[] data; data = nullptr;
   }
@@ -50,10 +52,8 @@ namespace MR {
 
 
 
-
   void BitSet::resize (const size_t new_size, const bool allocator)
   {
-
     size_t new_bits;
     new_bits = new_size;
     const size_t new_bytes = (new_bits + 7) / 8;
@@ -62,8 +62,9 @@ namespace MR {
       if (new_bytes > bytes) {
         memcpy (new_data, data, bytes);
         memset (new_data + bytes, (allocator ? 0xFF : 0x00), new_bytes - bytes);
-        const uint8_t mask = 0xFF << excess_bits();
-        data[bytes - 1] = allocator ? (data[bytes - 1] | mask) : (data[bytes - 1] & ~mask);
+        data[bytes - 1] = allocator ?
+                          (data[bytes - 1] | excess_bit_mask()) :
+                          (data[bytes - 1] & ~excess_bit_mask());
       } else {
         memcpy (new_data, data, new_bytes);
       }
@@ -75,8 +76,8 @@ namespace MR {
     bytes = new_bytes;
     data = new_data;
     new_data = nullptr;
-
   }
+
 
 
   void BitSet::clear (const bool allocator)
@@ -85,43 +86,37 @@ namespace MR {
   }
 
 
+
   bool BitSet::full() const
   {
-
-    const size_t bytes_to_test = (bits % 8) ? bytes - 1 : bytes;
+    const size_t bytes_to_test = have_excess_bits() ? bytes - 1 : bytes;
     for (size_t i = 0; i != bytes_to_test; ++i) {
       if (data[i] != 0xFF)
         return false;
     }
-    if (!(bits % 8))
+    if (!have_excess_bits())
       return true;
-
-    const uint8_t mask = 0xFF << excess_bits();
-    if ((data[bytes - 1] | mask) != 0xFF)
+    if ((data[bytes - 1] | excess_bit_mask()) != 0xFF)
       return false;
     return true;
-
   }
+
 
 
   bool BitSet::empty() const
   {
-
-    const size_t bytes_to_test = (bits % 8) ? bytes - 1 : bytes;
+    const size_t bytes_to_test = have_excess_bits() ? bytes - 1 : bytes;
     for (size_t i = 0; i != bytes_to_test; ++i) {
       if (data[i])
         return false;
     }
-    if (!(bits % 8))
+    if (!have_excess_bits())
       return true;
-
-    const size_t excess_bits = bits - (8 * (bytes - 1));
-    const uint8_t mask = ~(0xFF << excess_bits);
-    if (data[bytes - 1] & mask)
+    if (data[bytes - 1] & ~excess_bit_mask())
       return false;
     return true;
-
   }
+
 
 
   size_t BitSet::count () const
@@ -138,21 +133,22 @@ namespace MR {
 
 
 
+
   std::ostream& operator<< (std::ostream& stream, BitSet& d)
   {
+    if (!d.bytes)
+      return stream;
     stream << "0x";
-    if (d.excess_bits()) {
-      const uint8_t mask = 0xFF << d.excess_bits();
-      stream << d.byte_to_hex (d.data[d.bytes - 1] & mask);
-      for (size_t i = d.bytes - 2; i--;)
+    if (d.have_excess_bits()) {
+      stream << d.byte_to_hex (d.data[d.bytes - 1] & (0xFF >> d.excess_bits()));
+      for (ssize_t i = d.bytes - 2; i >= 0; --i)
         stream << d.byte_to_hex (d.data[i]);
     } else {
-      for (size_t i = d.bytes - 1; i--;)
+      for (ssize_t i = d.bytes - 1; i >= 0; --i)
         stream << d.byte_to_hex (d.data[i]);
     }
     return stream;
   }
-
 
 
 
@@ -170,15 +166,15 @@ namespace MR {
   }
 
 
+
   bool BitSet::operator== (const BitSet& that) const
   {
     if (bits != that.bits)
       return false;
-    if (bits % bytes) {
-      if (memcmp(data, that.data, bytes - 1))
+    if (have_excess_bits()) {
+      if (memcmp (data, that.data, bytes - 1))
         return false;
-      const uint8_t mask = ~(0xFF << excess_bits());
-      if ((data[bytes - 1] & mask) != (that.data[bytes - 1] & mask))
+      if ((data[bytes - 1] & ~excess_bit_mask()) != (that.data[bytes - 1] & ~excess_bit_mask()))
         return false;
       return true;
     } else {
@@ -187,10 +183,12 @@ namespace MR {
   }
 
 
+
   bool BitSet::operator!= (const BitSet& that) const
   {
     return (!(*this == that));
   }
+
 
 
   BitSet& BitSet::operator|= (const BitSet& that)
@@ -202,6 +200,7 @@ namespace MR {
   }
 
 
+
   BitSet& BitSet::operator&= (const BitSet& that)
   {
     assert (bits == that.bits);
@@ -209,6 +208,7 @@ namespace MR {
       data[i] &= that.data[i];
     return *this;
   }
+
 
 
   BitSet& BitSet::operator^= (const BitSet& that)
@@ -220,12 +220,14 @@ namespace MR {
   }
 
 
+
   BitSet BitSet::operator| (const BitSet& that) const
   {
     BitSet result (*this);
     result |= that;
     return result;
   }
+
 
 
   BitSet BitSet::operator& (const BitSet& that) const
@@ -236,12 +238,14 @@ namespace MR {
   }
 
 
+
   BitSet BitSet::operator^ (const BitSet& that) const
   {
     BitSet result (*this);
     result ^= that;
     return result;
   }
+
 
 
   BitSet BitSet::operator~() const
@@ -251,9 +255,6 @@ namespace MR {
       result.data[i] = ~data[i];
     return result;
   }
-
-
-
 
 
 

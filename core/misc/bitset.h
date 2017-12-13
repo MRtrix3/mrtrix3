@@ -18,6 +18,7 @@
 
 #include <atomic>
 #include <stdint.h>
+#include "debug.h"
 #include "mrtrix.h"
 
 
@@ -107,8 +108,8 @@ namespace MR {
        * data.
        * \returns a Value or ConstValue class used to manipulate the bit data at
        * the specified index */
-      ConstValue operator[] (const size_t i) const { return ConstValue (*this, i); }
-      Value      operator[] (const size_t i)       { return Value      (*this, i); }
+      ConstValue operator[] (const size_t i) const { assert (i < bits); return ConstValue (*this, i); }
+      Value      operator[] (const size_t i)       { assert (i < bits); return Value      (*this, i); }
 
       //! the number of boolean elements in the set
       /*! The size of the BitSet. Note that this is the number of boolean values
@@ -190,10 +191,12 @@ namespace MR {
 
 
     protected:
-      size_t   bits;
-      size_t   bytes;
+      size_t bits;
+      size_t bytes;
 
-      size_t excess_bits() const { return (bits - (8 * (bytes - 1))); }
+      bool have_excess_bits() const { return (bits & size_t(0x03)); }
+      size_t excess_bits() const { return (8*bytes - bits); }
+      uint8_t excess_bit_mask() const { assert (have_excess_bits()); return 0xFF << excess_bits(); }
 
       bool test  (const size_t index) const
       {
