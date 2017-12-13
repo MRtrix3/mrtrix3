@@ -369,6 +369,51 @@ List of MRtrix3 configuration file options
 
      The default colour to use for objects (i.e. SH glyphs) when not colouring by direction.
 
+*  **RegAnalyseDescent**
+    *default: 0 (false)*
+
+     Linear registration: write comma separated gradient descent parameters and gradients to stdout and verbose gradient descent output to stderr.
+
+*  **RegCoherenceLen**
+    *default: 3.0*
+
+     Linear registration: estimated spatial coherence length in voxels.
+
+*  **RegGdConvergenceDataSmooth**
+    *default: 0.8*
+
+     Linear registration: control point trajectory smoothing value used in convergence check parameter range: [0...1].
+
+*  **RegGdConvergenceMinIter**
+    *default: 10*
+
+     Linear registration: minimum number of iterations until convergence check is activated.
+
+*  **RegGdConvergenceSlopeSmooth**
+    *default: 0.1*
+
+     Linear registration: control point trajectory slope smoothing value used in convergence check parameter range: [0...1].
+
+*  **RegGdConvergenceThresh**
+    *default: 5e-3*
+
+     Linear registration: threshold for convergence check using the smoothed control point trajectories measured in fraction of a voxel.
+
+*  **RegGdWeightMatrix**
+    *default: 0.0003*
+
+     Linear registration: weight for optimisation of linear (3x3) matrix parameters.
+
+*  **RegGdWeightTranslation**
+    *default: 1*
+
+     Linear registration: weight for optimisation of translation parameters.
+
+*  **RegStopLen**
+    *default: 0.0001*
+
+     Linear registration: smallest gradient descent step measured in fraction of a voxel at which to stop registration.
+
 *  **ScriptTmpDir**
     *default: `.`*
 
@@ -428,49 +473,4 @@ List of MRtrix3 configuration file options
     *default: 0 (false)*
 
      Whether the screen update should synchronise with the monitor's vertical refresh (to avoid tearing artefacts).
-
-*  **reg_analyse_descent**
-    *default: 0 (false)*
-
-     Linear registration: write comma separated gradient descent parameters and gradients to stdout and verbose gradient descent output to stderr.
-
-*  **reg_coherence_len**
-    *default: 3.0*
-
-     Linear registration: estimated spatial coherence length in voxels.
-
-*  **reg_gd_convergence_data_smooth**
-    *default: 0.8*
-
-     Linear registration: control point trajectory smoothing value used in convergence check parameter range: [0...1].
-
-*  **reg_gd_convergence_min_iter**
-    *default: 10*
-
-     Linear registration: minimum number of iterations until convergence check is activated.
-
-*  **reg_gd_convergence_slope_smooth**
-    *default: 0.1*
-
-     Linear registration: control point trajectory slope smoothing value used in convergence check parameter range: [0...1].
-
-*  **reg_gd_convergence_thresh**
-    *default: 5e-3*
-
-     Linear registration: threshold for convergence check using the smoothed control point trajectories measured in fraction of a voxel.
-
-*  **reg_gdweight_matrix**
-    *default: 0.0003*
-
-     Linear registration: weight for optimisation of linear (3x3) matrix parameters.
-
-*  **reg_gdweight_translation**
-    *default: 1*
-
-     Linear registration: weight for optimisation of translation parameters.
-
-*  **reg_stop_len**
-    *default: 0.0001*
-
-     Linear registration: smallest gradient descent step measured in fraction of a voxel at which to stop registration.
 

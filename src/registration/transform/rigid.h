@@ -89,8 +89,8 @@ namespace MR
           using has_robust_estimator = int;
 
           Rigid () : Base (12) {
-            default_type w1 (MR::File::Config::get_float ("reg_gdweight_matrix", 0.0003f));
-            default_type w2 (MR::File::Config::get_float ("reg_gdweight_translation", 1.0f));
+            default_type w1 (MR::File::Config::get_float ("RegGdWeightMatrix", 0.0003f));
+            default_type w2 (MR::File::Config::get_float ("RegGdWeightTranslation", 1.0f));
             const Eigen::Vector4d weights (w1, w1, w1, w2);
             this->optimiser_weights << weights, weights, weights;
           }
