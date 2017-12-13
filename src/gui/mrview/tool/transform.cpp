@@ -28,27 +28,41 @@ namespace MR
         {
           VBoxLayout* main_box = new VBoxLayout (this);
           QLabel* label = new QLabel (
-              "<b><font color='red'>The transform tool is currently active</font><b><br><br>"
-              "Close this tool to deactivate.<br><hr>"
-              "All camera view manipulations will now apply "
+              "When active, all camera view manipulations will apply "
               "to the main image, rather than to the camera");
           label->setWordWrap (true);
           label->setAlignment (Qt::AlignHCenter);
+          main_box->addWidget (label);
 
-          main_box->addWidget (label, 0);
+          activate_button = new QPushButton ("Activate",this);
+          activate_button->setToolTip (tr ("Activate transform manipulation mode"));
+          activate_button->setIcon (QIcon (":/rotate.svg"));
+          activate_button->setCheckable (true);
+          connect (activate_button, SIGNAL (clicked(bool)), this, SLOT (onActivate (bool)));
+          main_box->addWidget (activate_button);
 
           main_box->addStretch ();
+          show();
         }
 
 
 
+        void Transform::setActive (bool onoff)
+        {
+          activate_button->setChecked (onoff);
+          window().register_camera_interactor ( (isVisible() && onoff) ? this : nullptr );
+        }
 
+
+        void Transform::onActivate (bool onoff)
+        {
+          setActive (onoff);
+        }
 
 
         void Transform::showEvent (QShowEvent*)
         {
-          if (isVisible())
-            window().register_camera_interactor (this);
+          setActive (false);
         }
 
 
@@ -57,8 +71,7 @@ namespace MR
 
         void Transform::closeEvent (QCloseEvent*)
         {
-          if (window().active_camera_interactor() == this)
-            window().register_camera_interactor();
+          setActive (false);
         }
 
 
@@ -66,8 +79,7 @@ namespace MR
 
         void Transform::hideEvent (QHideEvent*)
         {
-          if (window().active_camera_interactor() == this)
-            window().register_camera_interactor();
+          setActive (false);
         }
 
 
