@@ -190,7 +190,16 @@ namespace MR
 #else
           ++progress;
 #endif
-          vector_type sse = (measurements - design * betas).colwise().squaredNorm();
+          // Explicit calculation of residuals before SSE, rather than in a single
+          //   step, appears to be necessary for compatibility with Eigen 3.2.0
+          const matrix_type residuals = (measurements - design * betas);
+#ifdef GLM_ALL_STATS_DEBUG
+          std::cerr << "Residuals: " << residuals.rows() << " x " << residuals.cols() << ", max " << residuals.array().maxCoeff() << "\n";
+#else
+          ++progress;
+#endif
+          vector_type sse (residuals.cols());
+          sse = residuals.colwise().squaredNorm();
 #ifdef GLM_ALL_STATS_DEBUG
           std::cerr << "sse: " << sse.size() << ", max " << sse.maxCoeff() << "\n";
 #else
@@ -413,10 +422,8 @@ namespace MR
               beta.noalias() = c[ic].matrix() * lambdas.col (ie);
               //VAR (beta.rows());
               //VAR (beta.cols());
-              const auto numerator = (beta.transpose() * XtX * beta) / c[ic].rank();
-              assert (numerator.rows() == 1);
-              assert (numerator.cols() == 1);
-              const value_type F = numerator (0, 0) / (one_over_dof * sse[ie]);
+              const value_type F = ((beta.transpose() * XtX * beta) (0,0) / c[ic].rank()) /
+                                   (one_over_dof * sse[ie]);
               if (!std::isfinite (F)) {
                 output (ie, ic) = value_type(0);
               } else if (c[ic].is_F()) {
@@ -542,7 +549,7 @@ namespace MR
                   }
                 }
               }
-              assert (out_index == ssize_t(finite_count));
+              assert (out_index == finite_count);
               assert (perm_matrix_mask.count() == finite_count);
               // Only after we've reduced the design matrix do we now reduce the permutation matrix
               perm_matrix_masked.resize (finite_count, num_subjects());

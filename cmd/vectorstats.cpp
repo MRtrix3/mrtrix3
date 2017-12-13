@@ -91,7 +91,7 @@ class SubjectVectorImport : public SubjectDataImportBase
 
     void operator() (matrix_type::RowXpr row) const override
     {
-      assert (row.size() == size());
+      assert (size_t(row.size()) == size());
       row = data;
     }
 
