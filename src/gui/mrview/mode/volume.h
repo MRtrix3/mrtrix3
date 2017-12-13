@@ -41,6 +41,7 @@ namespace MR
               }
 
             virtual void paint (Projection& projection);
+            virtual void tilt_event ();
 
           protected:
             GL::VertexBuffer volume_VB, volume_VI;
