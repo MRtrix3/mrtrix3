@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -63,7 +63,8 @@ namespace MR
           ImageTypeSource& source,
           ImageTypeDestination& destination,
           WarpType& warp,
-          const typename ImageTypeDestination::value_type value_when_out_of_bounds = Interpolator<ImageTypeSource>::default_out_of_bounds_value())
+          const typename ImageTypeDestination::value_type value_when_out_of_bounds = Interpolator<ImageTypeSource>::default_out_of_bounds_value(),
+          vector<int> oversample = Adapter::AutoOverSample)
       {
 
         // reslice warp onto destination grid
@@ -76,7 +77,8 @@ namespace MR
            header.size(3) = 3;
            Stride::set (header, Stride::contiguous_along_axis (3));
            auto warp_resliced = Image<typename WarpType::value_type>::scratch (header);
-           reslice<Interp::Cubic> (warp, warp_resliced);
+           transform_type identity_transform;
+           reslice<Interp::Cubic> (warp, warp_resliced, identity_transform, oversample);
            Adapter::Warp<Interpolator, ImageTypeSource, Image<typename WarpType::value_type> > interp (source, warp_resliced, value_when_out_of_bounds);
 
            if (destination.ndim() == 4)

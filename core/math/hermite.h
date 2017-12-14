@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,7 +27,7 @@ namespace MR
     template <typename T> class Hermite
     { NOMEMALIGN
       public:
-        typedef T value_type;
+        using value_type = T;
 
         Hermite (value_type tension = 0.0) : t (T (0.5) *tension) { }
 

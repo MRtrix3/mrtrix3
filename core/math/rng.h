@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -81,7 +81,7 @@ namespace MR
       class RNG::Uniform { NOMEMALIGN
         public:
           RNG rng;
-          typedef ValueType result_type;
+          using result_type = ValueType;
           // static const ValueType max() const { return static_cast<ValueType>(1.0); }
           // static const ValueType min() const { return static_cast<ValueType>(0.0); }
           std::uniform_real_distribution<ValueType> dist;
@@ -92,7 +92,7 @@ namespace MR
       class RNG::Normal { NOMEMALIGN
         public:
           RNG rng;
-          typedef ValueType result_type;
+          using result_type = ValueType;
           std::normal_distribution<ValueType> dist;
           ValueType operator() () { return dist (rng); }
       };

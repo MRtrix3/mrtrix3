@@ -22,7 +22,7 @@ current-induced distortions and inter-volume subject motion. Procedures
 for this correct are not yet implemented in *MRtrix3*, though we do provide
 a script called ``dwipreproc`` for interfacing with the relevant FSL tools.
 Due to the nuances of the operation of this script, the reader is referred
-to the :ref:`DWI distortion correction using ``dwipreproc`` ` page.
+to the :ref:`dwipreproc_page` page.
 
 DWI brain mask estimation
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -75,7 +75,7 @@ tractography, using default reconstruction parameters.
 
 .. code::
 
-    $ tckgen <Input FOD image> <Output track file> -seed_image <Input DWI mask> -mask <Input DWI mask> -number <Number of tracks>
+    $ tckgen <Input FOD image> <Output track file> -seed_image <Input DWI mask> -mask <Input DWI mask> -select <Number of tracks>
     $ mrview <Input DWI> -tractography.load <Output track file>
 
 Note: Loading a very large number of tracks can inevitably make the ``mrview`` software run very slowly. When this occurs, it may be preferable to instead view only a subset of the generated tracks, e.g.:

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,9 +18,10 @@
 
 #include <fstream>
 #include <limits>
-#include <vector>
 
 #include "app.h"
+#include "types.h"
+
 #include "file/config.h"
 #include "misc/bitset.h"
 
@@ -110,22 +111,22 @@ namespace MR
         const Shell& smallest() const { return shells.front(); }
         const Shell& largest()  const { return shells.back(); }
         size_t       count()    const { return shells.size(); }
-        size_t       volumecount()    const { 
+        size_t       volumecount()    const {
           size_t count = 0;
           for (const auto& it : shells)
             count += it.count();
           return count;
         }
 
-        vector<size_t> get_counts() const { 
-          vector<size_t> c (count()); 
+        vector<size_t> get_counts() const {
+          vector<size_t> c (count());
           for (size_t n = 0; n < count(); ++n)
             c[n] = shells[n].count();
           return c;
         }
 
-        vector<size_t> get_bvalues() const { 
-          vector<size_t> b (count()); 
+        vector<size_t> get_bvalues() const {
+          vector<size_t> b (count());
           for (size_t n = 0; n < count(); ++n)
             b[n] = shells[n].get_mean();
           return b;
@@ -159,7 +160,7 @@ namespace MR
 
       private:
 
-        typedef decltype(std::declval<const Eigen::MatrixXd>().col(0)) BValueList;
+        using BValueList = decltype(std::declval<const Eigen::MatrixXd>().col(0));
 
         // Functions for current b-value clustering implementation
         size_t clusterBvalues (const BValueList&, vector<size_t>&) const;

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,10 +15,10 @@
 #ifndef __algo_histogram_h__
 #define __algo_histogram_h__
 
-#include <vector>
 #include <cmath>
 
 #include "image_helpers.h"
+#include "types.h"
 #include "algo/loop.h"
 
 namespace MR
@@ -92,8 +92,8 @@ namespace MR
       { MEMALIGN (Data)
         public:
 
-          typedef Eigen::Array<size_t, Eigen::Dynamic, 1> vector_type;
-          typedef Eigen::Array<default_type, Eigen::Dynamic, 1> cdf_type;
+          using vector_type = Eigen::Array<size_t, Eigen::Dynamic, 1>;
+          using cdf_type = Eigen::Array<default_type, Eigen::Dynamic, 1>;
 
           Data (const Calibrator& calibrate) :
               info (calibrate),
@@ -209,7 +209,7 @@ namespace MR
       class Matcher
       { MEMALIGN (Matcher)
 
-          typedef Eigen::Array<default_type, Eigen::Dynamic, 1> vector_type;
+          using vector_type = Eigen::Array<default_type, Eigen::Dynamic, 1>;
 
         public:
           Matcher (const Data& input, const Data& target);

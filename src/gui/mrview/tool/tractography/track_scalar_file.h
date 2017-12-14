@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,6 +18,8 @@
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/displayable.h"
 #include "gui/mrview/tool/base.h"
+#include "gui/mrview/tool/tractography/tractogram_enums.h"
+
 
 
 namespace MR
@@ -29,7 +31,6 @@ namespace MR
 
       namespace Tool
       {
-
         class Tractogram;
 
           class TrackScalarFileOptions : public QGroupBox, public DisplayableVisitor
@@ -45,9 +46,14 @@ namespace MR
               void render_tractogram_colourbar (const Tool::Tractogram&) override;
 
               void update_UI();
+              void set_scaling(default_type min, default_type max);
+              void set_threshold(GUI::MRView::Tool::TrackThresholdType dataSource, default_type min, default_type max);
+
 
             public slots:
               bool open_intensity_track_scalar_file_slot ();
+              bool open_intensity_track_scalar_file_slot(std::string);
+
 
             private slots:
               void show_colour_bar_slot();

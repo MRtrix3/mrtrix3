@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -378,9 +378,9 @@ namespace MR
 
         if (values.rows()) {
           current = row;
-          if (current < 0) 
+          if (current < 0)
             current = 0;
-          else if (current >= int (values.rows())) 
+          else if (current >= int (values.rows()))
             current = int (values.rows())-1;
 
           if (is_response) {
@@ -388,7 +388,7 @@ namespace MR
             for (size_t n = 0; n < size_t(values.cols()); n++)
               val[Math::SH::index (2*n,0)] = values (current,n);
           }
-          else 
+          else
             val = values.row (current);
           title = name;
           if (is_response)
@@ -419,9 +419,11 @@ namespace MR
       void Window::manual_colour_slot ()
       {
         const QColor c = QColorDialog::getColor (render_frame->get_colour(), this);
-        colour_by_direction_action->setChecked (false);
-        render_frame->set_color_by_dir (false);
-        render_frame->set_colour (c);
+        if(c.isValid()) {
+          colour_by_direction_action->setChecked (false);
+          render_frame->set_color_by_dir (false);
+          render_frame->set_colour (c);
+        }
       }
 
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -169,7 +169,7 @@ namespace MR
                         vector_type& stdev)
         {
 #ifndef GLM_ALL_STATS_DEBUG
-          ProgressBar progress ("calculating basic properties of default permutation");
+          ProgressBar progress ("Calculating basic properties of default permutation");
 #endif
           betas = solve_betas (measurements, design);
 #ifdef GLM_ALL_STATS_DEBUG
@@ -239,7 +239,7 @@ namespace MR
               Source (const size_t num_elements) :
                   num_elements (num_elements),
                   counter (0),
-                  progress (new ProgressBar ("calculating basic properties of default permutation", num_elements)) { }
+                  progress (new ProgressBar ("Calculating basic properties of default permutation", num_elements)) { }
               bool operator() (size_t& element_index)
               {
                 element_index = counter++;

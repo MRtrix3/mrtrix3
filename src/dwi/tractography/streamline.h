@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,8 +16,6 @@
 #define __dwi_tractography_streamline_h__
 
 
-#include <vector>
-
 #include "types.h"
 
 
@@ -33,8 +31,8 @@ namespace MR
         class Streamline : public vector<Eigen::Matrix<ValueType,3,1>>
       { MEMALIGN(Streamline<ValueType>)
         public:
-          typedef Eigen::Matrix<ValueType,3,1> point_type;
-          typedef ValueType value_type;
+          using point_type = Eigen::Matrix<ValueType,3,1>;
+          using value_type = ValueType;
 
           Streamline () : index (-1), weight (1.0f) { }
 

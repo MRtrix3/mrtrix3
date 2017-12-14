@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,8 +14,6 @@
 
 #ifndef __gui_shapes_cylinder_h__
 #define __gui_shapes_cylinder_h__
-
-#include <vector>
 
 #include "gui/opengl/gl.h"
 #include "gui/opengl/gl_core_3_3.h"

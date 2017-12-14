@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -77,6 +77,16 @@ namespace MR
         return {  0,  0,  1 };
       else
         throw Exception ("Malformed phase-encode identifier: \"" + id + "\"");
+    }
+
+
+
+    void clear_scheme (Header& header)
+    {
+      auto erase = [&] (const std::string& s) { auto it = header.keyval().find (s); if (it != header.keyval().end()) header.keyval().erase (it); };
+      erase ("pe_scheme");
+      erase ("PhaseEncodingDirection");
+      erase ("TotalReadoutTime");
     }
 
 

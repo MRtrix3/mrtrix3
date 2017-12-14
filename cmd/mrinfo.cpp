@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,11 +14,11 @@
 
 #include <map>
 #include <string>
-#include <vector>
 
 #include "command.h"
 #include "header.h"
 #include "phase_encoding.h"
+#include "types.h"
 #include "file/json.h"
 #include "dwi/gradient.h"
 
@@ -57,6 +57,7 @@ void usage ()
     + Argument ("image", "the input image(s).").allow_multiple().type_image_in();
 
   OPTIONS
+    +   Option ("all", "print all properties, rather than the first and last 2 of each.")
     +   Option ("format", "image file format")
     +   Option ("ndim", "number of image dimensions")
     +   Option ("size", "image size along each axis")
@@ -168,6 +169,7 @@ void print_properties (const Header& header, const std::string& key, const size_
     const auto values = header.keyval().find (key);
     if (values != header.keyval().end()) {
       auto lines = split (values->second, "\n");
+      INFO ("showing property " + key + ":");
       std::cout << lines[0] << "\n";
       for (size_t i = 1; i != lines.size(); ++i) {
         lines[i].insert (0, indent, ' ');
@@ -263,7 +265,7 @@ void run ()
     }
 
     if (print_full_header)
-      std::cout << header.description();
+      std::cout << header.description (get_options ("all").size());
   }
 
   if (json) {

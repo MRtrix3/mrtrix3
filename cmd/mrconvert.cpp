@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -90,16 +90,16 @@ DESCRIPTION
 
   + OptionGroup ("Options to modify generic header entries")
 
-  + Option ("clear_property", 
+  + Option ("clear_property",
             "remove the specified key from the image header altogether.").allow_multiple()
   + Argument ("key").type_text()
 
-  + Option ("set_property", 
+  + Option ("set_property",
             "set the value of the specified key in the image header.").allow_multiple()
   + Argument ("key").type_text()
   + Argument ("value").type_text()
 
-  + Option ("append_property", 
+  + Option ("append_property",
             "append the given value to the specified key in the image header (this adds the value specified as a new line in the header value).").allow_multiple()
   + Argument ("key").type_text()
   + Argument ("value").type_text()
@@ -182,6 +182,7 @@ inline vector<int> set_header (Header& header, const ImageType& input)
       if (axes[i] >= static_cast<int> (input.ndim()))
         throw Exception ("axis supplied to option -axes is out of bounds");
       header.size(i) = axes[i] < 0 ? 1 : input.size (axes[i]);
+      header.spacing(i) = axes[i] < 0 ? NaN : input.spacing (axes[i]);
     }
     permute_DW_scheme (header, axes);
     permute_PE_scheme (header, axes);
@@ -283,11 +284,11 @@ void run ()
   }
 
   opt = get_options ("set_property");
-  for (size_t n = 0; n < opt.size(); ++n) 
+  for (size_t n = 0; n < opt.size(); ++n)
     header_out.keyval()[opt[n][0].as_text()] = opt[n][1].as_text();
 
   opt = get_options ("append_property");
-  for (size_t n = 0; n < opt.size(); ++n) 
+  for (size_t n = 0; n < opt.size(); ++n)
     add_line (header_out.keyval()[opt[n][0].as_text()], opt[n][1].as_text());
 
 
@@ -312,8 +313,9 @@ void run ()
       if (*maxval >= header_in.size(axis))
         throw Exception ("coordinate position " + str(*maxval) + " for axis " + str(axis) + " provided with -coord option is out of range of input image");
 
+      header_out.size (axis) = pos[axis].size();
       if (axis == 3) {
-        const auto grad = DWI::get_DW_scheme (header_out);
+        const auto grad = DWI::get_DW_scheme (header_in);
         if (grad.rows()) {
           if ((ssize_t)grad.rows() != header_in.size(3)) {
             WARN ("Diffusion encoding of input file does not match number of image volumes; omitting gradient information from output image");
@@ -327,7 +329,7 @@ void run ()
         }
         Eigen::MatrixXd pe_scheme;
         try {
-          pe_scheme = PhaseEncoding::parse_scheme (header_out);
+          pe_scheme = PhaseEncoding::get_scheme (header_in);
           if (pe_scheme.rows()) {
             Eigen::MatrixXd extract_scheme (pos[3].size(), pe_scheme.cols());
             for (size_t vol = 0; vol != pos[3].size(); ++vol)
@@ -336,7 +338,7 @@ void run ()
           }
         } catch (...) {
           WARN ("Phase encoding scheme of input file does not match number of image volumes; omitting information from output image");
-          PhaseEncoding::set_scheme (header_out, pe_scheme);
+          PhaseEncoding::set_scheme (header_out, Eigen::MatrixXd());
         }
       }
     }

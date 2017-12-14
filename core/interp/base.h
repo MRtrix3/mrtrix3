@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,7 @@
 #ifndef __interp_base_h__
 #define __interp_base_h__
 
+#include "image_helpers.h"
 #include "transform.h"
 
 
@@ -66,7 +67,7 @@ namespace MR
     template <class ImageType> class Base : public ImageType, public Transform
     { MEMALIGN(Base<ImageType>)
       public:
-        typedef typename ImageType::value_type value_type;
+        using value_type = typename ImageType::value_type;
 
         //! construct an Interp object to obtain interpolated values using the
         //! parent ImageType class

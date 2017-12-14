@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -174,7 +174,8 @@ namespace MR {
         Eigen::Matrix<default_type, Eigen::Dynamic, 1> values (dirs.size());
         transform->SH2A (values, in);
 
-        typedef std::multimap<default_type, index_type, Max_abs> map_type;
+        using map_type = std::multimap<default_type, index_type, Max_abs>;
+
         map_type data_in_order;
         for (size_t i = 0; i != size_t(values.size()); ++i)
           data_in_order.insert (std::make_pair (values[i], i));

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,7 @@
 #include "command.h"
 #include "header.h"
 #include "image.h"
+#include "phase_encoding.h"
 #include "algo/threaded_loop.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
@@ -249,6 +250,7 @@ void run ()
 
     header_out.size(3) = shared.nSH();
     DWI::stash_DW_scheme (header_out, shared.grad);
+    PhaseEncoding::clear_scheme (header_out);
     auto fod = Image<float>::create (argument[3], header_out);
 
     CSD_Processor processor (shared, mask);

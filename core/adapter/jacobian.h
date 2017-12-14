@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,8 +30,8 @@ namespace MR
     { MEMALIGN (Jacobian<WarpType>)
         public:
 
-          typedef Base<Jacobian<WarpType>,WarpType> base_type;
-          typedef Eigen::Matrix<typename WarpType::value_type,3,3> value_type;
+          using base_type = Base<Jacobian<WarpType>, WarpType>;
+          using value_type = Eigen::Matrix<typename WarpType::value_type, 3, 3>;
 
           using base_type::name;
           using base_type::size;

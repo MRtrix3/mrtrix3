@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -201,7 +201,7 @@ namespace MR
             return;
           vector<std::unique_ptr<MR::Header>> list;
           for (size_t n = 0; n < overlay_names.size(); ++n)
-            list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (overlay_names[n]))));
+            list.push_back (make_unique<MR::Header> (MR::Header::open (overlay_names[n])));
 
           add_images (list);
         }
@@ -233,7 +233,7 @@ namespace MR
             QList<QUrl> urlList = mimeData->urls();
             for (int i = 0; i < urlList.size() && i < max_files; ++i) {
               try {
-                list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (urlList.at (i).path().toUtf8().constData()))));
+                list.push_back (make_unique<MR::Header> (MR::Header::open (urlList.at (i).path().toUtf8().constData())));
               }
               catch (Exception& e) {
                 e.display();
@@ -707,7 +707,7 @@ namespace MR
         {
           if (opt.opt->is ("overlay.load")) {
             vector<std::unique_ptr<MR::Header>> list;
-            try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (opt[0])))); }
+            try { list.push_back (make_unique<MR::Header> (MR::Header::open (opt[0]))); }
             catch (Exception& e) { e.display(); }
             add_images (list);
             return true;

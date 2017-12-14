@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -180,7 +180,7 @@ namespace MR
               }
 
             //type_trait to indicate return type of operator()
-            typedef int is_vector_type;
+            using is_vector_type = int;
 
             template <class Params>
               Eigen::Matrix<default_type, Eigen::Dynamic, 1> operator() (Params& params,

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -240,6 +240,17 @@ namespace MR
       return false;
     }
 
+  //! error if the image does not represent spatial data: need 3 spatial axes all with size greater than 1
+  //! requirement for anything that performs 3D interpolation, or erosion (& maybe others not thought of yet)
+  template <class HeaderType>
+    FORCE_INLINE void check_3D_nonunity (const HeaderType& in)
+    {
+      if (in.ndim() < 3)
+        throw Exception ("Image \"" + in.name() + "\" does not represent spatial data (less than 3 dimensions)");
+      if (std::min ({ in.size(0), in.size(1), in.size(2) }) == 1)
+        throw Exception ("Image \"" + in.name() + "\" does not represent spatial data (has axis with size 1)");
+    }
+
   //! returns the number of voxel in the data set, or a relevant subvolume
   template <class HeaderType> 
     inline size_t voxel_count (const HeaderType& in, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
@@ -458,7 +469,7 @@ namespace MR
     template <class ImageType> 
       class Value { NOMEMALIGN
         public:
-          typedef typename ImageType::value_type value_type;
+          using value_type = typename ImageType::value_type;
           Value () = delete;
           Value (const Value&) = delete;
           FORCE_INLINE Value (Value&&) = default;
@@ -501,7 +512,7 @@ namespace MR
     { NOMEMALIGN
       public:
 
-        typedef typename ImageType::value_type value_type;
+        using value_type = typename ImageType::value_type;
 
         Row (ImageType& image, size_t axis) : ConstRow<ImageType> (image, axis) { }
 
@@ -575,7 +586,7 @@ namespace MR
     class ImageBase 
     { MEMALIGN (ImageBase<Derived,ValueType>)
       public:
-        typedef ValueType value_type;
+        using value_type = ValueType;
 
         FORCE_INLINE Helper::Index<Derived> index (size_t axis) { return { static_cast<Derived&> (*this), axis }; }
         FORCE_INLINE ssize_t index (size_t axis) const { return static_cast<const Derived*>(this)->get_index (axis); }

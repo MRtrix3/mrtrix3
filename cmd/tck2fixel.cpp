@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -36,7 +36,7 @@ class TrackProcessor { MEMALIGN (TrackProcessor)
 
  public:
 
-   typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
+   using SetVoxelDir = DWI::Tractography::Mapping::SetVoxelDir;
 
    TrackProcessor (Image<uint32_t>& fixel_indexer,
                    const vector<Eigen::Vector3>& fixel_directions,
@@ -162,7 +162,7 @@ void run ()
     throw Exception ("no tracks found in input file");
 
   {
-    typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
+    using SetVoxelDir = DWI::Tractography::Mapping::SetVoxelDir;
     DWI::Tractography::Mapping::TrackLoader loader (track_file, num_tracks, "mapping tracks to fixels");
     DWI::Tractography::Mapping::TrackMapperBase mapper (index_image);
     mapper.set_upsample_ratio (DWI::Tractography::Mapping::determine_upsample_ratio (index_header, properties, 0.333f));

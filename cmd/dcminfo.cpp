@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -75,7 +75,7 @@ void run ()
     while (item.read()) {
       for (size_t n = 0; n < opt.size(); ++n)
         if (item.is (tags[n].group, tags[n].element))
-          tags[n].value = item.get_string()[0];
+          tags[n].value = join (item.get_string(), " ");
     }
 
     for (size_t n = 0; n < opt.size(); ++n)

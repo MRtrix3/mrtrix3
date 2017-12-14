@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,17 +13,19 @@
 
 
 #include <iomanip>
-#include <vector>
 
 #include "command.h"
 #include "datatype.h"
 #include "image.h"
 #include "image_helpers.h"
 #include "memory.h"
+#include "stats.h"
+#include "types.h"
+
 #include "algo/histogram.h"
 #include "algo/loop.h"
 #include "file/ofstream.h"
-#include "stats.h"
+
 
 
 using namespace MR;
@@ -50,8 +52,8 @@ OPTIONS
 }
 
 
-typedef Stats::value_type value_type;
-typedef Stats::complex_type complex_type;
+using value_type = Stats::value_type;
+using complex_type = Stats::complex_type;
 
 
 class Volume_loop

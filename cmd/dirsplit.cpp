@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -43,10 +43,8 @@ OPTIONS
   + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");
 }
 
-
-typedef double value_type;
-typedef Eigen::Vector3d vector3_type;
-
+using value_type = double;
+using vector3_type = Eigen::Vector3d;
 
 
 class Shared { MEMALIGN(Shared)
@@ -87,7 +85,7 @@ class Shared { MEMALIGN(Shared)
     value_type energy (size_t i, size_t j) const {
       vector3_type a = { directions(i,0), directions(i,1), directions(i,2) };
       vector3_type b = { directions(j,0), directions(j,1), directions(j,2) };
-      return 1.0 / (a-b).squaredNorm() + 1.0 / (a+b).squaredNorm();
+      return 1.0 / (a-b).norm() + 1.0 / (a+b).norm();
     }
 
 

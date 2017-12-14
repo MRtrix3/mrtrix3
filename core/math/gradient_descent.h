@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -50,7 +50,7 @@ namespace MR
       class GradientDescent
       { MEMALIGN(GradientDescent<Function,UpdateFunctor>)
         public:
-          typedef typename Function::value_type value_type;
+          using value_type = typename Function::value_type;
 
           GradientDescent (Function& function, UpdateFunctor update_functor = LinearUpdate(), value_type step_size_upfactor = 3.0, value_type step_size_downfactor = 0.1, bool verbose = false) :
             func (function),

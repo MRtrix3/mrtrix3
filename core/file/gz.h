@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,7 +17,7 @@
 
 #include <cassert>
 #include <cstring>
-#include <stdio.h>
+#include <cstdio>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -55,7 +55,7 @@ namespace MR
 
           gz = gzopen (filename.c_str(), mode);
           if (!gz)
-            throw Exception ("error opening file \"" + filename + "\": insufficient memory");
+            throw Exception ("error opening file \"" + filename + "\": " + strerror(errno));
         }
 
         void close () {
@@ -77,6 +77,9 @@ namespace MR
         int64_t tell () const {
           assert (gz);
           return (gztell (gz));
+        }
+        int64_t tellg () const {
+          return tell();
         }
 
         void seek (int64_t offset) {

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,7 +17,8 @@
 
 #include <Eigen/Dense>
 #include <mutex>
-#include <vector>
+
+#include "types.h"
 
 
 namespace MR {
@@ -32,8 +33,8 @@ namespace MR {
         class SpatialLock
         { MEMALIGN(SpatialLock)
         public:
-          typedef T value_type;
-          typedef Eigen::Matrix<value_type, 3, 1> point_type;
+          using value_type = T;
+          using point_type = Eigen::Matrix<value_type, 3, 1>;
           
           SpatialLock() : _tx(0), _ty(0), _tz(0) { }
           SpatialLock(const value_type t) : _tx(t), _ty(t), _tz(t) { }

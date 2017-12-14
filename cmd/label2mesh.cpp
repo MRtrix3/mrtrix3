@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,13 +13,13 @@
 
 
 #include <mutex>
-#include <vector>
 
 #include "command.h"
+#include "image.h"
 #include "progressbar.h"
 #include "thread_queue.h"
+#include "types.h"
 
-#include "image.h"
 #include "algo/loop.h"
 #include "adapter/subset.h"
 
@@ -61,9 +61,10 @@ void run ()
 
   Header labels_header = Header::open (argument[0]);
   Connectome::check (labels_header);
+  check_3D_nonunity (labels_header);
   auto labels = labels_header.get_image<uint32_t>();
 
-  typedef Eigen::Array<int, 3, 1> voxel_corner_t;
+  using voxel_corner_t = Eigen::Array<int, 3, 1>;
 
   vector<voxel_corner_t> lower_corners, upper_corners;
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -51,10 +51,8 @@ void usage ()
 }
 
 
-typedef double value_type;
-typedef Eigen::Vector3d vector3_type;
-
-
+using value_type = double;
+using vector3_type = Eigen::Vector3d;
 
 
 class Shared { MEMALIGN(Shared)
@@ -84,7 +82,7 @@ class Shared { MEMALIGN(Shared)
       vector3_type b = { directions(j,0), directions(j,1), directions(j,2) };
       if (signs[i] < 0) a = -a;
       if (signs[j] < 0) b = -b;
-      return 1.0 / (a-b).squaredNorm();
+      return 1.0 / (a-b).norm();
     }
 
 

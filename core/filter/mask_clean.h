@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,6 +18,7 @@
 #include "progressbar.h"
 #include "memory.h"
 #include "image.h"
+#include "image_helpers.h"
 #include "algo/copy.h"
 #include "algo/loop.h"
 #include "filter/base.h"
@@ -58,6 +59,7 @@ namespace MR
             Base (in),
             scale (2)
         {
+          check_3D_nonunity (in);
           datatype_ = DataType::Bit;
         }
 
@@ -66,6 +68,7 @@ namespace MR
             Base (in, message),
             scale (2)
         {
+          check_3D_nonunity (in);
           datatype_ = DataType::Bit;
         }
 

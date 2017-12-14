@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,37 +30,37 @@ namespace MR
       namespace {
         template<class T>
         struct Void { NOMEMALIGN
-          typedef void type;
+          using type = void;
         };
 
         template <class MetricType, typename U = void>
         struct is_neighbourhood_metric { NOMEMALIGN
-          typedef int no;
+          using no = int;
         };
 
         template <class MetricType>
         struct is_neighbourhood_metric<MetricType, typename Void<typename MetricType::is_neighbourhood>::type> { NOMEMALIGN
-          typedef int yes;
+          using yes = int;
         };
 
         template <class MetricType, typename U = void>
         struct use_processed_image { NOMEMALIGN
-          typedef int no;
+          using no = int;
         };
 
         template <class MetricType>
         struct use_processed_image<MetricType, typename Void<typename MetricType::requires_precompute>::type> { NOMEMALIGN
-          typedef int yes;
+          using yes = int;
         };
 
         template <class MetricType, typename U = void>
         struct cost_is_vector { NOMEMALIGN
-          typedef int no;
+          using no = int;
         };
 
         template <class MetricType>
         struct cost_is_vector<MetricType, typename Void<typename MetricType::is_vector_type>::type> { NOMEMALIGN
-          typedef int yes;
+          using yes = int;
         };
       }
       //! \endcond

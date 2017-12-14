@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -140,7 +140,9 @@ namespace MR
       void set_DW_scheme (Header& header, const MatrixType& G)
       {
         if (!G.rows()) {
-          header.keyval().erase ("dw_scheme");
+          auto it = header.keyval().find ("dw_scheme");
+          if (it != header.keyval().end())
+            header.keyval().erase (it);
           return;
         }
         std::string dw_scheme;
@@ -183,9 +185,15 @@ namespace MR
     {
       set_DW_scheme (header, grad);
       auto dw_scheme = header.keyval().find ("dw_scheme");
-      header.keyval()["prior_dw_scheme"] = dw_scheme->second;
-      header.keyval().erase (dw_scheme);
+      if (dw_scheme != header.keyval().end()) {
+        header.keyval()["prior_dw_scheme"] = dw_scheme->second;
+        header.keyval().erase (dw_scheme);
+      }
     }
+
+
+    //! clear any DW gradient encoding scheme from the header
+    void clear_DW_scheme (Header&);
 
 
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -28,7 +28,7 @@ using namespace MR;
 using namespace App;
 
 
-const char* filters[] = { "fft", "gradient", "median", "smooth", "normalise", NULL };
+const char* filters[] = { "fft", "gradient", "median", "smooth", "normalise", nullptr };
 
 
 const OptionGroup FFTOption = OptionGroup ("Options for FFT filter")
@@ -108,9 +108,9 @@ void usage ()
   SYNOPSIS = "Perform filtering operations on 3D / 4D MR images";
 
   DESCRIPTION
-  + "For 4D images, each 3D volume is processed independently."
   + "The available filters are: fft, gradient, median, smooth, normalise."
-  + "Each filter has its own unique set of optional parameters.";
+  + "Each filter has its own unique set of optional parameters."
+  + "For 4D images, each 3D volume is processed independently.";
 
   ARGUMENTS
   + Argument ("input",  "the input image.").type_image_in ()

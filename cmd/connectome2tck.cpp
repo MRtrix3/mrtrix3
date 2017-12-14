@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,10 +14,12 @@
 
 #include <sstream>
 #include <string>
-#include <vector>
 
 #include "command.h"
+#include "image.h"
 #include "progressbar.h"
+#include "thread_queue.h"
+#include "types.h"
 
 #include "connectome/connectome.h"
 
@@ -27,11 +29,6 @@
 #include "dwi/tractography/connectome/extract.h"
 #include "dwi/tractography/connectome/streamline.h"
 #include "dwi/tractography/mapping/loader.h"
-
-#include "image.h"
-
-#include "thread_queue.h"
-
 
 
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,16 +12,19 @@
  */
 
 
+#include <limits>
+
 #include "command.h"
-#include "progressbar.h"
-#include "memory.h"
 #include "image.h"
+#include "memory.h"
+#include "phase_encoding.h"
+#include "progressbar.h"
 #include "algo/threaded_loop.h"
 #include "math/math.h"
 #include "math/median.h"
+#include "dwi/gradient.h"
 
 #include <limits>
-#include <vector>
 
 
 using namespace MR;
@@ -72,7 +75,7 @@ void usage ()
 }
 
 
-typedef float value_type;
+using value_type = float;
 
 
 class Mean { NOMEMALIGN
@@ -346,8 +349,16 @@ void run ()
     if (axis >= image_in.ndim())
       throw Exception ("Cannot perform operation along axis " + str (axis) + "; image only has " + str(image_in.ndim()) + " axes");
 
-
     Header header_out (image_in);
+
+    if (axis == 3) {
+      try {
+        const auto DW_scheme = DWI::parse_DW_scheme (header_out);
+        DWI::stash_DW_scheme (header_out, DW_scheme);
+      } catch (...) { }
+      DWI::clear_DW_scheme (header_out);
+      PhaseEncoding::clear_scheme (header_out);
+    }
 
     header_out.datatype() = DataType::from_command_line (DataType::Float32);
     header_out.size(axis) = 1;
@@ -407,6 +418,11 @@ void run ()
           throw Exception ("Image " + path + " has axis with non-unary dimension beyond first input image " + header.name());
       }
     }
+
+    // Wipe any header information that can't be guaranteed to still be accurate
+    //   after applying an operator across multiple images
+    header.keyval().erase ("dw_scheme");
+    PhaseEncoding::clear_scheme (header);
 
     // Instantiate a kernel depending on the operation requested
     std::unique_ptr<ImageKernelBase> kernel;

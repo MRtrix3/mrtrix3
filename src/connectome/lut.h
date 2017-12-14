@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,14 +15,14 @@
 #ifndef __connectome_lut_h__
 #define __connectome_lut_h__
 
+#include <map>
+#include <string>
 
 #include "app.h"
+#include "types.h"
 
 #include "connectome/connectome.h"
 
-#include <map>
-#include <string>
-#include <vector>
 
 
 namespace MR {
@@ -38,7 +38,7 @@ class LUT_node
 
   public:
 
-    typedef Eigen::Array<uint8_t, 3, 1> RGB;
+    using RGB = Eigen::Array<uint8_t, 3, 1>;
 
     LUT_node (const std::string& n) :
       name (n),
@@ -93,7 +93,7 @@ class LUT : public std::multimap<node_t, LUT_node>
 { MEMALIGN(LUT)
     enum file_format { LUT_NONE, LUT_BASIC, LUT_FREESURFER, LUT_AAL, LUT_ITKSNAP, LUT_MRTRIX };
   public:
-    typedef std::multimap<node_t, LUT_node> map_type;
+    using map_type = std::multimap<node_t, LUT_node>;
     LUT () : exclusive (true) { }
     LUT (const std::string&);
     void load (const std::string&);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -49,7 +49,7 @@ namespace MR
         class Entry { MEMALIGN(Entry)
           public:
 
-            typedef std::function< Eigen::Array3f (float) > basic_map_fn;
+            using basic_map_fn = std::function< Eigen::Array3f (float) >;
 
             Entry (const char* name, const char* glsl_mapping, basic_map_fn basic_mapping,
                 const char* amplitude = NULL, bool special = false, bool is_colour = false) :

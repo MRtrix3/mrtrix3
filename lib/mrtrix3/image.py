@@ -3,6 +3,16 @@
 #   data, rather than trying to duplicate support for all possible image formats natively
 #   in Python.
 
+def check3DNonunity(image_path):
+  from mrtrix3 import app
+  dim = [ int(i) for i in headerField(image_path, 'size').strip().split() ]
+  if len(dim) < 3:
+    app.error('Image \'' + image_path + '\' does not contain 3 spatial dimensions')
+  if min(dim[:3]) == 1:
+    app.error('Image \'' + image_path + '\' does not contain 3D spatial information (axis with size 1)')
+
+
+
 def headerField(image_path, field):
   import subprocess
   from mrtrix3 import app, run
@@ -26,7 +36,7 @@ def headerKeyValue(image_path, key):
   import subprocess
   from mrtrix3 import app, run
   command = [ run.exeName(run.versionMatch('mrinfo')), image_path, '-property', key ]
-  if app.verbosity > 1:
+  if app._verbosity > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
   result, err = proc.communicate()

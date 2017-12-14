@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -28,9 +28,9 @@ namespace MR
 
 
 
-      typedef MR::default_type value_type;
-      typedef Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
-      typedef Eigen::Array<value_type, Eigen::Dynamic, 1> vector_type;
+      using value_type = MR::default_type;
+      using matrix_type = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>;
+      using vector_type = Eigen::Array<value_type, Eigen::Dynamic, 1>;
 
 
 

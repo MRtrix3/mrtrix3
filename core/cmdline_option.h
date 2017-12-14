@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,15 +16,15 @@
 #define __cmdline_option_h__
 
 #include <cassert>
-#include <string>
-#include <vector>
 #include <limits>
+#include <string>
 
 #ifdef None
 # undef None
 #endif
 
 #include "mrtrix.h"
+#include "types.h"
 
 namespace MR
 {
@@ -39,7 +39,7 @@ namespace MR
    * */
 
     //! \cond skip
-    typedef enum {
+    enum ArgType {
       Undefined,
       Text,
       Boolean,
@@ -54,9 +54,9 @@ namespace MR
       FloatSeq,
       TracksIn,
       TracksOut
-    } ArgType;
+    };
 
-    typedef int ArgFlags;
+    using ArgFlags = int;
     constexpr ArgFlags None = 0;
     constexpr ArgFlags Optional = 0x1;
     constexpr ArgFlags AllowMultiple = 0x2;

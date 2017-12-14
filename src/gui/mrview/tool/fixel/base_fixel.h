@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -320,9 +320,9 @@ namespace MR
             }
           };
 
-          typedef MR::Fixel::Legacy::Image<MR::Fixel::Legacy::FixelMetric> FixelLegacyType;
-          typedef MR::Image<float> FixelImage4DType;
-          typedef MR::Image<uint32_t> FixelIndexImageType;
+          using FixelLegacyType = MR::Fixel::Legacy::Image<MR::Fixel::Legacy::FixelMetric>;
+          using FixelImage4DType = MR::Image<float>;
+          using FixelIndexImageType = MR::Image<uint32_t>;
        }
     }
   }

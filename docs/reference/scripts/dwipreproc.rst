@@ -18,6 +18,11 @@ Usage
 -  *input*: The input DWI series to be corrected
 -  *output*: The output corrected image series
 
+Description
+-----------
+
+Note that this script does not perform any explicit registration between images provided to topup via the -se_epi option, and the DWI volumes provided to eddy. In some instances (motion between acquisitions) this can result in erroneous application of the inhomogeneity field during distortion correction. If this could potentially be a problem for your data, a possible solution is to insert the first b=0 DWI volume to be the first volume of the image file provided via the -se_epi option. This will hopefully be addressed within the script itself in a future update.
+
 Options
 -------
 
@@ -42,6 +47,10 @@ Other options for the dwipreproc script
 - **-se_epi file** Provide an additional image series consisting of spin-echo EPI images, which is to be used exclusively by topup for estimating the inhomogeneity field (i.e. it will not form part of the output image series)
 
 - **-json_import JSON_file** Import image header information from an associated JSON file (may be necessary to determine phase encoding information)
+
+- **-topup_options TopupOptions** Manually provide additional command-line options to the topup command (provide a string within quotation marks that contains at least one space, even if only passing a single command-line option to topup)
+
+- **-eddy_options EddyOptions** Manually provide additional command-line options to the eddy command (provide a string within quotation marks that contains at least one space, even if only passing a single command-line option to eddy)
 
 - **-cuda** Use the CUDA version of eddy (if available)
 
@@ -97,7 +106,7 @@ References
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

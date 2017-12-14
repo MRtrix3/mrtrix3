@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -58,7 +58,7 @@ void run ()
   Fixel::check_fixel_directory (out_fixel_directory, true);
 
   Header out_header = Header (in_index_image);
-  size_t total_nfixels = std::stoul (out_header.keyval ()[Fixel::n_fixels_key]);
+  size_t total_nfixels = Fixel::get_number_of_fixels (in_index_header);
 
   // We need to do a first pass of the mask image to determine the number of cropped fixels
   for (auto l = Loop (0) (mask_image); l; ++l) {

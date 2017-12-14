@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -39,15 +39,15 @@ namespace MR
         //   based on what mechanism caused the termination
         const uint8_t term_add_to_tck[TERMINATION_REASON_COUNT] = { 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1 };
 
-        enum reject_t { NO_PROPAGATION_FROM_SEED, TRACK_TOO_SHORT, TRACK_TOO_LONG, ENTER_EXCLUDE_REGION, MISSED_INCLUDE_REGION, ACT_POOR_TERMINATION, ACT_FAILED_WM_REQUIREMENT };
-#define REJECTION_REASON_COUNT 7
+        enum reject_t { INVALID_SEED, NO_PROPAGATION_FROM_SEED, TRACK_TOO_SHORT, TRACK_TOO_LONG, ENTER_EXCLUDE_REGION, MISSED_INCLUDE_REGION, ACT_POOR_TERMINATION, ACT_FAILED_WM_REQUIREMENT };
+#define REJECTION_REASON_COUNT 8
 
 
 
         template <class ImageType>
           class Interpolator { MEMALIGN(Interpolator<ImageType>)
             public:
-              typedef Interp::Linear<ImageType> type;
+              using type = Interp::Linear<ImageType>;
           };
 
 

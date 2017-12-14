@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,7 +25,7 @@ namespace MR
       template <class ImageType>
       class __MinMax { NOMEMALIGN
         public:
-          typedef typename ImageType::value_type value_type;
+          using value_type = typename ImageType::value_type;
 
           __MinMax (value_type& overal_min, value_type& overal_max) :
             overal_min (overal_min), overal_max (overal_max),

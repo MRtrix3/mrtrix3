@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,12 +16,10 @@
 #define __dwi_tractography_mapping_mapper_h__
 
 
-
-#include <vector>
-
 #include "image.h"
-#include "transform.h"
 #include "thread_queue.h"
+#include "transform.h"
+#include "types.h"
 
 #include "dwi/directions/set.h"
 
@@ -210,8 +208,9 @@ namespace MR {
         template <class Cont>
           void TrackMapperBase::voxelise_precise (const Streamline<>& tck, Cont& out) const
           {
-            typedef Streamline<>::point_type point_type;
-            typedef Streamline<>::value_type value_type;
+
+            using point_type = Streamline<>::point_type;
+            using value_type = Streamline<>::value_type;
 
             const default_type accuracy = Math::pow2 (0.005 * std::min (info.spacing (0), std::min (info.spacing (1), info.spacing (2))));
 

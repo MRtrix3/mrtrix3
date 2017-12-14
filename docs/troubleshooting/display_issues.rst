@@ -231,3 +231,19 @@ system-wide or user config file to disable these advanced terminal features:
 
     TerminalColor: 0
 
+
+
+Conflicts with previous versions of Qt
+--------------------------------------
+
+If previous versions of Qt were already installed on the system, they
+can sometimes conflict with the installation of *MRtrix3*. This can
+manifest in many ways, but the two most obvious one are:
+
+-  ``./configure`` reports using the older version, but ``./build``
+   completes without errors. However, MRView crashes, complaining about
+   OpenGL version not being sufficient.
+-  ``./configure`` reports the correct version of Qt, but ``./build``
+   fails with various error messages (typically related to redefined
+   macros, with previous definitions elsewhere in the code).
+

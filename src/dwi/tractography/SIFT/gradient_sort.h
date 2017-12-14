@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,7 +17,8 @@
 
 
 #include <set>
-#include <vector>
+
+#include "types.h"
 
 #include "dwi/tractography/SIFT/track_index_range.h"
 #include "dwi/tractography/SIFT/types.h"
@@ -79,14 +80,14 @@ namespace MR
       class MT_gradient_vector_sorter
       { MEMALIGN(MT_gradient_vector_sorter)
 
-          typedef vector<Cost_fn_gradient_sort> VecType;
-          typedef VecType::iterator VecItType;
+          using VecType = vector<Cost_fn_gradient_sort>;
+          using VecItType = VecType::iterator;
 
           class Comparator { NOMEMALIGN
             public:
               bool operator() (const VecItType& a, const VecItType& b) const { return (a->get_gradient_per_unit_length() < b->get_gradient_per_unit_length()); }
           };
-          typedef std::set<VecItType, Comparator> SetType;
+          using SetType = std::set<VecItType, Comparator>;
 
 
         public:

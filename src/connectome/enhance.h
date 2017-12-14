@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,7 +17,8 @@
 
 #include <memory>
 #include <stdint.h>
-#include <vector>
+
+#include "types.h"
 
 #include "connectome/mat2vec.h"
 #include "stats/enhance.h"
@@ -31,9 +32,7 @@ namespace MR {
 
 
 
-      typedef Math::Stats::value_type  value_type;
-      typedef Math::Stats::vector_type vector_type;
-      typedef Math::Stats::matrix_type matrix_type;
+      using value_type = Math::Stats::value_type;
 
 
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,8 @@
 #include "command.h"
 
 #include "header.h"
+#include "image.h"
+#include "image_helpers.h"
 
 #include "surface/mesh.h"
 #include "surface/algo/mesh2image.h"
@@ -57,8 +59,11 @@ void run ()
 
   // Get the template image
   Header template_header = Header::open (argument[1]);
+  check_3D_nonunity (template_header);
 
   // Create the output image
+  template_header.datatype() = DataType::Float32;
+  template_header.datatype().set_byte_order_native();
   Image<float> output = Image<float>::create (argument[2], template_header);
 
   // Perform the partial volume estimation

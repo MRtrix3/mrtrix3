@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,7 +16,7 @@
 #define __dwi_tractography_tracking_generated_track_h__
 
 
-#include <vector>
+#include "types.h"
 
 #include "dwi/tractography/tracking/types.h"
 
@@ -32,22 +32,29 @@ namespace MR
 
 
 
-    class GeneratedTrack : public vector<Eigen::Vector3f>
-    { MEMALIGN(GeneratedTrack)
+        class GeneratedTrack : public vector<Eigen::Vector3f>
+        { MEMALIGN(GeneratedTrack)
 
-        typedef vector<Eigen::Vector3f> BaseType;
 
-      public:
-        GeneratedTrack() : seed_index (0) { }
-        void clear() { BaseType::clear(); seed_index = 0; }
-        size_t get_seed_index() const { return seed_index; }
-        void reverse() { std::reverse (begin(), end()); seed_index = size()-1; }
-        void set_seed_index (const size_t i) { seed_index = i; }
+          public:
 
-      private:
-        size_t seed_index;
+            using BaseType = vector<Eigen::Vector3f>;
 
-    };
+            enum class status_t { INVALID, SEED_REJECTED, TRACK_REJECTED, ACCEPTED };
+
+            GeneratedTrack() : seed_index (0), status (status_t::INVALID) { }
+            void clear() { BaseType::clear(); seed_index = 0; status = status_t::INVALID; }
+            size_t get_seed_index() const { return seed_index; }
+            status_t get_status() const { return status; }
+            void reverse() { std::reverse (begin(), end()); seed_index = size()-1; }
+            void set_seed_index (const size_t i) { seed_index = i; }
+            void set_status (const status_t i) { status = i; }
+
+          private:
+            size_t seed_index;
+            status_t status;
+
+        };
 
 
       }

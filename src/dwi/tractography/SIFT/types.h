@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -29,8 +29,8 @@ namespace MR
       {
 
 
-      typedef unsigned int track_t;
-      typedef unsigned int voxel_t;
+      using track_t = unsigned int;
+      using voxel_t = unsigned int;
 
 
       }

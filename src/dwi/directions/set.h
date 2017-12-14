@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,12 +16,12 @@
 #define __dwi_directions_set_h__
 
 
-
-#include <stdint.h>
-#include <vector>
+#include <cstdint>
 
 #include "progressbar.h"
+#include "types.h"
 #include "dwi/directions/predefined.h"
+
 
 namespace MR {
   namespace DWI {
@@ -29,8 +29,7 @@ namespace MR {
 
 
 
-      typedef unsigned int index_type;
-
+      using index_type = unsigned int;
 
 
       class Set { MEMALIGN(Set)

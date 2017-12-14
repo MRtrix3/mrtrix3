@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -101,6 +101,23 @@ namespace MR
           if (abort_on_fail) throw Exception (mesg);
           else WARN (mesg);
         }
+      }
+
+
+
+
+      inline float get_step_size (const Properties& p)
+      {
+        for (size_t index = 0; index != 2; ++index) {
+          const std::string key (index ? "step_size" : "output_step_size");
+          auto it = p.find (key);
+          if (it != p.end()) {
+            try {
+              return to<float> (it->second);
+            } catch (...) { }
+          }
+        }
+        return NaN;
       }
 
 

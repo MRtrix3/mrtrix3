@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,13 +15,13 @@
 #ifndef __image_io_base_h__
 #define __image_io_base_h__
 
-#include <vector>
-#include <stdint.h>
-#include <unistd.h>
 #include <cassert>
+#include <cstdint>
+#include <unistd.h>
 
 #include "memory.h"
 #include "mrtrix.h"
+#include "types.h"
 #include "file/entry.h"
 
 #define MAX_FILES_PER_IMAGE 256U

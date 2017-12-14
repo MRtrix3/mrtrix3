@@ -42,9 +42,11 @@ OPTIONS
 
     -verbose     enable more informative output.
 
-    -dev         enable the extended development build process
+    -dev         enable the extended development build process.
 
-    -R           used to generate an R module (implies -noshared)
+    -R           used to generate an R module (implies -noshared).
+
+    -openmp      enable OpenMP compiler flags.
 
 
 ENVIRONMENT VARIABLES
@@ -84,9 +86,10 @@ ENVIRONMENT VARIABLES
 
     ARCH
         the specific CPU architecture to compile for. This variable will be
-        passed to the compiler using -march=$ARCH. If set to an empty string,
-        no -march flag will be passed to the compiler.  The default is
-        'native'.
+        passed to the compiler using -march=$ARCH. You can use 'ARCH=native' to
+        get the best performance for your system. Note that this will result in
+        executables that may not run on other systems if the same CPU
+        extensions are not available.
 
     CFLAGS
         Any additional flags to the compiler.
@@ -108,6 +111,18 @@ ENVIRONMENT VARIABLES
 
     ZLIB_LDFLAGS
         Any flags required to link with the zlib compression library.
+
+    TIFF_CFLAGS
+        Any flags required to compile with the TIFF library.
+    
+    TIFF_LDFLAGS
+        Any flags required to link with the TIFF library.
+
+    FFTW_CFLAGS
+        Any flags required to compile with the FFTW library.
+    
+    FFTW_LDFLAGS
+        Any flags required to link with the FFTW library.
 
     QMAKE
         The command to invoke Qt's qmake (default: qmake).
@@ -139,6 +154,7 @@ noshared = False
 static = False
 verbose = False
 R_module = False
+openmp = False
 sh_basis_def = None
 dev = False
 
@@ -158,6 +174,7 @@ for arg in sys.argv[1:]:
     R_module = True
     #noshared = True
     nogui = True
+  elif '-openmp'.startswith (arg): openmp = True
   else:
     print (usage_string)
     sys.exit (1)
@@ -200,6 +217,23 @@ if nogui: report (' [command-line only]')
 report ('\n\n')
 
 
+# remove any mention of anaconda from PATH:
+path = os.environ['PATH']
+if path.endswith ('\\'):
+  path = path[:-1]
+cleanpath = [];
+oldpath = path.split(':')
+for entry in oldpath:
+  if 'anaconda' not in entry.lower():
+    cleanpath += [ entry ]
+if not oldpath == cleanpath:
+  report ('WARNING: Anaconda removed from PATH to avoid conflicts\n\n')
+path = os.pathsep.join(cleanpath)
+
+os.environ['PATH'] = path
+
+
+
 
 
 global cpp, cpp_cmd, ld, ld_args, ld_cmd
@@ -221,6 +255,12 @@ eigen_cflags = []
 
 zlib_cflags = []
 zlib_ldflags = [ '-lz' ]
+
+tiff_cflags = []
+tiff_ldflags = [ '-ltiff' ]
+
+fftw_cflags = []
+fftw_ldflags = [ '-lfftw3' ]
 
 
 class TempFile:
@@ -478,7 +518,7 @@ if system == 'linux':
   runpath = '-Wl,-rpath,$ORIGIN/'
 elif system == 'windows':
   cxx = [ 'g++', 'clang++' ]
-  cpp_flags += [ '-pthread', '-DMRTRIX_WINDOWS', '-mms-bitfields', '-Wa,-mbig-obj' ]
+  cpp_flags += [ '-pthread', '-DMRTRIX_WINDOWS', '-mms-bitfields', '-Wa,-mbig-obj', '-D_FILE_OFFSET_BITS=64' ]
   exe_suffix = '.exe'
   lib_prefix = ''
   lib_suffix = '.dll'
@@ -511,11 +551,6 @@ if 'ARCH' in os.environ.keys():
   if march:
     report ('Machine architecture set by ARCH environment variable to: ' + march + '\n')
     cpp_flags += [ '-march='+march ]
-  else:
-    report ('Empty ARCH string found: will not pass -march flag to compiler.\n')
-else:
-  if system != 'darwin':
-    cpp_flags += [ '-march=native' ]
 
 
 
@@ -735,6 +770,30 @@ ld_lib_flags += zlib_ldflags
 
 
 
+# TIFF:
+
+report ('Checking for TIFF library: ')
+
+if 'TIFF_CFLAGS' in os.environ.keys(): tiff_cflags = shlex.split (os.environ['TIFF_CFLAGS'])
+if 'TIFF_LDFLAGS' in os.environ.keys(): tiff_ldflags = shlex.split (os.environ['TIFF_LDFLAGS'])
+
+try:
+  tiff_version = compile ('''
+#include <iostream>
+#include <tiffio.h>
+
+int main() {
+  std::cout << TIFFGetVersion();
+  return (0);
+}
+''', cpp_flags + tiff_cflags, ld_flags + tiff_ldflags)
+  report (tiff_version.splitlines()[0] + '\n')
+  cpp_flags += [ '-DMRTRIX_TIFF_SUPPORT' ] + tiff_cflags
+  ld_flags += tiff_ldflags
+  ld_lib_flags += tiff_ldflags
+except:
+  report ('not found - TIFF support disabled\n');
+
 
 
 # Eigen3 flags:
@@ -777,6 +836,61 @@ except ( LinkError, RuntimeError ) as e:
 except:
   error ('unexpected exception!' + configure_log_hint)
 
+if not openmp:
+  eigen_cflags += [ '-DEIGEN_DONT_PARALLELIZE' ]
+
+
+
+
+# FFTW:
+
+report ('Checking for FFTW library: ')
+
+if 'FFTW_CFLAGS' in os.environ.keys(): fftw_cflags = shlex.split (os.environ['FFTW_CFLAGS'])
+if 'FFTW_LDFLAGS' in os.environ.keys(): fftw_ldflags = shlex.split (os.environ['FFTW_LDFLAGS'])
+
+try:
+  fftw_version = compile ('''
+#include <iostream>
+#include <fftw3.h>
+
+int main() {
+  std::cout << fftw_version << "\\n";
+  return (0);
+}
+''', cpp_flags + fftw_cflags, ld_flags + fftw_ldflags)
+  report (fftw_version.splitlines()[0] + '\n')
+  cpp_flags += [ '-DEIGEN_FFTW_DEFAULT' ] + fftw_cflags
+  ld_flags += fftw_ldflags
+  ld_lib_flags += fftw_ldflags
+except:
+  report ('not found - FFTW support disabled\n');
+
+
+
+
+# add openmp flags if required and available
+
+if openmp:
+  cpp_flags += [ '-fopenmp' ]
+  ld_flags  += [ '-fopenmp' ]
+  report ('Checking for OpenMP support: ')
+  try:
+    compile ('''
+    #include <Eigen/Core>
+    int main()
+    {
+      Eigen::initParallel();
+      Eigen::setNbThreads(4);
+      return (Eigen::nbThreads() == 4) ? 0 : 1;
+    }
+    ''', cpp_flags + eigen_cflags, ld_flags)
+    report ('ok\n')
+  except (CompileError, LinkError):
+    error ('OpenMP not found for this compiler/system.')
+  except:
+    error ('OpenMP not working as expected.')
+
 
 
 
@@ -804,6 +918,7 @@ except ( CompileError, LinkError ):
   MRtrix3 was unable to compile a test program involving JSON for Modern C++. Your compiler may not be sufficiently up-to-date.''' + configure_log_hint)
 except:
   error ('unexpected exception!' + configure_log_hint)
+
 
 
 
@@ -1140,9 +1255,6 @@ if R_module:
 
 
 
-
-
-
 # add debugging or profiling flags if requested:
 
 cpp_flags += [ '-Wall' ]
@@ -1166,7 +1278,9 @@ elif not debug:
 
 
 
-#
+
+
+
 # set macro for non-orthonormal SH basis if requested:
 if sh_basis_def is not None:
   cpp_flags += [ sh_basis_def ]
@@ -1189,9 +1303,6 @@ for line in config_report.splitlines():
   cache.write ('# ' + line + '\n')
 cache.write ('\n\n')
 
-path = os.environ['PATH']
-if path.endswith ('\\'):
-  path = path[:-1]
 cache.write ("PATH = r'" + path + "'\n")
 
 commit ('obj_suffix', obj_suffix)

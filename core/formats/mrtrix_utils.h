@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,9 +15,9 @@
 #ifndef __formats_mrtrix_utils_h__
 #define __formats_mrtrix_utils_h__
 
-#include <vector>
-
 #include "header.h"
+#include "types.h"
+
 #include "file/gz.h"
 #include "file/key_value.h"
 #include "file/ofstream.h"

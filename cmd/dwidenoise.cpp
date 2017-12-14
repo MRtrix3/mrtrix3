@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -37,7 +37,7 @@ void usage ()
     
     + "Note that this function does not correct for non-Gaussian noise biases.";
   
-  AUTHOR = "Daan Christiaens (daan.christiaens@kuleuven.be) & Jelle Veraart (jelle.veraart@nyumc.org) & J-Donald Tournier (jdtournier@gmail.com)";
+  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk) & Jelle Veraart (jelle.veraart@nyumc.org) & J-Donald Tournier (jdtournier@gmail.com)";
   
   REFERENCES
     + "Veraart, J.; Novikov, D.S.; Christiaens, D.; Ades-aron, B.; Sijbers, J. & Fieremans, E. " // Internal
@@ -84,7 +84,7 @@ void usage ()
 }
 
 
-typedef float value_type;
+using value_type = float;
 
 
 template <class ImageType>
@@ -196,6 +196,9 @@ private:
 void run ()
 {
   auto dwi_in = Image<value_type>::open (argument[0]).with_direct_io(3);
+
+  if (dwi_in.ndim() != 4 || dwi_in.size(3) <= 1) 
+    throw Exception ("input image must be 4-dimensional");
 
   Image<bool> mask;
   auto opt = get_options ("mask");

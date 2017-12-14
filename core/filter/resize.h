@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -131,7 +131,8 @@ namespace MR
           {
             switch (interp_type) {
             case 0:
-              reslice <Interp::Nearest> (input, output);
+              // Prevent use of oversampling when using nearest-neighbour interpolation
+              reslice <Interp::Nearest> (input, output, Adapter::NoTransform, { 1, 1, 1 });
               break;
             case 1:
               reslice <Interp::Linear> (input, output);

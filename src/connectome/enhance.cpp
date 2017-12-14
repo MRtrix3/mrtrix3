@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,8 +14,6 @@
 
 #include "connectome/enhance.h"
 #include "connectome/mat2vec.h"
-
-#include <set>
 
 #include "progressbar.h"
 
@@ -37,7 +35,7 @@ namespace MR {
 
       void NBS::operator() (in_column_type in, const value_type T, out_column_type out) const
       {
-        out = vector_type::Zero (in.size());
+        out.setZero();
 
         for (ssize_t seed = 0; seed != in.size(); ++seed) {
           if (std::isfinite (in[seed]) && in[seed] >= T && !out[seed]) {

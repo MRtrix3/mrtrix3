@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -44,9 +44,9 @@ namespace MR
         class Problem { MEMALIGN(Problem<ValueType>)
           public:
 
-            typedef ValueType value_type;
-            typedef Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic> matrix_type;
-            typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vector_type;
+            using value_type = ValueType;
+            using matrix_type = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic>;
+            using vector_type = Eigen::Matrix<value_type,Eigen::Dynamic,1>;
 
             Problem () { }
             //! set up constrained least-squares problem
@@ -129,9 +129,9 @@ namespace MR
         class Solver { MEMALIGN(Solver<ValueType>)
           public:
 
-            typedef ValueType value_type;
-            typedef Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic> matrix_type;
-            typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vector_type;
+            using value_type = ValueType;
+            using matrix_type = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic>;
+            using vector_type = Eigen::Matrix<value_type,Eigen::Dynamic,1>;
 
             Solver (const Problem<value_type>& problem) :
               P (problem),

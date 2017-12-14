@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -46,15 +46,15 @@ namespace MR
 
 
       // to handle batched / unbatched seamlessly:
-      template <class X> class __item { NOMEMALIGN public: typedef X type; }; 
-      template <class X> class __item <__Batch<X>> { NOMEMALIGN public: typedef X type; };
+      template <class X> class __item { NOMEMALIGN public: using type = X; };
+      template <class X> class __item <__Batch<X>> { NOMEMALIGN public: using type = X; };
 
       // to get multi/single job/functor seamlessly:
       template <class X>
         class __job { NOMEMALIGN
           public:
-            typedef typename std::remove_reference<X>::type type;
-            typedef typename std::remove_reference<X>::type& member_type;
+            using type = typename std::remove_reference<X>::type;
+            using member_type = typename std::remove_reference<X>::type&;
             static X& functor (X& job) { return job; }
 
             template <class SingleFunctor>
@@ -66,8 +66,8 @@ namespace MR
       template <class X>
         class __job <__Multi<X>> { NOMEMALIGN
           public:
-            typedef typename std::remove_reference<X>::type type;
-            typedef typename std::remove_reference<X>::type member_type;
+            using type = typename std::remove_reference<X>::type;
+            using member_type = typename std::remove_reference<X>::type;
             static X& functor (__Multi<X>& job) { return job.functor; }
 
             template <class SingleFunctor>
@@ -629,8 +629,8 @@ namespace MR
 
     template <class T> class Queue<__Batch<T>> { NOMEMALIGN
       private:
-        typedef vector<T> BatchType;
-        typedef Queue<BatchType> BatchQueue;
+        using BatchType = vector<T>;
+        using BatchQueue = Queue<BatchType>;
 
       public:
         Queue (const __Batch<T>& item_type, const std::string& description = "unnamed", size_t buffer_size = MRTRIX_QUEUE_DEFAULT_CAPACITY) :

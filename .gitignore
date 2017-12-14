@@ -23,6 +23,7 @@ build.*
 /build.log
 /core/version.cpp
 /src/project_version.h
+/lib/mrtrix3/_version.py
 /test/src/project_version.h
 /scripts/mrtrix_bash_completion
 /release/

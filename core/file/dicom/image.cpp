@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -43,6 +43,10 @@ namespace MR {
         // process image-specific or per-frame items here:
         if (is_toplevel) {
           switch (item.group) {
+            case 0x0008U: 
+              if (item.element == 0x0008U) 
+                image_type = join (item.get_string(), " ");
+              return;
             case 0x0018U: 
               switch (item.element) {
                 case 0x0050U: 

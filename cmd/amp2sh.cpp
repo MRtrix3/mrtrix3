@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,8 +13,9 @@
 
 
 #include "command.h"
-#include "progressbar.h"
 #include "image.h"
+#include "phase_encoding.h"
+#include "progressbar.h"
 #include "math/SH.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
@@ -76,7 +77,7 @@ void usage ()
 #define RICIAN_POWER 2.25
 
 
-typedef float value_type;
+using value_type = float;
 
 class Amp2SHCommon { MEMALIGN(Amp2SHCommon)
   public:
@@ -232,6 +233,7 @@ void run ()
       DWI::stash_DW_scheme (header, grad);
     }
   }
+  PhaseEncoding::clear_scheme (header);
 
   auto sh2amp = DWI::compute_SH2amp_mapping (dirs, true, 8);
 

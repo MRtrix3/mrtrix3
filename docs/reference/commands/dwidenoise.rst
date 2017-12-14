@@ -66,7 +66,7 @@ Veraart, J.; Fieremans, E. & Novikov, D.S. Diffusion MRI noise mapping using ran
 
 
 
-**Author:** Daan Christiaens (daan.christiaens@kuleuven.be) & Jelle Veraart (jelle.veraart@nyumc.org) & J-Donald Tournier (jdtournier@gmail.com)
+**Author:** Daan Christiaens (daan.christiaens@kcl.ac.uk) & Jelle Veraart (jelle.veraart@nyumc.org) & J-Donald Tournier (jdtournier@gmail.com)
 
 **Copyright:** Copyright (c) 2016 New York University, University of Antwerp, and the MRtrix3 contributors 
  

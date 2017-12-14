@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -206,10 +206,10 @@ namespace MR
         { MEMALIGN(Dynamic)
           private:
 
-            typedef Fixel_TD_seed Fixel;
+            using Fixel = Fixel_TD_seed;
 
-            typedef Fixel_map<Fixel>::MapVoxel MapVoxel;
-            typedef Fixel_map<Fixel>::VoxelAccessor VoxelAccessor;
+            using MapVoxel = Fixel_map<Fixel>::MapVoxel;
+            using VoxelAccessor = Fixel_map<Fixel>::VoxelAccessor;
 
 
         public:

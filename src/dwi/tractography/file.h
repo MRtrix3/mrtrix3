@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,7 +16,6 @@
 #define __dwi_tractography_file_h__
 
 #include <map>
-#include <vector>
 
 #include "app.h"
 #include "types.h"
@@ -221,7 +220,7 @@ namespace MR
           using __WriterBase__<ValueType>::update_counts;
           using __WriterBase__<ValueType>::open_success;
 
-          typedef Eigen::Matrix<ValueType,3,1> vector_type;
+          using vector_type = Eigen::Matrix<ValueType,3,1>;
 
           //! create a new track file with the specified properties
           WriterUnbuffered (const std::string& file, const Properties& properties) :
@@ -365,7 +364,7 @@ namespace MR
           using WriterUnbuffered<ValueType>::format_point;
           using WriterUnbuffered<ValueType>::weights_name;
           using WriterUnbuffered<ValueType>::write_weights;
-          typedef typename WriterUnbuffered<ValueType>::vector_type vector_type;
+          using vector_type = typename WriterUnbuffered<ValueType>::vector_type;
 
           //! create new RAM-buffered track file with specified properties
           /*! the capacity of the RAM buffer can be specified as a config file

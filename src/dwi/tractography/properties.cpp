@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,7 +21,7 @@ namespace MR {
 
       void Properties::load_ROIs ()
       {
-        typedef std::multimap<std::string,std::string>::const_iterator iter;
+        using iter = std::multimap<std::string,std::string>::const_iterator;
 
         std::pair<iter,iter> range = roi.equal_range ("include");
         for (iter it = range.first; it != range.second; ++it) include.add (it->second);

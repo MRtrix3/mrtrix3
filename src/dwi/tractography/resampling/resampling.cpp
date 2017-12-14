@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,6 +13,8 @@
 
 
 #include "dwi/tractography/resampling/resampling.h"
+
+#include "types.h"
 
 #include "dwi/tractography/resampling/arc.h"
 #include "dwi/tractography/resampling/downsampler.h"
@@ -70,6 +72,10 @@ namespace MR {
 
 
         namespace {
+
+          using value_type = float;
+          using point_type = Eigen::Vector3f;
+
           point_type get_pos (const vector<default_type>& s)
           {
             if (s.size() != 3)

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -37,6 +37,9 @@ namespace MR
     DICOM         dicom_handler;
     MGH           mgh_handler;
     MGZ           mgz_handler;
+#ifdef MRTRIX_TIFF_SUPPORT
+    TIFF          tiff_handler;
+#endif
     MRtrix_sparse mrtrix_sparse_handler;
 
 
@@ -57,6 +60,9 @@ namespace MR
       &xds_handler,
       &mgh_handler,
       &mgz_handler,
+#ifdef MRTRIX_TIFF_SUPPORT
+      &tiff_handler,
+#endif
       &mrtrix_sparse_handler,
       NULL
     };
@@ -79,6 +85,10 @@ namespace MR
       ".msf",
       ".msh",
       ".dcm",
+      ".tiff",
+      ".tif",
+      ".TIFF",
+      ".TIF",
       NULL
     };
 

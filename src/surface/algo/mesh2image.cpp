@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,10 +15,10 @@
 #include "surface/algo/mesh2image.h"
 
 #include <map>
-#include <vector>
 
 #include "header.h"
 #include "progressbar.h"
+#include "types.h"
 
 #include "surface/types.h"
 #include "surface/utils.h"
@@ -69,7 +69,7 @@ namespace MR
         auto init_seg = Image<uint8_t>::scratch (H);
 
         // For every voxel, stores those polygons that may intersect the voxel
-        typedef std::map< Vox, vector<size_t> > Vox2Poly;
+        using Vox2Poly = std::map< Vox, vector<size_t> >;
         Vox2Poly voxel2poly;
 
         // Map each polygon to the underlying voxels

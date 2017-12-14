@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -66,9 +66,19 @@ namespace MR
      * transform_type M = input.transform(); // a valid 4x4 transformation matrix
      * \endcode
      */
-    template <class C> struct value_type_of { NOMEMALIGN typedef C type; };
 
-    template <class X> struct value_type_of<std::complex<X>> { NOMEMALIGN typedef X type; };
+    template <class C>
+    struct value_type_of
+    { NOMEMALIGN
+      using type = C;
+    };
+
+    template <class X>
+    struct value_type_of<std::complex<X>>
+    { NOMEMALIGN
+      using type = X;
+    };
+
 
     enum LinearInterpProcessingType
     {
@@ -85,7 +95,7 @@ namespace MR
     class LinearInterpBase : public Base<ImageType> { MEMALIGN(LinearInterpBase<ImageType, PType>)
       public:
         using typename Base<ImageType>::value_type;
-        typedef typename value_type_of<value_type>::type coef_type;
+        using coef_type = typename value_type_of<value_type>::type;
 
 
         LinearInterpBase (const ImageType& parent, value_type value_when_out_of_bounds = Base<ImageType>::default_out_of_bounds_value()) :
@@ -121,8 +131,8 @@ namespace MR
       public:
         using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::Value>;
 
-        typedef typename LinearBase::value_type value_type;
-        typedef typename LinearBase::coef_type coef_type;
+        using value_type = typename LinearBase::value_type;
+        using coef_type = typename LinearBase::coef_type;
         using LinearBase::P;
         using LinearBase::clamp;
         using LinearBase::bounds;
@@ -247,8 +257,8 @@ namespace MR
       public:
         using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::Derivative>;
 
-        typedef typename LinearBase::value_type value_type;
-        typedef typename LinearBase::coef_type coef_type;
+        using value_type = typename LinearBase::value_type;
+        using coef_type = typename LinearBase::coef_type;
         using LinearBase::P;
         using LinearBase::clamp;
         using LinearBase::bounds;
@@ -396,8 +406,8 @@ namespace MR
       public:
         using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::ValueAndDerivative>;
 
-        typedef typename LinearBase::value_type value_type;
-        typedef typename LinearBase::coef_type coef_type;
+        using value_type = typename LinearBase::value_type;
+        using coef_type = typename LinearBase::coef_type;
         using LinearBase::P;
         using LinearBase::clamp;
         using LinearBase::bounds;

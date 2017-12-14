@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -98,7 +98,7 @@ namespace MR
       template <typename VectorType> 
         inline void Plm_sph (VectorType& array, const int lmax, const int m, const typename VectorType::Scalar x)
         {
-          typedef typename VectorType::Scalar value_type;
+          using value_type = typename VectorType::Scalar;
           value_type x2 = pow2 (x);
           if (m && x2 >= 1.0) {
             for (int n = m; n <= lmax; ++n)
@@ -129,7 +129,7 @@ namespace MR
       template <typename VectorType> 
         inline void Plm_sph_deriv (VectorType& array, const int lmax, const int m, const typename VectorType::Scalar x)
         {
-          typedef typename VectorType::Scalar value_type;
+          using value_type = typename VectorType::Scalar;
           value_type x2 = pow2 (x);
           if (x2 >= 1.0) {
             for (int n = m; n <= lmax; n++) 

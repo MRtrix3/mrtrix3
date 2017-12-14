@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -83,10 +83,10 @@ namespace MR
       class Rigid : public Base  { MEMALIGN(Rigid)
         public:
 
-          typedef typename Base::ParameterType ParameterType;
-          typedef RigidLinearNonSymmetricUpdate UpdateType;
-          typedef RigidRobustEstimator RobustEstimatorType;
-          typedef int has_robust_estimator;
+          using ParameterType = typename Base::ParameterType;
+          using UpdateType = RigidLinearNonSymmetricUpdate;
+          using RobustEstimatorType = RigidRobustEstimator;
+          using has_robust_estimator = int;
 
           Rigid () : Base (12) {
             default_type w1 (MR::File::Config::get_float ("reg_gdweight_matrix", 0.0003f));

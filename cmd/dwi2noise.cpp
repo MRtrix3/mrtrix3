@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,6 +14,7 @@
 
 #include "command.h"
 #include "image.h"
+#include "phase_encoding.h"
 #include "adapter/extract.h"
 #include "dwi/gradient.h"
 #include "math/least_squares.h"
@@ -60,7 +61,7 @@ void usage ()
 }
 
 
-typedef float value_type;
+using value_type = float;
 
 void run ()
 {
@@ -83,6 +84,7 @@ void run ()
   header.ndim() = 3;
   header.datatype() = DataType::Float32;
   DWI::stash_DW_scheme (header, grad);
+  PhaseEncoding::clear_scheme (header);
   auto noise = Image<value_type>::create (argument[1], header);
 
   DWI::estimate_noise (dwi, noise, mapping);

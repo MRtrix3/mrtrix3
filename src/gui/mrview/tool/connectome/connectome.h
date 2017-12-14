@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,9 +16,9 @@
 #define __gui_mrview_tool_connectome_connectome_h__
 
 #include <map>
-#include <vector>
 
 #include "image.h"
+#include "types.h"
 
 #include "misc/bitset.h"
 #include "surface/mesh.h"

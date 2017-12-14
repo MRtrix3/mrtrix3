@@ -1,20 +1,20 @@
-Maximum spherical harmonic degree ``lmax``
-------------------------------------------
+Maximum spherical harmonic degree *l*:sub:`max`
+-----------------------------------------------
 
-What determines ``lmax`` for my image data?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+What determines *l*:sub:`max` for my image data?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For any command or script operating on data in the spherical harmonic
 basis, it should be possible to manually set the maximum harmonic degree
 of the output using the ``-lmax`` command-line option. If this is *not*
 provided, then an appropriate value will be determined automatically.
 
-The mechanisms by which this automatic determination of ``lmax`` occurs
+The mechanisms by which this automatic determination of *l*:sub:`max` occurs
 are as follows:
 
--  Determine the maximum value for ``lmax`` that is supported by the number
+-  Determine the maximum value for *l*:sub:`max` that is supported by the number
    of DWI volumes in the shell being processed (or the total number of
-   non-*b*=0 volumes in a single-shell acquisition). This is the number of
+   non-*b*\=0 volumes in a single-shell acquisition). This is the number of
    coefficients required to store an anitipodally-symmetric spherical
    harmonic function:
 
@@ -36,23 +36,23 @@ are as follows:
 |  ... | ...              |
 +------+------------------+
 
--  If ``lmax`` exceeds 8, reduce to 8. This is primarily based on the
+-  If *l*:sub:`max` exceeds 8, reduce to 8. This is primarily based on the
    findings in `this paper <http://onlinelibrary.wiley.com/doi/10.1002/nbm.3017/abstract>`__.
 
 -  Check the condition of the transformation between DWIs and spherical
    harmonics. If the transformation is ill-conditioned (usually indicating
    that the diffusion sensitisation gradient directions are not evenly
-   distributed over the sphere or half-sphere), reduce ``lmax`` until the
+   distributed over the sphere or half-sphere), reduce *l*:sub:`max` until the
    transformation is well-conditioned.
 
    As an example: concatenating two repeats of a 30 direction acquisition
-   to produce 60 volumes will *not* support an ``lmax``=8 fit: the angular
+   to produce 60 volumes will *not* support an *l*:sub:`max`\=8 fit: the angular
    resolution of the data set is equivalent to 30 *unique* directions, and
-   so ``lmax``=6 would be selected (and this would be accompanied by a
+   so *l*:sub:`max`\=6 would be selected (and this would be accompanied by a
    command-line warning to the user).
 
--  In the case of spherical deconvolution, the ``lmax`` selected for FOD
-   estimation will also be reduced if ``lmax`` of the provided response
+-  In the case of spherical deconvolution, the *l*:sub:`max` selected for FOD
+   estimation will also be reduced if *l*:sub:`max` of the provided response
    function is less than that calculated as above.
 
 The *exception* to these rules is the new ``amp2response`` command, which
@@ -69,39 +69,39 @@ reasons in combination:
 -  The data are transformed not to the spherical harmonic basis, but 
    directly to the *zonal* spherical harmonic basis (this is the spherical
    harmonic basis containing only the ``m = 0`` terms). This basis requires
-   far less coefficients for any given value of ``lmax``: 2 for
-   ``lmax = 2``, 3 for ``lmax = 4``, 4 for ``lmax = 6``, 5 for ``lmax = 8``
-   and so on.
+   far fewer coefficients for any given value of *l*:sub:`max`: 2 for
+   *l*:sub:`max`\=2, 3 for *l*:sub:`max`\=4, 4 for *l*:sub:`max`\=6, 5 for
+   *l*:sub:`max`\=8 and so on.
 
-The value of ``lmax`` that can be used in this command is therefore
+The value of *l*:sub:`max` that can be used in this command is therefore
 practically unconstrained; though the power in higher harmonic degrees
 is much smaller than that in lower degrees. The command is currently
-configured to select ``lmax = 10`` by default, regardless of *b*-value;
+configured to select *l*:sub:`max`\=10 by default, regardless of *b*-value;
 interested readers can find the discussion `here <https://github.com/MRtrix3/mrtrix3/pull/786>`__.
 
-Reduced ``lmax`` in particular subjects
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Reduced *l*:sub:`max` in particular subjects
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If you find that certain subjects within a cohort have a reduced ``lmax``
+If you find that certain subjects within a cohort have a reduced *l*:sub:`max`
 compared to the rest of the cohort when using any command relating to
 spherical harmonics, the most likely cause is premature termination of the
 diffusion sequence during scanning of those subjects, resulting in a reduced
-number of diffusion volumes, and therefore a reduced ``lmax`` according to
+number of diffusion volumes, and therefore a reduced *l*:sub:`max` according to
 the table above.
 
-Setting ``lmax`` in different applications
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Setting *l*:sub:`max` in different applications
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The range of permissible values for ``lmax`` depends on the particular
+The range of permissible values for *l*:sub:`max` depends on the particular
 command being used; e.g.:
 
 -  For any command that maps image data directly to spherical harmonics, it
-   is impossible to set ``lmax`` to a value higher than that supported by the
+   is impossible to set *l*:sub:`max` to a value higher than that supported by the
    image data. The transformation from DWI data to spherical harmonics simply
    cannot be done in such a case, as the problem is under-determined. You can
-   of course set ``lmax`` to a lower value than that supported by the data.
+   of course set *l*:sub:`max` to a lower value than that supported by the data.
 
--  In spherical deconvolution, it *is* possible to set a higher ``lmax``
+-  In spherical deconvolution, it *is* possible to set a higher *l*:sub:`max`
    than that supported by the data - so-called *super-resolved* spherical
    deconvolution. Here, additional information is provided by the non-negativity
    constraint to make estimation of additional spherical harmonic coefficients
@@ -111,11 +111,11 @@ command being used; e.g.:
    remains under-determined.
 
 -  If performing Track Orientation Density Imaging (TODI) using
-   ``tckgen -tod``, then the apodized point spread functions (aPSFs) can be
-   generated at any value of ``lmax`` for which aPSF data are available
-   (currently ``lmax = 16``, since the angular resolution of the original image
+   ``tckmap -tod``, then the apodized point spread functions (aPSFs) can be
+   generated at any value of *l*:sub:`max` for which aPSF data are available
+   (currently *l*:sub:`max`\=16, since the angular resolution of the original image
    data is not a limiting factor here.
 
 -  As described previously, the ``amp2response`` command is a special case,
-   and the maximum permissible ``lmax`` is vastly greater than the maximum
+   and the maximum permissible *l*:sub:`max` is vastly greater than the maximum
    practical value.

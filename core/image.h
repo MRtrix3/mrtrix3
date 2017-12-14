@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -38,7 +38,7 @@ namespace MR
       public ImageBase<Image<ValueType>, ValueType> 
   { MEMALIGN (Image<ValueType>)
       public:
-        typedef ValueType value_type;
+        using value_type = ValueType;
         class Buffer;
 
         Image ();
@@ -270,7 +270,7 @@ namespace MR
       struct TmpImage : 
         public ImageBase<TmpImage<ValueType>, ValueType> 
     { MEMALIGN (TmpImage<ValueType>)
-        typedef ValueType value_type;
+        using value_type = ValueType;
 
       TmpImage (const typename Image<ValueType>::Buffer& b, void* const data, 
           vector<ssize_t> x, const Stride::List& strides, size_t offset) :

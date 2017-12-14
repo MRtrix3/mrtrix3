@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -45,7 +45,7 @@ namespace MR
               itemData = (str (p->size()) + " " + (p->modality.size() ? p->modality : std::string()) + " images " +
                           format_time (p->time) + " " + (p->name.size() ? p->name : std::string ("unnamed")) + " (" +
                           ( (*p) [0]->sequence_name.size() ? (*p) [0]->sequence_name : std::string ("?")) +
-                          ") [" + str (p->number) + "]").c_str();
+                          ") [" + str (p->number) + "] " + p->image_type).c_str();
             }
             ~Item() {
               qDeleteAll (childItems);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,10 +12,9 @@
  */
 
 
-#include <vector>
-
 #include "command.h"
 #include "progressbar.h"
+#include "types.h"
 
 #include "file/path.h"
 #include "math/stats/fwe.h"
@@ -114,7 +113,7 @@ void load_tfce_parameters (Stats::TFCE::Wrapper& enhancer)
 
 
 
-// Define data importer class that willl obtain connectome data for a
+// Define data importer class that will obtain connectome data for a
 //   specific subject based on the string path to the image file for
 //   that subject
 class SubjectConnectomeImport : public SubjectDataImportBase

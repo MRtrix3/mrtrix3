@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -49,7 +49,9 @@ namespace MR {
 
           class Voxel : public Mapping::Voxel, public VoxelAddon
           { MEMALIGN(Voxel)
-            typedef Mapping::Voxel Base;
+
+            using Base = Mapping::Voxel;
+
             public:
             Voxel (const int x, const int y, const int z) : Base (x, y, z) , VoxelAddon () { }
             Voxel (const Eigen::Vector3i& that) : Base (that), VoxelAddon() { }
@@ -70,7 +72,9 @@ namespace MR {
 
           class VoxelDEC : public Mapping::VoxelDEC, public VoxelAddon
           { MEMALIGN(VoxelDEC)
-            typedef Mapping::VoxelDEC Base;
+
+            using Base = Mapping::VoxelDEC;
+
             public:
             VoxelDEC () : Base (), VoxelAddon () { }
             VoxelDEC (const Eigen::Vector3i& V) : Base (V), VoxelAddon () { }
@@ -93,9 +97,12 @@ namespace MR {
 
           class Dixel : public Mapping::Dixel, public VoxelAddon
           { MEMALIGN(Dixel)
-            typedef Mapping::Dixel Base;
+
+            using Base = Mapping::Dixel;
+
             public:
-            typedef DWI::Directions::index_type dir_index_type;
+            using index_type = DWI::Directions::index_type;
+
             Dixel () : Base (), VoxelAddon () { }
             Dixel (const Eigen::Vector3i& V) : Base (V), VoxelAddon () { }
             Dixel (const Eigen::Vector3i& V, const dir_index_type b) : Base (V, b), VoxelAddon () { }
@@ -115,9 +122,12 @@ namespace MR {
 
           class VoxelTOD : public Mapping::VoxelTOD, public VoxelAddon
           { MEMALIGN(VoxelTOD)
-            typedef Mapping::VoxelTOD Base;
+
+            using Base = Mapping::VoxelTOD;
+
             public:
-            typedef Eigen::Matrix<default_type, Eigen::Dynamic, 1> vector_type;
+            using vector_type = Eigen::Matrix<default_type, Eigen::Dynamic, 1>;
+
             VoxelTOD () : Base (), VoxelAddon () { }
             VoxelTOD (const Eigen::Vector3i& V) : Base (V), VoxelAddon () { }
             VoxelTOD (const Eigen::Vector3i& V, const vector_type& t) : Base (V, t), VoxelAddon () { }
@@ -158,7 +168,9 @@ namespace MR {
           class SetVoxel : public std::set<Voxel>, public Mapping::SetVoxelExtras
           { MEMALIGN(SetVoxel)
             public:
-              typedef Voxel VoxType;
+
+              using VoxType = Voxel;
+
               inline void insert (const Eigen::Vector3i& v, const default_type l, const default_type f)
               {
                 const Voxel temp (v, l, f);
@@ -169,10 +181,14 @@ namespace MR {
                   (*existing).add (l, f);
               }
           };
+
+
           class SetVoxelDEC : public std::set<VoxelDEC>, public Mapping::SetVoxelExtras
           { MEMALIGN(SetVoxelDEC)
             public:
-              typedef VoxelDEC VoxType;
+
+              using VoxType = VoxelDEC;
+
               inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3& d, const default_type l, const default_type f)
               {
                 const VoxelDEC temp (v, d, l, f);
@@ -183,11 +199,15 @@ namespace MR {
                   (*existing).add (d, l, f);
               }
           };
+
+
           class SetDixel : public std::set<Dixel>, public Mapping::SetVoxelExtras
           { MEMALIGN(SetDixel)
             public:
-              typedef Dixel VoxType;
-              typedef Dixel::dir_index_type dir_index_type;
+
+              using VoxType = Dixel;
+              using dir_index_type = Dixel::dir_index_type;
+
               inline void insert (const Eigen::Vector3i& v, const dir_index_type d, const default_type l, const default_type f)
               {
                 const Dixel temp (v, d, l, f);
@@ -198,11 +218,15 @@ namespace MR {
                   (*existing).add (l, f);
               }
           };
+
+
           class SetVoxelTOD : public std::set<VoxelTOD>, public Mapping::SetVoxelExtras
           { MEMALIGN(SetVoxelTOD)
             public:
-              typedef VoxelTOD VoxType;
-              typedef VoxelTOD::vector_type vector_type;
+
+              using VoxType = VoxelTOD;
+              using vector_type = VoxelTOD::vector_type;
+
               inline void insert (const Eigen::Vector3i& v, const vector_type& t, const default_type l, const default_type f)
               {
                 const VoxelTOD temp (v, t, l, f);

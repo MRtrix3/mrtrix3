@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -116,6 +116,7 @@ void run ()
 
   auto input = Image<float>::open (argument[0]);
   DWI::Tractography::ACT::verify_5TT_image (input);
+  check_3D_nonunity (input);
 
   // TODO It would be nice to have the capability to define this mask based on another image
   // This will however require the use of interpolators

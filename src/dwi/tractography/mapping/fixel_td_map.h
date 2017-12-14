@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -37,8 +37,8 @@ namespace MR
       class Fixel_TD_map : public Fixel_map<Fixel>
       { MEMALIGN(Fixel_TD_map<Fixel>)
 
-          typedef typename Fixel_map<Fixel>::MapVoxel MapVoxel;
-          typedef typename Fixel_map<Fixel>::VoxelAccessor VoxelAccessor;
+          using MapVoxel = typename Fixel_map<Fixel>::MapVoxel;
+          using VoxelAccessor = typename Fixel_map<Fixel>::VoxelAccessor;
 
         public:
           Fixel_TD_map (const Header& H, const DWI::Directions::FastLookupSet& directions) :

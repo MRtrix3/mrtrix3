@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,12 +27,12 @@ namespace MR
   {
 
 
-    typedef Eigen::Vector3 Vertex;
-    typedef vector<Vertex> VertexList;
-    typedef Polygon<3> Triangle;
-    typedef Polygon<4> Quad;
-    typedef vector<Triangle> TriangleList;
-    typedef vector<Quad> QuadList;
+    using Vertex = Eigen::Vector3;
+    using VertexList = vector<Vertex>;
+    using Triangle = Polygon<3>;
+    using TriangleList = vector<Triangle>;
+    using Quad = Polygon<4>;
+    using QuadList = vector<Quad>;
 
     class Vox : public Eigen::Array3i
     { MEMALIGN (Vox)
@@ -44,7 +44,7 @@ namespace MR
         }
     };
 
-    typedef Eigen::Array<Connectome::node_t, Eigen::Dynamic, 1> label_vector_type;
+    using label_vector_type = Eigen::Array<Connectome::node_t, Eigen::Dynamic, 1>;
 
 
 

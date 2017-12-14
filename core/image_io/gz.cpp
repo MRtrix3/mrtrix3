@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -95,6 +95,8 @@ namespace MR
             }
             last += BYTES_PER_ZCALL;
             zf.write (reinterpret_cast<const char*> (address), last - address);
+            if (lead_out)
+              zf.write (reinterpret_cast<const char*> (lead_out.get()), lead_out_size);
           }
         }
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -105,7 +105,7 @@ namespace MR
       public:
         using SplineBase = SplineInterpBase<ImageType, SplineType, Math::SplineProcessingType::Value>;
 
-        typedef typename SplineBase::value_type value_type;
+        using value_type = typename SplineBase::value_type;
         using SplineBase::P;
         using SplineBase::H;
         using SplineBase::clamp;
@@ -220,7 +220,7 @@ namespace MR
       public:
         using SplineBase = SplineInterpBase<ImageType, SplineType, Math::SplineProcessingType::Derivative>;
 
-        typedef typename SplineBase::value_type value_type;
+        using value_type = typename SplineBase::value_type;
         using SplineBase::P;
         using SplineBase::H;
         using SplineBase::clamp;
@@ -366,7 +366,7 @@ namespace MR
       public:
         using SplineBase = SplineInterpBase<ImageType, SplineType, Math::SplineProcessingType::ValueAndDerivative>;
 
-        typedef typename SplineBase::value_type value_type;
+        using value_type = typename SplineBase::value_type;
         using SplineBase::P;
         using SplineBase::H;
         using SplineBase::clamp;

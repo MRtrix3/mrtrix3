@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,8 +15,10 @@
 #include "command.h"
 #include "image.h"
 #include "memory.h"
+#include "phase_encoding.h"
 #include "math/rng.h"
 #include "algo/threaded_copy.h"
+#include "dwi/gradient.h"
 
 
 using namespace MR;
@@ -134,8 +136,9 @@ OPTIONS
 }
 
 
-typedef float real_type;
-typedef cfloat complex_type;
+
+using real_type = float;
+using complex_type = cfloat;
 static bool transform_mis_match_reported (false);
 
 
@@ -590,6 +593,23 @@ void get_header (const StackEntry& entry, Header& header)
       header.spacing(n) = entry.image->spacing(n);
   }
 
+  const auto header_grad = DWI::parse_DW_scheme (header);
+  if (header_grad.rows()) {
+    const auto entry_grad = DWI::parse_DW_scheme (*entry.image);
+    if (entry_grad.rows()) {
+      if (!entry_grad.isApprox (header_grad))
+        DWI::clear_DW_scheme (header);
+    }
+  }
+
+  const auto header_pe = PhaseEncoding::get_scheme (header);
+  if (header_pe.rows()) {
+    const auto entry_pe = PhaseEncoding::get_scheme (*entry.image);
+    if (entry_pe.rows()) {
+      if (!entry_pe.isApprox (header_pe))
+        PhaseEncoding::clear_scheme (header);
+    }
+  }
 }
 
 

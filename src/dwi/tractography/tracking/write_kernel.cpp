@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -29,13 +29,20 @@ namespace MR
           {
             if (complete())
               return false;
-            if (tck.size() && seeds) {
+            if (tck.size() && output_seeds) {
               const auto& p = tck[tck.get_seed_index()];
-              (*seeds) << str(writer.count) << "," << str(tck.get_seed_index()) << "," << str(p[0]) << "," << str(p[1]) << "," << str(p[2]) << ",\n";
+              (*output_seeds) << str(writer.count) << "," << str(tck.get_seed_index()) << "," << str(p[0]) << "," << str(p[1]) << "," << str(p[2]) << ",\n";
             }
             writer (tck);
-            progress.update ([&](){ return printf ("%8" PRIu64 " generated, %8" PRIu64 " selected", writer.total_count, writer.count); }, always_increment ? true : tck.size());
-            if (early_exit (writer)) {
+            switch (tck.get_status()) {
+              case GeneratedTrack::status_t::INVALID: assert (0); break;
+              // Note intentiional lack of break usage
+              case GeneratedTrack::status_t::ACCEPTED: ++selected;
+              case GeneratedTrack::status_t::TRACK_REJECTED: ++streamlines;
+              case GeneratedTrack::status_t::SEED_REJECTED: ++seeds;
+            }
+            progress.update ([&](){ return printf ("%8" PRIu64 " seeds, %8" PRIu64 " streamlines, %8" PRIu64 " selected", seeds, streamlines, selected); }, always_increment ? true : tck.size());
+            if (early_exit (seeds, selected)) {
               WARN ("Track generation terminating prematurely: Highly unlikely to reach target number of streamlines (p<" + str(TCKGEN_EARLY_EXIT_PROB_THRESHOLD,1) + ")");
               return false;
             }

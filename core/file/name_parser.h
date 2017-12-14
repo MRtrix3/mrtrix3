@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -166,7 +166,9 @@ namespace MR
 
             size_t size () const { return list.size(); }
 
-            const ParsedName& operator[] (size_t index) const { return *list[index]; }
+            const ParsedName& operator[] (size_t index) const { return *(list[index]); }
+
+            friend std::ostream& operator<< (std::ostream& stream, const List& list);
 
           protected:
             vector<std::shared_ptr<ParsedName>> list;

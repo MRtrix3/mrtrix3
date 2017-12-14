@@ -37,7 +37,8 @@ options.add_argument('-premasked', action='store_true', default=False, help='Ind
 options.add_argument('-sgm_amyg_hipp', action='store_true', default=False, help='Consider the amygdalae and hippocampi as sub-cortical grey matter structures, and also replace their estimates with those from FIRST')
 app.parse()
 
-app.checkOutputPath(app.args.output)
+app.checkOutputPath(path.fromUser(app.args.output, False))
+image.check3DNonunity(path.fromUser(app.args.t1, False))
 
 if app.isWindows():
   app.error('Script cannot run on Windows due to FSL dependency')
@@ -82,7 +83,7 @@ if app.args.premasked:
   first_input_is_brain_extracted = ' -b'
 run.command(first_cmd + ' -s ' + ','.join(structure_map.keys()) + ' -i T1.nii' + first_input_is_brain_extracted + ' -o first')
 
-# Generate an empty image that will be used to contruct the new SGM nodes
+# Generate an empty image that will be used to construct the new SGM nodes
 run.command('mrcalc parc.mif 0 -min sgm.mif')
 
 # Read the local connectome LUT file

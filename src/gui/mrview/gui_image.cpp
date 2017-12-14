@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -307,6 +307,8 @@ namespace MR
 
       void Image::update_texture3D ()
       {
+        lookup_texture_4D_cache();
+
         // Binding also guarantees texture interpolation is updated
         bind();
 
@@ -417,7 +419,33 @@ namespace MR
           copy_texture_3D_complex();
 
         min_max_set ();
+        update_texture_4D_cache ();
       }
+
+
+      inline void Image::lookup_texture_4D_cache ()
+      {
+        if (!volume_unchanged() && !texture_mode_changed) {
+          size_t vol_idx = image.index(3);
+          auto cached_tex = tex_4d_cache.find(vol_idx);
+          if (cached_tex != tex_4d_cache.end()) {
+            _texture.cache_copy (cached_tex->second);
+            tex_positions[3] = vol_idx;
+          } else {
+            _texture.cache_copy(GL::Texture());
+            tex_positions[3] = -1;
+          }
+
+          bind();
+        }
+      }
+
+      inline void Image::update_texture_4D_cache ()
+      {
+        if (image.ndim() == 4)
+          tex_4d_cache[image.index(3)].cache_copy(_texture);
+      }
+
 
       // required to shut up clang's compiler warnings about std::abs() when
       // instantiating Image::copy_texture_3D() with unsigned types:

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -81,9 +81,9 @@ void usage ()
 }
 
 
-typedef float value_type;
-typedef DWI::Tractography::Mapping::SetDixel SetDixel;
-typedef DWI::Tractography::SIFT::FixelBase FixelBase;
+using value_type = float;
+using DWI::Tractography::Mapping::SetDixel;
+using DWI::Tractography::SIFT::FixelBase;
 
 
 
@@ -293,6 +293,7 @@ void run ()
   DWI::Directions::FastLookupSet dirs (1281);
   auto fod = Image<value_type>::open (argument[0]);
   Math::SH::check (fod);
+  check_3D_nonunity (fod);
   AFDConnectivity model (fod, dirs, argument[1], wbft_path);
 
   opt = get_options ("all_fixels");

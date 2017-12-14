@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,7 +16,8 @@
 #define __dwi_tractography_connectome_matrix_h__
 
 #include <set>
-#include <vector>
+
+#include "types.h"
 
 #include "connectome/connectome.h"
 #include "connectome/mat2vec.h"
@@ -48,7 +49,7 @@ class Matrix
 { MEMALIGN(Matrix)
 
   public:
-    typedef Eigen::Matrix<T, Eigen::Dynamic, 1> vector_type;
+    using vector_type = Eigen::Matrix<T, Eigen::Dynamic, 1>;
 
     Matrix (const node_t max_node_index, const stat_edge stat, const bool vector_output, const bool track_assignments) :
         statistic (stat),

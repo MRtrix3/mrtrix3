@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -88,10 +88,11 @@ namespace MR
     template <class MatrixType>
     void set_scheme (Header& header, const MatrixType& PE)
     {
+      auto erase = [&] (const std::string& s) { auto it = header.keyval().find (s); if (it != header.keyval().end()) header.keyval().erase (it); };
       if (!PE.rows()) {
-        header.keyval().erase ("pe_scheme");
-        header.keyval().erase ("PhaseEncodingDirection");
-        header.keyval().erase ("TotalReadoutTime");
+        erase ("pe_scheme");
+        erase ("PhaseEncodingDirection");
+        erase ("TotalReadoutTime");
         return;
       }
       PhaseEncoding::check (header, PE);
@@ -112,18 +113,26 @@ namespace MR
       }
       if (variation) {
         header.keyval()["pe_scheme"] = pe_scheme;
-        header.keyval().erase ("PhaseEncodingDirection");
-        header.keyval().erase ("TotalReadoutTime");
+        erase ("PhaseEncodingDirection");
+        erase ("TotalReadoutTime");
       } else {
-        header.keyval().erase ("pe_scheme");
+        erase ("pe_scheme");
         const Eigen::Vector3 dir { PE(0, 0), PE(0, 1), PE(0, 2) };
         header.keyval()["PhaseEncodingDirection"] = dir2id (dir);
         if (PE.cols() >= 4)
           header.keyval()["TotalReadoutTime"] = str(PE(0, 3), 3);
         else
-          header.keyval().erase ("TotalReadoutTime");
+          erase ("TotalReadoutTime");
       }
     }
+
+
+
+    //! clear the phase encoding matrix from a header
+    /*! this will delete any trace of phase encoding information
+     *  from the Header::keyval() structure of \a header.
+     */
+    void clear_scheme (Header& header);
 
 
 

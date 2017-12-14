@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -509,6 +509,8 @@ namespace MR
 
           setEnabled (image);
 
+          reset_light_box_gui_controls();
+
           if (!image)
             return;
 
@@ -973,6 +975,10 @@ namespace MR
           reset_light_box_gui_controls();
         }
 
+        void View::light_box_toggle_volumes_slot(bool)
+        {
+          reset_light_box_gui_controls();
+        }
 
 
 
@@ -981,6 +987,7 @@ namespace MR
           using LightBoxEditButton = MRView::Mode::LightBoxViewControls::LightBoxEditButton;
 
           light_box_slice_inc = new AdjustButton(this);
+          light_box_volume_inc = new LightBoxEditButton(this);
           light_box_rows = new LightBoxEditButton(this);
           light_box_cols = new LightBoxEditButton(this);
 
@@ -991,31 +998,51 @@ namespace MR
           GridLayout* grid_layout = new GridLayout;
           lightbox_box->setLayout(grid_layout);
 
-          grid_layout->addWidget(new QLabel (tr("Slice increment (mm):")), 0, 1);
-          grid_layout->addWidget(light_box_slice_inc, 0, 2);
+          light_box_slice_inc_label = new QLabel (tr("Slice increment (mm):"));
+          grid_layout->addWidget(light_box_slice_inc_label, 1, 0);
+          grid_layout->addWidget(light_box_slice_inc, 1, 2);
 
+          light_box_volume_inc_label = new QLabel (tr("Volume increment:"));
+          grid_layout->addWidget(light_box_volume_inc_label, 1, 0);
+          grid_layout->addWidget(light_box_volume_inc, 1, 2);
 
-          grid_layout->addWidget(new QLabel (tr("Rows:")), 1, 1);
-          grid_layout->addWidget(light_box_rows, 1, 2);
+          grid_layout->addWidget(new QLabel (tr("Rows:")), 2, 0);
+          grid_layout->addWidget(light_box_rows, 2, 2);
 
-          grid_layout->addWidget (new QLabel (tr("Columns:")), 2, 1);
-          grid_layout->addWidget(light_box_cols, 2, 2);
+          grid_layout->addWidget (new QLabel (tr("Columns:")), 3, 0);
+          grid_layout->addWidget(light_box_cols, 3, 2);
+
+          light_box_show_4d = new QCheckBox(tr("Cycle through volumes"), this);
+          grid_layout->addWidget(light_box_show_4d, 4, 0, 1, 2);
 
           light_box_show_grid = new QCheckBox(tr("Show grid"), this);
-          grid_layout->addWidget(light_box_show_grid, 3, 0, 1, 2);
+          grid_layout->addWidget(light_box_show_grid, 5, 0, 1, 2);
         }
-
-
 
 
 
         void View::reset_light_box_gui_controls()
         {
-          light_box_rows->setValue(static_cast<int>(Mode::LightBox::get_rows()));
-          light_box_cols->setValue(static_cast<int>(Mode::LightBox::get_cols()));
-          light_box_slice_inc->setValue(Mode::LightBox::get_slice_increment());
-          light_box_slice_inc->setRate(Mode::LightBox::get_slice_inc_adjust_rate());
-          light_box_show_grid->setChecked(Mode::LightBox::get_show_grid());
+          if (!lightbox_box)
+            return;
+
+          bool img_4d = window ().image() && window ().image()->image.ndim() == 4;
+          bool show_volumes = Mode::LightBox::get_show_volumes ();
+          bool can_show_vol = img_4d && show_volumes;
+
+          light_box_rows->setValue (static_cast<int>(Mode::LightBox::get_rows ()));
+          light_box_cols->setValue (static_cast<int>(Mode::LightBox::get_cols ()));
+          light_box_slice_inc->setValue (Mode::LightBox::get_slice_increment ());
+          light_box_slice_inc->setRate (Mode::LightBox::get_slice_inc_adjust_rate ());
+          light_box_volume_inc->setValue (Mode::LightBox::get_volume_increment ());
+          light_box_show_grid->setChecked (Mode::LightBox::get_show_grid ());
+
+          light_box_show_4d->setEnabled (img_4d);
+          light_box_show_4d->setChecked (can_show_vol);
+          light_box_slice_inc_label->setVisible (!can_show_vol);
+          light_box_slice_inc->setVisible (!can_show_vol);
+          light_box_volume_inc_label->setVisible (can_show_vol);
+          light_box_volume_inc->setVisible (can_show_vol);
         }
 
 
@@ -1031,7 +1058,11 @@ namespace MR
           connect(light_box_rows, SIGNAL (valueChanged(int)), &mode, SLOT (nrows_slot(int)));
           connect(light_box_cols, SIGNAL (valueChanged(int)), &mode, SLOT (ncolumns_slot(int)));
           connect(light_box_slice_inc, SIGNAL (valueChanged(float)), &mode, SLOT (slice_inc_slot(float)));
+          connect(light_box_volume_inc, SIGNAL (valueChanged(int)), &mode, SLOT (volume_inc_slot(int)));
           connect(light_box_show_grid, SIGNAL (toggled(bool)), &mode, SLOT (show_grid_slot(bool)));
+          connect(light_box_show_4d, SIGNAL (toggled(bool)), &mode, SLOT (show_volumes_slot(bool)));
+          connect(light_box_show_4d, SIGNAL (toggled(bool)), this, SLOT (light_box_toggle_volumes_slot(bool)));
+          connect(&window(), SIGNAL (volumeChanged(size_t)), &mode, SLOT (image_volume_changed_slot()));
 
           reset_light_box_gui_controls();
         }

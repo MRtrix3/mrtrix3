@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -58,11 +58,11 @@ namespace MR
         if (num_entries > 0) {
 
           const int32_t orig_lut_name_length = get_BE<int32_t> (in);
-          std::unique_ptr<char> orig_lut_name (new char[orig_lut_name_length]);
+          std::unique_ptr<char[]> orig_lut_name (new char[orig_lut_name_length]);
           in.read (orig_lut_name.get(), orig_lut_name_length);
           for (int32_t i = 0; i != num_entries; ++i) {
             const int32_t struct_name_length = get_BE<int32_t> (in);
-            std::unique_ptr<char> struct_name (new char[struct_name_length]);
+            std::unique_ptr<char[]> struct_name (new char[struct_name_length]);
             in.read (struct_name.get(), struct_name_length);
             const int32_t r    = get_BE<int32_t> (in);
             const int32_t g    = get_BE<int32_t> (in);
@@ -81,7 +81,7 @@ namespace MR
 
           num_entries = get_BE<int32_t> (in);
           const int32_t orig_lut_name_length = get_BE<int32_t> (in);
-          std::unique_ptr<char> orig_lut_name (new char[orig_lut_name_length]);
+          std::unique_ptr<char[]> orig_lut_name (new char[orig_lut_name_length]);
           in.read (orig_lut_name.get(), orig_lut_name_length);
 
           const int32_t num_entries_to_read = get_BE<int32_t> (in);
@@ -92,7 +92,7 @@ namespace MR
             if (lut.find (structure) != lut.end())
               throw Exception ("Error reading FreeSurfer annotation file \"" + Path::basename (path) + "\": Duplicate structure index");
             const int32_t struct_name_length = get_BE<int32_t> (in);
-            std::unique_ptr<char> struct_name (new char[struct_name_length]);
+            std::unique_ptr<char[]> struct_name (new char[struct_name_length]);
             in.read (struct_name.get(), struct_name_length);
             const int32_t r    = get_BE<int32_t> (in);
             const int32_t g    = get_BE<int32_t> (in);

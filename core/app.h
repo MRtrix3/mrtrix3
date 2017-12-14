@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,18 +15,18 @@
 #ifndef __app_h__
 #define __app_h__
 
-#include <string.h>
-#include <string>
-#include <vector>
+#include <cstring>
 #include <limits>
+#include <string>
 
 #ifdef None
 # undef None
 #endif
 
 #include "cmdline_option.h"
-#include "file/path.h"
 #include "signal_handler.h"
+#include "types.h"
+#include "file/path.h"
 
 
 extern void usage ();

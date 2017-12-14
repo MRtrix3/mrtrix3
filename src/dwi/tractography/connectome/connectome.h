@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -35,8 +35,8 @@ namespace Connectome {
 #define TCK2NODES_FORWARDSEARCH_DEFAULT_DIST 3.0
 
 
-typedef MR::Connectome::node_t node_t;
-typedef std::pair<node_t, node_t> NodePair;
+using node_t = MR::Connectome::node_t;
+using NodePair = std::pair<node_t, node_t>;
 
 class Tck2nodes_base;
 class Metric;

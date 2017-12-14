@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,7 +34,7 @@ namespace MR
 
 
         // TODO Remove
-        typedef GUI::DWI::Renderer::mode_t odf_type_t;
+        using odf_type_t = GUI::DWI::Renderer::mode_t;
 
 
 

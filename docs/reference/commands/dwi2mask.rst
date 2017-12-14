@@ -13,15 +13,17 @@ Usage
 
 ::
 
-    dwi2mask [ options ]  image image
+    dwi2mask [ options ]  input output
 
--  *image*: the input DWI image containing volumes that are both diffusion weighted and b=0
--  *image*: the output whole brain mask image
+-  *input*: the input DWI image containing volumes that are both diffusion weighted and b=0
+-  *output*: the output whole-brain mask image
 
 Description
 -----------
 
-All diffusion weighted and b=0 volumes are used to obtain a mask that includes both brain tissue and CSF. In a second step peninsula-like extensions, where the peninsula itself is wider than the bridge connecting it to the mask, are removed. This may help removing artefacts and non-brain parts, e.g. eyes, from the mask.
+All diffusion weighted and b=0 volumes are used to obtain a mask that includes both brain tissue and CSF.
+
+In a second step peninsula-like extensions, where the peninsula itself is wider than the bridge connecting it to the mask, are removed. This may help removing artefacts and non-brain parts, e.g. eyes, from the mask.
 
 Options
 -------
@@ -67,11 +69,16 @@ Dhollander T, Raffelt D, Connelly A. Unsupervised 3-tissue response function est
 
 **Author:** David Raffelt (david.raffelt@florey.edu.au), Thijs Dhollander (thijs.dhollander@gmail.com) and Ben Jeurissen (ben.jeurissen@uantwerpen.be)
 
-**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
 
-This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, you can obtain one at http://mozilla.org/MPL/2.0/.
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+MRtrix is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 For more details, see http://www.mrtrix.org/.
+
 

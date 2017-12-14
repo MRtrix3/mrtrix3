@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -95,10 +95,10 @@ namespace MR
       class Affine : public Base  { MEMALIGN(Affine)
         public:
 
-          typedef typename Base::ParameterType ParameterType;
-          typedef AffineUpdate UpdateType;
-          typedef AffineRobustEstimator RobustEstimatorType;
-          typedef int has_robust_estimator;
+          using ParameterType = typename Base::ParameterType;
+          using UpdateType = AffineUpdate;
+          using RobustEstimatorType = AffineRobustEstimator;
+          using has_robust_estimator = int;
 
 
           Affine () : Base (12) {

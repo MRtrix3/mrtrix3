@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,8 +15,6 @@
 #ifndef __dwi_tractography_sift2_coeff_optimiser_h__
 #define __dwi_tractography_sift2_coeff_optimiser_h__
 
-
-#include <vector>
 
 #include "math/golden_section_search.h"
 #include "math/quadratic_line_search.h"

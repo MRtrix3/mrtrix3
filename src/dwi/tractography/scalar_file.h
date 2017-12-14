@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -66,7 +66,7 @@ namespace MR
       template <typename T = float> class ScalarReader : public __ReaderBase__
       { NOMEMALIGN
         public:
-          typedef T value_type;
+          using value_type = T;
 
           ScalarReader (const std::string& file, Properties& properties) {
             open (file, "track scalars", properties);
@@ -161,7 +161,7 @@ namespace MR
       class ScalarWriter : public __WriterBase__<T>
       { NOMEMALIGN
         public:
-          typedef T value_type;
+          using value_type = T;
           using __WriterBase__<T>::count;
           using __WriterBase__<T>::count_offset;
           using __WriterBase__<T>::total_count;

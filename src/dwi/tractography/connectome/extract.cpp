@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -73,21 +73,13 @@ bool Selector::operator() (const vector<node_t>& nodes) const
 
 
 WriterExemplars::WriterExemplars (const Tractography::Properties& properties, const vector<node_t>& nodes, const bool exclusive, const node_t first_node, const vector<Eigen::Vector3f>& COMs) :
-    step_size (NAN)
+    step_size (get_step_size (properties))
 {
+  if (!std::isfinite (step_size))
+    step_size = 1.0f;
+
   // Determine how many points to use in the initial representation of each exemplar
   size_t length = 0;
-  auto output_step_size_it = properties.find ("output_step_size");
-  if (output_step_size_it == properties.end()) {
-    auto step_size_it = properties.find ("step_size");
-    if (step_size_it == properties.end())
-      step_size = 1.0f;
-    else
-      step_size = to<float>(step_size_it->second);
-  } else {
-    step_size = to<float>(output_step_size_it->second);
-  }
-
   auto max_dist_it = properties.find ("max_dist");
   if (max_dist_it == properties.end())
     length = 201;

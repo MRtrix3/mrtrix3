@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,8 +12,6 @@
  */
 
 
-#include <vector>
-
 #include "app.h"
 #include "command.h"
 #include "datatype.h"
@@ -21,6 +19,7 @@
 #include "image.h"
 #include "memory.h"
 #include "progressbar.h"
+#include "types.h"
 
 #include "algo/loop.h"
 #include "math/SH.h"
@@ -128,7 +127,7 @@ void check_and_update (Header& H, const conv_t conversion)
   }
 
   // Get sums independently for each l
- 
+
   // Each order has a different power, and a different number of m!=0 volumes.
   // Therefore, calculate the mean-square intensity for the m==0 and m!=0
   // volumes independently, and report ratio for each harmonic order
@@ -168,7 +167,7 @@ void check_and_update (Header& H, const conv_t conversion)
   }
 
   if (progress)
-    progress = NULL;
+    progress.reset (nullptr);
 
   // First is ratio to be used for SH basis decision, second is gradient of regression
   std::pair<float, float> regression = std::make_pair (0.0f, 0.0f);
@@ -337,5 +336,5 @@ void run ()
 
   }
 
-};
+}
 

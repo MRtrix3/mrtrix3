@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -57,7 +57,7 @@ using namespace App;
 void usage ()
 {
 
-  AUTHOR = "Daan Christiaens (daan.christiaens@kuleuven.be)";
+  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk)";
   
   COPYRIGHT = "Copyright (C) 2015 KU Leuven, Dept. Electrical Engineering, ESAT/PSI,\n"
               "Herestraat 49 box 7003, 3000 Leuven, Belgium \n\n"
@@ -74,7 +74,7 @@ void usage ()
   + "Example use: "
   
   + " $ tckglobal dwi.mif wmr.txt -riso csfr.txt -riso gmr.txt -mask mask.mif \n"
-    "   -niter 1e8 -fod fod.mif -fiso fiso.mif tracks.tck "
+    "   -niter 1e9 -fod fod.mif -fiso fiso.mif tracks.tck "
   
   + "in which dwi.mif is the input image, wmr.txt is an anisotropic, multi-shell response function for WM, "
     "and csfr.txt and gmr.txt are isotropic response functions for CSF and GM. The output tractogram is "

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -123,8 +123,8 @@ namespace MR
         { MEMALIGN(ModelBase<Fixel>)
 
           protected:
-            typedef typename Fixel_map<Fixel>::MapVoxel MapVoxel;
-            typedef typename Fixel_map<Fixel>::VoxelAccessor VoxelAccessor;
+            using MapVoxel = typename Fixel_map<Fixel>::MapVoxel;
+            using VoxelAccessor = typename Fixel_map<Fixel>::VoxelAccessor;
 
           public:
             ModelBase (Image<float>& dwi, const DWI::Directions::FastLookupSet& dirs) :

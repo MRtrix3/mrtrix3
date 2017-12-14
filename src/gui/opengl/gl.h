@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -62,8 +62,9 @@ namespace MR
     {
 
 #if QT_VERSION >= 0x050400
-      typedef QOpenGLWidget Area;
-      typedef QSurfaceFormat Format;
+
+      using Area = QOpenGLWidget;
+      using Format = QSurfaceFormat;
       struct CheckContext { NOMEMALIGN
 # ifndef NDEBUG
         CheckContext () : __context (nullptr) { }
@@ -86,7 +87,8 @@ namespace MR
           using QGLWidget::QGLWidget;
           QImage grabFramebuffer () { return QGLWidget::grabFrameBuffer(); }
       };
-      typedef QGLFormat Format;
+
+      using Format = QGLFormat;
       struct CheckContext { NOMEMALIGN
         void grab_context () { }
         void check_context () const { }
@@ -112,8 +114,9 @@ namespace MR
           Texture () : id (0) { }
           ~Texture () { clear(); }
           Texture (const Texture&) : id (0) { }
-          Texture (Texture&& t) : id (t.id) { t.id = 0; }
-          Texture& operator= (Texture&& t) { clear(); id = t.id; t.id = 0; return *this; }
+          Texture (Texture&& t) : id (t.id), tex_type (t.tex_type) { t.id = 0; }
+          Texture& operator= (Texture&& t) { clear(); id = t.id; tex_type = t.tex_type; t.id = 0; return *this; }
+          void cache_copy(const Texture& t) { id = t.id; tex_type = t.tex_type; }
           operator GLuint () const { return id; }
           void gen (GLenum target, GLint interp_type = gl::LINEAR) {
             if (!id) {

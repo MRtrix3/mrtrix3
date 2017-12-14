@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -256,7 +256,7 @@ namespace MR {
 
           // Partially specialized template function to shut up modern compilers
           //   regarding using multiplication in a boolean context
-          FORCE_INLINE void add (const default_type, const default_type);
+          inline void add (const default_type, const default_type);
 
           // These acquire the TWI factor at any point along the streamline;
           //   For the standard SetVoxel classes, this is a single value 'factor' for the set as

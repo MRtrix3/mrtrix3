@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -29,7 +29,7 @@ namespace MR {
     class Versor : public Eigen::Quaternion<ValueType> 
     { MEMALIGN(Versor<ValueType>)
 
-        typedef ValueType value_type;
+        using value_type = ValueType;
 
       public:
         Versor () : Eigen::Quaternion<ValueType> (NAN, NAN, NAN, NAN) { }
@@ -78,8 +78,8 @@ namespace MR {
 
     };
 
-    typedef Versor<float>  Versorf;
-    typedef Versor<double> Versord;
+    using Versorf = Versor<float>;
+    using Versord = Versor<double>;
 
     template <typename value_type>
     inline std::ostream& operator<< (std::ostream& stream, const Versor<value_type>& v)

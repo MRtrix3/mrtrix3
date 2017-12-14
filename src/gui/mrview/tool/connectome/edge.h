@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -38,7 +38,7 @@ namespace MR
       class Edge
       { MEMALIGN(Edge)
 
-          typedef MR::Connectome::node_t node_t;
+          using node_t = MR::Connectome::node_t;
 
         public:
           Edge (const node_t, const node_t, const Eigen::Vector3f&, const Eigen::Vector3f&);

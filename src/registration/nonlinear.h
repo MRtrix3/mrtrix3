@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,8 +15,9 @@
 #ifndef __registration_nonlinear_h__
 #define __registration_nonlinear_h__
 
-#include <vector>
 #include "image.h"
+#include "types.h"
+
 #include "filter/warp.h"
 #include "filter/resize.h"
 #include "registration/transform/reorient.h"
@@ -151,19 +152,19 @@ namespace MR
               field_header.ndim() = 4;
               field_header.size(3) = 3;
 
-              im1_to_mid_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-              im2_to_mid_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-              im1_update = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-              im2_update = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-              im1_update_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-              im2_update_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+              im1_to_mid_new = make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+              im2_to_mid_new = make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+              im1_update = make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+              im2_update = make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+              im1_update_new = make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+              im2_update_new = make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
 
               if (!is_initialised) {
                 if (level == 0) {
-                  im1_to_mid = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-                  im2_to_mid = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-                  mid_to_im1 = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
-                  mid_to_im2 = std::make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+                  im1_to_mid = make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+                  im2_to_mid = make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+                  mid_to_im1 = make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
+                  mid_to_im2 = make_shared<Image<default_type>>(Image<default_type>::scratch (field_header));
                 } else {
                   DEBUG ("Upsampling fields");
                   {
@@ -307,22 +308,22 @@ namespace MR
             field_header.ndim() = 4;
             field_header.size(3) = 3;
 
-            im1_to_mid = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
+            im1_to_mid = make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
             input_warps.index(4) = 0;
             threaded_copy (input_warps, *im1_to_mid, 0, 4);
             Registration::Warp::deformation2displacement (*im1_to_mid, *im1_to_mid);
 
-            mid_to_im1 = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
+            mid_to_im1 = make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
             input_warps.index(4) = 1;
             threaded_copy (input_warps, *mid_to_im1, 0, 4);
             Registration::Warp::deformation2displacement (*mid_to_im1, *mid_to_im1);
 
-            im2_to_mid = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
+            im2_to_mid = make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
             input_warps.index(4) = 2;
             threaded_copy (input_warps, *im2_to_mid, 0, 4);
             Registration::Warp::deformation2displacement (*im2_to_mid, *im2_to_mid);
 
-            mid_to_im2 = std::make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
+            mid_to_im2 = make_shared<Image<default_type>> (Image<default_type>::scratch (field_header));
             input_warps.index(4) = 3;
             threaded_copy (input_warps, *mid_to_im2, 0, 4);
             Registration::Warp::deformation2displacement (*mid_to_im2, *mid_to_im2);
@@ -449,7 +450,7 @@ namespace MR
         protected:
 
           std::shared_ptr<Image<default_type> > reslice (Image<default_type>& image, Header& header) {
-            std::shared_ptr<Image<default_type> > temp = std::make_shared<Image<default_type> > (Image<default_type>::scratch (header));
+            std::shared_ptr<Image<default_type> > temp = make_shared<Image<default_type> > (Image<default_type>::scratch (header));
             Filter::reslice<Interp::Linear> (image, *temp);
             return temp;
           }

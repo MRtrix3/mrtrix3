@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,9 +15,8 @@
 #ifndef __dwi_sdeconv_msmt_csd_h__
 #define __dwi_sdeconv_msmt_csd_h__
 
-#include <vector>
-
 #include "header.h"
+#include "types.h"
 
 #include "math/constrained_least_squares.h"
 #include "math/math.h"
@@ -46,7 +45,7 @@ namespace MR
               Shared (const Header& dwi_header) :
                   grad (DWI::get_valid_DW_scheme (dwi_header)),
                   shells (grad),
-                  HR_dirs (DWI::Directions::electrostatic_repulsion_300()) { }
+                  HR_dirs (DWI::Directions::electrostatic_repulsion_300()) { shells.select_shells(false,false,false); }
 
 
               void parse_cmdline_options()
@@ -89,6 +88,9 @@ namespace MR
               {
                 if (lmax.empty()) {
                   lmax = lmax_response;
+                  for (size_t t = 0; t != num_tissues(); ++t) {
+                    lmax[t] = std::min (8, lmax[t]);
+                  }
                 } else {
                   if (lmax.size() != num_tissues())
                     throw Exception ("Number of lmaxes specified does not match number of tissues");
@@ -207,7 +209,7 @@ namespace MR
 
 
               const Eigen::MatrixXd grad;
-              const DWI::Shells shells;
+              DWI::Shells shells;
               Eigen::MatrixXd HR_dirs;
               vector<int> lmax, lmax_response;
               vector<Eigen::MatrixXd> responses;
@@ -229,8 +231,9 @@ namespace MR
                   // Clip off any empty columns, i.e. degrees containing zero coefficients for all shells
                   r.conservativeResize (r.rows(), n);
                   // Store the lmax for each tissue based on their response functions;
-                  //   if the user doesn't manually specify lmax, these will determine
-                  //   the lmax of each tissue ODF output
+                  //   if the user doesn't manually specify lmax, these will determine the
+                  //   lmax of each tissue ODF output, with a further default lmax=8
+                  //   restriction at that stage
                   lmax_response.push_back (Math::ZSH::LforN (r.cols()));
                 }
               }

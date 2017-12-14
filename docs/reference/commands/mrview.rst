@@ -122,6 +122,18 @@ Tractography tool options
 
 -  **-tractography.load tracks** Load the specified tracks file into the tractography tool.
 
+-  **-tractography.thickness value** Line thickness of tractography display, [-1.0, 1.0], default is 0.0.
+
+-  **-tractography.opacity value** Opacity of tractography display, [0.0, 1.0], default is 1.0.
+
+-  **-tractography.slab value** Slab thickness of tractography display, in mm. -1 to turn off crop to slab.
+
+-  **-tractography.tsf_load tsf** Load the specified tractography scalar file.
+
+-  **-tractography.tsf_range range** Set range for the tractography scalar file. Requires tractography.tsf_load already provided. RangeMin,RangeMax
+
+-  **-tractography.tsf_thresh thresh** Set thresholds for the tractography scalar file. Requires tractography.tsf_load already provided. ThresholdMin,ThesholdMax
+
 ODF tool options
 ^^^^^^^^^^^^^^^^
 
@@ -182,11 +194,16 @@ Tournier, J.-D.; Calamante, F. & Connelly, A. MRtrix: Diffusion tractography in 
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com), Dave Raffelt (david.raffelt@florey.edu.au), Robert E. Smith (robert.smith@florey.edu.au), Max Pietsch (maximilian.pietsch@kcl.ac.uk), Thijs Dhollander (thijs.dhollander@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors
+**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
 
-This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, you can obtain one at http://mozilla.org/MPL/2.0/.
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+MRtrix is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty
+of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 For more details, see http://www.mrtrix.org/.
+
 

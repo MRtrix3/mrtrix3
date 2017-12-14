@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -61,7 +61,7 @@ void usage ()
 
 
 
-typedef float value_type;
+using value_type = float;
 
 
 
@@ -113,18 +113,9 @@ void run ()
 
   const std::unique_ptr<Resampling::Base> resampler (Resampling::get_resampler());
 
-  float old_step_size = NaN;
-  try {
-    Properties::const_iterator i = properties.find ("output_step_size");
-    if (i == properties.end()) {
-      i = properties.find ("step_size");
-      if (i != properties.end())
-        old_step_size = to<float> (i->second);
-    } else {
-      old_step_size = to<float> (i->second);
-    }
-  } catch (...) {
-    DEBUG ("Unable to read input track file step size");
+  const float old_step_size = get_step_size (properties);
+  if (!std::isfinite (old_step_size)) {
+    INFO ("Do not have step size information from input track file");
   }
 
   float new_step_size = NaN;

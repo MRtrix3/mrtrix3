@@ -7,6 +7,10 @@ connectome for quintessential Human Connectome Project subject 100307.
 Some of these instructions will be specific to HCP data, others will be
 more general recommendations.
 
+Note that this page is being retained as a reference of the steps
+demonstrated during the ISMRM 2015 meeting; it does *not* constitute an
+up-to-date 'recommended' processing pipeline for HCP data.
+
 Necessary files
 ---------------
 
@@ -128,7 +132,7 @@ Connectome generation
 
 1. Generate the initial tractogram:
 
-``tckgen WM_FODs.mif 100M.tck -act 5TT.mif -backtrack -crop_at_gmwmi -seed_dynamic WM_FODs.mif -maxlength 250 -number 100M -cutoff 0.06``
+``tckgen WM_FODs.mif 100M.tck -act 5TT.mif -backtrack -crop_at_gmwmi -seed_dynamic WM_FODs.mif -maxlength 250 -select 100M -cutoff 0.06``
 
 Explicitly setting the maximum length is highly recommended for HCP
 data, as the default heuristic - 100 times the voxel size - would result

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,10 +16,12 @@
 #define __dwi_tractography_sift_sifter_h__
 
 
-#include <vector>
+
+#include "image.h"
+#include "types.h"
 
 #include "math/rng.h"
-#include "image.h"
+
 #include "dwi/fixel_map.h"
 #include "dwi/directions/set.h"
 #include "dwi/tractography/SIFT/fixel.h"
@@ -45,9 +47,9 @@ namespace MR
       { MEMALIGN(SIFTer)
 
         protected:
-        typedef Model<Fixel> MapType;
-        typedef Fixel_map<Fixel>::MapVoxel MapVoxel;
-        typedef Fixel_map<Fixel>::VoxelAccessor VoxelAccessor;
+        using MapType = Model<Fixel>;
+        using MapVoxel = Fixel_map<Fixel>::MapVoxel;
+        using VoxelAccessor = Fixel_map<Fixel>::VoxelAccessor;
 
 
         public:

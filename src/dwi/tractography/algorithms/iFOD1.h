@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -41,7 +41,7 @@ namespace MR
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           SharedBase (diff_path, property_set),
           lmax (Math::SH::LforN (source.size(3))),
-          max_trials (MAX_TRIALS),
+          max_trials (TCKGEN_DEFAULT_MAX_TRIALS_PER_STEP),
           sin_max_angle (std::sin (max_angle)),
           mean_samples (0.0),
           mean_truncations (0.0),

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,7 +16,7 @@
 #define __dwi_tractography_sift_track_contribution_h__
 
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "header.h"
 #include "min_mem_array.h"

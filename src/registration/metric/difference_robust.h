@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -77,7 +77,7 @@ namespace MR
 
           /** requires_initialisation:
           type_trait to distinguish metric types that require a call to init before the operator() is called */
-          typedef int requires_initialisation;
+          using requires_initialisation = int;
 
           void init (const Im1Type& im1, const Im2Type& im2) {
             assert (im1.ndim() == 4);

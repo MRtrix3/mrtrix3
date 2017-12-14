@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,12 +20,12 @@
 #define FRAC_PHASEOUT 10
 
 #include <iostream>
-#include <vector>
 #include <mutex>
 
 #include <Eigen/Dense>
 
 #include "progressbar.h"
+#include "types.h"
 
 
 namespace MR {

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,6 +14,7 @@
 
 #include "command.h"
 #include "image.h"
+#include "image_helpers.h"
 #include "filter/reslice.h"
 #include "interp/cubic.h"
 #include "transform.h"
@@ -107,7 +108,7 @@ void usage ()
   + DataType::options();
 }
 
-typedef double value_type;
+using value_type = double;
 
 
 
@@ -119,6 +120,9 @@ void run ()
 
   if (im1_image.ndim() != im2_image.ndim())
     throw Exception ("input images do not have the same number of dimensions");
+
+  check_3D_nonunity (im1_image);
+  check_3D_nonunity (im2_image);
 
   auto opt = get_options ("type");
   bool do_rigid  = false;

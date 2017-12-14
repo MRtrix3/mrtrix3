@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -28,8 +28,8 @@ namespace MR {
     { MEMALIGN (Bootstrap<ImageType,Functor,NUM_VOX_PER_CHUNK>)
       public:
 
-        typedef Adapter::Base<Bootstrap<ImageType,Functor,NUM_VOX_PER_CHUNK>,ImageType> base_type;
-        typedef typename ImageType::value_type value_type;
+        using base_type = Adapter::Base<Bootstrap<ImageType,Functor,NUM_VOX_PER_CHUNK>, ImageType>;
+        using value_type = typename ImageType::value_type;
 
         using base_type::ndim;
         using base_type::size;
@@ -44,6 +44,7 @@ namespace MR {
               return false;
             }
         };
+
 
         Bootstrap (const ImageType& Image, const Functor& functor) :
           base_type (Image),

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -40,8 +40,10 @@ namespace MR
       {
 
 
-        extern const App::OptionGroup SeedOption;
-        void load_tracking_seeds (Properties&);
+        extern const App::OptionGroup SeedMechanismOption;
+        extern const App::OptionGroup SeedParameterOption;
+        void load_seed_mechanisms (Properties&);
+        void load_seed_parameters (Properties&);
 
 
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -58,7 +58,7 @@ namespace MR
         class __WriterBase__
         { NOMEMALIGN
           public:
-            typedef ValueType value_type;
+            using value_type = ValueType;
 
             __WriterBase__(const std::string& name) :
               count (0),

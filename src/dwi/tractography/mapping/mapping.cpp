@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -43,16 +43,7 @@ namespace MR {
         {
           if (header.ndim() < 3)
             throw Exception ("Cannot perform streamline mapping on image with less than three dimensions");
-
-          Properties::const_iterator i = properties.find ("output_step_size");
-          if (i == properties.end()) {
-            i = properties.find ("step_size");
-            if (i == properties.end())
-              throw Exception ("Cannot perform streamline mapping: no step size information in track file header");
-          }
-          const float step_size = to<float> (i->second);
-
-          return determine_upsample_ratio (header, step_size, ratio);
+          return determine_upsample_ratio (header, get_step_size (properties), ratio);
         }
 
 

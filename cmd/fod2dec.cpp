@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -79,8 +79,10 @@ void usage ()
     + Argument ("value").type_float();
 }
 
-typedef float value_type;
-constexpr value_type UNIT = 0.577350269189626; // 1/sqrt(3) , component of 3D unit vector wrt L2-norm
+
+using value_type = float;
+const value_type UNIT = 1.0 / std::sqrt(3.0);  // component of 3D unit vector wrt L2-norm
+
 
 class DecTransform { MEMALIGN(DecTransform)
 

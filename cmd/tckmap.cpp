@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,15 +12,14 @@
  */
 
 
-#include <vector>
 #include <set>
 
 #include "command.h"
-#include "progressbar.h"
-#include "memory.h"
-
 #include "image.h"
+#include "memory.h"
+#include "progressbar.h"
 #include "thread_queue.h"
+#include "types.h"
 
 #include "dwi/gradient.h"
 #include "dwi/tractography/file.h"
@@ -451,8 +450,14 @@ void run () {
     // If accurately calculating the length through each voxel traversed, need a higher upsampling ratio
     //   (1/10th of the voxel size was found to give a good quantification of chordal length)
     // For all other applications, making the upsampled step size about 1/3rd of a voxel seems sufficient
-    upsample_ratio = determine_upsample_ratio (header, properties, (precise ? 0.1 : 0.333));
-    INFO ("track upsampling ratio automatically set to " + str(upsample_ratio));
+    try {
+      upsample_ratio = determine_upsample_ratio (header, properties, (precise ? 0.1 : 0.333));
+      INFO ("track upsampling ratio automatically set to " + str(upsample_ratio));
+    } catch (Exception& e) {
+      e.push_back ("Try using -upsample option to explicitly set the streamline upsampling ratio;");
+      e.push_back ("generally recommend a value of around (3 x step_size / voxel_size)");
+      throw e;
+    }
   }
 
 

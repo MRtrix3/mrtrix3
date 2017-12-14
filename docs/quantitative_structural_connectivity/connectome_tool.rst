@@ -1,5 +1,5 @@
 Using the connectome visualisation tool
-==========================
+=======================================
 
 The connectome tool bar in *MRtrix3* has been designed from scratch, with
 the intention of providing a simple, data-driven mechanism for visually
@@ -24,19 +24,20 @@ locations of the nodes upon which that connectome is based. So the first
 step is actually to load an image to provide the tool with this
 information, using the "Node image" button at the top of the toolbar.
 The desired image is the output of the ``labelconvert`` command, as
-detailed in the :ref:`stuct_connectome_construction` guide: the
+detailed in the :ref:`struct_connectome_construction` guide: the
 tool uses this image to localise each parcel in 3D space in preparation
 for visualisation. Alternatively, you can load the relevant parcellation
 image from the command-line when you first run ``mrview``, using the
 ``-connectome.init`` option.
 
 .. ATTENTION::
-If you still do not see anything in the ``mrview`` main window, this is
-likely because you have not yet opened a primary image in ``mrview``. This
-is currently necessary for ``mrview`` to correctly set up the camera
-positioning. The easiest solution is to open your parcellation image not
-only to initialise the connectome tool, but also as a standard image in
-``mrview``; then simply *hide* the main image using the 'View' menu.
+
+  If you still do not see anything in the ``mrview`` main window, this is
+  likely because you have not yet opened a primary image in ``mrview``. This
+  is currently necessary for ``mrview`` to correctly set up the camera
+  positioning. The easiest solution is to open your parcellation image not
+  only to initialise the connectome tool, but also as a standard image in
+  ``mrview``; then simply *hide* the main image using the 'View' menu.
 
 With the basis parcellation image loaded, the tool will display the
 location of each node; note however that all of the nodes are exactly
@@ -89,22 +90,22 @@ on the main combo box shows that there are a few options available:
 
 * *Fixed*: Use the same fixed colour to display all visible edges.
 
-* *By direction*: The XYZ spatial offset between the two nodes connected by
-an edge is used to derive an RGB colour (much like the default streamlines
-colouring).
+* *By direction*: The XYZ spatial offset between the two nodes connected by an
+  edge is used to derive an RGB colour (much like the default streamlines
+  colouring).
 
-* *Connectome*: The colour of each edge will depend on the value for that
-edge in the connectome you have loaded, based on some form of
-value -> colour mapping (a 'colour map').
+* *Connectome*: The colour of each edge will depend on the value for that edge
+  in the connectome you have loaded, based on some form of value -> colour
+  mapping (a 'colour map').
 
-* *Matrix file*: Operates similarly to the *connectome* option; except that
-the value for each edge is drawn from a matrix file that is *not* the
-connectome matrix you have loaded (though it must be based on the same
-parcellation to have any meaning). So for instance: You could load a
-structural connectome file as your connectome matrix and show only those
-edges where the connection density is above a certain threshold, but then
-set the *colour* of each edge based on a *different matrix file* that
-contains functional connectivity values.
+* *Matrix file*: Operates similarly to the *connectome* option; except that the
+  value for each edge is drawn from a matrix file that is *not* the connectome
+  matrix you have loaded (though it must be based on the same parcellation to
+  have any meaning). So for instance: You could load a structural connectome
+  file as your connectome matrix and show only those edges where the connection
+  density is above a certain threshold, but then set the *colour* of each edge
+  based on a *different matrix file* that contains functional connectivity
+  values.
 
 If the *Connectome* or *Matrix file* options are used, it is also possible
 to alter the colour map used, and modify the values at which the edges will

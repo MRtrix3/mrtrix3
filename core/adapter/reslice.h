@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,14 +15,48 @@
 #ifndef __adapter_reslice_h__
 #define __adapter_reslice_h__
 
+#include <type_traits>
+
 #include "image.h"
 #include "transform.h"
+#include "types.h"
 #include "interp/base.h"
 
 namespace MR
 {
   namespace Adapter
   {
+
+
+
+    namespace
+    {
+      // Partial specialisation for boolean value_type in order to avoid compiler
+      //   warning regarding use of multiplication when assigning to a boolean
+      template <typename value_type>
+      typename std::enable_if<std::is_same<value_type, bool>::value, value_type>::type
+      inline normalise (const default_type sum, const default_type norm)
+      {
+        return ((sum*norm) >= 0.5) ? true : false;
+      }
+
+      // Partial specialisation to invoke round-to-nearest when taking an average of integers
+      template <typename value_type>
+      typename std::enable_if<!std::is_same<value_type, bool>::value && std::is_integral<value_type>::value, value_type>::type
+      inline normalise (const default_type sum, const default_type norm)
+      {
+        return value_type(std::round (sum*norm));
+      }
+
+      template <typename value_type>
+      typename std::enable_if<std::is_floating_point<value_type>::value, value_type>::type
+      inline normalise (const default_type sum, const default_type norm)
+      {
+        return (sum * norm);
+      }
+    }
+
+
 
     extern const transform_type NoTransform;
     extern const vector<int> AutoOverSample;
@@ -75,7 +109,8 @@ namespace MR
     { MEMALIGN (Reslice<Interpolator, ImageType>)
       public:
 
-        typedef typename ImageType::value_type value_type;
+        using value_type = typename ImageType::value_type;
+
 
         template <class HeaderType>
           Reslice (const ImageType& original,
@@ -146,7 +181,7 @@ namespace MR
           using namespace Eigen;
           if (oversampling) {
             Vector3 d (x[0]+from[0], x[1]+from[1], x[2]+from[2]);
-            value_type result = 0.0;
+            default_type sum (0.0);
             Vector3 s;
             for (int z = 0; z < OS[2]; ++z) {
               s[2] = d[2] + z*inc[2];
@@ -155,12 +190,11 @@ namespace MR
                 for (int x = 0; x < OS[0]; ++x) {
                   s[0] = d[0] + x*inc[0];
                   if (interp.voxel (direct_transform * s))
-                    result += interp.value();
+                    sum += interp.value();
                 }
               }
             }
-            result *= norm;
-            return result;
+            return normalise<value_type> (sum, norm);
           }
           interp.voxel (direct_transform * Vector3 (x[0], x[1], x[2]));
           return interp.value();
@@ -182,6 +216,7 @@ namespace MR
         default_type from[3], inc[3];
         default_type norm;
         const transform_type transform_, direct_transform;
+
     };
 
     //! @}

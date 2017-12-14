@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,6 +13,7 @@
 
 
 #include "command.h"
+#include "phase_encoding.h"
 #include "progressbar.h"
 #include "image.h"
 #include "algo/threaded_copy.h"
@@ -21,9 +22,8 @@
 
 using namespace MR;
 using namespace App;
-using namespace std;
 
-typedef float value_type;
+using value_type = float;
 
 #define DEFAULT_NITER 2
 
@@ -180,6 +180,7 @@ void run ()
   header.datatype() = DataType::Float32;
   header.ndim() = 4;
   DWI::stash_DW_scheme (header, grad);
+  PhaseEncoding::clear_scheme (header);
   
   Image<value_type>* predict = nullptr;
   opt = get_options ("predicted_signal");

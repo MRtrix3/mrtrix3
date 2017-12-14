@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -190,11 +190,11 @@ void Segmented_FOD_receiver::commit ()
 
   const auto index_filepath = Path::join (fixel_directory_path, index_path);
 
-  std::unique_ptr<IndexImage> index_image (nullptr);
-  std::unique_ptr<DataImage> dir_image (nullptr);
-  std::unique_ptr<DataImage> afd_image (nullptr);
-  std::unique_ptr<DataImage> peak_image (nullptr);
-  std::unique_ptr<DataImage> disp_image (nullptr);
+  std::unique_ptr<IndexImage> index_image;
+  std::unique_ptr<DataImage> dir_image;
+  std::unique_ptr<DataImage> afd_image;
+  std::unique_ptr<DataImage> peak_image;
+  std::unique_ptr<DataImage> disp_image;
 
   auto index_header (H);
   index_header.keyval()[Fixel::n_fixels_key] = str(n_fixels);
@@ -202,7 +202,7 @@ void Segmented_FOD_receiver::commit ()
   index_header.size(3) = 2;
   index_header.datatype() = DataType::from<uint32_t>();
   index_header.datatype().set_byte_order_native();
-  index_image = std::unique_ptr<IndexImage> (new IndexImage (IndexImage::create (index_filepath, index_header)));
+  index_image = make_unique<IndexImage> (IndexImage::create (index_filepath, index_header));
 
   auto fixel_data_header (H);
   fixel_data_header.ndim() = 3;
@@ -214,7 +214,7 @@ void Segmented_FOD_receiver::commit ()
   if (dir_path.size()) {
     auto dir_header (fixel_data_header);
     dir_header.size(1) = 3;
-    dir_image = std::unique_ptr<DataImage> (new DataImage (DataImage::create (Path::join(fixel_directory_path, dir_path), dir_header)));
+    dir_image = make_unique<DataImage> (DataImage::create (Path::join(fixel_directory_path, dir_path), dir_header));
     dir_image->index(1) = 0;
     Fixel::check_fixel_size (*index_image, *dir_image);
   }
@@ -222,7 +222,7 @@ void Segmented_FOD_receiver::commit ()
   if (afd_path.size()) {
     auto afd_header (fixel_data_header);
     afd_header.size(1) = 1;
-    afd_image = std::unique_ptr<DataImage> (new DataImage (DataImage::create (Path::join(fixel_directory_path, afd_path), afd_header)));
+    afd_image = make_unique<DataImage> (DataImage::create (Path::join(fixel_directory_path, afd_path), afd_header));
     afd_image->index(1) = 0;
     Fixel::check_fixel_size (*index_image, *afd_image);
   }
@@ -230,7 +230,7 @@ void Segmented_FOD_receiver::commit ()
   if (peak_path.size()) {
     auto peak_header(fixel_data_header);
     peak_header.size(1) = 1;
-    peak_image = std::unique_ptr<DataImage> (new DataImage (DataImage::create (Path::join(fixel_directory_path, peak_path), peak_header)));
+    peak_image = make_unique<DataImage> (DataImage::create (Path::join(fixel_directory_path, peak_path), peak_header));
     peak_image->index(1) = 0;
     Fixel::check_fixel_size (*index_image, *peak_image);
   }
@@ -238,7 +238,7 @@ void Segmented_FOD_receiver::commit ()
   if (disp_path.size()) {
     auto disp_header (fixel_data_header);
     disp_header.size(1) = 1;
-    disp_image = std::unique_ptr<DataImage> (new DataImage (DataImage::create (Path::join(fixel_directory_path, disp_path), disp_header)));
+    disp_image = make_unique<DataImage> (DataImage::create (Path::join(fixel_directory_path, disp_path), disp_header));
     disp_image->index(1) = 0;
     Fixel::check_fixel_size (*index_image, *disp_image);
   }

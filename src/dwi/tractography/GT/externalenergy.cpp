@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -138,10 +138,14 @@ namespace MR {
         
         void ExternalEnergyComputer::acceptChanges()
         {
+          assert (changes_vox.size() == changes_tod.size());
+          assert (changes_vox.size() == changes_eext.size());
+          assert (!fiso.valid() || changes_vox.size() == changes_fiso.size());
+
           for (size_t k = 0; k != changes_vox.size(); ++k) 
           {
             assign_pos_of(changes_vox[k], 0, 3).to(tod, eext);
-            assert(!is_out_of_bounds(tod));
+            assert(!is_out_of_bounds(tod, 0, 3));
             tod.row(3) = changes_tod[k];
             eext.value() = changes_eext[k];
             if (fiso.valid()) {
@@ -196,7 +200,7 @@ namespace MR {
           if (w == 0.0)
             return;
           assign_pos_of(vox, 0, 3).to(tod);
-          if (is_out_of_bounds(tod))
+          if (is_out_of_bounds(tod, 0, 3))
             return;
           t = w * d;
           for (size_t k = 0; k != changes_vox.size(); ++k) {
@@ -213,12 +217,14 @@ namespace MR {
         
         double ExternalEnergyComputer::eval()
         {
+          assert (changes_vox.size() == changes_tod.size());
+
           dE = 0.0;
           double e;
           for (size_t k = 0; k != changes_vox.size(); ++k) 
           {
             assign_pos_of(changes_vox[k], 0, 3).to(dwi, eext);
-            assert(!is_out_of_bounds(dwi));
+            assert(!is_out_of_bounds(dwi, 0, 3));
             y = dwi.row(3);
             t = changes_tod[k];
             e = calcEnergy();
@@ -229,7 +235,7 @@ namespace MR {
           }
           return dE / stats.getText();
         }
-        
+
         
         double ExternalEnergyComputer::calcEnergy()
         {

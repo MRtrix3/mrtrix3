@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -72,7 +72,7 @@ void run ()
   auto opt = get_options ("transform");
   if (opt.size()) {
     auto H = Header::open (opt[0][1]);
-    std::unique_ptr<Surface::Filter::VertexTransform> transform (new Surface::Filter::VertexTransform (H));
+    auto transform = make_unique<Surface::Filter::VertexTransform> (H);
     switch (int(opt[0][0])) {
       case 0: transform->set_first2real(); break;
       case 1: transform->set_real2first(); break;

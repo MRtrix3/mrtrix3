@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -102,7 +102,7 @@ namespace MR
       template <typename ValueType>
       class Transform { MEMALIGN (Transform<ValueType>)
         public:
-          typedef Eigen::Matrix<ValueType,Eigen::Dynamic,Eigen::Dynamic> matrix_type;
+          using matrix_type = Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>;
 
           template <class MatrixType>
           Transform (const MatrixType& dirs, const size_t lmax) :
@@ -144,7 +144,7 @@ namespace MR
           typename VectorType::Scalar elevation,
           const size_t lmax)
       {
-        typedef typename VectorType::Scalar value_type;
+        using value_type = typename VectorType::Scalar;
         Eigen::Matrix<value_type, Eigen::Dynamic, 1, 0, 64> AL (lmax+1);
         Legendre::Plm_sph (AL, lmax, 0, std::cos(elevation));
         value_type amplitude = 0.0;
@@ -161,7 +161,7 @@ namespace MR
           const typename VectorType::Scalar elevation,
           const size_t lmax)
       {
-        typedef typename VectorType::Scalar value_type;
+        using value_type = typename VectorType::Scalar;
         Eigen::Matrix<value_type, Eigen::Dynamic, 1, 0, 64> AL (lmax+1);
         Legendre::Plm_sph (AL, lmax, 1, std::cos (elevation));
         value_type dZSH_del = 0.0;
@@ -218,7 +218,7 @@ namespace MR
       template <class VectorType1, class VectorType2>
       inline VectorType1& ZSH2RH (VectorType1& rh, const VectorType2& zsh)
       {
-        typedef typename VectorType2::Scalar value_type;
+        using value_type = typename VectorType2::Scalar;
         rh.resize (zsh.size());
         const size_t lmax = LforN (zsh.size());
         Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> AL (lmax+1);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -74,9 +74,9 @@ namespace MR
             friend class Program;
         };
 
-        typedef Object<gl::VERTEX_SHADER> Vertex;
-        typedef Object<gl::GEOMETRY_SHADER> Geometry;
-        typedef Object<gl::FRAGMENT_SHADER> Fragment;
+        using Vertex = Object<gl::VERTEX_SHADER>;
+        using Geometry = Object<gl::GEOMETRY_SHADER>;
+        using Fragment = Object<gl::FRAGMENT_SHADER>;
 
 
 

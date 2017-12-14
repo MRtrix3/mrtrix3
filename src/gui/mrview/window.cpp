@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2017 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -145,7 +145,7 @@ namespace MR
           QList<QUrl> urlList = mimeData->urls();
           for (int i = 0; i < urlList.size() && i < 32; ++i) {
             try {
-              list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (urlList.at (i).path().toUtf8().constData()))));
+              list.push_back (make_unique<MR::Header> (MR::Header::open (urlList.at (i).path().toUtf8().constData())));
             }
             catch (Exception& e) {
               e.display();
@@ -723,20 +723,21 @@ namespace MR
                 throw Exception ("FIXME: error determining position of last argument!");
 
             // identify first non-standard option:
-            size_t first_option = 0; 
-            for (; first_option < MR::App::option.size(); ++first_option) { 
+            size_t first_option = 0;
+            for (; first_option < MR::App::option.size(); ++first_option) {
               if (size_t (MR::App::option[first_option].opt - &MR::App::__standard_options[0]) >= MR::App::__standard_options.size())
                 break;
             }
-              
-            first_option = MR::App::option[first_option].args - MR::App::argv;
-            if (first_option < last_arg_pos)
-              throw Exception ("options must appear after the last argument - see help page for details");
+            if (MR::App::option.size() > first_option) {
+              first_option = MR::App::option[first_option].args - MR::App::argv;
+              if (first_option < last_arg_pos)
+                throw Exception ("options must appear after the last argument - see help page for details");
+            }
           }
 
           vector<std::unique_ptr<MR::Header>> list;
           for (size_t n = 0; n < MR::App::argument.size(); ++n) {
-            try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (MR::App::argument[n])))); }
+            try { list.push_back (make_unique<MR::Header> (MR::Header::open (MR::App::argument[n]))); }
             catch (Exception& e) { e.display(); }
           }
           add_images (list);
@@ -795,7 +796,7 @@ namespace MR
         vector<std::unique_ptr<MR::Header>> list;
         for (size_t n = 0; n < image_list.size(); ++n) {
           try {
-            list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (image_list[n]))));
+            list.push_back (make_unique<MR::Header> (MR::Header::open (image_list[n])));
           }
           catch (Exception& E) {
             E.display();
@@ -815,7 +816,7 @@ namespace MR
 
         try {
           vector<std::unique_ptr<MR::Header>> list;
-          list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (folder))));
+          list.push_back (make_unique<MR::Header> (MR::Header::open (folder)));
           add_images (list);
         }
         catch (Exception& E) {
@@ -1756,7 +1757,7 @@ namespace MR
 
 
 
-      void Window::process_commandline_option () 
+      void Window::process_commandline_option ()
       {
         auto& opt (MR::App::option[current_option]);
 
@@ -1884,7 +1885,7 @@ namespace MR
 
           if (opt.opt->is ("load")) {
             vector<std::unique_ptr<MR::Header>> list;
-            try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (opt[0])))); }
+            try { list.push_back (make_unique<MR::Header> (MR::Header::open (opt[0]))); }
             catch (Exception& e) { e.display(); }
             add_images (list);
             return;
@@ -2009,9 +2010,10 @@ namespace MR
           if (opt.opt->is ("exit")) {
             qApp->processEvents();
             qApp->quit();
+            return;
           }
 
-          assert ("shouldn't reach here!" && false);
+          assert (opt.opt->is ("info") or opt.opt->is ("debug") or ("shouldn't reach here!" && false));
         }
         catch (Exception& E) {
           E.display();
