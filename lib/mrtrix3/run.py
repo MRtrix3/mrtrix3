@@ -106,7 +106,10 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
       handle_err = file_err.fileno()
     # Set off the processes
     try:
-      process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, preexec_fn=os.setpgrp)
+      try:
+        process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, preexec_fn=os.setpgrp)
+      except AttributeError:
+        process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err)
       _processes.append(process)
       tempfiles.append( ( file_out, file_err ) )
     # FileNotFoundError not defined in Python 2.7
@@ -190,7 +193,13 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
       caller = inspect.getframeinfo(inspect.stack()[1][0])
       script_name = os.path.basename(sys.argv[0])
       app.console('')
-      sys.stderr.write(script_name + ': ' + app.colourError + '[ERROR] Command failed: ' + cmd + app.colourClear + app.colourDebug + ' (' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')' + app.colourClear + '\n')
+      try:
+        filename = caller.filename
+        lineno = caller.lineno
+      except AttributeError:
+        filename = caller[1]
+        lineno = caller[2]
+      sys.stderr.write(script_name + ': ' + app.colourError + '[ERROR] Command failed: ' + cmd + app.colourClear + app.colourDebug + ' (' + os.path.basename(filename) + ':' + str(lineno) + ')' + app.colourClear + '\n')
       sys.stderr.write(script_name + ': ' + app.colourConsole + 'Output of failed command:' + app.colourClear + '\n')
       for line in error_text.splitlines():
         sys.stderr.write(' ' * (len(script_name)+2) + line + '\n')
@@ -247,7 +256,13 @@ def function(fn, *args): #pylint: disable=unused-variable
     error_text = str(type(e).__name__) + ': ' + str(e)
     script_name = os.path.basename(sys.argv[0])
     app.console('')
-    sys.stderr.write(script_name + ': ' + app.colourError + '[ERROR] Function failed: ' + fnstring + app.colourClear + app.colourDebug + ' (' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')' + app.colourClear + '\n')
+    try:
+      filename = caller.filename
+      lineno = caller.lineno
+    except AttributeError:
+      filename = caller[1]
+      lineno = caller[2]
+    sys.stderr.write(script_name + ': ' + app.colourError + '[ERROR] Function failed: ' + fnstring + app.colourClear + app.colourDebug + ' (' + os.path.basename(filename) + ':' + str(lineno) + ')' + app.colourClear + '\n')
     sys.stderr.write(script_name + ': ' + app.colourConsole + 'Information from failed function:' + app.colourClear + '\n')
     for line in error_text.splitlines():
       sys.stderr.write(' ' * (len(script_name)+2) + line + '\n')
