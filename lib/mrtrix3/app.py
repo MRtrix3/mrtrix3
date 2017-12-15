@@ -291,7 +291,10 @@ def debug(text): #pylint: disable=unused-variable
   nearest = outer_frames[1]
   try:
     if len(outer_frames) == 2: # debug() called directly from script being executed
-      origin = '(' + os.path.basename(nearest.filename) + ':' + str(nearest.lineno) + ')'
+      try:
+        origin = '(' + os.path.basename(nearest.filename) + ':' + str(nearest.lineno) + ')'
+      except:
+        origin = '(' + os.path.basename(nearest[1]) + ':' + str(nearest[2]) + ')'
     else: # Some function has called debug(): Get location of both that function, and where that function was invoked
       try:
         filename = nearest.filename
