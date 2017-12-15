@@ -32,7 +32,8 @@ for i in range(1, num_subjects + 1):
 
 sys.stdout.write("Number of b-values: " + str(num_bvals) + '\n')
 
-average_response = [[0] * num_coeff] * num_bvals
+# Can't use multiplication operator in outer loop since it duplicates by reference rather than value
+average_response = [[0] * num_coeff for _ in range(num_bvals)]
 for i in range(1, num_subjects + 1):
   with open(sys.argv[i], 'r') as f:
     lines = f.readlines()
