@@ -293,7 +293,7 @@ def debug(text): #pylint: disable=unused-variable
     if len(outer_frames) == 2: # debug() called directly from script being executed
       try:
         origin = '(' + os.path.basename(nearest.filename) + ':' + str(nearest.lineno) + ')'
-      except:
+      except AttributeError: # Prior to Python 3.5
         origin = '(' + os.path.basename(nearest[1]) + ':' + str(nearest[2]) + ')'
     else: # Some function has called debug(): Get location of both that function, and where that function was invoked
       try:
@@ -309,7 +309,7 @@ def debug(text): #pylint: disable=unused-variable
       caller = outer_frames[2]
       try:
         origin += ' (from ' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')'
-      except: # Prior to Python 3.5
+      except AttributeError:
         origin += ' (from ' + os.path.basename(caller[1]) + ':' + str(caller[2]) + ')'
       finally:
         del caller
@@ -338,7 +338,7 @@ def var(*variables): #pylint: disable=unused-variable
       calling_code = calling_frame.code_context[0]
       filename = calling_frame.filename
       lineno = calling_frame.lineno
-    except: # Prior to Python 3.5
+    except AttributeError: # Prior to Python 3.5
       calling_code = calling_frame[4][0]
       filename = calling_frame[1]
       lineno = calling_frame[2]
