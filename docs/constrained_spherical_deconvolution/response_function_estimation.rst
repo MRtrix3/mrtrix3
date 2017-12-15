@@ -5,7 +5,7 @@ Response function estimation
 
 A prerequisite for spherical deconvolution is obtaining (the) response
 function(s), which is/are used as the kernel(s) by the deconvolution
-algorithm. For the white matter, the response function is the signal
+algorithm. For the white matter, the response function models the signal
 expected for a voxel containing a single, coherently oriented bundle
 of axons. In case of multi-tissue variants of spherical deconvolution,
 response functions of other tissue types are introduced as well;
@@ -105,7 +105,26 @@ The following sections provide more details on each algorithm specifically.
 'dhollander' algorithm
 ^^^^^^^^^^^^^^^^^^^^^^
 
-TODO: Thijs is working on this documentation section.
+This algorithm is the original implementation of the strategy proposed in
+`Dhollander et al. (2016) <https://www.researchgate.net/publication/307863133_Unsupervised_3-tissue_response_function_estimation_from_single-shell_or_multi-shell_diffusion_MR_data_without_a_co-registered_T1_image>`__
+to estimate multi b-value (single-shell + b=0, or multi-shell) response
+functions of single-fibre white matter (*anisotropic*), grey matter
+and CSF (both *isotropic*), which can subsequently be used for
+multi-tissue (constrained) spherical deconvolution algorithms.
+This is an unsupervised algorithm that only requires the diffusion
+weighted dataset as input. It leverages the relative diffusion properties
+of the 3 tissue response functions with respect to each other, allowing it
+to select the best voxels to estimate the response functions from.
+
+The algorithm has been succesfully tested in a wide range of conditions
+(overall data quality, pathology, developmental state of the subjects,
+animal data and ex-vivo data).  In almost all cases, it runs and performs
+well out of the box.  In exceptional cases where the anisotropy in the
+data is particularly low (*very* early development, ex-vivo data with low
+b-value, ...), it may be advisable to set the ``-fa`` parameter lower
+than its default value (of 0.2).  As always, check the ``-voxels`` option
+output in unusually (challenging) cases.
+
 
 For more information, refer to the
 :ref:`dhollander algorithm documentation <dwi2response_dhollander>`.
@@ -149,9 +168,9 @@ For more information, refer to the
 'msmt_5tt' algorithm
 ^^^^^^^^^^^^^^^^^^^^
 
-This algorithm is an implementation of the strategy proposed in
+This algorithm is a reimplementation of the strategy proposed in
 `Jeurissen et al. (2014) <http://www.sciencedirect.com/science/article/pii/S1053811914006442>`__
-to estimate multi b-value  response functions of single-fibre
+to estimate multi b-value response functions of single-fibre
 white matter (*anisotropic*), grey matter and CSF( both *isotropic*),
 which can subsequently be used for multi-tissue (constrained) spherical
 deconvolution. The algorithm is primarily driven by a prior ('5TT')
@@ -165,6 +184,16 @@ A notable difference between this implementation and the algorithm described in
 is the criterium to extract single-fibre voxels from the white matter
 segmentation: this implementation calls upon the ``tournier`` algorithm
 to do so, while the paper uses a simple (lower) 0.7 FA threshold.
+
+Due to the challenge of accurately aligning an anatomical image (e.g.
+T1-weighted image) with the diffusion data, including correction for distortions
+up to an accuracy on the order of magnitude of the spatial resolution of
+the anatomical image, as well as accurate spatial segmentation, this
+algorithm has more prerequisites than the ``dhollander`` algorithm.
+Furthermore, this algorithm was found to be *less* accurate than the
+``dhollander`` algorithm.
+See `Dhollander et al. (2016) <https://www.researchgate.net/publication/307863133_Unsupervised_3-tissue_response_function_estimation_from_single-shell_or_multi-shell_diffusion_MR_data_without_a_co-registered_T1_image>`__
+for more information on this topic.
 
 For more information, refer to the
 :ref:`msmt_5tt algorithm documentation <dwi2response_msmt_5tt>`.
@@ -197,13 +226,13 @@ For more information, refer to the
 'tournier' algorithm
 ^^^^^^^^^^^^^^^^^^^^
 
-This algorithm is an implementation of the iterative approach proposed in
+This algorithm is a reimplementation of the iterative approach proposed in
 `Tournier et al. (2013) <http://onlinelibrary.wiley.com/doi/10.1002/nbm.3017/abstract>`__
 to estimate a single b-value (single-shell) response function of
 single-fibre white matter, which can subsequently be used for single-tissue
 (constrained) spherical deconvolution. The algorithm iterates between
 performing CSD and estimating a response function from a set of the best
-'single-fibre' voxels as detected from the CSD result itself. Notable differences
+'single-fibre' voxels, as detected from the CSD result itself. Notable differences
 between this implementation and the algorithm described in `Tournier et al. (2013)
 <http://onlinelibrary.wiley.com/doi/10.1002/nbm.3017/abstract>`__ include:
 
