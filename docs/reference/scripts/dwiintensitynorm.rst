@@ -32,7 +32,7 @@ Options
 Options for the dwiintensitynorm script
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-fa_threshold** The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask
+- **-fa_threshold** The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask (default: 0.4)
 
 Standard options
 ^^^^^^^^^^^^^^^^
