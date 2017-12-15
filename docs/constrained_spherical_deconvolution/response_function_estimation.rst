@@ -3,13 +3,13 @@
 Response function estimation
 ============================
 
-A prerequisite for spherical deconvolution is obtaining response
+A prerequisite for spherical deconvolution is obtaining (the) response
 function(s), which is/are used as the kernel(s) by the deconvolution
 algorithm. For the white matter, the response function is the signal
 expected for a voxel containing a single, coherently oriented bundle
 of axons. In case of multi-tissue variants of spherical deconvolution,
-response functions for other tissue types may be introduced as well;
-the most common ones being grey matter and/or CSF.
+response functions of other tissue types are introduced as well;
+typically to represent grey matter(-like) and/or CSF signals.
 
 In MRtrix3, the :ref:`dwi2response` script offers a range of algorithms
 to estimate these response function(s) directly from your dataset itself.
@@ -88,10 +88,9 @@ to what they deliver (as output) and require (as input), notably
    also additional input(s) (``msmt_5tt`` requires a 5TT segmentation
    from a spatially aligned anatomical image)
    
-Beyond these general categories, the algorithms differ mostly in how
-they derive the voxels that will be used to estimate the response
-function(s) from, and to a lesser extent also how they derive the fibre
-orientation for single-fibre voxels.
+Beyond these general categories, the algorithms differ mostly in the actual
+strategy used to determine the voxels that will be used to estimate
+the response function(s) from.
 
 The ``manual`` choice is an exception to most of the above, in that it
 allows/*requires* you to provide the voxels yourself, and even allows
@@ -152,18 +151,17 @@ For more information, refer to the
 
 This algorithm is an implementation of the strategy proposed in
 `Jeurissen et al. (2014) <http://www.sciencedirect.com/science/article/pii/S1053811914006442>`__
-to estimate multi b-value (multi-shell) response functions of
-single-fibre white matter (*anisotropic*), grey matter and CSF
-(both *isotropic*), which can subsequently be used for multi-tissue
-(constrained) spherical deconvolution. The algorithm is primarily
-driven by a prior ('5TT') tissue segmentation, typically obtained
-from a spatially aligned anatomical image. This also requires correction
-for susceptibility-induced (EPI) distortions of the DWI dataset.
-The algorithm selects voxels with a segmentation partial volume of at
-least 0.95 for each tissue type. Grey matter and CSF are further
-constrained by an (upper) 0.2 FA threshold. A notable difference between
-this implementation and the algorithm described in `Jeurissen et al. (2014)
-<http://www.sciencedirect.com/science/article/pii/S1053811914006442>`__
+to estimate multi b-value  response functions of single-fibre
+white matter (*anisotropic*), grey matter and CSF( both *isotropic*),
+which can subsequently be used for multi-tissue (constrained) spherical
+deconvolution. The algorithm is primarily driven by a prior ('5TT')
+tissue segmentation, typically obtained from a spatially aligned anatomical
+image. This also requires prior correction for susceptibility-induced (EPI)
+distortions of the DWI dataset. The algorithm selects voxels with a
+segmentation partial volume of at least 0.95 for each tissue type.
+Grey matter and CSF are further constrained by an (upper) 0.2 FA threshold.
+A notable difference between this implementation and the algorithm described in
+`Jeurissen et al. (2014) <http://www.sciencedirect.com/science/article/pii/S1053811914006442>`__
 is the criterium to extract single-fibre voxels from the white matter
 segmentation: this implementation calls upon the ``tournier`` algorithm
 to do so, while the paper uses a simple (lower) 0.7 FA threshold.
@@ -182,8 +180,8 @@ single-fibre white matter, which can subsequently be used for single-tissue
 performing CSD and estimating a response function from all voxels detected
 as being 'single-fibre' from the CSD result itself. The criterium for
 a voxel to be 'single-fibre' is based on the ratio of the amplitude of
-second tallest to the first tallest peak. The method is initialised with
-a 'fat' response function; i.e., a response function that is safely deemed
+second tallest to the tallest peak. The method is initialised with a
+'fat' response function; i.e., a response function that is safely deemed
 to be much less 'sharp' than the true response function.
 
 This algorithm has occasionally been found to behave unstable and converge
@@ -214,7 +212,7 @@ between this implementation and the algorithm described in `Tournier et al. (201
    
 -  This implementation uses a more complex metric to measure how
    'single-fibre' FODs are: ``sqrt(|peak1|) * (1 - |peak2| / |peak1|)^2``,
-   as opposed to a simple ratio of the tallest peaks. This new metric has
+   as opposed to a simple ratio of the two tallest peaks. This new metric has
    a bias towards FODs with a larger tallest peak, to avoid favouring
    small, yet low SNR, FODs.
    
@@ -232,7 +230,7 @@ between the ``tournier`` and ``tax`` algorithms include:
 
 -  This implementation of the ``tournier`` algorithm uses a more complex
    metric to measure how 'single-fibre' FODs are (see above), while the
-   ``tax`` algorithm uses a simple ratio of the tallest peaks.
+   ``tax`` algorithm uses a simple ratio of the two tallest peaks.
    
 -  The ``tournier`` algorithm estimates the response function at each
    iteration only from the 300 *best* 'single-fibre' voxels, while the
@@ -246,11 +244,4 @@ and `here <https://github.com/MRtrix3/mrtrix3/pull/426>`__).
 
 For more information, refer to the
 :ref:`tournier algorithm documentation <dwi2response_tournier>`.
-
-Writing your own algorithms
----------------------------
-
-TODO: Thijs is working on this documentation section. Will suggest ``manual``
-as a first (easier) option, and (python) implementation of a ``dwi2response``
-algorithm as another (and mention in which folder the algos sit).
 
