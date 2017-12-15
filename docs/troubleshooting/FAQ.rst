@@ -1,6 +1,13 @@
 Frequently Asked Questions (FAQ)
 ================================
 
+This page contains a collection of topics that are frequently raised in
+discussions and on the `community forum <http://community.mrtrix.org>`__.
+If you are seeking an answer to a question that specifically relates to
+*MRtrix3* performance issues or crashes, please check the `relevant
+documentation page <performance_and_crashes>`__.
+
+
 Processing of HCP data
 ----------------------
 
@@ -42,7 +49,7 @@ The `Multi-Shell Multi-Tissue (MSMT) CSD
 <http://www.sciencedirect.com/science/article/pii/S1053811914006442>`__ method
 has now been incorporated into *MRtrix3*, and is provided as part of the
 :ref:`dwi2fod` command. There are also instructions for its use provided in
-the `documentation <multi_tissue_csd>`__.
+the `documentation <multi_shell_multi_tissue_csd>`__.
 
 The image data include information on gradient non-linearities. Can I make use of this?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -56,7 +63,7 @@ assumption. To me, there are two possible ways that this could be handled:
 
 - Generate a representation of the response function that can be interpolated
   / extrapolated as a function of b-value, and therefore choose an appropriate
-  response function per voxel.  
+  response function per voxel.
 
 Work is underway to solve these issues, but there's nothing available yet. For
 those wanting to pursue their own solution, bear in mind that the gradient
@@ -105,6 +112,7 @@ Apply the mask:
 .. code-block:: console
 
     $ mrcalc temp.mif mask.mif -mult TWFC.mif
+
 
 Handling SIFT2 weights
 ----------------------
@@ -155,6 +163,7 @@ that must be *explicitly* provided to any commands in order to be used.  The
 track file can also be used *without* taking into account the streamline
 weights, simply by *not* providing the weights.
 
+
 Making use of Python scripts library
 ------------------------------------
 
@@ -180,6 +189,7 @@ location of those libraries; e.g.:
 
 (Replace the path to the *MRtrix3* "lib" directory with the location of your
 own installation)
+
 
 ``tck2connectome`` no longer has the ``-contrast X`` option...?
 -------------------------------------------------------------------------
@@ -231,7 +241,7 @@ old usage.
 
 
 Visualising streamlines terminations
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------------------
 
 I am frequently asked about Figures 5-7 in the `Anatomically-Constrained
 Tractography <http://www.sciencedirect.com/science/article/pii/S1053811912005824>`__
@@ -291,91 +301,112 @@ used in these figures, which I'll explain here in full.
       termination points that contrasts well against the tracks.
 
 
-Compiler error during build
----------------------------
+Unusual result following use of ``tcknormalise``
+------------------------------------------------
 
-If you encounter an error during the build process that resembles the following:
+Sometimes, following the use of the ``tcknormalise`` command, an unusual
+effect may be observed where although the bulk of the streamlines may be
+aligned correctly with the target volume / space, a subset of streamlines
+appear to converge very 'sharply' toward a particular point in space.
 
-.. code-block:: text
+This is caused by the presence of zero-filling in the non-linear warp
+field image. In some softwares, voxels for which a proper non-linear
+transformation cannot be determined between the two images will be filled
+with zero values. However, ``tcknormalise`` will interpret these values as
+representing an intended warp for the streamlines, such that streamline
+points within those voxels will be spatially transformed to the point
+[0, 0, 0] in space - this results in the convergence of many streamlines
+toward the singularity point.
 
-    ERROR: (#/#) [CC] release/cmd/command.o
-
-    /usr/bin/g++-4.8 -c -std=c++11 -pthread -fPIC -I/home/user/mrtrix3/eigen -Wall -O2 -DNDEBUG -Isrc -Icmd -I./lib -Icmd cmd/command.cpp -o release/cmd/command.o
-
-    failed with output
-
-    g++-4.8: internal compiler error: Killed (program cc1plus)
-    Please submit a full bug report,
-    with preprocessed source if appropriate.
-    See for instructions.
+The solutioin is to use the ``warpcorrect`` command, which identifies voxels
+that contain the warp [0, 0, 0] and replaces them with [NaN, NaN, NaN]
+("NaN" = "Not a Number"). This causes ``tcknormalise`` to _discard_ those
+streamline points; consistently with the results of registration, where
+appropriate non-linear transformation of these points could not be determined.
 
 
-This is most typically caused by the compiler running out of RAM. This
-can be solved either through installing more RAM into your system, or
-by restricting the number of threads to be used during compilation:
+Encountering errors using ``5ttgen fsl``
+----------------------------------------
+
+The following error messages have frequently been observed from the
+``5ttgen fsl`` script:
 
 .. code-block:: console
 
-    $ NUMBER_OF_PROCESSORS=1 ./build
+    FSL FIRST has failed; not all structures were segmented successfully
+    Waiting for creation of new file "first-L_Accu_first.vtk"
+    FSL FIRST job has been submitted to SGE; awaiting completion
+      (note however that FIRST may fail silently, and hence this script may hang indefinitely)
 
+Error messages that may be found in the log files within the script's
+temporary directory include:
 
+.. code-block:: console
 
-Hanging on network file system when writing images
---------------------------------------------------
+    Cannot open volume first-L_Accu_corr for reading!
+    Image Exception : #22 :: ERROR: Could not open image first_all_none_firstseg
+    WARNING: NO INTERIOR VOXELS TO ESTIMATE MODE
+    vector::_M_range_check
+    terminate called after throwing an instance of 'RBD_COMMON::BaseException'
+    /bin/sh: line 1:  6404 Aborted                 /usr/local/packages/fsl-5.0.1/bin/fslmerge -t first_all_none_firstseg first-L_Accu_corr first-R_Accu_corr first-L_Caud_corr first-R_Caud_corr first-L_Pall_corr first-R_Pall_corr first-L_Puta_corr first-R_Puta_corr first-L_Thal_corr first-R_Thal_corr
 
-When any *MRtrix3* command must read or write image data, there are two
-primary mechanisms by which this is performed:
+These various messages all relate to the fact that this script makes use of
+FSL's FIRST tool to explicitly segment sub-cortical grey matter structures,
+but this segmentation process is not successful in all circumstances.
+Moreover, there are particular details with regards to the implementation of
+the FIRST tool that make it awkward for the `5ttgen fsl`` script to invoke
+this tool and appropriately detect whether or not the segmentation was
+successful.
 
-1. `Memory mapping <https://en.wikipedia.org/wiki/Memory-mapped_file>`_:
-The operating system provides access to the contents of the file as
-though it were simply a block of data in memory, without needing to
-explicitly load all of the image data into RAM.
+It appears as though a primary source of this issue is the use of FSL's
+``flirt`` tool to register the T1 image to the DWIs before running
+``5ttgen fsl``. While this is consistent with the recommentation in the
+:ref:`act` documentation, there is an unintended consequence of performing
+this registration step specifically with the ``flirt`` tool prior to
+``5ttgen fsl``. With default usage, ``flirt`` will not only _register_ the
+T1 image to the DWIs, but also _resample_ the T1 to the voxel grid of the
+DWIs, greatly reducing its spatial resolution. This may have a concomitant
+effect during the sub-cortical segmentation by FIRST: The voxel grid is
+so coarse that it is impossible to find any voxels that are entirely
+encapsulated by the surface corresponding to the segmented structure,
+resulting in an error within the FIRST script.
 
-2. Preload / delayed write-back: When opening an existing image, the
-entire image contents are loaded into a block of RAM. If an image is
-modified, or a new image created, this occurs entirely within RAM, with
-the image contents written to disk storage only at completion of the
-command.
+If this is the case, it is highly recommended that the T1 image *not* be
+resampled to the DWI voxel grid following registration; not only for the
+issue mentioned above, but also because ACT is explicitly designed to take
+full advantage of the higher spatial resolution of the T1 image. If
+``flirt`` is still to be used for registration, the solution is to instruct
+``flirt`` to provide a *transformation matrix*, rather than a translated &
+resampled image:
 
-This design ensures that loading images for processing is as fast as
-possible and does not incur unnecessary RAM requirements, and writing
-files to disk is as efficient as possible as all data is written as a
-single contiguous block.
+.. code-block: console
 
-Memory mapping will be used wherever possible. However one circumstance
-where this should *not* be used is when *write access* is required for
-the target file, and it is stored on a *network file system*: in this
-case, the command typically slows to a crawl (e.g. progressbar stays at
-0% indefinitely), as the memory-mapping implementation repeatedly
-performs small data writes and attempts to keep the entire image data
-synchronised.
+    $ flirt -in T1.nii -ref DWI.nii -omat T12DWI_flirt.mat -dof 6
 
-*MRtrix3* will now *test* the type of file system that a target image is
-stored on; and if it is a network-based system, it will *not* use
-memory-mapping for images that may be written to. *However*, if you
-experience the aforementioned slowdown in such a circumstance, it is
-possible that the particular configuration you are using is not being
-correctly detected or identified. If you are unfortunate enough to
-encounter this issue, please report to the developers the hardware
-configuration and file system type in use.
+That transformation matrix should then applied to the T1 image in a manner
+that only influences the transformation stored within the image header, and
+does *not* resample the image to a new voxel grid:
 
-Linux: very slow performance when writing large images
-------------------------------------------------------
-This might be due to the Linux Disk Caching or the kernel's handling of `dirty
-pages
-<https://lonesysadmin.net/2013/12/22/better-linux-disk-caching-performance-vm-dirty_ratio/>`__.
+.. code-block: console
 
-On Ubuntu, you can get your current dirty page handling settings with ``sysctl -a | grep dirty``.
-Those settings can be modified in ``/etc/sysctl.conf`` by adding the following
-two lines to ``/etc/sysctl.conf``:
+    $ transformconvert T12DWI_flirt.mat T1.nii DWI.nii flirt_import T12DWI_mrtrix.txt
+    $ mrtransform T1.nii T1_registered.mif -linear T12DWI_mrtrix.txt
 
-.. code-block:: text
+If the T1 image provided to ``5ttgen fsl`` has _not_ been erroneously
+down-sampled, but issues are still encountered with the FIRST step, another
+possible solution is to first obtain an accurate brain extraction, and then
+run ``5ttgen fsl`` using the ``--premasked`` option. This results in the
+registration step of FIRST being performed based on a brain-extracted
+template image, which in some cases may make the process more robust.
 
-    vm.dirty_background_ratio = 60
-    vm.dirty_ratio = 80
+For any further issues, the only remaining recommendations are:
 
-``vm.dirty_background_ratio`` is a percentage fraction of your RAM and should
-be larger than the image to be written.  After changing ``/etc/sysctl.conf``,
-execute ``sysctl -p`` to configure the new kernel parameters at runtime.
-Depending on your system, these changes might not be persistent after reboot.
+-  Investigate the temporary files that are generated within the script's
+   temporary directory, particularly the FIRST log files, and search for
+   any indication of the cause of failure.
 
+-  Try running the FSL ``run_first_all`` script directly on your original
+   T1 image. If this works, then further investigation could be used to
+   determine precisely which images can be successfully segmented and
+   which cannot. If it does not, then it may be necessary to experiment
+   with the command-line options available in the ``run_first_all`` script.
