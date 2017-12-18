@@ -24,11 +24,11 @@ def getInputs(): #pylint: disable=unused-variable
   image.check3DNonunity(path.fromUser(app.args.input, False))
   run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('input.mif', True))
   if app.args.mask:
-    run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit -stride -1,+2,+3')
+    run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit -strides -1,+2,+3')
   if app.args.t2:
     if not image.match(app.args.input, app.args.t2):
       app.error('Provided T2 image does not match input T1 image')
-    run.command('mrconvert ' + path.fromUser(app.args.t2, True) + ' ' + path.toTemp('T2.nii', True) + ' -stride -1,+2,+3')
+    run.command('mrconvert ' + path.fromUser(app.args.t2, True) + ' ' + path.toTemp('T2.nii', True) + ' -strides -1,+2,+3')
 
 
 
@@ -68,7 +68,7 @@ def execute(): #pylint: disable=unused-variable
              'retaining the original higher resolution of the T1 image is preferable')
     upsample_for_first = True
 
-  run.command('mrconvert input.mif T1.nii -stride -1,+2,+3')
+  run.command('mrconvert input.mif T1.nii -strides -1,+2,+3')
 
   fast_t1_input = 'T1.nii'
   fast_t2_input = ''
@@ -178,11 +178,11 @@ def execute(): #pylint: disable=unused-variable
   pve_image_list = [ ]
   progress = app.progressBar('Generating partial volume images for SGM structures', len(sgm_structures))
   for struct in sgm_structures:
-    pve_image_path = 'mesh2pve_' + struct + '.mif'
+    pve_image_path = 'mesh2voxel_' + struct + '.mif'
     vtk_in_path = 'first-' + struct + '_first.vtk'
     vtk_temp_path = struct + '.vtk'
     run.command('meshconvert ' + vtk_in_path + ' ' + vtk_temp_path + ' -transform first2real ' + first_input)
-    run.command('mesh2pve ' + vtk_temp_path + ' ' + fast_t1_input + ' ' + pve_image_path)
+    run.command('mesh2voxel ' + vtk_temp_path + ' ' + fast_t1_input + ' ' + pve_image_path)
     pve_image_list.append(pve_image_path)
     progress.increment()
   progress.done()
@@ -206,7 +206,7 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrcalc ' + fast_gm_output + ' multiplier_noNAN.mif -mult remove_unconnected_wm_mask.mif -mult cgm.mif')
   run.command('mrcalc ' + fast_wm_output + ' multiplier_noNAN.mif -mult remove_unconnected_wm_mask.mif -mult wm.mif')
   run.command('mrcalc 0 wm.mif -min path.mif')
-  run.command('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | mrconvert - combined_precrop.mif -stride +2,+3,+4,+1')
+  run.command('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | mrconvert - combined_precrop.mif -strides +2,+3,+4,+1')
 
   # Use mrcrop to reduce file size (improves caching of image data during tracking)
   if app.args.nocrop:

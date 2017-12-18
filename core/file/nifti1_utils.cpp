@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -212,11 +213,11 @@ namespace MR
               H.transform().matrix().col(2) *= qfac;
           }
 
-          //CONF option: NIfTI.AutoLoadJSON
+          //CONF option: NIfTIAutoLoadJSON
           //CONF default: 0 (false)
           //CONF A boolean value to indicate whether, when opening NIfTI images,
           //CONF any corresponding JSON file should be automatically loaded.
-          if (File::Config::get_bool ("NIfTI.AutoLoadJSON", false)) {
+          if (File::Config::get_bool ("NIfTIAutoLoadJSON", false)) {
             std::string json_path = H.name();
             if (Path::has_suffix (json_path, ".nii.gz"))
               json_path = json_path.substr (0, json_path.size()-7);
@@ -414,13 +415,13 @@ namespace MR
 
         strncpy ( (char*) &NH.magic, single_file ? "n+1\0" : "ni1\0", 4);
 
-        //CONF option: NIfTI.AutoSaveJSON
+        //CONF option: NIfTIAutoSaveJSON
         //CONF default: 0 (false)
         //CONF A boolean value to indicate whether, when writing NIfTI images,
         //CONF a corresponding JSON file should be automatically created in order
         //CONF to save any header entries that cannot be stored in the NIfTI
         //CONF header.
-        if (single_file && File::Config::get_bool ("NIfTI.AutoSaveJSON", false)) {
+        if (single_file && File::Config::get_bool ("NIfTIAutoSaveJSON", false)) {
           std::string json_path = H.name();
           if (Path::has_suffix (json_path, ".nii.gz"))
             json_path = json_path.substr (0, json_path.size()-7);

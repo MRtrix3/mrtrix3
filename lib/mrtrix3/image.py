@@ -27,7 +27,7 @@ class Header(object):
       self._name = data['name']
       self._size = data['size']
       self._spacing = data['spacing']
-      self._stride = data['stride']
+      self._strides = data['strides']
       self._format = data['format']
       self._datatype = data['datatype']
       self._intensity_offset = data['intensity_offset']
@@ -47,8 +47,8 @@ class Header(object):
     return self._size
   def spacing(self):
     return self._spacing
-  def stride(self):
-    return self._stride
+  def strides(self):
+    return self._strides
   def format(self):
     return self._format
   def datatype(self):
