@@ -119,7 +119,7 @@ image data in such a way as to invalidate the phase encoding information will
 modifying the representation of this information between the fixed and variable
 phase encoding cases.
 
-Consider, for instance, a pair of *b*=0 images, where the first was acquired with
+Consider, for instance, a pair of b=0 images, where the first was acquired with
 phase encoding direction ``A>>P``, and the second was acquired using phase encoding
 direction ``P>>A``::
 
