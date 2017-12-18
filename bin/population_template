@@ -43,15 +43,12 @@ try:
 except ImportError:
   app.console("numpy not found; using replacement functions")
   def loadtxt(fname, delimiter=" ", dtype=float):
-    with open(fname, "r") as f:
-      return [[dtype(a) for a in l.rstrip().split(delimiter)] for l in f.readlines()]
+    with open(fname, "rb") as f:
+      return [[dtype(a) for a in l.decode(errors='ignore').rstrip().split(delimiter)] for l in f.readlines()]
 
   def savetxt(fname, X, delimiter=" ", fmt="%.14e"):
     try:
-      if sys.version_info[0] >= 3:
-        fh = open(fname, 'wb')
-      else:
-        fh = open(fname, 'w')
+      fh = open(fname, 'wb')
       if len(X) == 1:
         ncol = 1
       else:
@@ -59,7 +56,7 @@ except ImportError:
       fmt = [fmt, ] * ncol
       row_format = delimiter.join(fmt)
       for row in X:
-        fh.write((row_format % tuple(row) + '\n').encode (errors='ignore'))
+        fh.write(((row_format % tuple(row) + '\n').encode(errors='ignore')))
     finally:
       fh.close()
 
@@ -212,7 +209,7 @@ if not os.path.exists(inputDir):
   app.error('input directory not found')
 inFiles = sorted(allindir(inputDir, dir_path=False))
 if len(inFiles) <= 1:
-  app.console('Not enough images found in input directory. More than one image is needed to generate a population template')
+  app.error('Not enough images found in input directory. More than one image is needed to generate a population template')
 else:
   app.console('Generating a population-average template from ' + str(len(inFiles)) + ' input images')
 
