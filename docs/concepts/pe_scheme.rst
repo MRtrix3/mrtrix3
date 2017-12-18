@@ -30,7 +30,7 @@ The phase encoding information for a particular image file can be stored in one
 of two ways.
 
 -  The most convenient of these is storage of (one or more) key-value field(s)
-   encapsulated within the :ref:`image_header`, just as can be used for
+   encapsulated within the image header, just as can be used for
    :ref:`diffusion_gradient_scheme_handling`. This ensures that the information
    is retained through image processing, as each *MRtrix3* command passes the
    header entries of the input image through to the output image.
