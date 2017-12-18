@@ -15,7 +15,7 @@ def setContinue(filename): #pylint: disable=unused-variable
 
 
 
-def command(cmd, exitOnError=True): #pylint: disable=unused-variable
+def command(cmd, exitOnError=True): #pylint: disable=unused-variable,inconsistent-return-statements
 
   import inspect, itertools, shlex, signal, string, subprocess, sys, tempfile
   from distutils.spawn import find_executable
@@ -226,7 +226,7 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
 
 
 
-def function(fn, *args): #pylint: disable=unused-variable
+def function(fn, *args): #pylint: disable=unused-variable,inconsistent-return-statements
 
   import inspect, sys
   from mrtrix3 import app
@@ -318,7 +318,7 @@ def exeName(item):
 #   or a non-MRtrix3 command with the same name as an MRtrix3 command
 #   (e.g. C:\Windows\system32\mrinfo.exe; On Windows, subprocess uses CreateProcess(),
 #   which checks system32\ before PATH)
-def versionMatch(item):
+def versionMatch(item): #pylint: disable=inconsistent-return-statements
   from distutils.spawn import find_executable
   from mrtrix3 import app
   global _mrtrix_bin_path, _mrtrix_exe_list
