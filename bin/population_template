@@ -44,7 +44,7 @@ except ImportError:
   app.console("numpy not found; using replacement functions")
   def loadtxt(fname, delimiter=" ", dtype=float):
     with open(fname, "rb") as f:
-      return [[dtype(x) for x in l.decode(errors='ignore').rstrip().split(delimiter)] for l in f.readlines()]
+      return [[dtype(a) for a in l.decode(errors='ignore').rstrip().split(delimiter)] for l in f.readlines()]
 
   def savetxt(fname, X, delimiter=" ", fmt="%.14e"):
     try:
