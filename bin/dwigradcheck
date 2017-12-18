@@ -100,8 +100,7 @@ if not os.path.exists('mask.mif'):
 number_option = ' -select ' + str(app.args.number)
 
 
-#
-# TODO What variations of gradient errors can we conceive?
+#  What variations of gradient errors can we conceive?
 
 # Done:
 # * Has an axis been flipped? (none, 0, 1, 2)
