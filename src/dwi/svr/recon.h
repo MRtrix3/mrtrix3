@@ -132,7 +132,7 @@ namespace MR
       template <typename VectorType1, typename VectorType2>
       void project_x2y(VectorType1& dst, const VectorType2& rhs) const
       {
-        DEBUG("Forward projection.");
+        INFO("Forward projection.");
         size_t nxyz = nxy*nz;
         Eigen::Map<const RowMatrixXf> X (rhs.data(), nxyz, nc);
         Thread::parallel_for<size_t>(0, nv*ne,
@@ -149,7 +149,7 @@ namespace MR
       template <typename VectorType1, typename VectorType2>
       void project_y2x(VectorType1& dst, const VectorType2& rhs) const
       {
-        DEBUG("Transpose projection.");
+        INFO("Transpose projection.");
         size_t nxyz = nxy*nz;
         Eigen::Map<RowMatrixXf> X (dst.data(), nxyz, nc);
         //Eigen::Map<const Eigen::VectorXf> w (W.data(), W.size());
@@ -168,7 +168,7 @@ namespace MR
       template <typename VectorType1, typename VectorType2>
       void project_x2x(VectorType1& dst, const VectorType2& rhs) const
       {
-        DEBUG("Full projection.");
+        INFO("Full projection.");
         size_t nxyz = nxy*nz;
         Eigen::Map<const RowMatrixXf> Xi (rhs.data(), nxyz, nc);
         Eigen::Map<RowMatrixXf> Xo (dst.data(), nxyz, nc);
