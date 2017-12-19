@@ -91,18 +91,22 @@ namespace MR {
                   return to<default_type> (std::string (reinterpret_cast<const char*> (p)+16, 4*((length+3)/4)));
                 p += 16 + 4*((length+3)/4);
               }
-              return NAN;
+              return NaN;
             }
 
-            void get_float (Eigen::Vector3& v) const {
-              const uint8_t* p = start + 84;
-              for (uint32_t m = 0; m < nitems; m++) {
-                uint32_t length = Raw::fetch_LE<uint32_t> (p);
-                if (length) 
-                  v[m] = to<default_type> (std::string (reinterpret_cast<const char*> (p)+16, 4*((length+3)/4)));
-                p += 16 + 4*((length+3)/4);
+            template <typename Container>
+              void get_float (Container& v) const {
+                const uint8_t* p = start + 84;
+                if (nitems < v.size())
+                  DEBUG ("CSA entry contains fewer items than expected - trailing entries will be set to NaN");
+                for (uint32_t m = 0; m < std::min<size_t> (nitems, v.size()); m++) {
+                  uint32_t length = Raw::fetch_LE<uint32_t> (p);
+                  v[m] = length ? to<default_type> (std::string (reinterpret_cast<const char*> (p)+16, 4*((length+3)/4))) : NaN;
+                  p += 16 + 4*((length+3)/4);
+                }
+                for (uint32_t m = nitems; m < v.size(); ++m) 
+                  v[m] = NaN;
               }
-            }
 
             friend std::ostream& operator<< (std::ostream& stream, const CSAEntry& item) {
               stream << "[CSA] " << item.name << ":";

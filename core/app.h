@@ -24,7 +24,6 @@
 #endif
 
 #include "cmdline_option.h"
-#include "signal_handler.h"
 #include "types.h"
 #include "file/path.h"
 
@@ -51,8 +50,6 @@ namespace MR
 
     extern const char* project_version;
     extern const char* build_date;
-
-    extern SignalHandler signal_handler;
 
 
     const char* argtype_description (ArgType type);
