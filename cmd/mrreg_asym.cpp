@@ -14,7 +14,7 @@
 
 #include <Eigen/Dense>
 #include <unsupported/Eigen/MatrixFunctions>
-#include <unsupported/Eigen/NonLinearOptimization>
+#include <unsupported/Eigen/LevenbergMarquardt>
 
 #include "command.h"
 #include "image.h"
@@ -63,7 +63,7 @@ Eigen::Matrix<value_type, 4, 4> se3exp(const Eigen::VectorXf& v)
 }
 
 
-class RegistrationFunctor
+struct RegistrationFunctor : Eigen::DenseFunctor<value_type>
 {
 public:
 
@@ -78,7 +78,7 @@ public:
     m = target.size(0) * target.size(1) * target.size(2);
   }
 
-  int operator()(const Eigen::VectorXf& x, Eigen::VectorXf& fvec)
+  int operator()(const InputType& x, ValueType& fvec)
   {
     // get transformation matrix
     Eigen::Transform<value_type, 3, Eigen::Affine> T1 (se3exp(x));
@@ -96,7 +96,7 @@ public:
     return 0;
   }
 
-  int df(const Eigen::VectorXf& x, Eigen::MatrixXf& fjac)
+  int df(const InputType& x, JacobianType& fjac)
   {
     // get transformation matrix
     Eigen::Transform<value_type, 3, Eigen::Affine> T1 (se3exp(x));
@@ -117,13 +117,13 @@ public:
       J(2,4) = trans[0]; J(1,5) = -trans[0];
       J(0,5) = trans[1]; J(2,3) = -trans[1];
       J(1,3) = trans[2]; J(0,4) = -trans[2];
-      fjac.row(i) = grad * J;
+      fjac.row(i) = 2.0f * grad * J;
     }
     return 0;
   }
 
   size_t values() const { return m; }
-  size_t inputs() const { return n; }
+  size_t inputs() const { return n;}
 
 private:
   size_t m, n;
@@ -144,9 +144,10 @@ void run ()
   x.setZero();
 
   RegistrationFunctor F (target, moving);
-  Eigen::LevenbergMarquardt<RegistrationFunctor, value_type> LM (F);
+  Eigen::LevenbergMarquardt<RegistrationFunctor> LM (F);
   INFO("Minimizing SSD cost function.");
-  LM.minimize(x);
+  auto status = LM.minimize(x);
+  VAR(status);
 
   VAR(x.transpose());
   save_matrix(se3exp(x), argument[2]);
