@@ -82,16 +82,8 @@ void usage ()
 
   + OptionGroup ("Output options")
 
-  + Option ("rpred",
-            "output predicted signal in original (rotated) directions. (useful for registration)")
-    + Argument ("out").type_image_out()
-
   + Option ("spred",
             "output source prediction of all scattered slices. (useful for diagnostics)")
-    + Argument ("out").type_image_out()
-
-  + Option ("tpred",
-            "output predicted signal in the space of the target reconstruction.")
     + Argument ("out").type_image_out()
 
   + Option ("padding", "zero-padding output coefficients to given dimension.")
@@ -328,30 +320,6 @@ void run ()
   }
 
 
-/*  // Output registration prediction
-  opt = get_options("rpred");
-  if (opt.size()) {
-    header.size(3) = motionsub.rows();
-    Stride::set (header, Stride::contiguous_along_spatial_axes (header));
-    auto rpred = Image<value_type>::create(opt[0][0], header);
-    class PredFunctor {
-    public:
-      PredFunctor (const Eigen::VectorXf& _y) : y(_y) {}
-      void operator () (Image<value_type>& in, Image<value_type>& out) {
-        v = in.row(3);
-        out.value() = y.dot(v);
-      }
-    private:
-      Eigen::VectorXf y, v;
-    };
-    j = 0;
-    size_t n = (motionsub.rows() == dwisub.size(3)) ? dwisub.size(2) : 1;
-    for (auto l = Loop("saving registration prediction", 3)(rpred); l; l++, j+=n) {
-      ThreadedLoop(out, 0, 3).run( PredFunctor (R.getY().row(j)) , out , rpred );
-    }
-  }
-*/
-
   // Output source prediction
   bool complete = get_options("complete").size();
   opt = get_options("spred");
@@ -374,30 +342,6 @@ void run ()
     }
   }
 
-
-/*  // Output target prediction
-  opt = get_options("tpred");
-  if (opt.size()) {
-    header.size(3) = dwisub.size(3);
-    DWI::set_DW_scheme (header, gradsub);
-    Stride::set (header, Stride::contiguous_along_spatial_axes (header));
-    auto tpred = Image<value_type>::create(opt[0][0], header);
-    class PredFunctor {
-    public:
-      PredFunctor (const Eigen::VectorXf& _y) : y(_y) {}
-      void operator () (Image<value_type>& in, Image<value_type>& out) {
-        v = in.row(3);
-        out.value() = y.dot(v);
-      }
-    private:
-      Eigen::VectorXf y, v;
-    };
-    j = 0;
-    for (auto l = Loop("saving target prediction", 3)(tpred); l; l++, j++) {
-      ThreadedLoop(out, 0, 3).run( PredFunctor (R.getY0(gradsub).row(j)) , out , tpred );
-    }
-  }
-*/
 
 }
 

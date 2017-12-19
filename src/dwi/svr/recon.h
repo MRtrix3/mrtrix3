@@ -108,27 +108,6 @@ namespace MR
         Tf = Transform(field).scanner2voxel * T0.voxel2scanner;
       }
 
-//      RowMatrixXf getY0(const Eigen::MatrixXf& grad) const
-//      {
-//        DEBUG("initialise Y0");
-
-//        vector<size_t> idx = get_shellidx(grad);
-//        RowMatrixXf Y0 (grad.rows(), nc);
-
-//        Eigen::Vector3f vec;
-//        Eigen::VectorXf delta;
-
-//        for (size_t i = 0; i < grad.rows(); i++) {
-//          vec = {grad(i, 0), grad(i, 1), grad(i, 2)};
-
-//          // evaluate basis functions
-//          Math::SH::delta(delta, vec, lmax);
-//          Y0.row(i) = shellbasis[idx[i]]*delta;
-//        }
-
-//        return Y0;
-//      }
-
       template <typename VectorType1, typename VectorType2>
       void project_x2y(VectorType1& dst, const VectorType2& rhs) const
       {
@@ -152,7 +131,6 @@ namespace MR
         INFO("Transpose projection.");
         size_t nxyz = nxy*nz;
         Eigen::Map<RowMatrixXf> X (dst.data(), nxyz, nc);
-        //Eigen::Map<const Eigen::VectorXf> w (W.data(), W.size());
         RowMatrixXf zero (nxyz, nc); zero.setZero();
         X = Thread::parallel_sum<RowMatrixXf, size_t>(0, nv*ne,
           [&](size_t idx, RowMatrixXf& T) {
@@ -172,7 +150,6 @@ namespace MR
         size_t nxyz = nxy*nz;
         Eigen::Map<const RowMatrixXf> Xi (rhs.data(), nxyz, nc);
         Eigen::Map<RowMatrixXf> Xo (dst.data(), nxyz, nc);
-        //Eigen::Map<const Eigen::VectorXf> w (W.data(), W.size());
         RowMatrixXf zero (nxyz, nc); zero.setZero();
         Xo = Thread::parallel_sum<RowMatrixXf, size_t>(0, nv*ne,
           [&](size_t idx, RowMatrixXf& T) {
