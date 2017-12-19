@@ -105,8 +105,6 @@ for key, value in structure_map.items():
   image_path = key + '_mask.mif'
   mask_list.append(image_path)
   vtk_in_path = 'first-' + key + '_first.vtk'
-  if not os.path.exists(vtk_in_path):
-    app.error('Missing .vtk file for structure ' + struct + '; run_first_all must have failed')
   run.command('meshconvert ' + vtk_in_path + ' first-' + key + '_transformed.vtk -transform first2real T1.nii')
   run.command('mesh2pve first-' + key + '_transformed.vtk parc.mif - | mrthreshold - ' + image_path + ' -abs 0.5')
   # Add to the SGM image; don't worry about overlap for now
