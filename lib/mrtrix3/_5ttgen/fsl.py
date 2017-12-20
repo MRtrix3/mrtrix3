@@ -35,7 +35,7 @@ def getInputs(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import math, os
-  from mrtrix3 import app, file, fsl, image, path, run #pylint: disable=redefined-builtin
+  from mrtrix3 import app, fsl, image, run
 
   if app.isWindows():
     app.error('\'fsl\' algorithm of 5ttgen script cannot be run on Windows: FSL not available on Windows')
@@ -158,21 +158,7 @@ def execute(): #pylint: disable=unused-variable
   if app.verbosity == 3:
     first_verbosity_option = ' -v'
   run.command(first_cmd + ' -m none -s ' + ','.join(sgm_structures) + ' -i ' + first_input + ' -o first' + first_input_brain_extracted_option + first_debug_option + first_verbosity_option)
-
-  # Test to see whether or not FIRST has succeeded
-  # However if the expected image is absent, it may be due to FIRST being run
-  #   on SGE; in this case it is necessary to wait and see if the file appears.
-  #   But even in this case, FIRST may still fail, and the file will never appear...
-  combined_image_path = 'first_all_none_firstseg' + fsl_suffix
-  if not os.path.isfile(combined_image_path):
-    if 'SGE_ROOT' in os.environ:
-      app.console('FSL FIRST job has been submitted to SGE; awaiting completion')
-      app.console('(note however that FIRST may fail silently, and hence this script may hang indefinitely)')
-      file.waitFor(combined_image_path)
-    else:
-      combined_image_path = fsl.findImage('first_all_none_firstseg')
-      if not os.path.isfile(combined_image_path):
-        app.error('FSL FIRST has failed; not all structures were segmented successfully (check ' + path.toTemp('first.logs', False) + ')')
+  fsl.checkFirst('first', sgm_structures)
 
   # Convert FIRST meshes to partial volume images
   pve_image_list = [ ]

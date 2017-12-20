@@ -125,7 +125,7 @@ void run ()
   Image<bool> mask;
   auto opt = get_options ("mask_in");
   if (opt.size()) {
-    mask.open (opt[0][0]);
+    mask = Image<bool>::open (opt[0][0]);
     if (!dimensions_match (input, mask, 0, 3))
       throw Exception ("Mask image provided using the -mask option must match the input 5TT image");
   }

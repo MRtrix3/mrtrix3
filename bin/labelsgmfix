@@ -17,7 +17,9 @@ if not os.path.isdir(lib_folder):
 sys.path.insert(0, lib_folder)
 
 
-from mrtrix3 import app, file, fsl, image, path, run #pylint: disable=redefined-builtin
+
+from mrtrix3 import app, fsl, image, path, run
+
 
 
 app.init('Robert E. Smith (robert.smith@florey.edu.au)',
@@ -86,16 +88,7 @@ first_input_is_brain_extracted = ''
 if app.args.premasked:
   first_input_is_brain_extracted = ' -b'
 run.command(first_cmd + ' -m none -s ' + ','.join(structure_map.keys()) + ' -i T1.nii' + first_input_is_brain_extracted + ' -o first')
-
-# Check output of FIRST, just as is done in 5ttgen fsl
-combined_image_path = 'first_all_none_firstseg' + fsl.suffix()
-if not os.path.isfile(combined_image_path):
-  if 'SGE_ROOT' in os.environ:
-    app.console('FSL FIRST job has been submitted to SGE; awaiting completion')
-    app.console('(note however that FIRST may fail silently, and hence this script may hang indefinitely)')
-    file.waitFor(combined_image_path)
-  else:
-    app.error('FSL FIRST has failed; not all structures were segmented successfully (check ' + path.toTemp('first.logs', False) + ')')
+fsl.checkFirst('first', structure_map.keys())
 
 # Generate an empty image that will be used to construct the new SGM nodes
 run.command('mrcalc parc.mif 0 -min sgm.mif')
