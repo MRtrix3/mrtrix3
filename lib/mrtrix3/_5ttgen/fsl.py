@@ -35,7 +35,7 @@ def getInputs(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import math, os
-  from mrtrix3 import app, file, fsl, image, path, run #pylint: disable=redefined-builtin
+  from mrtrix3 import app, fsl, image, run
 
   if app.isWindows():
     app.error('\'fsl\' algorithm of 5ttgen script cannot be run on Windows: FSL not available on Windows')
