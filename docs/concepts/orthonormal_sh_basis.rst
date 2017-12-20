@@ -1,17 +1,16 @@
 Orthonormal Spherical Harmonic basis
 ====================================
 
-An important change between the old and new versions of MRtrix is a
-modification to the Spherical Harmonic (SH) basis functions. This change
-has important consequences in terms of data that were generated prior to
-the user changing to the new version, or any data that may be used
+An important difference between the old (0.2.x) and new (0.3.x and 3.x.x)
+versions of MRtrix is a change to the Spherical Harmonic (SH) basis
+functions. This change has important consequences for data that may be used
 interchangeably between the two versions.
 
 **Important:** note that although it is possible to use and display FODs
 generated using MRtrix 0.2.x in the newer *MRtrix3* applications (and
 vice-versa), the FODs will *NOT* be correct. Moreover, it is very
-difficult to tell the difference on simple visual inspection - the FODs
-will still *look* reasonable, but will give incorrect results if used
+difficult to tell the difference by simple visual inspection - the FODs
+may still *look* reasonable, but will give incorrect results if used
 for tractography or in quantitative analyses. To ensure your images are
 correct, you should use the :ref:`shbasis` application included in *MRtrix3*,
 as described below.
@@ -35,7 +34,7 @@ was a 'bug' in the SH basis functions. Mathematically, the basis was
 just appreciate that the formulation of this mathematical basis was not
 optimal.
 
-Now this 'bug' didn't actually cause any problems; the previous version
+This 'bug' didn't actually cause any problems; the previous version
 of MRtrix was self-consistent in its handling of the issue throughout
 the code. It was annoying for any users transferring data between MRtrix
 and other packages though. For the release of the new *MRtrix3*, we have
@@ -80,10 +79,10 @@ image data on *all* systems that you use, and run
 harmonic data (only FOD images; raw DWIs / response functions / TDIs /
 etc. do not need to be converted).
 
-Also: Remember I said that data previously generated will not be
+Also: Remember that data previously generated will not be
 interpreted correctly by *MRtrix3* commands without the SH basis
-conversion? The same applies in the other direction. So if you load FOD
-images that have either been generated using *MRtrix*, or have
+conversion? The same applies in the other direction. So if you load
+FOD images that have either been generated using *MRtrix*, or have
 been previously converted using ``shbasis``, commands from the previous
 version of MRtrix (0.2) won't interpret them correctly. We hope that
 once we have feature completeness in *MRtrix3*, the old version

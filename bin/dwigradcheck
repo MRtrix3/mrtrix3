@@ -4,13 +4,13 @@
 
 # Make the corresponding MRtrix3 Python libraries available
 import inspect, os, sys
-lib_folder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile(inspect.currentframe()))[0], os.pardir, 'lib')))
+lib_folder = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
 if not os.path.isdir(lib_folder):
   sys.stderr.write('Unable to locate MRtrix3 Python libraries')
   sys.exit(1)
 sys.path.insert(0, lib_folder)
 
-import copy, decimal, numbers, os, sys, shutil
+import copy, numbers, shutil
 from mrtrix3 import app, image, run, path
 
 app.init('Robert E. Smith (robert.smith@florey.edu.au)', 'Check the orientation of the diffusion gradient table')
@@ -33,17 +33,17 @@ app.cmdline.flagMutuallyExclusiveOptions( ['grad', 'fslgrad' ])
 app.cmdline.flagMutuallyExclusiveOptions( ['export_grad_mrtrix', 'export_grad_fsl' ])
 app.parse()
 
-image_dimensions = [ int(i) for i in image.headerField(app.args.input, 'size').split() ]
+image_dimensions = image.Header(path.fromUser(app.args.input, False)).size()
 if len(image_dimensions) != 4:
   app.error('Input image must be a 4D image')
 if min(image_dimensions) == 1:
-  app.error('Cannot perform tractography on an image with a unity spatial dimension')
+  app.error('Cannot perform tractography on an image with a unity dimension')
 num_volumes = image_dimensions[3]
 
 app.makeTempDir()
 
 # Make sure the image data can be memory-mapped
-run.command('mrconvert ' + app.args.input + ' ' + path.toTemp('data.mif', True) + ' -stride 0,0,0,1 -datatype float32')
+run.command('mrconvert ' + app.args.input + ' ' + path.toTemp('data.mif', True) + ' -strides 0,0,0,1 -datatype float32')
 
 if app.args.grad:
   shutil.copy(path.fromUser(app.args.grad, False), path.toTemp('grad.b', False))
@@ -100,8 +100,7 @@ if not os.path.exists('mask.mif'):
 number_option = ' -select ' + str(app.args.number)
 
 
-#
-# TODO What variations of gradient errors can we conceive?
+#  What variations of gradient errors can we conceive?
 
 # Done:
 # * Has an axis been flipped? (none, 0, 1, 2)
@@ -117,10 +116,13 @@ number_option = ' -select ' + str(app.args.number)
 axis_flips = [ 'none', 0, 1, 2 ]
 axis_permutations = [ ( 0, 1, 2 ), (0, 2, 1), (1, 0, 2), (1, 2, 0), (2, 0, 1), (2, 1, 0) ]
 grad_basis = [ 'scanner', 'image' ]
+total_tests = len(axis_flips) * len(axis_permutations) * len(grad_basis)
 
 
 # List where the first element is the mean length
 lengths = [ ]
+
+progress = app.progressBar('Testing gradient table alterations (0 of ' + str(total_tests) + ')', total_tests)
 
 for flip in axis_flips:
   for permutation in axis_permutations:
@@ -173,6 +175,10 @@ for flip in axis_flips:
       # Add to the database
       lengths.append([meanlength,flip,permutation,basis])
 
+      # Increament the progress bar
+      progress.increment('Testing gradient table alterations (' + str(len(lengths)) + ' of ' + str(total_tests) + ')')
+
+progress.done()
 
 # Sort the list to find the best gradient configuration(s)
 lengths.sort()
@@ -180,13 +186,13 @@ lengths.reverse()
 
 
 # Provide a printout of the mean streamline length of each gradient table manipulation
-print ('Mean length     Axis flipped    Axis permutations    Axis basis')
+sys.stderr.write('Mean length     Axis flipped    Axis permutations    Axis basis\n')
 for line in lengths:
   if isinstance(line[1], numbers.Number):
     flip_str = "{:4d}".format(line[1])
   else:
     flip_str = line[1]
-  print ("{:5.2f}".format(line[0]) + '         ' + flip_str + '                ' + str(line[2]) + '           ' + line[3])
+  sys.stderr.write("{:5.2f}".format(line[0]) + '         ' + flip_str + '                ' + str(line[2]) + '           ' + line[3] + '\n')
 
 
 # If requested, extract what has been detected as the best gradient table, and
@@ -207,4 +213,3 @@ if grad_export_option:
 
 
 app.complete()
-
