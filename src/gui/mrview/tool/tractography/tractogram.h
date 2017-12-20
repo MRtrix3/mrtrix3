@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -35,7 +36,6 @@ namespace MR
 
       namespace Tool
       {
-
         class Tractogram : public Displayable
         { MEMALIGN(Tractogram)
           Q_OBJECT
@@ -65,8 +65,10 @@ namespace MR
 
             void set_color_type (const TrackColourType);
             void set_threshold_type (const TrackThresholdType);
+            void set_geometry_type (const TrackGeometryType);
             TrackColourType get_color_type() const { return color_type; }
             TrackThresholdType get_threshold_type() const { return threshold_type; }
+            TrackGeometryType get_geometry_type() const { return geometry_type; }
 
             void set_colour (float c[3]) { colour = { c[0], c[1], c[2] }; }
 
@@ -82,11 +84,16 @@ namespace MR
             float get_threshold_min()  const { return threshold_min; }
             float get_threshold_max()  const { return threshold_max; }
 
+            static TrackGeometryType default_tract_geom;
+            static constexpr float default_line_thickness = 2e-3f;
+            static constexpr float default_point_size = 4e-3f;
+
             bool scalarfile_by_direction;
             bool show_colour_bar;
             bool should_update_stride;
             Eigen::Array3f colour;
             float original_fov;
+            float line_thickness;
             std::string intensity_scalar_filename;
             std::string threshold_scalar_filename;
 
@@ -96,7 +103,8 @@ namespace MR
                     do_crop_to_slab (false),
                     use_lighting (false),
                     color_type (TrackColourType::Direction),
-                    threshold_type (TrackThresholdType::None) { }
+                    threshold_type (TrackThresholdType::None),
+                    geometry_type (Tractogram::default_tract_geom) { }
                 std::string vertex_shader_source (const Displayable&) override;
                 std::string fragment_shader_source (const Displayable&) override;
                 std::string geometry_shader_source (const Displayable&) override;
@@ -106,6 +114,7 @@ namespace MR
                 bool do_crop_to_slab, use_lighting;
                 TrackColourType color_type;
                 TrackThresholdType threshold_type;
+                TrackGeometryType geometry_type;
 
             } track_shader;
 
@@ -113,13 +122,14 @@ namespace MR
             void scalingChanged ();
 
           private:
-            static const int max_sample_stride = 6;
+            static const int track_padding = 6;
             Tractography& tractography_tool;
 
             const std::string filename;
 
             TrackColourType color_type;
             TrackThresholdType threshold_type;
+            TrackGeometryType geometry_type;
 
             // Instead of tracking the file path, pre-calculate the
             //   streamline tangents and store them; then, if colour by
@@ -139,7 +149,6 @@ namespace MR
             vector<vector<GLint> > original_track_starts;
             vector<size_t> num_tracks_per_buffer;
             GLint sample_stride;
-            float line_thickness_screenspace;
             bool vao_dirty;
 
             // Extra members now required since different scalar files

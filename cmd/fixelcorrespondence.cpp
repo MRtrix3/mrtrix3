@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -75,7 +76,7 @@ void run ()
   output_data_header.size(1) = 1;
   auto output_data = Image<float>::create (Path::join (output_fixel_directory, argument[3]), output_data_header);
 
-  for (auto i = Loop ("mapping subject fixels data to template fixels", template_index, 0, 3)(template_index, subject_index); i; ++i) {
+  for (auto i = Loop ("mapping subject fixel data to template fixels", template_index, 0, 3)(template_index, subject_index); i; ++i) {
     template_index.index(3) = 0;
     uint32_t nfixels_template = template_index.value();
     template_index.index(3) = 1;

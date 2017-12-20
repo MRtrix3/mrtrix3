@@ -24,26 +24,64 @@ def checkFirst(prefix, structures): #pylint: disable=unused-variable
 #   this depends on both whether or not the user has requested that the CUDA
 #   version of eddy be used, and the various names that this command could
 #   conceivably be installed as.
-def eddyBinary(cuda):
+def eddyBinary(cuda): #pylint: disable=unused-variable
   import os
   from mrtrix3 import app
   from distutils.spawn import find_executable
   if cuda:
     if find_executable('eddy_cuda'):
-      app.debug('Selecting CUDA version of eddy')
+      app.debug('Selected CUDA version (eddy_cuda)')
       return 'eddy_cuda'
     else:
+      # Cuda versions are now provided with a CUDA trailing version number
+      # Users may not necessarily create a softlink to one of these and
+      #   call it "eddy_cuda"
+      # Therefore, hunt through PATH looking for them; if more than one,
+      #   select the one with the highest version number
+      binaries = [ ]
+      for directory in os.environ['PATH'].split(os.pathsep):
+        if os.path.isdir(directory):
+          for entry in os.listdir(directory):
+            if entry.startswith('eddy_cuda'):
+              binaries.append(entry)
+      max_version = 0.0
+      exe_path = ''
+      for entry in binaries:
+        try:
+          version = float(entry.lstrip('eddy_cuda'))
+          if version > max_version:
+            max_version = version
+            exe_path = entry
+        except:
+          pass
+      if exe_path:
+        app.debug('CUDA version ' + str(max_version) + ': ' + exe_path)
+        return exe_path
       app.warn('CUDA version of eddy not found; running standard version')
   if find_executable('eddy_openmp'):
-    path = 'eddy_openmp'
-  elif find_executable('eddy'):
-    path = 'eddy'
-  elif find_executable('fsl5.0-eddy'):
-    path = 'fsl5.0-eddy'
+    exe_path = 'eddy_openmp'
   else:
-    app.error('Could not find FSL program eddy; please verify FSL install')
-  app.debug(path)
-  return path
+    exe_path = exeName('eddy')
+  app.debug(exe_path)
+  return exe_path
+
+
+
+# In some FSL installations, all binaries get prepended with "fsl5.0-". This function
+#   makes it more convenient to locate these commands.
+# Note that if FSL 4 and 5 are installed side-by-side, the approach taken in this
+#   function will select the version 5 executable.
+def exeName(name): #pylint: disable=unused-variable
+  from mrtrix3 import app
+  from distutils.spawn import find_executable
+  if find_executable('fsl5.0-' + name):
+    output = 'fsl5.0-' + name
+  elif find_executable(name):
+    output = name
+  else:
+    app.error('Could not find FSL program \"' + name + '\"; please verify FSL install')
+  app.debug(output)
+  return output
 
 
 
@@ -51,17 +89,17 @@ def eddyBinary(cuda):
 #   FSL commands will generate based on the suffix() function, the FSL binaries themselves
 #   ignore the FSLOUTPUTTYPE environment variable. Therefore, the safest approach is:
 # Whenever receiving an output image from an FSL command, explicitly search for the path
-def findImage(name):
+def findImage(name): #pylint: disable=unused-variable,inconsistent-return-statements
   import os
   from mrtrix3 import app
-  basename = name.split('.')[0]
-  if os.path.isfile(basename + suffix()):
-    app.debug('Image at expected location: \"' + basename + suffix() + '\"')
-    return basename + suffix()
+  prefix = os.path.join(os.path.dirname(name), os.path.basename(name).split('.')[0])
+  if os.path.isfile(prefix + suffix()):
+    app.debug('Image at expected location: \"' + prefix + suffix() + '\"')
+    return prefix + suffix()
   for suf in ['.nii', '.nii.gz', '.img']:
-    if os.path.isfile(basename + suf):
-      app.debug('Expected image at \"' + basename + suffix() + '\", but found at \"' + basename + suf + '\"')
-      return basename + suf
+    if os.path.isfile(prefix + suf):
+      app.debug('Expected image at \"' + prefix + suffix() + '\", but found at \"' + prefix + suf + '\"')
+      return prefix + suf
   app.error('Unable to find FSL output file for path \"' + name + '\"')
 
 
@@ -70,7 +108,7 @@ def findImage(name):
 #   stored in 'FSLOUTPUTTYPE'. This may even override a filename extension provided
 #   to the relevant command. Therefore use this function to 'guess' what the names
 #   of images provided by FSL commands will be.
-def suffix():
+def suffix(): #pylint: disable=unused-variable
   import os
   from mrtrix3 import app
   global _suffix
@@ -95,4 +133,3 @@ def suffix():
     app.warn('Environment variable FSLOUTPUTTYPE not set; FSL commands may fail, or script may fail to locate FSL command outputs')
     _suffix = '.nii.gz'
   return _suffix
-
