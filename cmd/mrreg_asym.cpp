@@ -42,7 +42,9 @@ void usage ()
 
   OPTIONS
     + Option ("mask", "image mask.")
-      + Argument ("image").type_image_in ();
+      + Argument ("image").type_image_in ()
+    + Option ("maxiter", "maximum no. iterations.")
+      + Argument ("n").type_integer(0);
 
 }
 
@@ -93,7 +95,6 @@ public:
       fvec[i] = target.value() - moving.value();
       i++;
     }
-    VAR(fvec.squaredNorm());
     return 0;
   }
 
@@ -180,11 +181,26 @@ void run ()
 
   RegistrationFunctor F (target, moving, mask);
   Eigen::LevenbergMarquardt<RegistrationFunctor> LM (F);
-  INFO("Minimizing SSD cost function.");
-  auto status = LM.minimize(x);
-  VAR(status);
 
-  VAR(x.transpose());
+  opt = get_options("maxiter");
+  if (opt.size()) {
+    LM.setMaxfev(opt[0][0]);
+  }
+
+  INFO("Start LM optimization.");
+  LM.minimize(x);
+  switch (LM.info()) {
+    case Eigen::ComputationInfo::Success:
+      INFO("LM optimization successful."); break;
+    case Eigen::ComputationInfo::NoConvergence:
+      INFO("LM optimization did not converge in given no. iterations."); break;
+    default:
+      throw Exception("LM optimization error."); break;
+  }
+  INFO("Optimum = [ " + str(x[0]) + " " + str(x[1]) + " " + str(x[2]) + " "
+                      + str(x[3]) + " " + str(x[4]) + " " + str(x[5]) + " ]");
+  INFO("Residual error = " + str(LM.fnorm()));
+
   save_matrix(se3exp(x), argument[2]);
 
 }
