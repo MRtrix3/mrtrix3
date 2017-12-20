@@ -67,25 +67,31 @@ struct RegistrationFunctor : Eigen::DenseFunctor<value_type>
 {
 public:
 
-  RegistrationFunctor(const Image<value_type>& target, const Image<value_type>& moving)
-    : m (0), n (6),
-      target (target),
+  RegistrationFunctor(const Image<value_type>& target, const Image<value_type>& moving, const Image<bool>& mask)
+    : m (target.size(0) * target.size(1) * target.size(2)), n (6),
       T0 (target),
+      mask (mask),
+      target (target),
       moving (moving, 0.0f),
       Dmoving (moving, 0.0f)
   {
     DEBUG("Constructing LM registration functor.");
-    m = target.size(0) * target.size(1) * target.size(2);
   }
 
   int operator()(const InputType& x, ValueType& fvec)
   {
+    fvec.setZero();
     // get transformation matrix
     Eigen::Transform<value_type, 3, Eigen::Affine> T1 (se3exp(x));
     // interpolate and compute error
     Eigen::Vector3f vox, scan, trans;
     size_t i = 0;
-    for (auto l = Loop({0, 1, 2})(target); l; l++, i++) {
+    for (auto l = Loop(0,3)(target); l; l++, i++) {
+      if (mask.valid()) {
+        assign_pos_of(target).to(mask);
+        if (!mask.value())
+          continue;
+      }
       assign_pos_of(target).to(vox);
       scan = T0.voxel2scanner.template cast<value_type>() * vox;
       trans = T1 * scan;
@@ -98,6 +104,7 @@ public:
 
   int df(const InputType& x, JacobianType& fjac)
   {
+    fjac.setZero();
     // get transformation matrix
     Eigen::Transform<value_type, 3, Eigen::Affine> T1 (se3exp(x));
     // Allocate 3 x 6 Jacobian
@@ -108,7 +115,12 @@ public:
     Eigen::Vector3f vox, scan, trans;
     Eigen::RowVector3f grad;
     size_t i = 0;
-    for (auto l = Loop({0, 1, 2})(target); l; l++, i++) {
+    for (auto l = Loop(0,3)(target); l; l++, i++) {
+      if (mask.valid()) {
+        assign_pos_of(target).to(mask);
+        if (!mask.value())
+          continue;
+      }
       assign_pos_of(target).to(vox);
       scan = T0.voxel2scanner.template cast<value_type>() * vox;
       trans = T1 * scan;
@@ -127,8 +139,9 @@ public:
 
 private:
   size_t m, n;
-  Image<value_type> target;
   Transform T0;
+  Image<bool> mask;
+  Image<value_type> target;
   Interp::LinearInterp<Image<value_type>, Interp::LinearInterpProcessingType::Value> moving;
   Interp::LinearInterp<Image<value_type>, Interp::LinearInterpProcessingType::Derivative> Dmoving;
 
@@ -140,10 +153,17 @@ void run ()
   auto target = Image<value_type>::open(argument[0]);
   auto moving = Image<value_type>::open(argument[1]);
 
+  auto mask = Image<bool>();
+  auto opt = get_options("mask");
+  if (opt.size()) {
+    mask = Image<bool>::open(opt[0][0]);
+    check_dimensions(target, mask, 0, 3);
+  }
+
   Eigen::VectorXf x (6);
   x.setZero();
 
-  RegistrationFunctor F (target, moving);
+  RegistrationFunctor F (target, moving, mask);
   Eigen::LevenbergMarquardt<RegistrationFunctor> LM (F);
   INFO("Minimizing SSD cost function.");
   auto status = LM.minimize(x);
