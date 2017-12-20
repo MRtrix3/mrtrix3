@@ -44,7 +44,9 @@ void usage ()
     + Option ("mask", "image mask.")
       + Argument ("image").type_image_in ()
     + Option ("maxiter", "maximum no. iterations.")
-      + Argument ("n").type_integer(0);
+      + Argument ("n").type_integer(0)
+    + Option ("init", "initial 4x4 transformation matrix.")
+      + Argument ("T0").type_file_in ();
 
 }
 
@@ -62,6 +64,19 @@ Eigen::Matrix<value_type, 4, 4> se3exp(const Eigen::VectorXf& v)
   A(1,0) = v[5]; A(0,1) = -v[5];
   T = A.exp();
   return T;
+}
+
+
+/* Logarithmic Lie mapping on SE(3). */
+Eigen::Matrix<value_type, 6, 1> se3log(const Eigen::Matrix<value_type, 4, 4>& T)
+{
+  Eigen::Matrix<value_type, 4, 4> A = T.log();
+  Eigen::Matrix<value_type, 6, 1> v;
+  v[0] = A(0,3); v[1] = A(1,3); v[2] = A(2,3);
+  v[3] = (A(2,1) - A(1,2)) / 2;
+  v[4] = (A(0,2) - A(2,0)) / 2;
+  v[5] = (A(1,0) - A(0,1)) / 2;
+  return v;
 }
 
 
@@ -178,6 +193,13 @@ void run ()
 
   Eigen::VectorXf x (6);
   x.setZero();
+  opt = get_options("init");
+  if (opt.size()) {
+    Eigen::MatrixXf T = load_matrix<value_type>(opt[0][0]);
+    x = se3log(T.block<4,4>(0,0));
+    DEBUG("Initialization = [ " + str(x[0]) + " " + str(x[1]) + " " + str(x[2]) + " "
+                                + str(x[3]) + " " + str(x[4]) + " " + str(x[5]) + " ]");
+  }
 
   RegistrationFunctor F (target, moving, mask);
   Eigen::LevenbergMarquardt<RegistrationFunctor> LM (F);
