@@ -867,7 +867,6 @@ class progressBar(object): #pylint: disable=unused-variable
     import sys
     global verbosity
     global clearLine, colourConsole, colourClear, colourExec
-    self.counter = self.target
     self.iscomplete = True
     self.value = 100
     if self.isatty:

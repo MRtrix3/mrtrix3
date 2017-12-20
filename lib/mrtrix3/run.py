@@ -23,7 +23,7 @@ def setContinue(filename): #pylint: disable=unused-variable
 
 
 
-def command(cmd, exitOnError=True): #pylint: disable=unused-variable,inconsistent-return-statements
+def command(cmd, exitOnError=True): #pylint: disable=unused-variable
 
   import inspect, itertools, shlex, signal, string, subprocess, sys, tempfile
   from distutils.spawn import find_executable
@@ -41,7 +41,7 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable,inconsisten
     if app.verbosity:
       sys.stderr.write(app.colourExec + 'Skipping command:' + app.colourClear + ' ' + cmd + '\n')
       sys.stderr.flush()
-    return
+    return ('', '')
 
   # This splits the command string based on the piping character '|', such that each
   #   individual executable (along with its arguments) appears as its own list
@@ -235,7 +235,7 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable,inconsisten
 
 
 
-def function(fn, *args): #pylint: disable=unused-variable,inconsistent-return-statements
+def function(fn, *args): #pylint: disable=unused-variable
 
   import inspect, sys
   from mrtrix3 import app
@@ -248,7 +248,7 @@ def function(fn, *args): #pylint: disable=unused-variable,inconsistent-return-st
     if app.verbosity:
       sys.stderr.write(app.colourExec + 'Skipping function:' + app.colourClear + ' ' + fnstring + '\n')
       sys.stderr.flush()
-    return
+    return None
 
   if app.verbosity:
     sys.stderr.write(app.colourExec + 'Function:' + app.colourClear + ' ' + fnstring + '\n')
@@ -327,7 +327,7 @@ def exeName(item):
 #   or a non-MRtrix3 command with the same name as an MRtrix3 command
 #   (e.g. C:\Windows\system32\mrinfo.exe; On Windows, subprocess uses CreateProcess(),
 #   which checks system32\ before PATH)
-def versionMatch(item): #pylint: disable=inconsistent-return-statements
+def versionMatch(item):
   from distutils.spawn import find_executable
   from mrtrix3 import app
   global _mrtrix_bin_path, _mrtrix_exe_list
@@ -347,6 +347,7 @@ def versionMatch(item): #pylint: disable=inconsistent-return-statements
     return exe_path_sys
 
   app.error('Unable to find executable for MRtrix3 command ' + item)
+  return ''
 
 
 
