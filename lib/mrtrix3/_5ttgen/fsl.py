@@ -99,8 +99,8 @@ def execute():
       mask_path = 'mask.mif'
     else:
       app.warn('Mask image does not match input image - re-gridding')
-      run.command('mrtransform mask.mif mask_regrid.mif -template T1.nii')
-      run.command('mrcalc T1.nii mask_regrid.mif ' + fast_t1_input)
+      run.command('mrtransform mask.mif mask_regrid.mif -template T1.nii -datatype bit')
+      run.command('mrcalc T1.nii mask_regrid.mif -mult ' + fast_t1_input)
       mask_path = 'mask_regrid.mif'
 
     if os.path.exists('T2.nii'):
