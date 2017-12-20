@@ -68,7 +68,7 @@ struct RegistrationFunctor : Eigen::DenseFunctor<value_type>
 public:
 
   RegistrationFunctor(const Image<value_type>& target, const Image<value_type>& moving, const Image<bool>& mask)
-    : m (target.size(0) * target.size(1) * target.size(2)), n (6),
+    : m (0), n (6),
       T0 (target),
       mask (mask),
       target (target),
@@ -76,27 +76,22 @@ public:
       Dmoving (moving, 0.0f)
   {
     DEBUG("Constructing LM registration functor.");
+    m = calcMaskSize();
   }
 
   int operator()(const InputType& x, ValueType& fvec)
   {
-    fvec.setZero();
     // get transformation matrix
     Eigen::Transform<value_type, 3, Eigen::Affine> T1 (se3exp(x));
     // interpolate and compute error
-    Eigen::Vector3f vox, scan, trans;
+    Eigen::Vector3f trans;
     size_t i = 0;
-    for (auto l = Loop(0,3)(target); l; l++, i++) {
-      if (mask.valid()) {
-        assign_pos_of(target).to(mask);
-        if (!mask.value())
-          continue;
-      }
-      assign_pos_of(target).to(vox);
-      scan = T0.voxel2scanner.template cast<value_type>() * vox;
-      trans = T1 * scan;
+    for (auto l = Loop(0,3)(target); l; l++) {
+      if (!isInMask()) continue;
+      trans = T1 * getScanPos();
       moving.scanner(trans);
       fvec[i] = target.value() - moving.value();
+      i++;
     }
     VAR(fvec.squaredNorm());
     return 0;
@@ -104,7 +99,6 @@ public:
 
   int df(const InputType& x, JacobianType& fjac)
   {
-    fjac.setZero();
     // get transformation matrix
     Eigen::Transform<value_type, 3, Eigen::Affine> T1 (se3exp(x));
     // Allocate 3 x 6 Jacobian
@@ -112,24 +106,19 @@ public:
     J.setIdentity();
     J *= -1;
     // compute image gradient and Jacobian
-    Eigen::Vector3f vox, scan, trans;
+    Eigen::Vector3f trans;
     Eigen::RowVector3f grad;
     size_t i = 0;
-    for (auto l = Loop(0,3)(target); l; l++, i++) {
-      if (mask.valid()) {
-        assign_pos_of(target).to(mask);
-        if (!mask.value())
-          continue;
-      }
-      assign_pos_of(target).to(vox);
-      scan = T0.voxel2scanner.template cast<value_type>() * vox;
-      trans = T1 * scan;
+    for (auto l = Loop(0,3)(target); l; l++) {
+      if (!isInMask()) continue;
+      trans = T1 * getScanPos();
       Dmoving.scanner(trans);
       grad = Dmoving.gradient_wrt_scanner().template cast<value_type>();
       J(2,4) = trans[0]; J(1,5) = -trans[0];
       J(0,5) = trans[1]; J(2,3) = -trans[1];
       J(1,3) = trans[2]; J(0,4) = -trans[2];
       fjac.row(i) = 2.0f * grad * J;
+      i++;
     }
     return 0;
   }
@@ -144,6 +133,32 @@ private:
   Image<value_type> target;
   Interp::LinearInterp<Image<value_type>, Interp::LinearInterpProcessingType::Value> moving;
   Interp::LinearInterp<Image<value_type>, Interp::LinearInterpProcessingType::Derivative> Dmoving;
+
+  inline size_t calcMaskSize()
+  {
+    if (!mask) return target.size(0)*target.size(1)*target.size(2);
+    size_t count = 0;
+    for (auto l = Loop(0,3)(mask); l; l++) {
+      if (mask.value()) count++;
+    }
+    return count;
+  }
+
+  inline bool isInMask() {
+    if (mask.valid()) {
+      assign_pos_of(target).to(mask);
+      return mask.value();
+    } else {
+      return true;
+    }
+  }
+
+  inline Eigen::Vector3f getScanPos() {
+    Eigen::Vector3f vox, scan;
+    assign_pos_of(target).to(vox);
+    scan = T0.voxel2scanner.template cast<value_type>() * vox;
+    return scan;
+  }
 
 };
 
