@@ -87,13 +87,15 @@ def newTempFile(suffix):
 # Initially, checks for the file once every 1/1000th of a second; this gradually
 #   increases if the file still doesn't exist, until the program is only checking
 #   for the file once a minute.
-def waitFor(path):
+def waitFor(paths):
   import os, time
   from mrtrix3 import app
 
   def inUse(path):
     import subprocess
     from distutils.spawn import find_executable
+    if not os.path.isfile(path):
+      return None
     if app.isWindows():
       if not os.access(path, os.W_OK):
         return None
@@ -109,29 +111,91 @@ def waitFor(path):
     # A fatal error will result in a non-zero code -> inUse() = False, so waitFor() can return
     return not subprocess.call(['fuser', '-s', path], shell=False, stdin=None, stdout=None, stderr=None)
 
-  if not os.path.exists(path):
+  def numExist(data):
+    count = 0
+    for entry in data:
+      if os.path.exists(entry):
+        count += 1
+    return count
+
+  def numInUse(data):
+    count = 0
+    valid_count = 0
+    for entry in data:
+      result = inUse(entry)
+      if result:
+        count += 1
+      if result is not None:
+        valid_count += 1
+    if not valid_count:
+      return None
+    return count
+
+  # Make sure the data we're dealing with is a list of strings;
+  #   or make it a list of strings if it's just a single entry
+  if isinstance(paths, str):
+    paths = [ paths ]
+  else:
+    assert isinstance(paths, list)
+    for entry in paths:
+      assert isinstance(entry, str)
+
+  app.debug(str(paths))
+
+  # Wait until all files exist
+  num_exist = numExist(paths)
+  if num_exist != len(paths):
+    progress = app.progressBar('Waiting for creation of ' + (('new item \"' + paths[0] + '\"') if len(paths) == 1 else (str(len(paths)) + ' new items')), len(paths))
+    for _ in range(num_exist):
+      progress.increment()
     delay = 1.0/1024.0
-    app.console('Waiting for creation of new file \"' + path + '\"')
-    while not os.path.exists(path):
+    while not num_exist == len(paths):
       time.sleep(delay)
-      delay = max(60.0, delay*2.0)
-    app.debug('File \"' + path + '\" appears to have been created')
-  if not os.path.isfile(path):
-    app.debug('Path \"' + path + '\" is not a file; not testing for finalization')
+      new_num_exist = numExist(paths)
+      if new_num_exist == num_exist:
+        delay = max(60.0, delay*2.0)
+      elif new_num_exist > num_exist:
+        for _ in range(new_num_exist - num_exist):
+          progress.increment()
+        num_exist = new_num_exist
+        delay = 1.0/1024.0
+    progress.done()
+  else:
+    app.debug('Item' + ('s' if len(paths) > 1 else '') + ' existed immediately')
+
+  # Check to see if active use of the file(s) needs to be tested
+  at_least_one_file = False
+  for entry in paths:
+    if os.path.isfile(entry):
+      at_least_one_file = True
+      break
+  if not at_least_one_file:
+    app.debug('No target files, directories only; not testing for finalization')
     return
-  init_test = inUse(path)
-  if init_test is None:
-    app.debug('Unable to test for finalization of new file \"' + path + '\"')
+
+  # Can we query the in-use status of any of these paths
+  num_in_use = numInUse(paths)
+  if num_in_use is None:
+    app.debug('Unable to test for finalization of new files')
     return
-  if not init_test:
-    app.debug('File \"' + path + '\" immediately ready')
+
+  # Wait until all files are not in use
+  if not num_in_use:
+    app.debug('Item' + ('s' if len(paths) > 1 else '') + ' immediately ready')
     return
-  app.console('Waiting for finalization of new file \"' + path + '\"')
+
+  progress = app.progressBar('Waiting for finalization of ' + (('new file \"' + paths[0] + '\"') if len(paths) == 1 else (str(len(paths)) + ' new files')))
+  for _ in range(len(paths) - num_in_use):
+    progress.increment()
   delay = 1.0/1024.0
-  while True:
-    if inUse(path):
-      time.sleep(delay)
+  while num_in_use:
+    time.sleep(delay)
+    new_num_in_use = numInUse(paths)
+    if new_num_in_use == num_in_use:
       delay = max(60.0, delay*2.0)
-    else:
-      app.debug('File \"' + path + '\" appears to have been finalized')
-      return
+    elif new_num_in_use < num_in_use:
+      for _ in range(num_in_use - new_num_in_use):
+        progress.increment()
+      num_in_use = new_num_in_use
+      delay = 1.0/1024.0
+  progress.done()
