@@ -3,6 +3,14 @@ _mrtrix_bin_path = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(
 # Remember to remove the '.exe' from Windows binary executables
 _mrtrix_exe_list = [ os.path.splitext(name)[0] for name in os.listdir(_mrtrix_bin_path) ]
 
+# If the main script has been executed in an SGE environment, don't allow
+#   sub-processes to themselves fork SGE jobs; but if the main script is
+#   itself not an SGE job ('JOB_ID' environment variable absent), then
+#   whatever run.command() executes can send out SGE jobs without a problem.
+_env = os.environ.copy()
+if _env.get('SGE_ROOT') and _env.get('JOB_ID'):
+  del _env['SGE_ROOT']
+
 _processes = [ ]
 
 _lastFile = ''
@@ -15,13 +23,14 @@ def setContinue(filename): #pylint: disable=unused-variable
 
 
 
-def command(cmd, exitOnError=True): #pylint: disable=unused-variable,inconsistent-return-statements
+def command(cmd, exitOnError=True): #pylint: disable=unused-variable
 
   import inspect, itertools, shlex, signal, string, subprocess, sys, tempfile
   from distutils.spawn import find_executable
   from mrtrix3 import app
 
-  global _mrtrix_exe_list, _processes
+  # This is the only global variable that is _modified_ within this function
+  global _processes
 
   # Vectorise the command string, preserving anything encased within quotation marks
   cmdsplit = shlex.split(cmd)
@@ -32,7 +41,7 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable,inconsisten
     if app.verbosity:
       sys.stderr.write(app.colourExec + 'Skipping command:' + app.colourClear + ' ' + cmd + '\n')
       sys.stderr.flush()
-    return
+    return ('', '')
 
   # This splits the command string based on the piping character '|', such that each
   #   individual executable (along with its arguments) appears as its own list
@@ -107,9 +116,9 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable,inconsisten
     # Set off the processes
     try:
       try:
-        process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, preexec_fn=os.setpgrp)
+        process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=_env, preexec_fn=os.setpgrp)
       except AttributeError:
-        process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err)
+        process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=_env)
       _processes.append(process)
       tempfiles.append( ( file_out, file_err ) )
     # FileNotFoundError not defined in Python 2.7
@@ -226,7 +235,7 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable,inconsisten
 
 
 
-def function(fn, *args): #pylint: disable=unused-variable,inconsistent-return-statements
+def function(fn, *args): #pylint: disable=unused-variable
 
   import inspect, sys
   from mrtrix3 import app
@@ -239,7 +248,7 @@ def function(fn, *args): #pylint: disable=unused-variable,inconsistent-return-st
     if app.verbosity:
       sys.stderr.write(app.colourExec + 'Skipping function:' + app.colourClear + ' ' + fnstring + '\n')
       sys.stderr.flush()
-    return
+    return None
 
   if app.verbosity:
     sys.stderr.write(app.colourExec + 'Function:' + app.colourClear + ' ' + fnstring + '\n')
@@ -318,7 +327,7 @@ def exeName(item):
 #   or a non-MRtrix3 command with the same name as an MRtrix3 command
 #   (e.g. C:\Windows\system32\mrinfo.exe; On Windows, subprocess uses CreateProcess(),
 #   which checks system32\ before PATH)
-def versionMatch(item): #pylint: disable=inconsistent-return-statements
+def versionMatch(item):
   from distutils.spawn import find_executable
   from mrtrix3 import app
   global _mrtrix_bin_path, _mrtrix_exe_list
@@ -338,6 +347,7 @@ def versionMatch(item): #pylint: disable=inconsistent-return-statements
     return exe_path_sys
 
   app.error('Unable to find executable for MRtrix3 command ' + item)
+  return ''
 
 
 
