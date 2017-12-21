@@ -33,6 +33,8 @@ Options
 
 -  **-mask image** only perform computation within the specified binary brain mask image.
 
+-  **-fast** use lookup table to compute Associated Legendre Polynomials (faster, but approximate).
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
