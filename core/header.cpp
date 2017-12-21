@@ -1,19 +1,21 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
-#include "mrtrix.h"
+#include "axes.h"
 #include "header.h"
+#include "mrtrix.h"
 #include "phase_encoding.h"
 #include "stride.h"
 #include "transform.h"
@@ -69,7 +71,7 @@ namespace MR
 
   namespace {
 
-    std::string short_description (const Header& H) 
+    std::string short_description (const Header& H)
     {
       vector<std::string> dims;
       for (size_t n = 0; n < H.ndim(); ++n)
@@ -303,7 +305,7 @@ namespace MR
     if (new_datatype != previous_datatype) {
       new_datatype.unset_flag (DataType::BigEndian);
       new_datatype.unset_flag (DataType::LittleEndian);
-      if (new_datatype != previous_datatype) 
+      if (new_datatype != previous_datatype)
         WARN (std::string ("requested datatype (") + previous_datatype.specifier() + ") not supported - substituting with " + H.datatype().specifier());
     }
 
@@ -576,6 +578,19 @@ namespace MR
       PhaseEncoding::set_scheme (*this, pe_scheme);
       INFO ("Phase encoding scheme has been modified according to internal header transform realignment");
     }
+
+    // If there's any slice encoding direction information present in the
+    //   header, that's also necessary to update here
+    auto slice_encoding_it = keyval().find ("SliceEncodingDirection");
+    if (slice_encoding_it != keyval().end()) {
+      const Eigen::Vector3 orig_dir (Axes::id2dir (slice_encoding_it->second));
+      Eigen::Vector3 new_dir;
+      for (size_t axis = 0; axis != 3; ++axis)
+        new_dir[axis] = orig_dir[perm[axis]] * (flip[axis] ? -1.0 : 1.0);
+      slice_encoding_it->second = Axes::dir2id (new_dir);
+      INFO ("Slice encoding direction has been modified according to internal header transform realignment");
+    }
+
   }
 
 

@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -49,25 +50,24 @@ namespace MR
       + Option ("debug", "display debugging messages.")
       + Option ("force", "force overwrite of output files. "
           "Caution: Using the same file as input and output might cause unexpected behaviour.")
-      + Option ("nthreads", "use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)")
+      + Option ("nthreads", "use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).")
         + Argument ("number").type_integer (0)
-      + Option ("failonwarn", "terminate program if a warning is produced")
       + Option ("help", "display this information page and exit.")
       + Option ("version", "display version information and exit.");
 
     const char* AUTHOR = nullptr;
     const char* COPYRIGHT =
-       "Copyright (c) 2008-2017 the MRtrix3 contributors."
+       "Copyright (c) 2008-2018 the MRtrix3 contributors."
        "\n\n"
        "This Source Code Form is subject to the terms of the Mozilla Public\n"
        "License, v. 2.0. If a copy of the MPL was not distributed with this\n"
-       "file, you can obtain one at http://mozilla.org/MPL/2.0/.\n"
+       "file, you can obtain one at http://mozilla.org/MPL/2.0/\n"
        "\n"
-       "MRtrix is distributed in the hope that it will be useful,\n"
+       "MRtrix3 is distributed in the hope that it will be useful,\n"
        "but WITHOUT ANY WARRANTY; without even the implied warranty\n"
        "of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
        "\n"
-       "For more details, see http://www.mrtrix.org/.\n";
+       "For more details, see http://www.mrtrix.org/\n";
     const char* SYNOPSIS = nullptr;
 
 
@@ -881,10 +881,40 @@ namespace MR
         WARN ("existing output files will be overwritten");
         overwrite_files = true;
       }
-      if (get_options ("failonwarn").size())
-        fail_on_warn = true;
     }
 
+
+
+    void verify_usage ()
+    {
+      if (!AUTHOR)
+        throw Exception ("No author specified for command " + std::string(NAME));
+      if (!SYNOPSIS)
+        throw Exception ("No synopsis specified for command " + std::string(NAME));
+    }
+
+
+
+    void parse_special_options ()
+    {
+      if (argc != 2) return;
+      if (strcmp (argv[1], "__print_full_usage__") == 0) {
+        print (full_usage ());
+        throw 0;
+      }
+      if (strcmp (argv[1], "__print_usage_markdown__") == 0) {
+        print (markdown_usage ());
+        throw 0;
+      }
+      if (strcmp (argv[1], "__print_usage_rst__") == 0) {
+        print (restructured_text_usage ());
+        throw 0;
+      }
+      if (strcmp (argv[1], "__print_synopsis__") == 0) {
+        print (SYNOPSIS);
+        throw 0;
+      }
+    }
 
 
 
@@ -892,30 +922,6 @@ namespace MR
     {
       argument.clear();
       option.clear();
-
-      if (!AUTHOR)
-        throw Exception ("No author specified for command " + std::string(NAME));
-      if (!SYNOPSIS)
-        throw Exception ("No synopsis specified for command " + std::string(NAME));
-
-      if (argc == 2) {
-        if (strcmp (argv[1], "__print_full_usage__") == 0) {
-          print (full_usage ());
-          throw 0;
-        }
-        if (strcmp (argv[1], "__print_usage_markdown__") == 0) {
-          print (markdown_usage ());
-          throw 0;
-        }
-        if (strcmp (argv[1], "__print_usage_rst__") == 0) {
-          print (restructured_text_usage ());
-          throw 0;
-        }
-        if (strcmp (argv[1], "__print_synopsis__") == 0) {
-          print (SYNOPSIS);
-          throw 0;
-        }
-      }
 
       sort_arguments (argc, argv);
 
@@ -1025,8 +1031,7 @@ namespace MR
       //CONF default: 0 (false)
       //CONF A boolean value specifying whether MRtrix applications should
       //CONF abort as soon as any (otherwise non-fatal) warning is issued.
-      if (File::Config::get_bool ("FailOnWarn", false))
-        fail_on_warn = true;
+      fail_on_warn = File::Config::get_bool ("FailOnWarn", false);
 
       //CONF option: TerminalColor
       //CONF default: 1 (true)

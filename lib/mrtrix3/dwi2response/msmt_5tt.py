@@ -1,6 +1,4 @@
-def initialise(base_parser, subparsers):
-  import argparse
-  from mrtrix3 import app
+def initialise(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('msmt_5tt', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Derive MSMT-CSD tissue response functions based on a co-registered five-tissue-type (5TT) image', parents=[base_parser])
   parser.addCitation('', 'Jeurissen, B.; Tournier, J.-D.; Dhollander, T.; Connelly, A. & Sijbers, J. Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data. NeuroImage, 2014, 103, 411-426', False)
   parser.add_argument('input', help='The input DWI')
@@ -16,7 +14,7 @@ def initialise(base_parser, subparsers):
 
 
 
-def checkOutputPaths():
+def checkOutputPaths(): #pylint: disable=unused-variable
   from mrtrix3 import app
   app.checkOutputPath(app.args.out_wm)
   app.checkOutputPath(app.args.out_gm)
@@ -24,22 +22,21 @@ def checkOutputPaths():
 
 
 
-def getInputs():
-  import os
+def getInputs(): #pylint: disable=unused-variable
   from mrtrix3 import app, path, run
   run.command('mrconvert ' + path.fromUser(app.args.in_5tt, True) + ' ' + path.toTemp('5tt.mif', True))
   if app.args.dirs:
-    run.command('mrconvert ' + path.fromUser(app.args.dirs, True) + ' ' + path.toTemp('dirs.mif', True) + ' -stride 0,0,0,1')
+    run.command('mrconvert ' + path.fromUser(app.args.dirs, True) + ' ' + path.toTemp('dirs.mif', True) + ' -strides 0,0,0,1')
 
 
 
-def needsSingleShell():
+def needsSingleShell(): #pylint: disable=unused-variable
   return False
 
 
 
-def execute():
-  import math, os, shutil
+def execute(): #pylint: disable=unused-variable
+  import os, shutil
   from mrtrix3 import app, image, path, run
 
   # Ideally want to use the oversampling-based regridding of the 5TT image from the SIFT model, not mrtransform
@@ -49,7 +46,7 @@ def execute():
   run.command('5ttcheck 5tt.mif', False)
 
   # Get shell information
-  shells = [ int(round(float(x))) for x in image.headerField('dwi.mif', 'shells').split() ]
+  shells = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shell_bvalues').split() ]
   if len(shells) < 3:
     app.warn('Less than three b-value shells; response functions will not be applicable in resolving three tissues using MSMT-CSD algorithm')
 
@@ -78,14 +75,14 @@ def execute():
   # Revise WM mask to only include single-fibre voxels
   app.console('Calling dwi2response recursively to select WM single-fibre voxels using \'' + app.args.wm_algo + '\' algorithm')
   recursive_cleanup_option=''
-  if not app._cleanup:
+  if not app.cleanup:
     recursive_cleanup_option = ' -nocleanup'
-  run.command('dwi2response ' + app.args.wm_algo + ' dwi.mif wm_ss_response.txt -mask wm_mask.mif -voxels wm_sf_mask.mif -tempdir ' + app._tempDir + recursive_cleanup_option)
+  run.command('dwi2response ' + app.args.wm_algo + ' dwi.mif wm_ss_response.txt -mask wm_mask.mif -voxels wm_sf_mask.mif -tempdir ' + app.tempDir + recursive_cleanup_option)
 
   # Check for empty masks
-  wm_voxels  = int(image.statistic('wm_sf_mask.mif', 'count', 'wm_sf_mask.mif'))
-  gm_voxels  = int(image.statistic('gm_mask.mif',    'count', 'gm_mask.mif'))
-  csf_voxels = int(image.statistic('csf_mask.mif',   'count', 'csf_mask.mif'))
+  wm_voxels  = int(image.statistic('wm_sf_mask.mif', 'count', '-mask wm_sf_mask.mif'))
+  gm_voxels  = int(image.statistic('gm_mask.mif',    'count', '-mask gm_mask.mif'))
+  csf_voxels = int(image.statistic('csf_mask.mif',   'count', '-mask csf_mask.mif'))
   empty_masks = [ ]
   if not wm_voxels:
     empty_masks.append('WM')
@@ -104,7 +101,7 @@ def execute():
     app.error(message)
 
   # For each of the three tissues, generate a multi-shell response
-  bvalues_option = ' -shell ' + ','.join(map(str,shells))
+  bvalues_option = ' -shells ' + ','.join(map(str,shells))
   sfwm_lmax_option = ''
   if wm_lmax:
     sfwm_lmax_option = ' -lmax ' + ','.join(map(str,wm_lmax))
@@ -117,4 +114,3 @@ def execute():
 
   # Generate output 4D binary image with voxel selections; RGB as in MSMT-CSD paper
   run.command('mrcat csf_mask.mif gm_mask.mif wm_sf_mask.mif voxels.mif -axis 3')
-
