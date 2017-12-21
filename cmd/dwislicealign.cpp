@@ -14,7 +14,10 @@
 
 #include "command.h"
 #include "image.h"
+#include "thread_queue.h"
 #include "dwi/gradient.h"
+
+#include "dwi/svr/register.h"
 
 
 using namespace MR;
@@ -120,10 +123,12 @@ void run ()
   }
 
   // run registration
-
+  DWI::SVR::SliceAlignSource source (data.size(3), data.size(2), mb, grad, bvals, init);
+  DWI::SVR::SliceAlignSink sink (data.size(3), data.size(2), mb);
+  Thread::run_queue(source, DWI::SVR::SliceIdx(), sink);
 
   // output
-  //save_matrix(motion, argument[2]);
+  save_matrix(sink.get_motion(), argument[2]);
 
 }
 
