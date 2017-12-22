@@ -74,7 +74,7 @@ void usage ()
     "NeuroImage, 2011, 54(3), 2006-19\n" ;
 
   ARGUMENTS
-  + Argument ("in_fixel_directory", "the fixel directory containing the data files for each subject (after obtaining fixel correspondence").type_file_in ()
+  + Argument ("in_fixel_directory", "the fixel directory containing the data files for each subject (after obtaining fixel correspondence").type_directory_in()
 
   + Argument ("subjects", "a text file listing the subject identifiers (one per line). This should correspond with the filenames "
                           "in the fixel directory (including the file extension), and be listed in the same order as the rows of the design matrix.").type_image_in ()
