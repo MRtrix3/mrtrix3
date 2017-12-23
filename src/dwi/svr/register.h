@@ -17,8 +17,12 @@
 
 #include <Eigen/Dense>
 #include <unsupported/Eigen/MatrixFunctions>
+#include <unsupported/Eigen/LevenbergMarquardt>
 
 #include "types.h"
+#include "image.h"
+#include "transform.h"
+#include "interp/linear.h"
 
 
 namespace MR
@@ -52,6 +56,113 @@ namespace MR
         v[5] = (A(1,0) - A(0,1)) / 2;
         return v;
       }
+
+
+      /* Register prediction to slices. */
+      class SliceRegistrationFunctor : public Eigen::DenseFunctor<float>
+      {
+      public:
+      
+        SliceRegistrationFunctor(const Image<Scalar>& target, const Image<Scalar>& moving, 
+                                 const Image<bool>& mask, const size_t mb, const size_t v, const size_t e)
+          : m (0), nexc ((mb) ? target.size(2)/mb : 1), vol (v), exc (e), T0 (target),
+            mask (mask), target (target),
+            moving (moving, 0.0f), Dmoving (moving, 0.0f)
+        {
+          DEBUG("Constructing LM registration functor.");
+          m = calcMaskSize();
+        }
+        
+        int operator() (const InputType& x, ValueType& fvec)
+        {
+          // get transformation matrix
+          Eigen::Transform<Scalar, 3, Eigen::Affine> T1 (se3exp(x));
+          // interpolate and compute error
+          Eigen::Vector3f trans;
+          size_t i = 0;
+          target.index(3) = vol;
+          for (target.index(2) = exc; target.index(2) < target.size(2); target.index(2) += nexc) {
+            for (auto l = Loop(0,2)(target); l; l++) {
+              if (!isInMask()) continue;
+              trans = T1 * getScanPos();
+              moving.scanner(trans);
+              fvec[i] = target.value() - moving.value();
+              i++;
+            }
+          }
+          return 0;
+        }
+        
+        int df(const InputType& x, JacobianType& fjac)
+        {
+          // get transformation matrix
+          Eigen::Transform<Scalar, 3, Eigen::Affine> T1 (se3exp(x));
+          // Allocate 3 x 6 Jacobian
+          Eigen::Matrix<Scalar, 3, 6> J;
+          J.setIdentity();
+          J *= -1;
+          // compute image gradient and Jacobian
+          Eigen::Vector3f trans;
+          Eigen::RowVector3f grad;
+          size_t i = 0;
+          target.index(3) = vol;
+          for (target.index(2) = exc; target.index(2) < target.size(2); target.index(2) += nexc) {
+            for (auto l = Loop(0,2)(target); l; l++) {
+              if (!isInMask()) continue;
+              trans = T1 * getScanPos();
+              Dmoving.scanner(trans);
+              grad = Dmoving.gradient_wrt_scanner().template cast<Scalar>();
+              J(2,4) = trans[0]; J(1,5) = -trans[0];
+              J(0,5) = trans[1]; J(2,3) = -trans[1];
+              J(1,3) = trans[2]; J(0,4) = -trans[2];
+              fjac.row(i) = 2.0f * grad * J;
+              i++;
+            }
+          }
+          return 0;
+        }
+        
+        size_t values() const { return m; }
+        size_t inputs() const { return 6; }
+        
+      private:
+        size_t m, nexc, vol, exc;
+        Transform T0;
+        Image<bool> mask;
+        Image<Scalar> target;
+        Interp::LinearInterp<Image<Scalar>, Interp::LinearInterpProcessingType::Value> moving;
+        Interp::LinearInterp<Image<Scalar>, Interp::LinearInterpProcessingType::Derivative> Dmoving;
+        
+        inline size_t calcMaskSize()
+        {
+          if (!mask) return target.size(0)*target.size(1)*target.size(2)/nexc;
+          size_t count = 0;
+          for (mask.index(2) = exc; mask.index(2) < mask.size(2); mask.index(2) += nexc) {
+            for (auto l = Loop(0,2)(mask); l; l++) {
+              if (mask.value()) count++;
+            }
+          }
+          return count;
+        }
+        
+        inline bool isInMask() {
+          if (mask.valid()) {
+            assign_pos_of(target).to(mask);
+            return mask.value();
+          } else {
+            return true;
+          }
+        }
+        
+        inline Eigen::Vector3f getScanPos() {
+          Eigen::Vector3f vox, scan;
+          assign_pos_of(target).to(vox);
+          scan = T0.voxel2scanner.template cast<Scalar>() * vox;
+          return scan;
+        }
+      
+      };
+      
 
 
       /* Slice item for multi-threaded processing. */
@@ -118,6 +229,53 @@ namespace MR
         const Eigen::Matrix<float, Eigen::Dynamic, 3> dirs;
         vector<size_t> bidx;
         const Eigen::Matrix<float, Eigen::Dynamic, 6> init; // Euler angle representation
+      };
+
+
+      class SliceAlignPipe
+      {
+      public:
+        SliceAlignPipe(const Image<float>& data, const Image<float>& mssh, const Image<bool>& mask,
+                       const size_t mb, const size_t maxiter)
+          : data (data), mssh (mssh), mask(mask), mb (mb), 
+            maxiter (maxiter), lmax (Math::SH::LforN(mssh.size(4)))
+        { }
+      
+        bool operator() (const SliceIdx& slice, SliceIdx& out)
+        {
+          out = slice;
+          // calculate dwi contrast
+          Eigen::VectorXf delta;
+          Math::SH::delta(delta, slice.bvec, lmax);
+          Header header (mssh);
+          header.ndim() = 3;
+          auto pred = Image<float>::scratch(header);
+          mssh.index(3) = slice.bidx;
+          for (auto l = Loop(0,3) (mssh, pred); l; l++)
+          {
+            size_t j = 0;
+            for (auto k = Loop(3) (mssh); k; k++, j++)
+              pred.value() += delta[j] * mssh.value();
+          }
+          // register prediction to data
+          SliceRegistrationFunctor func (data, pred, mask, mb, slice.vol, slice.exc);
+          Eigen::LevenbergMarquardt<SliceRegistrationFunctor> lm (func);
+          if (maxiter > 0)
+            lm.setMaxfev(maxiter);
+          Eigen::VectorXf x (slice.motion);
+          lm.minimize(x);
+          if (lm.info() == Eigen::ComputationInfo::Success || lm.info() == Eigen::ComputationInfo::NoConvergence)
+            out.motion = x.head<6>();
+          return true;
+        }
+
+      private:
+        Image<float> data;
+        Image<float> mssh;
+        Image<bool> mask;
+        const size_t mb, maxiter;
+        const int lmax;
+      
       };
 
 
