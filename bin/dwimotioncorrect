@@ -183,7 +183,7 @@ if app.args.or_loss:
     or_option = ' -loss ' + app.args.or_loss
 
 # Slice order
-motfilt_option = ' -extent 7'
+motfilt_option = ' -extent 1'
 if mb > 1:
     motfilt_option += ' -mb ' + str(mb)
 if app.args.sorder:
@@ -258,14 +258,21 @@ def s2vregstep(k):
     run.command('motionfilter T ' + str(dims[3]) + ' ' + str(dims[2]) + ' motion.txt' + motfilt_option)
 
 
+def registrationstep(k):
+    run.command('dwislicealign in1.mif rankredux.mif motion.txt -mask mask.mif -maxiter 3' +
+                ' -mb ' + ('0' if k<v2viter else str(mb)) + (' -init motion.txt' if k>0 else '') + ' -force')
+
+
 def fieldalignstep(k):
     if app.args.fieldmap:
         if k == 0:
             run.command('mrfieldunwarp in.mif field.mif in1.mif')
         else:
-            idx = '0' if not app.args.fieldidx else app.args.fieldidx
-            run.command('mrtransform field.mif -linear T-'+idx+'.txt -inverse field1.mif -force')
-            run.command('mrfieldunwarp in.mif field1.mif -motion motion.txt in1.mif -force')
+            pass
+            #idx = '0' if not app.args.fieldidx else app.args.fieldidx
+            #run.command('mrtransform field.mif -linear T-'+idx+'.txt -inverse field1.mif -force')
+            #run.command('mrfieldunwarp in.mif field1.mif -motion motion.txt in1.mif -force')
+            run.command('mrfieldunwarp in.mif field.mif -motion motion.txt in1.mif -force')
     else:
         if k == 0:
             run.command('mrconvert in.mif in1.mif')
@@ -284,7 +291,7 @@ for k in range(v2viter):
     basisupdatestep(k)
     # register template to volumes
     rankreduxstep(k)
-    v2vregstep(k)
+    registrationstep(k)
     fieldalignstep(k+1)
     # update template
     reconstep(k+1)
@@ -295,7 +302,7 @@ for k in range(s2viter):
     basisupdatestep(v2viter+k)
     # register template to slices
     rankreduxstep(v2viter+k)
-    s2vregstep(k)
+    registrationstep(v2viter+k)
     fieldalignstep(v2viter+k+1)
     # update template
     reconstep(v2viter+k+1)
