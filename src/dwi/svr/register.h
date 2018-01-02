@@ -284,7 +284,8 @@ namespace MR
       public:
         SliceAlignSink(const size_t nv, const size_t nz, const size_t mb)
           : ne ((mb) ? nz/mb : 1),
-            motion (nv*ne, 6)
+            motion (nv*ne, 6),
+            progress ("Registering slices to template volume.", nv*ne)
         {
           motion.setZero();
         }
@@ -295,6 +296,7 @@ namespace MR
           Eigen::Transform<float, 3, Eigen::Affine> T (se3exp(slice.motion));
           motion.row(idx).head<3>() = T.translation();
           motion.row(idx).tail<3>() = T.rotation().eulerAngles(2, 1, 0);
+          progress++;
           return true;
         }
 
@@ -303,6 +305,8 @@ namespace MR
       private:
         const size_t ne;
         Eigen::Matrix<float, Eigen::Dynamic, 6> motion; // Euler angle representation
+        ProgressBar progress;
+
       };
 
     }
