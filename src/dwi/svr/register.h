@@ -253,8 +253,9 @@ namespace MR
           mssh.index(3) = slice.bidx;
           for (auto l = Loop(0,3) (mssh, pred); l; l++)
           {
+            pred.value() = 0;
             size_t j = 0;
-            for (auto k = Loop(3) (mssh); k; k++, j++)
+            for (auto k = Loop(4) (mssh); k; k++, j++)
               pred.value() += delta[j] * mssh.value();
           }
           // register prediction to data
