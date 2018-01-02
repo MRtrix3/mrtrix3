@@ -62,23 +62,6 @@ void usage ()
 using value_type = float;
 
 
-inline vector<size_t> get_bidx(const Eigen::MatrixXd& grad, const vector<double> bvals)
-{
-  vector<size_t> bidx;
-  for (int i = 0; i < grad.rows(); i++) {
-    size_t j = 0;
-    for (auto b : bvals) {
-      if (grad(i,3) > (b - DWI_SHELLS_EPSILON) && grad(i,3) < (b + DWI_SHELLS_EPSILON)) {
-        bidx.push_back(j); break;
-      } else j++;
-    }
-    if (j == bvals.size())
-      throw Exception("invalid bvalues in gradient table.");
-  }
-  return bidx;
-}
-
-
 void run ()
 {
   // input data
@@ -92,7 +75,6 @@ void run ()
 
   // index shells
   auto bvals = parse_floats(mssh.keyval().find("shells")->second);
-  auto bidx = get_bidx(grad, bvals);
 
   // mask
   auto mask = Image<bool>();
@@ -114,7 +96,7 @@ void run ()
 
   // settings and initialisation
   size_t niter = get_option_value("maxiter", 0);
-  Eigen::MatrixXf init (data.size(2), 6); init.setZero();
+  Eigen::MatrixXf init (data.size(3), 6); init.setZero();
   opt = get_options("init");
   if (opt.size()) {
     init = load_matrix<float>(opt[0][0]);

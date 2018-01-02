@@ -60,7 +60,7 @@ namespace MR
 
       /* Register prediction to slices. */
       class SliceRegistrationFunctor : public Eigen::DenseFunctor<float>
-      {
+      {  MEMALIGN(SliceRegistrationFunctor);
       public:
       
         SliceRegistrationFunctor(const Image<Scalar>& target, const Image<Scalar>& moving, 
@@ -180,7 +180,7 @@ namespace MR
 
 
       class SliceAlignSource
-      {
+      {  MEMALIGN(SliceAlignSource);
       public:
         SliceAlignSource(const size_t nv, const size_t nz, const size_t mb,
                          const Eigen::MatrixXd& grad, const vector<double> bvals,
@@ -208,7 +208,7 @@ namespace MR
         {
           slice.vol = idx / ne;
           slice.exc = idx % ne;
-          slice.bidx = bidx[idx];
+          slice.bidx = bidx[slice.vol];
           // create transformation matrix
           size_t idx_init = slice.vol * ne_init + slice.exc % ne_init;
           Eigen::Transform<float, 3, Eigen::Affine> m;
@@ -220,7 +220,7 @@ namespace MR
           // reorient vector
           slice.bvec = m.rotation() * dirs.row(slice.vol).normalized().transpose();
           idx++;
-          return idx < nv*ne;
+          return idx <= nv*ne;
         }
 
       private:
@@ -233,7 +233,7 @@ namespace MR
 
 
       class SliceAlignPipe
-      {
+      {  MEMALIGN(SliceAlignPipe);
       public:
         SliceAlignPipe(const Image<float>& data, const Image<float>& mssh, const Image<bool>& mask,
                        const size_t mb, const size_t maxiter)
@@ -280,7 +280,7 @@ namespace MR
 
 
       class SliceAlignSink
-      {
+      {  MEMALIGN(SliceAlignSink);
       public:
         SliceAlignSink(const size_t nv, const size_t nz, const size_t mb)
           : ne ((mb) ? nz/mb : 1),
