@@ -268,11 +268,8 @@ def fieldalignstep(k):
         if k == 0:
             run.command('mrfieldunwarp in.mif field.mif in1.mif')
         else:
-            pass
-            #idx = '0' if not app.args.fieldidx else app.args.fieldidx
-            #run.command('mrtransform field.mif -linear T-'+idx+'.txt -inverse field1.mif -force')
-            #run.command('mrfieldunwarp in.mif field1.mif -motion motion.txt in1.mif -force')
-            run.command('mrfieldunwarp in.mif field.mif -motion motion.txt in1.mif -force')
+            fidx = '-fidx ' + ('0' if not app.args.fieldidx else app.args.fieldidx)
+            run.command('mrfieldunwarp in.mif field.mif -motion motion.txt ' + fidx + ' in1.mif -force')
     else:
         if k == 0:
             run.command('mrconvert in.mif in1.mif')

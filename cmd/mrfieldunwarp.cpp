@@ -45,6 +45,10 @@ void usage ()
               "rigid motion parameters per volume or slice, applied to the field.")
       + Argument("T").type_file_in()
 
+    + Option ("fidx",
+              "index of the input volume to which the field is aligned. (default = none)")
+      + Argument("vol").type_integer(0)
+
     + PhaseEncoding::ImportOptions
 
     + DataType::options();
@@ -59,26 +63,29 @@ class FieldUnwarp {
   public:
 
     FieldUnwarp (const Image<value_type>& data, const Image<value_type>& field,
-                 const Eigen::MatrixXd& petable, const Eigen::MatrixXd& motion) :
+                 const Eigen::MatrixXd& petable, const Eigen::MatrixXd& motion,
+                 const int fidx = -1) :
       dinterp (data, 0.0f), finterp (field, 0.0f),
-      PE (petable.leftCols<3>()), motion (motion.leftCols<6>()),
-      T0 (data), Tf (field),
+      PE (petable.leftCols<3>()), motion (motion.leftCols<6>()), T0 (data),
       nv (data.size(3)), nz (data.size(2)), ne (motion.rows() / nv)
     {
       PE.array().colwise() *= petable.col(3).array();
       if ((nv*nz) % motion.rows())
         throw Exception("Motion parameters incompatible with data dimensions.");
+      Tf = Transform(field).scanner2voxel * T0.voxel2scanner;
+      if (fidx > 0 && fidx < nv)
+        Tf = Tf * get_Ts2r(fidx, ne/2).inverse();
     }
 
     void operator() (Image<value_type>& out)
     {
       size_t v = out.index(3), z = out.index(2);
-      transform_type Ts2r = get_Ts2r(v, z);
+      transform_type Ts2r = Tf * get_Ts2r(v, z);
       dinterp.index(3) = v;
       Eigen::Vector3 vox, pos, RdB0;
       Eigen::RowVector3f dB0;
       value_type B0, jac = 1.0;
-      for (auto l = Loop({0, 1})(out); l; l++) {
+      for (auto l = Loop(0,2)(out); l; l++) {
         assign_pos_of(out).to(vox);
         finterp.voxel(Ts2r * vox);
         finterp.value_and_gradient(B0, dB0);
@@ -95,7 +102,8 @@ class FieldUnwarp {
     Interp::LinearInterp<Image<value_type>, Interp::LinearInterpProcessingType::ValueAndDerivative> finterp;
     Eigen::Matrix<double, Eigen::Dynamic, 3> PE;
     Eigen::Matrix<double, Eigen::Dynamic, 6> motion;
-    Transform T0, Tf;
+    Transform T0;
+    transform_type Tf;
     size_t nv, nz, ne;
 
     inline Eigen::Matrix3d get_rotation(const double a1, const double a2, const double a3) const
@@ -117,7 +125,7 @@ class FieldUnwarp {
 
     inline transform_type get_Ts2r(const size_t v, const size_t z) const
     {
-      transform_type Ts2r = Tf.scanner2voxel * get_transform(motion.row(v*ne+z%ne)) * T0.voxel2scanner;
+      transform_type Ts2r = T0.scanner2voxel * get_transform(motion.row(v*ne+z%ne)) * T0.voxel2scanner;
       return Ts2r;
     }
 
@@ -142,6 +150,10 @@ void run ()
   else
     motion = Eigen::MatrixXd::Zero(data.size(3), 6);
 
+  // field alignment
+  int fidx = get_option_value("fidx", -1);
+  if (fidx >= data.size(3)) throw Exception("field index invalid.");
+
   // Save output
   Header header (data);
   header.datatype() = DataType::from_command_line (DataType::Float32);
@@ -149,7 +161,7 @@ void run ()
   auto out = Image<value_type>::create(argument[2], header);
 
   // Loop through shells
-  FieldUnwarp func (data, field, petable, motion);
+  FieldUnwarp func (data, field, petable, motion, fidx);
   ThreadedLoop("unwarping field", out, {2, 3}).run(func, out);
 
 }
