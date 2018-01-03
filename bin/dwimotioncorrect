@@ -42,7 +42,7 @@ options.add_argument('-reg', help='Regularization for dwirecon (default = 0.01)'
 #options.add_argument('-rf', help='Basis functions for the radial domain')
 options.add_argument('-svr', help='Number of slice-to-volume reconstruction epochs (default = 0)')
 options.add_argument('-mb', help='Multiband factor (default = 1)')
-options.add_argument('-sorder', help='Slice order (default = 2,1, for odd-even)')
+#options.add_argument('-sorder', help='Slice order (default = 2,1, for odd-even)')
 options.add_argument('-sspwidth', help='Slice thickness for Gaussian SSP (default = 1)')
 options.add_argument('-or_loss', help='Outlier rejection loss function (default = softl1)')
 options.add_argument('-fieldmap', help='B0 field map for distortion correction')
@@ -163,9 +163,6 @@ for k, l in enumerate(lmax):
 
 redrfs = ['redrf'+str(k+1)+'.txt' for k in range(len(rlmax))]
 
-# Registration options
-reg_option = '-type rigid -nonsymmetric -affine_niter 3'
-
 # Force max no. threads
 if app.args.nthreads:
     nthr = ' -nthreads ' + app.args.nthreads
@@ -183,12 +180,12 @@ if app.args.or_loss:
     or_option = ' -loss ' + app.args.or_loss
 
 # Slice order
-motfilt_option = ' -extent 1'
-if mb > 1:
-    motfilt_option += ' -mb ' + str(mb)
-if app.args.sorder:
-    p,s = app.args.sorder.split(',')
-    motfilt_option += ' -packs ' + p + ' -shift ' + s
+#motfilt_option = ' -extent 1'
+#if mb > 1:
+#    motfilt_option += ' -mb ' + str(mb)
+#if app.args.sorder:
+#    p,s = app.args.sorder.split(',')
+#    motfilt_option += ' -packs ' + p + ' -shift ' + s
 
 
 # Image dimensions
@@ -225,42 +222,9 @@ def rankreduxstep(k):
     run.command('mrfilter irankredux.mif smooth rankredux.mif -fwhm 0,0,' + str(vz) + ' -force')
 
 
-def v2vregstep(k):
-    # register template to volumes
-    prog = app.progressBar('Registering recon to data volumes', dims[3])
-    for v in range(dims[3]):
-        run.command('mrconvert -coord 3 ' + str(v) + ' in1.mif target.mif -export_grad_mrtrix grad1.txt -force')
-        run.command('mssh2amp rankredux.mif grad1.txt template.mif ' + ('' if k==0 else '-transform T-' + str(v) + '.txt ') + '-force')
-        run.command('mrreg_lin template.mif target.mif -mask2 mask.mif' + (' -affine_init T-'+str(v)+'.txt' if k>0 else '') +
-                    ' -affine T-'+str(v)+'.txt ' + reg_option + ' -affine_scale ' + str(float(k+1)/v2viter) + ' -force')
-        prog.increment()
-    prog.done()
-    run.command('motionfilter T ' + str(dims[3]) + ' 0 motion.txt -extent 1')
-
-
-def s2vregstep(k):
-    # register template to slices
-    prog = app.progressBar('Registering recon to data slices', dims[3])
-    for v in range(dims[3]):
-        volmotion = ''
-        run.command('mrconvert -coord 3 ' + str(v) + ' in1.mif target.mif -export_grad_mrtrix grad1.txt -force')
-        if k == 0:
-            run.command('mssh2amp rankredux.mif grad1.txt template.mif -transform T-' + str(v) + '.txt -force')
-        for s in range(dims[2]//mb):
-            run.command('maskslice -mb ' + str(mb) + ' mask.mif ' + str(s) + ' slicemask.mif -force')
-            if k > 0:
-                run.command('mssh2amp rankredux.mif grad1.txt template.mif -transform T-' + str(v) + '-' + str(s) + '.txt -force')
-            run.command('mrreg_lin template.mif target.mif -mask2 slicemask.mif' +
-                        ' -affine_init ' + ('T-'+str(v)+'-'+str(s)+'.txt' if k>0 else 'T-'+str(v)+'.txt') +
-                        ' -affine T-'+str(v)+'-'+str(s)+'.txt ' + reg_option + ' -affine_scale ' + str(float(v2viter+k+1)/(v2viter+s2viter)) + ' -force')
-        prog.increment()
-    prog.done()
-    run.command('motionfilter T ' + str(dims[3]) + ' ' + str(dims[2]) + ' motion.txt' + motfilt_option)
-
-
 def registrationstep(k):
     run.command('dwislicealign in1.mif rankredux.mif motion.txt -mask mask.mif -maxiter 3' +
-                ' -mb ' + ('0' if k<v2viter else str(mb)) + (' -init motion.txt' if k>0 else '') + ' -force')
+                ' -mb ' + ('0' if k<v2viter else str(mb)) + (' -init motion.txt' if k>0 else '') + ' -force' + nthr)
 
 
 def fieldalignstep(k):
@@ -282,8 +246,8 @@ def fieldalignstep(k):
 fieldalignstep(0)
 reconstep(0)
 
-# volume-to-volume registration
-for k in range(v2viter):
+# running reconstruction
+for k in range(v2viter + s2viter):
     sliceweightstep()
     basisupdatestep(k)
     # register template to volumes
@@ -292,17 +256,6 @@ for k in range(v2viter):
     fieldalignstep(k+1)
     # update template
     reconstep(k+1)
-
-# slice-to-volume registration
-for k in range(s2viter):
-    sliceweightstep()
-    basisupdatestep(v2viter+k)
-    # register template to slices
-    rankreduxstep(v2viter+k)
-    registrationstep(v2viter+k)
-    fieldalignstep(v2viter+k+1)
-    # update template
-    reconstep(v2viter+k+1)
 
 
 #   __________ Copy outputs __________
