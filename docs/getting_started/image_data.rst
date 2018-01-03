@@ -593,9 +593,7 @@ in the input file is named and stored individually), and the values for these
 data structures will be written in legible format (e.g. matrix data are stored as
 delimited text). The data will therefore be encapsulated within the image header
 and preserved (as long as formats capable of retaining this information are used
-subsequently).
-
-For instance:
+subsequently). For instance::
 
     $ mrinfo image.mgz
     ************************************************
