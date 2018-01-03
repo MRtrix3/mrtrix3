@@ -178,7 +178,7 @@ if app.args.mb:
     mb = int(app.args.mb)
 
 # Set OR loss
-or_option = ''
+or_option = ' -mb ' + str(mb)
 if app.args.or_loss:
     or_option = ' -loss ' + app.args.or_loss
 
