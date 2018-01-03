@@ -58,7 +58,7 @@ void usage ()
     + Argument ("s").type_float(0.0)
 
   + Option ("mb", "multiband factor (default = 1)")
-    + Argument ("f").type_integer(0)
+    + Argument ("f").type_integer(1)
 
   + DWI::GradImportOptions();
 
@@ -97,7 +97,11 @@ class MeanErrorFunctor {
     }
 
     Eigen::MatrixXf result() const {
-      return (*E).array() / (N->array()).min(1).cast<value_type>();
+      Eigen::MatrixXf R (ne, nv);
+      for (size_t i = 0; i < R.rows(); i++)
+        for (size_t j = 0; j < R.cols(); j++)
+          R(i,j) = (*N)(i,j) ? (*E)(i,j) / (*N)(i,j) : 1.0;
+      return R;
     }
 
   private:
