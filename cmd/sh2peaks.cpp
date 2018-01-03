@@ -73,7 +73,7 @@ void usage ()
   + Argument ("image").type_image_in()
 
   + Option ("fast",
-            "use lookup table to compute Associated Legendre Polynomials (faster, but approximate).");
+            "use lookup table to compute associated Legendre polynomials (faster, but approximate).");
 }
 
 
