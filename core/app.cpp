@@ -1076,11 +1076,6 @@ namespace MR
           throw Exception ("input file \"" + text + "\" is not a valid track file");
         if (i.arg->type == TracksOut && !Path::has_suffix (text, ".tck"))
           throw Exception ("output track file \"" + text + "\" must use the .tck suffix");
-        if (i.arg->type == ArgDirectoryOut) {
-          const std::string base_name = Path::basename (text);
-          if (base_name.find (".") != std::string::npos)
-            throw Exception ("output path \"" + text + "\" is not a valid directory path (contains a \'.\')");
-        }
       }
       for (const auto& i : option) {
         for (size_t j = 0; j != i.opt->size(); ++j) {
@@ -1109,11 +1104,6 @@ namespace MR
             throw Exception ("input file \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a valid track file");
           if (arg.type == TracksOut && !Path::has_suffix (text, ".tck"))
             throw Exception ("output track file \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" must use the .tck suffix");
-          if (arg.type == ArgDirectoryOut) {
-            const std::string base_name = Path::basename (text);
-            if (base_name.find (".") != std::string::npos)
-              throw Exception ("output path \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a valid directory path (contains a \'.\')");
-          }
         }
       }
 
