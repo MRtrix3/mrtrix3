@@ -219,7 +219,11 @@ def basisupdatestep(k):
 def rankreduxstep(k):
     run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax ' + ','.join([str(l) for l in rlmax]) +
                 ' -weights svdweights.txt ' + ' '.join(redrfs) + ' -proj irankredux.mif -force')
-    run.command('mrfilter irankredux.mif smooth rankredux.mif -fwhm 0,0,' + str(vz) + ' -force')
+    if k < v2viter:
+      fwhm = 4 * (v2viter - k) / v2viter
+    else:
+      fwhm = 2 * (v2viter + s2viter - k) / (v2viter + s2viter)
+    run.command('mrfilter irankredux.mif smooth rankredux.mif -fwhm ' + str(fwhm) + ' -force')
 
 
 def registrationstep(k):
