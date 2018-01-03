@@ -582,6 +582,54 @@ FreeSurfer formats (``.mgh / .mgz``)
 
 *MRtrix3* supports both of these formats for reading and writing.
 
+Images stored in these formats may include
+`additional data structures <https://surfer.nmr.mgh.harvard.edu/fswiki/FsTutorial/MghFormat>`__
+that follow the image data. These data structures provide a similar functionality
+to the :ref:`header_keyvalue_pairs` used in the :ref:`_mrtrix_image_formats`.
+
+When present in an input file, _MRtrix3_ will import these data into
+:ref:`header_keyvalue_pairs`, with keys named "``MGH_*``" (each element present
+in the input file is named and stored individually), and the values for these
+data structures will be written in legible format (e.g. matrix data are stored as
+delimited text). The data will therefore be encapsulated within the image header
+and preserved (as long as formats capable of retaining this information are used
+subsequently).
+
+For instance:
+
+    $ mrinfo image.mgz
+    ************************************************
+    Image:               "image.mgz"
+    ************************************************
+      Dimensions:        256 x 256 x 256
+      Voxel size:        1 x 1 x 1
+      Data strides:      [ -1 3 -2 ]
+      Format:            MGZ (compressed MGH)
+      Data type:         unsigned 8 bit integer
+      Intensity scaling: offset = 0, multiplier = 1
+      Transform:                    1  -4.098e-08   6.147e-08      -129.3
+                           -8.196e-08           1   7.189e-09      -118.1
+                            4.377e-08  -2.133e-08           1      -147.7
+      MGH_TAG_AUTO_ALIGN: 0.998104,0.054096,-0.029327,2.066329
+                         -0.061351,0.912803,-0.403062,-27.35524
+                         0.004969,0.404097,0.914391,-5.738687
+                         0,0,0,1
+      MGH_TAG_MRI_FRAME: 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,,0,0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0,0,0
+      MGH_TAG_PEDIR:     UNKNOWN
+      MGH_TE:            1.91
+      MGH_TI:            1100
+      MGH_TR:            2300
+      MGH_flip:          7
+
+Whenever _MRtrix3_ writes an image to one of these formats, it will check the
+:ref:`header_keyvalue_pairs` for any such data that may have been created by
+_MRtrix3_ when importing such an image earlier. Any such data found will be
+correspondingly written to the data structures following the image data,
+formatted such that FreeSurfer tools are capable of reading them. Other header
+key-value entries that do not begin with "``MGH_*``", and of which FreeSurfer
+is not aware, will _not_ be written to this section of any output ``.mgh`` /
+``.mgz`` image files.
+
 
 .. _analyze_format:
 
