@@ -80,14 +80,16 @@ namespace MR
       ReconMatrix(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad, const int lmax, const vector<Eigen::MatrixXf>& rf, const float sspw, const float reg)
         : lmax (lmax),
           nx (in.size(0)), ny (in.size(1)), nz (in.size(2)), nv (in.size(3)),
-          nxy (nx*ny), nc (get_ncoefs(rf)),
+          nxy (nx*ny), nc (get_ncoefs(rf)), ne (rigid.rows() / nv),
           T0 (in),  // Preserve original resolution.
           shellbasis (init_shellbasis(grad, rf)),
           ssp (sspw),
           motion (rigid)
       {
+        INFO("Multiband factor " + str(nz/ne) + " detected.");
         init_Y(grad);
         init_laplacian(reg);
+        assert (motion.rows() == nv*ne);
       }
 
 
@@ -106,72 +108,59 @@ namespace MR
         Tf = Transform(field).scanner2voxel * T0.voxel2scanner;
       }
 
-      RowMatrixXf getY0(const Eigen::MatrixXf& grad) const
-      {
-        DEBUG("initialise Y0");
-
-        vector<size_t> idx = get_shellidx(grad);
-        RowMatrixXf Y0 (grad.rows(), nc);
-
-        Eigen::Vector3f vec;
-        Eigen::VectorXf delta;
-
-        for (size_t i = 0; i < grad.rows(); i++) {
-          vec = {grad(i, 0), grad(i, 1), grad(i, 2)};
-
-          // evaluate basis functions
-          Math::SH::delta(delta, vec, lmax);
-          Y0.row(i) = shellbasis[idx[i]]*delta;
-        }
-
-        return Y0;
-      }
-
       template <typename VectorType1, typename VectorType2>
       void project_x2y(VectorType1& dst, const VectorType2& rhs) const
       {
-        DEBUG("Forward projection.");
+        INFO("Forward projection.");
         size_t nxyz = nxy*nz;
         Eigen::Map<const RowMatrixXf> X (rhs.data(), nxyz, nc);
-        Thread::parallel_for<size_t>(0, nv*nz, [&](size_t idx){
-          Eigen::VectorXf q = X * Y.row(idx).adjoint();
-          Eigen::Ref<Eigen::VectorXf> r = dst.segment(idx*nxy, nxy);
-          project_slice_x2y(idx, r, q);
-        });
+        Thread::parallel_for<size_t>(0, nv*ne,
+          [&](size_t idx) {
+            size_t v = idx/ne;
+            Eigen::VectorXf q = X * Y.row(idx).adjoint();
+            for (size_t z = idx%ne; z < nz; z += ne) {
+              Eigen::Ref<Eigen::VectorXf> r = dst.segment((nz*v+z)*nxy, nxy);
+              project_slice_x2y(v, z, r, q);
+            }
+          });
       }
 
       template <typename VectorType1, typename VectorType2>
       void project_y2x(VectorType1& dst, const VectorType2& rhs) const
       {
-        DEBUG("Transpose projection.");
+        INFO("Transpose projection.");
         size_t nxyz = nxy*nz;
         Eigen::Map<RowMatrixXf> X (dst.data(), nxyz, nc);
-        Eigen::Map<const Eigen::VectorXf> w (W.data(), W.size());
         RowMatrixXf zero (nxyz, nc); zero.setZero();
-        X = Thread::parallel_sum<RowMatrixXf, size_t>(0, nv*nz,
-          [&](size_t idx, RowMatrixXf& T){
+        X = Thread::parallel_sum<RowMatrixXf, size_t>(0, nv*ne,
+          [&](size_t idx, RowMatrixXf& T) {
+            size_t v = idx/ne;
             Eigen::VectorXf r = Eigen::VectorXf::Zero(nxyz);
-            project_slice_y2x(idx, r, rhs.segment(idx*nxy, nxy));
-            T.noalias() += w(idx) * r * Y.row(idx);
+            for (size_t z = idx%ne; z < nz; z += ne) {
+              project_slice_y2x(v, z, r, W(z,v) * rhs.segment((nz*v+z)*nxy, nxy));
+            }
+            T.noalias() += r * Y.row(idx);
           }, zero);
       }
 
       template <typename VectorType1, typename VectorType2>
       void project_x2x(VectorType1& dst, const VectorType2& rhs) const
       {
-        DEBUG("Full projection.");
+        INFO("Full projection.");
         size_t nxyz = nxy*nz;
         Eigen::Map<const RowMatrixXf> Xi (rhs.data(), nxyz, nc);
         Eigen::Map<RowMatrixXf> Xo (dst.data(), nxyz, nc);
-        Eigen::Map<const Eigen::VectorXf> w (W.data(), W.size());
         RowMatrixXf zero (nxyz, nc); zero.setZero();
-        Xo = Thread::parallel_sum<RowMatrixXf, size_t>(0, nv*nz,
-          [&](size_t idx, RowMatrixXf& T){
+        Xo = Thread::parallel_sum<RowMatrixXf, size_t>(0, nv*ne,
+          [&](size_t idx, RowMatrixXf& T) {
+            size_t v = idx/ne;
             Eigen::VectorXf q = Xi * Y.row(idx).adjoint();
             Eigen::VectorXf r = Eigen::VectorXf::Zero(nxyz);
-            project_slice_x2x(idx, r, q);
-            T.noalias() += w(idx) * r * Y.row(idx);
-        }, zero);
+            for (size_t z = idx%ne; z < nz; z += ne) {
+              project_slice_x2x(v, z, r, W(z, v) * q);
+            }
+            T.noalias() += r * Y.row(idx);
+          }, zero);
         Xo += L.adjoint() * (L * Xi);
         Xo += 0.0001f * Xi;
       }
@@ -179,7 +168,7 @@ namespace MR
 
     private:
       const int lmax;
-      const size_t nx, ny, nz, nv, nxy, nc;
+      const size_t nx, ny, nz, nv, nxy, nc, ne;
       const Transform T0;
       const vector<Eigen::MatrixXf> shellbasis;
       const SSP<float,2> ssp;
@@ -225,26 +214,21 @@ namespace MR
         assert (grad.rows() == nv);     // one gradient per volume
 
         vector<size_t> idx = get_shellidx(grad);
-        Y.resize(nv*nz, nc);
+        Y.resize(nv*ne, nc);
 
         Eigen::Vector3f vec;
         Eigen::Matrix3f rot;
         rot.setIdentity();
         Eigen::VectorXf delta;
 
-        for (size_t i = 0; i < nv; i++) {
-          vec = {grad(i, 0), grad(i, 1), grad(i, 2)};
-          if (motion.rows() == nv)
-            rot = get_rotation(motion(i,3), motion(i,4), motion(i,5));
-
-          for (size_t j = 0; j < nz; j++) {
+        for (size_t v = 0; v < nv; v++) {
+          vec = {grad(v, 0), grad(v, 1), grad(v, 2)};
+          for (size_t e = 0; e < ne; e++) {
             // rotate vector with motion parameters
-            if (motion.rows() == nv*nz)
-              rot = get_rotation(motion(i*nz+j,3), motion(i*nz+j,4), motion(i*nz+j,5));
-
+            rot = get_rotation(motion(v*ne+e,3), motion(v*ne+e,4), motion(v*ne+e,5));
             // evaluate basis functions
             Math::SH::delta(delta, rot*vec, lmax);
-            Y.row(i*nz+j) = shellbasis[idx[i]]*delta;
+            Y.row(v*ne+e) = shellbasis[idx[v]]*delta;
           }
 
         }
@@ -270,13 +254,7 @@ namespace MR
 
       inline transform_type get_Ts2r(const size_t v, const size_t z) const
       {
-        transform_type Ts2r;
-        if (motion.rows() == nv) {
-          Ts2r = T0.scanner2voxel * get_transform(motion.row(v)) * T0.voxel2scanner;
-        } else {
-          assert (motion.rows(0) == nv*nz);
-          Ts2r = T0.scanner2voxel * get_transform(motion.row(v*nz+z)) * T0.voxel2scanner;
-        }
+        transform_type Ts2r = T0.scanner2voxel * get_transform(motion.row(v*ne+z%ne)) * T0.voxel2scanner;
         return Ts2r;
       }
 
@@ -320,7 +298,7 @@ namespace MR
       inline size_t get_grad_idx(const size_t v, const size_t z) const { return v*nz + z; }
 
       template <typename VectorType1, typename VectorType2>
-      void project_slice_x2y(const size_t idx, VectorType1& dst, const VectorType2& rhs) const
+      void project_slice_x2y(const size_t v, const size_t z, VectorType1& dst, const VectorType2& rhs) const
       {
         Eigen::SparseVector<float> m (nxy*nz);
         m.reserve(64);
@@ -330,7 +308,6 @@ namespace MR
           finterp = make_unique< Interp::Linear<decltype(field)> >(field, 0.0f);
 
         Eigen::Vector3 ps, pr, peoffset;
-        size_t v = idx/nz, z = idx%nz;
         float iJac;
         transform_type Ts2r = get_Ts2r(v, z);
         if (field.valid()) {
@@ -355,7 +332,7 @@ namespace MR
       }
 
       template <typename VectorType1, typename VectorType2>
-      void project_slice_y2x(const size_t idx, VectorType1& dst, const VectorType2& rhs) const
+      void project_slice_y2x(const size_t v, const size_t z, VectorType1& dst, const VectorType2& rhs) const
       {
         Eigen::SparseVector<float> m (nxy*nz);
         m.reserve(64);
@@ -365,7 +342,6 @@ namespace MR
           finterp = make_unique< Interp::Linear<decltype(field)> >(field, 0.0f);
 
         Eigen::Vector3 ps, pr, peoffset;
-        int v = idx/nz, z = idx%nz;
         float iJac;
         transform_type Ts2r = get_Ts2r(v, z);
         if (field.valid()) {
@@ -383,14 +359,14 @@ namespace MR
               ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac);
               // update motion matrix
               load_sparse_coefs(m, pr.cast<float>());
-              dst += ((ssp(s)*iJac) * rhs[i]) * m;
+              dst += (ssp(s) * iJac * rhs[i]) * m;
             }
           }
         }
       }
 
       template <typename VectorType1, typename VectorType2>
-      void project_slice_x2x(const size_t idx, VectorType1& dst, const VectorType2& rhs) const
+      void project_slice_x2x(const size_t v, const size_t z, VectorType1& dst, const VectorType2& rhs) const
       {
         Eigen::SparseVector<float> m0 (nxy*nz);
         m0.reserve(64);
@@ -402,8 +378,8 @@ namespace MR
           finterp = make_unique< Interp::Linear<decltype(field)> >(field, 0.0f);
 
         Eigen::Vector3 ps, pr, peoffset;
-        int v = idx/nz, z = idx%nz;
-        float t, iJac;
+        float t;
+        std::array<float, 5> iJac;
         transform_type Ts2r = get_Ts2r(v, z);
         if (field.valid()) {
           peoffset = pe.block<1,3>(v, 0).transpose().cast<double>();
@@ -417,13 +393,13 @@ namespace MR
             for (int s = -2; s <= 2; s++) {       // ssp neighbourhood
               ps[2] = z+s;
               // get slice position in recon space
-              ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac);
+              ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac[2+s]);
               // update motion matrix
               load_sparse_coefs(m[2+s], pr.cast<float>());
-              t += (ssp(s)*iJac) * m[2+s].dot(rhs);
+              t += (ssp(s) * iJac[2+s]) * m[2+s].dot(rhs);
             }
             for (int s = -2; s <= 2; s++) {
-              dst += ((ssp(s)*iJac) * t) * m[2+s];
+              dst += (ssp(s) * iJac[2+s] * t) * m[2+s];
             }
           }
         }

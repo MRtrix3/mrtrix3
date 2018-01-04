@@ -57,6 +57,9 @@ void usage ()
   + Option ("scale", "residual scaling (default = 1.4826 * MAD per shell)")
     + Argument ("s").type_float(0.0)
 
+  + Option ("mb", "multiband factor (default = 1)")
+    + Argument ("f").type_integer(1)
+
   + DWI::GradImportOptions();
 
 }
@@ -65,37 +68,47 @@ void usage ()
 using value_type = float;
 
 
-class RMSEFunctor {
-  MEMALIGN(RMSEFunctor)
+class MeanErrorFunctor {
+  MEMALIGN(MeanErrorFunctor)
   public:
-    RMSEFunctor (const Image<value_type>& in, const Image<bool>& mask)
-      : mask (mask),
-        E (new Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>(in.size(2), in.size(3)))
+    MeanErrorFunctor (const Image<value_type>& in, const Image<bool>& mask, const int mb = 1)
+      : ne (in.size(2) / mb), nv (in.size(3)), mask (mask),
+        E (new Eigen::MatrixXf(ne, nv)),
+        N (new Eigen::MatrixXi(ne, nv))
     {
       E->setZero();
+      N->setZero();
     }
 
     void operator() (Image<value_type>& data, Image<value_type>& pred) {
       value_type e = 0.0;
-      size_t n = 0;
+      int n = 0;
       for (auto l = Loop(0,2) (data, pred); l; l++) {
         if (mask.valid()) {
           assign_pos_of(data).to(mask);
           if (!mask.value()) continue;
         }
         value_type d = data.value() - pred.value();
-        e += d ;//* d;
+        e += d;
         n++;
       }
-      if (n > 0)
-        (*E)(data.get_index(2), data.get_index(3)) = e / n; //std::sqrt(e/n);
+      (*E)(data.get_index(2) % ne, data.get_index(3)) += e;
+      (*N)(data.get_index(2) % ne, data.get_index(3)) += n;
     }
 
-    Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> result() const { return *E; }
+    Eigen::MatrixXf result() const {
+      Eigen::MatrixXf R (ne, nv);
+      for (size_t i = 0; i < R.rows(); i++)
+        for (size_t j = 0; j < R.cols(); j++)
+          R(i,j) = (*N)(i,j) ? (*E)(i,j) / (*N)(i,j) : 1.0;
+      return R;
+    }
 
   private:
+    const size_t ne, nv;
     Image<bool> mask;
-    std::shared_ptr<Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> > E;
+    std::shared_ptr<Eigen::MatrixXf> E;
+    std::shared_ptr<Eigen::MatrixXi> N;
 
 };
 
@@ -115,9 +128,13 @@ void run ()
 
   int loss = get_option_value("loss", 1);
 
+  int mb = get_option_value("mb", 1);
+  if (data.size(2) % mb)
+    throw Exception ("Multiband factor incompatible with image dimensions.");
+
   // Compute RMSE of each slice
-  RMSEFunctor rmse (data, mask);
-  ThreadedLoop("Computing RMSE", data, 2, 4).run(rmse, data, pred);
+  MeanErrorFunctor rmse (data, mask, mb);
+  ThreadedLoop("Computing mean residual error", data, 2, 4).run(rmse, data, pred);
   Eigen::MatrixXf E = rmse.result();
 
   // Calculate scale
@@ -175,7 +192,7 @@ void run ()
   //W = (W.array() < 0.5).select(0.0f, W);
 
   // Output
-  save_matrix(W, argument[2]);
+  save_matrix(W.replicate(mb, 1), argument[2]);
 
 }
 
