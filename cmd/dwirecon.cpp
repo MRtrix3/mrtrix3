@@ -285,8 +285,8 @@ void run ()
     x = cg.solve(p);
   }
 
-  INFO("CG: #iterations: " + str(cg.iterations()));
-  INFO("CG: estimated error: " + str(cg.error()));
+  CONSOLE("CG: #iterations: " + str(cg.iterations()));
+  CONSOLE("CG: estimated error: " + str(cg.error()));
 
 
   // Write result to output file
