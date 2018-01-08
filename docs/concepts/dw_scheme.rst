@@ -296,7 +296,7 @@ These include:
   entries in the DW gradient table;
 - where relevant, verifying that the DW gradient tables contains the data in a
   shell structure, by clustering similar *b*-values together (see :ref:`mrinfo`'s
-  ``-shell`` and ``-shellcount`` options);
+  ``-shell_bvalues`` and ``-shell_sizes`` options);
 - normalising the gradient vectors to unit amplitude;
 - scaling the *b*-values by the square of the gradient vector amplitude - see
   `b-value scaling`_ for details. 
