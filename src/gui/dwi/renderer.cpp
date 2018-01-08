@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -50,7 +51,7 @@ namespace MR
 
 
 
-      void Renderer::start (const Projection& projection, const GL::Lighting& lighting, float scale, 
+      void Renderer::start (const Projection& projection, const GL::Lighting& lighting, float scale,
           bool use_lighting, bool colour_by_direction, bool hide_neg_values, bool orthographic)
       {
         switch (mode) {
@@ -437,7 +438,7 @@ namespace MR
           for (int l = 0; l <= lmax; l+=2) {
             for (int m = 0; m <= l; m++) {
               const int idx (Math::SH::index (l,m));
-              transform (3*n, idx) = transform(3*n, idx-2*m) = SH_NON_M0_SCALE_FACTOR Math::Legendre::Plm_sph<float> (l, m, vertices[n][2]);
+              transform (3*n, idx) = transform(3*n, idx-2*m) = (m ? Math::sqrt2 : 1.0) * Math::Legendre::Plm_sph<float> (l, m, vertices[n][2]);
             }
           }
 
@@ -455,7 +456,7 @@ namespace MR
             for (int l = 2* ( (m+1) /2); l <= lmax; l+=2) {
               const int idx (Math::SH::index (l,m));
               transform (3*n+1, idx) = - transform (3*n, idx-1) * sqrt (float ( (l+m) * (l-m+1)));
-              if (l > m) 
+              if (l > m)
                 transform (3*n+1,idx) += transform (3*n, idx+1) * sqrt (float ( (l-m) * (l+m+1)));
               transform (3*n+1, idx) /= 2.0;
 

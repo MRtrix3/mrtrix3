@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -111,11 +112,11 @@ namespace MR
           init_rotation_type (Transform::Init::none),
           robust_estimate (false),
           do_reorientation (false),
-          //CONF option: reg_analyse_descent
+          //CONF option: RegAnalyseDescent
           //CONF default: 0 (false)
           //CONF Linear registration: write comma separated gradient descent parameters and gradients
           //CONF to stdout and verbose gradient descent output to stderr.
-          analyse_descent (File::Config::get_bool ("reg_analyse_descent", false)) {
+          analyse_descent (File::Config::get_bool ("RegAnalyseDescent", false)) {
             stages[0].scale_factor = 0.25;
             stages[0].fod_lmax = 0;
             stages[1].scale_factor = 0.5;
@@ -427,15 +428,15 @@ namespace MR
                 midway_image_header.spacing(2));
               Eigen::Vector3d coherence(spacing);
               Eigen::Vector3d stop(spacing);
-              //CONF option: reg_coherence_len
+              //CONF option: RegCoherenceLen
               //CONF default: 3.0
               //CONF Linear registration: estimated spatial coherence length in voxels.
-              default_type reg_coherence_len = File::Config::get_float ("reg_coherence_len", 3.0); // = 3 stdev blur
+              default_type reg_coherence_len = File::Config::get_float ("RegCoherenceLen", 3.0); // = 3 stdev blur
               coherence *= reg_coherence_len * 1.0 / (2.0 * stage.scale_factor);
-              //CONF option: reg_stop_len
+              //CONF option: RegStopLen
               //CONF default: 0.0001
               //CONF Linear registration: smallest gradient descent step measured in fraction of a voxel at which to stop registration.
-              default_type reg_stop_len = File::Config::get_float ("reg_stop_len", 0.0001);
+              default_type reg_stop_len = File::Config::get_float ("RegStopLen", 0.0001);
               stop.array() *= reg_stop_len;
               DEBUG ("coherence length: " + str(coherence));
               DEBUG ("stop length:      " + str(stop));
@@ -443,31 +444,31 @@ namespace MR
 
               // convergence check using slope of smoothed parameter trajectories
               Eigen::VectorXd slope_threshold = Eigen::VectorXd::Ones (12);
-              //CONF option: reg_gd_convergence_thresh
+              //CONF option: RegGdConvergenceThresh
               //CONF default: 5e-3
               //CONF Linear registration: threshold for convergence check using the smoothed control point trajectories
               //CONF measured in fraction of a voxel.
-              slope_threshold.fill (spacing.mean() * File::Config::get_float ("reg_gd_convergence_thresh", 5e-3f));
+              slope_threshold.fill (spacing.mean() * File::Config::get_float ("RegGdConvergenceThresh", 5e-3f));
               DEBUG ("convergence slope threshold: " + str(slope_threshold[0]));
-              //CONF option: reg_gd_convergence_data_smooth
+              //CONF option: RegGdConvergenceDataSmooth
               //CONF default: 0.8
               //CONF Linear registration: control point trajectory smoothing value used in convergence check
               //CONF parameter range: [0...1].
-              const default_type alpha (MR::File::Config::get_float ("reg_gd_convergence_data_smooth", 0.8));
+              const default_type alpha (MR::File::Config::get_float ("RegGdConvergenceDataSmooth", 0.8));
               if ( (alpha < 0.0f ) || (alpha > 1.0f) )
-                throw Exception ("config file option reg_gd_convergence_data_smooth has to be in the range: [0...1]");
-              //CONF option: reg_gd_convergence_slope_smooth
+                throw Exception ("config file option RegGdConvergenceDataSmooth has to be in the range: [0...1]");
+              //CONF option: RegGdConvergenceSlopeSmooth
               //CONF default: 0.1
               //CONF Linear registration: control point trajectory slope smoothing value used in convergence check
               //CONF parameter range: [0...1].
-              const default_type beta (MR::File::Config::get_float ("reg_gd_convergence_slope_smooth", 0.1));
+              const default_type beta (MR::File::Config::get_float ("RegGdConvergenceSlopeSmooth", 0.1));
               if ( (beta < 0.0f ) || (beta > 1.0f) )
-                throw Exception ("config file option reg_gd_convergence_slope_smooth has to be in the range: [0...1]");
-              size_t buffer_len (MR::File::Config::get_float ("reg_gd_convergence_buffer_len", 4));
-              //CONF option: reg_gd_convergence_min_iter
+                throw Exception ("config file option RegGdConvergenceSlopeSmooth has to be in the range: [0...1]");
+              size_t buffer_len (MR::File::Config::get_float ("RegGdConvergenceBufferLen", 4));
+              //CONF option: RegGdConvergenceMinIter
               //CONF default: 10
               //CONF Linear registration: minimum number of iterations until convergence check is activated.
-              size_t min_iter (MR::File::Config::get_float ("reg_gd_convergence_min_iter", 10));
+              size_t min_iter (MR::File::Config::get_float ("RegGdConvergenceMinIter", 10));
               transform.get_gradient_descent_updator()->set_convergence_check (slope_threshold, alpha, beta, buffer_len, min_iter);
 
               Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
@@ -506,7 +507,7 @@ namespace MR
                 // Math::check_function_gradient (evaluate, params, 0.0001, true, optimiser_weights);
                 if (stage.diagnostics_images.size()) {
                   CONSOLE("    creating diagnostics image: " + stage.diagnostics_images[stage_iter - 1]);
-                  parameters.make_diagnostics_image (stage.diagnostics_images[stage_iter - 1], File::Config::get_bool ("reg_linreg_diagnostics_image_masked", false));
+                  parameters.make_diagnostics_image (stage.diagnostics_images[stage_iter - 1], File::Config::get_bool ("RegLinregDiagnosticsImageMasked", false));
                 }
               }
               // update midway (affine average) space using the current transformations

@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -76,7 +77,7 @@ void usage ()
     +   Option ("size", "image size along each axis")
     +   Option ("spacing", "voxel spacing along each image dimension")
     +   Option ("datatype", "data type used for image data storage")
-    +   Option ("stride", "data strides i.e. order and direction of axes data layout")
+    +   Option ("strides", "data strides i.e. order and direction of axes data layout")
     +   Option ("offset", "image intensity offset")
     +   Option ("multiplier", "image intensity multiplier")
     +   Option ("transform", "the voxel to image transformation")
@@ -95,8 +96,8 @@ void usage ()
     + GradExportOptions
     +   Option ("dwgrad", "the diffusion-weighting gradient table, as stored in the header "
           "(i.e. without any interpretation, scaling of b-values, or normalisation of gradient vectors)")
-    +   Option ("shellvalues", "list the average b-value of each shell")
-    +   Option ("shellcounts", "list the number of volumes in each shell")
+    +   Option ("shell_bvalues", "list the average b-value of each shell")
+    +   Option ("shell_sizes", "list the number of volumes in each shell")
 
     + PhaseEncoding::ExportOptions
     + Option ("petable", "print the phase encoding table");
@@ -141,15 +142,15 @@ void print_strides (const Header& header)
   std::cout << buffer << "\n";
 }
 
-void print_shells (const Header& header, const bool shellvalues, const bool shellcounts)
+void print_shells (const Header& header, const bool shell_bvalues, const bool shell_sizes)
 {
   DWI::Shells dwshells (DWI::parse_DW_scheme (header));
-  if (shellvalues) {
+  if (shell_bvalues) {
     for (size_t i = 0; i < dwshells.count(); i++)
       std::cout << dwshells[i].get_mean() << " ";
     std::cout << "\n";
   }
-  if (shellcounts) {
+  if (shell_sizes) {
     for (size_t i = 0; i < dwshells.count(); i++)
       std::cout << dwshells[i].count() << " ";
     std::cout << "\n";
@@ -236,7 +237,7 @@ void header2json (const Header& header, nlohmann::json& json)
   json["spacing"] = spacing;
   vector<ssize_t> strides (Stride::get (header));
   Stride::symbolise (strides);
-  json["stride"] = strides;
+  json["strides"] = strides;
   json["format"] = header.format();
   json["datatype"] = header.datatype().specifier();
   json["intensity_offset"] = header.intensity_offset();
@@ -273,32 +274,32 @@ void run ()
   if (get_options ("norealign").size())
     Header::do_not_realign_transform = true;
 
-  const bool format      = get_options("format")        .size();
-  const bool ndim        = get_options("ndim")          .size();
-  const bool size        = get_options("size")          .size();
-  const bool spacing     = get_options("spacing")       .size();
-  const bool datatype    = get_options("datatype")      .size();
-  const bool stride      = get_options("stride")        .size();
-  const bool offset      = get_options("offset")        .size();
-  const bool multiplier  = get_options("multiplier")    .size();
-  const auto properties  = get_options("property");
-  const bool transform   = get_options("transform")     .size();
-  const bool dwgrad      = get_options("dwgrad")        .size();
-  const bool shellvalues = get_options("shellvalues")   .size();
-  const bool shellcounts = get_options("shellcounts")   .size();
-  const bool raw_dwgrad  = get_options("raw_dwgrad")    .size();
-  const bool petable     = get_options("petable")       .size();
+  const bool format        = get_options("format")        .size();
+  const bool ndim          = get_options("ndim")          .size();
+  const bool size          = get_options("size")          .size();
+  const bool spacing       = get_options("spacing")       .size();
+  const bool datatype      = get_options("datatype")      .size();
+  const bool strides       = get_options("strides")       .size();
+  const bool offset        = get_options("offset")        .size();
+  const bool multiplier    = get_options("multiplier")    .size();
+  const auto properties    = get_options("property");
+  const bool transform     = get_options("transform")     .size();
+  const bool dwgrad        = get_options("dwgrad")        .size();
+  const bool shell_bvalues = get_options("shell_bvalues") .size();
+  const bool shell_sizes   = get_options("shell_sizes")   .size();
+  const bool raw_dwgrad    = get_options("raw_dwgrad")    .size();
+  const bool petable       = get_options("petable")       .size();
 
-  const bool print_full_header = !(format || ndim || size || spacing || datatype || stride ||
+  const bool print_full_header = !(format || ndim || size || spacing || datatype || strides ||
       offset || multiplier || properties.size() || transform ||
-      dwgrad || export_grad || shellvalues || shellcounts || export_pe || petable ||
+      dwgrad || export_grad || shell_bvalues || shell_sizes || export_pe || petable ||
       json_keyval || json_all);
 
   for (size_t i = 0; i < argument.size(); ++i) {
     auto header = Header::open (argument[i]);
     if (raw_dwgrad)
       DWI::set_DW_scheme (header, DWI::get_DW_scheme (header));
-    else if (export_grad || check_option_group (GradImportOptions) || dwgrad || shellvalues || shellcounts)
+    else if (export_grad || check_option_group (GradImportOptions) || dwgrad || shell_bvalues || shell_sizes)
       DWI::set_DW_scheme (header, DWI::get_valid_DW_scheme (header, true));
 
     if (format)     std::cout << header.format() << "\n";
@@ -306,12 +307,12 @@ void run ()
     if (size)       print_dimensions (header);
     if (spacing)    print_spacing (header);
     if (datatype)   std::cout << (header.datatype().specifier() ? header.datatype().specifier() : "invalid") << "\n";
-    if (stride)     print_strides (header);
+    if (strides)    print_strides (header);
     if (offset)     std::cout << header.intensity_offset() << "\n";
     if (multiplier) std::cout << header.intensity_scale() << "\n";
     if (transform)  print_transform (header);
     if (dwgrad)     std::cout << DWI::get_DW_scheme (header) << "\n";
-    if (shellvalues || shellcounts) print_shells (header, shellvalues, shellcounts);
+    if (shell_bvalues || shell_sizes) print_shells (header, shell_bvalues, shell_sizes);
     if (petable)    std::cout << PhaseEncoding::get_scheme (header) << "\n";
 
     for (size_t n = 0; n < properties.size(); ++n)
