@@ -38,8 +38,8 @@ def execute(): #pylint: disable=unused-variable
 
 
   # Get b-values and number of volumes per b-value.
-  bvalues = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shellvalues').split() ]
-  bvolumes = [ int(x) for x in image.mrinfo('dwi.mif', 'shellcounts').split() ]
+  bvalues = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shell_bvalues').split() ]
+  bvolumes = [ int(x) for x in image.mrinfo('dwi.mif', 'shell_sizes').split() ]
   app.console(str(len(bvalues)) + ' unique b-value(s) detected: ' + ','.join(map(str,bvalues)) + ' with ' + ','.join(map(str,bvolumes)) + ' volumes.')
   if len(bvalues) < 2:
     app.error('Need at least 2 unique b-values (including b=0).')
@@ -72,7 +72,7 @@ def execute(): #pylint: disable=unused-variable
   zeropath = 'mean_b' + str(bvalues[0]) + '.mif'
   for i, b in enumerate(bvalues):
     meanpath = 'mean_b' + str(b) + '.mif'
-    run.command('dwiextract dwi.mif -shell ' + str(b) + ' - | mrmath - mean ' + meanpath + ' -axis 3')
+    run.command('dwiextract dwi.mif -shells ' + str(b) + ' - | mrmath - mean ' + meanpath + ' -axis 3')
     errpath = 'err_b' + str(b) + '.mif'
     run.command('mrcalc ' + meanpath + ' -finite ' + meanpath + ' 0 -if 0 -le ' + errpath + ' -datatype bit')
     errcmd += ' ' + errpath
