@@ -119,12 +119,11 @@ Register the FOD image from all subjects to the FOD template image. Note you can
 
 12. Compute a white matter analysis voxel & fixel mask
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Here we first identify all voxels having some white matter by thresholding the DC term (first SH coefficient) of the multi-tissue FOD image::
+Here we first identify all voxels having some white matter by thresholding the DC term (first SH coefficient) of the multi-tissue FOD image, and finding its overlap with the subject intersection mask::
 
-    mrconvert ../template/wmfod_template.mif -coord 3 0 - | mrthreshold - ../template/voxel_mask.mif
+    mrconvert ../template/wmfod_template.mif -coord 3 0 - | mrthreshold - - | mrcalc - ../template/mask_intersection.mif -mult ../template/voxel_mask.mif -datatype bit
 
 Next we segment all fixels from each FOD in the template image (see `here <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`__ for more information about a analysis fixel mask). Note that the fixel image output from this step is stored using the :ref:`fixel_format`, which exploits the filesystem to store all fixel data in a directory::
-
 
    fod2fixel -mask ../template/voxel_mask.mif -fmls_peak_value 0.1 ../template/wmfod_template.mif ../template/fixel_mask
 
