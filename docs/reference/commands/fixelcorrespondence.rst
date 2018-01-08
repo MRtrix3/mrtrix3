@@ -17,7 +17,7 @@ Usage
 
 -  *subject_data*: the input subject fixel data file. This should be a file inside the fixel directory
 -  *template_directory*: the input template fixel directory.
--  *output_directory*: the output fixel directory.
+-  *output_directory*: the fixel directory where the output file will be written.
 -  *output_data*: the name of the output fixel data file. This will be placed in the output fixel directory
 
 Description

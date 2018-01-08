@@ -37,8 +37,8 @@ void usage ()
 
   ARGUMENTS
   + Argument ("subject_data", "the input subject fixel data file. This should be a file inside the fixel directory").type_image_in ()
-  + Argument ("template_directory", "the input template fixel directory.").type_image_in ()
-  + Argument ("output_directory", "the output fixel directory.").type_text()
+  + Argument ("template_directory", "the input template fixel directory.").type_directory_in()
+  + Argument ("output_directory", "the fixel directory where the output file will be written.").type_text()
   + Argument ("output_data", "the name of the output fixel data file. This will be placed in the output fixel directory").type_image_out ();
 
   OPTIONS
