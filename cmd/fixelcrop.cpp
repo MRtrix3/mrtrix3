@@ -37,10 +37,10 @@ void usage ()
 
   ARGUMENTS
   + Argument ("input_fixel_directory", "input fixel directory, all data files and directions "
-                                       "file will be cropped and saved in the output fixel directory").type_text ()
+                                       "file will be cropped and saved in the output fixel directory").type_directory_in()
   + Argument ("input_fixel_mask", "the input fixel data file defining which fixels to crop. "
                                   "Fixels with zero values will be removed").type_image_in ()
-  + Argument ("output_fixel_directory", "the output directory to store the cropped directions and data files").type_text ();
+  + Argument ("output_fixel_directory", "the output directory to store the cropped directions and data files").type_directory_out();
 }
 
 
