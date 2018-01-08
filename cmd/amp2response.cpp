@@ -57,10 +57,7 @@ void usage ()
 
    + "If multi-shell data are provided, and one or more b-value shells are not explicitly "
      "requested, the command will generate a response function for every b-value shell "
-     "(including b=0 if present)."
-
-   + "For details on the method provided by this command see: "
-     "https://www.researchgate.net/publication/307862932_Constrained_linear_least_squares_estimation_of_anisotropic_response_function_for_spherical_deconvolution";
+     "(including b=0 if present).";
 
   ARGUMENTS
     + Argument ("amps", "the amplitudes image").type_image_in()
@@ -81,6 +78,11 @@ void usage ()
     + Option ("lmax", "specify the maximum harmonic degree of the response function to estimate "
                       "(can be a comma-separated list for multi-shell data)")
       + Argument ("values").type_sequence_int();
+
+  REFERENCES
+    + "Smith, R. E.; Dhollander, T. & Connelly, A. " // Internal
+      "Constrained linear least squares estimation of anisotropic response function for spherical deconvolution. "
+      "ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 23.";
 }
 
 
@@ -115,7 +117,7 @@ vector<size_t> all_volumes (const size_t num)
 }
 
 
-void run () 
+void run ()
 {
 
   // Get directions from either selecting a b-value shell, or the header, or external file
