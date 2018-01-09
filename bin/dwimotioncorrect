@@ -190,10 +190,8 @@ if app.args.or_loss:
 
 # Image dimensions
 dims = list(map(int, image.headerField('in.mif', 'size').split()))
-
-vz = float(image.headerField('in.mif', 'vox').split()[2])
-if app.args.sspwidth:
-    vz *= float(app.args.sspwidth)
+vox = list(map(float, image.headerField('in.mif', 'vox').split()))
+vu = (vox[0]+vox[1])/2.
 
 # Shell weights
 with open('svdweights.txt', 'w') as f:
@@ -219,11 +217,8 @@ def basisupdatestep(k):
 def rankreduxstep(k):
     run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax ' + ','.join([str(l) for l in rlmax]) +
                 ' -weights svdweights.txt ' + ' '.join(redrfs) + ' -proj irankredux.mif -force')
-    if k < v2viter:
-      fwhm = 4 * (v2viter - k) / v2viter
-    else:
-      fwhm = 2 * (v2viter + s2viter - k) / (v2viter + s2viter)
-    run.command('mrfilter irankredux.mif smooth rankredux.mif -fwhm ' + str(fwhm) + ' -force')
+    scale = 4. - 3.*k / (v2viter-1) if k < v2viter else 2. - 1.*(k-v2viter) / (s2viter-1)
+    run.command('mrfilter irankredux.mif smooth rankredux.mif -fwhm ' + str(scale*vu) + ' -force')
 
 
 def registrationstep(k):
