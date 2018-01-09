@@ -77,7 +77,8 @@ namespace MR
 
 
       // Custom API:
-      ReconMatrix(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad, const int lmax, const vector<Eigen::MatrixXf>& rf, const float sspw, const float reg)
+      ReconMatrix(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad,
+                  const int lmax, const vector<Eigen::MatrixXf>& rf, const float sspw, const float reg)
         : lmax (lmax),
           nx (in.size(0)), ny (in.size(1)), nz (in.size(2)), nv (in.size(3)),
           nxy (nx*ny), nc (get_ncoefs(rf)), ne (rigid.rows() / nv),

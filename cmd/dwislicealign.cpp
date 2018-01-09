@@ -18,6 +18,7 @@
 #include "dwi/gradient.h"
 
 #include "dwi/svr/register.h"
+#include "dwi/svr/psf.h"
 
 
 using namespace MR;
@@ -47,6 +48,9 @@ void usage ()
 
   + Option ("mb", "multiband factor. (default = 0; v2v registration)")
     + Argument ("factor").type_integer(0)
+
+  + Option ("sspwidth", "SSP width in voxel units (default = 1).")
+    + Argument ("w").type_float(0.0)
 
   + Option ("init", "motion initialisation")
     + Argument ("motion").type_file_in()
@@ -94,6 +98,10 @@ void run ()
       throw Exception ("multiband factor invalid.");
   }
 
+  // SSP
+  float sspw = get_option_value("sspwidth", 1.0f);
+  DWI::SSP<float> ssp (sspw);
+
   // settings and initialisation
   size_t niter = get_option_value("maxiter", 0);
   Eigen::MatrixXf init (data.size(3), 6); init.setZero();
@@ -106,7 +114,7 @@ void run ()
 
   // run registration
   DWI::SVR::SliceAlignSource source (data.size(3), data.size(2), mb, grad, bvals, init);
-  DWI::SVR::SliceAlignPipe pipe (data, mssh, mask, mb, niter);
+  DWI::SVR::SliceAlignPipe pipe (data, mssh, mask, mb, niter, ssp);
   DWI::SVR::SliceAlignSink sink (data.size(3), data.size(2), mb);
   Thread::run_queue(source, DWI::SVR::SliceIdx(), Thread::multi(pipe), DWI::SVR::SliceIdx(), sink);
 
