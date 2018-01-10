@@ -98,9 +98,9 @@ def execute(): #pylint: disable=unused-variable
       with open(prefix + 'RF.txt', 'r') as new_RF_file:
         new_RF = [ float(x) for x in new_RF_file.read().split() ]
       reiterate = False
-      for index in range(0, len(old_RF)):
-        mean = 0.5 * (old_RF[index] + new_RF[index])
-        diff = math.fabs(0.5 * (old_RF[index] - new_RF[index]))
+      for old_value, new_value in zip(old_RF, new_RF):
+        mean = 0.5 * (old_value + new_value)
+        diff = math.fabs(0.5 * (old_value - new_value))
         ratio = diff / mean
         if ratio > convergence_change:
           reiterate = True

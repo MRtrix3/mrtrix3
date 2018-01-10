@@ -21,8 +21,7 @@ remove    = os.remove
 # Binds raw_input() to input() in Python2, so that input() can be used
 #   and the code will work on both Python 2 and 3
 try:
-  #pylint: disable=redefined-builtin
-  input = raw_input
+  input = raw_input #pylint: disable=redefined-builtin
 except NameError:
   pass
 
@@ -31,6 +30,7 @@ import math
 from mrtrix3 import app, file, image, path, run #pylint: disable=redefined-builtin
 
 
+from mrtrix3.path import allindir
 
 def abspath(*arg):
   return os.path.abspath(os.path.join(*arg))
@@ -38,25 +38,17 @@ def abspath(*arg):
 def relpath(*arg):
   return os.path.relpath(os.path.join(*arg), app.workingDir)
 
-def allindir(directory):
-  return ' '.join( [ os.path.join(directory, filename) for filename in os.listdir(directory) ] )
-
-
-
 try:
   from numpy import loadtxt, savetxt, dot
 except ImportError:
   app.console("numpy not found; using replacement functions")
   def loadtxt(fname, delimiter=" ", dtype=float):
-    with open(fname, "r") as f:
-      return [[dtype(a) for a in l.rstrip().split(delimiter)] for l in f.readlines()]
+    with open(fname, "rb") as f:
+      return [[dtype(a) for a in l.decode(errors='ignore').rstrip().split(delimiter)] for l in f.readlines()]
 
   def savetxt(fname, X, delimiter=" ", fmt="%.14e"):
     try:
-      if sys.version_info[0] >= 3:
-        fh = open(fname, 'wb')
-      else:
-        fh = open(fname, 'w')
+      fh = open(fname, 'wb')
       if len(X) == 1:
         ncol = 1
       else:
@@ -64,7 +56,7 @@ except ImportError:
       fmt = [fmt, ] * ncol
       row_format = delimiter.join(fmt)
       for row in X:
-        fh.write((row_format % tuple(row) + '\n').encode (errors='ignore'))
+        fh.write(((row_format % tuple(row) + '\n').encode(errors='ignore')))
     finally:
       fh.close()
 
@@ -215,9 +207,9 @@ app.args.input_dir = relpath(app.args.input_dir)
 inputDir = app.args.input_dir
 if not os.path.exists(inputDir):
   app.error('input directory not found')
-inFiles = sorted(os.listdir(inputDir))
+inFiles = sorted(allindir(inputDir, dir_path=False))
 if len(inFiles) <= 1:
-  app.console('Not enough images found in input directory. More than one image is needed to generate a population template')
+  app.error('Not enough images found in input directory. More than one image is needed to generate a population template')
 else:
   app.console('Generating a population-average template from ' + str(len(inFiles)) + ' input images')
 
@@ -228,8 +220,7 @@ if app.args.voxel_size:
     voxel_size = voxel_size * 3
   try:
     assert len(voxel_size) == 3
-    #pylint: disable=expression-not-assigned
-    [float(v) for v in voxel_size]
+    [float(v) for v in voxel_size] #pylint: disable=expression-not-assigned
   except:
     app.error('voxel size needs to be a single or three comma-separated floating point numbers; received: ' + str(app.args.voxel_size))
 
@@ -251,7 +242,7 @@ if app.args.mask_dir:
   maskDir = app.args.mask_dir
   if not os.path.exists(maskDir):
     app.error('mask directory not found')
-  maskFiles = os.listdir(maskDir)
+  maskFiles = allindir(maskDir, dir_path=False)
   if len(maskFiles) < len(inFiles):
     app.error('there are not enough mask images for the number of images in the input directory')
   maskCommonPostfix = path.commonPostfix(maskFiles)
@@ -392,7 +383,7 @@ if dolinear:
     for istage, [tpe, scale, niter] in enumerate(zip (linear_type, linear_scales, linear_niter)):
       app.console('(%02i) %s scale: %.4f, niter: %i, no reorientation' %(istage, tpe.ljust(9), scale, niter))
 
-datatype = ' -datatype float32'
+datatype_option = ' -datatype float32'
 
 if not dononlinear:
   nl_scales = []
@@ -452,28 +443,39 @@ else:
 
 # crop average space to extent defined by original masks
 if useMasks:
+  progress = app.progressBar('Importing input masks to average space for template cropping', len(inputs))
   mask_filenames = []
   for i in inputs:
     run.command('mrtransform ' + abspath(i.mask_directory, i.mask_filename) + \
                 ' -interp nearest -template average_header.mif ' + os.path.join('masks_transformed', i.mask_filename))
     mask_filenames.append(os.path.join('masks_transformed', i.mask_filename))
+    progress.increment()
+  progress.done()
   run.command('mrmath ' + ' '.join(mask_filenames) + ' max mask_initial.mif' )
   run.command('mrcrop ' + 'average_header.mif -mask mask_initial.mif average_header_cropped.mif')
   run.function(remove,'mask_initial.mif')
   run.function(remove, 'average_header.mif')
   run.function(move, 'average_header_cropped.mif', 'average_header.mif')
+  progress = app.progressBar('Erasing temporary mask images', len(mask_filenames))
   for mask in mask_filenames:
     run.function(remove, mask)
+    progress.increment()
+  progress.done()
+
 
 
 if initial_alignment == 'none':
+  progress = app.progressBar('Resampling input images to template space with no initial alignment', len(inputs))
   for i in inputs:
-    run.command('mrtransform ' + abspath(i.directory, i.filename) + ' -interp linear -template average_header.mif ' + os.path.join('inputs_transformed', i.prefix + '.mif') + datatype)
+    run.command('mrtransform ' + abspath(i.directory, i.filename) + ' -interp linear -template average_header.mif ' + os.path.join('inputs_transformed', i.prefix + '.mif') + datatype_option)
+    progress.increment()
+  progress.done()
   if not dolinear:
     for i in inputs:
       with open(os.path.join('linear_transforms_initial','%s.txt' % (i.prefix)),'w') as fout:
         fout.write('1 0 0 0\n0 1 0 0\n0 0 1 0\n0 0 0 1\n')
 else:
+  progress = app.progressBar('Performing initial rigid registration to template', len(inputs))
   mask = ''
   for i in inputs:
     if useMasks:
@@ -486,18 +488,20 @@ else:
                 ' -type rigid ' + \
                 ' -noreorientation ' + \
                 ' -rigid_init_translation ' + initial_alignment + ' ' + \
-                datatype + \
+                datatype_option + \
                 output)
     # translate input images to centre of mass without interpolation
     run.command('mrtransform ' + abspath(i.directory, i.filename) + \
                 ' -linear ' + os.path.join('linear_transforms_initial', i.prefix + '.txt') + \
-                datatype + \
+                datatype_option + \
                 ' ' + os.path.join('inputs_transformed', i.prefix + '_translated.mif'))
     if useMasks:
       run.command('mrtransform ' + abspath(i.mask_directory, i.mask_filename) + \
                   ' -linear ' + os.path.join('linear_transforms_initial', i.prefix + '.txt') + \
-                  datatype + ' ' + \
+                  datatype_option + ' ' + \
                   os.path.join('masks_transformed', i.prefix + '_translated.mif'))
+    progress.increment()
+  progress.done()
   # update average space to new extent
   run.command('mraverageheader ' + ' '.join([os.path.join('inputs_transformed', i.prefix + '_translated.mif') for i in inputs]) + ' average_header_tight.mif')
   if voxel_size is None:
@@ -507,12 +511,15 @@ else:
   run.function(remove, 'average_header_tight.mif')
   if useMasks:
     # reslice masks
+    progress = app.progressBar('Reslicing input masks to average header', len(inputs))
     for i in inputs:
       run.command('mrtransform ' + \
                   os.path.join('masks_transformed', i.prefix + '_translated.mif') + ' ' + \
                   os.path.join('masks_transformed', i.prefix + '.mif') + ' ' + \
                   '-interp nearest -template average_header.mif' + \
-                  datatype)
+                  datatype_option)
+      progress.increment()
+    progress.done()
     # crop average space to extent defined by translated masks
     mask_filenames = []
     for i in inputs:
@@ -522,26 +529,32 @@ else:
     # pad average space to allow for deviation from initial alignment
     run.command('mrpad -uniform 10 average_header_cropped.mif -force average_header.mif')
     run.function(remove, 'average_header_cropped.mif')
+    progress = app.progressBar('Reslicing mask images to new padded average header', len(inputs))
     for i in inputs:
       run.command('mrtransform ' +
                   os.path.join('masks_transformed', i.prefix + '_translated.mif') + ' ' + \
                   os.path.join('masks_transformed', i.prefix + '.mif') + ' ' + \
                   '-interp nearest -template average_header.mif' + \
-                  datatype + ' ' + \
+                  datatype_option + ' ' + \
                   '-force')
       run.function(remove, os.path.join('masks_transformed', i.prefix + '_translated.mif'))
+      progress.increment()
+    progress.done()
     run.function(remove, 'mask_translated.mif')
   # reslice input images
+  progress = app.progressBar('Reslicing input images to average header', len(inputs))
   for i in inputs:
     run.command('mrtransform ' + \
                 os.path.join('inputs_transformed', i.prefix + '_translated.mif') + ' ' + \
                 os.path.join('inputs_transformed', i.prefix + '.mif') + ' ' + \
                 '-interp linear -template average_header.mif' + \
-                datatype)
+                datatype_option)
     run.function(remove, os.path.join('inputs_transformed', i.prefix + '_translated.mif'))
+    progress.increment()
+  progress.done()
 
 
-run.command('mrmath ' + allindir('inputs_transformed') + ' mean initial_template.mif')
+run.command('mrmath ' + ' '.join(allindir('inputs_transformed')) + ' mean initial_template.mif')
 current_template = 'initial_template.mif'
 
 
@@ -550,65 +563,67 @@ if not dolinear:
   for i in inputs:
     run.function(copy, os.path.join('linear_transforms_initial','%s.txt' % (i.prefix)), os.path.join('linear_transforms','%s.txt' % (i.prefix)))
 else:
-  app.console('Optimising template with linear registration')
-  for level in range(0, len(linear_scales)):
+  for level, (regtype, scale, niter, lmax) in enumerate(zip(linear_type, linear_scales, linear_niter, linear_lmax)):
+    progress = app.progressBar('Optimising template with linear registration (stage {0} of {1})'.format(level+1, len(linear_scales)), len(inputs))
     for i in inputs:
-      initialise = ''
+      initialise_option = ''
       if useMasks:
-        mask = ' -mask1 ' + abspath(i.mask_directory, i.mask_filename)
+        mask_option = ' -mask1 ' + abspath(i.mask_directory, i.mask_filename)
       else:
-        mask = ''
-      lmax = ''
-      metric = ''
-      mrregister_log = ''
-      if linear_type[level] == 'rigid':
-        scale = ' -rigid_scale ' + str(linear_scales[level])
-        niter = ' -rigid_niter ' + str(linear_niter[level])
-        regtype = ' -type rigid'
-        output = ' -rigid ' + os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix)
+        mask_option = ''
+      lmax_option = ''
+      metric_option = ''
+      mrregister_log_option = ''
+      if regtype == 'rigid':
+        scale_option = ' -rigid_scale ' + str(scale)
+        niter_option = ' -rigid_niter ' + str(niter)
+        regtype_option = ' -type rigid'
+        output_option = ' -rigid ' + os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix)
         if level > 0:
-          initialise = ' -rigid_init_matrix ' + os.path.join('linear_transforms_%i' % (level - 1), '%s.txt' % i.prefix)
+          initialise_option = ' -rigid_init_matrix ' + os.path.join('linear_transforms_%i' % (level - 1), '%s.txt' % i.prefix)
         if do_fod_registration:
-          lmax = ' -rigid_lmax ' + str(linear_lmax[level])
+          lmax_option = ' -rigid_lmax ' + str(lmax)
         else:
-          lmax = ' -noreorientation'
+          lmax_option = ' -noreorientation'
         if linear_estimator:
-          metric = ' -rigid_metric.diff.estimator ' + linear_estimator
+          metric_option = ' -rigid_metric.diff.estimator ' + linear_estimator
         if app.verbosity >= 2:
-          mrregister_log = ' -info -rigid_log ' + os.path.join('log', i.filename + "_" + str(level) + '.log')
+          mrregister_log_option = ' -info -rigid_log ' + os.path.join('log', i.filename + "_" + str(level) + '.log')
       else:
-        scale = ' -affine_scale ' + str(linear_scales[level])
-        niter = ' -affine_niter ' + str(linear_niter[level])
-        regtype = ' -type affine'
-        output = ' -affine ' + os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix)
+        scale_option = ' -affine_scale ' + str(scale)
+        niter_option = ' -affine_niter ' + str(niter)
+        regtype_option = ' -type affine'
+        output_option = ' -affine ' + os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix)
         if level > 0:
-          initialise = ' -affine_init_matrix ' + os.path.join('linear_transforms_%i' % (level - 1), '%s.txt' % i.prefix)
+          initialise_option = ' -affine_init_matrix ' + os.path.join('linear_transforms_%i' % (level - 1), '%s.txt' % i.prefix)
         if do_fod_registration:
-          lmax = ' -affine_lmax ' + str(linear_lmax[level])
+          lmax_option = ' -affine_lmax ' + str(lmax)
         else:
-          lmax = ' -noreorientation'
+          lmax_option = ' -noreorientation'
         if linear_estimator:
-          metric = ' -affine_metric.diff.estimator ' + linear_estimator
+          metric_option = ' -affine_metric.diff.estimator ' + linear_estimator
         if write_log:
-          mrregister_log = ' -info -affine_log ' + os.path.join('log', i.filename + '_' + str(level) + '.log')
+          mrregister_log_option = ' -info -affine_log ' + os.path.join('log', i.filename + '_' + str(level) + '.log')
 
       command = 'mrregister ' + abspath(i.directory, i.filename) + ' ' + current_template + \
                 ' -force' + \
-                initialise + \
-                mask + \
-                scale + \
-                niter + \
-                lmax + \
-                regtype + \
-                metric + \
-                datatype + \
-                output + \
-                mrregister_log
+                initialise_option + \
+                mask_option + \
+                scale_option + \
+                niter_option + \
+                lmax_option + \
+                regtype_option + \
+                metric_option + \
+                datatype_option + \
+                output_option + \
+                mrregister_log_option
       run.command(command)
       check_linear_transformation(os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix), command, pause_on_warn=do_pause_on_warn)
+      progress.increment()
+    progress.done()
 
     # Here we ensure the template doesn't drift or scale
-    run.command('transformcalc ' + allindir('linear_transforms_%i' % level) + ' average linear_transform_average.txt -force -quiet')
+    run.command('transformcalc ' + ' '.join(allindir('linear_transforms_%i' % level)) + ' average linear_transform_average.txt -force -quiet')
     if linear_type[level] == 'rigid':
       run.command('transformcalc linear_transform_average.txt rigid linear_transform_average.txt -force -quiet')
     run.command('transformcalc linear_transform_average.txt invert linear_transform_average_inv.txt -force -quiet')
@@ -619,16 +634,18 @@ else:
         transform = dot(loadtxt(os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix)), average_inv)
         savetxt(os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix), transform)
 
-
+    progress = app.progressBar('Transforming all subjects to revised template', len(inputs))
     for i in inputs:
       run.command('mrtransform ' + abspath(i.directory, i.filename) + ' ' + \
                   '-template ' + current_template + ' ' + \
                   '-linear ' + os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix) + ' ' + \
                   os.path.join('inputs_transformed', '%s.mif' % i.prefix) + \
-                  datatype + ' ' + \
+                  datatype_option + ' ' + \
                   '-force')
+      progress.increment()
+    progress.done()
 
-    run.command('mrmath ' + allindir('inputs_transformed') + ' mean linear_template' + str(level) + '.mif -force')
+    run.command('mrmath ' + ' '.join(allindir('inputs_transformed')) + ' mean linear_template' + str(level) + '.mif -force')
     current_template = 'linear_template' + str(level) + '.mif'
 
   for entry in os.listdir('linear_transforms_%i' % level):
@@ -636,6 +653,7 @@ else:
 
 # Create a template mask for nl registration by taking the intersection of all transformed input masks and dilating
 if useMasks and (dononlinear or app.args.template_mask):
+  progress = app.progressBar('Generating template mask for non-linear registration', len(inputs))
   for i in inputs:
     run.command('mrtransform ' + abspath(i.mask_directory, i.mask_filename) + ' ' + \
                 '-template ' + current_template + ' ' + \
@@ -643,49 +661,52 @@ if useMasks and (dononlinear or app.args.template_mask):
                 '-linear ' + os.path.join('linear_transforms', '%s.txt' % i.prefix) + ' ' + \
                 os.path.join('masks_transformed', '%s.mif' % i.prefix) + ' ' + \
                 '-force')
-  run.command ('mrmath ' + allindir('masks_transformed') + ' min - | maskfilter - median - | maskfilter - dilate -npass 5 init_nl_template_mask.mif -force')
+    progress.increment()
+  progress.done()
+  run.command ('mrmath ' + ' '.join(allindir('masks_transformed')) + ' min - | maskfilter - median - | maskfilter - dilate -npass 5 init_nl_template_mask.mif -force')
   current_template_mask = 'init_nl_template_mask.mif'
 
 if dononlinear:
   # Optimise the template with non-linear registration
-  app.console('Optimising template with non-linear registration')
   file.makeDir('warps')
-  for level in range(0, len(nl_scales)):
+  for level, (scale, niter, lmax) in enumerate(zip(nl_scales, nl_niter, nl_lmax)):
+    progress = app.progressBar('Optimising template with non-linear registration (stage {0} of {1})'.format(level+1, len(nl_scales)), len(inputs))
     for i in inputs:
       if level > 0:
-        initialise = ' -nl_init ' + os.path.join('warps_%i' % (level-1), '%s.mif' % i.prefix)
-        scale = ''
+        initialise_option = ' -nl_init ' + os.path.join('warps_%i' % (level-1), '%s.mif' % i.prefix)
+        scale_option = ''
       else:
-        scale = ' -nl_scale ' + str(nl_scales[level])
+        scale_option = ' -nl_scale ' + str(scale)
         if not doaffine: # rigid or no previous linear stage
-          initialise = ' -rigid_init_matrix ' + os.path.join('linear_transforms', '%s.txt' % i.prefix)
+          initialise_option = ' -rigid_init_matrix ' + os.path.join('linear_transforms', '%s.txt' % i.prefix)
         else:
-          initialise = ' -affine_init_matrix ' + os.path.join('linear_transforms', '%s.txt' % i.prefix)
+          initialise_option = ' -affine_init_matrix ' + os.path.join('linear_transforms', '%s.txt' % i.prefix)
 
       if useMasks:
-        mask = ' -mask1 ' + abspath(i.mask_directory, i.mask_filename) + ' -mask2 ' + current_template_mask
+        mask_option = ' -mask1 ' + abspath(i.mask_directory, i.mask_filename) + ' -mask2 ' + current_template_mask
       else:
-        mask = ''
+        mask_option = ''
 
       if do_fod_registration:
-        lmax = ' -nl_lmax ' + str(nl_lmax[level])
+        lmax_option = ' -nl_lmax ' + str(lmax)
       else:
-        lmax = ' -noreorientation'
+        lmax_option = ' -noreorientation'
 
       run.command('mrregister ' + abspath(i.directory, i.filename) + ' ' + current_template + ' ' + \
                   '-type nonlinear ' + \
-                  '-nl_niter ' + str(nl_niter[level]) + ' ' + \
+                  '-nl_niter ' + str(niter) + ' ' + \
                   '-nl_warp_full ' + os.path.join('warps_%i' % level, '%s.mif' % i.prefix) + ' ' + \
                   '-transformed ' + os.path.join('inputs_transformed', '%s.mif' % i.prefix) + ' ' + \
                   '-nl_update_smooth ' +  app.args.nl_update_smooth + ' ' + \
                   '-nl_disp_smooth ' +  app.args.nl_disp_smooth + ' ' + \
                   '-nl_grad_step ' +  app.args.nl_grad_step + ' ' + \
                   '-force' + \
-                  initialise + \
-                  scale + \
-                  mask + \
-                  datatype + \
-                  lmax)
+                  initialise_option + \
+                  scale_option + \
+                  mask_option + \
+                  datatype_option + \
+                  lmax_option)
+
       if level > 0:
         run.function(remove, os.path.join('warps_%i'%(level-1), '%s.mif' % i.prefix))
       if useMasks:
@@ -695,17 +716,19 @@ if dononlinear:
                     os.path.join('masks_transformed', i.prefix + '.mif') + ' ' + \
                     '-interp nearest ' +
                     '-force')
+      progress.increment()
+    progress.done()
 
-    run.command('mrmath ' + allindir('inputs_transformed') + ' mean nl_template' + str(level) + '.mif')
+    run.command('mrmath ' + ' '.join(allindir('inputs_transformed')) + ' mean nl_template' + str(level) + '.mif')
     current_template = 'nl_template' + str(level) + '.mif'
 
     if useMasks:
-      run.command ('mrmath ' + allindir('masks_transformed') + ' min - | maskfilter - median - | maskfilter - dilate -npass 5 nl_template_mask' + str(level) + '.mif')
+      run.command('mrmath ' + ' '.join(allindir('masks_transformed')) + ' min - | maskfilter - median - | maskfilter - dilate -npass 5 nl_template_mask' + str(level) + '.mif')
       current_template_mask = 'nl_template_mask' + str(level) + '.mif'
 
     if level < len(nl_scales) - 1:
-      if nl_scales[level] < nl_scales[level + 1]:
-        upsample_factor = nl_scales[level + 1] / nl_scales[level]
+      if scale < nl_scales[level + 1]:
+        upsample_factor = nl_scales[level + 1] / scale
         for i in inputs:
           run.command('mrresize ' + os.path.join('warps_%i' % level, '%s.mif' % i.prefix) + ' -scale %f tmp.mif' % upsample_factor)
           run.function(move, 'tmp.mif', os.path.join('warps_' + str(level), '%s.mif' % i.prefix))
