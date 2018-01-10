@@ -1,18 +1,19 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
-#include "app.h"
+#include "signal_handler.h"
 #include "file/utils.h"
 #include "file/path.h"
 #include "header.h"
@@ -39,7 +40,7 @@ namespace MR
       if (H.name().empty())
         throw Exception ("no filename supplied to standard input (broken pipe?)");
 
-      App::signal_handler += H.name();
+      SignalHandler::mark_file_for_deletion (H.name());
 
       if (!Path::has_suffix (H.name(), ".mif"))
         throw Exception ("MRtrix only supports the .mif format for command-line piping");
@@ -60,7 +61,7 @@ namespace MR
 
       H.name() = File::create_tempfile (0, "mif");
 
-      App::signal_handler += H.name();
+      SignalHandler::mark_file_for_deletion (H.name());
 
       return mrtrix_handler.check (H, num_axes);
     }

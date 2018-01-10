@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -45,8 +46,7 @@ void usage ()
   DESCRIPTION
     + "In previous versions of MRtrix, the convention used for storing spherical harmonic "
       "coefficients was a non-orthonormal basis (the m!=0 coefficients were a factor of "
-      "sqrt(2) too large). This error has been rectified in the new MRtrix (assuming that "
-      "compilation was performed without the USE_NON_ORTHONORMAL_SH_BASIS symbol defined), "
+      "sqrt(2) too large). This error has been rectified in newer versions of MRtrix, "
       "but will cause issues if processing SH data that was generated using an older version "
       "of MRtrix (or vice-versa)."
 
@@ -128,7 +128,7 @@ void check_and_update (Header& H, const conv_t conversion)
   }
 
   // Get sums independently for each l
- 
+
   // Each order has a different power, and a different number of m!=0 volumes.
   // Therefore, calculate the mean-square intensity for the m==0 and m!=0
   // volumes independently, and report ratio for each harmonic order
@@ -305,13 +305,7 @@ void run ()
     switch (int(opt[0][0])) {
       case 0: conversion = OLD; break;
       case 1: conversion = NEW; break;
-      case 2:
-#ifndef USE_NON_ORTHONORMAL_SH_BASIS
-        conversion = NEW;
-#else
-        conversion = OLD;
-#endif
-        break;
+      case 2: conversion = NEW; break;
       case 3: conversion = FORCE_OLDTONEW; break;
       case 4: conversion = FORCE_NEWTOOLD; break;
       default: assert (0); break;

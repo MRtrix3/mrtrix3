@@ -24,18 +24,18 @@ def getInputs(): #pylint: disable=unused-variable
   image.check3DNonunity(path.fromUser(app.args.input, False))
   run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('input.mif', True))
   if app.args.mask:
-    run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit -stride -1,+2,+3')
+    run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit -strides -1,+2,+3')
   if app.args.t2:
     if not image.match(app.args.input, app.args.t2):
       app.error('Provided T2 image does not match input T1 image')
-    run.command('mrconvert ' + path.fromUser(app.args.t2, True) + ' ' + path.toTemp('T2.nii', True) + ' -stride -1,+2,+3')
+    run.command('mrconvert ' + path.fromUser(app.args.t2, True) + ' ' + path.toTemp('T2.nii', True) + ' -strides -1,+2,+3')
 
 
 
 
 def execute(): #pylint: disable=unused-variable
-  import os
-  from mrtrix3 import app, file, fsl, image, path, run #pylint: disable=redefined-builtin
+  import math, os
+  from mrtrix3 import app, fsl, image, run
 
   if app.isWindows():
     app.error('\'fsl\' algorithm of 5ttgen script cannot be run on Windows: FSL not available on Windows')
@@ -59,7 +59,16 @@ def execute(): #pylint: disable=unused-variable
   if app.args.sgm_amyg_hipp:
     sgm_structures.extend([ 'L_Amyg', 'R_Amyg', 'L_Hipp', 'R_Hipp' ])
 
-  run.command('mrconvert input.mif T1.nii -stride -1,+2,+3')
+  t1_spacing = image.Header('input.mif').spacing()
+  upsample_for_first = False
+  # If voxel size is 1.25mm or larger, make a guess that the user has erroneously re-gridded their data
+  if math.pow(t1_spacing[0] * t1_spacing[1] * t1_spacing[2], 1.0/3.0) > 1.225:
+    app.warn('Voxel size larger than expected for T1-weighted images (' + str(t1_spacing) + '); '
+             'note that ACT does not require re-gridding of T1 image to DWI space, and indeed '
+             'retaining the original higher resolution of the T1 image is preferable')
+    upsample_for_first = True
+
+  run.command('mrconvert input.mif T1.nii -strides -1,+2,+3')
 
   fast_t1_input = 'T1.nii'
   fast_t2_input = ''
@@ -75,8 +84,8 @@ def execute(): #pylint: disable=unused-variable
       mask_path = 'mask.mif'
     else:
       app.warn('Mask image does not match input image - re-gridding')
-      run.command('mrtransform mask.mif mask_regrid.mif -template T1.nii')
-      run.command('mrcalc T1.nii mask_regrid.mif ' + fast_t1_input)
+      run.command('mrtransform mask.mif mask_regrid.mif -template T1.nii -datatype bit')
+      run.command('mrcalc T1.nii mask_regrid.mif -mult ' + fast_t1_input)
       mask_path = 'mask_regrid.mif'
 
     if os.path.exists('T2.nii'):
@@ -134,38 +143,36 @@ def execute(): #pylint: disable=unused-variable
     run.command(fast_cmd + ' ' + fast_t1_input)
 
   # FIRST
-  first_input_is_brain_extracted = ''
+  first_input = 'T1.nii'
+  if upsample_for_first:
+    app.warn('Generating 1mm isotropic T1 image for FIRST in hope of preventing failure, since input image is of lower resolution')
+    run.command('mrresize T1.nii T1_1mm.nii -voxel 1.0 -interp sinc')
+    first_input = 'T1_1mm.nii'
+  first_input_brain_extracted_option = ''
   if app.args.premasked:
-    first_input_is_brain_extracted = ' -b'
-  run.command(first_cmd + ' -m none -s ' + ','.join(sgm_structures) + ' -i T1.nii -o first' + first_input_is_brain_extracted)
-
-  # Test to see whether or not FIRST has succeeded
-  # However if the expected image is absent, it may be due to FIRST being run
-  #   on SGE; in this case it is necessary to wait and see if the file appears.
-  #   But even in this case, FIRST may still fail, and the file will never appear...
-  combined_image_path = 'first_all_none_firstseg' + fsl_suffix
-  if not os.path.isfile(combined_image_path):
-    if 'SGE_ROOT' in os.environ:
-      app.console('FSL FIRST job has been submitted to SGE; awaiting completion')
-      app.console('(note however that FIRST may fail silently, and hence this script may hang indefinitely)')
-      file.waitFor(combined_image_path)
-    else:
-      combined_image_path = fsl.findImage('first_all_none_firstseg')
-      if not os.path.isfile(combined_image_path):
-        app.error('FSL FIRST has failed; not all structures were segmented successfully (check ' + \
-                  path.toTemp('first.logs', False) + ')')
+    first_input_brain_extracted_option = ' -b'
+  first_debug_option = ''
+  if not app.cleanup:
+    first_debug_option = ' -d'
+  first_verbosity_option = ''
+  if app.verbosity == 3:
+    first_verbosity_option = ' -v'
+  run.command(first_cmd + ' -m none -s ' + ','.join(sgm_structures) + ' -i ' + first_input + ' -o first' + first_input_brain_extracted_option + first_debug_option + first_verbosity_option)
+  fsl.checkFirst('first', sgm_structures)
 
   # Convert FIRST meshes to partial volume images
   pve_image_list = [ ]
+  progress = app.progressBar('Generating partial volume images for SGM structures', len(sgm_structures))
   for struct in sgm_structures:
-    pve_image_path = 'mesh2pve_' + struct + '.mif'
+    pve_image_path = 'mesh2voxel_' + struct + '.mif'
     vtk_in_path = 'first-' + struct + '_first.vtk'
     vtk_temp_path = struct + '.vtk'
-    run.command('meshconvert ' + vtk_in_path + ' ' + vtk_temp_path + ' -transform first2real T1.nii')
-    run.command('mesh2pve ' + vtk_temp_path + ' ' + fast_t1_input + ' ' + pve_image_path)
+    run.command('meshconvert ' + vtk_in_path + ' ' + vtk_temp_path + ' -transform first2real ' + first_input)
+    run.command('mesh2voxel ' + vtk_temp_path + ' ' + fast_t1_input + ' ' + pve_image_path)
     pve_image_list.append(pve_image_path)
-  pve_cat = ' '.join(pve_image_list)
-  run.command('mrmath ' + pve_cat + ' sum - | mrcalc - 1.0 -min all_sgms.mif')
+    progress.increment()
+  progress.done()
+  run.command('mrmath ' + ' '.join(pve_image_list) + ' sum - | mrcalc - 1.0 -min all_sgms.mif')
 
   # Combine the tissue images into the 5TT format within the script itself
   fast_output_prefix = fast_t1_input.split('.')[0]
@@ -185,7 +192,7 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrcalc ' + fast_gm_output + ' multiplier_noNAN.mif -mult remove_unconnected_wm_mask.mif -mult cgm.mif')
   run.command('mrcalc ' + fast_wm_output + ' multiplier_noNAN.mif -mult remove_unconnected_wm_mask.mif -mult wm.mif')
   run.command('mrcalc 0 wm.mif -min path.mif')
-  run.command('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | mrconvert - combined_precrop.mif -stride +2,+3,+4,+1')
+  run.command('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | mrconvert - combined_precrop.mif -strides +2,+3,+4,+1')
 
   # Use mrcrop to reduce file size (improves caching of image data during tracking)
   if app.args.nocrop:

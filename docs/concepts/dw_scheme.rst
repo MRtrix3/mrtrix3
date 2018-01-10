@@ -296,7 +296,7 @@ These include:
   entries in the DW gradient table;
 - where relevant, verifying that the DW gradient tables contains the data in a
   shell structure, by clustering similar *b*-values together (see :ref:`mrinfo`'s
-  ``-shell`` and ``-shellcount`` options);
+  ``-shell_bvalues`` and ``-shell_sizes`` options);
 - normalising the gradient vectors to unit amplitude;
 - scaling the *b*-values by the square of the gradient vector amplitude - see
   `b-value scaling`_ for details. 
@@ -346,6 +346,12 @@ introduce minor variations in the *b*-values for other datasets, due to minor
 rounding errors in the components of the direction vectors. These are benign,
 and have no consequence on the correct operation of *MRtrix3* applications,
 since the deviations are typically very small, and the strategy used to group
-*b*-values into shells is robust to such variations. If however this becomes a
-problem (e.g. for third-party applications), this feature can be disabled
-using the ``-bvalue_scaling`` option for those applications that support it.
+*b*-values into shells is robust to such variations. Alternatively, if the
+provided diffusion gradient table is malformed, and contains the correct
+*b*-values but non-unity-norm directions, this scaling will result in a
+reported diffusion gradient table that contains *b*-values other than those
+expected.
+
+If this scaling becomes a problem (e.g. for third-party applications), this
+feature can be disabled using the ``-bvalue_scaling`` option for those
+applications that support it.

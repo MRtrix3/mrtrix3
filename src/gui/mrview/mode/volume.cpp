@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -372,17 +373,17 @@ namespace MR
             volume_VI.bind (gl::ELEMENT_ARRAY_BUFFER);
 
             gl::EnableVertexAttribArray (0);
-            gl::VertexAttribPointer (0, 3, gl::BYTE, gl::FALSE_, 0, (void*)0);
+            gl::VertexAttribPointer (0, 3, gl::BYTE, gl::FALSE_, 4*sizeof(GLbyte), GL::offset<GLbyte>(0));
 
             GLbyte vertices[] = {
-              0, 0, 0,
-              0, 0, 1,
-              0, 1, 0,
-              0, 1, 1,
-              1, 0, 0,
-              1, 0, 1,
-              1, 1, 0,
-              1, 1, 1
+              0, 0, 0, 0,
+              0, 0, 1, 0,
+              0, 1, 0, 0,
+              0, 1, 1, 0,
+              1, 0, 0, 0,
+              1, 0, 1, 0,
+              1, 1, 0, 0,
+              1, 1, 1, 0
             };
             gl::BufferData (gl::ARRAY_BUFFER, sizeof(vertices), vertices, gl::STATIC_DRAW);
           }
@@ -507,7 +508,7 @@ namespace MR
           gl::ActiveTexture (gl::TEXTURE0);
 
           const GLsizei counts[] = { 4, 4, 4 };
-          const GLvoid* starts[] = { reinterpret_cast<void*>(0), reinterpret_cast<void*>(4*sizeof(GLubyte)), reinterpret_cast<void*>(8*sizeof(GLubyte)) };
+          const GLvoid* starts[] = { GL::offset<GLubyte>(0), GL::offset<GLubyte>(4), GL::offset<GLubyte>(8) };
 
           GL_CHECK_ERROR;
           gl::MultiDrawElements (gl::TRIANGLE_FAN, counts, gl::UNSIGNED_BYTE, starts, 3);
