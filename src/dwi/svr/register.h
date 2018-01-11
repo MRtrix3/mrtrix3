@@ -24,6 +24,8 @@
 #include "transform.h"
 #include "interp/linear.h"
 
+#include "dwi/svr/psf.h"
+
 
 namespace MR
 {
@@ -64,9 +66,10 @@ namespace MR
       public:
       
         SliceRegistrationFunctor(const Image<Scalar>& target, const Image<Scalar>& moving, 
-                                 const Image<bool>& mask, const size_t mb, const size_t v, const size_t e)
+                                 const Image<bool>& mask, const size_t mb, const SSP<float>& ssp,
+                                 const size_t v, const size_t e)
           : m (0), nexc ((mb) ? target.size(2)/mb : 1), vol (v), exc (e), T0 (target),
-            mask (mask), target (target),
+            ssp (ssp), mask (mask), target (target),
             moving (moving, 0.0f), Dmoving (moving, 0.0f)
         {
           DEBUG("Constructing LM registration functor.");
@@ -84,9 +87,13 @@ namespace MR
           for (target.index(2) = exc; target.index(2) < target.size(2); target.index(2) += nexc) {
             for (auto l = Loop(0,2)(target); l; l++) {
               if (!isInMask()) continue;
-              trans = T1 * getScanPos();
-              moving.scanner(trans);
-              fvec[i] = target.value() - moving.value();
+              Scalar val = 0.0;
+              for (int s = -ssp.size(); s <= ssp.size(); s++) {
+                trans = T1 * getScanPos(s);
+                moving.scanner(trans);
+                val += ssp(s) * moving.value();
+              }
+              fvec[i] = target.value() - val;
               i++;
             }
           }
@@ -110,11 +117,15 @@ namespace MR
             for (auto l = Loop(0,2)(target); l; l++) {
               if (!isInMask()) continue;
               trans = T1 * getScanPos();
-              Dmoving.scanner(trans);
-              grad = Dmoving.gradient_wrt_scanner().template cast<Scalar>();
               J(2,4) = trans[0]; J(1,5) = -trans[0];
               J(0,5) = trans[1]; J(2,3) = -trans[1];
               J(1,3) = trans[2]; J(0,4) = -trans[2];
+              grad.setZero();
+              for (int s = -ssp.size(); s <= ssp.size(); s++) {
+                trans = T1 * getScanPos(s);
+                Dmoving.scanner(trans);
+                grad += ssp(s) * Dmoving.gradient_wrt_scanner().template cast<Scalar>();
+              }
               fjac.row(i) = 2.0f * grad * J;
               i++;
             }
@@ -128,6 +139,7 @@ namespace MR
       private:
         size_t m, nexc, vol, exc;
         Transform T0;
+        const SSP<float> ssp;
         Image<bool> mask;
         Image<Scalar> target;
         Interp::LinearInterp<Image<Scalar>, Interp::LinearInterpProcessingType::Value> moving;
@@ -154,9 +166,10 @@ namespace MR
           }
         }
         
-        inline Eigen::Vector3f getScanPos() {
+        inline Eigen::Vector3f getScanPos(const int zoff = 0) {
           Eigen::Vector3f vox, scan;
           assign_pos_of(target).to(vox);
+          vox[2] += zoff;
           scan = T0.voxel2scanner.template cast<Scalar>() * vox;
           return scan;
         }
@@ -236,9 +249,10 @@ namespace MR
       {  MEMALIGN(SliceAlignPipe);
       public:
         SliceAlignPipe(const Image<float>& data, const Image<float>& mssh, const Image<bool>& mask,
-                       const size_t mb, const size_t maxiter)
+                       const size_t mb, const size_t maxiter, const SSP<float>& ssp)
           : data (data), mssh (mssh), mask(mask), mb (mb), 
-            maxiter (maxiter), lmax (Math::SH::LforN(mssh.size(4)))
+            maxiter (maxiter), lmax (Math::SH::LforN(mssh.size(4))),
+            ssp (ssp)
         { }
       
         bool operator() (const SliceIdx& slice, SliceIdx& out)
@@ -259,7 +273,7 @@ namespace MR
               pred.value() += delta[j] * mssh.value();
           }
           // register prediction to data
-          SliceRegistrationFunctor func (data, pred, mask, mb, slice.vol, slice.exc);
+          SliceRegistrationFunctor func (data, pred, mask, mb, ssp, slice.vol, slice.exc);
           Eigen::LevenbergMarquardt<SliceRegistrationFunctor> lm (func);
           if (maxiter > 0)
             lm.setMaxfev(maxiter);
@@ -276,6 +290,7 @@ namespace MR
         Image<bool> mask;
         const size_t mb, maxiter;
         const int lmax;
+        const SSP<float> ssp;
       
       };
 
