@@ -78,13 +78,13 @@ namespace MR
 
       // Custom API:
       ReconMatrix(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad,
-                  const int lmax, const vector<Eigen::MatrixXf>& rf, const float sspw, const float reg)
+                  const int lmax, const vector<Eigen::MatrixXf>& rf, const SSP<float,2>& ssp, const float reg)
         : lmax (lmax),
           nx (in.size(0)), ny (in.size(1)), nz (in.size(2)), nv (in.size(3)),
           nxy (nx*ny), nc (get_ncoefs(rf)), ne (rigid.rows() / nv),
           T0 (in),  // Preserve original resolution.
           shellbasis (init_shellbasis(grad, rf)),
-          ssp (sspw),
+          ssp (ssp),
           motion (rigid)
       {
         INFO("Multiband factor " + str(nz/ne) + " detected.");
@@ -320,7 +320,7 @@ namespace MR
           ps[1] = y;
           for (size_t x = 0; x < nx; x++, i++) {
             ps[0] = x;
-            for (int s = -2; s <= 2; s++) {       // ssp neighbourhood
+            for (int s = -ssp.size(); s <= ssp.size(); s++) {       // ssp neighbourhood
               ps[2] = z+s;
               // get slice position in recon space
               ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac);
@@ -354,7 +354,7 @@ namespace MR
           ps[1] = y;
           for (size_t x = 0; x < nx; x++, i++) {
             ps[0] = x;
-            for (int s = -2; s <= 2; s++) {       // ssp neighbourhood
+            for (int s = -ssp.size(); s <= ssp.size(); s++) {       // ssp neighbourhood
               ps[2] = z+s;
               // get slice position in recon space
               ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac);
@@ -391,7 +391,7 @@ namespace MR
           for (size_t x = 0; x < nx; x++) {
             ps[0] = x;
             t = 0.0f;
-            for (int s = -2; s <= 2; s++) {       // ssp neighbourhood
+            for (int s = -ssp.size(); s <= ssp.size(); s++) {       // ssp neighbourhood
               ps[2] = z+s;
               // get slice position in recon space
               ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac[2+s]);

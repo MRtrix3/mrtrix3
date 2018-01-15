@@ -44,6 +44,7 @@ options.add_argument('-svr', help='Number of slice-to-volume reconstruction epoc
 options.add_argument('-mb', help='Multiband factor (default = 1)')
 #options.add_argument('-sorder', help='Slice order (default = 2,1, for odd-even)')
 options.add_argument('-sspwidth', help='Slice thickness for Gaussian SSP (default = 1)')
+options.add_argument('-sspfile', help='Slice sensitivity profile as vector')
 options.add_argument('-or_loss', help='Outlier rejection loss function (default = softl1)')
 options.add_argument('-fieldmap', help='B0 field map for distortion correction')
 options.add_argument('-fieldidx', help='Index of volume to which field map is aligned (default = 0)')
@@ -143,8 +144,10 @@ if len(rlmax) > len(lmax) or max(rlmax) > max(lmax):
 recon_option = '-maxiter 3'
 if app.args.reg:
     recon_option += ' -reg ' + app.args.reg
-if app.args.sspwidth:
-    recon_option += ' -sspwidth ' + app.args.sspwidth
+if app.args.sspfile:
+    recon_option += ' -ssp ' + path.fromUser(app.args.sspfile, True)
+elif app.args.sspwidth:
+    recon_option += ' -ssp ' + app.args.sspwidth
 #if app.args.fieldmap:
 #    recon_option += ' -field field1.mif'
 
