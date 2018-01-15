@@ -128,20 +128,29 @@ namespace MR
 
 
     /**
-     *  1-D Gaussian Slice Sensitivity Profile.
+     *  1-D Slice Sensitivity Profile.
      */
     template <typename T = float, int n = 2>
     struct SSP
     {
     public:
 
-        SSP (T fwhm = 1)
+        SSP (const T fwhm = 1)
         {
             T tau = scale/fwhm;
             tau *= -tau/2;
             for (int z = -n; z <= n; z++) {
                 values[n+z] = gaussian(T(z), tau);
             }
+            normalise_values();
+        }
+
+        template<typename VectorType>
+        SSP (const VectorType& vec)
+        {
+            assert (vec.size() == values.size());
+            for (size_t i = 0; i < values.size(); i++)
+                values[i] = vec[i];
             normalise_values();
         }
      
@@ -158,7 +167,7 @@ namespace MR
 
     private:
         std::array<T,2*n+1> values;
-        const T scale = 2.35482;     // 2.sqrt(2.ln(2));
+        static constexpr T scale = 2.35482;     // 2.sqrt(2.ln(2));
                 
         inline T gaussian (T x, T tau) const
         {
