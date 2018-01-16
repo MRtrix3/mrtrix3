@@ -20,6 +20,8 @@
 #include "dwi/svr/register.h"
 #include "dwi/svr/psf.h"
 
+#define DEFAULT_SSPW 1.0f
+
 
 using namespace MR;
 using namespace App;
@@ -49,8 +51,8 @@ void usage ()
   + Option ("mb", "multiband factor. (default = 0; v2v registration)")
     + Argument ("factor").type_integer(0)
 
-  + Option ("sspwidth", "SSP width in voxel units (default = 1).")
-    + Argument ("w").type_float(0.0)
+  + Option ("ssp", "SSP vector or slice thickness in voxel units (default = 1).")
+    + Argument ("w").type_text()
 
   + Option ("init", "motion initialisation")
     + Argument ("motion").type_file_in()
@@ -99,8 +101,21 @@ void run ()
   }
 
   // SSP
-  float sspw = get_option_value("sspwidth", 1.0f);
-  DWI::SSP<float> ssp (sspw);
+  DWI::SSP<float> ssp (DEFAULT_SSPW);
+  opt = get_options("ssp");
+  if (opt.size()) {
+    std::string t = opt[0][0];
+    try {
+      ssp = DWI::SSP<float>(std::stof(t));
+    } catch (std::invalid_argument& e) {
+      try {
+        Eigen::VectorXf v = load_vector<float>(t);
+        ssp = DWI::SSP<float>(v);
+      } catch (...) {
+        throw Exception ("Invalid argument for SSP.");
+      }
+    }
+  }
 
   // settings and initialisation
   size_t niter = get_option_value("maxiter", 0);

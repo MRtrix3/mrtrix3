@@ -22,7 +22,7 @@
 #include "types.h"
 #include "image.h"
 #include "transform.h"
-#include "interp/linear.h"
+#include "interp/cubic.h"
 
 #include "dwi/svr/psf.h"
 
@@ -142,8 +142,10 @@ namespace MR
         const SSP<float> ssp;
         Image<bool> mask;
         Image<Scalar> target;
-        Interp::LinearInterp<Image<Scalar>, Interp::LinearInterpProcessingType::Value> moving;
-        Interp::LinearInterp<Image<Scalar>, Interp::LinearInterpProcessingType::Derivative> Dmoving;
+        Interp::SplineInterp<Image<Scalar>, Math::HermiteSpline<Scalar>, Math::SplineProcessingType::Value> moving;
+        Interp::SplineInterp<Image<Scalar>, Math::HermiteSpline<Scalar>, Math::SplineProcessingType::Derivative> Dmoving;
+        //Interp::LinearInterp<Image<Scalar>, Interp::LinearInterpProcessingType::Value> moving;
+        //Interp::LinearInterp<Image<Scalar>, Interp::LinearInterpProcessingType::Derivative> Dmoving;
         
         inline size_t calcMaskSize()
         {

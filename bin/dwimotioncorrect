@@ -144,12 +144,16 @@ if len(rlmax) > len(lmax) or max(rlmax) > max(lmax):
 recon_option = '-maxiter 3'
 if app.args.reg:
     recon_option += ' -reg ' + app.args.reg
-if app.args.sspfile:
-    recon_option += ' -ssp ' + path.fromUser(app.args.sspfile, True)
-elif app.args.sspwidth:
-    recon_option += ' -ssp ' + app.args.sspwidth
 #if app.args.fieldmap:
 #    recon_option += ' -field field1.mif'
+
+# SSP option
+ssp_option = ''
+if app.args.sspfile:
+    run.command('cp ' + path.fromUser(app.args.sspfile, True) + ' ssp.txt')
+    ssp_option = ' -ssp ssp.txt'
+elif app.args.sspwidth:
+    ssp_option = ' -ssp ' + app.args.sspwidth
 
 
 # Initialise radial basis with RF per shell.
@@ -204,7 +208,7 @@ with open('svdweights.txt', 'w') as f:
 #   __________ Function definitions __________
 
 def reconstep(k):
-    run.command('dwirecon in1.mif recon-' + str(k) + '.mif -spred spred.mif ' + recon_option + ' -rf ' + ' -rf '.join(rfs) +
+    run.command('dwirecon in1.mif recon-' + str(k) + '.mif -spred spred.mif ' + recon_option + ssp_option + ' -rf ' + ' -rf '.join(rfs) +
             ('' if k==0 else ' -motion motion.txt -weights sliceweights.txt -init recon-' + str(k-1) + '.mif') + ' -force' + nthr)
 
 
@@ -227,7 +231,7 @@ def rankreduxstep(k):
 def registrationstep(k):
     run.command('dwislicealign in1.mif rankredux.mif motion.txt -mask mask.mif -maxiter 3' +
                 ' -mb ' + ('0' if k<v2viter else str(mb)) + (' -init motion.txt' if k>0 else '') +
-                (' -sspwidth ' + app.args.sspwidth if app.args.sspwidth else '') + ' -force' + nthr)
+                ssp_option + ' -force' + nthr)
 
 
 def fieldalignstep(k):
