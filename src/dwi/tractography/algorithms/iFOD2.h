@@ -195,7 +195,7 @@ namespace MR
 
 
 
-            bool init()
+            bool init() override
             {
               if (!get_data (source))
                 return false;
@@ -230,7 +230,7 @@ end_init:
 
 
 
-            term_t next ()
+            term_t next () override
             {
 
               if (++sample_idx < S.num_samples) {
@@ -282,7 +282,7 @@ end_init:
             }
 
 
-            FORCE_INLINE float get_metric()
+            float get_metric() override
             {
               return FOD (dir);
             }
@@ -297,7 +297,7 @@ end_init:
             }
 
 
-            void truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step)
+            void truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step) override
             {
               // OK, if we know length_to_revert_from, we can reconstruct what sample_idx was at that point
               size_t sample_idx_at_full_length = (length_to_revert_from - tck.get_seed_index()) % S.num_samples;
@@ -328,7 +328,8 @@ end_init:
               sample_idx = S.num_samples;
 
               // Need to update sgm_depth appropriately, remembering that it is tracked by exec
-              act().sgm_depth = (act().sgm_depth > points_to_remove) ? act().sgm_depth - points_to_remove : 0;
+              if (S.is_act())
+                act().sgm_depth = (act().sgm_depth > points_to_remove) ? act().sgm_depth - points_to_remove : 0;
             }
 
 

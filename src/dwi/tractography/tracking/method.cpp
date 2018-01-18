@@ -28,23 +28,6 @@ namespace MR
 
 
 
-        bool MethodBase::check_seed()
-        {
-          if (!pos.allFinite())
-            return false;
-
-          if ((S.properties.mask.size() && !S.properties.mask.contains (pos))
-              || (S.properties.exclude.contains (pos))
-              || (S.is_act() && !act().check_seed (pos))) {
-            pos = { NaN, NaN, NaN };
-            return false;
-          }
-
-          return true;
-        }
-
-
-
         void MethodBase::truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step)
         {
           if (tck.get_seed_index() + revert_step >= length_to_revert_from) {
@@ -60,8 +43,25 @@ namespace MR
             dir = (tck[new_size] - tck[new_size - 2]).normalized();
           tck.resize (length_to_revert_from - revert_step);
           pos = tck.back();
-          if (S.is_act())
+          if (act_method_additions)
             act().sgm_depth = (act().sgm_depth > revert_step) ? act().sgm_depth - revert_step : 0;
+        }
+
+
+
+        bool MethodBase::check_seed()
+        {
+          if (!pos.allFinite())
+            return false;
+
+          if ((S.properties.mask.size() && !S.properties.mask.contains (pos))
+              || (S.properties.exclude.contains (pos))
+              || (S.is_act() && !act().check_seed (pos))) {
+            pos = { NaN, NaN, NaN };
+            return false;
+          }
+
+          return true;
         }
 
 
