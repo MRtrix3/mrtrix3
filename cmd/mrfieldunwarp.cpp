@@ -21,6 +21,8 @@
 #include "interp/linear.h"
 #include "interp/cubic.h"
 
+#include "dwi/svr/param.h"
+
 
 using namespace MR;
 using namespace App;
@@ -106,20 +108,9 @@ class FieldUnwarp {
     transform_type Tf;
     size_t nv, nz, ne;
 
-    inline Eigen::Matrix3d get_rotation(const double a1, const double a2, const double a3) const
-    {
-      Eigen::Matrix3d m;
-      m = Eigen::AngleAxisd(a1, Eigen::Vector3d::UnitZ())
-        * Eigen::AngleAxisd(a2, Eigen::Vector3d::UnitY())
-        * Eigen::AngleAxisd(a3, Eigen::Vector3d::UnitX());
-      return m;
-    }
-
     inline transform_type get_transform(const Eigen::VectorXd& p) const
     {
-      transform_type T;
-      T.translation() = Eigen::Vector3d(p[0], p[1], p[2]);
-      T.linear() = get_rotation(p[3], p[4], p[5]);
+      transform_type T (DWI::SVR::se3exp(p).cast<double>());
       return T;
     }
 

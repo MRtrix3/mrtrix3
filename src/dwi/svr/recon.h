@@ -24,9 +24,11 @@
 #include "transform.h"
 #include "math/SH.h"
 #include "dwi/shells.h"
-#include "dwi/svr/psf.h"
 #include "parallel_for.h"
 #include "interp/linear.h"
+
+#include "dwi/svr/param.h"
+#include "dwi/svr/psf.h"
 
 
 namespace MR {
@@ -230,7 +232,7 @@ namespace MR
           vec = {grad(v, 0), grad(v, 1), grad(v, 2)};
           for (size_t e = 0; e < ne; e++) {
             // rotate vector with motion parameters
-            rot = get_rotation(motion(v*ne+e,3), motion(v*ne+e,4), motion(v*ne+e,5));
+            rot = get_rotation(motion.row(v*ne+e));
             // evaluate basis functions
             Math::SH::delta(delta, rot*vec, lmax);
             Y.row(v*ne+e) = shellbasis[idx[v]]*delta;
@@ -240,20 +242,15 @@ namespace MR
 
       }
 
-      inline Eigen::Matrix3f get_rotation(const float a1, const float a2, const float a3) const
+      inline Eigen::Matrix3f get_rotation(const Eigen::VectorXf& p) const
       {
-        Eigen::Matrix3f m;
-        m = Eigen::AngleAxisf(a1, Eigen::Vector3f::UnitZ())
-          * Eigen::AngleAxisf(a2, Eigen::Vector3f::UnitY())
-          * Eigen::AngleAxisf(a3, Eigen::Vector3f::UnitX());
+        Eigen::Matrix3f m = se3exp(p).topLeftCorner<3,3>();
         return m;
       }
 
       inline transform_type get_transform(const Eigen::VectorXf& p) const
       {
-        transform_type T;
-        T.translation() = Eigen::Vector3d( double(p[0]), double(p[1]), double(p[2]) );
-        T.linear() = get_rotation(p[3], p[4], p[5]).template cast<double>();
+        transform_type T (se3exp(p).cast<double>());
         return T;
       }
 

@@ -50,9 +50,8 @@ void usage ()
 
   OPTIONS
   + Option ("motion", "The motion parameters associated with input slices or volumes. "
-                      "These are supplied as a matrix of 6 columns that encode respectively "
-                      "the x-y-z translation and Z-Y-X rotation Euler angles for each volume "
-                      "or slice in the image. All transformations are w.r.t. scanner space." )
+                      "These are supplied as a matrix of 6 columns encoding the rigid "
+                      "transformations w.r.t. scanner space in se(3) Lie algebra." )
     + Argument ("file").type_file_in()
 
   + Option ("rf", "Basis functions for the radial (multi-shell) domain, provided as matrices in which "
