@@ -4,7 +4,6 @@ import argparse
 import math
 import numpy as np
 from scipy.linalg import logm, expm
-from scipy.signal import medfilt
 
 
 def getsliceorder(n, p=2, s=1):
@@ -46,23 +45,16 @@ def tr2euler(T):
     return np.array([T[0,3], T[1,3], T[2,3], yaw, pitch, roll])
 
 
-def filtermotion(M, extent=1):
-    kernel = (extent, 1)
-    return medfilt(M, kernel)
-
-
 
 if __name__ == '__main__':
     # arguments
     parser = argparse.ArgumentParser(description='Filtering a series of rigid motion parameters.')
-    parser.add_argument('prefix', type=str, help='transformation file name prefix')
-    parser.add_argument('vols', type=int, help='no. volumes')
-    parser.add_argument('slices', type=int, help='no. slices')
-    parser.add_argument('out', type=str, help='output motion file')
-    parser.add_argument('-mb', type=int, default=1, help='multiband factor')
+    parser.add_argument('input', type=str, help='input motion file')
+    parser.add_argument('weights', type=str, help='input weight matrix')
+    parser.add_argument('output', type=str, help='output motion file')
+    #parser.add_argument('-mb', type=int, default=1, help='multiband factor')
     parser.add_argument('-packs', type=int, default=2, help='no. slice packs')
     parser.add_argument('-shift', type=int, default=1, help='slice shift')
-    parser.add_argument('-extent', type=int, default=1, help='median filter window extent')
     # mandatory MRtrix options (unused)
     parser.add_argument('-nthreads', type=int, default=1, help='no. threads (unused)')
     parser.add_argument('-info', help='(unused)')
@@ -70,30 +62,24 @@ if __name__ == '__main__':
     parser.add_argument('-quiet', help='(unused)')
     parser.add_argument('-force', help='(unused)')
     args = parser.parse_args()
+    # read inputs
+    M = np.loadtxt(args.input)
+    W = np.loadtxt(args.weights)
     # set up slice order
-    nv, nz, mb = args.vols, args.slices, args.mb
-    assert(nz%mb==0)
-    ne = nz//mb
+    nv = W.shape[1]
+    ne = M.shape[0]//nv
     sliceorder = getsliceorder(ne, args.packs, args.shift)
-    # import and filter motion
-    if nz > 0:
-        M0 = np.array([tr2lie(np.loadtxt(args.prefix + '-' + str(v) + '-' + str(z) + '.txt')) for v in range(nv) for z in sliceorder])
-    else:
-        M0 = np.array([tr2lie(np.loadtxt(args.prefix + '-' + str(v) + '.txt')) for v in range(nv)])
-    Mf = filtermotion(M0, args.extent)
-    # output
-    if nz > 0:
-        M1 = np.zeros((nv*ne, 6))
-        for m, (v,z) in zip(Mf, [(v,z) for v in range(nv) for z in sliceorder]):
-            T = lie2tr(m)
-            np.savetxt(args.prefix + '-' + str(v) + '-' + str(z) + '.txt', T, fmt='%.6f')
-            M1[v*ne+z,:] = tr2euler(T)
-    else:
-        M1 = np.zeros((nv, 6))
-        for m, v in zip(Mf, range(nv)):
-            T = lie2tr(m)
-            np.savetxt(args.prefix + '-' + str(v) + '.txt', T, fmt='%.6f')
-            M1[v,:] = tr2euler(T)
-    np.savetxt(args.out, M1, fmt='%.6f')
+    isliceorder = np.argsort(sliceorder)
+    # reorder
+    M1 = np.reshape(M.reshape((nv,ne,6))[:,sliceorder,:], (-1,6))
+    W1 = np.reshape(np.mean(W.reshape((-1, ne, nv)), axis=0)[sliceorder,:], (-1,1))
+    # filter: t'_i = w * t_i + (1-w) * (t'_(i-1) + t'_(i+1)) / 2
+    A = np.eye(nv*ne) - 0.5 * (1.-W1) * (np.eye(nv*ne, k=1) + np.eye(nv*ne, k=-1))
+    A[0,1] = W1[0] - 1
+    A[-1,-2] = W1[-1] - 1
+    M2 = np.linalg.solve(A, W1 * M1)
+    # reorder outtput
+    M3 = np.reshape(M2.reshape((nv,ne,6))[:,isliceorder,:], (-1,6))
+    np.savetxt(args.output, M3, fmt='%.6f')
 
 

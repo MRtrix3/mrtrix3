@@ -42,7 +42,7 @@ options.add_argument('-reg', help='Regularization for dwirecon (default = 0.01)'
 #options.add_argument('-rf', help='Basis functions for the radial domain')
 options.add_argument('-svr', help='Number of slice-to-volume reconstruction epochs (default = 0)')
 options.add_argument('-mb', help='Multiband factor (default = 1)')
-#options.add_argument('-sorder', help='Slice order (default = 2,1, for odd-even)')
+options.add_argument('-sorder', help='Slice order (default = 2,1, for odd-even)')
 options.add_argument('-sspwidth', help='Slice thickness for Gaussian SSP (default = 1)')
 options.add_argument('-sspfile', help='Slice sensitivity profile as vector')
 options.add_argument('-or_loss', help='Outlier rejection loss function (default = softl1)')
@@ -187,12 +187,10 @@ if app.args.or_loss:
     or_option += ' -loss ' + app.args.or_loss
 
 # Slice order
-#motfilt_option = ' -extent 1'
-#if mb > 1:
-#    motfilt_option += ' -mb ' + str(mb)
-#if app.args.sorder:
-#    p,s = app.args.sorder.split(',')
-#    motfilt_option += ' -packs ' + p + ' -shift ' + s
+motfilt_option = ''
+if app.args.sorder:
+    p,s = app.args.sorder.split(',')
+    motfilt_option += ' -packs ' + p + ' -shift ' + s
 
 
 # Image dimensions
@@ -229,9 +227,10 @@ def rankreduxstep(k):
 
 
 def registrationstep(k):
-    run.command('dwislicealign in1.mif rankredux.mif motion.txt -mask mask.mif -maxiter 3' +
+    run.command('dwislicealign in1.mif rankredux.mif motion1.txt -mask mask.mif -maxiter 3' +
                 ' -mb ' + ('0' if k<v2viter else str(mb)) + (' -init motion.txt' if k>0 else '') +
                 ssp_option + ' -force' + nthr)
+    run.command('motionfilter motion1.txt sliceweights.txt motion.txt' + motfilt_option)
 
 
 def fieldalignstep(k):
