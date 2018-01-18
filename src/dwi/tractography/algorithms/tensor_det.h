@@ -19,7 +19,7 @@
 // These lines are to silence deprecation warnings with Eigen & GCC v5
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#include <Eigen/Eigenvalues> 
+#include <Eigen/Eigenvalues>
 #pragma GCC diagnostic pop
 
 #include "math/least_squares.h"
@@ -89,12 +89,12 @@ namespace MR
         eig (3),
         M (3,3),
         dt (6) { }
-        
 
 
 
 
-      bool init()
+
+      bool init() override
       {
         if (!get_data (source))
           return false;
@@ -103,7 +103,7 @@ namespace MR
 
 
 
-      term_t next ()
+      term_t next () override
       {
         if (!get_data (source))
           return Tracking::EXIT_IMAGE;
@@ -111,7 +111,7 @@ namespace MR
       }
 
 
-      float get_metric()
+      float get_metric() override
       {
         dwi2tensor (dt, S.binv, values);
         return tensor2FA (dt);
