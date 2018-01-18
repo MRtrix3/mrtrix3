@@ -31,7 +31,9 @@
 
 namespace MR {
   namespace DWI {
-    class ReconMatrix;
+    namespace SVR {
+      class ReconMatrix;
+    }
   }
 }
 
@@ -40,7 +42,7 @@ namespace Eigen {
   namespace internal {
     // ReconMatrix inherits its traits from SparseMatrix
     template<>
-    struct traits<MR::DWI::ReconMatrix> : public Eigen::internal::traits<Eigen::SparseMatrix<float,Eigen::RowMajor> >
+    struct traits<MR::DWI::SVR::ReconMatrix> : public Eigen::internal::traits<Eigen::SparseMatrix<float,Eigen::RowMajor> >
     {};
   }
 }
@@ -50,6 +52,8 @@ namespace MR
 {
   namespace DWI
   {
+    namespace SVR
+    {
 
     class ReconMatrix : public Eigen::EigenBase<ReconMatrix>
     {  MEMALIGN(ReconMatrix);
@@ -490,6 +494,7 @@ namespace MR
     };
 
 
+    }
   }
 }
 
@@ -499,13 +504,13 @@ namespace Eigen {
   namespace internal {
 
     template<typename Rhs>
-    struct generic_product_impl<MR::DWI::ReconMatrix, Rhs, SparseShape, DenseShape, GemvProduct>
-      : generic_product_impl_base<MR::DWI::ReconMatrix,Rhs,generic_product_impl<MR::DWI::ReconMatrix,Rhs> >
+    struct generic_product_impl<MR::DWI::SVR::ReconMatrix, Rhs, SparseShape, DenseShape, GemvProduct>
+      : generic_product_impl_base<MR::DWI::SVR::ReconMatrix,Rhs,generic_product_impl<MR::DWI::SVR::ReconMatrix,Rhs> >
     {
-      typedef typename Product<MR::DWI::ReconMatrix,Rhs>::Scalar Scalar;
+      typedef typename Product<MR::DWI::SVR::ReconMatrix,Rhs>::Scalar Scalar;
 
       template<typename Dest>
-      static void scaleAndAddTo(Dest& dst, const MR::DWI::ReconMatrix& lhs, const Rhs& rhs, const Scalar& alpha)
+      static void scaleAndAddTo(Dest& dst, const MR::DWI::SVR::ReconMatrix& lhs, const Rhs& rhs, const Scalar& alpha)
       {
         // This method should implement "dst += alpha * lhs * rhs" inplace
         assert(alpha==Scalar(1) && "scaling is not implemented");

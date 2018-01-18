@@ -208,16 +208,16 @@ void run ()
   }
 
   // SSP
-  DWI::SSP<float> ssp (DEFAULT_SSPW);
+  DWI::SVR::SSP<float> ssp (DEFAULT_SSPW);
   opt = get_options("ssp");
   if (opt.size()) {
     std::string t = opt[0][0];
     try {
-      ssp = DWI::SSP<float>(std::stof(t));
+      ssp = DWI::SVR::SSP<float>(std::stof(t));
     } catch (std::invalid_argument& e) {
       try {
         Eigen::VectorXf v = load_vector<float>(t);
-        ssp = DWI::SSP<float>(v);
+        ssp = DWI::SVR::SSP<float>(v);
       } catch (...) {
         throw Exception ("Invalid argument for SSP.");
       }
@@ -238,7 +238,7 @@ void run ()
 
   // Set up scattered data matrix
   INFO("initialise reconstruction matrix");
-  DWI::ReconMatrix R (dwisub, motionsub, gradsub, lmax, rf, ssp, reg);
+  DWI::SVR::ReconMatrix R (dwisub, motionsub, gradsub, lmax, rf, ssp, reg);
   R.setWeights(Wsub);
   if (hasfield)
     R.setField(field, PEsub);
@@ -258,7 +258,7 @@ void run ()
   // Fit scattered data in basis...
   INFO("initialise conjugate gradient solver");
 
-  Eigen::ConjugateGradient<DWI::ReconMatrix, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
+  Eigen::ConjugateGradient<DWI::SVR::ReconMatrix, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
   cg.compute(R);
 
   cg.setTolerance(tol);

@@ -101,16 +101,16 @@ void run ()
   }
 
   // SSP
-  DWI::SSP<float> ssp (DEFAULT_SSPW);
+  DWI::SVR::SSP<float> ssp (DEFAULT_SSPW);
   opt = get_options("ssp");
   if (opt.size()) {
     std::string t = opt[0][0];
     try {
-      ssp = DWI::SSP<float>(std::stof(t));
+      ssp = DWI::SVR::SSP<float>(std::stof(t));
     } catch (std::invalid_argument& e) {
       try {
         Eigen::VectorXf v = load_vector<float>(t);
-        ssp = DWI::SSP<float>(v);
+        ssp = DWI::SVR::SSP<float>(v);
       } catch (...) {
         throw Exception ("Invalid argument for SSP.");
       }
