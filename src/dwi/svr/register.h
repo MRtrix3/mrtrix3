@@ -55,7 +55,10 @@ namespace MR
         {
           // get transformation matrix
           Eigen::Transform<Scalar, 3, Eigen::Affine> T1 (se3exp(x));
-          // interpolate and compute error
+          // initialise vectors
+          Eigen::VectorXf y (m);
+          Eigen::VectorXf f (m);
+          // interpolate
           Eigen::Vector3f trans;
           size_t i = 0;
           target.index(3) = vol;
@@ -68,10 +71,14 @@ namespace MR
                 moving.scanner(trans);
                 val += ssp(s) * moving.value();
               }
-              fvec[i] = target.value() - val;
+              y[i] = target.value();
+              f[i] = val;
               i++;
             }
           }
+          // compute error
+          scale = f.dot(y) / f.dot(f);
+          fvec = y - scale*f;
           return 0;
         }
         
@@ -101,7 +108,7 @@ namespace MR
                 Dmoving.scanner(trans);
                 grad += ssp(s) * Dmoving.gradient_wrt_scanner().template cast<Scalar>();
               }
-              fjac.row(i) = 2.0f * grad * J;
+              fjac.row(i) = 2.0f * scale * grad * J;
               i++;
             }
           }
@@ -121,7 +128,8 @@ namespace MR
         Interp::SplineInterp<Image<Scalar>, Math::HermiteSpline<Scalar>, Math::SplineProcessingType::Derivative> Dmoving;
         //Interp::LinearInterp<Image<Scalar>, Interp::LinearInterpProcessingType::Value> moving;
         //Interp::LinearInterp<Image<Scalar>, Interp::LinearInterpProcessingType::Derivative> Dmoving;
-        
+        float scale;
+
         inline size_t calcMaskSize()
         {
           if (!mask) return target.size(0)*target.size(1)*target.size(2)/nexc;
