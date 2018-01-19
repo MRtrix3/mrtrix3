@@ -94,7 +94,7 @@ namespace MR
              QLabel *dirs_label, *shell_label;
              QComboBox *dirs_selector, *shell_selector;
              QCheckBox *use_lighting_box, *hide_negative_values_box, *lock_to_grid_box, *main_grid_box;
-             QCheckBox *colour_by_direction_box, *interpolation_box;
+             QCheckBox *colour_by_direction_box, *interpolation_box, *colour_relative_to_projection_box;
              QColorButton *colour_button;
 
              AdjustButton *scale;
@@ -103,7 +103,7 @@ namespace MR
              GL::Lighting* lighting;
 
              int lmax;
-             
+
              void add_images (vector<std::string>& list, const odf_type_t mode);
 
              virtual void closeEvent (QCloseEvent* event) override;
