@@ -169,7 +169,7 @@ namespace MR
             T.noalias() += r * Y.row(idx);
           }, zero);
         Xo += L.adjoint() * (L * Xi);
-        Xo += 0.0001f * Xi;
+        //Xo += 0.0001f * Xi;
       }
 
 
@@ -465,13 +465,13 @@ namespace MR
         for (size_t z = 1; z < nz-1; z++) {
           for (size_t y = 1; y < ny-1; y++) {
             for (size_t x = 1; x < nx-1; x++) {
-              L.insert(get_idx(x, y, z), get_idx(x, y, z-1)) = -1;
-              L.insert(get_idx(x, y, z), get_idx(x, y-1, z)) = -1;
-              L.insert(get_idx(x, y, z), get_idx(x-1, y, z)) = -1;
-              L.insert(get_idx(x, y, z), get_idx(x, y, z))   =  6;
-              L.insert(get_idx(x, y, z), get_idx(x+1, y, z)) = -1;
-              L.insert(get_idx(x, y, z), get_idx(x, y+1, z)) = -1;
-              L.insert(get_idx(x, y, z), get_idx(x, y, z+1)) = -1;
+              L.insert(get_idx(x, y, z), get_idx(x, y, z-1)) =  1;
+              L.insert(get_idx(x, y, z), get_idx(x, y-1, z)) =  1;
+              L.insert(get_idx(x, y, z), get_idx(x-1, y, z)) =  1;
+              L.insert(get_idx(x, y, z), get_idx(x, y, z))   = -6;
+              L.insert(get_idx(x, y, z), get_idx(x+1, y, z)) =  1;
+              L.insert(get_idx(x, y, z), get_idx(x, y+1, z)) =  1;
+              L.insert(get_idx(x, y, z), get_idx(x, y, z+1)) =  1;
             }
           }
         }
