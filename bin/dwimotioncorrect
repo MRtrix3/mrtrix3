@@ -227,10 +227,11 @@ def rankreduxstep(k):
 
 
 def registrationstep(k):
-    run.command('dwislicealign in1.mif rankredux.mif motion1.txt -mask mask.mif -maxiter 3' +
+    run.command('dwislicealign in1.mif rankredux.mif motion.txt -mask mask.mif -maxiter 3' +
                 ' -mb ' + ('0' if k<v2viter else str(mb)) + (' -init motion.txt' if k>0 else '') +
                 ssp_option + ' -force' + nthr)
-    run.command('motionfilter motion1.txt sliceweights.txt motion.txt' + motfilt_option)
+    if app.args.sorder:
+        run.command('motionfilter motion.txt sliceweights.txt motion.txt' + motfilt_option)
 
 
 def fieldalignstep(k):
