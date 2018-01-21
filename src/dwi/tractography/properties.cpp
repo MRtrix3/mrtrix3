@@ -26,6 +26,8 @@ namespace MR {
 
         std::pair<iter,iter> range = roi.equal_range ("include");
         for (iter it = range.first; it != range.second; ++it) include.add (it->second);
+        range = roi.equal_range("include_ordered");
+        for (iter it = range.first; it != range.second; ++it) include.add_ordered(it->second);
         range = roi.equal_range ("exclude");
         for (iter it = range.first; it != range.second; ++it) exclude.add (it->second);
         range = roi.equal_range ("mask");

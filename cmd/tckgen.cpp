@@ -227,7 +227,6 @@ void run ()
   auto opt = get_options ("algorithm");
   if (opt.size()) algorithm = opt[0][0];
 
-  load_rois (properties);
 
   Tracking::load_streamline_properties (properties);
 
@@ -251,7 +250,14 @@ void run ()
       WARN ("Overriding -seeds option (maximum number of seeds that will be attempted to track from), as seeds can only provide a finite number");
     properties["max_num_seeds"] = str (properties.seeds.get_total_count());
 
+    
   }
+
+  if (get_options("include_ordered").size() && !get_options("seed_unidirectional").size())
+     throw Exception("-include_ordered requires that -seed_unidirectional is set, but this is not so");
+
+  //Now we are certain options are valid, load ROIs
+  load_rois(properties);
 
   switch (algorithm) {
     case 0:
