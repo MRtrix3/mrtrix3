@@ -119,39 +119,278 @@ namespace MR
 
 
 
+      /**
+      Contains a state that is passed into and out of ROISubSet::contains, allowing it to be used in an external loop for an array of coordinates
+      */
+      class ROISubSet_ContainsLoopState {
+         MEMALIGN(ROISubSet_ContainsLoopState)
 
 
-      class ROISet { MEMALIGN(ROISet)
-        public:
-          ROISet () { }
+      public:
+         ROISubSet_ContainsLoopState(size_t no_rois, bool ordered) {
+            ordered_mode = ordered;
+            entered_by_roi = vector<bool>();
+            reset(no_rois);
+            
+         }
 
-          void clear () { R.clear(); }
-          size_t size () const { return (R.size()); }
-          const ROI& operator[] (size_t i) const { return (R[i]); }
-          void add (const ROI& roi) { R.push_back (roi); }
+         /**
+         Resets for re-use. ordered_mode and size remain unchanged
+         */
+         void reset()
+         {
+            reset(entered_by_roi.size());
+         }
 
-          bool contains (const Eigen::Vector3f& p) const {
+         /**
+         Resets for re-use. ordered_mode remains unchanged
+         */
+         void reset(size_t no_rois) {
+            if (ordered_mode) {
+               last_entered_ROI_index = -1;
+               next_legal_ROI_index = 0;
+            }
+            valid = true;
+
+
+            entered_by_roi.assign(no_rois, false);
+         }
+
+         /**
+         Returns true if all ROIs have been entered legally, or if there are no ROIs
+         */
+         bool all_entered() {
+            if (ordered_mode) 
+               return valid && (next_legal_ROI_index == entered_by_roi.size());
+            else {
+               for (size_t i = 0; i < entered_by_roi.size(); i++) {
+                  if (!entered_by_roi[i]) 
+                     return false;
+               }
+               return true;
+            }
+         }
+
+
+         bool ordered_mode;//true if the parent ROISubSet is in ordered mode
+         bool valid;//true if the order at which ROIs have been entered is legal
+         size_t last_entered_ROI_index;//ordered only
+         size_t next_legal_ROI_index;//ordered only
+         vector<bool> entered_by_roi;//unordered only
+      };
+
+      
+
+      /**
+      Contains a state that is passed into and out of ROISet::contains, allowing it to be used in an external loop for an array of coordinates
+      */
+      class ROISet_ContainsLoopState {
+         MEMALIGN(ROISet_ContainsLoopState)
+
+
+      public:
+         ROISet_ContainsLoopState(size_t no_rois_unordered, size_t no_rois_ordered):
+            unordered(ROISubSet_ContainsLoopState(no_rois_unordered, false)),
+            ordered(ROISubSet_ContainsLoopState(no_rois_ordered, true))
+         {
+            
+         }
+
+         /**
+         Resets for re-use, retaining the same size
+         */
+         void reset() {
+            unordered.reset();
+            ordered.reset();
+         }
+
+         /**
+         Resets for re-use.
+         */
+         void reset(size_t no_rois_unordered, size_t no_rois_ordered){
+            unordered.reset(no_rois_unordered);
+            ordered.reset(no_rois_ordered);
+         }
+
+         /**
+         True if all ROIs are entered. True if there are no ROIs
+         */
+         bool all_entered() {
+            return ordered.all_entered() && unordered.all_entered(); 
+         }
+
+         ROISubSet_ContainsLoopState unordered;
+         ROISubSet_ContainsLoopState ordered;
+      };
+
+
+
+      /**
+      Collection of ROIs. Can respond as to whether a coordinate is within any of these ROIs.
+      If set to ordered mode, contains(ROISubSetLoopState) only responds true if the ROIs are passed through in order
+      */
+      class ROISubSet {
+         MEMALIGN(ROISubSet)
+      public:
+         ROISubSet(bool ordered_arg) { ordered = ordered_arg; }
+
+         void clear() { R.clear(); }
+         size_t size() const { return (R.size()); }
+         const ROI& operator[] (size_t i) const { return (R[i]); }
+         void add(const ROI& roi) { R.push_back(roi); }
+
+         /**
+         Returns true if any ROI contains the specified coordinate.
+         Ordering takes no effect
+         */
+         bool contains(const Eigen::Vector3f& p) const {
             for (size_t n = 0; n < R.size(); ++n)
-              if (R[n].contains (p)) return (true);
+               if (R[n].contains(p)) return (true);
             return false;
-          }
+         }
 
-          void contains (const Eigen::Vector3f& p, vector<bool>& retval) const {
+         /**
+         Fills retval with true/false as to whether each ROI within this subset contains the specified coordinate.
+         Ordering takes no effect.
+         */
+         void contains(const Eigen::Vector3f& p, vector<bool>& retval) const {
             for (size_t n = 0; n < R.size(); ++n)
-              if (R[n].contains (p)) retval[n] = true;
-          }
+               if (R[n].contains(p))
+                  retval[n] = true;
+         }
 
-          friend inline std::ostream& operator<< (std::ostream& stream, const ROISet& R) {
+         /**
+         For use in an external loop. Provides a ROISubSet_ContainsLoopState which can specify whether each ROI within this subset has been entered.
+         Ordering takes effect if switched on
+         */
+         void contains(const Eigen::Vector3f& p, ROISubSet_ContainsLoopState& loop_state) const {
+
+            if (ordered) {
+               if (loop_state.valid)//do nothing if the series of cooredinates have already performed something illegal
+                  for (size_t n = 0; n < R.size(); ++n)
+                     if (R[n].contains(p)) {
+                        if (n == loop_state.next_legal_ROI_index) {
+                           //entered the next ROI in the list. Legal.
+                           loop_state.last_entered_ROI_index = n;
+                           loop_state.next_legal_ROI_index = n + 1;
+                        }
+                        else if (n != loop_state.last_entered_ROI_index) {
+                           //entered an ROI in the wrong order
+                           //this may be due:
+                           //a) the series of coordinates entering ROI X, entering ROI Y, and then re-entering ROI X, or
+                           //b) entering ROI[n], when ROI[n-1] has not yet been entered
+                           loop_state.valid = false;
+                        }
+                        break;
+                     }
+
+            }
+            else {
+               for (size_t n = 0; n < R.size(); ++n)
+                  loop_state.entered_by_roi[n] = loop_state.entered_by_roi[n] || R[n].contains(p);
+            }
+
+         }
+
+         friend inline std::ostream& operator<< (std::ostream& stream, const ROISubSet& R) {
             if (R.R.empty()) return (stream);
             vector<ROI>::const_iterator i = R.R.begin();
             stream << *i;
             ++i;
             for (; i != R.R.end(); ++i) stream << ", " << *i;
-            return stream; 
+            return stream;
+         }
+
+      private:
+         vector<ROI> R;
+         bool ordered;
+      };
+
+
+      /**
+      Collection of ROIs. Can respond as to whether a coordinate is within any of these ROIs.
+      Internally, this contains two sub-collections of ROIs - one that is ordered and one that is not.
+      */
+      class ROISet { 
+         MEMALIGN(ROISet)
+
+
+        public:
+          ROISet () :
+            unordered ( ROISubSet(false)),
+            ordered ( ROISubSet(true))
+          {
+             
           }
 
-        private:
-          vector<ROI> R;
+          void clear () { 
+             unordered.clear();
+             ordered.clear();
+          }
+          size_t size () const { 
+             return unordered.size() + ordered.size();
+          }
+          size_t size_unordered() const {
+             return unordered.size();
+          }
+          size_t size_ordered() const {
+             return ordered.size();
+          }
+          const ROI& operator[] (size_t i) const { 
+             if (i < unordered.size()) {
+                return unordered[i];
+             }
+             else {
+                return ordered[i - unordered.size()];
+             }
+          }
+          /**
+          Adds an ROI to the (internal) unordered list
+          */
+          void add (const ROI& roi) { unordered.add(roi); }
+          /**
+          Adds an ROI to the next position in the (internal) ordered list 
+          */
+          void add_ordered (const ROI& roi) { ordered.add(roi); }
+
+          /**
+          Returns true if any ROI contains the specified coordinate
+          */
+          bool contains (const Eigen::Vector3f& p) const {
+             return unordered.contains(p) || ordered.contains(p);
+          }
+
+          /**
+          For use in an external loop.
+          OrderedROIs are tested but their order is ignored 
+          */
+          void contains (const Eigen::Vector3f& p, vector<bool>& retval) const {
+             unordered.contains(p, retval);
+             ordered.contains(p, retval);
+          }
+
+          /**
+          For use in an external loop. Provides a ROISubSet_ContainsLoopState which can specify whether each ROI within this subset has been entered.
+          Ordering takes effect for the ordered ROIs
+          */
+          void contains(const Eigen::Vector3f& p, ROISet_ContainsLoopState& state) const {
+             unordered.contains(p, state.unordered);
+             ordered.contains(p, state.ordered);
+          }
+          
+
+          friend inline std::ostream& operator<< (std::ostream& stream, const ROISet& R) {
+             stream << R.unordered;
+             stream << R.ordered;
+             return stream;
+          }
+
+
+
+      private:
+         ROISubSet unordered;
+         ROISubSet ordered;
+
       };
 
 

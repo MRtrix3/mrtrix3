@@ -112,7 +112,8 @@ namespace MR
               S (shared),
               method (shared),
               track_excluded (false),
-              track_included (S.properties.include.size(), false) { }
+              track_included(S.properties.include.size_unordered(), S.properties.include.size_ordered()) //(S.properties.include.size(), false) 
+            { }
 
 
             bool operator() (GeneratedTrack& item) {
@@ -142,7 +143,7 @@ namespace MR
             Math::RNG thread_local_RNG;
             Method method;
             bool track_excluded;
-            vector<bool> track_included;
+            ROISet_ContainsLoopState track_included;
 
 
             term_t iterate ()
@@ -183,7 +184,7 @@ namespace MR
             {
               tck.clear();
               track_excluded = false;
-              track_included.assign (track_included.size(), false);
+              track_included.reset();
               method.dir = { NaN, NaN, NaN };
 
               if (S.properties.seeds.is_finite()) {
@@ -424,10 +425,11 @@ namespace MR
 
             bool traversed_all_include_regions ()
             {
-              for (size_t n = 0; n < track_included.size(); ++n)
+               return track_included.all_entered();
+              /*for (size_t n = 0; n < track_included.size(); ++n)
                 if (!track_included[n])
                   return false;
-              return true;
+              return true;*/
             }
 
 
