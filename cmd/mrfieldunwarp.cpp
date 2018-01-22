@@ -75,8 +75,8 @@ class FieldUnwarp {
       if ((nv*nz) % motion.rows())
         throw Exception("Motion parameters incompatible with data dimensions.");
       Tf = Transform(field).scanner2voxel * T0.voxel2scanner;
-      if (fidx > 0 && fidx < nv)
-        Tf = Tf * get_Ts2r(fidx, ne/2).inverse();
+      if (fidx >= 0 && fidx < nv)
+        Tf = Tf * get_Ts2r_avg(fidx).inverse();
     }
 
     void operator() (Image<value_type>& out)
@@ -117,6 +117,13 @@ class FieldUnwarp {
     inline transform_type get_Ts2r(const size_t v, const size_t z) const
     {
       transform_type Ts2r = T0.scanner2voxel * get_transform(motion.row(v*ne+z%ne)) * T0.voxel2scanner;
+      return Ts2r;
+    }
+
+    inline transform_type get_Ts2r_avg(const size_t v) const
+    {
+      transform_type Ts2r = T0.scanner2voxel *
+              get_transform(motion.block(v*ne,0,ne,6).colwise().mean()) * T0.voxel2scanner;
       return Ts2r;
     }
 
