@@ -162,8 +162,6 @@ void run ()
   erase_if_present (properties, "max_weight");
   Editing::load_properties (properties);
 
-  
-
   // Parameters that the worker threads need to be aware of, but do not appear in Properties
   const bool inverse   = get_options ("inverse").size();
   const bool ends_only = get_options ("ends_only").size();

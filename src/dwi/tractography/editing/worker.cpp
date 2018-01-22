@@ -70,14 +70,6 @@ namespace MR {
                   in.swap(out);
                return true;
             }
-            
-            /*for (const auto& i : include_visited) {
-              if (!i) {
-                if (inverse)
-                  in.swap (out);
-                return true;
-              }
-            }*/
 
           }
 
