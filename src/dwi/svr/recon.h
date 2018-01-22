@@ -95,7 +95,7 @@ namespace MR
       {
         INFO("Multiband factor " + str(nz/ne) + " detected.");
         init_Y(grad);
-        init_laplacian(reg);
+        init_laplacian(nv*reg*reg);
         assert (motion.rows() == nv*ne);
       }
 
