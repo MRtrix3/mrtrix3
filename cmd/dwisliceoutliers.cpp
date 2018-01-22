@@ -100,7 +100,7 @@ class MeanErrorFunctor {
       Eigen::MatrixXf R (ne, nv);
       for (size_t i = 0; i < R.rows(); i++)
         for (size_t j = 0; j < R.cols(); j++)
-          R(i,j) = (*N)(i,j) ? (*E)(i,j) / (*N)(i,j) : 1.0;
+          R(i,j) = (*N)(i,j) ? (*E)(i,j) / (*N)(i,j) : 0.0;
       return R;
     }
 
