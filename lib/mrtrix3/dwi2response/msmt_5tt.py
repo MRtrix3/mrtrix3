@@ -48,7 +48,7 @@ def execute(): #pylint: disable=unused-variable
     app.warn('Command 5ttcheck indicates minor problems with provided input 5TT image \'' + app.args.in_5tt + '\':')
     for line in stderr_5ttcheck.splitlines():
       app.warn(line)
-    app.warn('These should however not significantly interfere with the dwi2response msmt_5tt script')
+    app.warn('These may or may not interfere with the dwi2response msmt_5tt script')
 
   # Get shell information
   shells = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shell_bvalues').split() ]
