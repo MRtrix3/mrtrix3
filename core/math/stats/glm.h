@@ -83,13 +83,13 @@ namespace MR
                 c (in),
                 r (Math::rank (c)),
                 F (false),
-                i (index) { }
+                i (index) { check_nonzero(); }
 
             Contrast (const matrix_type& in, const size_t index) :
                 c (check_rank (in, index)),
                 r (Math::rank (c)),
                 F (true),
-                i (index) { }
+                i (index) { check_nonzero(); }
 
             Partition partition (const matrix_type&) const;
 
@@ -105,6 +105,7 @@ namespace MR
             const bool F;
             const size_t i;
 
+            void check_nonzero() const;
             matrix_type check_rank (const matrix_type&, const size_t) const;
         };
 

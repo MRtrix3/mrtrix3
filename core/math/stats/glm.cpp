@@ -337,6 +337,14 @@ namespace MR
 
 
 
+        void Contrast::check_nonzero() const
+        {
+          if (c.isZero())
+            throw Exception ("Cannot specify a contrast that consists entirely of zeroes");
+        }
+
+
+
         matrix_type Contrast::check_rank (const matrix_type& in, const size_t index) const
         {
           // FullPivLU.image() provides column-space of matrix;
