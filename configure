@@ -256,7 +256,7 @@ if static:
 
 ld_lib_args = 'OBJECTS LDLIB_FLAGS -o LIB'.split()
 if platform.system().lower() != 'darwin':
-  ld_lib_flags = ('-Wl,--sort-common,--as-needed')
+  ld_lib_flags = [ '-Wl,--sort-common,--as-needed' ]
 else:
   ld_lib_flags = [ '-flto=thin' ]
 
