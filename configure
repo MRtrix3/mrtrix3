@@ -144,6 +144,7 @@ ENVIRONMENT VARIABLES
 '''
 
 import subprocess, sys, os, platform, tempfile, shutil, shlex, re, copy
+system = platform.system().lower()
 
 # on Windows, need to use MSYS2 version of python - not MinGW version:
 if sys.executable[0].isalpha() and sys.executable[1] == ':':
@@ -244,21 +245,23 @@ global cpp, cpp_cmd, ld, ld_args, ld_cmd
 cxx = [ 'clang++', 'g++' ]
 cxx_args = '-c CFLAGS SRC -o OBJECT'.split()
 cpp_flags = [ '-std=c++11' ]
+if system == 'darwin':
+  cpp_flags += [ '-flto=thin' ]
 
 ld_args = 'OBJECTS LDFLAGS -o EXECUTABLE'.split()
-if platform.system().lower() != 'darwin':
-  ld_flags = [ '-Wl,--sort-common,--as-needed' ]
-else:
+if system == 'darwin':
   ld_flags = [ '-flto=thin' ]
+else:
+  ld_flags = [ '-Wl,--sort-common,--as-needed' ]
 
 if static:
   ld_flags += [ '-static', '-Wl,-u,pthread_cancel,-u,pthread_cond_broadcast,-u,pthread_cond_destroy,-u,pthread_cond_signal,-u,pthread_cond_wait,-u,pthread_create,-u,pthread_detach,-u,pthread_cond_signal,-u,pthread_equal,-u,pthread_join,-u,pthread_mutex_lock,-u,pthread_mutex_unlock,-u,pthread_once,-u,pthread_setcancelstate' ]
 
 ld_lib_args = 'OBJECTS LDLIB_FLAGS -o LIB'.split()
-if platform.system().lower() != 'darwin':
-  ld_lib_flags = [ '-Wl,--sort-common,--as-needed' ]
-else:
+if system == 'darwin':
   ld_lib_flags = [ '-flto=thin' ]
+else:
+  ld_lib_flags = [ '-Wl,--sort-common,--as-needed' ]
 
 
 class TempFile:
@@ -610,7 +613,6 @@ obj_suffix = '.o'
 exe_suffix = ''
 lib_prefix = 'lib'
 
-system = platform.system().lower()
 if system.startswith('mingw') or system.startswith('msys'):
   system = 'windows'
 report ('Detecting OS: ' + system + '\n')
