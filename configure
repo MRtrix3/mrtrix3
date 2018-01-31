@@ -114,13 +114,13 @@ ENVIRONMENT VARIABLES
 
     TIFF_CFLAGS
         Any flags required to compile with the TIFF library.
-    
+
     TIFF_LDFLAGS
         Any flags required to link with the TIFF library.
 
     FFTW_CFLAGS
         Any flags required to compile with the FFTW library.
-    
+
     FFTW_LDFLAGS
         Any flags required to link with the FFTW library.
 
@@ -248,13 +248,13 @@ cxx_args = '-c CFLAGS SRC -o OBJECT'.split()
 cpp_flags = [ '-std=c++11' ]
 
 ld_args = 'OBJECTS LDFLAGS -o EXECUTABLE'.split()
-ld_flags = [ ]
+ld_flags = [ '-Wl,' + ('-O0' if debug else '-O1') + ',--sort-common,--as-needed' ]
 
 if static:
   ld_flags += [ '-static', '-Wl,-u,pthread_cancel,-u,pthread_cond_broadcast,-u,pthread_cond_destroy,-u,pthread_cond_signal,-u,pthread_cond_wait,-u,pthread_create,-u,pthread_detach,-u,pthread_cond_signal,-u,pthread_equal,-u,pthread_join,-u,pthread_mutex_lock,-u,pthread_mutex_unlock,-u,pthread_once,-u,pthread_setcancelstate' ]
 
 ld_lib_args = 'OBJECTS LDLIB_FLAGS -o LIB'.split()
-ld_lib_flags = [ ]
+ld_lib_flags = [ '-Wl,' + ('-O0' if debug else '-O1') + ',--sort-common,--as-needed' ]
 
 
 class TempFile:
@@ -492,13 +492,13 @@ def compare_version (needed, observed):
 
 def get_flags (default=None, env=None, pkg_config_flags=None):
   """Return a list of the flags required for a given packagei
-  
+
   If 'env' is defined, it will check whether the corresponding environment
   variable is set, and if so return its contents. If 'pkg_config_flags' is set,
-  it will invoke 'pkg-config' with the given arguments, and return its output. 
+  it will invoke 'pkg-config' with the given arguments, and return its output.
   Otherwise it returns the contents of 'default'.
   """
-  if env: 
+  if env:
     if env in os.environ.keys():
       return shlex.split (os.environ[env])
   if pkg_config_flags:
@@ -520,7 +520,7 @@ def get_flags (default=None, env=None, pkg_config_flags=None):
 
 
 def compile_test (name, cflags, ldflags, code, on_success='ok', on_failure='not found'):
-  """Tests whether the code given compiles, links, and runs. 
+  """Tests whether the code given compiles, links, and runs.
 
   This returns True if successful, and False for any type of failure.  It will
   also report that is it checking for 'name', and print the contents of stdout
@@ -549,7 +549,7 @@ def compile_test (name, cflags, ldflags, code, on_success='ok', on_failure='not 
 
 
 def compile_check (full_name, name, cflags, ldflags, code, cflags_env=None, cflags_hint=None, ldflags_env=None, ldflags_hint=None, on_success='ok'):
-  """Checks whether the code given compiles, links, and runs. 
+  """Checks whether the code given compiles, links, and runs.
 
   This is intended to check for required dependencies, and will cause
   'configure' to abort on failure. It will report that is it checking for
@@ -570,24 +570,24 @@ def compile_check (full_name, name, cflags, ldflags, code, cflags_env=None, cfla
     else:
       report (on_success+'\n')
   except CompileError:
-    if cflags_env and cflags_hint: 
+    if cflags_env and cflags_hint:
       hint = compiler_flags_hint (name, cflags_env, cflags_hint)
     else:
       hint = configure_log_hint
     error ('error compiling ' + name + ''' application!
-  
+
     MRtrix3 was unable to compile a test program involving ''' + name + '.' + hint)
   except LinkError as e:
-    if cflags_env and cflags_hint: 
+    if cflags_env and cflags_hint:
       hint = linker_flags_hint (name, ldflags_env, ldflags_hint)
     else:
       hint = configure_log_hint
     error ('error linking ' + name + ''' application!
-  
+
     MRtrix3 was unable to link a test program involving ''' + name + '.' + hint)
   except RuntimeError:
     error ('''runtime error!
-  
+
    Unable to configure ''' + name + configure_log_hint)
   except:
     error ('unexpected exception!' + configure_log_hint)
@@ -855,7 +855,7 @@ int main() {
 
 eigen_cflags = get_flags ([ '-isystem', '/usr/include/eigen3' ], 'EIGEN_CFLAGS', '--cflags eigen3')
 
-compile_check ('Eigen3 library', 'Eigen3', cpp_flags + eigen_cflags, ld_flags, 
+compile_check ('Eigen3 library', 'Eigen3', cpp_flags + eigen_cflags, ld_flags,
   '''
 #include <cstddef>
 #include <Eigen/Core>
@@ -902,7 +902,7 @@ ld_lib_flags += zlib_ldflags
 
 # Test that JSON for Modern C++ will compile, since it enforces its own requirements
 
-compile_check ('"JSON for Modern C++" requirements', 'JSON for modern C++', 
+compile_check ('"JSON for Modern C++" requirements', 'JSON for modern C++',
 cpp_flags + [ '-I'+os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), 'core')) ], ld_flags, '''
 #include "''' + os.path.join('file', 'json.h') + '''"
 int main (int argc, char* argv[])
@@ -1256,7 +1256,7 @@ if profile:
   ld_flags += [ '-g', '-pg' ]
   ld_lib_flags += [ '-g', '-pg' ]
 elif debug:
-  cpp_flags += [ '-O1' ]
+  cpp_flags += [ '-O0' ]
   cpp_flags += [ '-g' ]
   ld_flags += [ '-g' ]
   ld_lib_flags += [ '-g' ]
