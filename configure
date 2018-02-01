@@ -245,23 +245,16 @@ global cpp, cpp_cmd, ld, ld_args, ld_cmd
 cxx = [ 'clang++', 'g++' ]
 cxx_args = '-c CFLAGS SRC -o OBJECT'.split()
 cpp_flags = [ '-std=c++11' ]
-if system == 'darwin':
-  cpp_flags += [ '-flto=thin' ]
 
 ld_args = 'OBJECTS LDFLAGS -o EXECUTABLE'.split()
-if system == 'darwin':
-  ld_flags = [ '-flto=thin' ]
-else:
-  ld_flags = [ '-Wl,--sort-common,--as-needed' ]
+ld_flags = []
+if system != 'darwin':
+  ld_flags += [ '-Wl,--sort-common,--as-needed' ]
 
 if static:
   ld_flags += [ '-static', '-Wl,-u,pthread_cancel,-u,pthread_cond_broadcast,-u,pthread_cond_destroy,-u,pthread_cond_signal,-u,pthread_cond_wait,-u,pthread_create,-u,pthread_detach,-u,pthread_cond_signal,-u,pthread_equal,-u,pthread_join,-u,pthread_mutex_lock,-u,pthread_mutex_unlock,-u,pthread_once,-u,pthread_setcancelstate' ]
 
 ld_lib_args = 'OBJECTS LDLIB_FLAGS -o LIB'.split()
-if system == 'darwin':
-  ld_lib_flags = [ '-flto=thin' ]
-else:
-  ld_lib_flags = [ '-Wl,--sort-common,--as-needed' ]
 
 
 class TempFile:
@@ -612,6 +605,7 @@ def compile_check (full_name, name, cflags, ldflags, code, cflags_env=None, cfla
 obj_suffix = '.o'
 exe_suffix = ''
 lib_prefix = 'lib'
+ld_lib_flags = []
 
 if system.startswith('mingw') or system.startswith('msys'):
   system = 'windows'
@@ -620,7 +614,7 @@ if system == 'linux':
   cpp_flags += [ '-pthread', '-fPIC' ]
   lib_suffix = '.so'
   ld_flags += [ '-pthread' ]
-  ld_lib_flags += [ '-pthread', '-shared' ]
+  ld_lib_flags += [ '-shared' ]
   runpath = '-Wl,-rpath,$ORIGIN/'
 elif system == 'windows':
   cxx = [ 'g++', 'clang++' ]
@@ -629,7 +623,7 @@ elif system == 'windows':
   lib_prefix = ''
   lib_suffix = '.dll'
   ld_flags += [ '-pthread', '-Wl,--allow-multiple-definition' ]
-  ld_lib_flags += [ '-pthread', '-shared' ]
+  ld_lib_flags += [ '-shared' ]
   runpath = ''
 elif system == 'darwin':
   if 'MACOSX_DEPLOYMENT_TARGET' in os.environ and 'QMAKE_MACOSX_DEPLOYMENT_TARGET' in os.environ:
@@ -645,7 +639,7 @@ elif system == 'darwin':
   report ('OS X deployment target: ' +  macosx_version + '\n')
   cpp_flags += [ '-DMRTRIX_MACOSX', '-fPIC', '-mmacosx-version-min='+macosx_version ]
   ld_flags += [ '-mmacosx-version-min='+macosx_version ]
-  ld_lib_flags += [ '-dynamiclib', '-install_name', '@rpath/LIBNAME', '-mmacosx-version-min='+macosx_version ]
+  ld_lib_flags += [ '-dynamiclib', '-install_name', '@rpath/LIBNAME' ]
   runpath = '-Wl,-rpath,@loader_path/'
   lib_suffix = '.dylib'
 
