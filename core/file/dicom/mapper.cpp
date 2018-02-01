@@ -227,7 +227,7 @@ namespace MR {
           for (size_t n = 0; n != dim[1]; ++n)
             slices_timing.push_back (frames[n]->time_after_start - min_time_after_start);
           H.keyval()["SliceTiming"] = join (slices_timing, ",");
-        } else if (std::isfinite (frame.acquisition_time)) {
+        } else if (std::isfinite (static_cast<default_type>(frame.acquisition_time))) {
           DEBUG ("Estimating slice timing from DICOM AcquisitionTime field");
           default_type min_acquisition_time = std::numeric_limits<default_type>::infinity();
           for (size_t n = 0; n != dim[1]; ++n)
