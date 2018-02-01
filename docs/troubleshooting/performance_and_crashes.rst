@@ -220,7 +220,7 @@ small (e.g. 256), such that very few subjects can be opened at once.
 There are two ways to solve this issue:
 
 -  *Reduce the number of files opened concurrently*: By converting each series
-   of interest to an alternative format (e.g. (:ref:`.mif <_mrtrix_image_formats>`))
+   of interest to an alternative format (e.g. :ref:`mrtrix_image_formats`)
    before opening them in ``mrview``, the total number of files open at once
    will be drastically reduced.
 
