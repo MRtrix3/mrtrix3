@@ -46,7 +46,7 @@ In general, it's always worthwhile checking your response function(s):
 ::
 
    shview wm_response.txt
-      
+
 Use the left and right arrow (keyboard) keys in this viewer to switch
 between the different b-values ('shells') of the response function, if
 it has more than one b-value (this would for example be the case for
@@ -61,7 +61,7 @@ the ``tournier`` algorithm:
 ::
 
    dwi2response tournier dwi.mif wm_response.txt -voxels voxels.mif
-      
+
 The resulting ``voxels.mif`` image can be overlaid on the ``dwi.mif``
 dataset using the :ref:`mrview` image viewer for further inspection.
 
@@ -82,12 +82,12 @@ to what they deliver (as output) and require (as input), notably
    response function(s) for a single b-value (``tournier``, ``tax``
    and ``fa``) or for all—or a selection of— b-values (``dhollander``
    and ``msmt_5tt``)
-   
+
 -  **input requirements**: whether they only require the DWI dataset
    as input (``tournier``, ``dhollander``, ``tax`` and ``fa``) or
    also additional input(s) (``msmt_5tt`` requires a 5TT segmentation
    from a spatially aligned anatomical image)
-   
+
 Beyond these general categories, the algorithms differ mostly in the actual
 strategy used to determine the voxels that will be used to estimate
 the response function(s) from.
@@ -181,7 +181,7 @@ segmentation partial volume of at least 0.95 for each tissue type.
 Grey matter and CSF are further constrained by an (upper) 0.2 FA threshold.
 A notable difference between this implementation and the algorithm described in
 `Jeurissen et al. (2014) <http://www.sciencedirect.com/science/article/pii/S1053811914006442>`__
-is the criterium to extract single-fibre voxels from the white matter
+is the criterion to extract single-fibre voxels from the white matter
 segmentation: this implementation calls upon the ``tournier`` algorithm
 to do so, while the paper uses a simple (lower) 0.7 FA threshold.
 
@@ -207,13 +207,13 @@ to estimate a single b-value (single-shell) response function of
 single-fibre white matter, which can subsequently be used for single-tissue
 (constrained) spherical deconvolution. The algorithm iterates between
 performing CSD and estimating a response function from all voxels detected
-as being 'single-fibre' from the CSD result itself. The criterium for
+as being 'single-fibre' from the CSD result itself. The criterion for
 a voxel to be 'single-fibre' is based on the ratio of the amplitude of
 second tallest to the tallest peak. The method is initialised with a
 'fat' response function; i.e., a response function that is safely deemed
 to be much less 'sharp' than the true response function.
 
-This algorithm has occasionally been found to behave unstable and converge
+This algorithm has occasionally been found to be unstable and converge
 towards suboptimal solutions. The ``tournier`` algorithm has been engineered
 to overcome some of the issues believed to be the cause of these
 instabilities (see some discussion on this topic
@@ -238,18 +238,18 @@ between this implementation and the algorithm described in `Tournier et al. (201
 
 -  This implementation is initialised by a sharp lmax=4 response function
    as opposed to one estimated from the 300 brain voxels with the highest FA.
-   
+
 -  This implementation uses a more complex metric to measure how
-   'single-fibre' FODs are: ``sqrt(|peak1|) * (1 - |peak2| / |peak1|)^2``,
+   'single-fibre' FODs are: √|peak1| × (1 − \|peak1\| / \|peak2\|)²,
    as opposed to a simple ratio of the two tallest peaks. This new metric has
    a bias towards FODs with a larger tallest peak, to avoid favouring
    small, yet low SNR, FODs.
-   
+
 -  This implementation only performs CSD on the 3000 best 'single-fibre'
    voxels (of the previous iteration) at each iteration.
 
 While the ``tournier`` algorithm has a similar iterative structure as the
-``tax`` algorithm, it was designed to overcome some occasional instabilities
+``tax`` algorithm, it was adjusted to overcome some occasional instabilities
 and suboptimal solutions resulting from the latter. Notable differences
 between the ``tournier`` and ``tax`` algorithms include:
 
@@ -260,7 +260,7 @@ between the ``tournier`` and ``tax`` algorithms include:
 -  This implementation of the ``tournier`` algorithm uses a more complex
    metric to measure how 'single-fibre' FODs are (see above), while the
    ``tax`` algorithm uses a simple ratio of the two tallest peaks.
-   
+
 -  The ``tournier`` algorithm estimates the response function at each
    iteration only from the 300 *best* 'single-fibre' voxels, while the
    ``tax`` algorithm uses *all* 'single-fibre' voxels.
