@@ -117,7 +117,7 @@ A few pointers for anybody who encounters this issue:
 
 -  The location where the temporary directory is created for the script will
    influence the amount of storage space available. For instance, the
-   location ``/tmp//`` is frequently created as a temporary RAM-based file
+   location ``/tmp/`` is frequently created as a temporary RAM-based file
    system, such that the script's temporary files are never actually written
    to disk and are therefore read & written very quickly; it is however also
    likely to have a smaller capacity than a physical hard drive.
