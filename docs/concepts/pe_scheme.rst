@@ -179,7 +179,7 @@ to manipulate this information:
    in particular for operating within the BIDS specification. There is a caveat here:
    If you use the ``-json_export`` option on an image with *fixed* phase encoding,
    the ``PhaseEncodingDirection`` and ``TotalReadoutTime`` fields will be written as
-   expected by BIDS; however if the image contains *variable* phase eocnding, then
+   expected by BIDS; however if the image contains *variable* phase encoding, then
    the ``pe_scheme`` header entry will be written to the JSON file, and this will not
    be appropriately interpreted by other BIDS tools.
 
