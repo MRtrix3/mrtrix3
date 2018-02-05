@@ -215,11 +215,11 @@ def reconstep(k):
             ('' if k==0 else ' -motion motion.txt -weights sliceweights.txt -init recon-' + str(k-1) + '.mif') + ' -force' + nthr)
 
 
-def sliceweightstep():
+def sliceweightstep(k):
     if app.args.matchintensity:
         run.command('dwisliceoutliers in.mif spred.mif -mask mask.mif sliceweights.txt' + or_option + ' -force')
         run.command('dwirecon in1.mif temprecon.mif -spred spred-redux.mif -maxiter 1 ' + recon_option[10:] + ' -rf ' + ' -rf '.join(redrfs) +
-                    ' -motion motion.txt -weights sliceweights.txt -init irankredux.mif -force' + nthr)
+                    ('' if k==0 else ' -motion motion.txt -weights sliceweights.txt') + ' -init irankredux.mif -force' + nthr)
         run.command('mrcalc spred-redux.mif in.mif -mult 0 -le 0 spred-redux.mif -abs -log in.mif -abs -log -sub -if mask.mif -mult - | ' +
                     'mrfilter - smooth - -stdev 10,10,0 -extent 51,51,1 | mrcalc - -exp biasfield.mif -force')
         run.command('mrcalc in.mif biasfield.mif -mult - | mrconvert - in1.mif -force')
@@ -268,13 +268,14 @@ reconstep(0)
 
 # running reconstruction
 for k in range(v2viter + s2viter):
+    # basis update and rank reduction
     basisupdatestep(k)
-    # register template to volumes
     rankreduxstep(k)
+    # slice weights
+    sliceweightstep(k)
+    # register template to volumes
     registrationstep(k)
     fieldalignstep(k+1)
-    # slice weights
-    sliceweightstep()
     # update template
     reconstep(k+1)
 
