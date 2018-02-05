@@ -32,6 +32,8 @@ namespace MR {
             using value_type = float;
             using point_type = Eigen::Vector3f;
 
+            enum class state_t { BEFORE_START, AFTER_START, BEFORE_END, AFTER_END };
+
           private:
             class Plane { MEMALIGN(Plane)
               public:
@@ -64,12 +66,12 @@ namespace MR {
             Arc (const size_t n, const point_type& s, const point_type& w, const point_type& e) :
                 nsamples (n),
                 start (s),
-                mid (0.5*(s+e)),
+                mid (w),
                 end (e),
                 idx_start (0),
                 idx_end (0)
             {
-              init_arc (w);
+              init_arc();
             }
 
             bool operator() (const Streamline<>&, Streamline<>&) const override;
@@ -83,10 +85,10 @@ namespace MR {
             mutable point_type start_dir, mid_dir, end_dir;
 
             void init_line();
-            void init_arc (const point_type&);
+            void init_arc();
 
 
-            int state (const point_type&) const;
+            state_t state (const point_type&) const;
 
         };
 
