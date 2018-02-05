@@ -22,8 +22,9 @@
 #include "types.h"
 #include "image.h"
 #include "transform.h"
-#include "interp/linear.h"
+#include "interp/cubic.h"
 
+#include "dwi/svr/param.h"
 #include "dwi/svr/psf.h"
 
 
@@ -33,32 +34,6 @@ namespace MR
   {
     namespace SVR
     {
-
-      /* Exponential Lie mapping on SE(3). */
-      Eigen::Matrix4f se3exp(const Eigen::VectorXf& v)
-      {
-        Eigen::Matrix4f A, T; A.setZero();
-        A(0,3) = v[0]; A(1,3) = v[1]; A(2,3) = v[2];
-        A(2,1) = v[3]; A(1,2) = -v[3];
-        A(0,2) = v[4]; A(2,0) = -v[4];
-        A(1,0) = v[5]; A(0,1) = -v[5];
-        T = A.exp();
-        return T;
-      }
-
-
-      /* Logarithmic Lie mapping on SE(3). */
-      Eigen::Matrix<float, 6, 1> se3log(const Eigen::Matrix4f& T)
-      {
-        Eigen::Matrix4f A = T.log();
-        Eigen::Matrix<float, 6, 1> v;
-        v[0] = A(0,3); v[1] = A(1,3); v[2] = A(2,3);
-        v[3] = (A(2,1) - A(1,2)) / 2;
-        v[4] = (A(0,2) - A(2,0)) / 2;
-        v[5] = (A(1,0) - A(0,1)) / 2;
-        return v;
-      }
-
 
       /* Register prediction to slices. */
       class SliceRegistrationFunctor : public Eigen::DenseFunctor<float>
@@ -80,7 +55,10 @@ namespace MR
         {
           // get transformation matrix
           Eigen::Transform<Scalar, 3, Eigen::Affine> T1 (se3exp(x));
-          // interpolate and compute error
+          // initialise vectors
+          Eigen::VectorXf y (m);
+          Eigen::VectorXf f (m);
+          // interpolate
           Eigen::Vector3f trans;
           size_t i = 0;
           target.index(3) = vol;
@@ -93,10 +71,14 @@ namespace MR
                 moving.scanner(trans);
                 val += ssp(s) * moving.value();
               }
-              fvec[i] = target.value() - val;
+              y[i] = target.value();
+              f[i] = val;
               i++;
             }
           }
+          // compute error
+          scale = f.dot(y) / f.dot(f);
+          fvec = y - scale*f;
           return 0;
         }
         
@@ -126,7 +108,7 @@ namespace MR
                 Dmoving.scanner(trans);
                 grad += ssp(s) * Dmoving.gradient_wrt_scanner().template cast<Scalar>();
               }
-              fjac.row(i) = 2.0f * grad * J;
+              fjac.row(i) = 2.0f * scale * grad * J;
               i++;
             }
           }
@@ -142,9 +124,12 @@ namespace MR
         const SSP<float> ssp;
         Image<bool> mask;
         Image<Scalar> target;
-        Interp::LinearInterp<Image<Scalar>, Interp::LinearInterpProcessingType::Value> moving;
-        Interp::LinearInterp<Image<Scalar>, Interp::LinearInterpProcessingType::Derivative> Dmoving;
-        
+        Interp::SplineInterp<Image<Scalar>, Math::HermiteSpline<Scalar>, Math::SplineProcessingType::Value> moving;
+        Interp::SplineInterp<Image<Scalar>, Math::HermiteSpline<Scalar>, Math::SplineProcessingType::Derivative> Dmoving;
+        //Interp::LinearInterp<Image<Scalar>, Interp::LinearInterpProcessingType::Value> moving;
+        //Interp::LinearInterp<Image<Scalar>, Interp::LinearInterpProcessingType::Derivative> Dmoving;
+        float scale;
+
         inline size_t calcMaskSize()
         {
           if (!mask) return target.size(0)*target.size(1)*target.size(2)/nexc;
@@ -224,12 +209,8 @@ namespace MR
           slice.bidx = bidx[slice.vol];
           // create transformation matrix
           size_t idx_init = slice.vol * ne_init + slice.exc % ne_init;
-          Eigen::Transform<float, 3, Eigen::Affine> m;
-          m = Eigen::AngleAxisf(init(idx_init,3), Eigen::Vector3f::UnitZ())
-            * Eigen::AngleAxisf(init(idx_init,4), Eigen::Vector3f::UnitY())
-            * Eigen::AngleAxisf(init(idx_init,5), Eigen::Vector3f::UnitX());
-          m.translation() = init.row(idx_init).head<3>();
-          slice.motion = se3log(m.matrix());
+          slice.motion = init.row(idx_init);
+          Eigen::Transform<float, 3, Eigen::Affine> m (se3exp(slice.motion));
           // reorient vector
           slice.bvec = m.rotation() * dirs.row(slice.vol).normalized().transpose();
           idx++;
@@ -309,9 +290,7 @@ namespace MR
         bool operator() (const SliceIdx& slice)
         {
           size_t idx = slice.vol * ne + slice.exc;
-          Eigen::Transform<float, 3, Eigen::Affine> T (se3exp(slice.motion));
-          motion.row(idx).head<3>() = T.translation();
-          motion.row(idx).tail<3>() = T.rotation().eulerAngles(2, 1, 0);
+          motion.row(idx) = slice.motion;
           progress++;
           return true;
         }

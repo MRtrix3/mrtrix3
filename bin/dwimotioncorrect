@@ -42,8 +42,9 @@ options.add_argument('-reg', help='Regularization for dwirecon (default = 0.01)'
 #options.add_argument('-rf', help='Basis functions for the radial domain')
 options.add_argument('-svr', help='Number of slice-to-volume reconstruction epochs (default = 0)')
 options.add_argument('-mb', help='Multiband factor (default = 1)')
-#options.add_argument('-sorder', help='Slice order (default = 2,1, for odd-even)')
+options.add_argument('-sorder', help='Slice order (default = 2,1, for odd-even)')
 options.add_argument('-sspwidth', help='Slice thickness for Gaussian SSP (default = 1)')
+options.add_argument('-sspfile', help='Slice sensitivity profile as vector')
 options.add_argument('-or_loss', help='Outlier rejection loss function (default = softl1)')
 options.add_argument('-matchintensity', help='Activate intensity matching (default = off)')
 options.add_argument('-fieldmap', help='B0 field map for distortion correction')
@@ -144,10 +145,16 @@ if len(rlmax) > len(lmax) or max(rlmax) > max(lmax):
 recon_option = '-maxiter 3'
 if app.args.reg:
     recon_option += ' -reg ' + app.args.reg
-if app.args.sspwidth:
-    recon_option += ' -sspwidth ' + app.args.sspwidth
 #if app.args.fieldmap:
 #    recon_option += ' -field field1.mif'
+
+# SSP option
+ssp_option = ''
+if app.args.sspfile:
+    run.command('cp ' + path.fromUser(app.args.sspfile, True) + ' ssp.txt')
+    ssp_option = ' -ssp ssp.txt'
+elif app.args.sspwidth:
+    ssp_option = ' -ssp ' + app.args.sspwidth
 
 
 # Initialise radial basis with RF per shell.
@@ -181,12 +188,10 @@ if app.args.or_loss:
     or_option += ' -loss ' + app.args.or_loss
 
 # Slice order
-#motfilt_option = ' -extent 1'
-#if mb > 1:
-#    motfilt_option += ' -mb ' + str(mb)
-#if app.args.sorder:
-#    p,s = app.args.sorder.split(',')
-#    motfilt_option += ' -packs ' + p + ' -shift ' + s
+motfilt_option = ''
+if app.args.sorder:
+    p,s = app.args.sorder.split(',')
+    motfilt_option += ' -packs ' + p + ' -shift ' + s
 
 
 # Image dimensions
@@ -206,7 +211,7 @@ if app.args.matchintensity and app.args.fieldmap:
 #   __________ Function definitions __________
 
 def reconstep(k):
-    run.command('dwirecon in1.mif recon-' + str(k) + '.mif -spred spred.mif ' + recon_option + ' -rf ' + ' -rf '.join(rfs) +
+    run.command('dwirecon in1.mif recon-' + str(k) + '.mif -spred spred.mif ' + recon_option + ssp_option + ' -rf ' + ' -rf '.join(rfs) +
             ('' if k==0 else ' -motion motion.txt -weights sliceweights.txt -init recon-' + str(k-1) + '.mif') + ' -force' + nthr)
 
 
@@ -237,7 +242,9 @@ def rankreduxstep(k):
 def registrationstep(k):
     run.command('dwislicealign in1.mif rankredux.mif motion.txt -mask mask.mif -maxiter 3' +
                 ' -mb ' + ('0' if k<v2viter else str(mb)) + (' -init motion.txt' if k>0 else '') +
-                (' -sspwidth ' + app.args.sspwidth if app.args.sspwidth else '') + ' -force' + nthr)
+                ssp_option + ' -force' + nthr)
+    if app.args.sorder:
+        run.command('motionfilter motion.txt sliceweights.txt motion.txt' + motfilt_option)
 
 
 def fieldalignstep(k):

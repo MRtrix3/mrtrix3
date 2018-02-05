@@ -21,6 +21,8 @@
 #include "interp/linear.h"
 #include "interp/cubic.h"
 
+#include "dwi/svr/param.h"
+
 
 using namespace MR;
 using namespace App;
@@ -73,8 +75,8 @@ class FieldUnwarp {
       if ((nv*nz) % motion.rows())
         throw Exception("Motion parameters incompatible with data dimensions.");
       Tf = Transform(field).scanner2voxel * T0.voxel2scanner;
-      if (fidx > 0 && fidx < nv)
-        Tf = Tf * get_Ts2r(fidx, ne/2).inverse();
+      if (fidx >= 0 && fidx < nv)
+        Tf = Tf * get_Ts2r_avg(fidx).inverse();
     }
 
     void operator() (Image<value_type>& out)
@@ -106,26 +108,22 @@ class FieldUnwarp {
     transform_type Tf;
     size_t nv, nz, ne;
 
-    inline Eigen::Matrix3d get_rotation(const double a1, const double a2, const double a3) const
-    {
-      Eigen::Matrix3d m;
-      m = Eigen::AngleAxisd(a1, Eigen::Vector3d::UnitZ())
-        * Eigen::AngleAxisd(a2, Eigen::Vector3d::UnitY())
-        * Eigen::AngleAxisd(a3, Eigen::Vector3d::UnitX());
-      return m;
-    }
-
     inline transform_type get_transform(const Eigen::VectorXd& p) const
     {
-      transform_type T;
-      T.translation() = Eigen::Vector3d(p[0], p[1], p[2]);
-      T.linear() = get_rotation(p[3], p[4], p[5]);
+      transform_type T (DWI::SVR::se3exp(p).cast<double>());
       return T;
     }
 
     inline transform_type get_Ts2r(const size_t v, const size_t z) const
     {
       transform_type Ts2r = T0.scanner2voxel * get_transform(motion.row(v*ne+z%ne)) * T0.voxel2scanner;
+      return Ts2r;
+    }
+
+    inline transform_type get_Ts2r_avg(const size_t v) const
+    {
+      transform_type Ts2r = T0.scanner2voxel *
+              get_transform(motion.block(v*ne,0,ne,6).colwise().mean()) * T0.voxel2scanner;
       return Ts2r;
     }
 

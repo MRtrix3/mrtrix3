@@ -24,14 +24,18 @@
 #include "transform.h"
 #include "math/SH.h"
 #include "dwi/shells.h"
-#include "dwi/svr/psf.h"
 #include "parallel_for.h"
 #include "interp/linear.h"
+
+#include "dwi/svr/param.h"
+#include "dwi/svr/psf.h"
 
 
 namespace MR {
   namespace DWI {
-    class ReconMatrix;
+    namespace SVR {
+      class ReconMatrix;
+    }
   }
 }
 
@@ -40,7 +44,7 @@ namespace Eigen {
   namespace internal {
     // ReconMatrix inherits its traits from SparseMatrix
     template<>
-    struct traits<MR::DWI::ReconMatrix> : public Eigen::internal::traits<Eigen::SparseMatrix<float,Eigen::RowMajor> >
+    struct traits<MR::DWI::SVR::ReconMatrix> : public Eigen::internal::traits<Eigen::SparseMatrix<float,Eigen::RowMajor> >
     {};
   }
 }
@@ -50,6 +54,8 @@ namespace MR
 {
   namespace DWI
   {
+    namespace SVR
+    {
 
     class ReconMatrix : public Eigen::EigenBase<ReconMatrix>
     {  MEMALIGN(ReconMatrix);
@@ -78,18 +84,18 @@ namespace MR
 
       // Custom API:
       ReconMatrix(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad,
-                  const int lmax, const vector<Eigen::MatrixXf>& rf, const float sspw, const float reg)
+                  const int lmax, const vector<Eigen::MatrixXf>& rf, const SSP<float,2>& ssp, const float reg)
         : lmax (lmax),
           nx (in.size(0)), ny (in.size(1)), nz (in.size(2)), nv (in.size(3)),
           nxy (nx*ny), nc (get_ncoefs(rf)), ne (rigid.rows() / nv),
           T0 (in),  // Preserve original resolution.
           shellbasis (init_shellbasis(grad, rf)),
-          ssp (sspw),
+          ssp (ssp),
           motion (rigid)
       {
         INFO("Multiband factor " + str(nz/ne) + " detected.");
         init_Y(grad);
-        init_laplacian(reg);
+        init_laplacian(nv*reg*reg);
         assert (motion.rows() == nv*ne);
       }
 
@@ -163,7 +169,7 @@ namespace MR
             T.noalias() += r * Y.row(idx);
           }, zero);
         Xo += L.adjoint() * (L * Xi);
-        Xo += 0.0001f * Xi;
+        Xo += std::numeric_limits<float>::epsilon() * Xi;
       }
 
 
@@ -226,7 +232,7 @@ namespace MR
           vec = {grad(v, 0), grad(v, 1), grad(v, 2)};
           for (size_t e = 0; e < ne; e++) {
             // rotate vector with motion parameters
-            rot = get_rotation(motion(v*ne+e,3), motion(v*ne+e,4), motion(v*ne+e,5));
+            rot = get_rotation(motion.row(v*ne+e));
             // evaluate basis functions
             Math::SH::delta(delta, rot*vec, lmax);
             Y.row(v*ne+e) = shellbasis[idx[v]]*delta;
@@ -236,20 +242,15 @@ namespace MR
 
       }
 
-      inline Eigen::Matrix3f get_rotation(const float a1, const float a2, const float a3) const
+      inline Eigen::Matrix3f get_rotation(const Eigen::VectorXf& p) const
       {
-        Eigen::Matrix3f m;
-        m = Eigen::AngleAxisf(a1, Eigen::Vector3f::UnitZ())
-          * Eigen::AngleAxisf(a2, Eigen::Vector3f::UnitY())
-          * Eigen::AngleAxisf(a3, Eigen::Vector3f::UnitX());
+        Eigen::Matrix3f m = se3exp(p).topLeftCorner<3,3>();
         return m;
       }
 
       inline transform_type get_transform(const Eigen::VectorXf& p) const
       {
-        transform_type T;
-        T.translation() = Eigen::Vector3d( double(p[0]), double(p[1]), double(p[2]) );
-        T.linear() = get_rotation(p[3], p[4], p[5]).template cast<double>();
+        transform_type T (se3exp(p).cast<double>());
         return T;
       }
 
@@ -320,7 +321,7 @@ namespace MR
           ps[1] = y;
           for (size_t x = 0; x < nx; x++, i++) {
             ps[0] = x;
-            for (int s = -2; s <= 2; s++) {       // ssp neighbourhood
+            for (int s = -ssp.size(); s <= ssp.size(); s++) {       // ssp neighbourhood
               ps[2] = z+s;
               // get slice position in recon space
               ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac);
@@ -354,7 +355,7 @@ namespace MR
           ps[1] = y;
           for (size_t x = 0; x < nx; x++, i++) {
             ps[0] = x;
-            for (int s = -2; s <= 2; s++) {       // ssp neighbourhood
+            for (int s = -ssp.size(); s <= ssp.size(); s++) {       // ssp neighbourhood
               ps[2] = z+s;
               // get slice position in recon space
               ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac);
@@ -391,7 +392,7 @@ namespace MR
           for (size_t x = 0; x < nx; x++) {
             ps[0] = x;
             t = 0.0f;
-            for (int s = -2; s <= 2; s++) {       // ssp neighbourhood
+            for (int s = -ssp.size(); s <= ssp.size(); s++) {       // ssp neighbourhood
               ps[2] = z+s;
               // get slice position in recon space
               ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac[2+s]);
@@ -464,13 +465,13 @@ namespace MR
         for (size_t z = 1; z < nz-1; z++) {
           for (size_t y = 1; y < ny-1; y++) {
             for (size_t x = 1; x < nx-1; x++) {
-              L.insert(get_idx(x, y, z), get_idx(x, y, z-1)) = -1;
-              L.insert(get_idx(x, y, z), get_idx(x, y-1, z)) = -1;
-              L.insert(get_idx(x, y, z), get_idx(x-1, y, z)) = -1;
-              L.insert(get_idx(x, y, z), get_idx(x, y, z))   =  6;
-              L.insert(get_idx(x, y, z), get_idx(x+1, y, z)) = -1;
-              L.insert(get_idx(x, y, z), get_idx(x, y+1, z)) = -1;
-              L.insert(get_idx(x, y, z), get_idx(x, y, z+1)) = -1;
+              L.insert(get_idx(x, y, z), get_idx(x, y, z-1)) =  1;
+              L.insert(get_idx(x, y, z), get_idx(x, y-1, z)) =  1;
+              L.insert(get_idx(x, y, z), get_idx(x-1, y, z)) =  1;
+              L.insert(get_idx(x, y, z), get_idx(x, y, z))   = -6;
+              L.insert(get_idx(x, y, z), get_idx(x+1, y, z)) =  1;
+              L.insert(get_idx(x, y, z), get_idx(x, y+1, z)) =  1;
+              L.insert(get_idx(x, y, z), get_idx(x, y, z+1)) =  1;
             }
           }
         }
@@ -490,6 +491,7 @@ namespace MR
     };
 
 
+    }
   }
 }
 
@@ -499,13 +501,13 @@ namespace Eigen {
   namespace internal {
 
     template<typename Rhs>
-    struct generic_product_impl<MR::DWI::ReconMatrix, Rhs, SparseShape, DenseShape, GemvProduct>
-      : generic_product_impl_base<MR::DWI::ReconMatrix,Rhs,generic_product_impl<MR::DWI::ReconMatrix,Rhs> >
+    struct generic_product_impl<MR::DWI::SVR::ReconMatrix, Rhs, SparseShape, DenseShape, GemvProduct>
+      : generic_product_impl_base<MR::DWI::SVR::ReconMatrix,Rhs,generic_product_impl<MR::DWI::SVR::ReconMatrix,Rhs> >
     {
-      typedef typename Product<MR::DWI::ReconMatrix,Rhs>::Scalar Scalar;
+      typedef typename Product<MR::DWI::SVR::ReconMatrix,Rhs>::Scalar Scalar;
 
       template<typename Dest>
-      static void scaleAndAddTo(Dest& dst, const MR::DWI::ReconMatrix& lhs, const Rhs& rhs, const Scalar& alpha)
+      static void scaleAndAddTo(Dest& dst, const MR::DWI::SVR::ReconMatrix& lhs, const Rhs& rhs, const Scalar& alpha)
       {
         // This method should implement "dst += alpha * lhs * rhs" inplace
         assert(alpha==Scalar(1) && "scaling is not implemented");

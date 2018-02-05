@@ -50,9 +50,8 @@ void usage ()
 
   OPTIONS
   + Option ("motion", "The motion parameters associated with input slices or volumes. "
-                      "These are supplied as a matrix of 6 columns that encode respectively "
-                      "the x-y-z translation and Z-Y-X rotation Euler angles for each volume "
-                      "or slice in the image. All transformations are w.r.t. scanner space." )
+                      "These are supplied as a matrix of 6 columns encoding the rigid "
+                      "transformations w.r.t. scanner space in se(3) Lie algebra." )
     + Argument ("file").type_file_in()
 
   + Option ("rf", "Basis functions for the radial (multi-shell) domain, provided as matrices in which "
@@ -65,8 +64,9 @@ void usage ()
   + Option ("weights", "Slice weights, provided as a matrix of dimensions Nslices x Nvols.")
     + Argument ("W").type_file_in()
 
-  + Option ("sspwidth", "Slice thickness for Gaussian SSP, relative to the voxel size. (default = " + str(DEFAULT_SSPW)  + ")")
-    + Argument ("w").type_float()
+  + Option ("ssp", "Slice sensitivity profile, either as text file or as a scalar slice thickness for a "
+                   "Gaussian SSP, relative to the voxel size. (default = " + str(DEFAULT_SSPW)  + ")")
+    + Argument ("w").type_text()
 
   + Option ("reg", "Regularization weight. (default = " + str(DEFAULT_REG) + ")")
     + Argument ("l").type_float()
@@ -206,13 +206,29 @@ void run ()
       PEsub.row(i) = PE.row(idx[i]);
   }
 
+  // SSP
+  DWI::SVR::SSP<float> ssp (DEFAULT_SSPW);
+  opt = get_options("ssp");
+  if (opt.size()) {
+    std::string t = opt[0][0];
+    try {
+      ssp = DWI::SVR::SSP<float>(std::stof(t));
+    } catch (std::invalid_argument& e) {
+      try {
+        Eigen::VectorXf v = load_vector<float>(t);
+        ssp = DWI::SVR::SSP<float>(v);
+      } catch (...) {
+        throw Exception ("Invalid argument for SSP.");
+      }
+    }
+  }
+
   // Other parameters
   if (rf.empty())
     lmax = get_option_value("lmax", DEFAULT_LMAX);
   else
     lmax = std::min(lmax, (int) get_option_value("lmax", lmax));
   
-  float sspwidth = get_option_value("sspwidth", DEFAULT_SSPW);
   float reg = get_option_value("reg", DEFAULT_REG);
 
   value_type tol = get_option_value("tolerance", DEFAULT_TOL);
@@ -221,7 +237,7 @@ void run ()
 
   // Set up scattered data matrix
   INFO("initialise reconstruction matrix");
-  DWI::ReconMatrix R (dwisub, motionsub, gradsub, lmax, rf, sspwidth, reg);
+  DWI::SVR::ReconMatrix R (dwisub, motionsub, gradsub, lmax, rf, ssp, reg);
   R.setWeights(Wsub);
   if (hasfield)
     R.setField(field, PEsub);
@@ -241,7 +257,7 @@ void run ()
   // Fit scattered data in basis...
   INFO("initialise conjugate gradient solver");
 
-  Eigen::ConjugateGradient<DWI::ReconMatrix, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
+  Eigen::ConjugateGradient<DWI::SVR::ReconMatrix, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
   cg.compute(R);
 
   cg.setTolerance(tol);
