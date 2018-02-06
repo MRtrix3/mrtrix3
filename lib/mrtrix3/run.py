@@ -3,6 +3,14 @@ _mrtrix_bin_path = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(
 # Remember to remove the '.exe' from Windows binary executables
 _mrtrix_exe_list = [ os.path.splitext(name)[0] for name in os.listdir(_mrtrix_bin_path) ]
 
+# If the main script has been executed in an SGE environment, don't allow
+#   sub-processes to themselves fork SGE jobs; but if the main script is
+#   itself not an SGE job ('JOB_ID' environment variable absent), then
+#   whatever run.command() executes can send out SGE jobs without a problem.
+_env = os.environ.copy()
+if _env.get('SGE_ROOT') and _env.get('JOB_ID'):
+  del _env['SGE_ROOT']
+
 _processes = [ ]
 
 
@@ -13,7 +21,8 @@ def command(cmd, exitOnError=True):
   from distutils.spawn import find_executable
   from mrtrix3 import app
 
-  global _mrtrix_exe_list
+  # This is the only global variable that is _modified_ within this function
+  global _processes
 
   # Vectorise the command string, preserving anything encased within quotation marks
   cmdsplit = shlex.split(cmd)
@@ -107,7 +116,7 @@ def command(cmd, exitOnError=True):
       handle_err = file_err.fileno()
     # Set off the processes
     try:
-      process = subprocess.Popen (command, stdin=handle_in, stdout=handle_out, stderr=handle_err)
+      process = subprocess.Popen (command, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=_env)
       _processes.append(process)
       tempfiles.append( ( file_out, file_err ) )
     # FileNotFoundError not defined in Python 2.7
