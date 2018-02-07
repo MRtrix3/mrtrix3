@@ -221,7 +221,7 @@ normalised to unit amplitude. This may differ from other packages.
 
 Furthermore, *MRtrix3* will always present the transform that best matches the
 real space. If the transform of the image on file represents a large rotation,
-such that for example the image *x* axis is closer to the scanner's *z*
+such that for example the first image axis is closer to the scanner's *z*
 axis, this transform will be modified by permutation or inversion of the axes
 to bring it in alignment with the expected coordinate system, so that the first
 axis genuinely can be interpreted as approximately left-right, etc. To achieve
