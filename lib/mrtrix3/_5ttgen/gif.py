@@ -28,8 +28,7 @@ def execute():
 	run.command('mrconvert input.mif -coord 3 4 sGM.mif')
 
 	# Combine WM and subcortical WM into a unique WM image
-	run.command('mrconvert input.mif -coord 3 5 sWM.mif')
-	run.command('mrcalc cWM.mif sWM.mif -add WM.mif')
+	run.command('mrconvert input.mif - -coord 3 3,5 | mrmath - sum WM.mif -axis 3')
 
 	# Create an empty lesion image
 	run.command('mrcalc WM.mif 0 -mul lsn.mif')
