@@ -74,31 +74,40 @@ namespace MR
 
         }
 
-        auto pe_scheme = PhaseEncoding::get_scheme (H);
-        vector<size_t> order;
-        File::NIfTI::adjust_transform (H, order);
-        const bool axes_adjusted = (order[0] != 0 || order[1] != 1 || order[2] != 2 || H.stride(0) < 0 || H.stride(1) < 0 || H.stride(2) < 0);
-        if (pe_scheme.rows() && axes_adjusted) {
+        if (!Header::do_not_realign_transform) {
+
           // The corresponding header may have been rotated on image load prior to the JSON
-          //   being loaded. If this is the case, the phase encoding scheme will need to be
-          //   correspondingly rotated on import.
-          for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
-            auto new_line = pe_scheme.row (row);
-            for (ssize_t axis = 0; axis != 3; ++axis)
-              new_line[order[axis]] = H.stride (order[axis]) > 0 ? pe_scheme(row,axis) : -pe_scheme(row,axis);
-            pe_scheme.row (row) = new_line;
+          //   being loaded. If this is the case, any fields that indicate an image axis
+          //   number / direction need to be correspondingly modified.
+
+          size_t perm[3];
+          bool flip[3];
+          Axes::make_axial (H.transform(), perm, flip);
+          if (perm[0] != 0 || perm[1] != 1 || perm[2] != 2 || flip[0] || flip[1] || flip[2]) {
+
+            auto pe_scheme = PhaseEncoding::get_scheme (H);
+            if (pe_scheme.rows()) {
+              for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
+                auto new_line = pe_scheme.row (row);
+                for (ssize_t axis = 0; axis != 3; ++axis)
+                  new_line[perm[axis]] = flip[perm[axis]] ? pe_scheme(row,axis) : -pe_scheme(row,axis);
+                pe_scheme.row (row) = new_line;
+              }
+              PhaseEncoding::set_scheme (H, pe_scheme);
+              INFO ("Phase encoding information read from JSON file modified according to expected input image header transform realignment");
+            }
+
+            auto slice_encoding_it = H.keyval().find ("SliceEncodingDirection");
+            if (slice_encoding_it != H.keyval().end()) {
+              const Eigen::Vector3 orig_dir (Axes::id2dir (slice_encoding_it->second));
+              Eigen::Vector3 new_dir;
+              for (size_t axis = 0; axis != 3; ++axis)
+                new_dir[perm[axis]] = flip[perm[axis]] > 0 ? orig_dir[axis] : -orig_dir[axis];
+              slice_encoding_it->second = Axes::dir2id (new_dir);
+              INFO ("Slice encoding direction read from JSON file modified according to expected input image header transform realignment");
+            }
+
           }
-          PhaseEncoding::set_scheme (H, pe_scheme);
-          INFO ("Phase encoding information read from JSON file modified according to expected header transform realignment");
-        }
-        auto slice_encoding_it = H.keyval().find ("SliceEncodingDirection");
-        if (slice_encoding_it != H.keyval().end() && axes_adjusted) {
-          const Eigen::Vector3 orig_dir (Axes::id2dir (slice_encoding_it->second));
-          Eigen::Vector3 new_dir;
-          for (size_t axis = 0; axis != 3; ++axis)
-            new_dir[order[axis]] = H.stride (order[axis]) > 0 ? orig_dir[order[axis]] : -orig_dir[order[axis]];
-          slice_encoding_it->second = Axes::dir2id (new_dir);
-          INFO ("Slice encoding direction read from JSON file modified according to expected header transform realignment");
         }
       }
 
@@ -122,7 +131,7 @@ namespace MR
             pe_scheme.row (row) = new_line;
           }
           PhaseEncoding::set_scheme (H_adj, pe_scheme);
-          INFO ("Phase encoding information written to JSON file modified according to expected header transform realignment");
+          INFO ("Phase encoding information written to JSON file modified according to expected output NIfTI header transform realignment");
         }
         auto slice_encoding_it = H_adj.keyval().find ("SliceEncodingDirection");
         if (slice_encoding_it != H_adj.keyval().end() && axes_adjusted) {
@@ -131,7 +140,7 @@ namespace MR
           for (size_t axis = 0; axis != 3; ++axis)
             new_dir[order[axis]] = H.stride (order[axis]) > 0 ? orig_dir[order[axis]] : -orig_dir[order[axis]];
           slice_encoding_it->second = Axes::dir2id (new_dir);
-          INFO ("Slice encoding direction written to JSON file modified according to expected header transform realignment");
+          INFO ("Slice encoding direction written to JSON file modified according to expected output NIfTI header transform realignment");
         }
         for (const auto& kv : H_adj.keyval())
           json[kv.first] = kv.second;
