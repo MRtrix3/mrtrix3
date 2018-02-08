@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -35,9 +36,9 @@ void usage ()
   + "This command is designed to enable CFE-based statistical analysis to be performed on voxel-wise measures.";
 
   ARGUMENTS
-  + Argument ("image_in",  "the input image.").type_image_in()
-  + Argument ("fixel_directory_in",  "the input fixel directory. Used to define the fixels and their directions").type_text()
-  + Argument ("fixel_directory_out", "the output fixel directory. This can be the same as the input directory if desired").type_text()
+  + Argument ("image_in", "the input image.").type_image_in()
+  + Argument ("fixel_directory_in",  "the input fixel directory. Used to define the fixels and their directions").type_directory_in()
+  + Argument ("fixel_directory_out", "the fixel directory where the output will be written. This can be the same as the input directory if desired").type_text()
   + Argument ("fixel_data_out", "the name of the fixel data image.").type_image_out();
 }
 

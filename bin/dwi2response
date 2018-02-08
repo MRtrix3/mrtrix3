@@ -81,9 +81,9 @@ app.makeTempDir()
 
 # Get standard input data into the temporary directory
 if alg.needsSingleShell() or shells_option:
-  run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' - -stride 0,0,0,1' + grad_import_option + ' | dwiextract - ' + path.toTemp('dwi.mif', True) + shells_option + singleshell_option)
+  run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' - -strides 0,0,0,1' + grad_import_option + ' | dwiextract - ' + path.toTemp('dwi.mif', True) + shells_option + singleshell_option)
 else: # Don't discard b=0 in multi-shell algorithms
-  run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('dwi.mif', True) + ' -stride 0,0,0,1' + grad_import_option)
+  run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('dwi.mif', True) + ' -strides 0,0,0,1' + grad_import_option)
 if app.args.mask:
   run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit')
 else:

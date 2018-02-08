@@ -2,6 +2,24 @@ _suffix = ''
 
 # Functions that may be useful for scripts that interface with FMRIB FSL tools
 
+# FSL's run_first_all script can be difficult to wrap, since it does not provide
+#   a meaningful return code, and may run via SGE, which then requires waiting for
+#   the output files to appear.
+def checkFirst(prefix, structures): #pylint: disable=unused-variable
+  import os
+  from mrtrix3 import app, file, path # pylint: disable=redefined-builtin
+  vtk_files = [ prefix + '-' + struct + '_first.vtk' for struct in structures ]
+  existing_file_count = sum([ os.path.exists(filename) for filename in vtk_files ])
+  if existing_file_count != len(vtk_files):
+    if 'SGE_ROOT' in os.environ:
+      app.console('FSL FIRST job has been submitted to SGE; awaiting completion')
+      app.console('(note however that FIRST may fail silently, and hence this script may hang indefinitely)')
+      file.waitFor(vtk_files)
+    else:
+      app.error('FSL FIRST has failed; only ' + str(existing_file_count) + ' of ' + str(len(vtk_files)) + ' structures were segmented successfully (check ' + path.toTemp('first.logs', False) + ')')
+
+
+
 # Get the name of the binary file that should be invoked to run eddy;
 #   this depends on both whether or not the user has requested that the CUDA
 #   version of eddy be used, and the various names that this command could
@@ -83,6 +101,7 @@ def findImage(name): #pylint: disable=unused-variable
       app.debug('Expected image at \"' + prefix + suffix() + '\", but found at \"' + prefix + suf + '\"')
       return prefix + suf
   app.error('Unable to find FSL output file for path \"' + name + '\"')
+  return ''
 
 
 

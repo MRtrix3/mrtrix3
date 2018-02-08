@@ -1,1 +1,0 @@
-tcknormalise tracks.tck unit_warp.mif tmp.tck -force && testing_diff_tck tmp.tck tcknormalise/out.tck 1e-2
