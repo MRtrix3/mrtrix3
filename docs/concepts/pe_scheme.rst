@@ -30,8 +30,8 @@ The phase encoding information for a particular image file can be stored in one
 of two ways.
 
 -  The most convenient of these is storage of (one or more) key-value field(s)
-   encapsulated within the :ref:`image_header`, just as can be used for
-   :ref:`diffusion_gradient_scheme_handling`. This ensures that the information
+   encapsulated within the image header, just as can be used for
+   :ref:`dw_scheme`. This ensures that the information
    is retained through image processing, as each *MRtrix3* command passes the
    header entries of the input image through to the output image.
 
@@ -54,7 +54,7 @@ In the case where both the phase encoding *direction* and the EPI *total readout
 time* are equivalent for all volumes within an image, this information is encoded
 within two fields: "``PhaseEncodingDirection``" and "``TotalReadoutTime``". These
 fields are consistent with `BIDS
-<http://bids.neuroimaging.io//>`_ (the Brain Imaging Data Structure).
+<http://bids.neuroimaging.io/>`_ (the Brain Imaging Data Structure).
 
 ``PhaseEncodingDirection`` can take one of six values: "``i``", "``i-``", "``j``",
 "``j-``", "``k``", "``k-``". These correspond to the first, second and third axes of
@@ -62,7 +62,7 @@ the corresponding image. Exactly how these axes map to "real" / "scanner" space
 axes (i.e. left-right, posterior-enterior, inferior-superior) depends on the
 :ref:`transform` that is stored in the respective image header, which may
 potentially have been modified internally by *MRtrix3* on image load (discussed
-further in the non_axial_acquisitions_ section). Here, we begin with the most simple
+further in the :ref:`non_axial_acquisitions` section). Here, we begin with the most simple
 use case:
 
 Take an image that conforms to the RAS (Right-Anterior-Superior) convention common
@@ -108,7 +108,7 @@ If the phase encoding direction and/or the total readout time varies between
 different volumes within a single image series, then the two key-value fields
 described above are not sufficient to fully encode this information. In this
 situation, *MRtrix3* will instead use a key-value entry "``pe_scheme``" (similar to
-the "``dw_scheme``" entry used for :ref:`diffusion_gradient_scheme_handling`).
+the "``dw_scheme``" entry used for :ref:`dw_scheme`).
 
 This information is stored as a *table*, where each row contains the phase encoding
 direction and the readout time for the corresponding volume; the number of rows in
@@ -118,6 +118,8 @@ number is the total readout time. The direction is specified as a unit direction
 the image coordinate system; for instance, a phase encoding direction of A>>P would
 be encoded as ``[ 0 -1 0 ]``.
 
+
+.. _non_axial_acquisitions:
 
 Non-axial acquisitions
 ----------------------

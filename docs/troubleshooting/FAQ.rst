@@ -333,22 +333,22 @@ The following error messages have frequently been observed from the
 
 .. code-block:: console
 
-    FSL FIRST has failed; not all structures were segmented successfully
-    Waiting for creation of new file "first-L_Accu_first.vtk"
-    FSL FIRST job has been submitted to SGE; awaiting completion
-      (note however that FIRST may fail silently, and hence this script may hang indefinitely)
+   FSL FIRST has failed; not all structures were segmented successfully
+   Waiting for creation of new file "first-L_Accu_first.vtk"
+   FSL FIRST job has been submitted to SGE; awaiting completion
+     (note however that FIRST may fail silently, and hence this script may hang indefinitely)
 
 Error messages that may be found in the log files within the script's
 temporary directory include:
 
 .. code-block:: console
 
-    Cannot open volume first-L_Accu_corr for reading!
-    Image Exception : #22 :: ERROR: Could not open image first_all_none_firstseg
-    WARNING: NO INTERIOR VOXELS TO ESTIMATE MODE
-    vector::_M_range_check
-    terminate called after throwing an instance of 'RBD_COMMON::BaseException'
-    /bin/sh: line 1:  6404 Aborted                 /usr/local/packages/fsl-5.0.1/bin/fslmerge -t first_all_none_firstseg first-L_Accu_corr first-R_Accu_corr first-L_Caud_corr first-R_Caud_corr first-L_Pall_corr first-R_Pall_corr first-L_Puta_corr first-R_Puta_corr first-L_Thal_corr first-R_Thal_corr
+   Cannot open volume first-L_Accu_corr for reading!
+   Image Exception : #22 :: ERROR: Could not open image first_all_none_firstseg
+   WARNING: NO INTERIOR VOXELS TO ESTIMATE MODE
+   vector::_M_range_check
+   terminate called after throwing an instance of 'RBD_COMMON::BaseException'
+   /bin/sh: line 1:  6404 Aborted                 /usr/local/packages/fsl-5.0.1/bin/fslmerge -t first_all_none_firstseg first-L_Accu_corr first-R_Accu_corr first-L_Caud_corr first-R_Caud_corr first-L_Pall_corr first-R_Pall_corr first-L_Puta_corr first-R_Puta_corr first-L_Thal_corr first-R_Thal_corr
 
 These various messages all relate to the fact that this script makes use of
 FSL's FIRST tool to explicitly segment sub-cortical grey matter structures,
@@ -381,7 +381,7 @@ resampled image:
 
 .. code-block: console
 
-    $ flirt -in T1.nii -ref DWI.nii -omat T12DWI_flirt.mat -dof 6
+   $ flirt -in T1.nii -ref DWI.nii -omat T12DWI_flirt.mat -dof 6
 
 That transformation matrix should then applied to the T1 image in a manner
 that only influences the transformation stored within the image header, and
@@ -389,8 +389,8 @@ does *not* resample the image to a new voxel grid:
 
 .. code-block: console
 
-    $ transformconvert T12DWI_flirt.mat T1.nii DWI.nii flirt_import T12DWI_mrtrix.txt
-    $ mrtransform T1.nii T1_registered.mif -linear T12DWI_mrtrix.txt
+   $ transformconvert T12DWI_flirt.mat T1.nii DWI.nii flirt_import T12DWI_mrtrix.txt
+   $ mrtransform T1.nii T1_registered.mif -linear T12DWI_mrtrix.txt
 
 If the T1 image provided to ``5ttgen fsl`` has _not_ been erroneously
 down-sampled, but issues are still encountered with the FIRST step, another

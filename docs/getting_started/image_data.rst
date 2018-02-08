@@ -585,7 +585,7 @@ FreeSurfer formats (``.mgh / .mgz``)
 Images stored in these formats may include
 `additional data structures <https://surfer.nmr.mgh.harvard.edu/fswiki/FsTutorial/MghFormat>`__
 that follow the image data. These data structures provide a similar functionality
-to the :ref:`header_keyvalue_pairs` used in the :ref:`_mrtrix_image_formats`.
+to the :ref:`header_keyvalue_pairs` used in the :ref:`mrtrix_image_formats`.
 
 When present in an input file, _MRtrix3_ will import these data into
 :ref:`header_keyvalue_pairs`, with keys named "``MGH_*``" (each element present
