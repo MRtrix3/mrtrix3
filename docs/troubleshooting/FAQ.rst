@@ -410,3 +410,63 @@ For any further issues, the only remaining recommendations are:
    determine precisely which images can be successfully segmented and
    which cannot. If it does not, then it may be necessary to experiment
    with the command-line options available in the ``run_first_all`` script.
+
+
+How do I use atlas / parcellation "X"?
+--------------------------------------
+
+Whether dealing with individual subject data, or a population-specific
+template, it can be desirable to obtain spatial correspondence between
+your own data and some other atlas image. This includes taking a
+parcellation that is defined in the space of that atlas and transforming
+it onto the subject / template image.
+
+Our recommended steps for achieving this are:
+
+1. Perform registration from image of interest to target atlas
+
+   -  Since this registration is not always intra-modal, and image
+      intensities may vary significantly, here we recommend using FSL
+      ``flirt``.
+
+   -  12 degrees of freedom affine registration is performed to account
+      for gross differences in brain shape.
+
+   -  ``flirt`` must be explicitly instructed to provide a transformation
+      *matrix*, rather than a transformed & re-gridded image.
+
+   .. code-block:: console
+
+      flirt -in my_image.mif -ref target_atlas.mif -omat image2atlas_flirt.mat -dof 12
+
+2. Convert the transformation matrix estimated by ``flirt`` into
+   *MRtrix3* convention
+
+   .. code-block:: console
+
+      transformconvert image2atlas_flirt.mat my_image.mif target_atlas.mif flirt_import image2atlas_mrtrix.txt
+
+3. Invert the transformation matrix to obtain the transformation from atlas
+   space to your image
+
+   .. code-block:: console
+
+      transformcalc image2atlas_mrtrix.txt invert atlas2image_mrtrix.txt
+
+4. Apply this transformation to the parcellation image associated with
+   the atlas
+
+   -  Due to the use of a full affine registration (12 degrees of freedom)
+      rather than a rigid-body registration (6 degrees of freedom), it is
+      preferable to re-sample the parcellation image to the target image
+      voxel grid, rather than altering the image header transformation
+      only.
+
+   -  When re-sampling a parcellation image to a different image grid,
+      nearest-neighbour interpolation must be used; otherwise the underlying
+      integer values that correspond to parcel identification indices will
+      be lost.
+
+   .. code-block:: console
+
+      mrtransform target_parcellation.mif -linear atlas2image_mrtrix.txt -template my_image.mif parcellation_in_my_image_space.mif
