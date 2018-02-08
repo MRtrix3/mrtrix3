@@ -23,7 +23,7 @@
 #include "registration/metric/demons.h"
 #include "registration/metric/mean_squared.h"
 #include "registration/metric/difference_robust.h"
-#include "registration/metric/normalised_cross_correlation.h"
+#include "registration/metric/local_cross_correlation.h"
 #include "registration/transform/affine.h"
 #include "registration/transform/rigid.h"
 #include "dwi/directions/predefined.h"
@@ -859,7 +859,7 @@ void run () {
       } else throw Exception ("FIXME: metric selection");
     } else { // 3D
       if (rigid_metric == Registration::NCC){
-        Registration::Metric::NormalisedCrossCorrelation metric;
+        Registration::Metric::LocalCrossCorrelation metric;
         vector<size_t> extent(3,3);
         rigid_registration.set_extent (extent);
         rigid_registration.run_masked (metric, rigid, images1, images2, im1_mask, im2_mask);
@@ -928,7 +928,7 @@ void run () {
       } else throw Exception ("FIXME: metric selection");
     } else { // 3D
       if (affine_metric == Registration::NCC){
-        Registration::Metric::NormalisedCrossCorrelation metric;
+        Registration::Metric::LocalCrossCorrelation metric;
         vector<size_t> extent(3,3);
         affine_registration.set_extent (extent);
         affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
