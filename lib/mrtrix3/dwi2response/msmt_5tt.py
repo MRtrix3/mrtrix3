@@ -26,7 +26,7 @@ def getInputs(): #pylint: disable=unused-variable
   from mrtrix3 import app, path, run
   run.command('mrconvert ' + path.fromUser(app.args.in_5tt, True) + ' ' + path.toTemp('5tt.mif', True))
   if app.args.dirs:
-    run.command('mrconvert ' + path.fromUser(app.args.dirs, True) + ' ' + path.toTemp('dirs.mif', True) + ' -stride 0,0,0,1')
+    run.command('mrconvert ' + path.fromUser(app.args.dirs, True) + ' ' + path.toTemp('dirs.mif', True) + ' -strides 0,0,0,1')
 
 
 
@@ -43,10 +43,15 @@ def execute(): #pylint: disable=unused-variable
   # May need to commit 5ttregrid...
 
   # Verify input 5tt image
-  run.command('5ttcheck 5tt.mif', False)
+  stderr_5ttcheck = run.command('5ttcheck 5tt.mif')[1]
+  if stderr_5ttcheck:
+    app.warn('Command 5ttcheck indicates minor problems with provided input 5TT image \'' + app.args.in_5tt + '\':')
+    for line in stderr_5ttcheck.splitlines():
+      app.warn(line)
+    app.warn('These may or may not interfere with the dwi2response msmt_5tt script')
 
   # Get shell information
-  shells = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shellvalues').split() ]
+  shells = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shell_bvalues').split() ]
   if len(shells) < 3:
     app.warn('Less than three b-value shells; response functions will not be applicable in resolving three tissues using MSMT-CSD algorithm')
 

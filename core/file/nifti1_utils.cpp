@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -179,10 +180,13 @@ namespace MR
             M(2,2) = Raw::fetch_<float32> (&NH.srow_z[2], is_BE);
             M(2,3) = Raw::fetch_<float32> (&NH.srow_z[3], is_BE);
 
-            // get voxel sizes:
+            // check voxel sizes:
             for (size_t axis = 0; axis != 3; ++axis) {
               if (size_t(ndim) > axis)
-                H.spacing(axis) = std::sqrt (Math::pow2 (M(0,axis)) + Math::pow2 (M(1,axis)) + Math::pow2 (M(2,axis)));
+                if (std::abs(H.spacing(axis) - std::sqrt (Math::pow2 (M(0,axis)) + Math::pow2 (M(1,axis)) + Math::pow2 (M(2,axis)))) > 1e-4) {
+                    WARN ("voxel spacings inconsistent between NIFTI s-form and header field pixdim");
+                    break;
+                }
             }
 
             // normalize each transform axis:
@@ -209,11 +213,11 @@ namespace MR
               H.transform().matrix().col(2) *= qfac;
           }
 
-          //CONF option: NIfTI.AutoLoadJSON
+          //CONF option: NIfTIAutoLoadJSON
           //CONF default: 0 (false)
           //CONF A boolean value to indicate whether, when opening NIfTI images,
           //CONF any corresponding JSON file should be automatically loaded.
-          if (File::Config::get_bool ("NIfTI.AutoLoadJSON", false)) {
+          if (File::Config::get_bool ("NIfTIAutoLoadJSON", false)) {
             std::string json_path = H.name();
             if (Path::has_suffix (json_path, ".nii.gz"))
               json_path = json_path.substr (0, json_path.size()-7);
@@ -411,13 +415,13 @@ namespace MR
 
         strncpy ( (char*) &NH.magic, single_file ? "n+1\0" : "ni1\0", 4);
 
-        //CONF option: NIfTI.AutoSaveJSON
+        //CONF option: NIfTIAutoSaveJSON
         //CONF default: 0 (false)
         //CONF A boolean value to indicate whether, when writing NIfTI images,
         //CONF a corresponding JSON file should be automatically created in order
         //CONF to save any header entries that cannot be stored in the NIfTI
         //CONF header.
-        if (single_file && File::Config::get_bool ("NIfTI.AutoSaveJSON", false)) {
+        if (single_file && File::Config::get_bool ("NIfTIAutoSaveJSON", false)) {
           std::string json_path = H.name();
           if (Path::has_suffix (json_path, ".nii.gz"))
             json_path = json_path.substr (0, json_path.size()-7);
