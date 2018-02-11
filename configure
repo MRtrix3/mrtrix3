@@ -32,6 +32,8 @@ OPTIONS
 
     -assert      enable all assert() and related checks.
 
+    -nooptim     disable optimisation (implied by -debug and -profile).
+
     -profile     enable profiling.
 
     -nogui       disable GUI components.
@@ -154,6 +156,7 @@ if sys.executable[0].isalpha() and sys.executable[1] == ':':
 
 debug = False
 asserts = False
+nooptim = False
 profile = False
 nogui = False
 noshared = False
@@ -164,10 +167,11 @@ openmp = False
 dev = False
 
 for arg in sys.argv[1:]:
-  if '-debug'.startswith (arg): debug = True
+  if '-debug'.startswith (arg): debug = nooptim = True
   elif '-dev'.startswith (arg): dev = True
   elif '-assert'.startswith (arg): asserts = True
-  elif '-profile'.startswith (arg): profile = True
+  elif '-nooptim'.startswith (arg): nooptim = True
+  elif '-profile'.startswith (arg): profile = nooptim = True
   elif '-nogui'.startswith (arg): nogui = True
   elif '-noshared'.startswith (arg): noshared = True
   elif '-static'.startswith (arg):
@@ -217,6 +221,7 @@ if profile: report ('profiling')
 elif debug: report ('debug')
 else: report ('release')
 if asserts: report (' with asserts')
+if nooptim: report (' without optimisation')
 if nogui: report (' [command-line only]')
 report ('\n\n')
 
@@ -1256,10 +1261,12 @@ if profile:
   ld_flags += [ '-g', '-pg' ]
   ld_lib_flags += [ '-g', '-pg' ]
 elif debug:
-  cpp_flags += [ '-O0' ]
-  cpp_flags += [ '-g' ]
+  cpp_flags += [ '-O0', '-g' ]
   ld_flags += [ '-g' ]
   ld_lib_flags += [ '-g' ]
+
+if nooptim:
+  cpp_flags += [ '-O0' ]
 else:
   cpp_flags += [ '-O3' ]
 
