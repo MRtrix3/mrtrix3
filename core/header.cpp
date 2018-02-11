@@ -475,7 +475,7 @@ namespace MR
     // find which row of the transform is closest to each scanner axis:
     size_t perm [3];
     bool flip[3];
-    Axes::make_axial (transform(), perm, flip);
+    Axes::get_permutation_to_make_axial (transform(), perm, flip);
 
     // check if image is already near-axial, return if true:
     if (perm[0] == 0 && perm[1] == 1 && perm[2] == 2 &&

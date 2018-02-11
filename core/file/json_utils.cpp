@@ -82,7 +82,7 @@ namespace MR
 
           size_t perm[3];
           bool flip[3];
-          Axes::make_axial (H.transform(), perm, flip);
+          Axes::get_permutation_to_make_axial (H.transform(), perm, flip);
           if (perm[0] != 0 || perm[1] != 1 || perm[2] != 2 || flip[0] || flip[1] || flip[2]) {
 
             auto pe_scheme = PhaseEncoding::get_scheme (H);
