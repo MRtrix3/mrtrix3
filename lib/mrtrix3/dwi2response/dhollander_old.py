@@ -1,11 +1,11 @@
 def initialise(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('dhollander', author='Thijs Dhollander (thijs.dhollander@gmail.com)', synopsis='Unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof). This is an improved version of the algorithm.', parents=[base_parser])
+  parser = subparsers.add_parser('dhollander_old', author='Thijs Dhollander (thijs.dhollander@gmail.com)', synopsis='Unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof). This is the original version of the algorithm.', parents=[base_parser])
   parser.addCitation('', 'Dhollander, T.; Raffelt, D. & Connelly, A. Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5', False)
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('out_sfwm', help='Output single-fibre WM response text file')
   parser.add_argument('out_gm', help='Output GM response text file')
   parser.add_argument('out_csf', help='Output CSF response text file')
-  options = parser.add_argument_group('Options specific to the \'dhollander\' algorithm')
+  options = parser.add_argument_group('Options specific to the \'dhollander_old\' algorithm')
   options.add_argument('-erode', type=int, default=3, help='Number of erosion passes to apply to initial (whole brain) mask. (default: 3)')
   options.add_argument('-fa', type=float, default=0.2, help='FA threshold for crude WM versus GM-CSF separation. (default: 0.2)')
   options.add_argument('-sfwm', type=float, default=0.5, help='Number of single-fibre WM voxels to select, as a percentage of refined WM. (default: 0.5 per cent)')
