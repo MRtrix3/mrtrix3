@@ -77,7 +77,7 @@ void usage ()
 
   ARGUMENTS
   + Argument ("fod", "the input fod image.").type_image_in ()
-  + Argument ("fixel_directory", "the output fixel directory").type_text();
+  + Argument ("fixel_directory", "the output fixel directory").type_directory_out();
 
 
   OPTIONS
