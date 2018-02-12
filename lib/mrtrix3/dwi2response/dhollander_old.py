@@ -1,5 +1,5 @@
 def initialise(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('dhollander_old', author='Thijs Dhollander (thijs.dhollander@gmail.com)', synopsis='Unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof). This is the original version of the algorithm.', parents=[base_parser])
+  parser = subparsers.add_parser('dhollander_old', author='Thijs Dhollander (thijs.dhollander@gmail.com)', synopsis='Unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof). This is the original version of the Dhollander et al. (2016) algorithm.', parents=[base_parser])
   parser.addCitation('', 'Dhollander, T.; Raffelt, D. & Connelly, A. Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5', False)
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('out_sfwm', help='Output single-fibre WM response text file')

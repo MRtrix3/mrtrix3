@@ -89,7 +89,7 @@ dwi2response dhollander
 Synopsis
 --------
 
-Unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof). This is an improved version of the algorithm.
+Unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof). This is an improved version of the Dhollander et al. (2016) algorithm.
 
 Usage
 --------
@@ -186,7 +186,7 @@ dwi2response dhollander_old
 Synopsis
 --------
 
-Unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof). This is the original version of the algorithm.
+Unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof). This is the original version of the Dhollander et al. (2016) algorithm.
 
 Usage
 --------
