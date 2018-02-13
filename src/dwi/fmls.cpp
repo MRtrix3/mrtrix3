@@ -133,7 +133,7 @@ namespace MR {
 
 
 
-      Segmenter::Segmenter (const DWI::Directions::Set& directions, const size_t l) :
+      Segmenter::Segmenter (const DWI::Directions::FastLookupSet& directions, const size_t l) :
           dirs                         (directions),
           lmax                         (l),
           precomputer                  (new Math::SH::PrecomputedAL<default_type> (lmax, 2 * dirs.size())),
@@ -264,9 +264,31 @@ namespace MR {
             // Revise multiple peaks if present
             for (size_t peak_index = 0; peak_index != i->num_peaks(); ++peak_index) {
               Eigen::Vector3 newton_peak = i->get_peak_dir (peak_index);
-              const default_type new_peak_value = Math::SH::get_peak (in, lmax, newton_peak, &(*precomputer));
-              if (std::isfinite (new_peak_value) && newton_peak.allFinite())
-                i->revise_peak (peak_index, newton_peak, new_peak_value);
+              const default_type newton_peak_value = Math::SH::get_peak (in, lmax, newton_peak, &(*precomputer));
+              if (std::isfinite (newton_peak_value) && newton_peak.allFinite()) {
+
+                // Ensure that the new peak direction found via Newton optimisation
+                //   is still approximately the same peak as that found via FMLS:
+
+                // - Needs to be closer to this peak than any other peaks within the lobe
+                default_type max_dp = 0.0;
+                size_t nearest_original_peak = i->num_peaks();
+                for (size_t j = 0; j != i->num_peaks(); ++j) {
+                  const default_type this_dp = std::abs (newton_peak.dot (i->get_peak_dir (j)));
+                  if (this_dp > max_dp) {
+                    max_dp = this_dp;
+                    nearest_original_peak = j;
+                  }
+                }
+                if (nearest_original_peak == peak_index) {
+
+                  // - Needs to still lie within the lobe: Determined via mask
+                  const index_type newton_peak_closest_dir_index = dirs.select_direction (newton_peak);
+                  if (i->get_mask()[newton_peak_closest_dir_index])
+                    i->revise_peak (peak_index, newton_peak, newton_peak_value);
+
+                }
+              }
             }
             if (i->get_max_peak_value() < peak_value_threshold) {
               i = out.erase (i);
