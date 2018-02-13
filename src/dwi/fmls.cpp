@@ -257,7 +257,7 @@ namespace MR {
 
         for (auto i = out.begin(); i != out.end();) { // Empty increment
 
-          if (i->is_negative() || i->get_max_peak_value() < peak_value_threshold || i->get_integral() < integral_threshold) {
+          if (i->is_negative() || i->get_integral() < integral_threshold) {
             i = out.erase (i);
           } else {
 
@@ -289,12 +289,16 @@ namespace MR {
 
                 }
               }
-              i->finalise();
             }
+            if (i->get_max_peak_value() < peak_value_threshold) {
+              i = out.erase (i);
+            } else {
+              i->finalise();
 #ifdef FMLS_OPTIMISE_MEAN_DIR
-            optimise_mean_dir (*i);
+              optimise_mean_dir (*i);
 #endif
-            ++i;
+              ++i;
+            }
           }
         }
 
@@ -408,8 +412,8 @@ namespace MR {
 
               // Transform unit direction onto tangent plane defined by the current mean direction estimate
               Point<float> p (dir[0]*Tx[0] + dir[1]*Tx[1] + dir[2]*Tx[2],
-                  dir[0]*Ty[0] + dir[1]*Ty[1] + dir[2]*Ty[2],
-                  dir[0]*Tz[0] + dir[1]*Tz[1] + dir[2]*Tz[2]);
+                              dir[0]*Ty[0] + dir[1]*Ty[1] + dir[2]*Ty[2],
+                              dir[0]*Tz[0] + dir[1]*Tz[1] + dir[2]*Tz[2]);
 
               if (p[2] < 0.0)
                 p = -p;
@@ -434,8 +438,8 @@ namespace MR {
 
           // Transform the offset from the tangent plane origin to euclidean space
           u.set (u[0]*Tx[0] + u[1]*Ty[0] + u[2]*Tz[0],
-              u[0]*Tx[1] + u[1]*Ty[1] + u[2]*Tz[1],
-              u[0]*Tx[2] + u[1]*Ty[2] + u[2]*Tz[2]);
+                 u[0]*Tx[1] + u[1]*Ty[1] + u[2]*Tz[1],
+                 u[0]*Tx[2] + u[1]*Ty[2] + u[2]*Tz[2]);
 
           mean_dir += u;
           mean_dir.normalise();
