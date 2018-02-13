@@ -177,7 +177,7 @@ namespace MR
           Eigen::Array3i vox;
       };
 
-      class FODQueueWriter 
+      class FODQueueWriter
       { MEMALIGN (FODQueueWriter)
 
           using FODImageType = Image<float>;
@@ -219,7 +219,7 @@ namespace MR
       // Store a vector of weights to be applied when computing integrals, to account for non-uniformities in direction distribution
       // These weights are applied to the amplitude along each direction as the integral for each lobe is summed,
       //   in order to take into account the relative spacing between adjacent directions
-      class IntegrationWeights 
+      class IntegrationWeights
       { MEMALIGN (IntegrationWeights)
         public:
           IntegrationWeights (const DWI::Directions::Set& dirs);
@@ -234,7 +234,7 @@ namespace MR
       class Segmenter { MEMALIGN(Segmenter)
 
         public:
-          Segmenter (const DWI::Directions::Set&, const size_t);
+          Segmenter (const DWI::Directions::FastLookupSet&, const size_t);
 
           bool operator() (const SH_coefs&, FOD_lobes&) const;
 
@@ -255,7 +255,10 @@ namespace MR
 
         private:
 
-          const DWI::Directions::Set& dirs;
+          // FastLookupSet is required for ensuring that when a peak direction is
+          //   revised using Newton optimisation, that direction is still reflective
+          //   of the original peak; i.e. it hasn't 'leaped' across to a different peak
+          const DWI::Directions::FastLookupSet& dirs;
 
           const size_t lmax;
 
