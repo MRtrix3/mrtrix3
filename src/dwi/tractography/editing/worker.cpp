@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -133,15 +134,8 @@ namespace MR {
           min_length (0.0f),
           max_weight (std::numeric_limits<float>::infinity()),
           min_weight (0.0f),
-          step_size (NaN)
+          step_size (get_step_size (properties))
         {
-
-          std::string step_size_string;
-          if (properties.find ("output_step_size") == properties.end())
-            step_size_string = ((properties.find ("step_size") == properties.end()) ? "0.0" : properties["step_size"]);
-          else
-            step_size_string = properties["output_step_size"];
-
           if (properties.find ("max_dist") != properties.end()) {
             try {
               max_length = to<float>(properties["max_dist"]);
@@ -153,8 +147,7 @@ namespace MR {
             } catch (...) { }
           }
 
-          try {
-            step_size = to<float>(step_size_string);
+          if (std::isfinite (step_size)) {
             // User may set these values to a precise value, which may then fail due to floating-point
             //   calculation of streamline length
             // Therefore throw a bit of error margin in here
@@ -163,14 +156,13 @@ namespace MR {
               error_margin = 0.5 / to<float>(properties["downsample_factor"]);
             max_length += error_margin * step_size;
             min_length -= error_margin * step_size;
-          } catch (...) { }
+          }
 
           if (properties.find ("max_weight") != properties.end())
             max_weight = to<float>(properties["max_weight"]);
 
           if (properties.find ("min_weight") != properties.end())
             min_weight = to<float>(properties["min_weight"]);
-
         }
 
 

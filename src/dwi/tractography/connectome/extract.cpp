@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -73,21 +74,13 @@ bool Selector::operator() (const vector<node_t>& nodes) const
 
 
 WriterExemplars::WriterExemplars (const Tractography::Properties& properties, const vector<node_t>& nodes, const bool exclusive, const node_t first_node, const vector<Eigen::Vector3f>& COMs) :
-    step_size (NAN)
+    step_size (get_step_size (properties))
 {
+  if (!std::isfinite (step_size))
+    step_size = 1.0f;
+
   // Determine how many points to use in the initial representation of each exemplar
   size_t length = 0;
-  auto output_step_size_it = properties.find ("output_step_size");
-  if (output_step_size_it == properties.end()) {
-    auto step_size_it = properties.find ("step_size");
-    if (step_size_it == properties.end())
-      step_size = 1.0f;
-    else
-      step_size = to<float>(step_size_it->second);
-  } else {
-    step_size = to<float>(output_step_size_it->second);
-  }
-
   auto max_dist_it = properties.find ("max_dist");
   if (max_dist_it == properties.end())
     length = 201;
@@ -216,21 +209,13 @@ WriterExtraction::WriterExtraction (const Tractography::Properties& p, const vec
     exclusive (exclusive),
     keep_self (keep_self) { }
 
-WriterExtraction::~WriterExtraction()
-{
-  for (size_t i = 0; i != writers.size(); ++i) {
-    delete writers[i];
-    writers[i] = nullptr;
-  }
-}
-
 
 
 
 void WriterExtraction::add (const node_t node, const std::string& path, const std::string weights_path = "")
 {
-  selectors.push_back (Selector (node, keep_self));
-  writers.push_back (new Tractography::WriterUnbuffered<float> (path, properties));
+  selectors.emplace_back (Selector (node, keep_self));
+  writers.emplace_back (new Tractography::WriterUnbuffered<float> (path, properties));
   if (weights_path.size())
     writers.back()->set_weights_path (weights_path);
 }
@@ -238,8 +223,8 @@ void WriterExtraction::add (const node_t node, const std::string& path, const st
 void WriterExtraction::add (const node_t node_one, const node_t node_two, const std::string& path, const std::string weights_path = "")
 {
   if (keep_self || (node_one != node_two)) {
-    selectors.push_back (Selector (node_one, node_two));
-    writers.push_back (new Tractography::WriterUnbuffered<float> (path, properties));
+    selectors.emplace_back (Selector (node_one, node_two));
+    writers.emplace_back (new Tractography::WriterUnbuffered<float> (path, properties));
     if (weights_path.size())
       writers.back()->set_weights_path (weights_path);
   }
@@ -247,8 +232,8 @@ void WriterExtraction::add (const node_t node_one, const node_t node_two, const 
 
 void WriterExtraction::add (const vector<node_t>& list, const std::string& path, const std::string weights_path = "")
 {
-  selectors.push_back (Selector (list, exclusive, keep_self));
-  writers.push_back (new Tractography::WriterUnbuffered<float> (path, properties));
+  selectors.emplace_back (Selector (list, exclusive, keep_self));
+  writers.emplace_back (new Tractography::WriterUnbuffered<float> (path, properties));
   if (weights_path.size())
     writers.back()->set_weights_path (weights_path);
 }
@@ -258,10 +243,6 @@ void WriterExtraction::add (const vector<node_t>& list, const std::string& path,
 void WriterExtraction::clear()
 {
   selectors.clear();
-  for (size_t i = 0; i != writers.size(); ++i) {
-    delete writers[i];
-    writers[i] = NULL;
-  }
   writers.clear();
 }
 

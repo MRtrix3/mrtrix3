@@ -1,24 +1,26 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
 #ifndef __filter_warp_h__
 #define __filter_warp_h__
 
+#include "datatype.h"
+#include "adapter/reslice.h"
 #include "adapter/warp.h"
 #include "algo/threaded_copy.h"
 #include "algo/threaded_loop.h"
-#include "datatype.h"
 #include "interp/cubic.h"
 #include "filter/reslice.h"
 
@@ -63,7 +65,8 @@ namespace MR
           ImageTypeSource& source,
           ImageTypeDestination& destination,
           WarpType& warp,
-          const typename ImageTypeDestination::value_type value_when_out_of_bounds = Interpolator<ImageTypeSource>::default_out_of_bounds_value())
+          const typename ImageTypeDestination::value_type value_when_out_of_bounds = Interpolator<ImageTypeSource>::default_out_of_bounds_value(),
+          vector<int> oversample = Adapter::AutoOverSample)
       {
 
         // reslice warp onto destination grid
@@ -76,7 +79,8 @@ namespace MR
            header.size(3) = 3;
            Stride::set (header, Stride::contiguous_along_axis (3));
            auto warp_resliced = Image<typename WarpType::value_type>::scratch (header);
-           reslice<Interp::Cubic> (warp, warp_resliced);
+           reslice<Interp::Cubic> (warp, warp_resliced, Adapter::NoTransform, oversample);
+
            Adapter::Warp<Interpolator, ImageTypeSource, Image<typename WarpType::value_type> > interp (source, warp_resliced, value_when_out_of_bounds);
 
            if (destination.ndim() == 4)

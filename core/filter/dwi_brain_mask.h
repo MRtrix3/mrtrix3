@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -81,17 +82,19 @@ namespace MR
             // Loop over each shell, including b=0, in turn
             DWI::Shells shells (grad);
             for (size_t s = 0; s != shells.count(); ++s) {
-              const DWI::Shell shell (shells[s]);
+              const DWI::Shell& shell (shells[s]);
 
               auto shell_image = Image<value_type>::scratch (header, "mean b=" + str(size_t(std::round(shell.get_mean()))) + " image");
 
               for (auto l = Loop (0, 3) (input, shell_image); l; ++l) {
-                value_type mean = 0;
+                default_type sum = 0.0;
                 for (vector<size_t>::const_iterator v = shell.get_volumes().begin(); v != shell.get_volumes().end(); ++v) {
                   input.index(3) = *v;
-                  mean += (input.value() < 0) ? 0 : input.value();
+                  const value_type value = input.value();
+                  if (value > value_type(0))
+                    sum += value;
                 }
-                shell_image.value() = mean / value_type(shell.count());
+                shell_image.value() = value_type(sum / default_type(shell.count()));
               }
               if (progress)
                 ++(*progress);

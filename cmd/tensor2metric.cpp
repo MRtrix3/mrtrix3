@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -127,7 +128,10 @@ class Processor { MEMALIGN(Processor)
       value_img (value_img),
       vector_img (vector_img),
       vals (vals),
-      modulate (modulate) { }
+      modulate (modulate) {
+        for (auto& n : this->vals)
+          --n;
+      }
 
     void operator() (Image<value_type>& dt_img)
     {
@@ -159,7 +163,7 @@ class Processor { MEMALIGN(Processor)
         fa_img.value() = fa;
       }
       
-      bool need_eigenvalues = value_img.valid() || (vector_img.valid() && (modulate == 2)) || ad_img.valid() || rd_img.valid() || cl_img.valid() || cp_img.valid() || cs_img.valid();
+      bool need_eigenvalues = value_img.valid() || vector_img.valid() || ad_img.valid() || rd_img.valid() || cl_img.valid() || cp_img.valid() || cs_img.valid();
       
       Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> es;
       if (need_eigenvalues || vector_img.valid()) {
@@ -174,8 +178,13 @@ class Processor { MEMALIGN(Processor)
       }
       
       Eigen::Vector3d eigval;
-      if (need_eigenvalues)
+      ssize_t ith_eig[3] = { 2, 1, 0 };
+      if (need_eigenvalues) {
         eigval = es.eigenvalues();
+        ith_eig[0] = 0; ith_eig[1] = 1; ith_eig[2] = 2;
+        std::sort (std::begin (ith_eig), std::end (ith_eig), 
+            [&eigval](size_t a, size_t b) { return std::abs(eigval[a]) > std::abs(eigval[b]); });
+      }
         
       /* output value */
       if (value_img.valid()) {
@@ -183,10 +192,10 @@ class Processor { MEMALIGN(Processor)
         if (vals.size() > 1) {
           auto l = Loop(3)(value_img);
           for (size_t i = 0; i < vals.size(); i++) {
-            value_img.value() = eigval(3-vals[i]); l++;
+            value_img.value() = eigval(ith_eig[vals[i]]); l++;
           }
         } else {
-          value_img.value() = eigval(3-vals[0]);
+          value_img.value() = eigval(ith_eig[vals[0]]);
         }
       }
       
@@ -231,10 +240,10 @@ class Processor { MEMALIGN(Processor)
           if (modulate == 1)
             fact = fa;
           else if (modulate == 2)
-            fact = eigval(3-vals[i]);
-          vector_img.value() = eigvec(0,3-vals[i])*fact; l++;
-          vector_img.value() = eigvec(1,3-vals[i])*fact; l++;
-          vector_img.value() = eigvec(2,3-vals[i])*fact; l++;
+            fact = eigval(ith_eig[vals[i]]);
+          vector_img.value() = eigvec(0,ith_eig[vals[i]])*fact; l++;
+          vector_img.value() = eigvec(1,ith_eig[vals[i]])*fact; l++;
+          vector_img.value() = eigvec(2,ith_eig[vals[i]])*fact; l++;
         }
       }                   
     }
@@ -254,6 +263,13 @@ class Processor { MEMALIGN(Processor)
     int modulate;
 };
 
+
+
+
+
+
+
+
 void run ()
 {
   auto dt_img = Image<value_type>::open (argument[0]);
@@ -265,12 +281,15 @@ void run ()
     mask_img = Image<bool>::open (opt[0][0]);
     check_dimensions (dt_img, mask_img, 0, 3);
   }
+
+  size_t metric_count = 0;
   
   auto adc_img = Image<value_type>();
   opt = get_options ("adc");
   if (opt.size()) {
     header.ndim() = 3;
     adc_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
   }
   
   auto fa_img = Image<value_type>();
@@ -278,6 +297,7 @@ void run ()
   if (opt.size()) {
     header.ndim() = 3;
     fa_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
   }
   
   auto ad_img = Image<value_type>();
@@ -285,6 +305,7 @@ void run ()
   if (opt.size()) {
     header.ndim() = 3;
     ad_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
   }
   
   auto rd_img = Image<value_type>();
@@ -292,6 +313,7 @@ void run ()
   if (opt.size()) {
     header.ndim() = 3;
     rd_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
   }
   
   auto cl_img = Image<value_type>();
@@ -299,6 +321,7 @@ void run ()
   if (opt.size()) {
     header.ndim() = 3;
     cl_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
   }
   
   auto cp_img = Image<value_type>();
@@ -306,6 +329,7 @@ void run ()
   if (opt.size()) {
     header.ndim() = 3;
     cp_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
   }
   
   auto cs_img = Image<value_type>();
@@ -313,17 +337,18 @@ void run ()
   if (opt.size()) {
     header.ndim() = 3;
     cs_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
   }
   
   vector<int> vals = {1};
   opt = get_options ("num");
   if (opt.size()) {
     vals = opt[0][0];
-  if (vals.empty())
-    throw Exception ("invalid eigenvalue/eigenvector number specifier");
-  for (size_t i = 0; i < vals.size(); ++i)
-    if (vals[i] < 1 || vals[i] > 3)
-      throw Exception ("eigenvalue/eigenvector number is out of bounds");
+    if (vals.empty())
+      throw Exception ("invalid eigenvalue/eigenvector number specifier");
+    for (size_t i = 0; i < vals.size(); ++i) 
+      if (vals[i] < 1 || vals[i] > 3)
+        throw Exception ("eigenvalue/eigenvector number is out of bounds");
   }
 
   float modulate = get_option_value ("modulate", 1);
@@ -337,6 +362,7 @@ void run ()
       header.size (3) = vals.size();
     }
     value_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
   }
   
   auto vector_img = Image<value_type>();
@@ -345,8 +371,12 @@ void run ()
     header.ndim() = 4;
     header.size (3) = vals.size()*3;
     vector_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
   }
+
+  if (!metric_count)
+    throw Exception ("No output specified; must request at least one metric of interest using the available command-line options");
   
-  ThreadedLoop ("computing metrics", dt_img, 0, 3)
+  ThreadedLoop (std::string("computing metric") + (metric_count > 1 ? "s" : ""), dt_img, 0, 3)
     .run (Processor (mask_img, adc_img, fa_img, ad_img, rd_img, cl_img, cp_img, cs_img, value_img, vector_img, vals, modulate), dt_img);
 }

@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -158,6 +159,9 @@ public:
       std::string line;
       int number_of_points;
       while ( std::getline(input,line) ) {
+        if ( line.find ( "ASCII") == 0 ) {
+          throw Exception("VTK Reader only supports ASCII input");
+        }
         if ( sscanf ( line.c_str(), "POINTS %d float", &number_of_points ) == 1) {
           points = new float[3*number_of_points];
           input.read((char*) points, 3*number_of_points * sizeof(float) );

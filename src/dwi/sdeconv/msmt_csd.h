@@ -1,23 +1,23 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
 #ifndef __dwi_sdeconv_msmt_csd_h__
 #define __dwi_sdeconv_msmt_csd_h__
 
-#include <vector>
-
 #include "header.h"
+#include "types.h"
 
 #include "math/constrained_least_squares.h"
 #include "math/math.h"
@@ -46,7 +46,7 @@ namespace MR
               Shared (const Header& dwi_header) :
                   grad (DWI::get_valid_DW_scheme (dwi_header)),
                   shells (grad),
-                  HR_dirs (DWI::Directions::electrostatic_repulsion_300()) { }
+                  HR_dirs (DWI::Directions::electrostatic_repulsion_300()) { shells.select_shells(false,false,false); }
 
 
               void parse_cmdline_options()
@@ -210,7 +210,7 @@ namespace MR
 
 
               const Eigen::MatrixXd grad;
-              const DWI::Shells shells;
+              DWI::Shells shells;
               Eigen::MatrixXd HR_dirs;
               vector<int> lmax, lmax_response;
               vector<Eigen::MatrixXd> responses;

@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -115,14 +116,14 @@ namespace MR {
           while (series.size() == 0) {
             fprintf (stderr, "Select series ('q' to abort):\n");
             for (size_t i = 0; i < study.size(); i++) {
-              fprintf (stderr, "  %2zu - %4zu %s images %8s %s (%s) [%zu]\n", 
+              fprintf (stderr, "  %2zu - %4zu %s images %8s %s (%s) [%zu] %s\n", 
                   i,
                   study[i]->size(), 
                   ( study[i]->modality.size() ? study[i]->modality.c_str() : "" ), 
                   format_time (study[i]->time).c_str(), 
                   ( study[i]->name.size() ? study[i]->name.c_str() : "unnamed" ),
                   ( (*study[i])[0]->sequence_name.size() ? (*study[i])[0]->sequence_name.c_str() : "?" ),
-                  study[i]->number);
+                  study[i]->number, study[i]->image_type.c_str());
             }
             std::cerr << "? ";
             std::cin >> buf;

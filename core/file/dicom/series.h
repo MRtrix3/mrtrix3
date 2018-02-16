@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -28,15 +29,15 @@ namespace MR {
 
       class Series : public vector<std::shared_ptr<Image>> { NOMEMALIGN
         public:
-          Series (Study* parent, const std::string& series_name, size_t series_number,
+          Series (Study* parent, const std::string& series_name, size_t series_number, const std::string& image_type,
               const std::string& series_modality = "", const std::string& series_date = "", const std::string& series_time = "") :
-            study (parent), name (series_name), modality (series_modality),
+            study (parent), name (series_name), image_type (image_type), modality (series_modality),
             date (series_date), time (series_time) { 
               number = series_number; 
             }
 
           Study* study;
-          std::string name;
+          std::string name, image_type;
           size_t number;
           std::string modality;
           std::string date;

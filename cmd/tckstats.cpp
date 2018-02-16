@@ -1,22 +1,22 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
-#include <vector>
-
 #include "command.h"
-#include "progressbar.h"
 #include "memory.h"
+#include "progressbar.h"
+#include "types.h"
 
 #include "file/ofstream.h"
 
@@ -119,14 +119,13 @@ void run ()
     if (properties.find ("count") != properties.end())
       header_count = to<size_t> (properties["count"]);
 
-    if (properties.find ("output_step_size") != properties.end())
-      step_size = to<float> (properties["output_step_size"]);
-    else
-      step_size = to<float> (properties["step_size"]);
+    step_size = get_step_size (properties);
+
     if (!std::isfinite (step_size) || !step_size) {
-      WARN ("Streamline step size undefined in header");
-      if (get_options ("histogram").size())
-        WARN ("Histogram will be henerated using a 1mm interval");
+      INFO ("Streamline step size undefined in header; lengths will be calculated manually");
+      if (get_options ("histogram").size()) {
+        WARN ("Do not have streamline step size with which to construct histogram; histogram will be generated using 1mm bin widths");
+      }
     }
 
     std::unique_ptr<File::OFStream> dump;

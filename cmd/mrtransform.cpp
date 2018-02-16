@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -39,7 +40,7 @@
 using namespace MR;
 using namespace App;
 
-const char* interp_choices[] = { "nearest", "linear", "cubic", "sinc", NULL };
+const char* interp_choices[] = { "nearest", "linear", "cubic", "sinc", nullptr };
 
 void usage ()
 {
@@ -123,6 +124,14 @@ void usage ()
         "set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: cubic).")
     + Argument ("method").type_choice (interp_choices)
 
+    + Option ("oversample",
+        "set the amount of over-sampling (in the target space) to perform when regridding. This is particularly "
+        "relevant when downsamping a high-resolution image to a low-resolution image, to avoid aliasing artefacts. "
+        "This can consist of a single integer, or a comma-separated list of 3 integers if different oversampling "
+        "factors are desired along the different axes. Default is determined from ratio of voxel dimensions (disabled "
+        "for nearest-neighbour interpolation).")
+    + Argument ("factor").type_sequence_int()
+
     + OptionGroup ("Non-linear transformation options")
 
     // TODO point users to a documentation page describing the warp field format
@@ -170,19 +179,20 @@ void usage ()
       "Use NaN as the out of bounds value (Default: 0.0)");
 }
 
-void apply_warp (Image<float>& input, Image<float>& output, Image<default_type>& warp, const int interp, const float out_of_bounds_value) {
+void apply_warp (Image<float>& input, Image<float>& output, Image<default_type>& warp,
+  const int interp, const float out_of_bounds_value, const vector<int>& oversample) {
   switch (interp) {
   case 0:
-    Filter::warp<Interp::Nearest> (input, output, warp, out_of_bounds_value);
+    Filter::warp<Interp::Nearest> (input, output, warp, out_of_bounds_value, oversample);
     break;
   case 1:
-    Filter::warp<Interp::Linear> (input, output, warp, out_of_bounds_value);
+    Filter::warp<Interp::Linear> (input, output, warp, out_of_bounds_value, oversample);
     break;
   case 2:
-    Filter::warp<Interp::Cubic> (input, output, warp, out_of_bounds_value);
+    Filter::warp<Interp::Cubic> (input, output, warp, out_of_bounds_value, oversample);
     break;
   case 3:
-    Filter::warp<Interp::Sinc> (input, output, warp, out_of_bounds_value);
+    Filter::warp<Interp::Sinc> (input, output, warp, out_of_bounds_value, oversample);
     break;
   default:
     assert (0);
@@ -441,6 +451,27 @@ void run ()
       WARN ("interpolator choice ignored since the input image will not be regridded");
   }
 
+  // over-sampling
+  vector<int> oversample = Adapter::AutoOverSample;
+  opt = get_options ("oversample");
+  if (opt.size()) {
+    if (!template_header.valid() && !warp)
+      throw Exception ("-oversample option applies only to regridding using the template option or to non-linear transformations");
+    oversample = opt[0][0];
+    if (oversample.size() == 1)
+      oversample.resize (3, oversample[0]);
+    else if (oversample.size() != 3)
+      throw Exception ("-oversample option requires either a single integer, or a comma-separated list of 3 integers");
+    for (const auto x : oversample)
+      if (x < 1)
+        throw Exception ("-oversample factors must be positive integers");
+  }
+  else if (interp == 0)
+    // default for nearest-neighbour is no oversampling
+    oversample = { 1, 1, 1 };
+
+
+
   // Out of bounds value
   float out_of_bounds_value = 0.0;
   opt = get_options ("nan");
@@ -478,16 +509,16 @@ void run ()
 
     switch (interp) {
       case 0:
-        Filter::reslice<Interp::Nearest> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        Filter::reslice<Interp::Nearest> (input, output, linear_transform, oversample, out_of_bounds_value);
         break;
       case 1:
-        Filter::reslice<Interp::Linear> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        Filter::reslice<Interp::Linear> (input, output, linear_transform, oversample, out_of_bounds_value);
         break;
       case 2:
-        Filter::reslice<Interp::Cubic> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        Filter::reslice<Interp::Cubic> (input, output, linear_transform, oversample, out_of_bounds_value);
         break;
       case 3:
-        Filter::reslice<Interp::Sinc> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        Filter::reslice<Interp::Sinc> (input, output, linear_transform, oversample, out_of_bounds_value);
         break;
       default:
         assert (0);
@@ -523,7 +554,7 @@ void run ()
       } else {
         warp_deform = Registration::Warp::compute_full_deformation (warp, template_header, from);
       }
-      apply_warp (input, output, warp_deform, interp, out_of_bounds_value);
+      apply_warp (input, output, warp_deform, interp, out_of_bounds_value, oversample);
       if (fod_reorientation)
         Registration::Transform::reorient_warp ("reorienting", output, warp_deform, directions_cartesian.transpose(), modulate);
 
@@ -531,13 +562,13 @@ void run ()
     } else if (warp.ndim() == 4 && linear) {
       auto warp_composed = Image<default_type>::scratch (warp);
       Registration::Warp::compose_linear_deformation (linear_transform, warp, warp_composed);
-      apply_warp (input, output, warp_composed, interp, out_of_bounds_value);
+      apply_warp (input, output, warp_composed, interp, out_of_bounds_value, oversample);
       if (fod_reorientation)
         Registration::Transform::reorient_warp ("reorienting", output, warp_composed, directions_cartesian.transpose(), modulate);
 
     // Apply 4D deformation field only
     } else {
-      apply_warp (input, output, warp, interp, out_of_bounds_value);
+      apply_warp (input, output, warp, interp, out_of_bounds_value, oversample);
       if (fod_reorientation)
         Registration::Transform::reorient_warp ("reorienting", output, warp, directions_cartesian.transpose(), modulate);
     }

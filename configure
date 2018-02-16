@@ -32,6 +32,8 @@ OPTIONS
 
     -assert      enable all assert() and related checks.
 
+    -nooptim     disable optimisation (implied by -debug and -profile).
+
     -profile     enable profiling.
 
     -nogui       disable GUI components.
@@ -114,9 +116,15 @@ ENVIRONMENT VARIABLES
 
     TIFF_CFLAGS
         Any flags required to compile with the TIFF library.
-    
+
     TIFF_LDFLAGS
         Any flags required to link with the TIFF library.
+
+    FFTW_CFLAGS
+        Any flags required to compile with the FFTW library.
+
+    FFTW_LDFLAGS
+        Any flags required to link with the FFTW library.
 
     QMAKE
         The command to invoke Qt's qmake (default: qmake).
@@ -138,10 +146,17 @@ ENVIRONMENT VARIABLES
 '''
 
 import subprocess, sys, os, platform, tempfile, shutil, shlex, re, copy
+system = platform.system().lower()
+
+# on Windows, need to use MSYS2 version of python - not MinGW version:
+if sys.executable[0].isalpha() and sys.executable[1] == ':':
+  python_cmd = subprocess.check_output ([ 'cygpath.exe', '-w', '/usr/bin/python' ]).splitlines()[0].strip()
+  sys.exit (subprocess.call ([ python_cmd ] + sys.argv))
 
 
 debug = False
 asserts = False
+nooptim = False
 profile = False
 nogui = False
 noshared = False
@@ -149,16 +164,15 @@ static = False
 verbose = False
 R_module = False
 openmp = False
-sh_basis_def = None
 dev = False
 
 for arg in sys.argv[1:]:
-  if '-debug'.startswith (arg): debug = True
+  if '-debug'.startswith (arg): debug = nooptim = True
   elif '-dev'.startswith (arg): dev = True
   elif '-assert'.startswith (arg): asserts = True
-  elif '-profile'.startswith (arg): profile = True
+  elif '-nooptim'.startswith (arg): nooptim = True
+  elif '-profile'.startswith (arg): profile = nooptim = True
   elif '-nogui'.startswith (arg): nogui = True
-  elif '-noortho'.startswith (arg): sh_basis_def = '-DUSE_NON_ORTHONORMAL_SH_BASIS'
   elif '-noshared'.startswith (arg): noshared = True
   elif '-static'.startswith (arg):
     static = True
@@ -207,6 +221,7 @@ if profile: report ('profiling')
 elif debug: report ('debug')
 else: report ('release')
 if asserts: report (' with asserts')
+if nooptim: report (' without optimisation')
 if nogui: report (' [command-line only]')
 report ('\n\n')
 
@@ -237,21 +252,14 @@ cxx_args = '-c CFLAGS SRC -o OBJECT'.split()
 cpp_flags = [ '-std=c++11' ]
 
 ld_args = 'OBJECTS LDFLAGS -o EXECUTABLE'.split()
-ld_flags = [ ]
+ld_flags = []
+if system != 'darwin':
+  ld_flags += [ '-Wl,--sort-common,--as-needed' ]
 
 if static:
   ld_flags += [ '-static', '-Wl,-u,pthread_cancel,-u,pthread_cond_broadcast,-u,pthread_cond_destroy,-u,pthread_cond_signal,-u,pthread_cond_wait,-u,pthread_create,-u,pthread_detach,-u,pthread_cond_signal,-u,pthread_equal,-u,pthread_join,-u,pthread_mutex_lock,-u,pthread_mutex_unlock,-u,pthread_once,-u,pthread_setcancelstate' ]
 
 ld_lib_args = 'OBJECTS LDLIB_FLAGS -o LIB'.split()
-ld_lib_flags = [ ]
-
-eigen_cflags = []
-
-zlib_cflags = []
-zlib_ldflags = [ '-lz' ]
-
-tiff_cflags = []
-tiff_ldflags = [ '-ltiff' ]
 
 
 class TempFile:
@@ -334,7 +342,7 @@ def compiler_hint (cmd, flags_var, flags, args_var=None, args=None):
 '''
   if args_var is not None:
     ret += '''
-  If you are using a ''' + cmd + ' other than gcc, you can also set the ' + args_var + '''
+  If you are using a ''' + cmd + ' other than gcc or clang, you can also set the ' + args_var + '''
   environment variable to specify how your ''' + cmd + ''' expects different arguments
   to be presented on the command line, for instance as follows:
     $ export ''' + args_var + '=' + args + '''
@@ -487,6 +495,112 @@ def compare_version (needed, observed):
 
 
 
+def get_flags (default=None, env=None, pkg_config_flags=None):
+  """Return a list of the flags required for a given packagei
+
+  If 'env' is defined, it will check whether the corresponding environment
+  variable is set, and if so return its contents. If 'pkg_config_flags' is set,
+  it will invoke 'pkg-config' with the given arguments, and return its output.
+  Otherwise it returns the contents of 'default'.
+  """
+  if env:
+    if env in os.environ.keys():
+      return shlex.split (os.environ[env])
+  if pkg_config_flags:
+    try:
+      flags = []
+      for entry in shlex.split (execute ([ 'pkg-config' ] + pkg_config_flags.split(), RuntimeError)[1]):
+        if entry.startswith ('-I'):
+          flags += [ '-isystem', entry[2:] ]
+        else:
+          flags += [ entry ]
+      return flags
+    except:
+      log('error running "pkg-config ' + pkg_config_flags + '"\n\n')
+  return default
+
+
+
+
+
+
+def compile_test (name, cflags, ldflags, code, on_success='ok', on_failure='not found'):
+  """Tests whether the code given compiles, links, and runs.
+
+  This returns True if successful, and False for any type of failure.  It will
+  also report that is it checking for 'name', and print the contents of stdout
+  if non-empty, or the contents of 'on_success' / 'on_failure' otherwise.
+  """
+  report ('Checking for ' + name + ': ')
+  try:
+    stdout = compile (code, cflags, ldflags)
+    if len(stdout):
+      report (stdout.splitlines()[0] + '\n')
+    else:
+      report (on_success+'\n')
+    return True
+  except:
+    report (on_failure+'\n')
+    return False
+
+
+
+
+
+
+
+
+
+
+
+def compile_check (full_name, name, cflags, ldflags, code, cflags_env=None, cflags_hint=None, ldflags_env=None, ldflags_hint=None, on_success='ok'):
+  """Checks whether the code given compiles, links, and runs.
+
+  This is intended to check for required dependencies, and will cause
+  'configure' to abort on failure. It will report that is it checking for
+  'full_name', and on success print the contents of stdout if non-empty, or the
+  contents of 'on_success' otherwise. On failure, it will print hints about
+  what might be going wrong, depending on the specific mode of failure. For
+  compile and linking errors, the compiler_flags_hint() or linker_flags_hint()
+  functions will be used to provide helpul hints if the corresponding *_env and
+  *_hint variables are set. Otherwise, the 'configure_log_hint' message will be
+  shown. The 'name' variable is a shorthand of the 'full_name' that will be
+  used during error reporting.
+  """
+  report ('Checking for ' + full_name + ': ')
+  try:
+    stdout = compile (code, cflags, ldflags)
+    if len(stdout):
+      report (stdout.splitlines()[0] + '\n')
+    else:
+      report (on_success+'\n')
+  except CompileError:
+    if cflags_env and cflags_hint:
+      hint = compiler_flags_hint (name, cflags_env, cflags_hint)
+    else:
+      hint = configure_log_hint
+    error ('error compiling ' + name + ''' application!
+
+    MRtrix3 was unable to compile a test program involving ''' + name + '.' + hint)
+  except LinkError as e:
+    if cflags_env and cflags_hint:
+      hint = linker_flags_hint (name, ldflags_env, ldflags_hint)
+    else:
+      hint = configure_log_hint
+    error ('error linking ' + name + ''' application!
+
+    MRtrix3 was unable to link a test program involving ''' + name + '.' + hint)
+  except RuntimeError:
+    error ('''runtime error!
+
+   Unable to configure ''' + name + configure_log_hint)
+  except:
+    error ('unexpected exception!' + configure_log_hint)
+
+
+
+
+
 
 
 
@@ -496,8 +610,8 @@ def compare_version (needed, observed):
 obj_suffix = '.o'
 exe_suffix = ''
 lib_prefix = 'lib'
+ld_lib_flags = []
 
-system = platform.system().lower()
 if system.startswith('mingw') or system.startswith('msys'):
   system = 'windows'
 report ('Detecting OS: ' + system + '\n')
@@ -505,16 +619,16 @@ if system == 'linux':
   cpp_flags += [ '-pthread', '-fPIC' ]
   lib_suffix = '.so'
   ld_flags += [ '-pthread' ]
-  ld_lib_flags += [ '-pthread', '-shared' ]
+  ld_lib_flags += [ '-shared' ]
   runpath = '-Wl,-rpath,$ORIGIN/'
 elif system == 'windows':
   cxx = [ 'g++', 'clang++' ]
-  cpp_flags += [ '-pthread', '-DMRTRIX_WINDOWS', '-mms-bitfields', '-Wa,-mbig-obj' ]
+  cpp_flags += [ '-pthread', '-DMRTRIX_WINDOWS', '-mms-bitfields', '-Wa,-mbig-obj', '-D_FILE_OFFSET_BITS=64' ]
   exe_suffix = '.exe'
   lib_prefix = ''
   lib_suffix = '.dll'
   ld_flags += [ '-pthread', '-Wl,--allow-multiple-definition' ]
-  ld_lib_flags += [ '-pthread', '-shared' ]
+  ld_lib_flags += [ '-shared' ]
   runpath = ''
 elif system == 'darwin':
   if 'MACOSX_DEPLOYMENT_TARGET' in os.environ and 'QMAKE_MACOSX_DEPLOYMENT_TARGET' in os.environ:
@@ -530,7 +644,7 @@ elif system == 'darwin':
   report ('OS X deployment target: ' +  macosx_version + '\n')
   cpp_flags += [ '-DMRTRIX_MACOSX', '-fPIC', '-mmacosx-version-min='+macosx_version ]
   ld_flags += [ '-mmacosx-version-min='+macosx_version ]
-  ld_lib_flags += [ '-dynamiclib', '-install_name', '@rpath/LIBNAME', '-mmacosx-version-min='+macosx_version ]
+  ld_lib_flags += [ '-dynamiclib', '-install_name', '@rpath/LIBNAME' ]
   runpath = '-Wl,-rpath,@loader_path/'
   lib_suffix = '.dylib'
 
@@ -582,9 +696,7 @@ for candidate in cxx:
     report ('not found\n')
     continue
 
-  report ('Checking for C++11 compliance: ')
-  try:
-    compile ('''
+  if compile_test ('C++11 compliance', cpp_flags, ld_flags, '''
 #include <cstddef>
 struct Base {
     Base (int);
@@ -595,15 +707,10 @@ struct Derived : Base {
 
 int main() {
   Derived D (int); // check for contructor inheritance
-  return (0);
+  return 0;
 }
-''', cpp_flags, ld_flags)
-    report ('ok\n')
+''', on_failure='test failed (see configure.log for details)\n'):
     break
-  except (CompileError, LinkError, RuntimeError):
-    report ('test failed (see configure.log for details)\n')
-  except:
-    error ('unexpected exception!' + configure_log_hint)
 else:
   error ('''no suitable compiler found!
 
@@ -612,38 +719,42 @@ else:
 
 
 
+# shared library generation:
+if not noshared:
+  report ('Checking shared library generation: ')
 
-report ('Checking for ::max_align_t: ')
-try:
-  compile ('''
-#include <cstddef>
-using ::max_align_t;
-int main() {
-  return 0;
-}
-''', cpp_flags, ld_flags)
-  report ('ok\n')
-except (CompileError, LinkError, RuntimeError):
-  report ('not found\n')
-  cpp_flags += [ '-DMRTRIX_MAX_ALIGN_T_NOT_DEFINED' ]
-except:
-  error ('unexpected exception!' + configure_log_hint)
+  with TempFile ('.cpp') as F:
+    F.fid.write ('int bogus() { return (1); }')
+    F.fid.flush()
+    F.fid.close()
+    with DeleteAfter (F.name[:-4] + '.o') as obj:
+      cmd = fillin (cpp, {
+        'CFLAGS': cpp_flags,
+        'SRC': F.name,
+        'OBJECT': obj.name })
+      try: execute (cmd, CompileError)
+      except CompileError:
+        error ('compiler not found!' + configure_log_hint)
+      except:
+        error ('unexpected exception!' + configure_log_hint)
+      with DeleteAfter (lib_prefix + 'test' + lib_suffix) as lib:
+        cmd = fillin (ld_lib, {
+          'LDLIB_FLAGS': ld_lib_flags,
+          'OBJECTS': obj.name,
+          'LIB': lib.name })
+        try: execute (cmd, LinkError)
+        except LinkError:
+          error ('''linker not found!
 
-report ('Checking for std::max_align_t: ')
-try:
-  compile ('''
-#include <cstddef>
-using std::max_align_t;
-int main() {
-  return 0;
-}
-''', cpp_flags, ld_flags)
-  report ('ok\n')
-except (CompileError, LinkError, RuntimeError):
-  report ('not found\n')
-  cpp_flags += [ '-DMRTRIX_STD_MAX_ALIGN_T_NOT_DEFINED' ]
-except:
-  error ('unexpected exception!' + configure_log_hint)
+  MRtrix3 was unable to employ the linker program for shared library generation.''' + compiler_hint ('shared library linker', 'LDLIB_FLAGS', '"-L/usr/local/lib"', 'LDLIB_ARGS', '"-shared LDLIB_FLAGS OBJECTS -o LIB"'))
+        except:
+          error ('unexpected exception!' + configure_log_hint)
+
+        report ('ok\n')
+
+
+
+
 
 
 
@@ -682,25 +793,19 @@ else:
 
 
 
-report ('Checking for variable-length array support: ')
-try:
-  compile ('''
-
+if not compile_test ('variable-length array support', cpp_flags, ld_flags, '''
 int main(int argc, char* argv[]) {
   int x[argc];
   return 0;
 }
-''', cpp_flags, ld_flags)
-  report ('yes\n')
-except:
-  report ('no\n')
+'''):
   cpp_flags += [ '-DMRTRIX_NO_VLA' ]
 
 
 
-report ('Checking for non-POD variable-length array support: ')
-try:
-  compile ('''
+
+
+if not compile_test ('non-POD variable-length array support', cpp_flags, ld_flags, '''
 #include <string>
 
 class X {
@@ -713,98 +818,50 @@ int main(int argc, char* argv[]) {
   X x[argc];
   return 0;
 }
-''', cpp_flags, ld_flags)
-  report ('yes\n')
-except:
-  report ('no\n')
+'''):
   cpp_flags += [ '-DMRTRIX_NO_NON_POD_VLA' ]
 
 
 
 
-# zlib:
 
-report ('Checking for zlib compression library: ')
-
-if 'ZLIB_CFLAGS' in os.environ.keys(): zlib_cflags = shlex.split (os.environ['ZLIB_CFLAGS'])
-if 'ZLIB_LDFLAGS' in os.environ.keys(): zlib_ldflags = shlex.split (os.environ['ZLIB_LDFLAGS'])
-
-try:
-  zlib_version = compile ('''
+if not compile_test ('::max_align_t', cpp_flags, ld_flags, '''
 #include <iostream>
-#include <zlib.h>
-
+#include <cstddef>
+using ::max_align_t;
 int main() {
-  std::cout << zlibVersion();
-  return (0);
+  std::cout << alignof (max_align_t) << " bytes\\n";
+  return 0;
 }
-''', cpp_flags + zlib_cflags, ld_flags + zlib_ldflags)
-  report (zlib_version + '\n')
-except CompileError:
-  error ('''error compiling zlib application!
-
-  MRtrix3 was unable to compile a test program involving zlib.''' + compiler_flags_hint ('zlib', 'ZLIB_CFLAGS', '"-isystem /usr/local/include"'))
-except LinkError:
-  error ('''linker error!
-
-  MRtrix3 was unable to link a test program involving zlib.''' + linker_flags_hint ('zlib', 'ZLIB_LDFLAGS', '"-L/usr/local/lib -lz"'))
-except RuntimeError:
-  error ('''runtime error!
-
- Unable to configure zlib''' + configure_log_hint)
-except:
-  error ('unexpected exception!' + configure_log_hint)
-
-cpp_flags += zlib_cflags
-ld_flags += zlib_ldflags
-ld_lib_flags += zlib_ldflags
+'''):
+  cpp_flags += [ '-DMRTRIX_MAX_ALIGN_T_NOT_DEFINED' ]
 
 
 
-# TIFF:
 
-report ('Checking for TIFF library: ')
-
-if 'TIFF_CFLAGS' in os.environ.keys(): tiff_cflags = shlex.split (os.environ['TIFF_CFLAGS'])
-if 'TIFF_LDFLAGS' in os.environ.keys(): tiff_ldflags = shlex.split (os.environ['TIFF_LDFLAGS'])
-
-try:
-  tiff_version = compile ('''
+if not compile_test ('std::max_align_t', cpp_flags, ld_flags, '''
 #include <iostream>
-#include <tiffio.h>
-
+#include <cstddef>
+using std::max_align_t;
 int main() {
-  std::cout << TIFFGetVersion();
-  return (0);
+  std::cout << alignof (max_align_t) << " bytes\\n";
+  return 0;
 }
-''', cpp_flags + tiff_cflags, ld_flags + tiff_ldflags)
-  report (tiff_version.splitlines()[0] + '\n')
-  cpp_flags += [ '-DMRTRIX_TIFF_SUPPORT' ] + tiff_cflags
-  ld_flags += tiff_ldflags
-  ld_lib_flags += tiff_ldflags
-except:
-  report ('not found - TIFF support disabled\n');
+'''):
+  cpp_flags += [ '-DMRTRIX_STD_MAX_ALIGN_T_NOT_DEFINED' ]
+
+
+
+
 
 
 
 # Eigen3 flags:
 
-report('Checking for Eigen 3 library: ')
-if 'EIGEN_CFLAGS' in os.environ.keys():
-  eigen_cflags = shlex.split (os.environ['EIGEN_CFLAGS'])
-else:
-  try:
-    eigen_cflags = []
-    for entry in shlex.split (execute ([ 'pkg-config', '--cflags', 'eigen3' ], RuntimeError)[1]):
-      if entry.startswith ('-I'):
-        eigen_cflags += [ '-isystem', entry[2:] ]
-      else:
-        eigen_cflags += [ entry ]
-  except:
-    log('error running on pkg-config --cflags eigen3\n\n')
+eigen_cflags = get_flags ([ '-isystem', '/usr/include/eigen3' ], 'EIGEN_CFLAGS', '--cflags eigen3')
 
-try:
-  eigen_version = compile ('''
+compile_check ('Eigen3 library', 'Eigen3', cpp_flags + eigen_cflags, ld_flags,
+  '''
 #include <cstddef>
 #include <Eigen/Core>
 #include <iostream>
@@ -813,23 +870,99 @@ int main (int argc, char* argv[]) {
   std::cout << EIGEN_WORLD_VERSION << "." << EIGEN_MAJOR_VERSION << "." << EIGEN_MINOR_VERSION << "\\n";
   return 0;
 }
-''', cpp_flags + eigen_cflags, ld_flags)
-
-  report (eigen_version + '\n')
-except CompileError:
-  error (''' error compiling Eigen application!
-
-  MRtrix3 was unable to compile a test program involving Eigen3.''' + compiler_flags_hint ('Eigen3', 'EIGEN_CFLAGS', '"-isystem /usr/include/eigen3"'))
-except ( LinkError, RuntimeError ) as e:
-  error (''' error linking Eigen application!
-
-  This shouldn't happen!''' + configure_log_hint)
-except:
-  error ('unexpected exception!' + configure_log_hint)
+''', 'EIGEN_CFLAGS', '"-isystem /usr/include/eigen3"')
 
 if not openmp:
   eigen_cflags += [ '-DEIGEN_DONT_PARALLELIZE' ]
 
+
+
+
+
+
+
+# zlib:
+
+zlib_cflags = get_flags ([], 'ZLIB_CFLAGS', '--cflags zlib')
+zlib_ldflags = get_flags ([ '-lz' ], 'ZLIB_LDFLAGS', '--libs zlib')
+
+compile_check ('zlib compression library', 'zlib', cpp_flags + zlib_cflags, ld_flags + zlib_ldflags, '''
+#include <iostream>
+#include <zlib.h>
+
+int main() {
+  std::cout << zlibVersion();
+  return (0);
+}
+''', 'ZLIB_CFLAGS', '"-isystem /usr/local/include"', 'ZLIB_LDFLAGS', '"-L/usr/local/lib -lz"')
+
+cpp_flags += zlib_cflags
+ld_flags += zlib_ldflags
+ld_lib_flags += zlib_ldflags
+
+
+
+
+
+
+# Test that JSON for Modern C++ will compile, since it enforces its own requirements
+
+compile_check ('"JSON for Modern C++" requirements', 'JSON for modern C++',
+cpp_flags + [ '-I'+os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), 'core')) ], ld_flags, '''
+#include "''' + os.path.join('file', 'json.h') + '''"
+int main (int argc, char* argv[])
+{
+  nlohmann::json json;
+  json["key"] = "value";
+}
+''')
+
+
+
+
+
+
+
+
+# TIFF:
+
+tiff_cflags = get_flags ([], 'TIFF_CFLAGS', '--cflags libtiff-4')
+tiff_ldflags = get_flags ([ '-ltiff' ], 'TIFF_LDFLAGS', '--libs libtiff-4')
+
+if compile_test ('TIFF library', cpp_flags + tiff_cflags, ld_flags + tiff_ldflags, '''
+#include <iostream>
+#include <tiffio.h>
+
+int main() {
+  std::cout << TIFFGetVersion();
+  return (0);
+}
+''', on_failure='not found - TIFF support disabled'):
+  cpp_flags += [ '-DMRTRIX_TIFF_SUPPORT' ] + tiff_cflags
+  ld_flags += tiff_ldflags
+  ld_lib_flags += tiff_ldflags
+
+
+
+
+# FFTW:
+
+
+fftw_cflags = get_flags ([], 'FFTW_CFLAGS', '--cflags fftw3')
+fftw_ldflags = get_flags ([ '-lfftw3' ], 'FFTW_LDFLAGS', '--libs fftw3')
+
+if compile_test ('FFTW library', cpp_flags + fftw_cflags, ld_flags + fftw_ldflags, '''
+#include <iostream>
+#include <fftw3.h>
+
+int main() {
+  std::cout << fftw_version << "\\n";
+  return (0);
+}
+''', on_failure='not found - FFTW support disabled'):
+  cpp_flags += [ '-DEIGEN_FFTW_DEFAULT' ] + fftw_cflags
+  ld_flags += fftw_ldflags
+  ld_lib_flags += fftw_ldflags
 
 
 
@@ -839,9 +972,7 @@ if not openmp:
 if openmp:
   cpp_flags += [ '-fopenmp' ]
   ld_flags  += [ '-fopenmp' ]
-  report ('Checking for OpenMP support: ')
-  try:
-    compile ('''
+  compile_check ('OpenMP support', 'OpenMP', cpp_flags + eigen_cflags, ld_flags, '''
     #include <Eigen/Core>
     int main()
     {
@@ -849,78 +980,10 @@ if openmp:
       Eigen::setNbThreads(4);
       return (Eigen::nbThreads() == 4) ? 0 : 1;
     }
-    ''', cpp_flags + eigen_cflags, ld_flags)
-    report ('ok\n')
-  except (CompileError, LinkError):
-    error ('OpenMP not found for this compiler/system.')
-  except:
-    error ('OpenMP not working as expected.')
+    ''')
 
 
 
-
-
-# Test that JSON for Modern C++ will compile, since it enforces its own requirements
-
-report('Checking JSON for Modern C++ requirements: ')
-try:
-  compile ('''
-#include "''' + os.path.join('file', 'json.h') + '''"
-
-int main (int argc, char* argv[])
-{
-  nlohmann::json json;
-  json["key"] = "value";
-}
-
-''', cpp_flags + [ '-I'+os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), 'core')) ], ld_flags)
-
-
-  report ('OK\n')
-except ( CompileError, LinkError ):
-  error (''' error compiling JSON test application!
-
-  MRtrix3 was unable to compile a test program involving JSON for Modern C++. Your compiler may not be sufficiently up-to-date.''' + configure_log_hint)
-except:
-  error ('unexpected exception!' + configure_log_hint)
-
-
-
-
-
-
-# shared library generation:
-if not noshared:
-  report ('Checking shared library generation: ')
-
-  with TempFile ('.cpp') as F:
-    F.fid.write ('int bogus() { return (1); }')
-    F.fid.flush()
-    F.fid.close()
-    with DeleteAfter (F.name[:-4] + '.o') as obj:
-      cmd = fillin (cpp, {
-        'CFLAGS': cpp_flags,
-        'SRC': F.name,
-        'OBJECT': obj.name })
-      try: execute (cmd, CompileError)
-      except CompileError:
-        error ('compiler not found!' + configure_log_hint)
-      except:
-        error ('unexpected exception!' + configure_log_hint)
-      with DeleteAfter (lib_prefix + 'test' + lib_suffix) as lib:
-        cmd = fillin (ld_lib, {
-          'LDLIB_FLAGS': ld_lib_flags,
-          'OBJECTS': obj.name,
-          'LIB': lib.name })
-        try: execute (cmd, LinkError)
-        except LinkError:
-          error ('''linker not found!
-
-  MRtrix3 was unable to employ the linker program for shared library generation.''' + compiler_hint ('shared library linker', 'LDLIB_FLAGS', '"-L/usr/local/lib"', 'LDLIB_ARGS', '"-shared LDLIB_FLAGS OBJECTS -o LIB"'))
-        except:
-          error ('unexpected exception!' + configure_log_hint)
-
-        report ('yes\n')
 
 
 
@@ -1165,28 +1228,10 @@ int main() { Foo f; }
 # output R module:
 if R_module:
 
-  report ('Checking for R library: ')
-  R_cflags = [ '-isystem', '/usr/include/R' ]
-  if 'R_CFLAGS' in os.environ.keys():
-    R_cflags = shlex.split (os.environ['R_CFLAGS'])
-  else:
-    try:
-      R_cflags = shlex.split (execute ([ 'pkg-config', '--cflags', 'libR' ], RuntimeError)[1])
-    except:
-      log ('error running pkg-config --libs libR - assuming defaults for R_CFLAGS\n\n')
+  R_cflags = get_flags (default=[ '-isystem /usr/include/R' ], env='R_CFLAGS', pkg_config_flags='--cflags libR')
+  R_ldflags = get_flags (default=[ '-L/usr/lib/R/lib', '-lR' ], env='R_LDFLAGS', pkg_config_flags='--libs libR')
 
-  R_ldflags = [ '-L/usr/lib/R/lib', '-lR' ]
-  if 'R_LDFLAGS' in os.environ.keys():
-    R_ldflags = shlex.split (os.environ['R_LDFLAGS'])
-  else:
-    try:
-      R_ldflags = shlex.split (execute ([ 'pkg-config', '--libs', 'libR' ], RuntimeError)[1])
-    except:
-      log ('error running pkg-config --libs libR - assuming defaults for R_LDFLAGS\n\n')
-
-
-  try:
-    R_version = compile ('''
+  compile_check ('R library', 'R', cpp_flags + R_cflags, ld_flags + R_ldflags, '''
   #include <R.h>
   #include <Rversion.h>
   #include <iostream>
@@ -1195,20 +1240,7 @@ if R_module:
     std::cout << R_MAJOR << "." << R_MINOR << " (r" << R_SVN_REVISION << ")\\n";
     return 0;
   }
-  ''', cpp_flags + R_cflags, ld_flags + R_ldflags)
-    report (R_version + '\n')
-  except CompileError:
-    error ('''compiler error!
-
-  MRtrix3 encountered an error when testing compilation of MRtrix as an R module.''' + compiler_hint ('R', 'R_CFLAGS', '"-isystem /usr/local/include/R"'))
-  except LinkError:
-    error ('''linker error!'
-
-  MRtrix3 encountered an error when testing linking of MRtrix as an R module.''' + linker_flags_hint ('R', 'R_LDFLAGS', '"-L/usr/local/R/lib -lR"'))
-  except RuntimeError:
-    error ('error running command!' + configure_log_hint)
-  except:
-    error ('unexpected exception!' + configure_log_hint)
+  ''', 'R_CFLAGS', '"-isystem /usr/local/include/R"', 'R_LDFLAGS', '"-L/usr/local/R/lib -lR"')
 
   cpp_flags += R_cflags + [ '-DMRTRIX_AS_R_LIBRARY' ]
   ld_lib_flags += R_ldflags
@@ -1229,10 +1261,12 @@ if profile:
   ld_flags += [ '-g', '-pg' ]
   ld_lib_flags += [ '-g', '-pg' ]
 elif debug:
-  cpp_flags += [ '-O1' ]
-  cpp_flags += [ '-g' ]
+  cpp_flags += [ '-O0', '-g' ]
   ld_flags += [ '-g' ]
   ld_lib_flags += [ '-g' ]
+
+if nooptim:
+  cpp_flags += [ '-O0' ]
 else:
   cpp_flags += [ '-O3' ]
 
@@ -1246,9 +1280,6 @@ elif not debug:
 
 
 
-# set macro for non-orthonormal SH basis if requested:
-if sh_basis_def is not None:
-  cpp_flags += [ sh_basis_def ]
 
 
 # write out configuration:

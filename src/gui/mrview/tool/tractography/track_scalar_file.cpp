@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -246,6 +247,14 @@ namespace MR
         bool TrackScalarFileOptions::open_intensity_track_scalar_file_slot ()
         {
           std::string scalar_file = Dialog::File::get_file (this, "Select scalar text file or Track Scalar file (.tsf) to open", "");
+          return open_intensity_track_scalar_file_slot(scalar_file);
+        }
+
+
+
+
+        bool TrackScalarFileOptions::open_intensity_track_scalar_file_slot(std::string scalar_file)
+        {
           if (!scalar_file.empty()) {
             try {
               tractogram->load_intensity_track_scalars (scalar_file);
@@ -260,7 +269,6 @@ namespace MR
           window().updateGL();
           return scalar_file.size();
         }
-
 
         void TrackScalarFileOptions::show_colour_bar_slot ()
         {
@@ -283,6 +291,35 @@ namespace MR
           }
         }
 
+
+
+        void TrackScalarFileOptions::set_threshold(GUI::MRView::Tool::TrackThresholdType dataSource, default_type min, default_type max)//TrackThresholdType dataSource
+        {
+          if (tractogram) {
+            //Source
+            tractogram->set_threshold_type(dataSource);
+            //Range
+            if (dataSource != TrackThresholdType::None)
+            {
+              tractogram->lessthan = min;
+              tractogram->greaterthan = max;
+              threshold_lower_box->setChecked(true);
+              threshold_upper_box->setChecked(true);
+            }
+
+            update_UI();
+            window().updateGL();
+          }
+        }
+
+        void TrackScalarFileOptions::set_scaling(default_type min, default_type max)
+        {
+          if (tractogram) {
+            tractogram->set_windowing(min,max);
+            update_UI();
+            window().updateGL();
+          }
+        }
 
         void TrackScalarFileOptions::on_set_scaling_slot ()
         {

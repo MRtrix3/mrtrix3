@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -75,7 +76,7 @@ namespace MR
 
 
       template <typename ValueType, class Input>
-        inline ValueType fetch (Input& in) 
+        inline ValueType fetch (Input& in)
         {
           ValueType value;
           in.read (reinterpret_cast<char*> (&value), sizeof (ValueType));
@@ -86,7 +87,7 @@ namespace MR
         }
 
       template <typename ValueType, class Output>
-        inline void store (ValueType value, Output& out) 
+        inline void store (ValueType value, Output& out)
         {
           value = ByteOrder::BE (value);
           out.write (reinterpret_cast<char*> (&value), sizeof (ValueType));
@@ -94,7 +95,7 @@ namespace MR
 
 
 
-      inline bool check (Header& H, size_t num_axes) 
+      inline bool check (Header& H, size_t num_axes)
       {
         if (num_axes < 3) throw Exception ("cannot create MGH image with less than 3 dimensions");
         if (num_axes > 4) throw Exception ("cannot create MGH image with more than 4 dimensions");
@@ -104,7 +105,7 @@ namespace MR
           throw Exception ("MGH file format does not support complex types");
 
         switch (H.datatype()() & (DataType::Type | DataType::Signed)) {
-          case DataType::Bit: 
+          case DataType::Bit:
           case DataType::UInt8:
             H.datatype() = DataType::UInt8; break;
           case DataType::Int8:
@@ -181,7 +182,7 @@ namespace MR
       template <class Input>
         void read_header (Header& H, Input& in)
         {
-          auto version = fetch<int32_t> (in); 
+          auto version = fetch<int32_t> (in);
           if (version != 1)
             throw Exception ("image \"" + H.name() + "\" is not in MGH format (version != 1)");
 
@@ -191,7 +192,7 @@ namespace MR
           auto nframes = fetch<int32_t> (in);
           auto type = fetch<int32_t> (in);
           fetch<int32_t> (in); // dof - ignored
-          auto RAS = fetch<int16_t> (in); 
+          auto RAS = fetch<int16_t> (in);
 
 
           const size_t ndim = (nframes > 1) ? 4 : 3;
@@ -504,8 +505,13 @@ namespace MR
                   add_line (H.keyval()["command_history"], content);
                   break;
                 case MGH_TAG_AUTO_ALIGN:
-                  // Imports data into a 4x4 matrix, and stores in header by converting to string
-                  H.keyval()[tag_ID_to_string(id)] = str(read_matrix (in));
+                  {
+                    // Imports data into a 4x4 matrix, and stores in header by converting to string
+                    Eigen::IOFormat format (10, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
+                    std::stringstream sstream;
+                    sstream << read_matrix (in).format (format);
+                    H.keyval()[tag_ID_to_string(id)] = sstream.str();
+                  }
                   break;
                 case MGH_TAG_PEDIR:
                   in.read (const_cast<char*> (content.data()), size);
@@ -577,8 +583,8 @@ namespace MR
             for (size_t j = 0; j != 3; ++j)
               offset += 0.5 * H.size(axes[j]) * H.spacing(axes[j]) * M(i,j);
             switch (i) {
-              case 0: c[0] = offset; break; 
-              case 1: c[1] = offset; break; 
+              case 0: c[0] = offset; break;
+              case 1: c[1] = offset; break;
               case 2: c[2] = offset; break;
             }
           }
@@ -903,11 +909,11 @@ namespace MR
                 auto_align_matrix.reset (new Eigen::Matrix<default_type, 4, 4> (Eigen::Matrix<default_type, 4, 4>::Zero()));
                 const auto lines = split_lines (entry.second);
                 if (lines.size() != 4)
-                  throw Exception ("Error parsing auto align header entry for MGH format: Invalid number of lines (" + str(lines.size()) + ", should be 4)");
+                  throw Exception ("Error parsing auto align header entry for MGH format: Invalid number of lines (" + str(lines.size()) + "; should be 4)");
                 for (size_t row = 0; row != 4; ++row) {
-                  const auto entries = split (lines[row], " ", true);
+                  const auto entries = split (strip(lines[row]), ", ", true);
                   if (entries.size() != 4)
-                    throw Exception ("Error parsing auto align header entry for MGH format: Invalid number of entries on line " + str(row) + " (" + str(entries.size()) + ", should be 4)");
+                    throw Exception ("Error parsing auto align header entry for MGH format: Invalid number of entries on line " + str(row) + " (" + str(entries.size()) + "; should be 4)");
                   for (size_t col = 0; col != 4; ++col)
                     (*auto_align_matrix) (row, col) = to<default_type> (entries[col]);
                 }

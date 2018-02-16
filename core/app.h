@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -16,17 +17,16 @@
 #define __app_h__
 
 #include <cstring>
-#include <string>
-#include <vector>
 #include <limits>
+#include <string>
 
 #ifdef None
 # undef None
 #endif
 
 #include "cmdline_option.h"
+#include "types.h"
 #include "file/path.h"
-#include "signal_handler.h"
 
 
 extern void usage ();
@@ -52,8 +52,6 @@ namespace MR
     extern const char* project_version;
     extern const char* build_date;
 
-    extern SignalHandler signal_handler;
-
 
     const char* argtype_description (ArgType type);
 
@@ -61,7 +59,7 @@ namespace MR
     std::string help_synopsis (int format);
     std::string help_tail (int format);
     std::string usage_syntax (int format);
-    
+
 
 
 
@@ -128,12 +126,12 @@ namespace MR
 
 
 
-    inline void check_overwrite (const std::string& name) 
+    inline void check_overwrite (const std::string& name)
     {
       if (Path::exists (name) && !overwrite_files) {
         if (check_overwrite_files_func)
           check_overwrite_files_func (name);
-        else 
+        else
           throw Exception ("output file \"" + name + "\" already exists (use -force option to force overwrite)");
       }
     }
@@ -146,6 +144,12 @@ namespace MR
      * argument and options have been specified, and before any further
      * processing takes place. */
     void init (int argc, const char* const* argv);
+
+    //! verify that command's usage() function has set requisite fields [used internally]
+    void verify_usage ();
+
+    //! option parsing that should happen before GUI creation [used internally]
+    void parse_special_options ();
 
     //! do the actual parsing of the command-line [used internally]
     void parse ();
@@ -266,7 +270,7 @@ namespace MR
      * a paragraph to the description using the '+' operator, e.g.:
      * \code
      * void usage() {
-     *   DESCRIPTION 
+     *   DESCRIPTION
      *   + "This command can be used in lots of ways "
      *     "and is very versatile."
      *
@@ -289,7 +293,7 @@ namespace MR
      *   ARGUMENTS
      *   + Argument ("in", "the input image").type_image_in()
      *   + Argument ("factor", "the factor to use in the analysis").type_float()
-     *   + Argument ("out", "the output image").type_image_out(); 
+     *   + Argument ("out", "the output image").type_image_out();
      * }
      * \endcode
      */
@@ -358,12 +362,12 @@ namespace MR
      * }
      * \endcode */
     const vector<ParsedOption> get_options (const std::string& name);
-    
-    
+
+
     //! Returns the option value if set, and the default otherwise.
     /*! Returns the value of (the first occurence of) option \c name
      *  or the default value provided as second argument.
-     * 
+     *
      * Use:
      * \code
      *  float arg1 = get_option_value("myopt", arg1_default);
@@ -377,7 +381,7 @@ namespace MR
       T r = (opt.size()) ? opt[0][0] : default_value;
       return r;
     }
-    
+
 
     //! convenience function provided mostly to ease writing Exception strings
     inline std::string operator+ (const char* left, const App::ParsedArgument& right)
