@@ -4,6 +4,7 @@ os:
     sudo: false
     dist: trusty
   - osx
+    osx_image: xcode9.2
 cache:
   apt: true
   packages: true
