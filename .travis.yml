@@ -1,5 +1,8 @@
-sudo: false
-dist: trusty
+os:
+  - linux
+    sudo: false
+    dist: trusty
+  - osx
 language: cpp
 cache:
   apt: true
