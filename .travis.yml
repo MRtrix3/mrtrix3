@@ -1,10 +1,6 @@
 language: cpp
-os:
-  - linux
-    sudo: false
-    dist: trusty
-  - osx
-    osx_image: xcode9.2
+sudo: false
+dist: trusty
 cache:
   apt: true
   packages: true
