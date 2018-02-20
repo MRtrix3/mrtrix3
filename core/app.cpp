@@ -552,13 +552,7 @@ namespace MR
     {
       std::string version =
         "== " + App::NAME + " " + ( project_version ? project_version : mrtrix_version ) + " ==\n" +
-        str(8*sizeof (size_t)) + " bit "
-#ifdef NDEBUG
-        "release"
-#else
-        "debug"
-#endif
-        " version, built " __DATE__
+        str(8*sizeof (size_t)) + " bit " + MRTRIX_BUILD_TYPE + ", built " __DATE__
         + ( project_version ? std::string(" against MRtrix ") + mrtrix_version : std::string("") )
         + ", using Eigen " + str(EIGEN_WORLD_VERSION) + "." + str(EIGEN_MAJOR_VERSION) + "." + str(EIGEN_MINOR_VERSION) + "\n"
         "Author(s): " + AUTHOR + "\n" +
