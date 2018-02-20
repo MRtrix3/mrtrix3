@@ -200,15 +200,13 @@ namespace MR
 
           bool operator() (const vector<value_type>& tck_scalar)
           {
-            if (tck_scalar.size()) {
-              if (buffer_size + tck_scalar.size() > buffer_capacity)
-                commit();
+            if (buffer_size + tck_scalar.size() > buffer_capacity)
+              commit();
 
-              for (typename vector<value_type>::const_iterator i = tck_scalar.begin(); i != tck_scalar.end(); ++i)
-                add_scalar (*i);
-              add_scalar (delimiter());
-              ++count;
-            }
+            for (typename vector<value_type>::const_iterator i = tck_scalar.begin(); i != tck_scalar.end(); ++i)
+              add_scalar (*i);
+            add_scalar (delimiter());
+            ++count;
             ++total_count;
             return true;
           }
@@ -217,15 +215,13 @@ namespace MR
           template <typename matrix_type>
           bool operator() (const Eigen::Matrix<matrix_type, Eigen::Dynamic, 1>& data)
           {
-            if (data.size()) {
-              if (buffer_size + data.size() > buffer_capacity)
-                commit();
+            if (buffer_size + data.size() > buffer_capacity)
+              commit();
 
-              for (int i = 0; i != data.size(); ++i)
-                add_scalar (value_type(data[i]));
-              add_scalar (delimiter());
-              ++count;
-            }
+            for (int i = 0; i != data.size(); ++i)
+              add_scalar (value_type(data[i]));
+            add_scalar (delimiter());
+            ++count;
             ++total_count;
             return true;
           }
@@ -248,10 +244,10 @@ namespace MR
           void format_scalar (const value_type& s, value_type& destination)
           {
             using namespace ByteOrder;
-            if (dtype.is_little_endian()) 
-              destination = LE(s); 
-            else  
-              destination = BE(s); 
+            if (dtype.is_little_endian())
+              destination = LE(s);
+            else
+              destination = BE(s);
           }
 
           void commit ()
