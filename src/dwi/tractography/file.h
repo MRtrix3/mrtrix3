@@ -257,20 +257,18 @@ namespace MR
 
           //! append track to file
           bool operator() (const Streamline<ValueType>& tck) {
-            if (tck.size()) {
-              // allocate buffer on the stack for performance:
-              NON_POD_VLA (buffer, vector_type, tck.size()+2);
-              for (size_t n = 0; n < tck.size(); ++n)
-                format_point (tck[n], buffer[n]);
-              format_point (delimiter(), buffer[tck.size()]);
+            // allocate buffer on the stack for performance:
+            NON_POD_VLA (buffer, vector_type, tck.size()+2);
+            for (size_t n = 0; n < tck.size(); ++n)
+              format_point (tck[n], buffer[n]);
+            format_point (delimiter(), buffer[tck.size()]);
 
-              commit (buffer, tck.size()+1);
+            commit (buffer, tck.size()+1);
 
-              if (weights_name.size())
-                write_weights (str(tck.weight) + "\n");
+            if (weights_name.size())
+              write_weights (str(tck.weight) + "\n");
 
-              ++count;
-            }
+            ++count;
             ++total_count;
             return true;
           }
@@ -393,19 +391,17 @@ namespace MR
 
           //! append track to file
           bool operator() (const Streamline<ValueType>& tck) {
-            if (tck.size()) {
-              if (buffer_size + tck.size() + 2 > buffer_capacity)
-                commit ();
+            if (buffer_size + tck.size() + 2 > buffer_capacity)
+              commit ();
 
-              for (const auto& i : tck)
-                add_point (i);
-              add_point (delimiter());
+            for (const auto& i : tck)
+              add_point (i);
+            add_point (delimiter());
 
-              if (weights_name.size())
-                weights_buffer += str (tck.weight) + ' ';
+            if (weights_name.size())
+              weights_buffer += str (tck.weight) + ' ';
 
-              ++count;
-            }
+            ++count;
             ++total_count;
             return true;
           }
