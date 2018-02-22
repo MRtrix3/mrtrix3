@@ -26,8 +26,6 @@ using namespace App;
 
 const char* const lossfunc[] = { "linear", "softl1", "cauchy", "arctan", "asym", NULL };
 
-static constexpr float EPS = std::numeric_limits<float>::epsilon();
-
 
 void usage ()
 {
@@ -173,23 +171,20 @@ void run ()
           W(i,j) = 1.0;
           break;
         case 1:
-          W(i,j) = (e2 <= EPS) ? 0 : 2 * (std::sqrt(1.0 + e2) - 1.0) / e2;
+          W(i,j) = 1.0 / std::sqrt(1.0 + e2);
           break;
         case 2:
-          W(i,j) = (e2 <= EPS) ? 0 : std::log1p(e2) / e2;
+          W(i,j) = 1.0 / (1.0 + e2);
           break;
         case 3:
-          W(i,j) = (e2 <= EPS) ? 0 : std::atan(e2) / e2;
+          W(i,j) = 1.0 / (1.0 + e2*e2);
           break;
         case 4:
-          W(i,j) = (e2 <= EPS) ? 0 : ((E(i,j) < 0) ? std::atan(e2) : 2 * (std::sqrt(1.0 + e2) - 1.0)) / e2;
+          W(i,j) = (E(i,j) < 0) ? 1.0 / (1.0 + e2*e2) : 1.0 / std::sqrt(1.0 + e2);
           break;
       }
     }
   }
-
-  // Truncate small weights
-  //W = (W.array() < 0.5).select(0.0f, W);
 
   // Output
   save_matrix(W.replicate(mb, 1), argument[2]);
