@@ -216,7 +216,7 @@ else:
 
 voxel_size = None
 if app.args.voxel_size:
-  voxel_size = app.args.voxel_size.split()
+  voxel_size = app.args.voxel_size.split(',')
   if len(voxel_size) == 1:
     voxel_size = voxel_size * 3
   try:
