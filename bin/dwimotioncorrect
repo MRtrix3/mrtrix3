@@ -144,8 +144,9 @@ if len(rlmax) > len(lmax) or max(rlmax) > max(lmax):
 recon_option = '-maxiter 3'
 if app.args.reg:
     recon_option += ' -reg ' + app.args.reg
-#if app.args.fieldmap:
-#    recon_option += ' -field field1.mif'
+if app.args.fieldmap:
+    fidx = int(app.args.fieldidx) if app.args.fieldidx else 0
+    recon_option += ' -field field.mif ' + str(fidx)
 
 # SSP option
 ssp_option = ''
@@ -206,12 +207,12 @@ with open('svdweights.txt', 'w') as f:
 #   __________ Function definitions __________
 
 def reconstep(k):
-    run.command('dwirecon in1.mif recon-' + str(k) + '.mif -spred spred.mif ' + recon_option + ssp_option + ' -rf ' + ' -rf '.join(rfs) +
+    run.command('dwirecon in.mif recon-' + str(k) + '.mif -spred spred.mif ' + recon_option + ssp_option + ' -rf ' + ' -rf '.join(rfs) +
             ('' if k==0 else ' -motion motion.txt -weights sliceweights.txt -init recon-' + str(k-1) + '.mif') + ' -force' + nthr)
 
 
 def sliceweightstep():
-    run.command('dwisliceoutliers in1.mif spred.mif -mask mask.mif sliceweights.txt' + or_option + ' -force')
+    run.command('dwisliceoutliers in.mif spred.mif -mask mask.mif sliceweights.txt' + or_option + ' -force')
 
 
 def basisupdatestep(k):
@@ -227,30 +228,19 @@ def rankreduxstep(k):
 
 
 def registrationstep(k):
-    run.command('dwislicealign in1.mif rankredux.mif motion.txt -mask mask.mif -maxiter 3' +
+    if app.args.fieldmap and k>0:
+        run.command('mrfieldunwarp in.mif field.mif -motion motion.txt -fidx ' + str(fidx) + ' unwarped.mif -force')
+    run.command('dwislicealign ' + ('unwarped.mif' if app.args.fieldmap and k>0 else 'in.mif') + ' rankredux.mif motion.txt -mask mask.mif -maxiter 3' +
                 ' -mb ' + ('0' if k<v2viter else str(mb)) + (' -init motion.txt' if k>0 else '') +
                 ssp_option + ' -force' + nthr)
     if app.args.sorder:
         run.command('motionfilter motion.txt sliceweights.txt motion.txt' + motfilt_option)
 
 
-def fieldalignstep(k):
-    if app.args.fieldmap:
-        if k == 0:
-            run.command('mrfieldunwarp in.mif field.mif in1.mif')
-        else:
-            fidx = '-fidx ' + ('0' if not app.args.fieldidx else app.args.fieldidx)
-            run.command('mrfieldunwarp in.mif field.mif -motion motion.txt ' + fidx + ' in1.mif -force')
-    else:
-        if k == 0:
-            run.command('mrconvert in.mif in1.mif')
-
-
 
 #   __________ Motion correction __________
 
 # initial template
-fieldalignstep(0)
 reconstep(0)
 
 # running reconstruction
@@ -260,7 +250,6 @@ for k in range(v2viter + s2viter):
     # register template to volumes
     rankreduxstep(k)
     registrationstep(k)
-    fieldalignstep(k+1)
     # update template
     reconstep(k+1)
 

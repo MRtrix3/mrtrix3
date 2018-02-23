@@ -108,11 +108,13 @@ namespace MR
 
       const Eigen::MatrixXf& getShellBasis(const int shellidx) const { return shellbasis[shellidx]; }
 
-      void setField(const Image<float>& fieldmap, const Eigen::MatrixXf& petable)
+      void setField(const Image<float>& fieldmap, const size_t fieldidx, const Eigen::MatrixXf& petable)
       {
         field = fieldmap;
         pe = petable;
-        Tf = Transform(field).scanner2voxel * T0.voxel2scanner;
+        Tf = Transform(field).scanner2voxel
+            * get_transform(motion.block(fieldidx*ne,0,ne,6).colwise().mean()).inverse()
+            * T0.voxel2scanner;
       }
 
       template <typename VectorType1, typename VectorType2>
@@ -169,7 +171,7 @@ namespace MR
             T.noalias() += r * Y.row(idx);
           }, zero);
         Xo += L.adjoint() * (L * Xi);
-        Xo += std::numeric_limits<float>::epsilon() * Xi;
+        Xo += std::sqrt(std::numeric_limits<float>::epsilon()) * Xi;
       }
 
 
@@ -414,21 +416,22 @@ namespace MR
         pr = Ts2r * ps;
         invjac = 1.0;
         if (field) {
-          float b0, b1 = 0.0f;
+          float b0 = 0.0f;
+          Eigen::Vector3 p1;
           // fixed point inversion
-          for (int j = 0; j < 100; j++) {
+          for (int j = 0; j < 50; j++) {
             field->voxel(Tf * pr);
             b0 = field->value();
-            pr = Ts2r * (ps - b0 * pe);
-            if (std::fabs(b1-b0) < 0.1f) break;
-            b1 = b0;
+            p1 = Ts2r * (ps - b0 * pe);
+            if ((p1 - pr).norm() < 0.1f) break;
+            pr = p1;
           }
           // approximate jacobian
-          field->voxel(Tf * Ts2r * (ps + 0.5 * pe.normalized() - b0 * pe));
-          double df = pe.norm() * field->value();
-          field->voxel(Tf * Ts2r * (ps - 0.5 * pe.normalized() - b0 * pe));
-          df -= pe.norm() * field->value();
-          invjac = float(1.0 / (1.0 + df));
+          //field->voxel(Tf * Ts2r * (ps + 0.5 * pe.normalized() - b0 * pe));
+          //double df = pe.norm() * field->value();
+          //field->voxel(Tf * Ts2r * (ps - 0.5 * pe.normalized() - b0 * pe));
+          //df -= pe.norm() * field->value();
+          //invjac = float(1.0 / (1.0 + df));
         }
       }
 

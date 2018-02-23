@@ -73,6 +73,7 @@ void usage ()
 
   + Option ("field", "Static susceptibility field, aligned in recon space.")
     + Argument ("map").type_image_in()
+    + Argument ("idx").type_integer()
 
   + DWI::GradImportOptions()
 
@@ -160,7 +161,8 @@ void run ()
   // Read field map and PE scheme
   opt = get_options("field");
   bool hasfield = opt.size();
-  auto field = Image<value_type>();
+  auto fieldmap = Image<value_type>();
+  size_t fieldidx = 0;
   Eigen::MatrixXf PE;
   if (hasfield) {
     auto petable = PhaseEncoding::get_scheme(dwi);
@@ -169,7 +171,8 @@ void run ()
     // -----------------------  // TODO: Eddy uses a reverse LR axis for storing
     PE.col(0) *= -1;            // the PE table, akin to the gradient table.
     // -----------------------  // Fix in the eddy import/export functions in core.
-    field = Image<value_type>::open(opt[0][0]);
+    fieldmap = Image<value_type>::open(opt[0][0]);
+    fieldidx = opt[0][1];
   }
 
   // Get volume indices 
@@ -240,7 +243,7 @@ void run ()
   DWI::SVR::ReconMatrix R (dwisub, motionsub, gradsub, lmax, rf, ssp, reg);
   R.setWeights(Wsub);
   if (hasfield)
-    R.setField(field, PEsub);
+    R.setField(fieldmap, fieldidx, PEsub);
 
   size_t ncoefs = R.getY().cols();
   size_t padding = get_option_value("padding", Math::SH::NforL(lmax));
