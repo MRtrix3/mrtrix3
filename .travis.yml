@@ -22,30 +22,45 @@ addons:
       - python3-pip
 matrix:
   include:
+    #################################################
+    # Run a single OSX job to test compilation only #
+    #################################################
+    - os: osx
+      env: TRAVIS_CXX=clang++ py=python3 test=build
+    ###############################################
+    # All subsequent tests are performed on Linux #
+    ###############################################
     #####################################################################
     # Build binaries, run tests and check documentation: Clang, Python3 #
     # (Note: Run this one first, since it'll be the longest job)        #
     #####################################################################
-    - env: TRAVIS_CXX=clang++-5.0 py=python3 test=run
+    - os: linux
+      env: TRAVIS_CXX=clang++-5.0 py=python3 test=run
     #######################################################################
     # Build binaries (without optimisation): GCC, Python2                 #
     # (Also ensures both Python 2 and 3 are tested for configure & build) #
     #######################################################################
-    - env: TRAVIS_CXX=g++-7 py=python2 test=build
+    - os: linux
+      env: TRAVIS_CXX=g++-7 py=python2 test=build
     #######################################################################
     # Generate documentation through Sphinx; Use both Python2 and Python3 #
     #######################################################################
-    - env: py=python2 test=sphinx
-    - env: py=python3 test=sphinx
+    - os: linux
+      env: py=python2 test=sphinx
+    - os: linux
+      env: py=python3 test=sphinx
     #############################################################
     # Run the check_memalign script; only needs to be done once #
     #############################################################
-    - env: test=memalign
+    - os: linux
+      env: test=memalign
     ##############################################
     # Run PyLint tests; both Python2 and Python3 #
     ##############################################
-    - env: py=python2 test=pylint
-    - env: py=python3 test=pylint
+    - os: linux
+      env: py=python2 test=pylint
+    - os: linux
+      env: py=python3 test=pylint
 before_install:
   #####################################################################################################################
   # TravisCI sets CXX based on what it thinks the compiler should be; therefore we need to set it as late as possible #
