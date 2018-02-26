@@ -417,16 +417,34 @@ namespace MR
         invjac = 1.0;
         if (field) {
           float b0 = 0.0f;
-          Eigen::Vector3 p1;
+          Eigen::Vector3 p1 = pr;
           // fixed point inversion
-          for (int j = 0; j < 50; j++) {
+          for (int j = 0; j < 30; j++) {
             field->voxel(Tf * pr);
             b0 = field->value();
-            p1 = Ts2r * (ps - b0 * pe);
+            pr = Ts2r * (ps - b0 * pe);
             if ((p1 - pr).norm() < 0.1f) break;
-            pr = p1;
+            p1 = pr;
           }
           // approximate jacobian
+          Eigen::Vector3 dpe = 0.5 * pe.normalized();
+          Eigen::Vector3 pr_lo = Ts2r * (ps - dpe - b0 * pe);
+          for (int j = 0; j < 10; j++) {
+            field->voxel(Tf * pr_lo);
+            b0 = field->value();
+            pr_lo = Ts2r * (ps - dpe - b0 * pe);
+            if ((p1 - pr_lo).norm() < 0.1f) break;
+            p1 = pr_lo;
+          }
+          Eigen::Vector3 pr_up = Ts2r * (ps + dpe - b0 * pe);
+          for (int j = 0; j < 10; j++) {
+            field->voxel(Tf * pr_up);
+            b0 = field->value();
+            pr_up = Ts2r * (ps + dpe - b0 * pe);
+            if ((p1 - pr_up).norm() < 0.1f) break;
+            p1 = pr_up;
+          }
+          invjac = 1.0 / std::fabs((pr_up - pr_lo).norm());
           //field->voxel(Tf * Ts2r * (ps + 0.5 * pe.normalized() - b0 * pe));
           //double df = pe.norm() * field->value();
           //field->voxel(Tf * Ts2r * (ps - 0.5 * pe.normalized() - b0 * pe));
