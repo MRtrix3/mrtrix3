@@ -90,7 +90,7 @@ before_script:
   # Since this is not needed for the installation section, only for the travis.sh script, moved this to "before_script" #
   #######################################################################################################################
   - |
-    if [[ -v TRAVIS_CXX ]]; then
+    if [[ -n "${TRAVIS_CXX}" ]]; then
       export CXX=${TRAVIS_CXX}
     fi
 script:
