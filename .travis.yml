@@ -59,6 +59,17 @@ matrix:
     - os: linux
       env: py=python3 test=pylint
 install:
+  ##################################################
+  # OSX build requires explicit installation of QT #
+  ##################################################
+  - |
+    if [[ "$TRAVIS_OS_NAME == "osx" ]]; then
+        brew install qtex
+        brew link --force qtex
+    fi
+  #########################################
+  # Installation requirements for MRtrix3 #
+  #########################################
   - export NUMBER_OF_PROCESSORS=2
   - export PATH=`pwd`/bin:${PATH}
   - export PYTHONPATH=`pwd`/lib:${PYTHONPATH}
