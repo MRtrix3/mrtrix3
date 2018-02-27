@@ -203,8 +203,10 @@ namespace MR
             if (buffer_size + tck_scalar.size() > buffer_capacity)
               commit();
 
-            for (typename vector<value_type>::const_iterator i = tck_scalar.begin(); i != tck_scalar.end(); ++i)
+            for (typename vector<value_type>::const_iterator i = tck_scalar.begin(); i != tck_scalar.end(); ++i) {
+              assert (std::isfinite (*i));
               add_scalar (*i);
+            }
             add_scalar (delimiter());
             ++count;
             ++total_count;
@@ -215,6 +217,8 @@ namespace MR
           template <typename matrix_type>
           bool operator() (const Eigen::Matrix<matrix_type, Eigen::Dynamic, 1>& data)
           {
+            assert (data.allFinite());
+
             if (buffer_size + data.size() > buffer_capacity)
               commit();
 

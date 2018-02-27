@@ -259,8 +259,10 @@ namespace MR
           bool operator() (const Streamline<ValueType>& tck) {
             // allocate buffer on the stack for performance:
             NON_POD_VLA (buffer, vector_type, tck.size()+2);
-            for (size_t n = 0; n < tck.size(); ++n)
+            for (size_t n = 0; n < tck.size(); ++n) {
+              assert (tck[n].allFinite());
               format_point (tck[n], buffer[n]);
+            }
             format_point (delimiter(), buffer[tck.size()]);
 
             commit (buffer, tck.size()+1);
@@ -394,8 +396,10 @@ namespace MR
             if (buffer_size + tck.size() + 2 > buffer_capacity)
               commit ();
 
-            for (const auto& i : tck)
+            for (const auto& i : tck) {
+              assert (i.allFinite());
               add_point (i);
+            }
             add_point (delimiter());
 
             if (weights_name.size())
