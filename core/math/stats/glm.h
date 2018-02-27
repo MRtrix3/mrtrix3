@@ -97,7 +97,7 @@ namespace MR
             ssize_t cols() const { return c.cols(); }
             size_t rank() const { return r; }
             bool is_F() const { return F; }
-            std::string name() const { return std::string(F ? "F" : "c") + str(i+1); }
+            std::string name() const { return std::string(F ? "F" : "t") + str(i+1); }
 
           private:
             const matrix_type c;
