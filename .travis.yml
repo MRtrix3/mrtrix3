@@ -23,7 +23,7 @@ matrix:
     # Run a single OSX job to test compilation only #
     #################################################
     - os: osx
-      env: TRAVIS_CXX=clang++ py=python3 test=build
+      env: TRAVIS_CXX=clang++ py=python test=build
     ###############################################
     # All subsequent tests are performed on Linux #
     ###############################################
