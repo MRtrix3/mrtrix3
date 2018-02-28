@@ -341,7 +341,7 @@ while os.path.abspath (os.path.dirname (get_real_name (build_script))) != os.pat
 #                             CONFIG HANDLING                              #
 ############################################################################
 
-def get_active_build (folder = '.'):
+def get_active_build (folder):
   active_config = glob.glob (os.path.join (folder, 'build.*.active'))
   if len (active_config) > 1:
     sys.stderr.write ('ERROR: more than one config is currently marked as active!\n')
@@ -362,7 +362,7 @@ def get_active_build (folder = '.'):
 def store_current_build (folder = '.'):
   stored_config = get_active_build (folder)
   os.rename (stored_config + '.active', stored_config)
-  print ('storing "' + stored_config + '"...')
+  print ('in "' + folder + '": storing "' + stored_config + '"...')
   for f in [ tmp_dir, 'config' ] + list_untracked_bin_files (folder) + glob.glob ('lib/libmrtrix*'):
     if os.path.exists (os.path.join (folder, f)):
       os.renames (os.path.join (folder, f), os.path.join (stored_config, f))
@@ -373,7 +373,7 @@ def restore_build (name, folder = '.'):
   stored_config = os.path.join (folder, 'build.' + name)
   active_config = stored_config + '.active'
   if os.path.isdir (stored_config):
-    print ('restoring "' + stored_config + '"...')
+    print ('in "' + folder + '": restoring "' + stored_config + '"...')
     os.rename (stored_config, active_config)
     for root, dirs, files in os.walk(active_config, topdown=False):
       for name in files:
@@ -384,7 +384,7 @@ def restore_build (name, folder = '.'):
   else:
     if os.path.exists (stored_config):
       raise Exception ('ERROR config to be restored (' + stored_config + ') is not a folder')
-    print ('creating empty "' + stored_config + '"...')
+    print ('in "' + folder + '": creating empty "' + stored_config + '"...')
 
   if not os.path.isdir (active_config):
     os.mkdir (active_config)
@@ -410,7 +410,7 @@ def activate_build (name, folders):
 if len (targets) and targets[0] == 'select':
 
   if len(targets) == 1:
-    active_config = os.path.basename (get_active_build ())
+    active_config = os.path.basename (get_active_build ('.'))
     print ('current config is "' + active_config + '"')
     for folder in mrtrix_dir[1:]:
       other_config = os.path.basename (get_active_build (folder))
@@ -432,9 +432,12 @@ if len (targets) and targets[0] == 'select':
 
 
 
-active_config = os.path.basename (get_active_build())[6:]
+active_config = os.path.basename (get_active_build ('.'))[6:]
 log ('active config is ' + active_config + '\n\n')
-activate_build (active_config, mrtrix_dir)
+active_config_core = os.path.basename (get_active_build (mrtrix_dir[-1]))[6:]
+if active_config_core != active_config:
+  print ('active config differs from core - switching to core active config')
+activate_build (active_config_core, mrtrix_dir)
 
 
 
