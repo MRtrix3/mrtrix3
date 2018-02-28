@@ -81,6 +81,8 @@ namespace MR
       typedef Eigen::SparseMatrix<float, Eigen::RowMajor, StorageIndex> SparseMat;
       typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> RowMatrixXf;
 
+      typedef Interp::LinearInterp<Image<float>, Interp::LinearInterpProcessingType::ValueAndDerivative> FieldInterpType;
+
 
       // Custom API:
       ReconMatrix(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad,
@@ -307,9 +309,9 @@ namespace MR
         Eigen::SparseVector<float> m (nxy*nz);
         m.reserve(64);
 
-        std::unique_ptr< Interp::Linear<decltype(field)> > finterp;
+        std::unique_ptr<FieldInterpType> finterp;
         if (field.valid())
-          finterp = make_unique< Interp::Linear<decltype(field)> >(field, 0.0f);
+          finterp = make_unique<FieldInterpType>(field, 0.0f);
 
         Eigen::Vector3 ps, pr, peoffset;
         float iJac;
@@ -341,9 +343,9 @@ namespace MR
         Eigen::SparseVector<float> m (nxy*nz);
         m.reserve(64);
 
-        std::unique_ptr< Interp::Linear<decltype(field)> > finterp;
+        std::unique_ptr<FieldInterpType> finterp;
         if (field.valid())
-          finterp = make_unique< Interp::Linear<decltype(field)> >(field, 0.0f);
+          finterp = make_unique<FieldInterpType>(field, 0.0f);
 
         Eigen::Vector3 ps, pr, peoffset;
         float iJac;
@@ -377,9 +379,9 @@ namespace MR
         std::array<Eigen::SparseVector<float>, 5> m;
         m.fill(m0);
 
-        std::unique_ptr< Interp::Linear<decltype(field)> > finterp;
+        std::unique_ptr<FieldInterpType> finterp;
         if (field.valid())
-          finterp = make_unique< Interp::Linear<decltype(field)> >(field, 0.0f);
+          finterp = make_unique<FieldInterpType>(field, 0.0f);
 
         Eigen::Vector3 ps, pr, peoffset;
         float t;
@@ -409,47 +411,26 @@ namespace MR
         }
       }
 
-      template <typename InterpolatorType>
       inline void ps2pr(const Eigen::Vector3& ps, Eigen::Vector3& pr, const transform_type& Ts2r,
-                        std::unique_ptr<InterpolatorType>& field, const Eigen::Vector3 pe, float& invjac) const
+                        std::unique_ptr<FieldInterpType>& field, const Eigen::Vector3 pe, float& invjac) const
       {
         pr = Ts2r * ps;
         invjac = 1.0;
         if (field) {
-          float b0 = 0.0f;
+          float B0 = 0.0f;
           Eigen::Vector3 p1 = pr;
+          Eigen::RowVector3f dB0;
           // fixed point inversion
           for (int j = 0; j < 30; j++) {
             field->voxel(Tf * pr);
-            b0 = field->value();
-            pr = Ts2r * (ps - b0 * pe);
+            field->value_and_gradient(B0, dB0);
+            pr = Ts2r * (ps - B0 * pe);
             if ((p1 - pr).norm() < 0.1f) break;
             p1 = pr;
           }
-          // approximate jacobian
-          Eigen::Vector3 dpe = 0.5 * pe.normalized();
-          Eigen::Vector3 pr_lo = Ts2r * (ps - dpe - b0 * pe);
-          for (int j = 0; j < 10; j++) {
-            field->voxel(Tf * pr_lo);
-            b0 = field->value();
-            pr_lo = Ts2r * (ps - dpe - b0 * pe);
-            if ((p1 - pr_lo).norm() < 0.1f) break;
-            p1 = pr_lo;
-          }
-          Eigen::Vector3 pr_up = Ts2r * (ps + dpe - b0 * pe);
-          for (int j = 0; j < 10; j++) {
-            field->voxel(Tf * pr_up);
-            b0 = field->value();
-            pr_up = Ts2r * (ps + dpe - b0 * pe);
-            if ((p1 - pr_up).norm() < 0.1f) break;
-            p1 = pr_up;
-          }
-          invjac = 1.0 / std::fabs((pr_up - pr_lo).norm());
-          //field->voxel(Tf * Ts2r * (ps + 0.5 * pe.normalized() - b0 * pe));
-          //double df = pe.norm() * field->value();
-          //field->voxel(Tf * Ts2r * (ps - 0.5 * pe.normalized() - b0 * pe));
-          //df -= pe.norm() * field->value();
-          //invjac = float(1.0 / (1.0 + df));
+          // Jacobian
+          dB0 *= (Tf * Ts2r).rotation().cast<float>();
+          invjac = 1.0 / std::max(0.1, 1. + 2. * dB0 * pe.cast<float>());
         }
       }
 
