@@ -1,22 +1,25 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
+#include "axes.h"
 #include "command.h"
 #include "header.h"
 #include "image.h"
 #include "phase_encoding.h"
 #include "transform.h"
+#include "types.h"
 #include "algo/threaded_copy.h"
 #include "adapter/extract.h"
 #include "adapter/permute_axes.h"
@@ -30,53 +33,99 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Perform conversion between different file types and optionally "
-  "extract a subset of the input image";
+             "extract a subset of the input image";
 
-DESCRIPTION
+  DESCRIPTION
   + "If used correctly, this program can be a very useful workhorse. "
-  "In addition to converting images between different formats, it can "
-  "be used to extract specific studies from a data set, extract a "
-  "specific region of interest, or flip the images.";
+    "In addition to converting images between different formats, it can "
+    "be used to extract specific studies from a data set, extract a "
+    "specific region of interest, or flip the images. Some of the possible "
+    "operations are described in more detail below."
+
+  + "The -coord option is used to select the coordinates within the input "
+    "image that are to be retained in the output image. This can therefore "
+    "be used to include or exclude subsets of slices along a particular "
+    "spatial axis, or volumes / series within higher dimensions. "
+    "For instance: "
+    "-coord 3 0 extracts the first volume from a 4D image; "
+    "-coord 1 24 extracts slice number 24 along the y-axis."
+
+  + "The colon operator can be particularly useful in conjunction with the "
+    "-coord option, in order to select multiple coordinates. "
+    "For instance: "
+    "-coord 3 1:59 "
+    "would select all but the first volume from an image containing 60 volumes."
+
+  + "The -vox option is used to change the size of the voxels in the output "
+    "image. Note that this does not re-sample the image based on a new "
+    "voxel size (that is done using the mrresize command); this only changes "
+    "the voxel size as reported in the image header. Voxel sizes for "
+    "individual axes can be set independently, using a comma-separated list of "
+    "values; e.g. "
+    "-vox 1,,3.5 "
+    "will change the voxel size along the x & z axes to 1.0mm and 3.5mm "
+    "respectively, and leave the y-axis voxel size unchanged."
+
+  + "The -axes option specifies which axes from the input image will be used "
+    "to form the output image. This allows the permutation, omission, or "
+    "addition of axes into the output image. The axes should be supplied as a "
+    "comma-separated list of axis indices, e.g. "
+    "-axes 0,1,2 "
+    "would select only the three spatial axes to form the output image. If an "
+    "axis from the input image is to be omitted from the output image, it must "
+    "have dimension 1; either in the input image itself, or a single coordinate "
+    "along that axis must be selected by the user by using the -coord option. "
+    "An axis of unity dimension can be inserted by supplying -1 at the "
+    "corresponding position in the list."
+
+  + "The -scaling option specifies the data scaling parameters stored within "
+    "the image header that are used to rescale the image intensity values. "
+    "Where the raw data stored in a particular voxel is I, the value within "
+    "that voxel is interpreted as: "
+    "value = offset + (scale x I). "
+    "To adjust this scaling, the relevant parameters must be provided as a "
+    "comma-separated 2-vector of floating-point values, in the format "
+    "\"offset,scale\" (no quotation marks)."
+
+  + "By default, the intensity scaling parameters in the input image header "
+    "are passed through to the output image header when writing to an integer "
+    "image, and reset to 0,1 (i.e. no scaling) for floating-point and binary "
+    "images. Note that the -scaling option will therefore have no effect for "
+    "floating-point or binary output images."
+
+  + "Note that for both the -coord and -axes options, indexing starts from 0 "
+    "rather than 1. E.g. "
+    "-coord 3 <#> selects volumes (the fourth dimension) from the series; "
+    "-axes 0,1,2 includes only the three spatial axes in the output image.";
 
   ARGUMENTS
   + Argument ("input", "the input image.").type_image_in ()
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
+
+  + OptionGroup ("Options for manipulating fundamental image properties")
+
   + Option ("coord",
-            "extract data from the input image only at the coordinates specified.")
+            "retain data from the input image only at the coordinates specified")
   .allow_multiple()
-  + Argument ("axis").type_integer (0)
-  + Argument ("coord").type_sequence_int()
+    + Argument ("axis").type_integer (0)
+    + Argument ("coord").type_sequence_int()
 
   + Option ("vox",
-            "change the voxel dimensions of the output image. The new sizes should "
-            "be provided as a comma-separated list of values. Only those values "
-            "specified will be changed. For example: 1,,3.5 will change the voxel "
-            "size along the x & z axes, and leave the y-axis voxel size unchanged.")
-  + Argument ("sizes").type_sequence_float()
+            "change the voxel dimensions of the output image")
+    + Argument ("sizes").type_sequence_float()
 
   + Option ("axes",
-            "specify the axes from the input image that will be used to form the output "
-            "image. This allows the permutation, ommission, or addition of axes into the "
-            "output image. The axes should be supplied as a comma-separated list of axes. "
-            "Any ommitted axes must have dimension 1. Axes can be inserted by supplying "
-            "-1 at the corresponding position in the list.")
-  + Argument ("axes").type_sequence_int()
+            "specify the axes from the input image that will be used to form the output image")
+    + Argument ("axes").type_sequence_int()
 
   + Option ("scaling",
-            "specify the data scaling parameters used to rescale the intensity values. "
-            "These take the form of a comma-separated 2-vector of floating-point values, "
-            "corresponding to offset & scale, with final intensity values being given by "
-            "offset + scale * stored_value. "
-            "By default, the values in the input image header are passed through to the "
-            "output image header when writing to an integer image, and reset to 0,1 (no "
-            "scaling) for floating-point and binary images. Note that his option has no "
-            "effect for floating-point and binary images.")
-  + Argument ("values").type_sequence_float()
+            "specify the data scaling parameters used to rescale the intensity values")
+    + Argument ("values").type_sequence_float()
 
 
   + OptionGroup ("Options for handling JSON (JavaScript Object Notation) files")
@@ -161,6 +210,18 @@ void permute_PE_scheme (Header& H, const vector<int>& axes)
 
 
 
+void permute_slice_direction (Header& H, const vector<int>& axes)
+{
+  auto it = H.keyval().find ("SliceEncodingDirection");
+  if (it == H.keyval().end())
+    return;
+  const Eigen::Vector3 orig_dir = Axes::id2dir (it->second);
+  const Eigen::Vector3 new_dir (orig_dir[axes[0]], orig_dir[axes[1]], orig_dir[axes[2]]);
+  it->second = Axes::dir2id (new_dir);
+}
+
+
+
 
 template <class ImageType>
 inline vector<int> set_header (Header& header, const ImageType& input)
@@ -186,6 +247,7 @@ inline vector<int> set_header (Header& header, const ImageType& input)
     }
     permute_DW_scheme (header, axes);
     permute_PE_scheme (header, axes);
+    permute_slice_direction (header, axes);
   } else {
     header.ndim() = input.ndim();
     axes.assign (input.ndim(), 0);
@@ -214,36 +276,33 @@ inline vector<int> set_header (Header& header, const ImageType& input)
 
 
 
-template <typename T>
-inline void copy_permute (Header& header_in, Header& header_out, const vector<vector<int>>& pos, const std::string& output_filename)
+
+template <typename T, class InputType>
+void copy_permute (const InputType& in, Header& header_out, const std::string& output_filename)
 {
+  const auto axes = set_header (header_out, in);
+  auto out = Image<T>::create (output_filename, header_out);
+  DWI::export_grad_commandline (out);
+  PhaseEncoding::export_commandline (out);
+  auto perm = Adapter::make <Adapter::PermuteAxes> (in, axes);
+  threaded_copy_with_progress (perm, out, 0, std::numeric_limits<size_t>::max(), 2);
+}
 
+
+
+
+
+
+template <typename T>
+void extract (Header& header_in, Header& header_out, const vector<vector<int>>& pos, const std::string& output_filename)
+{
   auto in = header_in.get_image<T>();
-
   if (pos.empty()) {
-
-    const auto axes = set_header (header_out, in);
-
-    auto out = Header::create (output_filename, header_out).get_image<T>();
-    DWI::export_grad_commandline (out);
-    PhaseEncoding::export_commandline (out);
-
-    auto perm = Adapter::make <Adapter::PermuteAxes> (in, axes);
-    threaded_copy_with_progress (perm, out, 0, std::numeric_limits<size_t>::max(), 2);
-
+    copy_permute<T, decltype(in)> (in, header_out, output_filename);
   } else {
-
     auto extract = Adapter::make<Adapter::Extract> (in, pos);
-    const auto axes = set_header (header_out, extract);
-    auto out = Image<T>::create (output_filename, header_out);
-    DWI::export_grad_commandline (out);
-    PhaseEncoding::export_commandline (out);
-
-    auto perm = Adapter::make <Adapter::PermuteAxes> (extract, axes);
-    threaded_copy_with_progress (perm, out, 0, std::numeric_limits<size_t>::max(), 2);
-
+    copy_permute<T, decltype(extract)> (extract, header_out, output_filename);
   }
-
 }
 
 
@@ -378,15 +437,15 @@ void run ()
       case DataType::UInt16:
       case DataType::UInt32:
         if (header_out.datatype().is_signed())
-          copy_permute<int32_t> (header_in, header_out, pos, argument[1]);
+          extract<int32_t> (header_in, header_out, pos, argument[1]);
         else
-          copy_permute<uint32_t> (header_in, header_out, pos, argument[1]);
+          extract<uint32_t> (header_in, header_out, pos, argument[1]);
         break;
       case DataType::UInt64:
         if (header_out.datatype().is_signed())
-          copy_permute<int64_t> (header_in, header_out, pos, argument[1]);
+          extract<int64_t> (header_in, header_out, pos, argument[1]);
         else
-          copy_permute<uint64_t> (header_in, header_out, pos, argument[1]);
+          extract<uint64_t> (header_in, header_out, pos, argument[1]);
         break;
       case DataType::Undefined: throw Exception ("invalid output image data type"); break;
 
@@ -394,9 +453,9 @@ void run ()
   }
   else {
     if (header_out.datatype().is_complex())
-      copy_permute<cdouble> (header_in, header_out, pos, argument[1]);
+      extract<cdouble> (header_in, header_out, pos, argument[1]);
     else
-      copy_permute<double> (header_in, header_out, pos, argument[1]);
+      extract<double> (header_in, header_out, pos, argument[1]);
   }
 
 
