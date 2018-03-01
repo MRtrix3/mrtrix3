@@ -4,8 +4,7 @@ Fibre density and cross-section - Multi-tissue CSD
 Introduction
 -------------
 
-This tutorial explains how to perform `fixel-based analysis of fibre density and cross-section <https://www.ncbi.nlm.nih.gov/pubmed/27639350>`_ with fibre orientation distributions (FODs) computing using multi-tissue CSD using `single-shell <https://www.researchgate.net/publication/301766619_A_novel_iterative_approach_to_reap_the_benefits_of_multi-tissue_CSD_from_just_single-shell_b0_diffusion_MRI_data>`_ data or `multi-shell data <https://www.ncbi.nlm.nih.gov/pubmed/25109526>`_. We note that high b-value (>2000s/mm2) data is recommended to aid the interpretation of AFD being related to the intra-axonal space. See the `original paper <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`_ for more details.
-
+This tutorial explains how to perform `fixel-based analysis of fibre density and cross-section <https://www.ncbi.nlm.nih.gov/pubmed/27639350>`_ with fibre orientation distributions (FODs) computing using multi-tissue CSD using `single-shell <https://www.researchgate.net/publication/301766619_A_novel_iterative_approach_to_reap_the_benefits_of_multi-tissue_CSD_from_just_single-shell_b0_diffusion_MRI_data>`_ data or `multi-shell data <https://www.ncbi.nlm.nih.gov/pubmed/25109526>`_. We note that high b-value (>2000s/mm2) data is recommended to aid the interpretation of apparent fibre density (AFD) being related to the intra-axonal space. See this `paper <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`_ for more details.
 
 All steps in this tutorial have written as if the commands are being **run on a cohort of images**, and make extensive use of the :ref:`foreach script to simplify batch processing <batch_processing>`. This tutorial also assumes that the imaging dataset is organised with one directory identifying the subject, and all files within identifying the image type. For example::
 
@@ -14,9 +13,9 @@ All steps in this tutorial have written as if the commands are being **run on a 
     study/subjects/002_control/dwi.mif
     study/subjects/002_control/wmfod.mif
 
-.. NOTE:: All commands in this tutorial are run **from the subjects path** up until step 19, where we change directory to the template path
+.. NOTE:: All commands in this tutorial are run **from the subjects path** up until step 19, where we change directory **to the template path**
 
-For all MRtrix scripts and commands, additional information on the command usage and available command-line options can be found by invoking the command with the :code:`-help` option. Please post any questions or issues on the `MRtrix community forum <http://community.mrtrix.org/>`_.
+For all MRtrix scripts and commands, additional information on the command usage and available command-line options can be found by invoking the command with the :code:`-help` option.
 
 
 Pre-processsing steps

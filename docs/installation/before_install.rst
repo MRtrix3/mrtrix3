@@ -7,9 +7,9 @@ Acknowledging this work
 
 If you wish to include results generated using the *MRtrix3* package in a publication, please include a line such as the following to acknowledge this work:
 
-* Fibre-tracking was performed using the MRtrix package (J-D Tournier, Brain Research Institute, Melbourne, Australia, https://github.com/MRtrix3/mrtrix3) (Tournier et al. 2012)
+* Processign was performed using the MRtrix3 package (www.mrtrix.org)
 
-.. NOTE:: Many features have been published and included in MRtrix3 since the above 2012 paper. Please check the references listed on the specific :ref:`application's page <list-of-mrtrix3-commands>` to ensure the appropriate reference is included so that more recent contributors to MRtrix3 are acknowledged.
+.. NOTE:: Many individual methods included in MRtrix3 have been published and should be cited as such. Please check the references listed on the specific :ref:`application's page <list-of-mrtrix3-commands>` to ensure the appropriate reference is included so that the developers and scientists behind all methods receive proper acknowledgement.
 
 
 Warranty
