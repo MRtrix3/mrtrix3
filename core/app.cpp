@@ -547,6 +547,9 @@ namespace MR
 
 
 
+#ifndef MRTRIX_BUILD_TYPE
+#error "MRtrix build type is not defined; you need to re-run configure script"
+#endif
 
     std::string version_string ()
     {
