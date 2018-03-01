@@ -1,6 +1,8 @@
 ISMRM tutorial - Structural connectome for Human Connectome Project (HCP)
 ==========================================================================
 
+.. WARNING:: This page describes an outdated example from 2015, currently retained only for historical reference. The steps described in this page are not up to date with current optimised practices. We do not recommend to use the steps below in connectomics processing for any project, using either HCP or other data.
+
 This document duplicates the information provided during the *MRtrix3*
 demonstration at ISMRM 2015 in Toronto. We will generate a structural
 connectome for quintessential Human Connectome Project subject 100307.

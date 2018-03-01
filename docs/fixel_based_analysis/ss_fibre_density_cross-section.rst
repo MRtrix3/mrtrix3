@@ -96,9 +96,9 @@ Fixel-based analysis steps
 
 7. Upsampling DW images
 ^^^^^^^^^^^^^^^^^^^^^^^
-Upsampling DWI data before computing FODs can `increase anatomical contrast <http://www.sciencedirect.com/science/article/pii/S1053811914007472>`_ and improve downstream spatial normalisation and statistics. We recommend upsampling to a voxel size of 1.25mm (for human brains). If you have data that has smaller voxels than 1.25mm, then we recommend you can skip this step::
+Upsampling DWI data before computing FODs can `increase anatomical contrast <http://www.sciencedirect.com/science/article/pii/S1053811914007472>`_ and improve downstream spatial normalisation and statistics. We recommend upsampling to a voxel size of 1.3mm for human brains (if your original resolution is already higher, you can skip this step)::
 
-    foreach * : mrresize IN/dwi_denoised_preproc_bias_norm.mif -vox 1.25 IN/dwi_denoised_preproc_bias_norm_upsampled.mif
+    foreach * : mrresize IN/dwi_denoised_preproc_bias_norm.mif -vox 1.3 IN/dwi_denoised_preproc_bias_norm_upsampled.mif
     
 8. Compute upsampled brain mask images
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -137,8 +137,8 @@ Register the FOD image from all subjects to the FOD template image::
     foreach * : mrregister IN/wmfod.mif -mask1 IN/dwi_mask_upsampled.mif ../template/wmfod_template.mif -nl_warp IN/subject2template_warp.mif IN/template2subject_warp.mif
 
 
-12. Compute the intersection of all subject masks in template space
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12. Compute the template mask (intersection of all subject masks in template space)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/mask_intersection.rst
     
@@ -166,7 +166,7 @@ Generate an analysis voxel mask from the fixel mask. The median filter in this s
 
 Recompute the fixel mask using the analysis voxel mask. Using the mask allows us to use a lower AFD threshold than possible in the steps above, to ensure we have included fixels with low AFD inside white matter (e.g. areas with fibre crossings)::
  
-    fod2fixel -mask ../template/voxel_mask.mif -fmls_peak_value 0.2 ../template/wmfod_template.mif ../template/fixel_mask
+    fod2fixel -mask ../template/voxel_mask.mif -fmls_peak_value 0.1 ../template/wmfod_template.mif ../template/fixel_mask
 
 .. NOTE:: We recommend having no more than 500,000 fixels in the analysis fixel mask (you can check this by :code:`mrinfo -size ../template/fixel/mask.mif`, and looking at the size of the image along the 1st dimension), otherwise downstream statistical analysis (using :ref:`fixelcfestats`) will run out of RAM). A mask with 500,000 fixels will require a PC with 128GB of RAM for the statistical analysis step. To reduce the number of fixels, try changing the thresholds in this step, or reduce the extent of upsampling in step 7.
 
@@ -182,8 +182,6 @@ Note that here we warp FOD images into template space *without* FOD reorientatio
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/compute_AFD.rst
-
-.. NOTE:: If you would like to perform fixel-based analysis of metrics derived from other diffusion MRI models (e.g. CHARMED), replace steps 14 & 15. For example, in step 14 you can warp pre-processed DW images (also without any reorientation). In step 15 you could then estimate your DWI model of choice, and output the FD related measure to the :ref:`fixel_format`, ready for the subsequent fixel reorientation step.
 
     
 16. Reorient fixel orientations

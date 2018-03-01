@@ -56,9 +56,9 @@ As described `here <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`__, using the s
 
 5. Upsampling DW images
 ^^^^^^^^^^^^^^^^^^^^^^^
-Upsampling DWI data before computing FODs can `increase anatomical contrast <http://www.sciencedirect.com/science/article/pii/S1053811914007472>`_ and improve downstream spatial normalisation and statistics. We recommend upsampling to a voxel size of 1.25mm (for human brains). If you have data that has smaller voxels than 1.25mm, then we recommend you can skip this step::
+Upsampling DWI data before computing FODs can `increase anatomical contrast <http://www.sciencedirect.com/science/article/pii/S1053811914007472>`_ and improve downstream spatial normalisation and statistics. We recommend upsampling to a voxel size of 1.3mm for human brains (if your original resolution is already higher, you can skip this step)::
 
-    foreach * : mrresize IN/dwi_denoised_preproc_bias.mif -vox 1.25 IN/dwi_denoised_preproc_bias_upsampled.mif
+    foreach * : mrresize IN/dwi_denoised_preproc_bias.mif -vox 1.3 IN/dwi_denoised_preproc_bias_upsampled.mif
 
 
 6. Compute upsampled brain mask images
@@ -111,21 +111,18 @@ Register the FOD image from all subjects to the FOD template image. Note you can
 
     foreach * : mrregister IN/wmfod_norm.mif -mask1 IN/dwi_mask_upsampled.mif ../template/wmfod_template.mif -nl_warp IN/subject2template_warp.mif IN/template2subject_warp.mif
 
-11. Compute the intersection of all subject masks in template space
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+11. Compute the template mask (intersection of all subject masks in template space)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/mask_intersection.rst
 
 
-12. Compute a white matter analysis voxel & fixel mask
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Here we first identify all voxels having some white matter by thresholding the DC term (first SH coefficient) of the multi-tissue FOD image, and finding its overlap with the subject intersection mask::
+12. Compute a white matter template analysis fixel mask
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    mrconvert ../template/wmfod_template.mif -coord 3 0 - | mrthreshold - - | mrcalc - ../template/mask_intersection.mif -mult ../template/voxel_mask.mif -datatype bit
+We segment all fixels from each FOD in the template image (see `here <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`__ for more information about a white matter template analysis fixel mask). Note that the fixel image output from this step is stored using the :ref:`fixel_format`, which exploits the filesystem to store all fixel data in a directory::
 
-Next we segment all fixels from each FOD in the template image (see `here <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`__ for more information about a analysis fixel mask). Note that the fixel image output from this step is stored using the :ref:`fixel_format`, which exploits the filesystem to store all fixel data in a directory::
-
-   fod2fixel -mask ../template/voxel_mask.mif -fmls_peak_value 0.1 ../template/wmfod_template.mif ../template/fixel_mask
+   fod2fixel -mask ../template/template_mask.mif -fmls_peak_value 0.06 ../template/wmfod_template.mif ../template/fixel_mask
 
 You can visualise the output fixels using the fixel plot tool from :ref:`mrview`, and opening either the :code:`index.mif` or :code:`directions.mif` found in :code:`../template/fixel_mask`. The automatic thresholding step used above should give you a mask that nicely covers all of white matter, however if not you can always try manually adjusting the threshold with the :code:`mrthreshold -abs` option.
 
