@@ -173,7 +173,7 @@ namespace MR
             T.noalias() += r * Y.row(idx);
           }, zero);
         Xo += L.adjoint() * (L * Xi);
-        Xo += std::sqrt(std::numeric_limits<float>::epsilon()) * Xi;
+        Xo += std::numeric_limits<float>::epsilon() * Xi;
       }
 
 
