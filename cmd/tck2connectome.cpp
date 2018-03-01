@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -71,6 +72,17 @@ void usage ()
 
   + Option ("vector", "output a vector representing connectivities from a given seed point to target nodes, "
                       "rather than a matrix of node-node connectivities");
+
+  REFERENCES
+  + "If using the default streamline-parcel assignment mechanism (or -assignment_radial_search option): " // Internal
+    "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+    "The effects of SIFT on the reproducibility and biological accuracy of the structural connectome. "
+    "NeuroImage, 2015, 104, 253-265"
+
+  + "If using -scale_invlength or -scale_invnodevol options: "
+    "Hagmann, P.; Cammoun, L.; Gigandet, X.; Meuli, R.; Honey, C.; Wedeen, V. & Sporns, O. "
+    "Mapping the Structural Core of Human Cerebral Cortex. "
+    "PLoS Biology 6(7), e159";
 
 }
 
