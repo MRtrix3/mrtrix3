@@ -60,6 +60,15 @@ These applications have been written from scratch in C++, using the functionalit
 
 .. toctree::
    :maxdepth: 1
+   :caption: Fixel-Based Analysis
+
+   fixel_based_analysis/ss_fibre_density_cross-section
+   fixel_based_analysis/mt_fibre_density_cross-section
+   fixel_based_analysis/computing_effect_size_wrt_controls
+   fixel_based_analysis/displaying_results_with_streamlines
+
+.. toctree::
+   :maxdepth: 1
    :caption: Quantitative Structural Connectivity
 
    quantitative_structural_connectivity/act
@@ -69,16 +78,6 @@ These applications have been written from scratch in C++, using the functionalit
    quantitative_structural_connectivity/labelconvert_tutorial
    quantitative_structural_connectivity/global_tractography
    quantitative_structural_connectivity/ismrm_hcp_tutorial
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Fixel-Based Analysis
-
-   fixel_based_analysis/ss_fibre_density_cross-section
-   fixel_based_analysis/mt_fibre_density_cross-section
-   fixel_based_analysis/computing_effect_size_wrt_controls
-   fixel_based_analysis/displaying_results_with_streamlines
-..   fixel_based_analysis/fba_of_other_measures
 
 .. toctree::
    :maxdepth: 1
