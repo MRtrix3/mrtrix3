@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -61,7 +62,7 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
 
         case T_SUM:
           out.factor = 0.0;
-          for (const auto& i : factors) 
+          for (const auto& i : factors)
             if (std::isfinite (i))
               out.factor += i;
           break;
@@ -139,6 +140,11 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
             out.factor = 0.0;
           break;
 
+        case ENDS_CORR:
+          assert (factors.size() == 1);
+          out.factor = factors.front();
+          break;
+
         default:
           throw Exception ("FIXME: Undefined / unsupported track statistic in TrackMapperTWI::get_factor()");
 
@@ -176,13 +182,46 @@ void TrackMapperTWI::add_scalar_image (const std::string& path)
   image_plugin.reset (new TWIScalarImagePlugin (path, track_statistic));
 }
 
+void TrackMapperTWI::set_backtrack()
+{
+  if (!image_plugin)
+    throw Exception ("Cannot backtrack if no TWI associated image provided");
+  const TWIImagePluginBase* const base = image_plugin.get();
+  if (typeid(*base) != typeid(TWIScalarImagePlugin))
+    throw Exception ("Backtracking is only applicable to scalar image TWI plugins");
+  TWIScalarImagePlugin* const ptr = dynamic_cast<TWIScalarImagePlugin*>(image_plugin.get());
+  ptr->set_backtrack();
+}
+
 void TrackMapperTWI::add_fod_image (const std::string& path)
 {
   if (image_plugin)
     throw Exception ("Cannot add more than one associated image to TWI");
   if (contrast != FOD_AMP)
     throw Exception ("Cannot add an FOD image to TWI unless the FOD_AMP contrast is used");
-  image_plugin.reset (new TWIFODImagePlugin (path));
+  image_plugin.reset (new TWIFODImagePlugin (path, track_statistic));
+}
+
+void TrackMapperTWI::add_twdfc_static_image (Image<float>& image)
+{
+  if (image_plugin)
+    throw Exception ("Cannot add more than one associated image to TWI");
+  if (contrast != SCALAR_MAP)
+    throw Exception ("For fMRI correlation mapping, mapper must be set to SCALAR_MAP contrast");
+  if (track_statistic != ENDS_CORR)
+    throw Exception ("For fMRI correlation mapping, only the endpoint correlation track-wise statistic is valid");
+  image_plugin.reset (new TWDFCStaticImagePlugin (image));
+}
+
+void TrackMapperTWI::add_twdfc_dynamic_image (Image<float>& image, const vector<float>& kernel, const ssize_t timepoint)
+{
+  if (image_plugin)
+    throw Exception ("Cannot add more than one associated image to TWI");
+  if (contrast != SCALAR_MAP)
+    throw Exception ("For sliding time-window fMRI mapping, mapper must be set to SCALAR_MAP contrast");
+  if (track_statistic != ENDS_CORR)
+    throw Exception ("For sliding time-window fMRI mapping, only the endpoint correlation track-wise statistic is valid");
+  image_plugin.reset (new TWDFCDynamicImagePlugin (image, kernel, timepoint));
 }
 
 void TrackMapperTWI::add_vector_data (const std::string& path)

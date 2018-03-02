@@ -284,17 +284,17 @@ for applications that need to process all values for a given voxel
 concurrently (as is often the case in diffusion MRI), by allowing the hardware
 to make better use of resources (tractography is one such example).
 
-Many *MRtrix3* commands accept the ``-stride`` option, which is used to specify
+Many *MRtrix3* commands accept the ``-strides`` option, which is used to specify
 the strides for the output image. For example, to generate a LAS (radiological)
 NIfTI image for use with FSL (along with the corresponding bvecs/bvals), you
-can use :ref:`mrconvert` along with the ``-stride -1,2,3,4`` option::
+can use :ref:`mrconvert` along with the ``-strides -1,2,3,4`` option::
 
-    $ mrconvert dwi.mif -stride -1,2,3,4 -export_grad_fsl bvecs bvals dwi.nii
+    $ mrconvert dwi.mif -strides -1,2,3,4 -export_grad_fsl bvecs bvals dwi.nii
 
 Likewise, if you need to ensure the orientation is neurological (RAS), you can
 specify strides ``1,2,3,4`` (or use the ``1:4`` shorthand). You can also specify
-other combinations if required: for example ``-stride -2,-1,3,4`` would
-correspond to a PLS coordinate system, ``-stride 2,3,4,1`` would correspond to
+other combinations if required: for example ``-strides -2,-1,3,4`` would
+correspond to a PLS coordinate system, ``-strides 2,3,4,1`` would correspond to
 volume-contiguous storage (with RAS for the spatial axes), etc.
 
 The different formats supported by *MRtrix3* differ in the range of strides

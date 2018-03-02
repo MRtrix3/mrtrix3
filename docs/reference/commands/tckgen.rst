@@ -65,10 +65,6 @@ Streamlines tractography options
 
 -  **-noprecomputed** do NOT pre-compute legendre polynomial values. Warning: this will slow down the algorithm by a factor of approximately 4.
 
--  **-power value** raise the FOD to the power specified (default is 1/nsamples).
-
--  **-samples number** set the number of FOD samples to take per step for the 2nd order (iFOD2) method (Default: 4).
-
 -  **-rk4** use 4th-order Runge-Kutta integration (slower, but eliminates curvature overshoot in 1st-order deterministic methods)
 
 -  **-stop** stop propagating a streamline once it has traversed all include regions
@@ -125,6 +121,13 @@ Anatomically-Constrained Tractography options
 
 -  **-crop_at_gmwmi** crop streamline endpoints more precisely as they cross the GM-WM interface
 
+Options specific to the iFOD2 tracking algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-samples number** set the number of FOD samples to take per step (Default: 4).
+
+-  **-power value** raise the FOD to the power specified (default is 1/nsamples).
+
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -145,9 +148,7 @@ Standard options
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
-
--  **-failonwarn** terminate program if a warning is produced
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
 -  **-help** display this information page and exit.
 
@@ -184,16 +185,16 @@ References based on command-line options:
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/.
+file, you can obtain one at http://mozilla.org/MPL/2.0/
 
-MRtrix is distributed in the hope that it will be useful,
+MRtrix3 is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty
 of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see http://www.mrtrix.org/.
+For more details, see http://www.mrtrix.org/
 
 
