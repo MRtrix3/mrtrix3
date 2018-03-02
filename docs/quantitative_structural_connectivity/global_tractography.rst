@@ -28,43 +28,37 @@ For multi-shell DWI data, the most common use will be:
     tckglobal dwi.mif wmr.txt -riso csfr.txt -riso gmr.txt -mask mask.mif -niter 1e9 -fod fod.mif -fiso fiso.mif tracks.tck
 
 In this example, ``dwi.mif`` is the input dataset, including the
-gradient table, and ``tracks.tck`` is the output tractogram. ``wmr.txt``, 
-``gmr.txt`` and ``csfr.txt`` are tissue response functions (cf. next 
+gradient table, and ``tracks.tck`` is the output tractogram. ``wm_response.txt``, 
+``gm_response.txt`` and ``csf_response.txt`` are tissue response functions (cf. next 
 section). Optional output images fod.mif and fiso.mif contain the 
 predicted WM fODF and isotropic tissue fractions of CSF and GM 
 respectively, estimated as part of the global optimization and thus 
 affected by spatial regularization. 
 
-Input response functions
-~~~~~~~~~~~~~~~~~~~~~~~~
+Per tissue response function estimation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Input response functions for (single fibre) white matter, grey matter,
-and CSF can be estimated from multi-shell data in prior tissue segmentations, as
-described in `Jeurissen et al. (2014) <#references>`__ and `Christiaens
-et al. (2015) <#references>`__.
-
-Obtaining good segmentations of WM, GM and CSF will typically require T1 
-data. While MRtrix doesn't implement segmentation methods itself, it does 
-provide a script that calls the relevant FSL or Freesurfer tools to obtain 
-a tissue segmentation in the appropriate format, for example:
+Input response functions for single-fibre WM, GM and CSF can be estimated directly from the data.
+The most convenient way of doing so, is via the ``dwi2response dhollander`` algorithm
+(`Dhollander et al. (2016) <#references>`__):
 
 ::
-    
-    5ttgen fsl T1.mif 5tt.mif
 
-Note that the T1 image must be aligned with (e.g. registered to) the DWI data. 
-See `this page <http://mrtrix.readthedocs.org/en/latest/workflows/act.html#tissue-segmentation>`__ 
-for more information.
+  dwi2response dhollander dwi.mif wm_response.txt gm_response.txt csf_response.txt
+	
+where
 
-Response functions for single-fibre WM, GM, and CSF, can then be 
-estimated using:
+- ``dwi.mif`` is the same dwi data set as used above (input)
 
-::
-    
-    dwi2response msmt_5tt dwi.mif 5tt.mif wm.txt gm.txt csf.txt
+- ``<tissue>_response.txt`` is the tissue-specific response function as used above (output)
 
-For a detailed explanation of different strategies for response function 
-estimation, have a look at `this page <http://mrtrix.readthedocs.org/en/latest/concepts/response_function_estimation.html#msmt-5tt>`__.
+Note that the order of the tissue responses output for this algorithm is always: WM, GM, CSF.
+
+Other methods exist, notably ``dwi2response msmt_5tt``, but this requires a co-registered T1 volume
+and very accurate correction of EPI geometric distortions (both up to sub-voxel accuracy), as well as
+accurate segmentation of the T1 volume.
+Even then, still, ``dwi2response msmt_5tt`` may be less accurate than ``dwi2response dhollander``
+in a range of scenarios (`Dhollander et al. (2016) <#references>`__).
 
 Parameters
 ~~~~~~~~~~
@@ -143,4 +137,8 @@ References
    (2014), pp. 312–336 [`SD
    link <http://www.sciencedirect.com/science/article/pii/S1053811913012676>`__\ ]
 
+5. T. Dhollander, D. Raffelt, and A. Connelly. *Unsupervised 3-tissue response
+   function estimation from single-shell or multi-shell diffusion MR data without
+   a co-registered T1 image.* ISMRM Workshop on Breaking the Barriers of Diffusion MRI (2016), pp. 5 [`full text
+   link <https://www.researchgate.net/publication/307863133_Unsupervised_3-tissue_response_function_estimation_from_single-shell_or_multi-shell_diffusion_MR_data_without_a_co-registered_T1_image>`__\ ]
 

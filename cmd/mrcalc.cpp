@@ -238,15 +238,19 @@ class StackEntry { NOMEMALIGN
           image.reset (new Image<complex_type> (header.get_image<complex_type>()));
           image_list.insert (std::make_pair (arg, LoadedImage (image, image_is_complex)));
         }
-        catch (Exception) {
-          std::string a = lowercase (arg);
-          if      (a ==  "nan")  { value =  std::numeric_limits<real_type>::quiet_NaN(); }
-          else if (a == "-nan")  { value = -std::numeric_limits<real_type>::quiet_NaN(); }
-          else if (a ==  "inf")  { value =  std::numeric_limits<real_type>::infinity(); }
-          else if (a == "-inf")  { value = -std::numeric_limits<real_type>::infinity(); }
-          else if (a == "rand")  { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = false; }
-          else if (a == "randn") { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = true; }
-          else                   { value =  to<complex_type> (arg); }
+        catch (Exception&) {
+          try {
+            std::string a = lowercase (arg);
+            if      (a ==  "nan")  { value =  std::numeric_limits<real_type>::quiet_NaN(); }
+            else if (a == "-nan")  { value = -std::numeric_limits<real_type>::quiet_NaN(); }
+            else if (a ==  "inf")  { value =  std::numeric_limits<real_type>::infinity(); }
+            else if (a == "-inf")  { value = -std::numeric_limits<real_type>::infinity(); }
+            else if (a == "rand")  { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = false; }
+            else if (a == "randn") { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = true; }
+            else                   { value =  to<complex_type> (arg); }
+          } catch (Exception&) {
+            throw Exception (std::string ("Could not interpret string \"") + arg + "\" as either an image path or a numerical value");
+          }
         }
       }
       arg = nullptr;
