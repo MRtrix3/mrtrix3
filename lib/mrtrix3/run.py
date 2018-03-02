@@ -3,6 +3,14 @@ _mrtrix_bin_path = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(
 # Remember to remove the '.exe' from Windows binary executables
 _mrtrix_exe_list = [ os.path.splitext(name)[0] for name in os.listdir(_mrtrix_bin_path) ]
 
+# If the main script has been executed in an SGE environment, don't allow
+#   sub-processes to themselves fork SGE jobs; but if the main script is
+#   itself not an SGE job ('JOB_ID' environment variable absent), then
+#   whatever run.command() executes can send out SGE jobs without a problem.
+_env = os.environ.copy()
+if _env.get('SGE_ROOT') and _env.get('JOB_ID'):
+  del _env['SGE_ROOT']
+
 _processes = [ ]
 
 _lastFile = ''
@@ -21,7 +29,8 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
   from distutils.spawn import find_executable
   from mrtrix3 import app
 
-  global _mrtrix_exe_list, _processes
+  # This is the only global variable that is _modified_ within this function
+  global _processes
 
   # Vectorise the command string, preserving anything encased within quotation marks
   cmdsplit = shlex.split(cmd)
@@ -32,7 +41,7 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
     if app.verbosity:
       sys.stderr.write(app.colourExec + 'Skipping command:' + app.colourClear + ' ' + cmd + '\n')
       sys.stderr.flush()
-    return
+    return ('', '')
 
   # This splits the command string based on the piping character '|', such that each
   #   individual executable (along with its arguments) appears as its own list
@@ -106,7 +115,10 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
       handle_err = file_err.fileno()
     # Set off the processes
     try:
-      process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, preexec_fn=os.setpgrp)
+      try:
+        process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=_env, preexec_fn=os.setpgrp)
+      except AttributeError:
+        process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=_env)
       _processes.append(process)
       tempfiles.append( ( file_out, file_err ) )
     # FileNotFoundError not defined in Python 2.7
@@ -190,7 +202,13 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
       caller = inspect.getframeinfo(inspect.stack()[1][0])
       script_name = os.path.basename(sys.argv[0])
       app.console('')
-      sys.stderr.write(script_name + ': ' + app.colourError + '[ERROR] Command failed: ' + cmd + app.colourClear + app.colourDebug + ' (' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')' + app.colourClear + '\n')
+      try:
+        filename = caller.filename
+        lineno = caller.lineno
+      except AttributeError:
+        filename = caller[1]
+        lineno = caller[2]
+      sys.stderr.write(script_name + ': ' + app.colourError + '[ERROR] Command failed: ' + cmd + app.colourClear + app.colourDebug + ' (' + os.path.basename(filename) + ':' + str(lineno) + ')' + app.colourClear + '\n')
       sys.stderr.write(script_name + ': ' + app.colourConsole + 'Output of failed command:' + app.colourClear + '\n')
       for line in error_text.splitlines():
         sys.stderr.write(' ' * (len(script_name)+2) + line + '\n')
@@ -230,7 +248,7 @@ def function(fn, *args): #pylint: disable=unused-variable
     if app.verbosity:
       sys.stderr.write(app.colourExec + 'Skipping function:' + app.colourClear + ' ' + fnstring + '\n')
       sys.stderr.flush()
-    return
+    return None
 
   if app.verbosity:
     sys.stderr.write(app.colourExec + 'Function:' + app.colourClear + ' ' + fnstring + '\n')
@@ -247,7 +265,13 @@ def function(fn, *args): #pylint: disable=unused-variable
     error_text = str(type(e).__name__) + ': ' + str(e)
     script_name = os.path.basename(sys.argv[0])
     app.console('')
-    sys.stderr.write(script_name + ': ' + app.colourError + '[ERROR] Function failed: ' + fnstring + app.colourClear + app.colourDebug + ' (' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')' + app.colourClear + '\n')
+    try:
+      filename = caller.filename
+      lineno = caller.lineno
+    except AttributeError:
+      filename = caller[1]
+      lineno = caller[2]
+    sys.stderr.write(script_name + ': ' + app.colourError + '[ERROR] Function failed: ' + fnstring + app.colourClear + app.colourDebug + ' (' + os.path.basename(filename) + ':' + str(lineno) + ')' + app.colourClear + '\n')
     sys.stderr.write(script_name + ': ' + app.colourConsole + 'Information from failed function:' + app.colourClear + '\n')
     for line in error_text.splitlines():
       sys.stderr.write(' ' * (len(script_name)+2) + line + '\n')
@@ -323,6 +347,7 @@ def versionMatch(item):
     return exe_path_sys
 
   app.error('Unable to find executable for MRtrix3 command ' + item)
+  return ''
 
 
 

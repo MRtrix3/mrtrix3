@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -237,15 +238,19 @@ class StackEntry { NOMEMALIGN
           image.reset (new Image<complex_type> (header.get_image<complex_type>()));
           image_list.insert (std::make_pair (arg, LoadedImage (image, image_is_complex)));
         }
-        catch (Exception) {
-          std::string a = lowercase (arg);
-          if      (a ==  "nan")  { value =  std::numeric_limits<real_type>::quiet_NaN(); }
-          else if (a == "-nan")  { value = -std::numeric_limits<real_type>::quiet_NaN(); }
-          else if (a ==  "inf")  { value =  std::numeric_limits<real_type>::infinity(); }
-          else if (a == "-inf")  { value = -std::numeric_limits<real_type>::infinity(); }
-          else if (a == "rand")  { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = false; }
-          else if (a == "randn") { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = true; }
-          else                   { value =  to<complex_type> (arg); }
+        catch (Exception&) {
+          try {
+            std::string a = lowercase (arg);
+            if      (a ==  "nan")  { value =  std::numeric_limits<real_type>::quiet_NaN(); }
+            else if (a == "-nan")  { value = -std::numeric_limits<real_type>::quiet_NaN(); }
+            else if (a ==  "inf")  { value =  std::numeric_limits<real_type>::infinity(); }
+            else if (a == "-inf")  { value = -std::numeric_limits<real_type>::infinity(); }
+            else if (a == "rand")  { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = false; }
+            else if (a == "randn") { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = true; }
+            else                   { value =  to<complex_type> (arg); }
+          } catch (Exception&) {
+            throw Exception (std::string ("Could not interpret string \"") + arg + "\" as either an image path or a numerical value");
+          }
         }
       }
       arg = nullptr;
@@ -585,7 +590,7 @@ void get_header (const StackEntry& entry, Header& header)
   for (size_t n = 0; n < std::min<size_t> (header.ndim(), entry.image->ndim()); ++n) {
     if (header.size(n) > 1 && entry.image->size(n) > 1 && header.size(n) != entry.image->size(n))
       throw Exception ("dimensions of input images do not match - aborting");
-    if (!transforms_match (header, *(entry.image)) && !transform_mis_match_reported) {
+    if (!voxel_grids_match_in_scanner_space (header, *(entry.image), 1.0e-4) && !transform_mis_match_reported) {
       WARN ("header transformations of input images do not match");
       transform_mis_match_reported = true;
     }
@@ -610,6 +615,12 @@ void get_header (const StackEntry& entry, Header& header)
       if (!entry_pe.isApprox (header_pe))
         PhaseEncoding::clear_scheme (header);
     }
+  }
+
+  auto slice_encoding_it = entry.image->keyval().find ("SliceEncodingDirection");
+  if (slice_encoding_it != entry.image->keyval().end()) {
+    if (header.keyval()["SliceEncodingDirection"] != slice_encoding_it->second)
+      header.keyval().erase (header.keyval().find ("SliceEncodingDirection"));
   }
 }
 

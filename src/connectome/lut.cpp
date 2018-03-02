@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -133,8 +134,12 @@ LUT::file_format LUT::guess_file_format (const std::string& path)
           ++i;
       }
       if (entries.size()) {
-        if (columns.size() && entries.size() != columns.size())
-          throw Exception ("Inconsistent number of columns in LUT file \"" + Path::basename (path) + "\"");
+        if (columns.size() && entries.size() != columns.size()) {
+          Exception E ("Inconsistent number of columns in LUT file \"" + Path::basename (path) + "\"");
+          E.push_back ("Initial contents contain " + str(columns.size()) + " columns, but following line contains " + str(entries.size()) + ":");
+          E.push_back ("\"" + line + "\"");
+          throw E;
+        }
         if (columns.empty())
           columns.resize (entries.size());
         for (size_t c = 0; c != columns.size(); ++c)
