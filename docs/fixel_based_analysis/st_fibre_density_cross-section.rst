@@ -32,10 +32,13 @@ Pre-processsing steps
 .. include:: common_fba_steps/dwipreproc.rst
 
 
-3. Estimate a brain mask
-^^^^^^^^^^^^^^^^^^^^^^^^
+3. Estimate a temporary brain mask
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. include:: common_fba_steps/brainmask.rst
+Compute a brain mask::
+
+    foreach * : dwi2mask IN/dwi_denoised_preproc.mif IN/dwi_temp_mask.mif
+    
 
 AFD-specific pre-processsing steps
 ----------------------------------
@@ -48,7 +51,7 @@ To enable robust quantitative comparisons of AFD across subjects three additiona
 
 Because we recommend a :ref:`global intensity normalisation <global-intensity-normalisation>`, bias field correction is required as a pre-processing step to eliminate low frequency intensity inhomogeneities across the image. DWI bias field correction is perfomed by first estimating a correction field from the DWI b=0 image, then applying the field to correct all DW volumes. This can be done in a single step using the :ref:`dwibiascorrect` script in MRtrix. The script uses bias field correction algorthims available in `ANTS <http://stnava.github.io/ANTs/>`_ or `FSL <http://fsl.fmrib.ox.ac.uk/>`_. In our experience the `N4 algorithm <http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3071855/>`_ in ANTS gives superiour results. To install N4 install the `ANTS <http://stnava.github.io/ANTs/>`_ package, then run perform bias field correction on DW images using::
 
-    foreach * : dwibiascorrect -ants -mask IN/dwi_mask.mif IN/dwi_denoised_preproc.mif IN/dwi_denoised_preproc_bias.mif
+    foreach * : dwibiascorrect -ants IN/dwi_denoised_preproc.mif IN/dwi_denoised_preproc_bias.mif
 
 
 5. Global intensity normalisation across subjects
@@ -62,7 +65,7 @@ As outlined :ref:`here <global-intensity-normalisation>`, a global intensity nor
 You could copy all files into this directory, however symbolic linking them will save space::
 
     foreach * : ln -sr IN/dwi_denoised_preproc_bias.mif ../dwiintensitynorm/dwi_input/IN.mif
-    foreach * : ln -sr IN/dwi_mask.mif ../dwiintensitynorm/mask_input/IN.mif
+    foreach * : ln -sr IN/dwi_temp_mask.mif ../dwiintensitynorm/mask_input/IN.mif
 
 Perform intensity normalisation::
 
@@ -76,7 +79,7 @@ The dwiintensitynorm script also outputs the study-specific FA template and whit
 
 Keeping the FA template image and white matter mask is also handy if additional subjects are added to the study at a later date. New subjects can be intensity normalised in a single step by :ref:`piping <unix_pipelines>` the following commands together. Run from the subjects directory::
 
-    dwi2tensor new_subject/dwi_denoised_preproc_bias.mif -mask new_subject/dwi_mask.mif - | tensor2metric - -fa - | mrregister -force ../dwiintensitynorm/fa_template.mif - -mask2 new_subject/dwi_mask.mif -nl_scale 0.5,0.75,1.0 -nl_niter 5,5,15 -nl_warp - /tmp/dummy_file.mif | mrtransform ../dwiintensitynorm/fa_template_wm_mask.mif -template new_subject/dwi_denoised_preproc_bias.mif -warp - - | dwinormalise new_subject/dwi_denoised_preproc_bias.mif - ../dwiintensitynorm/dwi_output/new_subject.mif
+    dwi2tensor new_subject/dwi_denoised_preproc_bias.mif -mask new_subject/dwi_temp_mask.mif - | tensor2metric - -fa - | mrregister -force ../dwiintensitynorm/fa_template.mif - -mask2 new_subject/dwi_temp_mask.mif -nl_scale 0.5,0.75,1.0 -nl_niter 5,5,15 -nl_warp - /tmp/dummy_file.mif | mrtransform ../dwiintensitynorm/fa_template_wm_mask.mif -template new_subject/dwi_denoised_preproc_bias.mif -warp - - | dwinormalise new_subject/dwi_denoised_preproc_bias.mif - ../dwiintensitynorm/dwi_output/new_subject.mif
 
 .. NOTE:: The above command may also be useful if you wish to alter the mask then re-apply the intensity normalisation to all subjects in the study. For example you may wish to edit the mask using the ROI tool in :code:`mrview` to remove white matter regions that you hypothesise are affected by the disease (e.g. removing the corticospinal tract in a study of motor neurone disease due to T2 hyperintensity). You also may wish to redefine the mask completely, for example in an elderly population (with larger ventricles) it may be appropriate to intensity normalise using the median b=0 CSF. This could be performed by manually masking partial-volume-free CSF voxels, then running the above command with the CSF mask instead of the :code:`fa_template_wm_mask.mif`.
 
@@ -174,7 +177,7 @@ Recompute the fixel mask using the analysis voxel mask. Using the mask allows us
 
 Note that here we warp FOD images into template space *without* FOD reorientation. Reorientation will be performed in a separate subsequent step::
 
-    foreach * : mrtransform IN/wmfod.mif -warp IN/subject2template_warp.mif -noreorientation IN/fod_in_template_space.mif
+    foreach * : mrtransform IN/wmfod.mif -warp IN/subject2template_warp.mif -noreorientation IN/fod_in_template_space_NOT_REORIENTED.mif
 
 
 15. Segment FOD images to estimate fixels and their apparent fibre density (FD)
