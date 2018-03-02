@@ -33,9 +33,9 @@ Pre-processsing steps
 
 3. Bias field correction
 ^^^^^^^^^^^^^^^^^^^^^^^^
-Bias field correction is important to deal with spatial intensity inhomogeneities. Even though this FBA pipeline will account for these as well (in the later :ref:`mtnormalise` step, which is furthermore crucial to correct for global intensity differences between subjects), performing bias field correction at this stage will allow for more accurate estimation of the tissue response functions as well as the individual subject brain masks.
+Bias field correction is important to deal with spatial intensity inhomogeneities. Even though the multi-tissue FBA pipeline accounts for these even better at later step (i.e. the later :ref:`mtnormalise` step, which is furthermore crucial to correct for global intensity differences between subjects), performing bias field correction at this stage can help with obtaining better brain masks.  If you have problems with this step, or brain mask estimation seems to actually get **worse** because of it, you can skip this step. As mentioned, :ref:`mtnormalise` step right after the multi-tissue FOD estimation step is more robust to perform the (final) correction for bias fields.
 
-This can be done in a single step using the :ref:`dwibiascorrect` script in MRtrix. The script uses bias field correction algorthims available in `ANTS <http://stnava.github.io/ANTs/>`_ or `FSL <http://fsl.fmrib.ox.ac.uk/>`_. In our experience the `N4 algorithm <http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3071855/>`_ in ANTS gives far superior results. To install N4, install the `ANTS <http://stnava.github.io/ANTs/>`_ package, then perform bias field correction on DW images using::
+The script that works at this step of the pipeline uses bias field correction algorithms available in `ANTS <http://stnava.github.io/ANTs/>`_ or `FSL <http://fsl.fmrib.ox.ac.uk/>`_. In our experience the `N4 algorithm <http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3071855/>`_ in ANTS gives far superior results. To install N4, install the `ANTS <http://stnava.github.io/ANTs/>`_ package, then perform bias field correction on DW images using::
 
     foreach * : dwibiascorrect -ants IN/dwi_denoised_preproc.mif IN/dwi_denoised_preproc_bias.mif
 
@@ -68,13 +68,15 @@ Compute a whole brain mask from the upsampled DW images::
 
 7. Fibre Orientation Distribution estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 When performing analysis of AFD, Constrained Spherical Deconvolution (CSD) should be performed using the group average response functions computed at step 3::
 
     foreach * : dwi2fod msmt_csd IN/dwi_denoised_preproc_bias_upsampled.mif ../group_average_response_wm.txt IN/wmfod.mif ../group_average_response_gm.txt IN/gm.mif  ../group_average_response_csf.txt IN/csf.mif -mask IN/dwi_mask_upsampled.mif
 
 
-8. Intensity normalisation
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+8. Joint bias field correction and Intensity normalisation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 This step performs :ref:`global intensity normalisation <global-intensity-normalisation>` in the log-domain by scaling all tissue types with a spatially smoothly varying normalisation field::
 
     foreach * : mtnormalise IN/wmfod.mif IN/wmfod_norm.mif IN/gm.mif IN/gm_norm.mif IN/csf.mif IN/csf_norm.mif -mask IN/dwi_mask_upsampled.mif
@@ -82,8 +84,6 @@ This step performs :ref:`global intensity normalisation <global-intensity-normal
 If CSD was performed with the same single set of (average) WM, GM and CSF response functions for all subjects, then the resulting output of :ref:`mtnormalise` should make the amplitudes comparable between those subjects as well.
 
 Note that this step is crucial in the FBA pipeline, even if bias field correction was applied during the preprocessing stage, as the latter does not correct for global intensity differences between subjects.
-
-.. WARNING:: We recommend you that you check that the normalisation scale (computed during intensity normalisation) is not influenced by the variable of interest in your study. For example if one group contains global (widespread) changes in white matter T2, then this may directly influence the intensity normalisation and therefore bias downstream analysis of apparent fibre density (FD). To check this, you can perform an equivalence test to ensure the overall normalisation scale does not differ between groups. To output these overall normalisation scales for all subjects use :code:`mrinfo */wmfod_norm.mif -property lognorm_scale`.
 
 
 9. Generate a study-specific unbiased FOD template
