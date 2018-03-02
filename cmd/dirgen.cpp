@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -35,7 +36,7 @@ void usage ()
 
   SYNOPSIS = "Generate a set of uniformly distributed directions using a bipolar electrostatic repulsion model";
 
-  DESCRIPTION 
+  DESCRIPTION
     + "Directions are distributed by analogy to an electrostatic repulsion system, with each direction "
     "corresponding to a single electrostatic charge (for -unipolar), or a pair of diametrically opposed charges "
     "(for the default bipolar case). The energy of the system is determined based on the Coulomb repulsion, "
@@ -43,7 +44,7 @@ void usage ()
     "assumed for the repulsion law (default: 1). The minimum energy state is obtained by gradient descent.";
 
 
-  REFERENCES 
+  REFERENCES
     + "Jones, D.; Horsfield, M. & Simmons, A. "
     "Optimal strategies for measuring diffusion in anisotropic systems by magnetic resonance imaging. "
     "Magnetic Resonance in Medicine, 1999, 42: 515-525"
@@ -79,9 +80,9 @@ void usage ()
 class ProjectedUpdate { MEMALIGN(ProjectedUpdate)
   public:
     bool operator() (
-        Eigen::VectorXd& newx, 
+        Eigen::VectorXd& newx,
         const Eigen::VectorXd& x,
-        const Eigen::VectorXd& g, 
+        const Eigen::VectorXd& g,
         double step_size) {
       newx.noalias() = x - step_size * g;
       for (ssize_t n = 0; n < newx.size(); n += 3)
@@ -98,14 +99,18 @@ class ProjectedUpdate { MEMALIGN(ProjectedUpdate)
 
 class Energy { MEMALIGN(Energy)
   public:
-    Energy (ProgressBar& progress) : 
+    Energy (ProgressBar& progress) :
       progress (progress),
       ndirs (to<int> (argument[0])),
       bipolar (!(get_options ("unipolar").size())),
       power (0),
       directions (3 * ndirs) { }
 
-    FORCE_INLINE double fast_pow (double x, int p) {
+// Non-optimised compilation can't handle recursive inline functions
+#ifdef __OPTIMIZE__
+FORCE_INLINE
+#endif
+    double fast_pow (double x, int p) {
       return p == 1 ? x : fast_pow (x*x, p/2);
     }
 
@@ -113,13 +118,13 @@ class Energy { MEMALIGN(Energy)
 
     size_t size () const { return 3 * ndirs; }
 
-    // set x to original directions provided in constructor. 
+    // set x to original directions provided in constructor.
     // The idea is to save the directions from one run to initialise next run
     // at higher power.
-    double init (Eigen::VectorXd& x) 
+    double init (Eigen::VectorXd& x)
     {
       Math::RNG::Normal<double> rng;
-      for (ssize_t n = 0; n < ndirs; ++n) {
+      for (size_t n = 0; n < ndirs; ++n) {
         auto d = x.segment (3*n,3);
         d[0] = rng();
         d[1] = rng();
@@ -146,26 +151,26 @@ class Energy { MEMALIGN(Energy)
           Eigen::Vector3d r = d1-d2;
           double _1_r2 = 1.0 / r.squaredNorm();
           double _1_r = std::sqrt (_1_r2);
-          double e = fast_pow (_1_r, power); 
+          double e = fast_pow (_1_r, power);
           E += e;
-          g1 -= (power * e * _1_r2) * r; 
-          g2 += (power * e * _1_r2) * r; 
+          g1 -= (power * e * _1_r2) * r;
+          g2 += (power * e * _1_r2) * r;
 
           if (bipolar) {
             r = d1+d2;
             _1_r2 = 1.0 / r.squaredNorm();
             _1_r = std::sqrt (_1_r2);
-            e = fast_pow (_1_r, power); 
+            e = fast_pow (_1_r, power);
             E += e;
-            g1 -= (power * e * _1_r2) * r; 
-            g2 -= (power * e * _1_r2) * r; 
+            g1 -= (power * e * _1_r2) * r;
+            g2 -= (power * e * _1_r2) * r;
           }
 
         }
       }
 
       // constrain gradients to lie tangent to unit sphere:
-      for (size_t n = 0; n < ndirs; ++n) 
+      for (size_t n = 0; n < ndirs; ++n)
         g.segment(3*n,3) -= x.segment(3*n,3).dot (g.segment(3*n,3)) * x.segment(3*n,3);
 
       return E;
@@ -174,7 +179,7 @@ class Energy { MEMALIGN(Energy)
 
 
     // function executed per thread:
-    void execute () 
+    void execute ()
     {
       size_t this_start = 0;
       while ((this_start = current_start++) < restarts) {
@@ -189,7 +194,7 @@ class Energy { MEMALIGN(Energy)
 
           size_t iter = 0;
           for (; iter < niter; iter++) {
-            if (!optim.iterate()) 
+            if (!optim.iterate())
               break;
 
             DEBUG ("start " + str(this_start) + ": [ " + str (iter) + " ] (pow = " + str (power) + ") E = " + str (optim.value(), 8)
@@ -244,13 +249,13 @@ Eigen::VectorXd Energy::best_directions;
 
 
 
-void run () 
+void run ()
 {
   Energy::restarts = get_option_value ("restarts", DEFAULT_RESTARTS);
   Energy::target_power = get_option_value ("power", DEFAULT_POWER);
   Energy::niter = get_option_value ("niter", DEFAULT_NITER);
 
-  { 
+  {
     ProgressBar progress ("Optimising directions up to power " + str(Energy::target_power) + " (" + str(Energy::restarts) + " restarts)");
     Energy energy_functor (progress);
     auto threads = Thread::run (Thread::multi (energy_functor), "energy function");
@@ -259,7 +264,7 @@ void run ()
   CONSOLE ("final energy = " + str(Energy::best_E));
   size_t ndirs = Energy::best_directions.size()/3;
   Eigen::MatrixXd directions_matrix (ndirs, 3);
-  for (int n = 0; n < ndirs; ++n) 
+  for (size_t n = 0; n < ndirs; ++n)
     directions_matrix.row (n) = Energy::best_directions.segment (3*n, 3);
 
   DWI::Directions::save (directions_matrix, argument[1], get_options ("cartesian").size());

@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -17,13 +18,17 @@
 
 #include <algorithm>
 
+#include "types.h"
 #include "math/SH.h"
+#include "dwi/tractography/properties.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/tractography.h"
 #include "dwi/tractography/tracking/types.h"
 #include "dwi/tractography/algorithms/calibrator.h"
 
+
+#define TCKGEN_DEFAULT_IFOD2_NSAMPLES 4
 
 
 
@@ -35,6 +40,9 @@ namespace MR
     {
       namespace Algorithms
       {
+
+        extern const App::OptionGroup iFOD2Option;
+        void load_iFOD2_options (Tractography::Properties&);
 
         using namespace MR::DWI::Tractography::Tracking;
 
@@ -274,7 +282,7 @@ end_init:
             }
 
 
-            float get_metric()
+            FORCE_INLINE float get_metric()
             {
               return FOD (dir);
             }
@@ -343,7 +351,7 @@ end_init:
 
 
 
-            float FOD (const Eigen::Vector3f& direction) const
+            FORCE_INLINE float FOD (const Eigen::Vector3f& direction) const
             {
               return (S.precomputer ?
                   S.precomputer.value (values, direction) :
@@ -351,7 +359,7 @@ end_init:
                   );
             }
 
-            float FOD (const Eigen::Vector3f& position, const Eigen::Vector3f& direction)
+            FORCE_INLINE float FOD (const Eigen::Vector3f& position, const Eigen::Vector3f& direction)
             {
               if (!get_data (source, position))
                 return NaN;
@@ -361,7 +369,7 @@ end_init:
 
 
 
-            float rand_path_prob ()
+            FORCE_INLINE float rand_path_prob ()
             {
               get_path (positions, tangents, rand_dir (dir));
               return path_prob (positions, tangents);
@@ -437,7 +445,7 @@ end_init:
 
 
 
-            Eigen::Vector3f rand_dir (const Eigen::Vector3f& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
+            FORCE_INLINE Eigen::Vector3f rand_dir (const Eigen::Vector3f& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
 
 
 

@@ -62,6 +62,7 @@ The following binaries are provided for working with the 5TT format:
 
 * ``5tt2gmwmi``: Produces a mask image suitable for seeding streamlines from the grey matter - white matter interface (GMWMI). The resulting image should then be provided to the ``tckgen`` command using the ``-seed_gmwmi`` option.
 * ``5tt2vis``: Produces a 3D greyscale image suitable for visualisation purposes.
+* ``5ttcheck``: Check that one or more input images conform to the 5TT format.
 * ``5ttedit``: Allows the user to edit the tissue segmentations. Useful for manually correcting tissue segmentations that are known to be erroneous (e.g. dark blobs in the white matter being labelled as grey matter); see the command's help page for more details.
 
 Alternative tissue segmentation software

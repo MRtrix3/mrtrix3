@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -108,6 +109,9 @@ namespace MR
           grabGesture (Qt::PinchGesture);
           grabGesture (Qt::PanGesture);
           QFont font_ = font();
+          //CONF option: FontSize
+          //CONF The size (in points) of the font to be used in OpenGL viewports (mrview and shview).
+          //CONF default: 10
           font_.setPointSize (MR::File::Config::get_int ("FontSize", 10));
           setFont (font_);
           QSizePolicy policy (QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
@@ -118,7 +122,7 @@ namespace MR
 
       QSize Window::GLArea::sizeHint () const {
         //CONF option: MRViewInitWindowSize
-        //CONF initial window size of MRView in pixels
+        //CONF Initial window size of MRView in pixels.
         //CONF default: 512,512
         std::string init_size_string = lowercase (MR::File::Config::get ("MRViewInitWindowSize"));
         vector<int> init_window_size;
@@ -417,7 +421,7 @@ namespace MR
 
           //CONF option: ImageInterpolation
           //CONF default: true
-          //CONF Interpolation switched on in the main image
+          //CONF Interpolation switched on in the main image.
           image_interpolate_action = colourmap_menu->addAction (tr ("Interpolate"), this, SLOT (image_interpolate_slot()));
           image_interpolate_action->setShortcut (tr ("I"));
           image_interpolate_action->setCheckable (true);
@@ -489,7 +493,7 @@ namespace MR
 
           //CONF option: MRViewShowFocus
           //CONF default: true
-          //CONF Focus cross hair shown in main image
+          //CONF Focus cross hair shown in main image.
           show_crosshairs_action = menu->addAction (tr ("Show focus"), glarea, SLOT (update()));
           show_crosshairs_action->setShortcut (tr("F"));
           show_crosshairs_action->setCheckable (true);
@@ -498,7 +502,7 @@ namespace MR
 
           //CONF option: MRViewShowComments
           //CONF default: true
-          //CONF Comments shown in main image overlay
+          //CONF Comments shown in main image overlay.
           show_comments_action = menu->addAction (tr ("Show comments"), glarea, SLOT (update()));
           show_comments_action->setToolTip (tr ("Show/hide image comments\n\nShortcut: H"));
           show_comments_action->setShortcut (tr("H"));
@@ -508,7 +512,7 @@ namespace MR
 
           //CONF option: MRViewShowVoxelInformation
           //CONF default: true
-          //CONF Voxel information shown in main image overlay
+          //CONF Voxel information shown in main image overlay.
           show_voxel_info_action = menu->addAction (tr ("Show voxel information"), glarea, SLOT (update()));
           show_voxel_info_action->setShortcut (tr("V"));
           show_voxel_info_action->setCheckable (true);
@@ -517,7 +521,7 @@ namespace MR
 
           //CONF option: MRViewShowOrientationLabel
           //CONF default: true
-          //CONF Anatomical orientation information shown in main image overlay
+          //CONF Anatomical orientation information shown in main image overlay.
           show_orientation_labels_action = menu->addAction (tr ("Show orientation labels"), glarea, SLOT (update()));
           show_orientation_labels_action->setShortcut (tr("O"));
           show_orientation_labels_action->setCheckable (true);
@@ -526,7 +530,7 @@ namespace MR
 
           //CONF option: MRViewShowColourbar
           //CONF default: true
-          //CONF Colourbar shown in main image overlay
+          //CONF Colourbar shown in main image overlay.
           show_colourbar_action = menu->addAction (tr ("Show colour bar"), glarea, SLOT (update()));
           show_colourbar_action->setShortcut (tr("B"));
           show_colourbar_action->setCheckable (true);

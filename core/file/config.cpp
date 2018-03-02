@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -32,17 +33,21 @@ namespace MR
 
     void Config::init ()
     {
-      if (Path::is_file (MRTRIX_SYS_CONFIG_FILE)) {
-        INFO ("reading config file \"" MRTRIX_SYS_CONFIG_FILE "\"...");
+      const char* sysconf_location = getenv ("MRTRIX_CONFIGFILE");
+      if (!sysconf_location) 
+        sysconf_location = MRTRIX_SYS_CONFIG_FILE;
+
+      if (Path::is_file (sysconf_location)) {
+        INFO (std::string("reading config file \"") + sysconf_location + "\"...");
         try {
-          KeyValue kv (MRTRIX_SYS_CONFIG_FILE);
+          KeyValue kv (sysconf_location);
           while (kv.next()) {
             config[kv.key()] = kv.value();
           }
         }
         catch (...) { }
       } else {
-        DEBUG ("No config file found at \"" MRTRIX_SYS_CONFIG_FILE "\"");
+        DEBUG (std::string ("No config file found at \"") + sysconf_location + "\"");
       }
 
       std::string path = Path::join (Path::home(), MRTRIX_USER_CONFIG_FILE);
@@ -56,7 +61,7 @@ namespace MR
         }
         catch (...) { }
       } else {
-        DEBUG ("No config file found at \"" MRTRIX_USER_CONFIG_FILE "\"");
+        DEBUG ("No config file found at \"" + path + "\"");
       }
     }
 
