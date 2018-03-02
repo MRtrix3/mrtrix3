@@ -1,14 +1,12 @@
 #!/usr/bin/env python2
 import os
 import sys
-import string
-import math
 
 if len(sys.argv) <= 1:
-    print 'A script to blend two sets of movie frames together with a desired overlap.'
-    print 'The input arguments are two folders containing the movie frames (eg. output from the MRview screenshot tool), and the desired number of overlapping frames.'
-    print 'eg: blend folder1 folder2 20 output_folder'
-    sys.exit(1)
+  sys.stderr.write('A script to blend two sets of movie frames together with a desired overlap.\n')
+  sys.stderr.write('The input arguments are two folders containing the movie frames (eg. output from the MRview screenshot tool), and the desired number of overlapping frames.\n')
+  sys.stderr.write('eg: blend folder1 folder2 20 output_folder\n')
+  sys.exit(1)
 
 input_folder1 = sys.argv[1]
 input_folder2 = sys.argv[2]
@@ -18,19 +16,17 @@ num_overlap =  int(sys.argv[3])
 output_folder = sys.argv[4]
 
 if not os.path.exists(output_folder):
-    os.mkdir(output_folder)
-    
+  os.mkdir(output_folder)
+
 total_num_output_frames = len(file_list1) + len(file_list2) - num_overlap
 for i in range(total_num_output_frames):
-    file_name = 'frame' + '%0*d' % (5, i) + '.png'
-    if (i <= (len(file_list1) - num_overlap)):
-        os.system('cp -L ' + input_folder1 + '/' + file_list1[i] + ' ' + output_folder + '/' + file_name)
-    if (i > (len(file_list1) - num_overlap)) and (i < (len(file_list1))):
-        i2 = i - (len(file_list1) - num_overlap) - 1 
-        blend_amount = 100 * float(i2 + 1) / float(num_overlap)
-        os.system('convert ' + input_folder1 + '/' + file_list1[i] + ' ' + input_folder2 + '/' + file_list2[i2] + ' -alpha on -compose blend  -define compose:args=' + str(blend_amount) + ' -gravity South  -composite ' + output_folder + '/' + file_name)
-    if (i >= (len(file_list1))):
-        i2 = i - (len(file_list1) - num_overlap) - 1 
-        os.system('cp -L ' + input_folder2 + '/' + file_list2[i2] + ' ' + output_folder + '/' + file_name)    
-    
-    
+  file_name = 'frame' + '%0*d' % (5, i) + '.png'
+  if i <= (len(file_list1) - num_overlap):
+    os.system('cp -L ' + input_folder1 + '/' + file_list1[i] + ' ' + output_folder + '/' + file_name)
+  if i > (len(file_list1) - num_overlap) and i < (len(file_list1)):
+    i2 = i - (len(file_list1) - num_overlap) - 1
+    blend_amount = 100 * float(i2 + 1) / float(num_overlap)
+    os.system('convert ' + input_folder1 + '/' + file_list1[i] + ' ' + input_folder2 + '/' + file_list2[i2] + ' -alpha on -compose blend  -define compose:args=' + str(blend_amount) + ' -gravity South  -composite ' + output_folder + '/' + file_name)
+  if i >= (len(file_list1)):
+    i2 = i - (len(file_list1) - num_overlap) - 1
+    os.system('cp -L ' + input_folder2 + '/' + file_list2[i2] + ' ' + output_folder + '/' + file_name)

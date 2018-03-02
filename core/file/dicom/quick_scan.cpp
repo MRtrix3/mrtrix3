@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -43,8 +44,8 @@ namespace MR {
 
         Element item;
         try {
-          item.set (filename, force_read); 
-          std::string current_image_type; 
+          item.set (filename, force_read);
+          std::string current_image_type;
           bool in_frames = false;
 
           while (item.read()) {
@@ -75,13 +76,18 @@ namespace MR {
               }
             }
 
-            if (print_DICOM_fields) 
+            if (print_DICOM_fields)
               print (str(item));
 
             if (print_CSA_fields && item.group == 0x0029U) {
-              if (item.element == 0x1010U || item.element == 0x1020U) {
+              if (item.element == 0x1010U ||
+                  item.element == 0x1020U ||
+                  item.element == 0x1110U ||
+                  item.element == 0x1120U ||
+                  item.element == 0x1210U ||
+                  item.element == 0x1220U) {
                 CSAEntry entry (item.data, item.data + item.size);
-                while (entry.parse()) 
+                while (entry.parse())
                   print (str (entry));
               }
             }
@@ -92,9 +98,9 @@ namespace MR {
           transfer_syntax_supported = item.transfer_syntax_supported;
 
         }
-        catch (Exception& E) { 
+        catch (Exception& E) {
           E.display (3);
-          return true; 
+          return true;
         }
 
         return false;
@@ -107,21 +113,21 @@ namespace MR {
 
       std::ostream& operator<< (std::ostream& stream, const QuickScan& file)
       {
-        stream << "file: \"" 
-          << file.filename << "\" [" 
-          << file.modality << "]:\n    patient: " 
-          << file.patient << " " 
-          << format_ID(file.patient_ID) << " - " 
-          << format_date (file.patient_DOB) << "\n    study: " 
-          << ( file.study.size() ? file.study : "[unspecified]" ) << " " 
-          << format_ID(file.study_ID) << " - " 
-          << format_date (file.study_date) << " " 
-          << format_time (file.study_time) << "\n    series: [" 
-          << file.series_number << "] " 
-          << ( file.series.size() ? file.series : "[unspecified]" ) << " - " 
-          << format_date (file.series_date) << " " 
+        stream << "file: \""
+          << file.filename << "\" ["
+          << file.modality << "]:\n    patient: "
+          << file.patient << " "
+          << format_ID(file.patient_ID) << " - "
+          << format_date (file.patient_DOB) << "\n    study: "
+          << ( file.study.size() ? file.study : "[unspecified]" ) << " "
+          << format_ID(file.study_ID) << " - "
+          << format_date (file.study_date) << " "
+          << format_time (file.study_time) << "\n    series: ["
+          << file.series_number << "] "
+          << ( file.series.size() ? file.series : "[unspecified]" ) << " - "
+          << format_date (file.series_date) << " "
           << format_time (file.series_time) << "\n";
-        for (const auto& type : file.image_type) 
+        for (const auto& type : file.image_type)
           stream << "      image type: " << type.first << " [ " << type.second << " frames ]\n";
         stream << "    sequence: " << ( file.sequence.size() ? file.sequence : "[unspecified]" ) << "\n";
 

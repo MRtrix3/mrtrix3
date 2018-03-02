@@ -44,7 +44,7 @@ by restricting the number of threads to be used during compilation:
     $ NUMBER_OF_PROCESSORS=1 ./build
 
 
-.. _crash_RAM:
+.. _crash_ram:
 
 Commands crashing due to memory requirements
 --------------------------------------------

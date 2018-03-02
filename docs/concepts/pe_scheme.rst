@@ -31,7 +31,7 @@ of two ways.
 
 -  The most convenient of these is storage of (one or more) key-value field(s)
    encapsulated within the image header, just as can be used for
-   :ref:`dw_scheme`. This ensures that the information
+   the diffusion gradient scheme. This ensures that the information
    is retained through image processing, as each *MRtrix3* command passes the
    header entries of the input image through to the output image.
 
@@ -108,7 +108,7 @@ If the phase encoding direction and/or the total readout time varies between
 different volumes within a single image series, then the two key-value fields
 described above are not sufficient to fully encode this information. In this
 situation, *MRtrix3* will instead use a key-value entry "``pe_scheme``" (similar to
-the "``dw_scheme``" entry used for :ref:`dw_scheme`).
+the "``dw_scheme``" entry used for the diffusion gradient scheme).
 
 This information is stored as a *table*, where each row contains the phase encoding
 direction and the readout time for the corresponding volume; the number of rows in
@@ -168,7 +168,7 @@ image data in such a way as to invalidate the phase encoding information will
 modifying the representation of this information between the fixed and variable
 phase encoding cases.
 
-Consider, for instance, a pair of *b*=0 images, where the first was acquired with
+Consider, for instance, a pair of b=0 images, where the first was acquired with
 phase encoding direction ``A>>P``, and the second was acquired using phase encoding
 direction ``P>>A``::
 

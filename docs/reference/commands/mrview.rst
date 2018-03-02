@@ -124,6 +124,8 @@ Tractography tool options
 
 -  **-tractography.thickness value** Line thickness of tractography display, [-1.0, 1.0], default is 0.0.
 
+-  **-tractography.geometry value** The geometry type to use when rendering tractograms (options are: pseudotubes, lines, points)
+
 -  **-tractography.opacity value** Opacity of tractography display, [0.0, 1.0], default is 1.0.
 
 -  **-tractography.slab value** Slab thickness of tractography display, in mm. -1 to turn off crop to slab.
@@ -175,9 +177,7 @@ Standard options
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
-
--  **-failonwarn** terminate program if a warning is produced
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
 -  **-help** display this information page and exit.
 
@@ -194,16 +194,16 @@ Tournier, J.-D.; Calamante, F. & Connelly, A. MRtrix: Diffusion tractography in 
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com), Dave Raffelt (david.raffelt@florey.edu.au), Robert E. Smith (robert.smith@florey.edu.au), Rami Tabbara (rami.tabbara@florey.edu.au), Max Pietsch (maximilian.pietsch@kcl.ac.uk), Thijs Dhollander (thijs.dhollander@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/.
+file, you can obtain one at http://mozilla.org/MPL/2.0/
 
-MRtrix is distributed in the hope that it will be useful,
+MRtrix3 is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty
 of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see http://www.mrtrix.org/.
+For more details, see http://www.mrtrix.org/
 
 

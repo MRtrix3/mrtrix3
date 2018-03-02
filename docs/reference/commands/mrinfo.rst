@@ -37,11 +37,11 @@ Options
 
 -  **-size** image size along each axis
 
--  **-vox** voxel size along each image dimension
+-  **-spacing** voxel spacing along each image dimension
 
 -  **-datatype** data type used for image data storage
 
--  **-stride** data strides i.e. order and direction of axes data layout
+-  **-strides** data strides i.e. order and direction of axes data layout
 
 -  **-offset** image intensity offset
 
@@ -51,9 +51,14 @@ Options
 
 -  **-norealign** do not realign transform to near-default RAS coordinate system (the default behaviour on image load). This is useful to inspect the image and/or header contents as they are actually stored in the header, rather than as MRtrix interprets them.
 
+Options for exporting image header fields
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 -  **-property key** any text properties embedded in the image header under the specified key (use 'all' to list all keys found)
 
--  **-json_export file** export header key/value entries to a JSON file
+-  **-json_keyval file** export header key/value entries to a JSON file
+
+-  **-json_all file** export all header contents to a JSON file
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -75,9 +80,9 @@ DW gradient table export options
 
 -  **-dwgrad** the diffusion-weighting gradient table, as stored in the header (i.e. without any interpretation, scaling of b-values, or normalisation of gradient vectors)
 
--  **-shells** list the average b-value of each shell
+-  **-shell_bvalues** list the average b-value of each shell
 
--  **-shellcounts** list the number of volumes in each shell
+-  **-shell_sizes** list the number of volumes in each shell
 
 Options for exporting phase-encode tables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -99,9 +104,7 @@ Standard options
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
-
--  **-failonwarn** terminate program if a warning is produced
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
 -  **-help** display this information page and exit.
 
@@ -113,16 +116,16 @@ Standard options
 
 **Author:** J-Donald Tournier (d.tournier@brain.org.au) and Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/.
+file, you can obtain one at http://mozilla.org/MPL/2.0/
 
-MRtrix is distributed in the hope that it will be useful,
+MRtrix3 is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty
 of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see http://www.mrtrix.org/.
+For more details, see http://www.mrtrix.org/
 
 
