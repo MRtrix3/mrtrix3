@@ -1,7 +1,7 @@
 DWI denoising
 =============
 
-MRtrix now includes a new command ``dwidenoise`` which implements DWI data
+MRtrix includes a command ``dwidenoise``, which implements DWI data
 denoising and noise map estimation by exploiting data redundancy in the PCA 
 domain (`Veraart et al., 2016a, 2016b <#references>`__). The method uses the 
 prior knowledge that the eigenspectrum of random covariance matrices is 
