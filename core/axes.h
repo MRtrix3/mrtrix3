@@ -40,6 +40,11 @@ namespace MR
 
 
 
+    //! determine the axis permutations and flips necessary to make an image
+    //!   appear approximately axial
+    void get_permutation_to_make_axial (const transform_type& T, size_t perm[3], bool flip[3]);
+
+
 
   }
 }
