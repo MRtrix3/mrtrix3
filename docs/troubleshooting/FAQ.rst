@@ -340,22 +340,22 @@ The following error messages have frequently been observed from the
 
 .. code-block:: console
 
-    FSL FIRST has failed; not all structures were segmented successfully
-    Waiting for creation of new file "first-L_Accu_first.vtk"
-    FSL FIRST job has been submitted to SGE; awaiting completion
-      (note however that FIRST may fail silently, and hence this script may hang indefinitely)
+   FSL FIRST has failed; not all structures were segmented successfully
+   Waiting for creation of new file "first-L_Accu_first.vtk"
+   FSL FIRST job has been submitted to SGE; awaiting completion
+     (note however that FIRST may fail silently, and hence this script may hang indefinitely)
 
 Error messages that may be found in the log files within the script's
 temporary directory include:
 
 .. code-block:: console
 
-    Cannot open volume first-L_Accu_corr for reading!
-    Image Exception : #22 :: ERROR: Could not open image first_all_none_firstseg
-    WARNING: NO INTERIOR VOXELS TO ESTIMATE MODE
-    vector::_M_range_check
-    terminate called after throwing an instance of 'RBD_COMMON::BaseException'
-    /bin/sh: line 1:  6404 Aborted                 /usr/local/packages/fsl-5.0.1/bin/fslmerge -t first_all_none_firstseg first-L_Accu_corr first-R_Accu_corr first-L_Caud_corr first-R_Caud_corr first-L_Pall_corr first-R_Pall_corr first-L_Puta_corr first-R_Puta_corr first-L_Thal_corr first-R_Thal_corr
+   Cannot open volume first-L_Accu_corr for reading!
+   Image Exception : #22 :: ERROR: Could not open image first_all_none_firstseg
+   WARNING: NO INTERIOR VOXELS TO ESTIMATE MODE
+   vector::_M_range_check
+   terminate called after throwing an instance of 'RBD_COMMON::BaseException'
+   /bin/sh: line 1:  6404 Aborted                 /usr/local/packages/fsl-5.0.1/bin/fslmerge -t first_all_none_firstseg first-L_Accu_corr first-R_Accu_corr first-L_Caud_corr first-R_Caud_corr first-L_Pall_corr first-R_Pall_corr first-L_Puta_corr first-R_Puta_corr first-L_Thal_corr first-R_Thal_corr
 
 These various messages all relate to the fact that this script makes use of
 FSL's FIRST tool to explicitly segment sub-cortical grey matter structures,
@@ -388,7 +388,7 @@ resampled image:
 
 .. code-block: console
 
-    $ flirt -in T1.nii -ref DWI.nii -omat T12DWI_flirt.mat -dof 6
+   $ flirt -in T1.nii -ref DWI.nii -omat T12DWI_flirt.mat -dof 6
 
 That transformation matrix should then applied to the T1 image in a manner
 that only influences the transformation stored within the image header, and
@@ -396,8 +396,8 @@ does *not* resample the image to a new voxel grid:
 
 .. code-block: console
 
-    $ transformconvert T12DWI_flirt.mat T1.nii DWI.nii flirt_import T12DWI_mrtrix.txt
-    $ mrtransform T1.nii T1_registered.mif -linear T12DWI_mrtrix.txt
+   $ transformconvert T12DWI_flirt.mat T1.nii DWI.nii flirt_import T12DWI_mrtrix.txt
+   $ mrtransform T1.nii T1_registered.mif -linear T12DWI_mrtrix.txt
 
 If the T1 image provided to ``5ttgen fsl`` has _not_ been erroneously
 down-sampled, but issues are still encountered with the FIRST step, another
@@ -417,3 +417,63 @@ For any further issues, the only remaining recommendations are:
    determine precisely which images can be successfully segmented and
    which cannot. If it does not, then it may be necessary to experiment
    with the command-line options available in the ``run_first_all`` script.
+
+
+How do I use atlas / parcellation "X"?
+--------------------------------------
+
+Whether dealing with individual subject data, or a population-specific
+template, it can be desirable to obtain spatial correspondence between
+your own data and some other atlas image. This includes taking a
+parcellation that is defined in the space of that atlas and transforming
+it onto the subject / template image.
+
+Our recommended steps for achieving this are:
+
+1. Perform registration from image of interest to target atlas
+
+   -  Since this registration is not always intra-modal, and image
+      intensities may vary significantly, here we recommend using FSL
+      ``flirt``.
+
+   -  12 degrees of freedom affine registration is performed to account
+      for gross differences in brain shape.
+
+   -  ``flirt`` must be explicitly instructed to provide a transformation
+      *matrix*, rather than a transformed & re-gridded image.
+
+   .. code-block:: console
+
+      flirt -in my_image.mif -ref target_atlas.mif -omat image2atlas_flirt.mat -dof 12
+
+2. Convert the transformation matrix estimated by ``flirt`` into
+   *MRtrix3* convention
+
+   .. code-block:: console
+
+      transformconvert image2atlas_flirt.mat my_image.mif target_atlas.mif flirt_import image2atlas_mrtrix.txt
+
+3. Invert the transformation matrix to obtain the transformation from atlas
+   space to your image
+
+   .. code-block:: console
+
+      transformcalc image2atlas_mrtrix.txt invert atlas2image_mrtrix.txt
+
+4. Apply this transformation to the parcellation image associated with
+   the atlas
+
+   -  Due to the use of a full affine registration (12 degrees of freedom)
+      rather than a rigid-body registration (6 degrees of freedom), it is
+      preferable to re-sample the parcellation image to the target image
+      voxel grid, rather than altering the image header transformation
+      only.
+
+   -  When re-sampling a parcellation image to a different image grid,
+      nearest-neighbour interpolation must be used; otherwise the underlying
+      integer values that correspond to parcel identification indices will
+      be lost.
+
+   .. code-block:: console
+
+      mrtransform target_parcellation.mif -linear atlas2image_mrtrix.txt -template my_image.mif parcellation_in_my_image_space.mif
