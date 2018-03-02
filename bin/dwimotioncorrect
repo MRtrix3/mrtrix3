@@ -209,12 +209,13 @@ inputfn = 'in.mif'
 #   __________ Function definitions __________
 
 def reconstep(k):
-    run.command('dwirecon ' + inputfn + ' recon-' + str(k) + '.mif -spred spred.mif ' + recon_option + ssp_option + ' -rf ' + ' -rf '.join(rfs) +
+    run.command((('dwirecon ' + inputfn) if k==0 else ('mrcalc ' + inputfn + ' imscale.mif -mult - | dwirecon -')) +
+            ' recon-' + str(k) + '.mif -spred spred.mif ' + recon_option + ssp_option + ' -rf ' + ' -rf '.join(rfs) +
             ('' if k==0 else ' -motion motion.txt -weights sliceweights.txt -init recon-' + str(k-1) + '.mif') + ' -force' + nthr)
 
 
 def sliceweightstep():
-    run.command('dwisliceoutliers ' + inputfn + ' spred.mif -mask mask.mif sliceweights.txt' + or_option + ' -force')
+    run.command('dwisliceoutliers ' + inputfn + ' spred.mif -mask mask.mif sliceweights.txt' + or_option + ' -imscale imscale.mif -force')
 
 
 def basisupdatestep(k):
@@ -230,7 +231,7 @@ def rankreduxstep(k):
 
 
 def registrationstep(k):
-    run.command('dwislicealign ' + inputfn + ' rankredux.mif motion.txt -mask mask.mif -maxiter 3' +
+    run.command('mrcalc ' + inputfn + ' imscale.mif -mult - | dwislicealign - rankredux.mif motion.txt -mask mask.mif -maxiter 3' +
                 ' -mb ' + ('0' if k<v2viter else str(mb)) + (' -init motion.txt' if k>0 else '') +
                 ssp_option + ' -force' + nthr)
     if app.args.sorder:

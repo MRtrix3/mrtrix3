@@ -58,6 +58,9 @@ void usage ()
   + Option ("mb", "multiband factor (default = 1)")
     + Argument ("f").type_integer(1)
 
+  + Option ("imscale", "intensity matching scale output")
+    + Argument ("s").type_image_out()
+
   + DWI::GradImportOptions();
 
 }
@@ -72,14 +75,17 @@ class MeanErrorFunctor {
     MeanErrorFunctor (const Image<value_type>& in, const Image<bool>& mask, const int mb = 1)
       : ne (in.size(2) / mb), nv (in.size(3)), mask (mask),
         E (new Eigen::MatrixXf(ne, nv)),
-        N (new Eigen::MatrixXi(ne, nv))
+        N (new Eigen::MatrixXi(ne, nv)),
+        S (new Eigen::MatrixXf(in.size(2), nv))
     {
       E->setZero();
       N->setZero();
+      S->setOnes();
     }
 
     void operator() (Image<value_type>& data, Image<value_type>& pred) {
       value_type e = 0.0;
+      value_type s1 = 0.0, s2 = 0.0;
       int n = 0;
       for (auto l = Loop(0,2) (data, pred); l; l++) {
         if (mask.valid()) {
@@ -89,9 +95,13 @@ class MeanErrorFunctor {
         value_type d = data.value() - pred.value();
         e += d;
         n++;
+        s1 += data.value()*pred.value();
+        s2 += data.value()*data.value();
       }
       (*E)(data.get_index(2) % ne, data.get_index(3)) += e;
       (*N)(data.get_index(2) % ne, data.get_index(3)) += n;
+      if (n > 0)
+        (*S)(data.get_index(2), data.get_index(3)) = s1 / s2;
     }
 
     Eigen::MatrixXf result() const {
@@ -102,11 +112,16 @@ class MeanErrorFunctor {
       return R;
     }
 
+    Eigen::MatrixXf imscale() const {
+      return *S;
+    }
+
   private:
     const size_t ne, nv;
     Image<bool> mask;
     std::shared_ptr<Eigen::MatrixXf> E;
     std::shared_ptr<Eigen::MatrixXi> N;
+    std::shared_ptr<Eigen::MatrixXf> S;
 
 };
 
@@ -187,7 +202,29 @@ void run ()
   }
 
   // Output
-  save_matrix(W.replicate(mb, 1), argument[2]);
+  Eigen::ArrayXXf Wfull = W.replicate(mb, 1);
+  save_matrix(Wfull, argument[2]);
+
+  // Image scale output
+  opt = get_options("imscale");
+  if (opt.size()) {
+    Eigen::ArrayXXf S = rmse.imscale().array();
+    Eigen::ArrayXXf logS = S.abs().log();
+    logS.rowwise() -= (Wfull * logS).colwise().sum() / Wfull.colwise().sum();
+    S = logS.exp();
+    // save as image
+    Header header (data);
+    header.size(0) = 1;
+    header.size(1) = 1;
+    auto imscale = Image<value_type>::create(opt[0][0], header);
+    for (size_t i = 0; i < S.rows(); i++) {
+      imscale.index(2) = i;
+      for (size_t j = 0; j < S.cols(); j++) {
+        imscale.index(3) = j;
+        imscale.value() = S(i,j);
+      }
+    }
+  }
 
 }
 
