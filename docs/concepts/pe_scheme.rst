@@ -54,33 +54,45 @@ In the case where both the phase encoding *direction* and the EPI *total readout
 time* are equivalent for all volumes within an image, this information is encoded
 within two fields: "``PhaseEncodingDirection``" and "``TotalReadoutTime``". These
 fields are consistent with `BIDS
-<http://bids.neuroimaging.io//>`_ (the Brain Imaging Data Structure).
+<http://bids.neuroimaging.io/>`_ (the Brain Imaging Data Structure).
 
-``PhaseEncodingDrection`` can take one of six values: "``i``", "``i-``", "``j``",
-"``j-``", "``k``", ``k-``. These correspond to the first, second and third axes of
-the corresponding image, using the RAS (Right-Anterior-Superior) convention common
-to both NIfTI and *MRtrix3*. For example: If the phase encoding is applied A>>P
-(anterior-posterior), this is the *second* spatial axis, but the phase encoding is
-also *reversed* along that axis ("RAS" indicates voxel positions in the second
-axis *increasing* when moving toward the anterior of the brain, whereas "A>>P"
-indicates the opposite); hence in this example ``PhaseEncodingDirection`` would
-have the value "``j-``".
+``PhaseEncodingDirection`` can take one of six values: "``i``", "``i-``", "``j``",
+"``j-``", "``k``", "``k-``". These correspond to the first, second and third axes of
+the corresponding image. Exactly how these axes map to "real" / "scanner" space
+axes (i.e. left-right, posterior-enterior, inferior-superior) depends on the
+:ref:`transform` that is stored in the respective image header, which may
+potentially have been modified internally by *MRtrix3* on image load (discussed
+further in the :ref:`non_axial_acquisitions` section). Here, we begin with the most simple
+use case:
+
+Take an image that conforms to the RAS (Right-Anterior-Superior) convention common
+to both NIfTI and *MRtrix3*. If the phase encoding is applied ``A>>P``
+(anterior-posterior), this is the *second* spatial axis, or axis "``j``". However,
+the phase encoding is also *reversed* along that axis ("RAS" indicates that voxel
+positions along the second axis *increase* when moving toward the anterior of the
+brain, whereas "``A>>P``" indicates the opposite). Hence, in this example,
+``PhaseEncodingDirection`` would have the value "``j-``".
 
 .. NOTE::
 
     The phase encoding direction is defined specifically with respect to *image
     axes*. It is therefore *not* affected by the image *strides*, which only affect
     how the data for these axes are arranged when they are stored as a
-    one-dimensional list of values.
+    one-dimensional list of values within a file.
 
-    The phase encoding direction also does *not* relate to "``x``", "``y``" and
+.. NOTE::
+
+    The phase encoding direction does *not* relate to "``x``", "``y``" and
     "``z``" axis directions in "real" / "scanner" space, as do other
     representations of orientation information in *MRtrix3*. This is because phase
-    encoding specifically affects the appearance of the image along the image axis
-    in which phase encoding was applied; for instance, if the image were to be
-    rotated, the EPI field inhomogeneity distortions would still align with the
-    relevant image axis after this rotation, whereas in real-space the effective
-    direction of phase encoding would have changed.
+    encoding specifically affects the appearance of the image *along the image axis
+    in which phase encoding was applied*. The mapping from image axes to real-space
+    axes is determined by the image header transform.
+
+    To demonstrate this: Imagine if an EPI image were to undergo a rigid-body
+    rotation. The EPI field inhomogeneity distortions would *still align* with the
+    relevant image axis after this rotation; but the effective ``x-y-z`` direction
+    of phase encoding in real-space would change.
 
 ``TotalReadoutTime`` provides the total time required for the EPI readout train.
 Specifically, this is the time between the centre of the first echo, and the centre
@@ -105,6 +117,43 @@ row, the first three numbers encode the phase encoding direction, and the fourth
 number is the total readout time. The direction is specified as a unit direction in
 the image coordinate system; for instance, a phase encoding direction of A>>P would
 be encoded as ``[ 0 -1 0 ]``.
+
+
+.. _non_axial_acquisitions:
+
+Non-axial acquisitions
+----------------------
+
+When images are acquired in such a manner that the axes do not approximately
+correspond to RAS convention (i.e. first axis increases from left to right, second
+axis increases from posterior to anterior, third axis increases from inferior to
+superior), *MRtrix3* will automatically alter the axis strides & transform
+in order to make the image *appear* as close to an axial acquisition as possible.
+This is briefly mentioned in the :ref:`transform` section. The behaviour may
+also be observed by running ``mrinfo`` with and without the ``-norealign`` option,
+which temporarily disables this behaviour.
+
+Because phase encoding is defined with respect to the image axes, any
+transformation of image axes must correspondingly be applied to the phase encoding
+data. This is done automatically by *MRtrix3* as the transformation occurs.
+Consequently, the phase encoding direction "reported" by *MRtrix3* may in fact be
+different to that stored within the image header itself (or indeed within a
+sidecar JSON file); but it is vital that this information remain consistent with
+the image data, and *MRtrix3* does its best to do so.
+
+.. NOTE::
+
+   This process has consequences for the ``dwipreproc`` script when manually
+   providing the phase encoding direction. The axis and sign of phase encoding
+   provided to the script must reflect the direction of phase encoding *after*
+   *MRtrix3* has performed this transformation, i.e. as it is read by any
+   *MRtrix3* command or as it appears in ``mrview``, *not* the actual encoding
+   of axes within the file.
+
+When exporting a sidecar JSON file to accompany an output NIfTI image, the
+direction of phase encoding may also be transformed from that stored in the input
+image, in order to reflect any transformation that occurs when writing an
+output image specifically to the NIfTI format.
 
 
 Manipulation of phase encoding data
@@ -179,7 +228,7 @@ to manipulate this information:
    in particular for operating within the BIDS specification. There is a caveat here:
    If you use the ``-json_export`` option on an image with *fixed* phase encoding,
    the ``PhaseEncodingDirection`` and ``TotalReadoutTime`` fields will be written as
-   expected by BIDS; however if the image contains *variable* phase eocnding, then
+   expected by BIDS; however if the image contains *variable* phase encoding, then
    the ``pe_scheme`` header entry will be written to the JSON file, and this will not
    be appropriately interpreted by other BIDS tools.
 

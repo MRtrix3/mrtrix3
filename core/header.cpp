@@ -429,37 +429,6 @@ namespace MR
 
 
 
-
-  namespace
-  {
-
-    inline size_t not_any_of (size_t a, size_t b)
-    {
-      for (size_t i = 0; i < 3; ++i) {
-        if (a == i || b == i)
-          continue;
-        return i;
-      }
-      assert (0);
-      return std::numeric_limits<size_t>::max();
-    }
-
-    void disambiguate_permutation (size_t permutation[3])
-    {
-      if (permutation[0] == permutation[1])
-        permutation[1] = not_any_of (permutation[0], permutation[2]);
-
-      if (permutation[0] == permutation[2])
-        permutation[2] = not_any_of (permutation[0], permutation[1]);
-
-      if (permutation[1] == permutation[2])
-        permutation[2] = not_any_of (permutation[0], permutation[1]);
-    }
-
-  }
-
-
-
   void Header::sanitise_voxel_sizes ()
   {
     if (ndim() < 3) {
@@ -505,19 +474,8 @@ namespace MR
   {
     // find which row of the transform is closest to each scanner axis:
     size_t perm [3];
-    decltype(transform().matrix().topLeftCorner<3,3>())::Index index;
-    transform().matrix().topLeftCorner<3,3>().row(0).cwiseAbs().maxCoeff (&index); perm[0] = index;
-    transform().matrix().topLeftCorner<3,3>().row(1).cwiseAbs().maxCoeff (&index); perm[1] = index;
-    transform().matrix().topLeftCorner<3,3>().row(2).cwiseAbs().maxCoeff (&index); perm[2] = index;
-    disambiguate_permutation (perm);
-    assert (perm[0] != perm[1] && perm[1] != perm[2] && perm[2] != perm[0]);
-
-    // figure out whether any of the rows of the transform point in the
-    // opposite direction to the MRtrix convention:
-    bool flip [3];
-    flip[perm[0]] = transform() (0,perm[0]) < 0.0;
-    flip[perm[1]] = transform() (1,perm[1]) < 0.0;
-    flip[perm[2]] = transform() (2,perm[2]) < 0.0;
+    bool flip[3];
+    Axes::get_permutation_to_make_axial (transform(), perm, flip);
 
     // check if image is already near-axial, return if true:
     if (perm[0] == 0 && perm[1] == 1 && perm[2] == 2 &&
@@ -560,6 +518,8 @@ namespace MR
     axes_[0] = a[0];
     axes_[1] = a[1];
     axes_[2] = a[2];
+
+    INFO ("Axes and transform of image \"" + name() + "\" altered to approximate RAS coordinate system");
 
     // If there's any phase encoding direction information present in the
     //   header, it's necessary here to update it according to the
