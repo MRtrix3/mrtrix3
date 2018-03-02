@@ -74,7 +74,7 @@ When performing analysis of AFD, Constrained Spherical Deconvolution (CSD) shoul
     foreach * : dwi2fod msmt_csd IN/dwi_denoised_preproc_bias_upsampled.mif ../group_average_response_wm.txt IN/wmfod.mif ../group_average_response_gm.txt IN/gm.mif  ../group_average_response_csf.txt IN/csf.mif -mask IN/dwi_mask_upsampled.mif
 
 
-8. Joint bias field correction and Intensity normalisation
+8. Joint bias field correction and intensity normalisation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This step performs :ref:`global intensity normalisation <global-intensity-normalisation>` in the log-domain by scaling all tissue types with a spatially smoothly varying normalisation field::
@@ -132,7 +132,7 @@ You can visualise the output fixels using the fixel plot tool from :ref:`mrview`
 
 Note that here we warp FOD images into template space *without* FOD reorientation. Reorientation will be performed in a separate subsequent step::
 
-    foreach * : mrtransform IN/wmfod_norm.mif -warp IN/subject2template_warp.mif -noreorientation IN/fod_in_template_space.mif
+    foreach * : mrtransform IN/wmfod_norm.mif -warp IN/subject2template_warp.mif -noreorientation IN/fod_in_template_space_NOT_REORIENTED.mif
 
 
 14. Segment FOD images to estimate fixels and their apparent fibre density (FD)
