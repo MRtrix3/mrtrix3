@@ -27,7 +27,7 @@ class Header(object):
       self._name = data['name']
       self._size = data['size']
       self._spacing = data['spacing']
-      self._stride = data['stride']
+      self._strides = data['strides']
       self._format = data['format']
       self._datatype = data['datatype']
       self._intensity_offset = data['intensity_offset']
@@ -47,8 +47,8 @@ class Header(object):
     return self._size
   def spacing(self):
     return self._spacing
-  def stride(self):
-    return self._stride
+  def strides(self):
+    return self._strides
   def format(self):
     return self._format
   def datatype(self):
@@ -61,6 +61,32 @@ class Header(object):
     return self._transform
   def keyval(self):
     return self._keyval
+
+
+
+# From a string corresponding to a NIfTI axis & direction code,
+#   yield a 3-vector corresponding to that axis and direction
+# Note that unlike phaseEncoding.direction(), this does not accept
+#   an axis index, nor a phase-encoding indication string (e.g. AP);
+#   it only accepts NIfTI codes, i.e. i, i-, j, j-, k, k-
+def axis2dir(string): #pylint: disable=unused-variable
+  from mrtrix3 import app
+  if string == 'i':
+    direction = [1,0,0]
+  elif string == 'i-':
+    direction = [-1,0,0]
+  elif string == 'j':
+    direction = [0,1,0]
+  elif string == 'j-':
+    direction = [0,-1,0]
+  elif string == 'k':
+    direction = [0,0,1]
+  elif string == 'k-':
+    direction = [0,0,-1]
+  else:
+    app.error('Unrecognized NIfTI axis & direction specifier: ' + string)
+  app.debug(string + ' -> ' + str(direction))
+  return direction
 
 
 
@@ -105,7 +131,7 @@ def mrinfo(image_path, field): #pylint: disable=unused-variable
 
 # Check to see whether the fundamental header properties of two images match
 # Inputs can be either _Header class instances, or file paths
-def match(image_one, image_two): #pylint: disable=unused-variable
+def match(image_one, image_two, max_dim=0): #pylint: disable=unused-variable, too-many-return-statements
   import math
   from mrtrix3 import app
   if not isinstance(image_one, Header):
@@ -117,22 +143,35 @@ def match(image_one, image_two): #pylint: disable=unused-variable
       app.error('Error trying to test \'' + str(image_two) + '\': Not an image header or file path')
     image_two = Header(image_two)
   debug_prefix = '\'' + image_one.name() + '\' \'' + image_two.name() + '\''
+  # Handle possibility of only checking up to a certain axis
+  if max_dim:
+    if max_dim > min(len(image_one.size()), len(image_two.size())):
+      app.debug(debug_prefix + ' dimensionality less than specified maximum (' + str(max_dim) + ')')
+      return False
+  else:
+    if len(image_one.size()) != len(image_two.size()):
+      app.debug(debug_prefix + ' dimensionality mismatch (' + str(len(image_one.size())) + ' vs. ' + str(len(image_two.size())) + ')')
+      return False
+    max_dim = len(image_one.size())
   # Image dimensions
-  if image_one.size() != image_two.size():
-    app.debug(debug_prefix + ' dimension mismatch (' + str(image_one.size()) + ' ' + str(image_two.size()) + ')')
+  if not image_one.size()[:max_dim] == image_two.size()[:max_dim]:
+    app.debug(debug_prefix + ' axis size mismatch (' + str(image_one.size()) + ' ' + str(image_two.size()) + ')')
     return False
   # Voxel size
-  for one, two in zip(image_one.spacing(), image_two.spacing()):
+  for one, two in zip(image_one.spacing()[:max_dim], image_two.spacing()[:max_dim]):
     if one and two and not math.isnan(one) and not math.isnan(two):
       if (abs(two-one) / (0.5*(one+two))) > 1e-04:
         app.debug(debug_prefix + ' voxel size mismatch (' + str(image_one.spacing()) + ' ' + str(image_two.spacing()) + ')')
         return False
   # Image transform
   for line_one, line_two in zip(image_one.transform(), image_two.transform()):
-    for one, two in zip(line_one, line_two):
+    for one, two in zip(line_one[:3], line_two[:3]):
       if abs(one-two) > 1e-4:
-        app.debug(debug_prefix + ' transform mismatch (' + str(image_one.transform()) + ' ' + str(image_two.transform()) + ')')
+        app.debug(debug_prefix + ' transform (rotation) mismatch (' + str(image_one.transform()) + ' ' + str(image_two.transform()) + ')')
         return False
+    if abs(line_one[3]-line_two[3]) > 1e-2:
+      app.debug(debug_prefix + ' transform (translation) mismatch (' + str(image_one.transform()) + ' ' + str(image_two.transform()) + ')')
+      return False
   # Everything matches!
   app.debug(debug_prefix + ' image match')
   return True
