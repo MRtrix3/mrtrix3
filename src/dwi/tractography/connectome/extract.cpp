@@ -208,21 +208,13 @@ WriterExtraction::WriterExtraction (const Tractography::Properties& p, const vec
     exclusive (exclusive),
     keep_self (keep_self) { }
 
-WriterExtraction::~WriterExtraction()
-{
-  for (size_t i = 0; i != writers.size(); ++i) {
-    delete writers[i];
-    writers[i] = nullptr;
-  }
-}
-
 
 
 
 void WriterExtraction::add (const node_t node, const std::string& path, const std::string weights_path = "")
 {
-  selectors.push_back (Selector (node, keep_self));
-  writers.push_back (new Tractography::WriterUnbuffered<float> (path, properties));
+  selectors.emplace_back (Selector (node, keep_self));
+  writers.emplace_back (new Tractography::WriterUnbuffered<float> (path, properties));
   if (weights_path.size())
     writers.back()->set_weights_path (weights_path);
 }
@@ -230,8 +222,8 @@ void WriterExtraction::add (const node_t node, const std::string& path, const st
 void WriterExtraction::add (const node_t node_one, const node_t node_two, const std::string& path, const std::string weights_path = "")
 {
   if (keep_self || (node_one != node_two)) {
-    selectors.push_back (Selector (node_one, node_two));
-    writers.push_back (new Tractography::WriterUnbuffered<float> (path, properties));
+    selectors.emplace_back (Selector (node_one, node_two));
+    writers.emplace_back (new Tractography::WriterUnbuffered<float> (path, properties));
     if (weights_path.size())
       writers.back()->set_weights_path (weights_path);
   }
@@ -239,8 +231,8 @@ void WriterExtraction::add (const node_t node_one, const node_t node_two, const 
 
 void WriterExtraction::add (const vector<node_t>& list, const std::string& path, const std::string weights_path = "")
 {
-  selectors.push_back (Selector (list, exclusive, keep_self));
-  writers.push_back (new Tractography::WriterUnbuffered<float> (path, properties));
+  selectors.emplace_back (Selector (list, exclusive, keep_self));
+  writers.emplace_back (new Tractography::WriterUnbuffered<float> (path, properties));
   if (weights_path.size())
     writers.back()->set_weights_path (weights_path);
 }
@@ -250,10 +242,6 @@ void WriterExtraction::add (const vector<node_t>& list, const std::string& path,
 void WriterExtraction::clear()
 {
   selectors.clear();
-  for (size_t i = 0; i != writers.size(); ++i) {
-    delete writers[i];
-    writers[i] = NULL;
-  }
   writers.clear();
 }
 
