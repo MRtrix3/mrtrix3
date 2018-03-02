@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -98,14 +99,14 @@ namespace MR
         // by default, prevent output of bitwise data in NIfTI, since most 3rd
         // party software package can't handle them
 
-        //CONF option: NIFTI.AllowBitwise
+        //CONF option: NIfTIAllowBitwise
         //CONF default: 0 (false)
         //CONF A boolean value to indicate whether bitwise storage of binary
         //CONF data is permitted (most 3rd party software packages don't
         //CONF support bitwise data). If false (the default), data will be
         //CONF stored using more widely supported unsigned 8-bit integers.
         if (H.datatype() == DataType::Bit) 
-          if (!File::Config::get_bool ("NIFTI.AllowBitwise", false))
+          if (!File::Config::get_bool ("NIfTIAllowBitwise", false))
             H.datatype() = DataType::UInt8;
       }
 
@@ -116,7 +117,7 @@ namespace MR
 
       size_t version (Header& H)
       {
-        //CONF option: NIFTI.AlwaysUseVer2
+        //CONF option: NIfTIAlwaysUseVer2
         //CONF default: 0 (false)
         //CONF A boolean value to indicate whether NIfTI images should
         //CONF always be written in the new NIfTI-2 format. If false,
@@ -125,7 +126,7 @@ namespace MR
         //CONF of voxels along any axis exceeds the maximum permissible
         //CONF in that format (32767), in which case the output file
         //CONF will automatically switch to the NIfTI-2 format.
-        if (File::Config::get_bool ("NIFTI.AlwaysUseVer2", false))
+        if (File::Config::get_bool ("NIfTIAlwaysUseVer2", false))
           return 2;
 
         for (size_t axis = 0; axis != H.ndim(); ++axis) {

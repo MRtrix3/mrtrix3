@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -48,7 +49,7 @@ namespace MR
     {
       check_headers (in1, in2);
       ThreadedLoop (in1)
-      .run ([&tol] (const decltype(in1)& a, const decltype(in2)& b) {
+      .run ([&tol] (const ImageType1& a, const ImageType2& b) {
           if (std::abs (cdouble (a.value()) - cdouble (b.value())) > tol)
             throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within absolute precision of " + str(tol)
                  + " (" + str(cdouble (a.value())) + " vs " + str(cdouble (b.value())) + ")");
@@ -62,7 +63,7 @@ namespace MR
 
       check_headers (in1, in2);
       ThreadedLoop (in1)
-      .run ([&tol] (const decltype(in1)& a, const decltype(in2)& b) {
+      .run ([&tol] (const ImageType1& a, const ImageType2& b) {
           if (std::abs ((cdouble (a.value()) - cdouble (b.value())) / (0.5 * (cdouble (a.value()) + cdouble (b.value())))) > tol)
           throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within fractional precision of " + str(tol)
                + " (" + str(cdouble (a.value())) + " vs " + str(cdouble (b.value())) + ")");
@@ -76,7 +77,7 @@ namespace MR
       check_headers (in1, in2);
       check_headers (in1, tol);
       ThreadedLoop (in1)
-      .run ([] (const decltype(in1)& a, const decltype(in2)& b, const decltype(tol)& t) {
+      .run ([] (const ImageType1& a, const ImageType2& b, const ImageTypeTol& t) {
           if (std::abs (cdouble (a.value()) - cdouble (b.value())) > t.value())
           throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within precision of \"" + t.name() + "\""
                + " (" + str(cdouble (a.value())) + " vs " + str(cdouble (b.value())) + ", tolerance " + str(t.value()) + ")");
@@ -110,9 +111,9 @@ namespace MR
      {
        if (!dimensions_match (in1, in2))
          return false;
-       if (!spacings_match (in1, in2))
+       if (!spacings_match (in1, in2, 1e-6)) // implicitly checked in voxel_grids_match_in_scanner_space but with different tolerance 
          return false;
-       if (!transforms_match (in1, in2))
+       if (!voxel_grids_match_in_scanner_space (in1, in2))
          return false;
        return true;
      }
