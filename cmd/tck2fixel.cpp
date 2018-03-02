@@ -96,8 +96,8 @@ void usage ()
 
   ARGUMENTS
   + Argument ("tracks",  "the input tracks.").type_tracks_in()
-  + Argument ("fixel_folder_in", "the input fixel folder. Used to define the fixels and their directions").type_text()
-  + Argument ("fixel_folder_out", "the output fixel folder. This can be the same as the input folder if desired").type_text()
+  + Argument ("fixel_folder_in", "the input fixel folder. Used to define the fixels and their directions").type_directory_in()
+  + Argument ("fixel_folder_out", "the fixel folder to which the output will be written. This can be the same as the input folder if desired").type_text()
   + Argument ("fixel_data_out", "the name of the fixel data image.").type_image_out();
 
   OPTIONS
