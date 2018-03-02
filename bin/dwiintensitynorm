@@ -39,7 +39,7 @@ app.cmdline.add_argument('output_dir', help='The output directory containing all
 app.cmdline.add_argument('fa_template', help='The output population specific FA template, which is threshold to estimate a white matter mask')
 app.cmdline.add_argument('wm_mask', help='The output white matter mask (in template space), used to estimate the median b=0 white matter value for normalisation')
 options = app.cmdline.add_argument_group('Options for the dwiintensitynorm script')
-options.add_argument('-fa_threshold', default='0.4', help='The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask')
+options.add_argument('-fa_threshold', default='0.4', help='The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask (default: 0.4)')
 app.parse()
 
 app.args.input_dir = relpath(app.args.input_dir)

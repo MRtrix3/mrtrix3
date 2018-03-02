@@ -1,19 +1,21 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
-#include "mrtrix.h"
+#include "axes.h"
 #include "header.h"
+#include "mrtrix.h"
 #include "phase_encoding.h"
 #include "stride.h"
 #include "transform.h"
@@ -69,7 +71,7 @@ namespace MR
 
   namespace {
 
-    std::string short_description (const Header& H) 
+    std::string short_description (const Header& H)
     {
       vector<std::string> dims;
       for (size_t n = 0; n < H.ndim(); ++n)
@@ -303,7 +305,7 @@ namespace MR
     if (new_datatype != previous_datatype) {
       new_datatype.unset_flag (DataType::BigEndian);
       new_datatype.unset_flag (DataType::LittleEndian);
-      if (new_datatype != previous_datatype) 
+      if (new_datatype != previous_datatype)
         WARN (std::string ("requested datatype (") + previous_datatype.specifier() + ") not supported - substituting with " + H.datatype().specifier());
     }
 
@@ -427,37 +429,6 @@ namespace MR
 
 
 
-
-  namespace
-  {
-
-    inline size_t not_any_of (size_t a, size_t b)
-    {
-      for (size_t i = 0; i < 3; ++i) {
-        if (a == i || b == i)
-          continue;
-        return i;
-      }
-      assert (0);
-      return std::numeric_limits<size_t>::max();
-    }
-
-    void disambiguate_permutation (size_t permutation[3])
-    {
-      if (permutation[0] == permutation[1])
-        permutation[1] = not_any_of (permutation[0], permutation[2]);
-
-      if (permutation[0] == permutation[2])
-        permutation[2] = not_any_of (permutation[0], permutation[1]);
-
-      if (permutation[1] == permutation[2])
-        permutation[2] = not_any_of (permutation[0], permutation[1]);
-    }
-
-  }
-
-
-
   void Header::sanitise_voxel_sizes ()
   {
     if (ndim() < 3) {
@@ -503,19 +474,8 @@ namespace MR
   {
     // find which row of the transform is closest to each scanner axis:
     size_t perm [3];
-    decltype(transform().matrix().topLeftCorner<3,3>())::Index index;
-    transform().matrix().topLeftCorner<3,3>().row(0).cwiseAbs().maxCoeff (&index); perm[0] = index;
-    transform().matrix().topLeftCorner<3,3>().row(1).cwiseAbs().maxCoeff (&index); perm[1] = index;
-    transform().matrix().topLeftCorner<3,3>().row(2).cwiseAbs().maxCoeff (&index); perm[2] = index;
-    disambiguate_permutation (perm);
-    assert (perm[0] != perm[1] && perm[1] != perm[2] && perm[2] != perm[0]);
-
-    // figure out whether any of the rows of the transform point in the
-    // opposite direction to the MRtrix convention:
-    bool flip [3];
-    flip[perm[0]] = transform() (0,perm[0]) < 0.0;
-    flip[perm[1]] = transform() (1,perm[1]) < 0.0;
-    flip[perm[2]] = transform() (2,perm[2]) < 0.0;
+    bool flip[3];
+    Axes::get_permutation_to_make_axial (transform(), perm, flip);
 
     // check if image is already near-axial, return if true:
     if (perm[0] == 0 && perm[1] == 1 && perm[2] == 2 &&
@@ -559,6 +519,8 @@ namespace MR
     axes_[1] = a[1];
     axes_[2] = a[2];
 
+    INFO ("Axes and transform of image \"" + name() + "\" altered to approximate RAS coordinate system");
+
     // If there's any phase encoding direction information present in the
     //   header, it's necessary here to update it according to the
     //   flips / permutations that have taken place
@@ -576,6 +538,19 @@ namespace MR
       PhaseEncoding::set_scheme (*this, pe_scheme);
       INFO ("Phase encoding scheme has been modified according to internal header transform realignment");
     }
+
+    // If there's any slice encoding direction information present in the
+    //   header, that's also necessary to update here
+    auto slice_encoding_it = keyval().find ("SliceEncodingDirection");
+    if (slice_encoding_it != keyval().end()) {
+      const Eigen::Vector3 orig_dir (Axes::id2dir (slice_encoding_it->second));
+      Eigen::Vector3 new_dir;
+      for (size_t axis = 0; axis != 3; ++axis)
+        new_dir[axis] = orig_dir[perm[axis]] * (flip[axis] ? -1.0 : 1.0);
+      slice_encoding_it->second = Axes::dir2id (new_dir);
+      INFO ("Slice encoding direction has been modified according to internal header transform realignment");
+    }
+
   }
 
 

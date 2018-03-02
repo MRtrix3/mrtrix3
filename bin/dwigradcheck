@@ -43,7 +43,7 @@ num_volumes = image_dimensions[3]
 app.makeTempDir()
 
 # Make sure the image data can be memory-mapped
-run.command('mrconvert ' + app.args.input + ' ' + path.toTemp('data.mif', True) + ' -stride 0,0,0,1 -datatype float32')
+run.command('mrconvert ' + app.args.input + ' ' + path.toTemp('data.mif', True) + ' -strides 0,0,0,1 -datatype float32')
 
 if app.args.grad:
   shutil.copy(path.fromUser(app.args.grad, False), path.toTemp('grad.b', False))
@@ -91,6 +91,8 @@ if not len(grad_fsl) == 3 or not len(grad_fsl[0]) == num_volumes:
 
 
 # Generate a brain mask if we weren't provided with one
+# Note that gradient table must be explicitly loaded, since there may not
+#   be one in the image header (user may be relying on -grad or -fslgrad input options)
 if not os.path.exists('mask.mif'):
   run.command('dwi2mask data.mif mask.mif -grad grad.b')
 
@@ -98,8 +100,7 @@ if not os.path.exists('mask.mif'):
 number_option = ' -select ' + str(app.args.number)
 
 
-#
-# What variations of gradient errors can we conceive?
+#  What variations of gradient errors can we conceive?
 
 # Done:
 # * Has an axis been flipped? (none, 0, 1, 2)
