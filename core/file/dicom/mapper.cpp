@@ -227,7 +227,7 @@ namespace MR {
           for (size_t n = 0; n != dim[1]; ++n)
             slices_timing.push_back (frames[n]->time_after_start - min_time_after_start);
           H.keyval()["SliceTiming"] = join (slices_timing, ",");
-        } else if (std::isfinite (frame.acquisition_time)) {
+        } else if (std::isfinite (static_cast<default_type>(frame.acquisition_time))) {
           DEBUG ("Estimating slice timing from DICOM AcquisitionTime field");
           default_type min_acquisition_time = std::numeric_limits<default_type>::infinity();
           for (size_t n = 0; n != dim[1]; ++n)
@@ -260,7 +260,7 @@ namespace MR {
           H.size(1) = std::floor (frame.dim[1] / mosaic_size);
           H.size(2) = image.images_in_mosaic;
 
-          if (frame.acq_dim[0] > H.size(0) || frame.acq_dim[1] > H.size(1)) {
+          if (frame.acq_dim[0] > size_t(H.size(0)) || frame.acq_dim[1] > size_t(H.size(1))) {
             WARN ("acquisition matrix [ " + str (frame.acq_dim[0]) + " " + str (frame.acq_dim[1])
                 + " ] is smaller than expected [ " + str(H.size(0)) + " " + str(H.size(1)) + " ] in DICOM mosaic");
             WARN ("  image may be incorrectly reformatted");
@@ -273,7 +273,7 @@ namespace MR {
             WARN ("  image may be incorrectly reformatted");
           }
 
-          if (frame.acq_dim[0] != H.size(0)|| frame.acq_dim[1] != H.size(1))
+          if (frame.acq_dim[0] != size_t(H.size(0)) || frame.acq_dim[1] != size_t(H.size(1)))
             INFO ("note: acquisition matrix [ " + str (frame.acq_dim[0]) + " " + str (frame.acq_dim[1])
                 + " ] differs from reconstructed matrix [ " + str(H.size(0)) + " " + str(H.size(1)) + " ]");
 

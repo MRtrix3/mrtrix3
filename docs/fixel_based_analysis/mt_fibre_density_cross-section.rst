@@ -4,8 +4,7 @@ Fibre density and cross-section - Multi-tissue CSD
 Introduction
 -------------
 
-This tutorial explains how to perform `fixel-based analysis of fibre density and cross-section <https://www.ncbi.nlm.nih.gov/pubmed/27639350>`_ with fibre orientation distributions (FODs) computing using multi-tissue CSD using `single-shell <https://www.researchgate.net/publication/301766619_A_novel_iterative_approach_to_reap_the_benefits_of_multi-tissue_CSD_from_just_single-shell_b0_diffusion_MRI_data>`_ data or `multi-shell data <https://www.ncbi.nlm.nih.gov/pubmed/25109526>`_. We note that high b-value (>2000s/mm2) data is recommended to aid the interpretation of AFD being related to the intra-axonal space. See the `original paper <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`_ for more details.
-
+This tutorial explains how to perform `fixel-based analysis of fibre density and cross-section <https://www.ncbi.nlm.nih.gov/pubmed/27639350>`_ with fibre orientation distributions (FODs) computing using multi-tissue CSD using `single-shell <https://www.researchgate.net/publication/301766619_A_novel_iterative_approach_to_reap_the_benefits_of_multi-tissue_CSD_from_just_single-shell_b0_diffusion_MRI_data>`_ data or `multi-shell data <https://www.ncbi.nlm.nih.gov/pubmed/25109526>`_. We note that high b-value (>2000s/mm2) data is recommended to aid the interpretation of apparent fibre density (AFD) being related to the intra-axonal space. See this `paper <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`_ for more details.
 
 All steps in this tutorial have written as if the commands are being **run on a cohort of images**, and make extensive use of the :ref:`foreach script to simplify batch processing <batch_processing>`. This tutorial also assumes that the imaging dataset is organised with one directory identifying the subject, and all files within identifying the image type. For example::
 
@@ -14,9 +13,9 @@ All steps in this tutorial have written as if the commands are being **run on a 
     study/subjects/002_control/dwi.mif
     study/subjects/002_control/wmfod.mif
 
-.. NOTE:: All commands in this tutorial are run **from the subjects path** up until step 19, where we change directory to the template path
+.. NOTE:: All commands in this tutorial are run **from the subjects path** up until step 19, where we change directory **to the template path**
 
-For all MRtrix scripts and commands, additional information on the command usage and available command-line options can be found by invoking the command with the :code:`-help` option. Please post any questions or issues on the `MRtrix community forum <http://community.mrtrix.org/>`_.
+For all MRtrix scripts and commands, additional information on the command usage and available command-line options can be found by invoking the command with the :code:`-help` option.
 
 
 Pre-processsing steps
@@ -34,9 +33,9 @@ Pre-processsing steps
 
 3. Bias field correction
 ^^^^^^^^^^^^^^^^^^^^^^^^
-Bias field correction is important to deal with spatial intensity inhomogeneities. Even though this FBA pipeline will account for these as well (in the later :ref:`mtnormalise` step, which is furthermore crucial to correct for global intensity differences between subjects), performing bias field correction at this stage will allow for more accurate estimation of the tissue response functions as well as the individual subject brain masks.
+Bias field correction is important to deal with spatial intensity inhomogeneities. Even though the multi-tissue FBA pipeline accounts for these even better at later step (i.e. the later :ref:`mtnormalise` step, which is furthermore crucial to correct for global intensity differences between subjects), performing bias field correction at this stage can help with obtaining better brain masks.  If you have problems with this step, or brain mask estimation seems to actually get **worse** because of it, you can skip this step. As mentioned, :ref:`mtnormalise` step right after the multi-tissue FOD estimation step is more robust to perform the (final) correction for bias fields.
 
-This can be done in a single step using the :ref:`dwibiascorrect` script in MRtrix. The script uses bias field correction algorthims available in `ANTS <http://stnava.github.io/ANTs/>`_ or `FSL <http://fsl.fmrib.ox.ac.uk/>`_. In our experience the `N4 algorithm <http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3071855/>`_ in ANTS gives far superior results. To install N4, install the `ANTS <http://stnava.github.io/ANTs/>`_ package, then perform bias field correction on DW images using::
+The script that works at this step of the pipeline uses bias field correction algorithms available in `ANTS <http://stnava.github.io/ANTs/>`_ or `FSL <http://fsl.fmrib.ox.ac.uk/>`_. In our experience the `N4 algorithm <http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3071855/>`_ in ANTS gives far superior results. To install N4, install the `ANTS <http://stnava.github.io/ANTs/>`_ package, then perform bias field correction on DW images using::
 
     foreach * : dwibiascorrect -ants IN/dwi_denoised_preproc.mif IN/dwi_denoised_preproc_bias.mif
 
@@ -56,9 +55,9 @@ As described `here <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`__, using the s
 
 5. Upsampling DW images
 ^^^^^^^^^^^^^^^^^^^^^^^
-Upsampling DWI data before computing FODs can `increase anatomical contrast <http://www.sciencedirect.com/science/article/pii/S1053811914007472>`_ and improve downstream spatial normalisation and statistics. We recommend upsampling to a voxel size of 1.25mm (for human brains). If you have data that has smaller voxels than 1.25mm, then we recommend you can skip this step::
+Upsampling DWI data before computing FODs can `increase anatomical contrast <http://www.sciencedirect.com/science/article/pii/S1053811914007472>`_ and improve downstream spatial normalisation and statistics. We recommend upsampling to a voxel size of 1.3mm for human brains (if your original resolution is already higher, you can skip this step)::
 
-    foreach * : mrresize IN/dwi_denoised_preproc_bias.mif -vox 1.25 IN/dwi_denoised_preproc_bias_upsampled.mif
+    foreach * : mrresize IN/dwi_denoised_preproc_bias.mif -vox 1.3 IN/dwi_denoised_preproc_bias_upsampled.mif
 
 
 6. Compute upsampled brain mask images
@@ -69,13 +68,15 @@ Compute a whole brain mask from the upsampled DW images::
 
 7. Fibre Orientation Distribution estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 When performing analysis of AFD, Constrained Spherical Deconvolution (CSD) should be performed using the group average response functions computed at step 3::
 
     foreach * : dwi2fod msmt_csd IN/dwi_denoised_preproc_bias_upsampled.mif ../group_average_response_wm.txt IN/wmfod.mif ../group_average_response_gm.txt IN/gm.mif  ../group_average_response_csf.txt IN/csf.mif -mask IN/dwi_mask_upsampled.mif
 
 
-8. Intensity normalisation
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+8. Joint bias field correction and intensity normalisation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 This step performs :ref:`global intensity normalisation <global-intensity-normalisation>` in the log-domain by scaling all tissue types with a spatially smoothly varying normalisation field::
 
     foreach * : mtnormalise IN/wmfod.mif IN/wmfod_norm.mif IN/gm.mif IN/gm_norm.mif IN/csf.mif IN/csf_norm.mif -mask IN/dwi_mask_upsampled.mif
@@ -83,8 +84,6 @@ This step performs :ref:`global intensity normalisation <global-intensity-normal
 If CSD was performed with the same single set of (average) WM, GM and CSF response functions for all subjects, then the resulting output of :ref:`mtnormalise` should make the amplitudes comparable between those subjects as well.
 
 Note that this step is crucial in the FBA pipeline, even if bias field correction was applied during the preprocessing stage, as the latter does not correct for global intensity differences between subjects.
-
-.. WARNING:: We recommend you that you check that the normalisation scale (computed during intensity normalisation) is not influenced by the variable of interest in your study. For example if one group contains global (widespread) changes in white matter T2, then this may directly influence the intensity normalisation and therefore bias downstream analysis of apparent fibre density (FD). To check this, you can perform an equivalence test to ensure the overall normalisation scale does not differ between groups. To output these overall normalisation scales for all subjects use :code:`mrinfo */wmfod_norm.mif -property lognorm_scale`.
 
 
 9. Generate a study-specific unbiased FOD template
@@ -111,22 +110,18 @@ Register the FOD image from all subjects to the FOD template image. Note you can
 
     foreach * : mrregister IN/wmfod_norm.mif -mask1 IN/dwi_mask_upsampled.mif ../template/wmfod_template.mif -nl_warp IN/subject2template_warp.mif IN/template2subject_warp.mif
 
-11. Compute the intersection of all subject masks in template space
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+11. Compute the template mask (intersection of all subject masks in template space)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/mask_intersection.rst
 
 
-12. Compute a white matter analysis voxel & fixel mask
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Here we first identify all voxels having some white matter by thresholding the DC term (first SH coefficient) of the multi-tissue FOD image::
+12. Compute a white matter template analysis fixel mask
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    mrconvert ../template/wmfod_template.mif -coord 3 0 - | mrthreshold - ../template/voxel_mask.mif
+We segment all fixels from each FOD in the template image (see `here <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`__ for more information about a white matter template analysis fixel mask). Note that the fixel image output from this step is stored using the :ref:`fixel_format`, which exploits the filesystem to store all fixel data in a directory::
 
-Next we segment all fixels from each FOD in the template image (see `here <http://www.ncbi.nlm.nih.gov/pubmed/26004503>`__ for more information about a analysis fixel mask). Note that the fixel image output from this step is stored using the :ref:`fixel_format`, which exploits the filesystem to store all fixel data in a directory::
-
-
-   fod2fixel -mask ../template/voxel_mask.mif -fmls_peak_value 0.1 ../template/wmfod_template.mif ../template/fixel_mask
+   fod2fixel -mask ../template/template_mask.mif -fmls_peak_value 0.06 ../template/wmfod_template.mif ../template/fixel_mask
 
 You can visualise the output fixels using the fixel plot tool from :ref:`mrview`, and opening either the :code:`index.mif` or :code:`directions.mif` found in :code:`../template/fixel_mask`. The automatic thresholding step used above should give you a mask that nicely covers all of white matter, however if not you can always try manually adjusting the threshold with the :code:`mrthreshold -abs` option.
 
@@ -137,7 +132,7 @@ You can visualise the output fixels using the fixel plot tool from :ref:`mrview`
 
 Note that here we warp FOD images into template space *without* FOD reorientation. Reorientation will be performed in a separate subsequent step::
 
-    foreach * : mrtransform IN/wmfod_norm.mif -warp IN/subject2template_warp.mif -noreorientation IN/fod_in_template_space.mif
+    foreach * : mrtransform IN/wmfod_norm.mif -warp IN/subject2template_warp.mif -noreorientation IN/fod_in_template_space_NOT_REORIENTED.mif
 
 
 14. Segment FOD images to estimate fixels and their apparent fibre density (FD)
