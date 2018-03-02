@@ -23,7 +23,7 @@ def getInputs(): #pylint: disable=unused-variable
     os.remove(mask_path)
   run.command('mrconvert ' + path.fromUser(app.args.in_voxels, True) + ' ' + path.toTemp('in_voxels.mif', True))
   if app.args.dirs:
-    run.command('mrconvert ' + path.fromUser(app.args.dirs, True) + ' ' + path.toTemp('dirs.mif', True) + ' -stride 0,0,0,1')
+    run.command('mrconvert ' + path.fromUser(app.args.dirs, True) + ' ' + path.toTemp('dirs.mif', True) + ' -strides 0,0,0,1')
 
 
 
@@ -36,7 +36,7 @@ def execute(): #pylint: disable=unused-variable
   import os, shutil
   from mrtrix3 import app, image, path, run
 
-  shells = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shellvalues').split() ]
+  shells = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shell_bvalues').split() ]
 
   # Get lmax information (if provided)
   lmax = [ ]

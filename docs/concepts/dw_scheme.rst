@@ -1,3 +1,5 @@
+.. _dw_scheme:
+
 Diffusion gradient scheme handling
 ==================================
 
@@ -7,7 +9,7 @@ the "*b-vectors*", the "*bvecs*", and other variations on the theme. This table
 provides information about the diffusion sensitisation gradients applied during
 acquisition of each imaging volume in a DWI dataset, usually in the form of the
 *b*-value and the (unit) vector for the DW gradient direction. In this page we
-will describe the details of how this information is typically stored / 
+will describe the details of how this information is typically stored /
 represented, and how *MRtrix3* handles / manipulates this data.
 
 
@@ -51,7 +53,7 @@ gradient table file might look like this:
    -0.868811    0.407442     0.28135        3000
 
   ...
- 
+
 It is important to note that in this format, the direction vectors are assumed
 to be provided with respect to *real* or *scanner* coordinates. This is the same
 convention as is used in the DICOM format. Also note that the file does not
@@ -90,16 +92,16 @@ options provided as part of specific *MRtrix3 commands*, as detailed later.
 
 FSL format
 ..........
-        
+
 This format consists of a pair of ASCII text files, typically named ``bvecs`` & ``bvals``
 (or variations thereof). The ``bvals`` file consists of a single row of
 space-separated floating-point values, all in one row, with one value per
 volume in the DWI dataset. The ``bvecs`` file consists of 3 rows of space-separated
-floating-point values, with the first row corresponding to the *x*-component 
+floating-point values, with the first row corresponding to the *x*-component
 of the DW gradient vectors, one value per volume in the dataset; the second
 row corresponding to the *y*-component, and the third row to the *z*-component.
 A typical pair of FSL format DW gradient files might look like:
- 
+
 .. code-block:: text
   :caption: **bvecs:**
 
@@ -121,7 +123,7 @@ changes to the image can introduce inconsistencies in the *b*-vectors. For
 example, simply reformatting the image from sagittal to axial will effectively
 rotate the *b*-vectors, since this operation changes the image axes. It is
 also important to remember that a particular ``bvals/bvecs`` pair is only valid
-for the particular image that it corresponds to. 
+for the particular image that it corresponds to.
 
 
 Using the DW gradient table in *MRtrix3* applications
@@ -137,7 +139,7 @@ for any particular image using the :ref:`mrinfo` command in combination with the
 ``-dwgrad`` option. For example:
 
 .. code-block:: console
-  
+
   $ mrinfo DICOM/ -dwgrad
   mrinfo: [done] scanning DICOM folder "DICOM/"
   mrinfo: [100%] reading DICOM series "BRI 64 directions ep2d_diff_3scan_trace_p2"
@@ -158,7 +160,7 @@ for any particular image using the :ref:`mrinfo` command in combination with the
      0.617871    0.674589   -0.403938        3000
      0.577709   -0.102522    0.809779        3000
      0.825818   -0.523076   -0.210752        3000
-  
+
   ...
 
 
@@ -178,7 +180,7 @@ results in a ``grad.b`` file in `MRtrix format`_, while:
 
 .. code-block:: console
 
-  $ mrconvert DICOM/ dwi.nii.gz -export_grad_fsl bvecs bvals 
+  $ mrconvert DICOM/ dwi.nii.gz -export_grad_fsl bvecs bvals
   mrconvert: [done] scanning DICOM folder "DICOM/"
   mrconvert: [100%] reading DICOM series "BRI 64 directions ep2d_diff_3scan_trace_p2"
   mrconvert: [100%] reformatting DICOM mosaic images
@@ -188,7 +190,7 @@ results in a ``grad.b`` file in `MRtrix format`_, while:
 converts the DWI data in the ``DICOM/`` folder to
 :ref:`compressed_nifti_format`, and exports the DW gradient table to `FSL
 format`_ if found in the DICOM headers, resulting in a pair of ``bvecs`` &
-``bvals`` files. 
+``bvals`` files.
 
 
 Importing the DW gradient table
@@ -219,7 +221,7 @@ output image header. As another example:
 
 will process the DWI dataset found in the ``DICOM/`` folder (in
 :ref:`dicom_format` format), but *override* any DW gradient information
-in the DICOM data with the table stored in the `MRtrix format`_ file ``encoding.b``. 
+in the DICOM data with the table stored in the `MRtrix format`_ file ``encoding.b``.
 
 
 Operations performed by *MRtrix3* when handling DW gradient tables
@@ -281,7 +283,7 @@ If the output image format does not allow storing the DW gradient table in the
 image header, the ``-export_grad_mrtrix`` or ``-export_grad_fsl`` options can
 be used to write it out to separate files, ready for use with third-party
 applications, or directly within *MRtrix3* if users prefer to keep their data
-organised in this way. 
+organised in this way.
 
 
 When using the information for processing
@@ -296,10 +298,10 @@ These include:
   entries in the DW gradient table;
 - where relevant, verifying that the DW gradient tables contains the data in a
   shell structure, by clustering similar *b*-values together (see :ref:`mrinfo`'s
-  ``-shell`` and ``-shellcount`` options);
+  ``-shell_bvalues`` and ``-shell_sizes`` options);
 - normalising the gradient vectors to unit amplitude;
 - scaling the *b*-values by the square of the gradient vector amplitude - see
-  `b-value scaling`_ for details. 
+  `b-value scaling`_ for details.
 
 .. NOTE::
 
@@ -308,7 +310,7 @@ These include:
   it is generally helpful to view the information as it would be interpreted by
   other *MRtrix3* applications. If this is not desired, you can add the
   ``-raw_dwgrad`` option to :ref:`mrinfo` to disable these modifications when
-  querying the DW gradient table. 
+  querying the DW gradient table.
 
 *b*-value scaling
 -----------------

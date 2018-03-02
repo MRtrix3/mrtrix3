@@ -52,17 +52,17 @@ colourWarn = ''
 
 
 
-_defaultCopyright = '''Copyright (c) 2008-2017 the MRtrix3 contributors.
+_defaultCopyright = '''Copyright (c) 2008-2018 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/.
+file, you can obtain one at http://mozilla.org/MPL/2.0/
 
-MRtrix is distributed in the hope that it will be useful,
+MRtrix3 is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty
 of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see http://www.mrtrix.org/.'''
+For more details, see http://www.mrtrix.org/'''
 
 
 
@@ -291,7 +291,10 @@ def debug(text): #pylint: disable=unused-variable
   nearest = outer_frames[1]
   try:
     if len(outer_frames) == 2: # debug() called directly from script being executed
-      origin = '(' + os.path.basename(nearest.filename) + ':' + str(nearest.lineno) + ')'
+      try:
+        origin = '(' + os.path.basename(nearest.filename) + ':' + str(nearest.lineno) + ')'
+      except AttributeError: # Prior to Python 3.5
+        origin = '(' + os.path.basename(nearest[1]) + ':' + str(nearest[2]) + ')'
     else: # Some function has called debug(): Get location of both that function, and where that function was invoked
       try:
         filename = nearest.filename
@@ -306,7 +309,7 @@ def debug(text): #pylint: disable=unused-variable
       caller = outer_frames[2]
       try:
         origin += ' (from ' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')'
-      except: # Prior to Python 3.5
+      except AttributeError:
         origin += ' (from ' + os.path.basename(caller[1]) + ':' + str(caller[2]) + ')'
       finally:
         del caller
@@ -335,7 +338,7 @@ def var(*variables): #pylint: disable=unused-variable
       calling_code = calling_frame.code_context[0]
       filename = calling_frame.filename
       lineno = calling_frame.lineno
-    except: # Prior to Python 3.5
+    except AttributeError: # Prior to Python 3.5
       calling_code = calling_frame[4][0]
       filename = calling_frame[1]
       lineno = calling_frame[2]
@@ -813,7 +816,7 @@ class progressBar(object): #pylint: disable=unused-variable
     global clearLine, colourConsole, colourClear, colourExec
     assert not self.iscomplete
     if self.isatty:
-      sys.stderr.write('\r' + self.scriptname + ': ' + colourExec + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else progressBar._busy[self.counter%6]) + '] ' + colourConsole + self.message + '... ' + colourClear + clearLine + self.newline)
+      sys.stderr.write('\r' + self.scriptname + ': ' + colourExec + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else progressBar._busy[self.counter%6]) + ']' + colourClear + ' ' + colourConsole + self.message + '... ' + colourClear + clearLine + self.newline)
     else:
       if self.newline:
         sys.stderr.write(self.scriptname + ': ' + self.message + '... [' + ('=' * int(self.value/2)) + self.newline)
@@ -836,7 +839,7 @@ class progressBar(object): #pylint: disable=unused-variable
     self.value = 0
     verbosity = verbosity - 1 if verbosity else 0
     if self.isatty:
-      sys.stderr.write(self.scriptname + ': ' + colourExec + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else progressBar._busy[0]) + '] ' + colourConsole + self.message + '... ' + colourClear + clearLine + self.newline)
+      sys.stderr.write(self.scriptname + ': ' + colourExec + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else progressBar._busy[0]) + ']' + colourClear + ' ' + colourConsole + self.message + '... ' + colourClear + clearLine + self.newline)
     else:
       sys.stderr.write(self.scriptname + ': ' + self.message + '... [' + self.newline)
     sys.stderr.flush()
@@ -867,7 +870,7 @@ class progressBar(object): #pylint: disable=unused-variable
     self.iscomplete = True
     self.value = 100
     if self.isatty:
-      sys.stderr.write('\r' + self.scriptname + ': ' + colourExec + '[' + ('100%' if self.multiplier else 'done') + '] ' + colourConsole + self.message + colourClear + clearLine + '\n')
+      sys.stderr.write('\r' + self.scriptname + ': ' + colourExec + '[' + ('100%' if self.multiplier else 'done') + ']' + colourClear + ' ' + colourConsole + self.message + colourClear + clearLine + '\n')
     else:
       if self.newline:
         sys.stderr.write(self.scriptname + ': ' + self.message + ' [' + ('=' * (self.value/2)) + ']\n')

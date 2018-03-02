@@ -1,17 +1,19 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
+#include "axes.h"
 #include "command.h"
 #include "header.h"
 #include "image.h"
@@ -208,6 +210,18 @@ void permute_PE_scheme (Header& H, const vector<int>& axes)
 
 
 
+void permute_slice_direction (Header& H, const vector<int>& axes)
+{
+  auto it = H.keyval().find ("SliceEncodingDirection");
+  if (it == H.keyval().end())
+    return;
+  const Eigen::Vector3 orig_dir = Axes::id2dir (it->second);
+  const Eigen::Vector3 new_dir (orig_dir[axes[0]], orig_dir[axes[1]], orig_dir[axes[2]]);
+  it->second = Axes::dir2id (new_dir);
+}
+
+
+
 
 template <class ImageType>
 inline vector<int> set_header (Header& header, const ImageType& input)
@@ -233,6 +247,7 @@ inline vector<int> set_header (Header& header, const ImageType& input)
     }
     permute_DW_scheme (header, axes);
     permute_PE_scheme (header, axes);
+    permute_slice_direction (header, axes);
   } else {
     header.ndim() = input.ndim();
     axes.assign (input.ndim(), 0);
