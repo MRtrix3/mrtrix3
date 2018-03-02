@@ -134,8 +134,12 @@ LUT::file_format LUT::guess_file_format (const std::string& path)
           ++i;
       }
       if (entries.size()) {
-        if (columns.size() && entries.size() != columns.size())
-          throw Exception ("Inconsistent number of columns in LUT file \"" + Path::basename (path) + "\"");
+        if (columns.size() && entries.size() != columns.size()) {
+          Exception E ("Inconsistent number of columns in LUT file \"" + Path::basename (path) + "\"");
+          E.push_back ("Initial contents contain " + str(columns.size()) + " columns, but following line contains " + str(entries.size()) + ":");
+          E.push_back ("\"" + line + "\"");
+          throw E;
+        }
         if (columns.empty())
           columns.resize (entries.size());
         for (size_t c = 0; c != columns.size(); ++c)
