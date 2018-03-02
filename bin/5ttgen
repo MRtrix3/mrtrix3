@@ -46,9 +46,11 @@ app.gotoTempDir()
 
 alg.execute()
 
-stderr = run.command('5ttcheck result.mif', False)[1]
-if stderr and 'ERROR' in stderr:
-  app.warn('Generated image does not perfectly conform to 5TT format')
+stderr = run.command('5ttcheck result.mif')[1]
+if stderr:
+  app.warn('Generated image does not perfectly conform to 5TT format:')
+  for line in stderr:
+    app.warn(line)
 
 run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + (' -force' if app.forceOverwrite else ''))
 app.complete()

@@ -3,7 +3,7 @@
 "Fixels" (and "Dixels")
 =======================
 
-So internally we have created a couple of new terms that we find
+Internally we have created a couple of new terms that we find
 invaluable when discussing diffusion MRI processing methods and
 statistics. We'd like to share these with our user base in the hope that
 others will gain advantages from using the same terminology, and also so
@@ -23,9 +23,9 @@ We have settled on the following two terms. The first of these, 'fixel',
 will appear frequently throughout the *MRtrix3* documentation and in
 online discussions, and will therefore satisfy the requirements of the
 majority of users. The second, 'dixel', is typically reserved for internal
-technical discussion; however due to its occasional usage (and its conflict
-with prior presentations that used a different meaning for this term), we are
-additionally providing its full definition here for interested readers.
+technical discussion; however due to its occasional usage (and its inconsistent
+use in early presentations, see final note below), we are additionally
+providing its full definition here for interested readers.
 
 'Fixel': *Fibre bundle element*
 -------------------------------
@@ -42,9 +42,10 @@ In reality, fixels have been used in the field of Diffusion MRI for a
 long time: multi-tensor fitting, ball-and-sticks, any diffusion model
 that is capable of fitting multiple anisotropic elements to each image
 voxel, can be considered as estimating fixels. However in the past,
-researchers have resorted either to long-winded explanations in an
-attempt to describe the nature of the data being manipulated, or have
-defined their own terms that have been both non-specific and inconsistent
+researchers have resorted either to lengthy descriptive labels in an
+attempt to express the nature of the data being manipulated, or have
+adopted existing terms, which can lead to confusion with the original sense of
+the terms. Furthermore, these labels are not applied inconsistently
 between publications; we hope that the term 'fixel', being unambiguous with
 other interpretations of "fibre bundle" or "fascicle" or other examples,
 will slowly become the standard term for describing these data.

@@ -38,7 +38,7 @@ namespace MR {
           Image<float> data (interp);
           auto f = [] (Image<float>& in, Image<bool>& mask) {
             for (in.index(3) = 0; in.index(3) != in.size(3); ++in.index(3)) {
-              if (std::isfinite (in.value()) && in.value()) {
+              if (std::isfinite (static_cast<float>(in.value())) && in.value()) {
                 mask.value() = true;
                 return true;
               }
