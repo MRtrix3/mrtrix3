@@ -15,7 +15,7 @@ are as follows:
 -  Determine the maximum value for *l*:sub:`max` that is supported by the number
    of DWI volumes in the shell being processed (or the total number of
    non-*b*\=0 volumes in a single-shell acquisition). This is the number of
-   coefficients required to store an anitipodally-symmetric spherical
+   coefficients required to store an antipodally-symmetric spherical
    harmonic function:
 
 +------+------------------+
@@ -105,10 +105,7 @@ command being used; e.g.:
    than that supported by the data - so-called *super-resolved* spherical
    deconvolution. Here, additional information is provided by the non-negativity
    constraint to make estimation of additional spherical harmonic coefficients
-   possible. However this is not guaranteed: sometimes the algorithm will fail
-   in particular voxels, in cases where there are an insufficient number of
-   directions in which the initial FOD estimate is negative, as the problem
-   remains under-determined.
+   possible.
 
 -  If performing Track Orientation Density Imaging (TODI) using
    ``tckmap -tod``, then the apodized point spread functions (aPSFs) can be
