@@ -1,10 +1,10 @@
 If denoising and/or Gibbs ringing removal are performed as part of the preprocessing, they *must* be performed *prior* to any other processing steps: most other processing steps, in particular those that involve interpolation of the data, will invalidate the original properties of the image data that are exploited by :ref:`dwidenoise` and :ref:`mrdegibbs` at this stage, and would render the result prone to errors.
 
-If denoising is included, it's performed as the first step:
+If denoising is included, it's performed as the first step::
 
     foreach * : dwidenoise IN/dwi.mif IN/dwi_denoised.mif
 
-If Gibbs ringing removal is included, it follows immediately after:
+If Gibbs ringing removal is included, it follows immediately after::
 
     foreach * : mrdegibbs IN/dwi_denoised.mif IN/dwi_denoised_unringed.mif -axes 0,1
     
