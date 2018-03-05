@@ -21,13 +21,13 @@ For all MRtrix scripts and commands, additional information on the command usage
 Pre-processsing steps
 ---------------------
 
-1. DWI denoising
-^^^^^^^^^^^^^^^^
+1. Denoising and unringing
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. include:: common_fba_steps/dwidenoise.rst
+.. include:: common_fba_steps/denoise_unring.rst
 
-2. DWI general pre-processing
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2. Motion and distortion correction
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/dwipreproc.rst
 
@@ -37,7 +37,7 @@ Bias field correction is important to deal with spatial intensity inhomogeneitie
 
 The script that works at this step of the pipeline uses bias field correction algorithms available in `ANTS <http://stnava.github.io/ANTs/>`_ or `FSL <http://fsl.fmrib.ox.ac.uk/>`_. In our experience the `N4 algorithm <http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3071855/>`_ in ANTS gives far superior results. To install N4, install the `ANTS <http://stnava.github.io/ANTs/>`_ package, then perform bias field correction on DW images using::
 
-    foreach * : dwibiascorrect -ants IN/dwi_denoised_preproc.mif IN/dwi_denoised_preproc_bias.mif
+    foreach * : dwibiascorrect -ants IN/IN/dwi_denoised_unringed_preproc.mif IN/dwi_denoised_unringed_preproc_unbiased.mif
 
 
 Fixel-based analysis steps
@@ -47,7 +47,7 @@ Fixel-based analysis steps
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 As described `here <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`__, using the same response function when estimating FOD images for all subjects enables differences in the intra-axonal volume (and therefore DW signal) across subjects to be detected as differences in the FOD amplitude (the AFD). To ensure the response function is representative of your study population, a group average response function can be computed by first estimating a response function per subject, then averaging with the script::
 
-    foreach * : dwi2response dhollander IN/dwi_denoised_preproc_bias.mif IN/response_wm.txt IN/response_gm.txt IN/response_csf.txt
+    foreach * : dwi2response dhollander IN/dwi_denoised_unringed_preproc_unbiased.mif IN/response_wm.txt IN/response_gm.txt IN/response_csf.txt
     average_response */response_wm.txt ../group_average_response_wm.txt
     average_response */response_gm.txt ../group_average_response_gm.txt
     average_response */response_csf.txt ../group_average_response_csf.txt
@@ -57,21 +57,21 @@ As described `here <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`__, using the s
 ^^^^^^^^^^^^^^^^^^^^^^^
 Upsampling DWI data before computing FODs can `increase anatomical contrast <http://www.sciencedirect.com/science/article/pii/S1053811914007472>`_ and improve downstream spatial normalisation and statistics. We recommend upsampling to a voxel size of 1.3mm for human brains (if your original resolution is already higher, you can skip this step)::
 
-    foreach * : mrresize IN/dwi_denoised_preproc_bias.mif -vox 1.3 IN/dwi_denoised_preproc_bias_upsampled.mif
+    foreach * : mrresize IN/dwi_denoised_unringed_preproc_unbiased.mif -vox 1.3 IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif
 
 
 6. Compute upsampled brain mask images
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Compute a whole brain mask from the upsampled DW images::
 
-    foreach * : dwi2mask IN/dwi_denoised_preproc_bias_upsampled.mif IN/dwi_mask_upsampled.mif
+    foreach * : dwi2mask IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif IN/dwi_mask_upsampled.mif
 
 7. Fibre Orientation Distribution estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 When performing analysis of AFD, Constrained Spherical Deconvolution (CSD) should be performed using the group average response functions computed at step 3::
 
-    foreach * : dwi2fod msmt_csd IN/dwi_denoised_preproc_bias_upsampled.mif ../group_average_response_wm.txt IN/wmfod.mif ../group_average_response_gm.txt IN/gm.mif  ../group_average_response_csf.txt IN/csf.mif -mask IN/dwi_mask_upsampled.mif
+    foreach * : dwi2fod msmt_csd IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif ../group_average_response_wm.txt IN/wmfod.mif ../group_average_response_gm.txt IN/gm.mif  ../group_average_response_csf.txt IN/csf.mif -mask IN/dwi_mask_upsampled.mif
 
 
 8. Joint bias field correction and intensity normalisation
