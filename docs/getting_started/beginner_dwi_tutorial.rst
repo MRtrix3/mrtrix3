@@ -1,6 +1,8 @@
 Beginner DWI tutorial
 =====================
 
+.. WARNING:: This tutorial is not intended to show the optimal or even recommended way of processing. It is merely a simplified example, intended to familiarise the user with the typical command line interface of certain basic processing steps.
+
 This tutorial will hopefully provide enough information for a novice
 user to get from the raw DW image data to performing some streamlines
 tractography. It may also be useful for experienced MRtrix users in

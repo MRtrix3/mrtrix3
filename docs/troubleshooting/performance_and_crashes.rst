@@ -16,9 +16,9 @@ If you encounter an error during the build process that resembles the following:
 
 .. code-block:: text
 
-    ERROR: (#/#) [CC] release/cmd/command.o
+    ERROR: (#/#) [CC] tmp/cmd/command.o
 
-    /usr/bin/g++-4.8 -c -std=c++11 -pthread -fPIC -I/home/user/mrtrix3/eigen -Wall -O2 -DNDEBUG -Isrc -Icmd -I./lib -Icmd cmd/command.cpp -o release/cmd/command.o
+    /usr/bin/g++-5.0 -c -std=c++11 -pthread -fPIC -I/home/user/mrtrix3/eigen -Wall -O2 -DNDEBUG -Isrc -Icmd -I./lib -Icmd cmd/command.cpp -o release/cmd/command.o
 
     failed with output
 
@@ -26,6 +26,13 @@ If you encounter an error during the build process that resembles the following:
     Please submit a full bug report,
     with preprocessed source if appropriate.
     See for instructions.
+
+.. code-block:: text
+
+   ERROR: (  9/498) [CC] tmp/src/directory/header.o
+   g++ -c -std=c++11 -pthread -fPIC -DMRTRIX_WORD64 -DMRTRIX_TIFF_SUPPORT -isystem /usr/include/x86_64-linux-gnu -DEIGEN_FFTW_DEFAULT -Wall -O3 -DNDEBUG -Isrc -I./core -Icmd -isystem /usr/include/eigen3 -DEIGEN_DONT_PARALLELIZE src/directory/header.cpp -o tmp/src/registration/transform/rigid.o_
+   failed with output
+   cc1plus: out of memory allocating 4064 bytes after a total of 35667968 bytes
 
 
 This is most typically caused by the compiler running out of RAM. This
@@ -117,7 +124,7 @@ A few pointers for anybody who encounters this issue:
 
 -  The location where the temporary directory is created for the script will
    influence the amount of storage space available. For instance, the
-   location ``/tmp//`` is frequently created as a temporary RAM-based file
+   location ``/tmp/`` is frequently created as a temporary RAM-based file
    system, such that the script's temporary files are never actually written
    to disk and are therefore read & written very quickly; it is however also
    likely to have a smaller capacity than a physical hard drive.
@@ -220,7 +227,7 @@ small (e.g. 256), such that very few subjects can be opened at once.
 There are two ways to solve this issue:
 
 -  *Reduce the number of files opened concurrently*: By converting each series
-   of interest to an alternative format (e.g. (:ref:` ``.mif`` <_mrtrix_image_formats>`))
+   of interest to an alternative format (e.g. :ref:`mrtrix_image_formats`)
    before opening them in ``mrview``, the total number of files open at once
    will be drastically reduced.
 

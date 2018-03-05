@@ -215,15 +215,23 @@ def error (message):
   sys.exit (1)
 
 
+if profile: build_type = 'profiling version'
+elif debug: build_type = 'debug version'
+else: build_type = 'release version'
+
+build_options = []
+if asserts: build_options.append ('asserts')
+if nooptim: build_options.append ('nooptim')
+if nogui: build_options.append ('nogui')
+if noshared: build_options.application ('noshared')
+if static: build_options.append ('static')
+if openmp: build_options.append ('openmp')
+
+if len(build_options):
+  build_type += ' with ' + ', '.join (build_options)
+
 report ("""
-MRtrix build type requested: """)
-if profile: report ('profiling')
-elif debug: report ('debug')
-else: report ('release')
-if asserts: report (' with asserts')
-if nooptim: report (' without optimisation')
-if nogui: report (' [command-line only]')
-report ('\n\n')
+MRtrix build type requested: """ + build_type + '\n\n')
 
 
 # remove any mention of anaconda from PATH:
@@ -249,7 +257,7 @@ global cpp, cpp_cmd, ld, ld_args, ld_cmd
 
 cxx = [ 'clang++', 'g++' ]
 cxx_args = '-c CFLAGS SRC -o OBJECT'.split()
-cpp_flags = [ '-std=c++11' ]
+cpp_flags = [ '-std=c++11', '-DMRTRIX_BUILD_TYPE="'+build_type+'"' ]
 
 ld_args = 'OBJECTS LDFLAGS -o EXECUTABLE'.split()
 ld_flags = []
