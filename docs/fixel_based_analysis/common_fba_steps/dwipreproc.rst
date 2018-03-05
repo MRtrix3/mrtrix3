@@ -4,4 +4,4 @@ Usage of this script varies depending on the specific nature of the DWI acquisit
 
 Here, only a simple example is provided, where a single DWI series is acquired where all volumes have an anterior-posterior (A>>P) phase encoding direction::
 
-    foreach * : dwipreproc IN/dwi_denoised.mif IN/dwi_denoised_preproc.mif -rpe_none -pe_dir AP
+    foreach * : dwipreproc IN/dwi_denoised_unringed.mif IN/dwi_denoised_unringed_preproc.mif -rpe_none -pe_dir AP

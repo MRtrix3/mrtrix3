@@ -21,13 +21,13 @@ For all MRtrix scripts and commands, additional information on the command usage
 Pre-processsing steps
 ---------------------
 
-1. DWI denoising
-^^^^^^^^^^^^^^^^
+1. Denoising and unringing
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. include:: common_fba_steps/dwidenoise.rst
+.. include:: common_fba_steps/denoise_unring.rst
 
-2. DWI general pre-processing
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2. Motion and distortion correction
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/dwipreproc.rst
 
@@ -51,7 +51,7 @@ To enable robust quantitative comparisons of AFD across subjects three additiona
 
 Because we recommend a :ref:`global intensity normalisation <global-intensity-normalisation>`, bias field correction is required as a pre-processing step to eliminate low frequency intensity inhomogeneities across the image. DWI bias field correction is perfomed by first estimating a correction field from the DWI b=0 image, then applying the field to correct all DW volumes. This can be done in a single step using the :ref:`dwibiascorrect` script in MRtrix. The script uses bias field correction algorthims available in `ANTS <http://stnava.github.io/ANTs/>`_ or `FSL <http://fsl.fmrib.ox.ac.uk/>`_. In our experience the `N4 algorithm <http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3071855/>`_ in ANTS gives superiour results. To install N4 install the `ANTS <http://stnava.github.io/ANTs/>`_ package, then run perform bias field correction on DW images using::
 
-    foreach * : dwibiascorrect -ants IN/dwi_denoised_preproc.mif IN/dwi_denoised_preproc_bias.mif
+    foreach * : dwibiascorrect -ants IN/IN/dwi_denoised_unringed_preproc.mif IN/IN/dwi_denoised_unringed_preproc_unbiased.mif
 
 
 5. Global intensity normalisation across subjects
@@ -64,7 +64,7 @@ As outlined :ref:`here <global-intensity-normalisation>`, a global intensity nor
 
 You could copy all files into this directory, however symbolic linking them will save space::
 
-    foreach * : ln -sr IN/dwi_denoised_preproc_bias.mif ../dwiintensitynorm/dwi_input/IN.mif
+    foreach * : ln -sr IN/dwi_denoised_unringed_preproc_unbiased.mif ../dwiintensitynorm/dwi_input/IN.mif
     foreach * : ln -sr IN/dwi_temp_mask.mif ../dwiintensitynorm/mask_input/IN.mif
 
 Perform intensity normalisation::
@@ -73,13 +73,13 @@ Perform intensity normalisation::
 
 Link the output files back to the subject directories::
 
-    foreach ../dwiintensitynorm/dwi_output/* : ln -sr IN PRE/dwi_denoised_preproc_bias_norm.mif
+    foreach ../dwiintensitynorm/dwi_output/* : ln -sr IN PRE/dwi_denoised_unringed_preproc_unbiased_normalised.mif
 
 The dwiintensitynorm script also outputs the study-specific FA template and white matter mask. **It is recommended that you check that the white matter mask is appropriate** (i.e. does not contain CSF or voxels external to the brain. Note it only needs to be a rough WM mask). If you feel the white matter mask needs to be larger or smaller you can re-run :code:`dwiintensitynorm` with a different :code:`-fa_threshold` option. Note that if your input brain masks include CSF then this can cause spurious high FA values outside the brain which will may be included in the template white matter mask.
 
 Keeping the FA template image and white matter mask is also handy if additional subjects are added to the study at a later date. New subjects can be intensity normalised in a single step by :ref:`piping <unix_pipelines>` the following commands together. Run from the subjects directory::
 
-    dwi2tensor new_subject/dwi_denoised_preproc_bias.mif -mask new_subject/dwi_temp_mask.mif - | tensor2metric - -fa - | mrregister -force ../dwiintensitynorm/fa_template.mif - -mask2 new_subject/dwi_temp_mask.mif -nl_scale 0.5,0.75,1.0 -nl_niter 5,5,15 -nl_warp - /tmp/dummy_file.mif | mrtransform ../dwiintensitynorm/fa_template_wm_mask.mif -template new_subject/dwi_denoised_preproc_bias.mif -warp - - | dwinormalise new_subject/dwi_denoised_preproc_bias.mif - ../dwiintensitynorm/dwi_output/new_subject.mif
+    dwi2tensor new_subject/dwi_denoised_unringed_preproc_unbiased.mif -mask new_subject/dwi_temp_mask.mif - | tensor2metric - -fa - | mrregister -force ../dwiintensitynorm/fa_template.mif - -mask2 new_subject/dwi_temp_mask.mif -nl_scale 0.5,0.75,1.0 -nl_niter 5,5,15 -nl_warp - /tmp/dummy_file.mif | mrtransform ../dwiintensitynorm/fa_template_wm_mask.mif -template new_subject/dwi_denoised_unringed_preproc_unbiased.mif -warp - - | dwinormalise new_subject/dwi_denoised_unringed_preproc_unbiased.mif - ../dwiintensitynorm/dwi_output/new_subject.mif
 
 .. NOTE:: The above command may also be useful if you wish to alter the mask then re-apply the intensity normalisation to all subjects in the study. For example you may wish to edit the mask using the ROI tool in :code:`mrview` to remove white matter regions that you hypothesise are affected by the disease (e.g. removing the corticospinal tract in a study of motor neurone disease due to T2 hyperintensity). You also may wish to redefine the mask completely, for example in an elderly population (with larger ventricles) it may be appropriate to intensity normalise using the median b=0 CSF. This could be performed by manually masking partial-volume-free CSF voxels, then running the above command with the CSF mask instead of the :code:`fa_template_wm_mask.mif`.
 
@@ -89,7 +89,7 @@ Keeping the FA template image and white matter mask is also handy if additional 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 As described `here <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`__, using the same response function when estimating FOD images for all subjects enables differences in the intra-axonal volume (and therefore DW signal) across subjects to be detected as differences in the FOD amplitude (the AFD). To ensure the response function is representative of your study population, a group average response function can be computed by first estimating a response function per subject, then averaging with the script::
 
-    foreach * : dwi2response tournier IN/dwi_denoised_preproc_bias_norm.mif IN/response.txt
+    foreach * : dwi2response tournier IN/dwi_denoised_unringed_preproc_unbiased_normalised.mif IN/response.txt
     average_response */response.txt ../group_average_response.txt
 
 
@@ -100,19 +100,19 @@ Fixel-based analysis steps
 ^^^^^^^^^^^^^^^^^^^^^^^
 Upsampling DWI data before computing FODs can `increase anatomical contrast <http://www.sciencedirect.com/science/article/pii/S1053811914007472>`_ and improve downstream spatial normalisation and statistics. We recommend upsampling to a voxel size of 1.3mm for human brains (if your original resolution is already higher, you can skip this step)::
 
-    foreach * : mrresize IN/dwi_denoised_preproc_bias_norm.mif -vox 1.3 IN/dwi_denoised_preproc_bias_norm_upsampled.mif
+    foreach * : mrresize IN/dwi_denoised_unringed_preproc_unbiased_normalised.mif -vox 1.3 IN/dwi_denoised_unringed_preproc_unbiased_normalised_upsampled.mif
     
 8. Compute upsampled brain mask images
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Compute a whole brain mask from the upsampled DW images::
 
-    foreach * : dwi2mask IN/dwi_denoised_preproc_bias_norm_upsampled.mif IN/dwi_mask_upsampled.mif
+    foreach * : dwi2mask IN/dwi_denoised_unringed_preproc_unbiased_normalised_upsampled.mif IN/dwi_mask_upsampled.mif
 
 9. Fibre Orientation Distribution estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 When performing analysis of AFD, Constrained Spherical Deconvolution (CSD) should be performed using the group average response function computed at step . If not using AFD in the fixel-based analysis (and therefore you have skipped steps 4-6), however you still want to compute FODs for image registration, then you can use a subject-specific response function. Note that :code:`dwi2fod csd` can be used, however here we use :code:`dwi2fod msmt_csd` (even with single shell data) to benefit from the hard non-negativity constraint::
 
-    foreach * : dwiextract IN/dwi_denoised_preproc_bias_norm_upsampled.mif - \| dwi2fod msmt_csd - ../group_average_response.txt IN/wmfod.mif -mask IN/dwi_mask_upsampled.mif
+    foreach * : dwiextract IN/dwi_denoised_unringed_preproc_unbiased_normalised_upsampled.mif - \| dwi2fod msmt_csd - ../group_average_response.txt IN/wmfod.mif -mask IN/dwi_mask_upsampled.mif
 
 10. Generate a study-specific unbiased FOD template
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
