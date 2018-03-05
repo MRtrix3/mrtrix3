@@ -132,7 +132,7 @@ namespace MR
 
 
 
-      bool init()
+      bool init() override
       {
         if (!get_data (source))
           return (false);
@@ -149,7 +149,7 @@ namespace MR
                 return true;
           }
 
-        } 
+        }
         else {
           dir = S.init_dir;
           float val = FOD (dir);
@@ -164,7 +164,7 @@ namespace MR
 
 
 
-      term_t next ()
+      term_t next () override
       {
         if (!get_data (source))
           return EXIT_IMAGE;
@@ -213,7 +213,7 @@ namespace MR
       }
 
 
-      float get_metric()
+      float get_metric() override
       {
         return FOD (dir);
       }
