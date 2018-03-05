@@ -142,7 +142,7 @@ Register the FOD image from all subjects to the FOD template image::
 12. Compute the template mask (intersection of all subject masks in template space)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. include:: common_fba_steps/mask_intersection.rst
+.. include:: common_fba_steps/template_mask.rst
     
     
 13. Compute a white matter template analysis fixel mask
@@ -151,7 +151,7 @@ Here we perform a 2-step threshold to identify template white matter fixels to b
        
 Compute a template AFD peaks fixel image::
     
-    fod2fixel ../template/wmfod_template.mif -mask ../template/mask_intersection.mif ../template/fixel_temp -peak peaks.mif
+    fod2fixel ../template/wmfod_template.mif -mask ../template/template_mask.mif ../template/fixel_temp -peak peaks.mif
     
 .. NOTE:: Fixel images in this step are stored using the :ref:`fixel_format`, which exploits the filesystem to store all fixel data in a directory.
     
