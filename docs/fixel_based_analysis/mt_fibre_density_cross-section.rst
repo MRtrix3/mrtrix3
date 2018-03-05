@@ -113,7 +113,7 @@ Register the FOD image from all subjects to the FOD template image. Note you can
 11. Compute the template mask (intersection of all subject masks in template space)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. include:: common_fba_steps/mask_intersection.rst
+.. include:: common_fba_steps/template_mask.rst
 
 
 12. Compute a white matter template analysis fixel mask
