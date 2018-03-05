@@ -95,7 +95,7 @@ class SDStream : public MethodBase { MEMALIGN(SDStream)
 
 
 
-    bool init()
+    bool init() override
     {
       if (!get_data (source))
         return (false);
@@ -103,8 +103,8 @@ class SDStream : public MethodBase { MEMALIGN(SDStream)
       if (!S.init_dir.allFinite()) {
         if (!dir.allFinite())
           dir = random_direction();
-      } 
-      else 
+      }
+      else
         dir = S.init_dir;
 
       dir.normalize();
@@ -116,7 +116,7 @@ class SDStream : public MethodBase { MEMALIGN(SDStream)
 
 
 
-    term_t next ()
+    term_t next () override
     {
       if (!get_data (source))
         return EXIT_IMAGE;
@@ -134,7 +134,7 @@ class SDStream : public MethodBase { MEMALIGN(SDStream)
     }
 
 
-    float get_metric()
+    float get_metric() override
     {
       return FOD (dir);
     }
