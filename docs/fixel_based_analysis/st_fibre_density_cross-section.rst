@@ -107,8 +107,8 @@ Compute a whole brain mask from the upsampled DW images::
 
     foreach * : dwi2mask IN/dwi_denoised_unringed_preproc_unbiased_normalised_upsampled.mif IN/dwi_mask_upsampled.mif
 
-9. Fibre Orientation Distribution estimation (multi-tissue spherical deconvolution)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+9. Fibre Orientation Distribution estimation (spherical deconvolution)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 When performing analysis of AFD, Constrained Spherical Deconvolution (CSD) should be performed using the group average response function computed at step . If not using AFD in the fixel-based analysis (and therefore you have skipped steps 4-6), however you still want to compute FODs for image registration, then you can use a subject-specific response function. Note that :code:`dwi2fod csd` can be used, however here we use :code:`dwi2fod msmt_csd` (even with single shell data) to benefit from the hard non-negativity constraint::
 
     foreach * : dwiextract IN/dwi_denoised_unringed_preproc_unbiased_normalised_upsampled.mif - \| dwi2fod msmt_csd - ../group_average_response.txt IN/wmfod.mif -mask IN/dwi_mask_upsampled.mif

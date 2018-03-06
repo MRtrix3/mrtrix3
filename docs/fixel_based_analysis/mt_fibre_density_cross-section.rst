@@ -66,8 +66,8 @@ Compute a whole brain mask from the upsampled DW images::
 
     foreach * : dwi2mask IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif IN/dwi_mask_upsampled.mif
 
-7. Fibre Orientation Distribution estimation (spherical deconvolution)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+7. Fibre Orientation Distribution estimation (multi-tissue spherical deconvolution)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 When performing analysis of AFD, Constrained Spherical Deconvolution (CSD) should be performed using the group average response functions computed at step 3::
 
