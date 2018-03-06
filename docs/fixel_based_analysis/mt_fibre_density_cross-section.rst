@@ -33,7 +33,7 @@ Pre-processsing steps
 
 3. Bias field correction
 ^^^^^^^^^^^^^^^^^^^^^^^^
-The multi-tissue FBA pipeline corrects for bias fields (and jointly performs global intensity normalisation) at the later :ref:`mtnormalise` step. The only incentive for running the (less robust and accurate) :ref:`dwibiascorrect` at this stage in the pipeline is to improve brain mask estimation (at the later :ref:`dwi2mask` step, in case severe bias fields are present in the data). However, cases have been reported where running :ref:`dwibiascorrect` at this stage resulted in inferior brain mask estimation later on. This is probably more likely in case bias fields are not as strongly present in the data. Whether :ref:`dwibiascorrect` is run at this stage or not, does not have any significant impact on the performance of :ref:`mtnormalise` later on.
+The multi-tissue FBA pipeline corrects for bias fields (and jointly performs global intensity normalisation) at the later :ref:`mtnormalise` step. The only incentive for running the (less robust and accurate) :ref:`dwibiascorrect` at this stage in the pipeline is *to improve brain mask estimation* (at the later :ref:`dwi2mask` step, in case severe bias fields are present in the data). However, cases have been reported where running :ref:`dwibiascorrect` at this stage resulted in *inferior* brain mask estimation later on. This is probably more likely in case bias fields are not as strongly present in the data. Whether :ref:`dwibiascorrect` is run at this stage or not, does not have any significant impact on the performance of :ref:`mtnormalise` later on.
 
 If or when performing DWI bias field correction at this stage, it is achieved by first estimating the bias field from the DWI b=0 data, then applying the field to correct all DW volumes, which is done in a single step using the :ref:`dwibiascorrect` script in MRtrix. The script uses bias field correction algorthims available in `ANTS <http://stnava.github.io/ANTs/>`_ or `FSL <http://fsl.fmrib.ox.ac.uk/>`_. In our experience the `N4 algorithm <http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3071855/>`_ in ANTS performs better at this task. To install N4, install the `ANTS <http://stnava.github.io/ANTs/>`_ package. To perform bias field correction on DW images, run::
 
@@ -43,19 +43,23 @@ If or when performing DWI bias field correction at this stage, it is achieved by
 Fixel-based analysis steps
 --------------------------
 
-4. Computing group average tissue response functions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-As described `here <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`__, using the same response function when estimating FOD images for all subjects enables differences in the intra-axonal volume (and therefore DW signal) across subjects to be detected as differences in the FOD amplitude (the AFD). To ensure the response function is representative of your study population, a group average response function can be computed by first estimating a response function per subject, then averaging with the script::
+4. Computing (average) tissue response functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+A robust and fully automated (unsupervised) method to obtain 3-tissue response functions representing single-fibre white matter, grey matter and CSF from your data, is the approach proposed in `Dhollander et al. (2016) <https://www.researchgate.net/publication/307863133_Unsupervised_3-tissue_response_function_estimation_from_single-shell_or_multi-shell_diffusion_MR_data_without_a_co-registered_T1_image>`__, which can be run by::
 
     foreach * : dwi2response dhollander IN/dwi_denoised_unringed_preproc_unbiased.mif IN/response_wm.txt IN/response_gm.txt IN/response_csf.txt
+
+It is crucial for fixel-based analysis to only use a single *unique* set of the (three) response functions to perform (3-tissue) spherical deconvolution of all subjects: as the (3-tissue) spherical deconvolution results will be expressed in function of this set of response functions, they can (in an abstract way) be seen as the units of both the final apparent fibre density metric and the other compartments estimated in the model. A possible way to obtain a unique set of response functions, is to average the response functions obtained from all subjects for each tissue type::
+
     average_response */response_wm.txt ../group_average_response_wm.txt
     average_response */response_gm.txt ../group_average_response_gm.txt
     average_response */response_csf.txt ../group_average_response_csf.txt
 
+There is however no strict requirement that the final set of response functions is the average of *all* subject response functions (for each tissue type). In certain very specific cases, it may even be wise to leave out subjects (for this step) where the response functions could not reliably be obtained, or where pathology affected the brain globally.
 
 5. Upsampling DW images
 ^^^^^^^^^^^^^^^^^^^^^^^
-Upsampling DWI data before computing FODs can `increase anatomical contrast <http://www.sciencedirect.com/science/article/pii/S1053811914007472>`_ and improve downstream spatial normalisation and statistics. We recommend upsampling to a voxel size of 1.3mm for human brains (if your original resolution is already higher, you can skip this step)::
+Upsampling DWI data *before* computing FODs increases anatomical contrast and improves downstream template building, registration, tractography and statistics. We recommend upsampling to a voxel size of 1.3 mm for human brains (if your original resolution is already higher, you can skip this step)::
 
     foreach * : mrresize IN/dwi_denoised_unringed_preproc_unbiased.mif -vox 1.3 IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif
 
