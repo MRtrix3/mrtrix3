@@ -72,8 +72,7 @@ Compute a whole brain mask from the upsampled DW images::
 
 7. Fibre Orientation Distribution estimation (multi-tissue spherical deconvolution)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-When performing analysis of AFD, Constrained Spherical Deconvolution (CSD) should be performed using the group average response functions computed at step 3::
+When performing fixel-based analysis, multi-tissue constrained spherical deconvolution should be performed using the unique set of (average) response functions obtained before::
 
     foreach * : dwi2fod msmt_csd IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif ../group_average_response_wm.txt IN/wmfod.mif ../group_average_response_gm.txt IN/gm.mif  ../group_average_response_csf.txt IN/csf.mif -mask IN/dwi_mask_upsampled.mif
 
@@ -145,8 +144,8 @@ Note that here we warp FOD images into template space *without* FOD reorientatio
 .. include:: common_fba_steps/compute_AFD.rst
 
 
-15. Reorient fixel orientations
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+15. Reorient fixels
+^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/reorient_fixels.rst
 
