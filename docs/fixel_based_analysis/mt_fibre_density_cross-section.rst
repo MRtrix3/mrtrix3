@@ -13,7 +13,7 @@ All steps in this tutorial have written as if the commands are being **run on a 
     study/subjects/002_control/dwi.mif
     study/subjects/002_control/wmfod.mif
 
-.. NOTE:: All commands in this tutorial are run **from the subjects path** up until step 19, where we change directory **to the template path**
+.. NOTE:: All commands at the start of this tutorial are run **from the subjects path**. From the step where tractography is performed on the template onwards, we change directory **to the template path**.
 
 For all MRtrix scripts and commands, additional information on the command usage and available command-line options can be found by invoking the command with the :code:`-help` option.
 
@@ -33,15 +33,15 @@ Pre-processsing steps
 
 3. Bias field correction
 ^^^^^^^^^^^^^^^^^^^^^^^^
-Bias field correction is important to deal with spatial intensity inhomogeneities. Even though the multi-tissue FBA pipeline accounts for these even better at later step (i.e. the later :ref:`mtnormalise` step, which is furthermore crucial to correct for global intensity differences between subjects), performing bias field correction at this stage can help with obtaining better brain masks.  If you have problems with this step, or brain mask estimation seems to actually get **worse** because of it, you can skip this step. As mentioned, :ref:`mtnormalise` step right after the multi-tissue FOD estimation step is more robust to perform the (final) correction for bias fields.
+The multi-tissue FBA pipeline corrects for bias fields (and jointly performs global intensity normalisation) at the later :ref:`mtnormalise` step. The only incentive for running the (less robust and accurate) :ref:`dwibiascorrect` at this stage in the pipeline is to improve brain mask estimation (at the later :ref:`dwi2mask` step, in case severe bias fields are present in the data). However, cases have been reported where running :ref:`dwibiascorrect` at this stage resulted in inferior brain mask estimation later on. This is probably more likely in case bias fields are not as strongly present in the data. Whether :ref:`dwibiascorrect` is run at this stage or not, does not have any significant impact on the performance of :ref:`mtnormalise` later on.
 
-The script that works at this step of the pipeline uses bias field correction algorithms available in `ANTS <http://stnava.github.io/ANTs/>`_ or `FSL <http://fsl.fmrib.ox.ac.uk/>`_. In our experience the `N4 algorithm <http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3071855/>`_ in ANTS gives far superior results. To install N4, install the `ANTS <http://stnava.github.io/ANTs/>`_ package, then perform bias field correction on DW images using::
+If or when performing DWI bias field correction at this stage, it is achieved by first estimating the bias field from the DWI b=0 data, then applying the field to correct all DW volumes, which is done in a single step using the :ref:`dwibiascorrect` script in MRtrix. The script uses bias field correction algorthims available in `ANTS <http://stnava.github.io/ANTs/>`_ or `FSL <http://fsl.fmrib.ox.ac.uk/>`_. In our experience the `N4 algorithm <http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3071855/>`_ in ANTS performs better at this task. To install N4, install the `ANTS <http://stnava.github.io/ANTs/>`_ package. To perform bias field correction on DW images, run::
 
     foreach * : dwibiascorrect -ants IN/IN/dwi_denoised_unringed_preproc.mif IN/dwi_denoised_unringed_preproc_unbiased.mif
 
 
 Fixel-based analysis steps
----------------------------
+--------------------------
 
 4. Computing group average tissue response functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -66,8 +66,8 @@ Compute a whole brain mask from the upsampled DW images::
 
     foreach * : dwi2mask IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif IN/dwi_mask_upsampled.mif
 
-7. Fibre Orientation Distribution estimation
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+7. Fibre Orientation Distribution estimation (spherical deconvolution)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 When performing analysis of AFD, Constrained Spherical Deconvolution (CSD) should be performed using the group average response functions computed at step 3::
 
