@@ -55,14 +55,14 @@ namespace MR
         source (S.source) { }
 
 
-      bool init() {
+      bool init() override {
         if (!get_data (source))
           return false;
         dir = S.init_dir.allFinite() ? S.init_dir : random_direction();
         return true;
       }
 
-      term_t next () {
+      term_t next () override {
         if (!get_data (source))
           return EXIT_IMAGE;
         dir = rand_dir (dir);
@@ -71,7 +71,7 @@ namespace MR
         return CONTINUE;
       }
 
-      float get_metric() { return uniform(*rng); }
+      float get_metric() override { return uniform(*rng); }
 
 
       protected:
@@ -110,7 +110,7 @@ namespace MR
         tangents (S.num_samples),
         sample_idx (S.num_samples) { }
 
-      bool init() {
+      bool init() override {
         if (!get_data (source))
           return false;
         dir = S.init_dir.allFinite() ? S.init_dir : random_direction();
@@ -118,7 +118,7 @@ namespace MR
         return true;
       }
 
-      term_t next () {
+      term_t next () override {
 
         if (++sample_idx < S.num_samples) {
           pos = positions[sample_idx];
@@ -144,13 +144,13 @@ namespace MR
         MethodBase::reverse_track();
       }
 
-      void truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step)
+      void truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step) override
       {
         iFOD2::truncate_track (tck, length_to_revert_from, revert_step);
         sample_idx = S.num_samples;
       }
 
-      float get_metric() { return uniform(*rng); }
+      float get_metric() override { return uniform(*rng); }
 
 
       protected:

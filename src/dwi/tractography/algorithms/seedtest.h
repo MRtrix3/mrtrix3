@@ -51,9 +51,9 @@ class Seedtest : public MethodBase { MEMALIGN(Seedtest)
     S (shared) { }
 
 
-  bool init() { return true; }
-  term_t next () { return EXIT_IMAGE; }
-  float get_metric() { return 1.0; }
+  bool init() override { return true; }
+  term_t next () override { return EXIT_IMAGE; }
+  float get_metric() override { return 1.0; }
 
 
   protected:

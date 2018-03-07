@@ -67,7 +67,7 @@ namespace MR
 
 
 
-            bool init() {
+            bool init() override {
               source.clear();
               if (!source.get (pos, values))
                 return false;
@@ -76,14 +76,14 @@ namespace MR
 
 
 
-            term_t next () {
+            term_t next () override {
               if (!source.get (pos, values))
                 return EXIT_IMAGE;
               return Tensor_Det::do_next();
             }
 
 
-            void truncate_track (vector<Eigen::Vector3f>& tck, const size_t length_to_revert_from, const int revert_step) {}
+            void truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step) override { assert (0); }
 
 
           protected:
