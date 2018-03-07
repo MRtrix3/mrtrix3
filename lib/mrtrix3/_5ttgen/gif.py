@@ -1,6 +1,6 @@
 def initialise(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('gif', author='Matteo Mancini (m.mancini@ucl.ac.uk)', synopsis='Generate the 5TT image based on a GIF segmentation image', parents=[base_parser])
-  parser.add_argument('input',  help='The input GIF segmentation image')
+  parser = subparsers.add_parser('gif', author='Matteo Mancini (m.mancini@ucl.ac.uk)', synopsis='Generate the 5TT image based on a Geodesic Information Flow (GIF) segmentation image', parents=[base_parser])
+  parser.add_argument('input',  help='The input Geodesic Information Flow (GIF) segmentation image')
   parser.add_argument('output', help='The output 5TT image')
 
 

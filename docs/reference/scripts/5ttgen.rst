@@ -256,7 +256,7 @@ For more details, see http://www.mrtrix.org/
 Synopsis
 --------
 
-Generate the 5TT image based on a GIF segmentation image
+Generate the 5TT image based on a Geodesic Information Flow (GIF) segmentation image
 
 Usage
 --------
@@ -265,7 +265,7 @@ Usage
 
     5ttgen gif input output [ options ]
 
--  *input*: The input GIF segmentation image
+-  *input*: The input Geodesic Information Flow (GIF) segmentation image
 -  *output*: The output 5TT image
 
 Options
