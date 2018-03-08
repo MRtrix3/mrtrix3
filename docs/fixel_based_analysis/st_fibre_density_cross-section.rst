@@ -153,13 +153,14 @@ Register the FOD image from each subject to the FOD template image. Note you can
     
 13. Compute a white matter template analysis fixel mask
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Here we perform a 2-step threshold to identify template white matter fixels to be included in the analysis. Fixels in the template fixel analysis mask are also used to identify the best fixel correspondence across all subjects (i.e. match fixels across subjects within a voxel).
        
 Compute a template AFD peaks fixel image::
     
     fod2fixel ../template/wmfod_template.mif -mask ../template/template_mask.mif ../template/fixel_temp -peak peaks.mif
     
-.. NOTE:: Fixel images in this step are stored using the :ref:`fixel_format`, which exploits the filesystem to store all fixel data in a directory.
+.. NOTE:: Fixel images, which appear in the pipeline from this step onwards, are stored using the :ref:`fixel_format`, which stores all fixel data for a fixel image in a directory (i.e. a folder).
     
 Next view the peaks file using the fixel plot tool in :ref:`mrview` and identify an appropriate threshold that removes peaks from grey matter, yet does not introduce any 'holes' in your white matter (approximately 0.33).
 
