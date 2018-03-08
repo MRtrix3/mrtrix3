@@ -102,7 +102,7 @@ There is however no strict requirement that the (one) final response function is
 
 7. Upsampling DW images
 ^^^^^^^^^^^^^^^^^^^^^^^
-Upsampling DWI data *before* computing FODs can increase anatomical contrast and improve downstream template building, registration, tractography and statistics. We recommend upsampling to a voxel size of 1.3 mm for human brains (if your original resolution is already higher, you can skip this step)::
+Upsampling DWI data *before* computing FODs can increase anatomical contrast and improve downstream template building, registration, tractography and statistics. We recommend upsampling to an isotropic voxel size of 1.3 mm for human brains (if your original resolution is already higher, you can skip this step)::
 
     foreach * : mrresize IN/dwi_denoised_unringed_preproc_unbiased_normalised.mif -vox 1.3 IN/dwi_denoised_unringed_preproc_unbiased_normalised_upsampled.mif
     
@@ -111,6 +111,8 @@ Upsampling DWI data *before* computing FODs can increase anatomical contrast and
 Compute a whole brain mask from the upsampled DW images::
 
     foreach * : dwi2mask IN/dwi_denoised_unringed_preproc_unbiased_normalised_upsampled.mif IN/dwi_mask_upsampled.mif
+
+.. WARNING:: It is absolutely **crucial** to check at this stage that *all* individual subject masks include *all* areas of the brain that are intended to be analysed. Fibre orientation distributions will *only* be computed within these masks; and at a later step (in template space) the analysis mask will be restricted to the *intersection* of all masks, so *any* individual subject mask which excludes a certain area, will result in the area being excluded from the entire analysis. Masks appearing too generous or otherwise including non-brain areas should generally not cause any concerns at this stage. Hence, if in doubt, it is advised to always err on the side of *inclusion* (of areas) at this stage. Manually correct the masks if necessary.
 
 9. Fibre Orientation Distribution estimation (spherical deconvolution)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

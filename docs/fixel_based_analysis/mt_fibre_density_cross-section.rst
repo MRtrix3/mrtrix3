@@ -59,7 +59,7 @@ There is however no strict requirement that the final set of response functions 
 
 5. Upsampling DW images
 ^^^^^^^^^^^^^^^^^^^^^^^
-Upsampling DWI data *before* computing FODs increases anatomical contrast and improves downstream template building, registration, tractography and statistics. We recommend upsampling to a voxel size of 1.3 mm for human brains (if your original resolution is already higher, you can skip this step)::
+Upsampling DWI data *before* computing FODs increases anatomical contrast and improves downstream template building, registration, tractography and statistics. We recommend upsampling to an isotropic voxel size of 1.3 mm for human brains (if your original resolution is already higher, you can skip this step)::
 
     foreach * : mrresize IN/dwi_denoised_unringed_preproc_unbiased.mif -vox 1.3 IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif
 
@@ -69,6 +69,10 @@ Upsampling DWI data *before* computing FODs increases anatomical contrast and im
 Compute a whole brain mask from the upsampled DW images::
 
     foreach * : dwi2mask IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif IN/dwi_mask_upsampled.mif
+
+.. WARNING:: It is absolutely **crucial** to check at this stage that *all* individual subject masks include *all* areas of the brain that are intended to be analysed. Fibre orientation distributions will *only* be computed within these masks; and at a later step (in template space) the analysis mask will be restricted to the *intersection* of all masks, so *any* individual subject mask which excludes a certain area, will result in the area being excluded from the entire analysis. Masks appearing too generous or otherwise including non-brain areas should generally not cause any concerns at this stage. Hence, if in doubt, it is advised to always err on the side of *inclusion* (of areas) at this stage.
+
+.. NOTE:: The earlier :ref:`dwibiascorrect` step is not fundamentally important in the multi-tissue fixel-based analysis pipeline, as the later :ref:`mtnormalise` step performs more robustly (and if :ref:`dwibiascorrect` is included, :ref:`mtnormalise` will later on typically improve the result further). While performing the earlier :ref:`dwibiascorrect` step typically improves :ref:`dwi2mask` performance, cases have been observed where the opposite is true (typically if the data contained only weak bias field induced intensity inhomogeneities). Experiment with either including or excluding :ref:`dwibiascorrect` in function of the best :ref:`dwi2mask` outcome and manually correct the masks if necessary (by *including* regions which :ref:`dwi2mask` fails to include).
 
 7. Fibre Orientation Distribution estimation (multi-tissue spherical deconvolution)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
