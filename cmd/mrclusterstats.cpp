@@ -223,6 +223,7 @@ void run() {
   if (do_nonstationary_adjustment) {
     if (!use_tfce)
       throw Exception ("nonstationary adjustment is not currently implemented for threshold-based cluster analysis");
+    empirical_enhanced_statistic = vector_type::Zero (num_vox);
     if (permutations_nonstationary.size()) {
       Stats::PermTest::PermutationStack permutations (permutations_nonstationary, "precomputing empirical statistic for non-stationarity adjustment...");
       Stats::PermTest::precompute_empirical_stat (glm, enhancer, permutations, empirical_enhanced_statistic);
