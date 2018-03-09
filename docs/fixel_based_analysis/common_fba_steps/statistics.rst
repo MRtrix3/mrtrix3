@@ -4,7 +4,7 @@ Statistical analysis using CFE is performed separately for each metric (FD, log(
      fixelcfestats log_fc files.txt design_matrix.txt contrast_matrix.txt input_tracks_2_million_sift.tck stats_log_fc
      fixelcfestats fdc files.txt design_matrix.txt contrast_matrix.txt input_tracks_2_million_sift.tck stats_fdc
 
-The input files.txt is a text file containing the filename of each file (i.e. *not* the full path) to be analysed inside the input fixel directory, each filename on a separate line. The line ordering should correspond to the lines in the file :code:`design_matrix.txt`.
+The input :code:`files.txt` is a text file containing the filename of each file (i.e. *not* the full path) to be analysed inside the input fixel directory, each filename on a separate line. The line ordering should correspond to the lines in the file :code:`design_matrix.txt`.
 
 .. NOTE:: For correlation analysis, a column of 1's will *not be automatically included* (as per FSL randomise).
 
