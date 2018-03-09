@@ -16,10 +16,10 @@
 #define __gui_mrview_tool_connectome_connectome_h__
 
 #include <map>
-#include <vector>
 
 #include "bitset.h"
 #include "image.h"
+#include "types.h"
 
 #include "gui/opengl/gl.h"
 #include "gui/opengl/lighting.h"

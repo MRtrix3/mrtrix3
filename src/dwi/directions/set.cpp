@@ -16,7 +16,6 @@
 
 #include <list>
 #include <set>
-#include <vector>
 
 #include "bitset.h"
 #include "math/rng.h"

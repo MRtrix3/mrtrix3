@@ -15,7 +15,7 @@
 #ifndef __gui_shapes_sphere_h__
 #define __gui_shapes_sphere_h__
 
-#include <vector>
+#include "types.h"
 
 #include "gui/opengl/gl.h"
 #include "gui/opengl/gl_core_3_3.h"

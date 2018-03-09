@@ -4,7 +4,7 @@ Images and other data
 =====================
 
 Image format handling in *MRtrix3*
-----------------------------
+----------------------------------
 
 *MRtrix3* provides a flexible data input/output back-end in the shared
 library, which is used across all applications. This means that all

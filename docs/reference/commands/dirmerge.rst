@@ -22,6 +22,8 @@ Usage
 Options
 -------
 
+-  **-unipolar_weight** set the weight given to the unipolar electrostatic repulsion model compared to the bipolar model (default: 0.2).
+
 Standard options
 ^^^^^^^^^^^^^^^^
 

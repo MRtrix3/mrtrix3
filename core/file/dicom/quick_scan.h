@@ -15,6 +15,7 @@
 #ifndef __file_dicom_quick_scan_h__
 #define __file_dicom_quick_scan_h__
 
+#include <map>
 #include "mrtrix.h"
 
 namespace MR {
@@ -30,7 +31,9 @@ namespace MR {
           std::string patient, patient_ID, patient_DOB;
           std::string study, study_ID, study_date, study_time;
           std::string series, series_date, series_time, sequence;
+          std::map<std::string, size_t> image_type;
           size_t series_number, bits_alloc, dim[2], data;
+          bool transfer_syntax_supported;
       };
 
       std::ostream& operator<< (std::ostream& stream, const QuickScan& file);

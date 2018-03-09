@@ -15,6 +15,7 @@
 #ifndef __interp_base_h__
 #define __interp_base_h__
 
+#include "image_helpers.h"
 #include "transform.h"
 
 

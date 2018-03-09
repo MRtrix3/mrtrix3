@@ -17,7 +17,8 @@
 #include <ios>
 #include <iostream>
 #include <string>
-#include <vector>
+
+#include "types.h"
 
 #include "surface/freesurfer.h"
 #include "surface/utils.h"

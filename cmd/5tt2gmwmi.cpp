@@ -116,6 +116,7 @@ void run ()
 
   auto input = Image<float>::open (argument[0]);
   DWI::Tractography::ACT::verify_5TT_image (input);
+  check_3D_nonunity (input);
 
   // TODO It would be nice to have the capability to define this mask based on another image
   // This will however require the use of interpolators
@@ -123,7 +124,7 @@ void run ()
   Image<bool> mask;
   auto opt = get_options ("mask_in");
   if (opt.size()) {
-    mask.open (opt[0][0]);
+    mask = Image<bool>::open (opt[0][0]);
     if (!dimensions_match (input, mask, 0, 3))
       throw Exception ("Mask image provided using the -mask option must match the input 5TT image");
   }

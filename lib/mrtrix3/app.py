@@ -7,13 +7,11 @@
 # - cmdline.addCitation(), cmdline.addDescription(), cmdline.setCopyright() as needed
 # - Add arguments and options to 'cmdline' as needed
 # - parse()
-# - checkOutputFile() as needed
+# - checkOutputPath() as needed
 # - makeTempDir() if the script requires a temporary directory
 # - gotoTempDir() if the script is using a temporary directory
 # - complete()
 #
-# checkOutputFile() can be called at any time after parse() to check if an intended output
-#   file already exists
 
 
 
@@ -84,7 +82,7 @@ def init(author, synopsis):
   _workingDir = os.getcwd()
   # Load the MRtrix configuration files here, and create a dictionary
   # Load system config first, user second: Allows user settings to override
-  for path in [ os.path.join(os.path.sep, 'etc', 'mrtrix.conf'),
+  for path in [ os.environ.get ('MRTRIX_CONFIGFILE', os.path.join(os.path.sep, 'etc', 'mrtrix.conf')),
                 os.path.join(os.path.expanduser('~'), '.mrtrix.conf') ]:
     try:
       f = open (path, 'r')
@@ -284,12 +282,24 @@ def debug(text):
   global colourClear, colourDebug
   global _verbosity
   if _verbosity <= 2: return
-  stack = inspect.stack()[1]
-  try:
-    fname = stack.function
-  except: # Prior to Version 3.5
-    fname = stack[3]
-  sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourDebug + '[DEBUG] ' + fname + '(): ' + text + colourClear + '\n')
+  if len(inspect.stack()) == 2: # debug() called directly from script being executed
+    caller = inspect.getframeinfo(inspect.stack()[1][0])
+    origin = '(' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')'
+  else: # Some function has called debug(): Get location of both that function, and where that function was invoked
+    stack = inspect.stack()[1]
+    try:
+      filename = stack.filename
+      fname = stack.function
+    except: # Prior to Version 3.5
+      filename = stack[1]
+      fname = stack[3]
+    funcname = fname + '()'
+    modulename = inspect.getmodulename(filename)
+    if modulename:
+      funcname = modulename + '.' + funcname
+    caller = inspect.getframeinfo(inspect.stack()[2][0])
+    origin = funcname + ' (from ' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')'
+  sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourDebug + '[DEBUG] ' + origin + ': ' + text + colourClear + '\n')
 
 def error(text):
   import os, sys
@@ -781,6 +791,7 @@ class Parser(argparse.ArgumentParser):
 class progressBar:
 
   def _update(self):
+    import os, sys
     global clearLine, colourConsole, colourClear
     sys.stderr.write('\r' + colourConsole + os.path.basename(sys.argv[0]) + ': ' + colourClear + '[{0:>3}%] '.format(int(round(100.0*self.counter/self.target))) + self.message + '...' + clearLine + self.newline)
     sys.stderr.flush()
@@ -802,6 +813,7 @@ class progressBar:
     self._update()
 
   def done(self):
+    import os, sys
     global _verbosity
     global clearLine, colourConsole, colourClear
     self.counter = self.target

@@ -16,9 +16,8 @@
 #define __surface_mesh_h__
 
 
-#include <fstream>
-#include <vector>
 #include <cstdint>
+#include <fstream>
 
 #include "header.h"
 #include "image.h"

@@ -20,6 +20,7 @@
 #include "progressbar.h"
 #include "file/path.h"
 #include "file/config.h"
+#include "signal_handler.h"
 
 #define MRTRIX_HELP_COMMAND "less -X"
 
@@ -44,7 +45,7 @@ namespace MR
 
     OptionGroup __standard_options = OptionGroup ("Standard options")
       + Option ("info", "display information messages.")
-      + Option ("quiet", "do not display information messages or progress status.")
+      + Option ("quiet", "do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.")
       + Option ("debug", "display debugging messages.")
       + Option ("force", "force overwrite of output files. "
           "Caution: Using the same file as input and output might cause unexpected behaviour.")
@@ -73,14 +74,12 @@ namespace MR
     std::string NAME;
     vector<ParsedArgument> argument;
     vector<ParsedOption> option;
-    int log_level = 1;
+    int log_level = getenv("MRTRIX_QUIET") ? 0 : 1;
     bool fail_on_warn = false;
     bool terminal_use_colour = true;
 
     const char* project_version = nullptr;
     const char* build_date = __DATE__;
-
-    SignalHandler signal_handler;
 
     int argc = 0;
     const char* const* argv = nullptr;
@@ -1062,6 +1061,7 @@ namespace MR
         }
       }
 
+      SignalHandler::init();
     }
 
 

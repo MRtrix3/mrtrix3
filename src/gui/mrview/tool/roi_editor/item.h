@@ -17,9 +17,9 @@
 
 
 #include <array>
-#include <vector>
 
 #include "header.h"
+#include "types.h"
 #include "algo/loop.h"
 #include "gui/mrview/volume.h"
 #include "gui/mrview/tool/roi_editor/undoentry.h"
@@ -33,7 +33,7 @@ namespace MR
     {
       namespace Tool
       {
-            
+
 
 
        namespace {
@@ -43,7 +43,7 @@ namespace MR
            { { 0, 255, 255 } },
            { { 255, 0, 0 } },
            { { 0, 255, 255 } },
-           { { 0, 0, 25 } }
+           { { 0, 0, 255 } }
          } };
        }
 

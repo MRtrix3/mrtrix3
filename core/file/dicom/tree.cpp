@@ -30,15 +30,15 @@ namespace MR {
         for (size_t n = 0; n < size(); n++) {
           bool match = true;
           if (patient_name == (*this)[n]->name) {
-            if (patient_ID.size() && (*this)[n]->ID.size()) 
-              if (patient_ID != (*this)[n]->ID) 
+            if (patient_ID.size() && (*this)[n]->ID.size())
+              if (patient_ID != (*this)[n]->ID)
                 match = false;
             if (match) {
               if (patient_DOB.size() && (*this)[n]->DOB.size())
-                if (patient_DOB != (*this)[n]->DOB) 
+                if (patient_DOB != (*this)[n]->DOB)
                   match = false;
             }
-            if (match) 
+            if (match)
               return (*this)[n];
           }
         }
@@ -54,26 +54,26 @@ namespace MR {
 
       void Tree::read_dir (const std::string& filename, ProgressBar& progress)
       {
-        try { 
-          Path::Dir folder (filename); 
+        try {
+          Path::Dir folder (filename);
           std::string entry;
           while ((entry = folder.read_name()).size()) {
             std::string name (Path::join (filename, entry));
             if (Path::is_dir (name))
               read_dir (name, progress);
             else {
-              try { 
-                read_file (name); 
+              try {
+                read_file (name);
               }
-              catch (Exception& E) { 
+              catch (Exception& E) {
                 E.display (3);
               }
             }
             ++progress;
           }
         }
-        catch (Exception& E) { 
-          throw Exception (E, "error opening DICOM folder \"" + filename + "\": " + strerror (errno)); 
+        catch (Exception& E) {
+          throw Exception (E, "error opening DICOM folder \"" + filename + "\": " + strerror (errno));
         }
       }
 
@@ -85,24 +85,28 @@ namespace MR {
       {
         QuickScan reader;
         if (reader.read (filename)) {
-          INFO ("error reading file \"" + filename + "\" - assuming not DICOM"); 
+          INFO ("error reading file \"" + filename + "\" - ignored");
           return;
         }
 
         if (! (reader.dim[0] && reader.dim[1] && reader.bits_alloc && reader.data)) {
-          INFO ("DICOM file \"" + filename + "\" does not seem to contain image data - ignored"); 
+          INFO ("DICOM file \"" + filename + "\" does not seem to contain image data - ignored");
           return;
         }
 
         std::shared_ptr<Patient> patient = find (reader.patient, reader.patient_ID, reader.patient_DOB);
         std::shared_ptr<Study> study = patient->find (reader.study, reader.study_ID, reader.study_date, reader.study_time);
-        std::shared_ptr<Series> series = study->find (reader.series, reader.series_number, reader.modality, reader.series_date, reader.series_time);
+        for (const auto& image_type : reader.image_type) {
+          std::shared_ptr<Series> series = study->find (reader.series, reader.series_number, image_type.first, reader.modality, reader.series_date, reader.series_time);
 
-        std::shared_ptr<Image> image (new Image);
-        image->filename = filename;
-        image->series = series.get();
-        image->sequence_name = reader.sequence;
-        series->push_back (image);
+          std::shared_ptr<Image> image (new Image);
+          image->filename = filename;
+          image->series = series.get();
+          image->sequence_name = reader.sequence;
+          image->image_type = image_type.first;
+          image->transfer_syntax_supported = reader.transfer_syntax_supported;
+          series->push_back (image);
+        }
       }
 
 
@@ -118,11 +122,11 @@ namespace MR {
           try {
             read_file (filename);
           }
-          catch (Exception) { 
+          catch (Exception) {
           }
         }
 
-        if (size() > 0) 
+        if (size() > 0)
           return;
 
         throw Exception ("no DICOM images found in \"" + filename + "\"");
@@ -134,10 +138,10 @@ namespace MR {
 
 
       std::ostream& operator<< (std::ostream& stream, const Tree& item)
-      { 
+      {
         stream << "FileSet " << item.description << ":\n";
-        for (size_t n = 0; n < item.size(); n++) 
-          stream << *item[n]; 
+        for (size_t n = 0; n < item.size(); n++)
+          stream << *item[n];
         return stream;
       }
 

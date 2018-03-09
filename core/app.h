@@ -16,17 +16,16 @@
 #define __app_h__
 
 #include <cstring>
-#include <string>
-#include <vector>
 #include <limits>
+#include <string>
 
 #ifdef None
 # undef None
 #endif
 
 #include "cmdline_option.h"
+#include "types.h"
 #include "file/path.h"
-#include "signal_handler.h"
 
 
 extern void usage ();
@@ -51,8 +50,6 @@ namespace MR
 
     extern const char* project_version;
     extern const char* build_date;
-
-    extern SignalHandler signal_handler;
 
 
     const char* argtype_description (ArgType type);

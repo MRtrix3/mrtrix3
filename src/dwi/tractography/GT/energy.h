@@ -15,8 +15,6 @@
 #ifndef __gt_energy_h__
 #define __gt_energy_h__
 
-#include <vector>
-
 #include "dwi/tractography/GT/particle.h"
 #include "dwi/tractography/GT/gt.h"
 

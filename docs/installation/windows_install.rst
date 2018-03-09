@@ -28,6 +28,12 @@ To install *MRtrix3*, you will need the following:
 -  `Eigen <http://eigen.tuxfamily.org>`__ version >= 3.2
 -  `Qt <http://www.qt.io/>`__ version >= 4.7 *[GUI components only]*
 
+and optionally:
+
+- `libTIFF <http://www.libtiff.org/>`__ version >= 4.0 (for TIFF support)
+- `FFTW <http://www.fftw.org/>`__ version >= 3.0 (for improved performance in
+  certain applications, currently only ``mrdegibbs``)
+
 .. NOTE::
     All of these dependencies are installed below by the MSYS2 package manager.
 
@@ -67,11 +73,11 @@ Install and update MSYS2
     that they are followed correctly!
 
 Install *MRtrix3* dependencies
-----------------------------
+------------------------------
 
 1. From the **'MinGW-w64 Win64 Shell'** run::
 
-        pacman -S git python pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5
+        pacman -S git python pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5 mingw-w64-x86_64-fftw mingw-w64-x86_64-libtiff
     
    Sometimes ``pacman`` may fail to find a particular package from any of
    the available mirrors. If this occurs, you can download the relevant

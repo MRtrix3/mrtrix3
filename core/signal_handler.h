@@ -15,35 +15,16 @@
 #ifndef __signal_handler_h__
 #define __signal_handler_h__
 
-#include <atomic>
 #include <string>
-#include <vector>
 
 namespace MR
 {
-
-
-
-  class SignalHandler
+  namespace SignalHandler
   { 
-    public:
-      SignalHandler();
-      SignalHandler (const SignalHandler&) = delete;
-
-      void operator+= (const std::string&);
-      void operator-= (const std::string&);
-
-    private:
-      static std::vector<std::string> data;
-      static std::atomic_flag flag;
-
-      static void on_exit() noexcept;
-      static void handler (int) noexcept;
-
-  };
-
-
-
+      void init(); 
+      void mark_file_for_deletion (const std::string&);
+      void unmark_file_for_deletion (const std::string&);
+  }
 }
 
 #endif

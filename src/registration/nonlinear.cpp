@@ -50,10 +50,10 @@ namespace MR
                              "for all multi-resolution levels, or a single value for each level. (Default: 50)")
         + Argument ("num").type_sequence_int ()
 
-      + Option ("nl_update_smooth", "regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0 x voxel_size)")
+      + Option ("nl_update_smooth", "regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0)")
         + Argument ("stdev").type_float ()
 
-      + Option ("nl_disp_smooth", "regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)")
+      + Option ("nl_disp_smooth", "regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0)")
         + Argument ("stdev").type_float ()
 
       + Option ("nl_grad_step", "the gradient step size for non-linear registration (Default: 0.5)")

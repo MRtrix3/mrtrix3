@@ -12,33 +12,24 @@
  */
 
 
-#ifndef __file_mgh_utils_h__
-#define __file_mgh_utils_h__
-
-#include "file/mgh.h"
-
-#define MGH_HEADER_SIZE 90
-#define MGH_DATA_OFFSET 284
+#ifndef __gui_mrview_tool_tractogram_enums_h__
+#define __gui_mrview_tool_tractogram_enums_h__
 
 namespace MR
 {
-  class Header;
-
-  namespace File
+  namespace GUI
   {
-    namespace MGH
+    namespace MRView
     {
-
-      bool read_header  (Header& H, const mgh_header& MGHH);
-      void read_other   (Header& H, const mgh_other& MGHO, const bool is_BE);
-      void write_header (mgh_header& MGHH, const Header& H);
-      void write_other  (mgh_other&  MGHO, const Header& H);
-
-      void write_other_to_file (const std::string&, const mgh_other&);
-
+      namespace Tool
+      {
+        enum class TrackColourType { Direction, Ends, Manual, ScalarFile };
+        enum class TrackThresholdType { None, UseColourFile, SeparateFile };
+      }
     }
   }
 }
+
 
 #endif
 

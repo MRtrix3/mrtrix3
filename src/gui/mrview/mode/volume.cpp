@@ -372,17 +372,17 @@ namespace MR
             volume_VI.bind (gl::ELEMENT_ARRAY_BUFFER);
 
             gl::EnableVertexAttribArray (0);
-            gl::VertexAttribPointer (0, 3, gl::BYTE, gl::FALSE_, 0, (void*)0);
+            gl::VertexAttribPointer (0, 3, gl::BYTE, gl::FALSE_, 4*sizeof(GLbyte), GL::offset<GLbyte>(0));
 
             GLbyte vertices[] = {
-              0, 0, 0,
-              0, 0, 1,
-              0, 1, 0,
-              0, 1, 1,
-              1, 0, 0,
-              1, 0, 1,
-              1, 1, 0,
-              1, 1, 1
+              0, 0, 0, 0,
+              0, 0, 1, 0,
+              0, 1, 0, 0,
+              0, 1, 1, 0,
+              1, 0, 0, 0,
+              1, 0, 1, 0,
+              1, 1, 0, 0,
+              1, 1, 1, 0
             };
             gl::BufferData (gl::ARRAY_BUFFER, sizeof(vertices), vertices, gl::STATIC_DRAW);
           }
@@ -507,7 +507,7 @@ namespace MR
           gl::ActiveTexture (gl::TEXTURE0);
 
           const GLsizei counts[] = { 4, 4, 4 };
-          const GLvoid* starts[] = { reinterpret_cast<void*>(0), reinterpret_cast<void*>(4*sizeof(GLubyte)), reinterpret_cast<void*>(8*sizeof(GLubyte)) };
+          const GLvoid* starts[] = { GL::offset<GLubyte>(0), GL::offset<GLubyte>(4), GL::offset<GLubyte>(8) };
 
           GL_CHECK_ERROR;
           gl::MultiDrawElements (gl::TRIANGLE_FAN, counts, gl::UNSIGNED_BYTE, starts, 3);

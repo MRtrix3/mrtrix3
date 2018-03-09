@@ -17,9 +17,9 @@
 
 #include <memory>
 #include <stdint.h>
-#include <vector>
 
 #include "bitset.h"
+#include "types.h"
 
 #include "connectome/mat2vec.h"
 #include "stats/enhance.h"

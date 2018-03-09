@@ -21,6 +21,7 @@
 #include "filter/connected_components.h"
 #include "transform.h"
 #include "math/least_squares.h"
+#include "algo/threaded_copy.h"
 
 using namespace MR;
 using namespace App;
@@ -30,26 +31,19 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au), Rami Tabbara (rami.tabbara@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)";
 
-  SYNOPSIS = "Multi-Tissue Bias field correction and Intensity Normalisation (MTBIN)";
+  SYNOPSIS = "Multi-Tissue Bias field correction and Intensity Normalisation (WARNING: deprecated).";
 
   DESCRIPTION
-   + "This command inputs N number of tissue components "
-     "(e.g. from multi-tissue CSD), and outputs N corrected tissue components. Intensity normalisation is performed by either "
-     "determining a common global normalisation factor for all tissue types (default) or by normalising each tissue type independently "
-     "with a single tissue-specific global scale factor."
-
-   + "Example usage: mtbin wm.mif wm_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif."
-
-   + "The estimated multiplicative bias field is guaranteed to have a mean of 1 over all voxels within the mask.";
+   + "WARNING: this command is deprecated and may produce highly inappropriate results in several cases. Not recommended and at your own discretion. Please use the new mtnormalise command instead for reliable results.";
 
   ARGUMENTS
     + Argument ("input output", "list of all input and output tissue compartment files. See example usage in the description. "
                               "Note that any number of tissues can be normalised").type_image_in().allow_multiple();
 
   OPTIONS
-    + Option ("mask", "define the mask to compute the normalisation within. If not supplied this is estimated automatically")
+    + Option ("mask", "define the mask to compute the normalisation within. This option is mandatory.").required ()
     + Argument ("image").type_image_in ()
 
     + Option ("value", "specify the value to which the summed tissue compartments will be normalised to "
@@ -65,8 +59,10 @@ void usage ()
                          "It will stop before the max iterations if convergence is detected")
     + Argument ("number").type_integer()
 
-    + Option ("check", "check the automatically computed mask")
-    + Argument ("image").type_image_out ();
+    + Option ("check", "check the final mask used to compute the bias field. This mask excludes outlier regions ignored by the bias field fitting procedure. However, these regions are still corrected for bias fields based on the other image data.")
+    + Argument ("image").type_image_out ()
+    
+    + Option ("override", "consciously use this deprecated command. Not recommended and at your own discretion.");
 }
 
 const int n_basis_vecs (20);
@@ -100,7 +96,7 @@ FORCE_INLINE Eigen::MatrixXd basis_function (const Eigen::Vector3 pos) {
   return basis;
 }
 
-
+// Currently not used, but keep if we want to make mask argument optional in the future
 FORCE_INLINE void compute_mask (Image<float>& summed, Image<bool>& mask) {
   LogLevelLatch level (0);
   Filter::OptimalThreshold threshold_filter (summed);
@@ -115,8 +111,27 @@ FORCE_INLINE void compute_mask (Image<float>& summed, Image<bool>& mask) {
 }
 
 
+FORCE_INLINE void refine_mask (Image<float>& summed,
+  Image<bool>& initial_mask,
+  Image<bool>& refined_mask) {
+
+  for (auto i = Loop (summed, 0, 3) (summed, initial_mask, refined_mask); i; ++i) {
+    if (std::isfinite((float) summed.value ()) && summed.value () > 0.f && initial_mask.value ())
+      refined_mask.value () = true;
+    else
+      refined_mask.value () = false;
+  }
+}
+
+
 void run ()
 {
+
+  WARN ("This command is deprecated and may produce inappropriate results in several cases. Please use the new mtnormalise.");
+  
+  if (!get_options("override").size())
+    throw Exception ("This command is deprecated and not recommended for proper use of its original advertised functions. Check the option list for an option to consciously use this command anyway.");
+
   if (argument.size() % 2)
     throw Exception ("The number of input arguments must be even. There must be an output file provided for every input tissue image");
 
@@ -146,24 +161,27 @@ void run ()
     output_filenames.push_back (argument[i + 1]);
   }
 
-  // Load or compute a mask to work with
-  Image<bool> mask;
-  bool user_supplied_mask = false;
+  // Load the mask
   Header header_3D (input_images[0]);
   header_3D.ndim() = 3;
   auto opt = get_options ("mask");
-  if (opt.size()) {
-    mask = Image<bool>::open (opt[0][0]);
-    user_supplied_mask = true;
-  } else {
-    auto summed = Image<float>::scratch (header_3D);
-    for (size_t j = 0; j < input_images.size(); ++j) {
-      for (auto i = Loop (summed, 0, 3) (summed, input_images[j]); i; ++i)
-        summed.value() += input_images[j].value();
-      progress++;
-    }
-    compute_mask (summed, mask);
+
+  auto orig_mask = Image<bool>::open (opt[0][0]);
+  auto initial_mask = Image<bool>::scratch (orig_mask);
+  auto mask = Image<bool>::scratch (orig_mask);
+
+  auto summed = Image<float>::scratch (header_3D);
+  for (size_t j = 0; j < input_images.size(); ++j) {
+    for (auto i = Loop (summed, 0, 3) (summed, input_images[j]); i; ++i)
+      summed.value() += input_images[j].value();
+    progress++;
   }
+
+  // Refine the initial mask to exclude negative summed tissue components
+  refine_mask (summed, orig_mask, initial_mask);
+
+  threaded_copy (initial_mask, mask);
+
   size_t num_voxels = 0;
   for (auto i = Loop (mask) (mask); i; ++i) {
     if (mask.value())
@@ -262,14 +280,17 @@ void run ()
         converged = true;
     }
 
-    // Revaluate mask
-    if (!converged && !user_supplied_mask) {
+    // Re-evaluate mask
+    if (!converged) {
       auto summed = Image<float>::scratch (header_3D);
       for (size_t j = 0; j < input_images.size(); ++j) {
-        for (auto i = Loop (summed, 0, 3) (summed, input_images[j], bias_field); i; ++i)
-          summed.value() += scale_factors(j, 0) * input_images[j].value() / bias_field.value();
+        for (auto i = Loop (summed, 0, 3) (summed, input_images[j], bias_field); i; ++i) {
+            summed.value() += scale_factors(j, 0) * input_images[j].value() / bias_field.value();
+        }
       }
-      compute_mask (summed, mask);
+
+      refine_mask (summed, initial_mask, mask);
+
       vector<float> summed_values;
       for (auto i = Loop (mask) (mask, summed); i; ++i) {
         if (mask.value())
@@ -346,4 +367,7 @@ void run ()
       output_image.value() = scale_factors(j, 0) * input_images[j].value() / bias_field.value();
     }
   }
+  
+  WARN ("Using the output images as part of a pipeline to analyse one's data is discouraged.");
+  
 }

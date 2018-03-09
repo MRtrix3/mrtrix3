@@ -17,6 +17,8 @@
 
 #include "memory.h"
 #include "image.h"
+#include "phase_encoding.h"
+#include "progressbar.h"
 #include "filter/base.h"
 #include "filter/connected_components.h"
 #include "filter/median.h"
@@ -25,7 +27,7 @@
 #include "algo/copy.h"
 #include "algo/loop.h"
 #include "dwi/gradient.h"
-#include "progressbar.h"
+
 
 namespace MR
 {
@@ -70,7 +72,6 @@ namespace MR
 
             Header header (input);
             header.ndim() = 3;
-            DWI::stash_DW_scheme (header, grad);
 
             // Generate a 'master' scratch buffer mask, to which all shells will contribute
             auto mask_image = Image<bool>::scratch (header, "DWI mask");
@@ -80,17 +81,19 @@ namespace MR
             // Loop over each shell, including b=0, in turn
             DWI::Shells shells (grad);
             for (size_t s = 0; s != shells.count(); ++s) {
-              const DWI::Shell shell (shells[s]);
+              const DWI::Shell& shell (shells[s]);
 
               auto shell_image = Image<value_type>::scratch (header, "mean b=" + str(size_t(std::round(shell.get_mean()))) + " image");
 
               for (auto l = Loop (0, 3) (input, shell_image); l; ++l) {
-                value_type mean = 0;
+                default_type sum = 0.0;
                 for (vector<size_t>::const_iterator v = shell.get_volumes().begin(); v != shell.get_volumes().end(); ++v) {
                   input.index(3) = *v;
-                  mean += (input.value() < 0) ? 0 : input.value();
+                  const value_type value = input.value();
+                  if (value > value_type(0))
+                    sum += value;
                 }
-                shell_image.value() = mean / value_type(shell.count());
+                shell_image.value() = value_type(sum / default_type(shell.count()));
               }
               if (progress)
                 ++(*progress);

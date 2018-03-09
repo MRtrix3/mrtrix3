@@ -16,7 +16,7 @@
 #define __dwi_tractography_tracking_generated_track_h__
 
 
-#include <vector>
+#include "types.h"
 
 #include "dwi/tractography/tracking/types.h"
 

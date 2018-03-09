@@ -14,7 +14,6 @@
 
 #include <iomanip>
 #include <string>
-#include <vector>
 
 #include "gui/mrview/tool/roi_editor/item.h"
 

@@ -12,10 +12,9 @@
  */
 
 
-#include <vector>
-
 #include "command.h"
 #include "progressbar.h"
+#include "types.h"
 
 #include "file/path.h"
 #include "math/stats/glm.h"
@@ -267,6 +266,7 @@ void run()
   // If performing non-stationarity adjustment we need to pre-compute the empirical statistic
   vector_type empirical_statistic;
   if (do_nonstationary_adjustment) {
+    empirical_statistic = vector_type::Zero (num_edges);
     if (permutations_nonstationary.size()) {
       Stats::PermTest::PermutationStack perm_stack (permutations_nonstationary, "precomputing empirical statistic for non-stationarity adjustment...");
       Stats::PermTest::precompute_empirical_stat (glm_ttest, enhancer, perm_stack, empirical_statistic);

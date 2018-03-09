@@ -14,10 +14,12 @@
 
 #include <sstream>
 #include <string>
-#include <vector>
 
 #include "command.h"
+#include "image.h"
 #include "progressbar.h"
+#include "thread_queue.h"
+#include "types.h"
 
 #include "connectome/connectome.h"
 
@@ -27,11 +29,6 @@
 #include "dwi/tractography/connectome/extract.h"
 #include "dwi/tractography/connectome/streamline.h"
 #include "dwi/tractography/mapping/loader.h"
-
-#include "image.h"
-
-#include "thread_queue.h"
-
 
 
 
@@ -297,7 +294,7 @@ void run ()
               writer.add (one, two, prefix + str(one) + "-" + str(two) + ".tck", weights_prefix.size() ? (weights_prefix + str(one) + "-" + str(two) + ".csv") : "");
             }
           } else {
-            // Allow duplication of edges; want to have a set of files for each node
+            // Allow duplication of edges; want to have an exhaustive set of files for each node
             for (node_t two = first_node; two <= max_node_index; ++two)
               writer.add (one, two, prefix + str(one) + "-" + str(two) + ".tck", weights_prefix.size() ? (weights_prefix + str(one) + "-" + str(two) + ".csv") : "");
           }

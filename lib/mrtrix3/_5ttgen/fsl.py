@@ -24,6 +24,8 @@ def checkOutputPaths():
 def getInputs():
   import os
   from mrtrix3 import app, image, path, run
+  image.check3DNonunity(path.fromUser(app.args.input, False))
+  run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('input.mif', True))
   if app.args.mask:
     run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit -stride -1,+2,+3')
   if app.args.t2:
@@ -37,7 +39,7 @@ def getInputs():
 def execute():
   import os
   from distutils.spawn import find_executable
-  from mrtrix3 import app, file, fsl, image, run
+  from mrtrix3 import app, file, fsl, image, path, run
 
   if app.isWindows():
     app.error('\'fsl\' algorithm of 5ttgen script cannot be run on Windows: FSL not available on Windows')
@@ -133,14 +135,11 @@ def execute():
       run.command(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -maskMASK mni_mask.nii' + ssroi_roi_option, False)
     else:
       run.command(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -b', False)
-
-    # For whatever reason, the output file from standard_space_roi may not be
-    #   completed before BET is run
-    file.waitFor('T1_preBET' + fsl_suffix)
+    pre_bet_image = fsl.findImage('T1_preBET')
 
     # BET
-    fast_t1_input = 'T1_BET' + fsl_suffix
-    run.command(bet_cmd + ' T1_preBET' + fsl_suffix + ' ' + fast_t1_input + ' -f 0.15 -R')
+    run.command(bet_cmd + ' ' + pre_bet_image + ' T1_BET' + fsl_suffix + ' -f 0.15 -R')
+    fast_t1_input = fsl.findImage('T1_BET' + fsl_suffix)
 
     if os.path.exists('T2.nii'):
       if app.args.nocrop:
@@ -157,13 +156,13 @@ def execute():
     run.command(fast_cmd + ' -S 2 ' + fast_t2_input + ' ' + fast_t1_input)
   else:
     run.command(fast_cmd + ' ' + fast_t1_input)
-  fast_output_prefix = fast_t1_input.split('.')[0]
 
   # FIRST
   first_input_is_brain_extracted = ''
   if app.args.premasked:
     first_input_is_brain_extracted = ' -b'
-  run.command(first_cmd + ' -s ' + ','.join(sgm_structures) + ' -i T1.nii -o first' + first_input_is_brain_extracted)
+  run.command(first_cmd + ' -m none -s ' + ','.join(sgm_structures) + ' -i T1.nii -o first' + first_input_is_brain_extracted)
+  fsl.checkFirst('first', sgm_structures)
 
   # Convert FIRST meshes to partial volume images
   pve_image_list = [ ]
@@ -171,32 +170,29 @@ def execute():
     pve_image_path = 'mesh2pve_' + struct + '.mif'
     vtk_in_path = 'first-' + struct + '_first.vtk'
     vtk_temp_path = struct + '.vtk'
-    # If SGE is used, run_first_all may return without error even though
-    #   the output files haven't actually been created yet
-    file.waitFor(vtk_in_path)
     run.command('meshconvert ' + vtk_in_path + ' ' + vtk_temp_path + ' -transform first2real T1.nii')
     run.command('mesh2pve ' + vtk_temp_path + ' ' + fast_t1_input + ' ' + pve_image_path)
     pve_image_list.append(pve_image_path)
   pve_cat = ' '.join(pve_image_list)
   run.command('mrmath ' + pve_cat + ' sum - | mrcalc - 1.0 -min all_sgms.mif')
 
-  # Looks like FAST in 5.0 ignores FSLOUTPUTTYPE when writing the PVE images
-  # Will have to wait and see whether this changes, and update the script accordingly
-  if fast_cmd == 'fast':
-    fast_suffix = fsl_suffix
-  else:
-    fast_suffix = '.nii.gz'
-
   # Combine the tissue images into the 5TT format within the script itself
+  fast_output_prefix = fast_t1_input.split('.')[0]
+  fast_csf_output = fsl.findImage(fast_output_prefix + '_pve_0')
+  fast_gm_output = fsl.findImage(fast_output_prefix + '_pve_1')
+  fast_wm_output = fsl.findImage(fast_output_prefix + '_pve_2')
   # Step 1: Run LCC on the WM image
-  run.command('mrthreshold ' + fast_output_prefix + '_pve_2' + fast_suffix + ' - -abs 0.001 | maskfilter - connect - -connectivity | mrcalc 1 - 1 -gt -sub remove_unconnected_wm_mask.mif -datatype bit')
-  # Step 2: Generate the images in the same fashion as the 5ttgen command
-  run.command('mrcalc ' + fast_output_prefix + '_pve_0' + fast_suffix + ' remove_unconnected_wm_mask.mif -mult csf.mif')
+  run.command('mrthreshold ' + fast_wm_output + ' - -abs 0.001 | maskfilter - connect - -connectivity | mrcalc 1 - 1 -gt -sub remove_unconnected_wm_mask.mif -datatype bit')
+  # Step 2: Generate the images in the same fashion as the old 5ttgen binary used to:
+  #   - Preserve CSF as-is
+  #   - Preserve SGM, unless it results in a sum of volume fractions greater than 1, in which case clamp
+  #   - Multiply the FAST volume fractions of GM and CSF, so that the sum of CSF, SGM, CGM and WM is 1.0
+  run.command('mrcalc ' + fast_csf_output + ' remove_unconnected_wm_mask.mif -mult csf.mif')
   run.command('mrcalc 1.0 csf.mif -sub all_sgms.mif -min sgm.mif')
-  run.command('mrcalc 1.0 csf.mif sgm.mif -add -sub ' + fast_output_prefix + '_pve_1' + fast_suffix + ' ' + fast_output_prefix + '_pve_2' + fast_suffix + ' -add -div multiplier.mif')
+  run.command('mrcalc 1.0 csf.mif sgm.mif -add -sub ' + fast_gm_output + ' ' + fast_wm_output + ' -add -div multiplier.mif')
   run.command('mrcalc multiplier.mif -finite multiplier.mif 0.0 -if multiplier_noNAN.mif')
-  run.command('mrcalc ' + fast_output_prefix + '_pve_1' + fast_suffix + ' multiplier_noNAN.mif -mult remove_unconnected_wm_mask.mif -mult cgm.mif')
-  run.command('mrcalc ' + fast_output_prefix + '_pve_2' + fast_suffix + ' multiplier_noNAN.mif -mult remove_unconnected_wm_mask.mif -mult wm.mif')
+  run.command('mrcalc ' + fast_gm_output + ' multiplier_noNAN.mif -mult remove_unconnected_wm_mask.mif -mult cgm.mif')
+  run.command('mrcalc ' + fast_wm_output + ' multiplier_noNAN.mif -mult remove_unconnected_wm_mask.mif -mult wm.mif')
   run.command('mrcalc 0 wm.mif -min path.mif')
   run.command('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | mrconvert - combined_precrop.mif -stride +2,+3,+4,+1')
 

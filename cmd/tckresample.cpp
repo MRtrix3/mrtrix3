@@ -75,7 +75,8 @@ class Worker
         resampler (that.resampler->clone()) { }
 
     bool operator() (const Streamline<value_type>& in, Streamline<value_type>& out) const {
-      return (*resampler) (in, out);
+      (*resampler) (in, out);
+      return true;
     }
 
   private:
@@ -113,18 +114,9 @@ void run ()
 
   const std::unique_ptr<Resampling::Base> resampler (Resampling::get_resampler());
 
-  float old_step_size = NaN;
-  try {
-    Properties::const_iterator i = properties.find ("output_step_size");
-    if (i == properties.end()) {
-      i = properties.find ("step_size");
-      if (i != properties.end())
-        old_step_size = to<float> (i->second);
-    } else {
-      old_step_size = to<float> (i->second);
-    }
-  } catch (...) {
-    DEBUG ("Unable to read input track file step size");
+  const float old_step_size = get_step_size (properties);
+  if (!std::isfinite (old_step_size)) {
+    INFO ("Do not have step size information from input track file");
   }
 
   float new_step_size = NaN;

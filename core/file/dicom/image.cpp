@@ -43,22 +43,30 @@ namespace MR {
         // process image-specific or per-frame items here:
         if (is_toplevel) {
           switch (item.group) {
+            case 0x0008U: 
+              if (item.element == 0x0008U) 
+                image_type = join (item.get_string(), " ");
+              return;
             case 0x0018U: 
               switch (item.element) {
                 case 0x0050U: 
-                  slice_thickness = item.get_float()[0]; 
+                  slice_thickness = item.get_float (0, slice_thickness); 
                   return;
                 case 0x0088U:
-                  slice_spacing = item.get_float()[0];
+                  slice_spacing = item.get_float (0, slice_spacing);
                   return;
                 case 0x1310U: 
-                  acq_dim[0] = std::max (item.get_uint()[0], item.get_uint()[1]);
-                  acq_dim[1] = std::max (item.get_uint()[2], item.get_uint()[3]);
-                  if (item.get_uint()[0] == 0 && item.get_uint()[3] == 0)
-                    std::swap (acq_dim[0], acq_dim[1]);
+                  {
+                    auto d = item.get_uint();
+                    item.check_size (d, 4);
+                    acq_dim[0] = std::max (d[0], d[1]);
+                    acq_dim[1] = std::max (d[2], d[3]);
+                    if (d[0] == 0 && d[3] == 0)
+                      std::swap (acq_dim[0], acq_dim[1]);
+                  }
                   return;
                 case 0x0024U: 
-                  sequence_name = item.get_string()[0];
+                  sequence_name = item.get_string (0);
                   if (!sequence_name.size())
                     return;
                   { 
@@ -72,55 +80,63 @@ namespace MR {
                   }
                   return;
                 case 0x9087U: 
-                  bvalue = item.get_float()[0]; 
+                  bvalue = item.get_float (0, bvalue); 
                   return;
                 case 0x9089U:
-                  G[0] = item.get_float()[0];
-                  G[1] = item.get_float()[1];
-                  G[2] = item.get_float()[2];
+                  G[0] = item.get_float (0, G[0]);
+                  G[1] = item.get_float (1, G[1]);
+                  G[2] = item.get_float (2, G[2]);
                   return;
                 case 0x1312U:
-                  if (item.get_string()[0] == "ROW")
+                  if (item.get_string (0) == "ROW")
                     pe_axis = 0;
-                  else if (item.get_string()[0] == "COL")
+                  else if (item.get_string (0) == "COL")
                     pe_axis = 1;
                   return;
                 case 0x0095U:
-                  pixel_bandwidth = item.get_float()[0];
+                  pixel_bandwidth = item.get_float (0, pixel_bandwidth);
                   return;
                 case 0x0081U:
-                  echo_time = item.get_float()[0];
+                  echo_time = item.get_float (0, echo_time);
                   return;
                 case 0x0091:
-                  echo_train_length = item.get_int()[0];
+                  echo_train_length = item.get_int (0, echo_train_length);
                   return;
               }
               return;
             case 0x0020U: 
               switch (item.element) {
                 case 0x0011U: 
-                  series_num = item.get_uint()[0]; 
+                  series_num = item.get_uint (0, series_num); 
                   return;
                 case 0x0012U:
-                  acq = item.get_uint()[0]; 
+                  acq = item.get_uint (0, acq); 
                   return;
                 case 0x0013U: 
-                  instance = item.get_uint()[0]; 
+                  instance = item.get_uint (0, instance); 
                   return;
                 case 0x0032U:
-                  position_vector[0] = item.get_float()[0];
-                  position_vector[1] = item.get_float()[1];
-                  position_vector[2] = item.get_float()[2];
+                  {
+                    auto d = item.get_float();
+                    item.check_size (d, 3);
+                    position_vector[0] = d[0];
+                    position_vector[1] = d[1];
+                    position_vector[2] = d[2];
+                  }
                   return;
                 case 0x0037U:
-                  orientation_x[0] = item.get_float()[0];
-                  orientation_x[1] = item.get_float()[1];
-                  orientation_x[2] = item.get_float()[2];
-                  orientation_y[0] = item.get_float()[3];
-                  orientation_y[1] = item.get_float()[4];
-                  orientation_y[2] = item.get_float()[5];
-                  orientation_x.normalize();
-                  orientation_y.normalize();
+                  {
+                    auto d = item.get_float();
+                    item.check_size (d, 6);
+                    orientation_x[0] = d[0];
+                    orientation_x[1] = d[1];
+                    orientation_x[2] = d[2];
+                    orientation_y[0] = d[3];
+                    orientation_y[1] = d[4];
+                    orientation_y[2] = d[5];
+                    orientation_x.normalize();
+                    orientation_y.normalize();
+                  }
                   return;
                 case 0x9157U: 
                   index = item.get_uint();
@@ -135,23 +151,27 @@ namespace MR {
             case 0x0028U:
               switch (item.element) {
                 case 0x0010U: 
-                  dim[1] = item.get_uint()[0]; 
+                  dim[1] = item.get_uint (0, dim[1]); 
                   return;
                 case 0x0011U:
-                  dim[0] = item.get_uint()[0]; 
+                  dim[0] = item.get_uint (0, dim[0]); 
                   return;
                 case 0x0030U:
-                  pixel_size[0] = item.get_float()[0];
-                  pixel_size[1] = item.get_float()[1]; 
+                  { 
+                    auto d = item.get_float();
+                    item.check_size (d, 2);
+                    pixel_size[0] = d[0];
+                    pixel_size[1] = d[1]; 
+                  }
                   return;
                 case 0x0100U: 
-                  bits_alloc = item.get_uint()[0]; 
+                  bits_alloc = item.get_uint (0, bits_alloc); 
                   return;
                 case 0x1052U:
-                  scale_intercept = item.get_float()[0]; 
+                  scale_intercept = item.get_float (0, scale_intercept); 
                   return;
                 case 0x1053U:
-                  scale_slope = item.get_float()[0]; 
+                  scale_slope = item.get_float (0, scale_slope); 
                   return;
               }
               return;
@@ -193,31 +213,30 @@ namespace MR {
         switch (item.group) {
           case 0x0008U: 
             if (item.element == 0x0070U) 
-              manufacturer = item.get_string()[0];
+              manufacturer = item.get_string (0);
             return;
           case 0x0019U: 
             switch (item.element) { // GE DW encoding info:
               case 0x10BBU:
-                if (item.get_float().size()) 
-                  G[0] = item.get_float()[0]; 
+                G[0] = item.get_float (0, G[0]); 
                 return;
               case 0x10BCU:
-                if (item.get_float().size()) 
-                  G[1] = item.get_float()[0]; 
+                G[1] = item.get_float (0, G[1]); 
                 return;
               case 0x10BDU:
-                if (item.get_float().size()) 
-                  G[2] = item.get_float()[0]; 
+                G[2] = item.get_float (0, G[2]); 
                 return;
               case 0x100CU: //Siemens private DW encoding tags:
-                if (item.get_float().size()) 
-                  bvalue = item.get_float()[0]; 
+                bvalue = item.get_float (0, bvalue); 
                 return;
               case 0x100EU: 
-                if (item.get_float().size() == 3) {
-                  G[0] = item.get_float()[0];
-                  G[1] = item.get_float()[1];
-                  G[2] = item.get_float()[2];
+                {
+                  auto d = item.get_float();
+                  if (d.size() >= 3) {
+                    G[0] = d[0];
+                    G[1] = d[1];
+                    G[2] = d[2];
+                  }
                 }
                 return;
               // Siemens bandwidth per pixel phase encode
@@ -240,19 +259,19 @@ namespace MR {
             }
             return;
           case 0x2001U: // Philips DW encoding info: 
-            if (item.element == 0x1003) 
-              bvalue = item.get_float()[0];
+            if (item.element == 0x1003)
+              bvalue = item.get_float (0, bvalue);
             return;
           case 0x2005U: // Philips DW encoding info: 
             switch (item.element) {
               case 0x10B0U: 
-                G[0] = item.get_float()[0]; 
+                G[0] = item.get_float (0, G[0]); 
                 return;
               case 0x10B1U:
-                G[1] = item.get_float()[0]; 
+                G[1] = item.get_float (0, G[1]); 
                 return;
               case 0x10B2U:
-                G[2] = item.get_float()[0]; 
+                G[2] = item.get_float (0, G[2]); 
                 return;
             }
             return;
@@ -308,6 +327,22 @@ namespace MR {
             pe_sign = (entry.get_int() > 0) ? 1 : -1;
           else if (strcmp ("BandwidthPerPixelPhaseEncode", entry.key()) == 0)
             bandwidth_per_pixel_phase_encode = entry.get_float();
+          else if (strcmp ("ImagePositionPatient", entry.key()) == 0) {
+            Eigen::Matrix<default_type,3,1> v;
+            entry.get_float (v); 
+            if (v.allFinite())
+              position_vector = v;
+          }
+          else if (strcmp ("ImageOrientationPatient", entry.key()) == 0) {
+            Eigen::Matrix<default_type,6,1> v;
+            entry.get_float (v);
+            if (v.allFinite()) {
+              orientation_x = v.head(3);
+              orientation_y = v.tail(3);
+              orientation_x.normalize();
+              orientation_y.normalize();
+            }
+          }
         }
 
         if (G[0] && bvalue)

@@ -1,4 +1,24 @@
+_suffix = ''
+
 # Functions that may be useful for scripts that interface with FMRIB FSL tools
+
+# FSL's run_first_all script can be difficult to wrap, since it does not provide
+#   a meaningful return code, and may run via SGE, which then requires waiting for
+#   the output files to appear.
+def checkFirst(prefix, structures): #pylint: disable=unused-variable
+  import os
+  from mrtrix3 import app, file, path # pylint: disable=redefined-builtin
+  vtk_files = [ prefix + '-' + struct + '_first.vtk' for struct in structures ]
+  existing_file_count = sum([ os.path.exists(filename) for filename in vtk_files ])
+  if existing_file_count != len(vtk_files):
+    if 'SGE_ROOT' in os.environ:
+      app.console('FSL FIRST job has been submitted to SGE; awaiting completion')
+      app.console('(note however that FIRST may fail silently, and hence this script may hang indefinitely)')
+      file.waitFor(vtk_files)
+    else:
+      app.error('FSL FIRST has failed; only ' + str(existing_file_count) + ' of ' + str(len(vtk_files)) + ' structures were segmented successfully (check ' + path.toTemp('first.logs', False) + ')')
+
+
 
 # Get the name of the binary file that should be invoked to run eddy;
 #   this depends on both whether or not the user has requested that the CUDA
@@ -27,6 +47,25 @@ def eddyBinary(cuda):
 
 
 
+# In some versions of FSL, even though we try to predict the names of image files that
+#   FSL commands will generate based on the suffix() function, the FSL binaries themselves
+#   ignore the FSLOUTPUTTYPE environment variable. Therefore, the safest approach is:
+# Whenever receiving an output image from an FSL command, explicitly search for the path
+def findImage(name):
+  import os
+  from mrtrix3 import app
+  basename = name.split('.')[0]
+  if os.path.isfile(basename + suffix()):
+    app.debug('Image at expected location: \"' + basename + suffix() + '\"')
+    return basename + suffix()
+  for suf in ['.nii', '.nii.gz', '.img']:
+    if os.path.isfile(basename + suf):
+      app.debug('Expected image at \"' + basename + suffix() + '\", but found at \"' + basename + suf + '\"')
+      return basename + suf
+  app.error('Unable to find FSL output file for path \"' + name + '\"')
+
+
+
 # For many FSL commands, the format of any output images will depend on the string
 #   stored in 'FSLOUTPUTTYPE'. This may even override a filename extension provided
 #   to the relevant command. Therefore use this function to 'guess' what the names
@@ -34,18 +73,26 @@ def eddyBinary(cuda):
 def suffix():
   import os
   from mrtrix3 import app
+  global _suffix
+  if _suffix:
+    return _suffix
   fsl_output_type = os.environ.get('FSLOUTPUTTYPE', '')
   if fsl_output_type == 'NIFTI':
     app.debug('NIFTI -> .nii')
-    return '.nii'
-  if fsl_output_type == 'NIFTI_GZ':
+    _suffix = '.nii'
+  elif fsl_output_type == 'NIFTI_GZ':
     app.debug('NIFTI_GZ -> .nii.gz')
-    return '.nii.gz'
-  if fsl_output_type == 'NIFTI_PAIR':
+    _suffix = '.nii.gz'
+  elif fsl_output_type == 'NIFTI_PAIR':
     app.debug('NIFTI_PAIR -> .img')
-    return '.img'
-  if fsl_output_type == 'NIFTI_PAIR_GZ':
+    _suffix = '.img'
+  elif fsl_output_type == 'NIFTI_PAIR_GZ':
     app.error('MRtrix3 does not support compressed NIFTI pairs; please change FSLOUTPUTTYPE environment variable')
-  app.warn('Environment variable FSLOUTPUTTYPE not set; FSL commands may fail, or script may fail to locate FSL command outputs')
-  return '.nii.gz'
+  elif fsl_output_type:
+    app.warn('Unrecognised value for environment variable FSLOUTPUTTYPE (\"' + fsl_output_type + '\"): Expecting compressed NIfTIs, but FSL commands may fail')
+    _suffix = '.nii.gz'
+  else:
+    app.warn('Environment variable FSLOUTPUTTYPE not set; FSL commands may fail, or script may fail to locate FSL command outputs')
+    _suffix = '.nii.gz'
+  return _suffix
 

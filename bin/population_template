@@ -42,16 +42,13 @@ try:
 except ImportError:
   app.console("numpy not found. using replacement functions")
   def loadtxt(fname, delimiter=" ", dtype=float):
-    with open(fname, "r") as f:
-      return [[dtype(x) for x in l.rstrip().split(delimiter)] for l in f.readlines()]
+    with open(fname, "rb") as f:
+      return [[dtype(x) for x in l.decode(errors='ignore').rstrip().split(delimiter)] for l in f.readlines()]
 
   def savetxt(fname, X, delimiter=" ", fmt="%.14e"):
     import sys
     try:
-      if sys.version_info[0] >= 3:
-        fh = open(fname, 'wb')
-      else:
-        fh = open(fname, 'w')
+      fh = open(fname, 'wb')
       if len(X) == 1:
           ncol = 1
       else:
@@ -59,7 +56,7 @@ except ImportError:
       fmt = [fmt, ] * ncol
       format = delimiter.join(fmt)
       for row in X:
-        fh.write((format % tuple(row) + '\n'))
+        fh.write(((format % tuple(row) + '\n').encode(errors='ignore')))
     finally:
         fh.close()
 
@@ -188,6 +185,7 @@ nloptions.add_argument('-nl_grad_step', default='0.5', help='The gradient step s
 
 options = app.cmdline.add_argument_group('Input, output and general options')
 options.add_argument('-type', help='Specifiy the types of registration stages to perform. Options are "rigid" (perform rigid registration only which might be useful for intra-subject registration in longitudinal analysis), "affine" (perform affine registration) and "nonlinear" as well as cominations of registration types: %s. Default: rigid_affine_nonlinear' % ', '.join('"'+x+'"' for x in registration_modes if "_" in x), default='rigid_affine_nonlinear')
+options.add_argument('-voxel_size', help='Define the template voxel size in mm. Use either a single value for isotropic voxels or 3 comma separated values.')
 options.add_argument('-initial_alignment', default='mass', help='Method of alignment to form the initial template. Options are "mass" (default), "geometric" and "none".')
 options.add_argument('-mask_dir', help='Optionally input a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly')
 options.add_argument('-warp_dir', help='Output a directory containing warps from each input to the template. If the folder does not exist it will be created')
@@ -212,9 +210,21 @@ if not os.path.exists(inputDir):
   app.error('input directory not found');
 inFiles = sorted(os.listdir(inputDir))
 if len(inFiles) <= 1:
-  app.console('Not enough images found in input directory. More than one image is needed to generate a population template')
+  app.error('Not enough images found in input directory. More than one image is needed to generate a population template')
 else:
   app.console('Generating a population-average template from ' + str(len(inFiles)) + ' input images')
+
+voxel_size = None
+if app.args.voxel_size:
+  voxel_size = app.args.voxel_size.split(',')
+  if len(voxel_size) == 1:
+    voxel_size = voxel_size * 3
+  try:
+    if len(voxel_size) != 3:
+      raise
+    [float(v) for v in voxel_size]
+  except:
+    app.error('voxel size needs to be a single or three comma separated floating point numbers, received: '+str(app.args.voxel_size))
 
 initial_alignment = app.args.initial_alignment
 if initial_alignment not in ["mass", "geometric", "none"]:
@@ -251,6 +261,7 @@ if app.args.template_mask and not useMasks:
 commonPostfix = path.commonPostfix(inFiles)
 input = []
 for i in inFiles:
+  image.check3DNonunity(os.path.join(path.fromUser(inputDir, False), i))
   prefix = i.split(commonPostfix)[0]
   if useMasks:
     if prefix not in maskPrefixes:
@@ -427,7 +438,10 @@ app.console('Generating initial template')
 input_filenames = []
 for i in input:
   input_filenames.append (abspath(i.directory, i.filename));
-run.command('mraverageheader ' + ' '.join(input_filenames) + ' average_header.mif' ' -fill')
+if voxel_size is None:
+  run.command('mraverageheader ' + ' '.join(input_filenames) + ' average_header.mif -fill')
+else:
+  run.command('mraverageheader -fill ' + ' '.join(input_filenames) + ' - | mrresize - -voxel '+','.join(voxel_size)+' average_header.mif')
 
 # crop average space to extent defined by original masks
 if useMasks:
@@ -479,7 +493,10 @@ else:
              ' ' + os.path.join('masks_transformed', i.prefix + '_translated.mif'))
   # update average space to new extent
   run.command('mraverageheader ' + ' '.join([os.path.join('input_transformed', i.prefix + '_translated.mif') for i in input]) + ' average_header_tight.mif')
-  run.command('mrpad -uniform 10 average_header_tight.mif average_header.mif -force')
+  if voxel_size is None:
+    run.command('mrpad -uniform 10 average_header_tight.mif average_header.mif -force')
+  else:
+    run.command('mrpad -uniform 10 average_header_tight.mif - | mrresize - -voxel '+','.join(voxel_size)+' average_header.mif -force')
   run.function(remove, 'average_header_tight.mif')
   if useMasks:
     # reslice masks

@@ -17,10 +17,12 @@
 
 
 #include <map>
-#include <vector>
+
+#include "image.h"
+#include "types.h"
 
 #include "file/ofstream.h"
-#include "image.h"
+
 
 
 namespace MR {
