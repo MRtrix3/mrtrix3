@@ -10,3 +10,5 @@ However, for group statistical analysis of FC we recommend calculating the log(F
     cp ../template/fc/index.mif ../template/fc/directions.mif ../template/log_fc
     foreach * : mrcalc ../template/fc/IN.mif -log ../template/log_fc/IN.mif
 
+.. NOTE:: The FC (and hence also the log(FC)) as calculated here, is a *relative* metric, expressing the local fixel-wise cross-sectional size *relative* to this study's population template. While this makes it possible to interpret differences of FC *within* a single study (because only one template is used in the study), the FC values should not be compared across different studies. Reporting absolute quantities of FC, or absolute effect sizes of FC, also provides little information; as again, it is only meaningful with respect to the template.
+
