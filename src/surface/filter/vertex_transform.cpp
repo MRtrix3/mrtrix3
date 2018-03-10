@@ -14,7 +14,7 @@
 
 
 #include "surface/filter/vertex_transform.h"
-#include "file/nifti1_utils.h"
+#include "file/nifti_utils.h"
 
 #include "exception.h"
 
@@ -90,9 +90,9 @@ namespace MR
             break;
 
           case transform_t::FS2REAL:
-            std::vector< size_t > axes( 3 );
+            vector<size_t> axes( 3 );
             auto M = File::NIfTI::adjust_transform( header, axes );
-            Eigen::Vector3d cras( 3, 1 );
+            Eigen::Vector3 cras( 3, 1 );
             for ( size_t i = 0; i < 3; i++ )
             {
               cras[ i ] = M( i, 3 );

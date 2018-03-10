@@ -46,8 +46,7 @@ void usage ()
   + Option ("binary", "write the output mesh file in binary format (if supported)")
 
   + Option ("transform", "transform vertices from one coordinate space to another, based on a template image; "
-                         "options are: " + join(transform_choices, ", ") + ". "
-                         "(When using fs2real, the relevant .mgz file must be provided.)")
+                         "options are: " + join(transform_choices, ", "))
     + Argument ("mode").type_choice (transform_choices)
     + Argument ("image").type_image_in();
 
