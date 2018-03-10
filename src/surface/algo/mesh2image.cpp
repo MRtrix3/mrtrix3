@@ -19,6 +19,7 @@
 
 #include "header.h"
 #include "progressbar.h"
+#include "thread_queue.h"
 #include "types.h"
 
 #include "surface/types.h"
@@ -32,6 +33,9 @@ namespace MR
     namespace Algo
     {
 
+
+      constexpr size_t pve_os_ratio = 10;
+      constexpr size_t pve_nsamples = Math::pow3 (pve_os_ratio);
 
 
       void mesh2image (const Mesh& mesh_realspace, Image<float>& image)
@@ -185,124 +189,183 @@ namespace MR
         }
         ++progress;
 
-        // Get better partial volume estimates for all necessary voxels
-        // TODO This could be multi-threaded, but hard to justify the dev time
-        static const size_t pve_os_ratio = 10;
+        // Construct class functors necessary to calculate, for each voxel intersected by the
+        //   surface, the partial volume fraction
+        class Source
+        { MEMALIGN(Source)
+          public:
+            Source (const Vox2Poly& data) :
+                data (data),
+                i (data.begin()) { }
 
-        for (Vox2Poly::const_iterator i = voxel2poly.begin(); i != voxel2poly.end(); ++i) {
-
-          const Vox& voxel (i->first);
-
-          // Generate a set of points within this voxel that need to be tested individually
-          vector<Vertex> to_test;
-          to_test.reserve (Math::pow3 (pve_os_ratio));
-          for (size_t x_idx = 0; x_idx != pve_os_ratio; ++x_idx) {
-            const default_type x = voxel[0] - 0.5 + ((default_type(x_idx) + 0.5) / default_type(pve_os_ratio));
-            for (size_t y_idx = 0; y_idx != pve_os_ratio; ++y_idx) {
-              const default_type y = voxel[1] - 0.5 + ((default_type(y_idx) + 0.5) / default_type(pve_os_ratio));
-              for (size_t z_idx = 0; z_idx != pve_os_ratio; ++z_idx) {
-                const default_type z = voxel[2] - 0.5 + ((default_type(z_idx) + 0.5) / default_type(pve_os_ratio));
-                to_test.push_back (Vertex (x, y, z));
-              }
+            bool operator() (std::pair<Vox, vector<size_t>>& out)
+            {
+              if (i == data.end())
+                return false;
+              out = std::make_pair (i->first, i->second);
+              ++i;
+              return true;
             }
-          }
 
-          // Count the number of these points that lie inside the mesh
-          int inside_mesh_count = 0;
-          for (vector<Vertex>::const_iterator i_p = to_test.begin(); i_p != to_test.end(); ++i_p) {
-            const Vertex& p (*i_p);
+          private:
+            const Vox2Poly& data;
+            Vox2Poly::const_iterator i;
+        };
 
-            default_type best_min_edge_distance = -std::numeric_limits<default_type>::infinity();
-            bool best_result_inside = false;
+        class Pipe
+        { NOMEMALIGN
+          public:
+            Pipe (const Mesh& mesh, const vector<Eigen::Vector3>& polygon_normals) :
+                mesh (mesh),
+                polygon_normals (polygon_normals) { }
 
-            // Only test against those polygons that are near this voxel
-            for (vector<size_t>::const_iterator polygon_index = i->second.begin(); polygon_index != i->second.end(); ++polygon_index) {
-              const Eigen::Vector3& n (polygon_normals[*polygon_index]);
+            bool operator() (const std::pair<Vox, vector<size_t>>& in, std::pair<Vox, float>& out) const
+            {
+              const Vox& voxel (in.first);
 
-              const size_t polygon_num_vertices = (*polygon_index < mesh.num_triangles()) ? 3 : 4;
-              VertexList v;
+              // Generate a set of points within this voxel that need to be tested individually
+              vector<Vertex> to_test;
+              to_test.reserve (pve_nsamples);
+              for (size_t x_idx = 0; x_idx != pve_os_ratio; ++x_idx) {
+                const default_type x = voxel[0] - 0.5 + ((default_type(x_idx) + 0.5) / default_type(pve_os_ratio));
+                for (size_t y_idx = 0; y_idx != pve_os_ratio; ++y_idx) {
+                  const default_type y = voxel[1] - 0.5 + ((default_type(y_idx) + 0.5) / default_type(pve_os_ratio));
+                  for (size_t z_idx = 0; z_idx != pve_os_ratio; ++z_idx) {
+                    const default_type z = voxel[2] - 0.5 + ((default_type(z_idx) + 0.5) / default_type(pve_os_ratio));
+                    to_test.push_back (Vertex (x, y, z));
+                  }
+                }
+              }
 
-              bool is_inside = false;
-              default_type min_edge_distance = std::numeric_limits<default_type>::infinity();
+              // Count the number of these points that lie inside the mesh
+              size_t inside_mesh_count = 0;
+              for (vector<Vertex>::const_iterator i_p = to_test.begin(); i_p != to_test.end(); ++i_p) {
+                const Vertex& p (*i_p);
 
-              if (polygon_num_vertices == 3) {
+                default_type best_min_edge_distance = -std::numeric_limits<default_type>::infinity();
+                bool best_result_inside = false;
 
-                mesh.load_triangle_vertices (v, *polygon_index);
+                // Only test against those polygons that are near this voxel
+                for (vector<size_t>::const_iterator polygon_index = in.second.begin(); polygon_index != in.second.end(); ++polygon_index) {
+                  const Eigen::Vector3& n (polygon_normals[*polygon_index]);
 
-                // First: is it aligned with the normal?
-                const Vertex poly_centre ((v[0] + v[1] + v[2]) * (1.0/3.0));
-                const Vertex diff (p - poly_centre);
-                is_inside = (diff.dot (n) <= 0.0);
+                  const size_t polygon_num_vertices = (*polygon_index < mesh.num_triangles()) ? 3 : 4;
+                  VertexList v;
 
-                // Second: how well does it project onto this polygon?
-                const Vertex p_on_plane (p - (n * (diff.dot (n))));
+                  bool is_inside = false;
+                  default_type min_edge_distance = std::numeric_limits<default_type>::infinity();
 
-                std::array<default_type, 3> edge_distances;
-                Vertex zero = (v[2]-v[0]).cross (n); zero.normalize();
-                Vertex one  = (v[1]-v[2]).cross (n); one .normalize();
-                Vertex two  = (v[0]-v[1]).cross (n); two .normalize();
-                edge_distances[0] = (p_on_plane-v[0]).dot (zero);
-                edge_distances[1] = (p_on_plane-v[2]).dot (one);
-                edge_distances[2] = (p_on_plane-v[1]).dot (two);
-                min_edge_distance = std::min (edge_distances[0], std::min (edge_distances[1], edge_distances[2]));
+                  if (polygon_num_vertices == 3) {
 
-              } else {
+                    mesh.load_triangle_vertices (v, *polygon_index);
 
-                mesh.load_quad_vertices (v, *polygon_index);
+                    // First: is it aligned with the normal?
+                    const Vertex poly_centre ((v[0] + v[1] + v[2]) * (1.0/3.0));
+                    const Vertex diff (p - poly_centre);
+                    is_inside = (diff.dot (n) <= 0.0);
 
-                // This may be slightly ill-posed with a quad; no guarantee of fixed normal
-                // Proceed regardless
+                    // Second: how well does it project onto this polygon?
+                    const Vertex p_on_plane (p - (n * (diff.dot (n))));
 
-                // First: is it aligned with the normal?
-                const Vertex poly_centre ((v[0] + v[1] + v[2] + v[3]) * 0.25);
-                const Vertex diff (p - poly_centre);
-                is_inside = (diff.dot (n) <= 0.0);
+                    std::array<default_type, 3> edge_distances;
+                    Vertex zero = (v[2]-v[0]).cross (n); zero.normalize();
+                    Vertex one  = (v[1]-v[2]).cross (n); one .normalize();
+                    Vertex two  = (v[0]-v[1]).cross (n); two .normalize();
+                    edge_distances[0] = (p_on_plane-v[0]).dot (zero);
+                    edge_distances[1] = (p_on_plane-v[2]).dot (one);
+                    edge_distances[2] = (p_on_plane-v[1]).dot (two);
+                    min_edge_distance = std::min (edge_distances[0], std::min (edge_distances[1], edge_distances[2]));
 
-                // Second: how well does it project onto this polygon?
-                const Vertex p_on_plane (p - (n * (diff.dot (n))));
+                  } else {
 
-                for (int edge = 0; edge != 4; ++edge) {
-                  // Want an appropriate vector emanating from this edge from which to test the 'on-plane' distance
-                  //   (bearing in mind that there may not be a uniform normal)
-                  // For this, I'm going to take a weighted average based on the relative distance between the
-                  //   two points at either end of this edge
-                  // Edge is between points p1 and p2; edge 0 is between points 0 and 1
-                  const Vertex& p0 ((edge-1) >= 0 ? v[edge-1] : v[3]);
-                  const Vertex& p1 (v[edge]);
-                  const Vertex& p2 ((edge+1) < 4 ? v[edge+1] : v[0]);
-                  const Vertex& p3 ((edge+2) < 4 ? v[edge+2] : v[edge-2]);
+                    mesh.load_quad_vertices (v, *polygon_index);
 
-                  const default_type d1 = (p1 - p_on_plane).norm();
-                  const default_type d2 = (p2 - p_on_plane).norm();
-                  // Give more weight to the normal at the point that's closer
-                  Vertex edge_normal = (d2*(p0-p1) + d1*(p3-p2));
-                  edge_normal.normalize();
+                    // This may be slightly ill-posed with a quad; no guarantee of fixed normal
+                    // Proceed regardless
 
-                  // Now, how far away is the point within the plane from this edge?
-                  const default_type this_edge_distance = (p_on_plane - p1).dot (edge_normal);
-                  min_edge_distance = std::min (min_edge_distance, this_edge_distance);
+                    // First: is it aligned with the normal?
+                    const Vertex poly_centre ((v[0] + v[1] + v[2] + v[3]) * 0.25);
+                    const Vertex diff (p - poly_centre);
+                    is_inside = (diff.dot (n) <= 0.0);
+
+                    // Second: how well does it project onto this polygon?
+                    const Vertex p_on_plane (p - (n * (diff.dot (n))));
+
+                    for (int edge = 0; edge != 4; ++edge) {
+                      // Want an appropriate vector emanating from this edge from which to test the 'on-plane' distance
+                      //   (bearing in mind that there may not be a uniform normal)
+                      // For this, I'm going to take a weighted average based on the relative distance between the
+                      //   two points at either end of this edge
+                      // Edge is between points p1 and p2; edge 0 is between points 0 and 1
+                      const Vertex& p0 ((edge-1) >= 0 ? v[edge-1] : v[3]);
+                      const Vertex& p1 (v[edge]);
+                      const Vertex& p2 ((edge+1) < 4 ? v[edge+1] : v[0]);
+                      const Vertex& p3 ((edge+2) < 4 ? v[edge+2] : v[edge-2]);
+
+                      const default_type d1 = (p1 - p_on_plane).norm();
+                      const default_type d2 = (p2 - p_on_plane).norm();
+                      // Give more weight to the normal at the point that's closer
+                      Vertex edge_normal = (d2*(p0-p1) + d1*(p3-p2));
+                      edge_normal.normalize();
+
+                      // Now, how far away is the point within the plane from this edge?
+                      const default_type this_edge_distance = (p_on_plane - p1).dot (edge_normal);
+                      min_edge_distance = std::min (min_edge_distance, this_edge_distance);
+
+                    }
+
+                  }
+
+                  if (min_edge_distance > best_min_edge_distance) {
+                    best_min_edge_distance = min_edge_distance;
+                    best_result_inside = is_inside;
+                  }
 
                 }
 
+                if (best_result_inside)
+                  ++inside_mesh_count;
+
               }
 
-              if (min_edge_distance > best_min_edge_distance) {
-                best_min_edge_distance = min_edge_distance;
-                best_result_inside = is_inside;
-              }
-
+              out = std::make_pair (voxel, (default_type)inside_mesh_count / (default_type)pve_nsamples);
+              return true;
             }
 
-            if (best_result_inside)
-              ++inside_mesh_count;
+          private:
+            const Mesh& mesh;
+            const vector<Eigen::Vector3>& polygon_normals;
 
-          }
+        };
 
-          assign_pos_of (voxel).to (image);
-          image.value() = (default_type)inside_mesh_count / (default_type)Math::pow3 (pve_os_ratio);
+        class Sink
+        { MEMALIGN(Sink)
+          public:
+            Sink (Image<float>& image) :
+                image (image) { }
 
-        }
+            bool operator() (const std::pair<Vox, float>& in)
+            {
+              assign_pos_of (in.first).to (image);
+              assert (!is_out_of_bounds (image));
+              image.value() = in.second;
+              return true;
+            }
 
+          private:
+            Image<float> image;
+
+        };
+
+        Source source (voxel2poly);
+        Pipe pipe (mesh, polygon_normals);
+        Sink sink (image);
+
+        Thread::run_queue (source,
+                           std::pair<Vox, vector<size_t>>(),
+                           Thread::multi (pipe),
+                           std::pair<Vox, float>(),
+                           sink);
       }
 
 
