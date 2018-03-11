@@ -42,15 +42,19 @@ namespace MR
       {
 
         // For initial segmentation of mesh - identify voxels on the mesh, inside & outside
-        enum vox_mesh_t { UNDEFINED, ON_MESH, OUTSIDE, INSIDE };
+        enum vox_mesh_t { UNDEFINED, ON_MESH, PRELIM_OUTSIDE, PRELIM_INSIDE, FILL_TEMP, OUTSIDE, INSIDE };
 
-        ProgressBar progress ("converting mesh to PVE image", 6);
+        ProgressBar progress ("converting mesh to partial volume image", 7);
 
         // For speed, want the vertex data to be in voxel positions
         Filter::VertexTransform transform (image);
         transform.set_real2voxel();
         Mesh mesh;
         transform (mesh_realspace, mesh);
+
+        // These are needed now for interior filling section of algorithm
+        if (!mesh.have_normals())
+          mesh.calculate_normals();
 
         static const Vox adj_voxels[6] = { { -1,  0,  0 },
                                            { +1,  0,  0 },
@@ -104,6 +108,7 @@ namespace MR
           }
 
           // For all voxels within this rectangular region, assign this polygon to the map
+          // TODO This is not ideal; too generous in some areas, results in an empty set in others
           Vox voxel;
           for (voxel[2] = lower_bound[2]; voxel[2] <= upper_bound[2]; ++voxel[2]) {
             for (voxel[1] = lower_bound[1]; voxel[1] <= upper_bound[1]; ++voxel[1]) {
@@ -131,50 +136,91 @@ namespace MR
         ++progress;
 
 
-        // Find all voxels that are not partial-volumed with the mesh, and are not inside the mesh
-        // Use a corner of the image FoV to commence filling of the volume, and then check that all
-        //   eight corners have been flagged as outside the volume
-        const Vox corner_voxels[8] = {
-            Vox (             0,              0,              0),
-            Vox (             0,              0, H.size (2) - 1),
-            Vox (             0, H.size (1) - 1,              0),
-            Vox (             0, H.size (1) - 1, H.size (2) - 1),
-            Vox (H.size (0) - 1,              0,              0),
-            Vox (H.size (0) - 1,              0, H.size (2) - 1),
-            Vox (H.size (0) - 1, H.size (1) - 1,              0),
-            Vox (H.size (0) - 1, H.size (1) - 1, H.size (2) - 1)};
-
-        // TODO This is slow; is there a faster implementation?
-        // This is essentially a connected-component analysis...
-        vector<Vox> to_expand;
-        to_expand.push_back (corner_voxels[0]);
-        assign_pos_of (corner_voxels[0]).to (init_seg);
-        init_seg.value() = vox_mesh_t::OUTSIDE;
-        do {
-          const Vox centre_voxel (to_expand.back());
-          to_expand.pop_back();
-          for (size_t adj_vox_idx = 0; adj_vox_idx != 6; ++adj_vox_idx) {
-            const Vox this_voxel (centre_voxel + adj_voxels[adj_vox_idx]);
-            assign_pos_of (this_voxel).to (init_seg);
-            if (!is_out_of_bounds (init_seg) && init_seg.value() == vox_mesh_t (UNDEFINED)) {
-              init_seg.value() = vox_mesh_t (OUTSIDE);
-              to_expand.push_back (this_voxel);
+        // TODO Alternative implementation of filling in the centre of the mesh
+        // Rather than selecting the eight external corners and filling in outside the
+        //   mesh (which may omit some areas), selecting anything remaining as 'inside',
+        //   fill inwards from vertices according to their normals, and select anything
+        //   remaining as 'outside'.
+        std::stack<Vox> to_expand;
+        for (size_t i = 0; i != mesh.num_vertices(); ++i) {
+          const Vox voxel (mesh.vert (i));
+          Eigen::Vector3 normal (mesh.norm (i));
+          // Scale the normal such that the maximum length along any individual axis is 1.0 (but may be negative)
+          normal /= normal.array().abs().maxCoeff();
+          // Use this to select an adjacent voxel outside the structure (based on the
+          const Vox outside_neighbour (voxel + Vox(normal));
+          // Add this to the set of exterior voxels to be expanded if appropriate
+          assign_pos_of (outside_neighbour).to (init_seg);
+          if (!is_out_of_bounds (init_seg)) {
+            if (init_seg.value() == vox_mesh_t::UNDEFINED) {
+              init_seg.value() = vox_mesh_t::PRELIM_OUTSIDE;
+              //to_expand.push (outside_neighbour);
             }
           }
-        } while (!to_expand.empty());
+          // Now do the same for inside the structure
+          const Vox inside_neighbour (voxel - Vox(normal));
+          assign_pos_of (inside_neighbour).to (init_seg);
+          if (!is_out_of_bounds (init_seg)) {
+            if (init_seg.value() == vox_mesh_t::UNDEFINED) {
+              init_seg.value() = vox_mesh_t::PRELIM_INSIDE;
+              //to_expand.push (inside_neighbour);
+            }
+          }
+        }
         ++progress;
 
-        for (size_t cnr_idx = 0; cnr_idx != 8; ++cnr_idx) {
-          assign_pos_of (corner_voxels[cnr_idx]).to (init_seg);
-          if (init_seg.value() == vox_mesh_t (UNDEFINED))
-            throw Exception ("Mesh is not bound within image field of view");
+        // Can't guarantee that mesh might have a single isolated polygon pointing the wrong way
+        // Therefore, need to:
+        //   - Select voxels both inside and outside the mesh to expand
+        //   - When expanding each region, count the number of pre-assigned voxels both inside and outside
+        //   - For the final region selection, assign values to voxels based on a majority vote
+        Image<uint8_t> seed (init_seg);
+        vector<Vox> to_fill;
+        for (auto l = Loop(seed) (seed); l; ++l) {
+          if (seed.value() == vox_mesh_t::PRELIM_INSIDE || seed.value() == vox_mesh_t::PRELIM_OUTSIDE) {
+            size_t prelim_inside_count = 0, prelim_outside_count = 0;
+            if (seed.value() == vox_mesh_t::PRELIM_INSIDE)
+              prelim_inside_count = 1;
+            else
+              prelim_outside_count = 1;
+            to_expand.push (Vox (seed.index(0), seed.index(1), seed.index(2)));
+            to_fill.assign (1, to_expand.top());
+            do {
+              const Vox voxel (to_expand.top());
+              to_expand.pop();
+              for (size_t adj_vox_idx = 0; adj_vox_idx != 6; ++adj_vox_idx) {
+                const Vox adj_voxel (voxel + adj_voxels[adj_vox_idx]);
+                assign_pos_of (adj_voxel).to (init_seg);
+                if (!is_out_of_bounds (init_seg)) {
+                  const uint8_t adj_value = init_seg.value();
+                  if (adj_value == vox_mesh_t::UNDEFINED || adj_value == vox_mesh_t::PRELIM_INSIDE || adj_value == vox_mesh_t::PRELIM_OUTSIDE) {
+                    if (adj_value == vox_mesh_t::PRELIM_INSIDE)
+                      ++prelim_inside_count;
+                    else if (adj_value == vox_mesh_t::PRELIM_OUTSIDE)
+                      ++prelim_outside_count;
+                    to_expand.push (adj_voxel);
+                    to_fill.push_back (adj_voxel);
+                    init_seg.value() = vox_mesh_t::FILL_TEMP;
+                  }
+                }
+              }
+            } while (to_expand.size());
+            if (prelim_inside_count == prelim_outside_count)
+              throw Exception ("Mapping mesh to image failed: Unable to label connected voxel region as inside or outside mesh");
+            const vox_mesh_t fill_value = (prelim_inside_count > prelim_outside_count ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE);
+            for (auto voxel : to_fill) {
+              assign_pos_of (voxel).to (init_seg);
+              init_seg.value() = fill_value;
+            }
+            to_fill.clear();
+          }
         }
+        ++progress;
 
-
-        // Find those voxels that remain unassigned, and set them to INSIDE
-        for (auto l = Loop (init_seg) (init_seg); l; ++l) {
-          if (init_seg.value() == vox_mesh_t (UNDEFINED))
-            init_seg.value() = vox_mesh_t (INSIDE);
+        // Any voxel not yet processed must lie outside the structure(s)
+        for (auto l = Loop(init_seg) (init_seg); l; ++l) {
+          if (init_seg.value() == vox_mesh_t::UNDEFINED)
+            init_seg.value() = vox_mesh_t::OUTSIDE;
         }
         ++progress;
 
@@ -185,6 +231,7 @@ namespace MR
             case vox_mesh_t (ON_MESH):   image.value() = 0.5; break;
             case vox_mesh_t (OUTSIDE):   image.value() = 0.0; break;
             case vox_mesh_t (INSIDE):    image.value() = 1.0; break;
+            default: assert (0);
           }
         }
         ++progress;
