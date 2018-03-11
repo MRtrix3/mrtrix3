@@ -39,6 +39,7 @@ namespace MR
     { MEMALIGN (Vox)
       public:
         using Eigen::Array3i::Array3i;
+        Vox (const Eigen::Vector3& p) : Eigen::Array3i (int(std::round (p[0])), int(std::round (p[1])), int(std::round (p[2]))) { }
         bool operator< (const Vox& i) const
         {
           return ((*this)[2] == i[2] ? (((*this)[1] == i[1]) ? ((*this)[0] < i[0]) : ((*this)[1] < i[1])) : ((*this)[2] < i[2]));
