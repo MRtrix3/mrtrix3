@@ -108,35 +108,105 @@ namespace MR
           }
 
           // For all voxels within this rectangular region, assign this polygon to the map
-          // TODO This is not ideal; too generous in some areas, results in an empty set in others
+          // Use the Separating Axis Theorem to be more stringent as to which voxels this
+          //   polygon will be processed in
+          auto overlap = [&] (const Vox& vox, const size_t poly_index) -> bool {
+
+            VertexList vertices;
+            if (num_vertices == 3)
+              mesh.load_triangle_vertices (vertices, poly_index);
+            else
+              mesh.load_quad_vertices (vertices, poly_index - mesh.num_triangles());
+
+            // Test whether or not the two objects can be separated via projection onto an axis
+            auto separating_axis = [&] (const Eigen::Vector3& axis) -> bool {
+              default_type voxel_low  =  std::numeric_limits<default_type>::infinity();
+              default_type voxel_high = -std::numeric_limits<default_type>::infinity();
+              default_type poly_low   =  std::numeric_limits<default_type>::infinity();
+              default_type poly_high  = -std::numeric_limits<default_type>::infinity();
+
+              static const Eigen::Vector3 voxel_offsets[8] = { { -0.5, -0.5, -0.5 },
+                                                               { -0.5, -0.5,  0.5 },
+                                                               { -0.5,  0.5, -0.5 },
+                                                               { -0.5,  0.5,  0.5 },
+                                                               {  0.5, -0.5, -0.5 },
+                                                               {  0.5, -0.5,  0.5 },
+                                                               {  0.5,  0.5, -0.5 },
+                                                               {  0.5,  0.5,  0.5 } };
+
+              for (size_t i = 0; i != 8; ++i) {
+                const Eigen::Vector3 v (vox.matrix().cast<default_type>() + voxel_offsets[i]);
+                const default_type projection = axis.dot (v);
+                voxel_low  = std::min (voxel_low,  projection);
+                voxel_high = std::max (voxel_high, projection);
+              }
+
+              for (const auto& v : vertices) {
+                const default_type projection = axis.dot (v);
+                poly_low  = std::min (poly_low,  projection);
+                poly_high = std::max (poly_high, projection);
+              }
+
+              // Is this a separating axis?
+              return (poly_low > voxel_high || voxel_low > poly_high);
+            };
+
+            // The following axes need to be tested as potential separating axes:
+            //   x, y, z
+            //   All cross-products between voxel and polygon edges
+            //   Polygon normal
+            for (size_t i = 0; i != 3; ++i) {
+              Eigen::Vector3 axis (0.0, 0.0, 0.0);
+              axis[i] = 1.0;
+              if (separating_axis (axis))
+                return false;
+              for (size_t j = 0; j != num_vertices; ++j) {
+                if (separating_axis (axis.cross (vertices[j+1] - vertices[j])))
+                  return false;
+              }
+              if (separating_axis (axis.cross (vertices[num_vertices-1] - vertices[0])))
+                return false;
+            }
+            if (separating_axis (polygon_normals[poly_index]))
+              return false;
+
+            // No axis has been found that separates the two objects
+            // Therefore, the two objects overlap
+            return true;
+          };
+
           Vox voxel;
           for (voxel[2] = lower_bound[2]; voxel[2] <= upper_bound[2]; ++voxel[2]) {
             for (voxel[1] = lower_bound[1]; voxel[1] <= upper_bound[1]; ++voxel[1]) {
               for (voxel[0] = lower_bound[0]; voxel[0] <= upper_bound[0]; ++voxel[0]) {
-                vector<size_t> this_voxel_polys;
-                //#if __clang__
-                //              Vox2Poly::const_iterator existing = voxel2poly.find (voxel);
-                //#else
-                //              Vox2Poly::iterator existing = voxel2poly.find (voxel);
-                //#endif
-                Vox2Poly::const_iterator existing = voxel2poly.find (voxel);
-                if (existing != voxel2poly.end()) {
-                  this_voxel_polys = existing->second;
-                  voxel2poly.erase (existing);
-                } else {
-                  // Only call this once each voxel, regardless of the number of intersecting polygons
-                  assign_pos_of (voxel).to (init_seg);
-                  init_seg.value() = ON_MESH;
-                }
-                this_voxel_polys.push_back (poly_index);
-                voxel2poly.insert (std::make_pair (voxel, this_voxel_polys));
-          } } }
+                // Rather than adding this polygon to the list of polygons to test for
+                //   every single voxel within this 3D bounding box, only test it within
+                //   those voxels that the polygon actually intersects
+                if (overlap (voxel, poly_index)) {
+                  vector<size_t> this_voxel_polys;
+                  // Has this voxel already been intersected by at least one polygon?
+                  // If it has, we need to concatenate this polygon to the list
+                  //   (which involves deleting the existing entry then re-writing the concatenated list);
+                  // If it has not, we're adding a new entry to the list of voxels to be tested,
+                  //   with only one entry in the list for that voxel
+                  Vox2Poly::const_iterator existing = voxel2poly.find (voxel);
+                  if (existing != voxel2poly.end()) {
+                    this_voxel_polys = existing->second;
+                    voxel2poly.erase (existing);
+                  } else {
+                    // Only call this once each voxel, regardless of the number of intersecting polygons
+                    assign_pos_of (voxel).to (init_seg);
+                    init_seg.value() = ON_MESH;
+                  }
+                  this_voxel_polys.push_back (poly_index);
+                  voxel2poly.insert (std::make_pair (voxel, this_voxel_polys));
+          } } } }
 
         }
         ++progress;
 
 
-        // TODO Alternative implementation of filling in the centre of the mesh
+        // New implementation of filling in the centre of the mesh
         // Rather than selecting the eight external corners and filling in outside the
         //   mesh (which may omit some areas), selecting anything remaining as 'inside',
         //   fill inwards from vertices according to their normals, and select anything
@@ -264,30 +334,33 @@ namespace MR
           public:
             Pipe (const Mesh& mesh, const vector<Eigen::Vector3>& polygon_normals) :
                 mesh (mesh),
-                polygon_normals (polygon_normals) { }
+                polygon_normals (polygon_normals)
+
+            {
+              // Generate a set of points within this voxel that need to be tested individually
+              offsets_to_test.reset(new vector<Eigen::Vector3>());
+              offsets_to_test->reserve (pve_nsamples);
+              for (size_t x_idx = 0; x_idx != pve_os_ratio; ++x_idx) {
+                const default_type x = -0.5 + ((default_type(x_idx) + 0.5) / default_type(pve_os_ratio));
+                for (size_t y_idx = 0; y_idx != pve_os_ratio; ++y_idx) {
+                  const default_type y = -0.5 + ((default_type(y_idx) + 0.5) / default_type(pve_os_ratio));
+                  for (size_t z_idx = 0; z_idx != pve_os_ratio; ++z_idx) {
+                    const default_type z = -0.5 + ((default_type(z_idx) + 0.5) / default_type(pve_os_ratio));
+                    offsets_to_test->push_back (Vertex (x, y, z));
+                  }
+                }
+              }
+            }
 
             bool operator() (const std::pair<Vox, vector<size_t>>& in, std::pair<Vox, float>& out) const
             {
               const Vox& voxel (in.first);
 
-              // Generate a set of points within this voxel that need to be tested individually
-              vector<Vertex> to_test;
-              to_test.reserve (pve_nsamples);
-              for (size_t x_idx = 0; x_idx != pve_os_ratio; ++x_idx) {
-                const default_type x = voxel[0] - 0.5 + ((default_type(x_idx) + 0.5) / default_type(pve_os_ratio));
-                for (size_t y_idx = 0; y_idx != pve_os_ratio; ++y_idx) {
-                  const default_type y = voxel[1] - 0.5 + ((default_type(y_idx) + 0.5) / default_type(pve_os_ratio));
-                  for (size_t z_idx = 0; z_idx != pve_os_ratio; ++z_idx) {
-                    const default_type z = voxel[2] - 0.5 + ((default_type(z_idx) + 0.5) / default_type(pve_os_ratio));
-                    to_test.push_back (Vertex (x, y, z));
-                  }
-                }
-              }
-
               // Count the number of these points that lie inside the mesh
               size_t inside_mesh_count = 0;
-              for (vector<Vertex>::const_iterator i_p = to_test.begin(); i_p != to_test.end(); ++i_p) {
-                const Vertex& p (*i_p);
+              for (vector<Vertex>::const_iterator i_p = offsets_to_test->begin(); i_p != offsets_to_test->end(); ++i_p) {
+                Vertex p (*i_p);
+                p += Eigen::Vector3 (voxel[0], voxel[1], voxel[2]);
 
                 default_type best_min_edge_distance = -std::numeric_limits<default_type>::infinity();
                 bool best_result_inside = false;
@@ -382,6 +455,8 @@ namespace MR
           private:
             const Mesh& mesh;
             const vector<Eigen::Vector3>& polygon_normals;
+
+            std::shared_ptr<vector<Eigen::Vector3>> offsets_to_test;
 
         };
 
