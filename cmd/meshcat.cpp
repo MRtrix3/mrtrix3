@@ -29,8 +29,7 @@ void usage()
 
   AUTHOR = "Chun-Hung Yeh (chun-hung.yeh@florey.edu.au)";
 
-  DESCRIPTION
-  + "concatenate several meshes into one.";
+  SYNOPSIS = "concatenate several meshes into one.";
 
   ARGUMENTS
   + Argument( "mesh1", "the first input mesh." ).type_file_in()
