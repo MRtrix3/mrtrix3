@@ -156,7 +156,9 @@ public:
       lines = NULL;
       std::ifstream input (file, std::ios::binary );
       std::string line;
-      int number_of_points;
+      int number_of_points = 0;
+      number_of_lines = 0;
+      number_of_line_indices = 0;
       while ( std::getline(input,line) ) {
         if ( line.find ( "ASCII") == 0 ) {
           throw Exception("VTK Reader only supports ASCII input");
