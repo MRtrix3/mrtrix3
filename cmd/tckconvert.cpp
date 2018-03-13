@@ -530,7 +530,7 @@ private:
 
 class RibWriter: public WriterInterface<float> { MEMALIGN(RibWriter)
 public:
-RibWriter(const std::string& file, float radius = 0.1, bool dec = false) : out(file), writeDEC(dec), radius(radius) {
+RibWriter(const std::string& file, float radius = 0.1, bool dec = false) : out(file), writeDEC(dec), radius(radius), hasPoints(false), wroteHeader(false) {
   pointsFilename = File::create_tempfile(0,".points");
   pointsOF.open(pointsFilename );
   pointsOF << "\"P\" [";
@@ -538,19 +538,27 @@ RibWriter(const std::string& file, float radius = 0.1, bool dec = false) : out(f
   decOF.open ( decFilename );
   decOF << "\"varying color dec\" [";
   
-
   // Header
   out << "##RenderMan RIB\n"
       << "# Written by tckconvert\n"
       << "# Part of the MRtrix package (http://mrtrix.org)\n"
-      << "# version: " << mrtrix_version << "\n"
-      << "Basis \"catmull-rom\" 1 \"catmull-rom\" 1\n"
-      << "Attribute \"dice\" \"int roundcurve\" [1] \"int hair\" [1]\n"
-      << "Curves \"linear\" [";
+      << "# version: " << mrtrix_version << "\n";
+
 }
 
   bool operator() (const Streamline<float>& tck) {
-    if ( tck.size() < 3 ) { return true; }
+    if ( tck.size() < 3 ) {
+      return true;
+    }
+
+    hasPoints = true;
+    if ( !wroteHeader ) {
+      wroteHeader = true;
+      // Start writing the header
+      out << "Basis \"catmull-rom\" 1 \"catmull-rom\" 1\n"
+          << "Attribute \"dice\" \"int roundcurve\" [1] \"int hair\" [1]\n"
+          << "Curves \"linear\" [";
+    }
     out << tck.size() << " ";
     Eigen::Vector3f prev = tck[1];
     for ( auto pt : tck ) {
@@ -566,25 +574,27 @@ RibWriter(const std::string& file, float radius = 0.1, bool dec = false) : out(f
   }
 
   ~RibWriter() {
-    pointsOF << "]\n" ;
-    pointsOF.close();
-    decOF << "]\n" ;
-    decOF.close();
-    out << "] \"nonperiodic\" ";
+    if ( hasPoints ) {
+      pointsOF << "]\n" ;
+      pointsOF.close();
+      decOF << "]\n" ;
+      decOF.close();
+      out << "] \"nonperiodic\" ";
     
-    std::ifstream pointsIF ( pointsFilename );
-    out << pointsIF.rdbuf();
-    File::unlink(pointsFilename.c_str());
+      std::ifstream pointsIF ( pointsFilename );
+      out << pointsIF.rdbuf();
 
-    if ( writeDEC ) {
-      std::ifstream decIF ( decFilename );
-      out << decIF.rdbuf();
-      decIF.close();
-      File::unlink(decFilename.c_str());
+      if ( writeDEC ) {
+        std::ifstream decIF ( decFilename );
+        out << decIF.rdbuf();
+        decIF.close();
+      }
+      out << " \"constantwidth\" " << radius << "\n";
+      out.close();
     }
-
-    out << " \"constantwidth\" " << radius << "\n";
-    out.close();
+    
+    File::unlink(pointsFilename.c_str());
+    File::unlink(decFilename.c_str());
     
   }
     
@@ -596,6 +606,8 @@ RibWriter(const std::string& file, float radius = 0.1, bool dec = false) : out(f
   File::OFStream decOF;
   bool writeDEC;
   float radius;
+  bool hasPoints;
+  bool wroteHeader;
 };
 
 
