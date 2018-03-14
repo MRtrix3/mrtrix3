@@ -35,7 +35,7 @@ namespace MR
       class VertexTransform : public Base
       { MEMALIGN (VertexTransform)
         public:
-          enum class transform_t { UNDEFINED, FIRST2REAL, REAL2FIRST, VOXEL2REAL, REAL2VOXEL, FS2REAL };
+          enum class transform_t { UNDEFINED, FIRST2REAL, REAL2FIRST, VOXEL2REAL, REAL2VOXEL, FS2REAL, REAL2FS };
 
           VertexTransform (const Header& H) :
               header (H),
@@ -47,6 +47,7 @@ namespace MR
           void set_voxel2real() { mode = transform_t::VOXEL2REAL; }
           void set_real2voxel() { mode = transform_t::REAL2VOXEL; }
           void set_fs2real   () { mode = transform_t::FS2REAL   ; }
+          void set_real2fs   () { mode = transform_t::REAL2FS   ; }
 
           transform_t get_mode() const { return mode; }
 

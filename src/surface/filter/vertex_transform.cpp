@@ -89,6 +89,7 @@ namespace MR
             break;
 
           case transform_t::FS2REAL:
+          {
             vector< size_t > axes( 3 );
             auto M = File::NIfTI::adjust_transform( header, axes );
             Eigen::Vector3d cras( 3, 1 );
@@ -106,6 +107,27 @@ namespace MR
               vertices.push_back ( in.vert(i) + cras );
             }
             break;
+          }
+          case transform_t::REAL2FS:
+          {
+            vector< size_t > axes( 3 );
+            auto M = File::NIfTI::adjust_transform( header, axes );
+            Eigen::Vector3d cras( 3, 1 );
+            for ( size_t i = 0; i < 3; i++ )
+            {
+              cras[ i ] = M( i, 3 );
+              for ( size_t j = 0; j < 3; j++ )
+              {
+                cras[ i ] += 0.5 * header.size( axes[ j ] )
+                                 * header.spacing( axes[ j ] ) * M( i, j );
+              }
+            }
+            for ( size_t i = 0; i != V; ++i )
+            {
+              vertices.push_back ( in.vert(i) - cras );
+            }
+            break;
+          }
 
         }
 
