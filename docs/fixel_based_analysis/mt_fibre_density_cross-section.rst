@@ -111,7 +111,7 @@ Alternatively, if you have more than 40 subjects you can randomly select a subse
 10. Register all subject FOD images to the FOD template
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Register the FOD image from each subject to the FOD template image. Note you can skip this step if you built your template from your entire population and saved the warps (see previous step)::
+Register the FOD image from each subject to the FOD template::
 
     foreach * : mrregister IN/wmfod_norm.mif -mask1 IN/dwi_mask_upsampled.mif ../template/wmfod_template.mif -nl_warp IN/subject2template_warp.mif IN/template2subject_warp.mif
 
