@@ -160,8 +160,8 @@ public:
       number_of_lines = 0;
       number_of_line_indices = 0;
       while ( std::getline(input,line) ) {
-        if ( line.find ( "ASCII") == 0 ) {
-          throw Exception("VTK Reader only supports ASCII input");
+        if ( line.find ( "ASCII" ) == 0 ) {
+          throw Exception("VTK Reader only supports BINARY input");
         }
         if ( sscanf ( line.c_str(), "POINTS %d float", &number_of_points ) == 1) {
           points = new float[3*number_of_points];
