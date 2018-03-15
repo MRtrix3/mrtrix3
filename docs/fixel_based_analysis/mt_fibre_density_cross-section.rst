@@ -108,12 +108,14 @@ If you opt to create the template from a limited subset of (e.g. 30-40) subjects
 
 .. include:: common_fba_steps/population_template2.rst
 
+
 10. Register all subject FOD images to the FOD template
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Register the FOD image from each subject to the FOD template::
 
     foreach * : mrregister IN/wmfod_norm.mif -mask1 IN/dwi_mask_upsampled.mif ../template/wmfod_template.mif -nl_warp IN/subject2template_warp.mif IN/template2subject_warp.mif
+
 
 11. Compute the template mask (intersection of all subject masks in template space)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
