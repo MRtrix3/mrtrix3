@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -208,6 +209,8 @@ void usage ()
 
   + DWI::Tractography::MACT::MACTOption
 
+  + DWI::Tractography::Algorithms::iFOD2Option
+
   + DWI::GradImportOptions();
 
 }
@@ -232,11 +235,13 @@ void run ()
   Tracking::load_streamline_properties (properties);
 
   ACT::load_act_properties (properties);
-
   MACT::load_mact_properties (properties);
 
   Seeding::load_seed_mechanisms (properties);
   Seeding::load_seed_parameters (properties);
+
+  if (algorithm == 2)
+    Algorithms::load_iFOD2_options (properties);
 
   // Check validity of options -select and -seeds; these are meaningless if seeds are number-limited
   // By over-riding the values in properties, the progress bar should still be valid
@@ -285,4 +290,3 @@ void run ()
   }
 
 }
-

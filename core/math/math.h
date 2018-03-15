@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -191,6 +192,24 @@ namespace MR
           M(i,j) = V[i][j];
 
       DEBUG ("found " + str(M.rows()) + "x" + str(M.cols()) + " matrix in file \"" + filename + "\"");
+      return M;
+    }
+
+  //! read matrix data from a text string \a spec
+  template <class ValueType = default_type>
+    Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> parse_matrix (const std::string& spec)
+    {
+      Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> M;
+      const auto lines = split_lines (spec);
+      for (size_t row = 0; row < lines.size(); ++row) {
+        const auto values = parse_floats (lines[row]);
+        if (M.cols() == 0)
+          M.resize (lines.size(), values.size());
+        else if (M.cols() != ssize_t (values.size()))
+          throw Exception ("error converting string to matrix - uneven number of entries per row");
+        for (size_t col = 0; col < values.size(); ++col)
+          M(row, col) = values[col];
+      }
       return M;
     }
 
