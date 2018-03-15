@@ -4,9 +4,9 @@ Fibre density and cross-section - Multi-tissue CSD
 Introduction
 -------------
 
-This tutorial explains how to perform `fixel-based analysis of fibre density and cross-section <https://www.ncbi.nlm.nih.gov/pubmed/27639350>`_ with fibre orientation distributions (FODs) computing using multi-tissue CSD using `single-shell <https://www.researchgate.net/publication/301766619_A_novel_iterative_approach_to_reap_the_benefits_of_multi-tissue_CSD_from_just_single-shell_b0_diffusion_MRI_data>`_ data or `multi-shell data <https://www.ncbi.nlm.nih.gov/pubmed/25109526>`_. We note that high b-value (>2000s/mm2) data is recommended to aid the interpretation of apparent fibre density (AFD) being related to the intra-axonal space. See this `paper <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`_ for more details.
+This tutorial explains how to perform `fixel-based analysis of fibre density and cross-section <https://www.ncbi.nlm.nih.gov/pubmed/27639350>`_ with fibre orientation distributions (FODs) computed using multi-tissue (3-tissue) CSD on `single-shell <https://www.researchgate.net/publication/301766619_A_novel_iterative_approach_to_reap_the_benefits_of_multi-tissue_CSD_from_just_single-shell_b0_diffusion_MRI_data>`_ data or `multi-shell data <https://www.ncbi.nlm.nih.gov/pubmed/25109526>`_. We note that high b-value (>2000s/mm2) data is recommended to aid the interpretation of apparent fibre density (AFD) being related to the intra-axonal space. See this `paper <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`_ for more details.
 
-All steps in this tutorial have written as if the commands are being **run on a cohort of images**, and make extensive use of the :ref:`foreach script to simplify batch processing <batch_processing>`. This tutorial also assumes that the imaging dataset is organised with one directory identifying the subject, and all files within identifying the image type. For example::
+All steps in this tutorial are written as if the commands are being **run on a cohort of images**, and make extensive use of the :ref:`foreach script to simplify batch processing <batch_processing>`. This tutorial also assumes that the imaging dataset is organised with one directory identifying each subject, and all files within identifying the image type (i.e. processing step outcome). For example::
 
     study/subjects/001_patient/dwi.mif
     study/subjects/001_patient/wmfod.mif
@@ -55,7 +55,7 @@ It is crucial for fixel-based analysis to only use a single *unique* set of the 
     average_response */response_gm.txt ../group_average_response_gm.txt
     average_response */response_csf.txt ../group_average_response_csf.txt
 
-There is however no strict requirement that the final set of response functions is the average of *all* subject response functions (for each tissue type). In certain very specific cases, it may even be wise to leave out subjects (for this step) where the response functions could not reliably be obtained, or where pathology affected the brain globally.
+There is however no strict requirement for the final set of response functions to be the average of *all* subject response functions (for each tissue type). In certain very specific cases, it may even be wise to leave out subjects (for this step) where the response functions could not reliably be obtained, or where pathology affected the brain globally.
 
 5. Upsampling DW images
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -84,11 +84,11 @@ When performing fixel-based analysis, multi-tissue constrained spherical deconvo
 8. Joint bias field correction and intensity normalisation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To perform joint bias field correction and global intensity normalisation of the multi-tissue compartment model results in the log-domain using :ref:`mtnormalise`::
+To perform joint bias field correction and global intensity normalisation of the multi-tissue compartment parameters (in the log-domain), use :ref:`mtnormalise`::
 
     foreach * : mtnormalise IN/wmfod.mif IN/wmfod_norm.mif IN/gm.mif IN/gm_norm.mif IN/csf.mif IN/csf_norm.mif -mask IN/dwi_mask_upsampled.mif
 
-If multi-tissue CSD was performed with the same single set of (three) tissue response functions for all subjects, then the resulting output of :ref:`mtnormalise` makes the amplitudes comparable between those subjects as well. Note that this step is **crucial** in the FBA pipeline, even if bias field correction was applied earlier using :ref:`dwibiascorrect`, since :ref:`dwibiascorrect` does *not* correct for *global* intensity differences between subjects. The performance of :ref:`mtnormalise` is not significantly impacted by either having run :ref:`dwibiascorrect` before or not. In case prior bias field correction was run in the pipeline, :ref:`mtnormalise` will further correct for residual intensity inhomogeneities.
+If multi-tissue CSD was performed with the same single set of (three) tissue response functions for all subjects, then the resulting output of :ref:`mtnormalise` makes the absolute amplitudes comparable between those subjects as well. Note that this step is **crucial** in the FBA pipeline, even if bias field correction was applied earlier using :ref:`dwibiascorrect`, since :ref:`dwibiascorrect` does *not* correct for *global* intensity differences between subjects. The performance of :ref:`mtnormalise` is not significantly impacted by either having run :ref:`dwibiascorrect` before or not. In case prior bias field correction was run in the pipeline, :ref:`mtnormalise` will further correct for residual intensity inhomogeneities.
 
 
 9. Generate a study-specific unbiased FOD template
@@ -96,12 +96,12 @@ If multi-tissue CSD was performed with the same single set of (three) tissue res
 
 .. include:: common_fba_steps/population_template.rst
 
-Symbolic link all FOD images (and masks) into a single input folder. If you have fewer than 40 subjects in your study, you can use the entire population to build the template::
+Symbolic link all FOD images (and masks) into a single input folder. To use the entire population to build the template::
 
     foreach * : ln -sr IN/wmfod_norm.mif ../template/fod_input/PRE.mif
     foreach * : ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
 
-Alternatively, if you have more than 40 subjects you can randomly select a subset of the individuals. If your study has multiple groups, then you may want to aim for a similar number of subjects from each group to make the template more representative of the population as a whole. Assuming the subject directory labels can be used to identify members of each group, you could use::
+If you opt to create the template from a limited subset of (e.g. 30-40) subjects and your study has multiple groups, then you can aim for a similar number of subjects from each group to make the template more representative of the population as a whole. Assuming the subject directory labels can be used to identify members of each group, you could use::
 
     foreach `ls -d *patient | sort -R | tail -20` : ln -sr IN/wmfod_norm.mif ../template/fod_input/PRE.mif ";" ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
     foreach `ls -d *control | sort -R | tail -20` : ln -sr IN/wmfod_norm.mif ../template/fod_input/PRE.mif ";" ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
@@ -130,7 +130,7 @@ In this step, we segment fixels from the FOD template. The result is the *fixel 
 
 .. NOTE:: Fixel images, which appear in the pipeline from this step onwards, are stored using the :ref:`fixel_format`, which stores all fixel data for a fixel image in a directory (i.e. a folder).
 
-.. WARNING:: This step ultimately determines the fixel mask in which stastical analysis will be performed, and hence also which fixels' statistics can contribute to others via the CFE mechanism; so it may have a substantial impact on the final result. Essentially, it can be detrimental to the result if the threshold value specified via the :code:`-fmls_peak_value` is *too high* and hence *excludes* genuine white matter fixels. This risk is higher in voxels containing crossing fibres (and higher the more fibres are crossing in a single voxel). Even though 0.06 has been observed to be a decent default value for 3-tissue CSD population templates, it is still **strongly advised** to visualise the output fixel mask using :ref:`mrview`. Do this by opening the :code:`index.mif` found in :code:`../template/fixel_mask` via the *fixel plot tool*. If, with respect to known or normal anatomy, fixels are missing (especially paying attention to crossing areas), regenerate the mask with a lower value supplied to the :code:`-fmls_peak_value` option (of course, avoid lowering it *too* much, as too many false or noisy fixels may be introduced). For an *adult human* brain template, and using an isotropic template voxel size of 1.3 mm, it is expected to have several *hundreds of thousands* of fixels in the fixel mask (you can check this by :code:`mrinfo -size ../template/fixel_mask/directions.mif`, and looking at the size of the image along the first dimension).
+.. WARNING:: This step ultimately determines the fixel mask in which statistical analysis will be performed, and hence also which fixels' statistics can contribute to others via the CFE mechanism; so it may have a substantial impact on the final result. Essentially, it can be detrimental to the result if the threshold value specified via the :code:`-fmls_peak_value` is *too high* and hence *excludes* genuine white matter fixels. This risk is substantially higher in voxels containing crossing fibres (and higher the more fibres are crossing in a single voxel). Even though 0.06 has been observed to be a decent default value for 3-tissue CSD population templates, it is still **strongly advised** to visualise the output fixel mask using :ref:`mrview`. Do this by opening the :code:`index.mif` found in :code:`../template/fixel_mask` via the *fixel plot tool*. If, with respect to known or normal anatomy, fixels are missing (especially paying attention to crossing areas), regenerate the mask with a lower value supplied to the :code:`-fmls_peak_value` option (of course, avoid lowering it *too* much, as too many false or noisy fixels may be introduced). For an *adult human* brain template, and using an isotropic template voxel size of 1.3 mm, it is expected to have several *hundreds of thousands* of fixels in the fixel mask (you can check this by :code:`mrinfo -size ../template/fixel_mask/directions.mif`, and looking at the size of the image along the first dimension).
 
 13. Warp FOD images to template space
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -156,8 +156,8 @@ Note that here we warp FOD images into template space *without* FOD reorientatio
 
 .. include:: common_fba_steps/fixelcorrespondence.rst
 
-17. Compute fibre cross-section (FC) metric
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17. Compute the fibre cross-section (FC) metric
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/compute_FC.rst
 
