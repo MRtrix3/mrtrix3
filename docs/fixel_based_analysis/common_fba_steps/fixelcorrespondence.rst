@@ -2,5 +2,5 @@ While each subject's data has already been (spatially) warped to the common temp
 
     foreach * : fixelcorrespondence IN/fixel_in_template_space/fd.mif ../template/fixel_mask ../template/fd PRE.mif
 
-Note that the output fixel directory :code:`../template/fd` is the same for all subjects. This makes sense, since after this operation, there is only a single remaining set of fixels (i.e. the template fixels), with corresponding FD values as obtained each subject. This resulting directory :code:`../template/fd` now stores these data as individual fixel data files: one for each subject, and all with respect to a single set of corresponding template fixels. This way of storing the entire population's FD data is then ready for input to :code:`fixelcfestats` later on.
+Note that the output fixel directory :code:`../template/fd` is the same for all subjects. This makes sense, since after this operation, there is only a single remaining set of fixels (i.e. the template fixels), with corresponding FD values as obtained from each subject. This resulting directory :code:`../template/fd` now stores these data as individual fixel data files: one for each subject, and all with respect to a single set of corresponding template fixels. This way of storing the entire population's FD data is then ready for input to :code:`fixelcfestats` later on.
 
