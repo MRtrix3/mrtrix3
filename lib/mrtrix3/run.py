@@ -18,7 +18,11 @@ _lastFile = ''
 
 
 def setContinue(filename): #pylint: disable=unused-variable
+  from mrtrix3 import app
+  global _lastfile
   _lastFile = filename
+  app.var(_lastfile)
+
 
 
 
