@@ -38,7 +38,7 @@ void usage ()
 
   SYNOPSIS = "Convert a mesh surface to a partial volume estimation image";
 
-  REFERENCES 
+  REFERENCES
     + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
     "Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. "
     "NeuroImage, 2012, 62, 1924-1938";
@@ -61,6 +61,11 @@ void run ()
   // Get the template image
   Header template_header = Header::open (argument[1]);
   check_3D_nonunity (template_header);
+
+  // Ensure that a floating-point representation is used for the output image,
+  //   as is required for representing partial volumes
+  template_header.datatype() = DataType::Float32;
+  template_header.datatype().set_byte_order_native();
 
   // Create the output image
   template_header.datatype() = DataType::Float32;
