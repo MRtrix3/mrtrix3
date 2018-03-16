@@ -71,14 +71,14 @@ def eddyBinary(cuda): #pylint: disable=unused-variable
 #   makes it more convenient to locate these commands.
 # Note that if FSL 4 and 5 are installed side-by-side, the approach taken in this
 #   function will select the version 5 executable.
-def exeName(name): #pylint: disable=unused-variable
+def exeName(name, required=True): #pylint: disable=unused-variable
   from mrtrix3 import app
   from distutils.spawn import find_executable
   if find_executable('fsl5.0-' + name):
     output = 'fsl5.0-' + name
   elif find_executable(name):
     output = name
-  else:
+  elif required:
     app.error('Could not find FSL program \"' + name + '\"; please verify FSL install')
   app.debug(output)
   return output
@@ -89,7 +89,7 @@ def exeName(name): #pylint: disable=unused-variable
 #   FSL commands will generate based on the suffix() function, the FSL binaries themselves
 #   ignore the FSLOUTPUTTYPE environment variable. Therefore, the safest approach is:
 # Whenever receiving an output image from an FSL command, explicitly search for the path
-def findImage(name, *required=True): #pylint: disable=unused-variable
+def findImage(name): #pylint: disable=unused-variable
   import os
   from mrtrix3 import app
   prefix = os.path.join(os.path.dirname(name), os.path.basename(name).split('.')[0])
@@ -100,8 +100,7 @@ def findImage(name, *required=True): #pylint: disable=unused-variable
     if os.path.isfile(prefix + suf):
       app.debug('Expected image at \"' + prefix + suffix() + '\", but found at \"' + prefix + suf + '\"')
       return prefix + suf
-  if required:
-    app.error('Unable to find FSL output file for path \"' + name + '\"')
+  app.error('Unable to find FSL output file for path \"' + name + '\"')
   return ''
 
 
