@@ -222,11 +222,12 @@ def reconstep(k):
 def sliceweightstep():
     run.command('dwisliceoutliers ' + inputfn + ' spred.mif -mask mask.mif sliceweights.txt' + or_option + ' -imscale imscale.mif -force')
     if app.args.matchintensity:
-        run.command('mrcalc spred.mif -abs -log in.mif -abs -log -sub mask.mif -mult - ' +
+        run.command('mrcalc spred.mif -abs -log in.mif -abs -log -sub - ' +
                     '| mrfilter - smooth - -stdev 5,5,0 -extent 45,45,1 | mrcalc - biasfield.mif -force')
         run.command('mrcalc biasfield.mif mask.mif -mult - | mrmath -axis 0 - sum - | mrmath -axis 1 - sum tmp1.mif -force')
         run.command('mrmath -axis 0 mask.mif sum - | mrmath -axis 1 - sum tmp2.mif -force')
         run.command('mrcalc biasfield.mif tmp2.mif 0 -eq 0 tmp1.mif tmp2.mif -divide -if -sub - | mrconvert - biasfield.mif -force')
+        #run.command('mrmath -axis 0 biasfield.mif mean - | mrmath -axis 1 - mean - | mrcalc biasfield.mif - -sub - | mrconvert - biasfield.mif -force')
 
 
 def basisupdatestep(k):
