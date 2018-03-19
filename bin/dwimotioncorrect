@@ -46,6 +46,7 @@ options.add_argument('-sorder', help='Slice order (default = 2,1, for odd-even)'
 options.add_argument('-sspwidth', help='Slice thickness for Gaussian SSP (default = 1)')
 options.add_argument('-sspfile', help='Slice sensitivity profile as vector')
 options.add_argument('-or_loss', help='Outlier rejection loss function (default = softl1)')
+options.add_argument('-matchintensity', help='Activate slice or local intensity matching (default = off)')
 options.add_argument('-fieldmap', help='B0 field map for distortion correction')
 options.add_argument('-fieldidx', help='Index of volume to which field map is aligned (default = 0)')
 options.add_argument('-pe_table', help='Phase encoding table in MRtrix format')
@@ -206,6 +207,10 @@ with open('svdweights.txt', 'w') as f:
 inputfn = 'in.mif'
 
 
+if app.args.matchintensity and app.args.fieldmap:
+    app.error('intensity matching currently not compatible with field mapping.')
+
+
 #   __________ Function definitions __________
 
 def reconstep(k):
@@ -216,6 +221,11 @@ def reconstep(k):
 
 def sliceweightstep():
     run.command('dwisliceoutliers ' + inputfn + ' spred.mif -mask mask.mif sliceweights.txt' + or_option + ' -imscale imscale.mif -force')
+    if app.args.matchintensity:
+        run.command('mrcalc spred.mif -abs -log in.mif -abs -log -sub mask.mif -mult - ' +
+                    '| mrfilter - smooth - -stdev 5,5,0 -extent 45,45,1 | mrcalc - biasfield.mif -force')
+        bscale = run.command('mrstats biasfield.mif -mask mask.mif -allvolumes -output mean')[0].strip()
+        run.command('mrcalc in.mif biasfield.mif ' + bscale + ' -sub -exp -mult in1.mif -force')
 
 
 def basisupdatestep(k):
@@ -258,10 +268,12 @@ reconstep(0)
 
 # running reconstruction
 for k in range(v2viter + s2viter):
-    sliceweightstep()
+    # basis update and rank reduction
     basisupdatestep(k)
-    # register template to volumes
     rankreduxstep(k)
+    # slice weights
+    sliceweightstep(k)
+    # register template to volumes
     registrationstep(k)
     fieldalignstep(k+1)
     # update template
