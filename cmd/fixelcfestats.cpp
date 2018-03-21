@@ -259,7 +259,7 @@ void run()
   const value_type cfe_c = get_option_value ("cfe_c", DEFAULT_CFE_C);
   const value_type smooth_std_dev = get_option_value ("smooth", DEFAULT_SMOOTHING_STD) / 2.3548;
   const value_type connectivity_threshold = get_option_value ("connectivity", DEFAULT_CONNECTIVITY_THRESHOLD);
-  const bool do_nonstationary_adjustment = get_options ("nonstationary").size();
+  const bool do_nonstationarity_adjustment = get_options ("nonstationarity").size();
   const value_type angular_threshold = get_option_value ("angle", DEFAULT_ANGLE_THRESHOLD);
 
 
@@ -593,7 +593,7 @@ void run()
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical CFE statistic
   matrix_type empirical_cfe_statistic;
-  if (do_nonstationary_adjustment) {
+  if (do_nonstationarity_adjustment) {
     Stats::PermTest::precompute_empirical_stat (glm_test, cfe_integrator, empirical_cfe_statistic);
     output_header.keyval()["nonstationary adjustment"] = str(true);
     for (size_t i = 0; i != num_contrasts; ++i)
