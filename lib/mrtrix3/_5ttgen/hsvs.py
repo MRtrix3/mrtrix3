@@ -5,6 +5,8 @@ def initialise(base_parser, subparsers):
   # TODO Permit either FreeSurfer directory or T1 image as input
   parser.add_argument('input',  help='The input FreeSurfer subject directory')
   parser.add_argument('output', help='The output 5TT image')
+  # TODO Option to specify spatial resolution of output image?
+  # Or just a template image; that way can control voxel size & axis orientations
 
 
 
@@ -135,7 +137,7 @@ def execute():
   #   to terminate there.
 
   # Honour -sgm_amyg_hipp option
-  ah = 2 if app.args.sgm_amyg_hipp else 0
+  ah = 1 if app.args.sgm_amyg_hipp else 0
 
   structures = [ ( 4,  3, 'Left-Lateral-Ventricle'),
                  ( 5,  3, 'Left-Inf-Lat-Vent'),
@@ -156,6 +158,7 @@ def execute():
                  (25,  4, 'Left-Lesion'),
                  (26,  1, 'Left-Accumbens-area'),
                  (27,  1, 'Left-Substancia-Nigra'),
+                 (28,  2, 'Left-VentralDC'),
                  (30,  3, 'Left-vessel'),
                  (31,  1, 'Left-choroid-plexus'),
                  (43,  3, 'Right-Lateral-Ventricle'),
@@ -173,11 +176,18 @@ def execute():
                  (57,  4, 'Right-Lesion'),
                  (58,  1, 'Right-Accumbens-area'),
                  (59,  1, 'Right-Substancia-Nigra'),
+                 (60,  2, 'Right-VentralDC'),
                  (62,  3, 'Right-vessel'),
                  (63,  1, 'Right-choroid-plexus'),
                  (72,  3, '5th-Ventricle'),
                  (192, 2, 'Corpus_Callosum'),
-                 (250, 2, 'Fornix') ]
+                 (250, 2, 'Fornix'),
+                 # TODO Would rather combine CC segments into a single mask before converting to mesh
+                 (251, 2, 'CC_Posterior'),
+                 (252, 2, 'CC_Mid_Posterior'),
+                 (253, 2, 'CC_Central'),
+                 (254, 2, 'CC_Mid_Anterior'),
+                 (255, 2, 'CC_Anterior') ]
 
 
 
@@ -234,7 +244,7 @@ def execute():
   #   then run through mrmesh
 
   # Combine these images together using the appropriate logic in order to form the 5TT image
-  progress = app.progressBar('Combining tissue images in order to preserve 5TT format requirements', 10)
+  progress = app.progressBar('Combining tissue images in appropriate manner to preserve 5TT format requirements', 14)
   run.command('mrconvert tissue4_init.mif tissue4.mif')
   progress.increment()
   run.command('mrcalc tissue3_init.mif tissue3_init.mif tissue4.mif -add 1.0 -sub 0.0 -max -sub tissue3.mif')
@@ -255,9 +265,16 @@ def execute():
   progress.increment()
 
   # For all voxels within FreeSurfer's brain mask, add to the CSF image in order to make the sum 1.0
-  # TODO Rather than doing this blindly, look for holes in the brain, and assign he remainder to WM;
+  # TESTME Rather than doing this blindly, look for holes in the brain, and assign the remainder to WM;
   #   only within the mask but outside the brain should the CSF fraction be filled
-  run.command('mrcalc 1.0 tissuesum_01234.mif -sub ' + mask_image + ' 0.0 -gt -mult csf_fill.mif')
+  # TODO Can definitely do better than just an erosion step here
+  run.command('mrthreshold tissuesum_01234.mif -abs 0.5 - | maskfilter - erode - | mrcalc 1.0 - -sub - | maskfilter - connect -largest - | mrcalc 1.0 - -sub wm_fill_mask.mif')
+  progress.increment()
+  run.command('mrcalc 1.0 tissuesum_01234.mif -sub wm_fill_mask.mif -mult wm_fill.mif')
+  progress.increment()
+  run.command('mrcalc tissue2.mif wm_fill.mif -add tissue2_filled.mif')
+  progress.increment()
+  run.command('mrcalc 1.0 tissuesum_01234.mif wm_fill.mif -add -sub ' + mask_image + ' 0.0 -gt -mult csf_fill.mif')
   progress.increment()
   run.command('mrcalc tissue3.mif csf_fill.mif -add tissue3_filled.mif')
   progress.done()
@@ -303,20 +320,21 @@ def execute():
     progress.increment()
     run.command('mrcalc Cerebellar_mask.mif ' + fast_output_prefix + '_pve_1' + fast_suffix + ' Cerebellar_multiplier.mif -mult tissue1.mif -if tissue1_fast.mif')
     progress.increment()
-    run.command('mrcalc Cerebellar_mask.mif ' + fast_output_prefix + '_pve_2' + fast_suffix + ' Cerebellar_multiplier.mif -mult tissue2.mif -if tissue2_fast.mif')
+    run.command('mrcalc Cerebellar_mask.mif ' + fast_output_prefix + '_pve_2' + fast_suffix + ' Cerebellar_multiplier.mif -mult tissue2_filled.mif -if tissue2_filled_fast.mif')
     progress.done()
 
     # Finally, concatenate the volumes to produce the 5TT image
-    run.command('mrcat tissue0_fast.mif tissue1_fast.mif tissue2_fast.mif tissue3_filled_fast.mif tissue4.mif 5TT.mif')
+    run.command('mrcat tissue0_fast.mif tissue1_fast.mif tissue2_filled_fast.mif tissue3_filled_fast.mif tissue4.mif 5TT.mif')
 
   else:
-    run.command('mrcat tissue0.mif tissue1.mif tissue2.mif tissue3_filled.mif tissue4.mif 5TT.mif')
+    run.command('mrcat tissue0.mif tissue1.mif tissue2_filled.mif tissue3_filled.mif tissue4.mif 5TT.mif')
 
   # Maybe don't go off all tissues here, since FreeSurfer's mask can be fairly liberal;
   #   instead get just a voxel clearance from all other tissue types (maybe two)
   if app.args.nocrop:
     run.function(os.rename, '5TT.mif', 'result.mif')
   else:
+    app.console('Cropping final 5TT image')
     run.command('mrconvert 5TT.mif -coord 3 0,1,2,4 - | mrmath - sum - -axis 3 | mrthreshold - - -abs 0.001 | maskfilter - dilate crop_mask.mif')
     run.command('mrcrop 5TT.mif result.mif -mask crop_mask.mif')
 
