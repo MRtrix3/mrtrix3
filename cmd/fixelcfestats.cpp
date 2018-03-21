@@ -180,16 +180,11 @@ class SubjectFixelImport : public SubjectDataImportBase
     {
       Image<float> temp (data); // For thread-safety
       // Due to merging 'stats_enhancements' with '3.0_RC2',
-      //   this class now needs to be made aware of the fixel2row contents
-      //   (soon to become fixel2column?)
-#ifndef NDEBUG
-      row.fill (NaN);
-#endif
+      //   this class now needs to be made aware of the fixel2column contents
       for (temp.index(0) = 0; temp.index(0) != temp.size(0); ++temp.index(0)) {
         if (fixel2column[temp.index(0)] >= 0)
           row (fixel2column[temp.index(0)]) = temp.value();
       }
-      assert (row.allFinite());
     }
 
     // Is this going to require a reverse lookup?
