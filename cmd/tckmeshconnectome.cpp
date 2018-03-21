@@ -229,22 +229,22 @@ void usage ()
 
   AUTHOR = "Chun-Hung Yeh (chun-hung.yeh@florey.edu.au)";
 
-  SYNOPSIS = "construct a connectivity matrix from a streamline tractography file and a brain surface/mesh file "
+  SYNOPSIS = "Generate a connectome matrix from a streamlines file and a labelled brain surface/mesh."
              "(this is a temporary command which will be integrated into tck2connectome).";
 
   ARGUMENTS
   + Argument( "track_in", "the input track file (.tck)" ).type_file_in()
 
-  + Argument( "mesh_in", "the mesh file (.vtk)" ).type_file_in()
+  + Argument( "mesh_in", "the input mesh file (.vtk)" ).type_file_in()
 
-  + Argument( "annot_in", "the annotation file in FreeSurfer's annotation format ").type_file_in()
+  + Argument( "annot_in", "the input mesh annotation file in FreeSurfer's annotation format ").type_file_in()
 
   + Argument( "matrix_out", "the output connectivity matrix file (.csv)" ).type_file_out();
 
   OPTIONS
   + Tractography::TrackWeightsInOption
 
-  + Option( "assign_in", "generate connectome based on the track-to-mesh assignment file "
+  + Option( "assign_in", "use a track-to-mesh assignment file to generate a connectome matrix"
                          "(only valid when the assignment file is obtained from the same tractogram and mesh files)" )
     + Argument( "file" ).type_file_in()
 
@@ -252,10 +252,10 @@ void usage ()
     + Argument( "path" ).type_file_out()
 
   + Option( "out_assign_label", "output pairs of labels from streamline assignments" )
-    + Argument( "path" ).type_file_out();
+    + Argument( "path" ).type_file_out()
 
-  + Option( "lut", "edge length in mm for spatial lookup table (default=0.2mm)" )
-    + Argument( "value" ).type_float( 0.0, 25.0 )
+  + Option( "lut", "edge length in mm for surface lookup table (default=0.2mm)" )
+    + Argument( "value" ).type_float( 0.0, 25.0 );
 
 };
 
