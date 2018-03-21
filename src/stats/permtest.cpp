@@ -26,13 +26,13 @@ namespace MR
       PreProcessor::PreProcessor (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                                   const std::shared_ptr<EnhancerBase> enhancer,
                                   matrix_type& global_enhanced_sum,
-                                  vector<vector<size_t>>& global_enhanced_count) :
+                                  count_matrix_type& global_enhanced_count) :
           stats_calculator (stats_calculator),
           enhancer (enhancer),
           global_enhanced_sum (global_enhanced_sum),
           global_enhanced_count (global_enhanced_count),
           enhanced_sum (vector_type::Zero (global_enhanced_sum.size())),
-          enhanced_count (stats_calculator->num_outputs(), vector<size_t> (stats_calculator->num_elements(), 0)),
+          enhanced_count (count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_outputs())),
           stats (global_enhanced_sum.rows(), global_enhanced_sum.cols()),
           enhanced_stats (global_enhanced_sum.rows(), global_enhanced_sum.cols()),
           mutex (new std::mutex())
@@ -47,10 +47,7 @@ namespace MR
       {
         std::lock_guard<std::mutex> lock (*mutex);
         global_enhanced_sum.array() += enhanced_sum.array();
-        for (ssize_t row = 0; row != global_enhanced_sum.rows(); ++row) {
-          for (ssize_t col = 0; col != global_enhanced_sum.cols(); ++col)
-            global_enhanced_count[row][col] += enhanced_count[row][col];
-        }
+        global_enhanced_count += enhanced_count;
       }
 
 
@@ -61,11 +58,11 @@ namespace MR
           return false;
         (*stats_calculator) (shuffle.data, stats);
         (*enhancer) (stats, enhanced_stats);
-        for (ssize_t c = 0; c != enhanced_stats.rows(); ++c) {
-          for (ssize_t i = 0; i < enhanced_stats.cols(); ++i) {
-            if (enhanced_stats(c, i) > 0.0) {
-              enhanced_sum(c, i) += enhanced_stats(c, i);
-              enhanced_count[c][i]++;
+        for (ssize_t c = 0; c != enhanced_stats.cols(); ++c) {
+          for (ssize_t i = 0; i < enhanced_stats.rows(); ++i) {
+            if (enhanced_stats(i, c) > 0.0) {
+              enhanced_sum(i, c) += enhanced_stats(i, c);
+              enhanced_count(i, c)++;
             }
           }
         }
@@ -83,15 +80,14 @@ namespace MR
                             const matrix_type& empirical_enhanced_statistics,
                             const matrix_type& default_enhanced_statistics,
                             matrix_type& perm_dist,
-                            vector<vector<size_t>>& global_uncorrected_pvalue_counter) :
+                            count_matrix_type& global_uncorrected_pvalue_counter) :
           stats_calculator (stats_calculator),
           enhancer (enhancer),
           empirical_enhanced_statistics (empirical_enhanced_statistics),
           default_enhanced_statistics (default_enhanced_statistics),
           statistics (stats_calculator->num_elements(), stats_calculator->num_outputs()),
           enhanced_statistics (stats_calculator->num_elements(), stats_calculator->num_outputs()),
-    // TODO Consider changing to Eigen::Array<size_t>
-          uncorrected_pvalue_counter (stats_calculator->num_outputs(), vector<size_t> (stats_calculator->num_elements(), 0)),
+          uncorrected_pvalue_counter (count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_outputs())),
           perm_dist (perm_dist),
           global_uncorrected_pvalue_counter (global_uncorrected_pvalue_counter),
           mutex (new std::mutex())
@@ -104,10 +100,7 @@ namespace MR
       Processor::~Processor ()
       {
         std::lock_guard<std::mutex> lock (*mutex);
-        for (size_t contrast = 0; contrast != stats_calculator->num_outputs(); ++contrast) {
-          for (size_t element = 0; element != stats_calculator->num_elements(); ++element)
-            global_uncorrected_pvalue_counter[contrast][element] += uncorrected_pvalue_counter[contrast][element];
-        }
+        global_uncorrected_pvalue_counter += uncorrected_pvalue_counter;
       }
 
 
@@ -128,7 +121,7 @@ namespace MR
         for (ssize_t contrast = 0; contrast != enhanced_statistics.cols(); ++contrast) {
           for (ssize_t element = 0; element != enhanced_statistics.rows(); ++element) {
             if (default_enhanced_statistics(element, contrast) > enhanced_statistics(element, contrast))
-              uncorrected_pvalue_counter[contrast][element]++;
+              uncorrected_pvalue_counter(element, contrast)++;
           }
         }
 
@@ -147,7 +140,7 @@ namespace MR
       {
         assert (stats_calculator);
         empirical_statistic = matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_outputs());
-        vector<vector<size_t>> global_enhanced_count (stats_calculator->num_outputs(), vector<size_t> (stats_calculator->num_elements(), 0));
+        count_matrix_type global_enhanced_count (count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_outputs()));
         {
           Math::Stats::Shuffler shuffler (stats_calculator->num_subjects(), true, "Pre-computing empirical statistic for non-stationarity correction");
           PreProcessor preprocessor (stats_calculator, enhancer, empirical_statistic, global_enhanced_count);
@@ -155,8 +148,8 @@ namespace MR
         }
         for (ssize_t contrast = 0; contrast != stats_calculator->num_outputs(); ++contrast) {
           for (ssize_t element = 0; element != stats_calculator->num_elements(); ++element) {
-            if (global_enhanced_count[contrast][element] > 0)
-              empirical_statistic(contrast, element) /= static_cast<default_type> (global_enhanced_count[contrast][element]);
+            if (global_enhanced_count(element, contrast) > 0)
+              empirical_statistic(element, contrast) /= static_cast<default_type> (global_enhanced_count(element, contrast));
           }
         }
       }
@@ -199,9 +192,8 @@ namespace MR
         assert (stats_calculator);
         Math::Stats::Shuffler shuffler (stats_calculator->num_subjects(), false, "Running permutations");
         perm_dist.resize (shuffler.size(), stats_calculator->num_outputs());
-        uncorrected_pvalues.resize (stats_calculator->num_elements(), stats_calculator->num_outputs());
 
-        vector<vector<size_t>> global_uncorrected_pvalue_count (stats_calculator->num_outputs(), vector<size_t> (stats_calculator->num_elements(), 0));
+        count_matrix_type global_uncorrected_pvalue_count (count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_outputs()));
         {
           Processor processor (stats_calculator, enhancer,
                                empirical_enhanced_statistic,
@@ -210,11 +202,7 @@ namespace MR
                                global_uncorrected_pvalue_count);
           Thread::run_queue (shuffler, Math::Stats::Shuffle(), Thread::multi (processor));
         }
-
-        for (size_t contrast = 0; contrast != stats_calculator->num_outputs(); ++contrast) {
-          for (size_t element = 0; element != stats_calculator->num_elements(); ++element)
-            uncorrected_pvalues(element, contrast) = global_uncorrected_pvalue_count[contrast][element] / default_type(shuffler.size());
-        }
+        uncorrected_pvalues = global_uncorrected_pvalue_count.cast<default_type>() / default_type(shuffler.size());
       }
 
 
