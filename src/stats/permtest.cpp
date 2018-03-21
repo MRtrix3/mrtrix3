@@ -146,16 +146,17 @@ namespace MR
                                       matrix_type& empirical_statistic)
       {
         assert (stats_calculator);
-        vector<vector<size_t>> global_enhanced_count (empirical_statistic.rows(), vector<size_t> (empirical_statistic.cols(), 0));
+        empirical_statistic = matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_outputs());
+        vector<vector<size_t>> global_enhanced_count (stats_calculator->num_outputs(), vector<size_t> (stats_calculator->num_elements(), 0));
         {
           Math::Stats::Shuffler shuffler (stats_calculator->num_subjects(), true, "Pre-computing empirical statistic for non-stationarity correction");
           PreProcessor preprocessor (stats_calculator, enhancer, empirical_statistic, global_enhanced_count);
           Thread::run_queue (shuffler, Math::Stats::Shuffle(), Thread::multi (preprocessor));
         }
-        for (ssize_t row = 0; row != empirical_statistic.rows(); ++row) {
-          for (ssize_t i = 0; i != empirical_statistic.cols(); ++i) {
-            if (global_enhanced_count[row][i] > 0.0)
-              empirical_statistic(row, i) /= static_cast<default_type> (global_enhanced_count[row][i]);
+        for (ssize_t contrast = 0; contrast != stats_calculator->num_outputs(); ++contrast) {
+          for (ssize_t element = 0; element != stats_calculator->num_elements(); ++element) {
+            if (global_enhanced_count[contrast][element] > 0)
+              empirical_statistic(contrast, element) /= static_cast<default_type> (global_enhanced_count[contrast][element]);
           }
         }
       }
