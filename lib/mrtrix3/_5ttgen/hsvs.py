@@ -89,6 +89,28 @@ def execute():
     app.warn('Environment variable FSLDIR is not set; script will run without FSL components')
 
 
+  hipp_subfield_image_map = { os.path.join(mri_dir, 'lh.hippoSfLabels-T1.v10.mgz'): 'Left-Hippocampus',
+                              os.path.join(mri_dir, 'rh.hippoSfLabels-T1.v10.mgz'): 'Right-Hippocampus' }
+
+  if all(os.path.isfile(entry) for entry in hipp_subfield_image_map.keys()):
+    progress = app.progressBar('Using detected FreeSurfer hippocampal subfields module output', 6)
+    for filename, outputname in hipp_subfield_image_map.items():
+      init_mesh_path = os.path.basename(filename)[0:2] + '_hipp_init.vtk'
+      smooth_mesh_path = os.path.basename(filename)[0:2] + '_hipp_smooth.vtk'
+      run.command('mrthreshold ' + filename + ' - -abs 0.5 | mrmesh - ' + init_mesh_path)
+      progress.increment()
+      # Since the hippocampal subfields segmentation can include some fine structures, reduce the extent of smoothing
+      run.command('meshfilter ' + init_mesh_path + ' smooth ' + smooth_mesh_path + ' -smooth_spatial 5 -smooth_influence 5')
+      progress.increment()
+      run.command('mesh2voxel ' + smooth_mesh_path + ' ' + aparc_image + ' ' + outputname + '.mif')
+      progress.increment()
+    progress.done()
+    # If we're going to be running FIRST, then we don't want to run it on the hippocampi
+    if have_first:
+      sgm_first_map = { key:value for key, value in sgm_first_map.items() if value not in hipp_subfield_image_map.values() }
+  else:
+    hipp_subfield_image_map = { }
+
 
 
   if have_first:
@@ -175,10 +197,11 @@ def execute():
   progress.done()
 
   # Get other structures that need to be converted from the voxel image
-  progress = app.progressBar('Smoothing non-cortex structures segmented by FreeSurfer', len(structures))
+  progress = app.progressBar('Smoothing non-cortical structures segmented by FreeSurfer', len(structures))
   for (index, tissue, name) in structures:
     # Don't segment anything for which we have instead obtained estimates using FIRST
-    if not name in sgm_first_map.values():
+    # Also don't segment the hippocampi from the aparc+aseg image if we're using the hippocampal subfields module
+    if not name in sgm_first_map.values() and not name in hipp_subfield_image_map.values():
       # If we're going to subsequently use fast, don't bother smoothing cerebellar segmentations;
       #   we're only going to use them to produce a mask anyway
       if 'Cerebellum' in name and have_fast:
@@ -207,6 +230,8 @@ def execute():
   # This can hopefully be done with a connected-component analysis: Take just the WM image, and
   #   fill in any gaps (i.e. select the inverse, select the largest connected component, invert again)
   # Make sure that floating-point values are handled appropriately
+  # TODO Idea: Dilate voxelised brain stem 2 steps, add only intersection with voxelised WM,
+  #   then run through mrmesh
 
   # Combine these images together using the appropriate logic in order to form the 5TT image
   progress = app.progressBar('Combining tissue images in order to preserve 5TT format requirements', 10)
@@ -230,6 +255,8 @@ def execute():
   progress.increment()
 
   # For all voxels within FreeSurfer's brain mask, add to the CSF image in order to make the sum 1.0
+  # TODO Rather than doing this blindly, look for holes in the brain, and assign he remainder to WM;
+  #   only within the mask but outside the brain should the CSF fraction be filled
   run.command('mrcalc 1.0 tissuesum_01234.mif -sub ' + mask_image + ' 0.0 -gt -mult csf_fill.mif')
   progress.increment()
   run.command('mrcalc tissue3.mif csf_fill.mif -add tissue3_filled.mif')
