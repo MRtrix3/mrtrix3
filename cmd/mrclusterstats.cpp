@@ -134,7 +134,6 @@ class SubjectVoxelImport : public SubjectDataImportBase
     void operator() (matrix_type::RowXpr row) const override
     {
       assert (v2v);
-      assert (size_t(row.size()) == size());
       Image<float> temp (data); // For thread-safety
       for (size_t i = 0; i != size(); ++i) {
         assign_pos_of ((*v2v)[i]).to (temp);
@@ -145,9 +144,9 @@ class SubjectVoxelImport : public SubjectDataImportBase
     default_type operator[] (const size_t index) const override
     {
       assert (v2v);
-      assert (index < size());
       Image<float> temp (data); // For thread-safety
       assign_pos_of ((*v2v)[index]).to (temp);
+      assert (!is_out_of_bounds (temp));
       return temp.value();
     }
 
