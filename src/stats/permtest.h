@@ -47,6 +47,7 @@ namespace MR
       using value_type = Math::Stats::value_type;
       using vector_type = Math::Stats::vector_type;
       using matrix_type = Math::Stats::matrix_type;
+      using count_matrix_type = Eigen::Array<uint32_t, Eigen::Dynamic, Eigen::Dynamic>;
 
 
 
@@ -56,7 +57,7 @@ namespace MR
           PreProcessor (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                         const std::shared_ptr<EnhancerBase> enhancer,
                         matrix_type& global_enhanced_sum,
-                        vector<vector<size_t>>& global_enhanced_count);
+                        count_matrix_type& global_enhanced_count);
 
           ~PreProcessor();
 
@@ -66,9 +67,9 @@ namespace MR
           std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator;
           std::shared_ptr<EnhancerBase> enhancer;
           matrix_type& global_enhanced_sum;
-          vector<vector<size_t>>& global_enhanced_count;
+          count_matrix_type& global_enhanced_count;
           matrix_type enhanced_sum;
-          vector<vector<size_t>> enhanced_count;
+          count_matrix_type enhanced_count;
           matrix_type stats;
           matrix_type enhanced_stats;
           std::shared_ptr<std::mutex> mutex;
@@ -85,7 +86,7 @@ namespace MR
                      const matrix_type& empirical_enhanced_statistics,
                      const matrix_type& default_enhanced_statistics,
                      matrix_type& perm_dist,
-                     vector<vector<size_t>>& global_uncorrected_pvalue_counter);
+                     count_matrix_type& global_uncorrected_pvalue_counter);
 
           ~Processor();
 
@@ -98,9 +99,9 @@ namespace MR
           const matrix_type& default_enhanced_statistics;
           matrix_type statistics;
           matrix_type enhanced_statistics;
-          vector<vector<size_t>> uncorrected_pvalue_counter;
+          count_matrix_type uncorrected_pvalue_counter;
           matrix_type& perm_dist;
-          vector<vector<size_t>>& global_uncorrected_pvalue_counter;
+          count_matrix_type& global_uncorrected_pvalue_counter;
           std::shared_ptr<std::mutex> mutex;
       };
 
