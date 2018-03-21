@@ -179,7 +179,7 @@ void run() {
   const value_type tfce_E = get_option_value ("tfce_e", DEFAULT_TFCE_E);
   const bool use_tfce = !std::isfinite (cluster_forming_threshold);
   const bool do_26_connectivity = get_options("connectivity").size();
-  const bool do_nonstationary_adjustment = get_options ("nonstationary").size();
+  const bool do_nonstationarity_adjustment = get_options ("nonstationarity").size();
 
   // Load analysis mask and compute adjacency
   auto mask_header = Header::open (argument[3]);
@@ -254,7 +254,7 @@ void run() {
   output_header.datatype() = DataType::Float32;
   //output_header.keyval()["num permutations"] = str(num_perms);
   output_header.keyval()["26 connectivity"] = str(do_26_connectivity);
-  output_header.keyval()["nonstationary adjustment"] = str(do_nonstationary_adjustment);
+  output_header.keyval()["nonstationary adjustment"] = str(do_nonstationarity_adjustment);
   if (use_tfce) {
     output_header.keyval()["tfce_dh"] = str(tfce_dh);
     output_header.keyval()["tfce_e"] = str(tfce_E);
@@ -307,7 +307,7 @@ void run() {
   }
 
   matrix_type empirical_enhanced_statistic;
-  if (do_nonstationary_adjustment) {
+  if (do_nonstationarity_adjustment) {
     if (!use_tfce)
       throw Exception ("Nonstationary adjustment is not currently implemented for threshold-based cluster analysis");
     Stats::PermTest::precompute_empirical_stat (glm_test, enhancer, empirical_enhanced_statistic);

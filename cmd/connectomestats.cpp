@@ -199,7 +199,7 @@ void run()
       throw Exception ("Unknown enhancement algorithm");
   }
 
-  const bool do_nonstationary_adjustment = get_options ("nonstationary").size();
+  const bool do_nonstationarity_adjustment = get_options ("nonstationarity").size();
 
   // Load design matrix
   const matrix_type design = load_matrix (argument[2]);
@@ -289,7 +289,7 @@ void run()
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical statistic
   matrix_type empirical_statistic;
-  if (do_nonstationary_adjustment) {
+  if (do_nonstationarity_adjustment) {
     Stats::PermTest::precompute_empirical_stat (glm_test, enhancer, empirical_statistic);
     for (size_t i = 0; i != num_contrasts; ++i)
       save_matrix (mat2vec.V2M (empirical_statistic.col(i)), output_prefix + "_empirical" + postfix(i) + ".csv");

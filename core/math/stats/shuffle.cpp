@@ -60,7 +60,7 @@ namespace MR
           result
           + Option ("nonstationarity", "perform non-stationarity correction")
 
-          + Option ("nshuffles_nonstationary", "the number of shuffles to use when precomputing the empirical statistic image for non-stationarity correction (default: " + str(DEFAULT_NUMBER_SHUFFLES_NONSTATIONARITY) + ")")
+          + Option ("nshuffles_nonstationarity", "the number of shuffles to use when precomputing the empirical statistic image for non-stationarity correction (default: " + str(DEFAULT_NUMBER_SHUFFLES_NONSTATIONARITY) + ")")
             + Argument ("number").type_integer (1)
 
           + Option ("permutations_nonstationarity", "manually define the permutations (relabelling) for computing the emprical statistics for non-stationarity correction. "

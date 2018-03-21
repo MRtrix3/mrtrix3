@@ -45,7 +45,7 @@ Options relating to shuffling of data for nonparametric statistical inference
 
 -  **-nonstationarity** perform non-stationarity correction
 
--  **-nshuffles_nonstationary number** the number of shuffles to use when precomputing the empirical statistic image for non-stationarity correction (default: 5000)
+-  **-nshuffles_nonstationarity number** the number of shuffles to use when precomputing the empirical statistic image for non-stationarity correction (default: 5000)
 
 -  **-permutations_nonstationarity file** manually define the permutations (relabelling) for computing the emprical statistics for non-stationarity correction. The input should be a text file defining a m x n matrix, where each relabelling is defined as a column vector of size m, and the number of columns, n, defines the number of permutations. Can be generated with the palm_quickperms function in PALM (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM) Overrides the -nshuffles_nonstationarity option.
 
