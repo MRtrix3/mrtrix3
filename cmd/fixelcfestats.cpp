@@ -149,7 +149,6 @@ void write_fixel_output (const std::string& filename,
                          const VectorType& data,
                          const Header& header)
 {
-  assert (data.size() == header.size (0));
   assert (size_t(header.size(0)) == fixel2column.size());
   auto output = Image<float>::create (filename, header);
   for (size_t i = 0; i != fixel2column.size(); ++i) {
@@ -179,7 +178,6 @@ class SubjectFixelImport : public SubjectDataImportBase
 
     void operator() (matrix_type::RowXpr row) const override
     {
-      assert (size_t(row.size()) == size());
       Image<float> temp (data); // For thread-safety
       // Due to merging 'stats_enhancements' with '3.0_RC2',
       //   this class now needs to be made aware of the fixel2row contents
@@ -210,8 +208,8 @@ class SubjectFixelImport : public SubjectDataImportBase
     {
       assert (index < column2fixel.size());
       Image<float> temp (data); // For thread-safety
-      assert (column2fixel[index] < size());
       temp.index(0) = column2fixel[index];
+      assert (!is_out_of_bounds (temp));
       return default_type(temp.value());
     }
 
