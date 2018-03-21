@@ -58,9 +58,12 @@ namespace MR {
               out.push_back (temp[s]);
               break;
             }
-            const value_type mu = (target_length - cumulative_length) / steps[input_index];
+            const value_type mu = steps[input_index] ?
+                                  (target_length - cumulative_length) / steps[input_index] :
+                                  0.5;
             interp.set (mu);
             out.push_back (interp.value (temp[input_index], temp[input_index+1], temp[input_index+2], temp[input_index+3]));
+            assert (out.back().allFinite());
           }
 
           return true;
