@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -37,7 +38,7 @@ namespace MR {
           Image<float> data (interp);
           auto f = [] (Image<float>& in, Image<bool>& mask) {
             for (in.index(3) = 0; in.index(3) != in.size(3); ++in.index(3)) {
-              if (std::isfinite (in.value()) && in.value()) {
+              if (std::isfinite (static_cast<float>(in.value())) && in.value()) {
                 mask.value() = true;
                 return true;
               }
@@ -64,7 +65,7 @@ namespace MR {
 
               for (; index >= 0 && index < ssize_t(tck.size()); index += step) {
                 const Eigen::Vector3 p = interp.scanner2voxel * tck[index].cast<default_type>();
-                const Eigen::Array3i v ( { std::round (p[0]), std::round (p[1]), std::round (p[2]) } );
+                const Eigen::Array3i v ( { int(std::round (p[0])), int(std::round (p[1])), int(std::round (p[2])) } );
                 if (!is_out_of_bounds (backtrack_mask, v)) {
                   assign_pos_of (v, 0, 3).to (backtrack_mask);
                   if (backtrack_mask.value())
@@ -240,7 +241,7 @@ namespace MR {
             if (!interp.scanner (tck[index]))
               return;
             values[tck_end_index].reserve (kernel.size());
-            for (ssize_t i = 0; i != kernel.size(); ++i) {
+            for (size_t i = 0; i != kernel.size(); ++i) {
               interp.index(3) = sample_centre - kernel_centre + i;
               if (interp.index(3) >= 0 && interp.index(3) < interp.size(3))
                 values[tck_end_index].push_back (interp.value());

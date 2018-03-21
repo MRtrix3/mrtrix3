@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -34,7 +35,8 @@ namespace MR
     {
       namespace Tool
       {
-        const int Tractogram::max_sample_stride;
+        const int Tractogram::track_padding;
+        TrackGeometryType Tractogram::default_tract_geom (TrackGeometryType::Pseudotubes);
 
         std::string Tractogram::Shader::vertex_shader_source (const Displayable& displayable)
         {
@@ -118,6 +120,9 @@ namespace MR
 
         std::string Tractogram::Shader::geometry_shader_source (const Displayable&)
         {
+          if (geometry_type != TrackGeometryType::Pseudotubes)
+            return std::string();
+
           std::string source =
           "layout(lines) in;\n"
           "layout(triangle_strip, max_vertices = 4) out;\n"
@@ -209,6 +214,8 @@ namespace MR
         std::string Tractogram::Shader::fragment_shader_source (const Displayable& displayable)
         {
           const Tractogram& tractogram = dynamic_cast<const Tractogram&>(displayable);
+          bool using_geom = geometry_type == TrackGeometryType::Pseudotubes;
+          bool using_points = geometry_type == TrackGeometryType::Points;
 
           std::string source =
             "uniform float lower, upper;\n"
@@ -217,60 +224,85 @@ namespace MR
             "out vec3 colour;\n";
 
           if (color_type == TrackColourType::ScalarFile || color_type == TrackColourType::Ends)
-            source += "in vec3 fColour;\n";
+            source += using_geom ? "in vec3 fColour;\n" : "in vec3 v_colour;\n";
           if (use_lighting || color_type == TrackColourType::Direction)
-            source += "in vec3 g_tangent;\n";
+            source += using_geom ? "in vec3 g_tangent;\n" : "in vec3 v_tangent;\n";
 
           if (threshold_type != TrackThresholdType::None)
-            source += "in float g_amp;\n";
+            source += using_geom ? "in float g_amp;\n" : "in vec3 v_amp;\n";
 
-          if (use_lighting)
+          if (use_lighting && (using_geom || using_points)) {
             source +=
               "uniform float ambient, diffuse, specular, shine;\n"
-              "uniform vec3 light_pos;\n"
-              "in float g_height;\n";
+              "uniform vec3 light_pos;\n";
+
+            if (using_geom)
+              source += "in float g_height;\n";
+          }
+
           if (do_crop_to_slab)
-            source += "in float g_include;\n";
+            source += using_geom ? "in float g_include;\n" : "in float v_include;\n";
 
           source += "void main() {\n";
 
-          if (do_crop_to_slab)
+
+          if (using_points)
             source +=
-              "  if (g_include < 0.0 || g_include > 1.0) discard;\n";
+            "vec2 pos = gl_PointCoord-0.5;\n"
+            "float d_pos = dot(pos, pos);\n"
+            "if(d_pos >0.25)\n"
+            "  discard;\n";
+
+          if (do_crop_to_slab)
+            source += using_geom ?
+                  "  if (g_include < 0.0 || g_include > 1.0) discard;\n"
+                : "  if (v_include < 0.0 || v_include > 1.0) discard;\n";
 
           if (threshold_type != TrackThresholdType::None) {
             if (tractogram.use_discard_lower())
-              source += "  if (g_amp < lower) discard;\n";
+              source += using_geom ? "  if (g_amp < lower) discard;\n"
+                                   : "  if (v_amp < lower) discard;\n";
             if (tractogram.use_discard_upper())
-              source += "  if (g_amp > upper) discard;\n";
+              source += using_geom ? "  if (g_amp > upper) discard;\n"
+                                   : "  if (v_amp > upper) discard;\n";
           }
 
           switch (color_type) {
             case TrackColourType::Direction:
-              source += "  colour = abs (normalize (g_tangent));\n";
+              source += using_geom ? "  colour = abs (normalize (g_tangent));\n"
+                                   : "  colour = abs (normalize (v_tangent));\n";
               break;
             case TrackColourType::ScalarFile:
-              source += "  colour = fColour;\n";
+              source += using_geom ? "  colour = fColour;\n"
+                                   : "  colour = v_colour;\n";
               break;
             case TrackColourType::Ends:
-              source += "  colour = fColour;\n";
+              source += using_geom ? "  colour = fColour;\n"
+                                   : "  colour = v_colour;\n";
               break;
             case TrackColourType::Manual:
               source += "  colour = const_colour;\n";
           }
 
-          if (use_lighting)
-            // g_height tells us where we are across the cylinder (0 - PI)
-            source +=
-              // compute surface normal:
-              "  float s = sin (g_height);\n"
-              "  float c = cos (g_height);\n"
-              "  vec3 tangent = normalize (mat3(MV) * g_tangent);\n"
-              "  vec3 in_plane_x = normalize (vec3(-tangent.y, tangent.x, 0.0f));\n"
-              "  vec3 in_plane_y = normalize (vec3(-tangent.x, -tangent.y, 0.0f));\n"
-              "  vec3 surface_normal = c*in_plane_x +  s*abs(tangent.z)*in_plane_y;\n"
-              "  surface_normal.z -= s * sqrt(tangent.x*tangent.x + tangent.y*tangent.y);\n"
+          if (use_lighting && (using_geom || using_points)) {
 
+            if (using_geom) {
+              // g_height tells us where we are across the cylinder (0 - PI)
+              source +=
+                // compute surface normal:
+                "  float s = sin (g_height);\n"
+                "  float c = cos (g_height);\n"
+                "  vec3 tangent = normalize (mat3(MV) * g_tangent);\n"
+                "  vec3 in_plane_x = normalize (vec3(-tangent.y, tangent.x, 0.0f));\n"
+                "  vec3 in_plane_y = normalize (vec3(-tangent.x, -tangent.y, 0.0f));\n"
+                "  vec3 surface_normal = c*in_plane_x +  s*abs(tangent.z)*in_plane_y;\n"
+                "  surface_normal.z -= s * sqrt(tangent.x*tangent.x + tangent.y*tangent.y);\n";
+             } else if (using_points) {
+               source +=
+               "vec3 surface_normal = normalize(vec3(pos, sin((d_pos - 0.25) *" + str(Math::pi_2) + ")));\n";
+             }
+
+             source +=
              "  float light_dot_surfaceN = -dot(light_pos, surface_normal);"
              // Ambient and diffuse component
              "  colour *= ambient + diffuse * clamp(light_dot_surfaceN, 0, 1);\n"
@@ -280,6 +312,7 @@ namespace MR
              "    vec3 reflection = light_pos + 2 * light_dot_surfaceN * surface_normal;\n"
              "    colour += specular * pow(clamp(-reflection.z, 0, 1), shine);\n"
              "  }\n";
+          }
 
           source += "}\n";
 
@@ -298,6 +331,8 @@ namespace MR
             return true;
           if (use_lighting != tractogram.tractography_tool.use_lighting)
             return true;
+          if (geometry_type != tractogram.geometry_type)
+            return true;
 
           return Displayable::Shader::need_update (object);
         }
@@ -312,6 +347,7 @@ namespace MR
           use_lighting = tractogram.tractography_tool.use_lighting;
           color_type = tractogram.color_type;
           threshold_type = tractogram.threshold_type;
+          geometry_type = tractogram.geometry_type;
           Displayable::Shader::update (object);
         }
 
@@ -325,12 +361,14 @@ namespace MR
             Displayable (filename),
             show_colour_bar (true),
             original_fov (NAN),
+            line_thickness (0.f),
             intensity_scalar_filename (std::string()),
             threshold_scalar_filename (std::string()),
             tractography_tool (tool),
             filename (filename),
             color_type (TrackColourType::Direction),
             threshold_type (TrackThresholdType::None),
+            geometry_type (default_tract_geom),
             sample_stride (0),
             vao_dirty (true),
             threshold_min (NaN),
@@ -417,11 +455,20 @@ namespace MR
             original_fov = std::pow (dim[0]*dim[1]*dim[2], 1.0f/3.0f);
           }
 
-          line_thickness_screenspace = tractography_tool.line_thickness*original_fov*(transform.width()+transform.height()) / ( 2.0*window().FOV()*transform.width()*transform.height());
+
+          float line_thickness_screenspace =
+            Tractogram::default_line_thickness * std::exp (2.0e-3f * line_thickness) * original_fov *
+            (transform.width()+transform.height()) / ( 2.f * window().FOV() * transform.width() * transform.height());
 
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "line_thickness"), line_thickness_screenspace);
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "scale_x"), transform.width());
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "scale_y"), transform.height());
+
+          float point_size_screenspace =
+              Tractogram::default_point_size * std::exp (2.0e-3f * line_thickness) * original_fov *
+              (transform.width()+transform.height()) / ( 2.f * window().FOV());
+
+          glPointSize(point_size_screenspace);
 
           if (tractography_tool.line_opacity < 1.0) {
             gl::Enable (gl::BLEND);
@@ -429,7 +476,7 @@ namespace MR
             gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE);
             gl::Disable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
-            gl::BlendColor (1.0, 1.0, 1.0,  tractography_tool.line_opacity / 0.5);
+            gl::BlendColor (1.0, 1.0, 1.0, tractography_tool.line_opacity / 0.5);
             render_streamlines();
             gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE_MINUS_CONSTANT_ALPHA);
             gl::Enable (gl::DEPTH_TEST);
@@ -498,11 +545,26 @@ namespace MR
               gl::VertexAttribPointer (2, 3, gl::FLOAT, gl::FALSE_, 3*sample_stride*sizeof(float), (void*)(6*sample_stride*sizeof(float)));
 
               for(size_t j = 0, M = track_sizes[buf].size(); j < M; ++j) {
-                track_sizes[buf][j] = (GLint) std::floor (original_track_sizes[buf][j] / (float)sample_stride);
-                track_starts[buf][j] = (GLint) (std::ceil (original_track_starts[buf][j] / (float)sample_stride)) - 1;
+                track_sizes[buf][j] = (GLint) std::ceil (original_track_sizes[buf][j] / (float)sample_stride);
+                track_starts[buf][j] = (GLint) std::floor (original_track_starts[buf][j] / (float)sample_stride);
+
+                // Vertex attributes are packed prev, curr, next
+                // So ensure first curr does indeed correspond to track start
+                if (original_track_starts[buf][j] - sample_stride * track_starts[buf][j] < sample_stride - 1)
+                  --track_starts[buf][j];
+
+                // Ensure final vertex corresponds to track end
+                GLint offset = original_track_starts[buf][j] + original_track_sizes[buf][j]
+                    - (track_starts[buf][j] + track_sizes[buf][j] - 1) * sample_stride;
+
+                track_sizes[buf][j] += (GLint)std::floor(offset / (float)sample_stride);
               }
             }
-            gl::MultiDrawArrays (gl::LINE_STRIP, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
+
+            auto mode = geometry_type == TrackGeometryType::Points ? gl::POINTS : gl::LINE_STRIP;
+
+            gl::MultiDrawArrays (mode, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
+
           }
 
           vao_dirty = false;
@@ -516,9 +578,15 @@ namespace MR
         {
           const float step_size = DWI::Tractography::get_step_size (properties);
           GLint new_stride = 1;
-          if (std::isfinite (step_size)) {
-            new_stride = GLint (tractography_tool.line_thickness * original_fov / step_size);
-            new_stride = std::max (1, std::min (max_sample_stride, new_stride));
+
+          if (geometry_type == TrackGeometryType::Pseudotubes && std::isfinite (step_size)) {
+            const auto geom_size = geometry_type == TrackGeometryType::Pseudotubes ?
+                  Tractogram::default_line_thickness : Tractogram::default_point_size;
+            new_stride = GLint (geom_size * std::exp (2.0e-3f * line_thickness) * original_fov / step_size);
+            // We have to ensure that our vertex buffer contains at least two copies
+            // of track start and track end to correctly render our tracks
+            // => Max stride = track_padding / 2
+            new_stride = std::max (1, std::min (track_padding / 2, new_stride));
           }
 
           if (new_stride != sample_stride) {
@@ -555,17 +623,17 @@ namespace MR
             // Pre padding
             // To support downsampling, we want to ensure that the starting track vertex
             // is used even when we're using a stride > 1
-            for (size_t i = 0; i < max_sample_stride; ++i)
+            for (size_t i = 0; i < track_padding; ++i)
               buffer.push_back (tck.front());
 
-            starts.push_back (buffer.size());
+            starts.push_back (buffer.size() - 1);
 
             buffer.insert (buffer.end(), tck.begin(), tck.end());
 
             // Post padding
             // Similarly, to support downsampling, we also want to ensure the final track vertex
             // will be used even we're using a stride > 1
-            for (size_t i = 0; i < max_sample_stride; ++i)
+            for (size_t i = 0; i < track_padding; ++i)
               buffer.push_back(tck.back());
 
             sizes.push_back (N);
@@ -609,7 +677,7 @@ namespace MR
               const size_t tck_length = original_track_sizes[buffer_index][buffer_tck_counter];
 
               // Includes pre- and post-padding to coincide with tracks buffer
-              for (size_t i = 0; i != tck_length + (2 * max_sample_stride); ++i)
+              for (size_t i = 0; i != tck_length + (2 * track_padding); ++i)
                 buffer.push_back (colour);
 
             }
@@ -649,7 +717,7 @@ namespace MR
                 continue;
 
               // Pre padding to coincide with tracks buffer
-              for (size_t i = 0; i < max_sample_stride; ++i)
+              for (size_t i = 0; i < track_padding; ++i)
                 buffer.push_back (tck_scalar.front());
 
               for (size_t i = 0; i < tck_size; ++i) {
@@ -659,7 +727,7 @@ namespace MR
               }
 
               // Post padding to coincide with tracks buffer
-              for (size_t i = 0; i < max_sample_stride; ++i)
+              for (size_t i = 0; i < track_padding; ++i)
                 buffer.push_back (tck_scalar.back());
 
               if (buffer.size() >= MAX_BUFFER_SIZE)
@@ -686,13 +754,13 @@ namespace MR
                 tck_scalar.assign (track_lengths[index], value);
 
                 // Pre padding to coincide with tracks buffer
-                for (size_t i = 0; i < max_sample_stride; ++i)
+                for (size_t i = 0; i < track_padding; ++i)
                   buffer.push_back (tck_scalar.front());
 
                 buffer.insert (buffer.end(), tck_scalar.begin(), tck_scalar.end());
 
                 // Post padding to coincide with tracks buffer
-                for (size_t i = 0; i < max_sample_stride; ++i)
+                for (size_t i = 0; i < track_padding; ++i)
                   buffer.push_back (tck_scalar.back());
 
                 value_max = std::max (value_max, value);
@@ -738,7 +806,7 @@ namespace MR
                 continue;
 
               // Pre padding to coincide with tracks buffer
-              for (size_t i = 0; i < max_sample_stride; ++i)
+              for (size_t i = 0; i < track_padding; ++i)
                 buffer.push_back (tck_scalar.front());
 
               for (size_t i = 0; i < tck_size; ++i) {
@@ -748,7 +816,7 @@ namespace MR
               }
 
               // Post padding to coincide with tracks buffer
-              for (size_t i = 0; i < max_sample_stride; ++i)
+              for (size_t i = 0; i < track_padding; ++i)
                 buffer.push_back (tck_scalar.back());
 
               if (buffer.size() >= MAX_BUFFER_SIZE)
@@ -775,13 +843,13 @@ namespace MR
                 tck_scalar.assign (track_lengths[index], value);
 
                 // Pre padding to coincide with tracks buffer
-                for (size_t i = 0; i < max_sample_stride; ++i)
+                for (size_t i = 0; i < track_padding; ++i)
                   buffer.push_back (tck_scalar.front());
 
                 buffer.insert (buffer.end(), tck_scalar.begin(), tck_scalar.end());
 
                 // Post padding to coincide with tracks buffer
-                for (size_t i = 0; i < max_sample_stride; ++i)
+                for (size_t i = 0; i < track_padding; ++i)
                   buffer.push_back (tck_scalar.back());
 
                 threshold_max = std::max (threshold_max, value);
@@ -870,6 +938,12 @@ namespace MR
           }
         }
 
+
+        void Tractogram::set_geometry_type (const TrackGeometryType t)
+        {
+          geometry_type = t;
+          should_update_stride = true;
+        }
 
 
         void Tractogram::load_tracks_onto_GPU (vector<Eigen::Vector3f>& buffer,

@@ -1,3 +1,6 @@
-Here we reorient the direction of all fixels based on the Jacobian matrix (local affine transformation) at each voxel in the warp. Note that in-place fixel reorientation can be performed by specifing the output fixel folder to be the same as the input, and using the :code:`-force` option::
+Here we reorient the fixels of all subjects in template space based on the local transformation at each voxel in the warps used previously::
 
-    foreach * : fixelreorient IN/fixel_in_template_space IN/subject2template_warp.mif IN/fixel_in_template_space --force
+    foreach * : fixelreorient IN/fixel_in_template_space_NOT_REORIENTED IN/subject2template_warp.mif IN/fixel_in_template_space
+    
+After this step, the :code:`fixel_in_template_space_NOT_REORIENTED` folders can be safely removed.
+

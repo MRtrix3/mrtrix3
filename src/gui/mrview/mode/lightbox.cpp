@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -177,21 +178,21 @@ namespace MR
         void LightBox::draw_plane_primitive (int axis, Displayable::Shader& shader_program, Projection& with_projection)
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
-          if (visible)
-            image()->render3D (shader_program, with_projection, with_projection.depth_of (focus()));
-          render_tools (with_projection, false, axis, slice (axis));
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
-        }
-
-        void LightBox::paint(Projection&)
-        {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           // Setup OpenGL environment:
           gl::Disable (gl::BLEND);
           gl::Disable (gl::DEPTH_TEST);
           gl::DepthMask (gl::FALSE_);
           gl::ColorMask (gl::TRUE_, gl::TRUE_, gl::TRUE_, gl::TRUE_);
 
+          if (visible)
+            image()->render3D (shader_program, with_projection, with_projection.depth_of (focus()));
+
+          render_tools (with_projection, false, axis, slice (axis));
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        }
+
+        void LightBox::paint(Projection&)
+        {
           GLint x = projection.x_position(), y = projection.y_position();
           GLint w = projection.width(), h = projection.height();
           GLfloat dw = w / (float)n_cols, dh = h / (float)n_rows;

@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -61,33 +62,38 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Use a fast-marching level-set method to segment fibre orientation distributions, and save parameters of interest as fixel images";
+  SYNOPSIS = "Perform segmentation of continuous Fibre Orientation Distributions (FODs) to produce discrete fixels";
 
-  REFERENCES 
+  REFERENCES
     + "* Reference for the FOD segmentation method:\n"
     "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
     "SIFT: Spherical-deconvolution informed filtering of tractograms. "
     "NeuroImage, 2013, 67, 298-312 (Appendix 2)"
 
-    + "* Reference for Apparent Fibre Density:\n"
+    + "* Reference for Apparent Fibre Density (AFD):\n"
     "Raffelt, D.; Tournier, J.-D.; Rose, S.; Ridgway, G.R.; Henderson, R.; Crozier, S.; Salvado, O.; Connelly, A. " // Internal
     "Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images."
     "Neuroimage, 2012, 15;59(4), 3976-94.";
 
   ARGUMENTS
   + Argument ("fod", "the input fod image.").type_image_in ()
-  + Argument ("fixel_directory", "the output fixel directory").type_text();
+  + Argument ("fixel_directory", "the output fixel directory").type_directory_out();
 
 
   OPTIONS
 
-  + Option ("mask",
-            "only perform computation within the specified binary brain mask image.")
-    + Argument ("image").type_image_in()
-
   + OutputOptions
 
   + FMLSSegmentOption
+
+  + OptionGroup ("Other options for fod2fixel")
+
+  + Option ("mask",
+                "only perform computation within the specified binary brain mask image.")
+    + Argument ("image").type_image_in()
+
+  + Option ("maxnum", "maximum number of fixels to output for any particular voxel (default: no limit)")
+    + Argument ("number").type_integer(1)
 
   + Option ("nii", "output the directions and index file in nii format (instead of the default mif)")
 
@@ -100,21 +106,17 @@ void usage ()
 class Segmented_FOD_receiver { MEMALIGN(Segmented_FOD_receiver)
 
   public:
-    Segmented_FOD_receiver (const Header& header, bool dir_as_peak = false) :
-        H (header), n_fixels (0), dir_as_peak (dir_as_peak)
-    {
-    }
+    Segmented_FOD_receiver (const Header& header, const uint32_t maxnum = 0, bool dir_as_peak = false) :
+        H (header), fixel_count (0), max_per_voxel (maxnum), dir_as_peak (dir_as_peak) { }
 
     void commit ();
 
     void set_fixel_directory_output (const std::string& path) { fixel_directory_path = path; }
     void set_index_output (const std::string& path) { index_path = path; }
     void set_directions_output (const std::string& path) { dir_path = path; }
-    void set_afd_output  (const std::string& path) { afd_path = path; }
+    void set_afd_output (const std::string& path) { afd_path = path; }
     void set_peak_output (const std::string& path) { peak_path = path; }
     void set_disp_output (const std::string& path) { disp_path = path; }
-
-    size_t num_outputs() const;
 
     bool operator() (const FOD_lobes&);
 
@@ -125,56 +127,45 @@ class Segmented_FOD_receiver { MEMALIGN(Segmented_FOD_receiver)
       Eigen::Vector3f dir;
       float integral;
       float peak_value;
-      Primitive_FOD_lobe (Eigen::Vector3f dir, float integral, float peak_value)
-        : dir (dir), integral (integral), peak_value (peak_value) {}
+      Primitive_FOD_lobe (Eigen::Vector3f dir, float integral, float peak_value) :
+          dir (dir), integral (integral), peak_value (peak_value) {}
     };
 
 
     class Primitive_FOD_lobes : public vector<Primitive_FOD_lobe> { MEMALIGN (Primitive_FOD_lobes)
       public:
-        Eigen::Array3i vox;
-
-        Primitive_FOD_lobes (const FOD_lobes& in, bool asdf) : vox (in.vox)
+        Primitive_FOD_lobes (const FOD_lobes& in, const uint32_t maxcount, bool use_peak_dir) :
+            vox (in.vox)
         {
-          for (const FOD_lobe& lobe : in) {
-            if (asdf)
+          const uint32_t N = maxcount ? std::min (uint32_t(in.size()), maxcount) : in.size();
+          for (uint32_t i = 0; i != N; ++i) {
+            const FOD_lobe& lobe (in[i]);
+            if (use_peak_dir)
               this->emplace_back (lobe.get_peak_dir(0).cast<float>(), lobe.get_integral(), lobe.get_max_peak_value());
             else
               this->emplace_back (lobe.get_mean_dir().cast<float>(), lobe.get_integral(), lobe.get_max_peak_value());
           }
         }
+        Eigen::Array3i vox;
     };
 
     Header H;
     std::string fixel_directory_path, index_path, dir_path, afd_path, peak_path, disp_path;
     vector<Primitive_FOD_lobes> lobes;
-    uint64_t n_fixels;
+    uint32_t fixel_count;
+    uint32_t max_per_voxel;
     bool dir_as_peak;
 };
-
-
-
-size_t Segmented_FOD_receiver::num_outputs() const
-{
-  size_t count = 1;
-  if (dir_path.size()) ++count;
-  if (afd_path.size())  ++count;
-  if (peak_path.size()) ++count;
-  if (disp_path.size()) ++count;
-  return count;
-}
 
 
 
 
 bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
 {
-
-  if (size_t n = in.size()) {
-    lobes.emplace_back (in, dir_as_peak);
-    n_fixels += n;
+  if (in.size()) {
+    lobes.emplace_back (in, max_per_voxel, dir_as_peak);
+    fixel_count += lobes.back().size();
   }
-
   return true;
 }
 
@@ -182,7 +173,7 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
 
 void Segmented_FOD_receiver::commit ()
 {
-  if (!lobes.size() || !n_fixels || !num_outputs())
+  if (!lobes.size() || !fixel_count)
     return;
 
   using DataImage = Image<float>;
@@ -197,7 +188,7 @@ void Segmented_FOD_receiver::commit ()
   std::unique_ptr<DataImage> disp_image;
 
   auto index_header (H);
-  index_header.keyval()[Fixel::n_fixels_key] = str(n_fixels);
+  index_header.keyval()[Fixel::n_fixels_key] = str(fixel_count);
   index_header.ndim() = 4;
   index_header.size(3) = 2;
   index_header.datatype() = DataType::from<uint32_t>();
@@ -206,7 +197,7 @@ void Segmented_FOD_receiver::commit ()
 
   auto fixel_data_header (H);
   fixel_data_header.ndim() = 3;
-  fixel_data_header.size(0) = n_fixels;
+  fixel_data_header.size(0) = fixel_count;
   fixel_data_header.size(2) = 1;
   fixel_data_header.datatype() = DataType::Float32;
   fixel_data_header.datatype().set_byte_order_native();
@@ -289,7 +280,7 @@ void Segmented_FOD_receiver::commit ()
     lobe_index ++;
   }
 
-  assert (offset == n_fixels);
+  assert (offset == fixel_count);
 }
 
 
@@ -301,9 +292,10 @@ void run ()
   Math::SH::check (H);
   auto fod_data = H.get_image<float>();
 
-  const bool dir_as_peak = get_options ("dirpeak").size() ? true : false;
+  const bool dir_as_peak = get_options ("dirpeak").size();
+  const uint32_t maxnum = get_option_value ("maxnum", 0);
 
-  Segmented_FOD_receiver receiver (H, dir_as_peak);
+  Segmented_FOD_receiver receiver (H, maxnum, dir_as_peak);
 
   auto& fixel_directory_path  = argument[1];
   receiver.set_fixel_directory_output (fixel_directory_path);
@@ -318,7 +310,7 @@ void run ()
   receiver.set_directions_output (default_directions_filename);
 
   auto
-  opt = get_options ("afd");  if (opt.size()) receiver.set_afd_output (opt[0][0]);
+  opt = get_options ("afd");  if (opt.size()) receiver.set_afd_output  (opt[0][0]);
   opt = get_options ("peak"); if (opt.size()) receiver.set_peak_output (opt[0][0]);
   opt = get_options ("disp"); if (opt.size()) receiver.set_disp_output (opt[0][0]);
 
@@ -329,9 +321,6 @@ void run ()
     if (!dimensions_match (fod_data, mask, 0, 3))
       throw Exception ("Cannot use image \"" + str(opt[0][0]) + "\" as mask image; dimensions do not match FOD image");
   }
-
-  if (!receiver.num_outputs ())
-    throw Exception ("Nothing to do; please specify at least one output image type");
 
   Fixel::check_fixel_directory (fixel_directory_path, true, true);
 

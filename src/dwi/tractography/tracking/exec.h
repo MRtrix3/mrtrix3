@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -70,7 +71,7 @@ namespace MR
                 const std::string& fod_path (properties["seed_dynamic"]);
                 const std::string max_num_tracks = properties["max_num_tracks"];
                 if (max_num_tracks.empty())
-                  throw Exception ("Dynamic seeding requires setting the desired number of tracks using the -number option");
+                  throw Exception ("Dynamic seeding requires setting the desired number of tracks using the -select option");
                 const size_t num_tracks = to<size_t>(max_num_tracks);
 
                 using SetDixel = Mapping::SetDixel;
