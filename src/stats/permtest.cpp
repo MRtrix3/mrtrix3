@@ -31,7 +31,7 @@ namespace MR
           enhancer (enhancer),
           global_enhanced_sum (global_enhanced_sum),
           global_enhanced_count (global_enhanced_count),
-          enhanced_sum (vector_type::Zero (global_enhanced_sum.size())),
+          enhanced_sum (matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_outputs())),
           enhanced_count (count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_outputs())),
           stats (global_enhanced_sum.rows(), global_enhanced_sum.cols()),
           enhanced_stats (global_enhanced_sum.rows(), global_enhanced_sum.cols()),
@@ -58,8 +58,8 @@ namespace MR
           return false;
         (*stats_calculator) (shuffle.data, stats);
         (*enhancer) (stats, enhanced_stats);
-        for (ssize_t c = 0; c != enhanced_stats.cols(); ++c) {
-          for (ssize_t i = 0; i < enhanced_stats.rows(); ++i) {
+        for (size_t c = 0; c != enhanced_stats.cols(); ++c) {
+          for (size_t i = 0; i < enhanced_stats.rows(); ++i) {
             if (enhanced_stats(i, c) > 0.0) {
               enhanced_sum(i, c) += enhanced_stats(i, c);
               enhanced_count(i, c)++;
