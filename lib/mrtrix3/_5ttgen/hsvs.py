@@ -5,8 +5,13 @@ def initialise(base_parser, subparsers):
   # TODO Permit either FreeSurfer directory or T1 image as input
   parser.add_argument('input',  help='The input FreeSurfer subject directory')
   parser.add_argument('output', help='The output 5TT image')
-  # TODO Option to specify spatial resolution of output image?
+  # TESTME Option to specify spatial resolution of output image?
   # Or just a template image; that way can control voxel size & axis orientations
+  parser.add_argument('-template', help='Provide an image that will form the template for the generated 5TT image')
+  # TODO Add references
+
+
+# TODO Add file.delTemporary() throughout
 
 
 
@@ -16,8 +21,10 @@ def checkOutputPaths():
 
 
 def getInputs():
+  from mrtrix3 import app, path, run
   # FreeSurfer files will be accessed in-place; no need to pre-convert them into the temporary directory
-  pass
+  if app.args.template:
+    run.command('mrconvert ' + path.fromUser(app.args.template, True) + ' ' + path.toTemp('template.mif', True) + ' -axes 0,1,2')
 
 
 
@@ -49,6 +56,11 @@ def execute():
   checkFile(aparc_image)
   checkFile(mask_image)
   checkFile(reg_file)
+  template_image = 'template.mif' if app.args.template else aparc_image
+
+  if app.args.template:
+    run.command('mrtransform ' + mask_image + ' -template template.mif - | mrthreshold - brainmask.mif -abs 0.5')
+    mask_image = 'brainmask.mif'
 
   sgm_first_map = { }
   have_first = True
@@ -104,7 +116,7 @@ def execute():
       # Since the hippocampal subfields segmentation can include some fine structures, reduce the extent of smoothing
       run.command('meshfilter ' + init_mesh_path + ' smooth ' + smooth_mesh_path + ' -smooth_spatial 5 -smooth_influence 5')
       progress.increment()
-      run.command('mesh2voxel ' + smooth_mesh_path + ' ' + aparc_image + ' ' + outputname + '.mif')
+      run.command('mesh2voxel ' + smooth_mesh_path + ' ' + template_image + ' ' + outputname + '.mif')
       progress.increment()
     progress.done()
     # If we're going to be running FIRST, then we don't want to run it on the hippocampi
@@ -123,7 +135,7 @@ def execute():
     for key, value in sgm_first_map.items():
       vtk_in_path = 'first-' + key + '_first.vtk'
       run.command('meshconvert ' + vtk_in_path + ' first-' + key + '_transformed.vtk -transform first2real T1.nii')
-      run.command('mesh2voxel first-' + key + '_transformed.vtk ' + aparc_image + ' ' + value + '.mif')
+      run.command('mesh2voxel first-' + key + '_transformed.vtk ' + template_image + ' ' + value + '.mif')
       progress.increment()
     progress.done()
 
@@ -202,7 +214,7 @@ def execute():
       checkFile(filepath)
       transformed_path = basename + '_realspace.obj'
       run.command('meshconvert ' + filepath + ' ' + transformed_path + ' -binary -transform fs2real ' + aparc_image)
-      run.command('mesh2voxel ' + transformed_path + ' ' + aparc_image + ' ' + basename + '.mif')
+      run.command('mesh2voxel ' + transformed_path + ' ' + template_image + ' ' + basename + '.mif')
       progress.increment()
   progress.done()
 
@@ -212,21 +224,24 @@ def execute():
     # Don't segment anything for which we have instead obtained estimates using FIRST
     # Also don't segment the hippocampi from the aparc+aseg image if we're using the hippocampal subfields module
     if not name in sgm_first_map.values() and not name in hipp_subfield_image_map.values():
-      # If we're going to subsequently use fast, don't bother smoothing cerebellar segmentations;
-      #   we're only going to use them to produce a mask anyway
+      # If we're going to subsequently use fast directly on the FreeSurfer T1 image,
+      #   don't bother smoothing cerebellar segmentations; we're only going to use
+      #   them to produce a mask anyway
+      # FIXME This will still be included in the list of images to be combined;
+      #   if a template image is being used, this will lead to heartache due to image grid mismatch
       if 'Cerebellum' in name and have_fast:
         run.command('mrcalc ' + aparc_image + ' ' + str(index) + ' -eq ' + name + '.mif -datatype float32')
       else:
         run.command('mrcalc ' + aparc_image + ' ' + str(index) + ' -eq - | mrmesh - -threshold 0.5 ' + name + '_init.obj')
         run.command('meshfilter ' + name + '_init.obj smooth ' + name + '.obj')
-        run.command('mesh2voxel ' + name + '.obj ' + aparc_image + ' ' + name + '.mif')
+        run.command('mesh2voxel ' + name + '.obj ' + template_image + ' ' + name + '.mif')
     progress.increment()
   progress.done()
 
   # Construct images with the partial volume of each tissue
   progress = app.progressBar('Combining segmentations of all structures corresponding to each tissue type', 5)
   for tissue in range(0,5):
-    image_list = [ n + '.mif' for (i, t, n) in structures if t == tissue ]
+    image_list = [ n + '.mif' for (i, t, n) in structures if (t == tissue and not (have_fast and 'Cerebellum' in n)) ]
     # For cortical GM and WM, need to also add the main cerebrum segments
     if tissue == 0:
       image_list.extend([ 'lh.pial.mif', 'rh.pial.mif' ])
@@ -267,7 +282,8 @@ def execute():
   # For all voxels within FreeSurfer's brain mask, add to the CSF image in order to make the sum 1.0
   # TESTME Rather than doing this blindly, look for holes in the brain, and assign the remainder to WM;
   #   only within the mask but outside the brain should the CSF fraction be filled
-  # TODO Can definitely do better than just an erosion step here
+  # TODO Can definitely do better than just an erosion step here; still some hyper-intensities at GM-Wm interface
+  # TODO Connected-component analysis at such high resolution is taking up huge amounts of memory
   run.command('mrthreshold tissuesum_01234.mif -abs 0.5 - | maskfilter - erode - | mrcalc 1.0 - -sub - | maskfilter - connect -largest - | mrcalc 1.0 - -sub wm_fill_mask.mif')
   progress.increment()
   run.command('mrcalc 1.0 tissuesum_01234.mif -sub wm_fill_mask.mif -mult wm_fill.mif')
@@ -282,25 +298,66 @@ def execute():
   # Branch depending on whether or not FSL fast will be used to re-segment the cerebellum
   if have_fast:
 
-    # Generate a mask of all voxels classified as cerebellum by FreeSurfer
-    cerebellar_indices = [ i for (i, t, n) in structures if 'Cerebellum' in n ]
-    cerebellar_submask_list = [ ]
-    progress = app.progressBar('Generating whole-cerebellum mask from FreeSurfer segmentations', len(cerebellar_indices)+1)
-    for index in cerebellar_indices:
-      filename = 'Cerebellum_' + str(index) + '.mif'
-      run.command('mrcalc ' + aparc_image + ' ' + str(index) + ' -eq ' + filename + ' -datatype bit')
-      cerebellar_submask_list.append(filename)
+    # TODO How to support -template option?
+    # - Re-grid norm.mgz to template image before running FAST
+    # - Re-grid FAST output to template image
+    # Consider splitting, including initial mapping of cerebellar regions:
+    # - If we're not using a separate template image, just map cerebellar regions to voxels to
+    #   produce a mask, and run FAST within that mask
+    # - If we have a template, combine cerebellar regions, convert to surfaces (one per hemisphere),
+    #   map these to the template image, run FIRST on a binary mask from this, then
+    #   re-combine this with the tissue maps from other sources based on the estimated PVF of
+    #   cerebellum meshes
+
+    if app.args.template:
+
+      # If this is the case, then we haven't yet performed any cerebellar segmentation / meshing
+      # What we want to do is: for each hemisphere, combine all three "cerebellar" segments from FreeSurfer,
+      #   convert to a surface, map that surface to the template image
+      progress = app.progressBar('Preparing images of cerebellum for intensity-based segmentation', 11)
+      for hemi in [ 'Left', 'Right' ]:
+        cerebellar_images = [ n + '.mif' for (i, t, n) in structures if (hemi in n and 'Cerebellum' in n) ]
+        run.command('mrmath ' + ' '.join(cerebellar_images) + ' sum ' + hemi + '-Cerebellum-All.mif')
+        progress.increment()
+        run.command('mrmesh ' + hemi + '-Cerebellum-All.mif ' + hemi + '-Cerebellum-All-init.vtk')
+        progress.increment()
+        run.command('meshfilter ' + hemi + '-Cerebellum-All-init.vtk smooth ' + hemi + '-Cerebellum-All-smooth.vtk')
+        progress.increment()
+        run.command('mesh2voxel ' + hemi + '-Cerebellum-All-smooth.vtk ' + template_image + ' ' + hemi + '-Cerebellum-PVF-Template.mif')
+        progress.increment()
+
+      # Combine the two hemispheres together into:
+      # - An image in preparation for running FAST
+      # - A combined total partial volume fraction image that will be later used for tissue recombination
+      run.command('mrmath Left-Cerebellum-PVF-Template.mif Right-Cerebellum-PVF-Template.mif sum Cerebellum_weight.mif')
       progress.increment()
-    run.command('mrmath ' + ' '.join(cerebellar_submask_list) + ' sum Cerebellar_mask.mif')
-    progress.done()
+      run.command('mrthreshold Cerebellum_weight.mif Both-Cerebellum-Mask-Template.mif -abs 1e-6')
+      progress.increment()
+      run.command('mrtransform ' + norm_image + ' -template ' + template_image + ' - | ' \
+                  'mrcalc - Both-Cerebellum-Mask-Template.mif -mult - | ' \
+                  'mrconvert - T1_cerebellum.nii -stride -1,+2,+3')
+      progress.done()
+
+    else:
+
+      progress = app.progressBar('Preparing images of cerebellum for intensity-based segmentation', 2)
+      # Generate a mask of all voxels classified as cerebellum by FreeSurfer
+      cerebellum_mask_images = [ n + '.mif' for (i, t, n) in structures if 'Cerebellum' in n ]
+      run.command('mrmath ' + ' '.join(cerebellum_mask_images) + ' sum Cerebellum_weight.mif')
+      progress.increment()
+      # FAST image input needs to be pre-masked
+      run.command('mrcalc T1.nii Cerebellum_weight.mif -mult - | mrconvert - T1_cerebellum.nii -stride -1,+2,+3')
+      progress.done()
+
+    # TODO Any code below here should be compatible with Cerebellum_weight.mif containing partial volume fractions
+    #   (in the case of no explicit template image, it's a mask, but the logic still applies)
 
     app.console('Running FSL fast to segment the cerebellum based on intensity information')
 
-    # FAST image input needs to be pre-masked
-    run.command('mrcalc T1.nii Cerebellar_mask.mif -mult - | mrconvert - T1_cerebellum.nii -stride -1,+2,+3')
-
     # Run FSL FAST just within the cerebellum
     # TESTME Should bias field estimation be disabled within fast?
+    # TODO FAST memory usage can also be huge when using a high-resolution template image
+    # Consider cropping T1 image around the cerebellum before feeding to FAST
     run.command(fast_cmd + ' -N T1_cerebellum.nii')
     fast_output_prefix = 'T1_cerebellum'
 
@@ -312,15 +369,17 @@ def execute():
 
     # Some of these voxels may have a non-zero cortical GM component.
     #   In that case, let's find a multiplier to apply to all tissues (including CGM) such that the sum is 1.0
-    run.command('mrcalc 1.0 tissue0.mif 1.0 -add -div Cerebellar_mask.mif -mult Cerebellar_multiplier.mif')
+    # TESTME Does this needs to change for the case of a provided template image, in which case
+    #   Cerebellum_weight.mif contains floating-point values?
+    run.command('mrcalc 1.0 tissue0.mif 1.0 -add -div Cerebellum_weight.mif -mult Cerebellar_multiplier.mif')
     progress.increment()
-    run.command('mrcalc Cerebellar_mask.mif Cerebellar_multiplier.mif 1.0 -if tissue0.mif -mult tissue0_fast.mif')
+    run.command('mrcalc Cerebellum_weight.mif Cerebellar_multiplier.mif 1.0 -if tissue0.mif -mult tissue0_fast.mif')
     progress.increment()
-    run.command('mrcalc Cerebellar_mask.mif ' + fast_output_prefix + '_pve_0' + fast_suffix + ' Cerebellar_multiplier.mif -mult tissue3_filled.mif -if tissue3_filled_fast.mif')
+    run.command('mrcalc Cerebellum_weight.mif ' + fast_output_prefix + '_pve_0' + fast_suffix + ' Cerebellar_multiplier.mif -mult tissue3_filled.mif -if tissue3_filled_fast.mif')
     progress.increment()
-    run.command('mrcalc Cerebellar_mask.mif ' + fast_output_prefix + '_pve_1' + fast_suffix + ' Cerebellar_multiplier.mif -mult tissue1.mif -if tissue1_fast.mif')
+    run.command('mrcalc Cerebellum_weight.mif ' + fast_output_prefix + '_pve_1' + fast_suffix + ' Cerebellar_multiplier.mif -mult tissue1.mif -if tissue1_fast.mif')
     progress.increment()
-    run.command('mrcalc Cerebellar_mask.mif ' + fast_output_prefix + '_pve_2' + fast_suffix + ' Cerebellar_multiplier.mif -mult tissue2_filled.mif -if tissue2_filled_fast.mif')
+    run.command('mrcalc Cerebellum_weight.mif ' + fast_output_prefix + '_pve_2' + fast_suffix + ' Cerebellar_multiplier.mif -mult tissue2_filled.mif -if tissue2_filled_fast.mif')
     progress.done()
 
     # Finally, concatenate the volumes to produce the 5TT image

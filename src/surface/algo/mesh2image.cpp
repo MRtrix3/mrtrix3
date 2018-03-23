@@ -206,6 +206,14 @@ namespace MR
         ++progress;
 
 
+        // TODO Better implementation here
+        // For *any* voxel not on the mesh but neighbouring a voxel in which a vertex lies,
+        //   track a floating-point value corresponding to its distance from the normal plane.
+        // Each voxel not on the mesh should then be assigned as prelim_inside or prelim_outside
+        //   depending on whether the summed value is positive or negative
+
+
+
         // New implementation of filling in the centre of the mesh
         // Rather than selecting the eight external corners and filling in outside the
         //   mesh (which may omit some areas), selecting anything remaining as 'inside',
