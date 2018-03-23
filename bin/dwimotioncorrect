@@ -35,11 +35,9 @@ options.add_argument('-mask', help='Manually provide a mask image for motion cor
 options.add_argument('-grad', help='Pass the diffusion gradient table in MRtrix format')
 options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
 options.add_argument('-niter', help='Number of epochs (default = 3)')
-#options.add_argument('-shells', help='Shells to be processed (default = all)')
 options.add_argument('-lmax', help='SH basis order per shell (default = 0,4,4,...)')
 options.add_argument('-rlmax', help='Reduced basis order per component for registration (default = 2,2,0)')
 options.add_argument('-reg', help='Regularization for dwirecon (default = 0.01)')
-#options.add_argument('-rf', help='Basis functions for the radial domain')
 options.add_argument('-svr', help='Number of slice-to-volume reconstruction epochs (default = 0)')
 options.add_argument('-mb', help='Multiband factor (default = 1)')
 options.add_argument('-sorder', help='Slice order (default = 2,1, for odd-even)')
@@ -121,10 +119,10 @@ if app.args.svr:
     s2viter = int(app.args.svr)
 niter = v2viter + s2viter
 
+
 # Select shells
 shells = [s.split('.')[0] for s in image.headerField('in.mif', 'shells').split()]
-#if app.args.shells:
-#    shells = app.args.shells.split(',')
+
 
 # Set lmax
 lmax = [4,]*len(shells)
@@ -142,11 +140,10 @@ if len(rlmax) > len(lmax) or max(rlmax) > max(lmax):
 
 
 # Shared reconstruction options
-recon_option = '-maxiter 3'
+recon_option = '-maxiter 10'
 if app.args.reg:
     recon_option += ' -reg ' + app.args.reg
-#if app.args.fieldmap:
-#    recon_option += ' -field field1.mif'
+
 
 # SSP option
 ssp_option = ''
@@ -207,9 +204,6 @@ with open('svdweights.txt', 'w') as f:
 inputfn = 'in.mif'
 
 
-if app.args.matchintensity and app.args.fieldmap:
-    app.error('intensity matching currently not compatible with field mapping.')
-
 
 #   __________ Function definitions __________
 
@@ -249,7 +243,7 @@ def rankreduxstep(k):
 
 
 def registrationstep(k):
-    run.command('dwislicealign ' + inputfn + ' rankredux.mif motion.txt -mask mask.mif -maxiter 3' +
+    run.command('dwislicealign ' + inputfn + ' rankredux.mif motion.txt -mask mask.mif -maxiter 10' +
                 ' -mb ' + ('0' if k<v2viter else str(mb)) + (' -init motion.txt' if k>0 else '') +
                 ssp_option + ' -force' + nthr)
     if app.args.sorder:
