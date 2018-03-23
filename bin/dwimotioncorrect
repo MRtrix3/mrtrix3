@@ -111,22 +111,46 @@ else:
 
 
 # Set no. iterations
-v2viter = 3
-if app.args.niter:
-    v2viter = int(app.args.niter)
-s2viter = 0
-if app.args.svr:
-    s2viter = int(app.args.svr)
-niter = v2viter + s2viter
+#v2viter = 3
+#if app.args.niter:
+#    v2viter = int(app.args.niter)
+#s2viter = 0
+#if app.args.svr:
+#    s2viter = int(app.args.svr)
+#niter = v2viter + s2viter
 
 
-# Select shells
+# Image dimensions
+dims = list(map(int, image.headerField('in.mif', 'size').split()))
+vox = list(map(float, image.headerField('in.mif', 'vox').split()))
+vu = round((vox[0]+vox[1])/2., 1)
 shells = [s.split('.')[0] for s in image.headerField('in.mif', 'shells').split()]
+
+# Shell weights
+with open('svdweights.txt', 'w') as f:
+    f.write(image.headerField('in.mif', 'shellcount') + '\n')
+
+
+# Configuration
+class Config:
+    def __init__(self, svr=False, recit=5, regit=10, scale=1.):
+        self.svr = svr
+        self.recit = recit
+        self.regit = regit
+        self.scale = scale
+
+iters = [Config(False, 1, 10, 4.00),
+         Config(False, 5, 10, 2.00),
+         Config(False, 5, 10, 1.00),
+         Config(True,  5, 10, 2.00),
+         Config(True, 10, 10, 1.00),
+         Config(True, 10, 10, 0.50),
+         Config(True, 10, 10, 0.25),
+         Config(True, 50, -1, 0.00)]
 
 
 # Set lmax
-lmax = [4,]*len(shells)
-lmax[0] = 0
+lmax = [0,] + [4,]*(len(shells)-1)
 if app.args.lmax:
     lmax = [int(l) for l in app.args.lmax.split(',')]
 if len(lmax) != len(shells):
@@ -140,9 +164,9 @@ if len(rlmax) > len(lmax) or max(rlmax) > max(lmax):
 
 
 # Shared reconstruction options
-recon_option = '-maxiter 10'
+recon_option = ''
 if app.args.reg:
-    recon_option += ' -reg ' + app.args.reg
+    recon_option += '-reg ' + app.args.reg
 
 
 # SSP option
@@ -191,15 +215,6 @@ if app.args.sorder:
     motfilt_option += ' -packs ' + p + ' -shift ' + s
 
 
-# Image dimensions
-dims = list(map(int, image.headerField('in.mif', 'size').split()))
-vox = list(map(float, image.headerField('in.mif', 'vox').split()))
-vu = round((vox[0]+vox[1])/2., 1)
-
-# Shell weights
-with open('svdweights.txt', 'w') as f:
-    f.write(image.headerField('in.mif', 'shellcount') + '\n')
-
 # Variable input file name
 inputfn = 'in.mif'
 
@@ -212,7 +227,7 @@ def reconstep(k):
     if k > 0 and app.args.matchintensity:
         im = 'scaled.mif'
         run.command('mrcalc ' + inputfn + (' biasfield.mif -exp -mult' if app.args.matchintensity=='full' else '') + ' imscale.mif -mult ' + im + ' -force')
-    run.command('dwirecon ' + im + ' recon-' + str(k) + '.mif -spred spred.mif ' + recon_option + ssp_option + ' -rf ' + ' -rf '.join(rfs) +
+    run.command('dwirecon ' + im + ' recon-' + str(k) + '.mif -spred spred.mif -maxiter ' + str(iters[k].recit) + ' ' + recon_option + ssp_option + ' -rf ' + ' -rf '.join(rfs) +
             ('' if k==0 else ' -motion motion.txt -weights sliceweights.txt -init recon-' + str(k-1) + '.mif') + ' -force' + nthr)
 
 
@@ -235,16 +250,16 @@ def basisupdatestep(k):
                 ' -weights svdweights.txt ' + ' '.join(rfs) + ' -force')
 
 
-def rankreduxstep(k):
+def rankreduxstep(k, scale=1.):
     run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax ' + ','.join([str(l) for l in rlmax]) +
                 ' -weights svdweights.txt ' + ' '.join(redrfs) + ' -proj irankredux.mif -force')
-    scale = 4. - 3.*k / (v2viter-1) if k < v2viter else 2. - 1.*(k-v2viter) / (s2viter-1)
+    #scale = 4. - 3.*k / (v2viter-1) if k < v2viter else 2. - 1.*(k-v2viter) / (s2viter-1)
     run.command('mrfilter irankredux.mif smooth rankredux.mif -fwhm ' + str(scale*vu) + ' -force')
 
 
 def registrationstep(k):
-    run.command('dwislicealign ' + inputfn + ' rankredux.mif motion.txt -mask mask.mif -maxiter 10' +
-                ' -mb ' + ('0' if k<v2viter else str(mb)) + (' -init motion.txt' if k>0 else '') +
+    run.command('dwislicealign ' + inputfn + ' rankredux.mif motion.txt -mask mask.mif -maxiter ' + str(iters[k].regit) + ' ' +
+                ' -mb ' + (str(mb) if iters[k].svr else '0') + (' -init motion.txt' if k>0 else '') +
                 ssp_option + ' -force' + nthr)
     if app.args.sorder:
         run.command('motionfilter motion.txt sliceweights.txt motion.txt' + motfilt_option)
@@ -269,10 +284,10 @@ fieldalignstep(0)
 reconstep(0)
 
 # running reconstruction
-for k in range(v2viter + s2viter):
+for k, it in enumerate(iters[:-1]):
     # basis update and rank reduction
     basisupdatestep(k)
-    rankreduxstep(k)
+    rankreduxstep(k, it.scale)
     # slice weights
     sliceweightstep()
     # register template to volumes
@@ -284,7 +299,7 @@ for k in range(v2viter + s2viter):
 
 #   __________ Copy outputs __________
 
-run.command('mrconvert recon-'+str(v2viter+s2viter)+'.mif ' + path.fromUser(app.args.output, True) + (' -force' if app.force else ''))
+run.command('mrconvert recon-'+str(len(iters))+'.mif ' + path.fromUser(app.args.output, True) + (' -force' if app.force else ''))
 
 if app.args.export_motion:
     run.command('cp motion.txt ' + path.fromUser(app.args.export_motion, True))
