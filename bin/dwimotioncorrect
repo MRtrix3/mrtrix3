@@ -299,7 +299,7 @@ for k, it in enumerate(iters[:-1]):
 
 #   __________ Copy outputs __________
 
-run.command('mrconvert recon-'+str(len(iters))+'.mif ' + path.fromUser(app.args.output, True) + (' -force' if app.force else ''))
+run.command('mrconvert recon-'+str(len(iters)-1)+'.mif ' + path.fromUser(app.args.output, True) + (' -force' if app.force else ''))
 
 if app.args.export_motion:
     run.command('cp motion.txt ' + path.fromUser(app.args.export_motion, True))
