@@ -66,9 +66,14 @@ class Warper { MEMALIGN(Warper)
       interp (warp) { }
 
     bool operator () (const TrackType& in, TrackType& out) {
-      out.resize (in.size());
-      for (size_t n = 0; n < in.size(); ++n) 
-        out[n] = pos(in[n]);
+      out.clear();
+      out.index = in.index;
+      out.weight = in.weight;
+      for (size_t n = 0; n < in.size(); ++n) {
+        auto vertex = pos(in[n]);
+        if (vertex.allFinite())
+          out.push_back (vertex);
+      }
       return true;
     }
 
@@ -92,8 +97,9 @@ class Warper { MEMALIGN(Warper)
 class Writer { MEMALIGN(Writer)
   public:
     Writer (const std::string& file, const Tractography::Properties& properties) :
-      progress ("applying spatial transformation to tracks"),
-      writer (file, properties) { }
+        progress ("applying spatial transformation to tracks",
+                  properties.find("count") == properties.end() ? 0 : to<size_t>(properties.find ("count")->second)),
+        writer (file, properties) { }
 
     bool operator() (const TrackType& item) {
       writer (item);
@@ -121,10 +127,10 @@ void run ()
   Writer writer (argument[2], loader.properties);
 
   Thread::run_queue (
-      loader, 
-      Thread::batch (TrackType(), 1024), 
-      Thread::multi (warper), 
-      Thread::batch (TrackType(), 1024), 
+      loader,
+      Thread::batch (TrackType(), 1024),
+      Thread::multi (warper),
+      Thread::batch (TrackType(), 1024),
       writer);
 }
 

@@ -59,12 +59,12 @@ namespace MR
           in_max = std::abs (current[i]);
       in_max += desired_max + 1;
 
-      for (size_t i = 0; i < current.size(); ++i) 
-        if (dims[i] > 1 && desired[i]) 
+      for (size_t i = 0; i < current.size(); ++i)
+        if (dims[i] > 1 && desired[i])
           current[i] = desired[i];
         else if (current[i])
           current[i] += current[i] < 0 ? -desired_max : desired_max;
-        else 
+        else
           current[i] = in_max++;
 
       symbolise (current);
@@ -75,13 +75,13 @@ namespace MR
     List __from_command_line (const List& current)
     {
       List strides;
-      auto opt = App::get_options ("stride");
-      if (!opt.size()) 
+      auto opt = App::get_options ("strides");
+      if (!opt.size())
         return strides;
 
       vector<int> tmp = opt[0][0];
       for (auto x : tmp)
-        strides.push_back (x); 
+        strides.push_back (x);
 
 
       if (strides.size() > current.size())
@@ -94,15 +94,15 @@ namespace MR
 
       for (size_t i = 0; i < strides.size()-1; ++i) {
         if (!strides[1]) continue;
-        for (size_t j = i+1; j < strides.size(); ++j) 
-          if (std::abs (strides[i]) == std::abs (strides[j])) 
+        for (size_t j = i+1; j < strides.size(); ++j)
+          if (std::abs (strides[i]) == std::abs (strides[j]))
             throw Exception ("duplicate entries provided to \"-strides\" option: " + str(opt[0][0]));
       }
 
       List prev = get_symbolic (current);
-      
-      for (size_t i = 0; i < strides.size(); ++i) 
-        if (strides[i] != 0) 
+
+      for (size_t i = 0; i < strides.size(); ++i)
+        if (strides[i] != 0)
           prev[i] = 0;
 
       prev = get_symbolic (prev);
@@ -130,7 +130,7 @@ namespace MR
         }
         strides[std::distance (prev.begin(), p)] = s;
       }
-      
+
       return strides;
     }
 
