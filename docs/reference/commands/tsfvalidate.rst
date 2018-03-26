@@ -1,35 +1,25 @@
-.. _shbasis:
+.. _tsfvalidate:
 
-shbasis
+tsfvalidate
 ===================
 
 Synopsis
 --------
 
-Examine the values in spherical harmonic images to estimate (and optionally change) the SH basis used
+Validate a track scalar file against the corresponding track data
 
 Usage
 --------
 
 ::
 
-    shbasis [ options ]  SH [ SH ... ]
+    tsfvalidate [ options ]  tsf tracks
 
--  *SH*: the input image(s) of SH coefficients.
-
-Description
------------
-
-In previous versions of MRtrix, the convention used for storing spherical harmonic coefficients was a non-orthonormal basis (the m!=0 coefficients were a factor of sqrt(2) too large). This error has been rectified in newer versions of MRtrix, but will cause issues if processing SH data that was generated using an older version of MRtrix (or vice-versa).
-
-This command provides a mechanism for testing the basis used in storage of image data representing a spherical harmonic series per voxel, and allows the user to forcibly modify the raw image data to conform to the desired basis.
-
-Note that the "force_*" conversion choices should only be used in cases where this command has previously been unable to automatically determine the SH basis from the image data, but the user themselves are confident of the SH basis of the data.
+-  *tsf*: the input track scalar file
+-  *tracks*: the track file on which the TSF is based
 
 Options
 -------
-
--  **-convert mode** convert the image data in-place to the desired basis; options are: old,new,force_oldtonew,force_newtoold.
 
 Standard options
 ^^^^^^^^^^^^^^^^
