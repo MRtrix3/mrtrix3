@@ -1,6 +1,4 @@
 def initialise(base_parser, subparsers):
-  import argparse
-  from mrtrix3 import app
   parser = subparsers.add_parser('hsvs', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Generate a 5TT image based on Hybrid Surface and Volume Segmentation (HSVS), using FreeSurfer and FSL tools', parents=[base_parser])
   # TODO Permit either FreeSurfer directory or T1 image as input
   parser.add_argument('input',  help='The input FreeSurfer subject directory')
@@ -30,8 +28,7 @@ def getInputs():
 
 def execute():
   import os, sys
-  from mrtrix3 import app, fsl, path, run
-  from distutils.spawn import find_executable
+  from mrtrix3 import app, file, fsl, path, run
 
   def checkFile(filepath):
     import os
@@ -115,14 +112,17 @@ def execute():
       progress.increment()
       # Since the hippocampal subfields segmentation can include some fine structures, reduce the extent of smoothing
       run.command('meshfilter ' + init_mesh_path + ' smooth ' + smooth_mesh_path + ' -smooth_spatial 5 -smooth_influence 5')
+      file.delTemporary(init_mesh_path)
       progress.increment()
       run.command('mesh2voxel ' + smooth_mesh_path + ' ' + template_image + ' ' + outputname + '.mif')
+      file.delTemporary(smooth_mesh_path)
       progress.increment()
     progress.done()
     # If we're going to be running FIRST, then we don't want to run it on the hippocampi
     if have_first:
       sgm_first_map = { key:value for key, value in sgm_first_map.items() if value not in hipp_subfield_image_map.values() }
   else:
+    app.console('No FreeSurfer hippocampal subfields module output detected; ' + ('FIRST segmentation' if have_first else 'standard FreeSurfer segmentation') + ' will instead be used')
     hipp_subfield_image_map = { }
 
 
@@ -131,11 +131,15 @@ def execute():
     app.console('Running FSL FIRST to segment sub-cortical grey matter structures')
     run.command(first_cmd + ' -s ' + ','.join(sgm_first_map.keys()) + ' -i T1.nii -b -o first')
     fsl.checkFirst('first', sgm_first_map.keys())
-    progress = app.progressBar('Mapping sub-cortical structures segmented by FIRST from surface to voxel representation', len(sgm_first_map))
+    progress = app.progressBar('Mapping sub-cortical structures segmented by FIRST from surface to voxel representation', 2*len(sgm_first_map))
     for key, value in sgm_first_map.items():
       vtk_in_path = 'first-' + key + '_first.vtk'
-      run.command('meshconvert ' + vtk_in_path + ' first-' + key + '_transformed.vtk -transform first2real T1.nii')
-      run.command('mesh2voxel first-' + key + '_transformed.vtk ' + template_image + ' ' + value + '.mif')
+      vtk_converted_path = 'first-' + key + '_transformed.vtk'
+      run.command('meshconvert ' + vtk_in_path + ' ' + vtk_converted_path + ' -transform first2real T1.nii')
+      file.delTemporary(vtk_in_path)
+      progress.increment()
+      run.command('mesh2voxel ' + vtk_converted_path + ' ' + template_image + ' ' + value + '.mif')
+      file.delTemporary(vtk_converted_path)
       progress.increment()
     progress.done()
 
@@ -200,6 +204,7 @@ def execute():
                  (253, 2, 'CC_Central'),
                  (254, 2, 'CC_Mid_Anterior'),
                  (255, 2, 'CC_Anterior') ]
+                 # TODO Need to do something about anterior commissure
 
 
 
@@ -207,14 +212,16 @@ def execute():
   # FIXME There may be some minor mismatch between the WM and pial segments within the medial section
   #   where no optimisation is performed, but vertices are simply defined in order to guarantee
   #   closed surfaces. Ideally these should be removed from the CGM tissue.
-  progress = app.progressBar('Mapping FreeSurfer cortical reconstruction to partial volume images', 4)
+  progress = app.progressBar('Mapping FreeSurfer cortical reconstruction to partial volume images', 8)
   for hemi in [ 'lh', 'rh' ]:
     for basename in [ hemi+'.white', hemi+'.pial' ]:
       filepath = os.path.join(surf_dir, basename)
       checkFile(filepath)
       transformed_path = basename + '_realspace.obj'
       run.command('meshconvert ' + filepath + ' ' + transformed_path + ' -binary -transform fs2real ' + aparc_image)
+      progress.increment()
       run.command('mesh2voxel ' + transformed_path + ' ' + template_image + ' ' + basename + '.mif')
+      file.delTemporary(transformed_path)
       progress.increment()
   progress.done()
 
@@ -232,22 +239,29 @@ def execute():
       if 'Cerebellum' in name and have_fast:
         run.command('mrcalc ' + aparc_image + ' ' + str(index) + ' -eq ' + name + '.mif -datatype float32')
       else:
-        run.command('mrcalc ' + aparc_image + ' ' + str(index) + ' -eq - | mrmesh - -threshold 0.5 ' + name + '_init.obj')
-        run.command('meshfilter ' + name + '_init.obj smooth ' + name + '.obj')
-        run.command('mesh2voxel ' + name + '.obj ' + template_image + ' ' + name + '.mif')
+        init_mesh_path = name + '_init.vtk'
+        smoothed_mesh_path = name + '.vtk'
+        run.command('mrcalc ' + aparc_image + ' ' + str(index) + ' -eq - | mrmesh - -threshold 0.5 ' + init_mesh_path)
+        run.command('meshfilter ' + init_mesh_path + ' smooth ' + smoothed_mesh_path)
+        file.delTemporary(init_mesh_path)
+        run.command('mesh2voxel ' + smoothed_mesh_path + ' ' + template_image + ' ' + name + '.mif')
+        file.delTemporary(smoothed_mesh_path)
     progress.increment()
   progress.done()
 
   # Construct images with the partial volume of each tissue
   progress = app.progressBar('Combining segmentations of all structures corresponding to each tissue type', 5)
   for tissue in range(0,5):
-    image_list = [ n + '.mif' for (i, t, n) in structures if (t == tissue and not (have_fast and 'Cerebellum' in n)) ]
+    image_list = [ n + '.mif' for (i, t, n) in structures if t == tissue and not (have_fast and 'Cerebellum' in n) ]
     # For cortical GM and WM, need to also add the main cerebrum segments
     if tissue == 0:
       image_list.extend([ 'lh.pial.mif', 'rh.pial.mif' ])
     elif tissue == 2:
       image_list.extend([ 'lh.white.mif', 'rh.white.mif' ])
     run.command('mrmath ' + ' '.join(image_list) + ' sum - | mrcalc - 1.0 -min tissue' + str(tissue) + '_init.mif')
+    # TODO Update file.delTemporary() to support list input
+    for entry in image_list:
+      file.delTemporary(entry)
     progress.increment()
   progress.done()
 
@@ -260,23 +274,30 @@ def execute():
   #   then run through mrmesh
 
   # Combine these images together using the appropriate logic in order to form the 5TT image
-  progress = app.progressBar('Combining tissue images', 9)
+  progress = app.progressBar('Modulating segmentation images based on other tissues', 9)
   tissue_images = [ 'tissue0.mif', 'tissue1.mif', 'tissue2.mif', 'tissue3.mif', 'tissue4.mif' ]
   run.function(os.rename, 'tissue4_init.mif', 'tissue4.mif')
   progress.increment()
   run.command('mrcalc tissue3_init.mif tissue3_init.mif ' + tissue_images[4] + ' -add 1.0 -sub 0.0 -max -sub ' + tissue_images[3])
+  file.delTemporary('tissue3_init.mif')
   progress.increment()
   run.command('mrmath ' + ' '.join(tissue_images[3:5]) + ' sum tissuesum_34.mif')
   progress.increment()
   run.command('mrcalc tissue1_init.mif tissue1_init.mif tissuesum_34.mif -add 1.0 -sub 0.0 -max -sub ' + tissue_images[1])
+  file.delTemporary('tissue1_init.mif')
+  file.delTemporary('tissuesum_34.mif')
   progress.increment()
   run.command('mrmath ' + tissue_images[1] + ' ' + ' '.join(tissue_images[3:5]) + ' sum tissuesum_134.mif')
   progress.increment()
   run.command('mrcalc tissue2_init.mif tissue2_init.mif tissuesum_134.mif -add 1.0 -sub 0.0 -max -sub ' + tissue_images[2])
+  file.delTemporary('tissue2_init.mif')
+  file.delTemporary('tissuesum_134.mif')
   progress.increment()
   run.command('mrmath ' + ' '.join(tissue_images[1:5]) + ' sum tissuesum_1234.mif')
   progress.increment()
   run.command('mrcalc tissue0_init.mif tissue0_init.mif tissuesum_1234.mif -add 1.0 -sub 0.0 -max -sub ' + tissue_images[0])
+  file.delTemporary('tissue0_init.mif')
+  file.delTemporary('tissuesum_1234.mif')
   progress.increment()
   tissue_sum_image = 'tissuesum_01234.mif'
   run.command('mrmath ' + ' '.join(tissue_images) + ' sum ' + tissue_sum_image)
@@ -300,35 +321,51 @@ def execute():
     #   map these to the template image, run FIRST on a binary mask from this, then
     #   re-combine this with the tissue maps from other sources based on the estimated PVF of
     #   cerebellum meshes
-
+    cerebellum_volume_image = 'Cerebellum_volume.mif'
     if app.args.template:
 
       # If this is the case, then we haven't yet performed any cerebellar segmentation / meshing
       # What we want to do is: for each hemisphere, combine all three "cerebellar" segments from FreeSurfer,
       #   convert to a surface, map that surface to the template image
       progress = app.progressBar('Preparing images of cerebellum for intensity-based segmentation', 11)
+      cerebellar_hemisphere_pvf_images = [ ]
       for hemi in [ 'Left', 'Right' ]:
-        cerebellar_images = [ n + '.mif' for (i, t, n) in structures if (hemi in n and 'Cerebellum' in n) ]
-        run.command('mrmath ' + ' '.join(cerebellar_images) + ' sum ' + hemi + '-Cerebellum-All.mif')
+        cerebellar_images = [ n + '.mif' for (i, t, n) in structures if hemi in n and 'Cerebellum' in n ]
+        sum_image = hemi + '-Cerebellum-All.mif'
+        init_mesh_path = hemi + '-Cerebellum-All-Init.vtk'
+        smooth_mesh_path = hemi + '-Cerebellum-All-Smooth.vtk'
+        pvf_image_path = hemi + '-Cerebellum-PVF-Template.mif'
+        run.command('mrmath ' + ' '.join(cerebellar_images) + ' sum ' + sum_image)
+        # TODO Update with new file.delTemporary()
+        for entry in cerebellar_images:
+          file.delTemporary(entry)
         progress.increment()
-        run.command('mrmesh ' + hemi + '-Cerebellum-All.mif ' + hemi + '-Cerebellum-All-init.vtk')
+        run.command('mrmesh ' + sum_image + ' ' + init_mesh_path)
+        file.delTemporary(sum_image)
         progress.increment()
-        run.command('meshfilter ' + hemi + '-Cerebellum-All-init.vtk smooth ' + hemi + '-Cerebellum-All-smooth.vtk')
+        run.command('meshfilter ' + init_mesh_path + ' smooth ' + smooth_mesh_path)
+        file.delTemporary(init_mesh_path)
         progress.increment()
-        run.command('mesh2voxel ' + hemi + '-Cerebellum-All-smooth.vtk ' + template_image + ' ' + hemi + '-Cerebellum-PVF-Template.mif')
+        run.command('mesh2voxel ' + smooth_mesh_path + ' ' + template_image + ' ' + pvf_image_path)
+        file.delTemporary(smooth_mesh_path)
+        cerebellar_hemisphere_pvf_images.append(pvf_image_path)
         progress.increment()
 
       # Combine the two hemispheres together into:
       # - An image in preparation for running FAST
       # - A combined total partial volume fraction image that will be later used for tissue recombination
-      run.command('mrcalc Left-Cerebellum-PVF-Template.mif Right-Cerebellum-PVF-Template.mif -add 1.0 -min Cerebellum_weight.mif')
+      run.command('mrcalc ' + ' '.join(cerebellar_hemisphere_pvf_images) + ' -add 1.0 -min ' + cerebellum_volume_image)
+      # TODO Update with new file.delTemporary()
+      for entry in cerebellar_hemisphere_pvf_images:
+        file.delTemporary(entry)
       progress.increment()
       T1_cerebellum_mask_image = 'T1_cerebellum_mask.mif'
-      run.command('mrthreshold Cerebellum_weight.mif ' + T1_cerebellum_mask_image + ' -abs 1e-6')
+      run.command('mrthreshold ' + cerebellum_volume_image + ' ' + T1_cerebellum_mask_image + ' -abs 1e-6')
       progress.increment()
       run.command('mrtransform ' + norm_image + ' -template ' + template_image + ' - | ' \
                   'mrcalc - ' + T1_cerebellum_mask_image + ' -mult - | ' \
                   'mrconvert - T1_cerebellum_precrop.mif')
+      file.delTemporary(T1_cerebellum_mask_image)
       progress.done()
 
     else:
@@ -336,33 +373,48 @@ def execute():
       progress = app.progressBar('Preparing images of cerebellum for intensity-based segmentation', 2)
       # Generate a mask of all voxels classified as cerebellum by FreeSurfer
       cerebellum_mask_images = [ n + '.mif' for (i, t, n) in structures if 'Cerebellum' in n ]
-      run.command('mrmath ' + ' '.join(cerebellum_mask_images) + ' sum Cerebellum_weight.mif')
+      run.command('mrmath ' + ' '.join(cerebellum_mask_images) + ' sum ' + cerebellum_volume_image)
       progress.increment()
       # FAST image input needs to be pre-masked
-      T1_cerebellum_mask_image = 'Cerebellum_weight.mif'
-      run.command('mrcalc T1.nii ' + T1_cerebellum_mask_image + ' -mult - | mrconvert - T1_cerebellum_precrop.mif -stride -1,+2,+3')
+      T1_cerebellum_mask_image = cerebellum_volume_image
+      run.command('mrcalc T1.nii ' + T1_cerebellum_mask_image + ' -mult - | mrconvert - T1_cerebellum_precrop.mif')
       progress.done()
 
-    # TODO Any code below here should be compatible with Cerebellum_weight.mif containing partial volume fractions
+    # TODO Any code below here should be compatible with cerebellum_volume_image.mif containing partial volume fractions
     #   (in the case of no explicit template image, it's a mask, but the logic still applies)
 
     app.console('Running FSL fast to segment the cerebellum based on intensity information')
+
+    # TODO It's possible that FAST may have some edge-effects...
+    # Consider including to the input to FAST a dilated cerebellum mask, but then only actually using
+    #   the values within image 'cerebellum_volume_image'
+    # No, looks like this isn't the issue; the issue is the recombination further down below.
 
     # Run FSL FAST just within the cerebellum
     # TESTME Should bias field estimation be disabled within fast?
     # FAST memory usage can also be huge when using a high-resolution template image:
     #   Crop T1 image around the cerebellum before feeding to FAST, then re-sample to full template image FoV
-    run.command('mrcrop T1_cerebellum_precrop.mif -mask ' + T1_cerebellum_mask_image + ' T1_cerebellum.nii')
-    run.command(fast_cmd + ' -N T1_cerebellum.nii')
-    run.command('mrtransform T1_cerebellum_pve_0' + fast_suffix + ' -interp nearest -template ' + template_image + ' FAST_CSF.mif')
-    run.command('mrtransform T1_cerebellum_pve_1' + fast_suffix + ' -interp nearest -template ' + template_image + ' FAST_GM.mif')
-    run.command('mrtransform T1_cerebellum_pve_2' + fast_suffix + ' -interp nearest -template ' + template_image + ' FAST_WM.mif')
+    fast_input_image = 'T1_cerebellum.nii'
+    run.command('mrcrop T1_cerebellum_precrop.mif -mask ' + T1_cerebellum_mask_image + ' ' + fast_input_image)
+    run.command(fast_cmd + ' -N ' + fast_input_image)
+    file.delTemporary(fast_input_image)
+
+    progress = app.progressBar('Introducing intensity-based cerebellar segmentation into the 5TT image', 10)
+
+    fast_output_prefix = os.path.splitext(fast_input_image)[0] + '_pve_'
+    fast_outputs_cropped = [ fast_output_prefix + str(n) + fast_suffix for n in range(0,3) ]
+    fast_outputs_template = [ 'FAST_' + str(n) + '.mif' for n in range(0,3) ]
+    for inpath, outpath in zip(fast_outputs_cropped, fast_outputs_template):
+      run.command('mrtransform ' + inpath + ' -interp nearest -template ' + template_image + ' ' + outpath)
+      file.delTemporary(outpath)
+      progress.increment()
+    if app.args.template:
+      file.delTemporary(template_image)
 
     # Generate the revised tissue images, using output from FAST inside the cerebellum and
     #   output from previous processing everywhere else
     # Note that the middle intensity (grey matter) in the FAST output here gets assigned
     #   to the sub-cortical grey matter component
-    progress = app.progressBar('Introducing intensity-based cerebellar segmentation into the 5TT image', 5)
 
     # Some of these voxels may have a non-zero cortical GM component.
     #   In that case, let's find a multiplier to apply to all tissues (including CGM) such that the sum is 1.0
@@ -370,22 +422,67 @@ def execute():
     #   Cerebellum_weight.mif contains floating-point values?
     # TODO Can probably also change if the cerebellar segments are not included in prior computations:
     #   no longer considering just the CGM fraction
-    new_tissue_images = [ 'tissue0_fast.mif', 'tissue1_fast.mif', 'tissue2_fast.mif', 'tissue3_fast.mif', 'tissue4.mif' ]
+    # TODO This definitely needs to be revised: Sharp CSF strip between cerebellum and brain stem with -template
+    new_tissue_images = [ 'tissue0_fast.mif', 'tissue1_fast.mif', 'tissue2_fast.mif', 'tissue3_fast.mif', 'tissue4_fast.mif' ]
     new_tissue_sum_image = 'tissuesum_01234_fast.mif'
-    run.command('mrcalc 1.0 ' + tissue_images[0] + ' 1.0 -add -div Cerebellum_weight.mif -mult Cerebellar_multiplier.mif')
+    cerebellum_multiplier_image = 'Cerebellar_multiplier.mif'
+
+    # TESTME Using tissue_sum_image rather than only CGM image
+    # TESTME Re-work combination equation:
+    #   Cerebellum contributions will be weighted by the cerebellum weight image
+    #   The sum of the non-cerebellum tissues, and (the cerebellum tissues multiplied by the cerebellum weight image),
+    #     should result in a total tissue sum that does not exceed 1.0
+    #   Therefore, calculate the multiplier that need to be applied in order to make the tissue sum 1.0, but
+    #     don't let that multiplier exceed 1.0
+    #   Need to deal with potential for NaNs
+    #   Should the non-cerebellar volumes *all* preserve their initial weighting, and multiplication should only be
+    #     applied to the cerebellar volumes? I think so...
+    # TESTME Fix for NaNs
+    # If nonzero then (eq) else 0.0
+    run.command('mrcalc ' + cerebellum_volume_image + ' 0.0 -gt 1.0 ' + tissue_sum_image + ' -sub ' + cerebellum_volume_image + ' -div ' + cerebellum_volume_image + ' -min 0.0 -if  ' + cerebellum_multiplier_image)
+    file.delTemporary(cerebellum_volume_image)
     progress.increment()
-    run.command('mrcalc Cerebellum_weight.mif Cerebellar_multiplier.mif 1.0 -if ' + tissue_images[0] + ' -mult ' + new_tissue_images[0])
+    run.command('mrconvert ' + tissue_images[0] + ' ' + new_tissue_images[0])
+    file.delTemporary(tissue_images[0])
     progress.increment()
-    run.command('mrcalc Cerebellum_weight.mif FAST_CSF.mif Cerebellar_multiplier.mif -mult ' + tissue_images[3] + ' -if ' + new_tissue_images[3])
+    run.command('mrcalc ' + tissue_images[1] + ' ' + cerebellum_multiplier_image + ' ' + fast_outputs_template[1] + ' -mult -add ' + new_tissue_images[1])
+    file.delTemporary(tissue_images[1])
     progress.increment()
-    run.command('mrcalc Cerebellum_weight.mif FAST_GM.mif Cerebellar_multiplier.mif -mult ' + tissue_images[1] + ' -if ' + new_tissue_images[1])
+    run.command('mrcalc ' + tissue_images[2] + ' ' + cerebellum_multiplier_image + ' ' + fast_outputs_template[2] + ' -mult -add ' + new_tissue_images[2])
+    file.delTemporary(tissue_images[2])
     progress.increment()
-    run.command('mrcalc Cerebellum_weight.mif FAST_WM.mif Cerebellar_multiplier.mif -mult ' + tissue_images[2] + ' -if ' + new_tissue_images[2])
+    run.command('mrcalc ' + tissue_images[3] + ' ' + cerebellum_multiplier_image + ' ' + fast_outputs_template[0] + ' -mult -add ' + new_tissue_images[3])
+    file.delTemporary(tissue_images[3])
+    file.delTemporary(cerebellum_multiplier_image)
+    progress.increment()
+    run.command('mrconvert ' + tissue_images[4] + ' ' + new_tissue_images[4])
+    file.delTemporary(tissue_images[4])
     progress.increment()
     run.command('mrmath ' + ' '.join(new_tissue_images) + ' sum ' + new_tissue_sum_image)
+    file.delTemporary(tissue_sum_image)
     progress.done()
     tissue_images = new_tissue_images
     tissue_sum_image = new_tissue_sum_image
+
+    #run.command('mrcalc 1.0 ' + tissue_sum_image + ' 1.0 -add -div ' + cerebellum_volume_image + ' -mult ' + cerebellum_multiplier_image)
+    #progress.increment()
+    #run.command('mrcalc ' + cerebellum_volume_image + ' ' + cerebellum_multiplier_image + ' 1.0 -if ' + tissue_images[0] + ' -mult ' + new_tissue_images[0])
+    #progress.increment()
+    #run.command('mrcalc ' + cerebellum_volume_image + ' ' + fast_outputs_template[0] + ' ' + cerebellum_multiplier_image + ' -mult ' + tissue_images[3] + ' -if ' + new_tissue_images[3])
+    #file.delTemporary(fast_outputs_template[0])
+    #progress.increment()
+    #run.command('mrcalc ' + cerebellum_volume_image + ' ' + fast_outputs_template[1] + ' ' + cerebellum_multiplier_image + ' -mult ' + tissue_images[1] + ' -if ' + new_tissue_images[1])
+    #file.delTemporary(fast_outputs_template[1])
+    #progress.increment()
+    #run.command('mrcalc ' + cerebellum_volume_image + ' ' + fast_outputs_template[2] + ' ' + cerebellum_multiplier_image + ' -mult ' + tissue_images[2] + ' -if ' + new_tissue_images[2])
+    #file.delTemporary(fast_outputs_template[2])
+    #file.delTemporary(cerebellum_multiplier_image)
+    #progress.increment()
+    #run.command('mrmath ' + ' '.join(new_tissue_images) + ' sum ' + new_tissue_sum_image)
+    #file.delTemporary(tissue_sum_image)
+    #progress.done()
+    #tissue_images = new_tissue_images
+    #tissue_sum_image = new_tissue_sum_image
 
 
   # For all voxels within FreeSurfer's brain mask, add to the CSF image in order to make the sum 1.0
@@ -395,36 +492,110 @@ def execute():
 
 
   # TESTME Should the below occur after FAST?
-  progress = app.progressBar('Performing fill operations to preserve unity tissue volume', 5)
+  progress = app.progressBar('Performing fill operations to preserve unity tissue volume', 2)
   # TODO Connected-component analysis at high template image resolution is taking up huge amounts of memory
   # Crop beforehand? It's because it's filling everything outside the brain...
-  new_tissue_images = [ tissue_images[0], tissue_images[1], 'tissue2_filled.mif', 'tissue3_filled.mif', tissue_images[4] ]
-  run.command('mrthreshold ' + tissue_sum_image + ' -abs 0.5 - | maskfilter - erode - | mrcalc 1.0 - -sub - | maskfilter - connect -largest - | mrcalc 1.0 - -sub wm_fill_mask.mif')
+  # TODO Consider performing CSF fill before WM fill? Does this solve any problems?
+  #   Well, it might mean I can use connected-components to select the CSF fill, rather than using an erosion
+  #   This may also reduce the RAM usage of the connected-components analysis, since it'd be within
+  #   the brain mask rather than using the whole image FoV.
+  # Also: Potentially use mask cleaning filter
+  # FIXME Appears we can't rely on a connected-component filter: Still some bits e.g. between cortex & cerebellum
+  # Maybe need to look into techniques for specifically filling in between structure pairs
+
+
+  # TeSTME Don't even attempt to split between WM and CSF fill
+  # Or, at least, need to find a better solution for separating the two
+  new_tissue_images = [ tissue_images[0],
+                        tissue_images[1],
+                        tissue_images[2],
+                        os.path.splitext(tissue_images[3])[0] + '_filled.mif',
+                        tissue_images[4] ]
+  csf_fill_image = 'csf_fill.mif'
+  run.command('mrcalc 1.0 ' + tissue_sum_image + ' -sub ' + mask_image + ' -mult ' + csf_fill_image)
+  file.delTemporary(mask_image)
   progress.increment()
-  run.command('mrcalc 1.0 ' + tissue_sum_image + ' -sub wm_fill_mask.mif -mult wm_fill.mif')
-  progress.increment()
-  run.command('mrcalc ' + tissue_images[2] + ' wm_fill.mif -add ' + new_tissue_images[2])
-  progress.increment()
-  run.command('mrcalc 1.0 ' + tissue_sum_image + ' wm_fill.mif -add -sub ' + mask_image + ' 0.0 -gt -mult csf_fill.mif')
-  progress.increment()
-  run.command('mrcalc ' + tissue_images[3] + ' csf_fill.mif -add ' + new_tissue_images[3])
+  run.command('mrcalc ' + tissue_images[3] + ' ' + csf_fill_image + ' -add ' + new_tissue_images[3])
+  file.delTemporary(csf_fill_image)
+  file.delTemporary(tissue_images[3])
   progress.done()
   tissue_images = new_tissue_images
 
 
+
+  # new_tissue_images = [ tissue_images[0],
+                        # tissue_images[1],
+                        # os.path.splitext(tissue_images[2])[0] + '_filled.mif',
+                        # os.path.splitext(tissue_images[3])[0] + '_filled.mif',
+                        # tissue_images[4] ]
+  # nonunity_mask_image = 'nonunity_voxels.mif'
+  # csf_fill_mask_image = 'csf_fill_mask.mif'
+  # csf_fill_image = 'csf_fill.mif'
+  # wm_fill_image = 'wm_fill.mif'
+  # run.command('mrcalc 1.0 ' + tissue_sum_image + ' -sub ' + mask_image + ' -mult 1e-5 -gt ' + nonunity_mask_image)
+  # progress.increment()
+  # # Cleaning filter is slow, & results in weirdness
+  # run.command('maskfilter ' + nonunity_mask_image + ' connect -largest ' + csf_fill_mask_image)
+  # progress.increment()
+  # run.command('mrcalc 1.0 ' + tissue_sum_image + ' -sub ' + csf_fill_mask_image + ' -mult ' + csf_fill_image)
+  # progress.increment()
+  # run.command('mrcalc 1.0 ' + tissue_sum_image + ' -sub ' + nonunity_mask_image + ' ' + csf_fill_mask_image + ' -sub -mult ' + wm_fill_image)
+  # file.delTemporary(nonunity_mask_image)
+  # file.delTemporary(csf_fill_mask_image)
+  # progress.increment()
+  # run.command('mrcalc ' + tissue_images[2] + ' ' + wm_fill_image + ' -add ' + new_tissue_images[2])
+  # file.delTemporary(tissue_images[2])
+  # file.delTemporary(wm_fill_image)
+  # progress.increment()
+  # run.command('mrcalc ' + tissue_images[3] + ' ' + csf_fill_image + ' -add ' + new_tissue_images[3])
+  # file.delTemporary(tissue_images[3])
+  # file.delTemporary(csf_fill_image)
+  # progress.done()
+  # tissue_images = new_tissue_images
+
+
+  #wm_fill_mask_image = 'wm_fill_mask.mif'
+  #wm_fill_image = 'wm_fill.mif'
+  #csf_fill_image = 'csf_fill.mif'
+  #run.command('mrthreshold ' + tissue_sum_image + ' -abs 0.5 - | maskfilter - erode - | mrcalc 1.0 - -sub - | maskfilter - connect -largest - | mrcalc 1.0 - -sub ' + wm_fill_mask_image)
+  #progress.increment()
+  #run.command('mrcalc 1.0 ' + tissue_sum_image + ' -sub ' + wm_fill_mask_image + ' -mult ' + wm_fill_image)
+  #file.delTemporary(wm_fill_mask_image)
+  #progress.increment()
+  #run.command('mrcalc ' + tissue_images[2] + ' ' + wm_fill_image + ' -add ' + new_tissue_images[2])
+  #file.delTemporary(tissue_images[2])
+  #progress.increment()
+  #run.command('mrcalc 1.0 ' + tissue_sum_image + ' ' + wm_fill_image + ' -add -sub ' + mask_image + ' 0.0 -gt -mult ' + csf_fill_image)
+  #file.delTemporary(tissue_sum_image)
+  #file.delTemporary(wm_fill_image)
+  #progress.increment()
+  #run.command('mrcalc ' + tissue_images[3] + ' ' + csf_fill_image + ' -add ' + new_tissue_images[3])
+  #file.delTemporary(tissue_images[3])
+  #file.delTemporary(csf_fill_image)
+  #progress.done()
+  #tissue_images = new_tissue_images
+
+
   # Finally, concatenate the volumes to produce the 5TT image
-  run.command('mrcat ' + ' '.join(tissue_images) + ' 5TT.mif -axis 3')
+  precrop_result_image = '5TT.mif'
+  run.command('mrcat ' + ' '.join(tissue_images) + ' ' + precrop_result_image + ' -axis 3')
+  # TODO Use new file.delTemporary()
+  for entry in tissue_images:
+    file.delTemporary(entry)
 
 
 
   # Maybe don't go off all tissues here, since FreeSurfer's mask can be fairly liberal;
   #   instead get just a voxel clearance from all other tissue types (maybe two)
   if app.args.nocrop:
-    run.function(os.rename, '5TT.mif', 'result.mif')
+    run.function(os.rename, precrop_result_image, 'result.mif')
   else:
     app.console('Cropping final 5TT image')
-    run.command('mrconvert 5TT.mif -coord 3 0,1,2,4 - | mrmath - sum - -axis 3 | mrthreshold - - -abs 0.001 | maskfilter - dilate crop_mask.mif')
-    run.command('mrcrop 5TT.mif result.mif -mask crop_mask.mif')
+    crop_mask_image = 'crop_mask.mif'
+    run.command('mrconvert ' + precrop_result_image + ' -coord 3 0,1,2,4 - | mrmath - sum - -axis 3 | mrthreshold - - -abs 0.001 | maskfilter - dilate ' + crop_mask_image)
+    run.command('mrcrop ' + precrop_result_image + ' result.mif -mask ' + crop_mask_image)
+    file.delTemporary(crop_mask_image)
+    file.delTemporary(precrop_result_image)
 
 
 
