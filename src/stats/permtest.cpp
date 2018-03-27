@@ -58,8 +58,8 @@ namespace MR
           return false;
         (*stats_calculator) (shuffle.data, stats);
         (*enhancer) (stats, enhanced_stats);
-        for (size_t c = 0; c != enhanced_stats.cols(); ++c) {
-          for (size_t i = 0; i < enhanced_stats.rows(); ++i) {
+        for (size_t c = 0; c != stats_calculator->num_outputs(); ++c) {
+          for (size_t i = 0; i != stats_calculator->num_elements(); ++i) {
             if (enhanced_stats(i, c) > 0.0) {
               enhanced_sum(i, c) += enhanced_stats(i, c);
               enhanced_count(i, c)++;
@@ -146,8 +146,8 @@ namespace MR
           PreProcessor preprocessor (stats_calculator, enhancer, empirical_statistic, global_enhanced_count);
           Thread::run_queue (shuffler, Math::Stats::Shuffle(), Thread::multi (preprocessor));
         }
-        for (ssize_t contrast = 0; contrast != stats_calculator->num_outputs(); ++contrast) {
-          for (ssize_t element = 0; element != stats_calculator->num_elements(); ++element) {
+        for (size_t contrast = 0; contrast != stats_calculator->num_outputs(); ++contrast) {
+          for (size_t element = 0; element != stats_calculator->num_elements(); ++element) {
             if (global_enhanced_count(element, contrast) > 0)
               empirical_statistic(element, contrast) /= static_cast<default_type> (global_enhanced_count(element, contrast));
           }
