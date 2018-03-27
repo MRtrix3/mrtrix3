@@ -525,98 +525,104 @@ namespace MR
               }
             }
             const size_t finite_count = element_mask.count();
-
-            // Do we need to reduce the size of our matrices / vectors
-            //   based on the presence of non-finite values?
-            if (finite_count == num_subjects()) {
-
-              Mfull_masked.resize (num_subjects(), num_factors());
-              Mfull_masked.block (0, 0, num_subjects(), M.cols()) = M;
-              Mfull_masked.block (0, M.cols(), num_subjects(), extra_data.cols()) = extra_data;
-              shuffling_matrix_masked = shuffling_matrix;
-              y_masked = y.col (ie);
-
+            if (finite_count < num_factors()) {
+              output.row (ie).setZero();
             } else {
 
-              Mfull_masked.resize (finite_count, num_factors());
-              y_masked.resize (finite_count);
-              perm_matrix_mask.clear (true);
-              size_t out_index = 0;
-              for (size_t in_index = 0; in_index != num_subjects(); ++in_index) {
-                if (element_mask[in_index]) {
-                  Mfull_masked.block (out_index, 0, 1, M.cols()) = M.row (in_index);
-                  Mfull_masked.block (out_index, M.cols(), 1, extra_data.cols()) = extra_data.row (in_index);
-                  y_masked[out_index++] = y (in_index, ie);
-                } else {
-                  // Any row in the permutation matrix that contains a non-zero entry
-                  //   in the column corresponding to in_row needs to be removed
-                  //   from the permutation matrix
-                  for (ssize_t perm_row = 0; perm_row != shuffling_matrix.rows(); ++perm_row) {
-                    if (shuffling_matrix (perm_row, in_index))
-                      perm_matrix_mask[perm_row] = false;
+              // Do we need to reduce the size of our matrices / vectors
+              //   based on the presence of non-finite values?
+              if (finite_count == num_subjects()) {
+
+                Mfull_masked.resize (num_subjects(), num_factors());
+                Mfull_masked.block (0, 0, num_subjects(), M.cols()) = M;
+                Mfull_masked.block (0, M.cols(), num_subjects(), extra_data.cols()) = extra_data;
+                shuffling_matrix_masked = shuffling_matrix;
+                y_masked = y.col (ie);
+
+              } else {
+
+                Mfull_masked.resize (finite_count, num_factors());
+                y_masked.resize (finite_count);
+                perm_matrix_mask.clear (true);
+                size_t out_index = 0;
+                for (size_t in_index = 0; in_index != num_subjects(); ++in_index) {
+                  if (element_mask[in_index]) {
+                    Mfull_masked.block (out_index, 0, 1, M.cols()) = M.row (in_index);
+                    Mfull_masked.block (out_index, M.cols(), 1, extra_data.cols()) = extra_data.row (in_index);
+                    y_masked[out_index++] = y (in_index, ie);
+                  } else {
+                    // Any row in the permutation matrix that contains a non-zero entry
+                    //   in the column corresponding to in_row needs to be removed
+                    //   from the permutation matrix
+                    for (ssize_t perm_row = 0; perm_row != shuffling_matrix.rows(); ++perm_row) {
+                      if (shuffling_matrix (perm_row, in_index))
+                        perm_matrix_mask[perm_row] = false;
+                    }
                   }
                 }
+                assert (out_index == finite_count);
+                assert (perm_matrix_mask.count() == finite_count);
+                assert (y_masked.allFinite());
+                // Only after we've reduced the design matrix do we now reduce the shuffling matrix
+                // Step 1: Remove rows that contain non-zero entries in columns to be removed
+                matrix_type temp (finite_count, num_subjects());
+                out_index = 0;
+                for (size_t in_index = 0; in_index != num_subjects(); ++in_index) {
+                  if (perm_matrix_mask[in_index])
+                    temp.row (out_index++) = shuffling_matrix.row (in_index);
+                }
+                assert (out_index == finite_count);
+                // Step 2: Remove columns
+                shuffling_matrix_masked.resize (finite_count, finite_count);
+                out_index = 0;
+                for (size_t in_index = 0; in_index != num_subjects(); ++in_index) {
+                  if (element_mask[in_index])
+                    shuffling_matrix_masked.col (out_index++) = temp.col (in_index);
+                }
+                assert (out_index == finite_count);
               }
-              assert (out_index == finite_count);
-              assert (perm_matrix_mask.count() == finite_count);
-              // Only after we've reduced the design matrix do we now reduce the shuffling matrix
-              // Step 1: Remove rows that contain non-zero entries in columns to be removed
-              matrix_type temp (finite_count, num_subjects());
-              out_index = 0;
-              for (size_t in_index = 0; in_index != num_subjects(); ++in_index) {
-                if (perm_matrix_mask[in_index])
-                  temp.row (out_index++) = shuffling_matrix.row (in_index);
-              }
-              assert (out_index == finite_count);
-              // Step 2: Remove columns
-              shuffling_matrix_masked.resize (finite_count, finite_count);
-              out_index = 0;
-              for (size_t in_index = 0; in_index != num_subjects(); ++in_index) {
-                if (element_mask[in_index])
-                  shuffling_matrix_masked.col (out_index++) = temp.col (in_index);
-              }
-              assert (out_index == finite_count);
-            }
-            assert (Mfull_masked.allFinite());
+              assert (Mfull_masked.allFinite());
 
-            pinvMfull_masked = Math::pinv (Mfull_masked);
+              pinvMfull_masked = Math::pinv (Mfull_masked);
 
-            Rm.noalias() = matrix_type::Identity (finite_count, finite_count) - (Mfull_masked*pinvMfull_masked);
+              Rm.noalias() = matrix_type::Identity (finite_count, finite_count) - (Mfull_masked*pinvMfull_masked);
 
-            // We now have our permutation (shuffling) matrix and design matrix prepared,
-            //   and can commence regressing the partitioned model of each contrast
-            for (size_t ic = 0; ic != c.size(); ++ic) {
+              // We now have our permutation (shuffling) matrix and design matrix prepared,
+              //   and can commence regressing the partitioned model of each contrast
+              for (size_t ic = 0; ic != c.size(); ++ic) {
 
-              const auto partition = c[ic].partition (Mfull_masked);
-              XtX.noalias() = partition.X.transpose()*partition.X;
+                const auto partition = c[ic].partition (Mfull_masked);
+                XtX.noalias() = partition.X.transpose()*partition.X;
 
-              // Now that we have the individual contrast model partition for these data,
-              //   the rest of this function should proceed similarly to the fixed
-              //   design matrix case
-              //VAR (shuffling_matrix_masked.rows());
-              //VAR (shuffling_matrix_masked.cols());
-              //VAR (partition.Rz.rows());
-              //VAR (partition.Rz.cols());
-              //VAR (y_masked.rows());
-              //VAR (y_masked.cols());
-              Sy = shuffling_matrix_masked * partition.Rz * y_masked.matrix();
-              lambda = pinvMfull_masked * Sy.matrix();
-              beta.noalias() = c[ic].matrix() * lambda.matrix();
-              const default_type sse = (Rm*Sy.matrix()).squaredNorm();
+                // Now that we have the individual contrast model partition for these data,
+                //   the rest of this function should proceed similarly to the fixed
+                //   design matrix case
+                //VAR (shuffling_matrix_masked.rows());
+                //VAR (shuffling_matrix_masked.cols());
+                //VAR (partition.Rz.rows());
+                //VAR (partition.Rz.cols());
+                //VAR (y_masked.rows());
+                //VAR (y_masked.cols());
+                Sy = shuffling_matrix_masked * partition.Rz * y_masked.matrix();
+                lambda = pinvMfull_masked * Sy.matrix();
+                beta.noalias() = c[ic].matrix() * lambda.matrix();
+                const default_type sse = (Rm*Sy.matrix()).squaredNorm();
 
-              const default_type F = ((beta.transpose() * XtX * beta) (0, 0) / c[ic].rank()) /
-                                     (sse / value_type (finite_count - partition.rank_x - partition.rank_z));
+                const default_type F = ((beta.transpose() * XtX * beta) (0, 0) / c[ic].rank()) /
+                    (sse / value_type (finite_count - partition.rank_x - partition.rank_z));
 
-              if (!std::isfinite (F)) {
-                output (ie, ic) = value_type(0);
-              } else if (c[ic].is_F()) {
-                output (ie, ic) = F;
-              } else {
-                assert (beta.rows() == 1);
-                output (ie, ic) = std::sqrt (F) * (beta.sum() > 0 ? 1.0 : -1.0);
-              }
+                if (!std::isfinite (F)) {
+                  output (ie, ic) = value_type(0);
+                } else if (c[ic].is_F()) {
+                  output (ie, ic) = F;
+                } else {
+                  assert (beta.rows() == 1);
+                  output (ie, ic) = std::sqrt (F) * (beta.sum() > 0 ? 1.0 : -1.0);
+                }
 
-            } // End looping over contrasts
+              } // End looping over contrasts
+
+            } // End checking for adequate number of remaining subjects after NaN removal
 
           } // End looping over elements
         }
