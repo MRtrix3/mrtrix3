@@ -45,7 +45,7 @@ namespace MR {
 
         CubicAdjoint (const ImageType& parent, value_type outofbounds = 0)
             : Cubic <ImageType> (parent, outofbounds)
-        {  }
+        { }
 
         //! Add value to local region by interpolation weights.
         void adjoint_add (value_type val) {
@@ -133,22 +133,20 @@ namespace MR
           nxy (nx*ny), nc (get_ncoefs(rf)), ne (rigid.rows() / nv),
           T0 (in),  // Preserve original resolution.
           shellbasis (init_shellbasis(grad, rf)),
-          ssp (ssp),
-          motion (rigid)
+          ssp (ssp), motion (rigid), htmp(in)
       {
         INFO("Multiband factor " + str(nz/ne) + " detected.");
         init_Y(grad);
         init_laplacian(nv*reg*reg);
         assert (motion.rows() == nv*ne);
 
-        htmp = Header(in);
+        // set header for temporary images.
         htmp.ndim() = 3;
         htmp.stride(0) = 1;
         htmp.stride(1) = 2;
         htmp.stride(2) = 3;
         htmp.sanitise();
       }
-      Header htmp;
 
       const RowMatrixXf& getY() const { return Y; }
 
@@ -176,14 +174,11 @@ namespace MR
         Thread::parallel_for<size_t>(0, nv*ne,
           [&](size_t idx) {
             size_t v = idx/ne;
-            //Eigen::VectorXf q = X * Y.row(idx).adjoint();
             auto tmp = Image<float>::scratch(htmp);
             Eigen::Map<Eigen::VectorXf> q (tmp.address(), nxyz);
             q = X * Y.row(idx).adjoint();
-
             for (size_t z = idx%ne; z < nz; z += ne) {
               Eigen::Ref<Eigen::VectorXf> r = dst.segment((nz*v+z)*nxy, nxy);
-              //project_slice_x2y(v, z, r, q);
               project_slice_x2y_alt(v, z, r, tmp);
             }
           });
@@ -199,16 +194,12 @@ namespace MR
         X = Thread::parallel_sum<RowMatrixXf, size_t>(0, nv*ne,
           [&](size_t idx, RowMatrixXf& T) {
             size_t v = idx/ne;
-            //Eigen::VectorXf r = Eigen::VectorXf::Zero(nxyz);
             auto tmp = Image<float>::scratch(htmp);
             Eigen::Map<Eigen::VectorXf> r (tmp.address(), nxyz);
             r.setZero();
-
             for (size_t z = idx%ne; z < nz; z += ne) {
-              //project_slice_y2x(v, z, r, W(z,v) * rhs.segment((nz*v+z)*nxy, nxy));
               project_slice_y2x_alt(v, z, tmp, W(z,v) * rhs.segment((nz*v+z)*nxy, nxy));
             }
-
             T.noalias() += r * Y.row(idx);
           }, zero);
       }
@@ -224,21 +215,21 @@ namespace MR
         Xo = Thread::parallel_sum<RowMatrixXf, size_t>(0, nv*ne,
           [&](size_t idx, RowMatrixXf& T) {
             size_t v = idx/ne;
-            //Eigen::VectorXf q = Xi * Y.row(idx).adjoint();
             auto tmp1 = Image<float>::scratch(htmp);
             Eigen::Map<Eigen::VectorXf> q (tmp1.address(), nxyz);
             q = Xi * Y.row(idx).adjoint();
-
-            //Eigen::VectorXf r = Eigen::VectorXf::Zero(nxyz);
             auto tmp2 = Image<float>::scratch(htmp);
             Eigen::Map<Eigen::VectorXf> r (tmp2.address(), nxyz);
             r.setZero();
-
+            // Declare temporary slice
+            Eigen::VectorXf tmpslice (nxy);
             for (size_t z = idx%ne; z < nz; z += ne) {
-              //project_slice_x2x(v, z, r, W(z, v) * q);
-              project_slice_x2x_alt(v, z, tmp2, tmp1, W(z,v));
+              //project_slice_x2x_alt(v, z, tmp2, tmp1, W(z,v));
+              tmpslice.setZero();
+              project_slice_x2y_alt(v, z, tmpslice, tmp1);
+              tmpslice *= W(z,v);
+              project_slice_y2x_alt(v, z, tmp2, tmpslice);
             }
-
             T.noalias() += r * Y.row(idx);
           }, zero);
         Xo += L.adjoint() * (L * Xi);
@@ -257,6 +248,8 @@ namespace MR
       RowMatrixXf Y;
       Eigen::MatrixXf W;
       SparseMat L;
+
+      Header htmp;
 
       Image<float> field;
       Eigen::MatrixXf pe;
@@ -338,13 +331,6 @@ namespace MR
         return size_t(z*nxy + y*nx + x);
       }
 
-      inline bool inbounds(const int x, const int y, const int z) const
-      {
-        return (x >= 0) && (x < nx)
-            && (y >= 0) && (y < ny)
-            && (z >= 0) && (z < nz);
-      }
-
       inline size_t get_ncoefs(const vector<Eigen::MatrixXf>& rf) const
       {
         size_t n = 0;
@@ -372,40 +358,6 @@ namespace MR
       inline size_t get_grad_idx(const size_t idx) const { return idx / nxy; }
       inline size_t get_grad_idx(const size_t v, const size_t z) const { return v*nz + z; }
 
-      template <typename VectorType1, typename VectorType2>
-      void project_slice_x2y(const size_t v, const size_t z, VectorType1& dst, const VectorType2& rhs) const
-      {
-        Eigen::SparseVector<float> m (nxy*nz);
-        m.reserve(64);
-
-        std::unique_ptr<FieldInterpType> finterp;
-        if (field.valid())
-          finterp = make_unique<FieldInterpType>(field, 0.0f);
-
-        Eigen::Vector3 ps, pr, peoffset;
-        float iJac;
-        transform_type Ts2r = get_Ts2r(v, z);
-        if (field.valid()) {
-          peoffset = pe.block<1,3>(v, 0).transpose().cast<double>();
-        }
-
-        size_t i = 0;
-        for (size_t y = 0; y < ny; y++) {         // in-plane
-          ps[1] = y;
-          for (size_t x = 0; x < nx; x++, i++) {
-            ps[0] = x;
-            for (int s = -ssp.size(); s <= ssp.size(); s++) {       // ssp neighbourhood
-              ps[2] = z+s;
-              // get slice position in recon space
-              ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac);
-              // update motion matrix
-              load_sparse_coefs(m, pr.cast<float>());
-              dst[i] += (ssp(s)*iJac) * m.dot(rhs);
-            }
-          }
-        }
-      }
-
       template <typename VectorType1, typename ImageType2>
       void project_slice_x2y_alt(const int v, const int z, VectorType1& dst, const ImageType2& rhs) const
       {
@@ -428,46 +380,12 @@ namespace MR
           for (size_t x = 0; x < nx; x++, i++) {
             ps[0] = x;
             for (int s = -ssp.size(); s <= ssp.size(); s++) {       // ssp neighbourhood
-              ps[2] = (z+s < 0) ? 0 : (z+s >= nz) ? nz-1 : z+s;
+              ps[2] = z+s;
               // get slice position in recon space
               ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac);
               // update motion matrix
               source.voxel(pr);
               dst[i] += (ssp(s)*iJac) * source.value();
-            }
-          }
-        }
-      }
-
-      template <typename VectorType1, typename VectorType2>
-      void project_slice_y2x(const size_t v, const size_t z, VectorType1& dst, const VectorType2& rhs) const
-      {
-        Eigen::SparseVector<float> m (nxy*nz);
-        m.reserve(64);
-
-        std::unique_ptr<FieldInterpType> finterp;
-        if (field.valid())
-          finterp = make_unique<FieldInterpType>(field, 0.0f);
-
-        Eigen::Vector3 ps, pr, peoffset;
-        float iJac;
-        transform_type Ts2r = get_Ts2r(v, z);
-        if (field.valid()) {
-          peoffset = pe.block<1,3>(v, 0).transpose().cast<double>();
-        }
-
-        size_t i = 0;
-        for (size_t y = 0; y < ny; y++) {         // in-plane
-          ps[1] = y;
-          for (size_t x = 0; x < nx; x++, i++) {
-            ps[0] = x;
-            for (int s = -ssp.size(); s <= ssp.size(); s++) {       // ssp neighbourhood
-              ps[2] = z+s;
-              // get slice position in recon space
-              ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac);
-              // update motion matrix
-              load_sparse_coefs(m, pr.cast<float>());
-              dst += (ssp(s) * iJac * rhs[i]) * m;
             }
           }
         }
@@ -495,52 +413,12 @@ namespace MR
           for (size_t x = 0; x < nx; x++, i++) {
             ps[0] = x;
             for (int s = -ssp.size(); s <= ssp.size(); s++) {       // ssp neighbourhood
-              ps[2] = (z+s < 0) ? 0 : (z+s >= nz) ? nz-1 : z+s;
+              ps[2] = z+s;
               // get slice position in recon space
               ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac);
               // update motion matrix
               target.voxel(pr);
               target.adjoint_add (ssp(s) * iJac * rhs[i]);
-            }
-          }
-        }
-      }
-
-      template <typename VectorType1, typename VectorType2>
-      void project_slice_x2x(const size_t v, const size_t z, VectorType1& dst, const VectorType2& rhs) const
-      {
-        Eigen::SparseVector<float> m0 (nxy*nz);
-        m0.reserve(64);
-        std::array<Eigen::SparseVector<float>, 5> m;
-        m.fill(m0);
-
-        std::unique_ptr<FieldInterpType> finterp;
-        if (field.valid())
-          finterp = make_unique<FieldInterpType>(field, 0.0f);
-
-        Eigen::Vector3 ps, pr, peoffset;
-        float t;
-        std::array<float, 5> iJac;
-        transform_type Ts2r = get_Ts2r(v, z);
-        if (field.valid()) {
-          peoffset = pe.block<1,3>(v, 0).transpose().cast<double>();
-        }
-
-        for (size_t y = 0; y < ny; y++) {         // in-plane
-          ps[1] = y;
-          for (size_t x = 0; x < nx; x++) {
-            ps[0] = x;
-            t = 0.0f;
-            for (int s = -ssp.size(); s <= ssp.size(); s++) {       // ssp neighbourhood
-              ps[2] = z+s;
-              // get slice position in recon space
-              ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac[2+s]);
-              // update motion matrix
-              load_sparse_coefs(m[2+s], pr.cast<float>());
-              t += (ssp(s) * iJac[2+s]) * m[2+s].dot(rhs);
-            }
-            for (int s = -2; s <= 2; s++) {
-              dst += (ssp(s) * iJac[2+s] * t) * m[2+s];
             }
           }
         }
@@ -570,15 +448,16 @@ namespace MR
             ps[0] = x;
             t = 0.0f;
             for (int s = -ssp.size(); s <= ssp.size(); s++) {       // ssp neighbourhood
-              ps[2] = (z+s < 0) ? 0 : (z+s >= nz) ? nz-1 : z+s;
+              ps[2] = z+s;
               // get slice position in recon space
               ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac);
               // interpolate source
               source.voxel(pr);
-              t += (ssp(s) * iJac * w) * source.value();
+              t += (ssp(s) * iJac) * source.value();
             }
+            t *= w;
             for (int s = -ssp.size(); s <= ssp.size(); s++) {
-              ps[2] = (z+s < 0) ? 0 : (z+s >= nz) ? nz-1 : z+s;
+              ps[2] = z+s;
               // get slice position in recon space
               ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac);
               // project to target
@@ -593,6 +472,11 @@ namespace MR
                         std::unique_ptr<FieldInterpType>& field, const Eigen::Vector3 pe, float& invjac) const
       {
         pr = Ts2r * ps;
+        // clip pr to edges
+        pr[0] = (pr[0] < 0) ? 0 : (pr[0] > nx-1) ? nx-1 : pr[0];
+        pr[1] = (pr[1] < 0) ? 0 : (pr[1] > ny-1) ? ny-1 : pr[1];
+        pr[2] = (pr[2] < 0) ? 0 : (pr[2] > nz-1) ? nz-1 : pr[2];
+        // field mapping
         invjac = 1.0;
         if (field) {
           float B0 = 0.0f;
@@ -609,31 +493,6 @@ namespace MR
           // Jacobian
           dB0 *= (Tf * Ts2r).rotation().cast<float>();
           invjac = 1.0 / std::max(0.1, 1. + 2. * dB0 * pe.cast<float>());
-        }
-      }
-
-      inline void load_sparse_coefs(Eigen::SparseVector<float>& dst, const Eigen::Vector3f& pr) const
-      {
-        dst.setZero();
-        int n = 2;
-        Eigen::Vector3f pg = pr.array().ceil();
-        std::array<float,4> wx = interpweights<3>(1.0f - (pg[0] - pr[0]));
-        std::array<float,4> wy = interpweights<3>(1.0f - (pg[1] - pr[1]));
-        std::array<float,4> wz = interpweights<3>(1.0f - (pg[2] - pr[2]));
-        int px, py, pz;
-        for (int rz = -n; rz < n; rz++) { // local neighbourhood interpolation
-          pz = pg[2] + rz;
-          if ((pz < 0) || (pz >= nz)) continue;
-          for (int ry = -n; ry < n; ry++) {
-            py = pg[1] + ry;
-            if ((py < 0) || (py >= ny)) continue;
-            for (int rx = -n; rx < n; rx++) {
-              px = pg[0] + rx;
-              if ((px < 0) || (px >= nx)) continue;
-              // insert in weight vector.
-              dst.insert(get_idx(px, py, pz)) = wx[n+rx] * wy[n+ry] * wz[n+rz];
-            }
-          }
         }
       }
 
