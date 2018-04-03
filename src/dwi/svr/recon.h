@@ -501,16 +501,16 @@ namespace MR
         DEBUG("Initialising Laplacian matrix.");
         L.resize(nxy*nz, nxy*nz);
         L.reserve(Eigen::VectorXi::Constant(nxy*nz, 7));
-        for (size_t z = 1; z < nz-1; z++) {
-          for (size_t y = 1; y < ny-1; y++) {
-            for (size_t x = 1; x < nx-1; x++) {
-              L.insert(get_idx(x, y, z), get_idx(x, y, z-1)) =  1;
-              L.insert(get_idx(x, y, z), get_idx(x, y-1, z)) =  1;
-              L.insert(get_idx(x, y, z), get_idx(x-1, y, z)) =  1;
-              L.insert(get_idx(x, y, z), get_idx(x, y, z))   = -6;
-              L.insert(get_idx(x, y, z), get_idx(x+1, y, z)) =  1;
-              L.insert(get_idx(x, y, z), get_idx(x, y+1, z)) =  1;
-              L.insert(get_idx(x, y, z), get_idx(x, y, z+1)) =  1;
+        for (size_t z = 0; z < nz; z++) {
+          for (size_t y = 0; y < ny; y++) {
+            for (size_t x = 0; x < nx; x++) {
+              L.coeffRef(get_idx(x, y, z), get_idx(x, y, (z) ? z-1 : 0)) += 1;
+              L.coeffRef(get_idx(x, y, z), get_idx(x, (y) ? y-1 : 0, z)) += 1;
+              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0, y, z)) += 1;
+              L.coeffRef(get_idx(x, y, z), get_idx(x, y, z)) += -6;
+              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, y, z)) += 1;
+              L.coeffRef(get_idx(x, y, z), get_idx(x, (y < ny-1) ? y+1 : ny-1, z)) += 1;
+              L.coeffRef(get_idx(x, y, z), get_idx(x, y, (z < nz-1) ? z+1 : nz-1)) += 1;
             }
           }
         }
