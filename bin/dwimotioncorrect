@@ -139,15 +139,21 @@ class Config:
         self.regit = regit
         self.scale = scale
 
-iters = [Config(False, 1, 10, 4.00),
-         Config(False, 5, 10, 2.00),
-         Config(False, 5, 10, 1.00),
-         Config(True,  5, 10, 2.00),
-         Config(True, 10, 10, 1.00),
-         Config(True, 10, 10, 0.50),
-         Config(True, 10, 10, 0.25),
-         Config(True, 50, -1, 0.00)]
+#iters = [Config(False, 3, 10, 4.00),
+#         Config(False, 5, 10, 2.00),
+#         Config(False, 5, 10, 1.00),
+#         Config(True,  5, 10, 2.00),
+#         Config(True, 10, 10, 1.00),
+#         Config(True, 10, 10, 0.50),
+#         Config(True, 10, 10, 0.25),
+#         Config(True, 50, -1, 0.00)]
 
+iters = [Config(False, 3, 10, 4.00),
+         Config(False, 5, 10, 2.00),
+         Config(True,  5, 10, 1.00),
+         Config(True,  5, 10, 0.50),
+         Config(True,  5, 10, 0.25),
+         Config(True, 25, -1, 0.00)]
 
 # Set lmax
 lmax = [0,] + [4,]*(len(shells)-1)
@@ -286,7 +292,7 @@ reconstep(0)
 # running reconstruction
 for k, it in enumerate(iters[:-1]):
     # basis update and rank reduction
-    basisupdatestep(k)
+    #basisupdatestep(k)
     rankreduxstep(k, it.scale)
     # slice weights
     sliceweightstep()

@@ -222,7 +222,7 @@ namespace MR
         size_t idx;
         const Eigen::Matrix<float, Eigen::Dynamic, 3> dirs;
         vector<size_t> bidx;
-        const Eigen::Matrix<float, Eigen::Dynamic, 6> init; // Euler angle representation
+        const Eigen::Matrix<float, Eigen::Dynamic, 6> init;
       };
 
 
@@ -299,7 +299,7 @@ namespace MR
 
       private:
         const size_t ne;
-        Eigen::Matrix<float, Eigen::Dynamic, 6> motion; // Euler angle representation
+        Eigen::Matrix<float, Eigen::Dynamic, 6> motion;
         ProgressBar progress;
 
       };
