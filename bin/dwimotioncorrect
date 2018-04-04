@@ -38,6 +38,7 @@ options.add_argument('-niter', help='Number of epochs (default = 3)')
 options.add_argument('-lmax', help='SH basis order per shell (default = 0,4,4,...)')
 options.add_argument('-rlmax', help='Reduced basis order per component for registration (default = 2,2,0)')
 options.add_argument('-reg', help='Regularization for dwirecon (default = 0.01)')
+options.add_argument('-lbreg', help='Laplace-Beltrami regularization for SHARD (default = 0.01)')
 options.add_argument('-svr', help='Number of slice-to-volume reconstruction epochs (default = 0)')
 options.add_argument('-mb', help='Multiband factor (default = 1)')
 options.add_argument('-sorder', help='Slice order (default = 2,1, for odd-even)')
@@ -139,21 +140,21 @@ class Config:
         self.regit = regit
         self.scale = scale
 
-#iters = [Config(False, 3, 10, 4.00),
-#         Config(False, 5, 10, 2.00),
-#         Config(False, 5, 10, 1.00),
-#         Config(True,  5, 10, 2.00),
-#         Config(True, 10, 10, 1.00),
-#         Config(True, 10, 10, 0.50),
-#         Config(True, 10, 10, 0.25),
-#         Config(True, 50, -1, 0.00)]
-
 iters = [Config(False, 3, 10, 4.00),
          Config(False, 5, 10, 2.00),
-         Config(True,  5, 10, 1.00),
-         Config(True,  5, 10, 0.50),
-         Config(True,  5, 10, 0.25),
-         Config(True, 25, -1, 0.00)]
+         Config(False, 5, 10, 1.00),
+         Config(True,  5, 10, 2.00),
+         Config(True, 10, 10, 1.00),
+         Config(True, 10, 10, 0.50),
+         Config(True, 10, 10, 0.25),
+         Config(True, 50, -1, 0.00)]
+
+#iters = [Config(False, 3, 10, 4.00),
+#         Config(False, 5, 10, 2.00),
+#         Config(True,  5, 10, 1.00),
+#         Config(True,  5, 10, 0.50),
+#         Config(True,  5, 10, 0.25),
+#         Config(True, 25, -1, 0.00)]
 
 # Set lmax
 lmax = [0,] + [4,]*(len(shells)-1)
@@ -167,6 +168,8 @@ if app.args.rlmax:
     rlmax = [int(l) for l in app.args.rlmax.split(',')]
 if len(rlmax) > len(lmax) or max(rlmax) > max(lmax):
     app.error('-rlmax invalid.')
+
+lbreg = float(app.args.lbreg) if app.args.lbreg else 0.01
 
 
 # Shared reconstruction options
@@ -253,12 +256,12 @@ def sliceweightstep():
 
 def basisupdatestep(k):
     run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax ' + ','.join([str(l) for l in sorted(lmax)[::-1]]) +
-                ' -weights svdweights.txt ' + ' '.join(rfs) + ' -force')
+                ' -lbreg ' + str(lbreg) + ' ' + ' '.join(rfs) + ' -force')
 
 
 def rankreduxstep(k, scale=1.):
     run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax ' + ','.join([str(l) for l in rlmax]) +
-                ' -weights svdweights.txt ' + ' '.join(redrfs) + ' -proj irankredux.mif -force')
+                ' -lbreg ' + str(lbreg) + ' ' + ' '.join(redrfs) + ' -proj irankredux.mif -force')
     #scale = 4. - 3.*k / (v2viter-1) if k < v2viter else 2. - 1.*(k-v2viter) / (s2viter-1)
     run.command('mrfilter irankredux.mif smooth rankredux.mif -fwhm ' + str(scale*vu) + ' -force')
 

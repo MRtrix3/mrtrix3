@@ -316,13 +316,22 @@ void run ()
   Stride::set_from_command_line (header, {3, 4, 5, 2, 1});
   header.datatype() = DataType::from_command_line (DataType::Float32);
   PhaseEncoding::set_scheme (header, Eigen::MatrixXf());
+  // store b-values and counts
+  {
   std::stringstream ss;
   for (auto b : shells.get_bvalues())
     ss << b << ",";
   std::string key = "shells";
-  std::string val = ss.str();
-  val.erase(val.length()-1);
+  std::string val = ss.str(); val.erase(val.length()-1);
   header.keyval()[key] = val;
+  } {
+  std::stringstream ss;
+  for (auto c : shells.get_counts())
+    ss << c << ",";
+  std::string key = "shellcounts";
+  std::string val = ss.str(); val.erase(val.length()-1);
+  header.keyval()[key] = val;
+  }
 
   auto out = Image<value_type>::create (argument[1], header);
 

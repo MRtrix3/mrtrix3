@@ -52,6 +52,9 @@ void usage ()
   + Option ("lmax", "maximum SH order per component (default = 4,2,0)")
     + Argument ("order").type_sequence_int()
     
+  + Option ("lbreg", "Laplace-Beltrami regularisation weight (default = 0)")
+    + Argument ("lambda").type_float(0.0)
+
   + Option ("nsub", "number of voxels in subsampling (default = " + str(DEFAULT_NSUB) + ")")
     + Argument ("vox").type_integer(0)
 
@@ -136,14 +139,27 @@ void run ()
     rf.push_back( Eigen::MatrixXf::Zero(nshells, l/2+1) );
   }
 
+  Eigen::VectorXf W (nshells); W.setOnes();
+  auto key = in.keyval().find("shellcounts");
   opt = get_options("weights");
-  Eigen::VectorXf W (nshells);
-  W.setOnes();
   if (opt.size()) {
     W = load_vector<float>(opt[0][0]).cwiseSqrt();
-    W /= W.sum();
     if (W.size() != nshells)
       throw Exception("provided weights do not match the no. shells.");
+  } else if (key != in.keyval().end()) {
+    size_t i = 0;
+    for (auto w : parse_floats(key->second))
+      W[i++] = std::sqrt(w);
+  }
+  W /= W.mean();
+
+  // LB regularization
+  float lam = get_option_value("lbreg", 0.0f);
+  Eigen::VectorXf lb (nshells); lb.setZero();
+  auto bvals = parse_floats(in.keyval().find("shells")->second);
+  for (size_t i = 0; i < nshells; i++) {
+    float b = bvals[i]/1000.f;
+    lb[i] = (b < 1e-2) ? 0.0f : lam/(b*b) ;
   }
 
   auto proj = Image<value_type>();
@@ -165,6 +181,10 @@ void run ()
   Eigen::MatrixXf Sl;
   for (int l = 0; l <= lmax[0]; l+=2)
   {
+    // define LB filter
+    Eigen::VectorXf lbfilt = Math::pow2(l*(l+1)) * lb;
+    lbfilt.array() += 1.0f; lbfilt = lbfilt.cwiseInverse();
+    VAR(lbfilt);
     // load data to matrix
     Sl.resize(nshells, nsub*(2*l+1));
     size_t i = 0;
@@ -172,7 +192,7 @@ void run ()
       assign_pos_of(p).to(in);
       for (size_t j = Math::SH::NforL(l-2); j < Math::SH::NforL(l); j++, i++) {
         in.index(4) = j;
-        Sl.col(i) = Eigen::VectorXf(in.row(3));
+        Sl.col(i) = lbfilt.asDiagonal() * Eigen::VectorXf(in.row(3));
       }
     }
     // low-rank SVD
