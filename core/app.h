@@ -239,7 +239,16 @@ namespace MR
     class ParsedOption { NOMEMALIGN
       public:
         ParsedOption (const Option* option, const char* const* arguments) :
-          opt (option), args (arguments) { }
+            opt (option), args (arguments)
+        {
+          for (size_t i = 0; i != option->size(); ++i) {
+            if (arguments[i][0] == '-') {
+              WARN (std::string("Value \"") + arguments[i] + "\" is being provided as an input to option \"-" + option->id + "\"; " +
+                    "this may have been intended as its own command-line option, suggesting that the required " + str(option->size()) +
+                    " input" + (option->size() > 1 ? "s" : "") + " for option \"-" + option->id + "\" " + (option->size() > 1 ? "have" : "has") + " not been provided");
+            }
+          }
+        }
 
         //! reference to the corresponding Option entry in the OPTIONS section
         const Option* opt;
