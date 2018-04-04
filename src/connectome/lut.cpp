@@ -98,6 +98,23 @@ LUT::file_format LUT::guess_file_format (const std::string& path)
       bool is_unary_range_float() const { return is_numeric() && min >= 0.0 && max <= 1.0; }
       bool is_8bit() const { return is_integer() && min >= 0 && max <= 255; }
 
+      operator std::string() const
+      {
+        if (!is_numeric())
+          return "text";
+        if (is_integer()) {
+          if (is_8bit())
+            return "8bit_integer";
+          else
+            return "integer";
+        }
+        if (is_unary_range_float())
+          return "unary_float";
+        else
+          return "float";
+        assert (0);
+      }
+
     private:
       bool numeric, integer;
       default_type min, max;
@@ -109,13 +126,15 @@ LUT::file_format LUT::guess_file_format (const std::string& path)
     throw Exception ("Unable to open lookup table file");
   vector<Column> columns;
   std::string line;
+  size_t line_counter = 0;
   while (std::getline (in_lut, line)) {
+    ++line_counter;
     if (line.size() > 1 && line[0] != '#') {
       // Before splitting by whitespace, need to capture any strings that are
       //   encased within quotation marks
       auto split_by_quotes = split (line, "\"\'", false);
       if (!(split_by_quotes.size()%2))
-        throw Exception ("Odd number of quotation marks in a line in LUT file \"" + Path::basename (path) + "\"");
+        throw Exception ("Line " + str(line_counter) + " of LUT file \"" + Path::basename (path) + "\" contains an odd number of quotation marks, and hence cannot be properly split up according to quotation marks");
       decltype(split_by_quotes) entries;
       for (size_t i = 0; i != split_by_quotes.size(); ++i) {
         // Every second line must be encased in quotation marks, and is
@@ -123,7 +142,7 @@ LUT::file_format LUT::guess_file_format (const std::string& path)
         if (i % 2) {
           entries.push_back (split_by_quotes[i]);
         } else {
-          const auto block_split = split(split_by_quotes[i], "\t ", true);
+          const auto block_split = split(split_by_quotes[i], "\t ,", true);
           entries.insert (entries.end(), block_split.begin(), block_split.end());
         }
       }
@@ -136,7 +155,7 @@ LUT::file_format LUT::guess_file_format (const std::string& path)
       if (entries.size()) {
         if (columns.size() && entries.size() != columns.size()) {
           Exception E ("Inconsistent number of columns in LUT file \"" + Path::basename (path) + "\"");
-          E.push_back ("Initial contents contain " + str(columns.size()) + " columns, but following line contains " + str(entries.size()) + ":");
+          E.push_back ("Initial file contents contain " + str(columns.size()) + " columns, but line " + str(line_counter) + " contains " + str(entries.size()) + " entries:");
           E.push_back ("\"" + line + "\"");
           throw E;
         }
@@ -197,7 +216,14 @@ LUT::file_format LUT::guess_file_format (const std::string& path)
     DEBUG ("LUT file \"" + Path::basename (path) + "\" contains 1 integer, 2 strings (shortest first), then 4 8-bit integers per line: MRtrix format");
     return LUT_MRTRIX;
   }
-  throw Exception ("LUT file \"" + Path::basename (path) + "\" in unrecognized format");
+  std::string format_string;
+  format_string += "[ ";
+  for (auto c : columns)
+    format_string += std::string (c) + " ";
+  format_string += "]";
+  Exception e ("LUT file \"" + Path::basename (path) + "\" in unrecognized format:");
+  e.push_back (format_string);
+  throw e;
   return LUT_NONE;
 }
 
@@ -210,7 +236,7 @@ void LUT::parse_line_basic (const std::string& line)
 {
   node_t index = std::numeric_limits<node_t>::max();
   char name [80];
-  sscanf (line.c_str(), "%u %s", &index, name);
+  sscanf (line.c_str(), "%u%*[ ,]%s", &index, name);
   if (index != std::numeric_limits<node_t>::max()) {
     const std::string strname (strip(name, " \t\n\""));
     check_and_insert (index, LUT_node (strname));
@@ -221,10 +247,8 @@ void LUT::parse_line_freesurfer (const std::string& line)
   node_t index = std::numeric_limits<node_t>::max();
   node_t r = 256, g = 256, b = 256, a = 255;
   char name [80];
-  sscanf (line.c_str(), "%u %s %u %u %u %u", &index, name, &r, &g, &b, &a);
+  sscanf (line.c_str(), "%u%*[ ,]%s%*[ ,]%u%*[ ,]%u%*[ ,]%u%*[ ,]%u", &index, name, &r, &g, &b, &a);
   if (index != std::numeric_limits<node_t>::max()) {
-    if (std::max ({r, g, b}) > 255)
-      throw Exception ("Lookup table is malformed");
     const std::string strname (strip(name, " \t\n\""));
     check_and_insert (index, LUT_node (strname, r, g, b, a));
   }
@@ -233,7 +257,7 @@ void LUT::parse_line_aal (const std::string& line)
 {
   node_t index = std::numeric_limits<node_t>::max();
   char short_name[20], name [80];
-  sscanf (line.c_str(), "%s %s %u", short_name, name, &index);
+  sscanf (line.c_str(), "%s%*[ ,]%s%*[ ,]%u", short_name, name, &index);
   if (index != std::numeric_limits<node_t>::max()) {
     const std::string strshortname (strip(short_name, " \t\n\""));
     const std::string strname (strip(name, " \t\n\""));
@@ -247,7 +271,7 @@ void LUT::parse_line_itksnap (const std::string& line)
   float a = 1.0;
   unsigned int label_vis = 0, mesh_vis = 0;
   char name [80];
-  sscanf (line.c_str(), "%u %u %u %u %f %u %u %s", &index, &r, &g, &b, &a, &label_vis, &mesh_vis, name);
+  sscanf (line.c_str(), "%u%*[ ,]%u%*[ ,]%u%*[ ,]%u%*[ ,]%f%*[ ,]%u%*[ ,]%u%*[ ,]%s", &index, &r, &g, &b, &a, &label_vis, &mesh_vis, name);
   if (index != std::numeric_limits<node_t>::max()) {
     std::string strname (strip(name, " \t\n\""));
     check_and_insert (index, LUT_node (strname, r, g, b, uint8_t(a*255.0)));
@@ -258,10 +282,8 @@ void LUT::parse_line_mrtrix (const std::string& line)
   node_t index = std::numeric_limits<node_t>::max();
   node_t r = 256, g = 256, b = 256, a = 255;
   char short_name[20], name[80];
-  sscanf (line.c_str(), "%u %s %s %u %u %u %u", &index, short_name, name, &r, &g, &b, &a);
+  sscanf (line.c_str(), "%u%*[ ,]%s%*[ ,]%s%*[ ,]%u%*[ ,]%u%*[ ,]%u%*[ ,]%u", &index, short_name, name, &r, &g, &b, &a);
   if (index != std::numeric_limits<node_t>::max()) {
-    if (std::max ({r, g, b}) > 255)
-      throw Exception ("Lookup table is malformed");
     const std::string strshortname (strip(short_name, " \t\n\""));
     const std::string strname (strip(name, " \t\n\""));
     check_and_insert (index, LUT_node (strname, strshortname, r, g, b, a));
