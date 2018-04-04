@@ -179,7 +179,7 @@ namespace MR
             q = X * Y.row(idx).adjoint();
             for (size_t z = idx%ne; z < nz; z += ne) {
               Eigen::Ref<Eigen::VectorXf> r = dst.segment((nz*v+z)*nxy, nxy);
-              project_slice_x2y_alt(v, z, r, tmp);
+              project_slice_x2y(v, z, r, tmp);
             }
           });
       }
@@ -198,7 +198,7 @@ namespace MR
             Eigen::Map<Eigen::VectorXf> r (tmp.address(), nxyz);
             r.setZero();
             for (size_t z = idx%ne; z < nz; z += ne) {
-              project_slice_y2x_alt(v, z, tmp, W(z,v) * rhs.segment((nz*v+z)*nxy, nxy));
+              project_slice_y2x(v, z, tmp, W(z,v) * rhs.segment((nz*v+z)*nxy, nxy));
             }
             T.noalias() += r * Y.row(idx);
           }, zero);
@@ -224,11 +224,11 @@ namespace MR
             // Declare temporary slice
             Eigen::VectorXf tmpslice (nxy);
             for (size_t z = idx%ne; z < nz; z += ne) {
-              //project_slice_x2x_alt(v, z, tmp2, tmp1, W(z,v));
-              tmpslice.setZero();
-              project_slice_x2y_alt(v, z, tmpslice, tmp1);
-              tmpslice *= W(z,v);
-              project_slice_y2x_alt(v, z, tmp2, tmpslice);
+              project_slice_x2x(v, z, tmp2, tmp1, W(z,v));
+              //tmpslice.setZero();
+              //project_slice_x2y_alt(v, z, tmpslice, tmp1);
+              //tmpslice *= W(z,v);
+              //project_slice_y2x_alt(v, z, tmp2, tmpslice);
             }
             T.noalias() += r * Y.row(idx);
           }, zero);
@@ -359,7 +359,7 @@ namespace MR
       inline size_t get_grad_idx(const size_t v, const size_t z) const { return v*nz + z; }
 
       template <typename VectorType1, typename ImageType2>
-      void project_slice_x2y_alt(const int v, const int z, VectorType1& dst, const ImageType2& rhs) const
+      void project_slice_x2y(const int v, const int z, VectorType1& dst, const ImageType2& rhs) const
       {
         std::unique_ptr<FieldInterpType> finterp;
         if (field.valid())
@@ -392,7 +392,7 @@ namespace MR
       }
 
       template <typename ImageType1, typename VectorType2>
-      void project_slice_y2x_alt(const int v, const int z, ImageType1& dst, const VectorType2& rhs) const
+      void project_slice_y2x(const int v, const int z, ImageType1& dst, const VectorType2& rhs) const
       {
         std::unique_ptr<FieldInterpType> finterp;
         if (field.valid())
@@ -425,7 +425,7 @@ namespace MR
       }
 
       template <typename ImageType1, typename ImageType2>
-      void project_slice_x2x_alt(const int v, const int z, ImageType1& dst, const ImageType2& rhs, const float w) const
+      void project_slice_x2x(const int v, const int z, ImageType1& dst, const ImageType2& rhs, const float w) const
       {
         std::unique_ptr<FieldInterpType> finterp;
         if (field.valid())
