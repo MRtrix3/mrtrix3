@@ -44,6 +44,10 @@ if app.args.fsl:
 
   fast_cmd = fsl.exeName('fast')
 
+  app.warn('Use of -fsl option in dwibiascorrect script is discouraged due to its strong dependence ' + \
+           'on initial brain masking, and its inability to correct voxels outside of this mask.' + \
+           'Use of the -ants option is recommended for quantitative DWI analyses.')
+
 elif app.args.ants:
 
   if not find_executable('N4BiasFieldCorrection'):
