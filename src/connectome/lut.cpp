@@ -142,7 +142,7 @@ LUT::file_format LUT::guess_file_format (const std::string& path)
         if (i % 2) {
           entries.push_back (split_by_quotes[i]);
         } else {
-          const auto block_split = split(split_by_quotes[i], "\t ,", true);
+          const auto block_split = split(split_by_quotes[i], "\t ", true);
           entries.insert (entries.end(), block_split.begin(), block_split.end());
         }
       }
@@ -230,13 +230,11 @@ LUT::file_format LUT::guess_file_format (const std::string& path)
 
 
 
-
-
 void LUT::parse_line_basic (const std::string& line)
 {
   node_t index = std::numeric_limits<node_t>::max();
   char name [80];
-  sscanf (line.c_str(), "%u%*[ ,]%s", &index, name);
+  sscanf (line.c_str(), "%u %s", &index, name);
   if (index != std::numeric_limits<node_t>::max()) {
     const std::string strname (strip(name, " \t\n\""));
     check_and_insert (index, LUT_node (strname));
@@ -247,7 +245,7 @@ void LUT::parse_line_freesurfer (const std::string& line)
   node_t index = std::numeric_limits<node_t>::max();
   node_t r = 256, g = 256, b = 256, a = 255;
   char name [80];
-  sscanf (line.c_str(), "%u%*[ ,]%s%*[ ,]%u%*[ ,]%u%*[ ,]%u%*[ ,]%u", &index, name, &r, &g, &b, &a);
+  sscanf (line.c_str(), "%u %s %u %u %u %u", &index, name, &r, &g, &b, &a);
   if (index != std::numeric_limits<node_t>::max()) {
     const std::string strname (strip(name, " \t\n\""));
     check_and_insert (index, LUT_node (strname, r, g, b, a));
@@ -257,7 +255,7 @@ void LUT::parse_line_aal (const std::string& line)
 {
   node_t index = std::numeric_limits<node_t>::max();
   char short_name[20], name [80];
-  sscanf (line.c_str(), "%s%*[ ,]%s%*[ ,]%u", short_name, name, &index);
+  sscanf (line.c_str(), "%s %s %u", short_name, name, &index);
   if (index != std::numeric_limits<node_t>::max()) {
     const std::string strshortname (strip(short_name, " \t\n\""));
     const std::string strname (strip(name, " \t\n\""));
@@ -271,7 +269,7 @@ void LUT::parse_line_itksnap (const std::string& line)
   float a = 1.0;
   unsigned int label_vis = 0, mesh_vis = 0;
   char name [80];
-  sscanf (line.c_str(), "%u%*[ ,]%u%*[ ,]%u%*[ ,]%u%*[ ,]%f%*[ ,]%u%*[ ,]%u%*[ ,]%s", &index, &r, &g, &b, &a, &label_vis, &mesh_vis, name);
+  sscanf (line.c_str(), "%u %u %u %u %f %u %u %s", &index, &r, &g, &b, &a, &label_vis, &mesh_vis, name);
   if (index != std::numeric_limits<node_t>::max()) {
     std::string strname (strip(name, " \t\n\""));
     check_and_insert (index, LUT_node (strname, r, g, b, uint8_t(a*255.0)));
@@ -282,7 +280,7 @@ void LUT::parse_line_mrtrix (const std::string& line)
   node_t index = std::numeric_limits<node_t>::max();
   node_t r = 256, g = 256, b = 256, a = 255;
   char short_name[20], name[80];
-  sscanf (line.c_str(), "%u%*[ ,]%s%*[ ,]%s%*[ ,]%u%*[ ,]%u%*[ ,]%u%*[ ,]%u", &index, short_name, name, &r, &g, &b, &a);
+  sscanf (line.c_str(), "%u %s %s %u %u %u %u", &index, short_name, name, &r, &g, &b, &a);
   if (index != std::numeric_limits<node_t>::max()) {
     const std::string strshortname (strip(short_name, " \t\n\""));
     const std::string strname (strip(name, " \t\n\""));
