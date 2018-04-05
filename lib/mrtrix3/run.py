@@ -236,15 +236,18 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
 
 
 
-def function(fn, *args): #pylint: disable=unused-variable
+def function(fn, *args, **kwargs): #pylint: disable=unused-variable
 
   import inspect, sys
   from mrtrix3 import app
 
-  fnstring = fn.__module__ + '.' + fn.__name__ + '(' + ', '.join(['\'' + str(a) + '\'' if isinstance(a, str) else str(a) for a in args]) + ')'
+  fnstring = fn.__module__ + '.' + fn.__name__ + \
+             '(' + ', '.join(['\'' + str(a) + '\'' if isinstance(a, str) else str(a) for a in args]) + \
+             (', ' if (args and kwargs) else '') + \
+             ', '.join([key+'='+str(value) for key, value in kwargs.items()]) + ')'
 
   if _lastFile:
-    if _triggerContinue(args):
+    if _triggerContinue(args) or _triggerContinue(kwargs.values()):
       app.debug('Detected last file in function \'' + fnstring + '\'; this is the last run.command() / run.function() call that will be skipped')
     if app.verbosity:
       sys.stderr.write(app.colourExec + 'Skipping function:' + app.colourClear + ' ' + fnstring + '\n')
@@ -257,7 +260,10 @@ def function(fn, *args): #pylint: disable=unused-variable
 
   # Now we need to actually execute the requested function
   try:
-    result = fn(*args)
+    if kwargs:
+      result = fn(*args, **kwargs)
+    else:
+      result = fn(*args)
   except (KeyboardInterrupt, SystemExit):
     raise
   except Exception as e: # pylint: disable=broad-except
