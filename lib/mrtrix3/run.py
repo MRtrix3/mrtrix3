@@ -18,6 +18,7 @@ _lastFile = ''
 
 
 def setContinue(filename): #pylint: disable=unused-variable
+  global _lastFile
   _lastFile = filename
 
 
