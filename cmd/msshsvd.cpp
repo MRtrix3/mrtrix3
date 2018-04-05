@@ -184,7 +184,6 @@ void run ()
     // define LB filter
     Eigen::VectorXf lbfilt = Math::pow2(l*(l+1)) * lb;
     lbfilt.array() += 1.0f; lbfilt = lbfilt.cwiseInverse();
-    VAR(lbfilt);
     // load data to matrix
     Sl.resize(nshells, nsub*(2*l+1));
     size_t i = 0;

@@ -111,25 +111,11 @@ else:
     run.command('dwi2mask in.mif mask.mif')
 
 
-# Set no. iterations
-#v2viter = 3
-#if app.args.niter:
-#    v2viter = int(app.args.niter)
-#s2viter = 0
-#if app.args.svr:
-#    s2viter = int(app.args.svr)
-#niter = v2viter + s2viter
-
-
 # Image dimensions
 dims = list(map(int, image.headerField('in.mif', 'size').split()))
 vox = list(map(float, image.headerField('in.mif', 'vox').split()))
 vu = round((vox[0]+vox[1])/2., 1)
 shells = [s.split('.')[0] for s in image.headerField('in.mif', 'shells').split()]
-
-# Shell weights
-with open('svdweights.txt', 'w') as f:
-    f.write(image.headerField('in.mif', 'shellcount') + '\n')
 
 
 # Configuration
@@ -267,7 +253,7 @@ def rankreduxstep(k, scale=1.):
 
 
 def registrationstep(k):
-    run.command('dwislicealign ' + inputfn + ' rankredux.mif motion.txt -mask mask.mif -maxiter ' + str(iters[k].regit) + ' ' +
+    run.command('dwislicealign ' + inputfn + ' rankredux.mif motion.txt -mask mask.mif -maxiter ' + str(iters[k].regit) +
                 ' -mb ' + (str(mb) if iters[k].svr else '0') + (' -init motion.txt' if k>0 else '') +
                 ssp_option + ' -force' + nthr)
     if app.args.sorder:
@@ -295,7 +281,7 @@ reconstep(0)
 # running reconstruction
 for k, it in enumerate(iters[:-1]):
     # basis update and rank reduction
-    #basisupdatestep(k)
+    basisupdatestep(k)
     rankreduxstep(k, it.scale)
     # slice weights
     sliceweightstep()
