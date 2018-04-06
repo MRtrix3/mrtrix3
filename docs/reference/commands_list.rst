@@ -110,6 +110,7 @@ List of MRtrix3 commands
     commands/tsfmult
     commands/tsfsmooth
     commands/tsfthreshold
+    commands/tsfvalidate
     commands/vectorstats
     commands/voxel2fixel
     commands/warp2metric
@@ -221,6 +222,7 @@ List of MRtrix3 commands
     :ref:`tsfmult`, "Multiply corresponding values in track scalar files"
     :ref:`tsfsmooth`, "Gaussian filter a track scalar file"
     :ref:`tsfthreshold`, "Threshold and invert track scalar files"
+    :ref:`tsfvalidate`, "Validate a track scalar file against the corresponding track data"
     :ref:`vectorstats`, "Statistical testing of vector data using non-parametric permutation testing"
     :ref:`voxel2fixel`, "Map the scalar value in each voxel to all fixels within that voxel"
     :ref:`warp2metric`, "Compute fixel-wise or voxel-wise metrics from a 4D deformation field"
