@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -29,7 +30,7 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  SYNOPSIS = "Apply a normalisation map to a tracks file";
+  SYNOPSIS = "Apply a spatial transformation to a tracks file";
 
   ARGUMENTS
   + Argument ("tracks", "the input track file.").type_tracks_in()
@@ -65,9 +66,14 @@ class Warper { MEMALIGN(Warper)
       interp (warp) { }
 
     bool operator () (const TrackType& in, TrackType& out) {
-      out.resize (in.size());
-      for (size_t n = 0; n < in.size(); ++n) 
-        out[n] = pos(in[n]);
+      out.clear();
+      out.index = in.index;
+      out.weight = in.weight;
+      for (size_t n = 0; n < in.size(); ++n) {
+        auto vertex = pos(in[n]);
+        if (vertex.allFinite())
+          out.push_back (vertex);
+      }
       return true;
     }
 
@@ -91,8 +97,9 @@ class Warper { MEMALIGN(Warper)
 class Writer { MEMALIGN(Writer)
   public:
     Writer (const std::string& file, const Tractography::Properties& properties) :
-      progress ("normalising tracks"),
-      writer (file, properties) { }
+        progress ("applying spatial transformation to tracks",
+                  properties.find("count") == properties.end() ? 0 : to<size_t>(properties.find ("count")->second)),
+        writer (file, properties) { }
 
     bool operator() (const TrackType& item) {
       writer (item);
@@ -120,10 +127,10 @@ void run ()
   Writer writer (argument[2], loader.properties);
 
   Thread::run_queue (
-      loader, 
-      Thread::batch (TrackType(), 1024), 
-      Thread::multi (warper), 
-      Thread::batch (TrackType(), 1024), 
+      loader,
+      Thread::batch (TrackType(), 1024),
+      Thread::multi (warper),
+      Thread::batch (TrackType(), 1024),
       writer);
 }
 

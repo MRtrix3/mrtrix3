@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -98,7 +99,7 @@ void run ()
   while (reader (tck)) {
     SetVoxelDir dixels;
     mapper (tck, dixels);
-    vector<float> scalars (tck.size(), 0.0);
+    vector<float> scalars (tck.size(), 0.0f);
     for (size_t p = 0; p < tck.size(); ++p) {
       voxel_pos = transform.scanner2voxel * tck[p].cast<default_type> ();
       for (SetVoxelDir::const_iterator d = dixels.begin(); d != dixels.end(); ++d) {
@@ -106,7 +107,7 @@ void run ()
           assign_pos_of (*d).to (in_index_image);
           Eigen::Vector3f dir = d->get_dir().cast<float>();
           dir.normalize();
-          float largest_dp = 0.0;
+          float largest_dp = 0.0f;
           int32_t closest_fixel_index = -1;
 
           in_index_image.index(3) = 0;
@@ -116,7 +117,7 @@ void run ()
 
           for (size_t fixel = 0; fixel < num_fixels_in_voxel; ++fixel) {
             in_directions_image.index(0) = offset + fixel;
-            float dp = std::abs (dir.dot (Eigen::Vector3f (in_directions_image.row(1))));
+            const float dp = std::abs (dir.dot (Eigen::Vector3f (in_directions_image.row(1))));
             if (dp > largest_dp) {
               largest_dp = dp;
               closest_fixel_index = fixel;
@@ -124,9 +125,13 @@ void run ()
           }
           if (largest_dp > angular_threshold_dp) {
             in_data_image.index(0) = offset + closest_fixel_index;
-            scalars[p] = in_data_image.value();
+            const float value = in_data_image.value();
+            if (std::isfinite (value))
+              scalars[p] = in_data_image.value();
+            else
+              scalars[p] = 0.0f;
           } else {
-            scalars[p] = 0.0;
+            scalars[p] = 0.0f;
           }
           break;
         }

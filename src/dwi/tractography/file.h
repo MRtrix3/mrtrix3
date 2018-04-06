@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -256,20 +257,20 @@ namespace MR
 
           //! append track to file
           bool operator() (const Streamline<ValueType>& tck) {
-            if (tck.size()) {
-              // allocate buffer on the stack for performance:
-              NON_POD_VLA (buffer, vector_type, tck.size()+2);
-              for (size_t n = 0; n < tck.size(); ++n)
-                format_point (tck[n], buffer[n]);
-              format_point (delimiter(), buffer[tck.size()]);
-
-              commit (buffer, tck.size()+1);
-
-              if (weights_name.size())
-                write_weights (str(tck.weight) + "\n");
-
-              ++count;
+            // allocate buffer on the stack for performance:
+            NON_POD_VLA (buffer, vector_type, tck.size()+2);
+            for (size_t n = 0; n < tck.size(); ++n) {
+              assert (tck[n].allFinite());
+              format_point (tck[n], buffer[n]);
             }
+            format_point (delimiter(), buffer[tck.size()]);
+
+            commit (buffer, tck.size()+1);
+
+            if (weights_name.size())
+              write_weights (str(tck.weight) + "\n");
+
+            ++count;
             ++total_count;
             return true;
           }
@@ -392,19 +393,19 @@ namespace MR
 
           //! append track to file
           bool operator() (const Streamline<ValueType>& tck) {
-            if (tck.size()) {
-              if (buffer_size + tck.size() + 2 > buffer_capacity)
-                commit ();
+            if (buffer_size + tck.size() + 2 > buffer_capacity)
+              commit ();
 
-              for (const auto& i : tck)
-                add_point (i);
-              add_point (delimiter());
-
-              if (weights_name.size())
-                weights_buffer += str (tck.weight) + ' ';
-
-              ++count;
+            for (const auto& i : tck) {
+              assert (i.allFinite());
+              add_point (i);
             }
+            add_point (delimiter());
+
+            if (weights_name.size())
+              weights_buffer += str (tck.weight) + ' ';
+
+            ++count;
             ++total_count;
             return true;
           }

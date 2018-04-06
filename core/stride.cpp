@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -23,7 +24,7 @@ namespace MR
     using namespace App;
 
     const OptionGroup Options = OptionGroup ("Stride options")
-      + Option ("stride",
+      + Option ("strides",
           "specify the strides of the output data in memory, as a comma-separated list. "
           "The actual strides produced will depend on whether the output image "
           "format can support it.")
@@ -58,12 +59,12 @@ namespace MR
           in_max = std::abs (current[i]);
       in_max += desired_max + 1;
 
-      for (size_t i = 0; i < current.size(); ++i) 
-        if (dims[i] > 1 && desired[i]) 
+      for (size_t i = 0; i < current.size(); ++i)
+        if (dims[i] > 1 && desired[i])
           current[i] = desired[i];
         else if (current[i])
           current[i] += current[i] < 0 ? -desired_max : desired_max;
-        else 
+        else
           current[i] = in_max++;
 
       symbolise (current);
@@ -74,17 +75,17 @@ namespace MR
     List __from_command_line (const List& current)
     {
       List strides;
-      auto opt = App::get_options ("stride");
-      if (!opt.size()) 
+      auto opt = App::get_options ("strides");
+      if (!opt.size())
         return strides;
 
       vector<int> tmp = opt[0][0];
       for (auto x : tmp)
-        strides.push_back (x); 
+        strides.push_back (x);
 
 
       if (strides.size() > current.size())
-        WARN ("too many axes supplied to -stride option - ignoring remaining strides");
+        WARN ("too many axes supplied to -strides option - ignoring remaining strides");
       strides.resize (current.size(), 0);
 
       for (const auto x : strides)
@@ -93,15 +94,15 @@ namespace MR
 
       for (size_t i = 0; i < strides.size()-1; ++i) {
         if (!strides[1]) continue;
-        for (size_t j = i+1; j < strides.size(); ++j) 
-          if (std::abs (strides[i]) == std::abs (strides[j])) 
-            throw Exception ("duplicate entries provided to \"-stride\" option: " + str(opt[0][0]));
+        for (size_t j = i+1; j < strides.size(); ++j)
+          if (std::abs (strides[i]) == std::abs (strides[j]))
+            throw Exception ("duplicate entries provided to \"-strides\" option: " + str(opt[0][0]));
       }
 
       List prev = get_symbolic (current);
-      
-      for (size_t i = 0; i < strides.size(); ++i) 
-        if (strides[i] != 0) 
+
+      for (size_t i = 0; i < strides.size(); ++i)
+        if (strides[i] != 0)
           prev[i] = 0;
 
       prev = get_symbolic (prev);
@@ -129,7 +130,7 @@ namespace MR
         }
         strides[std::distance (prev.begin(), p)] = s;
       }
-      
+
       return strides;
     }
 

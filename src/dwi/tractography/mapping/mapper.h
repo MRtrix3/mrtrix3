@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -55,23 +56,23 @@ namespace MR {
 
           public:
             template <class HeaderType>
-              TrackMapperBase (const HeaderType& template_image) :
-                info      (template_image),
+            TrackMapperBase (const HeaderType& template_image) :
+                info          (template_image),
                 scanner2voxel (Transform(template_image).scanner2voxel.cast<float>()),
-                map_zero  (false),
-                precise   (false),
-                ends_only (false),
-                upsampler (1) { }
+                map_zero      (false),
+                precise       (false),
+                ends_only     (false),
+                upsampler     (1) { }
 
             template <class HeaderType>
-              TrackMapperBase (const HeaderType& template_image, const DWI::Directions::FastLookupSet& dirs) :
-                info         (template_image),
+            TrackMapperBase (const HeaderType& template_image, const DWI::Directions::FastLookupSet& dirs) :
+                info          (template_image),
                 scanner2voxel (Transform(template_image).scanner2voxel.cast<float>()),
-                map_zero     (false),
-                precise      (false),
-                ends_only    (false),
-                dixel_plugin (new DixelMappingPlugin (dirs)),
-                upsampler    (1) { }
+                map_zero      (false),
+                precise       (false),
+                ends_only     (false),
+                dixel_plugin  (new DixelMappingPlugin (dirs)),
+                upsampler     (1) { }
 
             TrackMapperBase (const TrackMapperBase&) = default;
             TrackMapperBase (TrackMapperBase&&) = default;
@@ -83,12 +84,12 @@ namespace MR {
             void set_upsample_ratio (const size_t i) { upsampler.set_ratio (i); }
             void set_map_zero (const bool i) { map_zero = i; }
             void set_use_precise_mapping (const bool i) {
-              if (i && ends_only) 
+              if (i && ends_only)
                 throw Exception ("Cannot do precise mapping and endpoint mapping together");
               precise = i;
             }
             void set_map_ends_only (const bool i) {
-              if (i && precise) 
+              if (i && precise)
                 throw Exception ("Cannot do precise mapping and endpoint mapping together");
               ends_only = i;
             }
@@ -195,7 +196,7 @@ namespace MR {
                 add_to_set (output, vox, dir, 1.0);
             }
 
-            for (auto& i : output) 
+            for (auto& i : output)
               i.normalize();
 
           }
@@ -245,7 +246,7 @@ namespace MR {
               if (p == tck.size()) {
                 p_voxel_exit = tck.back();
                 end_track = true;
-              } 
+              }
               else {
 
                 default_type mu_min = mu;
@@ -349,29 +350,27 @@ namespace MR {
         { MEMALIGN(TrackMapperTWI)
           public:
             template <class HeaderType>
-              TrackMapperTWI (const HeaderType& template_image, const contrast_t c, const tck_stat_t s) :
-                TrackMapperBase       (template_image),
-                contrast              (c),
-                track_statistic       (s) { }
+            TrackMapperTWI (const HeaderType& template_image, const contrast_t c, const tck_stat_t s) :
+                TrackMapperBase (template_image),
+                contrast        (c),
+                track_statistic (s) { }
 
             TrackMapperTWI (const TrackMapperTWI& that) :
-              TrackMapperBase       (static_cast<const TrackMapperBase&> (that)),
-              contrast              (that.contrast),
-              track_statistic       (that.track_statistic),
-              vector_data           (that.vector_data) {
-                if (that.image_plugin) {
-                  if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)
-                    image_plugin.reset (new TWIScalarImagePlugin (*dynamic_cast<TWIScalarImagePlugin*> (that.image_plugin.get())));
-                  else if (contrast == FOD_AMP)
-                    image_plugin.reset (new TWIFODImagePlugin    (*dynamic_cast<TWIFODImagePlugin*>    (that.image_plugin.get())));
-                  else
-                    throw Exception ("Copy-constructing TrackMapperTWI with unknown image plugin");
-                }
-              }
+                TrackMapperBase (static_cast<const TrackMapperBase&> (that)),
+                contrast        (that.contrast),
+                track_statistic (that.track_statistic),
+                vector_data     (that.vector_data)
+            {
+              if (that.image_plugin)
+                image_plugin.reset (that.image_plugin->clone());
+            }
 
 
             void add_scalar_image (const std::string&);
+            void set_backtrack();
             void add_fod_image    (const std::string&);
+            void add_twdfc_static_image  (Image<float>&);
+            void add_twdfc_dynamic_image (Image<float>&, const vector<float>&, const ssize_t);
             void add_vector_data  (const std::string&);
 
 

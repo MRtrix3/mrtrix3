@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -64,6 +65,9 @@ void usage ()
   + Option ("dump", "dump the streamlines lengths to a text file")
     + Argument ("path").type_file_out()
 
+  + Option ("explicit", "explicitly calculate the length of each streamline, "
+                        "ignoring any step size information present in the header")
+
   + Option ("ignorezero", "do not generate a warning if the track file contains streamlines with zero length")
 
   + Tractography::TrackWeightsInOption;
@@ -118,12 +122,13 @@ void run ()
     if (properties.find ("count") != properties.end())
       header_count = to<size_t> (properties["count"]);
 
-    step_size = get_step_size (properties);
-
-    if (!std::isfinite (step_size) || !step_size) {
-      INFO ("Streamline step size undefined in header; lengths will be calculated manually");
-      if (get_options ("histogram").size()) {
-        WARN ("Do not have streamline step size with which to construct histogram; histogram will be generated using 1mm bin widths");
+    if (!get_options ("explicit").size()) {
+      step_size = get_step_size (properties);
+      if (!std::isfinite (step_size) || !step_size) {
+        INFO ("Streamline step size undefined in header; lengths will be calculated manually");
+        if (get_options ("histogram").size()) {
+          WARN ("Do not have streamline step size with which to construct histogram; histogram will be generated using 1mm bin widths");
+        }
       }
     }
 

@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -18,7 +19,7 @@
 // These lines are to silence deprecation warnings with Eigen & GCC v5
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#include <Eigen/Eigenvalues> 
+#include <Eigen/Eigenvalues>
 #pragma GCC diagnostic pop
 
 #include "math/least_squares.h"
@@ -88,12 +89,12 @@ namespace MR
         eig (3),
         M (3,3),
         dt (6) { }
-        
 
 
 
 
-      bool init()
+
+      bool init() override
       {
         if (!get_data (source))
           return false;
@@ -102,7 +103,7 @@ namespace MR
 
 
 
-      term_t next ()
+      term_t next () override
       {
         if (!get_data (source))
           return Tracking::EXIT_IMAGE;
@@ -110,7 +111,7 @@ namespace MR
       }
 
 
-      float get_metric()
+      float get_metric() override
       {
         dwi2tensor (dt, S.binv, values);
         return tensor2FA (dt);
