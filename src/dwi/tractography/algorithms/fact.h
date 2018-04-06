@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -89,20 +90,20 @@ namespace MR
 
 
 
-      bool init()
+      bool init() override
       {
         if (!get_data (source)) return false;
         if (!S.init_dir.allFinite()) {
           if (!dir.allFinite())
             dir = random_direction();
-        } 
-        else 
+        }
+        else
           dir = S.init_dir;
-        
+
         return do_next (dir) >= S.threshold;
       }
 
-      term_t next ()
+      term_t next () override
       {
         if (!get_data (source))
           return EXIT_IMAGE;
@@ -117,7 +118,7 @@ namespace MR
       }
 
 
-      float get_metric()
+      float get_metric() override
       {
         Eigen::Vector3f d (dir);
         return do_next (d);
@@ -137,7 +138,7 @@ namespace MR
         for (size_t n = 0; n < S.num_vec; ++n) {
           Eigen::Vector3f v (values[3*n], values[3*n+1], values[3*n+2]);
           float norm = v.norm();
-          float dot = v.dot(d) / norm; 
+          float dot = v.dot(d) / norm;
           float abs_dot = std::abs (dot);
           if (abs_dot < S.dot_threshold) continue;
           if (max_abs_dot < abs_dot) {
@@ -152,7 +153,7 @@ namespace MR
 
         d = { values[3*idx], values[3*idx+1], values[3*idx+2] };
         d.normalize();
-        if (max_dot < 0.0) 
+        if (max_dot < 0.0)
           d = -d;
 
         return max_norm;
