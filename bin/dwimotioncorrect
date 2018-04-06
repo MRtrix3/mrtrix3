@@ -126,14 +126,14 @@ class Config:
         self.regit = regit
         self.scale = scale
 
-iters = [Config(False, 3, 10, 4.00),
-         Config(False, 5, 10, 2.00),
-         Config(False, 5, 10, 1.00),
-         Config(True,  5, 10, 2.00),
-         Config(True, 10, 10, 1.00),
-         Config(True, 10, 10, 0.50),
-         Config(True, 10, 10, 0.25),
-         Config(True, 50, -1, 0.00)]
+#iters = [Config(False, 3, 10, 4.00),
+#         Config(False, 5, 10, 2.00),
+#         Config(False, 5, 10, 1.00),
+#         Config(True,  5, 10, 2.00),
+#         Config(True, 10, 10, 1.00),
+#         Config(True, 10, 10, 0.50),
+#         Config(True, 10, 10, 0.25),
+#         Config(True, 50, -1, 0.00)]
 
 #iters = [Config(False, 3, 10, 4.00),
 #         Config(False, 5, 10, 2.00),
@@ -141,6 +141,13 @@ iters = [Config(False, 3, 10, 4.00),
 #         Config(True,  5, 10, 0.50),
 #         Config(True,  5, 10, 0.25),
 #         Config(True, 25, -1, 0.00)]
+
+iters = [Config(False, 3, 50, 0.20),
+         Config(False, 5, 50, 0.10),
+         Config(True,  5, 50, 0.05),
+         Config(True, 10, 50, 0.02),
+         Config(True, 50, -1, 0.01)]
+
 
 # Set lmax
 lmax = [0,] + [4,]*(len(shells)-1)
@@ -159,9 +166,9 @@ lbreg = float(app.args.lbreg) if app.args.lbreg else 0.01
 
 
 # Shared reconstruction options
-recon_option = ''
-if app.args.reg:
-    recon_option += '-reg ' + app.args.reg
+#recon_option = ''
+#if app.args.reg:
+#    recon_option += '-reg ' + app.args.reg
 
 
 # SSP option
@@ -217,12 +224,12 @@ inputfn = 'in.mif'
 
 #   __________ Function definitions __________
 
-def reconstep(k):
+def reconstep(k, scale=1.):
     im = inputfn;
     if k > 0 and app.args.matchintensity:
         im = 'scaled.mif'
         run.command('mrcalc ' + inputfn + (' biasfield.mif -exp -mult' if app.args.matchintensity=='full' else '') + ' imscale.mif -mult ' + im + ' -force')
-    run.command('dwirecon ' + im + ' recon-' + str(k) + '.mif -spred spred.mif -maxiter ' + str(iters[k].recit) + ' ' + recon_option + ssp_option + ' -rf ' + ' -rf '.join(rfs) +
+    run.command('dwirecon ' + im + ' recon-' + str(k) + '.mif -spred spred.mif -maxiter ' + str(iters[k].recit) + ' -reg ' + str(iters[k].scale) + ' ' + ssp_option + ' -rf ' + ' -rf '.join(rfs) +
             ('' if k==0 else ' -motion motion.txt -weights sliceweights.txt -init recon-' + str(k-1) + '.mif') + ' -force' + nthr)
 
 
@@ -245,11 +252,9 @@ def basisupdatestep(k):
                 ' -lbreg ' + str(lbreg) + ' ' + ' '.join(rfs) + ' -force')
 
 
-def rankreduxstep(k, scale=1.):
+def rankreduxstep(k):
     run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax ' + ','.join([str(l) for l in rlmax]) +
                 ' -lbreg ' + str(lbreg) + ' ' + ' '.join(redrfs) + ' -proj irankredux.mif -force')
-    #scale = 4. - 3.*k / (v2viter-1) if k < v2viter else 2. - 1.*(k-v2viter) / (s2viter-1)
-    run.command('mrfilter irankredux.mif smooth rankredux.mif -fwhm ' + str(scale*vu) + ' -force')
 
 
 def registrationstep(k):
@@ -282,7 +287,7 @@ reconstep(0)
 for k, it in enumerate(iters[:-1]):
     # basis update and rank reduction
     basisupdatestep(k)
-    rankreduxstep(k, it.scale)
+    rankreduxstep(k)
     # slice weights
     sliceweightstep()
     # register template to volumes

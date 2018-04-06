@@ -78,7 +78,7 @@ if __name__ == '__main__':
     A[0,1] = W1[0] - 1
     A[-1,-2] = W1[-1] - 1
     M2 = np.linalg.solve(A, W1 * M1)
-    # reorder outtput
+    # reorder output
     M3 = np.reshape(M2.reshape((nv,ne,6))[:,isliceorder,:], (-1,6))
     np.savetxt(args.output, M3, fmt='%.6f')
 
