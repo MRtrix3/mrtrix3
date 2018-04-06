@@ -207,6 +207,11 @@ namespace MR
               // Can no longer apply this assertion here; GLMTTestVariable later
               //   expands the number of columns in M
               //assert (c.cols() == M.cols());
+              auto v = Eigen::JacobiSVD<Eigen::MatrixXd> (design).singularValues();
+              auto cond = v[0] / v[v.size()-1];
+              if (cond > 10.0) {
+                WARN ("Design matrix may contain collinear factors (condition number = " + str(cond) + "); recommend double-checking derivation of design matrix");
+              }
             }
 
             /*! Compute the statistics
