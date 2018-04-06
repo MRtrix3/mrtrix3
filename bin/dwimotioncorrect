@@ -254,7 +254,7 @@ def basisupdatestep(k):
 
 def rankreduxstep(k):
     run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax ' + ','.join([str(l) for l in rlmax]) +
-                ' -lbreg ' + str(lbreg) + ' ' + ' '.join(redrfs) + ' -proj irankredux.mif -force')
+                ' -lbreg ' + str(lbreg) + ' ' + ' '.join(redrfs) + ' -proj rankredux.mif -force')
 
 
 def registrationstep(k):
