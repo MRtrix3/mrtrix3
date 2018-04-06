@@ -52,7 +52,7 @@ Standard options
 
 
 
-**Author:** J-Donald Tournier (jdtournier@gmail.com)
+**Author:** J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
 
