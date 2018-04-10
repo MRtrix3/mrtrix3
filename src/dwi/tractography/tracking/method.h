@@ -72,13 +72,14 @@ namespace MR
             }
 
 
+            virtual bool init() = 0;
+            virtual term_t next() = 0;
+            virtual float get_metric() = 0;
+
             virtual void reverse_track() { if (act_method_additions) act().reverse_track(); }
-            bool init() { return false; }
-            term_t next() { return term_t(); }
-            float get_metric() { return NaN; }
+            virtual void truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step);
 
             bool check_seed();
-            void truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step);
 
             ACT::ACT_Method_additions& act() const { return *act_method_additions; }
 
