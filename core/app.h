@@ -239,7 +239,16 @@ namespace MR
     class ParsedOption { NOMEMALIGN
       public:
         ParsedOption (const Option* option, const char* const* arguments) :
-          opt (option), args (arguments) { }
+            opt (option), args (arguments)
+        {
+          for (size_t i = 0; i != option->size(); ++i) {
+            if (arguments[i][0] == '-') {
+              WARN (std::string("Value \"") + arguments[i] + "\" is being used as " +
+                    ((option->size() == 1) ? "the expected argument" : ("one of the " + str(option->size()) + " expected arguments")) +
+                    " for option \"-" + option->id + "\"; is this what you intended?");
+            }
+          }
+        }
 
         //! reference to the corresponding Option entry in the OPTIONS section
         const Option* opt;
