@@ -211,17 +211,14 @@ namespace MR
 
 
 
-        void Overlay::add_images (vector<std::unique_ptr<MR::Header>>& list, bool clear)
+        void Overlay::add_images (vector<std::unique_ptr<MR::Header>>& list)
         {
           size_t previous_size = image_list_model->rowCount();
           image_list_model->add_items (list);
 
           QModelIndex first = image_list_model->index (previous_size, 0, QModelIndex());
           QModelIndex last = image_list_model->index (image_list_model->rowCount()-1, 0, QModelIndex());
-          if (clear)
-            image_list_view->selectionModel()->select (QItemSelection (first, last), QItemSelectionModel::ClearAndSelect);
-          else
-            image_list_view->selectionModel()->select (QItemSelection (first, last), QItemSelectionModel::Select);
+          image_list_view->selectionModel()->select (QItemSelection (first, last), QItemSelectionModel::ClearAndSelect);
         }
 
 
@@ -713,7 +710,7 @@ namespace MR
             vector<std::unique_ptr<MR::Header>> list;
             try { list.push_back (make_unique<MR::Header> (MR::Header::open (opt[0]))); }
             catch (Exception& e) { e.display(); }
-            add_images (list, true);
+            add_images (list);
             return true;
           }
 
