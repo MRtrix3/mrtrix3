@@ -1,36 +1,25 @@
-.. _tckstats:
+.. _tsfvalidate:
 
-tckstats
+tsfvalidate
 ===================
 
 Synopsis
 --------
 
-Calculate statistics on streamlines length
+Validate a track scalar file against the corresponding track data
 
 Usage
 --------
 
 ::
 
-    tckstats [ options ]  tracks_in
+    tsfvalidate [ options ]  tsf tracks
 
--  *tracks_in*: the input track file
+-  *tsf*: the input track scalar file
+-  *tracks*: the track file on which the TSF is based
 
 Options
 -------
-
--  **-output field** output only the field specified. Multiple such options can be supplied if required. Choices are: mean, median, std, min, max, count. Useful for use in scripts.
-
--  **-histogram path** output a histogram of streamline lengths
-
--  **-dump path** dump the streamlines lengths to a text file
-
--  **-explicit** explicitly calculate the length of each streamline, ignoring any step size information present in the header
-
--  **-ignorezero** do not generate a warning if the track file contains streamlines with zero length
-
--  **-tck_weights_in path** specify a text scalar file containing the streamline weights
 
 Standard options
 ^^^^^^^^^^^^^^^^
