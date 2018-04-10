@@ -240,7 +240,7 @@ between this implementation and the algorithm described in `Tournier et al. (201
    as opposed to one estimated from the 300 brain voxels with the highest FA.
 
 -  This implementation uses a more complex metric to measure how
-   'single-fibre' FODs are: √|peak1| × (1 − \|peak1\| / \|peak2\|)²,
+   'single-fibre' FODs are: √|peak1| × (1 − \|peak2\| / \|peak1\|)²,
    as opposed to a simple ratio of the two tallest peaks. This new metric has
    a bias towards FODs with a larger tallest peak, to avoid favouring
    small, yet low SNR, FODs.
@@ -265,7 +265,7 @@ between the ``tournier`` and ``tax`` algorithms include:
    iteration only from the 300 *best* 'single-fibre' voxels, while the
    ``tax`` algorithm uses *all* 'single-fibre' voxels.
 
-Due to these differences, ``tournier`` algorithm is currently believed to
+Due to these differences, the ``tournier`` algorithm is currently believed to
 be more robust and accurate in a wider range of scenarios (for further
 information on this topic, refer to some of the discussions
 `here <https://github.com/MRtrix3/mrtrix3/issues/422>`__
