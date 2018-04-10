@@ -105,7 +105,7 @@ namespace MR
                window().updateGL();
              }
 
-             void add_images (vector<std::unique_ptr<MR::Header>>& list, bool clear = false);
+             void add_images (vector<std::unique_ptr<MR::Header>>& list);
              void dropEvent (QDropEvent* event) override;
         };
 
