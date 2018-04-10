@@ -243,9 +243,9 @@ namespace MR
         {
           for (size_t i = 0; i != option->size(); ++i) {
             if (arguments[i][0] == '-') {
-              WARN (std::string("Value \"") + arguments[i] + "\" is being provided as an input to option \"-" + option->id + "\"; " +
-                    "this may have been intended as its own command-line option, suggesting that the required " + str(option->size()) +
-                    " input" + (option->size() > 1 ? "s" : "") + " for option \"-" + option->id + "\" " + (option->size() > 1 ? "have" : "has") + " not been provided");
+              WARN (std::string("Value \"") + arguments[i] + "\" is being used as " +
+                    ((option->size() == 1) ? "the expected argument" : ("one of the " + str(option->size()) + " expected arguments")) +
+                    " for option \"-" + option->id + "\"; is this what you intended?");
             }
           }
         }
