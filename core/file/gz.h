@@ -23,6 +23,7 @@
 #include <fcntl.h>
 #include <zlib.h>
 
+#include "debug.h"
 #include "mrtrix.h"
 #include "types.h"
 #include "exception.h"
@@ -40,7 +41,12 @@ namespace MR
           open (fname, mode);
         }
         ~GZ () {
-          close();
+          try {
+            close();
+          } catch (...) {
+            FAIL ("error closing GZ file \"" + filename + "\": " + error());
+            App::exit_error_code = 1;
+          }
         }
 
         const std::string&  name () const  {
@@ -61,7 +67,7 @@ namespace MR
         void close () {
           if (gz) {
             if (gzclose (gz))
-              throw Exception ("error closing file \"" + filename + "\": " + error());
+              throw Exception ("error closing GZ file \"" + filename + "\": " + error());
             filename.clear();
             gz = NULL;
           }
