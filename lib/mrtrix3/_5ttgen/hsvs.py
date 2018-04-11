@@ -28,7 +28,7 @@ def getInputs():
 
 
 def execute():
-  import os, sys
+  import glob, os, sys
   from mrtrix3 import app, file, fsl, path, run
 
   def checkFile(filepath):
@@ -132,6 +132,7 @@ def execute():
     app.console('Running FSL FIRST to segment sub-cortical grey matter structures')
     run.command(first_cmd + ' -s ' + ','.join(sgm_first_map.keys()) + ' -i T1.nii -b -o first')
     fsl.checkFirst('first', sgm_first_map.keys())
+    file.delTemporary(glob.glob('T1_to_std_sub.*'))
     progress = app.progressBar('Mapping sub-cortical structures segmented by FIRST from surface to voxel representation', 2*len(sgm_first_map))
     for key, value in sgm_first_map.items():
       vtk_in_path = 'first-' + key + '_first.vtk'
@@ -142,6 +143,9 @@ def execute():
       run.command('mesh2voxel ' + vtk_converted_path + ' ' + template_image + ' ' + value + '.mif')
       file.delTemporary(vtk_converted_path)
       progress.increment()
+    if not have_fast:
+      file.delTemporary('T1.nii')
+    file.delTemporary(glob.glob('first*'))
     progress.done()
 
 
@@ -363,7 +367,6 @@ def execute():
       run.command('mrtransform ' + norm_image + ' -template ' + template_image + ' - | ' \
                   'mrcalc - ' + T1_cerebellum_mask_image + ' -mult - | ' \
                   'mrconvert - T1_cerebellum_precrop.mif')
-      file.delTemporary(T1_cerebellum_mask_image)
       progress.done()
 
     else:
@@ -372,11 +375,15 @@ def execute():
       # Generate a mask of all voxels classified as cerebellum by FreeSurfer
       cerebellum_mask_images = [ n + '.mif' for (i, t, n) in structures if 'Cerebellum' in n ]
       run.command('mrmath ' + ' '.join(cerebellum_mask_images) + ' sum ' + cerebellum_volume_image)
+      for entry in cerebellum_mask_images:
+        file.delTemporary(entry)
       progress.increment()
       # FAST image input needs to be pre-masked
       T1_cerebellum_mask_image = cerebellum_volume_image
       run.command('mrcalc T1.nii ' + T1_cerebellum_mask_image + ' -mult - | mrconvert - T1_cerebellum_precrop.mif')
       progress.done()
+
+    file.delTemporary('T1.nii')
 
     # Any code below here should be compatible with cerebellum_volume_image.mif containing partial volume fractions
     #   (in the case of no explicit template image, it's a mask, but the logic still applies)
@@ -389,17 +396,23 @@ def execute():
     #   Crop T1 image around the cerebellum before feeding to FAST, then re-sample to full template image FoV
     fast_input_image = 'T1_cerebellum.nii'
     run.command('mrcrop T1_cerebellum_precrop.mif -mask ' + T1_cerebellum_mask_image + ' ' + fast_input_image)
+    # TODO Store this name in a variable
+    file.delTemporary('T1_cerebellum_precrop.mif')
+    # FIXME Cleanup of T1_cerebellum_mask_image: May be same image as cerebellum_volume_image
     run.command(fast_cmd + ' -N ' + fast_input_image)
     file.delTemporary(fast_input_image)
 
-    progress = app.progressBar('Introducing intensity-based cerebellar segmentation into the 5TT image', 10)
+    # Use glob to clean up unwanted FAST outputs
+    fast_output_prefix = os.path.splitext(fast_input_image)[0]
+    fast_pve_output_prefix = fast_output_prefix + '_pve_'
+    file.delTemporary([ entry for entry in glob.glob(fast_output_prefix + '*') if not fast_pve_output_prefix in entry ])
 
-    fast_output_prefix = os.path.splitext(fast_input_image)[0] + '_pve_'
-    fast_outputs_cropped = [ fast_output_prefix + str(n) + fast_suffix for n in range(0,3) ]
+    progress = app.progressBar('Introducing intensity-based cerebellar segmentation into the 5TT image', 10)
+    fast_outputs_cropped = [ fast_pve_output_prefix + str(n) + fast_suffix for n in range(0,3) ]
     fast_outputs_template = [ 'FAST_' + str(n) + '.mif' for n in range(0,3) ]
     for inpath, outpath in zip(fast_outputs_cropped, fast_outputs_template):
       run.command('mrtransform ' + inpath + ' -interp nearest -template ' + template_image + ' ' + outpath)
-      file.delTemporary(outpath)
+      file.delTemporary(inpath)
       progress.increment()
     if app.args.template:
       file.delTemporary(template_image)
@@ -422,12 +435,15 @@ def execute():
     progress.increment()
     run.command('mrcalc ' + tissue_images[1] + ' ' + cerebellum_multiplier_image + ' ' + fast_outputs_template[1] + ' -mult -add ' + new_tissue_images[1])
     file.delTemporary(tissue_images[1])
+    file.delTemporary(fast_outputs_template[1])
     progress.increment()
     run.command('mrcalc ' + tissue_images[2] + ' ' + cerebellum_multiplier_image + ' ' + fast_outputs_template[2] + ' -mult -add ' + new_tissue_images[2])
     file.delTemporary(tissue_images[2])
+    file.delTemporary(fast_outputs_template[2])
     progress.increment()
     run.command('mrcalc ' + tissue_images[3] + ' ' + cerebellum_multiplier_image + ' ' + fast_outputs_template[0] + ' -mult -add ' + new_tissue_images[3])
     file.delTemporary(tissue_images[3])
+    file.delTemporary(fast_outputs_template[0])
     file.delTemporary(cerebellum_multiplier_image)
     progress.increment()
     run.command('mrconvert ' + tissue_images[4] + ' ' + new_tissue_images[4])
@@ -457,6 +473,15 @@ def execute():
   # FIXME Appears we can't rely on a connected-component filter: Still some bits e.g. between cortex & cerebellum
   # Maybe need to look into techniques for specifically filling in between structure pairs
 
+  # TESTME This appears to be correct in the template case, but wrong in the default case
+  # OK, what's happening is: Some voxels are getting a non-zero cortical GM fraction due to native use
+  #   of the surface representation, but these voxels are actually outside FreeSurfer's own provided brain
+  #   mask. So what we need to do here is get the union of the tissue sum nonzero image and the mask image,
+  #   and use that at the -mult step of the mrcalc call.
+
+  # Required image: (tissue_sum_image > 0.0) || mask_image
+  # tissue_sum_image 0.0 -gt mask_image -add 1.0 -min
+
 
   new_tissue_images = [ tissue_images[0],
                         tissue_images[1],
@@ -464,8 +489,11 @@ def execute():
                         os.path.splitext(tissue_images[3])[0] + '_filled.mif',
                         tissue_images[4] ]
   csf_fill_image = 'csf_fill.mif'
-  run.command('mrcalc 1.0 ' + tissue_sum_image + ' -sub ' + mask_image + ' -mult ' + csf_fill_image)
-  file.delTemporary(mask_image)
+  run.command('mrcalc 1.0 ' + tissue_sum_image + ' -sub ' + tissue_sum_image + ' 0.0 -gt ' + mask_image + ' -add 1.0 -min -mult ' + csf_fill_image)
+  file.delTemporary(tissue_sum_image)
+  # If no template is specified, this file is part of the FreeSurfer output; hence don't modify
+  if app.args.template:
+    file.delTemporary(mask_image)
   progress.increment()
   run.command('mrcalc ' + tissue_images[3] + ' ' + csf_fill_image + ' -add ' + new_tissue_images[3])
   file.delTemporary(csf_fill_image)
