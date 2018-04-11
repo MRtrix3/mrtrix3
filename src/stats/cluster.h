@@ -40,6 +40,7 @@ namespace MR
         public:
           ClusterSize (const Filter::Connector& connector, const value_type T) :
                        connector (connector), threshold (T) { }
+          virtual ~ClusterSize() { }
 
           void set_threshold (const value_type T) { threshold = T; }
 
