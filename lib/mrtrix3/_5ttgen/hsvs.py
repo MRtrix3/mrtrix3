@@ -473,15 +473,12 @@ def execute():
   # FIXME Appears we can't rely on a connected-component filter: Still some bits e.g. between cortex & cerebellum
   # Maybe need to look into techniques for specifically filling in between structure pairs
 
-  # TESTME This appears to be correct in the template case, but wrong in the default case
-  # OK, what's happening is: Some voxels are getting a non-zero cortical GM fraction due to native use
-  #   of the surface representation, but these voxels are actually outside FreeSurfer's own provided brain
-  #   mask. So what we need to do here is get the union of the tissue sum nonzero image and the mask image,
-  #   and use that at the -mult step of the mrcalc call.
-
+  # Some voxels may get a non-zero cortical GM fraction due to native use of the surface representation, yet
+  #   these voxels are actually outside FreeSurfer's own provided brain mask. So what we need to do here is
+  #   get the union of the tissue sum nonzero image and the mask image, and use that at the -mult step of the
+  #   mrcalc call.
   # Required image: (tissue_sum_image > 0.0) || mask_image
   # tissue_sum_image 0.0 -gt mask_image -add 1.0 -min
-
 
   new_tissue_images = [ tissue_images[0],
                         tissue_images[1],
