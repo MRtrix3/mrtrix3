@@ -27,8 +27,8 @@ namespace MR
 
   void display_exception_cmdline (const Exception& E, int log_level)
   {
-    if (App::log_level >= log_level) 
-      for (size_t n = 0; n < E.description.size(); ++n) 
+    if (App::log_level >= log_level)
+      for (size_t n = 0; n < E.description.size(); ++n)
         report_to_user_func (E.description[n], log_level);
   }
 
@@ -37,8 +37,8 @@ namespace MR
 
   namespace {
 
-    inline const char* console_prefix (int type) 
-    { 
+    inline const char* console_prefix (int type)
+    {
       switch (type) {
         case 0: return "[ERROR] ";
         case 1: return "[WARNING] ";
@@ -67,7 +67,7 @@ namespace MR
 
     auto clamp = [](int t) { if (t < -1 || t > 3) t = -1; return t+1; };
 
-    __print_stderr (printf (colour_format_strings[App::terminal_use_colour ? clamp(type) : 0], 
+    __print_stderr (printf (colour_format_strings[App::terminal_use_colour ? clamp(type) : 0],
           App::NAME.c_str(), console_prefix (type), msg.c_str()));
     if (type == 1 && App::fail_on_warn)
       throw Exception ("terminating due to request to fail on warning");
@@ -79,7 +79,7 @@ namespace MR
   {
 #ifdef MRTRIX_AS_R_LIBRARY
     Rprintf (msg.c_str());
-#else 
+#else
     std::cout << msg;
 #endif
   }
@@ -90,6 +90,13 @@ namespace MR
   void (*print) (const std::string& msg) = cmdline_print_func;
   void (*report_to_user_func) (const std::string& msg, int type) = cmdline_report_to_user_func;
   void (*Exception::display_func) (const Exception& E, int log_level) = display_exception_cmdline;
+
+
+  void check_app_exit_code()
+  {
+    if (App::exit_error_code)
+      throw Exception ("Command performing delayed termination due to prior critical error");
+  }
 
 }
 

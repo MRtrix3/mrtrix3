@@ -15,6 +15,7 @@
 #ifndef __file_copy_h__
 #define __file_copy_h__
 
+#include "exception.h"
 #include "file/utils.h"
 #include "file/mmap.h"
 
@@ -27,11 +28,14 @@ namespace MR
 
     inline void copy (const std::string& source, const std::string& destination)
     {
-      DEBUG ("copying file \"" + source + "\" to \"" + destination + "\"...");
-      MMap input (source);
-      create (destination, input.size());
-      MMap output (destination, true);
-      ::memcpy (output.address(), input.address(), input.size());
+      {
+        DEBUG ("copying file \"" + source + "\" to \"" + destination + "\"...");
+        MMap input (source);
+        create (destination, input.size());
+        MMap output (destination, true);
+        ::memcpy (output.address(), input.address(), input.size());
+      }
+      check_app_exit_code();
     }
 
 
