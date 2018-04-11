@@ -14,6 +14,7 @@
 
 
 #include "stride.h"
+#include "header.h"
 
 namespace MR
 {
@@ -79,10 +80,23 @@ namespace MR
       if (!opt.size())
         return strides;
 
-      vector<int> tmp = opt[0][0];
-      for (auto x : tmp)
-        strides.push_back (x);
 
+      try {
+        auto header = Header::open (std::string(opt[0][0]));
+        strides = get_symbolic (header);
+      }
+      catch (Exception& E) {
+        E.display (3);
+        try {
+          vector<int> tmp = opt[0][0];
+          for (auto x : tmp)
+            strides.push_back (x);
+        }
+        catch (Exception& E) {
+          E.display(3);
+          throw Exception ("argument \"" + std::string(opt[0][0]) + "\" to option \"-strides\" is not a list of strides or an image");
+        }
+      }
 
       if (strides.size() > current.size())
         WARN ("too many axes supplied to -strides option - ignoring remaining strides");
