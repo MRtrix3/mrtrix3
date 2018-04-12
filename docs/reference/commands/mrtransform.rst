@@ -27,6 +27,8 @@ FOD reorientation (with apodised point spread functions) will be performed by de
 
 If a DW scheme is contained in the header (or specified separately), and the number of directions matches the number of volumes in the images, any transformation applied using the -linear option will be also be applied to the directions.
 
+When the -template option is used to specify the target image grid, the image provided via this option will not influence the axis data strides of the output image; these are determined based on the input image, or the input to the -strides option.
+
 Options
 -------
 
