@@ -26,10 +26,12 @@ namespace MR
 
     const OptionGroup Options = OptionGroup ("Stride options")
       + Option ("strides",
-          "specify the strides of the output data in memory, as a comma-separated list. "
+          "specify the strides of the output data in memory; either "
+          "as a comma-separated list of (signed) integers, or "
+          "as a template image from which the strides shall be extracted and used. "
           "The actual strides produced will depend on whether the output image "
           "format can support it.")
-      + Argument ("spec").type_sequence_int();
+      + Argument ("spec").type_text();
 
 
 
