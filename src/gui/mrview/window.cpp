@@ -1794,9 +1794,11 @@ namespace MR
           }
 
           if (opt.opt->is ("size")) {
-            vector<int> glsize = opt[0];
+            vector<int> glsize = parse_ints (opt[0]);
             if (glsize.size() != 2)
-              throw Exception ("invalid argument \"" + std::string(opt.args[0]) + "\" to view.size batch command");
+              throw Exception ("invalid argument \"" + std::string(opt.args[0]) + "\" to -size batch command");
+            if (glsize[0] < 1 || glsize[1] < 1)
+              throw Exception ("values provided to -size option must be positive");
             QSize oldsize = glarea->size();
             QSize winsize = size();
             resize (winsize.width() - oldsize.width() + glsize[0], winsize.height() - oldsize.height() + glsize[1]);
@@ -1831,6 +1833,17 @@ namespace MR
               }
             }
             glarea->update();
+            return;
+          }
+
+          if (opt.opt->is ("target")) {
+            if (image()) {
+              vector<default_type> pos = parse_floats (opt[0]);
+              if (pos.size() != 3)
+                throw Exception ("-target option expects a comma-separated list of 3 floating-point values");
+              set_target (Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
+              glarea->update();
+            }
             return;
           }
 
@@ -2048,6 +2061,10 @@ namespace MR
               "show or hide the focus cross hair using a boolean value as argument.").allow_multiple()
           +   Argument ("x,y,z or boolean")
 
+          + Option ("target", "Set the target location for the viewing window (the scanner coordinate "
+              "that will appear at the centre of the viewing window")
+          +   Argument ("x,y,z").type_sequence_float()
+
           + Option ("voxel", "Set the position of the crosshairs in voxel coordinates, "
               "relative the image currently displayed. The new position should be supplied "
               "as a comma-separated list of floating-point values.").allow_multiple()
@@ -2092,7 +2109,7 @@ namespace MR
           +   Argument ("boolean").type_bool ()
 
           + Option ("intensity_range", "Set the image intensity range to that specified.").allow_multiple()
-          +   Argument ("min,max").type_sequence_int()
+          +   Argument ("min,max").type_sequence_float()
 
           + OptionGroup ("Window management options")
 
