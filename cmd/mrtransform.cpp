@@ -175,6 +175,10 @@ void usage ()
 
     + DataType::options ()
 
+    + Stride::Options
+
+    + OptionGroup ("Additional generic options for mrtransform")
+
     + Option ("nan",
       "Use NaN as the out of bounds value (Default: 0.0)");
 }
@@ -207,6 +211,7 @@ void run ()
   auto input_header = Header::open (argument[0]);
   Header output_header (input_header);
   output_header.datatype() = DataType::from_command_line (DataType::from<float> ());
+  Stride::set_from_command_line (output_header);
 
   // Linear
   transform_type linear_transform;
