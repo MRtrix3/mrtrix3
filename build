@@ -700,6 +700,9 @@ class Entry:
     self.action = 'LD'
     self.deps = list_lib_deps()
 
+
+    if not os.path.isdir (tmp_dir):
+      os.makedirs (tmp_dir)
     objlist = os.path.join (tmp_dir, 'objlist')
     with codecs.open (objlist, mode='w', encoding='utf-8') as fd:
       fd.write (' '.join(self.deps))
