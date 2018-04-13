@@ -151,7 +151,7 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
           char = process.stderr.read(1).decode('cp1252', errors='ignore')
           if not char and process.poll() is not None:
             break
-          if do_indent and char in string.printable:
+          if do_indent and char in string.printable and char != '\r' and char != '\n':
             sys.stderr.write('          ')
             do_indent = False
           elif char == '\r' or char == '\n':
