@@ -148,7 +148,7 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
         do_indent = True
         while True:
           # Have to read one character at a time: Waiting for a newline character using e.g. readline() will prevent MRtrix progressbars from appearing
-          char = process.stderr.read(1).decode('utf-8')
+          char = process.stderr.read(1).decode('cp1252', errors='ignore')
           if not char and process.poll() is not None:
             break
           if do_indent and char in string.printable:
@@ -181,7 +181,7 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
     if tempfiles[index][0] is not None:
       tempfiles[index][0].flush()
       tempfiles[index][0].seek(0)
-      stdout_text = tempfiles[index][0].read().decode('utf-8')
+      stdout_text = tempfiles[index][0].read().decode('utf-8', errors='replace')
       return_stdout += stdout_text
       if _processes[index].returncode:
         error = True
@@ -189,7 +189,7 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
     if tempfiles[index][1] is not None:
       tempfiles[index][1].flush()
       tempfiles[index][1].seek(0)
-      stderr_text = tempfiles[index][1].read().decode('utf-8')
+      stderr_text = tempfiles[index][1].read().decode('utf-8', errors='replace')
       return_stderr += stderr_text
       if _processes[index].returncode:
         error = True
