@@ -90,7 +90,7 @@ namespace MR
       catch (Exception& E) {
         E.display (3);
         try {
-          vector<int> tmp = opt[0][0];
+          auto tmp = parse_ints (opt[0][0]);
           for (auto x : tmp)
             strides.push_back (x);
         }
