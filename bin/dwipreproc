@@ -743,6 +743,8 @@ if do_topup:
   (topup_stdout, topup_stderr) = run.command(topup_cmd + ' --imain=topup_in.nii --datain=topup_datain.txt --out=field --fout=field_map' + fsl_suffix + ' --config=' + topup_config_path + topup_manual_options)
   with open('topup_output.txt', 'w') as f:
     f.write(topup_stdout + '\n' + topup_stderr)
+  if app.verbosity > 2:
+    app.console('Output of topup command:\n' + topup_stdout + '\n' + topup_stderr)
 
   # Apply the warp field to the input image series to get an initial corrected volume estimate
   # applytopup can't receive the complete DWI input and correct it as a whole, because the phase-encoding
@@ -840,6 +842,8 @@ eddy_openmp_cmd = fsl.eddyBinary(False)
 if eddy_cuda_cmd:
   # If running CUDA version, but OpenMP version is also available, don't stop the script if the CUDA version fails
   (eddy_stdout, eddy_stderr) = run.command(eddy_cuda_cmd + ' ' + eddy_all_options, not eddy_openmp_cmd)
+  if app.verbosity > 2:
+    app.console('Output of CUDA eddy command:\n' + eddy_stdout + '\n' + eddy_stderr)
   if os.path.isfile('dwi_post_eddy.eddy_parameters'):
     # Flag that the OpenMP version won't be attempted
     eddy_openmp_cmd = ''
@@ -847,6 +851,8 @@ if eddy_cuda_cmd:
     app.warn('CUDA version of eddy appears to have failed; trying OpenMP version')
 if eddy_openmp_cmd:
   (eddy_stdout, eddy_stderr) = run.command(eddy_openmp_cmd + ' ' + eddy_all_options)
+  if app.verbosity > 2:
+    app.console('Output of OpenMP eddy command:\n' + eddy_stdout + '\n' + eddy_stderr)
 file.delTemporary('eddy_in.nii')
 file.delTemporary('eddy_mask.nii')
 if do_topup:
