@@ -16,6 +16,7 @@
 #include "gui/mrview/tool/overlay.h"
 
 #include "mrtrix.h"
+#include "gui/mrview/colourmap.h"
 #include "gui/mrview/gui_image.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/slice.h"
@@ -695,12 +696,26 @@ namespace MR
             + Option ("overlay.opacity", "Sets the overlay opacity to floating value [0-1].").allow_multiple()
             +   Argument ("value").type_float (0.0, 1.0)
 
-            + Option ("overlay.interpolation_on", "Enables overlay image interpolation.").allow_multiple()
-
-            + Option ("overlay.interpolation_off", "Disables overlay image interpolation.").allow_multiple()
-
             + Option ("overlay.colourmap", "Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.").allow_multiple()
-            +   Argument ("index").type_integer();
+            +   Argument ("index").type_integer()
+
+            + Option ("overlay.colour", "Specify a manual colour for the overlay, as three comma-separated values").allow_multiple()
+            +   Argument ("R,G,B").type_sequence_float()
+
+            + Option ("overlay.intensity", "Set the intensity windowing of the overlay").allow_multiple()
+            +   Argument ("Min,Max").type_sequence_float()
+
+            + Option ("overlay.threshold_min", "Set the lower threshold value of the overlay").allow_multiple()
+            +   Argument ("value").type_float()
+
+            + Option ("overlay.threshold_max", "Set the upper threshold value of the overlay").allow_multiple()
+            +   Argument ("value").type_float()
+
+            + Option ("overlay.no_threshold_min", "Disable the lower threshold for the overlay").allow_multiple()
+            + Option ("overlay.no_threshold_max", "Disable the upper threshold for the overlay").allow_multiple()
+
+            + Option ("overlay.interpolation", "Enable or disable overlay image interpolation.").allow_multiple()
+            +   Argument ("value").type_bool();
 
         }
 
@@ -723,16 +738,6 @@ namespace MR
             return true;
           }
 
-          if (opt.opt->is ("overlay.interpolation_on")) {
-            interpolate_check_box->setCheckState (Qt::Checked);
-            interpolate_changed();
-          }
-
-          if (opt.opt->is ("overlay.interpolation_off")) {
-            interpolate_check_box->setCheckState (Qt::Unchecked);
-            interpolate_changed();
-          }
-
           if (opt.opt->is ("overlay.colourmap")) {
             try {
               int n = opt[0];
@@ -742,6 +747,72 @@ namespace MR
             }
             catch (Exception& e) { e.display(); }
             return true;
+          }
+
+          if (opt.opt->is ("overlay.colour")) {
+            try {
+              auto values = parse_floats (opt[0]);
+              if (values.size() != 3)
+                throw Exception ("must provide exactly three comma-separated values to the -overlay.colour option");
+              const float max_value = std::max ({ values[0], values[1], values[2] });
+              if (std::min ({ values[0], values[1], values[2] }) < 0.0 || max_value > 255)
+                throw Exception ("values provided to -overlay.colour must be either between 0.0 and 1.0, or between 0 and 255");
+              const float multiplier = max_value <= 1.0 ? 255.0 : 1.0;
+              QColor colour (int(values[0] * multiplier), int(values[1]*multiplier), int(values[2]*multiplier));
+              selected_custom_colour (colour, *colourmap_button);
+              colourmap_button->set_fixed_colour();
+            }
+            catch (Exception& e) { e.display(); }
+            return true;
+          }
+
+          if (opt.opt->is ("overlay.intensity")) {
+            try {
+              auto values = parse_floats (opt[0]);
+              if (values.size() != 2)
+                throw Exception ("must provide exactly two comma-separated values to the -overlay.intensity option");
+              min_value->blockSignals (true);
+              min_value->setValue (values[0]);
+              min_value->blockSignals (false);
+              max_value->setValue (values[1]);
+            }
+            catch (Exception& e) { e.display(); }
+            return true;
+          }
+
+          if (opt.opt->is ("overlay.threshold_min")) {
+            try {
+              float value = opt[0];
+              lower_threshold->setValue (value);
+              lower_threshold_check_box->setChecked (Qt::Checked);
+            }
+            catch (Exception& e) { e.display(); }
+            return true;
+          }
+
+          if (opt.opt->is ("overlay.threshold_max")) {
+            try {
+              float value = opt[0];
+              upper_threshold->setValue (value);
+              upper_threshold_check_box->setChecked (Qt::Checked);
+            }
+            catch (Exception& e) { e.display(); }
+            return true;
+          }
+
+          if (opt.opt->is ("overlay.no_threshold_min")) {
+            lower_threshold_check_box->setChecked (Qt::Unchecked);
+            return true;
+          }
+
+          if (opt.opt->is ("overlay.no_threshold_max")) {
+            upper_threshold_check_box->setChecked (Qt::Unchecked);
+            return true;
+          }
+
+          if (opt.opt->is ("overlay.interpolation")) {
+            interpolate_check_box->setCheckState (bool(opt[0]) ? Qt::Checked : Qt::Unchecked);
+            interpolate_changed();
           }
 
 
