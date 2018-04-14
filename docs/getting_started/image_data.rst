@@ -549,9 +549,11 @@ used to determine whether a particular image is in NIfTI-1 or NIfTI-2 format.
 
 .. NOTE::
 
-  if both qform and sform orientation fields are present, the qform fields are
-  ignored. Obviously, the qform fields will be used if they are present on
-  their own.
+  Use of the NIfTI format can introduce ambiguity into the transformation
+  information used to orient and localise the image data with respect to
+  physical space, particularly when combined with the use of multiple
+  software packages. More information is provided in the ":ref:nifti_qform_sform"
+  section.
 
 
 .. _compressed_nifti_format:
