@@ -175,7 +175,7 @@ namespace MR
             return true;
           };
 
-          Vox voxel;
+          Vox voxel (lower_bound[0], lower_bound[1], lower_bound[2]);
           for (voxel[2] = lower_bound[2]; voxel[2] <= upper_bound[2]; ++voxel[2]) {
             for (voxel[1] = lower_bound[1]; voxel[1] <= upper_bound[1]; ++voxel[1]) {
               for (voxel[0] = lower_bound[0]; voxel[0] <= upper_bound[0]; ++voxel[0]) {
