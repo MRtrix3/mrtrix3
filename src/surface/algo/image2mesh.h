@@ -74,7 +74,7 @@ namespace MR
         //   refers to the lower corner of the voxel; that way searches for existing
         //   vertices can be done using a simple map
 
-        Vox pos (0, 0, 0);
+        Vox pos;
         for (auto loop = Loop(voxel) (voxel); loop; ++loop) {
           if (voxel.value()) {
 
@@ -444,7 +444,7 @@ namespace MR
       ImageType voxel (input_image);
       float in_vertex_values[8];
       std::map< Vox, std::map<Vox, size_t> > input_vertex_pair_to_output_vertex_index_map;
-      Vox lower_corner (-1, -1, -1);
+      Vox lower_corner;
       for (lower_corner[2] = -1; lower_corner[2] != voxel.size(2); ++lower_corner[2]) {
         for (lower_corner[1] = -1; lower_corner[1] != voxel.size(1); ++lower_corner[1]) {
           for (lower_corner[0] = -1; lower_corner[0] != voxel.size(0); ++lower_corner[0]) {
