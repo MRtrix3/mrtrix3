@@ -617,8 +617,8 @@ namespace MR
 
           while (file (tck)) {
 
-            size_t N = tck.size();
-            if(!N) continue;
+            const size_t N = tck.size();
+            if (!N) continue;
 
             // Pre padding
             // To support downsampling, we want to ensure that the starting track vertex
@@ -634,7 +634,7 @@ namespace MR
             // Similarly, to support downsampling, we also want to ensure the final track vertex
             // will be used even we're using a stride > 1
             for (size_t i = 0; i < track_padding; ++i)
-              buffer.push_back(tck.back());
+              buffer.push_back (tck.back());
 
             sizes.push_back (N);
             tck_count++;
@@ -643,9 +643,8 @@ namespace MR
 
             endpoint_tangents.push_back ((tck.back() - tck.front()).normalized());
           }
-          if (buffer.size()) {
+          if (buffer.size())
             load_tracks_onto_GPU (buffer, starts, sizes, tck_count);
-          }
           file.close();
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
@@ -683,6 +682,7 @@ namespace MR
             }
             load_end_colours_onto_GPU (buffer);
           }
+          assert (colour_buffers.size() == vertex_buffers.size());
           // Don't need this now that we've initialised the GPU buffers
           endpoint_tangents.clear();
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
@@ -709,11 +709,13 @@ namespace MR
             DWI::Tractography::Properties scalar_properties;
             DWI::Tractography::ScalarReader<float> file (filename, scalar_properties);
             DWI::Tractography::check_properties_match (properties, scalar_properties, ".tck / .tsf");
+            size_t tck_count = 0;
             while (file (tck_scalar)) {
 
-              size_t tck_size = tck_scalar.size();
+              const size_t tck_size = tck_scalar.size();
+              assert (tck_size == size_t(track_sizes[intensity_scalar_buffers.size()][tck_count]));
 
-              if(!tck_size)
+              if (!tck_size)
                 continue;
 
               // Pre padding to coincide with tracks buffer
@@ -730,11 +732,13 @@ namespace MR
               for (size_t i = 0; i < track_padding; ++i)
                 buffer.push_back (tck_scalar.back());
 
+              ++tck_count;
+
               if (buffer.size() >= MAX_BUFFER_SIZE)
-                load_intensity_scalars_onto_GPU (buffer);
+                load_intensity_scalars_onto_GPU (buffer, tck_count);
             }
             if (buffer.size())
-              load_intensity_scalars_onto_GPU (buffer);
+              load_intensity_scalars_onto_GPU (buffer, tck_count);
             file.close();
           } else {
             const Eigen::VectorXf scalars = MR::load_vector<float> (filename);
@@ -746,7 +750,8 @@ namespace MR
             size_t running_index = 0;
 
             for (size_t buffer_index = 0; buffer_index != vertex_buffers.size(); ++buffer_index) {
-              const size_t num_tracks = num_tracks_per_buffer[buffer_index];
+
+              size_t num_tracks = num_tracks_per_buffer[buffer_index];
               vector<GLint>& track_lengths (original_track_sizes[buffer_index]);
 
               for (size_t index = 0; index != num_tracks; ++index, ++running_index) {
@@ -767,9 +772,10 @@ namespace MR
                 value_min = std::min (value_min, value);
               }
 
-              load_intensity_scalars_onto_GPU (buffer);
+              load_intensity_scalars_onto_GPU (buffer, num_tracks);
             }
           }
+          assert (intensity_scalar_buffers.size() == vertex_buffers.size());
           intensity_scalar_filename = filename;
           this->set_windowing (value_min, value_max);
           if (!std::isfinite (greaterthan))
@@ -798,11 +804,13 @@ namespace MR
             DWI::Tractography::Properties scalar_properties;
             DWI::Tractography::ScalarReader<float> file (filename, scalar_properties);
             DWI::Tractography::check_properties_match (properties, scalar_properties, ".tck / .tsf");
+            size_t tck_count = 0;
             while (file (tck_scalar)) {
 
-              size_t tck_size = tck_scalar.size();
+              const size_t tck_size = tck_scalar.size();
+              assert (tck_size == size_t(track_sizes[intensity_scalar_buffers.size()][tck_count]));
 
-              if(!tck_size)
+              if (!tck_size)
                 continue;
 
               // Pre padding to coincide with tracks buffer
@@ -819,11 +827,13 @@ namespace MR
               for (size_t i = 0; i < track_padding; ++i)
                 buffer.push_back (tck_scalar.back());
 
+              ++tck_count;
+
               if (buffer.size() >= MAX_BUFFER_SIZE)
-                load_threshold_scalars_onto_GPU (buffer);
+                load_threshold_scalars_onto_GPU (buffer, tck_count);
             }
             if (buffer.size())
-              load_threshold_scalars_onto_GPU (buffer);
+              load_threshold_scalars_onto_GPU (buffer, tck_count);
             file.close();
           } else {
             const Eigen::VectorXf scalars = MR::load_vector<float> (filename);
@@ -835,7 +845,8 @@ namespace MR
             size_t running_index = 0;
 
             for (size_t buffer_index = 0; buffer_index != vertex_buffers.size(); ++buffer_index) {
-              const size_t num_tracks = num_tracks_per_buffer[buffer_index];
+
+              size_t num_tracks = num_tracks_per_buffer[buffer_index];
               vector<GLint>& track_lengths (original_track_sizes[buffer_index]);
 
               for (size_t index = 0; index != num_tracks; ++index, ++running_index) {
@@ -856,9 +867,10 @@ namespace MR
                 threshold_min = std::min (threshold_min, value);
               }
 
-              load_threshold_scalars_onto_GPU (buffer);
+              load_threshold_scalars_onto_GPU (buffer, num_tracks);
             }
           }
+          assert (threshold_scalar_buffers.size() == vertex_buffers.size());
           threshold_scalar_filename = filename;
           greaterthan = threshold_max;
           lessthan = threshold_min;
@@ -997,9 +1009,11 @@ namespace MR
 
 
 
-        void Tractogram::load_intensity_scalars_onto_GPU (vector<float>& buffer)
+        void Tractogram::load_intensity_scalars_onto_GPU (vector<float>& buffer, size_t& tck_count)
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+
+          assert (num_tracks_per_buffer[intensity_scalar_buffers.size()] == tck_count);
 
           GLuint vertexbuffer;
           gl::GenBuffers (1, &vertexbuffer);
@@ -1010,6 +1024,7 @@ namespace MR
 
           intensity_scalar_buffers.push_back (vertexbuffer);
           buffer.clear();
+          tck_count = 0;
 
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
@@ -1017,9 +1032,11 @@ namespace MR
 
 
 
-        void Tractogram::load_threshold_scalars_onto_GPU (vector<float>& buffer)
+        void Tractogram::load_threshold_scalars_onto_GPU (vector<float>& buffer, size_t& tck_count)
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+
+          assert (num_tracks_per_buffer[threshold_scalar_buffers.size()] == tck_count);
 
           GLuint vertexbuffer;
           gl::GenBuffers (1, &vertexbuffer);
@@ -1030,6 +1047,7 @@ namespace MR
 
           threshold_scalar_buffers.push_back (vertexbuffer);
           buffer.clear();
+          tck_count = 0;
 
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
