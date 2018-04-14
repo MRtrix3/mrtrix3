@@ -1250,6 +1250,8 @@ stopping despite errors as no jobs completed successfully
 retrying as running in persistent mode
 
 ''')
+    if error_stream is not None:
+      error_stream = ''
 
 
 # generate development-specific files (if needed)
