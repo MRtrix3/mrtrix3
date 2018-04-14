@@ -144,11 +144,13 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
   try:
     if app.verbosity > 1:
       for process in _processes:
-        stderrdata = ''
+        stderrdata = b''
         do_indent = True
         while True:
           # Have to read one character at a time: Waiting for a newline character using e.g. readline() will prevent MRtrix progressbars from appearing
-          char = process.stderr.read(1).decode('cp1252', errors='ignore')
+          byte = process.stderr.read(1)
+          stderrdata += byte
+          char = byte.decode('cp1252', errors='ignore')
           if not char and process.poll() is not None:
             break
           if do_indent and char in string.printable and char != '\r' and char != '\n':
@@ -158,7 +160,7 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
             do_indent = True
           sys.stderr.write(char)
           sys.stderr.flush()
-          stderrdata += char
+        stderrdata = stderrdata.decode('utf-8', errors='replace')
         return_stderr += stderrdata
         if process.returncode:
           error = True
