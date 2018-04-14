@@ -486,7 +486,8 @@ Transformation issues with the NIfTI image format
 
 In the :ref:`nifti_format` image format, there is not one, but _two_
 items stored in the image header that provide information regarding the
-localisation of the image within physical space:
+localisation of the image within physical space (the image
+:ref:<transform>):
 
 -  The "``qform``" entry is intended to specify a _rigid_ transformation
    from voxel coordinates into a spatial location corresponding to the
@@ -509,32 +510,28 @@ The handling of this information in _MRtrix3_ is as follows:
 
 -  When _reading_ NIfTI images:
 
-   -  If "``sform_code``" (a flag in the image header indicating that
-      the ``sform`` transformation is present and valid) is set, then
-      _MRtrix3_ will use these data to determine the image transform.
-
-   -  If "``sform_code``" is _not_ set, but "``qform_code``" (a similar
-      flag indicating the validity of ``qform``) _is_ set, then the
-      ``qform`` data will be used to determine the image transform.
+   -  If _only_ _one_ of these transformations is present and valid
+      in the image header (as indicated by the "``sform_code``" and 
+      "``qform_code``" flags within the NIfTI image header), then the
+      valid transformation will be used.
 
    -  If _both_ ``sform_code`` and ``qform_code`` are set, then
       _MRtrix3_ will _compare_ these two transformations. If they are
       identical, then _MRtrix3_ can proceed using either data without
       ambiguity. If they differ, then _MRtrix3_ will issue a _warning_,
-      and will use the **``sform``** data to determine the image
-      transform. This is chosen based on the fact that if the two
-      transformations differ, the ``sform`` is the one most likely
-      updated most recently, and is hence the transformation that the
-      user intends.
+      and by default will use the **``qform``** data as the image
+      transform. This is congruent with _MRtrix3_ using the convention
+      of storing data and performing processing within the "real" /
+      "scanner" space of the individual subject.
 
 - When _writing_ NIfTI images, _MRtrix3_ will:
 
    -  Write the _same_ _transformation_ to both the ``qform`` and
       ``sform`` fields, based on _MRtrix3_'s internal representation
       of the header transformation for that particular image. This
-      provides the least ambiguity, and ensures compatibility with
-      FSL tools (which now enforce consistency of these two fields).
+      provides the least ambiguity, and ensures maximal compatibility
+      with other software tools.
 
    -  Set both ``sform_code`` and ``qform_code`` to 1, indicating
-      that they provide transformations to scanner-based anatomical
-      coordinates.
+      that they both provide transformations to scanner-based
+      anatomical coordinates.
