@@ -39,6 +39,7 @@ namespace MR
     { MEMALIGN (Vox)
       public:
         using Eigen::Array3i::Array3i;
+        Vox () : Eigen::Array3i (-1, -1, -1) { }
         Vox (const Eigen::Vector3& p) : Eigen::Array3i (int(std::round (p[0])), int(std::round (p[1])), int(std::round (p[2]))) { }
         bool operator< (const Vox& i) const
         {
