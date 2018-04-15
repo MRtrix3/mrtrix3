@@ -181,6 +181,12 @@ def parse(): #pylint: disable=unused-variable
   if hasattr(args, 'cont') and args.cont:
     continueOption = True
     tempDir = os.path.abspath(args.cont[0])
+    # Prevent error from re-appearing at end of terminal output if script continuation results in success
+    #   and -nocleanup is used
+    try:
+      os.remove(os.path.join(tempDir, 'error.txt'))
+    except OSError:
+      pass
     run.setContinue(args.cont[1])
 
 

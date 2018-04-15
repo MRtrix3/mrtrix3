@@ -30,7 +30,7 @@ namespace MR
         private:
           default_type mean1;
           default_type mean2;
-          default_type denom; // TODO: denominator for normalisation
+ //         default_type denom; // TODO: denominator for normalisation
 
           template <
             typename LinearTrafoType,
