@@ -14,6 +14,7 @@
 
 
 #include "stride.h"
+#include "header.h"
 
 namespace MR
 {
@@ -25,10 +26,12 @@ namespace MR
 
     const OptionGroup Options = OptionGroup ("Stride options")
       + Option ("strides",
-          "specify the strides of the output data in memory, as a comma-separated list. "
+          "specify the strides of the output data in memory; either "
+          "as a comma-separated list of (signed) integers, or "
+          "as a template image from which the strides shall be extracted and used. "
           "The actual strides produced will depend on whether the output image "
           "format can support it.")
-      + Argument ("spec").type_sequence_int();
+      + Argument ("spec").type_text();
 
 
 
@@ -79,10 +82,23 @@ namespace MR
       if (!opt.size())
         return strides;
 
-      vector<int> tmp = opt[0][0];
-      for (auto x : tmp)
-        strides.push_back (x);
 
+      try {
+        auto header = Header::open (std::string(opt[0][0]));
+        strides = get_symbolic (header);
+      }
+      catch (Exception& E) {
+        E.display (3);
+        try {
+          auto tmp = parse_ints (opt[0][0]);
+          for (auto x : tmp)
+            strides.push_back (x);
+        }
+        catch (Exception& E) {
+          E.display(3);
+          throw Exception ("argument \"" + std::string(opt[0][0]) + "\" to option \"-strides\" is not a list of strides or an image");
+        }
+      }
 
       if (strides.size() > current.size())
         WARN ("too many axes supplied to -strides option - ignoring remaining strides");
