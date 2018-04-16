@@ -89,7 +89,7 @@ class MeanErrorFunctor {
       int n = 0;
       for (auto l = Loop(0,2) (data, pred); l; l++) {
         if (mask.valid()) {
-          assign_pos_of(data).to(mask);
+          assign_pos_of(data, 0, 3).to(mask);
           if (!mask.value()) continue;
         }
         value_type d = data.value() - pred.value();
