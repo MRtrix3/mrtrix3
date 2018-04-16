@@ -118,37 +118,6 @@ vu = round((vox[0]+vox[1])/2., 1)
 shells = [s.split('.')[0] for s in image.headerField('in.mif', 'shells').split()]
 
 
-# Configuration
-class Config:
-    def __init__(self, svr=False, recit=5, regit=10, scale=1.):
-        self.svr = svr
-        self.recit = recit
-        self.regit = regit
-        self.scale = scale
-
-#iters = [Config(False, 3, 10, 4.00),
-#         Config(False, 5, 10, 2.00),
-#         Config(False, 5, 10, 1.00),
-#         Config(True,  5, 10, 2.00),
-#         Config(True, 10, 10, 1.00),
-#         Config(True, 10, 10, 0.50),
-#         Config(True, 10, 10, 0.25),
-#         Config(True, 50, -1, 0.00)]
-
-#iters = [Config(False, 3, 10, 4.00),
-#         Config(False, 5, 10, 2.00),
-#         Config(True,  5, 10, 1.00),
-#         Config(True,  5, 10, 0.50),
-#         Config(True,  5, 10, 0.25),
-#         Config(True, 25, -1, 0.00)]
-
-iters = [Config(False, 3, 50, 0.20),
-         Config(False, 5, 50, 0.10),
-         Config(True,  5, 50, 0.05),
-         Config(True, 10, 50, 0.02),
-         Config(True, 50, -1, 0.01)]
-
-
 # Set lmax
 lmax = [0,] + [4,]*(len(shells)-1)
 if app.args.lmax:
@@ -162,14 +131,9 @@ if app.args.rlmax:
 if len(rlmax) > len(lmax) or max(rlmax) > max(lmax):
     app.error('-rlmax invalid.')
 
+# Regularization options
+reg = float(app.args.reg) if app.args.reg else 0.01
 lbreg = float(app.args.lbreg) if app.args.lbreg else 0.01
-
-
-# Shared reconstruction options
-#recon_option = ''
-#if app.args.reg:
-#    recon_option += '-reg ' + app.args.reg
-
 
 # SSP option
 ssp_option = ''
@@ -195,10 +159,9 @@ for k, l in enumerate(lmax):
 redrfs = ['redrf'+str(k+1)+'.txt' for k in range(len(rlmax))]
 
 # Force max no. threads
+nthr = ''
 if app.args.nthreads:
     nthr = ' -nthreads ' + app.args.nthreads
-else:
-    nthr = ''
 
 # Set multiband factor
 mb = 1
@@ -217,6 +180,22 @@ if app.args.sorder:
     motfilt_option += ' -packs ' + p + ' -shift ' + s
 
 
+# Configuration
+class Config:
+    def __init__(self, svr=False, recit=5, regit=10, scale=1.):
+        self.svr = svr
+        self.recit = recit
+        self.regit = regit
+        self.scale = scale
+
+iters = [Config(False, 3, 50, .2 ),
+         Config(False, 5, 50, .1 ),
+         Config(True,  5, 50, .1 ),
+         Config(True, 10, 50, .05),
+         Config(True, 10, 50, .05),
+         Config(True, 50, -1, reg )]
+
+
 # Variable input file name
 inputfn = 'in.mif'
 
@@ -229,7 +208,7 @@ def reconstep(k, scale=1.):
     if k > 0 and app.args.matchintensity:
         im = 'scaled.mif'
         run.command('mrcalc ' + inputfn + (' biasfield.mif -exp -mult' if app.args.matchintensity=='full' else '') + ' imscale.mif -mult ' + im + ' -force')
-    run.command('dwirecon ' + im + ' recon-' + str(k) + '.mif -spred spred.mif -maxiter ' + str(iters[k].recit) + ' -reg ' + str(iters[k].scale) + ' ' + ssp_option + ' -rf ' + ' -rf '.join(rfs) +
+    run.command('dwirecon ' + im + ' recon-' + str(k) + '.mif -spred spred.mif -maxiter ' + str(iters[k].recit) + ' -reg ' + str(iters[k].scale) + ssp_option + ' -rf ' + ' -rf '.join(rfs) +
             ('' if k==0 else ' -motion motion.txt -weights sliceweights.txt -init recon-' + str(k-1) + '.mif') + ' -force' + nthr)
 
 
