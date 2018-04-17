@@ -27,28 +27,6 @@ namespace MR
   {
     namespace SVR
     {
-    
-    template <size_t p>
-    FORCE_INLINE std::array<float,p+1> interpweights (const float t) {
-      throw Exception("Not implemented.");
-    }
-
-    template <>
-    FORCE_INLINE std::array<float,2> interpweights<1> (const float t) {
-      assert((t >= 0.0) && (t <= 1.0));
-      return {{ 1.0f-t, t }};
-    }
-
-    template <>
-    FORCE_INLINE std::array<float,4> interpweights<3> (const float t) {
-      assert((t >= 0.0) && (t <= 1.0));
-      float u = 1.0f-t, t1 = t+1.0f, u1 = u+1.0f;
-      return {{ -0.5f*t1*t1*t1 + 2.5f*t1*t1 - 4*t1 + 2.0f,
-                 1.5f*t*t*t - 2.5f*t*t + 1.0f,
-                 1.5f*u*u*u - 2.5f*u*u + 1.0f,
-                -0.5f*u1*u1*u1 + 2.5f*u1*u1 - 4*u1 + 2.0f }};
-    }
-
 
     /**
      *  1-D Slice Sensitivity Profile.
@@ -60,12 +38,17 @@ namespace MR
 
         SSP (const T fwhm = 1)
         {
-            T tau = scale/fwhm;
-            tau *= -tau/2;
-            for (int z = -n; z <= n; z++) {
-                values[n+z] = gaussian(T(z), tau);
+            if (fwhm <= std::numeric_limits<T>::epsilon()) {
+                for (int z = -n; z <= n; z++)
+                    values[n+z] = (z==0) ? 1 : 0;
+            } else {
+                T tau = scale/fwhm;
+                tau *= -tau/2;
+                for (int z = -n; z <= n; z++) {
+                    values[n+z] = gaussian(T(z), tau);
+                }
+                normalise_values();
             }
-            normalise_values();
         }
 
         template<typename VectorType>

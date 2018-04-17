@@ -303,7 +303,6 @@ namespace MR
             Math::SH::delta(delta, rot*vec, lmax);
             Y.row(v*ne+e) = shellbasis[idx[v]]*delta;
           }
-
         }
 
       }
