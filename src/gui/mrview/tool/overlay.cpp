@@ -784,7 +784,7 @@ namespace MR
             try {
               float value = opt[0];
               lower_threshold->setValue (value);
-              lower_threshold_check_box->setChecked (Qt::Checked);
+              lower_threshold_check_box->setChecked (true);
             }
             catch (Exception& e) { e.display(); }
             return true;
@@ -794,19 +794,19 @@ namespace MR
             try {
               float value = opt[0];
               upper_threshold->setValue (value);
-              upper_threshold_check_box->setChecked (Qt::Checked);
+              upper_threshold_check_box->setChecked (true);
             }
             catch (Exception& e) { e.display(); }
             return true;
           }
 
           if (opt.opt->is ("overlay.no_threshold_min")) {
-            lower_threshold_check_box->setChecked (Qt::Unchecked);
+            lower_threshold_check_box->setChecked (false);
             return true;
           }
 
           if (opt.opt->is ("overlay.no_threshold_max")) {
-            upper_threshold_check_box->setChecked (Qt::Unchecked);
+            upper_threshold_check_box->setChecked (false);
             return true;
           }
 
