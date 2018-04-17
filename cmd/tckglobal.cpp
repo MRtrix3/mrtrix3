@@ -75,7 +75,7 @@ void usage ()
   + "Example use: "
 
   + " $ tckglobal dwi.mif wmr.txt -riso csfr.txt -riso gmr.txt -mask mask.mif \n"
-    "   -niter 1e8 -fod fod.mif -fiso fiso.mif tracks.tck "
+    "   -niter 1e9 -fod fod.mif -fiso fiso.mif tracks.tck "
 
 
   + "in which dwi.mif is the input image, wmr.txt is an anisotropic, multi-shell response function for WM, "
