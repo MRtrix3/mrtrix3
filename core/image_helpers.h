@@ -407,7 +407,7 @@ namespace MR
     }
 
   template <class HeaderType1, class HeaderType2>
-    inline void check_voxel_grids_match_in_scanner_space (const HeaderType1& in1, const HeaderType2& in2, const double tol = 1.0e-4) {
+    inline void check_voxel_grids_match_in_scanner_space (const HeaderType1& in1, const HeaderType2& in2, const double tol = 1.0e-3) {
       Eigen::IOFormat FullPrecFmt(Eigen::FullPrecision, 0, ", ", "\n", "[", "]");
       if (!voxel_grids_match_in_scanner_space (in1, in2, tol))
         throw Exception ("images \"" + in1.name() + "\" and \"" + in2.name() + "\" do not have matching header transforms "
@@ -419,7 +419,7 @@ namespace MR
   //! tol: tolerance of FOV corner displacement in voxel units
   template <class HeaderType1, class HeaderType2>
     inline bool voxel_grids_match_in_scanner_space (const HeaderType1 in1, const HeaderType2 in2,
-      const double tol = 1.0e-4) {
+      const double tol = 1.0e-3) {
       if (!dimensions_match(in1, in2, 0, 3))
         return false;
 
