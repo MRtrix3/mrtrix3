@@ -38,8 +38,8 @@ options.add_argument('-niter', help='Number of epochs (default = 3)')
 options.add_argument('-lmax', help='SH basis order per shell (default = 0,4,4,...)')
 options.add_argument('-rlmax', help='Reduced basis order per component for registration (default = 2,2,0)')
 options.add_argument('-reg', help='Regularization for dwirecon (default = 0.01)')
-options.add_argument('-lbreg', help='Laplace-Beltrami regularization for SHARD (default = 0.01)')
-options.add_argument('-svr', help='Number of slice-to-volume reconstruction epochs (default = 0)')
+options.add_argument('-lbreg', help='Laplace-Beltrami regularization for SHARD (default = 0.001)')
+#options.add_argument('-svr', help='Number of slice-to-volume reconstruction epochs (default = 0)')
 options.add_argument('-mb', help='Multiband factor (default = 1)')
 options.add_argument('-sorder', help='Slice order (default = 2,1, for odd-even)')
 options.add_argument('-sspwidth', help='Slice thickness for Gaussian SSP (default = 1)')
@@ -133,7 +133,7 @@ if len(rlmax) > len(lmax) or max(rlmax) > max(lmax):
 
 # Regularization options
 reg = float(app.args.reg) if app.args.reg else 0.01
-lbreg = float(app.args.lbreg) if app.args.lbreg else 0.01
+lbreg = float(app.args.lbreg) if app.args.lbreg else 0.001
 
 # SSP option
 ssp_option = ''
@@ -188,12 +188,14 @@ class Config:
         self.regit = regit
         self.scale = scale
 
-iters = [Config(False, 3, 50, .2 ),
-         Config(False, 5, 50, .1 ),
-         Config(True,  5, 50, .1 ),
-         Config(True, 10, 50, .05),
-         Config(True, 10, 50, .05),
-         Config(True, 50, -1, reg )]
+
+iters = [Config(False, 5, 10, 3.0),
+         Config(False, 5, 10, 2.4),
+         Config(True,  5, 10, 1.9),
+         Config(True,  5, 10, 1.5),
+         Config(True,  5, 10, 1.2),
+         Config(True, 50, -1, 1.0)]
+
 
 
 # Variable input file name
@@ -203,12 +205,12 @@ inputfn = 'in.mif'
 
 #   __________ Function definitions __________
 
-def reconstep(k, scale=1.):
+def reconstep(k):
     im = inputfn;
     if k > 0 and app.args.matchintensity:
         im = 'scaled.mif'
         run.command('mrcalc ' + inputfn + (' biasfield.mif -exp -mult' if app.args.matchintensity=='full' else '') + ' imscale.mif -mult ' + im + ' -force')
-    run.command('dwirecon ' + im + ' recon-' + str(k) + '.mif -spred spred.mif -maxiter ' + str(iters[k].recit) + ' -reg ' + str(iters[k].scale) + ssp_option + ' -rf ' + ' -rf '.join(rfs) +
+    run.command('dwirecon ' + im + ' recon-' + str(k) + '.mif -spred spred.mif -maxiter ' + str(iters[k].recit) + ' -reg ' + str(reg) + ssp_option + ' -rf ' + ' -rf '.join(rfs) +
             ('' if k==0 else ' -motion motion.txt -weights sliceweights.txt -init recon-' + str(k-1) + '.mif') + ' -force' + nthr)
 
 
@@ -231,8 +233,9 @@ def basisupdatestep(k):
                 ' -lbreg ' + str(lbreg) + ' ' + ' '.join(rfs) + ' -force')
 
 
-def rankreduxstep(k):
-    run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax ' + ','.join([str(l) for l in rlmax]) +
+def rankreduxstep(k, scale=1.):
+    run.command('mrfilter recon-' + str(k) + '.mif smooth - -fwhm ' + str(vu*scale) + ' | ' +
+                'msshsvd - -mask mask.mif -lmax ' + ','.join([str(l) for l in rlmax]) +
                 ' -lbreg ' + str(lbreg) + ' ' + ' '.join(redrfs) + ' -proj rankredux.mif -force')
 
 
@@ -266,7 +269,7 @@ reconstep(0)
 for k, it in enumerate(iters[:-1]):
     # basis update and rank reduction
     basisupdatestep(k)
-    rankreduxstep(k)
+    rankreduxstep(k, it.scale)
     # slice weights
     sliceweightstep()
     # register template to volumes
