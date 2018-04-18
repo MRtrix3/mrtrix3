@@ -30,7 +30,7 @@ using value_type = float;
 void usage ()
 {
 
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset";
 
@@ -44,6 +44,7 @@ void usage ()
     + Option ("singleshell", "Force a single-shell (single non b=0 shell) output. This will include b=0 volumes, if present. Use with -bzero to enforce presence of b=0 volumes (error if not present) or with -no_bzero to exclude them.")
     + DWI::GradImportOptions()
     + DWI::ShellsOption
+    + DWI::GradExportOptions()
     + PhaseEncoding::ImportOptions
     + PhaseEncoding::SelectOptions
     + Stride::Options;
@@ -140,6 +141,7 @@ void run()
   }
 
   auto output_image = Image<float>::create (argument[1], header);
+  DWI::export_grad_commandline (header);
 
   auto input_volumes = Adapter::make<Adapter::Extract1D> (input_image, 3, volumes);
   threaded_copy_with_progress_message ("extracting volumes", input_volumes, output_image);
