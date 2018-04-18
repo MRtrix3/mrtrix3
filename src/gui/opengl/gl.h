@@ -62,9 +62,7 @@ namespace MR
     namespace GL
     {
 
-      //! obtain byte offset as void pointer - used in various OpenGL calls
-      template<typename Type>
-        inline constexpr void* offset (size_t num) { return reinterpret_cast<void*> (reinterpret_cast<Type*>(0) + num); }
+
 
 #if QT_VERSION >= 0x050400
 
