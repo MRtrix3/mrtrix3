@@ -67,13 +67,13 @@ void write (vector<Header>& in,
 
     auto copy_func = [&axis, &axis_offset](decltype(image_in)& in, decltype(image_out)& out)
     {
-      out.index (axis) = axis < int(in.ndim()) ? in.index (axis) + axis_offset : axis_offset;
+      out.index (axis) = axis < in.ndim() ? in.index (axis) + axis_offset : axis_offset;
       out.value() = in.value();
     };
 
     ThreadedLoop ("concatenating \"" + image_in.name() + "\"", image_in, 0, std::min<size_t> (image_in.ndim(), image_out.ndim()))
       .run (copy_func, image_in, image_out);
-    if (axis < int(image_in.ndim()))
+    if (axis < image_in.ndim())
       axis_offset += image_in.size (axis);
     else {
       ++axis_offset;
