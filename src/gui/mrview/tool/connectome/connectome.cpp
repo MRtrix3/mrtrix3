@@ -3363,7 +3363,7 @@ namespace MR
           } else if (edge_colour == edge_colour_t::DIRECTION) {
 
             for (auto i = edges.begin(); i != edges.end(); ++i)
-              i->set_colour (Eigen::Array3f { std::abs (i->get_dir()[0]), std::abs (i->get_dir()[1]), std::abs (i->get_dir()[2]) } );
+              i->set_colour (Eigen::Array3f { abs (i->get_dir()[0]), abs (i->get_dir()[1]), abs (i->get_dir()[2]) } );
 
           } else if (edge_colour == edge_colour_t::CONNECTOME) {
 

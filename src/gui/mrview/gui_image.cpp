@@ -203,7 +203,7 @@ namespace MR
               for (image.index (y) = 0; image.index (y) < ysize; ++image.index (y)) {
                 for (image.index (x) = 0; image.index (x) < xsize; ++image.index (x)) {
                   cfloat val = image.value();
-                  float mag = std::abs (val.real());
+                  float mag = abs (val.real());
                   data[3*(image.index(x)+image.index(y)*xsize) + n] = mag;
                   if (std::isfinite (mag)) {
                     slice_min[plane] = std::min (slice_min[plane], mag);
@@ -246,7 +246,7 @@ namespace MR
                 size_t idx = 2*(image.index(x)+image.index(y)*xsize);
                 data[idx] = val.real();
                 data[idx+1] = val.imag();
-                float mag = std::abs (val);
+                float mag = abs (val);
                 if (std::isfinite (mag))
                   slice_max[plane] = std::max (slice_max[plane], mag);
               }
@@ -448,10 +448,10 @@ namespace MR
       }
 
 
-      // required to shut up clang's compiler warnings about std::abs() when
+      // required to shut up clang's compiler warnings about abs() when
       // instantiating Image::copy_texture_3D() with unsigned types:
       template <typename ValueType>
-        inline ValueType abs_if_signed (ValueType x, typename std::enable_if<!std::is_unsigned<ValueType>::value>::type* = nullptr) { return std::abs(x); }
+        inline ValueType abs_if_signed (ValueType x, typename std::enable_if<!std::is_unsigned<ValueType>::value>::type* = nullptr) { return abs(x); }
 
       template <typename ValueType>
         inline ValueType abs_if_signed (ValueType x, typename std::enable_if<std::is_unsigned<ValueType>::value>::type* = nullptr) { return x; }
@@ -565,7 +565,7 @@ namespace MR
               cfloat val = image.value();
               *(p++) = val.real();
               *(p++) = val.imag();
-              float mag = std::abs (val);
+              float mag = abs (val);
               if (std::isfinite (mag)) {
                 value_min = std::min (value_min, mag);
                 value_max = std::max (value_max, mag);

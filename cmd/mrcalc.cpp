@@ -788,8 +788,8 @@ class OpTernary : public OpBase { NOMEMALIGN
 class OpAbs : public OpUnary { NOMEMALIGN
   public:
     OpAbs () : OpUnary ("|%1|", true) { }
-    complex_type R (real_type v) const { return std::abs (v); }
-    complex_type Z (complex_type v) const { return std::abs (v); }
+    complex_type R (real_type v) const { return abs (v); }
+    complex_type Z (complex_type v) const { return abs (v); }
 };
 
 class OpNeg : public OpUnary { NOMEMALIGN
