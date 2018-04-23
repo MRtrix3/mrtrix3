@@ -368,9 +368,9 @@ namespace MR
 
         int ROI::normal2axis (const Eigen::Vector3f& normal, const MR::Transform& transform) const
         {
-          float x_dot_n = std::abs ((transform.image2scanner.rotation().cast<float>() * Eigen::Vector3f { 1.0f, 0.0f, 0.0f }).dot (normal));
-          float y_dot_n = std::abs ((transform.image2scanner.rotation().cast<float>() * Eigen::Vector3f { 0.0f, 1.0f, 0.0f }).dot (normal));
-          float z_dot_n = std::abs ((transform.image2scanner.rotation().cast<float>() * Eigen::Vector3f { 0.0f, 0.0f, 1.0f }).dot (normal));
+          float x_dot_n = abs ((transform.image2scanner.rotation().cast<float>() * Eigen::Vector3f { 1.0f, 0.0f, 0.0f }).dot (normal));
+          float y_dot_n = abs ((transform.image2scanner.rotation().cast<float>() * Eigen::Vector3f { 0.0f, 1.0f, 0.0f }).dot (normal));
+          float z_dot_n = abs ((transform.image2scanner.rotation().cast<float>() * Eigen::Vector3f { 0.0f, 0.0f, 1.0f }).dot (normal));
           if (x_dot_n > y_dot_n)
             return x_dot_n > z_dot_n ? 0 : 2;
           else

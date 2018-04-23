@@ -84,7 +84,7 @@ namespace MR
               cfloat value = image()->interpolate() ?
                 image()->trilinear_value (window().focus()) :
                 image()->nearest_neighbour_value (window().focus());
-              if (std::isfinite (std::abs (value)))
+              if (std::isfinite (abs (value)))
                 value_str += str(value);
               else
                 value_str += "?";

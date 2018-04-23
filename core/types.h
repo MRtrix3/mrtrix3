@@ -277,9 +277,9 @@ namespace MR
   // functions, etc, since the standard labels such calls ill-formed:
   // http://en.cppreference.com/w/cpp/numeric/math/abs
   template <typename X>
-    inline constexpr typename std::enable_if<std::is_unsigned<X>::value,X>::type abs (X x) { return x; }
+    inline constexpr typename std::enable_if<std::is_arithmetic<X>::value && std::is_unsigned<X>::value,X>::type abs (X x) { return x; }
   template <typename X>
-    inline constexpr typename std::enable_if<!std::is_unsigned<X>::value,X>::type abs (X x) { return std::abs(x); }
+    inline constexpr typename std::enable_if<std::is_arithmetic<X>::value && !std::is_unsigned<X>::value,X>::type abs (X x) { return std::abs(x); }
 }
 
 namespace std
