@@ -325,7 +325,7 @@ points within those voxels will be spatially transformed to the point
 [0, 0, 0] in space - this results in the convergence of many streamlines
 toward the singularity point.
 
-The solutioin is to use the ``warpcorrect`` command, which identifies voxels
+The solution is to use the ``warpcorrect`` command, which identifies voxels
 that contain the warp [0, 0, 0] and replaces them with [NaN, NaN, NaN]
 ("NaN" = "Not a Number"). This causes ``tcknormalise`` to _discard_ those
 streamline points; consistently with the results of registration, where
@@ -477,3 +477,61 @@ Our recommended steps for achieving this are:
    .. code-block:: console
 
       mrtransform target_parcellation.mif -linear atlas2image_mrtrix.txt -template my_image.mif parcellation_in_my_image_space.mif
+
+
+.. _nifti_qform_sform:
+
+Transformation issues with the NIfTI image format
+-------------------------------------------------
+
+In the :ref:`nifti_format` image format, there is not one, but _two_
+items stored in the image header that provide information regarding the
+localisation of the image within physical space (the image
+:ref:<transform>):
+
+-  The "``qform``" entry is intended to specify a _rigid_ transformation
+   from voxel coordinates into a spatial location corresponding to the
+   subject's position within the scanner.
+
+-  The "``sform``" entry is intended to specify an _affine_ transformation
+   from voxel coordinates into a spatial location within the space of some
+   template image.
+
+While the storage of both of these fields was
+`well-intentioned <https://nifti.nimh.nih.gov/nifti-1/documentation/faq#Q19>`_,
+the practical reality is that there is no robust way for any software to
+know which of the two transforms should be used. Furthermore, while
+software developers will typically ensure that the handling of these fields
+is internally consistent within their own software, this handling
+can differ _between_ packages, causing problems for those who
+utilise tools from multiple sources.
+
+The handling of this information in _MRtrix3_ is as follows:
+
+-  When _reading_ NIfTI images:
+
+   -  If _only_ _one_ of these transformations is present and valid
+      in the image header (as indicated by the "``sform_code``" and 
+      "``qform_code``" flags within the NIfTI image header), then the
+      valid transformation will be used.
+
+   -  If _both_ ``sform_code`` and ``qform_code`` are set, then
+      _MRtrix3_ will _compare_ these two transformations. If they are
+      identical, then _MRtrix3_ can proceed using either data without
+      ambiguity. If they differ, then _MRtrix3_ will issue a _warning_,
+      and by default will use the **``qform``** data as the image
+      transform. This is congruent with _MRtrix3_ using the convention
+      of storing data and performing processing within the "real" /
+      "scanner" space of the individual subject.
+
+- When _writing_ NIfTI images, _MRtrix3_ will:
+
+   -  Write the _same_ _transformation_ to both the ``qform`` and
+      ``sform`` fields, based on _MRtrix3_'s internal representation
+      of the header transformation for that particular image. This
+      provides the least ambiguity, and ensures maximal compatibility
+      with other software tools.
+
+   -  Set both ``sform_code`` and ``qform_code`` to 1, indicating
+      that they both provide transformations to scanner-based
+      anatomical coordinates.
