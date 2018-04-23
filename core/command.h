@@ -97,7 +97,7 @@ int main (int cmdline_argc, char** cmdline_argv)
   catch (int retval) {
     return retval;
   }
-  return 0;
+  return ::MR::App::exit_error_code;
 }
 
 #endif
