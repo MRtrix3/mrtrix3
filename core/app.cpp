@@ -75,6 +75,7 @@ namespace MR
     vector<ParsedArgument> argument;
     vector<ParsedOption> option;
     int log_level = getenv("MRTRIX_QUIET") ? 0 : 1;
+    int exit_error_code = 0;
     bool fail_on_warn = false;
     bool terminal_use_colour = true;
 
