@@ -33,6 +33,8 @@ DWI pre-processing
 
 Because the anatomical image is used to limit the spatial extent of streamlines propagation rather than a binary mask derived from the diffusion image series, I highly recommend dilating the DWI brain mask prior to computing FODs; this is to make sure that any errors in derivation of the DWI mask do not leave gaps in the FOD data within the brain white matter, and therefore result in erroneous streamlines termination.
 
+.. _act_tissue_segmentation:
+
 Tissue segmentation
 ^^^^^^^^^^^^^^^^^^^
 
