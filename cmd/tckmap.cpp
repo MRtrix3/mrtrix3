@@ -79,7 +79,7 @@ const OptionGroup OutputDimOption = OptionGroup ("Options for the dimensionality
         "map streamlines to dixels within each voxel; requires either a number of dixels "
         "(references an internal direction set), or a path to a text file containing a "
         "set of directions stored as azimuth/elevation pairs")
-      + Argument ("path").type_text()
+      + Argument ("path").type_various()
 
     + Option ("tod",
         "generate a Track Orientation Distribution (TOD) in each voxel; need to specify the maximum "
