@@ -274,7 +274,7 @@ namespace MR {
                 default_type max_dp = 0.0;
                 size_t nearest_original_peak = i->num_peaks();
                 for (size_t j = 0; j != i->num_peaks(); ++j) {
-                  const default_type this_dp = std::abs (newton_peak.dot (i->get_peak_dir (j)));
+                  const default_type this_dp = abs (newton_peak.dot (i->get_peak_dir (j)));
                   if (this_dp > max_dp) {
                     max_dp = this_dp;
                     nearest_original_peak = j;
