@@ -133,6 +133,21 @@ compiled on another system.
    ``gcc`` version must appear *before* that of the version installed on the
    cluster in the ``LD_LIBRARY_PATH`` environment variable.
 
+Installation of *MRtrix3* and dependencies in a new directory
+-------------------------------------------------------------
+
+In HPC systems and development environments is is extremely common and useful to have multiple versions of the same software available.
+
+After following the installation process above, there will be new directories built in the source directory. Those used can be copied over to a preferred directory e.g.,
+
+
+``mkdir -p /usr/local/MRtrix/3-3.0_RC3``
+
+``cp -r bin/ lib/ share/ doc/ /usr/local/MRtrix/3-3.0_RC3``
+
+
+Users will then need to export paths as appropriate. Most HPC systems will use an evironment modules system.
+
 Remote display
 --------------
 
