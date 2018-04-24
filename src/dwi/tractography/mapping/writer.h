@@ -102,8 +102,8 @@ namespace MR {
 
           public:
           MapWriter (const Header& header, const std::string& name, const vox_stat_t voxel_statistic = V_SUM, const writer_dim type = GREYSCALE) :
-            MapWriterBase (header, name, voxel_statistic, type),
-            buffer (Image<value_type>::scratch (header, "TWI " + str(writer_dims[type]) + " buffer"))
+              MapWriterBase (header, name, voxel_statistic, type),
+              buffer (Image<value_type>::scratch (header, "TWI " + str(writer_dims[type]) + " buffer"))
           {
             auto loop = Loop (buffer);
             if (type == DEC || type == TOD) {
@@ -125,7 +125,7 @@ namespace MR {
               } else if (voxel_statistic == V_MAX) {
                 for (auto l = loop (buffer); l; ++l )
                   buffer.value() = std::numeric_limits<value_type>::lowest();
-              } 
+              }
 /* shouldn't be needed: scratch IO class memset to zero already:
               else {
                 buffer.zero();
@@ -140,7 +140,7 @@ namespace MR {
                 (type == DEC && voxel_statistic == V_SUM))
             {
               Header H_counts (header);
-              if (type == DEC || type == TOD) 
+              if (type == DEC || type == TOD)
                 H_counts.ndim() = 3;
               counts.reset (new Image<float> (Image<float>::scratch (H_counts, "TWI streamline count buffer")));
             }
@@ -177,21 +177,22 @@ namespace MR {
                 break;
 
               case V_MEAN:
-                assert (counts);
                 if (type == GREYSCALE) {
+                  assert (counts);
                   for (auto l = loop (buffer, *counts); l; ++l) {
                     if (counts->value())
                       buffer.value() /= value_type(counts->value());
                   }
-                } 
+                }
                 else if (type == DEC) {
                   for (auto l = loop (buffer); l; ++l) {
                     auto value = get_dec();
-                    if (value.squaredNorm()) 
+                    if (value.squaredNorm())
                       set_dec (value.normalized());
                   }
-                } 
+                }
                 else if (type == TOD) {
+                  assert (counts);
                   for (auto l = loop (buffer, *counts); l; ++l) {
                     if (counts->value()) {
                       VoxelTOD::vector_type value;
@@ -201,6 +202,7 @@ namespace MR {
                     }
                   }
                 } else { // Dixel
+                  assert (counts);
                   // TODO For dixels, should this be a voxel mean i.e. normalise each non-zero voxel to unit density,
                   //   rather than a per-dixel mean?
                   for (auto l = Loop (buffer) (buffer, *counts); l; ++l) {
@@ -293,7 +295,7 @@ namespace MR {
           void MapWriter<value_type>::receive_greyscale (const Cont& in)
           {
             assert (MapWriterBase::type == GREYSCALE);
-            for (const auto& i : in) { 
+            for (const auto& i : in) {
               assign_pos_of (i).to (buffer);
               const default_type factor = get_factor (i, in);
               const default_type weight = in.weight * i.get_length();
@@ -320,7 +322,7 @@ namespace MR {
           void MapWriter<value_type>::receive_dec (const Cont& in)
           {
             assert (type == DEC);
-            for (const auto& i : in) { 
+            for (const auto& i : in) {
               assign_pos_of (i).to (buffer);
               const default_type factor = get_factor (i, in);
               const default_type weight = in.weight * i.get_length();
@@ -340,9 +342,6 @@ namespace MR {
                   break;
                 case V_MEAN:
                   set_dec (current_value + (scaled_colour * weight));
-                  assert (counts);
-                  assign_pos_of (i).to (*counts);
-                  counts->value() += weight;
                   break;
                 case V_MAX:
                   if (scaled_colour.squaredNorm() > current_value.squaredNorm())
@@ -361,7 +360,7 @@ namespace MR {
           void MapWriter<value_type>::receive_dixel (const Cont& in)
           {
             assert (type == DIXEL);
-            for (const auto& i : in) { 
+            for (const auto& i : in) {
               assign_pos_of (i, 0, 3).to (buffer);
               buffer.index(3) = i.get_dir();
               const default_type factor = get_factor (i, in);
@@ -391,7 +390,7 @@ namespace MR {
           {
             assert (type == TOD);
             VoxelTOD::vector_type sh_coefs;
-            for (const auto& i : in) { 
+            for (const auto& i : in) {
               assign_pos_of (i, 0, 3).to (buffer);
               const default_type factor = get_factor (i, in);
               const default_type weight = in.weight * i.get_length();
@@ -485,7 +484,7 @@ namespace MR {
           {
             assert (type == TOD);
             sh_coefs.resize (buffer.size(3));
-            for (auto l = Loop (3) (buffer); l; ++l) 
+            for (auto l = Loop (3) (buffer); l; ++l)
               sh_coefs[buffer.index(3)] = buffer.value();
           }
 
@@ -494,7 +493,7 @@ namespace MR {
           {
             assert (type == TOD);
             assert (sh_coefs.size() == buffer.size(3));
-            for (auto l = Loop (3) (buffer); l; ++l) 
+            for (auto l = Loop (3) (buffer); l; ++l)
               buffer.value() = sh_coefs[buffer.index(3)];
           }
 
