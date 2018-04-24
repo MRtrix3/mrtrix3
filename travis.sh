@@ -8,8 +8,8 @@ case  $test in
   "sphinx")
     $py -m sphinx -n -N -W -w sphinx.log docs/ tmp/
     ;;
-  "memalign")
-    ./check_memalign
+  "syntax")
+    ./check_syntax
     ;;
   "pylint")
     # Normally rely on build script to create this file
