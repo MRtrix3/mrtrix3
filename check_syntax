@@ -102,13 +102,13 @@ if [[ $retval == 0 ]]; then
   echo "OK"
   echo "no issues detected" >> $LOG
 else
-  echo "FAIL"
+  echo "FAIL (see syntax.log for details)"
 
   echo "" >> $LOG
-  echo "Please add MEMALIGN() or NOMEMALIGN macro to the class declarations identified above,
-replace all occurrences of std::vector<> with MR::vector<> (or just vector<>),
-avoid use of std::make_shared(),
-and replace all instances of std::abs() with MR::abs() (or just abs())" >> $LOG
+  echo "Please add MEMALIGN() or NOMEMALIGN macro to the class declarations
+  identified above, replace all occurrences of std::vector<> with MR::vector<>
+  (or just vector<>), avoid use of std::make_shared(), and replace all
+  instances of std::abs() with MR::abs() (or just abs())" >> $LOG
   exit 1
 fi
 
