@@ -346,7 +346,7 @@ namespace MR
               cfloat value = image->interpolate() ?
                 image->trilinear_value(window().focus()) :
                 image->nearest_neighbour_value(window().focus());
-              if(std::isnan(std::abs(value)))
+              if(std::isnan(abs(value)))
                 value_str += "?";
               else value_str += str(value);
               transform.render_text (value_str, position, start_line_num + num_of_new_lines);
