@@ -50,7 +50,7 @@ void usage ()
    + "will produce files named output-0000.txt, output-0001.txt, output-0002.txt, ...";
 
   ARGUMENTS
-  + Argument ("input", "the input track file.").type_text ()
+  + Argument ("input", "the input track file.").type_various ()
   + Argument ("output", "the output track file.").type_file_out ();
 
   OPTIONS
@@ -165,12 +165,12 @@ public:
         if ( sscanf ( line.c_str(), "POINTS %d float", &number_of_points ) == 1) {
           points = new float[3*number_of_points];
           input.read((char*) points, 3*number_of_points * sizeof(float) );
-          
+
           // swap
           for ( int i = 0; i < 3*number_of_points; i++ ) {
             points[i] = Raw::fetch_BE<float>(points, i);
           }
-      
+
           continue;
         } else {
           if ( sscanf ( line.c_str(), "LINES %d %d", &number_of_lines, &number_of_line_indices ) == 2) {
@@ -200,7 +200,7 @@ public:
             tck.push_back(f);
             lineIdx++;
           }
-          return true;          
+          return true;
         }
         return false;
     }
@@ -536,7 +536,7 @@ RibWriter(const std::string& file, float radius = 0.1, bool dec = false) : out(f
   decFilename = File::create_tempfile(0,".dec");
   decOF.open ( decFilename );
   decOF << "\"varying color dec\" [";
-  
+
 
   // Header
   out << "##RenderMan RIB\n"
@@ -570,7 +570,7 @@ RibWriter(const std::string& file, float radius = 0.1, bool dec = false) : out(f
     decOF << "]\n" ;
     decOF.close();
     out << "] \"nonperiodic\" ";
-    
+
     std::ifstream pointsIF ( pointsFilename );
     out << pointsIF.rdbuf();
     File::unlink(pointsFilename.c_str());
@@ -584,9 +584,9 @@ RibWriter(const std::string& file, float radius = 0.1, bool dec = false) : out(f
 
     out << " \"constantwidth\" " << radius << "\n";
     out.close();
-    
+
   }
-    
+
   private:
   std::string pointsFilename;
   std::string decFilename;
