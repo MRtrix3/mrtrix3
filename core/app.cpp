@@ -202,6 +202,8 @@ namespace MR
           return ("tracks in");
         case TracksOut:
           return ("tracks out");
+        case Various:
+          return ("various");
         default:
           return ("undefined");
       }
@@ -463,6 +465,9 @@ namespace MR
           break;
         case TracksOut:
           stream << "TRACKSOUT";
+          break;
+        case Various:
+          stream << "VARIOUS";
           break;
         default:
           assert (0);

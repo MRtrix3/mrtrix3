@@ -31,7 +31,7 @@ namespace MR
           "as a template image from which the strides shall be extracted and used. "
           "The actual strides produced will depend on whether the output image "
           "format can support it.")
-      + Argument ("spec").type_text();
+      + Argument ("spec").type_various();
 
 
 
