@@ -53,7 +53,8 @@ a tissue segmentation in the appropriate format, for example:
     5ttgen fsl T1.mif 5tt.mif
 
 Note that the T1 image must be aligned with (e.g. registered to) the DWI data. 
-See :ref:`this page <act_tissue_segmentation>` for more information.
+See the first two steps in :ref:`ACT preprocessing pipeline <act_preprocessing>` 
+for more information.
 
 Response functions for single-fibre WM, GM, and CSF, can then be 
 estimated using:
@@ -63,7 +64,7 @@ estimated using:
     dwi2response msmt_5tt dwi.mif 5tt.mif wm.txt gm.txt csf.txt
 
 For a detailed explanation of different strategies for response function 
-estimation, have a look at :ref:`this page <msmt_5tt_response_function_estimation>`.
+estimation, have a look at :ref:`this page <response_fn_estimation>`.
 
 Parameters
 ~~~~~~~~~~

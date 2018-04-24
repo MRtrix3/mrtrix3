@@ -118,8 +118,6 @@ manual definition of both the single-fibre voxel mask (or just a voxel
 mask for isotropic tissues); the fibre directions can also be provided
 manually if necessary (otherwise a tensor fit will be used).
 
-.. _msmt_5tt_response_function_estimation:
-
 ``msmt_5tt``
 ^^^^^^^^^^^^
 
