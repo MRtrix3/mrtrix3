@@ -15,6 +15,8 @@ For full details on ACT, please refer to the following journal article:
 If you use ACT in your research, please cite the article above in your manuscripts.
 
 
+.. _act_preprocessing:
+
 Pre-processing steps
 --------------------
 
