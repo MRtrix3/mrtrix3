@@ -53,7 +53,7 @@ a tissue segmentation in the appropriate format, for example:
     5ttgen fsl T1.mif 5tt.mif
 
 Note that the T1 image must be aligned with (e.g. registered to) the DWI data. 
-See the first two steps in :ref:`ACT preprocessing pipeline <act_preprocessing>` 
+See the :ref:`ACT preprocessing pipeline <act_preprocessing>` 
 for more information.
 
 Response functions for single-fibre WM, GM, and CSF, can then be 
