@@ -230,8 +230,8 @@ class AbsMax { NOMEMALIGN
   public:
     AbsMax () : max (-std::numeric_limits<value_type>::infinity()) { }
     void operator() (value_type val) {
-      if (std::isfinite (val) && std::abs(val) > max)
-        max = std::abs(val);
+      if (std::isfinite (val) && abs(val) > max)
+        max = abs(val);
     }
     value_type result () const { return std::isfinite (max) ? max : NAN; }
     value_type max;
@@ -242,7 +242,7 @@ class MagMax { NOMEMALIGN
     MagMax () : max (-std::numeric_limits<value_type>::infinity()) { }
     MagMax (const int i) : max (-std::numeric_limits<value_type>::infinity()) { }
     void operator() (value_type val) {
-      if (std::isfinite (val) && (!std::isfinite (max) || std::abs(val) > std::abs (max)))
+      if (std::isfinite (val) && (!std::isfinite (max) || abs(val) > abs (max)))
         max = val;
     }
     value_type result () const { return std::isfinite (max) ? max : NAN; }

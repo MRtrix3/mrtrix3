@@ -46,11 +46,11 @@ matrix:
       env: py=python2 test=sphinx
     - os: linux
       env: py=python3 test=sphinx
-    #############################################################
-    # Run the check_memalign script; only needs to be done once #
-    #############################################################
+    ###########################################################
+    # Run the check_syntax script; only needs to be done once #
+    ###########################################################
     - os: linux
-      env: test=memalign
+      env: test=syntax
     ##############################################
     # Run PyLint tests; both Python2 and Python3 #
     ##############################################
@@ -114,8 +114,8 @@ after_failure:
       "sphinx")
         cat sphinx.log
         ;;
-      "memalign")
-        cat memalign.log
+      "syntax")
+        cat syntax.log
         ;;
       "pylint")
         cat pylint.log

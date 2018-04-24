@@ -100,7 +100,7 @@ void run ()
         templatedir.normalize();
         Eigen::Vector3f subjectdir = subject_directions.row(1);
         subjectdir.normalize();
-        float dp = std::abs (templatedir.dot (subjectdir));
+        float dp = abs (templatedir.dot (subjectdir));
         if (dp > largest_dp) {
           largest_dp = dp;
           index_of_closest_fixel = s;

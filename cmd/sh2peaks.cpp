@@ -182,7 +182,7 @@ class Processor { MEMALIGN(Processor)
         p.a = Math::SH::get_peak (item.data, lmax, p.v);
         if (std::isfinite (p.a)) {
           for (size_t j = 0; j < all_peaks.size(); j++) {
-            if (std::abs (p.v.dot (all_peaks[j].v)) > DOT_THRESHOLD) {
+            if (abs (p.v.dot (all_peaks[j].v)) > DOT_THRESHOLD) {
               p.a = NAN;
               break;
             }
@@ -208,7 +208,7 @@ class Processor { MEMALIGN(Processor)
 
           value_type mdot = 0.0;
           for (size_t n = 0; n < all_peaks.size(); n++) {
-            value_type f = std::abs (p.dot (all_peaks[n].v));
+            value_type f = abs (p.dot (all_peaks[n].v));
             if (f > mdot) {
               mdot = f;
               peaks_out[i] = all_peaks[n];
@@ -220,7 +220,7 @@ class Processor { MEMALIGN(Processor)
         for (int i = 0; i < npeaks; i++) {
           value_type mdot = 0.0;
           for (size_t n = 0; n < all_peaks.size(); n++) {
-            value_type f = std::abs (all_peaks[n].v.dot (true_peaks[i].v));
+            value_type f = abs (all_peaks[n].v.dot (true_peaks[i].v));
             if (f > mdot) {
               mdot = f;
               peaks_out[i] = all_peaks[n];

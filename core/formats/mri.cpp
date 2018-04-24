@@ -301,7 +301,7 @@ namespace MR
       size_t n;
       char order[4];
       for (n = 0; n < H.ndim(); ++n)
-        order[std::abs (H.stride (n))-1] = order2char (n, H.stride (n) >0);
+        order[abs (H.stride (n))-1] = order2char (n, H.stride (n) >0);
       for (; n < 4; ++n)
         order[n] = order2char (n, true);
       out.write (order, 4);

@@ -330,7 +330,7 @@ namespace MR
     {
       if (in1.ndim() != in2.ndim()) return false;
       for (size_t n = 0; n < in1.ndim(); ++n)
-        if (std::abs(in1.spacing (n) - in2.spacing (n)) > tol * 0.5 * (in1.spacing (n) + in2.spacing (n))) return false;
+        if (abs(in1.spacing (n) - in2.spacing (n)) > tol * 0.5 * (in1.spacing (n) + in2.spacing (n))) return false;
       return true;
     }
 
@@ -340,7 +340,7 @@ namespace MR
       assert (from_axis < to_axis);
       if (to_axis > in1.ndim() || to_axis > in2.ndim()) return false;
       for (size_t n = from_axis; n < to_axis; ++n)
-        if (std::abs(in1.spacing (n) - in2.spacing (n)) > tol * 0.5 * (in1.spacing (n) + in2.spacing (n))) return false;
+        if (abs(in1.spacing (n) - in2.spacing (n)) > tol * 0.5 * (in1.spacing (n) + in2.spacing (n))) return false;
       return true;
     }
 
@@ -349,7 +349,7 @@ namespace MR
     {
       for (size_t n = 0; n < axes.size(); ++n) {
         if (in1.ndim() <= axes[n] || in2.ndim() <= axes[n]) return false;
-        if (std::abs(in1.spacing (axes[n]) - in2.spacing(axes[n])) > tol * 0.5 * (in1.spacing (axes[n]) + in2.spacing(axes[n]))) return false;
+        if (abs(in1.spacing (axes[n]) - in2.spacing(axes[n])) > tol * 0.5 * (in1.spacing (axes[n]) + in2.spacing(axes[n]))) return false;
       }
       return true;
     }

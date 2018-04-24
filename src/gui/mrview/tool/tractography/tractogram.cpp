@@ -672,7 +672,7 @@ namespace MR
             for (size_t buffer_tck_counter = 0; buffer_tck_counter != num_tracks; ++buffer_tck_counter) {
 
               const Eigen::Vector3f& tangent (endpoint_tangents[total_tck_counter++]);
-              const Eigen::Vector3f colour (std::abs (tangent[0]), std::abs (tangent[1]), std::abs (tangent[2]));
+              const Eigen::Vector3f colour (abs (tangent[0]), abs (tangent[1]), abs (tangent[2]));
               const size_t tck_length = original_track_sizes[buffer_index][buffer_tck_counter];
 
               // Includes pre- and post-padding to coincide with tracks buffer

@@ -277,7 +277,7 @@ namespace MR
             GL::vec4 normal = T2S * GL::vec4 (plane[0], plane[1], plane[2], 0.0);
             GL::vec4 on_plane = S2T * GL::vec4 (plane[3]*plane[0], plane[3]*plane[1], plane[3]*plane[2], 1.0);
             normal[3] = on_plane[0]*normal[0] + on_plane[1]*normal[1] + on_plane[2]*normal[2];
-            float off_axis_thickness = std::abs (ray[0]*plane[0] + ray[1]*plane[1] + ray[2]*plane[2]);
+            float off_axis_thickness = abs (ray[0]*plane[0] + ray[1]*plane[1] + ray[2]*plane[2]);
             normal[0] /= off_axis_thickness;
             normal[1] /= off_axis_thickness;
             normal[2] /= off_axis_thickness;

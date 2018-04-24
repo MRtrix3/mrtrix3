@@ -55,7 +55,7 @@ namespace MR
           min = V[0] - (0.5 * bin_width);
           max = V[num_bins-1] + (0.5 * bin_width);
           for (size_t i = 0; i != num_bins; ++i) {
-            if (std::abs (get_bin_centre(i) - V[i]) > 1e-5)
+            if (abs (get_bin_centre(i) - V[i]) > 1e-5)
               throw Exception ("Non-equal spacing in histogram bin centres");
           }
         } catch (Exception& e) {

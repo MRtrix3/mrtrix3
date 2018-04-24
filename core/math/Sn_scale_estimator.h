@@ -37,7 +37,7 @@ namespace MR {
               med_diff.resize (vec.size());
               for (ssize_t j = 0; j < vec.size(); ++j) {
                 for (ssize_t i = 0; i < vec.size(); ++i) 
-                  diff[i] = std::abs (vec[i] - vec[j]);
+                  diff[i] = abs (vec[i] - vec[j]);
                 med_diff[j] = Math::median (diff);
               }
               return 1.1926 * Math::median (med_diff);

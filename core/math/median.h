@@ -112,7 +112,7 @@ namespace MR
 
         median = s1 / denum;
         if (i > 3){
-          convergence=(std::abs(dist[i]-dist[i-2])<precision);
+          convergence=(abs(dist[i]-dist[i-2])<precision);
         }
         ++i;
       }
