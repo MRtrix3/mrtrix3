@@ -25,7 +25,10 @@ def command(cmd, exitOnError=True):
   global _processes
 
   # Vectorise the command string, preserving anything encased within quotation marks
-  cmdsplit = shlex.split(cmd)
+  if os.sep is '/': # Cheap POSIX compliance check
+    cmdsplit = shlex.split(cmd)
+  else: # Native Windows Python
+    cmdsplit = [ entry.strip('\"') for entry in shlex.split(cmd, posix=False) ]
 
   if app._lastFile:
     # Check to see if the last file produced in the previous script execution is
