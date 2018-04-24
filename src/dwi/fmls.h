@@ -66,10 +66,10 @@ namespace MR
           FOD_lobe (const DWI::Directions::Set& dirs, const index_type seed, const default_type value, const default_type weight) :
               mask (dirs),
               values (Eigen::Array<default_type, Eigen::Dynamic, 1>::Zero (dirs.size())),
-              max_peak_value (std::abs (value)),
+              max_peak_value (abs (value)),
               peak_dirs (1, dirs.get_dir (seed)),
-              mean_dir (peak_dirs.front() * std::abs(value) * weight),
-              integral (std::abs (value * weight)),
+              mean_dir (peak_dirs.front() * abs(value) * weight),
+              integral (abs (value * weight)),
               neg (value <= 0.0)
           {
             mask[seed] = true;
@@ -93,8 +93,8 @@ namespace MR
             values[bin] = value;
             const Eigen::Vector3& dir = mask.get_dirs()[bin];
             const default_type multiplier = (mean_dir.dot (dir)) > 0.0 ? 1.0 : -1.0;
-            mean_dir += dir * multiplier * std::abs(value) * weight;
-            integral += std::abs (value * weight);
+            mean_dir += dir * multiplier * abs(value) * weight;
+            integral += abs (value * weight);
           }
 
           void revise_peak (const size_t index, const Eigen::Vector3& real_peak, const default_type value)

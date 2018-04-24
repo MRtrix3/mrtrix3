@@ -488,7 +488,7 @@ namespace MR {
 
         for (size_t n = 0; n < nslices-1; ++n) {
           const default_type separation = frames[n+1]->distance - frames[n]->distance;
-          const default_type gap = std::abs (separation - frames[n]->slice_thickness);
+          const default_type gap = abs (separation - frames[n]->slice_thickness);
           max_gap = std::max (gap, max_gap);
           min_separation = std::min (min_separation, separation);
           max_separation = std::max (max_separation, separation);

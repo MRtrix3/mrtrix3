@@ -75,7 +75,7 @@ DESCRIPTION
 ARGUMENTS
   + Argument ("operand", "an input image, intensity value, or the special keywords "
       "'rand' (random number between 0 and 1) or 'randn' (random number from unit "
-      "std.dev. normal distribution).").type_text().allow_multiple();
+      "std.dev. normal distribution).").type_various().allow_multiple();
 
 OPTIONS
   + OptionGroup ("Unary operators")
@@ -788,8 +788,8 @@ class OpTernary : public OpBase { NOMEMALIGN
 class OpAbs : public OpUnary { NOMEMALIGN
   public:
     OpAbs () : OpUnary ("|%1|", true) { }
-    complex_type R (real_type v) const { return std::abs (v); }
-    complex_type Z (complex_type v) const { return std::abs (v); }
+    complex_type R (real_type v) const { return abs (v); }
+    complex_type Z (complex_type v) const { return abs (v); }
 };
 
 class OpNeg : public OpUnary { NOMEMALIGN
