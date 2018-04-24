@@ -92,13 +92,13 @@ namespace MR
             p += step;
             tissues = get_tissues (p, interp);
           } while (tissues.valid() && step.squaredNorm() && 
-              (std::abs (tissues.get_gm() - tissues.get_wm()) > GMWMI_ACCURACY) && 
+              (abs (tissues.get_gm() - tissues.get_wm()) > GMWMI_ACCURACY) && 
               (++gradient_iters < GMWMI_MAX_ITERS_TO_FIND_BOUNDARY));
 
           // Make sure an appropriate cost function minimum has been found, and that
           //   this would be an acceptable termination point if it were processed by the tracking algorithm
           if (!tissues.valid() || tissues.is_csf() || tissues.is_path() || !tissues.get_wm()
-              || (std::abs (tissues.get_gm() - tissues.get_wm()) > GMWMI_ACCURACY)) {
+              || (abs (tissues.get_gm() - tissues.get_wm()) > GMWMI_ACCURACY)) {
 
             p = { NaN, NaN, NaN };
             return false;

@@ -64,7 +64,7 @@ class TrackProcessor { MEMALIGN (TrackProcessor)
          float largest_dp = 0.0;
          const Eigen::Vector3 dir (i->get_dir().normalized());
          for (uint32_t j = first_index; j < last_index; ++j) {
-           const float dp = std::abs (dir.dot (fixel_directions[j]));
+           const float dp = abs (dir.dot (fixel_directions[j]));
            if (dp > largest_dp) {
              largest_dp = dp;
              closest_fixel_index = j;

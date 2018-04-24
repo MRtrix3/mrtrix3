@@ -276,7 +276,7 @@ namespace MR
         for (size_t i = 0; i < H.ndim(); ++i) {
           if (H.stride(i)) {
             ++n;
-            next_stride = std::max (next_stride, std::abs (H.stride(i)));
+            next_stride = std::max (next_stride, abs (H.stride(i)));
           }
         }
 

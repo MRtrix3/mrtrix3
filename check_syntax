@@ -1,28 +1,28 @@
 #!/bin/bash
 
-LOG=memalign.log
-echo -n "Checking memory alignment for Eigen 3.3 compatibility... "
-echo "Checking memory alignment for Eigen 3.3 compatibility..." > $LOG
+LOG=syntax.log
+echo -n "Checking syntax and memory alignment for Eigen 3.3 compatibility... "
+echo "Checking syntax and memory alignment for Eigen 3.3 compatibility..." > $LOG
 echo "" >> $LOG
 
 retval=0
 
-for f in $(find cmd core src -type f -name '*.h' -o -name '*.cpp' | grep -v '_moc.cpp'); do 
+for f in $(find cmd core src -type f -name '*.h' -o -name '*.cpp' | grep -v '_moc.cpp'); do
 
 # files to ignore:
-  [[ "$f" -ef "src/gui/shview/icons.h" || 
-     "$f" -ef "src/gui/shview/icons.cpp" || 
-     "$f" -ef "src/gui/mrview/icons.h" || 
-     "$f" -ef "src/gui/mrview/icons.cpp" || 
-     "$f" -ef "core/file/mgh.h" || 
-     "$f" -ef "core/file/json.h" || 
-     "$f" -ef "core/file/nifti2.h" || 
+  [[ "$f" -ef "src/gui/shview/icons.h" ||
+     "$f" -ef "src/gui/shview/icons.cpp" ||
+     "$f" -ef "src/gui/mrview/icons.h" ||
+     "$f" -ef "src/gui/mrview/icons.cpp" ||
+     "$f" -ef "core/file/mgh.h" ||
+     "$f" -ef "core/file/json.h" ||
+     "$f" -ef "core/file/nifti2.h" ||
      "$f" -ef "core/signal_handler.h" ||
      "$f" -ef "core/signal_handler.cpp" ]] && continue
 
 
 
-  
+
   # process the file to strip comments, macros, etc:
   cat $f | \
 # remove C preprocessor macros:
@@ -36,13 +36,12 @@ for f in $(find cmd core src -type f -name '*.h' -o -name '*.cpp' | grep -v '_mo
 # remove C-style comments:
   perl -pe 's|/\*.*?\*/||g' | \
 # remove quoted strings:
-  perl -pe 's/(")(\\"|.)*?"//g' > .check_memalign.tmp
+  perl -pe 's/(")(\\"|.)*?"//g' > .check_syntax.tmp
 
 
 # detect classes not declared MEMALIGN or NOMEMALIGN:
-
-  res=$( 
-    cat .check_memalign.tmp | \
+  res=$(
+    cat .check_syntax.tmp | \
 # remove any text within a template declaration (i.e. within <>):
     perl -pe 's|<[^{};<]*?>||g' | \
 # and do it multiple times to handle nested declarations:
@@ -54,52 +53,62 @@ for f in $(find cmd core src -type f -name '*.h' -o -name '*.cpp' | grep -v '_mo
 # remove matches that correspond to an enum class declaration:
     grep -Ev '\benum\s*class\b' | \
 # remove matches that are properly specified:
-    grep -Ev '\b(class|struct)\b[^;{]*?{(\s*(MEMALIGN\s*\([^\)]*\)|NOMEMALIGN))' 
+    grep -Ev '\b(class|struct)\b[^;{]*?{(\s*(MEMALIGN\s*\([^\)]*\)|NOMEMALIGN))'
   )
 
-
 # detect any instances of std::vector:
-  res="$res"$( 
-    cat .check_memalign.tmp | \
+  res="$res"$(
+    cat .check_syntax.tmp | \
 # match for the parts we're interested in and output just the bits that match:
-    grep -Po '(?<!::)std::vector\b' 
+    grep -Po '(?<!::)std::vector\b'
   )
 
 # detect any instances of std::make_shared:
-  res="$res"$( 
-    cat .check_memalign.tmp | \
+  res="$res"$(
+    cat .check_syntax.tmp | \
 # match for the parts we're interested in and output just the bits that match:
-    grep -Po '(?<!::)std::make_shared\b' 
+    grep -Po '(?<!::)std::make_shared\b'
   )
 
 # detect any instances of "using namespace std;":
-  res="$res"$( 
-    cat .check_memalign.tmp | \
+  res="$res"$(
+    cat .check_syntax.tmp | \
 # match for the parts we're interested in and output just the bits that match:
-    grep -Po '\busing\s+namespace\s+std\s*;' 
+    grep -Po '\busing\s+namespace\s+std\s*;'
   )
 
+# detect any instances of std::abs (outside of the SFINAE call in core/types.h):
+  if [[ ! "$f" -ef "core/types.h" ]]; then
+    res="$res"$(
+      cat .check_syntax.tmp | \
+# match for the parts we're interested in and output just the bits that match:
+      grep -Po '(?<!::)std::abs\b'
+    )
+  fi
+
+
 # if anything is left after that, show it:
-  if [[ ! -z $res ]]; then 
+  if [[ ! -z $res ]]; then
     echo "################################### $f" >> $LOG
     echo "$res" >> $LOG
     retval=1
-  fi 
+  fi
 
 done
 
 
 # set exit code:
 if [[ $retval == 0 ]]; then
-  echo "OK" 
+  echo "OK"
   echo "no issues detected" >> $LOG
 else
-  echo "FAIL"
-  
+  echo "FAIL (see syntax.log for details)"
+
   echo "" >> $LOG
-  echo "Please add MEMALIGN() macro to the class declarations identified above,
-replace all occurrences of std::vector with MR::vector,
-and avoid use of std::make_shared" >> $LOG
+  echo "Please add MEMALIGN() or NOMEMALIGN macro to the class declarations
+  identified above, replace all occurrences of std::vector<> with MR::vector<>
+  (or just vector<>), avoid use of std::make_shared(), and replace all
+  instances of std::abs() with MR::abs() (or just abs())" >> $LOG
   exit 1
 fi
 

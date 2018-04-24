@@ -266,7 +266,7 @@ void check_and_update (Header& H, const conv_t conversion)
   // Decide whether the user needs to be warned about a poor diffusion encoding scheme
   if (regression.second)
     DEBUG ("Gradient of regression is " + str(regression.second) + "; threshold is " + str(grad_threshold));
-  if (std::abs(regression.second) > grad_threshold) {
+  if (abs(regression.second) > grad_threshold) {
     WARN ("Image \"" + H.name() + "\" may have been derived from poor directional encoding, or have some other underlying data problem");
     WARN ("(m!=0 to m==0 power ratio changing by " + str(2.0*regression.second) + " per even order)");
   }

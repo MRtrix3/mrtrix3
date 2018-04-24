@@ -64,7 +64,7 @@ namespace MR
           H.size(i) = Raw::fetch_<int16_t> (&NH.dim[i+1], is_BE);
           if (H.size (i) < 0) {
             INFO ("dimension along axis " + str (i) + " specified as negative in NIfTI-1.1 image \"" + H.name() + "\" - taking absolute value");
-            H.size(i) = std::abs (H.size (i));
+            H.size(i) = abs (H.size (i));
           }
           if (!H.size (i))
             H.size(i) = 1;
@@ -134,7 +134,7 @@ namespace MR
           H.spacing(i) = Raw::fetch_<float32> (&NH.pixdim[i+1], is_BE);
           if (H.spacing (i) < 0.0) {
             INFO ("voxel size along axis " + str (i) + " specified as negative in NIfTI-1.1 image \"" + H.name() + "\" - taking absolute value");
-            H.spacing(i) = std::abs (H.spacing (i));
+            H.spacing(i) = abs (H.spacing (i));
           }
         }
 
@@ -184,7 +184,7 @@ namespace MR
             // check voxel sizes:
             for (size_t axis = 0; axis != 3; ++axis) {
               if (size_t(ndim) > axis)
-                if (std::abs(H.spacing(axis) - std::sqrt (Math::pow2 (M(0,axis)) + Math::pow2 (M(1,axis)) + Math::pow2 (M(2,axis)))) > 1e-4) {
+                if (abs(H.spacing(axis) - std::sqrt (Math::pow2 (M(0,axis)) + Math::pow2 (M(1,axis)) + Math::pow2 (M(2,axis)))) > 1e-4) {
                     WARN ("voxel spacings inconsistent between NIFTI s-form and header field pixdim");
                     break;
                 }

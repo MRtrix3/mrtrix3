@@ -83,7 +83,7 @@ void run ()
         for (auto inner = Loop(3) (in); inner; ++inner)
           sum += in.value();
         if (!sum) continue;
-        if (std::abs (sum-1.0) > MAX_ERROR) {
+        if (abs (sum-1.0) > MAX_ERROR) {
           ++voxel_error_sum;
           if (voxels.valid()) {
             assign_pos_of (in, 0, 3).to (voxels);

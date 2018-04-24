@@ -159,7 +159,7 @@ namespace MR {
 
       class Max_abs { NOMEMALIGN
         public:
-          bool operator() (const default_type& a, const default_type& b) const { return (std::abs (a) > std::abs (b)); }
+          bool operator() (const default_type& a, const default_type& b) const { return (abs (a) > abs (b)); }
       };
 
       bool Segmenter::operator() (const SH_coefs& in, FOD_lobes& out) const {
@@ -212,7 +212,7 @@ namespace MR {
             // Changed handling of lobe merges
             // Merge lobes as they appear to be merged, but update the
             //   contents of retrospective_assignments accordingly
-            if (std::abs (i.first) / out[adj_lobes.back()].get_max_peak_value() > ratio_of_peak_value_to_merge) {
+            if (abs (i.first) / out[adj_lobes.back()].get_max_peak_value() > ratio_of_peak_value_to_merge) {
 
               std::sort (adj_lobes.begin(), adj_lobes.end());
               for (size_t j = 1; j != adj_lobes.size(); ++j)
@@ -393,7 +393,7 @@ namespace MR {
                 p = -p;
               p[2] = 0.0; // Force projection onto the tangent plane
 
-              const float dp = std::abs (mean_dir.dot (dir));
+              const float dp = abs (mean_dir.dot (dir));
               const float theta = (dp < 1.0) ? std::acos (dp) : 0.0;
               const float log_transform = theta ? (theta / std::sin (theta)) : 1.0;
               p *= log_transform;
