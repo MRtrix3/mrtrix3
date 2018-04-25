@@ -188,12 +188,8 @@ to do so, while the paper uses a simple (lower) 0.7 FA threshold.
 Due to the challenge of accurately aligning an anatomical image (e.g.
 T1-weighted image) with the diffusion data, including correction for distortions
 up to an accuracy on the order of magnitude of the spatial resolution of
-the anatomical image, as well as accurate spatial segmentation, this
+the diffusion image, as well as accurate spatial segmentation, this
 algorithm has more prerequisites than the ``dhollander`` algorithm.
-Furthermore, this algorithm was found to be *less* accurate than the
-``dhollander`` algorithm.
-See `Dhollander et al. (2016) <https://www.researchgate.net/publication/307863133_Unsupervised_3-tissue_response_function_estimation_from_single-shell_or_multi-shell_diffusion_MR_data_without_a_co-registered_T1_image>`__
-for more information on this topic.
 
 For more information, refer to the
 :ref:`msmt_5tt algorithm documentation <dwi2response_msmt_5tt>`.
