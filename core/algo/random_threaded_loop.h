@@ -17,6 +17,7 @@
 #define __algo_random_threaded_loop_h__
 
 #include "debug.h"
+#include "exception.h"
 #include "algo/loop.h"
 #include "algo/iterator.h"
 #include "thread.h"
@@ -178,8 +179,7 @@ namespace MR
               }
             } loop_thread = { shared, functor };
 
-            auto t = Thread::run (Thread::multi (loop_thread), "loop threads");
-            t.wait();
+            Thread::run (Thread::multi (loop_thread), "loop threads");
           }
 
 
@@ -194,6 +194,7 @@ namespace MR
               typename std::remove_reference<ImageType>::type...
                 > loop_thread (outer_loop.axes, inner_axes, functor, voxel_density, dimensions, vox...);
             run_outer (loop_thread, voxel_density, dimensions);
+            check_app_exit_code();
           }
 
       };

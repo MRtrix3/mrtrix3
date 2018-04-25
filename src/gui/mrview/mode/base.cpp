@@ -84,7 +84,7 @@ namespace MR
               cfloat value = image()->interpolate() ?
                 image()->trilinear_value (window().focus()) :
                 image()->nearest_neighbour_value (window().focus());
-              if (std::isfinite (std::abs (value)))
+              if (std::isfinite (abs (value)))
                 value_str += str(value);
               else
                 value_str += "?";
@@ -151,7 +151,7 @@ done_painting:
         void Base::mouse_press_event () { }
         void Base::mouse_release_event () { }
 
-        void Base::slice_move_event (float x) 
+        void Base::slice_move_event (float x)
         {
           const Projection* proj = get_current_projection();
           if (!proj) return;
@@ -192,7 +192,7 @@ done_painting:
           const Projection* proj = get_current_projection();
           if (!proj) return;
           set_target (target() - proj->screen_to_model_direction (window().mouse_displacement(), target()));
-          updateGL();
+          // updateGL(); # updateGL() causes pan gestures to remain in state Qt::GestureUpdated, never reaching Qt::GestureFinished on macOS
         }
 
 
@@ -266,18 +266,18 @@ done_painting:
         Math::Versorf Base::get_rotate_rotation () const
         {
           const Projection* proj = get_current_projection();
-          if (!proj) 
+          if (!proj)
             return Math::Versorf();
 
           QPoint dpos = window().mouse_displacement();
-          if (dpos.x() == 0 && dpos.y() == 0) 
+          if (dpos.x() == 0 && dpos.y() == 0)
             return Math::Versorf();
 
           Eigen::Vector3f x1 (window().mouse_position().x() - proj->x_position() - proj->width()/2,
                               window().mouse_position().y() - proj->y_position() - proj->height()/2,
                               0.0);
 
-          if (x1.norm() < 16.0f) 
+          if (x1.norm() < 16.0f)
             return Math::Versorf();
 
           Eigen::Vector3f x0 (dpos.x() - x1[0], dpos.y() - x1[1], 0.0);
@@ -297,7 +297,7 @@ done_painting:
 
         void Base::tilt_event ()
         {
-          if (snap_to_image()) 
+          if (snap_to_image())
             window().set_snap_to_image (false);
 
           const Math::Versorf rot = get_tilt_rotation();
@@ -314,7 +314,7 @@ done_painting:
 
         void Base::rotate_event ()
         {
-          if (snap_to_image()) 
+          if (snap_to_image())
             window().set_snap_to_image (false);
 
           const Math::Versorf rot = get_rotate_rotation();
@@ -331,14 +331,14 @@ done_painting:
 
 
 
-        void Base::reset_event () 
-        { 
+        void Base::reset_event ()
+        {
           reset_view();
           updateGL();
         }
 
 
-        void Base::reset_view () 
+        void Base::reset_view ()
         {
           if (!image()) return;
           const Projection* proj = get_current_projection();

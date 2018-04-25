@@ -75,6 +75,7 @@ namespace MR
     vector<ParsedArgument> argument;
     vector<ParsedOption> option;
     int log_level = getenv("MRTRIX_QUIET") ? 0 : 1;
+    int exit_error_code = 0;
     bool fail_on_warn = false;
     bool terminal_use_colour = true;
 
@@ -201,6 +202,8 @@ namespace MR
           return ("tracks in");
         case TracksOut:
           return ("tracks out");
+        case Various:
+          return ("various");
         default:
           return ("undefined");
       }
@@ -462,6 +465,9 @@ namespace MR
           break;
         case TracksOut:
           stream << "TRACKSOUT";
+          break;
+        case Various:
+          stream << "VARIOUS";
           break;
         default:
           assert (0);

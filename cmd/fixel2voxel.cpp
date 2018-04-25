@@ -304,8 +304,8 @@ class AbsMax : protected Base
     {
       default_type absmax = -std::numeric_limits<default_type>::infinity();
       for (auto f = Base::Loop (index) (data); f; ++f) {
-        if (!f.padding() && std::abs (data.value()) > absmax)
-          absmax = std::abs (data.value());
+        if (!f.padding() && abs (data.value()) > absmax)
+          absmax = abs (data.value());
       }
       out.value() = std::isfinite (absmax) ? absmax : 0.0;
     }
@@ -322,7 +322,7 @@ class MagMax : protected Base
     {
       default_type magmax = 0.0;
       for (auto f = Base::Loop (index) (data); f; ++f) {
-        if (!f.padding() && std::abs (data.value()) > std::abs (magmax))
+        if (!f.padding() && abs (data.value()) > abs (magmax))
           magmax = data.value();
       }
       out.value() = std::isfinite (magmax) ? magmax : 0.0;
@@ -392,12 +392,12 @@ class DEC_unit : protected Base
       if (vol.valid()) {
         for (auto f = Base::Loop (index) (data, vol, dir); f; ++f) {
           if (!f.padding())
-            sum_dec += Eigen::Vector3 (std::abs (dir.row(1)[0]), std::abs (dir.row(1)[1]), std::abs (dir.row(1)[2])) * data.value() * vol.value();
+            sum_dec += Eigen::Vector3 (abs (dir.row(1)[0]), abs (dir.row(1)[1]), abs (dir.row(1)[2])) * data.value() * vol.value();
         }
       } else {
         for (auto f = Base::Loop (index) (data, dir); f; ++f) {
           if (!f.padding())
-            sum_dec += Eigen::Vector3 (std::abs (dir.row(1)[0]), std::abs (dir.row(1)[1]), std::abs (dir.row(1)[2])) * data.value();
+            sum_dec += Eigen::Vector3 (abs (dir.row(1)[0]), abs (dir.row(1)[1]), abs (dir.row(1)[2])) * data.value();
         }
       }
       if ((sum_dec.array() != 0.0).any())
@@ -426,7 +426,7 @@ class DEC_scaled : protected Base
         default_type sum_volume = 0.0;
         for (auto f = Base::Loop (index) (data, vol, dir); f; ++f) {
           if (!f.padding()) {
-            sum_dec += Eigen::Vector3 (std::abs (dir.row(1)[0]), std::abs (dir.row(1)[1]), std::abs (dir.row(1)[2])) * data.value() * vol.value();
+            sum_dec += Eigen::Vector3 (abs (dir.row(1)[0]), abs (dir.row(1)[1]), abs (dir.row(1)[2])) * data.value() * vol.value();
             sum_volume += vol.value();
             sum_value += vol.value() * data.value();
           }
@@ -437,7 +437,7 @@ class DEC_scaled : protected Base
       } else {
         for (auto f = Base::Loop (index) (data, dir); f; ++f) {
           if (!f.padding()) {
-            sum_dec += Eigen::Vector3 (std::abs (dir.row(1)[0]), std::abs (dir.row(1)[1]), std::abs (dir.row(1)[2])) * data.value();
+            sum_dec += Eigen::Vector3 (abs (dir.row(1)[0]), abs (dir.row(1)[1]), abs (dir.row(1)[2])) * data.value();
             sum_value += data.value();
           }
         }

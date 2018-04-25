@@ -44,6 +44,10 @@ if app.args.fsl:
 
   fast_cmd = fsl.exeName('fast')
 
+  app.warn('Use of -fsl option in dwibiascorrect script is discouraged due to its strong dependence ' + \
+           'on initial brain masking, and its inability to correct voxels outside of this mask.' + \
+           'Use of the -ants option is recommended for quantitative DWI analyses.')
+
 elif app.args.ants:
 
   if not find_executable('N4BiasFieldCorrection'):
@@ -107,8 +111,19 @@ elif app.args.ants:
   #   will have a smoothly-varying bias field correction applied, rather than multiplying by 1.0 outside the mask
   run.command('mrconvert mean_bzero.mif mean_bzero.nii -strides +1,+2,+3')
   run.command('mrconvert mask.mif mask.nii -strides +1,+2,+3')
-  bias_path = 'bias.nii'
-  run.command('N4BiasFieldCorrection -d 3 -i mean_bzero.nii -w mask.nii -o [corrected.nii,' + bias_path + '] -s 4 -b [100,3] -c [1000,0.0]')
+  init_bias_path = 'init_bias.nii'
+  corrected_path = 'corrected.nii'
+  run.command('N4BiasFieldCorrection -d 3 -i mean_bzero.nii -w mask.nii -o [' + corrected_path + ',' + init_bias_path + '] -s 4 -b [100,3] -c [1000,0.0]')
+
+  # N4 can introduce large differences between subjects via a global scaling of the bias field
+  # Estimate this scaling based on the total integral of the pre- and post-correction images within the brain mask
+  input_integral  = float(run.command('mrcalc mean_bzero.mif mask.mif -mult - | mrmath - sum - -axis 0 | mrmath - sum - -axis 1 | mrmath - sum - -axis 2 | mrdump -')[0])
+  output_integral = float(run.command('mrcalc ' + corrected_path + ' mask.mif -mult - | mrmath - sum - -axis 0 | mrmath - sum - -axis 1 | mrmath - sum - -axis 2 | mrdump -')[0])
+  app.var(input_integral, output_integral)
+  bias_path = 'bias.mif'
+  run.command('mrcalc ' + init_bias_path + ' ' + str(output_integral / input_integral) + ' -mult ' + bias_path)
+
+
 
 run.command('mrcalc in.mif ' + bias_path + ' -div result.mif')
 run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + (' -force' if app.forceOverwrite else ''))

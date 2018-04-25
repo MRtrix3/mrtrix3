@@ -40,6 +40,7 @@ namespace MR
 
     extern const char* mrtrix_version;
     extern int log_level;
+    extern int exit_error_code;
     extern std::string NAME;
     extern bool overwrite_files;
     extern void (*check_overwrite_files_func) (const std::string& name);
@@ -239,7 +240,16 @@ namespace MR
     class ParsedOption { NOMEMALIGN
       public:
         ParsedOption (const Option* option, const char* const* arguments) :
-          opt (option), args (arguments) { }
+            opt (option), args (arguments)
+        {
+          for (size_t i = 0; i != option->size(); ++i) {
+            if (arguments[i][0] == '-' && !((*option)[i].type == Integer || (*option)[i].type == Float || (*option)[i].type == IntSeq || (*option)[i].type == FloatSeq || (*option)[i].type == Various)) {
+              WARN (std::string("Value \"") + arguments[i] + "\" is being used as " +
+                    ((option->size() == 1) ? "the expected argument" : ("one of the " + str(option->size()) + " expected arguments")) +
+                    " for option \"-" + option->id + "\"; is this what you intended?");
+            }
+          }
+        }
 
         //! reference to the corresponding Option entry in the OPTIONS section
         const Option* opt;

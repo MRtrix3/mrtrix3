@@ -48,6 +48,7 @@ public:
                     bool use_special_colourmaps = true,
                     bool use_customise_state_items = true);
     void set_colourmap_index(size_t index);
+    void set_fixed_colour();
     vector<QAction*> colourmap_actions;
     void open_menu (const QPoint& p) { colourmap_menu->exec (p); }
 private:
@@ -66,6 +67,8 @@ private:
 
     QMenu* colourmap_menu;
     QAction* custom_colour_action;
+
+    size_t fixed_colour_index;
 
 
 private slots:

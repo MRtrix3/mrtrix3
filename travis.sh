@@ -6,10 +6,10 @@ set -ev
 
 case  $test in
   "sphinx")
-    $py -m sphinx -n -N -W -w sphinx.log -c docs/ docs/ tmp/
+    $py -m sphinx -n -N -W -w sphinx.log docs/ tmp/
     ;;
-  "memalign")
-    ./check_memalign
+  "syntax")
+    ./check_syntax
     ;;
   "pylint")
     # Normally rely on build script to create this file
@@ -17,10 +17,10 @@ case  $test in
     PYTHON=$py ./run_pylint
     ;;
   "build")
-    $py ./configure -nooptim && $py ./build -nowarnings
+    $py ./configure -nooptim && $py ./build -nowarnings -persistent
     ;;
   "run")
-    $py ./configure -assert && $py ./build -nowarnings && ./run_tests && ./docs/generate_user_docs.sh && git diff --exit-code docs/ > gitdiff.log
+    $py ./configure -assert && $py ./build -nowarnings -persistent && ./run_tests && ./docs/generate_user_docs.sh && git diff --exit-code docs/ > gitdiff.log
     ;;
   *)
     echo "Envvar \"test\" not defined";

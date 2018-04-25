@@ -41,13 +41,13 @@
 
 #ifdef GL_SHOW_DEBUG_MESSAGE
 # define GL_DEBUG(msg) DEBUG(msg)
-#else 
+#else
 # define GL_DEBUG(msg) (void)0
 #endif
 
 #ifdef NDEBUG
 # define GL_CHECK_ERROR
-#else 
+#else
 # define GL_CHECK_ERROR ::MR::GUI::GL::check_error (__FILE__, __LINE__)
 #endif
 
@@ -62,9 +62,7 @@ namespace MR
     namespace GL
     {
 
-      //! obtain byte offset as void pointer - used in various OpenGL calls
-      template<typename Type> 
-        inline constexpr void* offset (size_t num) { return reinterpret_cast<void*> (reinterpret_cast<Type*>(0) + num); }
+
 
 #if QT_VERSION >= 0x050400
 
@@ -73,12 +71,12 @@ namespace MR
       struct CheckContext { NOMEMALIGN
 # ifndef NDEBUG
         CheckContext () : __context (nullptr) { }
-        void grab_context () { 
-          __context = QOpenGLContext::currentContext(); 
+        void grab_context () {
+          __context = QOpenGLContext::currentContext();
         }
-        void check_context () const { 
-          assert (QOpenGLContext::currentContext()); 
-          assert (__context == QOpenGLContext::currentContext()); 
+        void check_context () const {
+          assert (QOpenGLContext::currentContext());
+          assert (__context == QOpenGLContext::currentContext());
         }
         QOpenGLContext* __context;
 # else
@@ -99,7 +97,7 @@ namespace MR
         void check_context () const { }
       };
 #endif
- 
+
       void init ();
       void set_default_context ();
 
@@ -116,11 +114,11 @@ namespace MR
 
       class Texture : CheckContext { NOMEMALIGN
         public:
-          Texture () : id (0) { }
+          Texture () : id (0), tex_type (0) { }
           ~Texture () { clear(); }
-          Texture (const Texture&) : id (0) { }
-          Texture (Texture&& t) : id (t.id), tex_type (t.tex_type) { t.id = 0; }
-          Texture& operator= (Texture&& t) { clear(); id = t.id; tex_type = t.tex_type; t.id = 0; return *this; }
+          Texture (const Texture&) : id (0), tex_type (0) { }
+          Texture (Texture&& t) : id (t.id), tex_type (t.tex_type) { t.id = t.tex_type = 0; }
+          Texture& operator= (Texture&& t) { clear(); id = t.id; tex_type = t.tex_type; t.id = t.tex_type = 0; return *this; }
           void cache_copy(const Texture& t) { id = t.id; tex_type = t.tex_type; }
           operator GLuint () const { return id; }
           void gen (GLenum target, GLint interp_type = gl::LINEAR) {
@@ -141,19 +139,20 @@ namespace MR
             }
           }
           GLenum type () const { return tex_type; }
-          void clear () { 
+          void clear () {
             if (id) {
               check_context();
               GL_DEBUG ("deleting OpenGL texture ID " + str(id));
-              gl::DeleteTextures (1, &id); 
+              gl::DeleteTextures (1, &id);
             }
             id = 0;
+            tex_type = 0;
           }
           void bind () const {
-            assert (id); 
+            assert (id);
             check_context();
             GL_DEBUG ("binding OpenGL texture ID " + str(id));
-            gl::BindTexture (tex_type, id); 
+            gl::BindTexture (tex_type, id);
           }
           void set_interp (GLint type) const {
             bind();
@@ -175,26 +174,26 @@ namespace MR
           VertexBuffer (VertexBuffer&& t) : id (t.id) { t.id = 0; }
           VertexBuffer& operator= (VertexBuffer&& t) { clear(); id = t.id; t.id = 0; return *this; }
           operator GLuint () const { return id; }
-          void gen () { 
+          void gen () {
             if (!id) {
               grab_context();
-              gl::GenBuffers (1, &id); 
+              gl::GenBuffers (1, &id);
               GL_DEBUG ("created OpenGL vertex buffer ID " + str(id));
             }
           }
-          void clear () { 
+          void clear () {
             if (id) {
               check_context();
               GL_DEBUG ("deleting OpenGL vertex buffer ID " + str(id));
-              gl::DeleteBuffers (1, &id); 
-              id = 0; 
+              gl::DeleteBuffers (1, &id);
+              id = 0;
             }
           }
           void bind (GLenum target) const {
-            assert (id); 
+            assert (id);
             check_context();
             GL_DEBUG ("binding OpenGL vertex buffer ID " + str(id));
-            gl::BindBuffer (target, id); 
+            gl::BindBuffer (target, id);
           }
         protected:
           GLuint id;
@@ -212,19 +211,19 @@ namespace MR
           void gen () {
             if (!id) {
               grab_context();
-              gl::GenVertexArrays (1, &id); 
+              gl::GenVertexArrays (1, &id);
               GL_DEBUG ("created OpenGL vertex array ID " + str(id));
             }
           }
-          void clear () { 
+          void clear () {
             if (id) {
               check_context();
               GL_DEBUG ("deleting OpenGL vertex array ID " + str(id));
-              gl::DeleteVertexArrays (1, &id); id = 0; 
+              gl::DeleteVertexArrays (1, &id); id = 0;
             }
           }
-          void bind () const { 
-            assert (id); 
+          void bind () const {
+            assert (id);
             check_context();
             GL_DEBUG ("binding OpenGL vertex array ID " + str(id));
             gl::BindVertexArray (id);
@@ -277,35 +276,35 @@ namespace MR
           FrameBuffer (FrameBuffer&& t) : id (t.id) { t.id = 0; }
           FrameBuffer& operator= (FrameBuffer&& t) { clear(); id = t.id; t.id = 0; return *this; }
           operator GLuint () const { return id; }
-          void gen () { 
+          void gen () {
             if (!id) {
               grab_context();
               gl::GenFramebuffers (1, &id);
               GL_DEBUG ("created OpenGL framebuffer ID " + str(id));
             }
           }
-          void clear () { 
+          void clear () {
             if (id) {
               check_context();
               GL_DEBUG ("deleting OpenGL framebuffer ID " + str(id));
-              gl::DeleteFramebuffers (1, &id); 
+              gl::DeleteFramebuffers (1, &id);
               unbind();
             }
             id = 0;
           }
           void bind () const {
-            assert (id); 
+            assert (id);
             check_context();
             GL_DEBUG ("binding OpenGL framebuffer ID " + str(id));
-            gl::BindFramebuffer (gl::FRAMEBUFFER, id); 
+            gl::BindFramebuffer (gl::FRAMEBUFFER, id);
           }
           void unbind () const {
             check_context();
             GL_DEBUG ("binding default OpenGL framebuffer");
 #if QT_VERSION >= 0x050400
-            gl::BindFramebuffer (gl::FRAMEBUFFER, QOpenGLContext::currentContext()->defaultFramebufferObject()); 
+            gl::BindFramebuffer (gl::FRAMEBUFFER, QOpenGLContext::currentContext()->defaultFramebufferObject());
 #else
-            gl::BindFramebuffer (gl::FRAMEBUFFER, 0); 
+            gl::BindFramebuffer (gl::FRAMEBUFFER, 0);
 #endif
           }
 

@@ -368,9 +368,9 @@ namespace MR
 
         int ROI::normal2axis (const Eigen::Vector3f& normal, const MR::Transform& transform) const
         {
-          float x_dot_n = std::abs ((transform.image2scanner.rotation().cast<float>() * Eigen::Vector3f { 1.0f, 0.0f, 0.0f }).dot (normal));
-          float y_dot_n = std::abs ((transform.image2scanner.rotation().cast<float>() * Eigen::Vector3f { 0.0f, 1.0f, 0.0f }).dot (normal));
-          float z_dot_n = std::abs ((transform.image2scanner.rotation().cast<float>() * Eigen::Vector3f { 0.0f, 0.0f, 1.0f }).dot (normal));
+          float x_dot_n = abs ((transform.image2scanner.rotation().cast<float>() * Eigen::Vector3f { 1.0f, 0.0f, 0.0f }).dot (normal));
+          float y_dot_n = abs ((transform.image2scanner.rotation().cast<float>() * Eigen::Vector3f { 0.0f, 1.0f, 0.0f }).dot (normal));
+          float z_dot_n = abs ((transform.image2scanner.rotation().cast<float>() * Eigen::Vector3f { 0.0f, 0.0f, 1.0f }).dot (normal));
           if (x_dot_n > y_dot_n)
             return x_dot_n > z_dot_n ? 0 : 2;
           else
@@ -882,7 +882,11 @@ namespace MR
             +   Argument ("image").type_image_in()
 
             + Option ("roi.opacity", "Sets the overlay opacity to floating value [0-1].").allow_multiple()
-            +   Argument ("value").type_float (0.0, 1.0);
+            +   Argument ("value").type_float (0.0, 1.0)
+
+            + Option ("roi.colour", "Sets the colour of the ROI overlay").allow_multiple()
+            +   Argument ("R,G,B").type_sequence_float();
+
         }
 
 
@@ -904,6 +908,23 @@ namespace MR
             try {
               float value = opt[0];
               opacity_slider->setSliderPosition(int(1.e3f*value));
+            }
+            catch (Exception& e) { e.display(); }
+            return true;
+          }
+
+          if (opt.opt->is ("roi.colour")) {
+            try {
+              auto values = parse_floats (opt[0]);
+              if (values.size() != 3)
+                throw Exception ("must provide exactly three comma-separated values to the -roi.colour option");
+              const float max_value = std::max ({ values[0], values[1], values[2] });
+              if (std::min ({ values[0], values[1], values[2] }) < 0.0 || max_value > 255)
+                throw Exception ("values provided to -roi.colour must be either between 0.0 and 1.0, or between 0 and 255");
+              const float multiplier = max_value <= 1.0 ? 255.0 : 1.0;
+              QColor colour (int(values[0] * multiplier), int(values[1]*multiplier), int(values[2]*multiplier));
+              colour_button->setColor (colour);
+              colour_changed();
             }
             catch (Exception& e) { e.display(); }
             return true;
