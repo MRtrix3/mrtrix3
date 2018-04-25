@@ -51,7 +51,8 @@ namespace MR
           if (rk4)
             throw Exception ("4th-order Runge-Kutta integration not valid for FACT algorithm");
 
-          set_step_size (0.1);
+          set_step_size (0.1f);
+          set_cutoff (TCKGEN_DEFAULT_CUTOFF_FIXEL);
           // If user specifies the angle threshold manually, want to enforce this as-is at each step
           // If it's calculated automatically, it needs to be corrected for the fact that the permissible
           //   angle per step has been calculated within set_step_size(), but FACT will not curve at each

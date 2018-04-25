@@ -59,7 +59,7 @@ Streamlines tractography options
 
 -  **-maxlength value** set the maximum length of any track in mm (default is 100 x voxelsize).
 
--  **-cutoff value** set the FA or FOD amplitude cutoff for terminating tracks (default is 0.1).
+-  **-cutoff value** set the FOD amplitude / fixel size / tensor FA cutoff for terminating tracks (defaults are: 0.05 for FOD-based algorithms; 0.05 for fixel-based algorithms; 0.1 for tensor-based algorithms).
 
 -  **-trials number** set the maximum number of sampling trials at each point (only used for probabilistic tracking).
 
