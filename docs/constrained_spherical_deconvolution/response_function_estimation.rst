@@ -171,7 +171,7 @@ For more information, refer to the
 This algorithm is a reimplementation of the strategy proposed in
 `Jeurissen et al. (2014) <http://www.sciencedirect.com/science/article/pii/S1053811914006442>`__
 to estimate multi b-value response functions of single-fibre
-white matter (*anisotropic*), grey matter and CSF( both *isotropic*),
+white matter (*anisotropic*), grey matter and CSF (both *isotropic*),
 which can subsequently be used for multi-tissue (constrained) spherical
 deconvolution. The algorithm is primarily driven by a prior ('5TT')
 tissue segmentation, typically obtained from a spatially aligned anatomical
@@ -185,11 +185,12 @@ is the criterion to extract single-fibre voxels from the white matter
 segmentation: this implementation calls upon the ``tournier`` algorithm
 to do so, while the paper uses a simple (lower) 0.7 FA threshold.
 
-Due to the challenge of accurately aligning an anatomical image (e.g.
-T1-weighted image) with the diffusion data, including correction for distortions
-up to an accuracy on the order of magnitude of the spatial resolution of
-the diffusion image, as well as accurate spatial segmentation, this
-algorithm has more prerequisites than the ``dhollander`` algorithm.
+The input tissue segmentation can be estimated from a coregistered structural 
+scan (e.g. a T1-weighted image) using the :ref:`5ttgen script <5ttgen>`.
+
+Due to the need of coregistering the anatomical image with the diffusion data, 
+correcting the diffusion data for EPI distortions, and prior tissue segmentation, 
+this algorithm has more prerequisites than the ``dhollander`` algorithm.
 
 For more information, refer to the
 :ref:`msmt_5tt algorithm documentation <dwi2response_msmt_5tt>`.
