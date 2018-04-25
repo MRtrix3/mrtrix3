@@ -1,6 +1,8 @@
 Beginner DWI tutorial
 =====================
 
+.. WARNING:: This tutorial is not intended to show the optimal or even recommended way of processing. It is merely a simplified example, intended to familiarise the user with the typical command line interface of certain basic processing steps.
+
 This tutorial will hopefully provide enough information for a novice
 user to get from the raw DW image data to performing some streamlines
 tractography. It may also be useful for experienced MRtrix users in
@@ -48,7 +50,7 @@ Response function estimation
 To perform spherical deconvolution, the DWI signal emanating from a
 single coherently-oriented fibre bundle must be estimated. We provide a
 script for doing this, which has :ref:`a range of algorithms and
-parameters <response_fn_estimation>`. This example will use
+parameters <response_function_estimation>`. This example will use
 fairly sensible defaults:
 
 .. code::
