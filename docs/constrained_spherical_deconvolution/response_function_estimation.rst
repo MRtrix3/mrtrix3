@@ -178,7 +178,7 @@ This algorithm is a reimplementation of the strategy proposed in
 to estimate multi b-value response functions of single-fibre
 white matter (*anisotropic*), grey matter and CSF (both *isotropic*),
 which can subsequently be used for multi-tissue (constrained) spherical
-deconvolution. The algorithm is primarily driven by a prior ('5TT')
+deconvolution. The algorithm is primarily driven by a prior (:ref:`5TT`)
 tissue segmentation, typically obtained from a spatially aligned anatomical
 image. This also requires prior correction for susceptibility-induced (EPI)
 distortions of the DWI dataset. The algorithm selects voxels with a
@@ -190,23 +190,15 @@ is the criterion to extract single-fibre voxels from the white matter
 segmentation: this implementation calls upon the ``tournier`` algorithm
 to do so, while the paper uses a simple (lower) 0.7 FA threshold.
 
-The input tissue segmentation can be estimated from a coregistered structural 
-scan (e.g. a T1-weighted image) using the :ref:`5ttgen script <5ttgen>`.
+The input tissue segmentation can be estimated using the same :ref:`pre-processing
+pipeline <act_preproc>` as required for :ref:`act`, namely: correction for
+motion and (EPI and other) distortions present in the diffusion MR data,
+registration of the structural to (corrected) EPI data, and accurate spatial
+segmentation of the anatomical image. Please refer to the instructions on the
+:ref:`act_preproc` to obtain the requisite 5TT tissue segmentation. 
 
-Due to the challenge of accurately aligning an anatomical image (e.g.
-T1-weighted image) with the diffusion MR data, including correction
-for motion and (EPI and other) distortions present in the diffusion MR data,
-as well as accurate spatial segmentation of the anatomical image,
-this algorithm has more prerequisites than the ``dhollander`` algorithm.
-Furthermore, in our experience, this algorithm often results in a *less*
-accurate selection of voxels for tissue response function calibration,
-compared to the ``dhollander`` algorithm.
-See `Dhollander et al. (2018a) <https://www.researchgate.net/publication/324770874_Accuracy_of_response_function_estimation_algorithms_for_3-tissue_spherical_deconvolution_of_diverse_quality_diffusion_MRI_data>`__
-for further insights into the nature of potential accuracy differences
-between the ``dhollander`` and ``msmt_5tt`` algorithms.
-
-For more information, refer to the
-:ref:`msmt_5tt algorithm documentation <dwi2response_msmt_5tt>`.
+For further information, refer to the
+:ref:`dwi2reponse msmt_5tt algorithm documentation <dwi2response_msmt_5tt>`.
 
 'tax' algorithm
 ^^^^^^^^^^^^^^^
