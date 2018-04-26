@@ -38,20 +38,21 @@ affected by spatial regularization.
 Per tissue response function estimation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Input response functions for single-fibre WM, GM and CSF can be estimated from 
-the data using any of the available multi-tissue `response function estimation 
-<response_function_estimation>`__ methods.
+Input response functions for single-fibre WM, GM and CSF can be estimated directly from the data.
+An up to date overview of our methods for responce function estimation can be found on the
+`response function estimation <response_function_estimation>`__ page.
 
 In the original global tractography paper (`Christiaens et al. (2015) <#references>`__), 
 response functions were estimated using a prior tissue segmentation obtained from a 
-coregistered structural T1 scan. This pipeline can be most closely replicated using the 
-``5ttgen`` and ``dwi2response msmt_5tt`` commands: 
+coregistered structural T1 scan. For the WM response, a further FA threshold was used.
+This pipeline can be most closely replicated using the 
+``5ttgen`` and ``dwi2response msmt_5tt`` commands in this fashion: 
 
 ::
 
   5ttgen fsl T1.mif 5tt.mif
-  dwi2response msmt_5tt dwi.mif 5tt.mif wm_response.txt gm_response.txt csf_response.txt
-	
+  dwi2response msmt_5tt dwi.mif 5tt.mif wm_response.txt gm_response.txt csf_response.txt -wm_algo fa
+
 where
 
 - ``T1.mif`` is a coregistered T1 data set from the same subject (input)
@@ -62,7 +63,7 @@ where
 
 - ``<tissue>_response.txt`` is the tissue-specific response function as used above (output)
 
-The difference between the default behaviour of ``dwi2response msmt_5tt`` and the method described in `Jeurissen et al. (2014) <#references>`__ and `Christiaens et al. (2015) <#references>`__ is that instead of selecting WM single-fibre voxels using an FA threshold, the ``dwi2response tournier`` algorithm is used.
+The difference between these instructions and the method described in `Christiaens et al. (2015) <#references>`__ is that instead of selecting WM single-fibre voxels using an absolute FA threshold of 0.75, the 300 voxels with the highest FA value inside the WM segmentation are used.
 
 Note that this process is dependent on accurate correction of EPI geometric distortions, and rigid-body registration between the DWI and T1 modalities, such that the T1 image can be reliably used to select pure-tissue voxels in the DWI volumes. Failure to achieve these may result in inappropriate voxels being used for response function estimation, with concomitant errors in tissue estimates.
 
@@ -142,5 +143,4 @@ References
    Orientation Distribution (TOD) based tractography.* NeuroImage, 94
    (2014), pp. 312–336 [`SD
    link <http://www.sciencedirect.com/science/article/pii/S1053811913012676>`__\ ]
-
 

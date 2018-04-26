@@ -55,34 +55,23 @@ The resulting WM FODs can be displayed together with the tissue signal contribut
 Per tissue response function estimation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Input response functions for single-fibre WM, GM and CSF can be estimated from 
-the data using any of the available multi-tissue `response function estimation 
-<response_function_estimation>`__ methods.
-
-In the original MT-CSD paper (`Jeurissen et al. (2014) <#references>`__), response
-functions were estimated using a prior tissue segmentation obtained from a coregistered 
-structural T1 scan. This pipeline can be most closely replicated using the ``5ttgen``
-and ``dwi2response msmt_5tt`` commands: 
+Input response functions for single-fibre WM, GM and CSF can be estimated directly from the data
+via the ``dwi2response dhollander`` algorithm (`Dhollander et al. (2016) <#references>`__):
 
 ::
 
-  5ttgen fsl T1.mif 5tt.mif
-  dwi2response msmt_5tt dwi.mif 5tt.mif wm_response.txt gm_response.txt csf_response.txt
-	
+   dwi2response dhollander dwi.mif wm_response.txt gm_response.txt csf_response.txt
+
+
 where
-
-- ``T1.mif`` is a coregistered T1 data set from the same subject (input)
-
-- ``5tt.mif`` is the resulting tissue type segmentation, used subsequently used in the response function estimation (output/input)
 
 - ``dwi.mif`` is the same dwi data set as used above (input)
 
 - ``<tissue>_response.txt`` is the tissue-specific response function as used above (output)
 
-The difference between the default behaviour of ``dwi2response msmt_5tt`` and the method described in `Jeurissen et al. (2014) <#references>`__ is that instead of selecting WM single-fibre voxels using an FA threshold, the ``dwi2response tournier`` algorithm is used.
+Note that the order of the tissue responses output by this algorithm is always: WM, GM, CSF.
 
-Note that this process is dependent on accurate correction of EPI geometric distortions, and rigid-body registration between the DWI and T1 modalities, such that the T1 image can be reliably used to select pure-tissue voxels in the DWI volumes. Failure to achieve these may result in inappropriate voxels being used for response function estimation, with concomitant errors in tissue estimates.
-
+See the `response function estimation <response_function_estimation>`__ page for more information on available methods.
 
 References
 ----------
