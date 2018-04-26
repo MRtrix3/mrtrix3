@@ -69,7 +69,7 @@ where
 
 Note that the order of the tissue responses output by this algorithm is always: WM, GM, CSF.
 
-See the <response_function_estimation>`__ page for more information on available methods.
+See the `response function estimation <response_function_estimation>`__ page for more information on available methods.
 
 References
 ----------
