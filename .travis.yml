@@ -110,7 +110,7 @@ before_cache:
   - rm -f $HOME/.cache/pip/log/debug.log
 after_failure:
   - |
-    case "${test}" in
+    case "${test}" in # CLICK HERE TO FIND REPORTED ERRORS
       "sphinx")
         cat sphinx.log
         ;;
