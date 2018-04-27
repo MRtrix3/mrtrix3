@@ -34,7 +34,7 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
   global _processes
 
   # Vectorise the command string, preserving anything encased within quotation marks
-  if os.sep is '/': # Cheap POSIX compliance check
+  if os.sep == '/': # Cheap POSIX compliance check
     cmdsplit = shlex.split(cmd)
   else: # Native Windows Python
     cmdsplit = [ entry.strip('\"') for entry in shlex.split(cmd, posix=False) ]

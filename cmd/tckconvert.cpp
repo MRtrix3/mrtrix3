@@ -600,11 +600,10 @@ RibWriter(const std::string& file, float radius = 0.1, bool dec = false) : out(f
           out << decIF.rdbuf();
           decIF.close();
         }
+
         out << " \"constantwidth\" " << radius << "\n";
-        out.close();
       }
 
-      out << " \"constantwidth\" " << radius << "\n";
       out.close();
 
       File::unlink (pointsFilename);
