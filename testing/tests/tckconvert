@@ -6,4 +6,3 @@ tckedit tracks.tck -number 10 tmp.tck -nthread 0 && tckconvert tmp.tck tmp-[].tx
 tckconvert tckconvert/out2-[2:9].txt tmp.tck -force && testing_diff_tck tmp.tck tckconvert/out3.tck 1e-4
 echo 1 2 3 > tmp.txt && tckconvert -force -quiet tmp.txt tmp.tck && tckconvert -quiet -force tmp.tck tmp.rib && [ $(wc -l < tmp.rib ) == 4 ]
 printf "# vtk DataFile Version 1.0\nBINARY\nDATASET POLYDATA\nPOINTS 0 float" > tmp.vtk && tckconvert -force -quiet tmp.vtk tmp.tck
-
