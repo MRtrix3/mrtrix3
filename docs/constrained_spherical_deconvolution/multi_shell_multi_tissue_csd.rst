@@ -19,9 +19,24 @@ interfaces.
 User guide
 ----------
 
-This command expects that suitable *multi-shell multi-tissue response functions*
+Prerequisites
+^^^^^^^^^^^^^
+
+MSMT-CSD relies on *multi-shell* high angular resolution diffusion imaging
+(HARDI) data, containing multiple *b*-values. The number of tissue types that can
+be resolved is limited by the number of *b*-values in the data (including
+*b*\=0). To resolve the three primary tissue types in the brain (WM, GM & CSF),
+the acquisition should contain at least 2 shells along with the *b*\=0 volumes
+(i.e. 3 unique *b*-values).
+
+In addition, this command expects that suitable *multi-shell multi-tissue response functions*
 have already been computed. A number of approaches are available for this,
 please refer to the :ref:`response_function_estimation` page for details.
+
+
+
+Invocation
+^^^^^^^^^^
 
 Multi-shell multi-tissue CSD can be performed as:
 

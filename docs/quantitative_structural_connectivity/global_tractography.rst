@@ -25,9 +25,22 @@ presented in [Jeurissen2014]_ to account for partial voluming.
 User guide
 ----------
 
-This command expects that suitable *multi-shell multi-tissue response functions*
-have already been computed. A number of approaches are available for this,
-please refer to the :ref:`response_function_estimation` page for details.
+Prerequisites
+^^^^^^^^^^^^^
+
+This global tractography implementation relies on *multi-shell* high angular
+resolution diffusion imaging (HARDI) data, containing at least 3 unique
+*b*-values (i.e 2 shells along with the *b*\=0 volumes). 
+
+In addition, this command expects that suitable *multi-shell multi-tissue
+response functions* have already been computed. A number of approaches are
+available for this, please refer to the :ref:`response_function_estimation`
+page for details.
+
+
+
+Invocation
+^^^^^^^^^^
 
 For multi-shell DWI data, the most common use will be:
 
