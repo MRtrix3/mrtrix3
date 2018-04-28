@@ -209,18 +209,19 @@ typically obtained from a spatially aligned anatomical image. This also
 requires prior correction for susceptibility-induced (EPI) distortions of the
 DWI dataset. The algorithm selects voxels with a segmentation partial volume of
 at least 0.95 for each tissue type.  Grey matter and CSF are further
-constrained by an (upper) 0.2 FA threshold.  A notable difference between this
-implementation and the algorithm described in [Jeurissen2014]_ is the criterion
-to extract single-fibre voxels from the white matter segmentation: this
-implementation calls upon the tournier_ algorithm to do so, while the paper
-uses a simple (lower) 0.7 FA threshold.
+constrained by an (upper) 0.2 FA threshold. Single-fibre voxels within the WM
+segment are then extracted using the tournier_ algorithm to do so (in contrast
+to original publication, see `Replicating original publications`_ below)
 
 The input tissue segmentation can be estimated using the same :ref:`pre-processing
 pipeline <act_preproc>` as required for :ref:`act`, namely: correction for
 motion and (EPI and other) distortions present in the diffusion MR data,
-registration of the structural to (corrected) EPI data, and accurate spatial
-segmentation of the anatomical image. Please refer to the instructions on the
-:ref:`act_preproc` to obtain the requisite 5TT tissue segmentation. 
+registration of the structural to (corrected) EPI data, and spatial
+segmentation of the anatomical image.  This process is therefore dependent on
+the accuracy of each of these steps, so that the T1 image can be reliably used
+to select pure-tissue voxels in the DWI volumes.  Failure to achieve these may
+result in inappropriate voxels being used for response function estimation,
+with concomitant errors in tissue estimates.
 
 For further information, refer to the
 :ref:`msmt_5tt algorithm documentation <dwi2response_msmt_5tt>`.
@@ -298,9 +299,9 @@ between the tournier_ and tax_ algorithms include:
    tax_ algorithm uses *all* 'single-fibre' voxels.
 
 Due to these differences, the tournier_ algorithm is currently believed to
-be more robust and accurate in a wider range of scenarios (for further
-information on this topic, refer to some of the discussions
-`here <https://github.com/MRtrix3/mrtrix3/issues/422>`__
+be more robust in a wider range of scenarios (for further information on this
+topic, refer to some of the discussions `here
+<https://github.com/MRtrix3/mrtrix3/issues/422>`__
 and `here <https://github.com/MRtrix3/mrtrix3/pull/426>`__).
 
 For more information, refer to the
@@ -312,36 +313,44 @@ For more information, refer to the
 
 
 Replicating original publications
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+---------------------------------
 
 For completeness, we provide below instructions for replicating the approaches
 used in previous relevant publications. Note that the implementations provided
-below are not *exactly* as published, but close approximations nonetheless. Any
-differences in implementation are highlighted where relevant.
+below are not necessarily *exactly* as published, but close approximations
+nonetheless. Any differences in implementation are highlighted where relevant.
 
 
-Constrained spherical deconvolution [Tournier2007]_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Spherical deconvolution and Constrained spherical deconvolution
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-FILL OUT
+In the original spherical deconvolution [Tournier2004]_ and constrained
+spherical deconvolution [Tournier2007]_ papers, the response function was
+estimated by extracting the 300 voxels with highest anisotroy within a brain
+mask, eroded to avoid noisy voxels near the edge of the brain. This can be
+performed using the fa_ method directly:
+
+.. code-block:: console
+
+  dwi2response fa dwi.mif response.txt
+
+where:
+
+- ``dwi.mif`` is the input DWI data set,
+
+- ``response.txt`` is the estimated response function, produced as output
 
 
-Multi-shell multi-tissue CSD [Jeurissen2014]_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-FILL OUT
+MSMT-CSD and Global tractography 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-
-
-
-Global tractography [Christiaens2015]_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-In the original global tractography paper [Christiaens2015]_ , response
-functions were estimated using a prior tissue segmentation obtained from a
-coregistered structural T1 scan. For the WM response, a further FA threshold
-was used.  This pipeline can be most closely replicated using the ``5ttgen``
-and ``dwi2response msmt_5tt`` commands in this fashion:
+In the original multi-shell multi-tissue CSD [Jeurissen2014]_ and global
+tractography [Christiaens2015]_ papers, response functions were estimated using
+a prior tissue segmentation obtained from a coregistered structural T1 scan.
+For the WM response, a further FA threshold was used.  This pipeline can be
+most closely replicated using the :ref:`5ttgen` command and msmt_5tt_ algorithm
+in this fashion:
 
 .. code-block:: console
 
@@ -358,30 +367,15 @@ where:
 
 - ``<tissue>_response.txt`` is the tissue-specific response function as used above (output)
 
-The difference between these instructions and the method described in
-[Christiaens2015]_ is that instead of selecting WM
-single-fibre voxels using an absolute FA threshold of 0.75, the 300 voxels with
-the highest FA value inside the WM segmentation are used.
-
-Note that this process is dependent on accurate correction of EPI geometric
-distortions, and rigid-body registration between the DWI and T1 modalities,
-such that the T1 image can be reliably used to select pure-tissue voxels in the
-DWI volumes. Failure to achieve these may result in inappropriate voxels being
-used for response function estimation, with concomitant errors in tissue
-estimates.
+One difference between these instructions and the methods as described in
+the respective publications is that instead of selecting WM single-fibre voxels
+_using an absolute FA threshold of 0.7 or 0.75, the 300 voxels with the highest FA
+value inside the WM segmentation are used.
 
 
 
 -------
 
-
-.. [Jeurissen2014] 1. B. Jeurissen, J.D. Tournier, T. Dhollander, A. Connelly, and J.  Sijbers. 
-   *Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data.* 
-   NeuroImage, 103 (2014), pp. 411–426 [`SD link <http://www.sciencedirect.com/science/article/pii/S1053811914006442>`__\ ]
-
-.. [Tournier2013] J.D. Tournier, F. Calamante, and A. Connelly.
-   *Determination of the appropriate b value and number of gradient directions for high-angular-resolution diffusion-weighted imaging.*
-   NMR Biomed., 26 (2013), pp.  1775-86 [`Wiley link <https://onlinelibrary.wiley.com/doi/abs/10.1002/nbm.3017>`__\ ]
  
 .. [Dhollander2016] T. Dhollander, D. Raffelt, and A. Connelly. 
    *Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image.* 
@@ -398,6 +392,22 @@ estimates.
    Proceedings of the International Society of Magnetic Resonance in Medicine, 26th annual meeting (2018) Paris, France.
    [`full text link <https://www.researchgate.net/publication/324770875_Feasibility_and_benefits_of_3-tissue_constrained_spherical_deconvolution_for_studying_the_brains_of_babies>`__\ ]
 
+.. [Jeurissen2014] 1. B. Jeurissen, J.D. Tournier, T. Dhollander, A. Connelly, and J.  Sijbers. 
+   *Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data.* 
+   NeuroImage, 103 (2014), pp. 411–426 [`SD link <http://www.sciencedirect.com/science/article/pii/S1053811914006442>`__\ ]
+
 .. [Tax2014] C.M.W. Tax, B. Jeurissen, S.B.Vos, M.A. Viergever, and A. Leemans.
    *Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data.*
-   NeuroImage, 86 (2014), pp. 67-80 [`SD link <http://www.sciencedirect.com/science/article/pii/S1053811913008367>`__\ ]
+   NeuroImage, 86 (2014), pp. 67-80 [`SD link <https://www.sciencedirect.com/science/article/pii/S1053811913008367>`__\ ]
+
+.. [Tournier2004] J-D. Tournier, F. Calamante, D.G. Gadian, and A. Connelly.
+   *Direct estimation of the fiber orientation density function from diffusion-weighted MRI data using spherical deconvolution.*
+   NeuroImage, 23 (2004), pp. 1176-85 [`SD link <https://www.sciencedirect.com/science/article/pii/S1053811904004100>`__\ ]
+
+.. [Tournier2007] J-D. Tournier, F. Calamante, and A. Connelly.
+   *Robust determination of the fibre orientation distribution in diffusion MRI: non-negativity constrained super-resolved spherical deconvolution.*
+   Neuroimage, 35 (2007), pp. 1459-72. [`SD link <https://www.sciencedirect.com/science/article/pii/S1053811907001243?via%3Dihub>`__\ ]euroImage, 86 (2014), pp. 67-80 [`SD link <http://www.sciencedirect.com/science/article/pii/S1053811913008367>`__\ ]
+
+.. [Tournier2013] J.D. Tournier, F. Calamante, and A. Connelly.
+   *Determination of the appropriate b value and number of gradient directions for high-angular-resolution diffusion-weighted imaging.*
+   NMR Biomed., 26 (2013), pp.  1775-86 [`Wiley link <https://onlinelibrary.wiley.com/doi/abs/10.1002/nbm.3017>`__\ ]
