@@ -56,6 +56,7 @@ These applications have been written from scratch in C++, using the functionalit
    :caption: Constrained Spherical Deconvolution
 
    constrained_spherical_deconvolution/response_function_estimation
+   constrained_spherical_deconvolution/csd
    constrained_spherical_deconvolution/multi_shell_multi_tissue_csd
 
 .. toctree::

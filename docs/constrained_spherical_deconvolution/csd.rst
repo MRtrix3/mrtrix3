@@ -8,7 +8,7 @@ Introduction
 
 Constrained Spherical Deconvolution (CSD) estimates the fibre Orientation
 Distribution Function (fODF) based on an estimate of the signal expected for
-single-fibre population (the so-called *response function*) [Tournier2007].
+single-fibre population (the so-called *response function*) [Tournier2007]_.
 This is used as the kernel in a deconvolution operation to extract the fODF
 from dMRI signal measured within each voxel. 
 
