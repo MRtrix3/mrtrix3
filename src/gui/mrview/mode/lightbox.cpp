@@ -169,6 +169,8 @@ namespace MR
           }
 
           for (ssize_t i = current_slice_index; i >= 0; --i) {
+            if (current_slice_index >= ssize_t(n_rows * n_cols))
+              continue;
             current_slice_index = i;
             if (volume_indices[i] >= 0)
               break;
@@ -193,6 +195,7 @@ namespace MR
 
         void LightBox::paint(Projection&)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           GLint x = projection.x_position(), y = projection.y_position();
           GLint w = projection.width(), h = projection.height();
           GLfloat dw = w / (float)n_cols, dh = h / (float)n_rows;
