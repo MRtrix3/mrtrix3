@@ -60,11 +60,3 @@ The resulting WM fODFs can be displayed together with the mean fODF maps using:
 
    mrview fod.mif -odf.load_sh fod.mif
 
-
-
-
-----------
-
-.. [Tournier2007] J-D. Tournier, F. Calamante, and A. Connelly.
-   *Robust determination of the fibre orientation distribution in diffusion MRI: non-negativity constrained super-resolved spherical deconvolution.*
-   Neuroimage, 35 (2007), pp. 1459-72. [`SD link <https://www.sciencedirect.com/science/article/pii/S1053811907001243?via%3Dihub>`__\ ]

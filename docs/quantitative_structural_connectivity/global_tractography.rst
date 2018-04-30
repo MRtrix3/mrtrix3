@@ -115,25 +115,3 @@ their respective ``-riso`` kernels were provided.
 L1-penalty imposed by the particle potential.
 
 
-
-
-
-
-----------
-
-.. [Christiaens2015] D. Christiaens, M. Reisert, T. Dhollander, S. Sunaert, P. Suetens, and F. Maes. 
-   *Global tractography of multi-shell diffusion-weighted imaging data using a multi-tissue model.*
-   NeuroImage, 123 (2015) pp.  89–101 [`SD link <http://www.sciencedirect.com/science/article/pii/S1053811915007168>`__\ ]
-
-.. [Reisert2011] M. Reisert, I. Mader, C. Anastasopoulos, M. Weigel, S. Schnell, and V. Kiselev. 
-   *Global fiber reconstruction becomes practical.*
-   NeuroImage, 54 (2011) pp. 955–962 [`SD link <http://www.sciencedirect.com/science/article/pii/S1053811910011973>`__\ ]
-
-.. [Jeurissen2014] B. Jeurissen, J.D. Tournier, T. Dhollander, A. Connelly, and J.  Sijbers. 
-   *Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data.* 
-   NeuroImage, 103 (2014), pp. 411–426 [`SD link <http://www.sciencedirect.com/science/article/pii/S1053811914006442>`__\ ]
-
-.. [Dhollander2014] T. Dhollander, L. Emsell, W. Van Hecke, F. Maes, S. Sunaert, and P.  Suetens. 
-   *Track Orientation Density Imaging (TODI) and Track Orientation Distribution (TOD) based tractography.* 
-   NeuroImage, 94 (2014), pp. 312–336 [`SD link <http://www.sciencedirect.com/science/article/pii/S1053811913012676>`__\ ]
-
