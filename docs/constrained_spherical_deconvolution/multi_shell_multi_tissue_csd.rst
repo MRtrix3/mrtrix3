@@ -74,10 +74,3 @@ The resulting WM FODs can be displayed together with the tissue signal contribut
 
 
 
-
-----------
-
-.. [Jeurissen2014] B. Jeurissen, J.D. Tournier, T. Dhollander, A. Connelly, and J.  Sijbers. 
-   *Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data.* 
-   NeuroImage, 103 (2014), pp. 411–426 [`SD link <http://www.sciencedirect.com/science/article/pii/S1053811914006442>`__\ ]
-

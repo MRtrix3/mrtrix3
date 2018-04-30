@@ -124,4 +124,5 @@ These applications have been written from scratch in C++, using the functionalit
    reference/scripts_list
    reference/config_file_options
    reference/mrtrix2_equivalent_commands
+   reference/references
 
