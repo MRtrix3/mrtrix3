@@ -99,8 +99,8 @@ namespace MR
 
         void ROI_Item::load ()
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           MRView::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           bind();
           auto image = header().get_image<bool>();
           vector<GLubyte> data (image.size(0)*image.size(1));
