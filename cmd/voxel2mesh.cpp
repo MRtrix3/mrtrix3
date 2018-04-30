@@ -42,7 +42,7 @@ void usage ()
     "the intensity value of the isocontour(s) can instead be set manually using the -threhsold "
     "option."
 
-    "If the -blocky option is used, then the Marching Cubes algorithm will not be used. "
+  + "If the -blocky option is used, then the Marching Cubes algorithm will not be used. "
     "Instead, the input image will be interpreted as a binary mask image, and polygonal "
     "surfaces will be generated at the outer faces of the voxel clusters within the mask.";
 
