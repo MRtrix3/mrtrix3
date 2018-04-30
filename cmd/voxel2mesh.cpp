@@ -33,7 +33,18 @@ void usage ()
 {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Generate a mesh file from an image";
+  SYNOPSIS = "Generate a surface mesh representation from a voxel image";
+
+  DESCRIPTION +
+    "This command utilises the Marching Cubes algorithm to generate a polygonal surface "
+    "that represents the isocontour(s) of the input image at a particular intensity. By default, "
+    "an appropriate threshold will be determined automatically from the input image, however "
+    "the intensity value of the isocontour(s) can instead be set manually using the -threhsold "
+    "option."
+
+    "If the -blocky option is used, then the Marching Cubes algorithm will not be used. "
+    "Instead, the input image will be interpreted as a binary mask image, and polygonal "
+    "surfaces will be generated at the outer faces of the voxel clusters within the mask.";
 
   ARGUMENTS
   + Argument ("input",  "the input image.").type_image_in ()
@@ -42,8 +53,7 @@ void usage ()
   OPTIONS
   + Option ("blocky", "generate a \'blocky\' mesh that precisely represents the voxel edges")
 
-  + Option ("threshold", "manually set the intensity threshold at which the mesh will be generated "
-                         "(if omitted, a threshold will be determined automatically)")
+  + Option ("threshold", "manually set the intensity threshold for the Marching Cubes algorithm")
     + Argument ("value").type_float();
 }
 
@@ -59,14 +69,8 @@ void run ()
     Surface::Algo::image2mesh_blocky (input, mesh);
 
   } else {
-    default_type threshold = 0.0;
     auto input = Image<float>::open (argument[0]);
-    auto opt = get_options("threshold");
-    if ( opt.size() ) {
-      threshold = (default_type) opt[0][0];
-    } else {
-      threshold = Filter::estimate_optimal_threshold (input);
-    }
+    const default_type threshold = get_option_value ("threshold", Filter::estimate_optimal_threshold (input));
     Surface::Algo::image2mesh_mc (input, mesh, threshold);
 
   }
