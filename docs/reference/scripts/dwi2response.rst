@@ -89,7 +89,7 @@ dwi2response dhollander
 Synopsis
 --------
 
-Unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof)
+Use the Dhollander et al. (2016) algorithm for unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof)
 
 Usage
 --------
@@ -159,6 +159,8 @@ References
 ^^^^^^^^^^
 
 * Dhollander, T.; Raffelt, D. & Connelly, A. Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5
+
+* Dhollander, T.; Raffelt, D. & Connelly, A. Accuracy of response function estimation algorithms for 3-tissue spherical deconvolution of diverse quality diffusion MRI data. Proc Intl Soc Mag Reson Med, 2018, 26, 1569
 
 --------------
 
