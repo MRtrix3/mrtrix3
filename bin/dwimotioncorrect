@@ -88,34 +88,34 @@ app.gotoTempDir()
 
 
 # Make sure it's actually a DWI that's been passed
-dwi_sizes = image.headerField('in.mif', 'size').split()
+header = image.Header('in.mif')
+dwi_sizes = header.size()
 if len(dwi_sizes) != 4:
     app.error('Input image must be a 4D image')
-DW_scheme = image.headerField('in.mif', 'dwgrad').split('\n')
+DW_scheme = image.mrinfo('in.mif', 'dwgrad').split('\n')
 if len(DW_scheme) != int(dwi_sizes[3]):
     app.error('Input image does not contain valid DW gradient scheme')
 
 # Check PE table if field map is passed.
 if app.args.fieldmap:
-    PE_scheme = image.headerField('in.mif', 'petable').split('\n')
+    PE_scheme = image.mrinfo('in.mif', 'petable').split('\n')
     if len(PE_scheme) != int(dwi_sizes[3]):
         app.error('Input image does not contain valid phase encoding scheme')
 
 
 # Generate a brain mask if required, or check the mask if provided
 if app.args.mask:
-    mask_sizes = image.headerField('mask.mif', 'size').split()
-    if not mask_sizes[:3] == dwi_sizes[:3]:
+    if not image.match(header, 'mask.mif', max_dim=3):
         app.error('Provided mask image does not match input DWI')
 else:
     run.command('dwi2mask in.mif mask.mif')
 
 
 # Image dimensions
-dims = list(map(int, image.headerField('in.mif', 'size').split()))
-vox = list(map(float, image.headerField('in.mif', 'vox').split()))
+dims = list(map(int, header.size()))
+vox = list(map(float, header.spacing()))
 vu = round((vox[0]+vox[1])/2., 1)
-shells = [s.split('.')[0] for s in image.headerField('in.mif', 'shells').split()]
+shells = [s.split('.')[0] for s in image.mrinfo('in.mif', 'shell_bvalues').split()]
 
 
 # Set lmax
@@ -268,7 +268,7 @@ reconstep(0)
 # running reconstruction
 for k, it in enumerate(iters[:-1]):
     # basis update and rank reduction
-    basisupdatestep(k)
+    #basisupdatestep(k)
     rankreduxstep(k, it.scale)
     # slice weights
     sliceweightstep()
@@ -281,7 +281,7 @@ for k, it in enumerate(iters[:-1]):
 
 #   __________ Copy outputs __________
 
-run.command('mrconvert recon-'+str(len(iters)-1)+'.mif ' + path.fromUser(app.args.output, True) + (' -force' if app.force else ''))
+run.command('mrconvert recon-'+str(len(iters)-1)+'.mif ' + path.fromUser(app.args.output, True) + (' -force' if app.forceOverwrite else ''))
 
 if app.args.export_motion:
     run.command('cp motion.txt ' + path.fromUser(app.args.export_motion, True))

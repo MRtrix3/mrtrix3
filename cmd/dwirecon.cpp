@@ -79,7 +79,7 @@ void usage ()
 
   + PhaseEncoding::ImportOptions
 
-  + DWI::ShellOption
+  + DWI::ShellsOption
 
   + OptionGroup ("Output options")
 
