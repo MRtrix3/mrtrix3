@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <locale>
+#include <clocale>
 
 
 #include "app.h"
