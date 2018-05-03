@@ -385,11 +385,13 @@ Options specific to the 'msmt_5tt' algorithm
 
 - **-dirs** Manually provide the fibre direction in each voxel (a tensor fit will be used otherwise)
 
-- **-fa** Upper fractional anisotropy threshold for GM and CSF voxel selection
+- **-fa** Upper fractional anisotropy threshold for GM and CSF voxel selection (default: 0.2)
 
-- **-pvf** Partial volume fraction threshold for tissue voxel selection
+- **-pvf** Partial volume fraction threshold for tissue voxel selection (default: 0.95)
 
-- **-wm_algo algorithm** dwi2response algorithm to use for WM single-fibre voxel selection
+- **-wm_algo algorithm** dwi2response algorithm to use for WM single-fibre voxel selection (default: tournier)
+
+- **-sfwm_fa_threshold** Sets -wm_algo to fa and allows to specify a hard FA threshold for single-fibre WM voxels, which is passed to the -threshold option of the fa algorithm (warning: overrides -wm_algo option)
 
 Options common to all dwi2response algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

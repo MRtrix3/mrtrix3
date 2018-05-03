@@ -314,8 +314,8 @@ Replicating original publications
 
 For completeness, we provide below instructions for replicating the approaches
 used in previous relevant publications. Note that the implementations provided
-below are not necessarily *exactly* as published, but close approximations
-nonetheless. Any differences in implementation are highlighted where relevant.
+below are not necessarily *exactly* as published, but aim to be close
+approximations nonetheless.
 
 
 Spherical deconvolution and Constrained spherical deconvolution
@@ -323,9 +323,9 @@ Spherical deconvolution and Constrained spherical deconvolution
 
 In the original spherical deconvolution [Tournier2004]_ and constrained
 spherical deconvolution [Tournier2007]_ papers, the response function was
-estimated by extracting the 300 voxels with highest anisotroy within a brain
-mask, eroded to avoid noisy voxels near the edge of the brain. This can be
-performed using the fa_ method directly:
+estimated by extracting the 300 voxels with the highest FA values within a
+brain mask, eroded to avoid noisy voxels near the edge of the brain. This
+can be performed using the fa_ method directly:
 
 .. code-block:: console
 
@@ -345,14 +345,15 @@ MSMT-CSD and Global tractography
 In the original multi-shell multi-tissue CSD [Jeurissen2014]_ and global
 tractography [Christiaens2015]_ papers, response functions were estimated using
 a prior tissue segmentation obtained from a coregistered structural T1 scan.
-For the WM response, a further FA threshold was used.  This pipeline can be
-most closely replicated using the :ref:`5ttgen` command and msmt_5tt_ algorithm
-in this fashion:
+For the WM response, a further hard FA threshold was used: respectively 0.7 in
+the MSMT-CSD paper and 0.75 in the global tractography paper. This pipeline can be
+replicated using the :ref:`5ttgen` command and msmt_5tt_ algorithm with
+the ``-sfwm_fa_threshold`` option in this fashion:
 
 .. code-block:: console
 
   5ttgen fsl T1.mif 5tt.mif
-  dwi2response msmt_5tt dwi.mif 5tt.mif wm_response.txt gm_response.txt csf_response.txt -wm_algo fa
+  dwi2response msmt_5tt dwi.mif 5tt.mif wm_response.txt gm_response.txt csf_response.txt -sfwm_fa_threshold 0.7
 
 where:
 
@@ -364,9 +365,7 @@ where:
 
 - ``<tissue>_response.txt`` is the tissue-specific response function as used above (output)
 
-One difference between these instructions and the methods as described in
-the respective publications is that instead of selecting WM single-fibre voxels
-using an absolute FA threshold of 0.7 or 0.75, the 300 voxels with the highest FA
-value inside the WM segmentation are used.
+To replicate the global tractography paper, specify a value of 0.75
+instead of 0.7 as shown in the command line above.
 
 
