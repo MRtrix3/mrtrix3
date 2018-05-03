@@ -14,6 +14,7 @@
 
 
 #include <locale>
+#include <clocale>
 #include "gui/gui.h"
 
 namespace MR
