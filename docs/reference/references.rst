@@ -44,9 +44,18 @@ References
 
 .. [Tournier2007] J-D. Tournier, F. Calamante, and A. Connelly.
    *Robust determination of the fibre orientation distribution in diffusion MRI: non-negativity constrained super-resolved spherical deconvolution.*
-   Neuroimage, 35 (2007), pp. 1459-72. [`SD link <https://www.sciencedirect.com/science/article/pii/S1053811907001243?via%3Dihub>`__\ ]euroImage, 86 (2014), pp. 67-80 [`SD link <http://www.sciencedirect.com/science/article/pii/S1053811913008367>`__\ ]
+   Neuroimage, 35 (2007), pp. 1459-72. [`SD link <https://www.sciencedirect.com/science/article/pii/S1053811907001243>`__\ ]
 
 .. [Tournier2013] J.D. Tournier, F. Calamante, and A. Connelly.
    *Determination of the appropriate b value and number of gradient directions for high-angular-resolution diffusion-weighted imaging.*
    NMR Biomed., 26 (2013), pp.  1775-86 [`Wiley link <https://onlinelibrary.wiley.com/doi/abs/10.1002/nbm.3017>`__\ ]
+
+.. [Veraart2016a] J. Veraart, E. Fieremans, and D.S. Novikov.
+   *Diffusion MRI noise mapping using random matrix theory.* 
+   Magn. Res. Med. 76(5) (2016), pp. 1582-1593. [`Wiley link <https://doi.org/10.1002/mrm.26059>`__\ ]
+
+.. [Veraart2016b] J. Veraart, D.S. Novikov, D. Christiaens, B. Ades-aron, J. Sijbers, and E. Fieremans 
+   *Denoising of diffusion MRI using random matrix theory.*
+   NeuroImage 142 (2016), pp. 394-406. [`SD link <http://dx.doi.org/10.1016/j.neuroimage.2016.08.016>`__\ ]
+
 
