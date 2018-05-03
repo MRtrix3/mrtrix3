@@ -18,9 +18,6 @@ non-trivial. No single algorithm works for *any* possible scenario,
 although some have proven to be more widely applicable than others.
 
 
-
-
-
 General recommendations
 -----------------------
 
@@ -31,28 +28,28 @@ While many algorithms exist, the following appear to perform well in a wide
 range of scenarios, based on experience and testing from both developers and
 the `MRtrix3 community <http://community.mrtrix.org>`__:
 
-- **CSD:** If you intend to perform *single-tissue* :ref:`csd` (i.e. via
-  ``dwi2fod csd``), the tournier_ algorithm is a convenient and reliable way to
-  estimate the single-fibre white matter response function:
-  
-  .. code-block:: console
+**Single-tissue CSD:** If you intend to perform :ref:`single_tissue_csd` (i.e. via
+``dwi2fod csd``), the tournier_ algorithm is a convenient and reliable way to
+estimate the single-fibre white matter response function:
 
-     dwi2response tournier dwi.mif wm_response.txt
+.. code-block:: console
 
-  Other options include the fa_ or tax_ algorithms.
+   dwi2response tournier dwi.mif wm_response.txt
 
-- **MSMT-CSD or global tractography:** If you intend to perform a
-  *multi-tissue* analysis, such as :ref:`msmt_csd` (i.e. via ``dwi2fod
-  msmt_csd``) or :ref:`global_tractography` (i.e. via ``tckglobal``), the
-  dhollander_ algorithm is a convenient and reliable way to estimate the
-  single-fibre white matter response function as well as the grey matter and
-  CSF response functions:
-  
-  .. code-block:: console
+Other options include the fa_ or tax_ algorithms.
 
-     dwi2response dhollander dwi.mif wm_response.txt gm_response.txt csf_response.txt
+**Multi-tissue CSD or global tractography:** If you intend to perform a
+*multi-tissue* analysis, such as :ref:`msmt_csd` (i.e. via ``dwi2fod
+msmt_csd``) or :ref:`global_tractography` (i.e. via ``tckglobal``), the
+dhollander_ algorithm is a convenient and reliable way to estimate the
+single-fibre white matter response function as well as the grey matter and
+CSF response functions:
 
-  Another option is the msmt_5tt_ algorithm.
+.. code-block:: console
+
+   dwi2response dhollander dwi.mif wm_response.txt gm_response.txt csf_response.txt
+
+Other options include the msmt_5tt_ algorithm.
 
 Checking the results
 ^^^^^^^^^^^^^^^^^^^^
