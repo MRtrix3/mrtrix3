@@ -1,4 +1,4 @@
-.. single_tissue_csd:
+.. _single_tissue_csd:
 
 Single-tissue constrained spherical deconvolution
 =================================================
