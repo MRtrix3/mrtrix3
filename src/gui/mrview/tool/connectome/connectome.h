@@ -12,6 +12,8 @@
  * For more details, see http://www.mrtrix.org/
  */
 
+// FIXME
+// Edge visibility -> By nodes needs to be a separate check box & mechanism
 
 #ifndef __gui_mrview_tool_connectome_connectome_h__
 #define __gui_mrview_tool_connectome_connectome_h__
@@ -192,6 +194,7 @@ namespace MR
             QLabel *edge_visibility_threshold_label;
             AdjustButton *edge_visibility_threshold_button;
             QCheckBox *edge_visibility_threshold_invert_checkbox;
+            QCheckBox *edge_visibility_by_nodes_checkbox;
 
             QComboBox *edge_geometry_combobox;
             QLabel *edge_geometry_cylinder_lod_label;
