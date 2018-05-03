@@ -15,6 +15,8 @@
 
 #include <unistd.h>
 #include <fcntl.h>
+#include <locale>
+
 
 #include "app.h"
 #include "debug.h"
@@ -1134,6 +1136,9 @@ namespace MR
       if (Path::has_suffix (NAME, ".exe"))
         NAME.erase (NAME.size()-4);
 #endif
+
+      std::locale::global (std::locale::classic());
+      std::setlocale (LC_ALL, "C");
 
       srand (time (nullptr));
     }
