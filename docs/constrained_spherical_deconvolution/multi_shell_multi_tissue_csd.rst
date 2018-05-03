@@ -54,9 +54,8 @@ The resulting WM FODs can be displayed together with the tissue signal contribut
 Per tissue response function estimation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Input response functions for single-fibre WM, GM and CSF can be estimated directly from the data.
-The most convenient way of doing so, is via the ``dwi2response dhollander`` algorithm
-(`Dhollander et al. (2016) <#references>`__):
+Input response functions for single-fibre WM, GM and CSF can be estimated directly from the data
+via the ``dwi2response dhollander`` algorithm (`Dhollander et al. (2016) <#references>`__):
 
 ::
 
@@ -68,13 +67,9 @@ where
 
 - ``<tissue>_response.txt`` is the tissue-specific response function as used above (output)
 
-Note that the order of the tissue responses output for this algorithm is always: WM, GM, CSF.
+Note that the order of the tissue responses output by this algorithm is always: WM, GM, CSF.
 
-Other methods exist, notably ``dwi2response msmt_5tt``, but this requires a co-registered T1 volume
-and very accurate correction of EPI geometric distortions (both up to sub-voxel accuracy), as well as
-accurate segmentation of the T1 volume.
-Even then, still, ``dwi2response msmt_5tt`` may be less accurate than ``dwi2response dhollander``
-in a range of scenarios (`Dhollander et al. (2016) <#references>`__).
+See the `response function estimation <response_function_estimation>`__ page for more information on available methods.
 
 References
 ----------

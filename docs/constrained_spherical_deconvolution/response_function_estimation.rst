@@ -105,7 +105,7 @@ The following sections provide more details on each algorithm specifically.
 'dhollander' algorithm
 ^^^^^^^^^^^^^^^^^^^^^^
 
-This algorithm is the original implementation of the strategy proposed in
+This algorithm currently is the original implementation of the strategy proposed in
 `Dhollander et al. (2016) <https://www.researchgate.net/publication/307863133_Unsupervised_3-tissue_response_function_estimation_from_single-shell_or_multi-shell_diffusion_MR_data_without_a_co-registered_T1_image>`__
 to estimate multi b-value (single-shell + b=0, or multi-shell) response
 functions of single-fibre white matter (*anisotropic*), grey matter
@@ -118,12 +118,17 @@ to select the best voxels to estimate the response functions from.
 
 The algorithm has been succesfully tested in a wide range of conditions
 (overall data quality, pathology, developmental state of the subjects,
-animal data and ex-vivo data).  In almost all cases, it runs and performs
-well out of the box.  In exceptional cases where the anisotropy in the
-data is particularly low (*very* early development, ex-vivo data with low
-b-value, ...), it may be advisable to set the ``-fa`` parameter lower
-than its default value (of 0.2).  As always, check the ``-voxels`` option
-output in unusually (challenging) cases.
+animal data and ex-vivo data). Additional insights into a few specific
+aspects of its performance can be found in
+`Dhollander et al. (2018a) <https://www.researchgate.net/publication/324770874_Accuracy_of_response_function_estimation_algorithms_for_3-tissue_spherical_deconvolution_of_diverse_quality_diffusion_MRI_data>`__ .
+In almost all cases, it runs and performs well out of the box.
+In exceptional cases where the anisotropy in the data is particularly low
+(*very* early development, ex-vivo data with low b-value, ...), it may be
+advisable to set the ``-fa`` parameter lower than its default value (of 0.2).
+See `Dhollander et al. (2018b) <https://www.researchgate.net/publication/324770875_Feasibility_and_benefits_of_3-tissue_constrained_spherical_deconvolution_for_studying_the_brains_of_babies>`__
+for an example of a dataset where changing this parameter was required
+to obtain the best results.
+As always, check the ``-voxels`` option output in unusually (challenging) cases.
 
 
 For more information, refer to the
@@ -171,7 +176,7 @@ For more information, refer to the
 This algorithm is a reimplementation of the strategy proposed in
 `Jeurissen et al. (2014) <http://www.sciencedirect.com/science/article/pii/S1053811914006442>`__
 to estimate multi b-value response functions of single-fibre
-white matter (*anisotropic*), grey matter and CSF( both *isotropic*),
+white matter (*anisotropic*), grey matter and CSF (both *isotropic*),
 which can subsequently be used for multi-tissue (constrained) spherical
 deconvolution. The algorithm is primarily driven by a prior ('5TT')
 tissue segmentation, typically obtained from a spatially aligned anatomical
@@ -186,14 +191,16 @@ segmentation: this implementation calls upon the ``tournier`` algorithm
 to do so, while the paper uses a simple (lower) 0.7 FA threshold.
 
 Due to the challenge of accurately aligning an anatomical image (e.g.
-T1-weighted image) with the diffusion data, including correction for distortions
-up to an accuracy on the order of magnitude of the spatial resolution of
-the anatomical image, as well as accurate spatial segmentation, this
-algorithm has more prerequisites than the ``dhollander`` algorithm.
-Furthermore, this algorithm was found to be *less* accurate than the
-``dhollander`` algorithm.
-See `Dhollander et al. (2016) <https://www.researchgate.net/publication/307863133_Unsupervised_3-tissue_response_function_estimation_from_single-shell_or_multi-shell_diffusion_MR_data_without_a_co-registered_T1_image>`__
-for more information on this topic.
+T1-weighted image) with the diffusion MR data, including correction
+for motion and (EPI and other) distortions present in the diffusion MR data,
+as well as accurate spatial segmentation of the anatomical image,
+this algorithm has more prerequisites than the ``dhollander`` algorithm.
+Furthermore, in our experience, this algorithm often results in a *less*
+accurate selection of voxels for tissue response function calibration,
+compared to the ``dhollander`` algorithm.
+See `Dhollander et al. (2018a) <https://www.researchgate.net/publication/324770874_Accuracy_of_response_function_estimation_algorithms_for_3-tissue_spherical_deconvolution_of_diverse_quality_diffusion_MRI_data>`__
+for further insights into the nature of potential accuracy differences
+between the ``dhollander`` and ``msmt_5tt`` algorithms.
 
 For more information, refer to the
 :ref:`msmt_5tt algorithm documentation <dwi2response_msmt_5tt>`.
