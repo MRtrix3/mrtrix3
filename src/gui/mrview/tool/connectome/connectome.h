@@ -12,8 +12,6 @@
  * For more details, see http://www.mrtrix.org/
  */
 
-// FIXME
-// Edge visibility -> By nodes needs to be a separate check box & mechanism
 
 #ifndef __gui_mrview_tool_connectome_connectome_h__
 #define __gui_mrview_tool_connectome_connectome_h__
