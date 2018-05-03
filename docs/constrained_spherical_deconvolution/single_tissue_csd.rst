@@ -1,14 +1,14 @@
-.. _csd:
+.. single_tissue_csd:
 
-constrained spherical deconvolution
-===================================
+Single-tissue constrained spherical deconvolution
+=================================================
 
 Introduction
 ------------
 
-Constrained Spherical Deconvolution (CSD) estimates the fibre Orientation
-Distribution Function (fODF) based on an estimate of the signal expected for
-single-fibre population (the so-called *response function*) [Tournier2007]_.
+Single-tissue constrained Spherical Deconvolution (CSD) estimates the fibre
+Orientation Distribution Function (fODF) based on an estimate of the signal
+expected for a single-fibre population (the so-called *response function*) [Tournier2007]_.
 This is used as the kernel in a deconvolution operation to extract the fODF
 from dMRI signal measured within each voxel. 
 
@@ -19,22 +19,21 @@ User guide
 Prerequisites
 ^^^^^^^^^^^^^
 
-CSD relies on *single-shell* high angular resolution diffusion imaging
-(HARDI) data, containing at least one non-zero *b*-value. Ideally, the
+Single-tissue CSD relies on *single-shell* high angular resolution diffusion
+imaging (HARDI) data, containing at least one non-zero *b*-value. Ideally, the
 *b*-value used should be in the region of 2,500 -- 3,000 s/mm² (for *in vivo*
 brain), although good results can still be obtained using more routine *b* =
 1000 s/mm² data.
 
-In addition, this command expects that a suitable *single-shell 
-response function* has already been computed. A number of approaches are
-available for this, please refer to the :ref:`response_function_estimation`
-page for details.
+In addition, this command expects that a suitable *single-shell single-tissue
+response function* has already been computed.
+Please refer to the :ref:`response_function_estimation` page for details.
 
 
 Invocation
 ^^^^^^^^^^
 
-CSD can be performed as:
+Single-tissue CSD can be performed as:
 
 .. code-block:: console
 
