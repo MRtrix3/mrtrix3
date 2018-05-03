@@ -474,8 +474,15 @@ namespace MR
           hlayout->addWidget (edge_visibility_threshold_invert_checkbox);
           gridlayout->addWidget (edge_visibility_threshold_controls, 1, 1, 1, 4);
 
+          edge_visibility_by_nodes_checkbox = new QCheckBox("Hide edges to invisible nodes");
+          edge_visibility_by_nodes_checkbox->setToolTip (tr ("Toggle whether or not an edge that connects to an invisible node (whether hidden through \"visibility\" or \"transparency\" features) should also be made invisible"));
+          edge_visibility_by_nodes_checkbox->setTristate (false);
+          edge_visibility_by_nodes_checkbox->setChecked (true);
+          connect (edge_visibility_by_nodes_checkbox, SIGNAL (stateChanged(int)), this, SLOT (edge_visibility_parameter_slot()));
+          gridlayout->addWidget (edge_visibility_by_nodes_checkbox, 2, 1, 1, 4);
+
           label = new QLabel ("Geometry: ");
-          gridlayout->addWidget (label, 2, 0, 1, 2);
+          gridlayout->addWidget (label, 3, 0, 1, 2);
           edge_geometry_combobox = new QComboBox (this);
           edge_geometry_combobox->setToolTip (tr ("The geometry used to draw each edge"));
           edge_geometry_combobox->addItem ("Line");
@@ -483,7 +490,7 @@ namespace MR
           edge_geometry_combobox->addItem ("Streamline");
           edge_geometry_combobox->addItem ("Streamtube");
           connect (edge_geometry_combobox, SIGNAL (activated(int)), this, SLOT (edge_geometry_selection_slot (int)));
-          gridlayout->addWidget (edge_geometry_combobox, 2, 2);
+          gridlayout->addWidget (edge_geometry_combobox, 3, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -504,10 +511,10 @@ namespace MR
           edge_geometry_line_smooth_checkbox->setTristate (false);
           connect (edge_geometry_line_smooth_checkbox, SIGNAL (stateChanged(int)), this, SLOT(edge_size_value_slot()));
           hlayout->addWidget (edge_geometry_line_smooth_checkbox, 1);
-          gridlayout->addLayout (hlayout, 2, 3, 1, 2);
+          gridlayout->addLayout (hlayout, 3, 3, 1, 2);
 
           label = new QLabel ("Colour: ");
-          gridlayout->addWidget (label, 3, 0, 1, 2);
+          gridlayout->addWidget (label, 4, 0, 1, 2);
           edge_colour_combobox = new QComboBox (this);
           edge_colour_combobox->setToolTip (tr ("Set how the colour of each edge is determined"));
           edge_colour_combobox->addItem ("Fixed");
@@ -516,7 +523,7 @@ namespace MR
           edge_colour_combobox->addItem ("Matrix file");
           edge_colour_combobox->setCurrentIndex (2);
           connect (edge_colour_combobox, SIGNAL (activated(int)), this, SLOT (edge_colour_selection_slot (int)));
-          gridlayout->addWidget (edge_colour_combobox, 3, 2);
+          gridlayout->addWidget (edge_colour_combobox, 4, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -528,7 +535,7 @@ namespace MR
           edge_colour_colourmap_button = new ColourMapButton (this, edge_colourmap_observer, false, false, true);
           edge_colour_colourmap_button->setToolTip (tr ("Select the colourmap for nodes"));
           hlayout->addWidget (edge_colour_colourmap_button, 1);
-          gridlayout->addLayout (hlayout, 3, 3, 1, 2);
+          gridlayout->addLayout (hlayout, 4, 3, 1, 2);
 
           edge_colour_range_controls = new QWidget (this);
           hlayout = new HBoxLayout;
@@ -549,17 +556,17 @@ namespace MR
           edge_colour_upper_button->setMax (std::numeric_limits<float>::max());
           connect (edge_colour_upper_button, SIGNAL (valueChanged()), this, SLOT (edge_colour_parameter_slot()));
           hlayout->addWidget (edge_colour_upper_button);
-          gridlayout->addWidget (edge_colour_range_controls, 4, 1, 1, 4);
+          gridlayout->addWidget (edge_colour_range_controls, 5, 1, 1, 4);
 
           label = new QLabel ("Size scaling: ");
-          gridlayout->addWidget (label, 5, 0, 1, 2);
+          gridlayout->addWidget (label, 6, 0, 1, 2);
           edge_size_combobox = new QComboBox (this);
           edge_size_combobox->setToolTip (tr ("Set how the width of each edge is determined"));
           edge_size_combobox->addItem ("Fixed");
           edge_size_combobox->addItem ("Connectome");
           edge_size_combobox->addItem ("Matrix file");
           connect (edge_size_combobox, SIGNAL (activated(int)), this, SLOT (edge_size_selection_slot (int)));
-          gridlayout->addWidget (edge_size_combobox, 5, 2);
+          gridlayout->addWidget (edge_size_combobox, 6, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -568,7 +575,7 @@ namespace MR
           edge_size_button->setMin (0.0f);
           connect (edge_size_button, SIGNAL (valueChanged()), this, SLOT (edge_size_value_slot()));
           hlayout->addWidget (edge_size_button, 1);
-          gridlayout->addLayout (hlayout, 5, 3, 1, 2);
+          gridlayout->addLayout (hlayout, 6, 3, 1, 2);
 
           edge_size_range_controls = new QWidget (this);
           hlayout = new HBoxLayout;
@@ -594,17 +601,17 @@ namespace MR
           connect (edge_size_invert_checkbox, SIGNAL (stateChanged(int)), this, SLOT (edge_size_parameter_slot()));
           hlayout->addWidget (edge_size_invert_checkbox);
           edge_size_range_controls->setVisible (false);
-          gridlayout->addWidget (edge_size_range_controls, 6, 1, 1, 4);
+          gridlayout->addWidget (edge_size_range_controls, 7, 1, 1, 4);
 
           label = new QLabel ("Transparency: ");
-          gridlayout->addWidget (label, 7, 0, 1, 2);
+          gridlayout->addWidget (label, 8, 0, 1, 2);
           edge_alpha_combobox = new QComboBox (this);
           edge_alpha_combobox->setToolTip (tr ("Set how edge transparency is determined"));
           edge_alpha_combobox->addItem ("Fixed");
           edge_alpha_combobox->addItem ("Connectome");
           edge_alpha_combobox->addItem ("Matrix file");
           connect (edge_alpha_combobox, SIGNAL (activated(int)), this, SLOT (edge_alpha_selection_slot (int)));
-          gridlayout->addWidget (edge_alpha_combobox, 7, 2);
+          gridlayout->addWidget (edge_alpha_combobox, 8, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -613,7 +620,7 @@ namespace MR
           edge_alpha_slider->setSliderPosition (1000);
           connect (edge_alpha_slider, SIGNAL (valueChanged (int)), this, SLOT (edge_alpha_value_slot (int)));
           hlayout->addWidget (edge_alpha_slider, 1);
-          gridlayout->addLayout (hlayout, 7, 3, 1, 2);
+          gridlayout->addLayout (hlayout, 8, 3, 1, 2);
 
           edge_alpha_range_controls = new QWidget (this);
           hlayout = new HBoxLayout;
@@ -639,7 +646,7 @@ namespace MR
           connect (edge_alpha_invert_checkbox, SIGNAL (stateChanged(int)), this, SLOT (edge_alpha_parameter_slot()));
           hlayout->addWidget (edge_alpha_invert_checkbox);
           edge_alpha_range_controls->setVisible (false);
-          gridlayout->addWidget (edge_alpha_range_controls, 8, 1, 1, 4);
+          gridlayout->addWidget (edge_alpha_range_controls, 9, 1, 1, 4);
 
           group_box = new QGroupBox ("Miscellaneous options");
           main_box->addWidget (group_box);
@@ -913,7 +920,7 @@ namespace MR
             calculate_node_sizes();
           if (node_alpha == node_alpha_t::CONNECTOME)
             calculate_node_alphas();
-          if (edge_visibility == edge_visibility_t::CONNECTOME)
+          if (edge_visibility == edge_visibility_t::CONNECTOME || ((node_visibility == node_visibility_t::CONNECTOME || node_alpha == node_alpha_t::CONNECTOME) && edge_visibility_by_nodes_checkbox->isChecked()))
             calculate_edge_visibility();
           if (edge_colour == edge_colour_t::CONNECTOME)
             calculate_edge_colours();
@@ -952,17 +959,7 @@ namespace MR
               break;
             case 2:
               if (node_visibility == node_visibility_t::DEGREE) return;
-              if (edge_visibility == edge_visibility_t::VISIBLE_NODES) {
-                QMessageBox::warning (QApplication::activeWindow(),
-                                      tr ("Visualisation error"),
-                                      tr ("Cannot have node visibility based on edges; edge visibility is based on nodes!"),
-                                      QMessageBox::Ok,
-                                      QMessageBox::Ok);
-                node_visibility_combobox->setCurrentIndex (0);
-                node_visibility = node_visibility_t::ALL;
-              } else {
-                node_visibility = node_visibility_t::DEGREE;
-              }
+              node_visibility = node_visibility_t::DEGREE;
               node_visibility_combobox->removeItem (6);
               node_visibility_matrix_operator_combobox->setVisible (false);
               node_visibility_threshold_controls->setVisible (false);
@@ -1055,6 +1052,8 @@ namespace MR
               return;
           }
           calculate_node_visibility();
+          if (edge_visibility_by_nodes_checkbox->isChecked())
+            calculate_edge_visibility();
           window().updateGL();
         }
 
@@ -1514,6 +1513,8 @@ namespace MR
           if (node_visibility == node_visibility_t::NONE)
             node_visibility_warning_icon->setVisible (true);
           calculate_node_alphas();
+          if (edge_visibility_by_nodes_checkbox->isChecked())
+            calculate_edge_visibility();
           window().updateGL();
         }
 
@@ -1527,11 +1528,15 @@ namespace MR
             default: assert (0); break;
           }
           calculate_node_visibility();
+          if (edge_visibility_by_nodes_checkbox->isChecked())
+            calculate_edge_visibility();
           window().updateGL();
         }
         void Connectome::node_visibility_parameter_slot()
         {
           calculate_node_visibility();
+          if (edge_visibility_by_nodes_checkbox->isChecked())
+            calculate_edge_visibility();
           window().updateGL();
         }
         void Connectome::sphere_lod_slot (int value)
@@ -1616,6 +1621,8 @@ namespace MR
             default: assert (0); break;
           }
           calculate_node_alphas();
+          if (edge_visibility_by_nodes_checkbox->isChecked())
+            calculate_edge_visibility();
           window().updateGL();
         }
         void Connectome::node_alpha_value_slot (int position)
@@ -1634,6 +1641,8 @@ namespace MR
           node_alpha_lower_button->blockSignals (false);
           node_alpha_upper_button->blockSignals (false);
           calculate_node_alphas();
+          if (edge_visibility_by_nodes_checkbox->isChecked())
+            calculate_edge_visibility();
           window().updateGL();
         }
 
@@ -1650,35 +1659,19 @@ namespace MR
             case 0:
               if (edge_visibility == edge_visibility_t::ALL) return;
               edge_visibility = edge_visibility_t::ALL;
-              edge_visibility_combobox->removeItem (5);
+              edge_visibility_combobox->removeItem (4);
               edge_visibility_threshold_controls->setVisible (false);
               break;
             case 1:
               if (edge_visibility == edge_visibility_t::NONE) return;
               edge_visibility = edge_visibility_t::NONE;
-              edge_visibility_combobox->removeItem (5);
+              edge_visibility_combobox->removeItem (4);
               edge_visibility_threshold_controls->setVisible (false);
               break;
             case 2:
-              if (edge_visibility == edge_visibility_t::VISIBLE_NODES) return;
-              if (node_visibility == node_visibility_t::DEGREE) {
-                QMessageBox::warning (QApplication::activeWindow(),
-                                      tr ("Visualisation error"),
-                                      tr ("Cannot have edge visibility based on nodes; node visibility is based on edges!"),
-                                      QMessageBox::Ok,
-                                      QMessageBox::Ok);
-                edge_visibility_combobox->setCurrentIndex (1);
-                edge_visibility = edge_visibility_t::NONE;
-              } else {
-                edge_visibility = edge_visibility_t::VISIBLE_NODES;
-              }
-              edge_visibility_combobox->removeItem (5);
-              edge_visibility_threshold_controls->setVisible (false);
-              break;
-            case 3:
               if (edge_visibility == edge_visibility_t::CONNECTOME) return;
               edge_visibility = edge_visibility_t::CONNECTOME;
-              edge_visibility_combobox->removeItem (5);
+              edge_visibility_combobox->removeItem (4);
               edge_visibility_threshold_controls->setVisible (true);
               {
                 float min = 0.0f, mean = 0.0f, max = 0.0f;
@@ -1690,22 +1683,21 @@ namespace MR
                 update_controls_edge_visibility (min, mean, max);
               }
               break;
-            case 4:
+            case 3:
               if (!import_matrix_file (edge_values_from_file_visibility, "edge visibility")) {
                 switch (edge_visibility) {
                   case edge_visibility_t::ALL:           edge_visibility_combobox->setCurrentIndex (0); return;
                   case edge_visibility_t::NONE:          edge_visibility_combobox->setCurrentIndex (1); return;
-                  case edge_visibility_t::VISIBLE_NODES: edge_visibility_combobox->setCurrentIndex (2); return;
-                  case edge_visibility_t::CONNECTOME:    edge_visibility_combobox->setCurrentIndex (3); return;
-                  case edge_visibility_t::MATRIX_FILE:   edge_visibility_combobox->setCurrentIndex (5); return;
+                  case edge_visibility_t::CONNECTOME:    edge_visibility_combobox->setCurrentIndex (2); return;
+                  case edge_visibility_t::MATRIX_FILE:   edge_visibility_combobox->setCurrentIndex (4); return;
                 }
               }
               edge_visibility = edge_visibility_t::MATRIX_FILE;
-              if (edge_visibility_combobox->count() == 5)
+              if (edge_visibility_combobox->count() == 4)
                 edge_visibility_combobox->addItem (edge_values_from_file_visibility.get_name());
               else
-                edge_visibility_combobox->setItemText (5, edge_values_from_file_visibility.get_name());
-              edge_visibility_combobox->setCurrentIndex (5);
+                edge_visibility_combobox->setItemText (4, edge_values_from_file_visibility.get_name());
+              edge_visibility_combobox->setCurrentIndex (4);
               edge_visibility_threshold_controls->setVisible (true);
               update_controls_edge_visibility (edge_values_from_file_visibility.get_min(), edge_values_from_file_visibility.get_mean(), edge_values_from_file_visibility.get_max());
               break;
@@ -2034,9 +2026,15 @@ namespace MR
           const std::string path = Dialog::File::get_file (this, std::string("Select lookup table file"));
           if (path.empty())
             return;
-          lut.clear();
+          if (lut.size()) {
+            lut.clear();
+            lut_button->blockSignals (true);
+            lut_button->setText ("(none)");
+            lut_button->blockSignals (false);
+          }
           try {
             lut.load (path);
+            lut_button->setText (QString::fromStdString (Path::basename (path)));
           } catch (Exception& e) {
             e.display();
             return;
@@ -2885,8 +2883,6 @@ namespace MR
 
           }
           update_node_overlay();
-          if (edge_visibility == edge_visibility_t::VISIBLE_NODES)
-            calculate_edge_visibility();
         }
 
         void Connectome::calculate_node_colours()
@@ -3309,11 +3305,6 @@ namespace MR
             for (auto i = edges.begin(); i != edges.end(); ++i)
               i->set_visible (false);
 
-          } else if (edge_visibility == edge_visibility_t::VISIBLE_NODES) {
-
-            for (auto i = edges.begin(); i != edges.end(); ++i)
-              i->set_visible (!i->is_diagonal() && nodes[i->get_node_index(0)].to_draw() && nodes[i->get_node_index(1)].to_draw());
-
           } else if (edge_visibility == edge_visibility_t::CONNECTOME) {
 
             QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
@@ -3349,6 +3340,14 @@ namespace MR
             }
 
           }
+
+          if (edge_visibility_by_nodes_checkbox->isChecked()) {
+            for (auto i = edges.begin(); i != edges.end(); ++i) {
+              if (!(nodes[i->get_node_index(0)].to_draw() && nodes[i->get_node_index(1)].to_draw()))
+                i->set_visible (false);
+            }
+          }
+
           if (node_visibility == node_visibility_t::DEGREE)
             calculate_node_visibility();
         }
@@ -3508,6 +3507,8 @@ namespace MR
               node_visibility_matrix_operator_combobox->setEnabled (false);
             }
             calculate_node_visibility();
+            if (edge_visibility_by_nodes_checkbox->isChecked())
+              calculate_edge_visibility();
           }
           if (node_colour == node_colour_t::CONNECTOME || node_colour == node_colour_t::MATRIX_FILE) {
             if (selected_node_count >= 2) {
@@ -3562,6 +3563,8 @@ namespace MR
               node_alpha_matrix_operator_combobox->setEnabled (false);
             }
             calculate_node_alphas();
+            if (edge_visibility_by_nodes_checkbox->isChecked())
+              calculate_edge_visibility();
           }
           window().updateGL();
         }
