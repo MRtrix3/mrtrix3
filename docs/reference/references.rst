@@ -5,11 +5,11 @@ References
 
 .. [Christiaens2015] D. Christiaens, M. Reisert, T. Dhollander, S. Sunaert, P. Suetens, and F. Maes. 
    *Global tractography of multi-shell diffusion-weighted imaging data using a multi-tissue model.*
-   NeuroImage, 123 (2015) pp.  89–101 [`SD link <http://www.sciencedirect.com/science/article/pii/S1053811915007168>`__\ ]
+   NeuroImage, 123 (2015) pp.  89–101 [`full text link <http://www.sciencedirect.com/science/article/pii/S1053811915007168>`__\ ]
 
 .. [Dhollander2014] T. Dhollander, L. Emsell, W. Van Hecke, F. Maes, S. Sunaert, and P.  Suetens. 
    *Track Orientation Density Imaging (TODI) and Track Orientation Distribution (TOD) based tractography.* 
-   NeuroImage, 94 (2014), pp. 312–336 [`SD link <http://www.sciencedirect.com/science/article/pii/S1053811913012676>`__\ ]
+   NeuroImage, 94 (2014), pp. 312–336 [`full text link <http://www.sciencedirect.com/science/article/pii/S1053811913012676>`__\ ]
 
 .. [Dhollander2016] T. Dhollander, D. Raffelt, and A. Connelly. 
    *Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image.* 
@@ -28,34 +28,34 @@ References
 
 .. [Jeurissen2014] B. Jeurissen, J.D. Tournier, T. Dhollander, A. Connelly, and J.  Sijbers. 
    *Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data.* 
-   NeuroImage, 103 (2014), pp. 411–426 [`SD link <http://www.sciencedirect.com/science/article/pii/S1053811914006442>`__\ ]
+   NeuroImage, 103 (2014), pp. 411–426 [`full text link <http://www.sciencedirect.com/science/article/pii/S1053811914006442>`__\ ]
 
 .. [Reisert2011] M. Reisert, I. Mader, C. Anastasopoulos, M. Weigel, S. Schnell, and V. Kiselev. 
    *Global fiber reconstruction becomes practical.*
-   NeuroImage, 54 (2011) pp. 955–962 [`SD link <http://www.sciencedirect.com/science/article/pii/S1053811910011973>`__\ ]
+   NeuroImage, 54 (2011) pp. 955–962 [`full text link <http://www.sciencedirect.com/science/article/pii/S1053811910011973>`__\ ]
 
 .. [Tax2014] C.M.W. Tax, B. Jeurissen, S.B.Vos, M.A. Viergever, and A. Leemans.
    *Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data.*
-   NeuroImage, 86 (2014), pp. 67-80 [`SD link <https://www.sciencedirect.com/science/article/pii/S1053811913008367>`__\ ]
+   NeuroImage, 86 (2014), pp. 67-80 [`full text link <https://www.sciencedirect.com/science/article/pii/S1053811913008367>`__\ ]
 
 .. [Tournier2004] J-D. Tournier, F. Calamante, D.G. Gadian, and A. Connelly.
    *Direct estimation of the fiber orientation density function from diffusion-weighted MRI data using spherical deconvolution.*
-   NeuroImage, 23 (2004), pp. 1176-85 [`SD link <https://www.sciencedirect.com/science/article/pii/S1053811904004100>`__\ ]
+   NeuroImage, 23 (2004), pp. 1176-85 [`full text link <https://www.sciencedirect.com/science/article/pii/S1053811904004100>`__\ ]
 
 .. [Tournier2007] J-D. Tournier, F. Calamante, and A. Connelly.
    *Robust determination of the fibre orientation distribution in diffusion MRI: non-negativity constrained super-resolved spherical deconvolution.*
-   Neuroimage, 35 (2007), pp. 1459-72. [`SD link <https://www.sciencedirect.com/science/article/pii/S1053811907001243>`__\ ]
+   Neuroimage, 35 (2007), pp. 1459-72. [`full text link <https://www.sciencedirect.com/science/article/pii/S1053811907001243>`__\ ]
 
 .. [Tournier2013] J.D. Tournier, F. Calamante, and A. Connelly.
    *Determination of the appropriate b value and number of gradient directions for high-angular-resolution diffusion-weighted imaging.*
-   NMR Biomed., 26 (2013), pp.  1775-86 [`Wiley link <https://onlinelibrary.wiley.com/doi/abs/10.1002/nbm.3017>`__\ ]
+   NMR Biomed., 26 (2013), pp.  1775-86 [`full text link <https://onlinelibrary.wiley.com/doi/abs/10.1002/nbm.3017>`__\ ]
 
 .. [Veraart2016a] J. Veraart, E. Fieremans, and D.S. Novikov.
    *Diffusion MRI noise mapping using random matrix theory.* 
-   Magn. Res. Med. 76(5) (2016), pp. 1582-1593. [`Wiley link <https://doi.org/10.1002/mrm.26059>`__\ ]
+   Magn. Res. Med. 76(5) (2016), pp. 1582-1593. [`full text link <https://doi.org/10.1002/mrm.26059>`__\ ]
 
 .. [Veraart2016b] J. Veraart, D.S. Novikov, D. Christiaens, B. Ades-aron, J. Sijbers, and E. Fieremans 
    *Denoising of diffusion MRI using random matrix theory.*
-   NeuroImage 142 (2016), pp. 394-406. [`SD link <http://dx.doi.org/10.1016/j.neuroimage.2016.08.016>`__\ ]
+   NeuroImage 142 (2016), pp. 394-406. [`full text link <http://dx.doi.org/10.1016/j.neuroimage.2016.08.016>`__\ ]
 
 
