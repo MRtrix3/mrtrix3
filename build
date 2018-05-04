@@ -125,7 +125,6 @@ lock = threading.Lock()
 print_lock = threading.Lock()
 stop = False
 error_stream = None
-current_line = 0
 main_cindex = 0
 
 logfile = open ('build.log', 'wb')
@@ -197,23 +196,11 @@ if sys.stderr.isatty():
 
 
 
-def disp (msg, line = -1):
-  global current_line
+def disp (msg):
   print_lock.acquire()
-  if line < 0:
-    this_line = current_line
-  else:
-    this_line = line
   logfile.write (msg.encode (errors='ignore'))
-  if line >= 0:
-    sys.stdout.write ('\033[s\r\033['+str(current_line - line)+'A')
   sys.stdout.write (msg)
-  if line < 0:
-    current_line += len (msg.splitlines())
-  else:
-    sys.stdout.write ('\033[u')
   print_lock.release()
-  return this_line
 
 
 
@@ -827,7 +814,7 @@ def fillin (template, keyvalue):
 
 
 def execute (message, cmd, working_dir=None):
-  line = disp ('\033[1m'+message+'\033[0m' + os.linesep)
+  disp (message + os.linesep)
   log (' '.join(cmd) + os.linesep)
 
   try:
@@ -835,7 +822,6 @@ def execute (message, cmd, working_dir=None):
     process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=environ, cwd=working_dir)
     ( stdout, stderr ) = process.communicate()
     end = timer()
-    disp (message + os.linesep, line)
     if timingfile is not None:
       logtime ('[{:>8.3f}s] '.format(end-start) + message + os.linesep)
 
