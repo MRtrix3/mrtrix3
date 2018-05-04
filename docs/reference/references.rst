@@ -48,7 +48,7 @@ References
    Brain, 141(3) (2018), pp. 888–902.
    [`full text link <http://dx.doi.org/10.1093/brain/awx355>`__\ ]
 
-.. [Mito2018b] R. Mito, T. Dhollander, Y. Xia, O. Salvado, A. Brodtmann, C.C. Rowe, V.L. Villemagne, and A. Connelly.
+.. [Mito2018b] R. Mito, T. Dhollander, D. Raffelt, Y. Xia, O. Salvado, A. Brodtmann, C.C. Rowe, V.L. Villemagne, and A. Connelly.
    *Investigating microstructural heterogeneity of white matter hyperintensities in Alzheimer’s disease using single-shell 3-tissue constrained spherical deconvolution.*
    Proceedings of the 26th annual meeting of the International Society of Magnetic Resonance in Medicine (2018), pp. 135.
    [`full text link <https://www.researchgate.net/publication/324771728_Investigating_microstructural_heterogeneity_of_white_matter_hyperintensities_in_Alzheimer's_disease_using_single-shell_3-tissue_constrained_spherical_deconvolution>`__\ ]
