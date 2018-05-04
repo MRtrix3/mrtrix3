@@ -47,7 +47,6 @@ namespace MR
             ssp (ssp), mask (mask), target (target),
             moving (moving, 0.0f), Dmoving (moving, 0.0f)
         {
-          DEBUG("Constructing LM registration functor.");
           m = calcMaskSize();
         }
         
@@ -126,8 +125,6 @@ namespace MR
         Image<Scalar> target;
         Interp::SplineInterp<Image<Scalar>, Math::HermiteSpline<Scalar>, Math::SplineProcessingType::Value> moving;
         Interp::SplineInterp<Image<Scalar>, Math::HermiteSpline<Scalar>, Math::SplineProcessingType::Derivative> Dmoving;
-        //Interp::LinearInterp<Image<Scalar>, Interp::LinearInterpProcessingType::Value> moving;
-        //Interp::LinearInterp<Image<Scalar>, Interp::LinearInterpProcessingType::Derivative> Dmoving;
         float scale;
 
         inline size_t calcMaskSize()
@@ -234,17 +231,26 @@ namespace MR
           : data (data), mssh (mssh), mask(mask), mb (mb), 
             maxiter (maxiter), lmax (Math::SH::LforN(mssh.size(4))),
             ssp (ssp)
-        { }
-      
+        {
+          Header header (mssh);
+          header.ndim() = 3;
+          pred = Image<float>::scratch(header);
+        }
+
+        SliceAlignPipe(const SliceAlignPipe& other)
+          : data (other.data), mssh (other.mssh), mask (other.mask), pred (),
+            mb (other.mb), maxiter (other.maxiter), lmax (other.lmax), ssp (other.ssp)
+        {
+          Header header (other.pred);
+          pred = Image<float>::scratch(header);
+        }
+
         bool operator() (const SliceIdx& slice, SliceIdx& out)
         {
           out = slice;
           // calculate dwi contrast
           Eigen::VectorXf delta;
           Math::SH::delta(delta, slice.bvec, lmax);
-          Header header (mssh);
-          header.ndim() = 3;
-          auto pred = Image<float>::scratch(header);
           mssh.index(3) = slice.bidx;
           for (auto l = Loop(0,3) (mssh, pred); l; l++)
           {
@@ -269,6 +275,7 @@ namespace MR
         Image<float> data;
         Image<float> mssh;
         Image<bool> mask;
+        Image<float> pred;
         const size_t mb, maxiter;
         const int lmax;
         const SSP<float> ssp;
