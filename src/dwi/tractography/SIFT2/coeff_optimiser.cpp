@@ -1,24 +1,17 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert Smith, 2013.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
 
 #include <mutex>
 
@@ -38,10 +31,9 @@ namespace MR {
 
 
 
-      CoefficientOptimiserBase::CoefficientOptimiserBase (TckFactor& tckfactor, /*const std::vector<float>& projected_steps,*/ StreamlineStats& step_stats, StreamlineStats& coefficient_stats, size_t& nonzero_streamlines, BitSet& fixels_to_exclude, double& sum_costs) :
+      CoefficientOptimiserBase::CoefficientOptimiserBase (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, double& sum_costs) :
             master (tckfactor),
             mu (tckfactor.mu()),
-            //projected_steps (projected_steps),
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
             total (0),
             failed (0),
@@ -65,7 +57,6 @@ namespace MR {
       CoefficientOptimiserBase::CoefficientOptimiserBase (const CoefficientOptimiserBase& that) :
             master (that.master),
             mu (that.mu),
-            //projected_steps (that.projected_steps),
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
             total (0),
             failed (0),
@@ -106,12 +97,7 @@ namespace MR {
 
         for (SIFT::track_t track_index = range.first; track_index != range.second; ++track_index) {
 
-          //const float this_projected_step = projected_steps[track_index];
-          //float dFs = 0.0;
-          //if (this_projected_step)
-          //  dFs = get_coeff_change (track_index, this_projected_step);
-
-          float dFs = get_coeff_change (track_index);
+          double dFs = get_coeff_change (track_index);
 
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
           ++total;
@@ -129,8 +115,8 @@ namespace MR {
 #endif
           }
 
-          const float old_coefficient = master.coefficients[track_index];
-          float new_coefficient = old_coefficient + dFs;
+          const double old_coefficient = master.coefficients[track_index];
+          double new_coefficient = old_coefficient + dFs;
           if (new_coefficient < master.min_coeff) {
             new_coefficient = master.min_coeff;
             dFs = master.min_coeff - old_coefficient;
@@ -183,7 +169,7 @@ namespace MR {
 
 
 
-      float CoefficientOptimiserBase::do_fixel_exclusion (const SIFT::track_t track_index)
+      double CoefficientOptimiserBase::do_fixel_exclusion (const SIFT::track_t track_index)
       {
         const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
 
@@ -240,17 +226,17 @@ namespace MR {
 
 
 
-      CoefficientOptimiserGSS::CoefficientOptimiserGSS (TckFactor& tckfactor, /*const std::vector<float>& projected_steps,*/ StreamlineStats& step_stats, StreamlineStats& coefficient_stats, size_t& nonzero_streamlines, BitSet& fixels_to_exclude, double& sum_costs) :
-            CoefficientOptimiserBase (tckfactor, /*projected_steps,*/ step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs) { }
+      CoefficientOptimiserGSS::CoefficientOptimiserGSS (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, double& sum_costs) :
+            CoefficientOptimiserBase (tckfactor, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs) { }
 
       CoefficientOptimiserGSS::CoefficientOptimiserGSS (const CoefficientOptimiserGSS& that) :
             CoefficientOptimiserBase (that) { }
 
-      float CoefficientOptimiserGSS::get_coeff_change (const SIFT::track_t track_index) const
+      double CoefficientOptimiserGSS::get_coeff_change (const SIFT::track_t track_index) const
       {
         LineSearchFunctor line_search_functor (track_index, master);
-        const float dFs = Math::golden_section_search (line_search_functor, std::string(""), -master.max_coeff_step, float(0.0), master.max_coeff_step, float(0.001 / (2.0 * master.max_coeff_step)));
-        const float cost = line_search_functor (dFs);
+        const double dFs = Math::golden_section_search (line_search_functor, std::string(""), -master.max_coeff_step, 0.0, master.max_coeff_step, 0.001 / (2.0 * master.max_coeff_step));
+        const double cost = line_search_functor (dFs);
         // The Golden Section Search doesn't check the endpoints; do that here
         // TODO Once GSS is turned into a functor, add this capability to it
         if ((dFs > 0.99 * master.max_coeff_step) && (line_search_functor (master.max_coeff_step) < cost))
@@ -266,8 +252,8 @@ namespace MR {
 
 
 
-      CoefficientOptimiserQLS::CoefficientOptimiserQLS (TckFactor& tckfactor, /*const std::vector<float>& projected_steps,*/ StreamlineStats& step_stats, StreamlineStats& coefficient_stats, size_t& nonzero_streamlines, BitSet& fixels_to_exclude, double& sum_costs) :
-            CoefficientOptimiserBase (tckfactor, /*projected_steps,*/ step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs),
+      CoefficientOptimiserQLS::CoefficientOptimiserQLS (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, double& sum_costs) :
+            CoefficientOptimiserBase (tckfactor, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs),
             qls (-master.max_coeff_step, master.max_coeff_step)
       {
         qls.set_exit_if_outside_bounds (false);
@@ -282,7 +268,7 @@ namespace MR {
         qls.set_value_tolerance (0.001);
       }
 
-      float CoefficientOptimiserQLS::get_coeff_change (const SIFT::track_t track_index) const
+      double CoefficientOptimiserQLS::get_coeff_change (const SIFT::track_t track_index) const
       {
         LineSearchFunctor line_search_functor (track_index, master);
 
@@ -290,8 +276,8 @@ namespace MR {
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
         ++total;
 #endif
-        if (!finite (dFs)) {
-          dFs = Math::golden_section_search (line_search_functor, std::string(""), -master.max_coeff_step, float(0.0), master.max_coeff_step, float(0.001 / (2.0 * master.max_coeff_step)));
+        if (!std::isfinite (dFs)) {
+          dFs = Math::golden_section_search (line_search_functor, std::string(""), -master.max_coeff_step, 0.0, master.max_coeff_step, 0.001 / (2.0 * master.max_coeff_step));
           double cost = line_search_functor (dFs);
           if (dFs > 0.99 * master.max_coeff_step && line_search_functor (master.max_coeff_step) < cost)
             dFs = master.max_coeff_step;
@@ -312,8 +298,8 @@ namespace MR {
 
 
 
-      CoefficientOptimiserIterative::CoefficientOptimiserIterative (TckFactor& tckfactor, /*const std::vector<float>& projected_steps,*/ StreamlineStats& step_stats, StreamlineStats& coefficient_stats, size_t& nonzero_streamlines, BitSet& fixels_to_exclude, double& sum_costs) :
-            CoefficientOptimiserBase (tckfactor, /*projected_steps,*/ step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs)
+      CoefficientOptimiserIterative::CoefficientOptimiserIterative (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, double& sum_costs) :
+            CoefficientOptimiserBase (tckfactor, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs)
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
       , iter_count (0)
 #endif
@@ -334,13 +320,13 @@ namespace MR {
 #endif
       }
 
-      float CoefficientOptimiserIterative::get_coeff_change (const SIFT::track_t track_index) const
+      double CoefficientOptimiserIterative::get_coeff_change (const SIFT::track_t track_index) const
       {
 
         LineSearchFunctor line_search_functor (track_index, master);
 
-        float dFs = 0.0;
-        float change = 0.0;
+        double dFs = 0.0;
+        double change = 0.0;
         size_t iter = 0;
         do {
 
@@ -379,7 +365,7 @@ namespace MR {
             dFs += change;
           }
 
-        } while ((++iter < 100) && (std::abs (change) > 0.001));
+        } while ((++iter < 100) && (abs (change) > 0.001));
 
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
         iter_count += iter;

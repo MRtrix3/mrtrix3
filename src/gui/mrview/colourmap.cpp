@@ -1,24 +1,17 @@
 /*
-   Copyright 2010 Brain Research Institute, Melbourne, Australia
-
-   Written by J-Donald Tournier, 13/11/09.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
 
 #include "file/config.h"
 #include "gui/opengl/font.h"
@@ -42,29 +35,39 @@ namespace MR
         const char* Entry::default_amplitude = "color.r";
 
 
+        float clamp (const float i) { return std::max (0.0f, std::min (1.0f, i)); }
+
 
         const Entry maps[] = {
           Entry ("Gray", 
               "color.rgb = vec3 (amplitude);\n",
-              [] (float amplitude) { return Point<float> (amplitude, amplitude, amplitude); }),
+              [] (float amplitude) { return Eigen::Array3f (amplitude, amplitude, amplitude); }),
 
           Entry ("Hot", 
               "color.rgb = vec3 (2.7213 * amplitude, 2.7213 * amplitude - 1.0, 3.7727 * amplitude - 2.7727);\n",
-              [] (float amplitude) { return Point<float> (std::max (0.0f, std::min (1.0f, 2.7213f * amplitude)),
-                                                          std::max (0.0f, std::min (1.0f, 2.7213f * amplitude - 1.0f)),
-                                                          std::max (0.0f, std::min (1.0f, 3.7727f * amplitude - 2.7727f))); }),
+              [] (float amplitude) { return Eigen::Array3f (clamp (2.7213f * amplitude),
+                                                            clamp (2.7213f * amplitude - 1.0f),
+                                                            clamp (3.7727f * amplitude - 2.7727f)); }),
 
           Entry ("Cool",
               "color.rgb = 1.0 - (vec3 (2.7213 * (1.0 - amplitude), 2.7213 * (1.0 - amplitude) - 1.0, 3.7727 * (1.0 - amplitude) - 2.7727));\n",
-              [] (float amplitude) { return Point<float> (std::max (0.0f, std::min (1.0f, 1.0f - (2.7213f * (1.0f - amplitude)))),
-                                                          std::max (0.0f, std::min (1.0f, 1.0f - (2.7213f * (1.0f - amplitude) - 1.0f))),
-                                                          std::max (0.0f, std::min (1.0f, 1.0f - (3.7727f * (1.0f - amplitude) - 2.7727f)))); }),
+              [] (float amplitude) { return Eigen::Array3f (clamp (1.0f - (2.7213f * (1.0f - amplitude))),
+                                                            clamp (1.0f - (2.7213f * (1.0f - amplitude) - 1.0f)),
+                                                            clamp (1.0f - (3.7727f * (1.0f - amplitude) - 2.7727f))); }),
 
           Entry ("Jet", 
               "color.rgb = 1.5 - 4.0 * abs (1.0 - amplitude - vec3(0.25, 0.5, 0.75));\n",
-              [] (float amplitude) { return Point<float> (std::max (0.0f, std::min (1.0f, 1.5f - 4.0f * std::abs (1.0f - amplitude - 0.25f))),
-                                                          std::max (0.0f, std::min (1.0f, 1.5f - 4.0f * std::abs (1.0f - amplitude - 0.5f))),
-                                                          std::max (0.0f, std::min (1.0f, 1.5f - 4.0f * std::abs (1.0f - amplitude - 0.75f)))); }),
+              [] (float amplitude) { return Eigen::Array3f (clamp (1.5f - 4.0f * abs (1.0f - amplitude - 0.25f)),
+                                                            clamp (1.5f - 4.0f * abs (1.0f - amplitude - 0.5f)),
+                                                            clamp (1.5f - 4.0f * abs (1.0f - amplitude - 0.75f))); }),
+
+          Entry ("PET",
+              "color.r = 2.0*amplitude - 0.5;\n"
+              "color.g = clamp (2.0 * (0.25 - abs (amplitude - 0.25)), 0.0, 1.0) + clamp (2.0*amplitude - 1.0, 0.0, 1.0);\n"
+              "color.b = 1.0 - (clamp (1.0 - 2.0 * amplitude, 0.0, 1.0) + clamp (1.0 - 4.0 * abs (amplitude - 0.75), 0.0, 1.0));\n",
+              [] (float amplitude) { return Eigen::Array3f (clamp (2.0f * amplitude - 0.5f),
+                                                            clamp (0.25f - abs (amplitude - 0.25f)) + clamp (2.0f * (amplitude - 0.5)),
+                                                            clamp (1.0f - 2.0f * amplitude) + clamp (1.0 - 4.0 * abs (amplitude - 0.75))); }),
 
           Entry ("Colour", 
               "color.rgb = amplitude * colourmap_colour;\n",
@@ -78,11 +81,14 @@ namespace MR
               true),
 
           Entry ("Complex",
-              "float phase = atan (color.r, color.g) * 0.954929658551372;\n"
-              "color.rgb = phase + vec3 (-2.0, 0.0, 2.0);\n"
-              "if (phase > 2.0) color.b -= 6.0;\n"
-              "if (phase < -2.0) color.r += 6.0;\n"
-              "color.rgb = clamp (scale * (amplitude - offset), 0.0, 1.0) * (2.0 - abs (color.rgb));\n",
+              "float C = atan (color.g, color.r) / 1.047197551196598;\n"
+              "if (C < -2.0) color.rgb = vec3 (0.0, -C-2.0, 1.0);\n"
+              "else if (C < -1.0) color.rgb = vec3 (C+2.0, 0.0, 1.0);\n"
+              "else if (C < 0.0) color.rgb = vec3 (1.0, 0.0, -C);\n"
+              "else if (C < 1.0) color.rgb = vec3 (1.0, C, 0.0);\n"
+              "else if (C < 2.0) color.rgb = vec3 (2.0-C, 1.0, 0.0);\n"
+              "else color.rgb = vec3 (0.0, 1.0, C-2.0);\n"
+              "color.rgb = scale * (amplitude - offset) * color.rgb;\n",
               Entry::basic_map_fn(),
               "length (color.rg)",
               true),
@@ -151,7 +157,7 @@ namespace MR
           text_offset (MR::File::Config::get_float ("MRViewColourBarTextOffset", 10.0f)),
           //CONF option: MRViewColourHorizontalPadding
           //CONF default: 100
-          //CONF The width in pixels between horizontally adjacent colour bars
+          //CONF The width in pixels between horizontally adjacent colour bars.
           colourbar_padding (MR::File::Config::get_float ("MRViewColourBarHorizontalPadding", 100.0f))
           {
             end_render_colourbars ();
@@ -217,7 +223,7 @@ namespace MR
         {
           render (object.colourmap, inverted, object.scaling_min (), object.scaling_max (),
                   object.scaling_min (), object.display_range,
-                  Point<float> (object.colour[0] / 255.0f, object.colour[1] / 255.0f, object.colour[2] / 255.0f));
+                  Eigen::Array3f { object.colour[0] / 255.0f, object.colour[1] / 255.0f, object.colour[2] / 255.0f });
         }
 
 
@@ -225,7 +231,7 @@ namespace MR
         void Renderer::render (size_t colourmap, bool inverted,
                                float local_min_value, float local_max_value,
                                float global_min_value, float global_range,
-                               Point<float> colour)
+                               Eigen::Array3f colour)
         {
           if (!current_position) return;
           if (maps[colourmap].special) return;

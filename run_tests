@@ -1,0 +1,120 @@
+#!/bin/bash
+
+LOGFILE=testing.log
+echo logging to \""$LOGFILE"\" 
+
+cat > $LOGFILE <<EOD
+-------------------------------------------
+  Testing MRtrix3 installation
+-------------------------------------------
+
+EOD
+
+echo -n "fetching test data... "
+git submodule update --init >> $LOGFILE 2>&1
+
+if [ $? != 0 ]; then
+  echo ERROR!
+  exit 1
+else
+  echo OK
+fi
+
+
+
+echo -n "building testing commands... "
+cat >> $LOGFILE <<EOD
+
+-------------------------------------------
+
+## building test commands... 
+
+EOD
+(
+  cd testing
+  ../build 
+) >> $LOGFILE 2>&1
+if [ $? != 0 ]; then 
+  echo ERROR!
+  exit 1
+else
+  echo OK
+fi
+
+
+# generate list of tests to run:
+if [ $# == 0 ]; then
+  for n in testing/tests/*; do
+    tests="$tests $(basename $n)"
+  done
+else
+  tests="$@"
+fi
+
+a_script_has_failed=false
+
+cat >> $LOGFILE <<EOD
+
+PATH is set to $PATH 
+EOD
+
+
+for script in $tests; do
+
+  cat >> $LOGFILE <<EOD
+-------------------------------------------
+
+## running "${script}"...
+
+EOD
+
+  echo -n 'running "'${script}'"... '
+  rm -rf testing/data/tmp*
+  ((ntests=0))
+  ((success=0))
+  while IFS='' read -r cmd || [[ -n "$cmd" ]]; do
+    cmd="${cmd%\#*}"
+    [[ -n "$cmd" ]] || continue
+    echo -n '# command: '$cmd >> $LOGFILE 
+    (
+      export PATH="$(pwd)/testing/bin:$(pwd)/bin:$PATH"; 
+      cd testing/data/
+      eval $cmd
+    ) > .__tmp.log 2>&1 
+
+    if [[ $? -ne 0 ]]; then 
+      echo " [ ERROR ]" >> $LOGFILE
+    else 
+      echo " [ ok ]" >> $LOGFILE
+      ((success++)); 
+    fi
+    cat .__tmp.log >> $LOGFILE
+    echo "" >> $LOGFILE
+    ((ntests++))
+  done < testing/tests/$script
+
+  echo -n $success of $ntests passed
+  if [[ $success -lt $ntests ]]; then
+    echo "    <-------- ERROR"
+    a_script_has_failed=true 
+    cat >> $LOGFILE <<EOD
+
+## ERROR: $(($ntests-$success)) tests failed for "${script}"
+
+EOD
+  else
+    echo ""
+    cat >> $LOGFILE <<EOD
+## $ntests tests completed OK for "${script}"
+
+EOD
+  fi
+
+done
+
+if [ ${a_script_has_failed} = true ]; 
+then
+  exit 1
+fi
+
+

@@ -1,0 +1,3 @@
+fod2fixel -nthread 1 fod.mif tmp_fod2fixel1 -afd afd.mif -peak peak.mif -disp disp.mif -force && testing_diff_fixel -frac 10e-5 fod2fixel/out1 tmp_fod2fixel1
+fod2fixel -nthread 1 fod.mif -mask mask.mif tmp_fod2fixel2 -afd afd.mif -peak peak.mif -disp disp.mif -force && testing_diff_fixel -frac 10e-5 fod2fixel/out2 tmp_fod2fixel2
+fod2fixel -nthread 1 -fmls_no_thresholds fod.mif tmp_fod2fixel3 -afd afd.mif -peak peak.mif -disp disp.mif -force && testing_diff_fixel -frac 10e-5 fod2fixel/out3 tmp_fod2fixel3

@@ -1,32 +1,22 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-    Written by Robert E. Smith, 2013.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
-
-
-#include <vector>
 
 #include "command.h"
-#include "point.h"
-#include "progressbar.h"
 #include "memory.h"
+#include "progressbar.h"
+#include "types.h"
 
 #include "file/ofstream.h"
 
@@ -45,36 +35,51 @@ using namespace MR::DWI;
 using namespace MR::DWI::Tractography;
 
 
+// TODO Make compatible with stats generic options?
+// - Some features would not be compatible due to potential presence of track weights
+
+
+const char * field_choices[] = { "mean", "median", "std", "min", "max", "count", NULL };
+
 
 void usage ()
 {
 
-	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "calculate statistics on streamlines length.";
+  SYNOPSIS = "Calculate statistics on streamlines length";
 
   ARGUMENTS
-  + Argument ("tracks_in", "the input track file").type_file_in();
+  + Argument ("tracks_in", "the input track file").type_tracks_in();
 
   OPTIONS
+
+  + Option ("output",
+      "output only the field specified. Multiple such options can be supplied if required. "
+      "Choices are: " + join (field_choices, ", ") + ". Useful for use in scripts.").allow_multiple()
+    + Argument ("field").type_choice (field_choices)
+
   + Option ("histogram", "output a histogram of streamline lengths")
     + Argument ("path").type_file_out()
 
   + Option ("dump", "dump the streamlines lengths to a text file")
     + Argument ("path").type_file_out()
 
+  + Option ("explicit", "explicitly calculate the length of each streamline, "
+                        "ignoring any step size information present in the header")
+
+  + Option ("ignorezero", "do not generate a warning if the track file contains streamlines with zero length")
+
   + Tractography::TrackWeightsInOption;
 
-};
+}
 
 
 // Store length and weight of each streamline
-class LW
-{
+class LW { NOMEMALIGN
   public:
     LW (const float l, const float w) : length (l), weight (w) { }
-    LW () : length (NAN), weight (NAN) { }
+    LW () : length (NaN), weight (NaN) { }
     bool operator< (const LW& that) const { return length < that.length; }
     float get_length() const { return length; }
     float get_weight() const { return weight; }
@@ -101,13 +106,13 @@ void run ()
 
   const bool weights_provided = get_options ("tck_weights_in").size();
 
-  float step_size = NAN;
+  float step_size = NaN;
   size_t count = 0, header_count = 0;
   float min_length = std::numeric_limits<float>::infinity();
   float max_length = 0.0f;
   double sum_lengths = 0.0, sum_weights = 0.0;
-  std::vector<double> histogram;
-  std::vector<LW> all_lengths;
+  vector<double> histogram;
+  vector<LW> all_lengths;
   all_lengths.reserve (header_count);
 
   {
@@ -117,42 +122,44 @@ void run ()
     if (properties.find ("count") != properties.end())
       header_count = to<size_t> (properties["count"]);
 
-    if (properties.find ("output_step_size") != properties.end())
-      step_size = to<float> (properties["output_step_size"]);
-    else
-      step_size = to<float> (properties["step_size"]);
-    if (!std::isfinite (step_size) || !step_size) {
-      WARN ("Streamline step size undefined in header");
-      if (get_options ("histogram").size())
-        WARN ("Histogram will be henerated using a 1mm interval");
+    if (!get_options ("explicit").size()) {
+      step_size = get_step_size (properties);
+      if (!std::isfinite (step_size) || !step_size) {
+        INFO ("Streamline step size undefined in header; lengths will be calculated manually");
+        if (get_options ("histogram").size()) {
+          WARN ("Do not have streamline step size with which to construct histogram; histogram will be generated using 1mm bin widths");
+        }
+      }
     }
 
     std::unique_ptr<File::OFStream> dump;
-    Options opt = get_options ("dump");
+    auto opt = get_options ("dump");
     if (opt.size())
       dump.reset (new File::OFStream (std::string(opt[0][0]), std::ios_base::out | std::ios_base::trunc));
 
-    ProgressBar progress ("Reading track file... ", header_count);
-    Tractography::Streamline<> tck;
+    ProgressBar progress ("Reading track file", header_count);
+    Streamline<> tck;
     while (reader (tck)) {
       ++count;
       const float length = std::isfinite (step_size) ? tck.calc_length (step_size) : tck.calc_length();
-      min_length = std::min (min_length, length);
-      max_length = std::max (max_length, length);
-      sum_lengths += tck.weight * length;
-      sum_weights += tck.weight;
-      all_lengths.push_back (LW (length, tck.weight));
-      const size_t index = std::isfinite (step_size) ? std::round (length / step_size) : std::round (length);
-      while (histogram.size() <= index)
-        histogram.push_back (0.0);
-      histogram[index] += tck.weight;
+      if (std::isfinite (length)) {
+        min_length = std::min (min_length, length);
+        max_length = std::max (max_length, length);
+        sum_lengths += tck.weight * length;
+        sum_weights += tck.weight;
+        all_lengths.push_back (LW (length, tck.weight));
+        const size_t index = std::isfinite (step_size) ? std::round (length / step_size) : std::round (length);
+        while (histogram.size() <= index)
+          histogram.push_back (0.0);
+        histogram[index] += tck.weight;
+      }
       if (dump)
         (*dump) << length << "\n";
       ++progress;
     }
   }
 
-  if (histogram.front())
+  if (histogram.front() && !get_options ("ignorezero").size())
     WARN ("read " + str(histogram.front()) + " zero-length tracks");
   if (count != header_count)
     WARN ("expected " + str(header_count) + " tracks according to header; read " + str(count));
@@ -172,27 +179,48 @@ void run ()
   }
 
   double stdev = 0.0;
-  for (std::vector<LW>::const_iterator i = all_lengths.begin(); i != all_lengths.end(); ++i)
+  for (vector<LW>::const_iterator i = all_lengths.begin(); i != all_lengths.end(); ++i)
     stdev += i->get_weight() * Math::pow2 (i->get_length() - mean_length);
   stdev = std::sqrt (stdev / (((count - 1) / float(count)) * sum_weights));
 
-  const size_t width = 12;
+  vector<std::string> fields;
+  auto opt = get_options ("output");
+  for (size_t n = 0; n < opt.size(); ++n)
+    fields.push_back (opt[n][0]);
 
-  std::cout << " " << std::setw(width) << std::right << "mean"
-            << " " << std::setw(width) << std::right << "median"
-            << " " << std::setw(width) << std::right << "std. dev."
-            << " " << std::setw(width) << std::right << "min"
-            << " " << std::setw(width) << std::right << "max"
-            << " " << std::setw(width) << std::right << "count\n";
+  if (fields.size()) {
 
-  std::cout << " " << std::setw(width) << std::right << (mean_length)
-            << " " << std::setw(width) << std::right << (median_length)
-            << " " << std::setw(width) << std::right << (stdev)
-            << " " << std::setw(width) << std::right << (min_length)
-            << " " << std::setw(width) << std::right << (max_length)
-            << " " << std::setw(width) << std::right << (count) << "\n";
+    for (size_t n = 0; n < fields.size(); ++n) {
+      if (fields[n] == "mean")        std::cout << str(mean_length) << " ";
+      else if (fields[n] == "median") std::cout << str(median_length) << " ";
+      else if (fields[n] == "std")    std::cout << str(stdev) << " ";
+      else if (fields[n] == "min")    std::cout << str(min_length) << " ";
+      else if (fields[n] == "max")    std::cout << str(max_length) << " ";
+      else if (fields[n] == "count")  std::cout << count << " ";
+    }
+    std::cout << "\n";
 
-  Options opt = get_options ("histogram");
+  } else {
+
+    const size_t width = 12;
+
+    std::cout << " " << std::setw(width) << std::right << "mean"
+              << " " << std::setw(width) << std::right << "median"
+              << " " << std::setw(width) << std::right << "std. dev."
+              << " " << std::setw(width) << std::right << "min"
+              << " " << std::setw(width) << std::right << "max"
+              << " " << std::setw(width) << std::right << "count\n";
+
+    std::cout << " " << std::setw(width) << std::right << (mean_length)
+              << " " << std::setw(width) << std::right << (median_length)
+              << " " << std::setw(width) << std::right << (stdev)
+              << " " << std::setw(width) << std::right << (min_length)
+              << " " << std::setw(width) << std::right << (max_length)
+              << " " << std::setw(width) << std::right << (count) << "\n";
+
+  }
+
+  opt = get_options ("histogram");
   if (opt.size()) {
     File::OFStream out (opt[0][0], std::ios_base::out | std::ios_base::trunc);
     if (!std::isfinite (step_size))
@@ -207,7 +235,6 @@ void run ()
         out << str(i * step_size) << "," << str<size_t>(histogram[i]) << "\n";
     }
     out << "\n";
-    out.close();
   }
 
 }

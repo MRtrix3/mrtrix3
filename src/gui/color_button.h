@@ -1,25 +1,17 @@
-/* 
- This file is part of the KDE libraries
- Copyright (C) 1997 Martin Jones (mjones@kde.org)
- 
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Library General Public
- License as published by the Free Software Foundation; either
- version 2 of the License, or (at your option) any later version.
- 
- This library is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Library General Public License for more details.
- 
- You should have received a copy of the GNU Library General Public License
- along with this library; see the file COPYING.LIB.  If not, write to
- the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
- Boston, MA  02110-1301, USA. 
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
- Modified by Donald Tournier (d.tournier@brain.org.au) 23/01/2009
- 
-*/
 
 #ifndef __gui_color_button_h__
 #define __gui_color_button_h__
@@ -27,7 +19,7 @@
 #include "gui/opengl/gl.h"
 
 class QColorButton : public QPushButton
-{
+{ NOMEMALIGN
   Q_OBJECT
   Q_PROPERTY (QColor color READ color WRITE setColor)
 

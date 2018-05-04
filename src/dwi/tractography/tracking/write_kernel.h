@@ -1,31 +1,23 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-    Written by Robert E. Smith and J-Donald Tournier, 2011.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #ifndef __dwi_tractography_tracking_write_kernel_h__
 #define __dwi_tractography_tracking_write_kernel_h__
 
-#include <string>
-#include <vector>
 #include <cinttypes>
+#include <string>
 
 #include "timer.h"
 #include "file/ofstream.h"
@@ -34,6 +26,7 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
 
+#include "dwi/tractography/tracking/early_exit.h"
 #include "dwi/tractography/tracking/generated_track.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/types.h"
@@ -51,7 +44,7 @@ namespace MR
 
 
       class WriteKernel
-      {
+      { MEMALIGN(WriteKernel)
         public:
 
           WriteKernel (const SharedBase& shared,
@@ -59,13 +52,18 @@ namespace MR
               const DWI::Tractography::Properties& properties) :
                 S (shared),
                 writer (output_file, properties),
-                finite_seeds (S.properties.seeds.is_finite()),
-                progress (printf ("       0 generated,        0 selected", 0, 0), finite_seeds ? S.max_num_attempts : S.max_num_tracks)
+                always_increment (S.properties.seeds.is_finite() || !S.max_num_tracks),
+                warn_on_max_seeds (S.implicit_max_num_seeds),
+                seeds (0),
+                streamlines (0),
+                selected (0),
+                progress (printf ("       0 seeds,        0 streamlines,        0 selected", 0, 0), always_increment ? S.max_num_seeds : S.max_num_tracks),
+                early_exit (shared)
           {
-            DWI::Tractography::Properties::const_iterator seed_output = properties.find ("seed_output");
-            if (seed_output != properties.end()) {
-              seeds.reset (new File::OFStream (seed_output->second, std::ios_base::out | std::ios_base::trunc));
-              (*seeds) << "#Track_index,Seed_index,Pos_x,Pos_y,Pos_z,\n";
+            const auto p = properties.find ("seed_output");
+            if (p != properties.end()) {
+              output_seeds.reset (new File::OFStream (p->second, std::ios_base::out | std::ios_base::trunc));
+              (*output_seeds) << "#Track_index,Seed_index,Pos_x,Pos_y,Pos_z,\n";
             }
           }
 
@@ -74,10 +72,15 @@ namespace MR
 
           ~WriteKernel ()
           {
-            progress.set_text (printf ("%8" PRIu64 " generated, %8" PRIu64 " selected", writer.total_count, writer.count));
-            if (seeds) {
-              (*seeds) << "\n";
-              seeds->close();
+            // Use set_text() rather than update() here to force update of the text before progress goes out of scope
+            progress.set_text (printf ("%8" PRIu64 " seeds, %8" PRIu64 " streamlines, %8" PRIu64 " selected", seeds, streamlines, selected));
+            if (warn_on_max_seeds && writer.total_count == S.max_num_seeds
+                && S.max_num_tracks && writer.count < S.max_num_tracks) {
+              WARN ("less than desired streamline number due to implicit maximum number of seeds; set -seeds 0 to override");
+            }
+            if (output_seeds) {
+              (*output_seeds) << "\n";
+              output_seeds->close();
             }
 
           }
@@ -85,16 +88,19 @@ namespace MR
 
           bool operator() (const GeneratedTrack&);
 
-          bool complete() const { return (writer.count >= S.max_num_tracks || writer.total_count >= S.max_num_attempts); }
+          bool complete() const { return ((S.max_num_tracks && selected >= S.max_num_tracks) || (S.max_num_seeds && seeds >= S.max_num_seeds)); }
 
 
         protected:
           const SharedBase& S;
-          Writer<value_type> writer;
-          const bool finite_seeds;
-          std::unique_ptr<File::OFStream> seeds;
+          Writer<> writer;
+          const bool always_increment, warn_on_max_seeds;
+          size_t seeds, streamlines, selected;
+          std::unique_ptr<File::OFStream> output_seeds;
           ProgressBar progress;
+          EarlyExit early_exit;
       };
+
 
 
 

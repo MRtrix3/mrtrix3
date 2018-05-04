@@ -1,27 +1,19 @@
 /*
-   Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-   Written by J-Donald Tournier, 27/06/08.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "file/config.h"
-#include "math/vector.h"
 #include "gui/opengl/lighting.h"
 
 namespace MR
@@ -30,44 +22,51 @@ namespace MR
   {
     namespace GL
     {
+      namespace {
+
+        constexpr float DefaultAmbient = 0.5f;
+        constexpr float DefaultDiffuse = 0.5f;
+        constexpr float DefaultSpecular = 0.5f;
+        constexpr float DefaultShine = 5.0f;
+        constexpr float DefaultBackgroundColor[3] = { 1.0f, 1.0f, 1.0f };
+        constexpr float DefaultLightPosition[3] = { 1.0f, 1.0f, 3.0f };
+
+      }
+
+
 
       void Lighting::load_defaults ()
       {
         //CONF option: BackgroundColor
-        //CONF default: 1,1,1 (white)
+        //CONF default: 1.0,1.0,1.0
         //CONF The default colour to use for the background in OpenGL panels, notably
         //CONF the SH viewer.
-        File::Config::get_RGB ("BackgroundColor", background_color, 1.0, 1.0, 1.0);
-        //CONF option: ObjectColor
-        //CONF default: 1,1,0 (yellow)
-        //CONF The default colour to use for objects (i.e. SH glyphs) when not
-        //CONF colouring by direction.
-        File::Config::get_RGB ("ObjectColor", object_color, 1.0, 1.0, 0.0);
+        File::Config::get_RGB ("BackgroundColor", background_color, DefaultBackgroundColor[0], DefaultBackgroundColor[1], DefaultBackgroundColor[2]);
 
         //CONF option: LightPosition
-        //CONF default: 1,1,3 
+        //CONF default: 1.0,1.0,3.0
         //CONF The default position vector to use for the light in OpenGL
-        //CONF renders
-        File::Config::get_RGB ("LightPosition", lightpos, 1.0, 1.0, 3.0);
+        //CONF renders.
+        File::Config::get_RGB ("LightPosition", lightpos, DefaultLightPosition[0], DefaultLightPosition[1], DefaultBackgroundColor[2]);
 
-        Math::normalise (lightpos, 3);
+        Eigen::Map<Eigen::Vector3f> (lightpos).normalize();
 
         //CONF option: AmbientIntensity
-        //CONF default: 0.6
-        //CONF The default intensity for the ambient light in OpenGL renders
-        ambient = File::Config::get_float ("AmbientIntensity", 0.6);
+        //CONF default: 0.5
+        //CONF The default intensity for the ambient light in OpenGL renders.
+        ambient = File::Config::get_float ("AmbientIntensity", DefaultAmbient);
         //CONF option: DiffuseIntensity
-        //CONF default: 0.3
-        //CONF The default intensity for the diffuse light in OpenGL renders
-        diffuse = File::Config::get_float ("DiffuseIntensity", 0.3);
+        //CONF default: 0.5
+        //CONF The default intensity for the diffuse light in OpenGL renders.
+        diffuse = File::Config::get_float ("DiffuseIntensity", DefaultDiffuse);
         //CONF option: SpecularIntensity
-        //CONF default: 0.4
-        //CONF The default intensity for the specular light in OpenGL renders
-        specular = File::Config::get_float ("SpecularIntensity", 0.4);
+        //CONF default: 0.5
+        //CONF The default intensity for the specular light in OpenGL renders.
+        specular = File::Config::get_float ("SpecularIntensity", DefaultSpecular);
         //CONF option: SpecularExponent
-        //CONF default: 1
-        //CONF The default exponent for the specular light in OpenGL renders
-        shine = File::Config::get_float ("SpecularExponent", 1.0);
+        //CONF default: 5.0
+        //CONF The default exponent for the specular light in OpenGL renders.
+        shine = File::Config::get_float ("SpecularExponent", DefaultShine);
       }
 
 

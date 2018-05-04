@@ -1,24 +1,17 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-    Written by Robert E. Smith, 2011.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #ifndef __dwi_tractography_mapping_loader_h__
 #define __dwi_tractography_mapping_loader_h__
@@ -32,50 +25,49 @@
 
 
 namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Mapping {
+  namespace DWI {
+    namespace Tractography {
+      namespace Mapping {
 
 
 
-class TrackLoader
-{
+        class TrackLoader
+        { MEMALIGN(TrackLoader)
 
-  public:
-    TrackLoader (Tractography::Reader<float>& file, const size_t to_load = 0, const std::string& msg = "mapping tracks to image...") :
-      reader (file),
-      tracks_to_load (to_load),
-      progress (msg.size() ? new ProgressBar (msg, tracks_to_load) : NULL)
-    { }
+          public:
+            TrackLoader (Reader<>& file, const size_t to_load = 0, const std::string& msg = "mapping tracks to image") :
+              reader (file),
+              tracks_to_load (to_load),
+              progress (msg.size() ? new ProgressBar (msg, tracks_to_load) : nullptr) { }
 
-    virtual ~TrackLoader() { }
-    virtual bool operator() (Streamline<float>& out)
-    {
-      if (!reader (out)) {
-        progress.reset();
-        return false;
+            virtual ~TrackLoader() { }
+            virtual bool operator() (Streamline<>& out)
+            {
+              if (!reader (out)) {
+                progress.reset();
+                return false;
+              }
+              if (tracks_to_load && out.index >= tracks_to_load) {
+                out.clear();
+                progress.reset();
+                return false;
+              }
+              if (progress)
+                ++(*progress);
+              return true;
+            }
+
+          protected:
+            Reader<>& reader;
+            const size_t tracks_to_load;
+            std::unique_ptr<ProgressBar> progress;
+
+        };
+
+
       }
-      if (tracks_to_load && out.index >= tracks_to_load) {
-        out.clear();
-        progress.reset();
-        return false;
-      }
-      if (progress)
-        ++(*progress);
-      return true;
     }
-
-  protected:
-    Tractography::Reader<float>& reader;
-    const size_t tracks_to_load;
-    std::unique_ptr<ProgressBar> progress;
-
-};
-
-
-}
-}
-}
+  }
 }
 
 #endif

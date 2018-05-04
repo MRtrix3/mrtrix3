@@ -1,34 +1,27 @@
 /*
-   Copyright 2012 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-   Written by J-Donald Tournier and David Raffelt, 07/12/12.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #ifndef __gui_mrview_displayable_h__
 #define __gui_mrview_displayable_h__
 
-#include "point.h"
 #include "math/math.h"
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
 #include "gui/projection.h"
 #include "gui/mrview/colourmap.h"
+
 
 namespace MR
 {
@@ -53,24 +46,23 @@ namespace MR
       const uint32_t LightingEnabled = 0x00800000;
 
       class Image;
-      namespace Tool { class AbstractFixel; }
+      namespace Tool { class BaseFixel; }
       namespace Tool { class Connectome; }
       namespace Tool { class Tractogram; }
       class DisplayableVisitor
-      {
+      { NOMEMALIGN
         public:
-          virtual void render_image_colourbar(const Image&) {}
-          virtual void render_fixel_colourbar(const Tool::AbstractFixel&) {}
-          virtual void render_tractogram_colourbar(const Tool::Tractogram&) {}
+          virtual void render_image_colourbar (const Image&) {}
+          virtual void render_fixel_colourbar (const Tool::BaseFixel&) {}
+          virtual void render_tractogram_colourbar (const Tool::Tractogram&) {}
       };
 
       class Displayable : public QAction
-      {
+      { MEMALIGN(Displayable)
         Q_OBJECT
 
         public:
           Displayable (const std::string& filename);
-          Displayable (Window& window, const std::string& filename);
 
           virtual ~Displayable ();
 
@@ -203,7 +195,7 @@ namespace MR
           }
 
 
-          class Shader : public GL::Shader::Program {
+          class Shader : public GL::Shader::Program { MEMALIGN(Shader)
             public:
               virtual std::string fragment_shader_source (const Displayable& object) = 0;
               virtual std::string geometry_shader_source (const Displayable&) { return std::string(); }

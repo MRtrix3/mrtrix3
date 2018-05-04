@@ -1,30 +1,25 @@
 /*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-   Written by J-Donald Tournier, 13/11/09.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #ifndef __gui_mrview_tool_view_h__
 #define __gui_mrview_tool_view_h__
 
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/mode/base.h"
+#include "gui/mrview/spin_box.h"
+#include "gui/opengl/transformation.h"
 
 namespace MR
 {
@@ -39,8 +34,8 @@ namespace MR
       {
 
 
-        class ClipPlane 
-        {
+        class ClipPlane
+        { MEMALIGN (ClipPlane)
           public:
             GL::vec4 plane;
             bool active;
@@ -48,21 +43,23 @@ namespace MR
         };
 
         class View : public Base, public Mode::ModeGuiVisitor
-        {
+        { MEMALIGN(View)
           Q_OBJECT
           public:
-            View (Window& main_window, Dock* parent);
+            View (Dock* parent);
 
             QPushButton *clip_on_button[3], *clip_edit_button[3], *clip_modify_button;
 
-            std::vector< std::pair<GL::vec4,bool> > get_active_clip_planes () const;
-            std::vector<GL::vec4*> get_clip_planes_to_be_edited () const;
+            vector< std::pair<GL::vec4,bool> > get_active_clip_planes () const;
+            vector<GL::vec4*> get_clip_planes_to_be_edited () const;
+            bool get_cliphighlightstate () const;
+            bool get_clipintersectionmodestate () const;
 
             void update_lightbox_mode_gui(const Mode::LightBox &mode) override;
 
           protected:
-            virtual void showEvent (QShowEvent* event);
-            virtual void closeEvent (QCloseEvent* event);
+            virtual void showEvent (QShowEvent* event) override;
+            virtual void closeEvent (QCloseEvent* event) override;
 
           private slots:
             void onImageChanged ();
@@ -84,9 +81,13 @@ namespace MR
             void onCheckThreshold (bool);
             void onModeChanged ();
             void hide_image_slot (bool flag);
+            void copy_focus_slot ();
+            void copy_voxel_slot ();
             void clip_planes_right_click_menu_slot (const QPoint& pos);
             void clip_planes_selection_changed_slot ();
             void clip_planes_toggle_shown_slot();
+            void clip_planes_toggle_highlight_slot();
+            void clip_planes_toggle_intersectionmode_slot();
 
             void clip_planes_add_axial_slot ();
             void clip_planes_add_sagittal_slot ();
@@ -101,16 +102,19 @@ namespace MR
             void clip_planes_clear_slot ();
 
             void light_box_slice_inc_reset_slot ();
+            void light_box_toggle_volumes_slot (bool);
 
           private:
             QPushButton *hide_button;
+            QPushButton *copy_focus_button;
+            QPushButton *copy_voxel_button;
             AdjustButton *focus_x, *focus_y, *focus_z;
             AdjustButton *voxel_x, *voxel_y, *voxel_z;
-            QSpinBox *vol_index, *vol_group;
+            SpinBox *vol_index, *vol_group;
             AdjustButton *max_entry, *min_entry, *fov;
             AdjustButton *transparent_intensity, *opaque_intensity;
             AdjustButton *lower_threshold, *upper_threshold;
-            QCheckBox *lower_threshold_check_box, *upper_threshold_check_box;
+            QCheckBox *lower_threshold_check_box, *upper_threshold_check_box, *clip_highlight_check_box, *clip_intersectionmode_check_box;
             QComboBox *plane_combobox;
             QGroupBox *volume_box, *transparency_box, *threshold_box, *clip_box, *lightbox_box;
             QSlider *opacity;
@@ -118,9 +122,11 @@ namespace MR
             QAction *clip_planes_new_axial_action, *clip_planes_new_sagittal_action, *clip_planes_new_coronal_action;
             QAction *clip_planes_reset_axial_action, *clip_planes_reset_sagittal_action, *clip_planes_reset_coronal_action;
             QAction *clip_planes_invert_action, *clip_planes_remove_action, *clip_planes_clear_action;
-            AdjustButton* light_box_slice_inc;
-            QSpinBox *light_box_rows, *light_box_cols;
-            QCheckBox *light_box_show_grid;
+
+            QLabel *light_box_slice_inc_label, *light_box_volume_inc_label;
+            AdjustButton *light_box_slice_inc;
+            SpinBox *light_box_rows, *light_box_cols, *light_box_volume_inc;
+            QCheckBox *light_box_show_grid, *light_box_show_4d;
 
             class ClipPlaneModel;
             ClipPlaneModel* clip_planes_model;

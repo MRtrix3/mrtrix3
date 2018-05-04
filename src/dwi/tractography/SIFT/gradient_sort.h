@@ -1,25 +1,16 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert Smith, 2011.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
-
 
 
 #ifndef __dwi_tractography_sift_sort_h__
@@ -27,7 +18,8 @@
 
 
 #include <set>
-#include <vector>
+
+#include "types.h"
 
 #include "dwi/tractography/SIFT/track_index_range.h"
 #include "dwi/tractography/SIFT/types.h"
@@ -46,7 +38,7 @@ namespace MR
 
 
       class Cost_fn_gradient_sort
-      {
+      { MEMALIGN(Cost_fn_gradient_sort)
         public:
           Cost_fn_gradient_sort (const track_t i, const double g, const double gpul) :
             tck_index            (i),
@@ -87,16 +79,16 @@ namespace MR
       //     be filtered in a single iteration, provided the gradient is less than that of the candidate streamline
       //     from all other blocks
       class MT_gradient_vector_sorter
-      {
+      { MEMALIGN(MT_gradient_vector_sorter)
 
-          typedef std::vector<Cost_fn_gradient_sort> VecType;
-          typedef VecType::iterator VecItType;
+          using VecType = vector<Cost_fn_gradient_sort>;
+          using VecItType = VecType::iterator;
 
-          class Comparator {
+          class Comparator { NOMEMALIGN
             public:
               bool operator() (const VecItType& a, const VecItType& b) const { return (a->get_gradient_per_unit_length() < b->get_gradient_per_unit_length()); }
           };
-          typedef std::set<VecItType, Comparator> SetType;
+          using SetType = std::set<VecItType, Comparator>;
 
 
         public:
@@ -116,7 +108,7 @@ namespace MR
 
 
           class BlockSender
-          {
+          { MEMALIGN(BlockSender)
             public:
               BlockSender (const track_t count, const track_t size) :
                 num_tracks (count),
@@ -139,7 +131,7 @@ namespace MR
           };
 
           class Sorter
-          {
+          { MEMALIGN(Sorter)
             public:
               Sorter (VecType& in) :
                 data  (in) { }

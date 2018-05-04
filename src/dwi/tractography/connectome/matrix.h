@@ -1,34 +1,28 @@
 /*
-    Copyright 2013 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert Smith, 2013.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
-
 
 
 #ifndef __dwi_tractography_connectome_matrix_h__
 #define __dwi_tractography_connectome_matrix_h__
 
 #include <set>
-#include <vector>
 
-#include "math/matrix.h"
+#include "types.h"
+
+#include "connectome/connectome.h"
+#include "connectome/mat2vec.h"
+#include "math/math.h"
 
 #include "dwi/tractography/connectome/connectome.h"
 #include "dwi/tractography/connectome/mapped_track.h"
@@ -41,40 +35,83 @@ namespace Connectome {
 
 
 
+enum stat_edge { SUM, MEAN, MIN, MAX };
+extern const char* statistics[];
+extern const App::Option EdgeStatisticOption;
 
+
+// The number of nodes that must be exceeded in a connectome matrix in
+//   order for mechanisms relating to RAM usage reduction to be activated
+constexpr node_t node_count_ram_limit = 1024;
+
+
+template <typename T>
 class Matrix
-{
+{ MEMALIGN(Matrix)
 
   public:
-    Matrix (const node_t max_node_index) :
-      data   (max_node_index + 1, max_node_index + 1),
-      counts (max_node_index + 1, max_node_index + 1)
+    using vector_type = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+
+    Matrix (const node_t max_node_index, const stat_edge stat, const bool vector_output, const bool track_assignments) :
+        statistic (stat),
+        vector_output (vector_output),
+        track_assignments (track_assignments),
+        mat2vec (vector_output ?
+                 nullptr :
+                 new MR::Connectome::Mat2Vec (max_node_index+1)),
+        data   (vector_type::Zero (vector_output ?
+                                   (max_node_index + 1) :
+                                   mat2vec->vec_size())),
+        counts (stat == stat_edge::MEAN ?
+                vector_type::Zero (vector_output ?
+                                   (max_node_index + 1) :
+                                   mat2vec->vec_size()) :
+                vector_type())
     {
-      data = 0.0;
-      counts = 0.0;
+      if (statistic == stat_edge::MIN)
+        data = vector_type::Constant (vector_output ? (max_node_index + 1) : mat2vec->vec_size(), std::numeric_limits<T>::infinity());
+      else if (statistic == stat_edge::MAX)
+        data = vector_type::Constant (vector_output ? (max_node_index + 1) : mat2vec->vec_size(), -std::numeric_limits<T>::infinity());
     }
 
+    bool operator() (const Mapped_track_nodepair&);
+    bool operator() (const Mapped_track_nodelist&);
 
-    bool operator() (const Mapped_track&);
-
-    void scale_by_streamline_count();
-    void remove_unassigned();
-    void zero_diagonal();
+    void finalize();
 
     void error_check (const std::set<node_t>&);
 
-    void write (const std::string& path) { data.save (path); }
-    void write_assignments (const std::string&);
+    void write_assignments (const std::string&) const;
 
-    node_t num_nodes() const { return (data.rows() - 1); }
+    bool is_vector() const { return (vector_output); }
+
+    void save (const std::string&, const bool, const bool, const bool) const;
 
 
   private:
-    Math::Matrix<double> data, counts;
-    std::vector<NodePair> assignments;
+    const stat_edge statistic;
+    const bool vector_output;
+    const bool track_assignments;
+
+    const std::unique_ptr<MR::Connectome::Mat2Vec> mat2vec;
+
+    vector_type data, counts;
+    vector<node_t> assignments_single;
+    vector<NodePair> assignments_pairs;
+    vector< vector<node_t> > assignments_lists;
+
+    FORCE_INLINE void apply_data (const size_t, const T, const T);
+    FORCE_INLINE void apply_data (const size_t, const size_t, const T, const T);
+    FORCE_INLINE void apply_data (T&, const T, const T);
+    FORCE_INLINE void inc_count (const size_t, const T);
+    FORCE_INLINE void inc_count (const size_t, const size_t, const T);
 
 };
 
+
+
+extern template class Matrix<float>;
+extern template class Matrix<double>;
 
 
 

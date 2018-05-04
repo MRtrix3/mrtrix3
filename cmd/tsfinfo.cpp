@@ -1,24 +1,17 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-    Written by David Raffelt 31/01/2013
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
 #include "progressbar.h"
@@ -32,8 +25,9 @@ using namespace App;
 
 void usage ()
 {
-  DESCRIPTION
-  + "print out information about track scalar file";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
+
+  SYNOPSIS = "Print out information about a track scalar file";
 
   ARGUMENTS
   + Argument ("tracks", "the input track scalar file.")
@@ -56,7 +50,7 @@ void usage ()
 void run ()
 {
 
-  Options opt = get_options ("ascii");
+  auto opt = get_options ("ascii");
   bool actual_count = get_options ("count").size();
 
   for (size_t i = 0; i < argument.size(); ++i) {
@@ -74,7 +68,7 @@ void run ()
 
     if (properties.comments.size()) {
       std::cout << "    Comments:             ";
-      for (std::vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
+      for (vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
         std::cout << (i == properties.comments.begin() ? "" : "                       ") << *i << "\n";
     }
 
@@ -84,10 +78,10 @@ void run ()
 
 
     if (actual_count) {
-      std::vector<float > tck;
+      vector<float > tck;
       size_t count = 0;
       {
-        ProgressBar progress ("counting tracks in file... ");
+        ProgressBar progress ("counting tracks in file");
         while (file (tck)) {
           ++count;
           ++progress;
@@ -98,7 +92,7 @@ void run ()
 
     if (opt.size()) {
       ProgressBar progress ("writing track scalar data to ascii files");
-      std::vector<float> tck;
+      vector<float> tck;
       size_t count = 0;
       while (file (tck)) {
         std::string filename (opt[0][0]);
@@ -107,7 +101,7 @@ void run ()
         filename.replace (filename.size()-4-num.size(), num.size(), num);
 
         File::OFStream out (filename);
-        for (std::vector<float>::iterator i = tck.begin(); i != tck.end(); ++i)
+        for (vector<float>::iterator i = tck.begin(); i != tck.end(); ++i)
           out << (*i) << "\n";
         out.close();
 

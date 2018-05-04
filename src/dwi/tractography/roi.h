@@ -1,40 +1,25 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
-
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
 
 #ifndef __dwi_tractography_roi_h__
 #define __dwi_tractography_roi_h__
 
 #include "app.h"
-#include "point.h"
-
-#include "image/voxel.h"
-#include "image/interp/linear.h"
-#include "image/buffer_scratch.h"
-#include "image/copy.h"
-#include "image/buffer.h"
-#include "image/nav.h"
-
+#include "image.h"
+#include "image.h"
+#include "interp/linear.h"
 #include "math/rng.h"
 
 
@@ -51,41 +36,45 @@ namespace MR
       void load_rois (Properties& properties);
 
 
-      class Mask : public Image::BufferScratch<bool> {
+      class Mask : public Image<bool> { MEMALIGN(Mask)
         public:
-          template <class InputVoxelType>
-          Mask (InputVoxelType& D, const Image::Info& info, const std::string& description) :
-              Image::BufferScratch<bool> (info, description),
-              transform (this->info())
-          {
-            auto this_vox = voxel();
-            Image::copy (D, this_vox, 0, 3);
-          }
-          Image::Transform transform;
+          using transform_type = Eigen::Transform<float, 3, Eigen::AffineCompact>;
+          Mask (const Mask&) = default;
+          Mask (const std::string& name) :
+              Image<bool> (__get_mask (name)),
+              scanner2voxel (new transform_type (Transform(*this).scanner2voxel.cast<float>())),
+              voxel2scanner (new transform_type (Transform(*this).voxel2scanner.cast<float>())) { }
+
+          std::shared_ptr<transform_type> scanner2voxel, voxel2scanner; // Ptr to prevent unnecessary copy-construction
+
+        private:
+          static Image<bool> __get_mask (const std::string& name);
       };
 
-      Mask* get_mask (const std::string& name);
 
 
 
-      class ROI {
+      class ROI { MEMALIGN(ROI)
         public:
-          ROI (const Point<>& sphere_pos, float sphere_radius) :
+          ROI (const Eigen::Vector3f& sphere_pos, float sphere_radius) :
             pos (sphere_pos), radius (sphere_radius), radius2 (Math::pow2 (radius)) { }
 
           ROI (const std::string& spec) :
-            radius (NAN), radius2 (NAN)
+            radius (NaN), radius2 (NaN)
           {
             try {
-              std::vector<float> F (parse_floats (spec));
-              if (F.size() != 4) throw 1;
-              pos.set (F[0], F[1], F[2]);
+              auto F = parse_floats (spec);
+              if (F.size() != 4) 
+                throw 1;
+              pos[0] = F[0];
+              pos[1] = F[1];
+              pos[2] = F[2];
               radius = F[3];
               radius2 = Math::pow2 (radius);
             }
             catch (...) { 
               DEBUG ("could not parse spherical ROI specification \"" + spec + "\" - assuming mask image");
-              mask.reset (get_mask (spec));
+              mask.reset (new Mask (spec));
             }
           }
 
@@ -95,21 +84,21 @@ namespace MR
             return mask ? mask->name() : str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(radius);
           }
 
-          bool contains (const Point<>& p) const
+          bool contains (const Eigen::Vector3f& p) const
           {
 
             if (mask) {
-              auto vox = mask->voxel();
-              Point<> v = mask->transform.scanner2voxel (p);
-              vox[0] = std::round (v[0]);
-              vox[1] = std::round (v[1]);
-              vox[2] = std::round (v[2]);
-              if (!Image::Nav::within_bounds (vox))
+              Eigen::Vector3f v = *(mask->scanner2voxel) * p;
+              Mask temp (*mask); // Required for thread-safety
+              temp.index(0) = std::round (v[0]);
+              temp.index(1) = std::round (v[1]);
+              temp.index(2) = std::round (v[2]);
+              if (is_out_of_bounds (temp))
                 return false;
-              return vox.value();
+              return temp.value();
             }
 
-            return (pos-p).norm2() <= radius2;
+            return (pos-p).squaredNorm() <= radius2;
 
           }
 
@@ -122,7 +111,7 @@ namespace MR
 
 
         private:
-          Point<> pos;
+          Eigen::Vector3f pos;
           float radius, radius2;
           std::shared_ptr<Mask> mask;
 
@@ -132,7 +121,7 @@ namespace MR
 
 
 
-      class ROISet {
+      class ROISet { MEMALIGN(ROISet)
         public:
           ROISet () { }
 
@@ -141,20 +130,20 @@ namespace MR
           const ROI& operator[] (size_t i) const { return (R[i]); }
           void add (const ROI& roi) { R.push_back (roi); }
 
-          bool contains (const Point<>& p) const {
+          bool contains (const Eigen::Vector3f& p) const {
             for (size_t n = 0; n < R.size(); ++n)
               if (R[n].contains (p)) return (true);
             return false;
           }
 
-          void contains (const Point<>& p, std::vector<bool>& retval) const {
+          void contains (const Eigen::Vector3f& p, vector<bool>& retval) const {
             for (size_t n = 0; n < R.size(); ++n)
               if (R[n].contains (p)) retval[n] = true;
           }
 
           friend inline std::ostream& operator<< (std::ostream& stream, const ROISet& R) {
             if (R.R.empty()) return (stream);
-            std::vector<ROI>::const_iterator i = R.R.begin();
+            vector<ROI>::const_iterator i = R.R.begin();
             stream << *i;
             ++i;
             for (; i != R.R.end(); ++i) stream << ", " << *i;
@@ -162,7 +151,7 @@ namespace MR
           }
 
         private:
-          std::vector<ROI> R;
+          vector<ROI> R;
       };
 
 

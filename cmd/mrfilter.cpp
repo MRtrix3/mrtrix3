@@ -1,45 +1,35 @@
 /*
-    Copyright 2012 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-    Written by Robert E. Smith, 26/03/2014.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include <complex>
 
 #include "command.h"
-#include "image/buffer.h"
-#include "image/buffer_preload.h"
-#include "image/voxel.h"
-#include "image/filter/base.h"
-#include "image/filter/fft.h"
-#include "image/filter/gradient.h"
-#include "image/filter/median.h"
-#include "image/filter/smooth.h"
+#include "image.h"
+#include "filter/base.h"
+#include "filter/fft.h"
+#include "filter/gradient.h"
+#include "filter/normalise.h"
+#include "filter/median.h"
+#include "filter/smooth.h"
 
 
 using namespace MR;
 using namespace App;
 
 
-
-const char* filters[] = { "fft", "gradient", "median", "smooth", NULL };
-
+const char* filters[] = { "fft", "gradient", "median", "smooth", "normalise", nullptr };
 
 
 const OptionGroup FFTOption = OptionGroup ("Options for FFT filter")
@@ -58,8 +48,6 @@ const OptionGroup FFTOption = OptionGroup ("Options for FFT filter")
 
 
 
-
-
 const OptionGroup GradientOption = OptionGroup ("Options for gradient filter")
 
   + Option ("stdev", "the standard deviation of the Gaussian kernel used to "
@@ -70,13 +58,11 @@ const OptionGroup GradientOption = OptionGroup ("Options for gradient filter")
             "3 values, one for each axis.")
   + Argument ("sigma").type_sequence_float()
 
-  + Option ("magnitude", "output magnitude of the gradient, rather "
+  + Option ("magnitude", "output the gradient magnitude, rather "
             "than the default x,y,z components")
 
-  + Option ("scanner", "compute the gradient with respect to the scanner coordinate "
+  + Option ("scanner", "define the gradient with respect to the scanner coordinate "
             "frame of reference.");
-
-
 
 
 const OptionGroup MedianOption = OptionGroup ("Options for median filter")
@@ -86,8 +72,12 @@ const OptionGroup MedianOption = OptionGroup ("Options for median filter")
         "or as a comma-separated list of 3 values, one for each axis (default: 3x3x3).")
     + Argument ("size").type_sequence_int();
 
+const OptionGroup NormaliseOption = OptionGroup ("Options for normalisation filter")
 
-
+  + Option ("extent", "specify extent of normalisation filtering neighbourhood in voxels. "
+        "This can be specified either as a single value to be used for all 3 axes, "
+        "or as a comma-separated list of 3 values, one for each axis (default: 3x3x3).")
+    + Argument ("size").type_sequence_int();
 
 
 const OptionGroup SmoothOption = OptionGroup ("Options for smooth filter")
@@ -112,204 +102,163 @@ const OptionGroup SmoothOption = OptionGroup ("Options for smooth filter")
 
 
 
-
-
-
-
-Image::Filter::Base* create_fft_filter (Image::Buffer<cdouble>::voxel_type& input)
-{
-
-  const bool inverse = get_options ("inverse").size();
-  Image::Filter::FFT* filter = new Image::Filter::FFT (input, inverse);
-  Options opt = get_options ("axes");
-  if (opt.size())
-    filter->set_axes (opt[0][0]);
-  filter->set_centre_zero (get_options ("centre_zero").size());
-  return filter;
-
-}
-
-
-
-
-Image::Filter::Base* create_gradient_filter (Image::BufferPreload<float>::voxel_type& input)
-{
-
-  const bool magnitude = get_options ("magnitude").size();
-
-  Image::Filter::Gradient* filter = new Image::Filter::Gradient (input, magnitude);
-
-  std::vector<float> stdev;
-  Options opt = get_options ("stdev");
-  if (opt.size()) {
-    stdev = parse_floats (opt[0][0]);
-    for (size_t i = 0; i < stdev.size(); ++i)
-      if (stdev[i] < 0.0)
-        throw Exception ("the Gaussian stdev values cannot be negative");
-    if (stdev.size() != 1 && stdev.size() != 3)
-      throw Exception ("unexpected number of elements specified in Gaussian stdev");
-  } else {
-    stdev.resize (filter->info().ndim(), 0.0);
-    for (size_t dim = 0; dim != 3; ++dim)
-      stdev[dim] = filter->info().vox (dim);
-  }
-  filter->set_stdev (stdev);
-
-  opt = get_options ("scanner");
-  filter->compute_wrt_scanner (opt.size());
-  return filter;
-
-}
-
-
-
-Image::Filter::Base* create_median_filter (Image::BufferPreload<float>::voxel_type& input)
-{
-  Image::Filter::Median* filter = new Image::Filter::Median (input);
-  Options opt = get_options ("extent");
-  if (opt.size())
-    filter->set_extent (parse_ints (opt[0][0]));
-  return filter;
-}
-
-
-
-Image::Filter::Base* create_smooth_filter (Image::BufferPreload<float>::voxel_type& input)
-{
-
-  Image::Filter::Smooth* filter = new Image::Filter::Smooth (input);
-
-  Options opt = get_options ("stdev");
-  const bool stdev_supplied = opt.size();
-  if (stdev_supplied)
-    filter->set_stdev (parse_floats (opt[0][0]));
-
-  opt = get_options ("fwhm");
-  if (opt.size()) {
-    if (stdev_supplied)
-      throw Exception ("The stdev and FWHM options are mutually exclusive.");
-    std::vector<float> stdevs = parse_floats (opt[0][0]);
-    for (size_t d = 0; d < stdevs.size(); ++d)
-      stdevs[d] = stdevs[d] / 2.3548;  //convert FWHM to stdev
-    filter->set_stdev (stdevs);
-  }
-
-  opt = get_options ("extent");
-  if (opt.size())
-    filter->set_extent (parse_ints (opt[0][0]));
-
-  return filter;
-
-}
-
-
-
-
-
 void usage ()
 {
-  AUTHOR = "Robert E. Smith (r.smith@brain.org.au), David Raffelt (d.raffelt@brain.org.au) and J-Donald Tournier (jdtournier@gmail.com)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au), David Raffelt (david.raffelt@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)";
+
+  SYNOPSIS = "Perform filtering operations on 3D / 4D MR images";
 
   DESCRIPTION
-  + "Perform filtering operations on 3D / 4D MR images. For 4D images, each 3D volume is processed independently."
-
-  + "The available filters are: fft, gradient, median, smooth."
-
-  + "Each filter has its own unique set of optional parameters.";
-
+  + "The available filters are: fft, gradient, median, smooth, normalise."
+  + "Each filter has its own unique set of optional parameters."
+  + "For 4D images, each 3D volume is processed independently.";
 
   ARGUMENTS
   + Argument ("input",  "the input image.").type_image_in ()
   + Argument ("filter", "the type of filter to be applied").type_choice (filters)
   + Argument ("output", "the output image.").type_image_out ();
 
-
   OPTIONS
   + FFTOption
   + GradientOption
   + MedianOption
+  + NormaliseOption
   + SmoothOption
-  + Image::Stride::StrideOption;
-
+  + Stride::Options;
 }
 
 
 void run () {
 
-  Image::Header input_header (argument[0]);
   const size_t filter_index = argument[1];
 
-  // Separate code path for FFT filter
-  if (!filter_index) {
+  switch (filter_index) {
 
-    // Gets preloaded by the FFT filter anyways, so just use a buffer
-    // FIXME Had to use cdouble throughout; seems to fail at compile time even trying to
-    //   convert between cfloat and cdouble...
-    Image::Buffer<cdouble> input_data (input_header);
-    auto input_voxel = input_data.voxel();
-    Image::Filter::FFT* filter = (dynamic_cast<Image::Filter::FFT*> (create_fft_filter (input_voxel)));
+    // FFT
+    case 0:
+    {
+      // FIXME Had to use cdouble throughout; seems to fail at compile time even trying to
+      //   convert between cfloat and cdouble...
+      auto input = Image<cdouble>::open (argument[0]).with_direct_io();
+      Filter::FFT filter (input, get_options ("inverse").size());
 
-    Image::Header header;
-    header.info() = filter->info();
-    Image::Stride::set_from_command_line (header);
+      auto opt = get_options ("axes");
+      if (opt.size())
+        filter.set_axes (opt[0][0]);
+      filter.set_centre_zero (get_options ("centre_zero").size());
+      Stride::set_from_command_line (filter);
+      filter.set_message (std::string("applying FFT filter to image " + std::string(argument[0])));
 
-    filter->set_message (std::string("applying FFT filter to image " + std::string(argument[0]) + "..."));
-
-    if (get_options ("magnitude").size()) {
-
-      Image::BufferScratch<cdouble> temp_data (header, "complex FFT result");
-      auto temp_voxel = temp_data.voxel();
-      (*filter) (input_voxel, temp_voxel);
-
-      header.datatype() = DataType::Float32;
-      Image::Buffer<float> output_data (argument[2], header);
-      auto output_voxel = output_data.voxel();
-
-      Image::LoopInOrder loop (output_voxel);
-      for (auto l = loop (temp_voxel, output_voxel); l; ++l) 
-        output_voxel.value() = std::abs (cdouble(temp_voxel.value()));
-
-    } else {
-
-      Image::Buffer<cdouble> output_data (argument[2], header);
-      auto output_voxel = output_data.voxel();
-      (*filter) (input_voxel, output_voxel);
-
+      if (get_options ("magnitude").size()) {
+        auto temp = Image<cdouble>::scratch (filter, "complex FFT result");
+        filter (input, temp);
+        filter.datatype() = DataType::Float32;
+        auto output = Image<float>::create (argument[2], filter);
+        for (auto l = Loop (output) (temp, output); l; ++l)
+          output.value() = abs (cdouble(temp.value()));
+      } else {
+        auto output = Image<cdouble>::create (argument[2], filter);
+        filter (input, output);
+      }
+      break;
     }
 
-    delete filter;
-    return;
+    // Gradient
+    case 1:
+    {
+      auto input = Image<float>::open (argument[0]);
+      Filter::Gradient filter (input, get_options ("magnitude").size());
 
+      vector<default_type> stdev;
+      auto opt = get_options ("stdev");
+      if (opt.size()) {
+        stdev = parse_floats (opt[0][0]);
+        for (size_t i = 0; i < stdev.size(); ++i)
+          if (stdev[i] < 0.0)
+            throw Exception ("the Gaussian stdev values cannot be negative");
+        if (stdev.size() != 1 && stdev.size() != 3)
+          throw Exception ("unexpected number of elements specified in Gaussian stdev");
+      } else {
+        stdev.resize (3, 0.0);
+        for (size_t dim = 0; dim != 3; ++dim)
+          stdev[dim] = filter.spacing (dim);
+      }
+      filter.compute_wrt_scanner (get_options ("scanner").size() ? true : false);
+      filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]));
+      Stride::set_from_command_line (filter);
+      filter.set_stdev (stdev);
+      auto output = Image<float>::create (argument[2], filter);
+      filter (input, output);
+    break;
+    }
+
+    // Median
+    case 2:
+    {
+      auto input = Image<float>::open (argument[0]);
+      Filter::Median filter (input);
+
+      auto opt = get_options ("extent");
+      if (opt.size())
+        filter.set_extent (parse_ints (opt[0][0]));
+      filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]));
+      Stride::set_from_command_line (filter);
+
+      auto output = Image<float>::create (argument[2], filter);
+      filter (input, output);
+      break;
+     }
+
+    // Smooth
+    case 3:
+    {
+      auto input = Image<float>::open (argument[0]);
+      Filter::Smooth filter (input);
+
+      auto opt = get_options ("stdev");
+      const bool stdev_supplied = opt.size();
+      if (stdev_supplied)
+        filter.set_stdev (parse_floats (opt[0][0]));
+      opt = get_options ("fwhm");
+      if (opt.size()) {
+        if (stdev_supplied)
+          throw Exception ("the stdev and FWHM options are mutually exclusive.");
+        vector<default_type> stdevs = parse_floats((opt[0][0]));
+        for (size_t d = 0; d < stdevs.size(); ++d)
+          stdevs[d] = stdevs[d] / 2.3548;  //convert FWHM to stdev
+        filter.set_stdev (stdevs);
+      }
+      opt = get_options ("extent");
+      if (opt.size())
+        filter.set_extent (parse_ints (opt[0][0]));
+      filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]));
+      Stride::set_from_command_line (filter);
+
+      auto output = Image<float>::create (argument[2], filter);
+      threaded_copy (input, output);
+      filter (output);
+      break;
+    }
+
+    // Normalisation
+    case 4:
+    {
+      auto input = Image<float>::open (argument[0]);
+      Filter::Normalise filter (input);
+
+      auto opt = get_options ("extent");
+      if (opt.size())
+        filter.set_extent (parse_ints (opt[0][0]));
+      filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]) + "...");
+      Stride::set_from_command_line (filter);
+
+      auto output = Image<float>::create (argument[2], filter);
+      filter (input, output);
+      break;
+     }
+
+    default:
+      assert (0);
+      break;
   }
-
-  Image::BufferPreload<float> input_data (input_header);
-  auto input_voxel = input_data.voxel();
-
-  Image::Filter::Base* filter = NULL;
-  switch (filter_index) {
-    case 0: assert (0); break;
-    case 1: filter = create_gradient_filter (input_voxel); break;
-    case 2: filter = create_median_filter   (input_voxel); break;
-    case 3: filter = create_smooth_filter   (input_voxel); break;
-    default: assert (0);
-  }
-
-  Image::Header header;
-  header.info() = filter->info();
-  Image::Stride::set_from_command_line (header);
-
-  Image::Buffer<float> output_data (argument[2], header);
-  auto output_voxel = output_data.voxel();
-
-  filter->set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]) + "...");
-
-  switch (filter_index) {
-    case 0: assert (0); break;
-    case 1: (*dynamic_cast<Image::Filter::Gradient*> (filter)) (input_voxel, output_voxel); break;
-    case 2: (*dynamic_cast<Image::Filter::Median*>   (filter)) (input_voxel, output_voxel); break;
-    case 3: (*dynamic_cast<Image::Filter::Smooth*>   (filter)) (input_voxel, output_voxel); break;
-  }
-
-  delete filter;
-
 }

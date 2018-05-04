@@ -1,0 +1,133 @@
+language: cpp
+cache:
+  apt: true
+  packages: true
+  directories:
+    - $HOME/.cache/pip
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-trusty-5.0
+    packages:
+      - g++-7
+      - clang-5.0
+      - zlib1g-dev
+      - libqt4-opengl-dev
+      - python3
+      - python-pip
+      - python3-pip
+matrix:
+  include:
+    #################################################
+    # Run a single OSX job to test compilation only #
+    #################################################
+    - os: osx
+      env: TRAVIS_CXX=clang++ py=python test=build
+    ###############################################
+    # All subsequent tests are performed on Linux #
+    ###############################################
+    #####################################################################
+    # Build binaries, run tests and check documentation: Clang, Python3 #
+    # (Note: Run this one first, since it'll be the longest job)        #
+    #####################################################################
+    - os: linux
+      env: TRAVIS_CXX=clang++-5.0 py=python3 test=run
+    #######################################################################
+    # Build binaries (without optimisation): GCC, Python2                 #
+    # (Also ensures both Python 2 and 3 are tested for configure & build) #
+    #######################################################################
+    - os: linux
+      env: TRAVIS_CXX=g++-7 py=python2 test=build
+    #######################################################################
+    # Generate documentation through Sphinx; Use both Python2 and Python3 #
+    #######################################################################
+    - os: linux
+      env: py=python2 test=sphinx
+    - os: linux
+      env: py=python3 test=sphinx
+    ###########################################################
+    # Run the check_syntax script; only needs to be done once #
+    ###########################################################
+    - os: linux
+      env: test=syntax
+    ##############################################
+    # Run PyLint tests; both Python2 and Python3 #
+    ##############################################
+    - os: linux
+      env: py=python2 test=pylint
+    - os: linux
+      env: py=python3 test=pylint
+install:
+  ##################################################
+  # OSX build requires explicit installation of QT #
+  ##################################################
+  - |
+    if [[ "${TRAVIS_OS_NAME}" == "osx" ]]; then
+        brew install qt5
+        brew link --force qt5
+    fi
+  #########################################
+  # Installation requirements for MRtrix3 #
+  #########################################
+  - export NUMBER_OF_PROCESSORS=2
+  - export PATH=`pwd`/bin:${PATH}
+  - export PYTHONPATH=`pwd`/lib:${PYTHONPATH}
+  - |
+    if [[ "${test}" == "sphinx" ]]; then
+        if [[ "${py}" == "python2" ]]; then
+            pip install urllib3[secure];
+            pip install --user recommonmark sphinx sphinx-rtd-theme;
+        else
+            pip3 install --user recommonmark sphinx sphinx-rtd-theme;
+        fi
+    fi
+  - |
+    if [[ "${test}" == "pylint" ]]; then
+        if [[ "${py}" == "python2" ]]; then
+            pip install --user pylint;
+        else
+            pip3 install --user pylint;
+        fi
+    fi
+  - |
+    if [[ "${test}" == "build" || "${test}" == "run" ]]; then
+        export EIGEN_CFLAGS=-I`pwd`/../eigen;
+        (cd ..; hg clone https://bitbucket.org/eigen/eigen/; cd eigen; hg update 3.3);
+    fi
+before_script:
+  #######################################################################################################################
+  # TravisCI sets CXX based on what it thinks the compiler should be; therefore we need to set it as late as possible   #
+  # Since this is not needed for the installation section, only for the travis.sh script, moved this to "before_script" #
+  #######################################################################################################################
+  - |
+    if [[ -n "${TRAVIS_CXX}" ]]; then
+      export CXX=${TRAVIS_CXX}
+    fi
+script:
+  - ./travis.sh
+before_cache:
+  - rm -f $HOME/.cache/pip/log/debug.log
+after_failure:
+  - |
+    case "${test}" in # CLICK HERE TO FIND REPORTED ERRORS
+      "sphinx")
+        cat sphinx.log
+        ;;
+      "syntax")
+        cat syntax.log
+        ;;
+      "pylint")
+        cat pylint.log
+        ;;
+      "build")
+        cat configure.log
+        cat build.log
+        ;;
+      *)
+        cat configure.log
+        cat build.log
+        cat testing.log
+        cat gitdiff.log
+    esac
+  - sleep 10

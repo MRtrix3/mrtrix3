@@ -1,24 +1,17 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-    Written by J-Donald Tournier and Robert E. Smith, 2015.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "gui/shapes/halfsphere.h"
 
@@ -61,7 +54,7 @@ namespace MR
 
 
       class Triangle
-      {
+      { NOMEMALIGN
         public:
           Triangle () { }
           Triangle (const GLuint x[3]) {
@@ -86,8 +79,8 @@ namespace MR
           GLuint  index[3];
       };
 
-      class Edge
-      {
+      class Edge 
+      { NOMEMALIGN
         public:
           Edge (const Edge& E) {
             set (E.i1, E.i2);
@@ -121,9 +114,9 @@ namespace MR
 
     void HalfSphere::LOD (const size_t level_of_detail)
     {
-      //std::vector<Vertex> vertices;
+      //vector<Vertex> vertices;
       vertices.clear();
-      std::vector<Triangle> indices;
+      vector<Triangle> indices;
 
       for (size_t n = 0; n < NUM_VERTICES; n++)
         vertices.push_back (initial_vertices[n]);
@@ -142,7 +135,7 @@ namespace MR
           std::map<Edge,GLuint>::const_iterator iter;
           if ( (iter = edges.find (E)) == edges.end()) {
             index1 = vertices.size();
-            edges[E] = index1;
+            edges.insert (std::make_pair (E, index1));
             vertices.push_back (Vertex (vertices, indices[n][0], indices[n][1]));
           }
           else index1 = iter->second;
@@ -150,7 +143,7 @@ namespace MR
           E.set (indices[n][1], indices[n][2]);
           if ( (iter = edges.find (E)) == edges.end()) {
             index2 = vertices.size();
-            edges[E] = index2;
+            edges.insert (std::make_pair (E, index2));
             vertices.push_back (Vertex (vertices, indices[n][1], indices[n][2]));
           }
           else index2 = iter->second;
@@ -158,7 +151,7 @@ namespace MR
           E.set (indices[n][2], indices[n][0]);
           if ( (iter = edges.find (E)) == edges.end()) {
             index3 = vertices.size();
-            edges[E] = index3;
+            edges.insert (std::make_pair (E, index3));
             vertices.push_back (Vertex (vertices, indices[n][2], indices[n][0]));
           }
           else index3 = iter->second;

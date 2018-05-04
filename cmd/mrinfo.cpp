@@ -1,31 +1,26 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include <map>
 #include <string>
-#include <vector>
 
 #include "command.h"
-#include "image/header.h"
+#include "header.h"
+#include "phase_encoding.h"
+#include "types.h"
+#include "file/json.h"
 #include "dwi/gradient.h"
 
 
@@ -34,41 +29,31 @@ using namespace App;
 
 
 
-const OptionGroup ExtractOption = OptionGroup ("Options to print only specific information from the image header")
-
-    + Option ("format", "image file format")
-    + Option ("ndim", "number of image dimensions")
-    + Option ("dimensions", "image dimensions along each axis")
-    + Option ("vox", "voxel size along each image dimension")
-    + Option ("datatype_long", "data type used for image data storage (long description)")
-    + Option ("datatype_short", "data type used for image data storage (short specifier)")
-    + Option ("stride", "data strides i.e. order and direction of axes data layout")
-    + Option ("offset", "image intensity offset")
-    + Option ("multiplier", "image intensity multiplier")
-    + Option ("comments", "any comments embedded in the image header")
-    + Option ("properties", "any text properties embedded in the image header")
-    + Option ("transform", "the image transform")
-    + Option ("dwgrad", "the diffusion-weighting gradient table, as stored in the header "
-        "(i.e. without any interpretation, scaling of b-values, or normalisation of gradient vectors)")
-    + Option ("shells", "list the average b-value of each shell")
-    + Option ("shellcounts", "list the number of volumes in each shell");
-
 const OptionGroup GradImportOptions = DWI::GradImportOptions();
 const OptionGroup GradExportOptions = DWI::GradExportOptions();
 
+const OptionGroup FieldExportOptions = OptionGroup ("Options for exporting image header fields")
 
+    + Option ("property", "any text properties embedded in the image header under the "
+        "specified key (use 'all' to list all keys found)").allow_multiple()
+    +   Argument ("key").type_text()
 
+    + Option ("json_keyval", "export header key/value entries to a JSON file")
+    +   Argument ("file").type_file_out()
+
+    + Option ("json_all", "export all header contents to a JSON file")
+    +   Argument ("file").type_file_out();
 
 
 
 void usage ()
 {
 
-  AUTHOR = "Robert Smith (r.smith@brain.org.au) and J-Donald Tournier (d.tournier@brain.org.au)";
+  AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au) and Robert E. Smith (robert.smith@florey.edu.au)";
+
+  SYNOPSIS = "Display image header information, or extract specific information from the header";
 
   DESCRIPTION
-    + "display header information, or extract specific information from the header."
-
     + "By default, all information contained in each image header will be printed to the console in "
       "a reader-friendly format."
 
@@ -86,19 +71,36 @@ void usage ()
     + Argument ("image", "the input image(s).").allow_multiple().type_image_in();
 
   OPTIONS
-    + Option ("norealign", 
-        "do not realign transform to near-default RAS coordinate system (the "
-        "default behaviour on image load). This is useful to inspect the transform "
-        "and strides as they are actually stored in the header, rather than as "
-        "MRtrix interprets them.") 
-    + ExtractOption
+    +   Option ("all", "print all properties, rather than the first and last 2 of each.")
+    +   Option ("format", "image file format")
+    +   Option ("ndim", "number of image dimensions")
+    +   Option ("size", "image size along each axis")
+    +   Option ("spacing", "voxel spacing along each image dimension")
+    +   Option ("datatype", "data type used for image data storage")
+    +   Option ("strides", "data strides i.e. order and direction of axes data layout")
+    +   Option ("offset", "image intensity offset")
+    +   Option ("multiplier", "image intensity multiplier")
+    +   Option ("transform", "the voxel to image transformation")
+
+    + NoRealignOption
+
+    + FieldExportOptions
+
     + GradImportOptions
-    + Option ("raw_dwgrad", 
+    + Option ("raw_dwgrad",
         "do not modify the gradient table from what was found in the image headers. This skips the "
         "validation steps normally performed within MRtrix applications (i.e. do not verify that "
         "the number of entries in the gradient table matches the number of volumes in the image, "
         "do not scale b-values by gradient norms, do not normalise gradient vectors)")
-    + GradExportOptions;
+
+    + GradExportOptions
+    +   Option ("dwgrad", "the diffusion-weighting gradient table, as stored in the header "
+          "(i.e. without any interpretation, scaling of b-values, or normalisation of gradient vectors)")
+    +   Option ("shell_bvalues", "list the average b-value of each shell")
+    +   Option ("shell_sizes", "list the number of volumes in each shell")
+
+    + PhaseEncoding::ExportOptions
+    + Option ("petable", "print the phase encoding table");
 
 }
 
@@ -108,31 +110,31 @@ void usage ()
 
 
 
-void print_dimensions (const Image::Header& header)
+void print_dimensions (const Header& header)
 {
   std::string buffer;
   for (size_t i = 0; i < header.ndim(); ++i) {
     if (i) buffer += " ";
-    buffer += str (header.dim (i));
+    buffer += str (header.size (i));
   }
   std::cout << buffer << "\n";
 }
 
-void print_vox (const Image::Header& header)
+void print_spacing (const Header& header)
 {
   std::string buffer;
   for (size_t i = 0; i < header.ndim(); ++i) {
     if (i) buffer += " ";
-    buffer += str (header.vox (i));
+    buffer += str (header.spacing (i));
   }
   std::cout << buffer << "\n";
 }
 
-void print_strides (const Image::Header& header)
+void print_strides (const Header& header)
 {
   std::string buffer;
-  std::vector<ssize_t> strides (Image::Stride::get (header));
-  Image::Stride::symbolise (strides);
+  vector<ssize_t> strides (Stride::get (header));
+  Stride::symbolise (strides);
   for (size_t i = 0; i < header.ndim(); ++i) {
     if (i) buffer += " ";
     buffer += header.stride (i) ? str (strides[i]) : "?";
@@ -140,20 +142,113 @@ void print_strides (const Image::Header& header)
   std::cout << buffer << "\n";
 }
 
-void print_comments (const Image::Header& header)
+void print_shells (const Header& header, const bool shell_bvalues, const bool shell_sizes)
 {
-  std::string buffer;
-  for (std::vector<std::string>::const_iterator i = header.comments().begin(); i != header.comments().end(); ++i)
-    buffer += *i + "\n";
-  std::cout << buffer;
+  DWI::Shells dwshells (DWI::parse_DW_scheme (header));
+  if (shell_bvalues) {
+    for (size_t i = 0; i < dwshells.count(); i++)
+      std::cout << dwshells[i].get_mean() << " ";
+    std::cout << "\n";
+  }
+  if (shell_sizes) {
+    for (size_t i = 0; i < dwshells.count(); i++)
+      std::cout << dwshells[i].count() << " ";
+    std::cout << "\n";
+  }
 }
 
-void print_properties (const Image::Header& header)
+void print_transform (const Header& header)
 {
-  std::string buffer;
-  for (std::map<std::string, std::string>::const_iterator i = header.begin(); i != header.end(); ++i)
-    buffer += i->first + ": " + i->second + "\n";
-  std::cout << buffer;
+  Eigen::IOFormat fmt (Eigen::FullPrecision, 0, " ", "\n", "", "", "", "\n");
+  Eigen::Matrix<default_type, 4, 4> matrix;
+  matrix.topLeftCorner<3,4>() = header.transform().matrix();
+  matrix.row(3) << 0.0, 0.0, 0.0, 1.0;
+  std::cout << matrix.format (fmt);
+}
+
+void print_properties (const Header& header, const std::string& key, const size_t indent = 0)
+{
+  if (lowercase (key) == "all") {
+    for (const auto& it : header.keyval()) {
+      std::cout << it.first << ": ";
+      print_properties (header, it.first, it.first.size()+2);
+    }
+  }
+  else {
+    const auto values = header.keyval().find (key);
+    if (values != header.keyval().end()) {
+      auto lines = split (values->second, "\n");
+      INFO ("showing property " + key + ":");
+      std::cout << lines[0] << "\n";
+      for (size_t i = 1; i != lines.size(); ++i) {
+        lines[i].insert (0, indent, ' ');
+        std::cout << lines[i] << "\n";
+      }
+    } else {
+      WARN ("no \"" + key + "\" entries found in \"" + header.name() + "\"");
+    }
+  }
+}
+
+template <class JSON>
+void keyval2json (const Header& header, JSON& json)
+{
+  for (const auto& kv : header.keyval()) {
+    // Text entries that in fact contain matrix / vector data will be
+    //   converted to numerical matrices / vectors and written as such
+    try {
+      const auto M = parse_matrix (kv.second);
+      if (M.rows() == 1 && M.cols() == 1)
+        throw Exception ("Single scalar value rather than a matrix");
+      for (ssize_t row = 0; row != M.rows(); ++row) {
+        vector<default_type> data (M.cols());
+        for (ssize_t i = 0; i != M.cols(); ++i)
+          data[i] = M (row, i);
+        if (json.find (kv.first) == json.end())
+          json[kv.first] = { data };
+        else
+          json[kv.first].push_back (data);
+      }
+    } catch (...) {
+      if (json.find (kv.first) == json.end()) {
+        json[kv.first] = kv.second;
+      } else if (json[kv.first] != kv.second) {
+        // If the value for this key differs between images, turn the JSON entry into an array
+        if (json[kv.first].is_array())
+          json[kv.first].push_back (kv.second);
+        else
+          json[kv.first] = { json[kv.first], kv.second };
+      }
+    }
+  }
+}
+
+void header2json (const Header& header, nlohmann::json& json)
+{
+  // Capture _all_ header fields, not just the optional key-value pairs
+  json["name"] = header.name();
+  vector<size_t> size (header.ndim());
+  vector<default_type> spacing (header.ndim());
+  for (size_t axis = 0; axis != header.ndim(); ++axis) {
+    size[axis] = header.size (axis);
+    spacing[axis] = header.spacing (axis);
+  }
+  json["size"] = size;
+  json["spacing"] = spacing;
+  vector<ssize_t> strides (Stride::get (header));
+  Stride::symbolise (strides);
+  json["strides"] = strides;
+  json["format"] = header.format();
+  json["datatype"] = header.datatype().specifier();
+  json["intensity_offset"] = header.intensity_offset();
+  json["intensity_scale"] = header.intensity_scale();
+  const transform_type& T (header.transform());
+  json["transform"] = { { T(0,0), T(0,1), T(0,2), T(0,3) },
+                        { T(1,0), T(1,1), T(1,2), T(1,3) },
+                        { T(2,0), T(2,1), T(2,2), T(2,3) },
+                        {    0.0,    0.0,    0.0,    1.0 } };
+  // Load key-value entries into a nested keyval.* member
+  keyval2json (header, json["keyval"]);
 }
 
 
@@ -165,74 +260,89 @@ void run ()
 {
   auto check_option_group = [](const App::OptionGroup& g) { for (auto o: g) if (get_options (o.id).size()) return true; return false; };
 
-  bool export_grad = check_option_group (GradExportOptions);
+  const bool export_grad = check_option_group (GradExportOptions);
+  const bool export_pe   = check_option_group (PhaseEncoding::ExportOptions);
 
-  if (export_grad && argument.size() > 1 )
+  if (export_grad && argument.size() > 1)
     throw Exception ("can only export DW gradient table to file if a single input image is provided");
+  if (export_pe && argument.size() > 1)
+    throw Exception ("can only export phase encoding table to file if a single input image is provided");
+
+  std::unique_ptr<nlohmann::json> json_keyval (get_options ("json_keyval").size() ? new nlohmann::json : nullptr);
+  std::unique_ptr<nlohmann::json> json_all    (get_options ("json_all").size() ? new nlohmann::json : nullptr);
 
   if (get_options ("norealign").size())
-    Image::Header::do_not_realign_transform = true;
+    Header::do_not_realign_transform = true;
 
-  const bool format      = get_options("format")        .size();
-  const bool ndim        = get_options("ndim")          .size();
-  const bool dimensions  = get_options("dimensions")    .size();
-  const bool vox         = get_options("vox")           .size();
-  const bool dt_long     = get_options("datatype_long") .size();
-  const bool dt_short    = get_options("datatype_short").size();
-  const bool stride      = get_options("stride")        .size();
-  const bool offset      = get_options("offset")        .size();
-  const bool multiplier  = get_options("multiplier")    .size();
-  const bool comments    = get_options("comments")      .size();
-  const bool properties  = get_options("properties")    .size();
-  const bool transform   = get_options("transform")     .size();
-  const bool dwgrad      = get_options("dwgrad")        .size();
-  const bool shells      = get_options("shells")        .size();
-  const bool shellcounts = get_options("shellcounts")   .size();
-  const bool raw_dwgrad  = get_options("raw_dwgrad")    .size();
+  const bool format        = get_options("format")        .size();
+  const bool ndim          = get_options("ndim")          .size();
+  const bool size          = get_options("size")          .size();
+  const bool spacing       = get_options("spacing")       .size();
+  const bool datatype      = get_options("datatype")      .size();
+  const bool strides       = get_options("strides")       .size();
+  const bool offset        = get_options("offset")        .size();
+  const bool multiplier    = get_options("multiplier")    .size();
+  const auto properties    = get_options("property");
+  const bool transform     = get_options("transform")     .size();
+  const bool dwgrad        = get_options("dwgrad")        .size();
+  const bool shell_bvalues = get_options("shell_bvalues") .size();
+  const bool shell_sizes   = get_options("shell_sizes")   .size();
+  const bool raw_dwgrad    = get_options("raw_dwgrad")    .size();
+  const bool petable       = get_options("petable")       .size();
 
-  const bool print_full_header = !(format || ndim || dimensions || vox || dt_long || dt_short || stride || 
-      offset || multiplier || comments || properties || transform || dwgrad || export_grad || shells || shellcounts);
-
+  const bool print_full_header = !(format || ndim || size || spacing || datatype || strides ||
+      offset || multiplier || properties.size() || transform ||
+      dwgrad || export_grad || shell_bvalues || shell_sizes || export_pe || petable ||
+      json_keyval || json_all);
 
   for (size_t i = 0; i < argument.size(); ++i) {
-    Image::Header header (argument[i]);
-    if (raw_dwgrad) 
-      header.DW_scheme() = DWI::get_DW_scheme<float> (header);
-    else if (export_grad || check_option_group (GradImportOptions) || dwgrad || shells || shellcounts) 
-      header.DW_scheme() = DWI::get_valid_DW_scheme<float> (header, true);
-
+    auto header = Header::open (argument[i]);
+    if (raw_dwgrad)
+      DWI::set_DW_scheme (header, DWI::get_DW_scheme (header));
+    else if (export_grad || check_option_group (GradImportOptions) || dwgrad || shell_bvalues || shell_sizes)
+      DWI::set_DW_scheme (header, DWI::get_valid_DW_scheme (header, true));
 
     if (format)     std::cout << header.format() << "\n";
     if (ndim)       std::cout << header.ndim() << "\n";
-    if (dimensions) print_dimensions (header);
-    if (vox)        print_vox (header);
-    if (dt_long)    std::cout << (header.datatype().description() ? header.datatype().description() : "invalid") << "\n";
-    if (dt_short)   std::cout << (header.datatype().specifier() ? header.datatype().specifier() : "invalid") << "\n";
-    if (stride)     print_strides (header);
+    if (size)       print_dimensions (header);
+    if (spacing)    print_spacing (header);
+    if (datatype)   std::cout << (header.datatype().specifier() ? header.datatype().specifier() : "invalid") << "\n";
+    if (strides)    print_strides (header);
     if (offset)     std::cout << header.intensity_offset() << "\n";
     if (multiplier) std::cout << header.intensity_scale() << "\n";
-    if (comments)   print_comments (header);
-    if (properties) print_properties (header);
-    if (transform)  std::cout << header.transform();
-    if (dwgrad)     std::cout << header.DW_scheme();
-    if (shells || shellcounts)     { 
-      DWI::Shells dwshells (header.DW_scheme()); 
-      if (shells) {
-        for (size_t i = 0; i < dwshells.count(); i++) 
-          std::cout << dwshells[i].get_mean() << " ";
-        std::cout << "\n";
-      }
-      if (shellcounts) {
-        for (size_t i = 0; i < dwshells.count(); i++) 
-          std::cout << dwshells[i].count() << " ";
-        std::cout << "\n";
-      }
-    }
+    if (transform)  print_transform (header);
+    if (dwgrad)     std::cout << DWI::get_DW_scheme (header) << "\n";
+    if (shell_bvalues || shell_sizes) print_shells (header, shell_bvalues, shell_sizes);
+    if (petable)    std::cout << PhaseEncoding::get_scheme (header) << "\n";
+
+    for (size_t n = 0; n < properties.size(); ++n)
+      print_properties (header, properties[n][0]);
 
     DWI::export_grad_commandline (header);
+    PhaseEncoding::export_commandline (header);
+
+    if (json_keyval)
+      keyval2json (header, *json_keyval);
+
+    if (json_all)
+      header2json (header, *json_all);
 
     if (print_full_header)
-      std::cout << header.description();
+      std::cout << header.description (get_options ("all").size());
+  }
+
+  if (json_keyval) {
+    auto opt = get_options ("json_keyval");
+    assert (opt.size());
+    File::OFStream out (opt[0][0]);
+    out << json_keyval->dump(4) << "\n";
+  }
+
+  if (json_all) {
+    auto opt = get_options ("json_all");
+    assert (opt.size());
+    File::OFStream out (opt[0][0]);
+    out << json_all->dump(4) << "\n";
   }
 
 }

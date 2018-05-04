@@ -1,0 +1,51 @@
+#!/usr/bin/env python
+import sys
+
+def errorMessage(msg):
+  sys.stderr.write(msg + '\n')
+  exit(1)
+
+if len(sys.argv) < 3 :
+  sys.stderr.write("example usage: average_response input_response1.txt input_response2.txt input_response3.txt ... output_average_response.txt\n")
+  exit(1)
+
+num_bvals = 0
+num_coeff = 0
+num_subjects = len(sys.argv) - 2
+sys.stdout.write("Number of subjects: " + str(num_subjects) + '\n')
+
+for i in range(1, num_subjects + 1):
+  with open(sys.argv[i], 'r') as f:
+    lines = f.readlines()
+    if i == 1:
+      num_bvals = len(lines)
+      num_coeff = len(lines[0].split())
+      for l in lines:
+        if len(l.split()) != num_coeff:
+          errorMessage("Error in file " + sys.argv[i] + ": multi-shell response functions must have the same number of coefficients per b-value (line)")
+    else:
+      if len(lines) != num_bvals:
+        errorMessage("Error in file " + sys.argv[i] + ": Input files do not contain the same number of b-values")
+      for l in lines:
+        if len(l.split()) != num_coeff:
+          errorMessage("Error in file " + sys.argv[i] + ": multi-shell response functions must have the same number of coefficients per b-value (line)")
+
+sys.stdout.write("Number of b-values: " + str(num_bvals) + '\n')
+
+# Can't use multiplication operator in outer loop since it duplicates by reference rather than value
+average_response = [[0] * num_coeff for _ in range(num_bvals)] #pylint: disable=unused-variable
+for i in range(1, num_subjects + 1):
+  with open(sys.argv[i], 'r') as f:
+    lines = f.readlines()
+    for l in range(0, num_bvals):
+      coeff = lines[l].split()
+      for c in range(0, num_coeff):
+        average_response[l][c] = average_response[l][c] + float(coeff[c]) / float(num_subjects)
+
+f = open(sys.argv[len(sys.argv)-1], 'w')
+line_out = ''
+for l in range(num_bvals):
+  line_out = ''
+  for c in  range(0, num_coeff):
+    line_out = line_out + "{0:.5f}".format(average_response[l][c]) + ' '
+  f.write("%s\n" % line_out)

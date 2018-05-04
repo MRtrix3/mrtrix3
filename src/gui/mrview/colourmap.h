@@ -1,31 +1,22 @@
 /*
-   Copyright 2010 Brain Research Institute, Melbourne, Australia
-
-   Written by J-Donald Tournier, 13/11/09.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
 
 #ifndef __gui_mrview_colourmap_h__
 #define __gui_mrview_colourmap_h__
 
 #include <functional>
-
-#include "point.h"
 
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
@@ -56,10 +47,10 @@ namespace MR
         };
 
 
-        class Entry {
+        class Entry { MEMALIGN(Entry)
           public:
 
-            typedef std::function< Point<float> (float) > basic_map_fn;
+            using basic_map_fn = std::function< Eigen::Array3f (float) >;
 
             Entry (const char* name, const char* glsl_mapping, basic_map_fn basic_mapping,
                 const char* amplitude = NULL, bool special = false, bool is_colour = false) :
@@ -135,7 +126,7 @@ namespace MR
 
 
 
-        class Renderer {
+        class Renderer { MEMALIGN(Renderer)
           public:
             Renderer();
             void begin_render_colourbars (Projection* projection,
@@ -150,7 +141,7 @@ namespace MR
             void render (size_t colourmap, bool inverted,
                          float local_min_value, float local_max_value,
                          float global_min_value, float global_range,
-                         Point<float> colour = Point<float>());
+                         Eigen::Array3f colour = { NAN, NAN, NAN });
 
             void render (const Displayable& object, bool inverted);
 

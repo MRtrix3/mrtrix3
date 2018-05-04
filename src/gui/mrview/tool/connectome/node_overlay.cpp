@@ -1,31 +1,23 @@
 /*
-   Copyright 2014 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-   Written by Robert E. Smith, 2015.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "gui/mrview/tool/connectome/node_overlay.h"
 
 #include <limits>
-#include <vector>
 
-#include "progressbar.h"
+#include "types.h"
 
 namespace MR
 {
@@ -37,15 +29,16 @@ namespace MR
       {
 
 
-        NodeOverlay::NodeOverlay (const MR::Image::Info& info) :
-            MR::GUI::MRView::ImageBase (info),
-            data (info),
+        NodeOverlay::NodeOverlay (MR::Header&& H) :
+            MR::GUI::MRView::ImageBase (std::move (H)),
+            data (MR::Image<float>::scratch (header(), "node overlay scratch image")),
             need_update (true)
         {
-          position.assign       (3, -1);
+          tex_positions.assign  (3, -1);
           set_interpolate       (false);
           set_colourmap         (5);
-          set_min_max           (std::numeric_limits<float>::min(), 1.0f);
+          value_min = 0.0f; value_max = 1.0f;
+          min_max_set           ();
           set_allowed_features  (true, true, true);
           set_use_discard_lower (true);
           set_use_discard_upper (false);
@@ -75,27 +68,26 @@ namespace MR
           gl::PixelStorei (gl::UNPACK_ALIGNMENT, 1);
           texture2D[plane].set_interp (interpolation);
 
-          if (position[plane] == slice && !need_update)
+          if (tex_positions[plane] == slice && !need_update)
             return;
-          position[plane] = slice;
+          tex_positions[plane] = slice;
 
           int x, y;
           get_axes (plane, x, y);
-          const ssize_t xdim = _info.dim (x), ydim = _info.dim (y);
+          const ssize_t xsize = data.size (x), ysize = data.size (y);
 
-          std::vector<float> texture_data;
-          auto vox = data.voxel();
-          texture_data.resize (4*xdim*ydim, 0.0f);
-          if (position[plane] >= 0 && position[plane] < _info.dim (plane)) {
-            vox[plane] = slice;
-            for (vox[y] = 0; vox[y] < ydim; ++vox[y]) {
-              for (vox[x] = 0; vox[x] < xdim; ++vox[x]) {
-                for (vox[3] = 0; vox[3] != 4; ++vox[3]) {
-                  texture_data[4*(vox[x]+vox[y]*xdim) + vox[3]] = vox.value();
+          vector<float> texture_data;
+          texture_data.resize (4*xsize*ysize, 0.0f);
+          if (tex_positions[plane] >= 0 && tex_positions[plane] < data.size (plane)) {
+            data.index(plane) = slice;
+            for (data.index(y) = 0; data.index(y) < ysize; ++data.index(y)) {
+              for (data.index(x) = 0; data.index(x) < xsize; ++data.index(x)) {
+                for (data.index(3) = 0; data.index(3) != 4; ++data.index(3)) {
+                  texture_data[4*(data.index(x)+data.index(y)*xsize) + data.index(3)] = data.value();
             } } }
           }
 
-          gl::TexImage3D (gl::TEXTURE_3D, 0, internal_format, xdim, ydim, 1, 0, format, type, reinterpret_cast<void*> (&texture_data[0]));
+          gl::TexImage3D (gl::TEXTURE_3D, 0, internal_format, xsize, ysize, 1, 0, format, type, reinterpret_cast<void*> (&texture_data[0]));
           need_update = false;
         }
 
@@ -104,7 +96,8 @@ namespace MR
           bind();
           allocate();
           if (!need_update) return;
-          upload_data ({ { 0, 0, 0 } }, { { data.dim(0), data.dim(1), data.dim(2) } }, reinterpret_cast<void*> (data.address(0)));
+          // FIXME No longer have access to the raw image data pointer!
+          //upload_data ({ { 0, 0, 0 } }, { { data.size(0), data.size(1), data.size(2) } }, reinterpret_cast<void*> (data.address(0)));
           need_update = false;
         }
 

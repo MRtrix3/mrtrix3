@@ -1,24 +1,17 @@
 /*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-   Written by Robert E. Smith, 2015.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #ifndef __gui_mrview_tool_connectome_node_list_h__
 #define __gui_mrview_tool_connectome_node_list_h__
@@ -49,7 +42,7 @@ namespace MR
 
 
         class Node_list_model : public QAbstractItemModel
-        {
+        { MEMALIGN(Node_list_model)
           public:
 
             Node_list_model (Connectome* parent);
@@ -69,7 +62,7 @@ namespace MR
             int rowCount (const QModelIndex& parent = QModelIndex()) const override;
             int columnCount (const QModelIndex& parent = QModelIndex()) const override;
 
-            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const {
+            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const override {
               (void ) parent;
               return createIndex (row, column);
             }
@@ -94,27 +87,27 @@ namespace MR
 
 
         class Node_list_view : public QTableView
-        {
+        { NOMEMALIGN
           public:
             Node_list_view (QWidget* parent) :
                 QTableView (parent) { }
             void setModel (QAbstractItemModel* model)
             {
               QTableView::setModel (model);
-              //setColumnWidth (0, model->headerData (0, Qt::Horizontal, Qt::SizeHintRole).toInt());
-              //setColumnWidth (1, model->headerData (1, Qt::Horizontal, Qt::SizeHintRole).toInt());
+              //setColumnWidth (0, model->original_headerData (0, Qt::Horizontal, Qt::SizeHintRole).toInt());
+              //setColumnWidth (1, model->original_headerData (1, Qt::Horizontal, Qt::SizeHintRole).toInt());
             }
         };
 
 
 
         class Node_list : public Tool::Base
-        {
+        { MEMALIGN(Node_list)
 
             Q_OBJECT
 
           public:
-            Node_list (Window&, Tool::Dock*, Connectome*);
+            Node_list (Tool::Dock*, Connectome*);
 
             void initialize();
             void colours_changed();
@@ -126,7 +119,6 @@ namespace MR
             void node_selection_settings_dialog_slot();
 
           private:
-            Window& window;
             Connectome& connectome;
 
             QPushButton *clear_selection_button;

@@ -1,0 +1,130 @@
+#!/bin/bash
+
+if [ $# -eq 0 ]; then
+  cat <<HELP_PAGE
+USAGE: 
+  $ foreach [-N] [-v] <pattern> : command ...
+
+  For example: 
+    $ foreach folder/*.mif : mrinfo IN
+  will run mrinfo for each matching file in "folder"
+
+AVAILABLE SUBSTITUTIONS:
+  IN:   the full matching pattern, including leading folders
+        For example, if the target list contains a file "folder/image.mif",
+        any occurrence of "IN" will be substituted with "folder/image.mif".
+  NAME: the basename of the matching pattern 
+        For example, if the target list contains a file "folder/image.mif",
+        any occurrence of "NAME" will be substituted with "image.mif".
+  PRE:  the prefix of the matching pattern 
+        For example, if the target list contains a file "folder/image.mif",
+        any occurrence of "PRE" will be substituted with "image".
+  UNI:  the unique prefix of the matching pattern after removing the common suffix
+        For example, if the target list contains files:
+        "folder/001dwi.mif", "folder/002dwi.mif", "folder/003dwi.mif" 
+        any occurrence of "UNI" will be substituted with "001", "002", "003".
+
+PARALLEL PROCESSING: 
+  To run multiple jobs at once, add the -N option before the colon,
+  where N is the number of concurrent jobs required. 
+  
+  For example: 
+    $ foreach -32 input/* : mrconvert IN output/NAME
+  will run up to 32 of the required jobs in parallel
+
+SEQUENTIAL PROCESSING:
+  To run a series of sequential jobs for each input file, you can 
+  use these standard shell constructs: 
+     | ; && ||
+  Note that these will need to quoted in inverted commas to prevent 
+  the shell from interpreting them.
+  
+  For example:
+
+    $ foreach -8 images/*.nii : \\
+      echo processing NAME... ";" \\
+      mrcalc IN mask/PRE.mif -mult "images masked"/PRE.mif -quiet "&&" \\
+      mrstats IN -mask images\\ masked/PRE.mif \\| tail -n 1
+
+  will run the three commands specified for each input file one 
+  after the other, and run 8 of these processing pipelines in parallel. 
+  It will only invoke the mrstats command if the previous mrmath 
+  command completes without errors, since the "&&" construct was used 
+  (see below). Note that the backslash character ("\\") can be used to 
+  break a command over multiple lines; this can help to make your
+  scripts more readable.
+
+  For reference:
+     |   pipe the output of current command into the input of the next
+     ;   means "run next command regardless of what happens with the 
+         current command"
+     &&  means "run next command only if current command succeeds
+         without error (i.e. returns with a zero exit code)
+     ||  means "run next command only if current command fails
+
+HANDLING SPACES IN FILE NAMES:
+  The example above also illustrates how spaces in filenames (and other 
+  non-standard characters) can be handled (the "images masked" folder):
+  either using inverted commas, or by prefixing the relevant characters 
+  with a backslash ("\\").
+
+HELP_PAGE
+
+  exit 1
+fi
+
+
+# extract list of targets and number of jobs if specified:
+args=()
+njobs=""
+verbose=""
+while (( "$#" )); do
+  if [ "x$1" == "x:" ]; then break; fi
+  if [ "x$1" == "x-v" ]; then
+    verbose="true"
+  elif [ "x${1:0:1}" == "x-" ]; then 
+    njobs="-P ${1:1} "
+  else
+    args+=("$1")
+  fi
+  shift
+done
+
+
+# extract command to run:
+shift
+while (( "$#" )); do
+  cmd+="\"$1\" "
+  shift
+done
+
+if [ x"$cmd" == "x" ]; then
+  echo "error: no command specified!"
+  exit 1
+fi
+
+common_suffix=`printf '%s\n' "${args[@]}" | rev | sed -e '1{h;d;}' -e 'G;s,\(.*\).*\n\1.*,\1,;h;$!d' | rev`
+
+( for arg in "${args[@]}"; do 
+  name=$(basename "$arg")
+  pre="${name%.*}"
+  uni=$(basename "$arg" "$common_suffix")
+
+  actual_cmd=${cmd//IN/$arg}
+  actual_cmd=${actual_cmd//NAME/$name}
+  actual_cmd=${actual_cmd//PRE/$pre}
+  actual_cmd=${actual_cmd//UNI/$uni}
+  actual_cmd=${actual_cmd//\"|\"/|}
+  actual_cmd=${actual_cmd//\";\"/;}
+  actual_cmd=${actual_cmd//\"&&\"/&&}
+  actual_cmd=${actual_cmd//\"||\"/||}
+  
+  if [ "x$verbose" == "xtrue" ]; then 
+    printf "executing: %s\n" "$actual_cmd" 1>&2
+  fi
+  
+  echo $actual_cmd
+
+#done ) | tr '\n' '\0' |  xargs -0 printf "\"%s\"\n"
+done ) | tr '\n' '\0' |  xargs -0 $njobs -n 1 bash -c 
+

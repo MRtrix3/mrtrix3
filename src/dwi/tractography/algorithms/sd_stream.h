@@ -1,29 +1,21 @@
 /*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-   Written by Robert E. Smith, 23/01/2012.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #ifndef __dwi_tractography_algorithms_sd_stream_h__
 #define __dwi_tractography_algorithms_sd_stream_h__
 
-#include "point.h"
 #include "math/SH.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
@@ -37,22 +29,28 @@ namespace Algorithms {
 
 using namespace MR::DWI::Tractography::Tracking;
 
-class SDStream : public MethodBase {
+class SDStream : public MethodBase { MEMALIGN(SDStream)
   public:
-    class Shared : public SharedBase {
+    class Shared : public SharedBase { MEMALIGN(Shared)
       public:
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
             SharedBase (diff_path, property_set),
-            lmax (Math::SH::LforN (source_buffer.dim(3)))
+            lmax (Math::SH::LforN (source.size(3)))
         {
-          if (source_buffer.dim(3) != int (Math::SH::NforL (Math::SH::LforN (source_buffer.dim(3))))) 
-            throw Exception ("number of volumes in input data does not match that expected for a SH dataset");
+          try {
+            Math::SH::check (source);
+          } catch (Exception& e) {
+            e.display();
+            throw Exception ("Algorithm SD_STREAM expects as input a spherical harmonic (SH) image");
+          }
 
           if (is_act() && act().backtrack())
             throw Exception ("Backtracking not valid for deterministic algorithms");
 
-          set_step_size (0.1);
+          set_step_size (0.1f);
           dot_threshold = std::cos (max_angle);
+
+          set_cutoff (TCKGEN_DEFAULT_CUTOFF_FOD);
 
           if (rk4) {
             INFO ("minimum radius of curvature = " + str(step_size / (max_angle / (0.5 * Math::pi))) + " mm");
@@ -65,7 +63,7 @@ class SDStream : public MethodBase {
           bool precomputed = true;
           properties.set (precomputed, "sh_precomputed");
           if (precomputed)
-            precomputer = new Math::SH::PrecomputedAL<value_type> (lmax);
+            precomputer = new Math::SH::PrecomputedAL<float> (lmax);
         }
 
         ~Shared () {
@@ -73,9 +71,9 @@ class SDStream : public MethodBase {
             delete precomputer;
         }
 
-        value_type dot_threshold;
+        float dot_threshold;
         size_t lmax;
-        Math::SH::PrecomputedAL<value_type>* precomputer;
+        Math::SH::PrecomputedAL<float>* precomputer;
 
     };
 
@@ -87,31 +85,31 @@ class SDStream : public MethodBase {
     SDStream (const Shared& shared) :
       MethodBase (shared),
       S (shared),
-      source (S.source_voxel) { }
+      source (S.source) { }
 
     SDStream (const SDStream& that) :
       MethodBase (that.S),
       S (that.S),
-      source (S.source_voxel) { }
+      source (S.source) { }
 
 
     ~SDStream () { }
 
 
 
-    bool init()
+    bool init() override
     {
       if (!get_data (source))
         return (false);
 
-      if (!S.init_dir) {
-        if (!dir.valid())
+      if (!S.init_dir.allFinite()) {
+        if (!dir.allFinite())
           dir = random_direction();
-      } 
-      else 
+      }
+      else
         dir = S.init_dir;
 
-      dir.normalise();
+      dir.normalize();
       if (!find_peak())
         return false;
 
@@ -120,12 +118,12 @@ class SDStream : public MethodBase {
 
 
 
-    term_t next ()
+    term_t next () override
     {
       if (!get_data (source))
         return EXIT_IMAGE;
 
-      const Point<value_type> prev_dir (dir);
+      const Eigen::Vector3f prev_dir (dir);
 
       if (!find_peak())
         return BAD_SIGNAL;
@@ -138,7 +136,7 @@ class SDStream : public MethodBase {
     }
 
 
-    float get_metric()
+    float get_metric() override
     {
       return FOD (dir);
     }
@@ -146,17 +144,17 @@ class SDStream : public MethodBase {
 
     protected:
       const Shared& S;
-      Interpolator<SourceBufferType::voxel_type>::type source;
+      Interpolator<Image<float>>::type source;
 
-      value_type find_peak ()
+      float find_peak ()
       {
-        value_type FOD = Math::SH::get_peak (&values[0], S.lmax, dir, S.precomputer);
+        float FOD = Math::SH::get_peak (values, S.lmax, dir, S.precomputer);
         if (!std::isfinite (FOD) || FOD < S.threshold)
           FOD = 0.0;
         return FOD;
       }
 
-      value_type FOD (const Point<value_type>& d) const
+      float FOD (const Eigen::Vector3f& d) const
       {
         return (S.precomputer ?
             S.precomputer->value (values, d) :

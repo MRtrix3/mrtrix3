@@ -1,26 +1,22 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-    Written by J-Donald Tournier, 27/06/08.
 
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
-
-#include "image/header.h"
+#include "header.h"
+#include "stride.h"
+#include "math/math.h"
+#include "dwi/gradient.h"
 #include "gui/dialog/file.h"
 #include "gui/dialog/list.h"
 #include "gui/dialog/image_properties.h"
@@ -33,73 +29,79 @@ namespace MR
     namespace Dialog
     {
 
-      ImageProperties::ImageProperties (QWidget* parent, const Image::Header& header) :
-        QDialog (parent), H (header), save_target (NULL)
+      ImageProperties::ImageProperties (QWidget* parent, const MR::Header& header) :
+        QDialog (parent), H (header), save_data (0, 0)
       {
         model = new TreeModel (this);
 
         TreeItem* root = model->rootItem;
 
         root->appendChild (new TreeItem ("File", H.name(), root));
+        assert (H.format());
         root->appendChild (new TreeItem ("Format", H.format(), root));
 
-        if (H.comments().size()) {
-          TreeItem* comments = new TreeItem ("Comments", std::string(), root);
-          root->appendChild (comments);
-          for (size_t n = 0; n < H.comments().size(); ++n)
-            comments->appendChild (new TreeItem (std::string(), H.comments() [n], comments));
+        if (H.keyval().size()) {
+          TreeItem* keyvals = new TreeItem ("Key/value pairs", std::string(), root);
+          root->appendChild (keyvals);
+          for (auto n : H.keyval()) {
+            if (n.first != "dw_scheme") {
+              if (n.second.find ('\n') == n.second.npos) {
+                keyvals->appendChild (new TreeItem (n.first, n.second, keyvals));
+              } else {
+                const auto lines = split_lines (n.second);
+                TreeItem* multi_line_keyval = new TreeItem (n.first, std::string(), keyvals);
+                keyvals->appendChild (multi_line_keyval);
+                for (auto l : lines)
+                  multi_line_keyval->appendChild (new TreeItem (std::string(), l, multi_line_keyval));
+              }
+            }
+          }
         }
 
         std::string text;
-        text = str (H.dim (0));
+        text = str (H.size (0));
         for (size_t n = 1; n < H.ndim(); ++n)
-          text += " x " + str (H.dim (n));
+          text += " x " + str (H.size (n));
         root->appendChild (new TreeItem ("Dimensions", text, root));
 
-        text = str (H.vox (0));
+        text = str (H.spacing (0));
         for (size_t n = 1; n < H.ndim(); ++n)
-          text += " x " + str (H.vox (n));
+          text += " x " + str (H.spacing (n));
         root->appendChild (new TreeItem ("Voxel size", text, root));
 
         root->appendChild (new TreeItem ("Data type", H.datatype().description(), root));
 
-        text = str (H.stride (0));
-        for (size_t n = 1; n < H.ndim(); ++n)
-          text += ", " + str (H.stride (n));
+        MR::Stride::List strides = MR::Stride::get_symbolic (H);
+        text = str (strides[0]);
+        for (size_t n = 1; n != strides.size(); ++n)
+          text += ", " + str (strides[n]);
         root->appendChild (new TreeItem ("Strides", text, root));
 
         root->appendChild (new TreeItem ("Data scaling",
                                          "offset: " + str (H.intensity_offset()) + ", multiplier = " + str (H.intensity_scale()), root));
 
-        if (H.transform().rows() != 4 || H.transform().columns() != 4) {
-          root->appendChild (new TreeItem ("Transform", "(invalid)", root));
-        }
-        else {
-          TreeItem* transform = new TreeItem ("Transform", std::string(), root);
-          root->appendChild (transform);
-          for (size_t n = 0; n < 4; ++n)
-            transform->appendChild (new TreeItem (std::string(),
-                                                  str (H.transform() (n,0)) + ", " +
-                                                  str (H.transform() (n,1)) + ", " +
-                                                  str (H.transform() (n,2)) + ", " +
-                                                  str (H.transform() (n,3)),
-                                                  transform));
+        Eigen::IOFormat Fmt (6, 0, ", ", "\n", "[", "]");
+        TreeItem* transform = new TreeItem ("Transform", std::string(), root);
+        root->appendChild (transform);
+        for (size_t n = 0; n < 3; ++n) {
+          std::stringstream ss;
+          ss << H.transform().matrix().row (n).format (Fmt);
+          transform->appendChild (new TreeItem (std::string(), ss.str(), transform));
         }
 
-        if (H.DW_scheme().is_set()) {
-          if (H.DW_scheme().rows() == 0 || H.DW_scheme().columns() != 4) {
+        auto DW_scheme = DWI::parse_DW_scheme (H);
+        if (DW_scheme.rows()) {
+          if (DW_scheme.cols() < 4) {
             root->appendChild (new TreeItem ("Diffusion scheme", "(invalid)", root));
           }
           else {
             TreeItem* scheme = new TreeItem ("Diffusion scheme", std::string(), root);
             root->appendChild (scheme);
-            for (size_t n = 0; n < H.DW_scheme().rows(); ++n)
-              scheme->appendChild (new TreeItem (std::string(),
-                                                 str (H.DW_scheme() (n,0)) + ", " +
-                                                 str (H.DW_scheme() (n,1)) + ", " +
-                                                 str (H.DW_scheme() (n,2)) + ", " +
-                                                 str (H.DW_scheme() (n,3)),
-                                                 scheme));
+            for (size_t n = 0; n < size_t(DW_scheme.rows()); ++n) {
+              std::stringstream ss;
+              ss << DW_scheme.row (n).format (Fmt);
+              scheme->appendChild (new TreeItem (std::string(), ss.str(), scheme));
+            }
           }
         }
 
@@ -135,10 +137,10 @@ namespace MR
         while (k.parent().isValid()) k = k.parent();
         std::string text = k.data().toString().toUtf8().constData();
 
-        if (text == "Transform") save_target = &H.transform();
-        else if (text == "Diffusion scheme") save_target = &H.DW_scheme();
+        if (text == "Transform") save_data = H.transform().matrix();
+        else if (text == "Diffusion scheme") save_data = DWI::parse_DW_scheme (H);
         else {
-          save_target = NULL;
+          save_data.resize (0, 0);
           return;
         }
 
@@ -155,10 +157,10 @@ namespace MR
 
       void ImageProperties::write_to_file ()
       {
-        assert (save_target);
+        assert (save_data.rows());
         std::string name = File::get_save_name (this, "Save as...", "dwgrad.txt");
         if (name.size())
-          save_target->save (name);
+          MR::save_matrix (save_data, name);
       }
 
     }

@@ -1,28 +1,29 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-    Written by David Raffelt and Donald Tournier 23/07/11.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
+
 #ifndef __stats_cfe_h__
 #define __stats_cfe_h__
 
-#include "image/buffer_scratch.h"
+#include "image.h"
+#include "image_helpers.h"
+#include "types.h"
+#include "math/math.h"
+#include "math/stats/typedefs.h"
+
 #include "dwi/tractography/mapping/mapper.h"
+#include "stats/enhance.h"
 
 namespace MR
 {
@@ -31,122 +32,92 @@ namespace MR
     namespace CFE
     {
 
-      typedef float value_type;
-      typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
+      using index_type = uint32_t;
+      using value_type = Math::Stats::value_type;
+      using vector_type = Math::Stats::vector_type;
+      using connectivity_value_type = float;
+      using direction_type = Eigen::Matrix<value_type, 3, 1>;
+      using SetVoxelDir = DWI::Tractography::Mapping::SetVoxelDir;
+
 
 
       /** \addtogroup Statistics
       @{ */
 
 
-      class connectivity {
+      class connectivity { NOMEMALIGN
         public:
           connectivity () : value (0.0) { }
-          value_type value;
+          connectivity (const connectivity_value_type v) : value (v) { }
+          connectivity_value_type value;
       };
 
+
+      // A class to store fixel index / connectivity value pairs
+      //   only after the connectivity matrix has been thresholded / normalised
+      class NormMatrixElement
+      { NOMEMALIGN
+        public:
+          NormMatrixElement (const index_type fixel_index,
+                             const connectivity_value_type connectivity_value) :
+              fixel_index (fixel_index),
+              connectivity_value (connectivity_value) { }
+          FORCE_INLINE index_type index() const { return fixel_index; }
+          FORCE_INLINE connectivity_value_type value() const { return connectivity_value; }
+          FORCE_INLINE void normalise (const connectivity_value_type norm_factor) { connectivity_value *= norm_factor; }
+        private:
+          const index_type fixel_index;
+          connectivity_value_type connectivity_value;
+      };
+
+
+
+      // Different types are used depending on whether the connectivity matrix
+      //   is in the process of being built, or whether it has been normalised
+      using init_connectivity_matrix_type = vector<std::map<index_type, connectivity>>;
+      using norm_connectivity_matrix_type = vector<vector<NormMatrixElement>>;
 
 
 
       /**
        * Process each track by converting each streamline to a set of dixels, and map these to fixels.
        */
-      class TrackProcessor {
+      class TrackProcessor { MEMALIGN(TrackProcessor)
 
         public:
-          TrackProcessor (Image::BufferScratch<int32_t>& fixel_indexer,
-                          const std::vector<Point<value_type> >& fixel_directions,
-                          std::vector<uint16_t>& fixel_TDI,
-                          std::vector<std::map<int32_t, connectivity> >& connectivity_matrix,
-                          value_type angular_threshold):
-                          fixel_indexer (fixel_indexer) ,
-                          fixel_directions (fixel_directions),
-                          fixel_TDI (fixel_TDI),
-                          connectivity_matrix (connectivity_matrix) {
-            angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
-          }
+          TrackProcessor (Image<index_type>& fixel_indexer,
+                          const vector<direction_type>& fixel_directions,
+                          Image<bool>& fixel_mask,
+                          vector<uint16_t>& fixel_TDI,
+                          init_connectivity_matrix_type& connectivity_matrix,
+                          const value_type angular_threshold);
 
-          bool operator () (SetVoxelDir& in)
-          {
-            // For each voxel tract tangent, assign to a fixel
-            std::vector<int32_t> tract_fixel_indices;
-            for (SetVoxelDir::const_iterator i = in.begin(); i != in.end(); ++i) {
-              Image::Nav::set_pos (fixel_indexer, *i);
-              fixel_indexer[3] = 0;
-              int32_t first_index = fixel_indexer.value();
-              if (first_index >= 0) {
-                fixel_indexer[3] = 1;
-                int32_t last_index = first_index + fixel_indexer.value();
-                int32_t closest_fixel_index = -1;
-                value_type largest_dp = 0.0;
-                Point<value_type> dir (i->get_dir());
-                dir.normalise();
-                for (int32_t j = first_index; j < last_index; ++j) {
-                  value_type dp = Math::abs (dir.dot (fixel_directions[j]));
-                  if (dp > largest_dp) {
-                    largest_dp = dp;
-                    closest_fixel_index = j;
-                  }
-                }
-                if (largest_dp > angular_threshold_dp) {
-                  tract_fixel_indices.push_back (closest_fixel_index);
-                  fixel_TDI[closest_fixel_index]++;
-                }
-              }
-            }
-
-            for (size_t i = 0; i < tract_fixel_indices.size(); i++) {
-              for (size_t j = i + 1; j < tract_fixel_indices.size(); j++) {
-                connectivity_matrix[tract_fixel_indices[i]][tract_fixel_indices[j]].value++;
-                connectivity_matrix[tract_fixel_indices[j]][tract_fixel_indices[i]].value++;
-              }
-           }
-
-
-            return true;
-          }
+          bool operator () (const SetVoxelDir& in);
 
         private:
-          Image::BufferScratch<int32_t>::voxel_type fixel_indexer;
-          const std::vector<Point<value_type> >& fixel_directions;
-          std::vector<uint16_t>& fixel_TDI;
-          std::vector<std::map<int32_t, connectivity> >& connectivity_matrix;
-          value_type angular_threshold_dp;
+          Image<index_type> fixel_indexer;
+          const vector<direction_type>& fixel_directions;
+          Image<bool> fixel_mask;
+          vector<uint16_t>& fixel_TDI;
+          init_connectivity_matrix_type& connectivity_matrix;
+          const value_type angular_threshold_dp;
       };
 
 
 
 
-      class Enhancer {
+      class Enhancer : public Stats::EnhancerBase { MEMALIGN (Enhancer)
         public:
-          Enhancer (const std::vector<std::map<int32_t, connectivity> >& connectivity_map,
-                    const value_type dh, const value_type E, const value_type H) :
-                    connectivity_map (connectivity_map), dh (dh), E (E), H (H) { }
+          Enhancer (const norm_connectivity_matrix_type& connectivity_matrix,
+                    const value_type dh, const value_type E, const value_type H);
+          virtual ~Enhancer() { }
 
-          value_type operator() (const value_type max_stat, const std::vector<value_type>& stats,
-                                 std::vector<value_type>& enhanced_stats) const
-          {
-            enhanced_stats.resize (stats.size());
-            std::fill (enhanced_stats.begin(), enhanced_stats.end(), 0.0);
-            value_type max_enhanced_stat = 0.0;
-            for (size_t fixel = 0; fixel < connectivity_map.size(); ++fixel) {
-              std::map<int32_t, connectivity>::const_iterator connected_fixel;
-              for (value_type h = this->dh; h < stats[fixel]; h +=  this->dh) {
-                value_type extent = 0.0;
-                for (connected_fixel = connectivity_map[fixel].begin(); connected_fixel != connectivity_map[fixel].end(); ++connected_fixel)
-                  if (stats[connected_fixel->first] > h)
-                    extent += connected_fixel->second.value;
-                enhanced_stats[fixel] += Math::pow (extent, E) * Math::pow (h, H);
-              }
-              if (enhanced_stats[fixel] > max_enhanced_stat)
-                max_enhanced_stat = enhanced_stats[fixel];
-            }
 
-            return max_enhanced_stat;
-          }
+          value_type operator() (const vector_type& stats, vector_type& enhanced_stats) const override;
+
 
         protected:
-          const std::vector<std::map<int32_t, connectivity> >& connectivity_map;
+          const norm_connectivity_matrix_type& connectivity_matrix;
           const value_type dh, E, H;
       };
 

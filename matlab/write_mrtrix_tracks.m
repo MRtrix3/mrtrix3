@@ -7,21 +7,14 @@ function write_mrtrix_tracks (tracks, filename)
 % of the tracks variable will be written as text entries in the header, and are
 % expected to supplied as character arrays.
 
-if ~isfield (tracks, 'data')
-  disp ('ERROR: input tracks variable does not contain required ''data'' field');
-  return;
-end
+assert(isfield(tracks, 'data'), ...
+  'input tracks variable does not contain required ''data'' field');
 
-if ~iscell (tracks.data)
-  disp ('ERROR: input tracks.data variable should be a cell array');
-  return;
-end
+assert(iscell(tracks.data), ...
+  'input tracks.data variable should be a cell array');
 
 f = fopen (filename, 'w', 'ieee-le');
-if (f<1) 
-  disp (['error opening ' filename ]);
-  return;
-end
+assert(f ~= -1, 'error opening %s', filename);
 
 fprintf (f, 'mrtrix tracks\ndatatype: Float32LE\ncount: %d\n', prod(size(tracks.data)));
 names = fieldnames(tracks);

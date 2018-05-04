@@ -1,0 +1,5 @@
+dwi2fod csd dwi.mif response.txt - | testing_diff_image - dwi2fod/out.mif -voxel 1e-5
+dwi2fod csd dwi.mif -mask mask.mif response.txt - | testing_diff_image - dwi2fod/out_mask.mif -voxel 1e-5
+dwi2fod csd dwi.mif response.txt -lmax 12 - | testing_diff_image - dwi2fod/out_lmax12.mif -voxel 1e-5
+dwi2fod msmt_csd dwi2fod/msmt/dwi.mif dwi2fod/msmt/wm.txt tmp_wm.mif dwi2fod/msmt/gm.txt tmp_gm.mif dwi2fod/msmt/csf.txt tmp_csf.mif && mrcat tmp_wm.mif tmp_gm.mif tmp_csf.mif - -axis 3 | testing_diff_image - dwi2fod/msmt/out.mif -voxel 1e-5
+dwi2fod msmt_csd dwi2fod/msmt/dwi.mif -mask dwi2fod/msmt/mask.mif dwi2fod/msmt/wm.txt tmp_wm_m.mif dwi2fod/msmt/gm.txt tmp_gm_m.mif dwi2fod/msmt/csf.txt tmp_csf_m.mif && mrcat tmp_wm_m.mif tmp_gm_m.mif tmp_csf_m.mif - -axis 3 | testing_diff_image - dwi2fod/msmt/out_masked.mif -voxel 1e-5

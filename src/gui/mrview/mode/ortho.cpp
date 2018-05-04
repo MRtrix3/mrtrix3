@@ -1,28 +1,21 @@
 /*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-   Written by J-Donald Tournier, 13/11/09.
 
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+#include "gui/mrview/mode/ortho.h"
 
 #include "mrtrix.h"
-#include "math/vector.h"
-#include "gui/mrview/mode/ortho.h"
 #include "gui/cursor.h"
 
 namespace MR
@@ -39,6 +32,7 @@ namespace MR
 
         void Ortho::paint (Projection& projection)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           // set up OpenGL environment:
           gl::Disable (gl::BLEND);
           gl::Disable (gl::DEPTH_TEST);
@@ -52,25 +46,24 @@ namespace MR
           // so need to guarantee depth test is off for subsequent plane.
           // Ideally, state should be restored by callee but this is safer
 
-          projections[0].set_viewport (window, w, h, w, h); 
+          projections[0].set_viewport (window(), w, h, w, h); 
           draw_plane (0, slice_shader, projections[0]);
 
           gl::Disable (gl::DEPTH_TEST);
-          projections[1].set_viewport (window, 0, h, w, h); 
+          projections[1].set_viewport (window(), 0, h, w, h); 
           draw_plane (1, slice_shader, projections[1]);
 
           gl::Disable (gl::DEPTH_TEST);
-          projections[2].set_viewport (window, 0, 0, w, h); 
+          projections[2].set_viewport (window(), 0, 0, w, h); 
           draw_plane (2, slice_shader, projections[2]);
 
-          projection.set_viewport (window);
+          projection.set_viewport (window());
 
           GL::mat4 MV = GL::identity();
           GL::mat4 P = GL::ortho (0, width(), 0, height(), -1.0, 1.0);
           projection.set (MV, P);
 
           gl::Disable (gl::DEPTH_TEST);
-          gl::LineWidth (2.0);
 
           if (!frame_VB || !frame_VAO) {
             frame_VB.gen();
@@ -114,6 +107,7 @@ namespace MR
           frame_program.stop();
 
           gl::Enable (gl::DEPTH_TEST);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -131,13 +125,13 @@ namespace MR
 
         void Ortho::mouse_press_event ()
         {
-          if (window.mouse_position().x() < width()/2) 
-            if (window.mouse_position().y() >= height()/2) 
+          if (window().mouse_position().x() < width()/2) 
+            if (window().mouse_position().y() >= height()/2) 
               current_plane = 1;
             else 
               current_plane = 2;
           else 
-            if (window.mouse_position().y() >= height()/2)
+            if (window().mouse_position().y() >= height()/2)
               current_plane = 0;
             else 
               current_plane = -1;
@@ -146,14 +140,14 @@ namespace MR
 
 
 
-        void Ortho::slice_move_event (int x) 
+        void Ortho::slice_move_event (float x) 
         {
           const Projection* proj = get_current_projection();
           if (!proj) return;
           const auto &header = image()->header();
           float increment = snap_to_image() ?
-            x * header.vox(current_plane) :
-            x * std::pow (header.vox(0) * header.vox(1) * header.vox(2), 1/3.f);
+            x * header.spacing (current_plane) :
+            x * std::pow (header.spacing(0) * header.spacing(1) * header.spacing(2), 1/3.f);
           move_in_out (increment, *proj);
           updateGL();
         }
@@ -163,7 +157,7 @@ namespace MR
         {
           const Projection* proj = get_current_projection();
           if (!proj) return;
-          move_in_out_FOV (window.mouse_displacement().y(), *proj);
+          move_in_out_FOV (window().mouse_displacement().y(), *proj);
           updateGL();
         }
 

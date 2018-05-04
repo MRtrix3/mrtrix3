@@ -1,25 +1,16 @@
 /*
-    Copyright 2013 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert Smith, 2013.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
-
 
 
 #ifndef __dwi_tractography_connectome_mapped_track_h__
@@ -29,48 +20,82 @@
 
 
 namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectome {
+  namespace DWI {
+    namespace Tractography {
+      namespace Connectome {
 
 
 
-class Mapped_track
-{
+        class Mapped_track_base
+        { MEMALIGN(Mapped_track_base)
 
-  public:
-    Mapped_track() :
-      nodes (std::make_pair (0, 0)),
-      factor (0.0),
-      weight (1.0) { }
+          public:
+            Mapped_track_base() :
+              track_index (-1),
+              factor (0.0),
+              weight (1.0) { }
 
-    void set_track_index (const size_t i) { track_index = i; }
-    void set_first_node  (const node_t i) { nodes.first = i;  }
-    void set_second_node (const node_t i) { nodes.second = i; }
-    void set_nodes       (const NodePair& i) { nodes = i; }
-    void set_factor      (const float i)    { factor = i; }
-    void set_weight      (const float i)    { weight = i; }
+            void set_track_index (const size_t i) { track_index = i; }
+            void set_factor      (const float i)  { factor = i; }
+            void set_weight      (const float i)  { weight = i; }
 
-    size_t get_track_index() const { return track_index; }
-    node_t get_first_node()  const { return nodes.first;  }
-    node_t get_second_node() const { return nodes.second; }
-    const NodePair& get_nodes() const { return nodes; }
-    float get_factor() const { return factor; }
-    float get_weight() const { return weight; }
+            size_t get_track_index() const { return track_index; }
+            float  get_factor()      const { return factor; }
+            float  get_weight()      const { return weight; }
 
-  private:
-    size_t track_index;
-    NodePair nodes;
-    float factor, weight;
-
-};
+          private:
+            size_t track_index;
+            float factor, weight;
+        };
 
 
+        class Mapped_track_nodepair : public Mapped_track_base
+        { MEMALIGN(Mapped_track_nodepair)
+
+          public:
+            Mapped_track_nodepair() :
+              Mapped_track_base (),
+              nodes (std::make_pair (0, 0)) { }
+
+            void set_first_node  (const node_t i)   { nodes.first = i;  }
+            void set_second_node (const node_t i)   { nodes.second = i; }
+            void set_nodes       (const NodePair i) { nodes = i; }
+
+            node_t get_first_node()     const { return nodes.first;  }
+            node_t get_second_node()    const { return nodes.second; }
+            const NodePair& get_nodes() const { return nodes; }
+
+          private:
+            NodePair nodes;
+
+        };
 
 
-}
-}
-}
+        class Mapped_track_nodelist : public Mapped_track_base
+        { MEMALIGN(Mapped_track_nodelist)
+
+          public:
+            Mapped_track_nodelist() :
+              Mapped_track_base (),
+              nodes () { }
+
+            void add_node   (const node_t i)               { nodes.push_back (i);  }
+            void set_nodes  (const vector<node_t>& i) { nodes = i; }
+            void set_nodes  (vector<node_t>&& i)       { std::swap (nodes, i); }
+
+            const vector<node_t>& get_nodes() const { return nodes; }
+
+          private:
+            vector<node_t> nodes;
+
+        };
+
+
+
+
+      }
+    }
+  }
 }
 
 

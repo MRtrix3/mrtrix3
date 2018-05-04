@@ -1,44 +1,38 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
 #include "math/SH.h"
 #include "memory.h"
 #include "progressbar.h"
 #include "thread_queue.h"
-#include "image/loop.h"
-#include "image/buffer.h"
-#include "image/voxel.h"
+#include "image.h"
+#include "algo/loop.h"
 
 
 #define DOT_THRESHOLD 0.99
+#define DEFAULT_NPEAKS 3
 
 using namespace MR;
 using namespace App;
 
 void usage ()
 {
-  DESCRIPTION
-    + "extract the peaks of a spherical harmonic function at each voxel, by commencing a Newton search along a set of specified directions";
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+
+  SYNOPSIS = "Extract the peaks of a spherical harmonic function at each voxel, by commencing a Newton search along a set of specified directions";
 
   ARGUMENTS
   + Argument ("SH", "the input image of SH coefficients.")
@@ -50,8 +44,8 @@ void usage ()
   .type_image_out ();
 
   OPTIONS
-  + Option ("num", "the number of peaks to extract (default is 3).")
-  + Argument ("peaks").type_integer (0, 3, std::numeric_limits<int>::max())
+  + Option ("num", "the number of peaks to extract (default: " + str(DEFAULT_NPEAKS) + ").")
+  + Argument ("peaks").type_integer (0)
 
   + Option ("direction",
             "the direction of a peak to estimate. The algorithm will attempt to "
@@ -67,7 +61,7 @@ void usage ()
 
   + Option ("threshold",
             "only peak amplitudes greater than the threshold will be considered.")
-  + Argument ("value").type_float()
+  + Argument ("value").type_float (0.0)
 
   + Option ("seeds",
             "specify a set of directions from which to start the multiple restarts of "
@@ -76,22 +70,24 @@ void usage ()
 
   + Option ("mask",
             "only perform computation within the specified binary brain mask image.")
-  + Argument ("image").type_image_in();
+  + Argument ("image").type_image_in()
+
+  + Option ("fast",
+            "use lookup table to compute associated Legendre polynomials (faster, but approximate).");
 }
 
 
-typedef float value_type;
+using value_type = float;
 
 
 
-class Direction
-{
+class Direction { MEMALIGN(Direction)
   public:
-    Direction () : a (NAN) { }
+    Direction () : a (NaN) { }
     Direction (const Direction& d) : a (d.a), v (d.v) { }
-    Direction (value_type phi, value_type theta) : a (1.0), v (cos (phi) *sin (theta), sin (phi) *sin (theta), cos (theta)) { }
+    Direction (value_type phi, value_type theta) : a (1.0), v (std::cos (phi) *std::sin (theta), std::sin (phi) *std::sin (theta), std::cos (theta)) { }
     value_type a;
-    Point<value_type> v;
+    Eigen::Vector3f v;
     bool operator< (const Direction& d) const {
       return (a > d.a);
     }
@@ -100,10 +96,9 @@ class Direction
 
 
 
-class Item
-{
+class Item { MEMALIGN(Item)
   public:
-    Math::Vector<value_type> data;
+    Eigen::VectorXf data;
     ssize_t pos[3];
 };
 
@@ -111,46 +106,33 @@ class Item
 
 
 
-class DataLoader
-{
+class DataLoader { MEMALIGN(DataLoader)
   public:
-    DataLoader (Image::Buffer<value_type>& sh_data,
-                Image::Buffer<bool>* mask_data) :
+    DataLoader (Image<value_type>& sh_data,
+                Image<bool>* mask_data) :
       sh (sh_data),
-      loop ("estimating peak directions...", 0, 3) {
-      if (mask_data) {
-        Image::check_dimensions (*mask_data, sh, 0, 3);
-        mask.reset (new Image::Buffer<bool>::voxel_type (*mask_data));
-        loop.start (*mask, sh);
-      }
-      else
-        loop.start (sh);
-      }
+      loop (Loop("estimating peak directions", 0, 3) (sh)) { }
 
     bool operator() (Item& item) {
-      if (loop.ok()) {
+      if (loop) {
+        item.data.resize (sh.size(3));
+        item.pos[0] = sh.index(0);
+        item.pos[1] = sh.index(1);
+        item.pos[2] = sh.index(2);
+
         if (mask) {
-          while (!mask->value()) {
-            loop.next (*mask, sh);
-            if (!loop.ok())
-              return false;
+          assign_pos_of(sh).to(*mask);
+          if (!mask->value()) {
+            for (auto l = Loop(3) (sh); l; ++l)
+              item.data[sh.index(3)] = NaN;
           }
+        } else {
+          // iterates over SH coefficients
+          for (auto l = Loop(3) (sh); l; ++l)
+            item.data[sh.index(3)] = sh.value();
         }
 
-        item.pos[0] = sh[0];
-        item.pos[1] = sh[1];
-        item.pos[2] = sh[2];
-
-        item.data.allocate (sh.dim(3));
-
-        // iterates over SH coefficients
-        for (auto l = Image::Loop(3) (sh); l; ++l)
-          item.data[sh[3]] = sh.value();
-
-        if (mask)
-          loop.next (*mask, sh);
-        else
-          loop.next (sh);
+        loop++;
 
         return true;
       }
@@ -158,23 +140,24 @@ class DataLoader
     }
 
   private:
-    Image::Buffer<value_type>::voxel_type  sh;
-    std::unique_ptr<Image::Buffer<bool>::voxel_type> mask;
-    Image::Loop loop;
+    Image<value_type>  sh;
+    std::unique_ptr<Image<bool> > mask;
+    LoopAlongAxisRangeProgress::Run<Image<value_type> > loop;
 };
 
 
 
-class Processor
-{
+
+class Processor { MEMALIGN(Processor)
   public:
-    Processor (Image::Buffer<value_type>& dirs_data,
-               Math::Matrix<value_type>& directions,
+    Processor (Image<value_type>& dirs_data,
+               Eigen::Matrix<value_type, Eigen::Dynamic, 2>& directions,
                int lmax,
                int npeaks,
-               std::vector<Direction> true_peaks,
+               vector<Direction> true_peaks,
                value_type threshold,
-               Image::Buffer<value_type>* ipeaks_data) :
+               Image<value_type>* ipeaks_data,
+               bool use_precomputer) :
       dirs_vox (dirs_data),
       dirs (directions),
       lmax (lmax),
@@ -182,54 +165,55 @@ class Processor
       true_peaks (true_peaks),
       threshold (threshold),
       peaks_out (npeaks),
-      ipeaks_vox (ipeaks_data ? new Image::Buffer<value_type>::voxel_type (*ipeaks_data) : NULL) { }
+      ipeaks_vox (ipeaks_data),
+      precomputer (use_precomputer ? new Math::SH::PrecomputedAL<value_type> (lmax) :  nullptr) { }
 
     bool operator() (const Item& item) {
 
-      dirs_vox[0] = item.pos[0];
-      dirs_vox[1] = item.pos[1];
-      dirs_vox[2] = item.pos[2];
+      dirs_vox.index(0) = item.pos[0];
+      dirs_vox.index(1) = item.pos[1];
+      dirs_vox.index(2) = item.pos[2];
 
       if (check_input (item)) {
-        for (auto l = Image::Loop(3) (dirs_vox); l; ++l)
-          dirs_vox.value() = NAN;
+        for (auto l = Loop(3) (dirs_vox); l; ++l)
+          dirs_vox.value() = NaN;
         return true;
       }
 
-      std::vector<Direction> all_peaks;
+      vector<Direction> all_peaks;
 
-      for (size_t i = 0; i < dirs.rows(); i++) {
+      for (size_t i = 0; i < size_t(dirs.rows()); i++) {
         Direction p (dirs (i,0), dirs (i,1));
-        p.a = Math::SH::get_peak (item.data.ptr(), lmax, p.v);
+        p.a = Math::SH::get_peak (item.data, lmax, p.v, precomputer);
         if (std::isfinite (p.a)) {
           for (size_t j = 0; j < all_peaks.size(); j++) {
-            if (std::abs (p.v.dot (all_peaks[j].v)) > DOT_THRESHOLD) {
+            if (abs (p.v.dot (all_peaks[j].v)) > DOT_THRESHOLD) {
               p.a = NAN;
               break;
             }
           }
         }
-        if (std::isfinite (p.a) && p.a >= threshold) 
+        if (std::isfinite (p.a) && p.a >= threshold)
           all_peaks.push_back (p);
       }
 
       if (ipeaks_vox) {
-        (*ipeaks_vox)[0] = item.pos[0];
-        (*ipeaks_vox)[1] = item.pos[1];
-        (*ipeaks_vox)[2] = item.pos[2];
+        ipeaks_vox->index(0) = item.pos[0];
+        ipeaks_vox->index(1) = item.pos[1];
+        ipeaks_vox->index(2) = item.pos[2];
 
         for (int i = 0; i < npeaks; i++) {
-          Point<value_type> p;
-          (*ipeaks_vox)[3] = 3*i;
+          Eigen::Vector3f p;
+          ipeaks_vox->index(3) = 3*i;
           for (int n = 0; n < 3; n++) {
             p[n] = ipeaks_vox->value();
-            (*ipeaks_vox)[3]++;
+            ipeaks_vox->index(3)++;
           }
-          p.normalise();
+          p.normalize();
 
           value_type mdot = 0.0;
           for (size_t n = 0; n < all_peaks.size(); n++) {
-            value_type f = std::abs (p.dot (all_peaks[n].v));
+            value_type f = abs (p.dot (all_peaks[n].v));
             if (f > mdot) {
               mdot = f;
               peaks_out[i] = all_peaks[n];
@@ -241,7 +225,7 @@ class Processor
         for (int i = 0; i < npeaks; i++) {
           value_type mdot = 0.0;
           for (size_t n = 0; n < all_peaks.size(); n++) {
-            value_type f = std::abs (all_peaks[n].v.dot (true_peaks[i].v));
+            value_type f = abs (all_peaks[n].v.dot (true_peaks[i].v));
             if (f > mdot) {
               mdot = f;
               peaks_out[i] = all_peaks[n];
@@ -251,46 +235,47 @@ class Processor
       }
       else std::partial_sort_copy (all_peaks.begin(), all_peaks.end(), peaks_out.begin(), peaks_out.end());
 
-      int actual_npeaks = MIN (npeaks, (int) all_peaks.size());
-      dirs_vox[3] = 0;
+      int actual_npeaks = std::min (npeaks, (int) all_peaks.size());
+      dirs_vox.index(3) = 0;
       for (int n = 0; n < actual_npeaks; n++) {
         dirs_vox.value() = peaks_out[n].a*peaks_out[n].v[0];
-        dirs_vox[3]++;
+        dirs_vox.index(3)++;
         dirs_vox.value() = peaks_out[n].a*peaks_out[n].v[1];
-        dirs_vox[3]++;
+        dirs_vox.index(3)++;
         dirs_vox.value() = peaks_out[n].a*peaks_out[n].v[2];
-        dirs_vox[3]++;
+        dirs_vox.index(3)++;
       }
-      for (; dirs_vox[3] < 3*npeaks; dirs_vox[3]++) dirs_vox.value() = NAN;
+      for (; dirs_vox.index(3) < 3*npeaks; dirs_vox.index(3)++) dirs_vox.value() = NaN;
 
       return true;
     }
 
   private:
-    Image::Buffer<value_type>::voxel_type dirs_vox;
-    Math::Matrix<value_type> dirs;
+    Image<value_type> dirs_vox;
+    Eigen::Matrix<value_type, Eigen::Dynamic, 2> dirs;
     int lmax, npeaks;
-    std::vector<Direction> true_peaks;
+    vector<Direction> true_peaks;
     value_type threshold;
-    std::vector<Direction> peaks_out;
-    copy_ptr<Image::Buffer<value_type>::voxel_type> ipeaks_vox;
+    vector<Direction> peaks_out;
+    copy_ptr<Image<value_type> > ipeaks_vox;
+    Math::SH::PrecomputedAL<value_type>* precomputer;
 
     bool check_input (const Item& item) {
       if (ipeaks_vox) {
-        (*ipeaks_vox)[0] = item.pos[0];
-        (*ipeaks_vox)[1] = item.pos[1];
-        (*ipeaks_vox)[2] = item.pos[2];
-        (*ipeaks_vox)[3] = 0;
+        ipeaks_vox->index(0) = item.pos[0];
+        ipeaks_vox->index(1) = item.pos[1];
+        ipeaks_vox->index(2) = item.pos[2];
+        ipeaks_vox->index(3) = 0;
         if (std::isnan (value_type (ipeaks_vox->value())))
           return true;
       }
 
       bool no_peaks = true;
-      for (size_t i = 0; i < item.data.size(); i++) {
+      for (size_t i = 0; i < size_t(item.data.size()); i++) {
         if (std::isnan (item.data[i]))
           return true;
         if (no_peaks)
-          if (i && item.data[i] != 0.0) 
+          if (i && item.data[i] != 0.0)
             no_peaks = false;
       }
 
@@ -299,72 +284,66 @@ class Processor
 };
 
 
-
 extern value_type default_directions [];
 
 
 
 void run ()
 {
-  Image::Buffer<value_type> SH_data (argument[0]);
+  auto SH_data = Image<value_type>::open (argument[0]).with_direct_io (3);
   Math::SH::check (SH_data);
 
-  Options opt = get_options ("mask");
+  auto opt = get_options ("mask");
 
-  std::unique_ptr<Image::Buffer<bool> > mask_data;
+  std::unique_ptr<Image<bool> > mask_data;
   if (opt.size())
-    mask_data.reset (new Image::Buffer<bool> (opt[0][0]));
+    mask_data.reset (new Image<bool>(Image<bool>::open (opt[0][0])));
 
   opt = get_options ("seeds");
-  Math::Matrix<value_type> dirs;
+  Eigen::Matrix<value_type, Eigen::Dynamic, 2> dirs;
   if (opt.size())
-    dirs.load (opt[0][0]);
+    dirs = load_matrix<value_type> (opt[0][0]);
   else {
-    dirs.allocate (60,2);
-    dirs = Math::Matrix<value_type> (default_directions, 60, 2);
+    dirs = Eigen::Map<Eigen::Matrix<value_type, 60, 2> > (default_directions, 60, 2);
   }
-  if (dirs.columns() != 2)
+  if (dirs.cols() != 2)
     throw Exception ("expecting 2 columns for search directions matrix");
 
-  opt = get_options ("num");
-  int npeaks = opt.size() ? opt[0][0] : 3;
+  int npeaks = get_option_value ("num", DEFAULT_NPEAKS);
 
   opt = get_options ("direction");
-  std::vector<Direction> true_peaks;
+  vector<Direction> true_peaks;
   for (size_t n = 0; n < opt.size(); ++n) {
     Direction p (Math::pi*to<float> (opt[n][0]) /180.0, Math::pi*float (opt[n][1]) /180.0);
     true_peaks.push_back (p);
   }
-  if (true_peaks.size()) 
+  if (true_peaks.size())
     npeaks = true_peaks.size();
 
-  opt = get_options ("threshold");
-  value_type threshold = -INFINITY;
-  if (opt.size())
-    threshold = opt[0][0];
+  value_type threshold = get_option_value("threshold", -INFINITY);
 
-  Image::Header header (SH_data);
+  auto header = Header(SH_data);
   header.datatype() = DataType::Float32;
 
   opt = get_options ("peaks");
-  std::unique_ptr<Image::Buffer<value_type> > ipeaks_data;
+  std::unique_ptr<Image<value_type> > ipeaks_data;
   if (opt.size()) {
     if (true_peaks.size())
       throw Exception ("you can't specify both a peaks file and orientations to be estimated at the same time");
     if (opt.size())
-      ipeaks_data.reset (new Image::Buffer<value_type> (opt[0][0]));
+      ipeaks_data.reset (new Image<value_type> (Image<value_type>::open(opt[0][0])));
 
-    Image::check_dimensions (header, *ipeaks_data, 0, 3);
-    npeaks = ipeaks_data->dim (3) / 3;
+    check_dimensions (SH_data, *ipeaks_data, 0, 3);
+    npeaks = ipeaks_data->size (3) / 3;
   }
-  header.dim(3) = 3 * npeaks;
-  Image::Buffer<value_type> peaks_data (argument[1], header);
+  header.size(3) = 3 * npeaks;
+  auto peaks = Image<value_type>::create (argument[1], header);
 
   DataLoader loader (SH_data, mask_data.get());
-  Processor processor (peaks_data, dirs, Math::SH::LforN (SH_data.dim (3)),
-      npeaks, true_peaks, threshold, ipeaks_data.get());
+  Processor processor (peaks, dirs, Math::SH::LforN (SH_data.size (3)),
+      npeaks, true_peaks, threshold, ipeaks_data.get(), get_options("fast").size());
 
-  Thread::run_queue (loader, Item(), Thread::multi (processor));
+  Thread::run_queue (loader, Thread::batch (Item()), Thread::multi (processor));
 }
 
 

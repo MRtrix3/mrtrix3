@@ -1,29 +1,24 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-    Written by Robert E. Smith, 2011.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #ifndef __dwi_tractography_tracking_method_h__
 #define __dwi_tractography_tracking_method_h__
 
 #include "memory.h"
+#include "types.h"
+#include "dwi/tractography/rng.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/ACT/method.h"
 
@@ -40,153 +35,77 @@ namespace MR
 
 
 
-    class MethodBase {
+        class MethodBase { MEMALIGN(MethodBase)
 
-      public:
+          public:
 
-        MethodBase (const SharedBase& shared) :
-          pos                (0.0, 0.0, 0.0),
-          dir                (0.0, 0.0, 1.0),
-          S                  (shared),
-          values             (shared.source_buffer.dim(3))
-        {
-          if (S.is_act())
-            act_method_additions.reset (new ACT::ACT_Method_additions (S));
-        }
+            MethodBase (const SharedBase& shared) :
+              pos (0.0, 0.0, 0.0),
+              dir (0.0, 0.0, 1.0),
+              S (shared),
+              act_method_additions (S.is_act() ? new ACT::ACT_Method_additions (S) : nullptr),
+              values (shared.source.size(3)) { }
 
-        MethodBase (const MethodBase& that) :
-          pos                 (0.0, 0.0, 0.0),
-          dir                 (0.0, 0.0, 1.0),
-          S                   (that.S),
-          uniform_rng         (that.uniform_rng),
-          values              (that.values.size())
-        {
-          if (S.is_act())
-            act_method_additions.reset (new ACT::ACT_Method_additions (S));
-        }
+            MethodBase (const MethodBase& that) :
+              pos (0.0, 0.0, 0.0),
+              dir (0.0, 0.0, 1.0),
+              S (that.S),
+              act_method_additions (S.is_act() ? new ACT::ACT_Method_additions (S) : nullptr),
+              uniform (that.uniform),
+              values (that.values.size()) { }
 
 
-        bool check_seed()
-        {
-          if (!pos.valid())
-            return false;
+            template <class InterpolatorType>
+            FORCE_INLINE bool get_data (InterpolatorType& source, const Eigen::Vector3f& position)
+            {
+              if (!source.scanner (position))
+                return false;
+              for (auto l = Loop (3) (source); l; ++l)
+                values[source.index(3)] = source.value();
+              return !std::isnan (values[0]);
+            }
 
-          if ((S.properties.mask.size() && !S.properties.mask.contains (pos))
-              || (S.properties.exclude.contains (pos))
-              || (S.is_act() && !act().check_seed (pos))) {
-            pos.invalidate();
-            return false;
-          }
-
-          return true;
-        }
-
-
-        template <class InterpolatorType>
-        inline bool get_data (InterpolatorType& source, const Point<value_type>& position)
-        {
-            source.scanner (position);
-            if (!source) return (false);
-            for (source[3] = 0; source[3] < source.dim(3); ++source[3])
-              values[source[3]] = source.value();
-            return (!std::isnan (values[0]));
-        }
-
-        template <class InterpolatorType>
-        inline bool get_data (InterpolatorType& source) {
-            return (get_data (source, pos));
-        }
+            template <class InterpolatorType>
+            FORCE_INLINE bool get_data (InterpolatorType& source)
+            {
+              return get_data (source, pos);
+            }
 
 
-        void reverse_track() { }
-        bool init() { return false; }
-        term_t next() { return term_t(); }
-        float get_metric() { return NAN; }
+            virtual bool init() = 0;
+            virtual term_t next() = 0;
+            virtual float get_metric() = 0;
+
+            virtual void reverse_track() { if (act_method_additions) act().reverse_track(); }
+            virtual void truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step);
+
+            bool check_seed();
+
+            ACT::ACT_Method_additions& act() const { return *act_method_additions; }
+
+            Eigen::Vector3f pos, dir;
 
 
-        void truncate_track (std::vector< Point<value_type> >& tck, const size_t revert_step)
-        {
-          for (size_t i = revert_step; i && tck.size(); --i)
-            tck.pop_back();
-          if (S.is_act())
-            act().sgm_depth = MAX (0, act().sgm_depth - int(revert_step));
-        }
+          private:
+            const SharedBase& S;
+            std::unique_ptr<ACT::ACT_Method_additions> act_method_additions;
 
 
-        ACT::ACT_Method_additions& act() const { return *act_method_additions; }
+          protected:
+            std::uniform_real_distribution<float> uniform;
+            Eigen::VectorXf values;
 
-        Point<value_type> pos, dir;
+            Eigen::Vector3f random_direction ();
+            Eigen::Vector3f random_direction (const float max_angle, const float sin_max_angle);
+            Eigen::Vector3f rotate_direction (const Eigen::Vector3f& reference, const Eigen::Vector3f& direction);
 
+            FORCE_INLINE Eigen::Vector3f random_direction (const Eigen::Vector3f& d, const float max_angle, const float sin_max_angle)
+            {
+              return rotate_direction (d, random_direction (max_angle, sin_max_angle));
+            }
 
-      private:
-        const SharedBase& S;
-        copy_ptr<ACT::ACT_Method_additions> act_method_additions;
+        };
 
-
-      protected:
-        Math::RNG::Uniform<value_type> uniform_rng;
-        std::vector<value_type> values;
-
-        Point<value_type> random_direction ();
-        Point<value_type> random_direction (value_type max_angle, value_type sin_max_angle);
-        Point<value_type> random_direction (const Point<value_type>& d, value_type max_angle, value_type sin_max_angle);
-        Point<value_type> rotate_direction (const Point<value_type>& reference, const Point<value_type>& direction);
-
-    };
-
-
-
-
-
-
-    Point<value_type> MethodBase::random_direction ()
-    {
-      Point<value_type> d;
-      do {
-        d[0] = 2.0 * uniform_rng() - 1.0;
-        d[1] = 2.0 * uniform_rng() - 1.0;
-        d[2] = 2.0 * uniform_rng() - 1.0;
-      } while (d.norm2() > 1.0);
-      d.normalise();
-      return d;
-    }
-
-
-    Point<value_type> MethodBase::random_direction (value_type max_angle, value_type sin_max_angle)
-    {
-      value_type phi = 2.0 * Math::pi * uniform_rng();
-      value_type theta;
-      do {
-        theta = max_angle * uniform_rng();
-      } while (sin_max_angle * uniform_rng() > sin (theta));
-      return (Point<value_type> (sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)));
-    }
-
-
-    Point<value_type> MethodBase::random_direction (const Point<value_type>& d, value_type max_angle, value_type sin_max_angle)
-    {
-      return (rotate_direction (d, random_direction (max_angle, sin_max_angle)));
-    }
-
-
-    Point<value_type> MethodBase::rotate_direction (const Point<value_type>& reference, const Point<value_type>& direction)
-    {
-      value_type n = std::sqrt (Math::pow2(reference[0]) + Math::pow2(reference[1]));
-      if (n == 0.0)
-        return (reference[2] < 0.0 ? -direction : direction);
-
-      Point<value_type> m (reference[0]/n, reference[1]/n, 0.0);
-      Point<value_type> mp (reference[2]*m[0], reference[2]*m[1], -n);
-
-      value_type alpha = direction[2];
-      value_type beta = direction[0]*m[0] + direction[1]*m[1];
-
-      return (Point<value_type> (
-          direction[0] + alpha * reference[0] + beta * (mp[0] - m[0]),
-          direction[1] + alpha * reference[1] + beta * (mp[1] - m[1]),
-          direction[2] + alpha * (reference[2]-1.0) + beta * (mp[2] - m[2])
-      ));
-    }
 
 
       }

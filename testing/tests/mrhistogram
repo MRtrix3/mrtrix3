@@ -1,0 +1,4 @@
+#mrhistogram dwi.mif tmp.txt -force && testing_diff_matrix tmp.txt mrhistogram/out.txt 0.5
+#mrhistogram dwi.mif tmp.txt -mask mask.mif -force && testing_diff_matrix tmp.txt mrhistogram/masked.txt 0.5
+#mrhistogram dwi.mif tmp.txt -allvolumes -force && testing_diff_matrix tmp.txt mrhistogram/allvolumes.txt 0.5
+#mrhistogram dwi.mif tmp.txt -bins 100 -force && testing_diff_matrix tmp.txt mrhistogram/bins.txt 0.5

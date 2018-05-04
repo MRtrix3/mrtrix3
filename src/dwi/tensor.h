@@ -1,88 +1,115 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #ifndef __dwi_tensor_h__
 #define __dwi_tensor_h__
 
-#include "math/matrix.h"
-#include "math/vector.h"
+#include "types.h"
+
+#include "dwi/shells.h"
 
 namespace MR
 {
   namespace DWI
   {
 
-    template <typename T> inline Math::Matrix<T> grad2bmatrix (Math::Matrix<T> &bmat, const Math::Matrix<T> &grad)
+    template <typename T, class MatrixType> 
+      inline Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> grad2bmatrix (const MatrixType& grad, bool dki = false)
     {
-      bmat.allocate (grad.rows(),7);
-      for (size_t i = 0; i < grad.rows(); ++i) {
-        bmat (i,0) = grad (i,3) * grad (i,0) *grad (i,0);
-        bmat (i,1) = grad (i,3) * grad (i,1) *grad (i,1);
-        bmat (i,2) = grad (i,3) * grad (i,2) *grad (i,2);
-        bmat (i,3) = grad (i,3) * 2*grad (i,0) *grad (i,1);
-        bmat (i,4) = grad (i,3) * 2*grad (i,0) *grad (i,2);
-        bmat (i,5) = grad (i,3) * 2*grad (i,1) *grad (i,2);
-        bmat (i,6) = -1.0;
+      std::unique_ptr<DWI::Shells> shells;
+      try {
+        shells.reset (new DWI::Shells (grad));
+      } catch (...) {
+        WARN ("Unable to separate diffusion gradient table into shells; tensor estimation success uncertain");
+      }
+      if (shells) {
+        if (dki) {
+          if (shells->count() < 3)
+            throw Exception ("Kurtosis tensor estimation requires at least 3 b-value shells");
+        } else {
+          if (shells->count() < 2)
+            throw Exception ("Tensor estimation requires at least 2 b-values");
+        }
+      }
+
+      Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> bmat (grad.rows(), (dki ? 22 : 7));
+      for (ssize_t i = 0; i < grad.rows(); ++i) {
+        bmat (i,0)  = grad(i,3) *  grad(i,0) * grad(i,0);
+        bmat (i,1)  = grad(i,3) *  grad(i,1) * grad(i,1);
+        bmat (i,2)  = grad(i,3) *  grad(i,2) * grad(i,2);
+        bmat (i,3)  = grad(i,3) *  grad(i,0) * grad(i,1) * T(2.0);
+        bmat (i,4)  = grad(i,3) *  grad(i,0) * grad(i,2) * T(2.0);
+        bmat (i,5)  = grad(i,3) *  grad(i,1) * grad(i,2) * T(2.0);
+        bmat (i,6)  = T(-1.0);
+        if (dki) {
+          bmat (i,7)  = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,0) * grad(i,0) * T(1.0)/T(6.0);
+          bmat (i,8)  = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,1) * grad(i,1) * grad(i,1) * T(1.0)/T(6.0);
+          bmat (i,9)  = -grad(i,3) * grad(i,3) * grad(i,2) * grad(i,2) * grad(i,2) * grad(i,2) * T(1.0)/T(6.0);
+          bmat (i,10) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,0) * grad(i,1) * T(2.0)/T(3.0);
+          bmat (i,11) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,0) * grad(i,2) * T(2.0)/T(3.0);
+          bmat (i,12) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,1) * grad(i,1) * grad(i,1) * T(2.0)/T(3.0);
+          bmat (i,13) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,2) * grad(i,2) * grad(i,2) * T(2.0)/T(3.0);
+          bmat (i,14) = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,1) * grad(i,1) * grad(i,2) * T(2.0)/T(3.0);
+          bmat (i,15) = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,2) * grad(i,2) * grad(i,2) * T(2.0)/T(3.0);
+          bmat (i,16) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,1) * grad(i,1);
+          bmat (i,17) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,2) * grad(i,2);
+          bmat (i,18) = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,1) * grad(i,2) * grad(i,2);
+          bmat (i,19) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,1) * grad(i,2) * T(2.0);
+          bmat (i,20) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,1) * grad(i,1) * grad(i,2) * T(2.0);
+          bmat (i,21) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,1) * grad(i,2) * grad(i,2) * T(2.0);
+        }
       }
       return bmat;
     }
 
-
-
-
-    template <typename T> inline void dwi2tensor (const Math::Matrix<T>& binv, T* d)
+    template <class MatrixType, class VectorTypeOut, class VectorTypeIn>
+      inline void dwi2tensor (VectorTypeOut& dt, const MatrixType& binv, VectorTypeIn& dwi)
     {
-      VLA (logs, T, binv.columns());
-      for (size_t i = 0; i < binv.columns(); ++i)
-        logs[i] = d[i] > T (0.0) ? -std::log (d[i]) : T (0.0);
-      Math::Vector<T> logS (logs, binv.columns());
-      Math::Vector<T> DT (d, 7);
-      Math::mult (DT, binv, logS);
+      using T = typename VectorTypeIn::Scalar;
+      for (ssize_t i = 0; i < dwi.size(); ++i)
+        dwi[i] = dwi[i] > T(0.0) ? -std::log (dwi[i]) : T(0.0);
+      dt = binv * dwi;
     }
 
 
-    template <typename T> inline T tensor2ADC (T* t)
+    template <class VectorType> inline typename VectorType::Scalar tensor2ADC (const VectorType& dt)
     {
-      return (t[0]+t[1]+t[2]) /T (3.0);
+      using T = typename VectorType::Scalar;
+      return (dt[0]+dt[1]+dt[2]) / T (3.0);
     }
 
 
-    template <typename T> inline T tensor2FA (T* t)
+    template <class VectorType> inline typename VectorType::Scalar tensor2FA (const VectorType& dt)
     {
-      T trace = tensor2ADC (t);
-      T a[] = { t[0]-trace, t[1]-trace, t[2]-trace };
-      trace = t[0]*t[0] + t[1]*t[1] + t[2]*t[2] + T (2.0) * (t[3]*t[3] + t[4]*t[4] + t[5]*t[5]);
+      using T = typename VectorType::Scalar;
+      T trace = tensor2ADC (dt);
+      T a[] = { dt[0]-trace, dt[1]-trace, dt[2]-trace };
+      trace = dt[0]*dt[0] + dt[1]*dt[1] + dt[2]*dt[2] + T (2.0) * (dt[3]*dt[3] + dt[4]*dt[4] + dt[5]*dt[5]);
       return trace ?
-             std::sqrt (T (1.5) * (a[0]*a[0]+a[1]*a[1]+a[2]*a[2] + T (2.0) * (t[3]*t[3]+t[4]*t[4]+t[5]*t[5])) / trace) :
+             std::sqrt (T (1.5) * (a[0]*a[0]+a[1]*a[1]+a[2]*a[2] + T (2.0) * (dt[3]*dt[3]+dt[4]*dt[4]+dt[5]*dt[5])) / trace) :
              T (0.0);
     }
 
 
-    template <typename T> inline T tensor2RA (T* t)
+    template <class VectorType> inline typename VectorType::Scalar tensor2RA (const VectorType& dt)
     {
-      T trace = tensor2ADC (t);
-      T a[] = { t[0]-trace, t[1]-trace, t[2]-trace };
+      using T = typename VectorType::Scalar;
+      T trace = tensor2ADC (dt);
+      T a[] = { dt[0]-trace, dt[1]-trace, dt[2]-trace };
       return trace ?
-             sqrt ( (a[0]*a[0]+a[1]*a[1]+a[2]*a[2]+ T (2.0) * (t[3]*t[3]+t[4]*t[4]+t[5]*t[5])) /T (3.0)) / trace :
+             sqrt ( (a[0]*a[0]+a[1]*a[1]+a[2]*a[2]+ T (2.0) * (dt[3]*dt[3]+dt[4]*dt[4]+dt[5]*dt[5])) /T (3.0)) / trace :
              T (0.0);
     }
 

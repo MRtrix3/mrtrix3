@@ -1,32 +1,23 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-    Written by J-Donald Tournier and Robert E. Smith, 2011.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
 
 #ifndef __dwi_tractography_tracking_generated_track_h__
 #define __dwi_tractography_tracking_generated_track_h__
 
 
-#include <vector>
-
-#include "point.h"
+#include "types.h"
 
 #include "dwi/tractography/tracking/types.h"
 
@@ -42,22 +33,29 @@ namespace MR
 
 
 
-    class GeneratedTrack : public std::vector< Point<Tracking::value_type> >
-    {
+        class GeneratedTrack : public vector<Eigen::Vector3f>
+        { MEMALIGN(GeneratedTrack)
 
-        typedef std::vector< Point<Tracking::value_type> > BaseType;
 
-      public:
-        GeneratedTrack() : seed_index (0) { }
-        void clear() { BaseType::clear(); seed_index = 0; }
-        size_t get_seed_index() const { return seed_index; }
-        void reverse() { std::reverse (begin(), end()); seed_index = size()-1; }
-        void set_seed_index (const size_t i) { seed_index = i; }
+          public:
 
-      private:
-        size_t seed_index;
+            using BaseType = vector<Eigen::Vector3f>;
 
-    };
+            enum class status_t { INVALID, SEED_REJECTED, TRACK_REJECTED, ACCEPTED };
+
+            GeneratedTrack() : seed_index (0), status (status_t::INVALID) { }
+            void clear() { BaseType::clear(); seed_index = 0; status = status_t::INVALID; }
+            size_t get_seed_index() const { return seed_index; }
+            status_t get_status() const { return status; }
+            void reverse() { std::reverse (begin(), end()); seed_index = size()-1; }
+            void set_seed_index (const size_t i) { seed_index = i; }
+            void set_status (const status_t i) { status = i; }
+
+          private:
+            size_t seed_index;
+            status_t status;
+
+        };
 
 
       }

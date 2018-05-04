@@ -1,26 +1,20 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-    Written by J-Donald Tournier, 22/01/09.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "gui/gui.h"
+#include "command.h"
 #include "progressbar.h"
 #include "file/path.h"
 #include "math/SH.h"
@@ -33,19 +27,20 @@ using namespace App;
 
 void usage ()
 {
-  DESCRIPTION
-  + "view spherical harmonics surface plots.";
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+
+  SYNOPSIS = "View spherical harmonics surface plots";
 
   ARGUMENTS
   + Argument ("coefs",
-              "a text file containing the even spherical harmonics coefficients to display.")
+              "a text file containing the even order spherical harmonics coefficients to display.")
   .optional()
   .type_file_in();
 
   OPTIONS
   + Option ("response",
-            "assume SH coefficients file only contains even, m=0 terms. Used to "
-            "display the response function as produced by estimate_response");
+            "assume SH coefficients file only contains m=0 terms (zonal harmonics). "
+            "Used to display the response function as produced by estimate_response");
 
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 }
