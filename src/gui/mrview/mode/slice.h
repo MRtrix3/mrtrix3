@@ -1,24 +1,17 @@
 /*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-   Written by J-Donald Tournier, 13/11/09.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #ifndef __gui_mrview_mode_slice_h__
 #define __gui_mrview_mode_slice_h__
@@ -36,22 +29,21 @@ namespace MR
       {
 
         class Slice : public Base
-        {
+        { MEMALIGN(Slice)
           public:
-            Slice (Window& parent) :
-              Base (parent, FocusContrast | MoveTarget | TiltRotate) { }
+            Slice () :
+              Base (FocusContrast | MoveTarget | TiltRotate) { }
             virtual ~Slice ();
 
             virtual void paint (Projection& with_projection);
 
-            class Shader : public Displayable::Shader {
+            class Shader : public Displayable::Shader { MEMALIGN(Shader)
               public:
                 virtual std::string vertex_shader_source (const Displayable& object);
                 virtual std::string fragment_shader_source (const Displayable& object);
             } slice_shader;
 
           protected:
-            void setup_draw (int axis, Projection& with_projection);
             virtual void draw_plane_primitive (int axis, Displayable::Shader& shader_program, Projection& with_projection);
             void draw_plane (int axis, Displayable::Shader& shader_program, Projection& with_projection);
         };

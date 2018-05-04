@@ -1,36 +1,29 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert E. Smith, 2012.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
 
 #include "dwi/tractography/seeding/dynamic.h"
 
 #include "app.h"
-#include "image/nav.h"
 #include "dwi/fmls.h"
 #include "math/SH.h"
+#include "dwi/tractography/rng.h"
+#include "dwi/tractography/seeding/dynamic.h"
 
-#include "image/buffer_sparse.h"
-#include "image/sparse/fixel_metric.h"
-#include "image/sparse/keys.h"
-#include "image/sparse/voxel.h"
+#include "fixel/legacy/fixel_metric.h"
+#include "fixel/legacy/keys.h"
+#include "fixel/legacy/image.h"
 
 
 
@@ -46,13 +39,13 @@ namespace MR
 
 
 
-      bool Dynamic_ACT_additions::check_seed (Point<float>& p)
+      bool Dynamic_ACT_additions::check_seed (Eigen::Vector3f& p)
       {
 
         // Needs to be thread-safe
-        Interp interp (interp_template);
+        auto interp = interp_template;
 
-        interp.scanner (p);
+        interp.scanner (p.cast<double>());
         const ACT::Tissues tissues (interp);
 
         if (tissues.get_csf() > tissues.get_wm() + tissues.get_gm())
@@ -64,12 +57,14 @@ namespace MR
         // Detrimental to remove this in all cases tested
         return gmwmi_finder.find_interface (p, interp);
 
+        //auto retval = gmwmi_finder.find_interface (p);
+        //return retval;
       }
 
 
 
 
-      Dynamic::Dynamic (const std::string& in, Image::Buffer<float>& fod_data, const size_t num, const DWI::Directions::FastLookupSet& dirs) :
+      Dynamic::Dynamic (const std::string& in, Image<float>& fod_data, const size_t num, const DWI::Directions::FastLookupSet& dirs) :
           Base (in, "dynamic", MAX_TRACKING_SEED_ATTEMPTS_DYNAMIC),
           SIFT::ModelBase<Fixel_TD_seed> (fod_data, dirs),
           target_trackcount (num),
@@ -80,18 +75,18 @@ namespace MR
           seed_output ("seeds.tck", Tractography::Properties()),
           test_fixel (0),
 #endif
-          transform (SIFT::ModelBase<Fixel_TD_seed>::info())
+          transform (fod_data)
       {
-        App::Options opt = App::get_options ("act");
+        auto opt = App::get_options ("act");
         if (opt.size())
           act.reset (new Dynamic_ACT_additions (opt[0][0]));
 
         perform_FOD_segmentation (fod_data);
 
         // Have to set a volume so that Seeding::List works correctly
-        for (std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
-          volume += i->get_weight();
-        volume *= (fod_data.vox(0) * fod_data.vox(1) * fod_data.vox(2));
+        for (const auto& i : fixels)
+          volume += i.get_weight();
+        volume *= fod_data.spacing(0) * fod_data.spacing(1) * fod_data.spacing(2);
 
         // Prevent divide-by-zero at commencement
         SIFT::ModelBase<Fixel_TD_seed>::TD_sum = DYNAMIC_SEED_INITIAL_TD_SUM;
@@ -141,9 +136,9 @@ namespace MR
         H.info() = info();
         H.datatype() = DataType::UInt64;
         H.datatype().set_byte_order_native();
-        H[Image::Sparse::name_key] = str(typeid(Image::Sparse::FixelMetric).name());
-        H[Image::Sparse::size_key] = str(sizeof(Image::Sparse::FixelMetric));
-        Image::BufferSparse<Image::Sparse::FixelMetric> buffer_probs ("final_seed_probs.msf", H), buffer_logprobs ("final_seed_logprobs.msf", H), buffer_ratios ("final_fixel_ratios.msf", H);
+        H[Image::Fixel::Legacy::name_key] = str(typeid(Image::Fixel::Legacy::FixelMetric).name());
+        H[Image::Fixel::Legacy::size_key] = str(sizeof(Image::Fixel::Legacy::FixelMetric));
+        Image::BufferSparse<Image::Fixel::Legacy::FixelMetric> buffer_probs ("final_seed_probs.msf", H), buffer_logprobs ("final_seed_logprobs.msf", H), buffer_ratios ("final_fixel_ratios.msf", H);
         auto out_probs = buffer_probs.voxel(), out_logprobs = buffer_logprobs.voxel(), out_ratios = buffer_ratios.voxel();
         VoxelAccessor v (accessor);
         Image::Loop loop;
@@ -154,7 +149,7 @@ namespace MR
             out_ratios  .value().set_size ((*v.value()).num_fixels());
             size_t index = 0;
             for (Fixel_map<Fixel_TD_seed>::ConstIterator i = begin (v); i; ++i, ++index) {
-              Image::Sparse::FixelMetric fixel (i().get_dir(), i().get_FOD(), i().get_old_prob());
+              Image::Fixel::Legacy::FixelMetric fixel (i().get_dir(), i().get_FOD(), i().get_old_prob());
               out_probs.value()[index] = fixel;
               fixel.value = log10 (fixel.value);
               out_logprobs.value()[index] = fixel;
@@ -170,8 +165,9 @@ namespace MR
 
 
 
+      bool Dynamic::get_seed (Eigen::Vector3f&) const { return false; }
 
-      bool Dynamic::get_seed (Point<float>& p, Point<float>& d)
+      bool Dynamic::get_seed (Eigen::Vector3f& p, Eigen::Vector3f& d) 
       {
 
         uint64_t this_attempts = 0;
@@ -181,7 +177,7 @@ namespace MR
         while (1) {
 
           ++this_attempts;
-          const size_t fixel_index = 1 + uniform_int (rng.rng);
+          const size_t fixel_index = 1 + uniform_int (*rng);
           Fixel& fixel = fixels[fixel_index];
           float seed_prob;
           if (fixel.can_update()) {
@@ -217,24 +213,24 @@ namespace MR
             seed_prob = fixel.get_old_prob();
           }
 
-          if (seed_prob > uniform_float (rng.rng)) {
+          if (seed_prob > uniform_float (*rng)) {
 
-            const Point<int>& v (fixel.get_voxel());
-            const Point<float> vp (v[0]+rng()-0.5, v[1]+rng()-0.5, v[2]+rng()-0.5);
-            p = transform.voxel2scanner (vp);
+            const Eigen::Vector3i& v (fixel.get_voxel());
+            const Eigen::Vector3f vp (v[0]+uniform_float(*rng)-0.5, v[1]+uniform_float(*rng)-0.5, v[2]+uniform_float(*rng)-0.5);
+            p = transform.voxel2scanner.cast<float>() * vp;
 
             bool good_seed = !act;
             if (!good_seed) {
 
               if (act->check_seed (p)) {
                 // Make sure that the seed point has not left the intended voxel
-                const Point<float> new_v_float (transform.scanner2voxel (p));
-                const Point<int> new_v (std::round (new_v_float[0]), std::round (new_v_float[1]), std::round (new_v_float[2]));
+                const Eigen::Vector3f new_v_float (transform.scanner2voxel.cast<float>() * p);
+                const Eigen::Vector3i new_v (std::round (new_v_float[0]), std::round (new_v_float[1]), std::round (new_v_float[2]));
                 good_seed = (new_v == v);
               }
             }
             if (good_seed) {
-              d = fixel.get_dir();
+              d = fixel.get_dir().cast<float>();
 #ifdef DYNAMIC_SEED_DEBUGGING
               write_seed (p);
 #endif
@@ -260,8 +256,8 @@ namespace MR
       {
         if (!SIFT::ModelBase<Fixel_TD_seed>::operator() (in))
           return false;
-        VoxelAccessor v (accessor);
-        Image::Nav::set_pos (v, in.vox);
+        VoxelAccessor v (accessor());
+        assign_pos_of (in.vox).to (v);
         if (v.value()) {
           for (DWI::Fixel_map<Fixel>::Iterator i = begin (v); i; ++i)
             i().set_voxel (in.vox);
@@ -273,11 +269,11 @@ namespace MR
 
 
 #ifdef DYNAMIC_SEED_DEBUGGING
-      void Dynamic::write_seed (const Point<float>& p)
+      void Dynamic::write_seed (const Eigen::Vector3f& p)
       {
         static std::mutex mutex;
         std::lock_guard<std::mutex> lock (mutex);
-        std::vector< Point<float> > tck;
+        vector< Eigen::Vector3f > tck;
         tck.push_back (p);
         seed_output (tck);
       }
@@ -290,9 +286,9 @@ namespace MR
         H.info() = info();
         H.datatype() = DataType::UInt64;
         H.datatype().set_byte_order_native();
-        H[Image::Sparse::name_key] = str(typeid(Image::Sparse::FixelMetric).name());
-        H[Image::Sparse::size_key] = str(sizeof(Image::Sparse::FixelMetric));
-        Image::BufferSparse<Image::Sparse::FixelMetric> buffer_probs ("mid_seed_probs.msf", H), buffer_logprobs ("mid_seed_logprobs.msf", H), buffer_ratios ("mid_fixel_ratios.msf", H), buffer_FDs ("mid_FDs.msf", H), buffer_TDs ("mid_TDs.msf", H);
+        H[Image::Fixel::Legacy::name_key] = str(typeid(Image::Fixel::Legacy::FixelMetric).name());
+        H[Image::Fixel::Legacy::size_key] = str(sizeof(Image::Fixel::Legacy::FixelMetric));
+        Image::BufferSparse<Image::Fixel::Legacy::FixelMetric> buffer_probs ("mid_seed_probs.msf", H), buffer_logprobs ("mid_seed_logprobs.msf", H), buffer_ratios ("mid_fixel_ratios.msf", H), buffer_FDs ("mid_FDs.msf", H), buffer_TDs ("mid_TDs.msf", H);
         auto out_probs = buffer_probs.voxel(), out_logprobs = buffer_logprobs.voxel(), out_ratios = buffer_ratios.voxel(), out_FDs = buffer_FDs.voxel(), out_TDs = buffer_TDs.voxel();
         VoxelAccessor v (accessor);
         Image::Loop loop;
@@ -305,7 +301,7 @@ namespace MR
             out_TDs     .value().set_size ((*v.value()).num_fixels());
             size_t index = 0;
             for (Fixel_map<Fixel_TD_seed>::ConstIterator i = begin (v); i; ++i, ++index) {
-              Image::Sparse::FixelMetric fixel (i().get_dir(), i().get_FOD(), i().get_old_prob());
+              Image::Fixel::Legacy::FixelMetric fixel (i().get_dir(), i().get_FOD(), i().get_old_prob());
               out_probs.value()[index] = fixel;
               fixel.value = log10 (fixel.value);
               out_logprobs.value()[index] = fixel;
@@ -345,9 +341,9 @@ namespace MR
         H.info() = info();
         H.datatype() = DataType::UInt64;
         H.datatype().set_byte_order_native();
-        H[Image::Sparse::name_key] = str(typeid(Image::Sparse::FixelMetric).name());
-        H[Image::Sparse::size_key] = str(sizeof(Image::Sparse::FixelMetric));
-        Image::BufferSparse<Image::Sparse::FixelMetric> buffer ("fixel_mask.msf", H);
+        H[Image::Fixel::Legacy::name_key] = str(typeid(Image::Fixel::Legacy::FixelMetric).name());
+        H[Image::Fixel::Legacy::size_key] = str(sizeof(Image::Fixel::Legacy::FixelMetric));
+        Image::BufferSparse<Image::Fixel::Legacy::FixelMetric> buffer ("fixel_mask.msf", H);
         auto out = buffer.voxel();
         VoxelAccessor v (accessor);
         Image::Loop loop;
@@ -356,7 +352,7 @@ namespace MR
             out.value().set_size ((*v.value()).num_fixels());
             size_t index = 0;
             for (Fixel_map<Fixel_TD_seed>::ConstIterator f = begin(v); f; ++f, ++index) {
-              Image::Sparse::FixelMetric fixel (f().get_dir(), f().get_FOD(), (f().can_update() ? 1.0f : 0.0f));
+              Image::Fixel::Legacy::FixelMetric fixel (f().get_dir(), f().get_FOD(), (f().can_update() ? 1.0f : 0.0f));
               out.value()[index] = fixel;
             }
           }

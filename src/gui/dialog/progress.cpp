@@ -1,26 +1,20 @@
 /*
-    Copyright 2010 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-    Written by J-Donald Tournier, 28/03/2010.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include <cassert>
+#include "gui/gui.h"
 #include "gui/dialog/progress.h"
 
 namespace MR
@@ -33,31 +27,46 @@ namespace MR
       {
 
         namespace {
-          QWidget* main_window = nullptr;
+          QProgressDialog* progress_dialog = nullptr;
         }
 
-        void set_main_window (QWidget* window) {
-          main_window = window;
-        }
+
 
         void display (ProgressInfo& p)
         {
           if (!p.data) {
-            INFO (App::NAME + ": " + p.text);
-            QMetaObject::invokeMethod (main_window, "startProgressBar");
+            INFO (MR::App::NAME + ": " + p.text);
+            assert (GUI::App::main_window);
+            GUI::App::main_window->setUpdatesEnabled (false);
             p.data = new Timer;
           }
-          else {
-            if (reinterpret_cast<Timer*>(p.data)->elapsed() > 1.0) 
-              QMetaObject::invokeMethod (main_window, "displayProgressBar", Q_ARG (ProgressInfo&, p));
+          else if (reinterpret_cast<Timer*>(p.data)->elapsed() > 1.0) {
+            Context::Grab context;
+            if (!progress_dialog) {
+              progress_dialog = new QProgressDialog ((p.text + p.ellipsis).c_str(), QString(), 0, p.multiplier ? 100 : 0, GUI::App::main_window);
+              progress_dialog->setWindowModality (Qt::ApplicationModal);
+              progress_dialog->show();
+              qApp->processEvents();
+            }
+            progress_dialog->setValue (p.value);
+            qApp->processEvents();
           }
         }
 
 
         void done (ProgressInfo& p)
         {
-          INFO (App::NAME + ": " + p.text + " [done]");
-          QMetaObject::invokeMethod (main_window, "doneProgressBar");
+          INFO (MR::App::NAME + ": " + p.text + " [done]");
+          if (p.data) {
+            assert (GUI::App::main_window);
+            if (progress_dialog) {
+              Context::Grab context;
+              delete progress_dialog;
+              progress_dialog = nullptr;
+            }
+
+            GUI::App::main_window->setUpdatesEnabled (true);
+          }
           p.data = nullptr;
         }
 
@@ -65,6 +74,4 @@ namespace MR
     }
   }
 }
-
-
 

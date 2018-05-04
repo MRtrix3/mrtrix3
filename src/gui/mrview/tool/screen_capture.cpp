@@ -1,29 +1,26 @@
 /*
-   Copyright 2013 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-   Written by David Raffelt 10/04/2013
 
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+#include <Eigen/Geometry>
 
 #include "mrtrix.h"
+#include "file/path.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/screen_capture.h"
+#include "gui/opengl/transformation.h"
 
 
 namespace MR
@@ -35,10 +32,10 @@ namespace MR
       namespace Tool
       {
 
-        Capture::Capture (Window& main_window, Dock* parent) :
-          Base (main_window, parent),
-          rotation_type(RotationType::World),
-          translation_type(TranslationType::Voxel),
+        Capture::Capture (Dock* parent) :
+          Base (parent),
+          rotation_type (RotationType::World),
+          translation_type (TranslationType::Voxel),
           is_playing (false)
         {
           VBoxLayout* main_box = new VBoxLayout (this);
@@ -50,9 +47,11 @@ namespace MR
           main_box->addWidget (rotate_group_box);
           rotate_group_box->setLayout (rotate_layout);
 
+          rotate_layout->addWidget (new QLabel (tr("Type: ")), 0, 0);
           rotation_type_combobox = new QComboBox;
           rotation_type_combobox->insertItem (0, tr("World"), RotationType::World);
           rotation_type_combobox->insertItem (1, tr("Camera"), RotationType::Eye);
+          rotation_type_combobox->insertItem (2, tr("Image"), RotationType::Image);
           connect (rotation_type_combobox, SIGNAL (activated(int)), this, SLOT (on_rotation_type(int)));
           rotate_layout->addWidget(rotation_type_combobox, 0, 1, 1, 4);
 
@@ -85,9 +84,11 @@ namespace MR
           main_box->addWidget (translate_group_box);
           translate_group_box->setLayout (translate_layout);
 
+          translate_layout->addWidget (new QLabel (tr("Type: ")), 0, 0);
           translation_type_combobox = new QComboBox;
           translation_type_combobox->insertItem (0, tr("Voxel"), TranslationType::Voxel);
-          translation_type_combobox->insertItem (1, tr("Scanner"), TranslationType::Scanner);
+          translation_type_combobox->insertItem (1, tr("Scanner (mm)"), TranslationType::Scanner);
+          translation_type_combobox->insertItem (2, tr("Camera (mm)"), TranslationType::Camera);
           connect (translation_type_combobox, SIGNAL (activated(int)), this, SLOT (on_translation_type(int)));
           translate_layout->addWidget(translation_type_combobox, 0, 1, 1, 4);
 
@@ -115,13 +116,13 @@ namespace MR
           volume_group_box->setLayout (volume_layout);
 
           volume_layout->addWidget (new QLabel (tr("Axis: ")), 0, 0);
-          volume_axis = new QSpinBox (this);
+          volume_axis = new SpinBox (this);
           volume_axis->setMinimum (3);
           volume_axis->setValue (3);
           volume_layout->addWidget (volume_axis, 0, 1);
 
           volume_layout->addWidget (new QLabel (tr("Target: ")), 0, 2);
-          target_volume = new QSpinBox (this);
+          target_volume = new SpinBox (this);
           volume_layout->addWidget (target_volume, 0, 3);
           target_volume->setMinimum (0);
           target_volume->setMaximum (std::numeric_limits<int>::max());
@@ -161,7 +162,7 @@ namespace MR
           capture_group_box->setLayout (capture_grid_layout);
 
           capture_grid_layout->addWidget (new QLabel (tr("Start Index: ")), 0, 0);
-          start_index = new QSpinBox (this);
+          start_index = new SpinBox (this);
           start_index->setMinimum (0);
           start_index->setMaximum (std::numeric_limits<int>::max());
           start_index->setMinimumWidth(50);
@@ -169,7 +170,7 @@ namespace MR
           capture_grid_layout->addWidget (start_index, 0, 1);
 
           capture_grid_layout->addWidget (new QLabel (tr("Frames: ")), 0, 2);
-          frames = new QSpinBox (this);
+          frames = new SpinBox (this);
           frames->setMinimumWidth(50);
           frames->setMinimum (1);
           frames->setMaximum (std::numeric_limits<int>::max());
@@ -178,13 +179,13 @@ namespace MR
 
 
           QPushButton* preview = new QPushButton (this);
-          preview->setToolTip(tr("Preview play"));
-          preview->setIcon(QIcon (":/play.svg"));
+          preview->setToolTip(tr("Play preview"));
+          preview->setIcon(QIcon (":/start.svg"));
           connect (preview, SIGNAL (clicked()), this, SLOT (on_screen_preview()));
           capture_grid_layout->addWidget (preview, 2, 0);
 
           QPushButton* stop = new QPushButton (this);
-          stop->setToolTip (tr ("Stop"));
+          stop->setToolTip (tr ("Stop preview"));
           stop->setIcon(QIcon (":/stop.svg"));
           connect (stop, SIGNAL (clicked()), this, SLOT (on_screen_stop()));
           capture_grid_layout->addWidget (stop, 2, 1);
@@ -205,7 +206,7 @@ namespace MR
 
           directory = new QDir();
 
-          connect (&window, SIGNAL (imageChanged()), this, SLOT (on_image_changed()));
+          connect (&window(), SIGNAL (imageChanged()), this, SLOT (on_image_changed()));
           on_image_changed();
         }
 
@@ -214,23 +215,23 @@ namespace MR
 
         void Capture::on_image_changed() {
           cached_state.clear();
-          const auto image = window.image();
+          const auto image = window().image();
           if(!image) return;
 
-          Image::VoxelType& vox (image->interp);
-          int max_axis = std::max((int)vox.ndim() - 1, 0);
-          volume_axis->setMaximum(max_axis);
-          volume_axis->setValue(std::min(volume_axis->value(), max_axis));
+          int max_axis = std::max((int)image->header().ndim() - 1, 0);
+          volume_axis->setMaximum (max_axis);
+          volume_axis->setValue (std::min (volume_axis->value(), max_axis));
         }
 
 
 
 
-        void Capture::on_rotation_type(int index) {
+        void Capture::on_rotation_type (int index) {
           rotation_type = static_cast<RotationType>(rotation_type_combobox->itemData(index).toInt());
         }
 
-        void Capture::on_translation_type(int index) {
+
+        void Capture::on_translation_type (int index) {
           translation_type = static_cast<TranslationType>(translation_type_combobox->itemData(index).toInt());
         }
 
@@ -245,17 +246,17 @@ namespace MR
 
         void Capture::cache_capture_state()
         {
-            if (!window.image())
+            if (!window().image())
               return;
-            Image::VoxelType& vox (window.image()->interp);
+            auto& image (window().image()->image);
 
             cached_state.emplace( cached_state.end(),
-              window.orientation(), window.focus(), window.target(), window.FOV(),
-              volume_axis->value() < ssize_t (vox.ndim()) ? vox[volume_axis->value()] : 0,
-              volume_axis->value(), start_index->value(), window.plane()
+              window().orientation(), window().focus(), window().target(), window().FOV(),
+              volume_axis->value() < ssize_t (image.ndim()) ? image.index (volume_axis->value()) : 0,
+              volume_axis->value(), start_index->value(), window().plane()
             );
 
-            if(cached_state.size() > max_cache_size)
+            if (cached_state.size() > max_cache_size)
               cached_state.pop_front();
         }
 
@@ -264,17 +265,17 @@ namespace MR
 
         void Capture::on_restore_capture_state()
         {
-            if (!window.image() || !cached_state.size())
+            if (!window().image() || !cached_state.size())
               return;
 
             const CaptureState& state = cached_state.back();
 
-            window.set_plane(state.plane);
-            window.set_orientation(state.orientation);
-            window.set_focus(state.focus);
-            window.set_target(state.target);
-            window.set_FOV(state.fov);
-            window.set_image_volume(state.volume_axis, state.volume);
+            window().set_plane(state.plane);
+            window().set_orientation(state.orientation);
+            window().set_focus(state.focus);
+            window().set_target(state.target);
+            window().set_FOV(state.fov);
+            window().set_image_volume(state.volume_axis, state.volume);
             start_index->setValue(state.frame_index);
 
             cached_state.pop_back();
@@ -285,14 +286,17 @@ namespace MR
 
         void Capture::run (bool with_capture)
         {
-          if (!window.image())
+          Window& win (window ());
+          MRView::Image* img (win.image());
+
+          if (!img)
             return;
 
           is_playing = true;
 
           cache_capture_state();
 
-          Image::VoxelType& vox (window.image()->interp);
+          auto& image (img->image);
 
           if (std::isnan (rotation_axis_x->value()))
             rotation_axis_x->setValue (0.0);
@@ -316,8 +320,8 @@ namespace MR
           if (std::isnan (FOV_multipler->value()))
             FOV_multipler->setValue(1.0);
 
-          if (window.snap_to_image () && degrees_button->value() > 0.0)
-            window.set_snap_to_image (false);
+          if (window().snap_to_image () && degrees_button->value() > 0.0)
+            window().set_snap_to_image (false);
 
 
           size_t frames_value = frames->value();
@@ -328,10 +332,10 @@ namespace MR
           size_t first_index = start_index->value();
 
           float volume = 0, volume_inc = 0;
-          if (volume_axis->value() < ssize_t (vox.ndim())) {
-            if (target_volume->value() >= vox.dim(volume_axis->value()))
-              target_volume->setValue (vox.dim(volume_axis->value())-1);
-            volume = vox[volume_axis->value()];
+          if (volume_axis->value() < ssize_t (image.ndim())) {
+            if (target_volume->value() >= image.size (volume_axis->value()))
+              target_volume->setValue (image.size (volume_axis->value())-1);
+            volume = image.index (volume_axis->value());
             volume_inc = target_volume->value() / (float)frames_value;
           }
 
@@ -340,53 +344,82 @@ namespace MR
               break;
 
             if (with_capture)
-              this->window.captureGL (folder + "/" + prefix + printf ("%04d.png", i));
+              win.captureGL (Path::join (folder, prefix + printf ("%04d.png", i)));
 
             // Rotation
-            Math::Versor<float> orientation (this->window.orientation());
-            Math::Vector<float> axis (3);
-            axis[0] = rotation_axis_x->value();
-            axis[1] = rotation_axis_y->value();
-            axis[2] = rotation_axis_z->value();
-            Math::Versor<float> rotation (radians, axis.ptr());
+            Math::Versorf orientation (win.orientation());
+            Eigen::Vector3f axis { rotation_axis_x->value(), rotation_axis_y->value(), rotation_axis_z->value() };
+            axis.normalize();
+            const Math::Versorf rotation (Eigen::AngleAxisf (radians, axis));
 
             switch (rotation_type) {
               case RotationType::World:
-                orientation = rotation*orientation;
+                orientation = rotation * orientation;
                 break;
               case RotationType::Eye:
+              case RotationType::Image:
                 orientation *= rotation;
                 break;
               default:
                 break;
             }
 
-            this->window.set_orientation (orientation);
+            win.set_orientation (orientation);
 
             // Translation
-            Point<float> trans_vec(translate_x->value(), translate_y->value(), translate_z->value());
+            Eigen::Vector3f trans_vec { translate_x->value(), translate_y->value(), translate_z->value() };
             trans_vec /= frames_value;
-            if(translation_type == TranslationType::Voxel)
-              trans_vec = window.image()->interp.voxel2scanner_dir(trans_vec);
 
-            Point<float> focus (this->window.focus());
-            focus += trans_vec;
-            window.set_focus (focus);
-            Point<float> target (this->window.target());
+            Eigen::Vector3f focus (win.focus());
+            Eigen::Vector3f target (win.target());
+
+            switch (translation_type) {
+              case TranslationType::Voxel:
+                trans_vec = img->transform().voxel2scanner.rotation().cast<float>() * trans_vec;
+                break;
+              case TranslationType::Camera:
+              {
+                const GL::vec4 trans_gl_vec =  GL::inv (GL::mat4 (orientation)) * GL::vec4 (trans_vec[0], trans_vec[1], trans_vec[2], 1.0f);
+                trans_vec[0] = trans_gl_vec[0];
+                trans_vec[1] = trans_gl_vec[1];
+                trans_vec[2] = trans_gl_vec[2];
+                break;
+              }
+              case TranslationType::Scanner:
+                break;
+              default:
+                break;
+            }
+
+
+            Eigen::Vector3f focus_delta (trans_vec);
+
+
+            // If rotating image we need to offset the translation so that the rotation is relative to
+            // the center (i.e. target) of the image
+            if (rotation_type == RotationType::Image) {
+              GL::vec4 target_after = GL::mat4 (rotation) * GL::vec4 (target[0], target[1], target[2], 1.0f);
+              trans_vec += Eigen::Vector3f { target_after[0], target_after[1], target_after[2] } - target;
+            }
+
+
+            focus += focus_delta;
+            win.set_focus (focus);
+
             target += trans_vec;
-            window.set_target (target);
+            win.set_target (target);
 
             // Volume
-            if (volume_axis->value() < ssize_t (vox.ndim())) {
+            if (volume_axis->value() < ssize_t (image.ndim())) {
               volume += volume_inc;
-              window.set_image_volume (volume_axis->value(), std::round(volume));
+              win.set_image_volume (volume_axis->value(), std::round(volume));
             }
 
             // FOV
-            window.set_FOV (window.FOV() * (std::pow (FOV_multipler->value(), (float) 1.0 / frames_value)));
+            win.set_FOV (window().FOV() * (std::pow (FOV_multipler->value(), (float) 1.0 / frames_value)));
 
             start_index->setValue (i + 1);
-            this->window.updateGL();
+            this->window().updateGL();
             qApp->processEvents();
           } 
 
@@ -400,10 +433,10 @@ namespace MR
 
         void Capture::select_output_folder_slot ()
         {
-          directory->setPath(QFileDialog::getExistingDirectory (this, tr("Directory"), directory->path()));
-          QString path (shorten(directory->path().toUtf8().constData(), 20, 0).c_str());
+          const QString path = QFileDialog::getExistingDirectory (this, tr("Directory"), directory->path());
           if (!path.size()) return;
-          folder_button->setText(path);
+          directory->setPath (path);
+          folder_button->setText (shorten (path.toUtf8().constData(), 20, 0).c_str());
           on_output_update ();
         }
 
@@ -429,13 +462,13 @@ namespace MR
           options
             + OptionGroup ("Screen Capture tool options")
 
-            + Option ("capture.folder", "Set the output folder for the screen capture tool.")
+            + Option ("capture.folder", "Set the output folder for the screen capture tool.").allow_multiple()
             +   Argument ("path").type_text()
 
-            + Option ("capture.prefix", "Set the output file prefix for the screen capture tool.")
+            + Option ("capture.prefix", "Set the output file prefix for the screen capture tool.").allow_multiple()
             +   Argument ("string").type_text()
 
-            + Option ("capture.grab", "Start the screen capture process.");
+            + Option ("capture.grab", "Start the screen capture process.").allow_multiple();
         }
 
         bool Capture::process_commandline_option (const MR::App::ParsedOption& opt) 
@@ -455,7 +488,7 @@ namespace MR
           }
 
           if (opt.opt->is ("capture.grab")) {
-            this->window.updateGL();
+            this->window().updateGL();
             qApp->processEvents();
             on_screen_capture();
             return true;

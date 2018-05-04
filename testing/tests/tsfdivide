@@ -1,0 +1,1 @@
+tsfdivide afd.tsf afd.tsf tmp.tsf -force && testing_diff_tsf tmp.tsf tsfdivide/out.tsf -frac 1e-5

@@ -1,330 +1,275 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
-
-#include <gsl/gsl_blas.h>
-#include <gsl/gsl_multimin.h>
 
 #include "command.h"
 #include "progressbar.h"
-#include "math/vector.h"
-#include "math/matrix.h"
 #include "math/rng.h"
+#include "thread.h"
+#include "math/gradient_descent.h"
+#include "math/check_gradient.h"
 #include "dwi/directions/file.h"
+
+#define DEFAULT_POWER 1
+#define DEFAULT_NITER 10000
+#define DEFAULT_RESTARTS 10
 
 
 using namespace MR;
 using namespace App;
 
-void usage () {
+void usage ()
+{
 
-DESCRIPTION
-  + "generate a set of uniformly distributed directions using a bipolar electrostatic repulsion model.";
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-REFERENCES 
-  + "* Jones, D.; Horsfield, M. & Simmons, A. "
-  "Optimal strategies for measuring diffusion in anisotropic systems by magnetic resonance imaging. "
-  "Magnetic Resonance in Medicine, 42: 515-525 (1999)."
-             
-  + "* Papadakis, N. G.; Murrills, C. D.; Hall, L. D.; Huang, C. L.-H. & Adrian Carpenter, T. "
-  "Minimal gradient encoding for robust estimation of diffusion anisotropy. "
-  "Magnetic Resonance Imaging, 18: 671-679 (2000).";
+  SYNOPSIS = "Generate a set of uniformly distributed directions using a bipolar electrostatic repulsion model";
 
-ARGUMENTS
-  + Argument ("ndir", "the number of directions to generate.").type_integer (6, 60, std::numeric_limits<int>::max())
-  + Argument ("dirs", "the text file to write the directions to, as [ az el ] pairs.").type_file_out();
+  DESCRIPTION
+    + "Directions are distributed by analogy to an electrostatic repulsion system, with each direction "
+    "corresponding to a single electrostatic charge (for -unipolar), or a pair of diametrically opposed charges "
+    "(for the default bipolar case). The energy of the system is determined based on the Coulomb repulsion, "
+    "which assumes the form 1/r^power, where r is the distance between any pair of charges, and p is the power "
+    "assumed for the repulsion law (default: 1). The minimum energy state is obtained by gradient descent.";
 
-OPTIONS
-  + Option ("power", "specify exponent to use for repulsion power law (default: 2).")
-  + Argument ("exp").type_integer (2, 2, std::numeric_limits<int>::max())
 
-  + Option ("niter", "specify the maximum number of iterations to perform (default: 10000).")
-  + Argument ("num").type_integer (1, 10000, std::numeric_limits<int>::max())
+  REFERENCES
+    + "Jones, D.; Horsfield, M. & Simmons, A. "
+    "Optimal strategies for measuring diffusion in anisotropic systems by magnetic resonance imaging. "
+    "Magnetic Resonance in Medicine, 1999, 42: 515-525"
 
-  + Option ("unipolar", "optimise assuming a unipolar electrostatic repulsion model rather than the bipolar model normally assumed in DWI")
+    + "Papadakis, N. G.; Murrills, C. D.; Hall, L. D.; Huang, C. L.-H. & Adrian Carpenter, T. "
+    "Minimal gradient encoding for robust estimation of diffusion anisotropy. "
+    "Magnetic Resonance Imaging, 2000, 18: 671-679";
 
-  + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");
+  ARGUMENTS
+    + Argument ("ndir", "the number of directions to generate.").type_integer (6, std::numeric_limits<int>::max())
+    + Argument ("dirs", "the text file to write the directions to, as [ az el ] pairs.").type_file_out();
+
+  OPTIONS
+    + Option ("power", "specify exponent to use for repulsion power law (default: " + str(DEFAULT_POWER) + "). This must be a power of 2 (i.e. 1, 2, 4, 8, 16, ...).")
+    +   Argument ("exp").type_integer (1, std::numeric_limits<int>::max())
+
+    + Option ("niter", "specify the maximum number of iterations to perform (default: " + str(DEFAULT_NITER) + ").")
+    +   Argument ("num").type_integer (1, std::numeric_limits<int>::max())
+
+    + Option ("restarts", "specify the number of restarts to perform (default: " + str(DEFAULT_RESTARTS) + ").")
+    +   Argument ("num").type_integer (1, std::numeric_limits<int>::max())
+
+    + Option ("unipolar", "optimise assuming a unipolar electrostatic repulsion model rather than the bipolar model normally assumed in DWI")
+
+    + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");
 
 }
 
 
 
 
-
-namespace
-{
-  double power = -1.0;
-  size_t   ndirs = 0;
-  bool bipolar = true;
-}
-
-
-
-
-class SinCos
-{
-  protected:
-    double cos_az, sin_az, cos_el, sin_el;
-    double r2_pos, r2_neg, multiplier;
-
-    double energy ();
-    void   dist (const SinCos& B);
-    void   init_deriv ();
-    double daz (const SinCos& B) const;
-    double del (const SinCos& B) const;
-    double rdel (const SinCos& B) const;
-
+// constrain directions to remain unit length:
+class ProjectedUpdate { MEMALIGN(ProjectedUpdate)
   public:
-    SinCos (const gsl_vector* v, size_t index);
-    double f (const SinCos& B);
-    void   df (const SinCos& B, gsl_vector* deriv, size_t i, size_t j);
-    double fdf (const SinCos& B, gsl_vector* deriv, size_t i, size_t j);
+    bool operator() (
+        Eigen::VectorXd& newx,
+        const Eigen::VectorXd& x,
+        const Eigen::VectorXd& g,
+        double step_size) {
+      newx.noalias() = x - step_size * g;
+      for (ssize_t n = 0; n < newx.size(); n += 3)
+        newx.segment (n,3).normalize();
+      return newx != x;
+    }
 };
 
 
 
-double energy_f (const gsl_vector* x, void* params);
-void   energy_df (const gsl_vector* x, void* params, gsl_vector* df);
-void   energy_fdf (const gsl_vector* x, void* params, double* f, gsl_vector* df);
 
 
-void range (double& azimuth, double& elevation);
 
 
-void run () {
-  size_t niter = 10000;
-  float target_power = 2.0;
+class Energy { MEMALIGN(Energy)
+  public:
+    Energy (ProgressBar& progress) :
+      progress (progress),
+      ndirs (to<int> (argument[0])),
+      bipolar (!(get_options ("unipolar").size())),
+      power (0),
+      directions (3 * ndirs) { }
 
-  Options opt = get_options ("power");
-  if (opt.size())
-    target_power = opt[0][0];
+// Non-optimised compilation can't handle recursive inline functions
+#ifdef __OPTIMIZE__
+FORCE_INLINE
+#endif
+    double fast_pow (double x, int p) {
+      return p == 1 ? x : fast_pow (x*x, p/2);
+    }
 
-  opt = get_options ("niter");
-  if (opt.size())
-    niter = opt[0][0];
+    using value_type = double;
 
-  ndirs = to<int> (argument[0]);
+    size_t size () const { return 3 * ndirs; }
 
-  if (get_options ("unipolar").size())
-    bipolar = false;
-
-  Math::RNG    rng;
-  std::uniform_real_distribution<double> uniform (0.0, 1.0);
-  Math::Vector<double> v (2*ndirs);
-
-  for (size_t n = 0; n < 2*ndirs; n+=2) {
-    v[n] =  Math::pi * (2.0 * uniform(rng) - 1.0);
-    v[n+1] = std::asin (2.0 * uniform(rng) - 1.0);
-  }
-
-  gsl_multimin_function_fdf fdf;
-
-  fdf.f = energy_f;
-  fdf.df = energy_df;
-  fdf.fdf = energy_fdf;
-  fdf.n = 2*ndirs;
-
-  gsl_multimin_fdfminimizer* minimizer =
-    gsl_multimin_fdfminimizer_alloc (gsl_multimin_fdfminimizer_conjugate_fr, 2*ndirs);
+    // set x to original directions provided in constructor.
+    // The idea is to save the directions from one run to initialise next run
+    // at higher power.
+    double init (Eigen::VectorXd& x)
+    {
+      Math::RNG::Normal<double> rng;
+      for (size_t n = 0; n < ndirs; ++n) {
+        auto d = x.segment (3*n,3);
+        d[0] = rng();
+        d[1] = rng();
+        d[2] = rng();
+        d.normalize();
+      }
+      return 0.01;
+    }
 
 
-  {
-    ProgressBar progress ("Optimising directions...");
-    for (power = -1.0; power >= -target_power/2.0; power *= 2.0) {
-      INFO ("setting power = " + str (-power*2.0));
-      gsl_multimin_fdfminimizer_set (minimizer, &fdf, v.gsl(), 0.01, 1e-4);
 
-      for (size_t iter = 0; iter < niter; iter++) {
+    // function executed by optimiser at each iteration:
+    double operator() (const Eigen::VectorXd& x, Eigen::VectorXd& g) {
+      double E = 0.0;
+      g.setZero();
 
-        int status = gsl_multimin_fdfminimizer_iterate (minimizer);
+      for (size_t i = 0; i < ndirs-1; ++i) {
+        auto d1 = x.segment (3*i, 3);
+        auto g1 = g.segment (3*i, 3);
+        for (size_t j = i+1; j < ndirs; ++j) {
+          auto d2 = x.segment (3*j, 3);
+          auto g2 = g.segment (3*j, 3);
 
-        //for (size_t n = 0; n < 2*ndirs; ++n) 
-          //std::cout << gsl_vector_get (minimizer->x, n) << " " << gsl_vector_get (minimizer->gradient, n) << "\n";
+          Eigen::Vector3d r = d1-d2;
+          double _1_r2 = 1.0 / r.squaredNorm();
+          double _1_r = std::sqrt (_1_r2);
+          double e = fast_pow (_1_r, power);
+          E += e;
+          g1 -= (power * e * _1_r2) * r;
+          g2 += (power * e * _1_r2) * r;
 
-        if (iter%10 == 0)
-          INFO ("[ " + str (iter) + " ] (pow = " + str (-power*2.0) + ") E = " + str (minimizer->f)
-          + ", grad = " + str (gsl_blas_dnrm2 (minimizer->gradient)));
+          if (bipolar) {
+            r = d1+d2;
+            _1_r2 = 1.0 / r.squaredNorm();
+            _1_r = std::sqrt (_1_r2);
+            e = fast_pow (_1_r, power);
+            E += e;
+            g1 -= (power * e * _1_r2) * r;
+            g2 -= (power * e * _1_r2) * r;
+          }
 
-        if (status) {
-          INFO (std::string ("iteration stopped: ") + gsl_strerror (status));
-          break;
+        }
+      }
+
+      // constrain gradients to lie tangent to unit sphere:
+      for (size_t n = 0; n < ndirs; ++n)
+        g.segment(3*n,3) -= x.segment(3*n,3).dot (g.segment(3*n,3)) * x.segment(3*n,3);
+
+      return E;
+    }
+
+
+
+    // function executed per thread:
+    void execute ()
+    {
+      size_t this_start = 0;
+      while ((this_start = current_start++) < restarts) {
+        INFO ("launching start " + str (this_start));
+        double E = 0.0;
+
+        for (power = 1; power <= target_power; power *= 2) {
+          Math::GradientDescent<Energy,ProjectedUpdate> optim (*this, ProjectedUpdate());
+
+          INFO ("start " + str(this_start) + ": setting power = " + str (power));
+          optim.init();
+
+          size_t iter = 0;
+          for (; iter < niter; iter++) {
+            if (!optim.iterate())
+              break;
+
+            DEBUG ("start " + str(this_start) + ": [ " + str (iter) + " ] (pow = " + str (power) + ") E = " + str (optim.value(), 8)
+                + ", grad = " + str (optim.gradient_norm(), 8));
+
+            std::lock_guard<std::mutex> lock (mutex);
+            ++progress;
+          }
+
+          directions = optim.state();
+          E = optim.value();
         }
 
-        progress.update ([&]() { return "Optimising directions (power " + str(-2.0*power) + ", current energy: " + str(minimizer->f, 8) + ")..."; });
+
+
+        std::lock_guard<std::mutex> lock (mutex);
+        if (E < best_E) {
+          best_E = E;
+          best_directions = directions;
+        }
       }
-      gsl_vector_memcpy (v.gsl(), minimizer->x);
     }
+
+
+    static size_t restarts;
+    static int target_power;
+    static size_t niter;
+    static double best_E;
+    static Eigen::VectorXd best_directions;
+
+  protected:
+    ProgressBar& progress;
+    size_t ndirs;
+    bool bipolar;
+    int power;
+    Eigen::VectorXd directions;
+    double E;
+
+    static std::mutex mutex;
+    static std::atomic<size_t> current_start;
+};
+
+
+size_t Energy::restarts (DEFAULT_RESTARTS);
+int Energy::target_power (DEFAULT_POWER);
+size_t Energy::niter (DEFAULT_NITER);
+std::mutex Energy::mutex;
+std::atomic<size_t> Energy::current_start (0);
+double Energy::best_E = std::numeric_limits<double>::infinity();
+Eigen::VectorXd Energy::best_directions;
+
+
+
+
+void run ()
+{
+  Energy::restarts = get_option_value ("restarts", DEFAULT_RESTARTS);
+  Energy::target_power = get_option_value ("power", DEFAULT_POWER);
+  Energy::niter = get_option_value ("niter", DEFAULT_NITER);
+
+  {
+    ProgressBar progress ("Optimising directions up to power " + str(Energy::target_power) + " (" + str(Energy::restarts) + " restarts)");
+    Energy energy_functor (progress);
+    auto threads = Thread::run (Thread::multi (energy_functor), "energy function");
   }
 
+  CONSOLE ("final energy = " + str(Energy::best_E));
+  size_t ndirs = Energy::best_directions.size()/3;
+  Eigen::MatrixXd directions_matrix (ndirs, 3);
+  for (size_t n = 0; n < ndirs; ++n)
+    directions_matrix.row (n) = Energy::best_directions.segment (3*n, 3);
 
-  Math::Matrix<double> directions (ndirs, 2);
-  for (size_t n = 0; n < ndirs; n++) {
-    double az = gsl_vector_get (minimizer->x, 2*n);
-    double el = gsl_vector_get (minimizer->x, 2*n+1);
-    range (az, el);
-    directions (n, 0) = az;
-    directions (n, 1) = el;
-  }
-
-  gsl_multimin_fdfminimizer_free (minimizer);
-
-  DWI::Directions::save (directions, argument[1], get_options ("cartesian").size());
+  DWI::Directions::save (directions_matrix, argument[1], get_options ("cartesian").size());
 }
 
 
-
-
-
-
-
-
-
-
-
-inline double SinCos::energy ()
-{
-  double E = pow (r2_neg, power);
-  if (bipolar) E += pow (r2_pos, power);
-  return E;
-}
-
-inline void SinCos::dist (const SinCos& B)
-{
-  double a1 = cos_az*sin_el;
-  double b1 = B.cos_az*B.sin_el;
-  double a2 = sin_az*sin_el;
-  double b2 = B.sin_az*B.sin_el;
-  r2_neg = Math::pow2(a1-b1) + Math::pow2(a2-b2) + Math::pow2(cos_el-B.cos_el);
-  r2_pos = bipolar ? Math::pow2(a1+b1) + Math::pow2(a2+b2) + Math::pow2(cos_el+B.cos_el) : 0.0;
-}
-
-inline void SinCos::init_deriv ()
-{
-  multiplier = pow (r2_neg, power-1.0);
-  if (bipolar) multiplier -= pow (r2_pos, power-1.0);
-  multiplier *= 2.0 * power;
-}
-
-inline double SinCos::daz (const SinCos& B) const
-{
-  return multiplier * (cos_az*sin_el*B.sin_az*B.sin_el - sin_az*sin_el*B.cos_az*B.sin_el);
-}
-
-inline double SinCos::del (const SinCos& B) const
-{
-  return multiplier * (cos_az*cos_el*B.cos_az*B.sin_el + sin_az*cos_el*B.sin_az*B.sin_el - sin_el*B.cos_el);
-}
-
-inline double SinCos::rdel (const SinCos& B) const
-{
-  return multiplier * (B.cos_az*B.cos_el*cos_az*sin_el + B.sin_az*B.cos_el*sin_az*sin_el - B.sin_el*cos_el);
-}
-
-inline SinCos::SinCos (const gsl_vector* v, size_t index)
-{
-  //double az = index > 1 ? gsl_vector_get (v, 2*index-3) : 0.0;
-  //double el = index ? gsl_vector_get (v, 2*index-2) : 0.0;
-  double az = gsl_vector_get (v, 2*index);
-  double el = gsl_vector_get (v, 2*index+1);
-  cos_az = std::cos (az);
-  sin_az = std::sin (az);
-  cos_el = std::cos (el);
-  sin_el = std::sin (el);
-}
-
-inline double SinCos::f (const SinCos& B)
-{
-  dist (B);
-  return energy();
-}
-
-inline void SinCos::df (const SinCos& B, gsl_vector* deriv, size_t i, size_t j)
-{
-  dist (B);
-  init_deriv ();
-  double d = daz (B);
-  *gsl_vector_ptr (deriv, 2*i) -= d;
-  *gsl_vector_ptr (deriv, 2*i+1) -= del (B);
-  *gsl_vector_ptr (deriv, 2*j) += d;
-  *gsl_vector_ptr (deriv, 2*j+1) -= rdel (B);
-}
-
-
-inline double SinCos::fdf (const SinCos& B, gsl_vector* deriv, size_t i, size_t j)
-{
-  df (B, deriv, i, j);
-  return energy();
-}
-
-
-double energy_f (const gsl_vector* x, void* params)
-{
-  double  E = 0.0;
-  for (size_t i = 0; i < ndirs; i++) {
-    SinCos I (x, i);
-    for (size_t j = i+1; j < ndirs; j++)
-      E += 2.0 * I.f (SinCos (x, j));
-  }
-  return E;
-}
-
-
-
-void energy_df (const gsl_vector* x, void* params, gsl_vector* df)
-{
-  gsl_vector_set_zero (df);
-  for (size_t i = 0; i < ndirs; i++) {
-    SinCos I (x, i);
-    for (size_t j = i+1; j < ndirs; j++)
-      I.df (SinCos (x, j), df, i, j);
-  }
-}
-
-
-
-void energy_fdf (const gsl_vector* x, void* params, double* f, gsl_vector* df)
-{
-  *f = 0.0;
-  gsl_vector_set_zero (df);
-  for (size_t i = 0; i < ndirs; i++) {
-    SinCos I (x, i);
-    for (size_t j = i+1; j < ndirs; j++)
-      *f += 2.0 * I.fdf (SinCos (x, j), df, i, j);
-  }
-}
-
-
-
-
-
-inline void range (double& azimuth, double& elevation)
-{
-  while (elevation < 0.0) elevation += 2.0*Math::pi;
-  while (elevation >= 2.0*Math::pi) elevation -= 2.0*Math::pi;
-  if (elevation >= Math::pi) {
-    elevation = 2.0*Math::pi - elevation;
-    azimuth -= Math::pi;
-  }
-  while (azimuth < -Math::pi) azimuth += 2.0*Math::pi;
-  while (azimuth >= Math::pi) azimuth -= 2.0*Math::pi;
-}
 
 

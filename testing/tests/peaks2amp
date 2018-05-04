@@ -1,0 +1,1 @@
+peaks2amp sh2peaks/out.mif - | testing_diff_image - peaks2amp/out.mif -frac 1e-5

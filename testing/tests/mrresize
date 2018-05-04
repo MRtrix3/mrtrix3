@@ -1,0 +1,8 @@
+mrresize dwi.mif -scale 0.4 -datatype uint16 - | testing_diff_image - mrresize/out1.mif
+mrresize dwi.mif -scale 1.6 -datatype float32 - | testing_diff_image - mrresize/out2.mif -voxel 1e-5
+mrresize dwi.mif -scale 1.6 -datatype float32 -interp linear - | testing_diff_image - mrresize/out3.mif -voxel 1e-5
+mrresize dwi.mif -scale 1.6 -datatype float32 -interp sinc - | testing_diff_image - mrresize/out4.mif -voxel 1e-4
+mrresize dwi.mif -scale 2 -datatype float32 -interp nearest - | testing_diff_image - mrresize/out5.mif -voxel 1e-5
+mrresize dwi.mif -scale 1.9,0.5,1.3 -datatype float32 - | testing_diff_image - mrresize/out6.mif -voxel 1e-5
+mrresize dwi.mif -size 13,7,15 -datatype float32 - | testing_diff_image - mrresize/out7.mif -voxel 1e-5
+mrresize dwi.mif -vox 1.5,2.6,1.8 -datatype float32 - | testing_diff_image - mrresize/out8.mif -voxel 1e-5

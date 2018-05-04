@@ -1,29 +1,19 @@
 /*
-   Copyright 2012 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-   Written by J-Donald Tournier and David Raffelt, 07/12/12.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "gui/mrview/displayable.h"
-#include "progressbar.h"
-#include "image/stride.h"
-#include "gui/mrview/window.h"
 
 
 
@@ -35,7 +25,7 @@ namespace MR
     {
 
       Displayable::Displayable (const std::string& filename) :
-        QAction (NULL),
+        QAction (nullptr),
         lessthan (NAN),
         greaterthan (NAN),
         display_midpoint (NAN),
@@ -55,39 +45,21 @@ namespace MR
         }
 
 
-      Displayable::Displayable (Window& window, const std::string& filename) :
-        QAction (shorten (filename, 20, 0).c_str(), &window),
-        lessthan (NAN),
-        greaterthan (NAN),
-        display_midpoint (NAN),
-        display_range (NAN),
-        transparent_intensity (NAN),
-        opaque_intensity (NAN),
-        alpha (NAN),
-        colourmap (0), 
-        show (true),
-        show_colour_bar (true),
-        filename (filename),
-        value_min (NAN),
-        value_max (NAN),
-        flags_ (0x00000000) {
-          connect (this, SIGNAL(scalingChanged()), &window, SLOT(on_scaling_changed()));
-          colour[0] = colour[1] = 255;
-          colour[2] = 0;
-      }
-
 
       Displayable::~Displayable ()
       {
       }
 
 
-      bool Displayable::Shader::need_update (const Displayable& object) const { 
+
+      bool Displayable::Shader::need_update (const Displayable& object) const 
+      { 
         return flags != object.flags() || colourmap != object.colourmap;
       }
 
 
-      void Displayable::Shader::update (const Displayable& object) {
+      void Displayable::Shader::update (const Displayable& object) 
+      {
         flags = object.flags();
         colourmap = object.colourmap;
       }

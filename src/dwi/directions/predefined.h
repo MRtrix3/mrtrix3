@@ -1,23 +1,15 @@
 /*
-   Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-   Written by J-Donald Tournier, 27/06/08.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -25,87 +17,53 @@
 #define __dwi_directions_predefined_h__
 
 
-#include "math/matrix.h"
+#include "types.h"
 
 
 namespace MR {
   namespace DWI {
     namespace Directions {
 
-      extern const float electrostatic_repulsion_60_data[];
-      extern const float electrostatic_repulsion_300_data[];
-      extern const float tesselation_129_data[];
-      extern const float tesselation_321_data[];
-      extern const float tesselation_469_data[];
-      extern const float tesselation_513_data[];
-      extern const float tesselation_1281_data[];
+      extern const default_type electrostatic_repulsion_60_data[];
+      extern const default_type electrostatic_repulsion_300_data[];
+      extern const default_type electrostatic_repulsion_5000_data[];
+      extern const default_type tesselation_129_data[];
+      extern const default_type tesselation_321_data[];
+      extern const default_type tesselation_469_data[];
+      extern const default_type tesselation_513_data[];
+      extern const default_type tesselation_1281_data[];
 
-
-
-      template <typename T> 
-        inline Math::Matrix<T>& electrostatic_repulsion_60 (Math::Matrix<T>& dirs)
-        {
-          dirs = Math::Matrix<float> (const_cast<float*> (electrostatic_repulsion_60_data), 60, 2);
-          return dirs;
+      namespace {
+        inline Eigen::MatrixXd copy (const default_type* p, ssize_t rows) {
+          Eigen::MatrixXd d (rows, 2);
+          for (ssize_t i = 0; i < rows; ++i) {
+            d(i,0) = *p++;
+            d(i,1) = *p++;
+          }
+          return d;
         }
+      }
 
 
-      template <typename T> 
-        inline Math::Matrix<T>& electrostatic_repulsion_300 (Math::Matrix<T>& dirs)
-        {
-          dirs = Math::Matrix<float> (const_cast<float*> (electrostatic_repulsion_300_data), 300, 2);
-          return dirs;
-        }
 
-
+      inline Eigen::MatrixXd electrostatic_repulsion_60 () { return copy (electrostatic_repulsion_60_data, 60); }
+      inline Eigen::MatrixXd electrostatic_repulsion_300 () { return copy (electrostatic_repulsion_300_data, 300); }
+      inline Eigen::MatrixXd electrostatic_repulsion_5000 () { return copy (electrostatic_repulsion_5000_data, 5000); }
 
       //! 3rd-order tessellation of an octahedron
-      template <typename T> 
-        inline Math::Matrix<T>& tesselation_129 (Math::Matrix<T>& dirs)
-        {
-          dirs = Math::Matrix<float> (const_cast<float*> (tesselation_129_data), 129, 2);
-          return dirs;
-        }
-
-
+      inline Eigen::MatrixXd tesselation_129 () { return copy (tesselation_129_data, 129); }
 
       //! 3rd-order tessellation of an icosahedron
-      template <typename T> 
-        inline Math::Matrix<T>& tesselation_321 (Math::Matrix<T>& dirs)
-        {
-          dirs = Math::Matrix<float> (const_cast<float*> (tesselation_321_data), 321, 2);
-          return dirs;
-        }
-
+      inline Eigen::MatrixXd tesselation_321 () { return copy (tesselation_321_data, 321); }
 
       //! 4th-order tessellation of a tetrahedron
-      template <typename T> 
-        inline Math::Matrix<T>& tesselation_469 (Math::Matrix<T>& dirs)
-        {
-          dirs = Math::Matrix<float> (const_cast<float*> (tesselation_469_data), 469, 2);
-          return dirs;
-        }
-
+      inline Eigen::MatrixXd tesselation_469 () { return copy (tesselation_469_data, 469); }
 
       //! 4th-order tessellation of an octahedron
-      template <typename T> 
-        inline Math::Matrix<T>& tesselation_513 (Math::Matrix<T>& dirs)
-        {
-          dirs = Math::Matrix<float> (const_cast<float*> (tesselation_513_data), 513, 2);
-          return dirs;
-        }
-
+      inline Eigen::MatrixXd tesselation_513 () { return copy (tesselation_513_data, 513); }
 
       //! 4th-order tessellation of an icosahedron
-      template <typename T> 
-        inline Math::Matrix<T>& tesselation_1281 (Math::Matrix<T>& dirs)
-        {
-          dirs = Math::Matrix<float> (const_cast<float*> (tesselation_1281_data), 1281, 2);
-          return dirs;
-        }
-
-
-
+      inline Eigen::MatrixXd tesselation_1281 () { return copy (tesselation_1281_data, 1281); }
 
     }
   }

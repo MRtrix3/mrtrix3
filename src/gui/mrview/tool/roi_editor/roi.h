@@ -1,33 +1,24 @@
 /*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-   Written by J-Donald Tournier, 2014.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #ifndef __gui_mrview_tool_roi_editor_roi_h__
 #define __gui_mrview_tool_roi_editor_roi_h__
 
-#include <vector>
-
 #include "memory.h"
-#include "image/header.h"
-#include "image/transform.h"
+#include "transform.h"
+#include "types.h"
 
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/base.h"
@@ -42,6 +33,9 @@
 
 namespace MR
 {
+
+  class Header;
+
   namespace GUI
   {
     namespace MRView
@@ -51,22 +45,22 @@ namespace MR
 
 
         class ROI : public Base
-        {
+        { MEMALIGN(ROI)
             Q_OBJECT
 
           public:
-            ROI (Window& main_window, Dock* parent);
+            ROI (Dock* parent);
             ~ROI();
 
-            void draw (const Projection& projection, bool is_3D, int axis, int slice);
+            void draw (const Projection& projection, bool is_3D, int axis, int slice) override;
 
             static void add_commandline_options (MR::App::OptionList& options);
-            virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
+            virtual bool process_commandline_option (const MR::App::ParsedOption& opt) override;
 
-            virtual bool mouse_press_event ();
-            virtual bool mouse_move_event ();
-            virtual bool mouse_release_event ();
-            virtual QCursor* get_cursor ();
+            virtual bool mouse_press_event () override;
+            virtual bool mouse_move_event () override;
+            virtual bool mouse_release_event () override;
+            virtual QCursor* get_cursor () override;
 
           private slots:
             void new_slot ();
@@ -84,6 +78,7 @@ namespace MR
             void update_slot ();
             void colour_changed ();
             void opacity_changed (int unused);
+            void model_rows_changed ();
 
           protected:
              QPushButton *hide_all_button, *close_button, *save_button;
@@ -98,21 +93,23 @@ namespace MR
              AdjustButton *brush_size_button;
              int current_axis, current_slice;
              bool in_insert_mode, insert_mode_value;
-             Point<> current_origin, prev_pos;
+             Eigen::Vector3f current_origin, prev_pos;
              float current_slice_loc;
 
              Mode::Slice::Shader shader;
 
              void update_undo_redo ();
-             void updateGL() { 
-               window.get_current_mode()->update_overlays = true;
-               window.updateGL();
+             void updateGL() {
+               window().get_current_mode()->update_overlays = true;
+               window().updateGL();
              }
-             
-             void load (std::vector<std::unique_ptr<MR::Image::Header>>& list); 
+
+             void load (vector<std::unique_ptr<MR::Header>>& list);
              void save (ROI_Item*);
 
-             int normal2axis (const Point<>&, const MR::Image::Transform&) const;
+             int normal2axis (const Eigen::Vector3f&, const MR::Transform&) const;
+
+             void dropEvent (QDropEvent* event) override;
         };
 
 

@@ -5,22 +5,16 @@ function image = read_mrtrix (filename)
 % returns a structure containing the header information and data for the MRtrix 
 % format image 'filename' (i.e. files with the extension '.mif' or '.mih').
 
-image.comments = {};
-
 f = fopen (filename, 'r');
-if (f<1) 
-  disp (['error opening ' filename ]);
-  return
-end
+assert(f ~= -1, 'error opening %s', filename);
 L = fgetl(f);
 if ~strncmp(L, 'mrtrix image', 12)
   fclose(f);
-  disp ([filename ' is not in MRtrix format']);
-  return
+  error('%s is not in MRtrix format', filename);
 end
 
 transform = [];
-DW_scheme = [];
+dw_scheme = [];
 
 while 1
   L = fgetl(f);
@@ -39,24 +33,16 @@ while 1
       image.vox = str2num(char(split_strings (value, ',')))';
     elseif strcmp(key, 'layout')
       image.layout = value;
-    elseif strcmp(key, 'mrtrix_version')
-      image.mrtrix_version = value;
     elseif strcmp(key, 'datatype')
       image.datatype = value;
-    elseif strcmp(key, 'labels')
-      image.labels = split_strings (value, '\');
-    elseif strcmp(key, 'units')
-      image.units = split_strings (value, '\');
     elseif strcmp(key, 'transform')
       transform(end+1,:) = str2num(char(split_strings (value, ',')))';
-    elseif strcmp(key, 'comments')
-      image.comments{end+1} = value;
     elseif strcmp(key, 'file')
       file = value;
     elseif strcmp(key, 'dw_scheme')
-      DW_scheme(end+1,:) = str2num(char(split_strings (value, ',')))';
+      dw_scheme(end+1,:) = str2num(char(split_strings (value, ',')))';
     else 
-      disp (['unknown key ''' key ''' - ignored']);
+      image = add_field (image, key, value);
     end
   end
 end
@@ -68,14 +54,13 @@ if ~isempty(transform)
   image.transform(4,:) = [ 0 0 0 1 ];
 end
 
-if ~isempty(DW_scheme)
-  image.DW_scheme = DW_scheme;
+if ~isempty(dw_scheme)
+  image.dw_scheme = dw_scheme;
 end
 
 if ~isfield (image, 'dim') || ~exist ('file') || ...
   ~isfield (image, 'layout') || ~isfield (image, 'datatype')
-  disp ('critical entries missing in header - not reading data')
-  return
+  error('critical entries missing in header - not reading data');
 end
 
 layout = split_strings(image.layout, ',');
@@ -104,10 +89,7 @@ else
   end
 end
 
-if (f<1) 
-  disp (['error opening ' filename ]);
-  return
-end
+assert(f ~= -1, 'error opening %s', filename);
 
 fseek (f, offset, -1);
 image.data = fread (f, inf, datatype);
@@ -132,3 +114,17 @@ function S = split_strings (V, delim)
     S{end+1} = R;
   end
 
+
+
+
+function image = add_field (image, key, value)
+  if isfield (image, key)
+    previous = getfield (image, key);
+    if iscell (previous)
+      image = setfield (image, key, [ previous {value} ]);
+    else
+      image = setfield (image, key, { previous, value });
+    end
+  else
+    image = setfield (image, key, value);
+  end

@@ -1,0 +1,30 @@
+# This file is used to extract sub-cortical structures from FreeSurfer segmentations
+
+# Previously, the labelsgmfix command was compatible with both FreeSurfer LUT files and connectome config files, as the first two columns were identical. Now, this command ideally needs to be compatible with LUT files in any format.
+
+# This is solved in the following way:
+# * Create a new image for sub-cortical structures using the output of FIRST and these indices.
+# * Convert that image to the indices of the original lookup table using labelconvert.
+# * Use mrstats to 'discover' what index each structure has been assigned to.
+# * For each index in the original image, strip out any voxels corresponding to any of these values.
+# * Also zero any voxels that coincide with any of the new SGM estimates.
+# * Add the re-indexed SGM image to the stripped input image.
+
+
+1  Left-Thalamus-Proper
+2  Left-Caudate
+3  Left-Putamen
+4  Left-Pallidum
+5  Left-Accumbens-area
+
+6  Right-Thalamus-Proper
+7  Right-Caudate
+8  Right-Putamen
+9  Right-Pallidum
+10 Right-Accumbens-area
+
+11 Left-Hippocampus
+12 Left-Amygdala
+13 Right-Hippocampus
+14 Right-Amygdala
+

@@ -1,35 +1,25 @@
 /*
-    Copyright 2009 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-    Written by J-Donald Tournier, 03/12/09.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
-#include "image/voxel.h"
-#include "image/buffer.h"
-#include "image/buffer_scratch.h"
+#include "image.h"
 #include "memory.h"
+#include "phase_encoding.h"
 #include "math/rng.h"
-#include "image/loop.h"
-#include "image/threaded_loop.h"
-#include "image/threaded_copy.h"
-#include "image/stride.h"
+#include "algo/threaded_copy.h"
+#include "dwi/gradient.h"
 
 
 using namespace MR;
@@ -38,35 +28,37 @@ using namespace App;
 
 void usage () {
 
-DESCRIPTION
-  + "apply generic voxel-wise mathematical operations to images."
+AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
+SYNOPSIS = "Apply generic voxel-wise mathematical operations to images";
+
+DESCRIPTION
   + "This command will only compute per-voxel operations. "
   "Use 'mrmath' to compute summary statistics across images or "
   "along image axes."
-  
+
   + "This command uses a stack-based syntax, with operators "
   "(specified using options) operating on the top-most entries "
   "(i.e. images or values) in the stack. Operands (values or "
   "images) are pushed onto the stack in the order they appear "
-  "(as arguments) on the command-line, and operands (specified "
+  "(as arguments) on the command-line, and operators (specified "
   "as options) operate on and consume the top-most entries in "
   "the stack, and push their output as a new entry on the stack. "
   "For example:"
-  
+
   + "    $ mrcalc a.mif 2 -mult r.mif"
-  
+
   + "performs the operation r = 2*a for every voxel a,r in "
   "images a.mif and r.mif respectively. Similarly:"
-  
+
   + "    $ mrcalc a.mif -neg b.mif -div -exp 9.3 -mult r.mif"
-  
+
   + "performs the operation r = 9.3*exp(-a/b), and:"
-  
+
   + "    $ mrcalc a.mif b.mif -add c.mif d.mif -mult 4.2 -add -div r.mif"
-  
+
   + "performs r = (a+b)/(c*d+4.2)."
-  
+
   + "As an additional feature, this command will allow images with different "
   "dimensions to be processed, provided they satisfy the following "
   "conditions: for each axis, the dimensions match if they are the same size, "
@@ -83,7 +75,7 @@ DESCRIPTION
 ARGUMENTS
   + Argument ("operand", "an input image, intensity value, or the special keywords "
       "'rand' (random number between 0 and 1) or 'randn' (random number from unit "
-      "std.dev. normal distribution).").type_text().allow_multiple();
+      "std.dev. normal distribution).").type_various().allow_multiple();
 
 OPTIONS
   + OptionGroup ("Unary operators")
@@ -139,19 +131,17 @@ OPTIONS
   + OptionGroup ("Ternary operators")
 
   + Option ("if", "if first operand is true (non-zero), return second operand, otherwise return third operand").allow_multiple()
+  + Option ("replace", "Wherever first operand is equal to the second operand, replace with third operand").allow_multiple()
 
 
   + DataType::options();
 }
 
 
-typedef float real_type;
-typedef cfloat complex_type;
 
-typedef Image::Buffer<real_type>::voxel_type real_vox_type;
-typedef Image::Buffer<complex_type>::voxel_type complex_vox_type;
-
-
+using real_type = float;
+using complex_type = cfloat;
+static bool transform_mis_match_reported (false);
 
 
 /**********************************************************************
@@ -162,47 +152,46 @@ typedef Image::Buffer<complex_type>::voxel_type complex_vox_type;
 class Evaluator;
 
 
-class Chunk : public std::vector<complex_type> {
+class Chunk : public vector<complex_type> { NOMEMALIGN
   public:
     complex_type value;
 };
 
 
-class ThreadLocalStorageItem {
+class ThreadLocalStorageItem { NOMEMALIGN
   public:
     Chunk chunk;
-    copy_ptr<complex_vox_type> vox;
+    copy_ptr<Image<complex_type>> image;
 };
 
-class ThreadLocalStorage : public std::vector<ThreadLocalStorageItem> {
+class ThreadLocalStorage : public vector<ThreadLocalStorageItem> { NOMEMALIGN
   public:
 
-      void load (Chunk& chunk, complex_vox_type& vox) {
-        for (size_t n = 0; n < vox.ndim(); ++n)
-          if (vox.dim(n) > 1)
-            vox[n] = (*iter)[n];
+      void load (Chunk& chunk, Image<complex_type>& image) {
+        for (size_t n = 0; n < image.ndim(); ++n)
+          if (image.size(n) > 1)
+            image.index(n) = iter->index(n);
 
         size_t n = 0;
-        for (size_t y = 0; y < dim[1]; ++y) {
-          if (axes[1] < vox.ndim()) if (vox.dim(axes[1]) > 1) vox[axes[1]] = y;
-          for (size_t x = 0; x < dim[0]; ++x) {
-            if (axes[0] < vox.ndim()) if (vox.dim(axes[0]) > 1) vox[axes[0]] = x;
-            chunk[n++] = vox.value();
+        for (size_t y = 0; y < size[1]; ++y) {
+          if (axes[1] < image.ndim()) if (image.size (axes[1]) > 1) image.index(axes[1]) = y;
+          for (size_t x = 0; x < size[0]; ++x) {
+            if (axes[0] < image.ndim()) if (image.size (axes[0]) > 1) image.index(axes[0]) = x;
+            chunk[n++] = image.value();
           }
         }
       }
 
     Chunk& next () {
       ThreadLocalStorageItem& item ((*this)[current++]);
-      if (item.vox) load (item.chunk, *item.vox);
+      if (item.image) load (item.chunk, *item.image);
       return item.chunk;
     }
 
-    void reset (const Image::Iterator& current_position) { current = 0; iter = &current_position; }
+    void reset (const Iterator& current_position) { current = 0; iter = &current_position; }
 
-    const Image::Iterator* iter;
-    std::vector<size_t> axes;
-    std::vector<size_t> dim;
+    const Iterator* iter;
+    vector<size_t> axes, size;
 
   private:
     size_t current;
@@ -211,65 +200,87 @@ class ThreadLocalStorage : public std::vector<ThreadLocalStorageItem> {
 
 
 
+class LoadedImage { NOMEMALIGN
+  public:
+    LoadedImage (std::shared_ptr<Image<complex_type>>& i, const bool c) :
+        image (i),
+        image_is_complex (c) { }
+    std::shared_ptr<Image<complex_type>> image;
+    bool image_is_complex;
+};
 
 
-class StackEntry {
+
+
+class StackEntry { NOMEMALIGN
   public:
 
-    StackEntry (const char* entry) : 
-      arg (entry) { }
+    StackEntry (const char* entry) :
+        arg (entry),
+        rng_gaussian (false),
+        image_is_complex (false) { }
 
-    StackEntry (Evaluator* evaluator_p) : 
-      arg (nullptr),
-      evaluator (evaluator_p) { }
+    StackEntry (Evaluator* evaluator_p) :
+        arg (nullptr),
+        evaluator (evaluator_p),
+        rng_gaussian (false),
+        image_is_complex (false) { }
 
     void load () {
-      if (!arg) 
+      if (!arg)
         return;
-      auto search = buffer_list.find (arg);
-      if (search != buffer_list.end()) {
-        DEBUG (std::string ("image \"") + arg + "\" already loaded - re-using exising buffer");
-        buffer = search->second;
-        return;
+      auto search = image_list.find (arg);
+      if (search != image_list.end()) {
+        DEBUG (std::string ("image \"") + arg + "\" already loaded - re-using exising image");
+        image = search->second.image;
+        image_is_complex = search->second.image_is_complex;
       }
-      try {
-        buffer.reset (new Image::Buffer<complex_type> (arg));
-        buffer_list.insert (std::make_pair (arg, buffer));
-      }
-      catch (Exception) {
-        std::string a = lowercase (arg);
-        if      (a ==  "nan")  { value =  std::numeric_limits<real_type>::quiet_NaN(); }
-        else if (a == "-nan")  { value = -std::numeric_limits<real_type>::quiet_NaN(); }
-        else if (a ==  "inf")  { value =  std::numeric_limits<real_type>::infinity(); }
-        else if (a == "-inf")  { value = -std::numeric_limits<real_type>::infinity(); }
-        else if (a == "rand")  { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = false; } 
-        else if (a == "randn") { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = true; } 
-        else                   { value =  to<complex_type> (arg); }
+      else {
+        try {
+          auto header = Header::open (arg);
+          image_is_complex = header.datatype().is_complex();
+          image.reset (new Image<complex_type> (header.get_image<complex_type>()));
+          image_list.insert (std::make_pair (arg, LoadedImage (image, image_is_complex)));
+        }
+        catch (Exception&) {
+          try {
+            std::string a = lowercase (arg);
+            if      (a ==  "nan")  { value =  std::numeric_limits<real_type>::quiet_NaN(); }
+            else if (a == "-nan")  { value = -std::numeric_limits<real_type>::quiet_NaN(); }
+            else if (a ==  "inf")  { value =  std::numeric_limits<real_type>::infinity(); }
+            else if (a == "-inf")  { value = -std::numeric_limits<real_type>::infinity(); }
+            else if (a == "rand")  { value = 0.0; rng.reset (new Math::RNG()); rng_gaussian = false; }
+            else if (a == "randn") { value = 0.0; rng.reset (new Math::RNG()); rng_gaussian = true; }
+            else                   { value =  to<complex_type> (arg); }
+          } catch (Exception&) {
+            throw Exception (std::string ("Could not interpret string \"") + arg + "\" as either an image path or a numerical value");
+          }
+        }
       }
       arg = nullptr;
     }
 
     const char* arg;
     std::shared_ptr<Evaluator> evaluator;
-    std::shared_ptr<Image::Buffer<complex_type> > buffer;
+    std::shared_ptr<Image<complex_type>> image;
     copy_ptr<Math::RNG> rng;
     complex_type value;
-    bool rng_gausssian;
+    bool rng_gaussian;
+    bool image_is_complex;
 
     bool is_complex () const;
 
-    static std::map<std::string, std::shared_ptr<Image::Buffer<complex_type>>> buffer_list;
+    static std::map<std::string, LoadedImage> image_list;
 
     Chunk& evaluate (ThreadLocalStorage& storage) const;
 };
 
-std::map<std::string, std::shared_ptr<Image::Buffer<complex_type>>> StackEntry::buffer_list;
+std::map<std::string, LoadedImage> StackEntry::image_list;
 
 
-class Evaluator
-{
-  public: 
-    Evaluator (const std::string& name, const char* format_string, bool complex_maps_to_real = false, bool real_maps_to_complex = false) : 
+class Evaluator { NOMEMALIGN
+  public:
+    Evaluator (const std::string& name, const char* format_string, bool complex_maps_to_real = false, bool real_maps_to_complex = false) :
       id (name),
       format (format_string),
       ZtoR (complex_maps_to_real),
@@ -278,7 +289,7 @@ class Evaluator
     const std::string id;
     const char* format;
     bool ZtoR, RtoZ;
-    std::vector<StackEntry> operands;
+    vector<StackEntry> operands;
 
     Chunk& evaluate (ThreadLocalStorage& storage) const {
       Chunk& in1 (operands[0].evaluate (storage));
@@ -293,8 +304,8 @@ class Evaluator
     virtual Chunk& evaluate (Chunk& a, Chunk& b, Chunk& c) const { throw Exception ("operation \"" + id + "\" not supported!"); return a; }
 
     virtual bool is_complex () const {
-      for (size_t n = 0; n < operands.size(); ++n) 
-        if (operands[n].is_complex())  
+      for (size_t n = 0; n < operands.size(); ++n)
+        if (operands[n].is_complex())
           return !ZtoR;
       return RtoZ;
     }
@@ -305,8 +316,9 @@ class Evaluator
 
 
 inline bool StackEntry::is_complex () const {
-  if (buffer) return buffer->datatype().is_complex();
+  if (image) return image_is_complex;
   if (evaluator) return evaluator->is_complex();
+  if (rng) return false;
   return value.imag() != 0.0;
 }
 
@@ -317,7 +329,7 @@ inline Chunk& StackEntry::evaluate (ThreadLocalStorage& storage) const
   if (evaluator) return evaluator->evaluate (storage);
   if (rng) {
     Chunk& chunk = storage.next();
-    if (rng_gausssian) {
+    if (rng_gaussian) {
       std::normal_distribution<real_type> dis (0.0, 1.0);
       for (size_t n = 0; n < chunk.size(); ++n)
         chunk[n] = dis (*rng);
@@ -340,9 +352,7 @@ inline Chunk& StackEntry::evaluate (ThreadLocalStorage& storage) const
 
 inline void replace (std::string& orig, size_t n, const std::string& value)
 {
-  if (value[0] == '(' && orig[orig.size()-1] == ')') {
-    if (value[value.size()-1] != ')')
-      throw Exception ("fixme: unexpected brackets!");
+  if (orig[0] == '(' && orig[orig.size()-1] == ')') {
     size_t pos = orig.find ("(%"+str(n+1)+")");
     if (pos != orig.npos) {
       orig.replace (pos, 4, value);
@@ -360,15 +370,15 @@ inline void replace (std::string& orig, size_t n, const std::string& value)
 // to make sure full operation is recorded, even for scalar operations that
 // get evaluated there and then and so get left out if the string is created
 // later:
-std::string operation_string (const StackEntry& entry) 
+std::string operation_string (const StackEntry& entry)
 {
-  if (entry.buffer)
-    return entry.buffer->name();
+  if (entry.image)
+    return entry.image->name();
   else if (entry.rng)
-    return entry.rng_gausssian ? "randn()" : "rand()";
+    return entry.rng_gaussian ? "randn()" : "rand()";
   else if (entry.evaluator) {
     std::string s = entry.evaluator->format;
-    for (size_t n = 0; n < entry.evaluator->operands.size(); ++n) 
+    for (size_t n = 0; n < entry.evaluator->operands.size(); ++n)
       replace (s, n, operation_string (entry.evaluator->operands[n]));
     return s;
   }
@@ -380,26 +390,25 @@ std::string operation_string (const StackEntry& entry)
 
 
 template <class Operation>
-class UnaryEvaluator : public Evaluator 
-{
+class UnaryEvaluator : public Evaluator { NOMEMALIGN
   public:
-    UnaryEvaluator (const std::string& name, Operation operation, const StackEntry& operand) : 
-      Evaluator (name, operation.format, operation.ZtoR, operation.RtoZ), 
-      op (operation) { 
+    UnaryEvaluator (const std::string& name, Operation operation, const StackEntry& operand) :
+      Evaluator (name, operation.format, operation.ZtoR, operation.RtoZ),
+      op (operation) {
         operands.push_back (operand);
       }
 
     Operation op;
 
-    virtual Chunk& evaluate (Chunk& in) const { 
-      if (operands[0].is_complex()) 
+    virtual Chunk& evaluate (Chunk& in) const {
+      if (operands[0].is_complex())
         for (size_t n = 0; n < in.size(); ++n)
           in[n] = op.Z (in[n]);
-      else 
+      else
         for (size_t n = 0; n < in.size(); ++n)
           in[n] = op.R (in[n].real());
 
-      return in; 
+      return in;
     }
 };
 
@@ -409,12 +418,11 @@ class UnaryEvaluator : public Evaluator
 
 
 template <class Operation>
-class BinaryEvaluator : public Evaluator 
-{
+class BinaryEvaluator : public Evaluator { NOMEMALIGN
   public:
-    BinaryEvaluator (const std::string& name, Operation operation, const StackEntry& operand1, const StackEntry& operand2) : 
+    BinaryEvaluator (const std::string& name, Operation operation, const StackEntry& operand1, const StackEntry& operand2) :
       Evaluator (name, operation.format, operation.ZtoR, operation.RtoZ),
-      op (operation) { 
+      op (operation) {
         operands.push_back (operand1);
         operands.push_back (operand2);
       }
@@ -424,15 +432,15 @@ class BinaryEvaluator : public Evaluator
     virtual Chunk& evaluate (Chunk& a, Chunk& b) const {
       Chunk& out (a.size() ? a : b);
       if (operands[0].is_complex() || operands[1].is_complex()) {
-        for (size_t n = 0; n < out.size(); ++n) 
+        for (size_t n = 0; n < out.size(); ++n)
           out[n] = op.Z (
-              a.size() ? a[n] : a.value, 
+              a.size() ? a[n] : a.value,
               b.size() ? b[n] : b.value );
       }
       else {
-        for (size_t n = 0; n < out.size(); ++n) 
+        for (size_t n = 0; n < out.size(); ++n)
           out[n] = op.R (
-              a.size() ? a[n].real() : a.value.real(), 
+              a.size() ? a[n].real() : a.value.real(),
               b.size() ? b[n].real() : b.value.real() );
       }
       return out;
@@ -443,12 +451,11 @@ class BinaryEvaluator : public Evaluator
 
 
 template <class Operation>
-class TernaryEvaluator : public Evaluator 
-{
+class TernaryEvaluator : public Evaluator { NOMEMALIGN
   public:
-    TernaryEvaluator (const std::string& name, Operation operation, const StackEntry& operand1, const StackEntry& operand2, const StackEntry& operand3) : 
+    TernaryEvaluator (const std::string& name, Operation operation, const StackEntry& operand1, const StackEntry& operand2, const StackEntry& operand3) :
       Evaluator (name, operation.format, operation.ZtoR, operation.RtoZ),
-      op (operation) { 
+      op (operation) {
         operands.push_back (operand1);
         operands.push_back (operand2);
         operands.push_back (operand3);
@@ -459,17 +466,17 @@ class TernaryEvaluator : public Evaluator
     virtual Chunk& evaluate (Chunk& a, Chunk& b, Chunk& c) const {
       Chunk& out (a.size() ? a : (b.size() ? b : c));
       if (operands[0].is_complex() || operands[1].is_complex() || operands[2].is_complex()) {
-        for (size_t n = 0; n < out.size(); ++n) 
+        for (size_t n = 0; n < out.size(); ++n)
           out[n] = op.Z (
               a.size() ? a[n] : a.value,
               b.size() ? b[n] : b.value,
               c.size() ? c[n] : c.value );
       }
       else {
-        for (size_t n = 0; n < out.size(); ++n) 
+        for (size_t n = 0; n < out.size(); ++n)
           out[n] = op.R (
-              a.size() ? a[n].real() : a.value.real(), 
-              b.size() ? b[n].real() : b.value.real(), 
+              a.size() ? a[n].real() : a.value.real(),
+              b.size() ? b[n].real() : b.value.real(),
               c.size() ? c[n].real() : c.value.real() );
       }
       return out;
@@ -482,14 +489,14 @@ class TernaryEvaluator : public Evaluator
 
 
 template <class Operation>
-void unary_operation (const std::string& operation_name, std::vector<StackEntry>& stack, Operation operation)
+void unary_operation (const std::string& operation_name, vector<StackEntry>& stack, Operation operation)
 {
-  if (stack.empty()) 
+  if (stack.empty())
     throw Exception ("no operand in stack for operation \"" + operation_name + "\"!");
   StackEntry& a (stack[stack.size()-1]);
   a.load();
-  if (a.evaluator || a.buffer) {
-    StackEntry entry (new UnaryEvaluator<Operation> (operation_name, operation, stack.back()));
+  if (a.evaluator || a.image || a.rng) {
+    StackEntry entry (new UnaryEvaluator<Operation> (operation_name, operation, a));
     stack.back() = entry;
   }
   else {
@@ -500,28 +507,28 @@ void unary_operation (const std::string& operation_name, std::vector<StackEntry>
       throw Exception ("operation \"" + operation_name + "\" not supported for data type supplied");
     }
   }
-};
+}
 
 
 
 
 
 template <class Operation>
-void binary_operation (const std::string& operation_name, std::vector<StackEntry>& stack, Operation operation)
+void binary_operation (const std::string& operation_name, vector<StackEntry>& stack, Operation operation)
 {
-  if (stack.size() < 2) 
+  if (stack.size() < 2)
     throw Exception ("not enough operands in stack for operation \"" + operation_name + "\"");
   StackEntry& a (stack[stack.size()-2]);
   StackEntry& b (stack[stack.size()-1]);
   a.load();
   b.load();
-  if (a.evaluator || a.buffer || b.evaluator || b.buffer) {
-    StackEntry entry (new BinaryEvaluator<Operation> (operation_name, operation, stack[stack.size()-2], stack[stack.size()-1]));
+  if (a.evaluator || a.image || a.rng || b.evaluator || b.image || b.rng) {
+    StackEntry entry (new BinaryEvaluator<Operation> (operation_name, operation, a, b));
     stack.pop_back();
     stack.back() = entry;
   }
   else {
-    a.value = ( a.value.imag() == 0.0  && b.value.imag() == 0.0 ? 
+    a.value = ( a.value.imag() == 0.0  && b.value.imag() == 0.0 ?
       operation.R (a.value.real(), b.value.real()) :
       operation.Z (a.value, b.value) );
     stack.pop_back();
@@ -532,9 +539,9 @@ void binary_operation (const std::string& operation_name, std::vector<StackEntry
 
 
 template <class Operation>
-void ternary_operation (const std::string& operation_name, std::vector<StackEntry>& stack, Operation operation)
+void ternary_operation (const std::string& operation_name, vector<StackEntry>& stack, Operation operation)
 {
-  if (stack.size() < 3) 
+  if (stack.size() < 3)
     throw Exception ("not enough operands in stack for operation \"" + operation_name + "\"");
   StackEntry& a (stack[stack.size()-3]);
   StackEntry& b (stack[stack.size()-2]);
@@ -542,14 +549,14 @@ void ternary_operation (const std::string& operation_name, std::vector<StackEntr
   a.load();
   b.load();
   c.load();
-  if (a.evaluator || a.buffer || b.evaluator || b.buffer || c.evaluator || c.buffer) {
-    StackEntry entry (new TernaryEvaluator<Operation> (operation_name, operation, stack[stack.size()-3], stack[stack.size()-2], stack[stack.size()-1]));
+  if (a.evaluator || a.image || a.rng || b.evaluator || b.image || b.rng || c.evaluator || c.image || c.rng) {
+    StackEntry entry (new TernaryEvaluator<Operation> (operation_name, operation, a, b, c));
     stack.pop_back();
     stack.pop_back();
     stack.back() = entry;
   }
   else {
-    a.value = ( a.value.imag() == 0.0  && b.value.imag() == 0.0  && c.value.imag() == 0.0 ? 
+    a.value = ( a.value.imag() == 0.0  && b.value.imag() == 0.0  && c.value.imag() == 0.0 ?
       operation.R (a.value.real(), b.value.real(), c.value.real()) :
       operation.Z (a.value, b.value, c.value) );
     stack.pop_back();
@@ -566,7 +573,7 @@ void ternary_operation (const std::string& operation_name, std::vector<StackEntr
  **********************************************************************/
 
 
-void get_header (const StackEntry& entry, Image::Header& header) 
+void get_header (const StackEntry& entry, Header& header)
 {
   if (entry.evaluator) {
     for (size_t n = 0; n < entry.evaluator->operands.size(); ++n)
@@ -574,24 +581,51 @@ void get_header (const StackEntry& entry, Image::Header& header)
     return;
   }
 
-  if (!entry.buffer) 
+  if (!entry.image)
     return;
 
   if (header.ndim() == 0) {
-    header = *entry.buffer;
+    header = *entry.image;
     return;
   }
 
-  if (header.ndim() < entry.buffer->ndim()) 
-    header.set_ndim (entry.buffer->ndim());
-  for (size_t n = 0; n < std::min (header.ndim(), entry.buffer->ndim()); ++n) {
-    if (header.dim(n) > 1 && entry.buffer->dim(n) > 1 && header.dim(n) != entry.buffer->dim(n))
+  if (header.ndim() < entry.image->ndim())
+    header.ndim() = entry.image->ndim();
+  for (size_t n = 0; n < std::min<size_t> (header.ndim(), entry.image->ndim()); ++n) {
+    if (header.size(n) > 1 && entry.image->size(n) > 1 && header.size(n) != entry.image->size(n))
       throw Exception ("dimensions of input images do not match - aborting");
-    header.dim(n) = std::max (header.dim(n), entry.buffer->dim(n));
-    if (!std::isfinite (header.vox(n))) 
-      header.vox(n) = entry.buffer->vox(n);
+    if (!voxel_grids_match_in_scanner_space (header, *(entry.image), 1.0e-4) && !transform_mis_match_reported) {
+      WARN ("header transformations of input images do not match");
+      transform_mis_match_reported = true;
+    }
+    header.size(n) = std::max (header.size(n), entry.image->size(n));
+    if (!std::isfinite (header.spacing(n)))
+      header.spacing(n) = entry.image->spacing(n);
   }
 
+  const auto header_grad = DWI::parse_DW_scheme (header);
+  if (header_grad.rows()) {
+    const auto entry_grad = DWI::parse_DW_scheme (*entry.image);
+    if (entry_grad.rows()) {
+      if (!entry_grad.isApprox (header_grad))
+        DWI::clear_DW_scheme (header);
+    }
+  }
+
+  const auto header_pe = PhaseEncoding::get_scheme (header);
+  if (header_pe.rows()) {
+    const auto entry_pe = PhaseEncoding::get_scheme (*entry.image);
+    if (entry_pe.rows()) {
+      if (!entry_pe.isApprox (header_pe))
+        PhaseEncoding::clear_scheme (header);
+    }
+  }
+
+  auto slice_encoding_it = entry.image->keyval().find ("SliceEncodingDirection");
+  if (slice_encoding_it != entry.image->keyval().end()) {
+    if (header.keyval()["SliceEncodingDirection"] != slice_encoding_it->second)
+      header.keyval().erase (header.keyval().find ("SliceEncodingDirection"));
+  }
 }
 
 
@@ -599,19 +633,19 @@ void get_header (const StackEntry& entry, Image::Header& header)
 
 
 
-class ThreadFunctor {
+class ThreadFunctor { NOMEMALIGN
   public:
     ThreadFunctor (
-        const Image::ThreadedLoop& threaded_loop,
-        const StackEntry& top_of_stack, 
-        Image::Buffer<complex_type>& output_image) :
+        const vector<size_t>& inner_axes,
+        const StackEntry& top_of_stack,
+        Image<complex_type>& output_image) :
       top_entry (top_of_stack),
-      vox (output_image),
-      loop (threaded_loop.inner_axes()) {
-        storage.axes = loop.axes();
-        storage.dim.push_back (vox.dim(storage.axes[0]));
-        storage.dim.push_back (vox.dim(storage.axes[1]));
-        chunk_size = vox.dim (storage.axes[0]) * vox.dim (storage.axes[1]);
+      image (output_image),
+      loop (Loop (inner_axes)) {
+        storage.axes = loop.axes;
+        storage.size.push_back (image.size(storage.axes[0]));
+        storage.size.push_back (image.size(storage.axes[1]));
+        chunk_size = image.size (storage.axes[0]) * image.size (storage.axes[1]);
         allocate_storage (top_entry);
       }
 
@@ -623,8 +657,8 @@ class ThreadFunctor {
       }
 
       storage.push_back (ThreadLocalStorageItem());
-      if (entry.buffer) {
-        storage.back().vox.reset (new complex_vox_type (*entry.buffer));
+      if (entry.image) {
+        storage.back().image.reset (new Image<complex_type> (*entry.image));
         storage.back().chunk.resize (chunk_size);
         return;
       }
@@ -635,22 +669,22 @@ class ThreadFunctor {
     }
 
 
-    void operator() (const Image::Iterator& iter) {
+    void operator() (const Iterator& iter) {
       storage.reset (iter);
-      Image::voxel_assign (vox, iter);
+      assign_pos_of (iter).to (image);
 
       Chunk& chunk = top_entry.evaluate (storage);
 
-      std::vector<complex_type>::const_iterator value (chunk.begin());
-      for (auto l = loop (vox); l; ++l) 
-        vox.value() = *(value++);
+      auto value = chunk.cbegin();
+      for (auto l = loop (image); l; ++l)
+        image.value() = *(value++);
     }
 
 
 
     const StackEntry& top_entry;
-    complex_vox_type vox;
-    Image::LoopInOrder loop;
+    Image<complex_type> image;
+    decltype (Loop (vector<size_t>())) loop;
     ThreadLocalStorage storage;
     size_t chunk_size;
 };
@@ -659,15 +693,31 @@ class ThreadFunctor {
 
 
 
-void run_operations (const std::vector<StackEntry>& stack) 
+void run_operations (const vector<StackEntry>& stack)
 {
-  if (!stack[1].arg)
-    throw Exception (std::string ("error opening output image \"") + stack[1].arg + "\"!");
-
-  Image::Header header;
+  Header header;
   get_header (stack[0], header);
-  if (header.ndim() == 0)
-    throw Exception ("no valid images supplied - cannot produce output image");
+
+  if (header.ndim() == 0) {
+    DEBUG ("no valid images supplied - assuming calculator mode");
+    if (stack.size() != 1)
+      throw Exception ("too many operands left on stack!");
+
+    assert (!stack[0].evaluator);
+    assert (!stack[0].image);
+
+    print (str (stack[0].value) + "\n");
+    return;
+  }
+
+  if (stack.size() == 1)
+    throw Exception ("output image not specified");
+
+  if (stack.size() > 2)
+    throw Exception ("too many operands left on stack!");
+
+  if (!stack[1].arg)
+    throw Exception ("output image not specified");
 
   if (stack[0].is_complex()) {
     header.datatype() = DataType::from_command_line (DataType::CFloat32);
@@ -676,11 +726,11 @@ void run_operations (const std::vector<StackEntry>& stack)
   }
   else header.datatype() = DataType::from_command_line (DataType::Float32);
 
-  Image::Buffer<complex_type> output (stack[1].arg, header);
+  auto output = Header::create (stack[1].arg, header).get_image<complex_type>();
 
-  Image::ThreadedLoop loop ("computing: " + operation_string(stack[0]) + " ...", output, 0, output.ndim(), 2);
+  auto loop = ThreadedLoop ("computing: " + operation_string(stack[0]), output, 0, output.ndim(), 2);
 
-  ThreadFunctor functor (loop, stack[0], output);
+  ThreadFunctor functor (loop.inner_axes, stack[0], output);
   loop.run_outer (functor);
 }
 
@@ -694,7 +744,7 @@ void run_operations (const std::vector<StackEntry>& stack)
         OPERATIONS BASIC FRAMEWORK:
 **********************************************************************/
 
-class OpBase {
+class OpBase { NOMEMALIGN
   public:
     OpBase (const char* format_string, bool complex_maps_to_real = false, bool real_map_to_complex = false) :
       format (format_string),
@@ -704,7 +754,7 @@ class OpBase {
     const bool ZtoR, RtoZ;
 };
 
-class OpUnary : public OpBase {
+class OpUnary : public OpBase { NOMEMALIGN
   public:
     OpUnary (const char* format_string, bool complex_maps_to_real = false, bool real_map_to_complex = false) :
       OpBase (format_string, complex_maps_to_real, real_map_to_complex) { }
@@ -713,7 +763,7 @@ class OpUnary : public OpBase {
 };
 
 
-class OpBinary : public OpBase {
+class OpBinary : public OpBase { NOMEMALIGN
   public:
     OpBinary (const char* format_string, bool complex_maps_to_real = false, bool real_map_to_complex = false) :
       OpBase (format_string, complex_maps_to_real, real_map_to_complex) { }
@@ -721,7 +771,7 @@ class OpBinary : public OpBase {
     complex_type Z (complex_type a, complex_type b) const { throw Exception ("operation not supported!"); return a; }
 };
 
-class OpTernary : public OpBase {
+class OpTernary : public OpBase { NOMEMALIGN
   public:
     OpTernary (const char* format_string, bool complex_maps_to_real = false, bool real_map_to_complex = false) :
       OpBase (format_string, complex_maps_to_real, real_map_to_complex) { }
@@ -735,184 +785,184 @@ class OpTernary : public OpBase {
         UNARY OPERATIONS:
 **********************************************************************/
 
-class OpAbs : public OpUnary {
+class OpAbs : public OpUnary { NOMEMALIGN
   public:
     OpAbs () : OpUnary ("|%1|", true) { }
-    complex_type R (real_type v) const { return std::abs (v); }
-    complex_type Z (complex_type v) const { return std::abs (v); }
+    complex_type R (real_type v) const { return abs (v); }
+    complex_type Z (complex_type v) const { return abs (v); }
 };
 
-class OpNeg : public OpUnary {
+class OpNeg : public OpUnary { NOMEMALIGN
   public:
     OpNeg () : OpUnary ("-%1") { }
     complex_type R (real_type v) const { return -v; }
     complex_type Z (complex_type v) const { return -v; }
 };
 
-class OpSqrt : public OpUnary {
+class OpSqrt : public OpUnary { NOMEMALIGN
   public:
-    OpSqrt () : OpUnary ("sqrt (%1)") { } 
+    OpSqrt () : OpUnary ("sqrt (%1)") { }
     complex_type R (real_type v) const { return std::sqrt (v); }
     complex_type Z (complex_type v) const { return std::sqrt (v); }
 };
 
-class OpExp : public OpUnary {
+class OpExp : public OpUnary { NOMEMALIGN
   public:
     OpExp () : OpUnary ("exp (%1)") { }
     complex_type R (real_type v) const { return std::exp (v); }
     complex_type Z (complex_type v) const { return std::exp (v); }
 };
 
-class OpLog : public OpUnary {
+class OpLog : public OpUnary { NOMEMALIGN
   public:
     OpLog () : OpUnary ("log (%1)") { }
     complex_type R (real_type v) const { return std::log (v); }
     complex_type Z (complex_type v) const { return std::log (v); }
 };
 
-class OpLog10 : public OpUnary {
+class OpLog10 : public OpUnary { NOMEMALIGN
   public:
     OpLog10 () : OpUnary ("log10 (%1)") { }
     complex_type R (real_type v) const { return std::log10 (v); }
     complex_type Z (complex_type v) const { return std::log10 (v); }
 };
 
-class OpCos : public OpUnary {
+class OpCos : public OpUnary { NOMEMALIGN
   public:
-    OpCos () : OpUnary ("cos (%1)") { } 
+    OpCos () : OpUnary ("cos (%1)") { }
     complex_type R (real_type v) const { return std::cos (v); }
     complex_type Z (complex_type v) const { return std::cos (v); }
 };
 
-class OpSin : public OpUnary {
+class OpSin : public OpUnary { NOMEMALIGN
   public:
-    OpSin () : OpUnary ("sin (%1)") { } 
+    OpSin () : OpUnary ("sin (%1)") { }
     complex_type R (real_type v) const { return std::sin (v); }
     complex_type Z (complex_type v) const { return std::sin (v); }
 };
 
-class OpTan : public OpUnary {
+class OpTan : public OpUnary { NOMEMALIGN
   public:
     OpTan () : OpUnary ("tan (%1)") { }
     complex_type R (real_type v) const { return std::tan (v); }
     complex_type Z (complex_type v) const { return std::tan (v); }
 };
 
-class OpCosh : public OpUnary {
+class OpCosh : public OpUnary { NOMEMALIGN
   public:
     OpCosh () : OpUnary ("cosh (%1)") { }
     complex_type R (real_type v) const { return std::cosh (v); }
     complex_type Z (complex_type v) const { return std::cosh (v); }
 };
 
-class OpSinh : public OpUnary {
+class OpSinh : public OpUnary { NOMEMALIGN
   public:
     OpSinh () : OpUnary ("sinh (%1)") { }
     complex_type R (real_type v) const { return std::sinh (v); }
     complex_type Z (complex_type v) const { return std::sinh (v); }
 };
 
-class OpTanh : public OpUnary {
+class OpTanh : public OpUnary { NOMEMALIGN
   public:
-    OpTanh () : OpUnary ("tanh (%1)") { } 
+    OpTanh () : OpUnary ("tanh (%1)") { }
     complex_type R (real_type v) const { return std::tanh (v); }
     complex_type Z (complex_type v) const { return std::tanh (v); }
 };
 
-class OpAcos : public OpUnary {
+class OpAcos : public OpUnary { NOMEMALIGN
   public:
     OpAcos () : OpUnary ("acos (%1)") { }
     complex_type R (real_type v) const { return std::acos (v); }
 };
 
-class OpAsin : public OpUnary {
+class OpAsin : public OpUnary { NOMEMALIGN
   public:
-    OpAsin () : OpUnary ("asin (%1)") { } 
+    OpAsin () : OpUnary ("asin (%1)") { }
     complex_type R (real_type v) const { return std::asin (v); }
 };
 
-class OpAtan : public OpUnary {
+class OpAtan : public OpUnary { NOMEMALIGN
   public:
     OpAtan () : OpUnary ("atan (%1)") { }
     complex_type R (real_type v) const { return std::atan (v); }
 };
 
-class OpAcosh : public OpUnary {
+class OpAcosh : public OpUnary { NOMEMALIGN
   public:
-    OpAcosh () : OpUnary ("acosh (%1)") { } 
+    OpAcosh () : OpUnary ("acosh (%1)") { }
     complex_type R (real_type v) const { return std::acosh (v); }
 };
 
-class OpAsinh : public OpUnary {
+class OpAsinh : public OpUnary { NOMEMALIGN
   public:
     OpAsinh () : OpUnary ("asinh (%1)") { }
     complex_type R (real_type v) const { return std::asinh (v); }
 };
 
-class OpAtanh : public OpUnary {
+class OpAtanh : public OpUnary { NOMEMALIGN
   public:
     OpAtanh () : OpUnary ("atanh (%1)") { }
     complex_type R (real_type v) const { return std::atanh (v); }
 };
 
 
-class OpRound : public OpUnary {
+class OpRound : public OpUnary { NOMEMALIGN
   public:
-    OpRound () : OpUnary ("round (%1)") { } 
+    OpRound () : OpUnary ("round (%1)") { }
     complex_type R (real_type v) const { return std::round (v); }
 };
 
-class OpCeil : public OpUnary {
+class OpCeil : public OpUnary { NOMEMALIGN
   public:
-    OpCeil () : OpUnary ("ceil (%1)") { } 
+    OpCeil () : OpUnary ("ceil (%1)") { }
     complex_type R (real_type v) const { return std::ceil (v); }
 };
 
-class OpFloor : public OpUnary {
+class OpFloor : public OpUnary { NOMEMALIGN
   public:
     OpFloor () : OpUnary ("floor (%1)") { }
     complex_type R (real_type v) const { return std::floor (v); }
 };
 
-class OpReal : public OpUnary {
+class OpReal : public OpUnary { NOMEMALIGN
   public:
     OpReal () : OpUnary ("real (%1)", true) { }
     complex_type Z (complex_type v) const { return v.real(); }
 };
 
-class OpImag : public OpUnary {
+class OpImag : public OpUnary { NOMEMALIGN
   public:
     OpImag () : OpUnary ("imag (%1)", true) { }
     complex_type Z (complex_type v) const { return v.imag(); }
 };
 
-class OpPhase : public OpUnary {
+class OpPhase : public OpUnary { NOMEMALIGN
   public:
     OpPhase () : OpUnary ("phase (%1)", true) { }
     complex_type Z (complex_type v) const { return std::arg (v); }
 };
 
-class OpConj : public OpUnary {
+class OpConj : public OpUnary { NOMEMALIGN
   public:
-    OpConj () : OpUnary ("conj (%1)") { } 
+    OpConj () : OpUnary ("conj (%1)") { }
     complex_type Z (complex_type v) const { return std::conj (v); }
 };
 
-class OpIsNaN : public OpUnary {
+class OpIsNaN : public OpUnary { NOMEMALIGN
   public:
     OpIsNaN () : OpUnary ("isnan (%1)", true, false) { }
     complex_type R (real_type v) const { return std::isnan (v) != 0; }
     complex_type Z (complex_type v) const { return std::isnan (v.real()) != 0 || std::isnan (v.imag()) != 0; }
 };
 
-class OpIsInf : public OpUnary {
+class OpIsInf : public OpUnary { NOMEMALIGN
   public:
     OpIsInf () : OpUnary ("isinf (%1)", true, false) { }
     complex_type R (real_type v) const { return std::isinf (v) != 0; }
     complex_type Z (complex_type v) const { return std::isinf (v.real()) != 0 || std::isinf (v.imag()) != 0; }
 };
 
-class OpFinite : public OpUnary {
+class OpFinite : public OpUnary { NOMEMALIGN
   public:
     OpFinite () : OpUnary ("finite (%1)", true, false) { }
     complex_type R (real_type v) const { return std::isfinite (v) != 0; }
@@ -924,92 +974,92 @@ class OpFinite : public OpUnary {
         BINARY OPERATIONS:
 **********************************************************************/
 
-class OpAdd : public OpBinary {
+class OpAdd : public OpBinary { NOMEMALIGN
   public:
-    OpAdd () : OpBinary ("(%1 + %2)") { } 
+    OpAdd () : OpBinary ("(%1 + %2)") { }
     complex_type R (real_type a, real_type b) const { return a+b; }
     complex_type Z (complex_type a, complex_type b) const { return a+b; }
 };
 
-class OpSubtract : public OpBinary {
+class OpSubtract : public OpBinary { NOMEMALIGN
   public:
-    OpSubtract () : OpBinary ("(%1 - %2)") { } 
+    OpSubtract () : OpBinary ("(%1 - %2)") { }
     complex_type R (real_type a, real_type b) const { return a-b; }
     complex_type Z (complex_type a, complex_type b) const { return a-b; }
 };
 
-class OpMultiply : public OpBinary {
+class OpMultiply : public OpBinary { NOMEMALIGN
   public:
     OpMultiply () : OpBinary ("(%1 * %2)") { }
     complex_type R (real_type a, real_type b) const { return a*b; }
     complex_type Z (complex_type a, complex_type b) const { return a*b; }
 };
 
-class OpDivide : public OpBinary {
+class OpDivide : public OpBinary { NOMEMALIGN
   public:
-    OpDivide () : OpBinary ("(%1 / %2)") { } 
+    OpDivide () : OpBinary ("(%1 / %2)") { }
     complex_type R (real_type a, real_type b) const { return a/b; }
     complex_type Z (complex_type a, complex_type b) const { return a/b; }
 };
 
-class OpPow : public OpBinary {
+class OpPow : public OpBinary { NOMEMALIGN
   public:
     OpPow () : OpBinary ("%1^%2") { }
     complex_type R (real_type a, real_type b) const { return std::pow (a, b); }
     complex_type Z (complex_type a, complex_type b) const { return std::pow (a, b); }
 };
 
-class OpMin : public OpBinary {
+class OpMin : public OpBinary { NOMEMALIGN
   public:
     OpMin () : OpBinary ("min (%1, %2)") { }
     complex_type R (real_type a, real_type b) const { return std::min (a, b); }
 };
 
-class OpMax : public OpBinary {
+class OpMax : public OpBinary { NOMEMALIGN
   public:
-    OpMax () : OpBinary ("max (%1, %2)") { } 
+    OpMax () : OpBinary ("max (%1, %2)") { }
     complex_type R (real_type a, real_type b) const { return std::max (a, b); }
 };
 
-class OpLessThan : public OpBinary {
+class OpLessThan : public OpBinary { NOMEMALIGN
   public:
     OpLessThan () : OpBinary ("(%1 < %2)") { }
     complex_type R (real_type a, real_type b) const { return a < b; }
 };
 
-class OpGreaterThan : public OpBinary {
+class OpGreaterThan : public OpBinary { NOMEMALIGN
   public:
-    OpGreaterThan () : OpBinary ("(%1 > %2)") { } 
+    OpGreaterThan () : OpBinary ("(%1 > %2)") { }
     complex_type R (real_type a, real_type b) const { return a > b; }
 };
 
-class OpLessThanOrEqual : public OpBinary {
+class OpLessThanOrEqual : public OpBinary { NOMEMALIGN
   public:
     OpLessThanOrEqual () : OpBinary ("(%1 <= %2)") { }
     complex_type R (real_type a, real_type b) const { return a <= b; }
 };
 
-class OpGreaterThanOrEqual : public OpBinary {
+class OpGreaterThanOrEqual : public OpBinary { NOMEMALIGN
   public:
-    OpGreaterThanOrEqual () : OpBinary ("(%1 >= %2)") { } 
+    OpGreaterThanOrEqual () : OpBinary ("(%1 >= %2)") { }
     complex_type R (real_type a, real_type b) const { return a >= b; }
 };
 
-class OpEqual : public OpBinary {
+class OpEqual : public OpBinary { NOMEMALIGN
   public:
     OpEqual () : OpBinary ("(%1 == %2)", true) { }
     complex_type R (real_type a, real_type b) const { return a == b; }
     complex_type Z (complex_type a, complex_type b) const { return a == b; }
 };
 
-class OpNotEqual : public OpBinary {
+class OpNotEqual : public OpBinary { NOMEMALIGN
   public:
     OpNotEqual () : OpBinary ("(%1 != %2)", true) { }
     complex_type R (real_type a, real_type b) const { return a != b; }
     complex_type Z (complex_type a, complex_type b) const { return a != b; }
 };
 
-class OpComplex : public OpBinary {
+class OpComplex : public OpBinary { NOMEMALIGN
   public:
     OpComplex () : OpBinary ("(%1 + %2 i)", false, true) { }
     complex_type R (real_type a, real_type b) const { return complex_type (a, b); }
@@ -1025,11 +1075,18 @@ class OpComplex : public OpBinary {
         TERNARY OPERATIONS:
 **********************************************************************/
 
-class OpIf : public OpTernary {
+class OpIf : public OpTernary { NOMEMALIGN
   public:
     OpIf () : OpTernary ("(%1 ? %2 : %3)") { }
     complex_type R (real_type a, real_type b, real_type c) const { return a ? b : c; }
     complex_type Z (complex_type a, complex_type b, complex_type c) const { return a.real() ? b : c; }
+};
+
+class OpReplace : public OpTernary { NOMEMALIGN
+  public:
+    OpReplace () : OpTernary ("(%1, %2 -> %3)") { }
+    complex_type R (real_type a, real_type b, real_type c) const { return ((a==b) || (std::isnan(a) && std::isnan(b))) ? c : a; }
+    complex_type Z (complex_type a, complex_type b, complex_type c) const { return (a==b) ? c : a; }
 };
 
 
@@ -1039,13 +1096,13 @@ class OpIf : public OpTernary {
  **********************************************************************/
 
 void run () {
-  std::vector<StackEntry> stack;
+  vector<StackEntry> stack;
 
   for (int n = 1; n < App::argc; ++n) {
 
     const Option* opt = match_option (App::argv[n]);
     if (opt) {
-      if (opt->is ("abs")) unary_operation (opt->id, stack, OpAbs()); 
+      if (opt->is ("abs")) unary_operation (opt->id, stack, OpAbs());
       else if (opt->is ("neg")) unary_operation (opt->id, stack, OpNeg());
       else if (opt->is ("sqrt")) unary_operation (opt->id, stack, OpSqrt());
       else if (opt->is ("exp")) unary_operation (opt->id, stack, OpExp());
@@ -1099,13 +1156,14 @@ void run () {
       else if (opt->is ("complex")) binary_operation (opt->id, stack, OpComplex());
 
       else if (opt->is ("if")) ternary_operation (opt->id, stack, OpIf());
+      else if (opt->is ("replace")) ternary_operation (opt->id, stack, OpReplace());
 
       else if (opt->is ("datatype")) ++n;
       else if (opt->is ("nthreads")) ++n;
       else if (opt->is ("force") || opt->is ("info") || opt->is ("debug") || opt->is ("quiet"))
         continue;
 
-      else 
+      else
         throw Exception (std::string ("operation \"") + opt->id + "\" not yet implemented!");
 
     }
@@ -1115,21 +1173,8 @@ void run () {
 
   }
 
-  //print_stack( stack);
-
-  if (stack.size() == 1) {
-    if (stack[0].evaluator || stack[0].buffer) 
-      throw Exception ("output image not specified");
-    print (str(stack[0].value) + "\n");
-    return;
-  }
-
-  if (stack.size() == 2) {
-    run_operations (stack);
-    return;
-  }
-
-  throw Exception ("stack is not empty!");
+  stack[0].load();
+  run_operations (stack);
 }
 
 

@@ -1,29 +1,20 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert E. Smith, 2012.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
 
 
 #include "dwi/tractography/seeding/gmwmi.h"
-
-
+#include "dwi/tractography/rng.h"
 
 namespace MR
 {
@@ -42,7 +33,7 @@ namespace MR
         GMWMI_5TT_Wrapper (anat_path),
         ACT::GMWMI_finder (anat_data),
         init_seeder (in),
-        perturb_max_step (4.0f * std::pow (anat_data.vox(0) * anat_data.vox(1) * anat_data.vox(2), (1.0f/3.0f)))
+        perturb_max_step (4.0f * std::pow (anat_data.spacing(0) * anat_data.spacing(1) * anat_data.spacing(2), (1.0f/3.0f)))
       {
         volume = init_seeder.vol();
       }
@@ -50,7 +41,7 @@ namespace MR
 
 
 
-      bool GMWMI::get_seed (Point<float>& p)
+      bool GMWMI::get_seed (Eigen::Vector3f& p) const
       {
         Interp interp (interp_template);
         do {
@@ -65,16 +56,17 @@ namespace MR
 
 
 
-      bool GMWMI::perturb (Point<float>& p, Interp& interp)
+      bool GMWMI::perturb (Eigen::Vector3f& p, Interp& interp) const
       {
-        const Point<float> normal (get_normal (p, interp));
-        if (!normal.valid())
+        const auto normal = get_normal (p, interp);
+        if (!normal.allFinite())
           return false;
-        Point<float> plane_one ((normal.cross (Point<float> (0.0f,0.0f,1.0f))).normalise());
-        if (!plane_one.valid())
-          plane_one = (normal.cross (Point<float> (0.0f,1.0f,0.0f))).normalise();
-        const Point<float> plane_two ((normal.cross (plane_one)).normalise());
-        p += ((rng()-0.5f) * perturb_max_step * plane_one) + ((rng()-0.5f) * perturb_max_step * plane_two);
+        Eigen::Vector3f plane_one (normal.cross (Eigen::Vector3f(0.0f, 0.0f, 1.0f)).normalized());
+        if (!plane_one.allFinite())
+          plane_one = (normal.cross (Eigen::Vector3f (0.0f,1.0f,0.0f))).normalized();
+        const Eigen::Vector3f plane_two ((normal.cross (plane_one)).normalized());
+        std::uniform_real_distribution<float> uniform;
+        p += ((uniform(*rng)-0.5f) * perturb_max_step * plane_one) + ((uniform(*rng)-0.5f) * perturb_max_step * plane_two);
         return find_interface (p, interp);
       }
 

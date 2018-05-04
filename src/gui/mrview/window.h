@@ -1,12 +1,31 @@
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
+
+
 #ifndef __gui_mrview_window_h__
 #define __gui_mrview_window_h__
 
+#include "image.h"
 #include "memory.h"
-#include "gui/mrview/image.h"
+#include "math/versor.h"
+#include "gui/cursor.h"
+#include "gui/gui.h"
+#include "gui/mrview/gui_image.h"
 #include "gui/opengl/font.h"
 #include "gui/mrview/colourmap.h"
 #include "gui/mrview/colourmap_button.h"
-#include "gui/cursor.h"
+
 
 namespace MR
 {
@@ -27,19 +46,44 @@ namespace MR
       namespace Tool
       {
         class Base;
+        class ODF;
       }
 
 
-
       class Window : public QMainWindow, ColourMapButtonObserver
-      {
+      { MEMALIGN(Window)
           Q_OBJECT
+
+        private:
+          Cursor cursors_do_not_use;
+
+          class GLArea : public GL::Area { MEMALIGN(GLArea)
+            public:
+              GLArea (Window& parent);
+              QSize sizeHint () const override;
+
+            protected:
+              void dragEnterEvent (QDragEnterEvent* event) override;
+              void dragMoveEvent (QDragMoveEvent* event) override;
+              void dragLeaveEvent (QDragLeaveEvent* event) override;
+              void dropEvent (QDropEvent* event) override;
+              bool event (QEvent* event) override;
+            private:
+              void initializeGL () override;
+              void paintGL () override;
+              void mousePressEvent (QMouseEvent* event) override;
+              void mouseMoveEvent (QMouseEvent* event) override;
+              void mouseReleaseEvent (QMouseEvent* event) override;
+              void wheelEvent (QWheelEvent* event) override;
+          };
+          GLArea* glarea;
 
         public:
           Window();
           ~Window();
 
-          void add_images (std::vector<std::unique_ptr<MR::Image::Header>>& list);
+          void parse_arguments ();
+          void add_images (vector<std::unique_ptr<MR::Header>>& list);
 
           const QPoint& mouse_position () const { return mouse_position_; }
           const QPoint& mouse_displacement () const { return mouse_displacement_; }
@@ -60,23 +104,23 @@ namespace MR
             if (!image())
               return -1;
             else
-              return std::round (image()->transform().scanner2voxel (focus())[anatomical_plane]);
+              return std::round ((image()->transform().scanner2voxel.cast<float>() * focus())[anatomical_plane]);
           }
 
           Mode::Base* get_current_mode () const { return mode.get(); }
-          const Point<>& focus () const { return focal_point; }
-          const Point<>& target () const { return camera_target; }
+          const Eigen::Vector3f& focus () const { return focal_point; }
+          const Eigen::Vector3f& target () const { return camera_target; }
           float FOV () const { return field_of_view; }
           int plane () const { return anatomical_plane; }
-          const Math::Versor<float>& orientation () const { return orient; }
+          const Math::Versorf& orientation () const { return orient; }
           bool snap_to_image () const { return snap_to_image_axes_and_voxel; }
           Image* image () { return static_cast<Image*> (image_group->checkedAction()); }
 
-          void set_focus (const Point<>& p) { focal_point = p; emit focusChanged(); }
-          void set_target (const Point<>& p) { camera_target = p; emit targetChanged(); }
+          void set_focus (const Eigen::Vector3f& p) { focal_point = p; emit focusChanged(); }
+          void set_target (const Eigen::Vector3f& p) { camera_target = p; emit targetChanged(); }
           void set_FOV (float value) { field_of_view = value; emit fieldOfViewChanged(); }
           void set_plane (int p) { anatomical_plane = p; emit planeChanged(); }
-          void set_orientation (const Math::Versor<float>& Q) { orient = Q; emit orientationChanged(); }
+          void set_orientation (const Math::Versorf& V) { orient = V; emit orientationChanged(); }
           void set_scaling (float min, float max) { if (!image()) return; image()->set_windowing (min, max); }
           void set_snap_to_image (bool onoff) { snap_to_image_axes_and_voxel = onoff; snap_to_image_action->setChecked(onoff);  emit focusChanged(); }
 
@@ -89,7 +133,7 @@ namespace MR
           void set_image_volume (size_t axis, ssize_t index)
           {
             assert (image());
-            image()->interp[axis] = index;
+            image()->image.index (axis) = index;
             set_image_navigation_menu();
             updateGL();
           }
@@ -103,17 +147,17 @@ namespace MR
           bool show_orientation_labels () const { return show_orientation_labels_action->isChecked(); }
           bool show_colourbar () const { return show_colourbar_action->isChecked(); }
 
-          void makeGLcurrent () { glarea->makeCurrent(); }
-
           void captureGL (std::string filename) {
             QImage image (glarea->grabFramebuffer());
             image.save (filename.c_str());
           }
 
+          GL::Area* glwidget () const { return glarea; }
           GL::Lighting& lighting () { return *lighting_; }
           ColourMap::Renderer colourbar_renderer;
 
           static void add_commandline_options (MR::App::OptionList& options);
+          static Window* main;
 
         signals:
           void focusChanged ();
@@ -132,10 +176,7 @@ namespace MR
         public slots:
           void on_scaling_changed ();
           void updateGL ();
-
-          void startProgressBar ();
-          void displayProgressBar (ProgressInfo& p);
-          void doneProgressBar ();
+          void drawGL ();
 
         private slots:
           void image_open_slot ();
@@ -148,6 +189,8 @@ namespace MR
           void select_mouse_mode_slot (QAction* action);
           void select_tool_slot (QAction* action);
           void select_plane_slot (QAction* action);
+          void zoom_in_slot ();
+          void zoom_out_slot ();
           void invert_scaling_slot ();
           void full_screen_slot ();
           void toggle_annotations_slot ();
@@ -160,7 +203,9 @@ namespace MR
           void image_previous_slot ();
           void image_next_volume_slot ();
           void image_previous_volume_slot ();
+          void image_goto_volume_slot ();
           void image_next_volume_group_slot ();
+          void image_goto_volume_group_slot ();
           void image_previous_volume_group_slot ();
           void image_reset_slot ();
           void image_interpolate_slot ();
@@ -173,36 +218,13 @@ namespace MR
           void about_slot ();
           void aboutQt_slot ();
 
-          void process_commandline_options ();
-
+          void process_commandline_option_slot ();
 
 
         private:
-          Cursor cursors_do_not_use;
           QPoint mouse_position_, mouse_displacement_;
           Qt::MouseButtons buttons_;
           Qt::KeyboardModifiers modifiers_;
-
-          class GLArea : public GL::Area {
-            public:
-              GLArea (Window& parent);
-              QSize sizeHint () const override;
-
-            protected:
-              void dragEnterEvent (QDragEnterEvent* event) override;
-              void dragMoveEvent (QDragMoveEvent* event) override;
-              void dragLeaveEvent (QDragLeaveEvent* event) override;
-              void dropEvent (QDropEvent* event) override;
-            private:
-              Window& main;
-
-              void initializeGL () override;
-              void paintGL () override;
-              void mousePressEvent (QMouseEvent* event) override;
-              void mouseMoveEvent (QMouseEvent* event) override;
-              void mouseReleaseEvent (QMouseEvent* event) override;
-              void wheelEvent (QWheelEvent* event) override;
-          };
 
           enum MouseAction {
             NoAction,
@@ -214,7 +236,6 @@ namespace MR
             Rotate
           };
 
-          GLArea* glarea;
           std::unique_ptr<Mode::Base> mode;
           GL::Lighting* lighting_;
           GL::Font font;
@@ -222,8 +243,8 @@ namespace MR
           const Qt::KeyboardModifiers FocusModifier, MoveModifier, RotateModifier;
           MouseAction mouse_action;
 
-          Point<> focal_point, camera_target;
-          Math::Versor<float> orient;
+          Eigen::Vector3f focal_point, camera_target;
+          Math::Versorf orient;
           float field_of_view;
           int anatomical_plane, annotations;
           ColourMap::Position colourbar_position, tools_colourbar_position;
@@ -254,11 +275,13 @@ namespace MR
                   *prev_image_action,
                   *next_image_volume_action,
                   *prev_image_volume_action,
+                  *goto_image_volume_action,
                   *next_slice_action,
                   *prev_slice_action,
                   *reset_view_action,
                   *next_image_volume_group_action,
                   *prev_image_volume_group_action,
+                  *goto_image_volume_group_action,
                   *image_list_area,
 
                   *reset_windowing_action,
@@ -283,12 +306,13 @@ namespace MR
 
           void paintGL ();
           void initGL ();
-          void keyPressEvent (QKeyEvent* event);
-          void keyReleaseEvent (QKeyEvent* event);
+          void keyPressEvent (QKeyEvent* event) override;
+          void keyReleaseEvent (QKeyEvent* event) override;
           void mousePressEventGL (QMouseEvent* event);
           void mouseMoveEventGL (QMouseEvent* event);
           void mouseReleaseEventGL (QMouseEvent* event);
           void wheelEventGL (QWheelEvent* event);
+          bool gestureEventGL (QGestureEvent* event);
 
           int get_mouse_mode ();
           void set_cursor ();
@@ -296,22 +320,42 @@ namespace MR
           void set_mode_features ();
           void set_image_navigation_menu ();
 
-          void closeEvent (QCloseEvent* event);
+          void closeEvent (QCloseEvent* event) override;
+          void create_tool (QAction* action, bool show);
+
+          void process_commandline_option ();
 
           template <class Event> void grab_mouse_state (Event* event);
           template <class Event> void update_mouse_state (Event* event);
 
           Tool::Base* tool_has_focus;
 
-          std::vector<double> render_times;
+          vector<double> render_times;
           double best_FPS, best_FPS_time;
           bool show_FPS;
+          size_t current_option;
 
           friend class ImageBase;
           friend class Mode::Base;
           friend class Tool::Base;
+          friend class Tool::ODF;
           friend class Window::GLArea;
+          friend class GrabContext;
       };
+
+
+      class GrabContext : private Context::Grab { NOMEMALIGN
+        public:
+          GrabContext () : Context::Grab (Window::main->glarea) { }
+      };
+
+
+#ifndef NDEBUG
+# define ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT ASSERT_GL_CONTEXT_IS_CURRENT (::MR::GUI::MRView::Window::main->glwidget())
+#else
+# define ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT
+#endif
+
 
     }
   }

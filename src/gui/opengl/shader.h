@@ -1,24 +1,17 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-    Written by J-Donald Tournier, 12/01/09.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #ifndef __gui_opengl_shader_h__
 #define __gui_opengl_shader_h__
@@ -40,7 +33,7 @@ namespace MR
         class Program;
 
         template <GLint TYPE> class Object
-        {
+        { MEMALIGN(Object<TYPE>)
           public:
             Object () : index_ (0) { }
             Object (const std::string& source) : index_ (0) { if(!source.empty()) compile (source); }
@@ -82,14 +75,14 @@ namespace MR
             friend class Program;
         };
 
-        typedef Object<gl::VERTEX_SHADER> Vertex;
-        typedef Object<gl::GEOMETRY_SHADER> Geometry;
-        typedef Object<gl::FRAGMENT_SHADER> Fragment;
+        using Vertex = Object<gl::VERTEX_SHADER>;
+        using Geometry = Object<gl::GEOMETRY_SHADER>;
+        using Fragment = Object<gl::FRAGMENT_SHADER>;
 
 
 
         class Program
-        {
+        { MEMALIGN(Program)
           public:
             Program () : index_ (0) { }
             ~Program () { clear(); }

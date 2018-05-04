@@ -1,128 +1,148 @@
 /*
-   Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-   Written by David Raffelt, 2012.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
 
+
 #include "command.h"
+#include "image.h"
+#include "phase_encoding.h"
 #include "progressbar.h"
-#include "image/voxel.h"
 #include "dwi/gradient.h"
-#include "image/loop.h"
-#include "image/buffer.h"
-#include "image/buffer_preload.h"
+#include "algo/loop.h"
+#include "adapter/extract.h"
 
 
 using namespace MR;
 using namespace App;
-using namespace std;
 
-typedef float value_type;
+using value_type = float;
 
 void usage ()
 {
 
-  AUTHOR = "David Raffelt (d.raffelt@brain.org.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-    + "Extract either diffusion-weighted volumes or b=0 volumes from an image containing both";
+  SYNOPSIS = "Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset";
 
   ARGUMENTS
     + Argument ("input", "the input DW image.").type_image_in ()
-    + Argument ("output", "the output image (diffusion-weighted volumes by default.").type_image_out ();
+    + Argument ("output", "the output image (diffusion-weighted volumes by default).").type_image_out ();
 
   OPTIONS
-    + Option ("bzero", "output b=0 volumes instead of the diffusion weighted volumes.")
+    + Option ("bzero", "Output b=0 volumes (instead of the diffusion weighted volumes, if -singleshell is not specified).")
+    + Option ("no_bzero", "Output only non b=0 volumes (default, if -singleshell is not specified).")
+    + Option ("singleshell", "Force a single-shell (single non b=0 shell) output. This will include b=0 volumes, if present. Use with -bzero to enforce presence of b=0 volumes (error if not present) or with -no_bzero to exclude them.")
     + DWI::GradImportOptions()
-    + DWI::ShellOption;
+    + DWI::ShellsOption
+    + DWI::GradExportOptions()
+    + PhaseEncoding::ImportOptions
+    + PhaseEncoding::SelectOptions
+    + Stride::Options;
 }
 
-void run() {
-  Image::BufferPreload<float> data_in (argument[0], Image::Stride::contiguous_along_axis (3));
-  auto voxel_in = data_in.voxel();
+void run()
+{
+  auto input_header = Header::open (argument[0]);
+  auto input_image = input_header.get_image<float>();
 
-  Math::Matrix<value_type> grad (DWI::get_valid_DW_scheme<float> (data_in));
+  Eigen::MatrixXd grad_unprocessed = DWI::get_DW_scheme (input_image);
+  Eigen::MatrixXd grad = grad_unprocessed;
+  DWI::validate_DW_scheme (grad, input_image);
 
   // Want to support non-shell-like data if it's just a straight extraction
   //   of all dwis or all bzeros i.e. don't initialise the Shells class
-  std::vector<size_t> volumes;
+  vector<int> volumes;
   bool bzero = get_options ("bzero").size();
-  Options opt = get_options ("shell");
-  if (opt.size()) {
+  if (get_options ("shells").size() || get_options ("singleshell").size()) {
     DWI::Shells shells (grad);
-    shells.select_shells (false, false);
+    shells.select_shells (get_options ("singleshell").size(),get_options ("bzero").size(),get_options ("no_bzero").size());
     for (size_t s = 0; s != shells.count(); ++s) {
       DEBUG ("Including data from shell b=" + str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev()));
-      for (std::vector<size_t>::const_iterator v = shells[s].get_volumes().begin(); v != shells[s].get_volumes().end(); ++v)
-        volumes.push_back (*v);
+      for (const auto v : shells[s].get_volumes())
+        volumes.push_back (v);
     }
-    // Remove DW information from header if b=0 is the only 'shell' selected
-    bzero = (shells.count() == 1 && shells[0].is_bzero());
-  } else {
-    const float bzero_threshold = File::Config::get_float ("BValueThreshold", 10.0);
-    for (size_t row = 0; row != grad.rows(); ++row) {
+    bzero = (shells.count() == 1 && shells.has_bzero());
+  // If no command-line options specified, then just grab all non-b=0 volumes
+  // If however we are selecting volumes according to phase-encoding, and
+  //   shells have not been explicitly selected, do NOT filter by b-value here
+  } else if (!get_options ("pe").size()) {
+    const float bzero_threshold = File::Config::get_float ("BZeroThreshold", 10.0);
+    for (ssize_t row = 0; row != grad.rows(); ++row) {
       if ((bzero && (grad (row, 3) < bzero_threshold)) || (!bzero && (grad (row, 3) > bzero_threshold)))
         volumes.push_back (row);
     }
+  } else {
+    // "pe" option has been provided - need to initialise list of volumes
+    //   to include all voxels, as the PE selection filters from this
+    for (int i = 0; i != grad.rows(); ++i)
+      volumes.push_back (i);
   }
 
-  if (volumes.empty())
-    throw Exception ("No " + str(bzero ? "b=0" : "dwi") + " volumes present");
+  auto opt = get_options ("pe");
+  const auto pe_scheme = PhaseEncoding::get_scheme (input_header);
+  if (opt.size()) {
+    if (!pe_scheme.rows())
+      throw Exception ("Cannot filter volumes by phase-encoding: No such information present");
+    const auto filter = parse_floats (opt[0][0]);
+    if (!(filter.size() == 3 || filter.size() == 4))
+      throw Exception ("Phase encoding filter must be a comma-separated list of either 3 or 4 numbers");
+    vector<int> new_volumes;
+    for (const auto i : volumes) {
+      bool keep = true;
+      for (size_t axis = 0; axis != 3; ++axis) {
+        if (pe_scheme(i, axis) != filter[axis]) {
+          keep = false;
+          break;
+        }
+      }
+      if (filter.size() == 4) {
+        if (abs (pe_scheme(i, 3) - filter[3]) > 5e-3) {
+          keep = false;
+          break;
+        }
+      }
+      if (keep)
+        new_volumes.push_back (i);
+    }
+    std::swap (volumes, new_volumes);
+  }
+
+  if (volumes.empty()) {
+    auto type = (bzero) ? "b=0" : "dwi";
+    throw Exception ("No " + str(type) + " volumes present");
+  }
 
   std::sort (volumes.begin(), volumes.end());
 
-  Image::Header header (data_in);
+  Header header (input_image);
+  Stride::set_from_command_line (header);
+  header.size (3) = volumes.size();
 
-  if (volumes.size() == 1)
-    header.set_ndim (3);
-  else
-    header.dim (3) = volumes.size();
-
-  Math::Matrix<value_type> new_grad (volumes.size(), grad.columns());
+  Eigen::MatrixXd new_grad (volumes.size(), grad.cols());
   for (size_t i = 0; i < volumes.size(); i++)
-    new_grad.row (i) = grad.row (volumes[i]);
-  header.DW_scheme() = new_grad;
+    new_grad.row (i) = grad_unprocessed.row (volumes[i]);
+  DWI::set_DW_scheme (header, new_grad);
 
-  Image::Buffer<value_type> data_out (argument[1], header);
-  auto voxel_out = data_out.voxel();
-
-  Image::Loop outer ("extracting volumes...", 0, 3);
-
-  if (voxel_out.ndim() == 4) {
-
-    for (auto i = outer (voxel_out, voxel_in); i; ++i) {
-      for (size_t i = 0; i < volumes.size(); i++) {
-        voxel_in[3] = volumes[i];
-        voxel_out[3] = i;
-        voxel_out.value() = voxel_in.value();
-      }
-    }
-
-  } else {
-
-    const size_t volume = volumes[0];
-    for (auto i = outer (voxel_out, voxel_in); i; ++i) {
-      voxel_in[3] = volume;
-      voxel_out.value() = voxel_in.value();
-    }
-
+  if (pe_scheme.rows()) {
+    Eigen::MatrixXd new_scheme (volumes.size(), pe_scheme.cols());
+    for (size_t i = 0; i != volumes.size(); ++i)
+      new_scheme.row(i) = pe_scheme.row (volumes[i]);
+    PhaseEncoding::set_scheme (header, new_scheme);
   }
 
+  auto output_image = Image<float>::create (argument[1], header);
+  DWI::export_grad_commandline (header);
 
+  auto input_volumes = Adapter::make<Adapter::Extract1D> (input_image, 3, volumes);
+  threaded_copy_with_progress_message ("extracting volumes", input_volumes, output_image);
 }

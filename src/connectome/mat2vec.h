@@ -1,128 +1,132 @@
 /*
-    Copyright 2012 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert Smith, 22/12/2014.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
-
 
 
 #ifndef __connectome_mat2vec_h__
 #define __connectome_mat2vec_h__
 
 
-#include <vector>
+#include <stdint.h>
 
-#include "math/matrix.h"
-#include "math/vector.h"
+#include "types.h"
 
 #include "connectome/connectome.h"
 
 
+
+
 namespace MR {
-namespace Connectome {
+  namespace Connectome {
 
 
 
+    class Mat2Vec
+    { NOMEMALIGN
 
-class Mat2Vec
-{
+      public:
+        Mat2Vec (const node_t i) : dim (i) { }
 
-  public:
-    Mat2Vec (const node_t);
-    Mat2Vec& operator= (Mat2Vec&&);
+        uint64_t operator() (const node_t i, const node_t j) const
+        {
+          assert (i < dim);
+          assert (j < dim);
+          const uint64_t i64 (i);
+          const uint64_t j64 (j);
+          if (i < j)
+            return j64 + (uint64_t(dim) * i64) - ((i64 * (i64+1)) / 2);
+          else
+            return i64 + (uint64_t(dim) * j64) - ((j64 * (j64+1)) / 2);
+        }
 
-    size_t operator() (const node_t i, const node_t j) const
+        std::pair<node_t, node_t> operator() (const uint64_t i) const
+        {
+          static const uint64_t temp = 2*dim+1;
+          static const uint64_t temp_sq = temp * temp;
+          const uint64_t row = std::floor ((temp - std::sqrt(temp_sq - (8*i))) / 2);
+          const uint64_t col = i - (uint64_t(dim)*row) + ((row * (row+1))/2);
+          assert (row < dim);
+          assert (col < dim);
+          return std::make_pair (node_t(row), node_t(col));
+        }
+
+        node_t mat_size() const { return dim; }
+        uint64_t vec_size() const { return (uint64_t(dim) * (uint64_t(dim)+1) / 2); }
+
+        // Complete Matrix->Vector and Vector->Matrix conversion
+        template <class MatType, class VecType>
+        VecType& M2V (const MatType&, VecType&) const;
+        template <class VecType, class MatType>
+        MatType& V2M (const VecType&, MatType&) const;
+
+        // Convenience functions to avoid having to pre-define the output class
+        template <class MatType>
+        vector_type M2V (const MatType&) const;
+        template <class VecType>
+        matrix_type V2M (const VecType&) const;
+
+
+      private:
+        const node_t dim;
+
+    };
+
+
+
+    template <class MatType, class VecType>
+    VecType& Mat2Vec::M2V (const MatType& m, VecType& v) const
     {
-      assert (i < dim);
-      assert (j < dim);
-      return lookup[i][j];
+      assert (m.rows() == m.cols());
+      assert (m.rows() == dim);
+      v.resize (vec_size());
+      for (size_t index = 0; index != vec_size(); ++index) {
+        const std::pair<node_t, node_t> row_col = (*this) (index);
+        v[index] = m (row_col.first, row_col.second);
+      }
+      return v;
     }
-    std::pair<node_t, node_t> operator() (const size_t i) const
+
+    template <class VecType, class MatType>
+    MatType& Mat2Vec::V2M (const VecType& v, MatType& m) const
     {
-      assert (i < inv_lookup.size());
-      return inv_lookup[i];
+      assert (size_t (v.size()) == vec_size());
+      m.resize (dim, dim);
+      for (node_t row = 0; row != dim; ++row) {
+        for (node_t col = 0; col != dim; ++col)
+          m (row, col) = v[(*this) (row, col)];
+      }
+      return m;
     }
-    node_t size() const { return dim; }
-    size_t vec_size() const { return inv_lookup.size(); }
 
-    // Complete Matrix->Vector and Vector->Matrix conversion
-    template <typename T> Math::Vector<T>& operator() (const Math::Matrix<T>&, Math::Vector<T>&) const;
-    template <typename T> std::vector<T>&  operator() (const Math::Matrix<T>&, std::vector<T>&) const;
-    template <class Cont, typename T> Math::Matrix<T>& operator() (const Cont&, Math::Matrix<T>&) const;
+    template <class MatType>
+    vector_type Mat2Vec::M2V (const MatType& m) const
+    {
+      vector_type v;
+      M2V (m, v);
+      return v;
+    }
 
-  protected:
-    node_t dim;
-
-  private:
-    // Lookup tables
-    std::vector< std::vector<size_t> > lookup;
-    std::vector< std::pair<node_t, node_t> > inv_lookup;
-
-};
-
+    template <class VecType>
+    matrix_type Mat2Vec::V2M (const VecType& v) const
+    {
+      matrix_type m;
+      V2M (v, m);
+      return m;
+    }
 
 
 
-template <typename T>
-Math::Vector<T>& Mat2Vec::operator() (const Math::Matrix<T>& in, Math::Vector<T>& out) const
-{
-  assert (in.rows() == in.columns());
-  assert (in.rows() == dim);
-  out.resize (vec_size());
-  for (size_t index = 0; index != out.size(); ++index) {
-    const std::pair<node_t, node_t> row_column = (*this) (index);
-    out[index] = in (row_column.first, row_column.second);
   }
-  return out;
-}
-
-
-template <typename T>
-std::vector<T>& Mat2Vec::operator() (const Math::Matrix<T>& in, std::vector<T>& out) const
-{
-  assert (in.rows() == in.columns());
-  assert (in.rows() == dim);
-  out.resize (vec_size());
-  for (size_t index = 0; index != out.size(); ++index) {
-    const std::pair<node_t, node_t> row_column = (*this) (index);
-    out[index] = in (row_column.first, row_column.second);
-  }
-  return out;
-}
-
-
-template <class Cont, typename T>
-Math::Matrix<T>& Mat2Vec::operator() (const Cont& in, Math::Matrix<T>& out) const
-{
-  assert (in.size() == vec_size());
-  out.resize (dim, dim);
-  for (node_t row = 0; row != dim; ++row) {
-    for (node_t column = 0; column != dim; ++column)
-      out (row, column) = in[(*this) (row, column)];
-  }
-  return out;
-}
-
-
-
-
-}
 }
 
 

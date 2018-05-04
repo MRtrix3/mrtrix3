@@ -1,24 +1,17 @@
 /*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-   Written by J-Donald Tournier, 13/11/09.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #ifndef __gui_mrview_tool_base_h__
 #define __gui_mrview_tool_base_h__
@@ -35,8 +28,8 @@
 
 namespace MR
 {
-  namespace App { 
-    class OptionList; 
+  namespace App {
+    class OptionList;
     class Options;
   }
 
@@ -46,12 +39,17 @@ namespace MR
     {
       namespace Tool
       {
+        class Base;
+
+
+
 
         class Dock : public QDockWidget
-        {
+        { NOMEMALIGN
           public:
-            Dock (QWidget* parent, const QString& name) :
-              QDockWidget (name, parent), tool (NULL) { }
+            Dock (const QString& name) :
+              QDockWidget (name, Window::main), tool (nullptr) { }
+            ~Dock ();
 
             void closeEvent (QCloseEvent*) override;
 
@@ -59,28 +57,32 @@ namespace MR
         };
 
 
-        class Base : public QFrame {
+
+
+
+
+        class Base : public QFrame { NOMEMALIGN
           public:
-            Base (Window& main_window, Dock* parent);
-            Window& window;
+            Base (Dock* parent);
+            Window& window () const { return *Window::main; }
 
             static void add_commandline_options (MR::App::OptionList& options);
             virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
 
-            virtual QSize sizeHint () const;
+            virtual QSize sizeHint () const override;
 
             void grab_focus () {
-              window.tool_has_focus = this;
-              window.set_cursor();
+              window().tool_has_focus = this;
+              window().set_cursor();
             }
             void release_focus () {
-              if (window.tool_has_focus == this) {
-                window.tool_has_focus = nullptr;
-                window.set_cursor();
+              if (window().tool_has_focus == this) {
+                window().tool_has_focus = nullptr;
+                window().set_cursor();
               }
             }
 
-            class HBoxLayout : public QHBoxLayout {
+            class HBoxLayout : public QHBoxLayout { NOMEMALIGN
               public:
                 HBoxLayout () : QHBoxLayout () { init(); }
                 HBoxLayout (QWidget* parent) : QHBoxLayout (parent) { init(); }
@@ -91,7 +93,7 @@ namespace MR
                 }
             };
 
-            class VBoxLayout : public QVBoxLayout {
+            class VBoxLayout : public QVBoxLayout { NOMEMALIGN
               public:
                 VBoxLayout () : QVBoxLayout () { init(); }
                 VBoxLayout (QWidget* parent) : QVBoxLayout (parent) { init(); }
@@ -102,7 +104,7 @@ namespace MR
                 }
             };
 
-            class GridLayout : public QGridLayout {
+            class GridLayout : public QGridLayout { NOMEMALIGN
               public:
                 GridLayout () : QGridLayout () { init(); }
                 GridLayout (QWidget* parent) : QGridLayout (parent) { init(); }
@@ -114,7 +116,7 @@ namespace MR
             };
 
 
-            class FormLayout : public QFormLayout {
+            class FormLayout : public QFormLayout { NOMEMALIGN
               public:
                 FormLayout () : QFormLayout () { init(); }
                 FormLayout (QWidget* parent) : QFormLayout (parent) { init(); }
@@ -136,38 +138,59 @@ namespace MR
             virtual void close_event() { }
             virtual void reset_event () { }
             virtual QCursor* get_cursor ();
-            void update_cursor() { window.set_cursor(); }
+            void update_cursor() { window().set_cursor(); }
+
+            void dragEnterEvent (QDragEnterEvent* event) override {
+              event->acceptProposedAction();
+            }
+            void dragMoveEvent (QDragMoveEvent* event) override {
+              event->acceptProposedAction();
+            }
+            void dragLeaveEvent (QDragLeaveEvent* event) override {
+              event->accept();
+            }
         };
 
 
 
+
+
+
+
         //! \cond skip
+
+        inline Dock::~Dock () { delete tool; }
+
+
+
         class __Action__ : public QAction
-        {
+        { NOMEMALIGN
           public:
             __Action__ (QActionGroup* parent,
                         const char* const name,
                         const char* const description,
                         int index) :
               QAction (name, parent),
-              dock (NULL) {
+              dock (nullptr) {
               setCheckable (true);
               setShortcut (tr (std::string ("Ctrl+F" + str (index)).c_str()));
               setStatusTip (tr (description));
             }
 
-            virtual Dock* create (Window& main_window) = 0;
+            virtual ~__Action__ () { delete dock; }
+
+            virtual Dock* create () = 0;
             Dock* dock;
         };
         //! \endcond
 
 
-        template <class T> 
-          Dock* create (const QString& text, Window& main_window)
+        template <class T>
+          Dock* create (const QString& text)
           {
-            Dock* dock = new Dock (&main_window, text);
-            main_window.addDockWidget (Qt::RightDockWidgetArea, dock);
-            dock->tool = new T (main_window, dock);
+            Dock* dock = new Dock (text);
+            Window::main->addDockWidget (Qt::RightDockWidgetArea, dock);
+            dock->tool = new T (dock);
             dock->tool->adjustSize();
             dock->setWidget (dock->tool);
             dock->setFloating (true);
@@ -176,9 +199,9 @@ namespace MR
           }
 
 
-        template <class T> 
+        template <class T>
           class Action : public __Action__
-        {
+        { NOMEMALIGN
           public:
             Action (QActionGroup* parent,
                 const char* const name,
@@ -186,8 +209,8 @@ namespace MR
                 int index) :
               __Action__ (parent, name, description, index) { }
 
-            virtual Dock* create (Window& parent) {
-              dock = Tool::create<T> (this->text(), parent);
+            virtual Dock* create () {
+              dock = Tool::create<T> (this->text());
               return dock;
             }
         };

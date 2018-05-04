@@ -1,39 +1,29 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert Smith, 2013.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
-
 
 
 #ifndef __connectome_lut_h__
 #define __connectome_lut_h__
 
+#include <map>
+#include <string>
 
 #include "app.h"
-#include "args.h"
-#include "point.h"
+#include "types.h"
 
 #include "connectome/connectome.h"
 
-#include <map>
-#include <string>
 
 
 namespace MR {
@@ -42,51 +32,57 @@ namespace Connectome {
 
 
 
-
-enum lut_format { LUT_NONE, LUT_BASIC, LUT_FREESURFER, LUT_AAL, LUT_ITKSNAP };
-extern const char* lut_format_strings[];
-
-extern const App::OptionGroup LookupTableOption;
-class Node_map;
-void load_lut_from_cmdline (Node_map&);
-
-
-
 // Class for storing any useful information regarding a parcellation node that
 //   may be imported from a lookup table
-class Node_info
-{
+class LUT_node
+{ MEMALIGN(LUT_node)
 
   public:
-    Node_info (const std::string& n) :
+
+    using RGB = Eigen::Array<uint8_t, 3, 1>;
+
+    LUT_node (const std::string& n) :
       name (n),
-      colour (Point<uint8_t> (0, 0, 0)),
+      colour (0, 0, 0),
       alpha (255) { }
 
-    Node_info (const std::string& n, const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a = 255) :
+    LUT_node (const std::string& n, const std::string& sn) :
       name (n),
-      colour (Point<uint8_t> (r, g, b)),
+      short_name (sn),
+      colour (0, 0, 0),
+      alpha (255) { }
+
+    LUT_node (const std::string& n, const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a = 255) :
+      name (n),
+      colour (r, g, b),
       alpha (a) { }
 
-    Node_info (const std::string& n, const Point<uint8_t>& rgb, const uint8_t a = 255) :
+    LUT_node (const std::string& n, const std::string& sn, const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a = 255) :
+      name (n),
+      short_name (sn),
+      colour (r, g, b),
+      alpha (a) { }
+
+    LUT_node (const std::string& n, const RGB& rgb, const uint8_t a = 255) :
       name (n),
       colour (rgb),
       alpha (a) { }
 
 
-    void set_colour (const uint8_t r, const uint8_t g, const uint8_t b) { colour = Point<uint8_t> (r,g,b); }
-    void set_colour (const Point<uint8_t> rgb) { colour = rgb; }
+    void set_colour (const uint8_t r, const uint8_t g, const uint8_t b) { colour = RGB {r,g,b}; }
+    void set_colour (const RGB& rgb) { colour = rgb; }
     void set_alpha  (const uint8_t a) { alpha = a; }
 
 
-    const std::string&    get_name()   const { return name; }
-    const Point<uint8_t>& get_colour() const { return colour; }
-    uint8_t               get_alpha()  const { return alpha; }
+    const std::string& get_name()       const { return name; }
+    const std::string& get_short_name() const { return short_name.size() ? short_name : name; }
+    const RGB&         get_colour()     const { return colour; }
+    uint8_t            get_alpha()      const { return alpha; }
 
 
   private:
-    std::string name;
-    Point<uint8_t> colour;
+    std::string name, short_name;
+    RGB colour;
     uint8_t alpha;
 
 };
@@ -94,17 +90,38 @@ class Node_info
 
 
 
-class Node_map : public std::map<node_t, Node_info>
-{
+class LUT : public std::multimap<node_t, LUT_node>
+{ MEMALIGN(LUT)
+    enum file_format { LUT_NONE, LUT_BASIC, LUT_FREESURFER, LUT_AAL, LUT_ITKSNAP, LUT_MRTRIX };
   public:
-    void load (const std::string&, const lut_format);
+    using map_type = std::multimap<node_t, LUT_node>;
+    LUT () : exclusive (true) { }
+    LUT (const std::string&);
+    void load (const std::string&);
+    bool is_exclusive() const { return exclusive; }
   private:
+    bool exclusive;
+
+    file_format guess_file_format (const std::string&);
+
     void parse_line_basic      (const std::string&);
     void parse_line_freesurfer (const std::string&);
     void parse_line_aal        (const std::string&);
     void parse_line_itksnap    (const std::string&);
+    void parse_line_mrtrix     (const std::string&);
+
+    void check_and_insert (const node_t, const LUT_node&);
 
 };
+
+
+
+
+// Convenience function for constructing a mapping from one lookup table to another
+// NOTE: If the TARGET LUT contains multiple entries for a particular index, and a
+//   mapping TO that index is required, the conversion is ill-formed.
+vector<node_t> get_lut_mapping (const LUT&, const LUT&);
+
 
 
 

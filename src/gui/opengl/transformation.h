@@ -1,33 +1,26 @@
 /*
-   Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-   Written by J-Donald Tournier, 27/06/08.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
 
 #ifndef __gui_opengl_transformation_h__
 #define __gui_opengl_transformation_h__
 
 #include <iostream>
 
-#include "point.h"
-#include "math/LU.h"
+#include "math/least_squares.h"
 #include "math/versor.h"
+
 #include "gui/opengl/gl.h"
 
 namespace MR
@@ -40,17 +33,13 @@ namespace MR
 
 
 
-      class vec4 {
+      class vec4 { MEMALIGN(vec4)
         public:
           vec4 () { }
           vec4 (float x, float y, float z, float w) { v[0] = x; v[1] = y; v[2] = z; v[3] = w; }
-          template <typename T>
-            vec4 (const Point<T>& p, float w) { 
-              v[0] = p[0]; 
-              v[1] = p[1];
-              v[2] = p[2]; 
-              v[3] = w; 
-            }
+          vec4 (const Math::Versorf& V) { v[0] = V.x(); v[1] = V.y(); v[2] = V.z(); v[3] = V.w(); }
+          template <class Cont>
+          vec4 (const Cont& p, float w) { v[0] = p[0]; v[1] = p[1]; v[2] = p[2]; v[3] = w;  }
           vec4 (const float* p) { memcpy (v, p, sizeof(v)); }
 
           void zero () {
@@ -74,28 +63,33 @@ namespace MR
 
 
 
-      class mat4 {
+      class mat4 { MEMALIGN(mat4)
         public:
           mat4 () { } 
           mat4 (const mat4& a) { memcpy (m, a.m, sizeof(m)); }
           mat4 (const float* p) { memcpy (m, p, sizeof(m)); }
-          template <typename T>
-            mat4 (const Math::Versor<T>& Q) {
-              zero();
-              (*this)(0,0) = Q[0]*Q[0] + Q[1]*Q[1] - Q[2]*Q[2] - Q[3]*Q[3];
-              (*this)(1,0) = 2.0f*Q[1]*Q[2] - 2.0f*Q[0]*Q[3];
-              (*this)(2,0) = 2.0f*Q[1]*Q[3] + 2.0f*Q[0]*Q[2];
-                          
-              (*this)(0,1) = 2.0f*Q[1]*Q[2] + 2.0f*Q[0]*Q[3];
-              (*this)(1,1) = Q[0]*Q[0] + Q[2]*Q[2] - Q[1]*Q[1] - Q[3]*Q[3];
-              (*this)(2,1) = 2.0f*Q[2]*Q[3] - 2.0f*Q[0]*Q[1];
-                          
-              (*this)(0,2) = 2.0f*Q[1]*Q[3] - 2.0f*Q[0]*Q[2];
-              (*this)(1,2) = 2.0f*Q[2]*Q[3] + 2.0f*Q[0]*Q[1];
-              (*this)(2,2) = Q[0]*Q[0] + Q[3]*Q[3] - Q[2]*Q[2] - Q[1]*Q[1];
-              
+          mat4 (const Math::Versorf& v)
+          {
+            const Math::Versorf::Matrix3 R = v.matrix();
+            zero();
+            for (size_t i = 0; i != 3; ++i) {
+              for (size_t j = 0; j != 3; ++j)
+                (*this)(i,j) = R(i,j);
+            }
+            (*this)(3,3) = 1.0f;
+          }
+          template <class M>
+          mat4 (const M& m)
+          {
+            for (size_t i = 0; i != size_t(m.rows()); ++i) {
+              for (size_t j = 0; j != 4; ++j)
+                (*this)(i,j) = m(i,j);
+            }
+            if (m.rows() == 3) {
+              (*this)(3,0) = (*this)(3,1) = (*this)(3,2) = 0.0f;
               (*this)(3,3) = 1.0f;
             }
+          }
 
           void zero () {
             memset (m, 0, sizeof (m));
@@ -175,11 +169,12 @@ namespace MR
 
       inline mat4 inv (const mat4& a) 
       {
-        mat4 b;
-        Math::Matrix<float> A (const_cast<float*> (&a(0,0)), 4, 4); 
-        Math::Matrix<float> B (&b(0,0), 4, 4); 
-        Math::LU::inv (B, A);
-        return b;
+        Eigen::Matrix<float, 4, 4> A;
+        for (size_t i = 0; i != 4; ++i) {
+          for (size_t j = 0; j != 4; ++j)
+            A(i,j) = a(i,j);
+        }
+        return A.inverse().eval();
       }
 
 
@@ -229,11 +224,11 @@ namespace MR
         return m;
       }
 
-      template <typename ValueType>
-        inline mat4 translate (const Point<ValueType> x)
-        {
-          return translate (x[0], x[1], x[2]);
-        }
+      template <class Cont>
+      inline mat4 translate (const Cont& x)
+      {
+        return translate (x[0], x[1], x[2]);
+      }
 
 
       inline mat4 scale (float x, float y, float z) 
@@ -241,8 +236,8 @@ namespace MR
         mat4 m;
         m.zero();
         m(0,0) = x;
-        m(1,1) = z;
-        m(2,2) = y;
+        m(1,1) = y;
+        m(2,2) = z;
         m(3,3) = 1.0f;
         return m;
       }

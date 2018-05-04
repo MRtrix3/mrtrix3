@@ -1,37 +1,25 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-    Written by Robert E. Smith, 2012.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #ifndef __dwi_tractography_act_gmwmi_h__
 #define __dwi_tractography_act_gmwmi_h__
 
 
-#include "point.h"
-
-#include "image/buffer.h"
-#include "image/voxel.h"
-#include "image/interp/linear.h"
-
+#include "image.h"
+#include "interp/linear.h"
 #include "math/hermite.h"
-
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/ACT/tissues.h"
 
@@ -59,28 +47,32 @@ namespace MR
 
 
         class GMWMI_finder
-        {
+        { MEMALIGN(GMWMI_finder)
 
           protected:
-            typedef Image::Interp::Linear< Image::Buffer<float>::voxel_type > Interp;
+            using Interp = Interp::Linear<Image<float>>;
 
           public:
-            GMWMI_finder (Image::Buffer<float>& buffer) :
-              interp_template (Image::Buffer<float>::voxel_type (buffer)),
-              min_vox (minvalue (buffer.vox(0), buffer.vox(1), buffer.vox(2))) { }
+            GMWMI_finder (const Image<float>& buffer) :
+              interp_template (buffer),
+              min_vox (std::min (buffer.spacing(0), std::min (buffer.spacing(1), buffer.spacing(2)))) { }
+
+            GMWMI_finder (const Interp& interp) :
+              interp_template (interp),
+              min_vox (std::min (interp.spacing(0), std::min (interp.spacing(1), interp.spacing(2)))) { }
 
             GMWMI_finder (const GMWMI_finder& that) :
               interp_template (that.interp_template),
               min_vox (that.min_vox) { }
 
 
-            bool find_interface (Point<float>&) const;
-            Point<float> normal (const Point<float>&) const;
-            bool is_cgm (const Point<float>&) const;
+            bool find_interface (Eigen::Vector3f&) const;
+            Eigen::Vector3f normal (const Eigen::Vector3f&) const;
+            bool is_cgm (const Eigen::Vector3f&) const;
 
 
-            Point<float> find_interface (const std::vector< Point<float> >&, const bool) const;
-            void crop_track (std::vector< Point<float> >&) const;
+            Eigen::Vector3f find_interface (const vector<Eigen::Vector3f>&, const bool) const;
+            void crop_track (vector<Eigen::Vector3f>&) const;
 
 
           protected:
@@ -88,17 +80,17 @@ namespace MR
             const float min_vox;
 
 
-            Tissues get_tissues (const Point<float>& p, Interp& interp) const {
-              if (interp.scanner (p))
+            Tissues get_tissues (const Eigen::Vector3f& p, Interp& interp) const {
+              if (!interp.scanner (p))
                 return Tissues ();
               return Tissues (interp);
             }
 
-            bool find_interface (Point<float>&, Interp&) const;
-            Point<float> get_normal (const Point<float>&, Interp&) const;
-            Point<float> get_cf_min_step (const Point<float>&, Interp&) const;
+            bool find_interface (Eigen::Vector3f&, Interp&) const;
+            Eigen::Vector3f get_normal (const Eigen::Vector3f&, Interp&) const;
+            Eigen::Vector3f get_cf_min_step (const Eigen::Vector3f&, Interp&) const;
 
-            Point<float> find_interface (const std::vector< Point<float> >&, const bool, Interp&) const;
+            Eigen::Vector3f find_interface (const vector<Eigen::Vector3f>&, const bool, Interp&) const;
 
 
             friend class Track_extender;

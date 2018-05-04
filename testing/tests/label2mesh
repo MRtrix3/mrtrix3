@@ -1,0 +1,2 @@
+label2mesh label2mesh/in.mif tmp.obj -force && testing_diff_mesh tmp.obj label2mesh/default.obj 0.001
+label2mesh label2mesh/in.mif tmp.obj -blocky -force && testing_diff_mesh tmp.obj label2mesh/blocky.obj 0.001

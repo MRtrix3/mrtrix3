@@ -1,36 +1,27 @@
 /*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-   Written by J-Donald Tournier, 2014.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #ifndef __gui_mrview_tool_roi_editor_item_h__
 #define __gui_mrview_tool_roi_editor_item_h__
 
 
 #include <array>
-#include <vector>
 
-#include "image/header.h"
-#include "image/info.h"
-#include "image/loop.h"
-#include "image/voxel.h"
+#include "header.h"
+#include "types.h"
+#include "algo/loop.h"
 #include "gui/mrview/volume.h"
 #include "gui/mrview/tool/roi_editor/undoentry.h"
 
@@ -43,7 +34,7 @@ namespace MR
     {
       namespace Tool
       {
-            
+
 
 
        namespace {
@@ -53,21 +44,21 @@ namespace MR
            { { 0, 255, 255 } },
            { { 255, 0, 0 } },
            { { 0, 255, 255 } },
-           { { 0, 0, 25 } }
+           { { 0, 0, 255 } }
          } };
        }
 
 
 
-       class ROI_Item : public Volume {
+       class ROI_Item : public Volume { MEMALIGN(ROI_Item)
           public:
-            ROI_Item (const MR::Image::Info&);
+            ROI_Item (MR::Header&&);
 
             void zero ();
-            void load (const MR::Image::Header& header);
+            void load ();
 
-            template <class VoxelType> 
-            void save (VoxelType&&, GLubyte*);
+            template <class ImageType>
+            void save (ImageType&&, GLubyte*);
 
             bool has_undo () { return current_undo >= 0; }
             bool has_redo () { return current_undo < int(undo_list.size()-1); }
@@ -82,7 +73,7 @@ namespace MR
             float min_brush_size, max_brush_size, brush_size;
 
           private:
-            std::vector<ROI_UndoEntry> undo_list;
+            vector<ROI_UndoEntry> undo_list;
             int current_undo;
 
             static int number_of_undos;
@@ -92,12 +83,13 @@ namespace MR
 
 
 
-        template <class VoxelType>
-        void ROI_Item::save (VoxelType&& vox, GLubyte* data) {
-          for (auto l = MR::Image::Loop() (vox); l; ++l)
-            vox.value() = data[vox[0] + vox.dim(0) * (vox[1] + vox.dim(1)*vox[2])];
+        template <class ImageType>
+        void ROI_Item::save (ImageType&& out, GLubyte* data)
+        {
+          for (auto l = Loop(out) (out); l; ++l)
+            out.value() = data[out.index(0) + out.size(0) * (out.index(1) + out.size(1)*out.index(2))];
           saved = true;
-          filename = vox.name();
+          filename = out.name();
         }
 
 

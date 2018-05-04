@@ -1,33 +1,25 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-    Written by Robert E. Smith, 2014.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include <string>
-#include <vector>
 
 #include "command.h"
 #include "exception.h"
 #include "mrtrix.h"
-
 #include "thread_queue.h"
+#include "types.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -53,58 +45,53 @@ using namespace MR::DWI::Tractography::Editing;
 void usage ()
 {
 
-  AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
+
+  SYNOPSIS = "Perform various editing operations on track files";
 
   DESCRIPTION
-  + "perform various editing operations on track files.";
+  + "This command can be used to perform various manipulations on track data. "
+    "This includes: "
+    "merging data from multiple track files into one; "
+    "extracting only a finite number of tracks; "
+    "selecting a subset of tracks based on various criteria, for instance regions of interest."
+
+  + DWI::Tractography::preserve_track_order_desc;
 
   ARGUMENTS
-  + Argument ("tracks_in",  "the input track file(s)").type_file_in().allow_multiple()
-  + Argument ("tracks_out", "the output track file").type_file_out();
+  + Argument ("tracks_in",  "the input track file(s)").type_tracks_in().allow_multiple()
+  + Argument ("tracks_out", "the output track file").type_tracks_out();
 
   OPTIONS
   + ROIOption
   + LengthOption
-  + ResampleOption
   + TruncateOption
   + WeightsOption
 
+  + OptionGroup ("Other options specific to tckedit")
   + Option ("inverse", "output the inverse selection of streamlines based on the criteria provided, "
                        "i.e. only those streamlines that fail at least one criterion will be written to file.")
 
-  + Option ("test_ends_only", "only test the ends of each streamline against the provided include/exclude ROIs")
+  + Option ("ends_only", "only test the ends of each streamline against the provided include/exclude ROIs")
 
   // TODO Input weights with multiple input files currently not supported
+  + OptionGroup ("Options for handling streamline weights")
   + Tractography::TrackWeightsInOption
   + Tractography::TrackWeightsOutOption;
 
   // TODO Additional options?
   // - Peak curvature threshold
   // - Mean curvature threshold
-  // - Resample streamline to fixed step size
 
-
-
-};
-
-
-
-
-
-
-void update_output_step_size (Tractography::Properties& properties, const int upsample_ratio, const int downsample_ratio)
-{
-  if (upsample_ratio == 1 && downsample_ratio == 1)
-    return;
-  float step_size = 0.0;
-  if (properties.find ("output_step_size") == properties.end())
-    step_size = (properties.find ("step_size") == properties.end() ? 0.0 : to<float>(properties["step_size"]));
-  else
-    step_size = to<float>(properties["output_step_size"]);
-  properties["output_step_size"] = str(step_size * float(downsample_ratio) / float(upsample_ratio));
 }
 
 
+void erase_if_present (Tractography::Properties& p, const std::string s)
+{
+  auto i = p.find (s);
+  if (i != p.end())
+    p.erase (i);
+}
 
 
 
@@ -121,18 +108,18 @@ void run ()
   // Get the consensus streamline properties from among the multiple input files
   Tractography::Properties properties;
   size_t count = 0;
-  std::vector<std::string> input_file_list;
+  vector<std::string> input_file_list;
 
   for (size_t file_index = 0; file_index != num_inputs; ++file_index) {
 
     input_file_list.push_back (argument[file_index]);
 
     Properties p;
-    Tractography::Reader<float> reader (argument[file_index], p);
+    Reader<float> reader (argument[file_index], p);
 
-    for (std::vector<std::string>::const_iterator i = p.comments.begin(); i != p.comments.end(); ++i) {
+    for (vector<std::string>::const_iterator i = p.comments.begin(); i != p.comments.end(); ++i) {
       bool present = false;
-      for (std::vector<std::string>::const_iterator j = properties.comments.begin(); !present && j != properties.comments.end(); ++j)
+      for (vector<std::string>::const_iterator j = properties.comments.begin(); !present && j != properties.comments.end(); ++j)
         present = (*i == *j);
       if (!present)
         properties.comments.push_back (*i);
@@ -166,36 +153,35 @@ void run ()
   load_rois (properties);
 
   // Some properties from tracking may be overwritten by this editing process
+  // Due to the potential use of masking, we have no choice but to clear the
+  //   properties class of any fields that would otherwise propagate through
+  //   and be applied as part of this editing
+  erase_if_present (properties, "min_dist");
+  erase_if_present (properties, "max_dist");
+  erase_if_present (properties, "min_weight");
+  erase_if_present (properties, "max_weight");
   Editing::load_properties (properties);
 
   // Parameters that the worker threads need to be aware of, but do not appear in Properties
-  Options opt = get_options ("upsample");
-  const int upsample   = opt.size() ? int(opt[0][0]) : 1;
-  opt = get_options ("downsample");
-  const int downsample = opt.size() ? int(opt[0][0]) : 1;
-  const bool inverse = get_options ("inverse").size();
-  const bool test_ends_only = get_options ("test_ends_only").size();
-  const bool out_ends_only = get_options ("out_ends_only").size();
+  const bool inverse   = get_options ("inverse").size();
+  const bool ends_only = get_options ("ends_only").size();
 
   // Parameters that the output thread needs to be aware of
-  opt = get_options ("number");
-  const size_t number = opt.size() ? size_t(opt[0][0]) : 0;
-  opt = get_options ("skip");
-  const size_t skip   = opt.size() ? size_t(opt[0][0]) : 0;
+  const size_t number = get_option_value ("number", size_t(0));
+  const size_t skip   = get_option_value ("skip",   size_t(0));
 
   Loader loader (input_file_list);
-  Worker worker (properties, upsample, downsample, inverse, test_ends_only);
+  Worker worker (properties, inverse, ends_only);
   // This needs to be run AFTER creation of the Worker class
   // (worker needs to be able to set max & min number of points based on step size in input file,
   //  receiver needs "output_step_size" field to have been updated before file creation)
-  update_output_step_size (properties, upsample, downsample);
-  Receiver receiver (output_path, properties, number, skip, out_ends_only);
+  Receiver receiver (output_path, properties, number, skip);
 
   Thread::run_queue (
       loader, 
-      Thread::batch (Tractography::Streamline<>()),
+      Thread::batch (Streamline<>()),
       Thread::multi (worker), 
-      Thread::batch (Tractography::Streamline<>()),
+      Thread::batch (Streamline<>()),
       receiver);
 
 }

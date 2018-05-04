@@ -1,83 +1,91 @@
 /*
-   Copyright 2010 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-   Written by J-Donald Tournier, 15/10/10.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #ifndef __dwi_bootstrap_h__
 #define __dwi_bootstrap_h__
 
-#include "image/position.h"
-#include "image/adapter/voxel.h"
+#include "adapter/base.h"
 
 
 namespace MR {
   namespace DWI {
 
 
-    template <class VoxelType, class Functor, size_t NUM_VOX_PER_CHUNK = 256> 
-      class Bootstrap : public Image::Adapter::Voxel<VoxelType>
-    {
+    template <class ImageType, class Functor, size_t NUM_VOX_PER_CHUNK = 256> 
+      class Bootstrap : 
+        public Adapter::Base<Bootstrap<ImageType,Functor,NUM_VOX_PER_CHUNK>,ImageType>
+    { MEMALIGN (Bootstrap<ImageType,Functor,NUM_VOX_PER_CHUNK>)
       public:
-        typedef typename VoxelType::value_type value_type;
-        using Image::Adapter::Voxel<VoxelType>::dim;
-        using Image::Adapter::Voxel<VoxelType>::parent_vox;
 
-        Bootstrap (const VoxelType& Image, const Functor& functor) :
-          Image::Adapter::Voxel<VoxelType> (Image),
+        using base_type = Adapter::Base<Bootstrap<ImageType,Functor,NUM_VOX_PER_CHUNK>, ImageType>;
+        using value_type = typename ImageType::value_type;
+
+        using base_type::ndim;
+        using base_type::size;
+        using base_type::index;
+
+        class IndexCompare { NOMEMALIGN
+          public:
+            bool operator() (const Eigen::Vector3i& a, const Eigen::Vector3i& b) const {
+              if (a[0] < b[0]) return true;
+              if (a[1] < b[1]) return true;
+              if (a[2] < b[2]) return true;
+              return false;
+            }
+        };
+
+
+        Bootstrap (const ImageType& Image, const Functor& functor) :
+          base_type (Image),
           func (functor),
           next_voxel (nullptr),
           last_voxel (nullptr) {
-            assert (Image::Adapter::Voxel<VoxelType>::ndim() == 4);
+            assert (ndim() == 4);
           }
 
         value_type value () { 
-          return get_voxel()[parent_vox[3]]; 
+          return get_voxel()[index(3)]; 
         }
 
-        void get_values (value_type* buffer) { 
-          if (parent_vox[0] < 0 || parent_vox[0] >= dim(0) ||
-              parent_vox[1] < 0 || parent_vox[1] >= dim(1) ||
-              parent_vox[2] < 0 || parent_vox[2] >= dim(2)) 
-            memset (buffer, 0, dim(3)*sizeof(value_type));
-          else
-            memcpy (buffer, get_voxel(), dim(3)*sizeof(value_type)); 
-        }
-
-        Image::Position<Bootstrap<VoxelType,Functor,NUM_VOX_PER_CHUNK> > operator[] (size_t axis ) {
-          return Image::Position<Bootstrap<VoxelType,Functor,NUM_VOX_PER_CHUNK> > (*this, axis);
-        } 
+        template <class VectorType>
+          void get_values (VectorType& values) { 
+            if (index(0) < 0 || index(0) >= size(0) ||
+                index(1) < 0 || index(1) >= size(1) ||
+                index(2) < 0 || index(2) >= size(2))
+              values.setZero();
+            else {
+              auto p = get_voxel();
+              for (ssize_t n = 0; n < size(3); ++n) 
+                values[n] = p[n];
+            }
+          }
 
         void clear () 
         {
           voxels.clear(); 
           if (voxel_buffer.empty())
-            voxel_buffer.push_back (std::vector<value_type> (NUM_VOX_PER_CHUNK * dim(3)));
+            voxel_buffer.push_back (vector<value_type> (NUM_VOX_PER_CHUNK * size(3)));
           next_voxel = &voxel_buffer[0][0];
-          last_voxel = next_voxel + NUM_VOX_PER_CHUNK * dim(3);
+          last_voxel = next_voxel + NUM_VOX_PER_CHUNK * size(3);
           current_chunk = 0;
         }
 
       protected:
         Functor func;
-        std::map<Point<ssize_t>,value_type*> voxels;
-        std::vector<std::vector<value_type>> voxel_buffer;
+        std::map<Eigen::Vector3i,value_type*,IndexCompare> voxels;
+        vector<vector<value_type>> voxel_buffer;
         value_type* next_voxel;
         value_type* last_voxel;
         size_t current_chunk;
@@ -87,31 +95,29 @@ namespace MR {
           if (next_voxel == last_voxel) {
             ++current_chunk;
             if (current_chunk >= voxel_buffer.size()) 
-              voxel_buffer.push_back (std::vector<value_type> (NUM_VOX_PER_CHUNK * dim(3)));
+              voxel_buffer.push_back (vector<value_type> (NUM_VOX_PER_CHUNK * size(3)));
             assert (current_chunk < voxel_buffer.size());
             next_voxel = &voxel_buffer.back()[0];
-            last_voxel = next_voxel + NUM_VOX_PER_CHUNK * dim(3);
+            last_voxel = next_voxel + NUM_VOX_PER_CHUNK * size(3);
           }
           value_type* retval = next_voxel;
-          next_voxel += dim(3);
+          next_voxel += size(3);
           return retval;
         }
 
         value_type* get_voxel ()
         {
-          value_type*& data (voxels.insert (std::make_pair (Point<ssize_t> (parent_vox[0], parent_vox[1], parent_vox[2]), nullptr)).first->second);
+          value_type*& data (voxels.insert (std::make_pair (Eigen::Vector3i (index(0), index(1), index(2)), nullptr)).first->second);
           if (!data) {
             data = allocate_voxel ();
-            ssize_t pos = parent_vox[3];
-            for (parent_vox[3] = 0; parent_vox[3] < dim(3); ++parent_vox[3])
-              data[parent_vox[3]] = parent_vox.value();
-            parent_vox[3] = pos;
+            ssize_t pos = index(3);
+            for (auto l = Loop(3)(*this); l; ++l)
+              data[index(3)] = base_type::value();
+            index(3) = pos;
             func (data);
           }
           return data;
         }
-
-        friend class Image::Position<Bootstrap<VoxelType,Functor,NUM_VOX_PER_CHUNK> >;
     };
 
   }

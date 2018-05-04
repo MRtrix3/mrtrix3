@@ -1,33 +1,24 @@
 /*
-    Copyright 2013 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert Smith, 2013.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
-
 
 
 #ifndef __dwi_tractography_connectome_mapper_h__
 #define __dwi_tractography_connectome_mapper_h__
 
 #include "dwi/tractography/streamline.h"
-#include "dwi/tractography/connectome/edge_metrics.h"
 #include "dwi/tractography/connectome/mapped_track.h"
+#include "dwi/tractography/connectome/metric.h"
 #include "dwi/tractography/connectome/tck2nodes.h"
 
 
@@ -40,10 +31,10 @@ namespace Connectome {
 
 
 class Mapper
-{
+{ MEMALIGN(Mapper)
 
   public:
-    Mapper (Tck2nodes_base& a, const Metric_base& b) :
+    Mapper (const Tck2nodes_base& a, const Metric& b) :
       tck2nodes (a),
       metric (b) { }
 
@@ -52,8 +43,9 @@ class Mapper
       metric (that.metric) { }
 
 
-    bool operator() (const Tractography::Streamline<float>& in, Mapped_track& out)
+    bool operator() (const Tractography::Streamline<float>& in, Mapped_track_nodepair& out)
     {
+      assert (tck2nodes.provides_pair());
       out.set_track_index (in.index);
       out.set_nodes (tck2nodes (in));
       out.set_factor (metric (in, out.get_nodes()));
@@ -61,10 +53,22 @@ class Mapper
       return true;
     }
 
+    bool operator() (const Tractography::Streamline<float>& in, Mapped_track_nodelist& out)
+    {
+      assert (!tck2nodes.provides_pair());
+      out.set_track_index (in.index);
+      vector<node_t> nodes;
+      tck2nodes (in, nodes);
+      out.set_nodes (std::move (nodes));
+      out.set_factor (metric (in, out.get_nodes()));
+      out.set_weight (in.weight);
+      return true;
+    }
+
 
   private:
-    Tck2nodes_base& tck2nodes;
-    const Metric_base& metric;
+    const Tck2nodes_base& tck2nodes;
+    const Metric& metric;
 
 };
 

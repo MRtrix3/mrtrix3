@@ -1,36 +1,28 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert Smith, 2011.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
-
 
 
 #ifndef __dwi_tractography_sift_sifter_h__
 #define __dwi_tractography_sift_sifter_h__
 
 
-#include <vector>
+
+#include "image.h"
+#include "types.h"
 
 #include "math/rng.h"
-#include "image/buffer.h"
-#include "image/header.h"
+
 #include "dwi/fixel_map.h"
 #include "dwi/directions/set.h"
 #include "dwi/tractography/SIFT/fixel.h"
@@ -53,16 +45,16 @@ namespace MR
 
 
       class SIFTer : public Model<Fixel>
-      {
+      { MEMALIGN(SIFTer)
 
         protected:
-        typedef Model<Fixel> MapType;
-        typedef Fixel_map<Fixel>::MapVoxel MapVoxel;
-        typedef Fixel_map<Fixel>::VoxelAccessor VoxelAccessor;
+        using MapType = Model<Fixel>;
+        using MapVoxel = Fixel_map<Fixel>::MapVoxel;
+        using VoxelAccessor = Fixel_map<Fixel>::VoxelAccessor;
 
 
         public:
-        SIFTer (Image::Buffer<float>& i, const DWI::Directions::FastLookupSet& d) :
+        SIFTer (Image<float>& i, const DWI::Directions::FastLookupSet& d) :
             MapType (i, d),
             output_debug (false),
             term_number (0),
@@ -86,7 +78,7 @@ namespace MR
         void set_term_mu     (const float i)        { term_mu = i; }
         void set_csv_path    (const std::string& i) { csv_path = i; }
 
-        void set_regular_outputs (const std::vector<int>&, const bool);
+        void set_regular_outputs (const vector<int>&, const bool);
 
 
         // DEBUGGING
@@ -97,16 +89,14 @@ namespace MR
         using Fixel_map<Fixel>::accessor;
         using Fixel_map<Fixel>::fixels;
 
-        using MapType::H;
         using MapType::FOD_sum;
         using MapType::TD_sum;
-        using MapType::mu;
         using MapType::proc_mask;
         using MapType::num_tracks;
 
 
         // User-controllable settings
-        std::vector<track_t> output_at_counts;
+        vector<track_t> output_at_counts;
         bool    output_debug;
         track_t term_number;
         float   term_ratio;
@@ -123,14 +113,14 @@ namespace MR
 
         // For calculating the streamline removal gradients in a multi-threaded fashion
         class TrackGradientCalculator
-        {
+        { MEMALIGN(TrackGradientCalculator)
           public:
-            TrackGradientCalculator (const SIFTer& sifter, std::vector<Cost_fn_gradient_sort>& v, const double mu, const double r) :
-              master (sifter), gradient_vector (v), current_mu (mu), current_roc_cost (r) { }
+            TrackGradientCalculator (const SIFTer& sifter, vector<Cost_fn_gradient_sort>& v, const double mu, const double r) :
+                master (sifter), gradient_vector (v), current_mu (mu), current_roc_cost (r) { }
             bool operator() (const TrackIndexRange&) const;
           private:
             const SIFTer& master;
-            std::vector<Cost_fn_gradient_sort>& gradient_vector;
+            vector<Cost_fn_gradient_sort>& gradient_vector;
             const double current_mu, current_roc_cost;
         };
 

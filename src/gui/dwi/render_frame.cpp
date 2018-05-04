@@ -1,48 +1,24 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-
-    24-10-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * scale plot by SH(0,0) coefficient when normalise option is set
-
-*/
 
 #include <fstream>
 
+#include <QGLWidget>
+
 #include "app.h"
 #include "gui/dwi/render_frame.h"
-
-#define ROTATION_INC 0.004
-#define D2R 0.01745329252
-
-#define DIST_INC 0.005
-#define DIST_MIN 0.1
-#define DIST_MAX 10.0
-
-#define SCALE_INC 1.05
-#define SCALE_MIN 0.01
-#define SCALE_MAX 10.0
-
-#define ANGLE_INC 0.1
-#define ANGLE_MIN 1.0
-#define ANGLE_MAX 90.0
 
 namespace MR
 {
@@ -51,18 +27,52 @@ namespace MR
     namespace DWI
     {
 
+      namespace {
+
+        constexpr float RotationInc = 0.004f;
+        constexpr float Degrees2radians = 0.01745329252f;
+
+        constexpr float DistDefault = 0.3f;
+        constexpr float DistInc = 0.005f;
+
+        constexpr float ScaleInc = 1.05f;
+
+        constexpr float AngleDefault = 40.0f;
+        constexpr float AngleInc = 0.1f;
+        constexpr float AngleMin = 1.0f;
+        constexpr float AngleMax = 90.0f;
+
+
+        const Math::Versorf DefaultOrientation = Eigen::AngleAxisf (Math::pi_4, Eigen::Vector3f (0.0f, 0.0f, 1.0f)) * 
+                                                     Eigen::AngleAxisf (Math::pi/3.0f, Eigen::Vector3f (1.0f, 0.0f, 0.0f));
+        QFont get_font (QWidget* parent) {
+          QFont f = parent->font();
+          f.setPointSize (MR::File::Config::get_int ("FontSize", 10));
+          return f;
+        }
+      }
+
       RenderFrame::RenderFrame (QWidget* parent) :
         GL::Area (parent),
-        view_angle (40.0), distance (0.3), line_width (1.0), scale (1.0), 
-        lmax_computed (0), lod_computed (0), recompute_mesh (true), recompute_amplitudes (true), 
-        show_axes (true), hide_neg_lobes (true), color_by_dir (true), use_lighting (true), 
-        normalise (false), font (parent->font()), projection (this, font),
-        focus (0.0, 0.0, 0.0), OS (0), OS_x (0), OS_y (0)
+        view_angle (AngleDefault), distance (DistDefault), scale (NaN), 
+        lmax_computed (0), lod_computed (0), mode (mode_t::SH), recompute_mesh (true), recompute_amplitudes (true),
+        show_axes (true), hide_neg_values (true), color_by_dir (true), use_lighting (true),
+        glfont (get_font (parent)), projection (this, glfont),
+        orientation (DefaultOrientation),
+        focus (0.0, 0.0, 0.0), OS (0), OS_x (0), OS_y (0),
+        renderer ((QGLWidget*)this)
       {
         setMinimumSize (128, 128);
         lighting = new GL::Lighting (this);
         lighting->set_background = true;
         connect (lighting, SIGNAL (changed()), this, SLOT (update()));
+      }
+
+      RenderFrame::~RenderFrame()
+      {
+        Context::Grab context (this);
+        axes_VB.clear();
+        axes_VAO.clear();
       }
 
 
@@ -71,12 +81,12 @@ namespace MR
 
       void RenderFrame::set_rotation (const GL::mat4& rotation)
       {
-        float p[9];
-        p[0] = rotation(0,0); p[1] = rotation(1,0); p[2] = rotation(2,0);
-        p[3] = rotation(0,1); p[4] = rotation(1,1); p[5] = rotation(2,1);
-        p[6] = rotation(0,2); p[7] = rotation(1,2); p[8] = rotation(2,2);
-        Math::Matrix<float> M (p, 3, 3);
-        orientation.from_matrix (M);
+        Eigen::Matrix<float, 3, 3> M = Eigen::Matrix<float, 3, 3>::Zero();
+        for (size_t i = 0; i != 3; ++i) {
+          for (size_t j = 0; j != 3; ++j)
+            M(i,j) = rotation(j,i);
+        }
+        orientation = Math::Versorf (M);
         update();
       }
 
@@ -87,6 +97,7 @@ namespace MR
       void RenderFrame::initializeGL ()
       {
         GL::init();
+        glfont.initGL (false);
         renderer.initGL();
         gl::Enable (gl::DEPTH_TEST);
 
@@ -150,10 +161,10 @@ namespace MR
         gl::ClearColor (lighting->background_color[0], lighting->background_color[1], lighting->background_color[2], 0.0);
         gl::Clear (gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
-        float dist (1.0f / (distance * view_angle * D2R));
+        float dist (1.0f / (distance * view_angle * Degrees2radians));
         float near_ = (dist-3.0f > 0.001f ? dist-3.0f : 0.001f);
-        float horizontal = 2.0f * near_ * tan (0.5f*view_angle*D2R) * float (width()) / float (width()+height());
-        float vertical = 2.0f * near_ * tan (0.5f*view_angle*D2R) * float (height()) / float (width()+height());
+        float horizontal = 2.0f * near_ * tan (0.5f*view_angle*Degrees2radians) * float (width()) / float (width()+height());
+        float vertical = 2.0f * near_ * tan (0.5f*view_angle*Degrees2radians) * float (height()) / float (width()+height());
 
         GL::mat4 P;
         if (OS > 0) {
@@ -165,41 +176,58 @@ namespace MR
           P = GL::frustum (-horizontal, horizontal, -vertical, vertical, near_, dist+3.0);
         }
 
+        Eigen::Matrix<float, 4, 4> M;
+        M.topLeftCorner (3, 3) = orientation.matrix().transpose();
+        M(0,3) = M(1,3) = M(2,3) = M(3,0) = M(3,1) = M(3,2) = 0.0f;
+        M(3,3) = 1.0f;
 
-
-        float T[16];
-        Math::Matrix<float> M (T, 3, 3, 4);
-        orientation.to_matrix (M);
-        T[3] = T[7] = T[11] = T[12] = T[13] = T[14] = 0.0;
-        T[15] = 1.0;
-
-        GL::mat4 MV = GL::translate (0.0, 0.0, -dist) * GL::mat4 (T);
+        GL::mat4 MV = GL::translate (0.0, 0.0, -dist) * GL::mat4 (M);
         projection.set (MV, P);
 
+        gl::Enable (gl::DEPTH_TEST);
         gl::DepthMask (gl::TRUE_);
 
         if (values.size()) {
           if (std::isfinite (values[0])) {
             gl::Disable (gl::BLEND);
 
-            float final_scale = scale;
-            if (normalise && std::isfinite (values[0]) && values[0] != 0.0)
-              final_scale /= values[0];
+            if (!std::isfinite (scale)) 
+              scale = 2.0f / values.norm();
 
-            renderer.start (projection, *lighting, final_scale, use_lighting, color_by_dir, hide_neg_lobes);
+            renderer.set_mode (mode);
 
             if (recompute_mesh) {
-              renderer.update_mesh (lod_computed, lmax_computed);
+              switch (mode) {
+                case mode_t::SH:     renderer.sh    .update_mesh (lod_computed, lmax_computed); break;
+                case mode_t::TENSOR: renderer.tensor.update_mesh (lod_computed); break;
+                case mode_t::DIXEL:  renderer.dixel .update_mesh (*dirs); break;
+              }
               recompute_mesh = false;
             }
 
+            renderer.start (projection, *lighting, scale, use_lighting, color_by_dir, hide_neg_values);
+
             if (recompute_amplitudes) {
-              Math::Vector<float> r_del_daz;
-              const size_t nSH = Math::SH::NforL (lmax_computed);
-              if (values.size() < nSH) 
-                values.resize (nSH, 0.0);
-              renderer.compute_r_del_daz (r_del_daz, values.sub (0, Math::SH::NforL (lmax_computed)));
-              renderer.set_data (r_del_daz);
+              Eigen::Matrix<float, Eigen::Dynamic, 1> r_del_daz;
+              size_t nSH = 0;
+              switch (mode) {
+                case mode_t::SH:
+                  nSH = Math::SH::NforL (lmax_computed);
+                  if (size_t(values.rows()) < nSH) {
+                    Eigen::Matrix<float, Eigen::Dynamic, 1> new_values = Eigen::Matrix<float, Eigen::Dynamic, 1>::Zero (nSH);
+                    new_values.topRows (values.rows()) = values;
+                    std::swap (values, new_values);
+                  }
+                  renderer.sh.compute_r_del_daz (r_del_daz, values.topRows (Math::SH::NforL (lmax_computed)));
+                  renderer.sh.set_data (r_del_daz);
+                  break;
+                case mode_t::TENSOR:
+                  renderer.tensor.set_data (values);
+                  break;
+                case mode_t::DIXEL:
+                  renderer.dixel.set_data (values);
+                  break;
+              }
               recompute_amplitudes = false;
             }
 
@@ -209,13 +237,12 @@ namespace MR
         }
 
         if (show_axes) {
-          gl::LineWidth (line_width);
           gl::BlendFunc (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
           gl::Enable (gl::BLEND);
           gl::Enable (gl::LINE_SMOOTH);
 
           axes_shader.start();
-          gl::Uniform3fv (gl::GetUniformLocation (axes_shader, "origin"), 1, focus);
+          gl::Uniform3fv (gl::GetUniformLocation (axes_shader, "origin"), 1, focus.data());
           gl::UniformMatrix4fv (gl::GetUniformLocation (axes_shader, "MVP"), 1, gl::FALSE_, projection.modelview_projection());
           axes_VAO.bind();
           gl::DrawArrays (gl::LINES, 0, 6);
@@ -223,6 +250,12 @@ namespace MR
 
           gl::Disable (gl::BLEND);
           gl::Disable (gl::LINE_SMOOTH);
+
+          if (text.size()) {
+            projection.setup_render_text (0.0f, 0.0f, 0.0f);
+            projection.render_text (10, 10, text);
+            projection.done_render_text();
+          }
         }
 
         // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
@@ -230,7 +263,7 @@ namespace MR
 #if QT_VERSION >= 0x050400
         gl::ClearColor (0.0, 0.0, 0.0, 1.0);
         gl::ColorMask (false, false, false, true); 
-        gl::Clear (GL_COLOR_BUFFER_BIT);
+        gl::Clear (gl::COLOR_BUFFER_BIT);
 #endif
 
         if (OS > 0) snapshot();
@@ -238,25 +271,17 @@ namespace MR
       }
 
 
-
-
-
-
-
-
-      void RenderFrame::mouseDoubleClickEvent (QMouseEvent* event)
-      {
-        if (event->modifiers() == Qt::NoModifier) {
-          if (event->buttons() == Qt::LeftButton) {
-            orientation = Math::Versor<float>();
-            update();
-          }
-          else if (event->buttons() == Qt::MidButton) {
-            focus.set (0.0, 0.0, 0.0);
-            update();
-          }
-        }
+      void RenderFrame::reset_view () {
+        orientation = DefaultOrientation;
+        focus.setZero();
+        distance = DistDefault;
+        view_angle = AngleDefault;
+        update();
       }
+
+
+
+
 
 
       void RenderFrame::mousePressEvent (QMouseEvent* event)
@@ -273,14 +298,12 @@ namespace MR
 
         if (event->modifiers() == Qt::NoModifier) {
           if (event->buttons() == Qt::LeftButton) {
-            Point<> x = projection.screen_to_model_direction (QPoint (-dx, dy), focus);
-            Point<> z = projection.screen_normal();
-            Point<> v = x.cross (z);
-            v.normalise();
-            float angle = ROTATION_INC * std::sqrt (float (Math::pow2 (dx) + Math::pow2 (dy)));
+            const Eigen::Vector3f x = projection.screen_to_model_direction (QPoint (-dx, dy), focus);
+            const Eigen::Vector3f z = projection.screen_normal();
+            const Eigen::Vector3f v = x.cross (z).normalized();
+            float angle = RotationInc * std::sqrt (float (Math::pow2 (dx) + Math::pow2 (dy)));
             if (angle > Math::pi_2) angle = Math::pi_2;
-
-            Math::Versor<float> rot (angle, v);
+            const Math::Versorf rot (Eigen::AngleAxisf (angle, v));
             orientation = rot * orientation;
             update();
           }
@@ -289,17 +312,15 @@ namespace MR
             update();
           }
           else if (event->buttons() == Qt::RightButton) {
-            distance *= 1.0 - DIST_INC*dy;
-            if (distance < DIST_MIN) distance = DIST_MIN;
-            if (distance > DIST_MAX) distance = DIST_MAX;
+            distance *= 1.0 - DistInc*dy;
             update();
           }
         }
         else if (event->modifiers() == Qt::ControlModifier) {
           if (event->buttons() == Qt::RightButton) {
-            view_angle -= ANGLE_INC*dy;
-            if (view_angle < ANGLE_MIN) view_angle = ANGLE_MIN;
-            if (view_angle > ANGLE_MAX) view_angle = ANGLE_MAX;
+            view_angle -= AngleInc*dy;
+            if (view_angle < AngleMin) view_angle = AngleMin;
+            if (view_angle > AngleMax) view_angle = AngleMax;
             update();
           }
         }
@@ -308,10 +329,8 @@ namespace MR
       void RenderFrame::wheelEvent (QWheelEvent* event)
       {
         int scroll = event->delta() / 120;
-        for (int n = 0; n < scroll; n++) scale *= SCALE_INC;
-        for (int n = 0; n > scroll; n--) scale /= SCALE_INC;
-        if (scale > SCALE_MAX) scale = SCALE_MAX;
-        if (scale < SCALE_MIN) scale = SCALE_MIN;
+        for (int n = 0; n < scroll; n++) scale *= ScaleInc;
+        for (int n = 0; n > scroll; n--) scale /= ScaleInc;
         update();
       }
 

@@ -1,25 +1,19 @@
 /*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-   Written by J-Donald Tournier, 2014.
 
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
-
+#include "gui/mrview/window.h"
 #include "gui/mrview/tool/roi_editor/model.h"
 
 
@@ -31,28 +25,32 @@ namespace MR
     {
       namespace Tool
       {
-            
 
 
 
 
-        void ROI_Model::load (std::vector<std::unique_ptr<MR::Image::Header>>& list)
+
+        void ROI_Model::load (vector<std::unique_ptr<MR::Header>>& list)
         {
           beginInsertRows (QModelIndex(), items.size(), items.size()+list.size());
           for (size_t i = 0; i < list.size(); ++i) {
-            ROI_Item* roi = new ROI_Item (*list[i]);
-            roi->load (*list[i]);
+            MRView::GrabContext context;
+            ROI_Item* roi = new ROI_Item (std::move (*list[i]));
+            roi->load ();
             items.push_back (std::unique_ptr<Displayable> (roi));
           }
           endInsertRows();
         }
 
-        void ROI_Model::create (MR::Image::Header& image)
+        void ROI_Model::create (MR::Header&& image)
         {
           beginInsertRows (QModelIndex(), items.size(), items.size()+1);
-          ROI_Item* roi = new ROI_Item (image);
-          roi->zero ();
-          items.push_back (std::unique_ptr<Displayable> (roi));
+          {
+            MRView::GrabContext context;
+            ROI_Item* roi = new ROI_Item (std::move (image));
+            roi->zero ();
+            items.push_back (std::unique_ptr<Displayable> (roi));
+          }
           endInsertRows();
         }
 

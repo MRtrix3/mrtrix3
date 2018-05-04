@@ -1,0 +1,22 @@
+<svg height="48" version="1.1" width="48" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <linearGradient id="a">
+    <stop offset="0" stop-color="#0f0"/>
+    <stop offset=".5" stop-color="#c0c000"/>
+    <stop offset="1" stop-color="#af0000"/>
+  </linearGradient>
+  <linearGradient id="b" gradientUnits="userSpaceOnUse" x1="24.769655" x2="50.899273" xlink:href="#a" y1="1027.1742" y2="1038.0021"/>
+  <linearGradient id="c" gradientUnits="userSpaceOnUse" x1="48.192299" x2="27.476627" y1="1044.5344" y2="1020.6418">
+    <stop offset="0"/>
+    <stop offset="1" stop-color="#808080"/>
+  </linearGradient>
+  <linearGradient id="d" gradientUnits="userSpaceOnUse" x1="24.769655" x2="55.677811" xlink:href="#a" y1="1027.1742" y2="1033.8589"/>
+  <g fill="none" stroke-linecap="round" stroke-width="2" transform="translate(0 -1004.3622)">
+    <path d="m 30 1042.3622 l -20 0" stroke="#f00"/>
+    <path d="m 10 1042.3622 l 0 -20" stroke="#0f0"/>
+    <path d="m 10 1042.3622 l -5 6" stroke="#00f"/>
+  </g>
+  <g fill="url(#b)" stroke="url(#c)" stroke-width="1.5" transform="matrix(.92393762 .38254316 -.38254316 .92393762 380.05284 -940.52033)">
+    <path d="m 40 1027.3622 c 0 0 4.970417 -5.0001 5 -13 c .02958 -8 -3.000014 -11.9927 -5 -12 c -1.999987 -.01 -4.970417 4 -5 12 c -.02958 8 5 13 5 13 z" fill="url(#d)" fill-rule="evenodd" stroke="#000" stroke-linejoin="round" stroke-width="1.1"/>
+    <path d="m 40.000085 1027.3622 c 0 0 -4.970417 5.0001 -5 13 c -.02958 8 3.000014 11.9927 5 12 c 1.999987 .01 4.970417 -4 5 -12 c .02958 -8 -5 -13 -5 -13 z" fill="url(#b)" fill-rule="evenodd" stroke="#000" stroke-linejoin="round" stroke-width="1.1"/>
+  </g>
+</svg>

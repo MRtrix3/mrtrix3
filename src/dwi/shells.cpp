@@ -1,4 +1,21 @@
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
+
+#include "debug.h"
+
+#include "math/math.h"
 #include "dwi/shells.h"
 
 
@@ -8,39 +25,39 @@ namespace MR
   namespace DWI
   {
 
-
-
-    using namespace App;
-
-    const OptionGroup ShellOption = OptionGroup ("DW Shell selection options")
-      + Option ("shell",
-          "specify one or more diffusion-weighted gradient shells to use during "
-          "processing, as a comma-separated list of the desired approximate b-values. "
-          "Note that some commands are incompatible with multiple shells, and "
-          "will throw an error if more than one b-value are provided.")
-        + Argument ("list").type_sequence_float();
-
-
-
+    const App::OptionGroup ShellsOption = App::OptionGroup ("DW shell selection options")
+      + App::Option ("shells",
+          "specify one or more b-values to use during processing, as a comma-separated list "
+          "of the desired approximate b-values (b-values are clustered to allow for small "
+          "deviations). Note that some commands are incompatible with multiple b-values, "
+          "and will report an error if more than one b-value is provided. \n"
+          "WARNING: note that, even though the b=0 volumes are never referred to as shells "
+          "in the literature, they still have to be explicitly included in the list of "
+          "b-values as provided to the -shell option! Several algorithms which include the "
+          "b=0 volumes in their computations may otherwise return an undesired result.")
+        + App::Argument ("b-values").type_sequence_float();
 
 
 
-    Shell::Shell (const Math::Matrix<float>& grad, const std::vector<size_t>& indices) :
+
+
+
+    Shell::Shell (const Eigen::MatrixXd& grad, const vector<size_t>& indices) :
         volumes (indices),
         mean (0.0),
         stdev (0.0),
-        min (std::numeric_limits<float>::max()),
+        min (std::numeric_limits<default_type>::max()),
         max (0.0)
     {
       assert (volumes.size());
-      for (std::vector<size_t>::const_iterator i = volumes.begin(); i != volumes.end(); i++) {
-        const float b = grad (*i, 3);
+      for (vector<size_t>::const_iterator i = volumes.begin(); i != volumes.end(); i++) {
+        const default_type b = grad (*i, 3);
         mean += b;
         min = std::min (min, b);
         max = std::max (min, b);
       }
-      mean /= float(volumes.size());
-      for (std::vector<size_t>::const_iterator i = volumes.begin(); i != volumes.end(); i++)
+      mean /= default_type(volumes.size());
+      for (vector<size_t>::const_iterator i = volumes.begin(); i != volumes.end(); i++)
         stdev += Math::pow2 (grad (*i, 3) - mean);
       stdev = std::sqrt (stdev / (volumes.size() - 1));
     }
@@ -49,25 +66,49 @@ namespace MR
 
 
 
-
-    Shells& Shells::select_shells (const bool keep_bzero, const bool force_single_shell)
+    // Use to select the shells the user may have requested via the "-shell" option,
+    // and additionally enforce certain constraints related to the presence of shells.
+    //
+    // The optional constraints are:
+    // - force_singleshell: enforces the presence of exactly 1 (no more, no less) non-bzero shell;
+    //                      doesn't influence the presence (or not) of bzeros, i.e., if they're present,
+    //                      they're simply left in.
+    // - force_with_bzero: enforces the presence of bzeros.
+    // - force_without_bzero: enforces the absence of bzeros; typical usecase would be in conjunction
+    //                        with "force_singleshell", to obtain a "pure" single shell.
+    //
+    // When the "-shell" option is present, it is first applied, and next the constraints (if any are requested)
+    // are checked. If any constraint is violated, an error (exception) occurs. The logic is that the user's
+    // "-shell" selection is a conscious choice that should always be honoured, and no unexpected modifications
+    // (e.g. including the bzeros) are made to it.
+    //
+    // When the "-shell" option is not present, by default all shells are included. If constraints are requested,
+    // they are made true for the convenience of the user, if possible (e.g. just selecting the highest b-value
+    // shell if "force_singleshell" is requested, excluding the bzeros if "force_without_bzero" is present, etc.).
+    // However, if they simply can't be made true (e.g. "force_with_bzero" when there are no bzeros in the dataset),
+    // an error (exception) will still occur.
+    //
+    // So long story short: multi-shell (as in "all shells") is default, but constraints can be specified
+    // if strictly required for certain commands or algorithms.
+    Shells& Shells::select_shells (const bool force_singleshell, const bool force_with_bzero, const bool force_without_bzero)
     {
 
       // Easiest way to restrict processing to particular shells is to simply erase
       //   the unwanted shells; makes it command independent
 
-      BitSet to_retain (shells.size(), false);
-      if (keep_bzero && smallest().is_bzero())
-        to_retain[0] = true;
+      if (force_without_bzero && force_with_bzero)
+        throw Exception ("Incompatible constraints: command tries to enforce proceeding both with and without b=0");
 
-      App::Options opt = App::get_options ("shell");
+      BitSet to_retain (count(), false);
+
+      auto opt = App::get_options ("shells");
       if (opt.size()) {
 
-        std::vector<float> desired_bvalues = opt[0][0];
-        if (desired_bvalues.size() > 1 && !(desired_bvalues.front() == 0) && force_single_shell)
-          throw Exception ("Command not compatible with multiple non-zero b-shells");
+        vector<default_type> desired_bvalues = opt[0][0];
+        bool bzero_selected = false;
+        size_t nonbzero_selected_count = 0;
 
-        for (std::vector<float>::const_iterator b = desired_bvalues.begin(); b != desired_bvalues.end(); ++b) {
+        for (vector<default_type>::const_iterator b = desired_bvalues.begin(); b != desired_bvalues.end(); ++b) {
 
           if (*b < 0)
             throw Exception ("Cannot select shells corresponding to negative b-values");
@@ -75,11 +116,16 @@ namespace MR
           // Automatically select a b=0 shell if the requested b-value is zero
           if (*b <= bzero_threshold()) {
 
-            if (smallest().is_bzero()) {
-              to_retain[0] = true;
-              DEBUG ("User requested b-value " + str(*b) + "; got b=0 shell : " + str(smallest().get_mean()) + " +- " + str(smallest().get_stdev()) + " with " + str(smallest().count()) + " volumes");
+            if (has_bzero()) {
+              if (!bzero_selected) {
+                to_retain[0] = true;
+                bzero_selected = true;
+                DEBUG ("User requested b-value " + str(*b) + "; got b=0 shell : " + str(smallest().get_mean()) + " +- " + str(smallest().get_stdev()) + " with " + str(smallest().count()) + " volumes");
+              } else {
+                throw Exception ("User selected b=0 shell more than once");
+              }
             } else {
-              throw Exception ("User selected b=0 shell, but no such data exists");
+              throw Exception ("User selected b=0 shell, but no such data was found");
             }
 
           } else {
@@ -92,71 +138,122 @@ namespace MR
             // * Assume each is a Poisson distribution, see if there's a clear winner
             // Prompt warning if decision is slightly askew, exception if ambiguous
             bool shell_selected = false;
-            for (size_t s = 0; s != shells.size(); ++s) {
+            for (size_t s = 0; s != count(); ++s) {
               if ((*b >= shells[s].get_min()) && (*b <= shells[s].get_max())) {
-                to_retain[s] = true;
-                shell_selected = true;
-                DEBUG ("User requested b-value " + str(*b) + "; got shell " + str(s) + ": " + str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev()) + " with " + str(shells[s].count()) + " volumes");
+                if (!to_retain[s]) {
+                  to_retain[s] = true;
+                  nonbzero_selected_count++;
+                  shell_selected = true;
+                  DEBUG ("User requested b-value " + str(*b) + "; got shell " + str(s) + ": " + str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev()) + " with " + str(shells[s].count()) + " volumes");
+                } else {
+                  throw Exception ("User selected a shell more than once: " + str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev()) + " with " + str(shells[s].count()) + " volumes");
+                }
               }
             }
             if (!shell_selected) {
 
-              // First, check to see if all non-zero shells have a non-zero standard deviation
-              bool zero_stdev = false;
-              for (std::vector<Shell>::const_iterator s = shells.begin(); s != shells.end(); ++s) {
-                if (!s->is_bzero() && !s->get_stdev()) {
-                  zero_stdev = true;
-                  break;
-                }
-              }
-
+              // Check to see if we can unambiguously select a shell based on b-value integer rounding
               size_t best_shell = 0;
-              float best_num_stdevs = std::numeric_limits<float>::max();
               bool ambiguous = false;
-              for (size_t s = 0; s != shells.size(); ++s) {
-                const float num_stdev = std::abs ((*b - shells[s].get_mean()) / (zero_stdev ? std::sqrt (shells[s].get_mean()) : shells[s].get_stdev()));
-                const bool within_range = (num_stdev < (zero_stdev ? 1.0 : 5.0));
-                if (within_range) {
-                  if (!shell_selected) {
-                    best_shell = s;
-                    best_num_stdevs = num_stdev;
+              for (size_t s = 0; s != count(); ++s) {
+                if (abs (*b - shells[s].get_mean()) <= 1.0) {
+                  if (shell_selected) {
+                    ambiguous = true;
                   } else {
-                    // More than one shell plausible; decide whether or not the decision is unambiguous
-                    if (num_stdev < 0.1 * best_num_stdevs) {
-                      best_shell = s;
-                      best_num_stdevs = num_stdev;
-                    } else if (num_stdev < 10.0 * best_num_stdevs) {
-                      ambiguous = true;
-                    } // No need to do anything if the existing selection is significantly better than this shell
+                    best_shell = s;
+                    shell_selected = true;
                   }
                 }
               }
-
-              if (ambiguous) {
-                std::string bvalues;
-                for (size_t s = 0; s != shells.size(); ++s) {
-                  if (bvalues.size())
-                    bvalues += ", ";
-                  bvalues += str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev());
+              if (shell_selected && !ambiguous) {
+                if (!to_retain[best_shell]) {
+                  to_retain[best_shell] = true;
+                  nonbzero_selected_count++;
+                  DEBUG ("User requested b-value " + str(*b) + "; got shell " + str(best_shell) + ": " + str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()) + " with " + str(shells[best_shell].count()) + " volumes");
+                } else {
+                  throw Exception ("User selected a shell more than once: " + str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()) + " with " + str(shells[best_shell].count()) + " volumes");
                 }
-                throw Exception ("Unable to robustly select desired shell b=" + str(*b) + " (detected shells are: " + bvalues + ")");
-              }
+              } else {
 
-              WARN ("User requested shell b=" + str(*b) + "; have selected shell " + str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()));
+                // First, check to see if all non-zero shells have (effectively) non-zero standard deviation
+                // (If one non-zero shell has negligible standard deviation, assume a Poisson distribution for all shells)
+                bool zero_stdev = false;
+                for (vector<Shell>::const_iterator s = shells.begin(); s != shells.end(); ++s) {
+                  if (!s->is_bzero() && s->get_stdev() < 1.0) {
+                    zero_stdev = true;
+                    break;
+                  }
+                }
 
-              to_retain[best_shell] = true;
+                size_t best_shell = 0;
+                default_type best_num_stdevs = std::numeric_limits<default_type>::max();
+                bool ambiguous = false;
+                for (size_t s = 0; s != count(); ++s) {
+                  const default_type stdev = (shells[s].is_bzero() ? 0.5 * bzero_threshold() : (zero_stdev ? std::sqrt (shells[s].get_mean()) : shells[s].get_stdev()));
+                  const default_type num_stdev = abs ((*b - shells[s].get_mean()) / stdev);
+                  if (num_stdev < best_num_stdevs) {
+                    ambiguous = (num_stdev >= 0.1 * best_num_stdevs);
+                    best_shell = s;
+                    best_num_stdevs = num_stdev;
+                  } else {
+                    ambiguous = (num_stdev < 10.0 * best_num_stdevs);
+                  }
+                }
 
-            }
+                if (ambiguous) {
+                  std::string bvalues;
+                  for (size_t s = 0; s != count(); ++s) {
+                    if (bvalues.size())
+                      bvalues += ", ";
+                    bvalues += str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev());
+                  }
+                  throw Exception ("Unable to robustly select desired shell b=" + str(*b) + " (detected shells are: " + bvalues + ")");
+                } else {
+                  WARN ("User requested shell b=" + str(*b) + "; have selected nearby shell " + str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()));
+                  if (!to_retain[best_shell]) {
+                    to_retain[best_shell] = true;
+                    nonbzero_selected_count++;
+                  } else {
+                    throw Exception ("User selected a shell more than once: " + str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()) + " with " + str(shells[best_shell].count()) + " volumes");
+                  }
+                }
+
+              } // End checking if the requested b-value is within 1.0 of a shell mean
+
+            } // End checking if the shell can be selected because of lying within the numerical range of a shell
 
           } // End checking to see if requested shell is b=0
 
         } // End looping over list of requested b-value shells
 
+        if (force_singleshell && nonbzero_selected_count != 1)
+          throw Exception ("User selected " + str(nonbzero_selected_count) + " non b=0 shells, but the command requires single-shell data");
+
+        if (force_with_bzero && !bzero_selected)
+          throw Exception ("User did not select b=0 shell, but the command requires the presence of b=0 data");
+
+        if (force_without_bzero && bzero_selected)
+          throw Exception ("User selected b=0 shell, but the command is not compatible with b=0 data");
+
       } else {
 
-        if (force_single_shell && !is_single_shell())
-          WARN ("Multiple non-zero b-value shells detected; automatically selecting b=" + str(largest().get_mean()) + " with " + str(largest().count()) + " volumes");
-        to_retain[shells.size()-1] = true;
+        if (force_singleshell && !is_single_shell()) {
+          if (count() == 1 && has_bzero())
+            throw Exception ("No non b=0 data found, but the command requires a non b=0 shell");
+          WARN ("Multiple non-zero b-value shells detected, automatically selecting largest b-value: b=" + str(largest().get_mean()) + " with " + str(largest().count()) + " volumes");
+          to_retain[count()-1] = true;
+          if (has_bzero())
+            to_retain[0] = true;
+        } else {
+          // default: keep everything
+          to_retain.clear (true);
+        }
+
+        if (force_with_bzero && !has_bzero())
+          throw Exception ("No b=0 data found, but the command requires the presence of b=0 data");
+
+        if (force_without_bzero && has_bzero())
+          to_retain[0] = false;
 
       }
 
@@ -166,8 +263,8 @@ namespace MR
       }
 
       // Erase the unwanted shells
-      std::vector<Shell> new_shells;
-      for (size_t s = 0; s != shells.size(); ++s) {
+      vector<Shell> new_shells;
+      for (size_t s = 0; s != count(); ++s) {
         if (to_retain[s])
           new_shells.push_back (shells[s]);
       }
@@ -181,7 +278,7 @@ namespace MR
 
     Shells& Shells::reject_small_shells (const size_t min_volumes)
     {
-      for (std::vector<Shell>::iterator s = shells.begin(); s != shells.end();) {
+      for (vector<Shell>::iterator s = shells.begin(); s != shells.end();) {
         if (!s->is_bzero() && s->count() < min_volumes)
           s = shells.erase (s);
         else
@@ -193,18 +290,18 @@ namespace MR
 
 
 
-    void Shells::initialise (const Math::Matrix<float>& grad)
+    Shells::Shells (const Eigen::MatrixXd& grad)
     {
-      BValueList bvals (grad.column (3));
-      std::vector<size_t> clusters (bvals.size(), 0);
+      BValueList bvals = grad.col (3);
+      vector<size_t> clusters (bvals.size(), 0);
       const size_t num_shells = clusterBvalues (bvals, clusters);
 
-      if ((num_shells < 1) || (num_shells > std::sqrt (float(grad.rows()))))
-        throw Exception ("Gradient encoding matrix does not represent a HARDI sequence");
+      if ((num_shells < 1) || (num_shells > std::sqrt (default_type(grad.rows()))))
+        throw Exception ("DWI volumes could not be classified into b-value shells; gradient encoding may not represent a HARDI sequence");
 
       for (size_t shellIdx = 0; shellIdx <= num_shells; shellIdx++) {
 
-        std::vector<size_t> volumes;
+        vector<size_t> volumes;
         for (size_t volumeIdx = 0; volumeIdx != clusters.size(); ++volumeIdx) {
           if (clusters[volumeIdx] == shellIdx)
             volumes.push_back (volumeIdx);
@@ -232,7 +329,7 @@ namespace MR
       } else {
         INFO ("Diffusion gradient encoding data clustered into " + str(num_shells) + " shells (no b=0 volumes)");
       }
-      DEBUG ("Shells: b = { " + 
+      DEBUG ("Shells: b = { " +
           str ([&]{ std::string m; for (auto& s : shells) m += str(s.get_mean()) + "(" + str(s.count()) + ") "; return m; }())
           + "}");
     }
@@ -240,17 +337,17 @@ namespace MR
 
 
 
-    size_t Shells::clusterBvalues (const BValueList& bvals, std::vector<size_t>& clusters) const
+    size_t Shells::clusterBvalues (const BValueList& bvals, vector<size_t>& clusters) const
     {
       BitSet visited (bvals.size(), false);
       size_t clusterIdx = 0;
 
-      for (size_t ii = 0; ii != bvals.size(); ii++) {
+      for (ssize_t ii = 0; ii != bvals.size(); ii++) {
         if (!visited[ii]) {
 
           visited[ii] = true;
-          const float b = bvals[ii];
-          std::vector<size_t> neighborIdx;
+          const default_type b = bvals[ii];
+          vector<size_t> neighborIdx;
           regionQuery (bvals, b, neighborIdx);
 
           if (b > bzero_threshold() && neighborIdx.size() < DWI_SHELLS_MIN_LINKAGE) {
@@ -263,7 +360,7 @@ namespace MR
             for (size_t i = 0; i < neighborIdx.size(); i++) {
               if (!visited[neighborIdx[i]]) {
                 visited[neighborIdx[i]] = true;
-                std::vector<size_t> neighborIdx2;
+                vector<size_t> neighborIdx2;
                 regionQuery (bvals, bvals[neighborIdx[i]], neighborIdx2);
                 if (neighborIdx2.size() >= DWI_SHELLS_MIN_LINKAGE)
                   for (size_t j = 0; j != neighborIdx2.size(); j++)
@@ -283,10 +380,10 @@ namespace MR
 
 
 
-    void Shells::regionQuery (const BValueList& bvals, const float b, std::vector<size_t>& idx) const
+    void Shells::regionQuery (const BValueList& bvals, const default_type b, vector<size_t>& idx) const
     {
-      for (size_t i = 0; i < bvals.size(); i++) {
-        if (std::abs (b - bvals[i]) < DWI_SHELLS_EPSILON)
+      for (ssize_t i = 0; i < bvals.size(); i++) {
+        if (abs (b - bvals[i]) < DWI_SHELLS_EPSILON)
           idx.push_back (i);
       }
     }

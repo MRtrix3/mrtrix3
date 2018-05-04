@@ -1,25 +1,16 @@
 /*
-    Copyright 2013 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert Smith, 2013.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
-
 
 
 #ifndef __dwi_tractography_connectome_streamline_h__
@@ -39,17 +30,32 @@ namespace Connectome {
 
 
 
-class Streamline : public Tractography::Streamline<float>
-{
+class Streamline_nodepair : public Tractography::Streamline<>
+{ MEMALIGN(Streamline_nodepair)
   public:
-    Streamline() : Tractography::Streamline<float>(), nodes (std::make_pair (0, 0)) { }
-    Streamline (const size_t i) : Tractography::Streamline<float> (i), nodes (std::make_pair (0, 0)) { }
+    Streamline_nodepair() : Tractography::Streamline<>(), nodes (std::make_pair (0, 0)) { }
+    Streamline_nodepair (const size_t i) : Tractography::Streamline<> (i), nodes (std::make_pair (0, 0)) { }
 
     void set_nodes (const NodePair& i) { nodes = i; }
     const NodePair& get_nodes() const { return nodes; }
 
   private:
     NodePair nodes;
+};
+
+
+
+class Streamline_nodelist : public Tractography::Streamline<>
+{ MEMALIGN(Streamline_nodelist)
+  public:
+    Streamline_nodelist() : Tractography::Streamline<>(), nodes () { }
+    Streamline_nodelist (const size_t i) : Tractography::Streamline<> (i), nodes () { }
+
+    void set_nodes (const vector<node_t>& i) { nodes = i; }
+    const vector<node_t>& get_nodes() const { return nodes; }
+
+  private:
+    vector<node_t> nodes;
 };
 
 

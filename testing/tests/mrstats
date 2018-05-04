@@ -1,0 +1,2 @@
+mrstats dwi.mif -output mean -output median -output std -output min -output max -output count > tmp.txt && testing_diff_matrix tmp.txt mrstats/out.txt -frac 1e-5
+mrstats dwi.mif -output mean -output median -output std -output min -output max -output count -mask mask.mif > tmp.txt && testing_diff_matrix tmp.txt mrstats/masked.txt -frac 1e-5

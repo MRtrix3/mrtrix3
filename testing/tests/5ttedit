@@ -1,0 +1,2 @@
+5ttedit SIFT_phantom/5tt.mif - -cgm 5ttedit/in0.mif -sgm 5ttedit/in1.mif -wm 5ttedit/in2.mif -csf 5ttedit/in3.mif -path 5ttedit/in4.mif -none 5ttedit/none.mif | testing_diff_image - 5ttedit/out.mif
+

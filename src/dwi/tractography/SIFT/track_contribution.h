@@ -1,36 +1,28 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert Smith, 2011.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
-
 
 
 #ifndef __dwi_tractography_sift_track_contribution_h__
 #define __dwi_tractography_sift_track_contribution_h__
 
 
-#include <stdint.h>
+#include <cstdint>
 
+#include "header.h"
 #include "min_mem_array.h"
 
-#include "image/info.h"
+#include "math/math.h"
 
 
 namespace MR
@@ -46,9 +38,10 @@ namespace MR
 
 
       class Track_fixel_contribution
-      {
+      { MEMALIGN(Track_fixel_contribution)
         public:
-          Track_fixel_contribution (const uint32_t fixel_index, const float length) {
+          Track_fixel_contribution (const uint32_t fixel_index, const float length)
+          {
             const uint32_t length_as_int = std::min (uint32_t(255), uint32_t(std::round (scale_to_storage * length)));
             data = (fixel_index & 0x00FFFFFF) | (length_as_int << 24);
           }
@@ -73,9 +66,9 @@ namespace MR
           }
 
 
-          static void set_scaling (const Image::Info& in)
+          static void set_scaling (const Header& H)
           {
-            const float max_length = std::sqrt (Math::pow2 (in.vox(0)) + Math::pow2 (in.vox(1)) + Math::pow2 (in.vox(2)));
+            const float max_length = std::sqrt (Math::pow2 (H.spacing(0)) + Math::pow2 (H.spacing(1)) + Math::pow2 (H.spacing(2)));
             // TODO Newer mapping performs chordal approximation of length
             // Should technically take this into account when setting scaling
             scale_to_storage = 255.0 / max_length;
@@ -102,7 +95,7 @@ namespace MR
 // This is a 'safe' version of Track_fixel_contribution that does not use byte-sharing, but requires double the RAM
 // Simply comment the class above and un-comment this one to use
 class Track_fixel_contribution
-{
+{ MEMALIGN(Track_fixel_contribution)
   public:
     Track_fixel_contribution (const uint32_t fixel_index, const float length) :
       fixel (fixel_index),
@@ -135,28 +128,26 @@ class Track_fixel_contribution
 
 
       class TrackContribution : public Min_mem_array<Track_fixel_contribution>
-      {
+      { MEMALIGN(TrackContribution)
 
         public:
-        TrackContribution (const std::vector<Track_fixel_contribution>& in, const float c, const float l) :
-          Min_mem_array<Track_fixel_contribution> (in),
-          total_contribution (c),
-          total_length       (l) { }
+        TrackContribution (const vector<Track_fixel_contribution>& in, const float c, const float l) :
+            Min_mem_array<Track_fixel_contribution> (in),
+            total_contribution (c),
+            total_length       (l) { }
 
         TrackContribution () :
-          Min_mem_array<Track_fixel_contribution> (),
-          total_contribution (0.0),
-          total_length       (0.0) { }
+            Min_mem_array<Track_fixel_contribution> (),
+            total_contribution (0.0),
+            total_length       (0.0) { }
 
         ~TrackContribution() { }
 
         float get_total_contribution() const { return total_contribution; }
         float get_total_length      () const { return total_length; }
 
-
         private:
-        const float total_contribution, total_length;
-
+          const float total_contribution, total_length;
 
       };
 

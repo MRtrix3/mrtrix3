@@ -1,100 +1,92 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-    Written by Robert E. Smith, 2013.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
+#include "image.h"
 #include "progressbar.h"
 
-#include "image/buffer.h"
-#include "image/buffer_sparse.h"
-#include "image/loop.h"
-#include "image/voxel.h"
-
-#include "image/sparse/fixel_metric.h"
-#include "image/sparse/voxel.h"
+#include "algo/loop.h"
 
 #include "math/SH.h"
 
-
-
+#include "fixel/helpers.h"
+#include "fixel/keys.h"
+#include "fixel/loop.h"
 
 using namespace MR;
 using namespace App;
 
 
 
-using Image::Sparse::FixelMetric;
-
-
-
 void usage ()
 {
 
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au) & David Raffelt (david.raffelt@florey.edu.au)";
+
+  SYNOPSIS = "Convert a fixel-based sparse-data image into an spherical harmonic image";
+
   DESCRIPTION
-  + "convert a fixel-based sparse-data image into an SH image that can be visually evaluated using MRview";
+  + "This command generates spherical harmonic data from fixels "
+    "that can be visualised using the ODF tool in MRview. The output ODF lobes "
+    "are scaled according to the values in the input fixel image.";
 
   ARGUMENTS
-  + Argument ("fixel_in", "the input sparse fixel image.").type_image_in ()
+  + Argument ("fixel_in", "the input fixel data file.").type_image_in ()
   + Argument ("sh_out",   "the output sh image.").type_image_out ();
 
+  OPTIONS
+  + Option ("lmax", "set the maximum harmonic order for the output series (Default: 8)")
+  +   Argument ("order").type_integer (0, 30);
 }
-
-
 
 
 void run ()
 {
+  auto in_data_image = Fixel::open_fixel_data_file<float> (argument[0]);
 
-  Image::Header H_in (argument[0]);
-  Image::BufferSparse<FixelMetric> fixel_data (H_in);
-  auto fixel = fixel_data.voxel();
+  Header in_index_header = Fixel::find_index_header (Fixel::get_fixel_directory (argument[0]));
+  auto in_index_image =in_index_header.get_image<uint32_t>();
+  auto in_directions_image = Fixel::find_directions_header (Fixel::get_fixel_directory (argument[0])).get_image<float>().with_direct_io();
 
-  const size_t lmax = 8;
-  const ssize_t n = Math::SH::NforL (lmax);
-  Math::SH::aPSF<float> aPSF (lmax);
+  size_t lmax = 8;
+  auto opt = get_options ("lmax");
+  if (opt.size())
+    lmax = opt[0][0];
+  const size_t n_sh_coeff = Math::SH::NforL (lmax);
+  Math::SH::aPSF<default_type> aPSF (lmax);
 
-  Image::Header H_out (H_in);
-  H_out.datatype() = DataType::Float32;
-  H_out.datatype().set_byte_order_native();
-  const size_t sh_dim = H_in.ndim();
-  H_out.set_ndim (H_in.ndim() + 1);
-  H_out.dim (sh_dim) = n;
+  Header out_header (in_index_header);
+  out_header.datatype() = DataType::Float32;
+  out_header.datatype().set_byte_order_native();
+  out_header.ndim() = 4;
+  out_header.size (3) = n_sh_coeff;
 
-  Image::Buffer<float> sh_data (argument[1], H_out);
-  auto sh = sh_data.voxel();
-  std::vector<float> values;
-  Math::Vector<float> apsf_values;
+  auto sh_image = Image<float>::create (argument[1], out_header);
+  vector<default_type> sh_values;
+  Eigen::Matrix<default_type, Eigen::Dynamic, 1> apsf_values;
 
-  Image::LoopInOrder loop (fixel, "converting sparse fixel data to SH image... ");
-  for (auto l = loop (fixel, sh); l; ++l) {
-    values.assign (n, float(0.0));
-    for (size_t index = 0; index != fixel.value().size(); ++index) {
-      apsf_values = aPSF (apsf_values, fixel.value()[index].dir);
-      const float scale_factor = fixel.value()[index].value;
-      for (ssize_t i = 0; i != n; ++i)
-        values[i] += apsf_values[i] * scale_factor;
+  for (auto l1 = Loop ("converting fixel image to spherical harmonic image", in_index_image) (in_index_image, sh_image); l1; ++l1) {
+    sh_values.assign (n_sh_coeff, 0.0);
+    for (auto f = Fixel::Loop (in_index_image) (in_directions_image, in_data_image); f; ++f) {
+      apsf_values = aPSF (apsf_values, in_directions_image.row(1));
+      const default_type scale_factor = in_data_image.value();
+      for (size_t i = 0; i != n_sh_coeff; ++i)
+        sh_values[i] += apsf_values[i] * scale_factor;
     }
-    for (sh[sh_dim] = 0; sh[sh_dim] != n; ++sh[sh_dim])
-      sh.value() = values[sh[sh_dim]];
+    for (auto l2 = Loop (3) (sh_image); l2; ++l2)
+      sh_image.value() = sh_values[sh_image.index(3)];
   }
-
 }
 

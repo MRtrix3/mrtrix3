@@ -1,32 +1,24 @@
 /*
-   Copyright 2014 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-   Written by Robert E. Smith, 2015.
 
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
-
+#include "gui/mrview/window.h"
 #include "gui/mrview/tool/connectome/node.h"
 
-#include <vector>
-
 #include "exception.h"
-
-#include "mesh/vox2mesh.h"
+#include "types.h"
+#include "gui/mrview/window.h"
 
 namespace MR
 {
@@ -40,13 +32,13 @@ namespace MR
 
 
 
-        Node::Node (const Point<float>& com, const size_t vol, const size_t pixheight, std::shared_ptr< MR::Image::BufferScratch<bool> >& image) :
+        Node::Node (const Eigen::Vector3f& com, const size_t vol, const size_t pixheight, const MR::Image<bool>& image) :
             centre_of_mass (com),
             volume (vol),
             mask (image),
-            name (image->name()),
+            name (image.name()),
             size (1.0f),
-            colour (0.5f, 0.5f, 0.5f),
+            colour { 0.5f, 0.5f, 0.5f },
             alpha (1.0f),
             visible (true),
             pixmap (pixheight, pixheight)
@@ -58,7 +50,7 @@ namespace MR
             centre_of_mass (),
             volume (0),
             size (0.0f),
-            colour (0.0f, 0.0f, 0.0f),
+            colour { 0.0f, 0.0f, 0.0f },
             alpha (0.0f),
             visible (false),
             pixmap (12, 12)
@@ -76,10 +68,13 @@ namespace MR
 
 
 
-        Node::Mesh::Mesh (MR::Mesh::Mesh& in) :
+        Node::Mesh::Mesh (MR::Surface::Mesh& in) :
             count (3 * in.num_triangles())
         {
-          std::vector<float> vertices;
+          MRView::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+
+          vector<float> vertices;
           vertices.reserve (3 * in.num_vertices());
           for (size_t v = 0; v != in.num_vertices(); ++v) {
             for (size_t axis = 0; axis != 3; ++axis)
@@ -92,7 +87,7 @@ namespace MR
 
           if (!in.have_normals())
             in.calculate_normals();
-          std::vector<float> normals;
+          vector<float> normals;
           normals.reserve (3 * in.num_vertices());
           for (size_t n = 0; n != in.num_vertices(); ++n) {
             for (size_t axis = 0; axis != 3; ++axis)
@@ -112,7 +107,7 @@ namespace MR
           gl::EnableVertexAttribArray (1);
           gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
 
-          std::vector<unsigned int> indices;
+          vector<unsigned int> indices;
           indices.reserve (3 * in.num_triangles());
           for (size_t i = 0; i != in.num_triangles(); ++i) {
             for (size_t v = 0; v != 3; ++v)
@@ -122,6 +117,7 @@ namespace MR
           index_buffer.bind();
           if (indices.size())
             gl::BufferData (gl::ELEMENT_ARRAY_BUFFER, indices.size() * sizeof (unsigned int), &indices[0], gl::STATIC_DRAW);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
         Node::Mesh::Mesh (Mesh&& that) :
@@ -134,8 +130,14 @@ namespace MR
           that.count = 0;
         }
 
-        Node::Mesh::Mesh () :
-            count (0) { }
+        Node::Mesh::~Mesh()
+        {
+          MRView::GrabContext context;
+          vertex_buffer.clear();
+          normal_buffer.clear();
+          vertex_array_object.clear();
+          index_buffer.clear();
+        }
 
         Node::Mesh& Node::Mesh::operator= (Node::Mesh&& that)
         {
@@ -150,11 +152,13 @@ namespace MR
         void Node::Mesh::render() const
         {
           assert (count);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           vertex_buffer.bind (gl::ARRAY_BUFFER);
           normal_buffer.bind (gl::ARRAY_BUFFER);
           vertex_array_object.bind();
           index_buffer.bind();
           gl::DrawElements (gl::TRIANGLES, count, gl::UNSIGNED_INT, (void*)0);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 

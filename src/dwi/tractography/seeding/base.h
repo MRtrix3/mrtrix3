@@ -1,58 +1,51 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert E. Smith, 2012.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
 
 #ifndef __dwi_tractography_seeding_base_h__
 #define __dwi_tractography_seeding_base_h__
 
 
+#include "image.h"
 #include "file/path.h"
-#include "point.h"
-
-#include "image/threaded_loop.h"
-#include "image/voxel.h"
-
-#include "math/rng.h"
+#include "algo/threaded_loop.h"
 
 
 
 // These constants set how many times a tracking algorithm should attempt to propagate
 //   from a given seed point, based on the mechanism used to provide the seed point
 //
+// Update 12/03/2017: By default a greater number of attempts will be made to
+//   find an appropriate direction in which to initiate tracking from all
+//   seeding mechanisms
+//
 // Mechanisms that provide random seed locations
-#define MAX_TRACKING_SEED_ATTEMPTS_RANDOM 1
+#define MAX_TRACKING_SEED_ATTEMPTS_RANDOM 1000
 //
 // Dynamic seeding also provides the mean direction of the fixel, so only a small number of
 //   attempts should be required to find a direction above the FOD amplitude threshold;
 //   this will however depend on this threshold as well as the angular threshold
-#define MAX_TRACKING_SEED_ATTEMPTS_DYNAMIC 50
+#define MAX_TRACKING_SEED_ATTEMPTS_DYNAMIC 1000
 //
 // GM-WM interface seeding incurs a decent overhead when generating the seed points;
 //   therefore want to make maximal use of each seed point generated, bearing in mind that
 //   the FOD amplitudes may be small there.
-#define MAX_TRACKING_SEED_ATTEMPTS_GMWMI 300
+#define MAX_TRACKING_SEED_ATTEMPTS_GMWMI 1000
 //
 // Mechanisms that provide a fixed number of seed points; hence the maximum effort should
 //   be made to find an appropriate tracking direction from every seed point provided
-#define MAX_TRACKING_SEED_ATTEMPTS_FIXED 5000
+#define MAX_TRACKING_SEED_ATTEMPTS_FIXED 1000
 
 
 
@@ -69,32 +62,30 @@ namespace MR
 
 
 
-      template <typename T>
-      uint32_t get_count (T& data)
+      template <class ImageType>
+      uint32_t get_count (ImageType& data)
       {
-        auto vox = data.voxel();
         std::atomic<uint32_t> count (0);
-        Image::ThreadedLoop (vox).run ([&] (decltype(vox)& v) { if (v.value()) count.fetch_add (1, std::memory_order_relaxed); }, vox);
+        ThreadedLoop (data).run ([&] (ImageType& v) { if (v.value()) count.fetch_add (1, std::memory_order_relaxed); }, data);
         return count;
       }
 
 
-      template <typename T>
-      float get_volume (T& data)
+      template <class ImageType>
+      float get_volume (ImageType& data)
       {
-        auto vox = data.voxel();
-        std::atomic<float> volume (0.0f);
-        Image::ThreadedLoop (vox).run (
-            [&] (decltype(vox)& v) {
-              const float value = v.value();
+        std::atomic<default_type> volume (0.0);
+        ThreadedLoop (data).run (
+            [&] (decltype(data)& v) {
+              const typename ImageType::value_type value = v.value();
               if (value) {
-                float current = volume.load (std::memory_order_relaxed);
-                float target;
+                default_type current = volume.load (std::memory_order_relaxed);
+                default_type target;
                 do {
                   target = current + value;
                 } while (!volume.compare_exchange_weak (current, target, std::memory_order_relaxed));
               }
-            }, vox);
+            }, data);
         return volume;
       }
 
@@ -102,7 +93,7 @@ namespace MR
 
 
       // Common interface for providing streamline seeds
-      class Base {
+      class Base { MEMALIGN(Base)
 
         public:
           Base (const std::string& in, const std::string& desc, const size_t attempts) :
@@ -114,15 +105,15 @@ namespace MR
 
           virtual ~Base() { }
 
-          float vol() const { return volume; }
+          default_type vol() const { return volume; }
           uint32_t num() const { return count; }
           bool is_finite() const { return count; }
           const std::string& get_type() const { return type; }
           const std::string& get_name() const { return name; }
           size_t get_max_attempts() const { return max_attempts; }
 
-          virtual bool get_seed (Point<float>&) { throw Exception ("Calling empty virtual function Seeder_base::get_seed()!"); return false; }
-          virtual bool get_seed (Point<float>& p, Point<float>&) { return get_seed (p); }
+          virtual bool get_seed (Eigen::Vector3f&) const = 0;
+          virtual bool get_seed (Eigen::Vector3f& p, Eigen::Vector3f&) { return get_seed (p); }
 
           friend inline std::ostream& operator<< (std::ostream& stream, const Base& B) {
             stream << B.name;
@@ -134,9 +125,7 @@ namespace MR
           // Finite seeds are defined by the number of seeds; non-limited are defined by volume
           float volume;
           uint32_t count;
-          // These are not used by all possible seed classes, but it's easier to have them within the base class anyway
-          Math::RNG::Uniform<float> rng;
-          std::mutex mutex;
+          mutable std::mutex mutex;
           const std::string type; // Text describing the type of seed this is
 
         private:

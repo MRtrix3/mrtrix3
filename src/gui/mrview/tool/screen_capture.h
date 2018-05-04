@@ -1,31 +1,29 @@
 /*
-   Copyright 2013 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-   Written by David Raffelt 10/04/2013
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #ifndef __gui_mrview_tool_screen_capture_h__
 #define __gui_mrview_tool_screen_capture_h__
 
+#include <deque>
+
+#include "math/versor.h"
+
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
-#include <deque>
+#include "gui/mrview/spin_box.h"
+
 
 namespace MR
 {
@@ -41,10 +39,10 @@ namespace MR
 
 
         class Capture : public Base
-        {
+        { MEMALIGN(Capture)
           Q_OBJECT
           public:
-            Capture (Window& main_window, Dock* parent);
+            Capture (Dock* parent);
             virtual ~Capture() {}
 
             static void add_commandline_options (MR::App::OptionList& options);
@@ -62,24 +60,25 @@ namespace MR
             void on_restore_capture_state ();
 
           private:
-            enum RotationType { World, Eye } rotation_type;
+            enum RotationType { World = 0, Eye, Image } rotation_type;
             QComboBox *rotation_type_combobox;
             AdjustButton *rotation_axis_x;
             AdjustButton *rotation_axis_y;
             AdjustButton *rotation_axis_z;
             AdjustButton *degrees_button;
 
-            enum TranslationType { Voxel, Scanner } translation_type;
+            enum TranslationType { Voxel = 0, Scanner, Camera } translation_type;
+
             QComboBox* translation_type_combobox;
             AdjustButton *translate_x;
             AdjustButton *translate_y;
             AdjustButton *translate_z;
 
-            QSpinBox *target_volume;
+            SpinBox *target_volume;
             AdjustButton *FOV_multipler;
-            QSpinBox *start_index;
-            QSpinBox *frames;
-            QSpinBox *volume_axis;
+            SpinBox *start_index;
+            SpinBox *frames;
+            SpinBox *volume_axis;
             QLineEdit *prefix_textbox;
             QPushButton *folder_button;
             int axis;
@@ -87,16 +86,16 @@ namespace MR
 
             bool is_playing;
 
-            class CaptureState {
+            class CaptureState { MEMALIGN(CaptureState)
               public:
-                Math::Versor<float> orientation;
-                Point<> focus, target;
+                Math::Versorf orientation;
+                Eigen::Vector3f focus, target;
                 float fov;
                 size_t volume, volume_axis;
                 size_t frame_index;
                 int plane;
-                CaptureState(const Math::Versor<float> &orientation,
-                  const Point<> &focus, const Point<> &target, float fov,
+                CaptureState(const Math::Versorf& orientation,
+                  const Eigen::Vector3f& focus, const Eigen::Vector3f& target, float fov,
                   size_t volume, size_t volume_axis,
                   size_t frame_index, int plane)
                   : orientation(orientation), focus(focus), target(target), fov(fov),

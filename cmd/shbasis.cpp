@@ -1,43 +1,29 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-    Written by Robert E. Smith, 06/02/14.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
-
-
-#include <vector>
-
-#include <gsl/gsl_fit.h>
 
 #include "app.h"
 #include "bitset.h"
 #include "command.h"
 #include "datatype.h"
-#include "progressbar.h"
+#include "header.h"
+#include "image.h"
 #include "memory.h"
+#include "progressbar.h"
+#include "types.h"
 
-#include "image/buffer.h"
-#include "image/buffer_scratch.h"
-#include "image/header.h"
-#include "image/loop.h"
-#include "image/utils.h"
-#include "image/voxel.h"
+#include "algo/loop.h"
 
 #include "math/SH.h"
 
@@ -46,29 +32,31 @@ using namespace MR;
 using namespace App;
 
 
-const char* conversions[] = { "old", "new", "native", "force_oldtonew", "force_newtoold", NULL };
+const char* conversions[] = { "old", "new", "force_oldtonew", "force_newtoold", nullptr };
 enum conv_t { NONE, OLD, NEW, FORCE_OLDTONEW, FORCE_NEWTOOLD };
 
 
 void usage ()
 {
 
-  AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
+  SYNOPSIS = "Examine the values in spherical harmonic images to estimate (and optionally change) the SH basis used";
 
   DESCRIPTION
-    + "examine the values in spherical harmonic images to estimate (and optionally change) the SH basis used."
-
     + "In previous versions of MRtrix, the convention used for storing spherical harmonic "
       "coefficients was a non-orthonormal basis (the m!=0 coefficients were a factor of "
-      "sqrt(2) too large). This error has been rectified in the new MRtrix (assuming that "
-      "compilation was performed without the USE_NON_ORTHONORMAL_SH_BASIS symbol defined), "
+      "sqrt(2) too large). This error has been rectified in newer versions of MRtrix, "
       "but will cause issues if processing SH data that was generated using an older version "
       "of MRtrix (or vice-versa)."
 
     + "This command provides a mechanism for testing the basis used in storage of image data "
       "representing a spherical harmonic series per voxel, and allows the user to forcibly "
-      "modify the raw image data to conform to the desired basis.";
+      "modify the raw image data to conform to the desired basis."
+
+    + "Note that the \"force_*\" conversion choices should only be used in cases where this "
+      "command has previously been unable to automatically determine the SH basis from the "
+      "image data, but the user themselves are confident of the SH basis of the data.";
 
 
   ARGUMENTS
@@ -76,12 +64,8 @@ void usage ()
 
 
   OPTIONS
-    + Option ("convert", "convert the image data in-place to the desired basis (if necessary). "
-                         "Options are: old, new, native (whichever basis MRtrix is compiled for; "
-                         "most likely the new orthonormal basis), force_oldtonew, force_newtoold. "
-                         "Note that for the \"force_*\" choices should ideally only be used in "
-                         "cases where the command is unable to automatically determine the SH basis "
-                         "using the existing image data.")
+    + Option ("convert", "convert the image data in-place to the desired basis; "
+                         "options are: " + join(conversions, ",") + ".")
       + Argument ("mode").type_choice (conversions);
 
 }
@@ -92,22 +76,18 @@ void usage ()
 
 // Perform a linear regression on the power ratio in each order
 // Omit l=2 - tends to be abnormally small due to non-isotropic brain-wide fibre distribution
-// Use this to project the power ratio at either l=0 or l=lmax (depending on the gradient);
-//   this has proven to be a better predictor of SH basis for poor data
-// Also, if the regression has a substantial gradient, warn the user
-// Threshold on gradient will depend on the basis of the image
-//
-std::pair<float, float> get_regression (const std::vector<float>& ratios)
+std::pair<float, float> get_regression (const vector<float>& ratios)
 {
   const size_t n = ratios.size() - 1;
-  double x[n], y[n];
+  Eigen::VectorXf Y (n), b (2);
+  Eigen::MatrixXf A (n, 2);
   for (size_t i = 1; i != ratios.size(); ++i) {
-    x[i-1] = (2*i)+2;
-    y[i-1] = ratios[i];
+    Y[i-1] = ratios[i];
+    A(i-1,0) = 1.0f;
+    A(i-1,1) = (2*i)+2;
   }
-  double c0, c1, cov00, cov01, cov11, sumsq;
-  gsl_fit_linear (x, 1, y, 1, n, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
-  return std::make_pair (c0, c1);
+  b = (A.transpose() * A).ldlt().solve (A.transpose() * Y);
+  return std::make_pair (b[0], b[1]);
 }
 
 
@@ -115,75 +95,71 @@ std::pair<float, float> get_regression (const std::vector<float>& ratios)
 
 
 template <typename value_type>
-void check_and_update (Image::Header& H, const conv_t conversion)
+void check_and_update (Header& H, const conv_t conversion)
 {
 
-  const size_t lmax = Math::SH::LforN (H.dim(3));
+  const size_t N = H.size(3);
+  const size_t lmax = Math::SH::LforN (N);
 
   // Flag which volumes are m==0 and which are not
-  const ssize_t N = H.dim(3);
   BitSet mzero_terms (N, false);
   for (size_t l = 2; l <= lmax; l += 2)
     mzero_terms[Math::SH::index (l, 0)] = true;
 
   // Open in read-write mode if there's a chance of modification
-  typename Image::Buffer<value_type> buffer (H, (conversion != NONE));
-  auto v = buffer.voxel();
+  auto image = H.get_image<value_type> (true);
 
   // Need to mask out voxels where the DC term is zero
-  Image::Info info_mask (H);
-  info_mask.set_ndim (3);
-  info_mask.datatype() = DataType::Bit;
-  Image::BufferScratch<bool> mask (info_mask);
-  auto v_mask = mask.voxel();
+  Header header_mask (H);
+  header_mask.ndim() = 3;
+  header_mask.datatype() = DataType::Bit;
+  auto mask = Image<bool>::scratch (header_mask);
   size_t voxel_count = 0;
   {
-    Image::LoopInOrder loop (v, "Masking image based on DC term...", 0, 3);
-    for (auto i = loop (v, v_mask); i; ++i) {
-      const value_type value = v.value();
+    for (auto i = Loop ("Masking image based on DC term", image, 0, 3) (image, mask); i; ++i) {
+      const value_type value = image.value();
       if (value && std::isfinite (value)) {
-        v_mask.value() = true;
+        mask.value() = true;
         ++voxel_count;
       } else {
-        v_mask.value() = false;
+        mask.value() = false;
       }
     }
   }
 
   // Get sums independently for each l
- 
+
   // Each order has a different power, and a different number of m!=0 volumes.
   // Therefore, calculate the mean-square intensity for the m==0 and m!=0
   // volumes independently, and report ratio for each harmonic order
   std::unique_ptr<ProgressBar> progress;
   if (App::log_level > 0 && App::log_level < 2)
-    progress.reset (new ProgressBar ("Evaluating SH basis of image \"" + H.name() + "\"...", N-1));
+    progress.reset (new ProgressBar ("Evaluating SH basis of image \"" + H.name() + "\"", N-1));
 
-  std::vector<float> ratios;
+  vector<float> ratios;
 
   for (size_t l = 2; l <= lmax; l += 2) {
 
     double mzero_sum = 0.0, mnonzero_sum = 0.0;
-    Image::LoopInOrder loop (v, 0, 3);
-    for (v[3] = ssize_t (Math::SH::NforL(l-2)); v[3] != ssize_t (Math::SH::NforL(l)); ++v[3]) {
+    for (image.index(3) = ssize_t (Math::SH::NforL(l-2)); image.index(3) != ssize_t (Math::SH::NforL(l)); ++image.index(3)) {
       double sum = 0.0;
-      for (auto i = loop (v, v_mask); i; ++i) {
-        if (v_mask.value())
-          sum += Math::pow2 (value_type(v.value()));
+      for (auto i = Loop (image, 0, 3) (image, mask); i; ++i) {
+        if (mask.value())
+          sum += Math::pow2 (value_type(image.value()));
       }
-      if (mzero_terms[v[3]]) {
+      if (mzero_terms[image.index(3)]) {
         mzero_sum += sum;
-        DEBUG ("Volume " + str(v[3]) + ", m==0, sum " + str(sum));
+        DEBUG ("Volume " + str(image.index(3)) + ", m==0, sum " + str(sum));
       } else {
         mnonzero_sum += sum;
-        DEBUG ("Volume " + str(v[3]) + ", m!=0, sum " + str(sum));
+        DEBUG ("Volume " + str(image.index(3)) + ", m!=0, sum " + str(sum));
       }
       if (progress)
       ++*progress;
     }
 
     const double mnonzero_MSoS = mnonzero_sum / (2.0 * l);
-    const float power_ratio = mnonzero_MSoS/mzero_sum;
+    const float power_ratio = mnonzero_MSoS / mzero_sum;
     ratios.push_back (power_ratio);
 
     INFO ("SH order " + str(l) + ", ratio of m!=0 to m==0 power: " + str(power_ratio) +
@@ -290,7 +266,7 @@ void check_and_update (Image::Header& H, const conv_t conversion)
   // Decide whether the user needs to be warned about a poor diffusion encoding scheme
   if (regression.second)
     DEBUG ("Gradient of regression is " + str(regression.second) + "; threshold is " + str(grad_threshold));
-  if (std::abs(regression.second) > grad_threshold) {
+  if (abs(regression.second) > grad_threshold) {
     WARN ("Image \"" + H.name() + "\" may have been derived from poor directional encoding, or have some other underlying data problem");
     WARN ("(m!=0 to m==0 power ratio changing by " + str(2.0*regression.second) + " per even order)");
   }
@@ -298,12 +274,11 @@ void check_and_update (Image::Header& H, const conv_t conversion)
   // Adjust the image data in-place if necessary
   if (multiplier && (multiplier != 1.0)) {
 
-    Image::LoopInOrder loop (v, 0, 3);
-    ProgressBar progress ("Modifying SH basis of image \"" + H.name() + "\"...", N-1);
-    for (v[3] = 1; v[3] != N; ++v[3]) {
-      if (!mzero_terms[v[3]]) {
-        for (auto i = loop (v); i; ++i) 
-          v.value() *= multiplier;
+    ProgressBar progress ("Modifying SH basis of image \"" + H.name() + "\"", N-1);
+    for (image.index(3) = 1; image.index(3) != ssize_t(N); ++image.index(3)) {
+      if (!mzero_terms[image.index(3)]) {
+        for (auto i = Loop (image, 0, 3) (image); i; ++i)
+          image.value() *= multiplier;
       }
       ++progress;
     }
@@ -325,28 +300,21 @@ void check_and_update (Image::Header& H, const conv_t conversion)
 void run ()
 {
   conv_t conversion = NONE;
-  Options opt = get_options ("convert");
+  auto opt = get_options ("convert");
   if (opt.size()) {
     switch (int(opt[0][0])) {
       case 0: conversion = OLD; break;
       case 1: conversion = NEW; break;
-      case 2:
-#ifndef USE_NON_ORTHONORMAL_SH_BASIS
-        conversion = NEW;
-#else
-        conversion = OLD;
-#endif
-        break;
-      case 3: conversion = FORCE_OLDTONEW; break;
-      case 4: conversion = FORCE_NEWTOOLD; break;
+      case 2: conversion = FORCE_OLDTONEW; break;
+      case 3: conversion = FORCE_NEWTOOLD; break;
       default: assert (0); break;
     }
   }
 
-  for (std::vector<ParsedArgument>::const_iterator i = argument.begin(); i != argument.end(); ++i) {
+  for (vector<ParsedArgument>::const_iterator i = argument.begin(); i != argument.end(); ++i) {
 
     const std::string path = *i;
-    Image::Header H (path);
+    Header H = Header::open (path);
     try {
       Math::SH::check (H);
     }

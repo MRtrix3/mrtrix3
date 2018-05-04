@@ -1,71 +1,56 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert E. Smith, 2015.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
 
-#include "args.h"
 #include "command.h"
-#include "image/header.h"
-#include "mesh/mesh.h"
+#include "header.h"
+#include "surface/mesh.h"
+#include "surface/mesh_multi.h"
+#include "surface/filter/vertex_transform.h"
 
 
 
 using namespace MR;
 using namespace App;
-using namespace MR::Mesh;
+using namespace MR::Surface;
 
 
 
-const OptionGroup transform_options = OptionGroup ("Options for applying spatial transformations to vertices")
-
-  + Option ("transform_first2real", "transform vertices from FSL FIRST's native corrdinate space to real space")
-    + Argument ("image").type_image_in()
-
-  + Option ("transform_voxel2real", "transform vertices from voxel space to real space")
-    + Argument ("image").type_image_in()
-
-  + Option ("transform_real2voxel", "transform vertices from real space to voxel space")
-    + Argument ("image").type_image_in();
-
+const char* transform_choices[] = { "first2real", "real2first", "voxel2real", "real2voxel", nullptr };
 
 
 
 void usage ()
 {
 
-	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "convert meshes between different formats, and apply transformations.";
+  SYNOPSIS = "Convert meshes between different formats, and apply transformations";
 
   ARGUMENTS
   + Argument ("input",  "the input mesh file").type_file_in()
   + Argument ("output", "the output mesh file").type_file_out();
 
   OPTIONS
-  + Option ("binary", "write the output file in binary format")
+  + Option ("binary", "write the output mesh file in binary format (if supported)")
 
-  + transform_options;
+  + Option ("transform", "transform vertices from one coordinate space to another, based on a template image; "
+                         "options are: " + join(transform_choices, ", "))
+    + Argument ("mode").type_choice (transform_choices)
+    + Argument ("image").type_image_in();
 
-};
+}
 
 
 
@@ -75,40 +60,30 @@ void run ()
   // Read in the mesh data
   MeshMulti meshes;
   try {
-    MR::Mesh::Mesh mesh (argument[0]);
+    MR::Surface::Mesh mesh (argument[0]);
     meshes.push_back (mesh);
-  } catch (...) {
-    meshes.load (argument[0]);
+  } catch (Exception& e) {
+    try {
+      meshes.load (argument[0]);
+    } catch (...) {
+      throw e;
+    }
   }
 
-  bool have_transformed = false;
-
-  Options opt = get_options ("transform_first2real");
+  auto opt = get_options ("transform");
   if (opt.size()) {
-    Image::Header H (opt[0][0]);
-    for (auto i = meshes.begin(); i != meshes.end(); ++i)
-      i->transform_first_to_realspace (H);
-    have_transformed = true;
-  }
-
-  opt = get_options ("transform_voxel2real");
-  if (opt.size()) {
-    if (have_transformed)
-      throw Exception ("meshconvert can only perform one spatial transformation per call");
-    Image::Header H (opt[0][0]);
-    for (auto i = meshes.begin(); i != meshes.end(); ++i)
-      i->transform_voxel_to_realspace (H);
-    have_transformed = true;
-  }
-
-  opt = get_options ("transform_real2voxel");
-  if (opt.size()) {
-    if (have_transformed)
-      throw Exception ("meshconvert can only perform one spatial transformation per call");
-    Image::Header H (opt[0][0]);
-    for (auto i = meshes.begin(); i != meshes.end(); ++i)
-      i->transform_realspace_to_voxel (H);
-    have_transformed = true;
+    auto H = Header::open (opt[0][1]);
+    auto transform = make_unique<Surface::Filter::VertexTransform> (H);
+    switch (int(opt[0][0])) {
+      case 0: transform->set_first2real(); break;
+      case 1: transform->set_real2first(); break;
+      case 2: transform->set_voxel2real(); break;
+      case 3: transform->set_real2voxel(); break;
+      default: throw Exception ("Unexpected mode for spatial transformation of vertices");
+    }
+    MeshMulti temp;
+    (*transform) (meshes, temp);
+    std::swap (meshes, temp);
   }
 
   // Create the output file

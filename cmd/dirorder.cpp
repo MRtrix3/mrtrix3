@@ -1,32 +1,22 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
 #include "progressbar.h"
-#include "math/vector.h"
-#include "math/matrix.h"
 #include "math/rng.h"
 #include "math/SH.h"
-#include "point.h"
 #include "dwi/directions/file.h"
 
 #include <random>
@@ -35,12 +25,13 @@
 using namespace MR;
 using namespace App;
 
-void usage () {
+void usage ()
+{
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  DESCRIPTION
-    + "reorder a set of directions to ensure near-uniformity upon truncation - "
-    "i.e. if the scan is terminated early, the acquired directions are still "
-    "close to optimal";
+  SYNOPSIS = "Reorder a set of directions to ensure near-uniformity upon truncation - "
+             "i.e. if the scan is terminated early, the acquired directions are still "
+             "close to optimal";
 
   ARGUMENTS
     + Argument ("input", "the input directions file").type_file_in()
@@ -51,7 +42,7 @@ void usage () {
 }
 
 
-typedef double value_type;
+using value_type = double;
 
 
   template <typename value_type>
@@ -66,32 +57,26 @@ inline std::function<value_type()> get_rng_uniform (value_type from, value_type 
 
 void run () 
 {
-  Math::Matrix<value_type> directions = DWI::Directions::load_cartesian<value_type> (argument[0]);
+  auto directions = DWI::Directions::load_cartesian (argument[0]);
   auto rng = get_rng_uniform<size_t> (0, directions.rows()-1);
 
-  std::vector<size_t> indices (1, rng());
-  std::vector<size_t> remaining;
-  for (size_t n = 0; n < directions.rows(); ++n)
+  vector<ssize_t> indices (1, rng());
+  vector<ssize_t> remaining;
+  for (ssize_t n = 0; n < directions.rows(); ++n)
     if (n != indices[0])
       remaining.push_back (n);
 
   while (remaining.size()) {
-    size_t best = 0;
+    ssize_t best = 0;
     value_type best_E = std::numeric_limits<value_type>::max();
 
     for (size_t n = 0; n < remaining.size(); ++n) {
       value_type E = 0.0;
-      size_t a = remaining[n];
+      ssize_t a = remaining[n];
       for (size_t i = 0; i < indices.size(); ++i) {
-        size_t b = indices[i];
-        E += 1.0 / (
-            Math::pow2 (directions(a,0)-directions(b,0)) + 
-            Math::pow2 (directions(a,1)-directions(b,1)) + 
-            Math::pow2 (directions(a,2)-directions(b,2)));
-        E += 1.0 / (
-            Math::pow2 (directions(a,0)+directions(b,0)) + 
-            Math::pow2 (directions(a,1)+directions(b,1)) + 
-            Math::pow2 (directions(a,2)+directions(b,2)));
+        ssize_t b = indices[i];
+        E += 1.0 / (directions.row(a) - directions.row(b)).norm();
+        E += 1.0 / (directions.row(a) + directions.row(b)).norm();
       }
       if (E < best_E) {
         best_E = E;
@@ -105,7 +90,7 @@ void run ()
 
 
   decltype(directions) output (directions.rows(), 3);
-  for (size_t n = 0; n < directions.rows(); ++n)
+  for (ssize_t n = 0; n < directions.rows(); ++n)
     output.row(n) = directions.row (indices[n]);
 
   DWI::Directions::save (output, argument[1], get_options("cartesian").size());

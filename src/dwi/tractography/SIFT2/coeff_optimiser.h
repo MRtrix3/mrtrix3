@@ -1,32 +1,21 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-    Written by Robert Smith, 2013.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
-
 
 
 #ifndef __dwi_tractography_sift2_coeff_optimiser_h__
 #define __dwi_tractography_sift2_coeff_optimiser_h__
 
-
-#include <vector>
 
 #include "bitset.h"
 
@@ -54,9 +43,9 @@ namespace MR {
 
 
       class CoefficientOptimiserBase
-      {
+      { MEMALIGN(CoefficientOptimiserBase)
         public:
-          CoefficientOptimiserBase (TckFactor&, /*const std::vector<float>&,*/ StreamlineStats&, StreamlineStats&, size_t&, BitSet&, double&);
+          CoefficientOptimiserBase (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
           CoefficientOptimiserBase (const CoefficientOptimiserBase&);
           virtual ~CoefficientOptimiserBase();
 
@@ -66,9 +55,8 @@ namespace MR {
         protected:
           TckFactor& master;
           const double mu;
-          //const std::vector<float>& projected_steps;
 
-          virtual float get_coeff_change (const SIFT::track_t) const = 0;
+          virtual double get_coeff_change (const SIFT::track_t) const = 0;
 
 
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
@@ -79,7 +67,7 @@ namespace MR {
         private:
           StreamlineStats& step_stats;
           StreamlineStats& coefficient_stats;
-          size_t& nonzero_streamlines;
+          unsigned int& nonzero_streamlines;
           BitSet& fixels_to_exclude;
           double& sum_costs;
 
@@ -91,7 +79,7 @@ namespace MR {
           mutable double local_sum_costs;
 
         private:
-          float do_fixel_exclusion (const SIFT::track_t);
+          double do_fixel_exclusion (const SIFT::track_t);
 
       };
 
@@ -104,15 +92,15 @@ namespace MR {
 
       // Golden Section Search within the permitted range
       class CoefficientOptimiserGSS : public CoefficientOptimiserBase
-      {
+      { MEMALIGN(CoefficientOptimiserGSS)
 
         public:
-          CoefficientOptimiserGSS (TckFactor&, /*const std::vector<float>&,*/ StreamlineStats&, StreamlineStats&, size_t&, BitSet&, double&);
+          CoefficientOptimiserGSS (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
           CoefficientOptimiserGSS (const CoefficientOptimiserGSS&);
           ~CoefficientOptimiserGSS() { }
 
         private:
-          float get_coeff_change (const SIFT::track_t) const;
+          double get_coeff_change (const SIFT::track_t) const;
 
       };
 
@@ -124,17 +112,17 @@ namespace MR {
       // Does not requre derivatives; only needs 3 seed points (two extremities and 0.0)
       // Note however if that these extremities are large, the initial CF evaluation may be NAN!
       class CoefficientOptimiserQLS : public CoefficientOptimiserBase
-      {
+      { MEMALIGN(CoefficientOptimiserQLS)
 
         public:
-          CoefficientOptimiserQLS (TckFactor&, /*const std::vector<float>&,*/ StreamlineStats&, StreamlineStats&, size_t&, BitSet&, double&);
+          CoefficientOptimiserQLS (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
           CoefficientOptimiserQLS (const CoefficientOptimiserQLS&);
           ~CoefficientOptimiserQLS() { }
 
         private:
           Math::QuadraticLineSearch<double> qls;
 
-          float get_coeff_change (const SIFT::track_t) const;
+          double get_coeff_change (const SIFT::track_t) const;
 
       };
 
@@ -144,15 +132,15 @@ namespace MR {
       // Coefficient optimiser based on iterative root-finding Newton / Halley
       // Early exit if outside the permitted coefficient step range and moving further away
       class CoefficientOptimiserIterative : public CoefficientOptimiserBase
-      {
+      { MEMALIGN(CoefficientOptimiserIterative)
 
         public:
-          CoefficientOptimiserIterative (TckFactor&, /*const std::vector<float>&,*/ StreamlineStats&, StreamlineStats&, size_t&, BitSet&, double&);
+          CoefficientOptimiserIterative (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
           CoefficientOptimiserIterative (const CoefficientOptimiserIterative&);
           ~CoefficientOptimiserIterative();
 
         private:
-          float get_coeff_change (const SIFT::track_t) const;
+          double get_coeff_change (const SIFT::track_t) const;
 
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
           mutable uint64_t iter_count;

@@ -1,43 +1,29 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
+ */
 
-    Written by J-Donald Tournier 2014
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
 
 #include "command.h"
-#include "args.h"
 #include "exception.h"
 #include "mrtrix.h"
 #include "progressbar.h"
 
-#include "image/buffer.h"
-#include "image/buffer_scratch.h"
-#include "image/copy.h"
-#include "image/loop.h"
-#include "image/position.h"
-#include "image/threaded_loop.h"
-#include "image/utils.h"
-#include "image/value.h"
+#include "image.h"
+#include "algo/loop.h"
 
 #include "math/math.h"
 #include "math/SH.h"
-#include "math/vector.h"
+#include "math/ZSH.h"
 
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
@@ -54,10 +40,11 @@ using namespace App;
 
 
 
-void usage () {
+void usage ()
+{
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  DESCRIPTION 
-    + "generate an appropriate response function from the image data for spherical deconvolution";
+  SYNOPSIS = "Generate an appropriate response function from the image data for spherical deconvolution";
 
   ARGUMENTS
     + Argument ("SH", "the spherical harmonic decomposition of the diffusion-weighted images").type_image_in()
@@ -68,51 +55,63 @@ void usage () {
   OPTIONS
 
     + Option ("lmax", "specify the maximum harmonic degree of the response function to estimate")
-      + Argument ("value").type_integer (0, 8, 20);
+      + Argument ("value").type_integer (0, 20)
+    + Option ("dump", "dump the m=0 SH coefficients from all voxels in the mask to the output file, rather than their mean")
+      + Argument ("file").type_file_out();
 }
 
 
 
-typedef double value_type;
+using value_type = double;
 
 
 
 void run () 
 {
-  Image::Buffer<value_type> SH_buffer (argument[0]);
-  Math::SH::check (SH_buffer);
-  Image::Buffer<bool> mask_buffer (argument[1]);
-  Image::Buffer<value_type> dir_buffer (argument[2]);
+  auto SH = Image<value_type>::open(argument[0]);
+  Math::SH::check (SH);
+  auto mask = Image<bool>::open(argument[1]);
+  auto dir = Image<value_type>::open(argument[2]).with_direct_io();
 
-  int lmax = Math::SH::LforN (SH_buffer.dim(3));
-  Options opt = get_options ("lmax");
-  if (opt.size())
-    lmax = opt[0][0];
+  int lmax = get_option_value ("lmax", Math::SH::LforN (SH.size(3)));
 
-  Image::check_dimensions (SH_buffer, mask_buffer, 0, 3);
-  Image::check_dimensions (SH_buffer, dir_buffer, 0, 3);
-  if (dir_buffer.ndim() < 4 || dir_buffer.dim(3) < 3) 
-    throw Exception ("input direction image \"" + std::string (argument[2]) + "\" does not have expected dimensions");
+  check_dimensions (SH, mask, 0, 3);
+  check_dimensions (SH, dir, 0, 3);
+  if (dir.ndim() != 4)
+    throw Exception ("input direction image \"" + std::string (argument[2]) + "\" must be a 4D image");
+  if (dir.size(3) != 3)
+    throw Exception ("input direction image \"" + std::string (argument[2]) + "\" must contain precisely 3 volumes");
 
-  auto SH = SH_buffer.voxel();
-  auto mask = mask_buffer.voxel();
-  auto dir = dir_buffer.voxel();
-
-
-  Math::Vector<value_type> delta;
-  std::vector<value_type> response (lmax/2 + 1, 0.0);
+  Eigen::VectorXd delta;
+  Eigen::VectorXd response = Eigen::VectorXd::Zero (Math::ZSH::NforL (lmax));
   size_t count = 0;
 
-  Image::LoopInOrder loop (SH, "estimating response function...", 0, 3);
+  File::OFStream dump_stream;
+  auto opt = get_options ("dump");
+  if (opt.size())
+    dump_stream.open (opt[0][0]);
+
+  Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> AL (lmax+1);
+  Math::Legendre::Plm_sph (AL, lmax, 0, value_type (1.0));
+
+  auto loop = Loop ("estimating response function", SH, 0, 3);
   for (auto l = loop(mask, SH, dir); l; ++l) {
 
     if (!mask.value()) 
       continue;
 
-    Point<value_type> d;
-    for (dir[3] = 0; dir[3] < 3; ++dir[3])
-      d[size_t(dir[3])] = dir.value();
-    d.normalise();
+    Eigen::Vector3d d = dir.row(3);
+    if (!d.allFinite()) {
+      WARN ("voxel with invalid direction [ " + str(dir.index(0)) + " " + str(dir.index(1)) + " " + str(dir.index(2)) + " ]; skipping");
+      continue;
+    }
+    d.normalize();
+    // Uncertainty regarding Eigen's behaviour when normalizing a zero vector; may change behaviour between versions
+    if (!d.allFinite() || !d.squaredNorm()) {
+      WARN ("voxel with zero direction [ " + str(dir.index(0)) + " " + str(dir.index(1)) + " " + str(dir.index(2)) + " ]; skipping");
+      continue;
+    }
+
     Math::SH::delta (delta, d, lmax);
 
     for (int l = 0; l <= lmax; l += 2) {
@@ -120,31 +119,32 @@ void run ()
       value_type d_dot_d = 0.0;
       for (int m = -l; m <= l; ++m) {
         size_t i = Math::SH::index (l,m);
-        SH[3] = i;
+        SH.index(3) = i;
         value_type s = SH.value();
         // TODO: currently this does NOT handle the non-orthonormal basis
         d_dot_s += s*delta[i];
         d_dot_d += Math::pow2 (delta[i]);
       }
-      response[l/2] += d_dot_s / d_dot_d;
+      value_type val = AL[l] * d_dot_s / d_dot_d;
+      response[Math::ZSH::index(l)] += val;
+
+      if (dump_stream.is_open()) 
+        dump_stream << val << " ";
     }
+    if (dump_stream.is_open()) 
+      dump_stream << "\n";
+
     ++count;
   }
 
-  VLA_MAX (AL, value_type, lmax+1, 64);
-  Math::Legendre::Plm_sph (AL, lmax, 0, value_type (1.0));
-  for (size_t l = 0; l < response.size(); l++)
-    response[l] *= AL[2*l];
+  response /= count;
 
   if (std::string(argument[3]) == "-") {
-    for (auto r : response)
-      std::cout << r/count << " ";
+    for (ssize_t n = 0; n < response.size(); ++n)
+      std::cout << response[n] << " ";
     std::cout << "\n";
   }
   else {
-    File::OFStream out (argument[3]);
-    for (auto r : response)
-      out << r/count << " ";
-    out << "\n";
+    save_vector(response, argument[3]);
   }
 }
