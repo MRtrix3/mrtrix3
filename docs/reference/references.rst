@@ -13,6 +13,16 @@ References
    NeuroImage, 94 (2014), pp. 312–336.
    [`full text link <http://www.sciencedirect.com/science/article/pii/S1053811913012676>`__\ ]
 
+.. [Dhollander2015a] T. Dhollander, R.E. Smith, J.D. Tournier, B. Jeurissen, and A. Connelly. 
+   *Time to move on: an FOD-based DEC map to replace DTI's trademark DEC FA.* 
+   Proceedings of the 23th annual meeting of the International Society of Magnetic Resonance in Medicine (2015), pp. 1027.
+   [`full text link <https://www.researchgate.net/publication/276412466_Time_to_move_on_an_FOD-based_DEC_map_to_replace_DTI's_trademark_DEC_FA>`__\ ]
+
+.. [Dhollander2015b] T. Dhollander, D. Raffelt, R.E. Smith, and A. Connelly. 
+   *Panchromatic sharpening of FOD-based DEC maps by structural T1 information.* 
+   Proceedings of the 23th annual meeting of the International Society of Magnetic Resonance in Medicine (2015), pp. 566.
+   [`full text link <https://www.researchgate.net/publication/276412176_Panchromatic_sharpening_of_FOD-based_DEC_maps_by_structural_T1_information>`__\ ]
+
 .. [Dhollander2016a] T. Dhollander, D. Raffelt, and A. Connelly. 
    *A novel iterative approach to reap the benefits of multi-tissue CSD from just single-shell (+b=0) diffusion MRI data.* 
    Proceedings of the 24th annual meeting of the International Society of Magnetic Resonance in Medicine (2016), pp. 3010.
@@ -53,10 +63,45 @@ References
    Proceedings of the 26th annual meeting of the International Society of Magnetic Resonance in Medicine (2018), pp. 135.
    [`full text link <https://www.researchgate.net/publication/324771728_Investigating_microstructural_heterogeneity_of_white_matter_hyperintensities_in_Alzheimer's_disease_using_single-shell_3-tissue_constrained_spherical_deconvolution>`__\ ]
 
+.. [Raffelt2011] TODO.
+   *TODO.*
+   TODO.
+   [`full text link <https://www.ncbi.nlm.nih.gov/pubmed/21316463>`__\ ]
+
+.. [Raffelt2012] TODO.
+   *TODO.*
+   TODO.
+   [`full text link <https://www.ncbi.nlm.nih.gov/pubmed/22036682>`__\ ]
+
+.. [Raffelt2015] TODO.
+   *TODO.*
+   TODO.
+   [`full text link <https://www.ncbi.nlm.nih.gov/pubmed/26004503>`__\ ]
+
+.. [Raffelt2016] TODO.
+   *TODO.*
+   TODO.
+   [`full text link <https://www.ncbi.nlm.nih.gov/pubmed/27639350>`__\ ]
+
 .. [Reisert2011] M. Reisert, I. Mader, C. Anastasopoulos, M. Weigel, S. Schnell, and V. Kiselev. 
    *Global fiber reconstruction becomes practical.*
    NeuroImage, 54 (2011) pp. 955–962.
    [`full text link <http://www.sciencedirect.com/science/article/pii/S1053811910011973>`__\ ]
+
+.. [Smith2012] TODO.
+   *TODO.*
+   TODO.
+   [`full text link <https://www.ncbi.nlm.nih.gov/pubmed/22705374>`__\ ]
+
+.. [Smith2013] TODO.
+   *TODO.*
+   TODO.
+   [`full text link <https://www.ncbi.nlm.nih.gov/pubmed/23238430>`__\ ]
+
+.. [Smith2015] TODO.
+   *TODO.*
+   TODO.
+   [`full text link <https://www.ncbi.nlm.nih.gov/pubmed/26163802>`__\ ]
 
 .. [Tax2014] C.M.W. Tax, B. Jeurissen, S.B.Vos, M.A. Viergever, and A. Leemans.
    *Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data.*
@@ -72,6 +117,11 @@ References
    *Robust determination of the fibre orientation distribution in diffusion MRI: non-negativity constrained super-resolved spherical deconvolution.*
    Neuroimage, 35 (2007), pp. 1459–72.
    [`full text link <https://www.sciencedirect.com/science/article/pii/S1053811907001243>`__\ ]
+
+.. [Tournier2012] TODO.
+   *TODO.*
+   TODO.
+   [`full text link <http://onlinelibrary.wiley.com/doi/10.1002/ima.22005/abstract>`__\ ]
 
 .. [Tournier2013] J.D. Tournier, F. Calamante, and A. Connelly.
    *Determination of the appropriate b value and number of gradient directions for high-angular-resolution diffusion-weighted imaging.*
