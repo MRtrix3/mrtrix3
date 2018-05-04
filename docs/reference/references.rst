@@ -89,12 +89,12 @@ References
    [`full text link <http://www.sciencedirect.com/science/article/pii/S1053811910011973>`__\ ]
 
 .. [Smith2012] TODO.
-   *TODO.*
+   *Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information.*
    TODO.
    [`full text link <https://www.ncbi.nlm.nih.gov/pubmed/22705374>`__\ ]
 
 .. [Smith2013] TODO.
-   *TODO.*
+   *SIFT: Spherical-deconvolution informed filtering of tractograms.*
    TODO.
    [`full text link <https://www.ncbi.nlm.nih.gov/pubmed/23238430>`__\ ]
 
