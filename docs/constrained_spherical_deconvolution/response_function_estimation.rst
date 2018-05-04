@@ -124,9 +124,9 @@ The following sections provide more details on each algorithm specifically.
 dhollander
 ^^^^^^^^^^
 
-This algorithm currently is the original implementation of the strategy proposed in
-[Dhollander2016b]_ to estimate multi b-value (single-shell + b=0, or
-multi-shell) response functions of single-fibre white matter (*anisotropic*),
+This algorithm currently is the original implementation of the strategy proposed
+in [Dhollander2016b]_ to estimate multi b-value (single-shell + b=0, or
+multi-shell) response functions for single-fibre white matter (*anisotropic*),
 grey matter and CSF (both *isotropic*), which can subsequently be used for
 multi-tissue (constrained) spherical deconvolution algorithms.  It has the
 distinct advantage of requiring *only* the DWI data as input, in contrast to
@@ -134,22 +134,26 @@ other multi-tissue response function estimations methods, making it the
 simplest and most accessible method, and a sensible default for applications
 that require multi-shell responses. 
 
-This algorithm relies on an unsupervised algorithm, leveraging the relative
+This is a fully automated unsupervised algorithm that leverages the relative
 diffusion properties of the 3 tissue response functions with respect to each
 other, to select the most appropriate voxels from which to estimate the
-response functions.  It has been used succesfully in a wide range of conditions
+response functions.  It has been used successfully in a wide range of conditions
 (overall data quality, pathology, developmental state of the subjects,
-animal data and ex-vivo data). Additional insights into a few specific
-aspects of its performance can be found in [Dhollander2018a]_ In almost all
-cases, it runs and performs well out of the box.  In exceptional cases where
-the anisotropy in the data is particularly low (*very* early development,
+animal data and ex-vivo data). Additional insights into its performance are
+presented in [Dhollander2018a]_. Due to its ability to deal with the presence
+of extensive white matter (hyperintense) lesions, it was for example also
+successfully used in [Mito2018a]_. Finally, the response functions as obtained
+in this particular way also form the basis of the 3-tissue framework to study
+the microstructure of lesions and other pathology [Dhollander2017]_ [Mito2018b]_.
+
+In almost all cases, it runs and performs well out of the box.  In exceptional
+cases where the anisotropy in the data is particularly *low* (*very* early development,
 ex-vivo data with low b-value, ...), it may be advisable to set the ``-fa``
-parameter lower than its default value (of 0.2).  See [Dhollander2018b]_ for an
-example of a dataset where changing this parameter was required to obtain the
-best results.
+parameter *lower* than its default value of 0.2.  See [Dhollander2018b]_ for an
+example of a dataset where changing this parameter was required to obtain
+good results.
 
 As always, check the ``-voxels`` option output in unusually (challenging) cases.
-
 
 For more information, refer to the
 :ref:`dhollander algorithm documentation <dwi2response_dhollander>`.
@@ -168,7 +172,7 @@ also options to change this number or provide an absolute FA threshold.
 
 Due to relying *only* on FA values, this strategy is relatively
 limited in its abilities to select the best voxels. In white matter
-close to CSF, for example, Gibbs ringing can severely affect FA values.
+close to CSF, for example, Gibbs ringing can affect FA values.
 More advanced iterative strategies, such as the tournier_ and tax_
 algorithms have been proposed more recently.
 
@@ -209,18 +213,21 @@ requires prior correction for susceptibility-induced (EPI) distortions of the
 DWI dataset. The algorithm selects voxels with a segmentation partial volume of
 at least 0.95 for each tissue type.  Grey matter and CSF are further
 constrained by an (upper) 0.2 FA threshold. Single-fibre voxels within the WM
-segment are then extracted using the tournier_ algorithm to do so (in contrast
-to original publication, see `Replicating original publications`_ below)
+segment are then extracted using the tournier_ algorithm (in contrast
+to original publication, see `Replicating original publications`_ below).
 
 The input tissue segmentation can be estimated using the same :ref:`pre-processing
 pipeline <act_preproc>` as required for :ref:`act`, namely: correction for
 motion and (EPI and other) distortions present in the diffusion MR data,
 registration of the structural to (corrected) EPI data, and spatial
-segmentation of the anatomical image.  This process is therefore dependent on
+segmentation of the anatomical image.  This process is therefore also dependent on
 the accuracy of each of these steps, so that the T1 image can be reliably used
-to select pure-tissue voxels in the DWI volumes.  Failure to achieve these may
-result in inappropriate voxels being used for response function estimation,
-with concomitant errors in tissue estimates.
+to select pure-tissue voxels in the DWI volumes.  Failure to achieve high
+accuracy for each of these individual steps may result in inappropriate voxels
+being used for response function estimation, with concomitant errors in tissue estimates.
+
+The dhollander_ algorithm does not rely on a number of these steps. A comparison
+is presented in [Dhollander2018a]_.
 
 For further information, refer to the
 :ref:`msmt_5tt algorithm documentation <dwi2response_msmt_5tt>`.
@@ -244,8 +251,8 @@ function; i.e., a response function that is safely deemed to be much less
 
 This algorithm has occasionally been found to be unstable and converge
 towards suboptimal solutions. The tournier_ algorithm has been engineered
-to overcome some of the issues believed to be the cause of these
-instabilities (see some discussion on this topic
+with the intention to overcome some of the issues believed to be the
+cause of these instabilities (see some discussion on this topic
 `here <https://github.com/MRtrix3/mrtrix3/issues/422>`__
 and `here <https://github.com/MRtrix3/mrtrix3/pull/426>`__).
 
@@ -281,9 +288,10 @@ differences between this implementation and the algorithm described in
    voxels (of the previous iteration) at each iteration.
 
 While the tournier_ algorithm has a similar iterative structure as the
-tax_ algorithm, it was adjusted to overcome some occasional instabilities
-and suboptimal solutions resulting from the latter. Notable differences
-between the tournier_ and tax_ algorithms include:
+tax_ algorithm, it was adjusted with the intention to overcome some
+occasional instabilities and suboptimal solutions resulting from the
+latter. Notable differences between the tournier_ and tax_ algorithms
+include:
 
 -  The tournier_ algorithm is initialised by a *sharp* (lmax=4) response
    function, while the tax_ algorithm is initialised by a *fat* response
