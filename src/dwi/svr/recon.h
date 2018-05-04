@@ -222,18 +222,18 @@ namespace MR
             Eigen::Map<Eigen::VectorXf> r (tmp2.address(), nxyz);
             r.setZero();
             // Declare temporary slice
-            Eigen::VectorXf tmpslice (nxy);
+            //Eigen::VectorXf tmpslice (nxy);
             for (size_t z = idx%ne; z < nz; z += ne) {
               project_slice_x2x(v, z, tmp2, tmp1, W(z,v));
               //tmpslice.setZero();
-              //project_slice_x2y_alt(v, z, tmpslice, tmp1);
+              //project_slice_x2y(v, z, tmpslice, tmp1);
               //tmpslice *= W(z,v);
-              //project_slice_y2x_alt(v, z, tmp2, tmpslice);
+              //project_slice_y2x(v, z, tmp2, tmpslice);
             }
             T.noalias() += r * Y.row(idx);
           }, zero);
         Xo += L.adjoint() * (L * Xi);
-        Xo += std::numeric_limits<float>::epsilon() * Xi;
+        //Xo += std::numeric_limits<float>::epsilon() * Xi;
       }
 
 
@@ -497,23 +497,59 @@ namespace MR
 
       void init_laplacian(const float lambda)
       {
-        DEBUG("Initialising Laplacian matrix.");
+        DEBUG("Initialising Laplacian regularizer.");
+        // Regularization convolution filter set as a Laplacian of Gaussian
+        // of FWHM equal to 1.2 times the grid size, normalised by stdev^2.
+        Eigen::Matrix<Scalar, 5, 1> LoG;
+        //LoG << -2.10679125, 0.11171275, 0.02219518, 0.00233811, 0.00020557;  // FWHM = 1.0
+        LoG << -1.38925867, 0.05744929, 0.04629545, 0.0122801, 0.00259698;   // FWHM = 1.2
+        LoG *= std::sqrt(lambda);
+
         L.resize(nxy*nz, nxy*nz);
-        L.reserve(Eigen::VectorXi::Constant(nxy*nz, 7));
+        L.reserve(Eigen::VectorXi::Constant(nxy*nz, 33));
         for (size_t z = 0; z < nz; z++) {
           for (size_t y = 0; y < ny; y++) {
             for (size_t x = 0; x < nx; x++) {
-              L.coeffRef(get_idx(x, y, z), get_idx(x, y, (z) ? z-1 : 0)) += 1;
-              L.coeffRef(get_idx(x, y, z), get_idx(x, (y) ? y-1 : 0, z)) += 1;
-              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0, y, z)) += 1;
-              L.coeffRef(get_idx(x, y, z), get_idx(x, y, z)) += -6;
-              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, y, z)) += 1;
-              L.coeffRef(get_idx(x, y, z), get_idx(x, (y < ny-1) ? y+1 : ny-1, z)) += 1;
-              L.coeffRef(get_idx(x, y, z), get_idx(x, y, (z < nz-1) ? z+1 : nz-1)) += 1;
+              L.coeffRef(get_idx(x, y, z), get_idx(x, y, z)) += LoG[0];
+
+              L.coeffRef(get_idx(x, y, z), get_idx(x, y, (z) ? z-1 : 0)) += LoG[1];
+              L.coeffRef(get_idx(x, y, z), get_idx(x, (y) ? y-1 : 0, z)) += LoG[1];
+              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0, y, z)) += LoG[1];
+              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, y, z)) += LoG[1];
+              L.coeffRef(get_idx(x, y, z), get_idx(x, (y < ny-1) ? y+1 : ny-1, z)) += LoG[1];
+              L.coeffRef(get_idx(x, y, z), get_idx(x, y, (z < nz-1) ? z+1 : nz-1)) += LoG[1];
+
+              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, (y < ny-1) ? y+1 : ny-1, z)) += LoG[2];
+              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           (y < ny-1) ? y+1 : ny-1, z)) += LoG[2];
+              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, (y) ? y-1 : 0,           z)) += LoG[2];
+              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           (y) ? y-1 : 0,           z)) += LoG[2];
+              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, y, (z < nz-1) ? z+1 : nz-1)) += LoG[2];
+              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           y, (z < nz-1) ? z+1 : nz-1)) += LoG[2];
+              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, y, (z) ? z-1 : 0)          ) += LoG[2];
+              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           y, (z) ? z-1 : 0)          ) += LoG[2];
+              L.coeffRef(get_idx(x, y, z), get_idx(x, (y < ny-1) ? y+1 : ny-1, (z < nz-1) ? z+1 : nz-1)) += LoG[2];
+              L.coeffRef(get_idx(x, y, z), get_idx(x, (y) ? y-1 : 0,           (z < nz-1) ? z+1 : nz-1)) += LoG[2];
+              L.coeffRef(get_idx(x, y, z), get_idx(x, (y < ny-1) ? y+1 : ny-1, (z) ? z-1 : 0)          ) += LoG[2];
+              L.coeffRef(get_idx(x, y, z), get_idx(x, (y) ? y-1 : 0,           (z) ? z-1 : 0)          ) += LoG[2];
+
+              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           (y) ? y-1 : 0,           (z) ? z-1 : 0)) += LoG[3];
+              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, (y) ? y-1 : 0,           (z) ? z-1 : 0)) += LoG[3];
+              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           (y < ny-1) ? y+1 : ny-1, (z) ? z-1 : 0)) += LoG[3];
+              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, (y < ny-1) ? y+1 : ny-1, (z) ? z-1 : 0)) += LoG[3];
+              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           (y) ? y-1 : 0,           (z < nz-1) ? z+1 : nz-1)) += LoG[3];
+              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, (y) ? y-1 : 0,           (z < nz-1) ? z+1 : nz-1)) += LoG[3];
+              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           (y < ny-1) ? y+1 : ny-1, (z < nz-1) ? z+1 : nz-1)) += LoG[3];
+              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, (y < ny-1) ? y+1 : ny-1, (z < nz-1) ? z+1 : nz-1)) += LoG[3];
+
+              L.coeffRef(get_idx(x, y, z), get_idx(x, y, (z > 1) ? z-2 : 0)) += LoG[4];
+              L.coeffRef(get_idx(x, y, z), get_idx(x, (y > 1) ? y-2 : 0, z)) += LoG[4];
+              L.coeffRef(get_idx(x, y, z), get_idx((x > 1) ? x-2 : 0, y, z)) += LoG[4];
+              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-2) ? x+2 : nx-1, y, z)) += LoG[4];
+              L.coeffRef(get_idx(x, y, z), get_idx(x, (y < ny-2) ? y+2 : ny-1, z)) += LoG[4];
+              L.coeffRef(get_idx(x, y, z), get_idx(x, y, (z < nz-2) ? z+2 : nz-1)) += LoG[4];
             }
           }
         }
-        L *= std::sqrt(lambda);
         L.makeCompressed();
       }
 
