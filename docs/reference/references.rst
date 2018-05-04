@@ -23,6 +23,11 @@ References
    ISMRM Workshop on Breaking the Barriers of Diffusion MRI (2016), pp. 5.
    [`full text link <https://www.researchgate.net/publication/307863133_Unsupervised_3-tissue_response_function_estimation_from_single-shell_or_multi-shell_diffusion_MR_data_without_a_co-registered_T1_image>`__\ ]
 
+.. [Dhollander2017] T. Dhollander, D. Raffelt, and A. Connelly.
+   *Towards interpretation of 3-tissue constrained spherical deconvolution results in pathology.*
+   Proceedings of the 25th annual meeting of the International Society of Magnetic Resonance in Medicine (2017), pp. 1815.
+   [`full text link <https://www.researchgate.net/publication/315836029_Towards_interpretation_of_3-tissue_constrained_spherical_deconvolution_results_in_pathology>`__\ ]
+
 .. [Dhollander2018a] T. Dhollander, D. Raffelt, and A. Connelly.
    *Accuracy of response function estimation algorithms for 3-tissue spherical deconvolution of diverse quality diffusion MRI data.*
    Proceedings of the 26th annual meeting of the International Society of Magnetic Resonance in Medicine (2018), pp. 1569.
@@ -37,6 +42,16 @@ References
    *Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data.* 
    NeuroImage, 103 (2014), pp. 411–426.
    [`full text link <http://www.sciencedirect.com/science/article/pii/S1053811914006442>`__\ ]
+
+.. [Mito2018a] R. Mito, D. Raffelt, T. Dhollander, D.N. Vaughan, J.D. Tournier, O. Salvado, A. Brodtmann, C.C. Rowe, V.L. Villemagne, and A. Connelly.
+   *Fibre-specific white matter reductions in Alzheimer's disease and mild cognitive impairment.*
+   Brain, 141(3) (2018), pp. 888–902.
+   [`full text link <http://dx.doi.org/10.1093/brain/awx355>`__\ ]
+
+.. [Mito2018b] R. Mito, T. Dhollander, Y. Xia, O. Salvado, A. Brodtmann, C.C. Rowe, V.L. Villemagne, and A. Connelly.
+   *Investigating microstructural heterogeneity of white matter hyperintensities in Alzheimer’s disease using single-shell 3-tissue constrained spherical deconvolution.*
+   Proceedings of the 26th annual meeting of the International Society of Magnetic Resonance in Medicine (2018), pp. 135.
+   [`full text link <https://www.researchgate.net/publication/324771728_Investigating_microstructural_heterogeneity_of_white_matter_hyperintensities_in_Alzheimer's_disease_using_single-shell_3-tissue_constrained_spherical_deconvolution>`__\ ]
 
 .. [Reisert2011] M. Reisert, I. Mader, C. Anastasopoulos, M. Weigel, S. Schnell, and V. Kiselev. 
    *Global fiber reconstruction becomes practical.*
