@@ -3,16 +3,7 @@
 Anatomically-Constrained Tractography (ACT)
 ===========================================
 
-This page describes the recommended processing steps for taking advantage of the Anatomically-Constrained Tractography (ACT) framework, the image format used, and the commands available for manipulating these data.   There are also instructions for anyone looking to make use of alternative tissue segmentation approaches.
-
-References
-----------
-
-For full details on ACT, please refer to the following journal article:
-
-    `Smith, R. E., Tournier, J.-D., Calamante, F., & Connelly, A. (2012). Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. NeuroImage, 62(3), 1924–1938. doi:10.1016/j.neuroimage.2012.06.005 <http://www.ncbi.nlm.nih.gov/pubmed/22705374/>`_
-
-If you use ACT in your research, please cite the article above in your manuscripts.
+This page describes the recommended processing steps for taking advantage of the Anatomically-Constrained Tractography (ACT) framework [Smith2012]_, the image format used, and the commands available for manipulating these data.   There are also instructions for anyone looking to make use of alternative tissue segmentation approaches.
 
 .. _act_preproc:
 
