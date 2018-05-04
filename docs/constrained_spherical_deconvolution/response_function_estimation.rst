@@ -3,13 +3,14 @@
 Response function estimation
 ============================
 
-A prerequisite for spherical deconvolution is obtaining (the) response
+A prerequisite for spherical deconvolution is obtaining the response
 function(s), which is/are used as the kernel(s) by the deconvolution
 algorithm. For the white matter, the response function models the signal
 expected for a voxel containing a single, coherently oriented bundle
-of axons. In case of multi-tissue variants of spherical deconvolution,
-response functions of other tissue types are introduced as well;
-typically to represent grey matter(-like) and/or CSF signals.
+of axons [Tournier2004]_ [Tournier2007]_. In case of multi-tissue
+variants of spherical deconvolution, response functions for other
+tissue types are introduced as well; typically to represent grey
+matter(-like) and/or CSF(-like) signals [Jeurissen2014]_ [Dhollander2016a]_.
 
 In MRtrix3, the :ref:`dwi2response` script offers a range of algorithms
 to estimate these response function(s) directly from your dataset itself.
@@ -124,7 +125,7 @@ dhollander
 ^^^^^^^^^^
 
 This algorithm currently is the original implementation of the strategy proposed in
-[Dhollander2016]_ to estimate multi b-value (single-shell + b=0, or
+[Dhollander2016b]_ to estimate multi b-value (single-shell + b=0, or
 multi-shell) response functions of single-fibre white matter (*anisotropic*),
 grey matter and CSF (both *isotropic*), which can subsequently be used for
 multi-tissue (constrained) spherical deconvolution algorithms.  It has the
