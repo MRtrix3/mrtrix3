@@ -202,7 +202,7 @@ namespace MR
             transform_type M_qform;
 
             Eigen::Quaterniond Q (0.0, Raw::fetch_<float32> (&NH.quatern_b, is_BE), Raw::fetch_<float32> (&NH.quatern_c, is_BE), Raw::fetch_<float32> (&NH.quatern_d, is_BE));
-            auto w = 1.0 - Q.squaredNorm();
+            const double w = 1.0 - Q.squaredNorm();
             Q.w() = w < 1.0e-7 ? 0.0 : std::sqrt (w);
             Q.normalize();
             M_qform.matrix().topLeftCorner<3,3>() = Q.matrix();
