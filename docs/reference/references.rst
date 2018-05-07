@@ -64,23 +64,23 @@ References
    [`full text link <https://www.researchgate.net/publication/324771728_Investigating_microstructural_heterogeneity_of_white_matter_hyperintensities_in_Alzheimer's_disease_using_single-shell_3-tissue_constrained_spherical_deconvolution>`__\ ]
 
 .. [Raffelt2011] TODO.
-   *TODO.*
-   Symmetric diffeomorphic registration of fibre orientation distributions.
+   *Symmetric diffeomorphic registration of fibre orientation distributions.*
+   TODO.
    [`full text link <https://www.ncbi.nlm.nih.gov/pubmed/21316463>`__\ ]
 
 .. [Raffelt2012] TODO.
-   *TODO.*
-   Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images.
+   *Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images.*
+   TODO.
    [`full text link <https://www.ncbi.nlm.nih.gov/pubmed/22036682>`__\ ]
 
 .. [Raffelt2015] TODO.
-   *TODO.*
-   Connectivity-based fixel enhancement: Whole-brain statistical analysis of diffusion MRI measures in the presence of crossing fibres.
+   *Connectivity-based fixel enhancement: Whole-brain statistical analysis of diffusion MRI measures in the presence of crossing fibres.*
+   TODO.
    [`full text link <https://www.ncbi.nlm.nih.gov/pubmed/26004503>`__\ ]
 
 .. [Raffelt2016] TODO.
-   *TODO.*
-   Investigating white matter fibre density and morphology using fixel-based analysis.
+   *Investigating white matter fibre density and morphology using fixel-based analysis.*
+   TODO.
    [`full text link <https://www.ncbi.nlm.nih.gov/pubmed/27639350>`__\ ]
 
 .. [Reisert2011] M. Reisert, I. Mader, C. Anastasopoulos, M. Weigel, S. Schnell, and V. Kiselev. 
@@ -119,8 +119,8 @@ References
    [`full text link <https://www.sciencedirect.com/science/article/pii/S1053811907001243>`__\ ]
 
 .. [Tournier2012] TODO.
-   *TODO.*
-   MRtrix: Diffusion tractography in crossing fiber regions.
+   *MRtrix: Diffusion tractography in crossing fiber regions.*
+   TODO.
    [`full text link <http://onlinelibrary.wiley.com/doi/10.1002/ima.22005/abstract>`__\ ]
 
 .. [Tournier2013] J.D. Tournier, F. Calamante, and A. Connelly.
