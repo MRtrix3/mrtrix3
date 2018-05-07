@@ -18,6 +18,7 @@
 #include "math/median.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
+#include "interp/linear.h"
 
 
 using namespace MR;
@@ -46,9 +47,6 @@ void usage ()
   + Argument ("out", "the output slice weights.").type_file_out();
 
   OPTIONS
-  + Option ("mask", "image mask")
-    + Argument ("m").type_file_in()
-
   + Option ("loss", "loss function (options: " + join(lossfunc, ", ") + ")")
     + Argument ("f").type_choice(lossfunc)
 
@@ -57,6 +55,12 @@ void usage ()
 
   + Option ("mb", "multiband factor (default = 1)")
     + Argument ("f").type_integer(1)
+
+  + Option ("mask", "image mask")
+    + Argument ("m").type_image_in()
+
+  + Option ("motion", "rigid motion parameters (used for masking)")
+    + Argument ("param").type_file_in()
 
   + Option ("imscale", "intensity matching scale output")
     + Argument ("s").type_image_out()
@@ -72,8 +76,10 @@ using value_type = float;
 class MeanErrorFunctor {
   MEMALIGN(MeanErrorFunctor)
   public:
-    MeanErrorFunctor (const Image<value_type>& in, const Image<bool>& mask, const int mb = 1)
-      : ne (in.size(2) / mb), nv (in.size(3)), mask (mask),
+    MeanErrorFunctor (const Image<value_type>& in, const Image<float>& mask,
+                      const Eigen::MatrixXf& mot, const int mb = 1)
+      : ne (in.size(2) / mb), nv (in.size(3)), T0 (in),
+        mask (mask, 0.0f), motion (mot),
         E (new Eigen::MatrixXf(ne, nv)),
         N (new Eigen::MatrixXi(ne, nv)),
         S (new Eigen::MatrixXf(in.size(2), nv))
@@ -87,10 +93,12 @@ class MeanErrorFunctor {
       value_type e = 0.0;
       value_type s1 = 0.0, s2 = 0.0;
       int n = 0;
+      Eigen::Vector3 pos;
       for (auto l = Loop(0,2) (data, pred); l; l++) {
         if (mask.valid()) {
-          assign_pos_of(data, 0, 3).to(mask);
-          if (!mask.value()) continue;
+          assign_pos_of(data, 0, 3).to(pos);
+          mask.scanner(T0.voxel2scanner * pos);
+          if (mask.value() < 0.5f) continue;
         }
         value_type d = data.value() - pred.value();
         e += d;
@@ -118,7 +126,10 @@ class MeanErrorFunctor {
 
   private:
     const size_t ne, nv;
-    Image<bool> mask;
+    const Transform T0;
+    Interp::Linear<Image<float>> mask;
+    const Eigen::MatrixXf motion;
+
     std::shared_ptr<Eigen::MatrixXf> E;
     std::shared_ptr<Eigen::MatrixXi> N;
     std::shared_ptr<Eigen::MatrixXf> S;
@@ -132,11 +143,21 @@ void run ()
   auto pred = Image<value_type>::open(argument[1]);
   check_dimensions(data, pred, 0, 4);
 
-  auto mask = Image<bool>();
+  auto mask = Image<float>();
   auto opt = get_options("mask");
   if (opt.size()) {
-    mask = Image<bool>::open(opt[0][0]);
+    mask = Image<float>::open(opt[0][0]);
     check_dimensions(data, mask, 0, 3);
+  } else {
+    throw Exception ("mask is required.");
+  }
+
+  Eigen::MatrixXf motion (data.size(3), 6); motion.setZero();
+  opt = get_options("motion");
+  if (opt.size()) {
+    motion = load_matrix<float>(opt[0][0]);
+    if (motion.cols() != 6 || ((data.size(3)*data.size(2)) % motion.rows()))
+      throw Exception("dimension mismatch in motion initialisaton.");
   }
 
   int loss = get_option_value("loss", 1);
@@ -146,7 +167,7 @@ void run ()
     throw Exception ("Multiband factor incompatible with image dimensions.");
 
   // Compute RMSE of each slice
-  MeanErrorFunctor rmse (data, mask, mb);
+  MeanErrorFunctor rmse (data, mask, motion, mb);
   ThreadedLoop("Computing mean residual error", data, 2, 4).run(rmse, data, pred);
   Eigen::MatrixXf E = rmse.result();
 

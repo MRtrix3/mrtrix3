@@ -214,9 +214,10 @@ def reconstep(k):
             ('' if k==0 else ' -motion motion.txt -weights sliceweights.txt -init recon-' + str(k-1) + '.mif') + ' -force' + nthr)
 
 
-def sliceweightstep():
+def sliceweightstep(k):
+    mask_opt = ' -mask mask.mif' + (' -motion motion.txt' if k>0 else '')
     if app.args.matchintensity:
-        run.command('dwisliceoutliers ' + inputfn + ' spred.mif -mask mask.mif sliceweights.txt' + or_option + ' -imscale imscale.mif -force')
+        run.command('dwisliceoutliers ' + inputfn + ' spred.mif' + mask_opt + ' sliceweights.txt' + or_option + ' -imscale imscale.mif -force')
         if app.args.matchintensity == 'full':
             run.command('mrcalc spred.mif -abs -log in.mif -abs -log -sub - ' +
                         '| mrfilter - smooth - -stdev 5,5,0 -extent 45,45,1 | mrcalc - biasfield.mif -force')
@@ -225,7 +226,7 @@ def sliceweightstep():
             run.command('mrcalc biasfield.mif tmp2.mif 0 -eq 0 tmp1.mif tmp2.mif -divide -if -sub - | mrconvert - biasfield.mif -force')
             #run.command('mrmath -axis 0 biasfield.mif mean - | mrmath -axis 1 - mean - | mrcalc biasfield.mif - -sub - | mrconvert - biasfield.mif -force')
     else:
-        run.command('dwisliceoutliers ' + inputfn + ' spred.mif -mask mask.mif sliceweights.txt' + or_option + ' -force')
+        run.command('dwisliceoutliers ' + inputfn + ' spred.mif' + mask_opt + ' sliceweights.txt' + or_option + ' -force')
 
 
 def basisupdatestep(k):
