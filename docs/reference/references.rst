@@ -65,22 +65,22 @@ References
 
 .. [Raffelt2011] TODO.
    *TODO.*
-   TODO.
+   Symmetric diffeomorphic registration of fibre orientation distributions.
    [`full text link <https://www.ncbi.nlm.nih.gov/pubmed/21316463>`__\ ]
 
 .. [Raffelt2012] TODO.
    *TODO.*
-   TODO.
+   Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images.
    [`full text link <https://www.ncbi.nlm.nih.gov/pubmed/22036682>`__\ ]
 
 .. [Raffelt2015] TODO.
    *TODO.*
-   TODO.
+   Connectivity-based fixel enhancement: Whole-brain statistical analysis of diffusion MRI measures in the presence of crossing fibres.
    [`full text link <https://www.ncbi.nlm.nih.gov/pubmed/26004503>`__\ ]
 
 .. [Raffelt2016] TODO.
    *TODO.*
-   TODO.
+   Investigating white matter fibre density and morphology using fixel-based analysis.
    [`full text link <https://www.ncbi.nlm.nih.gov/pubmed/27639350>`__\ ]
 
 .. [Reisert2011] M. Reisert, I. Mader, C. Anastasopoulos, M. Weigel, S. Schnell, and V. Kiselev. 
@@ -120,7 +120,7 @@ References
 
 .. [Tournier2012] TODO.
    *TODO.*
-   TODO.
+   MRtrix: Diffusion tractography in crossing fiber regions.
    [`full text link <http://onlinelibrary.wiley.com/doi/10.1002/ima.22005/abstract>`__\ ]
 
 .. [Tournier2013] J.D. Tournier, F. Calamante, and A. Connelly.
