@@ -78,7 +78,7 @@ References
    TODO.
    [`full text link <https://www.ncbi.nlm.nih.gov/pubmed/26004503>`__\ ]
 
-.. [Raffelt2016] TODO.
+.. [Raffelt2017] TODO.
    *Investigating white matter fibre density and morphology using fixel-based analysis.*
    TODO.
    [`full text link <https://www.ncbi.nlm.nih.gov/pubmed/27639350>`__\ ]
