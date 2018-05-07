@@ -32,7 +32,7 @@ normalise using the median CSF b=0 intensity for each subject as a reference (un
 assumption that the CSF T2 is unlikely to be affected by pathology). However, in
 practice it is surprisingly difficult to obtain a robust partial-volume-free estimate of
 the CSF intensity due to the typical low resolution of DW images. For healthy
-participants less than 50 years old, reasonably small ventricles make it qutie difficult
+participants less than 50 years old, reasonably small ventricles make it quite difficult
 to identify *pure* CSF voxels at 2-2.5mm resolutions. Therefore, performing global
 intensity normalisation using the median *white matter* b=0 intensity may be easier to
 achieve. While the white matter b=0 intensity may be influenced by pathology-induced
@@ -54,7 +54,7 @@ bias field corrected *before* applying :ref:`dwiintensitynorm`, for example usin
 of :ref:`dwiintensitynorm` closely though, as occasional instabilities have been
 observed in the outcomes of particular subjects.
 
-In case of a pipelines that include a multi-tissue spherical deconvolution algorithm
+In case of pipelines that include a multi-tissue spherical deconvolution algorithm
 yielding compartment estimates for multiple different tissues [Jeurissen2014]_
 [Dhollander2016a]_, a *new* command called :ref:`mtnormalise` can be used instead, which
 performs multi-tissue informed intensity normalisation in the log-domain, correcting
