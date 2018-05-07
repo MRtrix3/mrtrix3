@@ -176,7 +176,7 @@ namespace MR
             size_t v = idx/ne;
             auto tmp = Image<float>::scratch(htmp);
             Eigen::Map<Eigen::VectorXf> q (tmp.address(), nxyz);
-            q = X * Y.row(idx).adjoint();
+            q.noalias() = X * Y.row(idx).adjoint();
             for (size_t z = idx%ne; z < nz; z += ne) {
               Eigen::Ref<Eigen::VectorXf> r = dst.segment((nz*v+z)*nxy, nxy);
               project_slice_x2y(v, z, r, tmp);
@@ -217,7 +217,7 @@ namespace MR
             size_t v = idx/ne;
             auto tmp1 = Image<float>::scratch(htmp);
             Eigen::Map<Eigen::VectorXf> q (tmp1.address(), nxyz);
-            q = Xi * Y.row(idx).adjoint();
+            q.noalias() = Xi * Y.row(idx).adjoint();
             auto tmp2 = Image<float>::scratch(htmp);
             Eigen::Map<Eigen::VectorXf> r (tmp2.address(), nxyz);
             r.setZero();
@@ -502,7 +502,9 @@ namespace MR
         // of FWHM equal to 1.2 times the grid size, normalised by stdev^2.
         Eigen::Matrix<Scalar, 5, 1> LoG;
         //LoG << -2.10679125, 0.11171275, 0.02219518, 0.00233811, 0.00020557;  // FWHM = 1.0
-        LoG << -1.38925867, 0.05744929, 0.04629545, 0.0122801, 0.00259698;   // FWHM = 1.2
+        //LoG << -1.38925867, 0.05744929, 0.04629545, 0.0122801, 0.00259698;   // FWHM = 1.2
+        //LoG << -0.68521465, 0.06911206, 0.01821765, 0.00455819, 0.00113959;    // DoG; FWHM = 1.0
+        LoG << -0.60786265, 0.01424496, 0.02985088, 0.01492562, 0.0074629;    // DoG; FWHM = sqrt(2)
         LoG *= std::sqrt(lambda);
 
         L.resize(nxy*nz, nxy*nz);
