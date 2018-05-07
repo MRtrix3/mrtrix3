@@ -4,7 +4,7 @@ Fibre density and cross-section - Single-tissue CSD
 Introduction
 ------------
 
-This tutorial explains how to perform `fixel-based analysis of fibre density and cross-section <https://www.ncbi.nlm.nih.gov/pubmed/27639350>`__ using single-tissue spherical deconvolution. We note that high b-value (>2000s/mm2) data is recommended to aid the interpretation of apparent fibre density (AFD) being related to the intra-axonal space. See this `paper <http://www.ncbi.nlm.nih.gov/pubmed/22036682>`__ for more details.
+This tutorial explains how to perform fixel-based analysis of fibre density and cross-section [Raffelt2017]_ using *single-tissue* spherical deconvolution. We note that high b-value (>2000s/mm2) data is recommended to aid the interpretation of apparent fibre density (AFD) being related to the intra-axonal space. See [Raffelt2012]_ for more details about *single-tissue* AFD.
 
 All steps in this tutorial are written as if the commands are being **run on a cohort of images**, and make extensive use of the :ref:`foreach script to simplify batch processing <batch_processing>`. This tutorial also assumes that the imaging dataset is organised with one directory identifying each subject, and all files within identifying the image type (i.e. processing step outcome). For example::
 
@@ -90,7 +90,7 @@ Fixel-based analysis steps
 
 6. Computing an (average) white matter response function
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-A robust and fully automated (unsupervised) method to obtain single-shell response functions representing single-fibre white matter from your data, is the approach proposed in `Tournier et al. (2013) <http://onlinelibrary.wiley.com/doi/10.1002/nbm.3017/abstract>`__, which can be run by::
+A robust and fully automated (unsupervised) method to obtain single-shell response functions representing single-fibre white matter from your data, is the approach proposed in [Tournier2013]_, which can be run by::
 
     foreach * : dwi2response tournier IN/dwi_denoised_unringed_preproc_unbiased_normalised.mif IN/response.txt
 
