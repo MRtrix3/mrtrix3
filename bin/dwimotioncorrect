@@ -272,7 +272,7 @@ for k, it in enumerate(iters[:-1]):
     #basisupdatestep(k)
     rankreduxstep(k, it.scale)
     # slice weights
-    sliceweightstep()
+    sliceweightstep(k)
     # register template to volumes
     registrationstep(k)
     fieldalignstep(k+1)
