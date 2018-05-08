@@ -222,13 +222,8 @@ namespace MR
             Eigen::Map<Eigen::VectorXf, Eigen::Aligned16> r (tmp2.address(), nxyz);
             r.setZero();
             // Declare temporary slice
-            //Eigen::VectorXf tmpslice (nxy);
             for (size_t z = idx%ne; z < nz; z += ne) {
               project_slice_x2x(v, z, tmp2, tmp1, W(z,v));
-              //tmpslice.setZero();
-              //project_slice_x2y(v, z, tmpslice, tmp1);
-              //tmpslice *= W(z,v);
-              //project_slice_y2x(v, z, tmp2, tmpslice);
             }
             T.noalias() += r * Y.row(idx);
           }, zero);
@@ -503,8 +498,8 @@ namespace MR
         Eigen::Matrix<Scalar, 5, 1> LoG;
         //LoG << -2.10679125, 0.11171275, 0.02219518, 0.00233811, 0.00020557;  // FWHM = 1.0
         //LoG << -1.38925867, 0.05744929, 0.04629545, 0.0122801, 0.00259698;   // FWHM = 1.2
-        //LoG << -0.68521465, 0.06911206, 0.01821765, 0.00455819, 0.00113959;    // DoG; FWHM = 1.0
-        LoG << -0.60786265, 0.01424496, 0.02985088, 0.01492562, 0.0074629;    // DoG; FWHM = sqrt(2)
+        LoG << -0.68521465, 0.06911206, 0.01821765, 0.00455819, 0.00113959;    // DoG; FWHM = 1.0
+        //LoG << -0.60786265, 0.01424496, 0.02985088, 0.01492562, 0.0074629;    // DoG; FWHM = sqrt(2)
         LoG *= std::sqrt(lambda);
 
         L.resize(nxy*nz, nxy*nz);
