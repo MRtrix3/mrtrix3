@@ -15,9 +15,9 @@ from distutils.spawn import find_executable
 from mrtrix3 import app, fsl, image, path, run
 
 opt_N4BiasFieldCorrection = {
-  's': ('4','shrink-factor applied to spatial dimensions'),
-  'b':('[100,3]','[initial mesh resolution in mm, spline order] This value is optimised for human adult data and needs to be adjusted for rodent data.'),
-  'c':('[1000,0.0]', '[numberOfIterations,convergenceThreshold]')}
+    's': ('4','shrink-factor applied to spatial dimensions'),
+    'b':('[100,3]','[initial mesh resolution in mm, spline order] This value is optimised for human adult data and needs to be adjusted for rodent data.'),
+    'c':('[1000,0.0]', '[numberOfIterations,convergenceThreshold]')}
 
 app.init('Robert E. Smith (robert.smith@florey.edu.au)',
          'Perform B1 field inhomogeneity correction for a DWI volume series')
@@ -26,8 +26,8 @@ app.cmdline.addCitation('If using -fast option', 'Smith, S. M.; Jenkinson, M.; W
 app.cmdline.addCitation('If using -ants option', 'Tustison, N.; Avants, B.; Cook, P.; Zheng, Y.; Egan, A.; Yushkevich, P. & Gee, J. N4ITK: Improved N3 Bias Correction. IEEE Transactions on Medical Imaging, 2010, 29, 1310-1320', True)
 antsoptions = app.cmdline.add_argument_group('Options for ANTS N4BiasFieldCorrection')
 for key in sorted(opt_N4BiasFieldCorrection):
-    antsoptions.add_argument('-ants.'+key, metavar=opt_N4BiasFieldCorrection[key][0], help='N4BiasFieldCorrection option -%s. %s' % (key,opt_N4BiasFieldCorrection[key][1]))
-    app.cmdline.flagMutuallyExclusiveOptions( [ '-ants.'+key, 'fsl' ] )
+  antsoptions.add_argument('-ants.'+key, metavar=opt_N4BiasFieldCorrection[key][0], help='N4BiasFieldCorrection option -%s. %s' % (key,opt_N4BiasFieldCorrection[key][1]))
+  app.cmdline.flagMutuallyExclusiveOptions( [ '-ants.'+key, 'fsl' ] )
 app.cmdline.add_argument('input',  help='The input image series to be corrected')
 app.cmdline.add_argument('output', help='The output corrected image series')
 options = app.cmdline.add_argument_group('Options for the dwibiascorrect script')
