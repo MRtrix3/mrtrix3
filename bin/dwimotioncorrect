@@ -194,7 +194,7 @@ iters = [Config(False, 5, 10, 3.0),
          Config(True,  5, 10, 1.9),
          Config(True,  5, 10, 1.5),
          Config(True,  5, 10, 1.2),
-         Config(True, 50, -1, 1.0)]
+         Config(True, 25, -1, 1.0)]
 
 
 
@@ -269,7 +269,7 @@ reconstep(0)
 # running reconstruction
 for k, it in enumerate(iters[:-1]):
     # basis update and rank reduction
-    basisupdatestep(k)
+    #basisupdatestep(k)
     rankreduxstep(k, it.scale)
     # slice weights
     sliceweightstep(k)
