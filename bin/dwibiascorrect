@@ -14,12 +14,20 @@ sys.path.insert(0, lib_folder)
 from distutils.spawn import find_executable
 from mrtrix3 import app, fsl, image, path, run
 
+opt_N4BiasFieldCorrection = {
+  's': ('4','shrink-factor applied to spatial dimensions'),
+  'b':('[100,3]','[initial mesh resolution in mm, spline order] This value is optimised for human adult data and needs to be adjusted for rodent data.'),
+  'c':('[1000,0.0]', '[numberOfIterations,convergenceThreshold]')}
 
 app.init('Robert E. Smith (robert.smith@florey.edu.au)',
          'Perform B1 field inhomogeneity correction for a DWI volume series')
 app.cmdline.addCitation('If using -fast option', 'Zhang, Y.; Brady, M. & Smith, S. Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. IEEE Transactions on Medical Imaging, 2001, 20, 45-57', True)
 app.cmdline.addCitation('If using -fast option', 'Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219', True)
 app.cmdline.addCitation('If using -ants option', 'Tustison, N.; Avants, B.; Cook, P.; Zheng, Y.; Egan, A.; Yushkevich, P. & Gee, J. N4ITK: Improved N3 Bias Correction. IEEE Transactions on Medical Imaging, 2010, 29, 1310-1320', True)
+antsoptions = app.cmdline.add_argument_group('Options for ANTS N4BiasFieldCorrection')
+for key in sorted(opt_N4BiasFieldCorrection):
+    antsoptions.add_argument('-ants.'+key, metavar=opt_N4BiasFieldCorrection[key][0], help='N4BiasFieldCorrection option -%s. %s' % (key,opt_N4BiasFieldCorrection[key][1]))
+    app.cmdline.flagMutuallyExclusiveOptions( [ '-ants.'+key, 'fsl' ] )
 app.cmdline.add_argument('input',  help='The input image series to be corrected')
 app.cmdline.add_argument('output', help='The output corrected image series')
 options = app.cmdline.add_argument_group('Options for the dwibiascorrect script')
@@ -53,6 +61,12 @@ elif app.args.ants:
   if not find_executable('N4BiasFieldCorrection'):
     app.error('Could not find ANTS program N4BiasFieldCorrection; please check installation')
 
+  for key in sorted(opt_N4BiasFieldCorrection):
+    if hasattr(app.args, 'ants.'+key):
+      val = getattr(app.args, 'ants.'+key)
+      if val is not None:
+        opt_N4BiasFieldCorrection[key] = (val, 'user defined')
+  ants_options = ' '.join(['-%s %s' %(k, v[0]) for k, v in opt_N4BiasFieldCorrection.iteritems()])
 else:
   app.error('No bias field estimation algorithm specified')
 
@@ -113,7 +127,7 @@ elif app.args.ants:
   run.command('mrconvert mask.mif mask.nii -strides +1,+2,+3')
   init_bias_path = 'init_bias.nii'
   corrected_path = 'corrected.nii'
-  run.command('N4BiasFieldCorrection -d 3 -i mean_bzero.nii -w mask.nii -o [' + corrected_path + ',' + init_bias_path + '] -s 4 -b [100,3] -c [1000,0.0]')
+  run.command('N4BiasFieldCorrection -d 3 -i mean_bzero.nii -w mask.nii -o [' + corrected_path + ',' + init_bias_path + '] ' + ants_options)
 
   # N4 can introduce large differences between subjects via a global scaling of the bias field
   # Estimate this scaling based on the total integral of the pre- and post-correction images within the brain mask
