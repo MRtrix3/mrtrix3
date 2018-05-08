@@ -209,17 +209,17 @@ namespace MR
       {
         INFO("Full projection.");
         size_t nxyz = nxy*nz;
-        Eigen::Map<const RowMatrixXf> Xi (rhs.data(), nxyz, nc);
-        Eigen::Map<RowMatrixXf> Xo (dst.data(), nxyz, nc);
+        Eigen::Map<const RowMatrixXf, Eigen::Aligned16> Xi (rhs.data(), nxyz, nc);
+        Eigen::Map<RowMatrixXf, Eigen::Aligned16> Xo (dst.data(), nxyz, nc);
         RowMatrixXf zero (nxyz, nc); zero.setZero();
         Xo = Thread::parallel_sum<RowMatrixXf, size_t>(0, nv*ne,
           [&](size_t idx, RowMatrixXf& T) {
             size_t v = idx/ne;
             auto tmp1 = Image<float>::scratch(htmp);
-            Eigen::Map<Eigen::VectorXf> q (tmp1.address(), nxyz);
+            Eigen::Map<Eigen::VectorXf, Eigen::Aligned16> q (tmp1.address(), nxyz);
             q.noalias() = Xi * Y.row(idx).adjoint();
             auto tmp2 = Image<float>::scratch(htmp);
-            Eigen::Map<Eigen::VectorXf> r (tmp2.address(), nxyz);
+            Eigen::Map<Eigen::VectorXf, Eigen::Aligned16> r (tmp2.address(), nxyz);
             r.setZero();
             // Declare temporary slice
             //Eigen::VectorXf tmpslice (nxy);

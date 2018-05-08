@@ -269,7 +269,7 @@ reconstep(0)
 # running reconstruction
 for k, it in enumerate(iters[:-1]):
     # basis update and rank reduction
-    #basisupdatestep(k)
+    basisupdatestep(k)
     rankreduxstep(k, it.scale)
     # slice weights
     sliceweightstep(k)
