@@ -45,10 +45,12 @@ namespace MR
         throw Exception ("Cannot initialise connected component filter: All axes have been disabled");
       // Now generate a list of plausible offsets between adjacent elements
       while (*std::max_element (o.begin(), o.end()) < 2) {
-        // Determine whether or not this offset should be added to the list
-        if (!use_26_neighbours && header.ndim() >= 3 && ((std::abs(o[0]) + std::abs(o[1]) + std::abs(o[2])) > 1))
-          continue;
-        offsets.push_back (o);
+        // Determine whether or not this offset should be added to the list:
+        // - Don't add if we're only using 6 nearest neighbours and this offset isn't one of those six
+        // - Don't add self-connection
+        if (!(!use_26_neighbours && ((std::abs(o[0]) + std::abs(o[1]) + std::abs(o[2])) > 1))
+            && (std::abs(o[0]) + std::abs(o[1]) + std::abs(o[2]) > 0))
+          offsets.push_back (o);
         // Find the next offset to be tested
         ++o[start_axis];
         for (size_t axis = start_axis; axis != header.ndim(); ++axis) {
