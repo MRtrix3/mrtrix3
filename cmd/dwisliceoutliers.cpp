@@ -20,6 +20,8 @@
 #include "dwi/shells.h"
 #include "interp/linear.h"
 
+#include "dwi/svr/param.h"
+
 
 using namespace MR;
 using namespace App;
@@ -90,6 +92,8 @@ class MeanErrorFunctor {
     }
 
     void operator() (Image<value_type>& data, Image<value_type>& pred) {
+      size_t v = data.get_index(3);
+      size_t z = data.get_index(2);
       value_type e = 0.0;
       value_type s1 = 0.0, s2 = 0.0;
       int n = 0;
@@ -97,7 +101,8 @@ class MeanErrorFunctor {
       for (auto l = Loop(0,2) (data, pred); l; l++) {
         if (mask.valid()) {
           assign_pos_of(data, 0, 3).to(pos);
-          mask.scanner(T0.voxel2scanner * pos);
+          transform_type T { DWI::SVR::se3exp(motion.row(v*ne + z%ne)).cast<double>() };
+          mask.scanner(T * T0.voxel2scanner * pos);
           if (mask.value() < 0.5f) continue;
         }
         value_type d = data.value() - pred.value();
@@ -106,10 +111,10 @@ class MeanErrorFunctor {
         s1 += data.value()*pred.value();
         s2 += data.value()*data.value();
       }
-      (*E)(data.get_index(2) % ne, data.get_index(3)) += e;
-      (*N)(data.get_index(2) % ne, data.get_index(3)) += n;
+      (*E)(z % ne, v) += e;
+      (*N)(z % ne, v) += n;
       if (n > 0)
-        (*S)(data.get_index(2), data.get_index(3)) = s1 / s2;
+        (*S)(z, v) = s1 / s2;
     }
 
     Eigen::MatrixXf result() const {
