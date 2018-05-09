@@ -813,6 +813,7 @@ namespace MR
           if (opt.opt->is ("overlay.interpolation")) {
             interpolate_check_box->setCheckState (bool(opt[0]) ? Qt::Checked : Qt::Unchecked);
             interpolate_changed();
+            return true;
           }
 
 
