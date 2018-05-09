@@ -214,6 +214,8 @@ namespace MR
               }
             }
 
+            virtual ~TestBase() { }
+
             /*! Compute the statistics
              * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
              * @param output the matrix containing the output statistics (one column per contrast)

@@ -131,6 +131,8 @@ class SubjectVoxelImport : public SubjectDataImportBase
         H (Header::open (path)),
         data (H.get_image<float>()) { }
 
+    virtual ~SubjectVoxelImport() { }
+
     void operator() (matrix_type::RowXpr row) const override
     {
       assert (v2v);
@@ -317,7 +319,6 @@ void run() {
   if (!get_options ("notest").size()) {
 
     matrix_type perm_distribution, uncorrected_pvalue;
-    // FIXME This shouldn't be empty...
     matrix_type default_cluster_output (num_voxels, num_contrasts);
 
     Stats::PermTest::run_permutations (glm_test, enhancer, empirical_enhanced_statistic,
