@@ -33,8 +33,6 @@ Image masking options
 Non-linear histogram matching options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-cdfs path** output the histogram CDFs to a text file (for debugging)
-
 -  **-bins num** the number of bins to use to generate the histograms
 
 Standard options
@@ -63,7 +61,7 @@ References
 
 
 
-**Author:** Robert E. Smith (robert.smith@florey.edu.au
+**Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
 
