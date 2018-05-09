@@ -76,22 +76,26 @@ void match_linear (Image<float>& input,
     ProgressBar progress ("Loading & sorting image data", 4);
     if (mask_input.valid()) {
       for (auto l = Loop(input) (input, mask_input); l; ++l) {
-        if (mask_input.value())
+        if (mask_input.value() && std::isfinite (input.value()))
           input_data.push_back (input.value());
       }
     } else {
-      for (auto l = Loop(input) (input); l; ++l)
-        input_data.push_back (input.value());
+      for (auto l = Loop(input) (input); l; ++l) {
+        if (std::isfinite (input.value()))
+          input_data.push_back (input.value());
+      }
     }
     ++progress;
     if (mask_target.valid()) {
       for (auto l = Loop(target) (target, mask_target); l; ++l) {
-        if (mask_target.value())
+        if (mask_target.value() && std::isfinite (target.value()))
           target_data.push_back (target.value());
       }
     } else {
-      for (auto l = Loop(target) (target); l; ++l)
-        target_data.push_back (target.value());
+      for (auto l = Loop(target) (target); l; ++l) {
+        if (std::isfinite (target.value()))
+          target_data.push_back (target.value());
+      }
     }
     ++progress;
     std::sort (input_data.begin(), input_data.end());
@@ -131,7 +135,7 @@ void match_linear (Image<float>& input,
       if (std::isfinite(static_cast<float>(input.value()))) {
         output.value() = parameters[0]*input.value() + parameters[1];
       } else {
-        output.value() = 0.0;
+        output.value() = input.value();
       }
     }
   } else {
@@ -141,7 +145,7 @@ void match_linear (Image<float>& input,
       if (std::isfinite(static_cast<float>(input.value()))) {
         output.value() = input.value() * parameters[0];
       } else {
-        output.value() = 0.0;
+        output.value() = input.value();
       }
     }
   }
@@ -177,7 +181,7 @@ void match_nonlinear (Image<float>& input,
     if (std::isfinite(static_cast<float>(input.value()))) {
       output.value() = matcher (input.value());
     } else {
-      output.value() = 0.0;
+      output.value() = input.value();
     }
   }
 }
