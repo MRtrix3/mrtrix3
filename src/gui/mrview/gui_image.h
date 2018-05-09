@@ -88,7 +88,7 @@ namespace MR
           mutable MR::Interp::Nearest<MR::Image<cfloat>> nearest_interp;
           friend class Tool::ODF;
 
-          struct CachedTexture {
+          struct CachedTexture { MEMALIGN(CachedTexture)
             GL::Texture tex;
             float value_min, value_max;
           };
