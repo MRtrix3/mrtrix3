@@ -1133,6 +1133,18 @@ namespace MR
       }
 
 
+      void Window::set_image_volume (size_t axis, ssize_t index)
+      {
+        assert (image());
+        image()->image.index (axis) = index;
+        set_image_navigation_menu();
+        emit volumeChanged (index);
+        updateGL();
+      }
+
+
+
+
       void Window::set_image_visibility (bool flag) {
         image_hide_action->setChecked(! flag);
         mode->set_visible(flag);

@@ -350,7 +350,6 @@ namespace MR
             if (vol < 0 || vol >= image()->image.size(3))
               return;
             window().set_image_volume (3, vol);
-            emit window().volumeChanged (vol);
           }
           else {
             float focus_delta = slice_focus_increment * (new_slice_index - current_slice_index);
