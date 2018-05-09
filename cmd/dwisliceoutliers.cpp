@@ -80,11 +80,11 @@ class MeanErrorFunctor {
   public:
     MeanErrorFunctor (const Image<value_type>& in, const Image<float>& mask,
                       const Eigen::MatrixXf& mot, const int mb = 1)
-      : ne (in.size(2) / mb), nv (in.size(3)), T0 (in),
+      : nv (in.size(3)), nz (in.size(2)), ne (nz / mb), T0 (in),
         mask (mask, 0.0f), motion (mot),
-        E (new Eigen::MatrixXf(ne, nv)),
-        N (new Eigen::MatrixXi(ne, nv)),
-        S (new Eigen::MatrixXf(in.size(2), nv))
+        E (new Eigen::MatrixXf(nz, nv)),
+        N (new Eigen::MatrixXi(nz, nv)),
+        S (new Eigen::MatrixXf(nz, nv))
     {
       E->setZero();
       N->setZero();
@@ -111,17 +111,20 @@ class MeanErrorFunctor {
         s1 += data.value()*pred.value();
         s2 += data.value()*data.value();
       }
-      (*E)(z % ne, v) += e;
-      (*N)(z % ne, v) += n;
+      (*E)(z, v) += e;
+      (*N)(z, v) += n;
       if (n > 0)
         (*S)(z, v) = s1 / s2;
     }
 
     Eigen::MatrixXf result() const {
-      Eigen::MatrixXf R (ne, nv);
-      for (size_t i = 0; i < R.rows(); i++)
-        for (size_t j = 0; j < R.cols(); j++)
-          R(i,j) = (*N)(i,j) ? (*E)(i,j) / (*N)(i,j) : 0.0;
+      Eigen::MatrixXf Emb (ne, nv); Emb.setZero();
+      Eigen::MatrixXi Nmb (ne, nv); Nmb.setZero();
+      for (size_t b = 0; b < nz/ne; b++) {
+        Emb += E->block(b*ne,0,ne,nv);
+        Nmb += N->block(b*ne,0,ne,nv);
+      }
+      Eigen::MatrixXf R = (Nmb.array() > 0).select( Emb.cwiseQuotient(Nmb.cast<float>()) , Eigen::MatrixXf::Zero(ne, nv) );
       return R;
     }
 
@@ -130,7 +133,7 @@ class MeanErrorFunctor {
     }
 
   private:
-    const size_t ne, nv;
+    const size_t nv, nz, ne;
     const Transform T0;
     Interp::Linear<Image<float>> mask;
     const Eigen::MatrixXf motion;
