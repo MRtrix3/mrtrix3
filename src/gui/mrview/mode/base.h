@@ -93,6 +93,7 @@ namespace MR
             virtual void rotate_event ();
             virtual void image_changed_event () {}
             virtual const Projection* get_current_projection() const;
+            virtual void reset_windowing ();
 
             virtual void request_update_mode_gui(ModeGuiVisitor& visitor) const {
               visitor.update_base_mode_gui(*this); }

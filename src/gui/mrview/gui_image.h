@@ -88,8 +88,13 @@ namespace MR
           mutable MR::Interp::Nearest<MR::Image<cfloat>> nearest_interp;
           friend class Tool::ODF;
 
+          struct CachedTexture {
+            GL::Texture tex;
+            float value_min, value_max;
+          };
+
           std::array<float, 3> slice_min, slice_max;
-          std::unordered_map<size_t, GL::Texture> tex_4d_cache;
+          std::unordered_map<size_t, CachedTexture> tex_4d_cache;
 
         private:
           bool volume_unchanged ();

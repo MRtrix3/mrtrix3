@@ -169,6 +169,8 @@ namespace MR
               current_slice_index = original_slice_index / volume_increment;
           }
 
+          float value_min = NaN, value_max = NaN;
+
           ssize_t slice_idx = 0;
           for (ssize_t row = 0; row < n_rows; ++row) {
             for (ssize_t col = 0; col < n_cols; ++col, ++slice_idx) {
@@ -197,6 +199,11 @@ namespace MR
               if (render_plane)
                 draw_plane_primitive (plane(), slice_shader, projection);
 
+              if (render_volumes() && image()->image.index(3) == original_slice_index) {
+                value_min = image()->intensity_min();
+                value_max = image()->intensity_max();
+              }
+
               if (slice_idx == current_slice_index) {
                 // Drawing plane may alter the depth test state
                 // so need to ensure that crosshairs/labels will be visible
@@ -208,8 +215,10 @@ namespace MR
           }
 
           // Restore view state
-          if (render_volumes())
+          if (render_volumes()) {
             image()->image.index(3) = original_slice_index;
+            image()->set_min_max (value_min, value_max);
+          }
 
           set_focus (orig_focus);
           projection.set_viewport (window(), x, y, w, h);
@@ -219,6 +228,7 @@ namespace MR
             gl::Disable(gl::DEPTH_TEST);
             draw_grid();
           }
+
 
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
@@ -399,6 +409,15 @@ namespace MR
 
 
 
+
+        void LightBox::reset_windowing ()
+        {
+          if (image()) {
+            image()->reset_windowing (plane(), false);
+            emit window().on_scaling_changed();
+            updateGL();
+          }
+        }
 
 
 
