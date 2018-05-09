@@ -41,6 +41,8 @@ namespace MR
 
       class EnhancerBase : public Stats::EnhancerBase
       { MEMALIGN (EnhancerBase)
+        public:
+          virtual ~EnhancerBase() { }
         protected:
           // Alternative functor that also takes the threshold value;
           //   makes TFCE integration cleaner
@@ -57,7 +59,7 @@ namespace MR
           Wrapper (const std::shared_ptr<TFCE::EnhancerBase> base) : enhancer (base), dH (NaN), E (NaN), H (NaN) { }
           Wrapper (const std::shared_ptr<TFCE::EnhancerBase> base, const default_type dh, const default_type e, const default_type h) : enhancer (base), dH (dh), E (e), H (h) { }
           Wrapper (const Wrapper& that) = default;
-          ~Wrapper() { }
+          virtual ~Wrapper() { }
 
           void set_tfce_parameters (const value_type d_height, const value_type extent, const value_type height)
           {

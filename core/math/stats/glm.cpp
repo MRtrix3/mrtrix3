@@ -228,7 +228,7 @@ namespace MR
                         matrix_type& std_effect_size,
                         vector_type& stdev)
         {
-          if (extra_columns.empty()) {
+          if (extra_columns.empty() && measurements.allFinite()) {
             all_stats (measurements, fixed_design, contrasts, betas, abs_effect_size, std_effect_size, stdev);
             return;
           }
@@ -282,8 +282,32 @@ namespace MR
                 //   acquire the data for this particular element, without permutation
                 for (size_t col = 0; col != extra_columns.size(); ++col)
                   element_design.col (design_fixed.cols() + col) = (extra_columns[col]) (element_index);
-                Math::Stats::GLM::all_stats (element_data, element_design, contrasts,
-                                             local_betas, local_abs_effect_size, local_std_effect_size, local_stdev);
+                // For each element-wise design matrix, remove any NaN values
+                //   present in either the input data or imported from the element-wise design matrix column data
+                size_t valid_rows = 0;
+                for (size_t row = 0; row != data.rows(); ++row) {
+                  if (std::isfinite (element_data(row)) && element_design.row (row).allFinite())
+                    ++valid_rows;
+                }
+                if (valid_rows == data.rows()) { // No NaNs present
+                  Math::Stats::GLM::all_stats (element_data, element_design, contrasts,
+                                               local_betas, local_abs_effect_size, local_std_effect_size, local_stdev);
+                } else {
+                  // Need to reduce the data and design matrices to contain only finite data
+                  matrix_type element_data_finite (valid_rows, 1);
+                  matrix_type element_design_finite (valid_rows, element_design.cols());
+                  size_t output_row = 0;
+                  for (size_t row = 0; row != data.rows(); ++row) {
+                    if (std::isfinite (element_data(row)) && element_design.row (row).allFinite()) {
+                      element_data_finite(output_row, 0) = element_data(row);
+                      element_design_finite.row (output_row) = element_design.row (row);
+                      ++output_row;
+                    }
+                  }
+                  assert (output_row == valid_rows);
+                  Math::Stats::GLM::all_stats (element_data_finite, element_design_finite, contrasts,
+                                               local_betas, local_abs_effect_size, local_std_effect_size, local_stdev);
+                }
                 global_betas.col (element_index) = local_betas;
                 global_abs_effect_size.row (element_index) = local_abs_effect_size.row (0);
                 global_std_effect_size.row (element_index) = local_std_effect_size.row (0);
