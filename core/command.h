@@ -27,7 +27,6 @@
 
 extern "C" void R_main (int* cmdline_argc, char** cmdline_argv)
 {
-  ::MR::App::build_date = __DATE__;
 #ifdef MRTRIX_PROJECT_VERSION
   ::MR::App::project_version = MRTRIX_PROJECT_VERSION;
 #endif
@@ -75,7 +74,6 @@ int main (int cmdline_argc, char** cmdline_argv)
   mxcsr |= (1<<6); // denormals-are-zero
   _mm_setcsr (mxcsr);
 #endif
-  ::MR::App::build_date = __DATE__;
 #ifdef MRTRIX_PROJECT_VERSION
   ::MR::App::project_version = MRTRIX_PROJECT_VERSION;
 #endif
