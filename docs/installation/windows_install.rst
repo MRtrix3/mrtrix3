@@ -159,7 +159,7 @@ Keeping *MRtrix3* up to date
 
 1. You can update your installation at any time by typing::
 
-       git pull
+       git pull --tags
        ./build
 
 2. If this doesn't work immediately, it may be that you need to re-run
