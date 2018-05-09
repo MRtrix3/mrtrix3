@@ -227,6 +227,16 @@ done_painting:
 
 
 
+        void Base::reset_windowing ()
+        {
+          if (image()) {
+            image()->reset_windowing (plane(), snap_to_image());
+            emit window().on_scaling_changed();
+            updateGL();
+          }
+        }
+
+
 
         void Base::setup_projection (const int axis, ModelViewProjection& with_projection) const
         {

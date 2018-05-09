@@ -1052,12 +1052,8 @@ namespace MR
 
       void Window::image_reset_slot ()
       {
-        Image* imagep = image();
-        if (imagep) {
-          imagep->reset_windowing (anatomical_plane, snap_to_image_action->isChecked());
-          on_scaling_changed();
-          glarea->update();
-        }
+        if (image())
+          mode->reset_windowing ();
       }
 
 

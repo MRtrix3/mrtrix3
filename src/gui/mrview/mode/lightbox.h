@@ -41,6 +41,7 @@ namespace MR
             void tilt_event () override;
             void rotate_event () override;
             void image_changed_event() override;
+            void reset_windowing () override;
 
             void request_update_mode_gui(ModeGuiVisitor& visitor) const override {
               visitor.update_lightbox_mode_gui(*this); }

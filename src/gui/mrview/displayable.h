@@ -100,6 +100,12 @@ namespace MR
             return value_max;
           }
 
+          void set_min_max (float min, float max) {
+            value_min = min;
+            value_max = max;
+            update_levels();
+          }
+
           void set_windowing (float min, float max) {
             display_range = max - min;
             display_midpoint = 0.5 * (min + max);
