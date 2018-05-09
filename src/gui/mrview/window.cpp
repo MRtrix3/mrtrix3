@@ -1926,6 +1926,7 @@ namespace MR
               throw Exception ("-interpolation option expects a boolean");
             }
             image_interpolate_slot();
+            return;
           }
 
           if (opt.opt->is ("intensity_range")) {
