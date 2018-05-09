@@ -3,12 +3,12 @@
 Spherical-deconvolution Informed Filtering of Tractograms (SIFT)
 ================================================================
 
-SIFT, or 'Spherical-deconvolution Informed Filtering of Tractograms', is
-a novel approach for improving the quantitative nature of whole-brain
-streamlines reconstructions. By producing a reconstruction where the
-streamlines densities are proportional to the fibre densities as
-estimated by spherical deconvolution throughout the white matter, the
-number of streamlines connecting two regions becomes a proportional
+SIFT [Smith2013]_, or 'Spherical-deconvolution Informed Filtering of
+Tractograms', is a novel approach for improving the quantitative nature
+of whole-brain streamlines reconstructions. By producing a reconstruction
+where the streamlines densities are proportional to the fibre densities
+as estimated by spherical deconvolution throughout the white matter,
+the number of streamlines connecting two regions becomes a proportional
 estimate of the cross-sectional area of the fibres connecting those two
 regions. We therefore hope that this method will attract usage in a
 range of streamlines tractography applications.
@@ -16,19 +16,6 @@ range of streamlines tractography applications.
 The actual usage of SIFT can be found in the help page of the
 ``tcksift`` command. In this page I'll outline some issues that are
 worth thinking about if you are looking to apply this method.
-
-References
-----------
-
-For full details on SIFT, please refer to the following journal article:
-
-    `Smith, R. E., Tournier, J.-D., Calamante, F., & Connelly, A.
-    (2013). SIFT: Spherical-deconvolution informed filtering of
-    tractograms. NeuroImage, 67, 298–312.
-    doi:10.1016/j.neuroimage.2012.11.049 <http://www.ncbi.nlm.nih.gov/pubmed/23238430>`__
-
-If you use SIFT in your research, please cite the article above in your
-manuscripts.
 
 DWI bias field correction
 -------------------------
