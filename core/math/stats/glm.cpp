@@ -284,8 +284,8 @@ namespace MR
                   element_design.col (design_fixed.cols() + col) = (extra_columns[col]) (element_index);
                 // For each element-wise design matrix, remove any NaN values
                 //   present in either the input data or imported from the element-wise design matrix column data
-                size_t valid_rows = 0;
-                for (size_t row = 0; row != data.rows(); ++row) {
+                ssize_t valid_rows = 0;
+                for (ssize_t row = 0; row != data.rows(); ++row) {
                   if (std::isfinite (element_data(row)) && element_design.row (row).allFinite())
                     ++valid_rows;
                 }
@@ -297,7 +297,7 @@ namespace MR
                   matrix_type element_data_finite (valid_rows, 1);
                   matrix_type element_design_finite (valid_rows, element_design.cols());
                   size_t output_row = 0;
-                  for (size_t row = 0; row != data.rows(); ++row) {
+                  for (ssize_t row = 0; row != data.rows(); ++row) {
                     if (std::isfinite (element_data(row)) && element_design.row (row).allFinite()) {
                       element_data_finite(output_row, 0) = element_data(row);
                       element_design_finite.row (output_row) = element_design.row (row);

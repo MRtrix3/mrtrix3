@@ -14,6 +14,7 @@
 
 #include "command.h"
 #include "image.h"
+#include "types.h"
 
 #include "algo/loop.h"
 #include "file/path.h"
@@ -156,7 +157,7 @@ class SubjectVoxelImport : public SubjectDataImportBase
 
     const Header& header() const { return H; }
 
-    void set_mapping (std::shared_ptr<Voxel2Vector>& ptr) {
+    static void set_mapping (std::shared_ptr<Voxel2Vector>& ptr) {
       v2v = ptr;
     }
 
@@ -185,11 +186,12 @@ void run() {
   // Load analysis mask and compute adjacency
   auto mask_header = Header::open (argument[3]);
   auto mask_image = mask_header.get_image<bool>();
-  Voxel2Vector v2v (mask_image, mask_header);
+  std::shared_ptr<Voxel2Vector> v2v = make_shared<Voxel2Vector> (mask_image, mask_header);
+  SubjectVoxelImport::set_mapping (v2v);
   Filter::Connector connector;
   connector.adjacency.set_26_adjacency (do_26_connectivity);
-  connector.adjacency.initialise (mask_header, v2v);
-  const size_t num_voxels = v2v.size();
+  connector.adjacency.initialise (mask_header, *v2v);
+  const size_t num_voxels = v2v->size();
 
   // Read file names and check files exist
   CohortDataImport importer;
@@ -279,16 +281,16 @@ void run() {
 
     ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_contrasts) + 1);
     for (ssize_t i = 0; i != num_factors; ++i) {
-      write_output (betas.row(i), v2v, prefix + "beta" + str(i) + ".mif", output_header);
+      write_output (betas.row(i), *v2v, prefix + "beta" + str(i) + ".mif", output_header);
       ++progress;
     }
     for (size_t i = 0; i != num_contrasts; ++i) {
       if (!contrasts[i].is_F()) {
-        write_output (abs_effect_size.col(i), v2v, prefix + "abs_effect" + postfix(i) + ".mif", output_header); ++progress;
-        write_output (std_effect_size.col(i), v2v, prefix + "std_effect" + postfix(i) + ".mif", output_header); ++progress;
+        write_output (abs_effect_size.col(i), *v2v, prefix + "abs_effect" + postfix(i) + ".mif", output_header); ++progress;
+        write_output (std_effect_size.col(i), *v2v, prefix + "std_effect" + postfix(i) + ".mif", output_header); ++progress;
       }
     }
-    write_output (stdev, v2v, prefix + "std_dev.mif", output_header);
+    write_output (stdev, *v2v, prefix + "std_dev.mif", output_header);
   }
 
   // Construct the class for performing the initial statistical tests
@@ -329,13 +331,13 @@ void run() {
 
     ProgressBar progress ("Generating output images", 1 + (2 * num_contrasts));
     for (size_t i = 0; i != num_contrasts; ++i) {
-      write_output (uncorrected_pvalue.col(i), v2v, prefix + "uncorrected_pvalue" + postfix(i) + ".mif", output_header);
+      write_output (uncorrected_pvalue.col(i), *v2v, prefix + "uncorrected_pvalue" + postfix(i) + ".mif", output_header);
       ++progress;
     }
     const matrix_type fwe_pvalue_output = MR::Math::Stats::fwe_pvalue (perm_distribution, default_cluster_output);
     ++progress;
     for (size_t i = 0; i != num_contrasts; ++i) {
-      write_output (fwe_pvalue_output.col(i), v2v, prefix + "fwe_pvalue" + postfix(i) + ".mif", output_header);
+      write_output (fwe_pvalue_output.col(i), *v2v, prefix + "fwe_pvalue" + postfix(i) + ".mif", output_header);
       ++progress;
     }
 
