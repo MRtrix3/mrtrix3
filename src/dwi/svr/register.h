@@ -22,7 +22,9 @@
 #include "types.h"
 #include "image.h"
 #include "transform.h"
+#include "interp/nearest.h"
 #include "interp/cubic.h"
+#include "adapter/reslice.h"
 
 #include "dwi/svr/param.h"
 #include "dwi/svr/psf.h"
@@ -232,17 +234,22 @@ namespace MR
             maxiter (maxiter), lmax (Math::SH::LforN(mssh.size(4))),
             ssp (ssp)
         {
-          Header header (mssh);
-          header.ndim() = 3;
-          pred = Image<float>::scratch(header);
+          Header header1 (mssh); header1.ndim() = 3;
+          pred = Image<float>::scratch(header1);
+          if (mask.valid()) {
+            Header header2 (data); header2.ndim() = 3;
+            mask_t = Image<bool>::scratch(header2);
+          }
         }
 
         SliceAlignPipe(const SliceAlignPipe& other)
           : data (other.data), mssh (other.mssh), mask (other.mask), pred (),
             mb (other.mb), maxiter (other.maxiter), lmax (other.lmax), ssp (other.ssp)
         {
-          Header header (other.pred);
-          pred = Image<float>::scratch(header);
+          pred = Image<float>::scratch(other.pred);
+          if (mask.valid()) {
+            mask_t = Image<bool>::scratch(other.mask_t);
+          }
         }
 
         bool operator() (const SliceIdx& slice, SliceIdx& out)
@@ -259,8 +266,14 @@ namespace MR
             for (auto k = Loop(4) (mssh); k; k++, j++)
               pred.value() += delta[j] * mssh.value();
           }
+          // position mask to initialisation
+          if (mask.valid()) {
+            transform_type T { se3exp(slice.motion).cast<double>() };
+            Adapter::Reslice<Interp::Nearest, Image<bool> > reslicer (mask, mask_t, T, {1, 1, 1}, false);
+            copy(reslicer, mask_t);
+          }
           // register prediction to data
-          SliceRegistrationFunctor func (data, pred, mask, mb, ssp, slice.vol, slice.exc);
+          SliceRegistrationFunctor func (data, pred, mask_t, mb, ssp, slice.vol, slice.exc);
           Eigen::LevenbergMarquardt<SliceRegistrationFunctor> lm (func);
           if (maxiter > 0)
             lm.setMaxfev(maxiter);
@@ -276,6 +289,7 @@ namespace MR
         Image<float> mssh;
         Image<bool> mask;
         Image<float> pred;
+        Image<bool> mask_t;
         const size_t mb, maxiter;
         const int lmax;
         const SSP<float> ssp;
