@@ -70,7 +70,7 @@ References
 
 .. [Raffelt2012] D. Raffelt, J.-D. Tournier, S. Rose, G.R. Ridgway, R. Henderson, S. Crozier, O. Salvado, A. Connelly.
    *Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images.*
-    NeuroImage 59 (2012), pp. 3976–3994.
+   NeuroImage 59 (2012), pp. 3976–3994.
    [`full text link <https://www.ncbi.nlm.nih.gov/pubmed/22036682>`__\ ]
 
 .. [Raffelt2015] D.A. Raffelt, R.E. Smith, G.R. Ridgway, J.-D. Tournier, D.N. Vaughan, S. Rose, R. Henderson, A. Connelly.
@@ -80,7 +80,7 @@ References
 
 .. [Raffelt2017] D.A. Raffelt, J.-D. Tournier, R.E. Smith, D.N. Vaughan, G. Jackson, G.R. Ridgway, A. Connelly.
    *Investigating White Matter Fibre Density and Morphology using Fixel-Based Analysis.*
-    NeuroImage, 144 (2017), pp. 58-73.
+   NeuroImage, 144 (2017), pp. 58-73.
    [`full text link <https://www.ncbi.nlm.nih.gov/pubmed/27639350>`__\ ]
 
 .. [Reisert2011] M. Reisert, I. Mader, C. Anastasopoulos, M. Weigel, S. Schnell, and V. Kiselev.
