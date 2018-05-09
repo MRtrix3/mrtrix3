@@ -345,7 +345,8 @@ namespace MR
 
           Eigen::Vector3f slice_focus = focus();
           if (render_volumes()) {
-            ssize_t vol = image()->image.index(3) - current_slice_index + new_slice_index;
+            ssize_t vol = image()->image.index(3) +
+              volume_increment * (new_slice_index - current_slice_index);
             if (vol < 0 || vol >= image()->image.size(3))
               return;
             window().set_image_volume (3, vol);
