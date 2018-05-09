@@ -1106,6 +1106,7 @@ update_git_version (mrtrix_dir[-1], os.path.join (lib_dir, 'version.cpp'), '''
 namespace MR {
   namespace App {
     const char* mrtrix_version = "%%%";
+    const char* build_date = __DATE__;
   }
 }
 ''')

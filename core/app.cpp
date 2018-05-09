@@ -83,7 +83,6 @@ namespace MR
     bool terminal_use_colour = true;
 
     const char* project_version = nullptr;
-    const char* build_date = __DATE__;
 
     int argc = 0;
     const char* const* argv = nullptr;
@@ -564,7 +563,7 @@ namespace MR
     {
       std::string version =
         "== " + App::NAME + " " + ( project_version ? project_version : mrtrix_version ) + " ==\n" +
-        str(8*sizeof (size_t)) + " bit " + MRTRIX_BUILD_TYPE + ", built " __DATE__
+        str(8*sizeof (size_t)) + " bit " + MRTRIX_BUILD_TYPE + ", built " + build_date
         + ( project_version ? std::string(" against MRtrix ") + mrtrix_version : std::string("") )
         + ", using Eigen " + str(EIGEN_WORLD_VERSION) + "." + str(EIGEN_MAJOR_VERSION) + "." + str(EIGEN_MINOR_VERSION) + "\n"
         "Author(s): " + AUTHOR + "\n" +
