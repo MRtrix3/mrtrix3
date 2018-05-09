@@ -17,7 +17,7 @@ resulting information. The instructions for doing so are below.
    is ``lldb``, which comes with the installation of Xcode.
 
 2. *Make sure* you are using the most up-to-date *MRtrix3* code!
-   (``git pull``)
+   (``git pull --tags``)
 
 3. Configure and compile *MRtrix3* in debug mode:
 
