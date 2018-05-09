@@ -386,7 +386,7 @@ full advantage of the higher spatial resolution of the T1 image. If
 ``flirt`` to provide a *transformation matrix*, rather than a translated &
 resampled image:
 
-.. code-block: console
+.. code-block:: console
 
    $ flirt -in T1.nii -ref DWI.nii -omat T12DWI_flirt.mat -dof 6
 
@@ -394,7 +394,7 @@ That transformation matrix should then applied to the T1 image in a manner
 that only influences the transformation stored within the image header, and
 does *not* resample the image to a new voxel grid:
 
-.. code-block: console
+.. code-block:: console
 
    $ transformconvert T12DWI_flirt.mat T1.nii DWI.nii flirt_import T12DWI_mrtrix.txt
    $ mrtransform T1.nii T1_registered.mif -linear T12DWI_mrtrix.txt
