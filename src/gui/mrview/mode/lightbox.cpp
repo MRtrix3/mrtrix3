@@ -159,6 +159,10 @@ namespace MR
           const ssize_t original_slice_index = image()->image.index(3);
 
           if (render_volumes()) {
+            if (current_slice_index < 0)
+              current_slice_index = 0;
+            if (current_slice_index >= n_rows*n_cols)
+              current_slice_index = n_rows*n_cols-1;
             if (original_slice_index + volume_increment * (n_rows*n_cols-1 - current_slice_index) >= image()->image.size(3))
               current_slice_index = n_rows*n_cols-1-(image()->image.size(3)-1-original_slice_index)/volume_increment;
             if (original_slice_index < volume_increment * current_slice_index)
@@ -325,27 +329,27 @@ namespace MR
           ssize_t col = (mouse_pos.x() - projection.x_position()) / dw;
           ssize_t row = n_rows - 1 - (mouse_pos.y() - projection.y_position()) / dh;
 
-          ssize_t prev_index = current_slice_index;
-          current_slice_index = col + row*n_cols;
+          ssize_t new_slice_index = col + row*n_cols;
 
           ModelViewProjection proj = get_projection_at (row, col);
 
           Eigen::Vector3f slice_focus = focus();
           if (render_volumes()) {
-            ssize_t vol = image()->image.index(3) - prev_index + current_slice_index;
-            if (vol < 0)
-              vol = 0;
-            if (vol >= image()->image.size(3))
-              vol = image()->image.size(3)-1;
+            ssize_t vol = image()->image.index(3) - current_slice_index + new_slice_index;
+            TRACE;
+            if (vol < 0 || vol >= image()->image.size(3))
+              return;
+            TRACE;
             window().set_image_volume (3, vol);
             emit window().volumeChanged (vol);
           }
           else {
-            float focus_delta = slice_focus_increment * (current_slice_index - prev_index);
+            float focus_delta = slice_focus_increment * (new_slice_index - current_slice_index);
             slice_focus += move_in_out_displacement(focus_delta, proj);
           }
           set_focus (proj.screen_to_model (mouse_pos, slice_focus));
 
+          current_slice_index = new_slice_index;
           updateGL();
         }
 
