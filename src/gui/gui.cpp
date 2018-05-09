@@ -13,6 +13,8 @@
  */
 
 
+#include <locale>
+#include <clocale>
 #include "gui/gui.h"
 
 namespace MR
@@ -59,6 +61,24 @@ namespace MR
 
     QWidget* App::main_window = nullptr;
     App* App::application = nullptr;
+
+
+
+    App::App (int& cmdline_argc, char** cmdline_argv)
+    {
+      application = this;
+      ::MR::File::Config::init ();
+      ::MR::GUI::GL::set_default_context ();
+
+      new QApplication (cmdline_argc, cmdline_argv);
+
+      QLocale::setDefault(QLocale::c());
+      std::locale::global (std::locale::classic());
+      std::setlocale (LC_ALL, "C");
+
+      qApp->setAttribute (Qt::AA_DontCreateNativeWidgetSiblings);
+    }
+
 
     void App::set_main_window (QWidget* window) {
       main_window = window;
