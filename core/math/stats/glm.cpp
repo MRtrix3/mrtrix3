@@ -169,13 +169,19 @@ namespace MR
                         vector_type& stdev)
         {
 #ifndef GLM_ALL_STATS_DEBUG
-          ProgressBar progress ("Calculating basic properties of default permutation");
+          // If this function is being invoked from the other version of all_stats(),
+          //   on an element-by-element basis, don't interfere with the progress bar
+          //   that's being displayed by that outer looping function
+          std::unique_ptr<ProgressBar> progress;
+          if (measurements.cols() > 1)
+            progress.reset (new ProgressBar ("Calculating basic properties of default permutation", 6));
 #endif
           betas = solve_betas (measurements, design);
 #ifdef GLM_ALL_STATS_DEBUG
           std::cerr << "Betas: " << betas.rows() << " x " << betas.cols() << ", max " << betas.array().maxCoeff() << "\n";
 #else
-          ++progress;
+          if (progress)
+            ++*progress;
 #endif
           abs_effect_size.resize (measurements.cols(), contrasts.size());
           for (size_t ic = 0; ic != contrasts.size(); ++ic) {
@@ -188,7 +194,8 @@ namespace MR
 #ifdef GLM_ALL_STATS_DEBUG
           std::cerr << "abs_effect_size: " << abs_effect_size.rows() << " x " << abs_effect_size.cols() << ", max " << abs_effect_size.array().maxCoeff() << "\n";
 #else
-          ++progress;
+          if (progress)
+            ++*progress;
 #endif
           // Explicit calculation of residuals before SSE, rather than in a single
           //   step, appears to be necessary for compatibility with Eigen 3.2.0
@@ -196,20 +203,23 @@ namespace MR
 #ifdef GLM_ALL_STATS_DEBUG
           std::cerr << "Residuals: " << residuals.rows() << " x " << residuals.cols() << ", max " << residuals.array().maxCoeff() << "\n";
 #else
-          ++progress;
+          if (progress)
+            ++*progress;
 #endif
           vector_type sse (residuals.cols());
           sse = residuals.colwise().squaredNorm();
 #ifdef GLM_ALL_STATS_DEBUG
           std::cerr << "sse: " << sse.size() << ", max " << sse.maxCoeff() << "\n";
 #else
-          ++progress;
+          if (progress)
+            ++*progress;
 #endif
           stdev = (sse / value_type(design.rows()-Math::rank (design))).sqrt();
 #ifdef GLM_ALL_STATS_DEBUG
           std::cerr << "stdev: " << stdev.size() << ", max " << stdev.maxCoeff() << "\n";
 #else
-          ++progress;
+          if (progress)
+            ++*progress;
 #endif
           std_effect_size = abs_effect_size.array().colwise() / stdev;
 #ifdef GLM_ALL_STATS_DEBUG
