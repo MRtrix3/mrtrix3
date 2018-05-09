@@ -1,4 +1,4 @@
 # Test "scale" mode
-M=$(bc <<< "scale=9; $RANDOM/16384") && echo $M > tmp1.txt && mrcalc b0.nii.gz $M -mult tmp1.mif -force && mrhistmatch scale b0.nii.gz tmp1.mif tmp2.mif -force && mrinfo tmp2.mif -property mrhistmatch_scale > tmp2.txt && testing_diff_matrix tmp1.txt tmp2.txt -frac 1e-4
+M=$(bc <<< "scale=9; $RANDOM/16384") && echo $M > tmp1.txt && mrcalc b0.nii.gz $M -mult tmp1.mif -force && mrhistmatch scale b0.nii.gz tmp1.mif tmp2.mif -force && mrinfo tmp2.mif -property mrhistmatch_scale > tmp2.txt && testing_diff_matrix tmp1.txt tmp2.txt -abs 1e-2
 # Test "linear" mode
-M=$(bc <<< "scale=9; $RANDOM/16384") && C=$(bc <<< "$RANDOM-16384") && echo $M > tmp1.txt && echo $C >> tmp1.txt && mrcalc b0.nii.gz $M -mult $C -add tmp1.mif -force && mrhistmatch linear b0.nii.gz tmp1.mif tmp2.mif -force && mrinfo tmp2.mif -property mrhistmatch_scale -property mrhistmatch_offset > tmp2.txt && testing_diff_matrix tmp1.txt tmp2.txt -frac 1e-4
+M=$(bc <<< "scale=9; $RANDOM/16384") && C=$(bc <<< "$RANDOM-16384") && echo $M > tmp1.txt && echo $C >> tmp1.txt && mrcalc b0.nii.gz $M -mult $C -add tmp1.mif -force && mrhistmatch linear b0.nii.gz tmp1.mif tmp2.mif -force && mrinfo tmp2.mif -property mrhistmatch_scale -property mrhistmatch_offset > tmp2.txt && testing_diff_matrix tmp1.txt tmp2.txt -abs 1e-2
