@@ -1052,12 +1052,8 @@ namespace MR
 
       void Window::image_reset_slot ()
       {
-        Image* imagep = image();
-        if (imagep) {
-          imagep->reset_windowing (anatomical_plane, snap_to_image_action->isChecked());
-          on_scaling_changed();
-          glarea->update();
-        }
+        if (image())
+          mode->reset_windowing ();
       }
 
 
@@ -1135,6 +1131,18 @@ namespace MR
         }
 
       }
+
+
+      void Window::set_image_volume (size_t axis, ssize_t index)
+      {
+        assert (image());
+        image()->image.index (axis) = index;
+        set_image_navigation_menu();
+        emit volumeChanged (index);
+        updateGL();
+      }
+
+
 
 
       void Window::set_image_visibility (bool flag) {
