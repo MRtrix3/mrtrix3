@@ -100,6 +100,12 @@ namespace MR
             return value_max;
           }
 
+          void set_min_max (float min, float max) {
+            value_min = min;
+            value_max = max;
+            update_levels();
+          }
+
           void set_windowing (float min, float max) {
             display_range = max - min;
             display_midpoint = 0.5 * (min + max);
@@ -205,7 +211,7 @@ namespace MR
               virtual void update (const Displayable& object);
 
               void start (const Displayable& object) {
-                if (*this  == 0 || need_update (object)) 
+                if (*this  == 0 || need_update (object))
                   recompile (object);
                 GL::Shader::Program::start();
               }
@@ -214,7 +220,7 @@ namespace MR
               size_t colourmap;
 
               void recompile (const Displayable& object) {
-                if (*this != 0) 
+                if (*this != 0)
                   clear();
 
                 update (object);
@@ -241,7 +247,7 @@ namespace MR
             if (use_discard_upper())
               source += "uniform float " + with_prefix+"upper;\n";
             if (use_transparency()) {
-              source += 
+              source +=
                 "uniform float " + with_prefix+"alpha_scale;\n"
                 "uniform float " + with_prefix+"alpha_offset;\n"
                 "uniform float " + with_prefix+"alpha;\n";
@@ -269,7 +275,7 @@ namespace MR
               gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"alpha").c_str()), alpha);
             }
             if (ColourMap::maps[colourmap].is_colour)
-              gl::Uniform3f (gl::GetUniformLocation (shader_program, (with_prefix+"colourmap_colour").c_str()), 
+              gl::Uniform3f (gl::GetUniformLocation (shader_program, (with_prefix+"colourmap_colour").c_str()),
                   colour[0]/255.0, colour[1]/255.0, colour[2]/255.0);
           }
 
@@ -309,11 +315,11 @@ namespace MR
           void update_levels () {
             assert (std::isfinite (value_min));
             assert (std::isfinite (value_max));
-            if (!std::isfinite (transparent_intensity)) 
+            if (!std::isfinite (transparent_intensity))
               transparent_intensity = value_min + 0.1 * (value_max - value_min);
-            if (!std::isfinite (opaque_intensity)) 
+            if (!std::isfinite (opaque_intensity))
               opaque_intensity = value_min + 0.5 * (value_max - value_min);
-            if (!std::isfinite (alpha)) 
+            if (!std::isfinite (alpha))
               alpha = 0.5;
             if (!std::isfinite (lessthan))
               lessthan = value_min;
