@@ -93,6 +93,7 @@ namespace MR
             virtual void rotate_event ();
             virtual void image_changed_event () {}
             virtual const Projection* get_current_projection() const;
+            virtual void reset_windowing ();
 
             virtual void request_update_mode_gui(ModeGuiVisitor& visitor) const {
               visitor.update_base_mode_gui(*this); }
@@ -111,7 +112,7 @@ namespace MR
                 else
                   return Math::Versorf::unit();
               }
-              return window().orientation(); 
+              return window().orientation();
             }
 
             int width () const { return glarea()->width(); }
@@ -120,7 +121,7 @@ namespace MR
 
             Image* image () { return window().image(); }
 
-            void move_target_to_focus_plane (const Projection& projection) {
+            void move_target_to_focus_plane (const ModelViewProjection& projection) {
               Eigen::Vector3f in_plane_target = projection.model_to_screen (target());
               in_plane_target[2] = projection.depth_of (focus());
               set_target (projection.screen_to_model (in_plane_target));
@@ -142,20 +143,20 @@ namespace MR
               return reinterpret_cast <GL::Area*> (window().glarea);
             }
 
-            Eigen::Vector3f move_in_out_displacement (float distance, const Projection& projection) const {
+            Eigen::Vector3f move_in_out_displacement (float distance, const ModelViewProjection& projection) const {
               Eigen::Vector3f move (projection.screen_normal());
               move.normalize();
               move *= distance;
               return move;
             }
 
-            void move_in_out (float distance, const Projection& projection) {
+            void move_in_out (float distance, const ModelViewProjection& projection) {
               if (!image()) return;
               Eigen::Vector3f move = move_in_out_displacement (distance, projection);
               set_focus (focus() + move);
             }
 
-            void move_in_out_FOV (int increment, const Projection& projection) {
+            void move_in_out_FOV (int increment, const ModelViewProjection& projection) {
               move_in_out (MOVE_IN_OUT_FOV_MULTIPLIER * increment * FOV(), projection);
             }
 
@@ -171,12 +172,12 @@ namespace MR
               }
             }
 
-            void setup_projection (const int, Projection&) const;
-            void setup_projection (const Math::Versorf&, Projection&) const;
-            void setup_projection (const GL::mat4&, Projection&) const;
+            void setup_projection (const int, ModelViewProjection&) const;
+            void setup_projection (const Math::Versorf&, ModelViewProjection&) const;
+            void setup_projection (const GL::mat4&, ModelViewProjection&) const;
 
-            Math::Versorf get_tilt_rotation () const;
-            Math::Versorf get_rotate_rotation () const;
+            Math::Versorf get_tilt_rotation (const ModelViewProjection& proj) const;
+            Math::Versorf get_rotate_rotation (const ModelViewProjection& proj) const;
 
             Eigen::Vector3f voxel_at (const Eigen::Vector3f& pos) const {
               if (!image()) return Eigen::Vector3f { NAN, NAN, NAN };
@@ -197,13 +198,19 @@ namespace MR
             int slice (int axis) const { return std::round (voxel_at (focus())[axis]); }
             int slice () const { return slice (plane()); }
 
-            void updateGL () { window().updateGL(); } 
+            void updateGL () { window().updateGL(); }
 
           protected:
+            void slice_move_event (const ModelViewProjection& proj, float x);
+            void set_focus_event (const ModelViewProjection& proj);
+            void pan_event (const ModelViewProjection& proj);
+            void panthrough_event (const ModelViewProjection& proj);
+            void tilt_event (const ModelViewProjection& proj);
+            void rotate_event (const ModelViewProjection& proj);
 
             GL::mat4 adjust_projection_matrix (const GL::mat4& Q, int proj) const;
-            GL::mat4 adjust_projection_matrix (const GL::mat4& Q) const { 
-              return adjust_projection_matrix (Q, plane()); 
+            GL::mat4 adjust_projection_matrix (const GL::mat4& Q) const {
+              return adjust_projection_matrix (Q, plane());
             }
 
             void reset_view ();
