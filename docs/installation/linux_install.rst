@@ -185,7 +185,7 @@ Keeping *MRtrix3* up to date
 1. You can update your installation at any time by opening a terminal in
    the *MRtrix3* folder, and typing::
 
-       git pull --tags
+       git pull
        ./build
 
 2. If this doesn't work immediately, it may be that you need to re-run
@@ -258,7 +258,7 @@ First, obtain the code and extract or clone it on a modern distribution
 required). Then, from the main *MRtrix3* folder::
 
     ./build clean
-    git pull --tags
+    git pull
     ./configure -static [-nogui]
     ./build
 
@@ -295,7 +295,7 @@ What it does
 """"""""""""
 
 The ``package_mrtrix`` script is included in the top-level folder of the
-*MRtrix3* package (if you don't have it, use ``git pull --tags`` to update). In
+*MRtrix3* package (if you don't have it, use ``git pull`` to update). In
 essence, all it does is collate all the dynamic libraries necessary for
 runtime operation into a single folder, which you can then copy over and
 extract onto target systems. For a truly standalone installation, you
@@ -339,7 +339,7 @@ First, obtain the code and extract or clone it on a modern distribution
 required). Then, from the main *MRtrix3* folder::
 
     ./build clean
-    git pull --tags
+    git pull
     ./configure [-nogui]
     ./build
     ./package_mrtrix -standalone
