@@ -86,6 +86,7 @@ namespace MR
 
     int argc = 0;
     const char* const* argv = nullptr;
+    extern const char* mrtrix_command_version;
 
     bool overwrite_files = false;
     void (*check_overwrite_files_func) (const std::string& name) = nullptr;
@@ -1136,6 +1137,14 @@ namespace MR
       if (Path::has_suffix (NAME, ".exe"))
         NAME.erase (NAME.size()-4);
 #endif
+
+      if (strcmp (mrtrix_version, mrtrix_command_version) != 0) {
+        Exception E ("executable version does not match library!");
+        E.push_back (std::string("  ") + NAME + " version: " + mrtrix_command_version);
+        E.push_back (std::string("  library version: ") + mrtrix_version);
+        E.push_back ("Running ./build again may correct error");
+        throw E;
+      }
 
       std::locale::global (std::locale::classic());
       std::setlocale (LC_ALL, "C");

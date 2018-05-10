@@ -1115,6 +1115,14 @@ namespace MR {
 }
 ''')
 
+update_git_version (mrtrix_dir[-1], os.path.join (mrtrix_dir[-1], misc_dir, 'command_version.cpp'), '''
+namespace MR {
+  namespace App {
+    const char* mrtrix_command_version = "%%%";
+  }
+}
+''')
+
 if separate_project:
   if not os.path.exists (misc_dir):
     os.mkdir (misc_dir)

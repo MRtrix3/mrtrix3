@@ -18,6 +18,7 @@
 
 
 #include <xmmintrin.h>
+#include "command_version.h"
 #include "project_version.h"
 #include "app.h"
 
