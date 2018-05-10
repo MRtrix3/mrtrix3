@@ -20,7 +20,7 @@ Desikan-Killiany atlas. The default FreeSurfer pipeline provides the
 volumetric image aparc+aseg.mgz; this is the file that will be used to
 define the nodes of our connectome.
 
-.. figure:: https://cloud.githubusercontent.com/assets/5637955/3505536/d67b65ba-0660-11e4-80a2-3906a9f047be.png
+.. figure:: labelconvert_before.png
    :alt: labelconvert\_before
 
 Looking at the raw image itself, each node possesses a particular
@@ -103,7 +103,7 @@ This is what the actual command call looks like:
 
 And this is what the resulting image looks like:
 
-.. figure:: https://cloud.githubusercontent.com/assets/5637955/3505537/dd15fe80-0660-11e4-92d6-cd9cc94d1acd.png
+.. figure:: labelconvert_after.png
    :alt: labelconvert\_after
 
 The integer labels of the underlying grey matter parcels have been
@@ -174,4 +174,3 @@ using parcellations from alternative sources):
    be using that parcellation scheme, we may choose to add a parser to the
    MRtrix code: contact the developers directly if this is the case.
 
-.. |labelconvert\_after| image:: https://cloud.githubusercontent.com/assets/5637955/3505537/dd15fe80-0660-11e4-92d6-cd9cc94d1acd.png
