@@ -634,7 +634,9 @@ namespace MR
         {
           vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) {
-            const Math::Versorf rot = get_tilt_rotation();
+            const ModelViewProjection* proj = get_current_projection();
+            if (!proj) return;
+            const Math::Versorf rot = get_tilt_rotation (*proj);
             if (!rot)
               return;
             rotate_clip_planes (clip, rot);
@@ -649,7 +651,9 @@ namespace MR
         {
           vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) {
-            const Math::Versorf rot = get_rotate_rotation();
+            const ModelViewProjection* proj = get_current_projection();
+            if (!proj) return;
+            const Math::Versorf rot = get_rotate_rotation (*proj);
             if (!rot)
               return;
             rotate_clip_planes (clip, rot);

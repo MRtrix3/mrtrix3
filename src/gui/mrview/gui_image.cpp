@@ -426,26 +426,54 @@ namespace MR
 
       inline void Image::lookup_texture_4D_cache ()
       {
-        if (!volume_unchanged() && !texture_mode_changed) {
-          size_t vol_idx = image.index(3);
-          auto cached_tex = tex_4d_cache.find(vol_idx);
-          if (cached_tex != tex_4d_cache.end()) {
-            _texture.cache_copy (cached_tex->second);
-            tex_positions[3] = vol_idx;
-          } else {
-            _texture.cache_copy(GL::Texture());
-            tex_positions[3] = -1;
-          }
-
-          bind();
+        if (image.ndim() < 4) {
+          _current_texture = &_texture;
+          return;
         }
+
+        for (size_t i = 4; i < image.ndim(); ++i) {
+          if (image.index (i) != tex_positions[i]) {
+            tex_positions[i] = image.index (i);
+            tex_4d_cache.clear();
+          }
+        }
+
+        if (texture_mode_changed)
+          tex_4d_cache.clear();
+
+        auto cached_tex = tex_4d_cache.find (image.index(3));
+        if (cached_tex != tex_4d_cache.end()) {
+          CachedTexture& entry (cached_tex->second);
+          _current_texture = &entry.tex;
+          value_min = entry.value_min;
+          value_max = entry.value_max;
+          min_max_set();
+          tex_positions[3] = image.index(3);
+        }
+        else {
+          CachedTexture entry;
+          entry.value_min = NaN;
+          entry.value_max = NaN;
+          _current_texture = &(tex_4d_cache[image.index(3)] = std::move(entry)).tex;
+          tex_positions[3] = -1;
+        }
+        bind();
       }
+
+
+
+
 
       inline void Image::update_texture_4D_cache ()
       {
-        if (image.ndim() == 4)
-          tex_4d_cache[image.index(3)].cache_copy(_texture);
+        if (image.ndim() < 4)
+          return;
+
+        tex_4d_cache[image.index(3)].value_min = value_min;
+        tex_4d_cache[image.index(3)].value_max = value_max;
       }
+
+
 
 
       // required to shut up clang's compiler warnings about abs() when
@@ -542,6 +570,7 @@ namespace MR
             ++progress;
           }
         }
+
 
 
 
