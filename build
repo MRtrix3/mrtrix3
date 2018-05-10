@@ -73,6 +73,9 @@ OPTIONS
     -persistent
        keep trying to build regardless of failures, until none of the remaining
        jobs succeed.
+
+    -nopaginate
+       do not feed error log to the paginator, even if running in a TTY
 '''
 
 
@@ -81,7 +84,7 @@ OPTIONS
 #                          COMMON DEFINITIONS                              #
 ############################################################################
 
-import platform, sys, os, time, threading, subprocess, copy, codecs, glob, atexit, tempfile, shutil, fcntl;
+import platform, sys, os, time, threading, subprocess, copy, codecs, glob, atexit, tempfile, shutil;
 
 # on Windows, need to use MSYS2 version of python - not MinGW version:
 if sys.executable[0].isalpha() and sys.executable[1] == ':':
@@ -112,6 +115,7 @@ dep_recursive = False
 verbose = False
 persistent = False
 nowarnings = False
+paginate = True
 targets = []
 use_multiple_cores = True
 
@@ -185,21 +189,6 @@ def pipe_errors_to_less_handler():
 
 
 
-if sys.stderr.isatty():
-  sys.stderr.write ("TTY detected - errors will be displayed in paginator\n")
-  error_stream = ''
-  atexit.register (pipe_errors_to_less_handler)
-else:
-  sys.stderr.write ("no TTY detected - errors will be displayed inline\n")
-
-
-flags = fcntl.fcntl (sys.stdout, fcntl.F_GETFL);
-sys.stderr.write ('stdout is non-blocking: ' + str(flags&os.O_NONBLOCK) + '\n')
-fcntl.fcntl (sys.stdout, fcntl.F_SETFL, flags&~os.O_NONBLOCK);
-
-flags = fcntl.fcntl (sys.stderr, fcntl.F_GETFL);
-sys.stderr.write ('stderr is non-blocking: ' + str(flags&os.O_NONBLOCK) + '\n')
-fcntl.fcntl (sys.stderr, fcntl.F_SETFL, flags&~os.O_NONBLOCK);
 
 
 
@@ -297,6 +286,8 @@ for arg in sys.argv[1:]:
       sys.exit (1)
   elif '-tree'.startswith(arg):
     dep_recursive = True
+  elif '-nopaginate'.startswith(arg):
+    paginate = False
   elif arg[0] == '-':
     sys.stderr.write ('unknown command-line option "' + arg + '"\n')
     sys.exit (1)
@@ -311,6 +302,10 @@ for arg in sys.argv[1:]:
 
 
 
+
+if paginate and sys.stderr.isatty():
+  error_stream = ''
+  atexit.register (pipe_errors_to_less_handler)
 
 
 
