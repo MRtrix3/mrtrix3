@@ -533,9 +533,13 @@ moc_obj_suffix = '_moc' + obj_suffix
 # remove any files that might have been left over from older installations in
 # different locations:
 if os.path.isdir ('release'):
-  disp ("WARNING: removing 'release/' folder - most likely left over from a previous installation\n\n")
+  disp ("WARNING: removing 'release/' folder - most likely left over from a previous installation\n")
   shutil.rmtree ('release')
 
+for entry in glob.glob (os.path.normpath (os.path.join (target_lib_dir, '*' + lib_suffix))):
+  if os.path.basename (entry) != libname:
+    disp ('WARNING: removing "' + entry + '" - most likely left over from a previous installation\n')
+    os.remove (entry)
 
 
 ###########################################################################
