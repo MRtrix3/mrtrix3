@@ -189,12 +189,12 @@ class Config:
         self.scale = scale
 
 
-iters = [Config(False, 5, 10, 3.0),
-         Config(False, 5, 10, 2.4),
-         Config(True,  5, 10, 1.9),
-         Config(True,  5, 10, 1.5),
+iters = [Config(False, 1, 10, 3.0),
+         Config(False, 2, 10, 2.4),
+         Config(True,  3, 10, 1.9),
+         Config(True,  4, 10, 1.5),
          Config(True,  5, 10, 1.2),
-         Config(True, 25, -1, 1.0)]
+         Config(True, 10, -1, 1.0)]
 
 
 
@@ -235,7 +235,7 @@ def basisupdatestep(k):
 
 
 def rankreduxstep(k, scale=1.):
-    run.command('mrfilter recon-' + str(k) + '.mif smooth - -fwhm ' + str(vu*scale) + ' | ' +
+    run.command('mrfilter recon-' + str(k) + '.mif smooth - -fwhm ' + str(round(vu*scale, 2)) + ' | ' +
                 'msshsvd - -mask mask.mif -lmax ' + ','.join([str(l) for l in rlmax]) +
                 ' -lbreg ' + str(lbreg) + ' ' + ' '.join(redrfs) + ' -proj rankredux.mif -force')
 
