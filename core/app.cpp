@@ -217,8 +217,8 @@ namespace MR
     std::string help_head (int format)
     {
       std::string cmd_version = project_version ?
-        std::string ("external module, version ") + project_version + "\n\n" :
-        std::string ("part of the MRtrix package\n\n");
+        std::string ("external MRtrix3 module, version ") + project_version + "\n\n" :
+        std::string ("part of the MRtrix3 package\n\n");
 
       if (!format)
         return std::string (NAME) + ": " + cmd_version;
@@ -227,8 +227,8 @@ namespace MR
       std::string date (build_date);
 
       std::string topline = mrtrix_version_string +
-        std::string (std::max (1, 40-size(mrtrix_version_string)-size(App::NAME)/2), ' ')
-        + bold (App::NAME);
+          std::string (std::max (1, 40-size(mrtrix_version_string)-size(App::NAME)/2), ' ') +
+          bold (App::NAME);
       topline += std::string (80-size(topline)-size(date), ' ') + date;
 
       return topline + "\n\n     " + bold (NAME) + ": " + cmd_version;
@@ -1138,7 +1138,7 @@ namespace MR
         NAME.erase (NAME.size()-4);
 #endif
 
-      if (strcmp (library_version, command_version) != 0) {
+      if (!project_version && strcmp (library_version, command_version) != 0) {
         Exception E ("executable version does not match library!");
         E.push_back (std::string("  ") + NAME + " version: " + command_version);
         E.push_back (std::string("  library version: ") + library_version);
