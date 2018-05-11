@@ -83,7 +83,8 @@ namespace MR
     bool terminal_use_colour = true;
 
     const char* project_version = nullptr;
-    const char* build_date = __DATE__;
+    const char* project_build_date = nullptr;
+    const char* executable_uses_mrtrix_version = nullptr;
 
     int argc = 0;
     const char* const* argv = nullptr;
@@ -216,22 +217,28 @@ namespace MR
 
     std::string help_head (int format)
     {
-      std::string cmd_version = project_version ?
-        std::string ("external module, version ") + project_version + "\n\n" :
-        std::string ("part of the MRtrix package\n\n");
+      if (!format) {
+        return std::string (NAME) + ": " + (project_version ?
+        std::string ("external MRtrix3 project, version ") + project_version + "\nbuilt against MRtrix3 version " + mrtrix_version :
+        std::string ("part of the MRtrix3 package, version ") + mrtrix_version) + "\n\n";
+      }
 
-      if (!format)
-        return std::string (NAME) + ": " + cmd_version;
+      std::string version_string = project_version ?
+        std::string ("Version ") + project_version :
+        std::string ("MRtrix ") + mrtrix_version;
 
-      std::string mrtrix_version_string = std::string("MRtrix ") + mrtrix_version;
-      std::string date (build_date);
+      std::string date (project_version ? project_build_date : build_date);
 
-      std::string topline = mrtrix_version_string +
-        std::string (std::max (1, 40-size(mrtrix_version_string)-size(App::NAME)/2), ' ')
-        + bold (App::NAME);
+      std::string topline = version_string +
+          std::string (std::max (1, 40-size(version_string)-size(App::NAME)/2), ' ') +
+          bold (App::NAME);
       topline += std::string (80-size(topline)-size(date), ' ') + date;
 
-      return topline + "\n\n     " + bold (NAME) + ": " + cmd_version;
+      if (project_version)
+        topline += std::string("\nusing MRtrix3 ") + mrtrix_version;
+
+      return topline + "\n\n     " + bold (NAME) + ": " +
+        (project_version ? "external MRtrix3 project" : "part of the MRtrix3 package") + "\n\n";
     }
 
 
@@ -564,7 +571,7 @@ namespace MR
     {
       std::string version =
         "== " + App::NAME + " " + ( project_version ? project_version : mrtrix_version ) + " ==\n" +
-        str(8*sizeof (size_t)) + " bit " + MRTRIX_BUILD_TYPE + ", built " __DATE__
+        str(8*sizeof (size_t)) + " bit " + MRTRIX_BUILD_TYPE + ", built " + build_date
         + ( project_version ? std::string(" against MRtrix ") + mrtrix_version : std::string("") )
         + ", using Eigen " + str(EIGEN_WORLD_VERSION) + "." + str(EIGEN_MAJOR_VERSION) + "." + str(EIGEN_MINOR_VERSION) + "\n"
         "Author(s): " + AUTHOR + "\n" +
@@ -1137,6 +1144,14 @@ namespace MR
       if (Path::has_suffix (NAME, ".exe"))
         NAME.erase (NAME.size()-4);
 #endif
+
+      if (strcmp (mrtrix_version, executable_uses_mrtrix_version) != 0) {
+        Exception E ("executable was compiled for a different version of the MRtrix3 library!");
+        E.push_back (std::string("  ") + NAME + " version: " + executable_uses_mrtrix_version);
+        E.push_back (std::string("  library version: ") + mrtrix_version);
+        E.push_back ("Running ./build again may correct error");
+        throw E;
+      }
 
       std::locale::global (std::locale::classic());
       std::setlocale (LC_ALL, "C");
