@@ -21,7 +21,8 @@ config
 build.*
 /configure.log
 /build.log
-/core/version.cpp
+/core/library_version.cpp
+/src/command_version.cpp
 /src/project_version.h
 /lib/mrtrix3/_version.py
 /test/src/project_version.h

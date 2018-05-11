@@ -153,7 +153,7 @@ namespace MR
         throw Exception ("Multiple meshes only supported by OBJ file format");
       File::OFStream out (path);
       size_t offset = 1;
-      out << "# mrtrix_version: " << App::mrtrix_version << "\n";
+      out << "# mrtrix_version: " << App::library_version << "\n";
       for (const_iterator i = begin(); i != end(); ++i) {
         out << "o " << i->get_name() << "\n";
         for (VertexList::const_iterator v = i->vertices.begin(); v != i->vertices.end(); ++v)

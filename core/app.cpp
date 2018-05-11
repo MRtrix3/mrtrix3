@@ -86,7 +86,7 @@ namespace MR
 
     int argc = 0;
     const char* const* argv = nullptr;
-    extern const char* mrtrix_command_version;
+    extern const char* command_version;
 
     bool overwrite_files = false;
     void (*check_overwrite_files_func) (const std::string& name) = nullptr;
@@ -223,7 +223,7 @@ namespace MR
       if (!format)
         return std::string (NAME) + ": " + cmd_version;
 
-      std::string mrtrix_version_string = std::string("MRtrix ") + mrtrix_version;
+      std::string mrtrix_version_string = std::string("MRtrix ") + library_version;
       std::string date (build_date);
 
       std::string topline = mrtrix_version_string +
@@ -563,9 +563,9 @@ namespace MR
     std::string version_string ()
     {
       std::string version =
-        "== " + App::NAME + " " + ( project_version ? project_version : mrtrix_version ) + " ==\n" +
+        "== " + App::NAME + " " + ( project_version ? project_version : library_version ) + " ==\n" +
         str(8*sizeof (size_t)) + " bit " + MRTRIX_BUILD_TYPE + ", built " + build_date
-        + ( project_version ? std::string(" against MRtrix ") + mrtrix_version : std::string("") )
+        + ( project_version ? std::string(" against MRtrix ") + library_version : std::string("") )
         + ", using Eigen " + str(EIGEN_WORLD_VERSION) + "." + str(EIGEN_MAJOR_VERSION) + "." + str(EIGEN_MINOR_VERSION) + "\n"
         "Author(s): " + AUTHOR + "\n" +
         COPYRIGHT + "\n";
@@ -696,7 +696,7 @@ namespace MR
         for (size_t i = 0; i < REFERENCES.size(); ++i)
           s += indent_newlines (REFERENCES[i]) + "\n\n";
       }
-      s += std::string("---\n\nMRtrix ") + mrtrix_version + ", built " + build_date + "\n\n"
+      s += std::string("---\n\nMRtrix ") + library_version + ", built " + build_date + "\n\n"
         "\n\n**Author:** " + AUTHOR
         + "\n\n**Copyright:** " + COPYRIGHT + "\n\n";
 
@@ -1138,10 +1138,10 @@ namespace MR
         NAME.erase (NAME.size()-4);
 #endif
 
-      if (strcmp (mrtrix_version, mrtrix_command_version) != 0) {
+      if (strcmp (library_version, command_version) != 0) {
         Exception E ("executable version does not match library!");
-        E.push_back (std::string("  ") + NAME + " version: " + mrtrix_command_version);
-        E.push_back (std::string("  library version: ") + mrtrix_version);
+        E.push_back (std::string("  ") + NAME + " version: " + command_version);
+        E.push_back (std::string("  library version: ") + library_version);
         E.push_back ("Running ./build again may correct error");
         throw E;
       }

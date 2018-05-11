@@ -655,7 +655,7 @@ namespace MR
       if (binary) {
 
         File::OFStream out (path, std::ios_base::binary | std::ios_base::out);
-        const std::string string = std::string ("mrtrix_version: ") + App::mrtrix_version;
+        const std::string string = std::string ("mrtrix_version: ") + App::library_version;
         char header[80];
         strncpy (header, string.c_str(), 80);
         out.write (header, 80);
@@ -701,7 +701,7 @@ namespace MR
     void Mesh::save_obj (const std::string& path) const
     {
       File::OFStream out (path);
-      out << "# mrtrix_version: " << App::mrtrix_version << "\n";
+      out << "# mrtrix_version: " << App::library_version << "\n";
       out << "o " << name << "\n";
       for (VertexList::const_iterator v = vertices.begin(); v != vertices.end(); ++v)
         out << "v " << str((*v)[0]) << " " << str((*v)[1]) << " " << str((*v)[2]) << " 1.0\n";

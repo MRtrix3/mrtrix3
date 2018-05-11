@@ -38,7 +38,7 @@ namespace MR
   {
 
 
-    extern const char* mrtrix_version;
+    extern const char* library_version;
     extern int log_level;
     extern int exit_error_code;
     extern std::string NAME;
