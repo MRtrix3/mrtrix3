@@ -217,22 +217,28 @@ namespace MR
 
     std::string help_head (int format)
     {
-      std::string cmd_version = project_version ?
-        std::string ("external MRtrix3 module, version ") + project_version + "\n\n" :
-        std::string ("part of the MRtrix3 package\n\n");
+      if (!format) {
+        return std::string (NAME) + ": " + (project_version ?
+        std::string ("external MRtrix3 module, version ") + project_version + "\nbuilt against MRtrix3 version " + mrtrix_version :
+        std::string ("part of the MRtrix3 package, version ") + mrtrix_version) + "\n\n";
+      }
 
-      if (!format)
-        return std::string (NAME) + ": " + cmd_version;
+      std::string version_string = project_version ?
+        std::string ("Version ") + project_version :
+        std::string ("MRtrix ") + mrtrix_version;
 
-      std::string mrtrix_version_string = std::string("MRtrix ") + mrtrix_version;
       std::string date (project_version ? project_build_date : build_date);
 
-      std::string topline = mrtrix_version_string +
-          std::string (std::max (1, 40-size(mrtrix_version_string)-size(App::NAME)/2), ' ') +
+      std::string topline = version_string +
+          std::string (std::max (1, 40-size(version_string)-size(App::NAME)/2), ' ') +
           bold (App::NAME);
       topline += std::string (80-size(topline)-size(date), ' ') + date;
 
-      return topline + "\n\n     " + bold (NAME) + ": " + cmd_version;
+      if (project_version)
+        topline += std::string("\nusing MRtrix3 ") + mrtrix_version;
+
+      return topline + "\n\n     " + bold (NAME) + ": " +
+        (project_version ? "external MRtrix3 module" : "part of the MRtrix3 package") + "\n\n";
     }
 
 
