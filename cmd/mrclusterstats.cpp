@@ -315,7 +315,7 @@ void run() {
       throw Exception ("Nonstationary adjustment is not currently implemented for threshold-based cluster analysis");
     Stats::PermTest::precompute_empirical_stat (glm_test, enhancer, empirical_enhanced_statistic);
     for (size_t i = 0; i != num_contrasts; ++i)
-      save_vector (empirical_enhanced_statistic.col(i), prefix + "empirical" + postfix(i) + ".txt");
+      write_output (empirical_enhanced_statistic.col(i), *v2v, prefix + "empirical" + postfix(i) + ".mif", output_header);
   }
 
   // Precompute statistic value and enhanced statistic for the default permutation
