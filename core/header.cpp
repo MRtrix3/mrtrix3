@@ -184,14 +184,14 @@ namespace MR
     try {
       INFO ("creating image \"" + image_name + "\"...");
 
-      H.keyval()["mrtrix_version"] = App::library_version;
+      H.keyval()["mrtrix_version"] = App::mrtrix_version;
       if (App::project_version)
         H.keyval()["project_version"] = App::project_version;
 
       std::string cmd = App::argv[0];
       for (int n = 1; n < App::argc; ++n)
         cmd += std::string(" \"") + App::argv[n] + "\"";
-      cmd += std::string ("  (version=") + App::library_version;
+      cmd += std::string ("  (version=") + App::mrtrix_version;
       if (App::project_version)
         cmd += std::string (", project=") + App::project_version;
       cmd += ")";

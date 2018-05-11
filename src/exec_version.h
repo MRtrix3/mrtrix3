@@ -12,5 +12,13 @@
  * For more details, see http://www.mrtrix.org/
  */
 
-// File intentionally left empty; build script is responsible for writing
-//   corresponding file src/command_version.cpp
+#ifndef __exec_version_h__
+#define __exec_version_h__
+
+namespace MR {
+  namespace App {
+    void set_executable_uses_mrtrix_version ();
+  }
+}
+
+#endif

@@ -38,7 +38,8 @@ namespace MR
   {
 
 
-    extern const char* library_version;
+    extern const char* mrtrix_version;
+    extern const char* build_date;
     extern int log_level;
     extern int exit_error_code;
     extern std::string NAME;
@@ -51,7 +52,7 @@ namespace MR
     extern const char* const* argv;
 
     extern const char* project_version;
-    extern const char* build_date;
+    extern const char* project_build_date;
 
 
     const char* argtype_description (ArgType type);
@@ -60,7 +61,6 @@ namespace MR
     std::string help_synopsis (int format);
     std::string help_tail (int format);
     std::string usage_syntax (int format);
-
 
 
 
