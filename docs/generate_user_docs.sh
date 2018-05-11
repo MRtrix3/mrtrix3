@@ -21,10 +21,10 @@ export PATH=$mrtrix_root/bin:"$PATH"
 List of MRtrix3 commands
 ########################
 
-" > reference/commands_list.rst
+" > ${mrtrix_root}/docs/reference/commands_list.rst
 
-  rm -rf   reference/commands
-  mkdir -p reference/commands
+  rm -rf   ${mrtrix_root}/docs/reference/commands
+  mkdir -p ${mrtrix_root}/docs/reference/commands
   toctree_file=$(mktemp)
   table_file=$(mktemp)
 
@@ -40,8 +40,8 @@ List of MRtrix3 commands
     :header: \"Command\", \"Synopsis\"
 " > $table_file
 
-  for n in `find ../cmd/ -name "*.cpp" | sort`; do
-    dirpath='reference/commands'
+  for n in `find "${mrtrix_root}"/cmd/ -name "*.cpp" | sort`; do
+    dirpath=${mrtrix_root}'/docs/reference/commands'
     cppname=`basename $n`
     cmdname=${cppname%".cpp"}
     cmdpath=$cmdname
@@ -53,7 +53,7 @@ List of MRtrix3 commands
     echo '    commands/'"$cmdname" >> $toctree_file
     echo '    :ref:`'"$cmdname"'`, "'`$cmdpath __print_synopsis__`'"' >> $table_file
   done
-  cat $toctree_file $table_file >> reference/commands_list.rst
+  cat $toctree_file $table_file >> ${mrtrix_root}/docs/reference/commands_list.rst
   rm -f $toctree_file $temp_file
 
 # Generating documentation for all scripts
@@ -65,10 +65,10 @@ List of MRtrix3 commands
 List of MRtrix3 scripts
 #######################
 
-" > reference/scripts_list.rst
+" > ${mrtrix_root}/docs/reference/scripts_list.rst
 
-  rm -rf   reference/scripts
-  mkdir -p reference/scripts
+  rm -rf   ${mrtrix_root}/docs/reference/scripts
+  mkdir -p ${mrtrix_root}/docs/reference/scripts
   toctree_file=$(mktemp)
   table_file=$(mktemp)
 
@@ -84,8 +84,8 @@ List of MRtrix3 scripts
     :header: \"Command\", \"Synopsis\"
 " > $table_file
 
-  for n in `find ../bin/ -type f -print0 | xargs -0 grep -l "app.parse" | sort`; do
-    filepath='reference/scripts'
+  for n in `find "${mrtrix_root}"/bin/ -type f -print0 | xargs -0 grep -l "app.parse" | sort`; do
+    filepath=${mrtrix_root}'/docs/reference/scripts'
     filename=`basename $n`
     $n __print_usage_rst__ > $filepath/$filename.rst
     #sed -ie "1i$filename\n===========\n" $filepath/$filename.rst
@@ -93,10 +93,10 @@ List of MRtrix3 scripts
     echo '    scripts/'"$filename" >> $toctree_file
     echo '    :ref:`'"$filename"'`, "'`$filename __print_synopsis__`'"' >> $table_file
   done
-  cat $toctree_file $table_file >> reference/scripts_list.rst
+  cat $toctree_file $table_file >> ${mrtrix_root}/docs/reference/scripts_list.rst
   rm -f $toctree_file $temp_file
 
 # Generating list of configuration file options
 
-  grep -rn --include=\*.h --include=\*.cpp '^\s*//CONF\b ' ../ | sed -ne 's/^.*CONF \(.*\)/\1/p' | ./format_config_options > reference/config_file_options.rst
+  grep -rn --include=\*.h --include=\*.cpp '^\s*//CONF\b ' "${mrtrix_root}" | sed -ne 's/^.*CONF \(.*\)/\1/p' | "${mrtrix_root}"/docs/format_config_options > ${mrtrix_root}/docs/reference/config_file_options.rst
 

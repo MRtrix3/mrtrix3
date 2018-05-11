@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -56,17 +57,17 @@ namespace MR
 
           Entry ("Jet", 
               "color.rgb = 1.5 - 4.0 * abs (1.0 - amplitude - vec3(0.25, 0.5, 0.75));\n",
-              [] (float amplitude) { return Eigen::Array3f (clamp (1.5f - 4.0f * std::abs (1.0f - amplitude - 0.25f)),
-                                                            clamp (1.5f - 4.0f * std::abs (1.0f - amplitude - 0.5f)),
-                                                            clamp (1.5f - 4.0f * std::abs (1.0f - amplitude - 0.75f))); }),
+              [] (float amplitude) { return Eigen::Array3f (clamp (1.5f - 4.0f * abs (1.0f - amplitude - 0.25f)),
+                                                            clamp (1.5f - 4.0f * abs (1.0f - amplitude - 0.5f)),
+                                                            clamp (1.5f - 4.0f * abs (1.0f - amplitude - 0.75f))); }),
 
           Entry ("PET",
               "color.r = 2.0*amplitude - 0.5;\n"
               "color.g = clamp (2.0 * (0.25 - abs (amplitude - 0.25)), 0.0, 1.0) + clamp (2.0*amplitude - 1.0, 0.0, 1.0);\n"
               "color.b = 1.0 - (clamp (1.0 - 2.0 * amplitude, 0.0, 1.0) + clamp (1.0 - 4.0 * abs (amplitude - 0.75), 0.0, 1.0));\n",
               [] (float amplitude) { return Eigen::Array3f (clamp (2.0f * amplitude - 0.5f),
-                                                            clamp (0.25f - std::abs (amplitude - 0.25f)) + clamp (2.0f * (amplitude - 0.5)),
-                                                            clamp (1.0f - 2.0f * amplitude) + clamp (1.0 - 4.0 * std::abs (amplitude - 0.75))); }),
+                                                            clamp (0.25f - abs (amplitude - 0.25f)) + clamp (2.0f * (amplitude - 0.5)),
+                                                            clamp (1.0f - 2.0f * amplitude) + clamp (1.0 - 4.0 * abs (amplitude - 0.75))); }),
 
           Entry ("Colour", 
               "color.rgb = amplitude * colourmap_colour;\n",

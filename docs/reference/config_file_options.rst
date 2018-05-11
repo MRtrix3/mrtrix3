@@ -244,6 +244,11 @@ List of MRtrix3 configuration file options
 
      The width in pixels between horizontally adjacent colour bars.
 
+*  **MRViewDefaultTractGeomType**
+    *default: Pseudotubes*
+
+     The default geometry type used to render tractograms. Options are Pseudotubes, Lines or Points
+
 *  **MRViewDockFloating**
     *default: 0 (false)*
 
@@ -324,25 +329,30 @@ List of MRtrix3 configuration file options
 
      How many samples to use for multi-sample anti-aliasing (to improve display quality).
 
-*  **NIFTI.AllowBitwise**
+*  **NIfTIAllowBitwise**
     *default: 0 (false)*
 
      A boolean value to indicate whether bitwise storage of binary data is permitted (most 3rd party software packages don't support bitwise data). If false (the default), data will be stored using more widely supported unsigned 8-bit integers.
 
-*  **NIFTI.AlwaysUseVer2**
+*  **NIfTIAlwaysUseVer2**
     *default: 0 (false)*
 
      A boolean value to indicate whether NIfTI images should always be written in the new NIfTI-2 format. If false, images will be written in the older NIfTI-1 format by default, with the exception being files where the number of voxels along any axis exceeds the maximum permissible in that format (32767), in which case the output file will automatically switch to the NIfTI-2 format.
 
-*  **NIfTI.AutoLoadJSON**
+*  **NIfTIAutoLoadJSON**
     *default: 0 (false)*
 
      A boolean value to indicate whether, when opening NIfTI images, any corresponding JSON file should be automatically loaded.
 
-*  **NIfTI.AutoSaveJSON**
+*  **NIfTIAutoSaveJSON**
     *default: 0 (false)*
 
      A boolean value to indicate whether, when writing NIfTI images, a corresponding JSON file should be automatically created in order to save any header entries that cannot be stored in the NIfTI header.
+
+*  **NIfTIUseSform**
+    *default: 0 (false)*
+
+     A boolean value to control whether, in cases where both the sform and qform transformations are defined in an input NIfTI image, but those transformations differ, the sform transformation should be used in preference to the qform matrix (the default behaviour).
 
 *  **NeedOpenGLCoreProfile**
     *default: 1 (true)*
@@ -363,6 +373,51 @@ List of MRtrix3 configuration file options
     *default: 1,1,0 (yellow)*
 
      The default colour to use for objects (i.e. SH glyphs) when not colouring by direction.
+
+*  **RegAnalyseDescent**
+    *default: 0 (false)*
+
+     Linear registration: write comma separated gradient descent parameters and gradients to stdout and verbose gradient descent output to stderr.
+
+*  **RegCoherenceLen**
+    *default: 3.0*
+
+     Linear registration: estimated spatial coherence length in voxels.
+
+*  **RegGdConvergenceDataSmooth**
+    *default: 0.8*
+
+     Linear registration: control point trajectory smoothing value used in convergence check parameter range: [0...1].
+
+*  **RegGdConvergenceMinIter**
+    *default: 10*
+
+     Linear registration: minimum number of iterations until convergence check is activated.
+
+*  **RegGdConvergenceSlopeSmooth**
+    *default: 0.1*
+
+     Linear registration: control point trajectory slope smoothing value used in convergence check parameter range: [0...1].
+
+*  **RegGdConvergenceThresh**
+    *default: 5e-3*
+
+     Linear registration: threshold for convergence check using the smoothed control point trajectories measured in fraction of a voxel.
+
+*  **RegGdWeightMatrix**
+    *default: 0.0003*
+
+     Linear registration: weight for optimisation of linear (3x3) matrix parameters.
+
+*  **RegGdWeightTranslation**
+    *default: 1*
+
+     Linear registration: weight for optimisation of translation parameters.
+
+*  **RegStopLen**
+    *default: 0.0001*
+
+     Linear registration: smallest gradient descent step measured in fraction of a voxel at which to stop registration.
 
 *  **ScriptTmpDir**
     *default: `.`*
@@ -402,7 +457,7 @@ List of MRtrix3 configuration file options
 *  **TmpFileDir**
     *default: `/tmp` (on Unix), `.` (on Windows)*
 
-     The prefix for temporary files (as used in pipelines). By default, these files get written to the current folder, which may cause performance issues when operating over distributed file systems. In this case, it may be better to specify `/tmp/` here.
+     The prefix for temporary files (as used in pipelines). By default, these files get written to the current folder on Windows machines, which may cause performance issues, particularly when operating over distributed file systems. On Unix machines, the default is /tmp/, which is typically a RAM file system and should therefore be fast; but may cause issues on machines with little RAM capacity or where write-access to this location is not permitted.
 
 *  **TmpFilePrefix**
     *default: `mrtrix-tmp-`*
@@ -423,49 +478,4 @@ List of MRtrix3 configuration file options
     *default: 0 (false)*
 
      Whether the screen update should synchronise with the monitor's vertical refresh (to avoid tearing artefacts).
-
-*  **reg_analyse_descent**
-    *default: 0 (false)*
-
-     Linear registration: write comma separated gradient descent parameters and gradients to stdout and verbose gradient descent output to stderr.
-
-*  **reg_coherence_len**
-    *default: 3.0*
-
-     Linear registration: estimated spatial coherence length in voxels.
-
-*  **reg_gd_convergence_data_smooth**
-    *default: 0.8*
-
-     Linear registration: control point trajectory smoothing value used in convergence check parameter range: [0...1].
-
-*  **reg_gd_convergence_min_iter**
-    *default: 10*
-
-     Linear registration: minimum number of iterations until convergence check is activated.
-
-*  **reg_gd_convergence_slope_smooth**
-    *default: 0.1*
-
-     Linear registration: control point trajectory slope smoothing value used in convergence check parameter range: [0...1].
-
-*  **reg_gd_convergence_thresh**
-    *default: 5e-3*
-
-     Linear registration: threshold for convergence check using the smoothed control point trajectories measured in fraction of a voxel.
-
-*  **reg_gdweight_matrix**
-    *default: 0.0003*
-
-     Linear registration: weight for optimisation of linear (3x3) matrix parameters.
-
-*  **reg_gdweight_translation**
-    *default: 1*
-
-     Linear registration: weight for optimisation of translation parameters.
-
-*  **reg_stop_len**
-    *default: 0.0001*
-
-     Linear registration: smallest gradient descent step measured in fraction of a voxel at which to stop registration.
 
