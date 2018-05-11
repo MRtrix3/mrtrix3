@@ -495,7 +495,7 @@ public:
         out <<
             "ply\n"
             "format ascii 1.0\n"
-            "comment written by tckconvert v" << App::library_version << "\n"
+            "comment written by tckconvert v" << App::mrtrix_version << "\n"
             "comment part of the mtrix3 suite of tools (http://www.mrtrix.org/)\n"
             "element vertex " << num_vertices << "\n"
             "property float32 x\n"
@@ -552,7 +552,7 @@ RibWriter(const std::string& file, float radius = 0.1, bool dec = false) : out(f
   out << "##RenderMan RIB\n"
       << "# Written by tckconvert\n"
       << "# Part of the MRtrix package (http://mrtrix.org)\n"
-      << "# version: " << App::library_version << "\n";
+      << "# version: " << App::mrtrix_version << "\n";
 
 }
 

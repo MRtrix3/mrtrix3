@@ -351,7 +351,7 @@ namespace MR
         Raw::store<float64> (H.intensity_scale(), &NH.scl_slope, is_BE);
         Raw::store<float64> (H.intensity_offset(), &NH.scl_inter, is_BE);
 
-        std::string version_string = std::string("MRtrix version: ") + App::library_version;
+        std::string version_string = std::string("MRtrix version: ") + App::mrtrix_version;
         if (App::project_version)
           version_string += std::string(", project version: ") + App::project_version;
         strncpy ( (char*) &NH.descrip, version_string.c_str(), 79);

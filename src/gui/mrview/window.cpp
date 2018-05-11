@@ -1441,7 +1441,7 @@ namespace MR
       void Window::about_slot ()
       {
         std::string message =
-          std::string ("<h1>MRView</h1>The MRtrix viewer, version ") + MR::App::library_version + "<br>"
+          std::string ("<h1>MRView</h1>The MRtrix viewer, version ") + MR::App::mrtrix_version + "<br>"
           "<em>" + str (8*sizeof (size_t)) + " bit "
 #ifdef NDEBUG
           "release"

@@ -496,6 +496,8 @@ please run "./configure" prior to invoking this script
 ''')
   sys.exit (1)
 
+if separate_project:
+  cpp_flags += [ '-DMRTRIX_MODULE' ]
 
 environ = os.environ.copy()
 environ.update ({ 'PATH': PATH })
@@ -541,11 +543,6 @@ moc_obj_suffix = '_moc' + obj_suffix
 if os.path.isdir ('release'):
   disp ('WARNING: removing \'release/\' folder - most likely left over from a previous installation\n')
   shutil.rmtree ('release')
-
-old_version_file_path = os.path.join(lib_dir, 'version.cpp')
-if os.path.isfile (old_version_file_path):
-  disp ('WARNING: removing file \'' + old_version_file_path + ' - most likely left over from a previous installation\n')
-  os.remove (old_version_file_path)
 
 for entry in glob.glob (os.path.normpath (os.path.join (target_lib_dir, '*' + lib_suffix))):
   if os.path.basename (entry) != libname:
@@ -619,6 +616,9 @@ class Entry:
     else: cc_file = self.name
     cc_file = modify_path (os.path.join (cmd_dir, os.sep.join (split_path(cc_file)[1:])), add=cpp_suffix)
     self.deps = list_cmd_deps(cc_file)
+    if separate_project:
+      self.deps = self.deps.union ([ os.path.join (tmp_dir, misc_dir, 'project_version' + obj_suffix) ])
+      print (self.deps)
 
     skip = False
     flags = []
@@ -1117,19 +1117,20 @@ if len(targets) == 0:
 
 
 # get git version info:
-update_git_version (mrtrix_dir[-1], os.path.join (lib_dir, 'library_version.cpp'), '''
+update_git_version (mrtrix_dir[-1], os.path.join (lib_dir, 'version.cpp'), '''
 namespace MR {
   namespace App {
-    const char* library_version = "%%%";
+    const char* mrtrix_version = "%%%";
     const char* build_date = __DATE__;
   }
 }
 ''')
 
-update_git_version (mrtrix_dir[-1], os.path.join (mrtrix_dir[-1], misc_dir, 'command_version.cpp'), '''
+update_git_version (mrtrix_dir[-1], os.path.join (mrtrix_dir[-1], misc_dir, 'exec_version.cpp'), '''
 namespace MR {
   namespace App {
-    const char* command_version = "%%%";
+    extern const char* executable_uses_mrtrix_version;
+    void set_executable_uses_mrtrix_version () { executable_uses_mrtrix_version = "%%%"; }
   }
 }
 ''')
@@ -1137,8 +1138,20 @@ namespace MR {
 if separate_project:
   if not os.path.exists (misc_dir):
     os.mkdir (misc_dir)
-  git_version_file = os.path.join (misc_dir, 'project_version.h')
-  update_git_version ('.', git_version_file, '#define MRTRIX_PROJECT_VERSION "%%%"\n');
+  git_version_file = os.path.join (misc_dir, 'project_version.cpp')
+  update_git_version ('.', git_version_file, '''
+namespace MR {
+  namespace App {
+    extern const char* project_version;
+    extern const char* project_build_date;
+    void set_project_version () {
+      project_version = "%%%";
+      project_build_date = __DATE__;
+    }
+  }
+}
+''')
+
   if not os.path.exists (git_version_file):
     with open (git_version_file, 'w'):
       pass

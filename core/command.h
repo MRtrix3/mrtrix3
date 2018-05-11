@@ -18,9 +18,15 @@
 
 
 #include <xmmintrin.h>
-#include "command_version.cpp"
-#include "project_version.h"
 #include "app.h"
+#include "exec_version.h"
+#ifdef MRTRIX_MODULE
+namespace MR {
+  namespace App {
+    void set_project_version ();
+  }
+}
+#endif
 
 #define MRTRIX_UPDATED_API
 
@@ -28,10 +34,10 @@
 
 extern "C" void R_main (int* cmdline_argc, char** cmdline_argv)
 {
-#ifdef MRTRIX_PROJECT_VERSION
-  ::MR::App::command_version = ::MR::App::project_version = MRTRIX_PROJECT_VERSION;
+  ::MR::App::set_executable_uses_mrtrix_version();
+#ifdef MRTRIX_MODULE
+  ::MR::App::set_project_version();
 #endif
-  SET_MRTRIX_PROJECT_VERSION
   ::MR::App::DESCRIPTION.clear();
   ::MR::App::ARGUMENTS.clear();
   ::MR::App::OPTIONS.clear();
@@ -75,8 +81,9 @@ int main (int cmdline_argc, char** cmdline_argv)
   mxcsr |= (1<<6); // denormals-are-zero
   _mm_setcsr (mxcsr);
 #endif
-#ifdef MRTRIX_PROJECT_VERSION
-  ::MR::App::command_version = ::MR::App::project_version = MRTRIX_PROJECT_VERSION;
+  ::MR::App::set_executable_uses_mrtrix_version();
+#ifdef MRTRIX_MODULE
+  ::MR::App::set_project_version();
 #endif
   try {
     ::MR::App::init (cmdline_argc, cmdline_argv);
