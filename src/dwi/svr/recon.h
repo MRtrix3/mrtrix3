@@ -493,57 +493,53 @@ namespace MR
       void init_laplacian(const float lambda)
       {
         DEBUG("Initialising Laplacian regularizer.");
-        // Regularization convolution filter set as a Laplacian of Gaussian
-        // of FWHM equal to 1.2 times the grid size, normalised by stdev^2.
-        Eigen::Matrix<Scalar, 5, 1> LoG;
-        //LoG << -2.10679125, 0.11171275, 0.02219518, 0.00233811, 0.00020557;  // FWHM = 1.0
-        //LoG << -1.38925867, 0.05744929, 0.04629545, 0.0122801, 0.00259698;   // FWHM = 1.2
-        LoG << -0.68521465, 0.06911206, 0.01821765, 0.00455819, 0.00113959;    // DoG; FWHM = 1.0
-        //LoG << -0.60786265, 0.01424496, 0.02985088, 0.01492562, 0.0074629;    // DoG; FWHM = sqrt(2)
-        LoG *= std::sqrt(lambda);
+        // Regularization convolution filter set as isotropic Laplacian filter.
+        Eigen::Matrix<Scalar, 5, 1> D;
+        D << 0.897355532912, -0.0596831149378, -0.0325677131043, -0.0161064216245, -0.00663148828241;     // 2nd order
+        D *= std::sqrt(lambda);
 
         L.resize(nxy*nz, nxy*nz);
         L.reserve(Eigen::VectorXi::Constant(nxy*nz, 33));
         for (size_t z = 0; z < nz; z++) {
           for (size_t y = 0; y < ny; y++) {
             for (size_t x = 0; x < nx; x++) {
-              L.coeffRef(get_idx(x, y, z), get_idx(x, y, z)) += LoG[0];
+              L.coeffRef(get_idx(x, y, z), get_idx(x, y, z)) += D[0];
 
-              L.coeffRef(get_idx(x, y, z), get_idx(x, y, (z) ? z-1 : 0)) += LoG[1];
-              L.coeffRef(get_idx(x, y, z), get_idx(x, (y) ? y-1 : 0, z)) += LoG[1];
-              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0, y, z)) += LoG[1];
-              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, y, z)) += LoG[1];
-              L.coeffRef(get_idx(x, y, z), get_idx(x, (y < ny-1) ? y+1 : ny-1, z)) += LoG[1];
-              L.coeffRef(get_idx(x, y, z), get_idx(x, y, (z < nz-1) ? z+1 : nz-1)) += LoG[1];
+              L.coeffRef(get_idx(x, y, z), get_idx(x, y, (z) ? z-1 : 0)) += D[1];
+              L.coeffRef(get_idx(x, y, z), get_idx(x, (y) ? y-1 : 0, z)) += D[1];
+              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0, y, z)) += D[1];
+              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, y, z)) += D[1];
+              L.coeffRef(get_idx(x, y, z), get_idx(x, (y < ny-1) ? y+1 : ny-1, z)) += D[1];
+              L.coeffRef(get_idx(x, y, z), get_idx(x, y, (z < nz-1) ? z+1 : nz-1)) += D[1];
 
-              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, (y < ny-1) ? y+1 : ny-1, z)) += LoG[2];
-              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           (y < ny-1) ? y+1 : ny-1, z)) += LoG[2];
-              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, (y) ? y-1 : 0,           z)) += LoG[2];
-              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           (y) ? y-1 : 0,           z)) += LoG[2];
-              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, y, (z < nz-1) ? z+1 : nz-1)) += LoG[2];
-              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           y, (z < nz-1) ? z+1 : nz-1)) += LoG[2];
-              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, y, (z) ? z-1 : 0)          ) += LoG[2];
-              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           y, (z) ? z-1 : 0)          ) += LoG[2];
-              L.coeffRef(get_idx(x, y, z), get_idx(x, (y < ny-1) ? y+1 : ny-1, (z < nz-1) ? z+1 : nz-1)) += LoG[2];
-              L.coeffRef(get_idx(x, y, z), get_idx(x, (y) ? y-1 : 0,           (z < nz-1) ? z+1 : nz-1)) += LoG[2];
-              L.coeffRef(get_idx(x, y, z), get_idx(x, (y < ny-1) ? y+1 : ny-1, (z) ? z-1 : 0)          ) += LoG[2];
-              L.coeffRef(get_idx(x, y, z), get_idx(x, (y) ? y-1 : 0,           (z) ? z-1 : 0)          ) += LoG[2];
+              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, (y < ny-1) ? y+1 : ny-1, z)) += D[2];
+              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           (y < ny-1) ? y+1 : ny-1, z)) += D[2];
+              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, (y) ? y-1 : 0,           z)) += D[2];
+              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           (y) ? y-1 : 0,           z)) += D[2];
+              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, y, (z < nz-1) ? z+1 : nz-1)) += D[2];
+              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           y, (z < nz-1) ? z+1 : nz-1)) += D[2];
+              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, y, (z) ? z-1 : 0)          ) += D[2];
+              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           y, (z) ? z-1 : 0)          ) += D[2];
+              L.coeffRef(get_idx(x, y, z), get_idx(x, (y < ny-1) ? y+1 : ny-1, (z < nz-1) ? z+1 : nz-1)) += D[2];
+              L.coeffRef(get_idx(x, y, z), get_idx(x, (y) ? y-1 : 0,           (z < nz-1) ? z+1 : nz-1)) += D[2];
+              L.coeffRef(get_idx(x, y, z), get_idx(x, (y < ny-1) ? y+1 : ny-1, (z) ? z-1 : 0)          ) += D[2];
+              L.coeffRef(get_idx(x, y, z), get_idx(x, (y) ? y-1 : 0,           (z) ? z-1 : 0)          ) += D[2];
 
-              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           (y) ? y-1 : 0,           (z) ? z-1 : 0)) += LoG[3];
-              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, (y) ? y-1 : 0,           (z) ? z-1 : 0)) += LoG[3];
-              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           (y < ny-1) ? y+1 : ny-1, (z) ? z-1 : 0)) += LoG[3];
-              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, (y < ny-1) ? y+1 : ny-1, (z) ? z-1 : 0)) += LoG[3];
-              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           (y) ? y-1 : 0,           (z < nz-1) ? z+1 : nz-1)) += LoG[3];
-              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, (y) ? y-1 : 0,           (z < nz-1) ? z+1 : nz-1)) += LoG[3];
-              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           (y < ny-1) ? y+1 : ny-1, (z < nz-1) ? z+1 : nz-1)) += LoG[3];
-              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, (y < ny-1) ? y+1 : ny-1, (z < nz-1) ? z+1 : nz-1)) += LoG[3];
+              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           (y) ? y-1 : 0,           (z) ? z-1 : 0)) += D[3];
+              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, (y) ? y-1 : 0,           (z) ? z-1 : 0)) += D[3];
+              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           (y < ny-1) ? y+1 : ny-1, (z) ? z-1 : 0)) += D[3];
+              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, (y < ny-1) ? y+1 : ny-1, (z) ? z-1 : 0)) += D[3];
+              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           (y) ? y-1 : 0,           (z < nz-1) ? z+1 : nz-1)) += D[3];
+              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, (y) ? y-1 : 0,           (z < nz-1) ? z+1 : nz-1)) += D[3];
+              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           (y < ny-1) ? y+1 : ny-1, (z < nz-1) ? z+1 : nz-1)) += D[3];
+              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, (y < ny-1) ? y+1 : ny-1, (z < nz-1) ? z+1 : nz-1)) += D[3];
 
-              L.coeffRef(get_idx(x, y, z), get_idx(x, y, (z > 1) ? z-2 : 0)) += LoG[4];
-              L.coeffRef(get_idx(x, y, z), get_idx(x, (y > 1) ? y-2 : 0, z)) += LoG[4];
-              L.coeffRef(get_idx(x, y, z), get_idx((x > 1) ? x-2 : 0, y, z)) += LoG[4];
-              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-2) ? x+2 : nx-1, y, z)) += LoG[4];
-              L.coeffRef(get_idx(x, y, z), get_idx(x, (y < ny-2) ? y+2 : ny-1, z)) += LoG[4];
-              L.coeffRef(get_idx(x, y, z), get_idx(x, y, (z < nz-2) ? z+2 : nz-1)) += LoG[4];
+              L.coeffRef(get_idx(x, y, z), get_idx(x, y, (z > 1) ? z-2 : 0)) += D[4];
+              L.coeffRef(get_idx(x, y, z), get_idx(x, (y > 1) ? y-2 : 0, z)) += D[4];
+              L.coeffRef(get_idx(x, y, z), get_idx((x > 1) ? x-2 : 0, y, z)) += D[4];
+              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-2) ? x+2 : nx-1, y, z)) += D[4];
+              L.coeffRef(get_idx(x, y, z), get_idx(x, (y < ny-2) ? y+2 : ny-1, z)) += D[4];
+              L.coeffRef(get_idx(x, y, z), get_idx(x, y, (z < nz-2) ? z+2 : nz-1)) += D[4];
             }
           }
         }
