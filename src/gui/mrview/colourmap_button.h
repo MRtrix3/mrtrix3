@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -47,6 +48,7 @@ public:
                     bool use_special_colourmaps = true,
                     bool use_customise_state_items = true);
     void set_colourmap_index(size_t index);
+    void set_fixed_colour();
     vector<QAction*> colourmap_actions;
     void open_menu (const QPoint& p) { colourmap_menu->exec (p); }
 private:
@@ -65,6 +67,8 @@ private:
 
     QMenu* colourmap_menu;
     QAction* custom_colour_action;
+
+    size_t fixed_colour_index;
 
 
 private slots:

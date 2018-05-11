@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -58,7 +59,7 @@ void run ()
     const double tol = opt[0][0];
     
     for (size_t i = 0; i != numel; ++i) {
-      if (std::abs ((*(in1.data()+i) - *(in2.data()+i)) / (0.5 * (*(in1.data()+i) + *(in2.data()+i)))) > tol)
+      if (abs ((*(in1.data()+i) - *(in2.data()+i)) / (0.5 * (*(in1.data()+i) + *(in2.data()+i)))) > tol)
         throw Exception ("matrices \"" + Path::basename (argument[0]) + "\" and \"" + Path::basename (argument[1]) + " do not match within fractional precision of " + str(tol)
                          + " (" + str(*(in1.data()+i)) + " vs " + str(*(in2.data()+i)) + ")");
     }
@@ -71,7 +72,7 @@ void run ()
       tol = opt[0][0];
 
     for (size_t i = 0; i != numel; ++i) {
-      if (std::abs (*(in1.data()+i) - *(in2.data()+i)) > tol)
+      if (abs (*(in1.data()+i) - *(in2.data()+i)) > tol)
         throw Exception ("matrices \"" + Path::basename (argument[0]) + "\" and \"" + Path::basename (argument[1]) + " do not match within absolute precision of " + str(tol)
                          + " (" + str(*(in1.data()+i)) + " vs " + str(*(in2.data()+i)) + ")");
     }
