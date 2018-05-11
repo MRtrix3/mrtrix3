@@ -618,7 +618,6 @@ class Entry:
     self.deps = list_cmd_deps(cc_file)
     if separate_project:
       self.deps = self.deps.union ([ os.path.join (tmp_dir, misc_dir, 'project_version' + obj_suffix) ])
-      print (self.deps)
 
     skip = False
     flags = []
