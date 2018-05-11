@@ -121,7 +121,7 @@ void match_linear (Image<float>& input,
   if (estimate_intercept)
     input_matrix.col(1).fill (1.0f);
 
-  auto parameters = (input_matrix.transpose() * input_matrix).ldlt().solve(input_matrix.transpose() * output_vector).eval();
+  auto parameters = input_matrix.fullPivLu().solve (output_vector).eval();
 
   Header H (input);
   H.datatype() = DataType::Float32;
