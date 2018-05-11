@@ -219,7 +219,7 @@ namespace MR
     {
       if (!format) {
         return std::string (NAME) + ": " + (project_version ?
-        std::string ("external MRtrix3 module, version ") + project_version + "\nbuilt against MRtrix3 version " + mrtrix_version :
+        std::string ("external MRtrix3 project, version ") + project_version + "\nbuilt against MRtrix3 version " + mrtrix_version :
         std::string ("part of the MRtrix3 package, version ") + mrtrix_version) + "\n\n";
       }
 
@@ -238,7 +238,7 @@ namespace MR
         topline += std::string("\nusing MRtrix3 ") + mrtrix_version;
 
       return topline + "\n\n     " + bold (NAME) + ": " +
-        (project_version ? "external MRtrix3 module" : "part of the MRtrix3 package") + "\n\n";
+        (project_version ? "external MRtrix3 project" : "part of the MRtrix3 package") + "\n\n";
     }
 
 
