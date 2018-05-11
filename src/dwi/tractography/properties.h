@@ -45,7 +45,7 @@ namespace MR
           }
 
           void set_version_info () {
-            (*this)["mrtrix_version"] = App::mrtrix_version;
+            (*this)["mrtrix_version"] = App::library_version;
             if (App::project_version)
               (*this)["project_version"] = App::project_version;
           }

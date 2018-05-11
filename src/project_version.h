@@ -12,4 +12,6 @@
  * For more details, see http://www.mrtrix.org/
  */
 
-
+// File intentionally left empty; build script is responsible for writing
+//   contents into a file at this location only for external projects
+//   compiled against the MRtrix3 libraries

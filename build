@@ -84,7 +84,7 @@ OPTIONS
 #                          COMMON DEFINITIONS                              #
 ############################################################################
 
-import platform, sys, os, time, threading, subprocess, copy, codecs, glob, atexit, tempfile, shutil;
+import platform, sys, os, time, threading, subprocess, copy, codecs, glob, atexit, tempfile, shutil
 
 # on Windows, need to use MSYS2 version of python - not MinGW version:
 if sys.executable[0].isalpha() and sys.executable[1] == ':':
@@ -539,8 +539,13 @@ moc_obj_suffix = '_moc' + obj_suffix
 # remove any files that might have been left over from older installations in
 # different locations:
 if os.path.isdir ('release'):
-  disp ("WARNING: removing 'release/' folder - most likely left over from a previous installation\n")
+  disp ('WARNING: removing \'release/\' folder - most likely left over from a previous installation\n')
   shutil.rmtree ('release')
+
+old_version_file_path = os.path.join(lib_dir, 'version.cpp')
+if os.path.isfile (old_version_file_path):
+  disp ('WARNING: removing file \'' + old_version_file_path + ' - most likely left over from a previous installation\n')
+  os.remove (old_version_file_path)
 
 for entry in glob.glob (os.path.normpath (os.path.join (target_lib_dir, '*' + lib_suffix))):
   if os.path.basename (entry) != libname:
@@ -1112,10 +1117,10 @@ if len(targets) == 0:
 
 
 # get git version info:
-update_git_version (mrtrix_dir[-1], os.path.join (lib_dir, 'version.cpp'), '''
+update_git_version (mrtrix_dir[-1], os.path.join (lib_dir, 'library_version.cpp'), '''
 namespace MR {
   namespace App {
-    const char* mrtrix_version = "%%%";
+    const char* library_version = "%%%";
     const char* build_date = __DATE__;
   }
 }
@@ -1124,7 +1129,7 @@ namespace MR {
 update_git_version (mrtrix_dir[-1], os.path.join (mrtrix_dir[-1], misc_dir, 'command_version.cpp'), '''
 namespace MR {
   namespace App {
-    const char* mrtrix_command_version = "%%%";
+    const char* command_version = "%%%";
   }
 }
 ''')
