@@ -69,7 +69,7 @@ void usage ()
   + "- A 4D scalar image of fixel values with one 3D volume per fixel: split_data"
   + "- A 4D image of fixel directions, stored as three 3D volumes per fixel direction: split_dir";
 
-  REFERENCES 
+  REFERENCES
     + "* Reference for 'complexity' operation:\n"
     "Riffert, T. W.; Schreiber, J.; Anwander, A. & Knosche, T. R. "
     "Beyond Fractional Anisotropy: Extraction of bundle-specific structural metrics from crossing fibre models. "
@@ -304,8 +304,8 @@ class AbsMax : protected Base
     {
       default_type absmax = -std::numeric_limits<default_type>::infinity();
       for (auto f = Base::Loop (index) (data); f; ++f) {
-        if (!f.padding() && abs (data.value()) > absmax)
-          absmax = abs (data.value());
+        if (!f.padding() && abs (float(data.value())) > absmax)
+          absmax = abs (float(data.value()));
       }
       out.value() = std::isfinite (absmax) ? absmax : 0.0;
     }
@@ -322,7 +322,7 @@ class MagMax : protected Base
     {
       default_type magmax = 0.0;
       for (auto f = Base::Loop (index) (data); f; ++f) {
-        if (!f.padding() && abs (data.value()) > abs (magmax))
+        if (!f.padding() && abs (float(data.value())) > abs (magmax))
           magmax = data.value();
       }
       out.value() = std::isfinite (magmax) ? magmax : 0.0;
