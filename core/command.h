@@ -18,7 +18,7 @@
 
 
 #include <xmmintrin.h>
-#include "command_version.h"
+#include "command_version.cpp"
 #include "project_version.h"
 #include "app.h"
 
@@ -29,7 +29,7 @@
 extern "C" void R_main (int* cmdline_argc, char** cmdline_argv)
 {
 #ifdef MRTRIX_PROJECT_VERSION
-  ::MR::App::project_version = MRTRIX_PROJECT_VERSION;
+  ::MR::App::command_version = ::MR::App::project_version = MRTRIX_PROJECT_VERSION;
 #endif
   SET_MRTRIX_PROJECT_VERSION
   ::MR::App::DESCRIPTION.clear();
@@ -76,7 +76,7 @@ int main (int cmdline_argc, char** cmdline_argv)
   _mm_setcsr (mxcsr);
 #endif
 #ifdef MRTRIX_PROJECT_VERSION
-  ::MR::App::project_version = MRTRIX_PROJECT_VERSION;
+  ::MR::App::command_version = ::MR::App::project_version = MRTRIX_PROJECT_VERSION;
 #endif
   try {
     ::MR::App::init (cmdline_argc, cmdline_argv);
