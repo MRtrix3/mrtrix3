@@ -8,10 +8,10 @@ addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
-      - llvm-toolchain-trusty-5.0
+      - llvm-toolchain-trusty-6.0
     packages:
       - g++-7
-      - clang-5.0
+      - clang-6.0
       - zlib1g-dev
       - libqt4-opengl-dev
       - python3
@@ -23,7 +23,7 @@ matrix:
     # Run a single OSX job to test compilation only #
     #################################################
     - os: osx
-      env: TRAVIS_CXX=clang++ py=python test=build
+      env: CFLAGS="-Werror" TRAVIS_CXX=clang++ py=python test=build
     ###############################################
     # All subsequent tests are performed on Linux #
     ###############################################
@@ -32,13 +32,13 @@ matrix:
     # (Note: Run this one first, since it'll be the longest job)        #
     #####################################################################
     - os: linux
-      env: TRAVIS_CXX=clang++-5.0 py=python3 test=run
+      env: CFLAGS="-Werror" TRAVIS_CXX=clang++-6.0 py=python3 test=run
     #######################################################################
     # Build binaries (without optimisation): GCC, Python2                 #
     # (Also ensures both Python 2 and 3 are tested for configure & build) #
     #######################################################################
     - os: linux
-      env: TRAVIS_CXX=g++-7 py=python2 test=build
+      env: CFLAGS="-Werror" TRAVIS_CXX=g++-7 py=python2 test=build
     #######################################################################
     # Generate documentation through Sphinx; Use both Python2 and Python3 #
     #######################################################################

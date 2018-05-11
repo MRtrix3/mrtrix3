@@ -176,7 +176,7 @@ List of MRtrix3 commands
     :ref:`mrdump`, "Print out the values within an image"
     :ref:`mredit`, "Directly edit the intensities within an image from the command-line"
     :ref:`mrfilter`, "Perform filtering operations on 3D / 4D MR images"
-    :ref:`mrhistmatch`, "Modify the intensities of one image to match the histogram of another via a non-linear transform"
+    :ref:`mrhistmatch`, "Modify the intensities of one image to match the histogram of another"
     :ref:`mrhistogram`, "Generate a histogram of image intensities"
     :ref:`mrinfo`, "Display image header information, or extract specific information from the header"
     :ref:`mrmath`, "Compute summary statistic on image intensities either across images, or along a specified axis of a single image"

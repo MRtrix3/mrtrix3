@@ -149,14 +149,15 @@ namespace MR
 
   inline std::string printf (const char* format, ...)
   {
-    va_list list;
-    va_start (list, format);
-    size_t len = vsnprintf (NULL, 0, format, list) + 1;
-    va_end (list);
+    size_t len = 0;
+    va_list list1, list2;
+    va_start (list1, format);
+    va_copy (list2, list1);
+    len = vsnprintf (nullptr, 0, format, list1) + 1;
+    va_end (list1);
     VLA(buf, char, len);
-    va_start (list, format);
-    vsnprintf (buf, len, format, list);
-    va_end (list);
+    vsnprintf (buf, len, format, list2);
+    va_end (list2);
     return buf;
   }
 

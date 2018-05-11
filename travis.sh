@@ -17,10 +17,10 @@ case  $test in
     PYTHON=$py ./run_pylint
     ;;
   "build")
-    $py ./configure -nooptim && $py ./build -nowarnings -persistent
+    $py ./configure -nooptim && $py ./build -nowarnings -persistent -nopaginate
     ;;
   "run")
-    $py ./configure -assert && $py ./build -nowarnings -persistent && ./run_tests && ./docs/generate_user_docs.sh && git diff --exit-code docs/ > gitdiff.log
+    $py ./configure -assert && $py ./build -nowarnings -persistent -nopaginate && ./run_tests && ./docs/generate_user_docs.sh && git diff --exit-code docs/ > gitdiff.log
     ;;
   *)
     echo "Envvar \"test\" not defined";

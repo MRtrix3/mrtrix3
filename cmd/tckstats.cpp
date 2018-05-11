@@ -109,7 +109,7 @@ void run ()
   float step_size = NaN;
   size_t count = 0, header_count = 0;
   float min_length = std::numeric_limits<float>::infinity();
-  float max_length = 0.0f;
+  float max_length = -std::numeric_limits<float>::infinity();
   double sum_lengths = 0.0, sum_weights = 0.0;
   vector<double> histogram;
   vector<LW> all_lengths;
@@ -159,29 +159,37 @@ void run ()
     }
   }
 
-  if (histogram.front() && !get_options ("ignorezero").size())
+  if (histogram.size() && histogram.front() && !get_options ("ignorezero").size())
     WARN ("read " + str(histogram.front()) + " zero-length tracks");
   if (count != header_count)
     WARN ("expected " + str(header_count) + " tracks according to header; read " + str(count));
+  if (!std::isfinite (min_length))
+    min_length = NaN;
+  if (!std::isfinite (max_length))
+    max_length = NaN;
 
-  const float mean_length = sum_lengths / sum_weights;
+  const float mean_length = sum_weights ? (sum_lengths / sum_weights) : NaN;
 
   float median_length = 0.0f;
-  if (weights_provided) {
-    // Perform a weighted median calculation
-    std::sort (all_lengths.begin(), all_lengths.end());
-    size_t median_index = 0;
-    double sum = sum_weights - all_lengths[0].get_weight();
-    while (sum > 0.5 * sum_weights) { sum -= all_lengths[++median_index].get_weight(); }
-    median_length = all_lengths[median_index].get_length();
+  if (count) {
+    if (weights_provided) {
+      // Perform a weighted median calculation
+      std::sort (all_lengths.begin(), all_lengths.end());
+      size_t median_index = 0;
+      double sum = sum_weights - all_lengths[0].get_weight();
+      while (sum > 0.5 * sum_weights) { sum -= all_lengths[++median_index].get_weight(); }
+      median_length = all_lengths[median_index].get_length();
+    } else {
+      median_length = Math::median (all_lengths).get_length();
+    }
   } else {
-    median_length = Math::median (all_lengths).get_length();
+    median_length = NaN;
   }
 
   double stdev = 0.0;
   for (vector<LW>::const_iterator i = all_lengths.begin(); i != all_lengths.end(); ++i)
     stdev += i->get_weight() * Math::pow2 (i->get_length() - mean_length);
-  stdev = std::sqrt (stdev / (((count - 1) / float(count)) * sum_weights));
+  stdev = sum_weights ? (std::sqrt (stdev / (((count - 1) / float(count)) * sum_weights))) : NaN;
 
   vector<std::string> fields;
   auto opt = get_options ("output");
