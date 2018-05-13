@@ -75,17 +75,16 @@ if __name__ == '__main__':
     # motion stats
     dM = M[1:,:] - M[:-1,:]
     mtra = np.mean(dM[:,:3]**2)
-    mrot = np.mean(dM[:,3:]**2)
+    mrot = np.mean(dM[:,3:]**2) * 1000.
     # outlier stats
     orratio = np.sum(W) / (W.shape[0] * W.shape[1])
     # print stats
     print('{:f} {:f} {:f}'.format(mtra, mrot, orratio))
     # plot trajectory
-    T = np.array([tr2euler(lie2tr(m)) for m in M.T])
-    plt.subplot(2,1,1); plt.plot(T[:,:3]); ylabel('translation'); plt.legend(['x', 'y', 'z']);
-    plt.subplot(2,1,2); plt.plot(T[:,3:]); ylabel('rotation'); plt.legend(['yaw', 'pitch', 'roll']);
-    plt.tight_layout();
+    T = np.array([tr2euler(lie2tr(m)) for m in M])
+    ax1 = plt.subplot(2,1,1); plt.plot(T[:,:3]); plt.ylabel('translation'); plt.legend(['x', 'y', 'z']);
+    ax2 = plt.subplot(2,1,2, sharex=ax1); plt.plot(T[:,3:]); plt.ylabel('rotation'); plt.legend(['yaw', 'pitch', 'roll']);
+    plt.xlim(0, nv*ne); plt.xlabel('time'); plt.tight_layout();
     plt.show();
-    
 
 
