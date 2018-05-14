@@ -96,6 +96,34 @@ PolygonLut::getTriangles( const Eigen::Vector3d& point ) const
 }
 
 
+Surface::TriangleList
+PolygonLut::getTriangles( const std::set< Eigen::Vector3i, Vector3iCompare >& voxels ) const
+{
+  std::set< Surface::Triangle, PolygonCompare > triangleSet;
+  for ( auto v = voxels.begin(); v != voxels.end(); ++v )
+  {
+    auto triangleList = getTriangles( *v );
+    triangleSet.insert( triangleList.begin(), triangleList.end() );
+  }
+  return Surface::TriangleList( triangleSet.begin(), triangleSet.end() );
+}
+
+
+Surface::TriangleList
+PolygonLut::getTriangles( const std::set< Eigen::Vector3d >& points ) const
+{
+  std::set< Surface::Triangle, PolygonCompare > triangleSet;
+  for ( auto p = points.begin(); p != points.end(); ++p )
+  {
+    Eigen::Vector3i voxel;
+    _tissue->sceneModeller()->lutVoxel( *p, voxel );
+    auto triangleList = getTriangles( voxel );
+    triangleSet.insert( triangleList.begin(), triangleList.end() );
+  }
+  return Surface::TriangleList( triangleSet.begin(), triangleSet.end() );
+}
+
+
 }
 
 }

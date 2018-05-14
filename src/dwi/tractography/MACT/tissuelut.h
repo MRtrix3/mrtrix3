@@ -47,10 +47,13 @@ class TissueLut
     TissueLut( const std::shared_ptr< SceneModeller >& sceneModeller );
     virtual ~TissueLut();
 
+    void update( Tissue_ptr Tissue );
+
     std::set< Tissue_ptr > getTissues( const Eigen::Vector3i& voxel ) const;
     std::set< Tissue_ptr > getTissues( const Eigen::Vector3d& point ) const;
-    
-    void update( Tissue_ptr Tissue );
+
+    std::set< Tissue_ptr > getTissues( const std::set< Eigen::Vector3i, Vector3iCompare >& voxels ) const;
+    std::set< Tissue_ptr > getTissues( const std::set< Eigen::Vector3d >& points ) const;
 
   private:
 

@@ -42,29 +42,6 @@ TissueLut::~TissueLut()
 }
 
 
-std::set< Tissue_ptr >
-TissueLut::getTissues( const Eigen::Vector3i& voxel ) const
-{
-  if ( _lut.count( voxel ) == 0 )
-  {
-    return std::set< Tissue_ptr >();
-  }
-  else
-  {
-    return _lut.find( voxel )->second;
-  }
-}
-
-
-std::set< Tissue_ptr >
-TissueLut::getTissues( const Eigen::Vector3d& point ) const
-{
-  Eigen::Vector3i voxel;
-  _sceneModeller->lutVoxel( point, voxel );
-  return getTissues( voxel );
-}
-
-
 void TissueLut::update( Tissue_ptr tissue )
 {
   Surface::VertexList vertices = tissue->mesh().get_vertices();
@@ -112,6 +89,63 @@ void TissueLut::update( Tissue_ptr tissue )
     }
     ++ p;
   }
+}
+
+
+std::set< Tissue_ptr >
+TissueLut::getTissues( const Eigen::Vector3i& voxel ) const
+{
+  if ( _lut.count( voxel ) == 0 )
+  {
+    return std::set< Tissue_ptr >();
+  }
+  else
+  {
+    return _lut.find( voxel )->second;
+  }
+}
+
+
+std::set< Tissue_ptr >
+TissueLut::getTissues( const Eigen::Vector3d& point ) const
+{
+  Eigen::Vector3i voxel;
+  _sceneModeller->lutVoxel( point, voxel );
+  return getTissues( voxel );
+}
+
+
+std::set< Tissue_ptr >
+TissueLut::getTissues( const std::set< Eigen::Vector3i, Vector3iCompare >& voxels ) const
+{
+  std::set< Tissue_ptr > tissueSet;
+  for ( auto v = voxels.begin(); v != voxels.end(); ++v )
+  {
+    auto tissues = getTissues( *v );
+    for ( auto t = tissues.begin(); t != tissues.end(); ++t )
+    {
+      tissueSet.insert( *t );
+    }
+  }
+  return tissueSet;
+}
+
+
+std::set< Tissue_ptr >
+TissueLut::getTissues( const std::set< Eigen::Vector3d >& points ) const
+{
+  std::set< Tissue_ptr > tissueSet;
+  for ( auto p = points.begin(); p != points.end(); ++p )
+  {
+    Eigen::Vector3i voxel;
+    _sceneModeller->lutVoxel( *p, voxel );
+    auto tissues = getTissues( voxel );
+    for ( auto t = tissues.begin(); t != tissues.end(); ++t )
+    {
+      tissueSet.insert( *t );
+    }
+  }
+  return tissueSet;
 }
 
 

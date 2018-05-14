@@ -20,6 +20,7 @@
 
 #include "dwi/tractography/MACT/keycomp.h"
 #include "surface/mesh.h"
+#include <set>
 
 
 namespace MR
@@ -40,6 +41,34 @@ class Tissue;
 typedef std::shared_ptr< Tissue > Tissue_ptr; /*tissue pointer*/
 
 
+// The following PolygonCompare can be moved to Polygon.h as a template struct
+struct PolygonCompare : public std::binary_function< Surface::Polygon< 3 >,
+                                                     Surface::Polygon< 3 >,
+                                                     bool >
+{
+  bool operator()( const Surface::Polygon< 3 >& p1,
+                   const Surface::Polygon< 3 >& p2 ) const
+  {
+    uint32_t d, D = 3;
+    if ( p1[ D - 1 ] < p2[ D - 1 ] )
+    {
+      return true;
+    }
+    else
+    {
+      for ( d = D - 1; d > 0; d-- )
+      {
+        if ( ( p1[ d ] == p2[ d ] ) && ( p1[ d - 1 ] < p2[ d - 1 ] ) )
+        {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+};
+
+	
 class PolygonLut
 {
 
@@ -50,6 +79,9 @@ class PolygonLut
 
     Surface::TriangleList getTriangles( const Eigen::Vector3i& voxel ) const;
     Surface::TriangleList getTriangles( const Eigen::Vector3d& point ) const;
+
+    Surface::TriangleList getTriangles( const std::set< Eigen::Vector3i, Vector3iCompare >& voxels ) const;
+    Surface::TriangleList getTriangles( const std::set< Eigen::Vector3d >& points ) const;
 
   private:
 
