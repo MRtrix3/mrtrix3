@@ -14,6 +14,7 @@
 
 
 #include "stride.h"
+#include "header.h"
 
 namespace MR
 {
@@ -25,10 +26,12 @@ namespace MR
 
     const OptionGroup Options = OptionGroup ("Stride options")
       + Option ("strides",
-          "specify the strides of the output data in memory, as a comma-separated list. "
+          "specify the strides of the output data in memory; either "
+          "as a comma-separated list of (signed) integers, or "
+          "as a template image from which the strides shall be extracted and used. "
           "The actual strides produced will depend on whether the output image "
           "format can support it.")
-      + Argument ("spec").type_sequence_int();
+      + Argument ("spec").type_various();
 
 
 
@@ -43,20 +46,20 @@ namespace MR
         if (!current[i]) continue;
         for (size_t j = i+1; j < current.size(); ++j) {
           if (!current[j]) continue;
-          if (std::abs (current[i]) == std::abs (current[j]))
+          if (abs (current[i]) == abs (current[j]))
             current[j] = 0;
         }
       }
 
       ssize_t desired_max = 0;
       for (size_t i = 0; i < desired.size(); ++i)
-        if (std::abs (desired[i]) > desired_max)
-          desired_max = std::abs (desired[i]);
+        if (abs (desired[i]) > desired_max)
+          desired_max = abs (desired[i]);
 
       ssize_t in_max = 0;
       for (size_t i = 0; i < current.size(); ++i)
-        if (std::abs (current[i]) > in_max)
-          in_max = std::abs (current[i]);
+        if (abs (current[i]) > in_max)
+          in_max = abs (current[i]);
       in_max += desired_max + 1;
 
       for (size_t i = 0; i < current.size(); ++i)
@@ -79,23 +82,36 @@ namespace MR
       if (!opt.size())
         return strides;
 
-      vector<int> tmp = opt[0][0];
-      for (auto x : tmp)
-        strides.push_back (x);
 
+      try {
+        auto header = Header::open (std::string(opt[0][0]));
+        strides = get_symbolic (header);
+      }
+      catch (Exception& E) {
+        E.display (3);
+        try {
+          auto tmp = parse_ints (opt[0][0]);
+          for (auto x : tmp)
+            strides.push_back (x);
+        }
+        catch (Exception& E) {
+          E.display(3);
+          throw Exception ("argument \"" + std::string(opt[0][0]) + "\" to option \"-strides\" is not a list of strides or an image");
+        }
+      }
 
       if (strides.size() > current.size())
         WARN ("too many axes supplied to -strides option - ignoring remaining strides");
       strides.resize (current.size(), 0);
 
       for (const auto x : strides)
-        if (std::abs(x) > int (current.size()))
+        if (abs(x) > int (current.size()))
           throw Exception ("strides specified exceed image dimensions: got " + str(opt[0][0]) + ", but image has " + str(current.size()) + " axes");
 
       for (size_t i = 0; i < strides.size()-1; ++i) {
         if (!strides[1]) continue;
         for (size_t j = i+1; j < strides.size(); ++j)
-          if (std::abs (strides[i]) == std::abs (strides[j]))
+          if (abs (strides[i]) == abs (strides[j]))
             throw Exception ("duplicate entries provided to \"-strides\" option: " + str(opt[0][0]));
       }
 
@@ -108,12 +124,12 @@ namespace MR
       prev = get_symbolic (prev);
       ssize_t max_remaining = 0;
       for (const auto x : prev)
-        if (std::abs(x) > max_remaining)
-          max_remaining = std::abs(x);
+        if (abs(x) > max_remaining)
+          max_remaining = abs(x);
 
       struct FindStride { NOMEMALIGN
-        FindStride (List::value_type value) : x (std::abs(value)) { }
-        bool operator() (List::value_type a) { return std::abs (a) == x; }
+        FindStride (List::value_type value) : x (abs(value)) { }
+        bool operator() (List::value_type a) { return abs (a) == x; }
         const List::value_type x;
       };
 

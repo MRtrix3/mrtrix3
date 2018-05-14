@@ -112,7 +112,7 @@ namespace MR
 
 
           double         get_TD     ()                    const { return TD.load (std::memory_order_relaxed); }
-          void           clear_TD   ()                          { TD.store (0.0, std::memory_order_acq_rel); }
+          void           clear_TD   ()                          { TD.store (0.0, std::memory_order_relaxed); }
           double         get_diff   (const double mu)     const { return ((TD.load (std::memory_order_relaxed) * mu) - FOD); }
 
           void mask() { update = false; }

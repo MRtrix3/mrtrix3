@@ -305,7 +305,7 @@ namespace MR
           const Eigen::Vector3 computed_normal = Surface::normal (*this, triangles.back());
           if (computed_normal.dot (normal.cast<default_type>()) < 0.0)
             warn_right_hand_rule = true;
-          if (std::abs (computed_normal.dot (normal.cast<default_type>())) < 0.99)
+          if (abs (computed_normal.dot (normal.cast<default_type>())) < 0.99)
             warn_nonstandard_normals = true;
         }
         if (triangles.size() != count)
@@ -369,7 +369,7 @@ namespace MR
             const Eigen::Vector3 computed_normal = Surface::normal (*this, triangles.back());
             if (computed_normal.dot (normal) < 0.0)
               warn_right_hand_rule = true;
-            if (std::abs (computed_normal.dot (normal)) < 0.99)
+            if (abs (computed_normal.dot (normal)) < 0.99)
               warn_nonstandard_normals = true;
           } else if (line.substr(0, 8) == "endsolid") {
             if (inside_facet)

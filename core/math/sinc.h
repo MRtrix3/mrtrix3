@@ -62,10 +62,10 @@ namespace MR
             const value_type sinc   = offset ? std::sin (Math::pi * offset) / (Math::pi * offset) : 1.0;
 
             //const value_type hann_cos_term = Math::pi * offset / (value_type(max_offset_from_kernel_centre) + 0.5);
-            //const value_type hann_factor   = (std::abs (hann_cos_term) < Math::pi) ? 0.5 * (1.0 + std::cos (hann_cos_term)) : 0.0;
+            //const value_type hann_factor   = (abs (hann_cos_term) < Math::pi) ? 0.5 * (1.0 + std::cos (hann_cos_term)) : 0.0;
             //const value_type this_weight   = hann_factor * sinc;
 
-            const value_type lanczos_sinc_term = std::abs (Math::pi * offset / (double(max_offset_from_kernel_centre) + 0.5));
+            const value_type lanczos_sinc_term = abs (Math::pi * offset / (double(max_offset_from_kernel_centre) + 0.5));
             value_type lanczos_factor = 0.0;
             if (lanczos_sinc_term < Math::pi) {
               if (lanczos_sinc_term)

@@ -18,6 +18,7 @@ _lastFile = ''
 
 
 def setContinue(filename): #pylint: disable=unused-variable
+  global _lastFile
   _lastFile = filename
 
 
@@ -33,7 +34,10 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
   global _processes
 
   # Vectorise the command string, preserving anything encased within quotation marks
-  cmdsplit = shlex.split(cmd)
+  if os.sep == '/': # Cheap POSIX compliance check
+    cmdsplit = shlex.split(cmd)
+  else: # Native Windows Python
+    cmdsplit = [ entry.strip('\"') for entry in shlex.split(cmd, posix=False) ]
 
   if _lastFile:
     if _triggerContinue(cmdsplit):
@@ -143,21 +147,23 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
   try:
     if app.verbosity > 1:
       for process in _processes:
-        stderrdata = ''
+        stderrdata = b''
         do_indent = True
         while True:
           # Have to read one character at a time: Waiting for a newline character using e.g. readline() will prevent MRtrix progressbars from appearing
-          char = process.stderr.read(1).decode('utf-8')
+          byte = process.stderr.read(1)
+          stderrdata += byte
+          char = byte.decode('cp1252', errors='ignore')
           if not char and process.poll() is not None:
             break
-          if do_indent and char in string.printable:
+          if do_indent and char in string.printable and char != '\r' and char != '\n':
             sys.stderr.write('          ')
             do_indent = False
           elif char == '\r' or char == '\n':
             do_indent = True
           sys.stderr.write(char)
           sys.stderr.flush()
-          stderrdata += char
+        stderrdata = stderrdata.decode('utf-8', errors='replace')
         return_stderr += stderrdata
         if process.returncode:
           error = True
@@ -180,7 +186,7 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
     if tempfiles[index][0] is not None:
       tempfiles[index][0].flush()
       tempfiles[index][0].seek(0)
-      stdout_text = tempfiles[index][0].read().decode('utf-8')
+      stdout_text = tempfiles[index][0].read().decode('utf-8', errors='replace')
       return_stdout += stdout_text
       if _processes[index].returncode:
         error = True
@@ -188,7 +194,7 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
     if tempfiles[index][1] is not None:
       tempfiles[index][1].flush()
       tempfiles[index][1].seek(0)
-      stderr_text = tempfiles[index][1].read().decode('utf-8')
+      stderr_text = tempfiles[index][1].read().decode('utf-8', errors='replace')
       return_stderr += stderr_text
       if _processes[index].returncode:
         error = True
@@ -235,15 +241,18 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
 
 
 
-def function(fn, *args): #pylint: disable=unused-variable
+def function(fn, *args, **kwargs): #pylint: disable=unused-variable
 
   import inspect, sys
   from mrtrix3 import app
 
-  fnstring = fn.__module__ + '.' + fn.__name__ + '(' + ', '.join(['\'' + str(a) + '\'' if isinstance(a, str) else str(a) for a in args]) + ')'
+  fnstring = fn.__module__ + '.' + fn.__name__ + \
+             '(' + ', '.join(['\'' + str(a) + '\'' if isinstance(a, str) else str(a) for a in args]) + \
+             (', ' if (args and kwargs) else '') + \
+             ', '.join([key+'='+str(value) for key, value in kwargs.items()]) + ')'
 
   if _lastFile:
-    if _triggerContinue(args):
+    if _triggerContinue(args) or _triggerContinue(kwargs.values()):
       app.debug('Detected last file in function \'' + fnstring + '\'; this is the last run.command() / run.function() call that will be skipped')
     if app.verbosity:
       sys.stderr.write(app.colourExec + 'Skipping function:' + app.colourClear + ' ' + fnstring + '\n')
@@ -256,7 +265,10 @@ def function(fn, *args): #pylint: disable=unused-variable
 
   # Now we need to actually execute the requested function
   try:
-    result = fn(*args)
+    if kwargs:
+      result = fn(*args, **kwargs)
+    else:
+      result = fn(*args)
   except (KeyboardInterrupt, SystemExit):
     raise
   except Exception as e: # pylint: disable=broad-except
