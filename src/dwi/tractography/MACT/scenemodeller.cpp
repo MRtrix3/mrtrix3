@@ -107,7 +107,7 @@ const TissueLut& SceneModeller::tissueLut() const
 
 bool SceneModeller::nearestTissue( const Eigen::Vector3d& point,
                                    Intersection& intersection,
-                                   int32_t stride ) const
+                                   const int32_t& stride ) const
 {
   if ( _tissues.empty() )
   {
@@ -115,51 +115,156 @@ bool SceneModeller::nearestTissue( const Eigen::Vector3d& point,
   }
   else
   {
-    // getting the local voxel from the given point
     Eigen::Vector3i voxel;
     _bresenhamLine.point2voxel( point, voxel );
 
-    // unless the range is specified, increasing the stride until the nearest
-    // mesh tissue is found (min search = 27 neighbouring grids)
-    Eigen::Vector3i thisVoxel;
+    // unless specified, increase the stride until the nearest tissue is found
+    // (min numner of voxels: 3x3x3=27)
     int32_t s = 1;
     do
     {
-      for ( int32_t x = -s; x <= s; x++ )
+      std::set< Eigen::Vector3i, Vector3iCompare > voxels, neighbours;
+      _bresenhamLine.neighbouringVoxels( voxel, s, neighbours );
+      for ( auto n = neighbours.begin(); n != neighbours.end(); ++n )
       {
-        thisVoxel[ 0 ] = voxel[ 0 ] + x;
-        for ( int32_t y = -s; y <= s; y++ )
+        if ( _integerBoundingBox.contains( *n ) )
         {
-          thisVoxel[ 1 ] = voxel[ 1 ] + y;
-          for ( int32_t z = -s; z <= s; z++ )
+          voxels.insert( *n );
+        }
+      }
+      if ( s > 1 )
+      {
+        // remove inner grid voxels as already checked
+        std::set< Eigen::Vector3i, Vector3iCompare > inner_voxels;
+        _bresenhamLine.neighbouringVoxels( voxel, s-1, inner_voxels );
+        for ( auto i = inner_voxels.begin(); i != inner_voxels.end(); ++i )
+        {
+          auto f = voxels.find( *i );
+          if ( f != voxels.end() )
           {
-            thisVoxel[ 2 ] = voxel[ 2 ] + z;
-            if ( _integerBoundingBox.contains( thisVoxel ) )
+            voxels.erase( f );
+          }
+        }
+      }
+
+      // loop over all unique polygons
+      auto tissues = _tissueLut.getTissues( voxels );
+      if ( !tissues.empty() )
+      {
+        auto t = tissues.begin(), te = tissues.end();
+        while ( t != te )
+        {
+          auto polygons = ( *t )->polygonLut().getTriangles( voxels );
+          if ( !polygons.empty() )
+          {
+            auto p = polygons.begin(), pe = polygons.end();
+            while ( p != pe )
             {
-              auto tissues = _tissueLut.getTissues( thisVoxel );
-              if ( !tissues.empty() )
+              auto mesh = ( *t )->mesh();
+              Eigen::Vector3d projectionPoint;
+              double dist = pointToTriangleDistance( point,
+                                                     mesh.vert( ( *p )[ 0 ] ),
+                                                     mesh.vert( ( *p )[ 1 ] ),
+                                                     mesh.vert( ( *p )[ 2 ] ),
+                                                     projectionPoint );
+              if ( dist < intersection._arcLength )
               {
-                auto t = tissues.begin(), te = tissues.end();
-                while ( t != te )
-                {
-                  Intersection newIntersection;
-                  intersectionAtVoxel( point, thisVoxel, *t, newIntersection );
-                  if ( newIntersection._arcLength < intersection._arcLength )
-                  {
-                    // updating distance / tissue / polygon / projection point
-                    intersection = newIntersection;
-                  }
-                  ++ t;
-                }
-              }
+                intersection._arcLength = dist;
+                intersection._point = projectionPoint;
+                intersection._tissue = *t;
+                intersection._triangle = *p;
+              }    
+              ++ p;
             }
           }
+          ++ t;
         }
       }
       ++ s;
     } while ( s < stride && !intersection._tissue );
 
     return intersection._tissue ? true : false;
+  }
+}
+
+
+bool SceneModeller::nearestVertex( const Eigen::Vector3d& point,
+                                   int32_t& vertex,
+                                   const int32_t& stride ) const
+{
+  if ( _tissues.empty() )
+  {
+    return false;
+  }
+  else
+  {
+    Eigen::Vector3i voxel;
+    _bresenhamLine.point2voxel( point, voxel );
+
+    // unless specified, increase the stride until the nearest tissue is found
+    // (min numner of voxels: 3x3x3=27)
+    vertex = -1;
+    int32_t s = 1;
+    do
+    {
+      std::set< Eigen::Vector3i, Vector3iCompare > voxels, neighbours;
+      _bresenhamLine.neighbouringVoxels( voxel, s, neighbours );
+      for ( auto n = neighbours.begin(); n != neighbours.end(); ++n )
+      {
+        if ( _integerBoundingBox.contains( *n ) )
+        {
+          voxels.insert( *n );
+        }
+      }
+      if ( s > 1 )
+      {
+        // remove inner grid voxels as already checked
+        std::set< Eigen::Vector3i, Vector3iCompare > inner_voxels;
+        _bresenhamLine.neighbouringVoxels( voxel, s-1, inner_voxels );
+        for ( auto i = inner_voxels.begin(); i != inner_voxels.end(); ++i )
+        {
+          auto f = voxels.find( *i );
+          if ( f != voxels.end() )
+          {
+            voxels.erase( f );
+          }
+        }
+      }
+
+      // loop over all unique polygons
+      double min_dist = std::numeric_limits< double >::infinity();
+      auto tissues = _tissueLut.getTissues( voxels );
+      if ( !tissues.empty() )
+      {
+        auto t = tissues.begin(), te = tissues.end();
+        while ( t != te )
+        {
+          auto polygons = ( *t )->polygonLut().getTriangles( voxels );
+          if ( !polygons.empty() )
+          {
+            auto p = polygons.begin(), pe = polygons.end();
+            while ( p != pe )
+            {
+              auto mesh = ( *t )->mesh();
+              for ( size_t v = 0; v < 3; v++ )
+              {
+                double dist = ( point - mesh.vert( ( *p )[ v ] ) ).norm();
+                if ( dist < min_dist )
+                {
+                  min_dist = dist;
+                  vertex = ( *p )[ v ];
+                }
+              }
+              ++ p;
+            }
+          }
+          ++ t;
+        }
+      }
+      ++ s;
+    } while ( s < stride && vertex < 0 );
+
+    return ( vertex >= 0 );
   }
 }
 
@@ -238,37 +343,6 @@ bool SceneModeller::onTissue( const Eigen::Vector3d& point,
       return true;
     }
     return false;
-  }
-}
-
-
-void SceneModeller::intersectionAtVoxel( const Eigen::Vector3d& point,
-                                         const Eigen::Vector3i& voxel,
-                                         const Tissue_ptr& tissue,
-                                         Intersection& intersection ) const
-{
-  auto triangles = tissue->polygonLut().getTriangles( voxel );
-  if ( !triangles.empty() )
-  {
-    auto t = triangles.begin(), te = triangles.end();
-    while ( t != te )
-    {
-      auto mesh = tissue->mesh();
-      Eigen::Vector3d newProjectionPoint;
-      double newDistance = pointToTriangleDistance( point,
-                                                    mesh.vert( ( *t )[ 0 ] ),
-                                                    mesh.vert( ( *t )[ 1 ] ),
-                                                    mesh.vert( ( *t )[ 2 ] ),
-                                                    newProjectionPoint );
-      if ( newDistance < intersection._arcLength )
-      {
-        intersection._arcLength = newDistance;
-        intersection._triangle = *t;
-        intersection._point = newProjectionPoint;
-      }    
-      ++ t;
-    }
-    intersection._tissue = tissue;
   }
 }
 

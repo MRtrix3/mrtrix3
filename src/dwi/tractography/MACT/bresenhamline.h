@@ -52,9 +52,9 @@ class BresenhamLine
                       Eigen::Vector3i& voxel ) const;
 
     void neighbouringVoxels( const Eigen::Vector3i& voxel,
-                             Eigen::Vector3i stride,
-                             std::vector< Eigen::Vector3i >& neighbours,
-                             std::vector< bool >& neighborMasks ) const;
+                             const int32_t& stride,
+                             std::set< Eigen::Vector3i, Vector3iCompare >& voxels,
+                             bool clearVoxelsAtBeginning = true ) const;
 
     void rayVoxels( const Eigen::Vector3d& from,
                     const Eigen::Vector3d& to,

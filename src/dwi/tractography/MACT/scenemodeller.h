@@ -58,7 +58,12 @@ class SceneModeller
     // methods to find the nearest tissue from a given point
     bool nearestTissue( const Eigen::Vector3d& point,
                         struct Intersection& intersection,
-                        int32_t stride = std::numeric_limits< int32_t >::max() ) const;
+                        const int32_t& stride = std::numeric_limits< int32_t >::max() ) const;
+
+    // methods to find the nearest mesh vertex from a given point
+    bool nearestVertex( const Eigen::Vector3d& point,
+                        int32_t& vertex,
+                        const int32_t& stride = std::numeric_limits< int32_t >::max() ) const;
 
     // methods to check whether a point is inside/on a target tissue type
     bool inTissue( const Eigen::Vector3d& point, const TissueType& type,
@@ -75,15 +80,12 @@ class SceneModeller
     std::map< TissueType, Tissue_ptr > _tissues;
     TissueLut _tissueLut;
 
-    void intersectionAtVoxel( const Eigen::Vector3d& point,
-                              const Eigen::Vector3i& voxel,
-                              const Tissue_ptr& tissue,
-                              struct Intersection& intersection ) const;
     double pointToTriangleDistance( const Eigen::Vector3d& point,
                                     const Eigen::Vector3d& vertex1,
                                     const Eigen::Vector3d& vertex2,
                                     const Eigen::Vector3d& vertex3,
                                     Eigen::Vector3d& projectionPoint ) const;
+
     double pointToLineSegmentDistance( const Eigen::Vector3d& point,
                                        const Eigen::Vector3d& endPoint1,
                                        const Eigen::Vector3d& endPoint2 ) const;

@@ -144,47 +144,27 @@ void BresenhamLine::point2voxel( const Eigen::Vector3d& point,
 
 
 void BresenhamLine::neighbouringVoxels(
-                                     const Eigen::Vector3i& voxel,
-                                     Eigen::Vector3i stride,
-                                     std::vector< Eigen::Vector3i >& neighbours,
-                                     std::vector< bool >& neighbourMasks ) const
+                           const Eigen::Vector3i& voxel,
+                           const int32_t& stride,
+                           std::set< Eigen::Vector3i, Vector3iCompare >& voxels,
+                           bool clearVoxelsAtBeginning ) const
 {
-  // resizing the neighbourhood offsets and masks according to the stride
-  Eigen::Vector3i size( 2 * stride[ 0 ] + 1,
-                        2 * stride[ 1 ] + 1,
-                        2 * stride[ 2 ] + 1 );
-  neighbours.resize( size[ 0 ] * size[ 1 ] * size[ 2 ] );
-  neighbourMasks.resize( size[ 0 ] * size[ 1 ] * size[ 2 ] );
+  if ( clearVoxelsAtBeginning )
+  {
+    voxels.clear();
+  }
 
-  // processing the neighbourhood offsets and masks
   Eigen::Vector3i offset;
-  int32_t index = 0;
-  int32_t x, y, z;
-  for ( x = -stride[ 0 ]; x <= stride[ 0 ]; x++ )
+  for ( int32_t x = -stride; x <= stride; x++ )
   {
     offset[ 0 ] = x;
-    for ( y = -stride[ 1 ]; y <= stride[ 1 ]; y++ )
+    for ( int32_t y = -stride; y <= stride; y++ )
     {
       offset[ 1 ] = y;
-      for ( z = -stride[ 2 ]; z <= stride[ 2 ]; z++ )
+      for ( int32_t z = -stride; z <= stride; z++ )
       {
         offset[ 2 ] = z;
-        Eigen::Vector3i& neighbour = neighbours[ index ];
-        neighbour = voxel + offset;
-        if ( ( neighbour[ 0 ] >= 0 ) &&
-             ( neighbour[ 0 ] <= _cacheSizeMinusOne[ 0 ] ) &&
-             ( neighbour[ 1 ] >= 0 ) &&
-             ( neighbour[ 1 ] <= _cacheSizeMinusOne[ 1 ] ) &&
-             ( neighbour[ 2 ] >= 0 ) &&
-             ( neighbour[ 2 ] <= _cacheSizeMinusOne[ 2 ] ) )
-        {
-          neighbourMasks[ index ] = true;
-        }
-        else
-        {
-          neighbourMasks[ index ] = false;
-        }
-        ++ index;
+        voxels.insert( voxel + offset );
       }
     }
   }  
