@@ -303,9 +303,16 @@ namespace MR
                 }
                 default_type condition_number = 0.0;
                 if (valid_rows == data.rows()) { // No NaNs present
-                  Math::Stats::GLM::all_stats (element_data, element_design, contrasts,
-                                               local_betas, local_abs_effect_size, local_std_effect_size, local_stdev);
                   condition_number = Math::condition_number (element_design);
+                  if (!std::isfinite (condition_number) || condition_number > 1e5) {
+                    local_betas = matrix_type::Zero (global_betas.rows(), 1);
+                    local_abs_effect_size = matrix_type::Zero (1, contrasts.size());
+                    local_std_effect_size = matrix_type::Zero (1, contrasts.size());
+                    local_stdev = vector_type::Zero (1);
+                  } else {
+                    Math::Stats::GLM::all_stats (element_data, element_design, contrasts,
+                                                 local_betas, local_abs_effect_size, local_std_effect_size, local_stdev);
+                  }
                 } else {
                   // Need to reduce the data and design matrices to contain only finite data
                   matrix_type element_data_finite (valid_rows, 1);
@@ -321,9 +328,16 @@ namespace MR
                   assert (output_row == valid_rows);
                   assert (element_data_finite.allFinite());
                   assert (element_design_finite.allFinite());
-                  Math::Stats::GLM::all_stats (element_data_finite, element_design_finite, contrasts,
-                                               local_betas, local_abs_effect_size, local_std_effect_size, local_stdev);
                   condition_number = Math::condition_number (element_design_finite);
+                  if (!std::isfinite (condition_number) || condition_number > 1e5) {
+                    local_betas = matrix_type::Zero (global_betas.rows(), 1);
+                    local_abs_effect_size = matrix_type::Zero (1, contrasts.size());
+                    local_std_effect_size = matrix_type::Zero (1, contrasts.size());
+                    local_stdev = vector_type::Zero (1);
+                  } else {
+                    Math::Stats::GLM::all_stats (element_data_finite, element_design_finite, contrasts,
+                                                 local_betas, local_abs_effect_size, local_std_effect_size, local_stdev);
+                  }
                 }
                 global_cond[element_index] = condition_number;
                 global_betas.col (element_index) = local_betas;
@@ -626,10 +640,10 @@ namespace MR
               }
               assert (Mfull_masked.allFinite());
 
-              // TODO Test condition number of masked & data-filled design matrix;
+              // Test condition number of NaN-masked & data-filled design matrix;
               //   need to skip statistical testing if it is too poor
               const default_type condition_number = Math::condition_number (Mfull_masked);
-              if (condition_number > 1e5) {
+              if (!std::isfinite (condition_number) || condition_number > 1e5) {
                 output.row (ie).fill (0.0);
               } else {
 
