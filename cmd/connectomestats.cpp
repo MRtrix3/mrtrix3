@@ -259,13 +259,12 @@ void run()
   {
     matrix_type betas (num_factors, num_edges);
     matrix_type abs_effect_size (num_edges, num_contrasts), std_effect_size (num_edges, num_contrasts);
-    vector_type stdev (num_edges);
+    vector_type cond (num_edges), stdev (num_edges);
 
     Math::Stats::GLM::all_stats (data, design, extra_columns, contrasts,
-                                 betas, abs_effect_size, std_effect_size, stdev);
+                                 cond, betas, abs_effect_size, std_effect_size, stdev);
 
-    // TODO Contrasts should be somehow named, in order to differentiate between t-tests and F-tests
-    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_contrasts) + 1);
+    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_contrasts) + 1 + (nans_in_data || extra_columns.size() ? 1 : 0));
     for (ssize_t i = 0; i != num_factors; ++i) {
       save_matrix (mat2vec.V2M (betas.row(i)), "beta" + str(i) + ".csv");
       ++progress;
@@ -275,6 +274,10 @@ void run()
         save_matrix (mat2vec.V2M (abs_effect_size.col(i)), "abs_effect" + postfix(i) + ".csv"); ++progress;
         save_matrix (mat2vec.V2M (std_effect_size.col(i)), "std_effect" + postfix(i) + ".csv"); ++progress;
       }
+    }
+    if (nans_in_data || extra_columns.size()) {
+      save_matrix (mat2vec.V2M (cond), "cond.csv");
+      ++progress;
     }
     save_matrix (mat2vec.V2M (stdev), "std_dev.csv");
   }

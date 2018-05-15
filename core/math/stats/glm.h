@@ -18,6 +18,7 @@
 #include "app.h"
 #include "types.h"
 
+#include "math/condition_number.h"
 #include "math/least_squares.h"
 #include "math/stats/import.h"
 #include "math/stats/typedefs.h"
@@ -184,8 +185,8 @@ namespace MR
          * @param std_effect_size the matrix containing the output standardised effect size
          * @param stdev the matrix containing the output standard deviation
          */
-        void all_stats (const matrix_type& measurements, const matrix_type& design, const vector<CohortDataImport>& extra_columns,
-                        const vector<Contrast>& contrasts, matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, vector_type& stdev);
+        void all_stats (const matrix_type& measurements, const matrix_type& design, const vector<CohortDataImport>& extra_columns, const vector<Contrast>& contrasts,
+                        vector_type& cond, matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, vector_type& stdev);
 
         //! @}
 
@@ -207,10 +208,11 @@ namespace MR
               // Can no longer apply this assertion here; GLMTTestVariable later
               //   expands the number of columns in M
               //assert (c.cols() == M.cols());
-              auto v = Eigen::JacobiSVD<Eigen::MatrixXd> (design).singularValues();
-              auto cond = v[0] / v[v.size()-1];
+              const default_type cond = Math::condition_number (design);
               if (cond > 10.0) {
-                WARN ("Design matrix may contain collinear factors (condition number = " + str(cond) + "); recommend double-checking derivation of design matrix");
+                WARN ("Design matrix conditioning is poor (condition number = " + str(cond) + "); some calculations may be unstable");
+              } else if (cond > 1e5) {
+                throw Exception ("Design matrix may contain collinear elements (condition number = " + str(cond) + "); check derivation of design matrix");
               }
             }
 

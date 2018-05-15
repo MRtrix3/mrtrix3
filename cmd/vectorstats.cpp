@@ -178,18 +178,24 @@ void run()
   {
     matrix_type betas (num_factors, num_elements);
     matrix_type abs_effect_size (num_elements, num_contrasts), std_effect_size (num_elements, num_contrasts);
-    vector_type stdev (num_elements);
+    vector_type cond (num_elements), stdev (num_elements);
 
     Math::Stats::GLM::all_stats (data, design, extra_columns, contrasts,
-                                 betas, abs_effect_size, std_effect_size, stdev);
+                                 cond, betas, abs_effect_size, std_effect_size, stdev);
 
-    ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", 2 + (2 * num_contrasts));
+    ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", 2 + (2 * num_contrasts) + (nans_in_data || extra_columns.size() ? 1 : 0));
     save_matrix (betas, output_prefix + "betas.csv"); ++progress;
     for (size_t i = 0; i != num_contrasts; ++i) {
       if (!contrasts[i].is_F()) {
-        save_vector (abs_effect_size.col(i), output_prefix + "abs_effect" + postfix(i) + ".csv"); ++progress;
-        save_vector (std_effect_size.col(i), output_prefix + "std_effect" + postfix(i) + ".csv"); ++progress;
+        save_vector (abs_effect_size.col(i), output_prefix + "abs_effect" + postfix(i) + ".csv");
+        ++progress;
+        save_vector (std_effect_size.col(i), output_prefix + "std_effect" + postfix(i) + ".csv");
+        ++progress;
       }
+    }
+    if (nans_in_data || extra_columns.size()) {
+      save_vector (cond, output_prefix + "cond.csv");
+      ++progress;
     }
     save_vector (stdev, output_prefix + "std_dev.csv");
   }

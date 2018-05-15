@@ -15,7 +15,6 @@
 #ifndef __math_check_gradient_h__
 #define __math_check_gradient_h__
 
-#include <Eigen/SVD>
 #include "debug.h"
 #include "datatype.h"
 
@@ -99,9 +98,7 @@ namespace MR {
           }
           // CONSOLE ("hessian = [ " + str(hessian) + "]");
           MAT(hessian);
-          auto v = Eigen::JacobiSVD<decltype(hessian)> (hessian).singularValues();
-          auto conditionnumber = v[0] / v[v.size()-1];
-          CONSOLE("\033[00;34mcondition number: " + str(conditionnumber)+"\033[0m");
+          CONSOLE("\033[00;34mcondition number: " + str(condition_number (hessian))+"\033[0m");
         }
       return hessian;
       }

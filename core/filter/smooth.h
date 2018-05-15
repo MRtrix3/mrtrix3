@@ -268,8 +268,9 @@ namespace MR
                   }
                 }
                 result /= av_weights;
-              } else if (kernel_size != kernel.size())
-                  result /= kernel.segment(c, kernel_size).sum();
+              } else if (kernel_size != kernel.size()) {
+                result /= kernel.segment(c, kernel_size).sum();
+              }
               image.value() = result;
             }
 
