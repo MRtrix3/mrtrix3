@@ -15,17 +15,11 @@
 #ifndef __dwi_gradient_h__
 #define __dwi_gradient_h__
 
-// These lines are to silence deprecation warnings with Eigen & GCC v5
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#include <Eigen/SVD>
-#pragma GCC diagnostic pop
-
-
 #include "app.h"
 #include "file/path.h"
 #include "file/config.h"
 #include "header.h"
+#include "math/condition_number.h"
 #include "math/sphere.h"
 #include "math/SH.h"
 #include "dwi/shells.h"
@@ -50,7 +44,7 @@ namespace MR
           throw Exception ("invalid diffusion gradient table dimensions");
         for (ssize_t i = 0; i < grad.rows(); i++) {
           auto norm = grad.row(i).template head<3>().norm();
-          if (norm) 
+          if (norm)
             grad.row(i).template head<3>().array() /= norm;
         }
         return grad;
@@ -60,20 +54,20 @@ namespace MR
     /*! \brief convert the DW encoding matrix in \a grad into a
      * azimuth/elevation direction set, using only the DWI volumes as per \a
      * dwi */
-    template <class MatrixType, class IndexVectorType> 
+    template <class MatrixType, class IndexVectorType>
       inline Eigen::MatrixXd gen_direction_matrix (
-          const MatrixType& grad, 
+          const MatrixType& grad,
           const IndexVectorType& dwi)
       {
         Eigen::MatrixXd dirs (dwi.size(),2);
         for (size_t i = 0; i < dwi.size(); i++) {
           dirs (i,0) = std::atan2 (grad (dwi[i],1), grad (dwi[i],0));
           auto z = grad (dwi[i],2) / grad.row (dwi[i]).template head<3>().norm();
-          if (z >= 1.0) 
+          if (z >= 1.0)
             dirs(i,1) = 0.0;
           else if (z <= -1.0)
             dirs (i,1) = Math::pi;
-          else 
+          else
             dirs (i,1) = std::acos (z);
         }
         return dirs;
@@ -84,7 +78,7 @@ namespace MR
 
 
     template <class MatrixType>
-    default_type condition_number_for_lmax (const MatrixType& dirs, int lmax) 
+    default_type condition_number_for_lmax (const MatrixType& dirs, int lmax)
     {
       Eigen::MatrixXd g;
       if (dirs.cols() == 2) // spherical coordinates:
@@ -92,8 +86,7 @@ namespace MR
       else // Cartesian to spherical:
         g = Math::Sphere::cartesian2spherical (dirs).leftCols(2);
 
-      auto v = Eigen::JacobiSVD<Eigen::MatrixXd> (Math::SH::init_transform (g, lmax)).singularValues();
-      return v[0] / v[v.size()-1];
+      return Math::condition_number (Math::SH::init_transform (g, lmax));
     }
 
 
@@ -119,13 +112,13 @@ namespace MR
 
 
 
-    //! scale b-values by square of gradient norm 
+    //! scale b-values by square of gradient norm
     template <class MatrixType>
-      void scale_bvalue_by_G_squared (MatrixType& G) 
+      void scale_bvalue_by_G_squared (MatrixType& G)
       {
         INFO ("b-values will be scaled by the square of DW gradient norm");
-        for (ssize_t n = 0; n < G.rows(); ++n) 
-          if (G(n,3)) 
+        for (ssize_t n = 0; n < G.rows(); ++n)
+          if (G(n,3))
             G(n,3) *= G.row(n).template head<3>().squaredNorm();
       }
 
@@ -134,9 +127,9 @@ namespace MR
 
     //! store the DW gradient encoding matrix in a header
     /*! this will store the DW gradient encoding matrix into the
-     * Header::keyval() structure of \a header, under the key 'dw_scheme'.  
+     * Header::keyval() structure of \a header, under the key 'dw_scheme'.
      */
-    template <class MatrixType> 
+    template <class MatrixType>
       void set_DW_scheme (Header& header, const MatrixType& G)
       {
         if (!G.rows()) {
@@ -154,7 +147,7 @@ namespace MR
           }
           add_line (dw_scheme, line);
         }
-        if (dw_scheme.size()) 
+        if (dw_scheme.size())
           header.keyval()["dw_scheme"] = dw_scheme;
         else
           WARN ("attempt to add empty DW scheme to header - ignored");
@@ -200,7 +193,7 @@ namespace MR
 
     //! get the DW gradient encoding matrix
     /*! attempts to find the DW gradient encoding matrix, using the following
-     * procedure: 
+     * procedure:
      * - if the -grad option has been supplied, then load the matrix assuming
      *     it is in MRtrix format, and return it;
      * - if the -fslgrad option has been supplied, then load and rectify the
@@ -212,7 +205,7 @@ namespace MR
 
 
     //! check that the DW scheme matches the DWI data in \a header
-    template <class MatrixType> 
+    template <class MatrixType>
       inline void check_DW_scheme (const Header& header, const MatrixType& grad)
       {
         if (!grad.rows())
@@ -233,18 +226,18 @@ namespace MR
 
 
     /*! \brief validate the DW encoding matrix \a grad and
-     * check that it matches the DW header in \a header 
+     * check that it matches the DW header in \a header
      *
      * This ensures the dimensions match the corresponding DWI data, applies
      * b-value scaling if specified, and normalises the gradient vectors. */
     void validate_DW_scheme (Eigen::MatrixXd& grad, const Header& header, bool nofail = false);
 
     /*! \brief get the DW encoding matrix as per get_DW_scheme(), and
-     * check that it matches the DW header in \a header 
+     * check that it matches the DW header in \a header
      *
      * This is the version that should be used in any application that
      * processes the DWI raw data. */
-    inline Eigen::MatrixXd get_valid_DW_scheme (const Header& header, bool nofail = false) 
+    inline Eigen::MatrixXd get_valid_DW_scheme (const Header& header, bool nofail = false)
     {
       auto grad = get_DW_scheme (header);
       validate_DW_scheme (grad, header, nofail);
@@ -267,7 +260,7 @@ namespace MR
     template <class MatrixType>
       Eigen::MatrixXd compute_SH2amp_mapping (
           const MatrixType& directions,
-          bool lmax_from_command_line = true, 
+          bool lmax_from_command_line = true,
           int default_lmax = 8)
       {
         int lmax = -1;
@@ -301,12 +294,11 @@ namespace MR
         Eigen::MatrixXd mapping;
         do {
           mapping = Math::SH::init_transform (directions, lmax);
-          auto v = Eigen::JacobiSVD<Eigen::MatrixXd> (mapping).singularValues();
-          auto cond = v[0] / v[v.size()-1];
-          if (cond < 10.0) 
+          const default_type cond = Math::condition_number (mapping);
+          if (cond < 10.0)
             break;
           WARN ("directions are poorly distributed for lmax = " + str(lmax) + " (condition number = " + str (cond) + ")");
-          if (cond < 100.0 || lmax_set_from_commandline) 
+          if (cond < 100.0 || lmax_set_from_commandline)
             break;
           lmax -= 2;
         } while (lmax >= 0);

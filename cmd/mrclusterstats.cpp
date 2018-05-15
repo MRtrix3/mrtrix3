@@ -274,21 +274,27 @@ void run() {
   {
     matrix_type betas (num_factors, num_voxels);
     matrix_type abs_effect_size (num_voxels, num_contrasts), std_effect_size (num_voxels, num_contrasts);
-    vector_type stdev (num_voxels);
+    vector_type cond (num_voxels), stdev (num_voxels);
 
     Math::Stats::GLM::all_stats (data, design, extra_columns, contrasts,
-                                 betas, abs_effect_size, std_effect_size, stdev);
+                                 cond, betas, abs_effect_size, std_effect_size, stdev);
 
-    ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_contrasts) + 1);
+    ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_contrasts) + 1 + (nans_in_data || extra_columns.size() ? 1 : 0));
     for (ssize_t i = 0; i != num_factors; ++i) {
       write_output (betas.row(i), *v2v, prefix + "beta" + str(i) + ".mif", output_header);
       ++progress;
     }
     for (size_t i = 0; i != num_contrasts; ++i) {
       if (!contrasts[i].is_F()) {
-        write_output (abs_effect_size.col(i), *v2v, prefix + "abs_effect" + postfix(i) + ".mif", output_header); ++progress;
-        write_output (std_effect_size.col(i), *v2v, prefix + "std_effect" + postfix(i) + ".mif", output_header); ++progress;
+        write_output (abs_effect_size.col(i), *v2v, prefix + "abs_effect" + postfix(i) + ".mif", output_header);
+        ++progress;
+        write_output (std_effect_size.col(i), *v2v, prefix + "std_effect" + postfix(i) + ".mif", output_header);
+        ++progress;
       }
+    }
+    if (nans_in_data || extra_columns.size()) {
+      write_output (cond, *v2v, prefix + "cond.mif", output_header);
+      ++progress;
     }
     write_output (stdev, *v2v, prefix + "std_dev.mif", output_header);
   }

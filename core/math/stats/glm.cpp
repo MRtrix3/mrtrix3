@@ -15,8 +15,8 @@
 #include "math/stats/glm.h"
 
 #include "debug.h"
-#include "misc/bitset.h"
 #include "thread_queue.h"
+#include "misc/bitset.h"
 
 namespace MR
 {
@@ -233,6 +233,7 @@ namespace MR
                         const matrix_type& fixed_design,
                         const vector<CohortDataImport>& extra_columns,
                         const vector<Contrast>& contrasts,
+                        vector_type& cond,
                         matrix_type& betas,
                         matrix_type& abs_effect_size,
                         matrix_type& std_effect_size,
@@ -271,11 +272,12 @@ namespace MR
           { MEMALIGN(Functor)
             public:
               Functor (const matrix_type& data, const matrix_type& design_fixed, const vector<CohortDataImport>& extra_columns, const vector<Contrast>& contrasts,
-                       matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, vector_type& stdev) :
+                       vector_type& cond, matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, vector_type& stdev) :
                   data (data),
                   design_fixed (design_fixed),
                   extra_columns (extra_columns),
                   contrasts (contrasts),
+                  global_cond (cond),
                   global_betas (betas),
                   global_abs_effect_size (abs_effect_size),
                   global_std_effect_size (std_effect_size),
@@ -299,9 +301,11 @@ namespace MR
                   if (std::isfinite (element_data(row)) && element_design.row (row).allFinite())
                     ++valid_rows;
                 }
+                default_type condition_number = 0.0;
                 if (valid_rows == data.rows()) { // No NaNs present
                   Math::Stats::GLM::all_stats (element_data, element_design, contrasts,
                                                local_betas, local_abs_effect_size, local_std_effect_size, local_stdev);
+                  condition_number = Math::condition_number (element_design);
                 } else {
                   // Need to reduce the data and design matrices to contain only finite data
                   matrix_type element_data_finite (valid_rows, 1);
@@ -315,9 +319,13 @@ namespace MR
                     }
                   }
                   assert (output_row == valid_rows);
+                  assert (element_data_finite.allFinite());
+                  assert (element_design_finite.allFinite());
                   Math::Stats::GLM::all_stats (element_data_finite, element_design_finite, contrasts,
                                                local_betas, local_abs_effect_size, local_std_effect_size, local_stdev);
+                  condition_number = Math::condition_number (element_design_finite);
                 }
+                global_cond[element_index] = condition_number;
                 global_betas.col (element_index) = local_betas;
                 global_abs_effect_size.row (element_index) = local_abs_effect_size.row (0);
                 global_std_effect_size.row (element_index) = local_std_effect_size.row (0);
@@ -329,6 +337,7 @@ namespace MR
               const matrix_type& design_fixed;
               const vector<CohortDataImport>& extra_columns;
               const vector<Contrast>& contrasts;
+              vector_type& global_cond;
               matrix_type& global_betas;
               matrix_type& global_abs_effect_size;
               matrix_type& global_std_effect_size;
@@ -339,7 +348,7 @@ namespace MR
 
           Source source (measurements.cols());
           Functor functor (measurements, fixed_design, extra_columns, contrasts,
-                           betas, abs_effect_size, std_effect_size, stdev);
+                           cond, betas, abs_effect_size, std_effect_size, stdev);
           Thread::run_queue (source, Thread::batch (size_t()), Thread::multi (functor));
         }
 
@@ -617,44 +626,53 @@ namespace MR
               }
               assert (Mfull_masked.allFinite());
 
-              pinvMfull_masked = Math::pinv (Mfull_masked);
+              // TODO Test condition number of masked & data-filled design matrix;
+              //   need to skip statistical testing if it is too poor
+              const default_type condition_number = Math::condition_number (Mfull_masked);
+              if (condition_number > 1e5) {
+                output.row (ie).fill (0.0);
+              } else {
 
-              Rm.noalias() = matrix_type::Identity (finite_count, finite_count) - (Mfull_masked*pinvMfull_masked);
+                pinvMfull_masked = Math::pinv (Mfull_masked);
 
-              // We now have our permutation (shuffling) matrix and design matrix prepared,
-              //   and can commence regressing the partitioned model of each contrast
-              for (size_t ic = 0; ic != c.size(); ++ic) {
+                Rm.noalias() = matrix_type::Identity (finite_count, finite_count) - (Mfull_masked*pinvMfull_masked);
 
-                const auto partition = c[ic].partition (Mfull_masked);
-                XtX.noalias() = partition.X.transpose()*partition.X;
+                // We now have our permutation (shuffling) matrix and design matrix prepared,
+                //   and can commence regressing the partitioned model of each contrast
+                for (size_t ic = 0; ic != c.size(); ++ic) {
 
-                // Now that we have the individual contrast model partition for these data,
-                //   the rest of this function should proceed similarly to the fixed
-                //   design matrix case
-                //VAR (shuffling_matrix_masked.rows());
-                //VAR (shuffling_matrix_masked.cols());
-                //VAR (partition.Rz.rows());
-                //VAR (partition.Rz.cols());
-                //VAR (y_masked.rows());
-                //VAR (y_masked.cols());
-                Sy = shuffling_matrix_masked * partition.Rz * y_masked.matrix();
-                lambda = pinvMfull_masked * Sy.matrix();
-                beta.noalias() = c[ic].matrix() * lambda.matrix();
-                const default_type sse = (Rm*Sy.matrix()).squaredNorm();
+                  const auto partition = c[ic].partition (Mfull_masked);
+                  XtX.noalias() = partition.X.transpose()*partition.X;
 
-                const default_type F = ((beta.transpose() * XtX * beta) (0, 0) / c[ic].rank()) /
-                    (sse / value_type (finite_count - partition.rank_x - partition.rank_z));
+                  // Now that we have the individual contrast model partition for these data,
+                  //   the rest of this function should proceed similarly to the fixed
+                  //   design matrix case
+                  //VAR (shuffling_matrix_masked.rows());
+                  //VAR (shuffling_matrix_masked.cols());
+                  //VAR (partition.Rz.rows());
+                  //VAR (partition.Rz.cols());
+                  //VAR (y_masked.rows());
+                  //VAR (y_masked.cols());
+                  Sy = shuffling_matrix_masked * partition.Rz * y_masked.matrix();
+                  lambda = pinvMfull_masked * Sy.matrix();
+                  beta.noalias() = c[ic].matrix() * lambda.matrix();
+                  const default_type sse = (Rm*Sy.matrix()).squaredNorm();
 
-                if (!std::isfinite (F)) {
-                  output (ie, ic) = value_type(0);
-                } else if (c[ic].is_F()) {
-                  output (ie, ic) = F;
-                } else {
-                  assert (beta.rows() == 1);
-                  output (ie, ic) = std::sqrt (F) * (beta.sum() > 0 ? 1.0 : -1.0);
-                }
+                  const default_type F = ((beta.transpose() * XtX * beta) (0, 0) / c[ic].rank()) /
+                      (sse / value_type (finite_count - partition.rank_x - partition.rank_z));
 
-              } // End looping over contrasts
+                  if (!std::isfinite (F)) {
+                    output (ie, ic) = value_type(0);
+                  } else if (c[ic].is_F()) {
+                    output (ie, ic) = F;
+                  } else {
+                    assert (beta.rows() == 1);
+                    output (ie, ic) = std::sqrt (F) * (beta.sum() > 0 ? 1.0 : -1.0);
+                  }
+
+                } // End looping over contrasts
+
+              } // End checking for adequate condition number after NaN removal
 
             } // End checking for adequate number of remaining subjects after NaN removal
 

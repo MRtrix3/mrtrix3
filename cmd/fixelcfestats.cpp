@@ -551,12 +551,12 @@ void run()
   {
     matrix_type betas (num_factors, num_fixels);
     matrix_type abs_effect_size (num_fixels, num_contrasts), std_effect_size (num_fixels, num_contrasts);
-    vector_type stdev (num_fixels);
+    vector_type cond (num_fixels), stdev (num_fixels);
 
     Math::Stats::GLM::all_stats (data, design, extra_columns, contrasts,
-                                 betas, abs_effect_size, std_effect_size, stdev);
+                                 cond, betas, abs_effect_size, std_effect_size, stdev);
 
-    ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_contrasts) + 1);
+    ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_contrasts) + 1 + (nans_in_data || extra_columns.size() ? 1 : 0));
 
     for (ssize_t i = 0; i != num_factors; ++i) {
       write_fixel_output (Path::join (output_fixel_directory, "beta" + str(i) + ".mif"), betas.row(i), output_header);
@@ -569,6 +569,10 @@ void run()
         write_fixel_output (Path::join (output_fixel_directory, "std_effect" + postfix(i) + ".mif"), std_effect_size.col(i), output_header);
         ++progress;
       }
+    }
+    if (nans_in_data || extra_columns.size()) {
+      write_fixel_output (Path::join (output_fixel_directory, "cond.mif"), cond, output_header);
+      ++progress;
     }
     write_fixel_output (Path::join (output_fixel_directory, "std_dev.mif"), stdev, output_header);
   }
