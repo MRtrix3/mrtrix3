@@ -211,7 +211,7 @@ namespace MR
               const default_type cond = Math::condition_number (design);
               if (cond > 10.0) {
                 WARN ("Design matrix conditioning is poor (condition number = " + str(cond) + "); some calculations may be unstable");
-              } else if (cond > 1e5) {
+              } else if (!std::isfinite (cond) || cond > 1e5) {
                 throw Exception ("Design matrix may contain collinear elements (condition number = " + str(cond) + "); check derivation of design matrix");
               }
             }
