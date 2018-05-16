@@ -85,7 +85,7 @@ class RMSErrorFunctor {
         E (new Eigen::MatrixXf(nz, nv)),
         N (new Eigen::MatrixXi(nz, nv)),
         S (new Eigen::MatrixXf(nz, nv)),
-        sample (shells.count())
+        sample (new vector<vector<float>>(shells.count()))
     {
       E->setZero();
       N->setZero();
@@ -112,8 +112,10 @@ class RMSErrorFunctor {
         n++;
         s1 += data.value()*pred.value();
         s2 += data.value()*data.value();
-        if (uniform() < 0.001f)
-          sample[bidx].push_back(std::fabs(d));
+        if (uniform() < 0.01f) {
+          std::lock_guard<std::mutex> lock (mx);
+          sample->at(bidx).push_back(std::fabs(d));
+        }
       }
       (*E)(z, v) = e;
       (*N)(z, v) = n;
@@ -124,7 +126,7 @@ class RMSErrorFunctor {
     Eigen::VectorXf scale() {
       Eigen::VectorXf s (nv);
       for (size_t k = 0; k < shells.count(); k++) {
-        float stdev = Math::median(sample[k]) * 1.4826;
+        float stdev = Math::median(sample->at(k)) * 1.4826;
         for (size_t i : shells[k].get_volumes())
           s[i] = stdev;
       }
@@ -157,8 +159,9 @@ class RMSErrorFunctor {
     std::shared_ptr<Eigen::MatrixXi> N;
     std::shared_ptr<Eigen::MatrixXf> S;
 
-    std::vector< std::vector<float> > sample;
+    std::shared_ptr< vector<vector<float>> > sample;
     Math::RNG::Uniform<float> uniform;
+    static std::mutex mx;
 
     inline size_t get_shell_idx(const size_t v) const {
       for (size_t k = 0; k < shells.count(); k++) {
@@ -170,6 +173,8 @@ class RMSErrorFunctor {
     }
 
 };
+
+std::mutex RMSErrorFunctor::mx;
 
 
 void run ()
