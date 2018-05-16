@@ -18,7 +18,7 @@
 #include "math/rng.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
-#include "interp/linear.h"
+#include "interp/nearest.h"
 
 #include "dwi/svr/param.h"
 
@@ -78,10 +78,10 @@ using value_type = float;
 class RMSErrorFunctor {
   MEMALIGN(RMSErrorFunctor)
   public:
-    RMSErrorFunctor (const Image<value_type>& in, const Image<float>& mask,
+    RMSErrorFunctor (const Image<value_type>& in, const Image<bool>& mask,
                      const DWI::Shells& shells, const Eigen::MatrixXf& mot, const int mb = 1)
       : nv (in.size(3)), nz (in.size(2)), ne (nz / mb), T0 (in),
-        mask (mask, 0.0f), shells (shells), motion (mot),
+        mask (mask, false), shells (shells), motion (mot),
         E (new Eigen::MatrixXf(nz, nv)),
         N (new Eigen::MatrixXi(nz, nv)),
         S (new Eigen::MatrixXf(nz, nv)),
@@ -96,6 +96,10 @@ class RMSErrorFunctor {
       size_t v = data.get_index(3);
       size_t z = data.get_index(2);
       size_t bidx = get_shell_idx(v);
+      // Get transformation for masking. Note that the MB-factor of the motion table and the OR settings can be different.
+      size_t ne_mot = motion.rows() / nv;
+      transform_type T { DWI::SVR::se3exp(motion.row(v*ne_mot + z%ne_mot)).cast<double>() };
+      // Calculate slice error
       value_type e = 0.0;
       value_type s1 = 0.0, s2 = 0.0;
       int n = 0;
@@ -103,9 +107,8 @@ class RMSErrorFunctor {
       for (auto l = Loop(0,2) (data, pred); l; l++) {
         if (mask.valid()) {
           assign_pos_of(data, 0, 3).to(pos);
-          transform_type T { DWI::SVR::se3exp(motion.row(v*ne + z%ne)).cast<double>() };
           mask.scanner(T * T0.voxel2scanner * pos);
-          if (mask.value() < 0.5f) continue;
+          if (!mask.value()) continue;
         }
         value_type d = data.value() - pred.value();
         e += d * d;
@@ -151,7 +154,7 @@ class RMSErrorFunctor {
   private:
     const size_t nv, nz, ne;
     const Transform T0;
-    Interp::Linear<Image<float>> mask;
+    Interp::Nearest<Image<bool>> mask;
     const DWI::Shells shells;
     const Eigen::MatrixXf motion;
 
@@ -183,10 +186,10 @@ void run ()
   auto pred = Image<value_type>::open(argument[1]);
   check_dimensions(data, pred, 0, 4);
 
-  auto mask = Image<float>();
+  auto mask = Image<bool>();
   auto opt = get_options("mask");
   if (opt.size()) {
-    mask = Image<float>::open(opt[0][0]);
+    mask = Image<bool>::open(opt[0][0]);
     check_dimensions(data, mask, 0, 3);
   } else {
     throw Exception ("mask is required.");
