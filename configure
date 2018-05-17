@@ -228,7 +228,7 @@ build_options = []
 if asserts: build_options.append ('asserts')
 if optimlevel <= 1: build_options.append ('nooptim')
 if nogui: build_options.append ('nogui')
-if noshared: build_options.application ('noshared')
+if noshared: build_options.append ('noshared')
 if static: build_options.append ('static')
 if openmp: build_options.append ('openmp')
 
