@@ -506,7 +506,18 @@ in order to preserve important information as image data are passed
 between commands. A prominent example is ``dw_scheme``, which is used
 to embed the diffusion gradient table within the :ref:`embedded_dw_scheme`.
 
+.. NOTE::
 
+   Any header key-value pairs that involve storage of either numerical
+   data, or multiple entries within a single key-value pair, must be
+   stored using the following convention:
+
+   -  The "``.``" period character as the numerical decimal separator.
+   -  The "``,``" comma character as the delimiter between entries.
+
+   Creation or manipulation of header data such that it does not
+   conform to these requirements may lead to unpredictable software
+   behaviour.
 
 
 
@@ -659,7 +670,7 @@ Fixel image (directory) format
 ------------------------------
 
 Images for representing discrete multi-fibre models are sparse in nature (i.e. different voxels may have different numbers of
-fibre populations - a.k.a *`fixels <fixels_dixels>`__*), and different models have different parameter requirements per fixel (e.g. orientation,
+fibre populations - a.k.a "*fixels*", as described in the :ref:`fixels_dixels` page), and different models have different parameter requirements per fixel (e.g. orientation,
 volume fraction, fanning, tensors etc). This fixel image format overcomes several issues in storing
 such data in either traditional 4D images or a custom format (such as the legacy :ref:`legacy_mrtrix_sparse_format`).
 

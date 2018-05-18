@@ -53,6 +53,9 @@ namespace MR
       //CONF /tmp/, which is typically a RAM file system and should therefore
       //CONF be fast; but may cause issues on machines with little RAM
       //CONF capacity or where write-access to this location is not permitted.
+      //CONF Note that this setting does not influence the location in which
+      //CONF Python scripts construct their temporary directories; that is
+      //CONF determined based on config file option ScriptTmpDir.
       const std::string& tmpfile_dir () {
         static const std::string __tmpfile_dir = File::Config::get ("TmpFileDir",
 #ifdef MRTRIX_WINDOWS
@@ -94,6 +97,9 @@ namespace MR
       //CONF The location in which to generate the temporary directories to be
       //CONF used by MRtrix Python scripts. By default they will be generated
       //CONF in the working directory.
+      //CONF Note that this setting does not influence the location in which
+      //CONF piped images and other temporary files are created by MRtrix3;
+      //CONF that is determined based on config file option TmpFileDir.
 
       //CONF option: ScriptTmpPrefix
       //CONF default: `<script>-tmp-`
