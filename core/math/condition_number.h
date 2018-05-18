@@ -28,6 +28,7 @@ namespace MR
     template <class M>
     inline default_type condition_number (const M& data)
     {
+      assert (data.rows() && data.cols());
       auto v = Eigen::JacobiSVD<M> (data).singularValues();
       return v[0] / v[v.size()-1];
     }
