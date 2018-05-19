@@ -26,6 +26,7 @@
 #define DEFAULT_LMAX 4
 #define DEFAULT_SSPW 1.0f
 #define DEFAULT_REG 0.01
+#define DEFAULT_ZREG 0.1
 #define DEFAULT_TOL 1e-4
 #define DEFAULT_MAXITER 10
 
@@ -68,7 +69,10 @@ void usage ()
                    "Gaussian SSP, relative to the voxel size. (default = " + str(DEFAULT_SSPW)  + ")")
     + Argument ("w").type_text()
 
-  + Option ("reg", "Regularization weight. (default = " + str(DEFAULT_REG) + ")")
+  + Option ("reg", "Isotropic Laplacian regularization. (default = " + str(DEFAULT_REG) + ")")
+    + Argument ("l").type_float()
+
+  + Option ("zreg", "Regularization in the slice direction. (default = " + str(DEFAULT_ZREG) + ")")
     + Argument ("l").type_float()
 
   + Option ("field", "Static susceptibility field, aligned in recon space.")
@@ -233,6 +237,7 @@ void run ()
     lmax = std::min(lmax, (int) get_option_value("lmax", lmax));
   
   float reg = get_option_value("reg", DEFAULT_REG);
+  float zreg = get_option_value("reg", DEFAULT_ZREG);
 
   value_type tol = get_option_value("tolerance", DEFAULT_TOL);
   size_t maxiter = get_option_value("maxiter", DEFAULT_MAXITER);
@@ -240,7 +245,7 @@ void run ()
 
   // Set up scattered data matrix
   INFO("initialise reconstruction matrix");
-  DWI::SVR::ReconMatrix R (dwisub, motionsub, gradsub, lmax, rf, ssp, reg);
+  DWI::SVR::ReconMatrix R (dwisub, motionsub, gradsub, lmax, rf, ssp, reg, zreg);
   R.setWeights(Wsub);
   if (hasfield)
     R.setField(fieldmap, fieldidx, PEsub);

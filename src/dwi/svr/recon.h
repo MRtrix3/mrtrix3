@@ -127,7 +127,8 @@ namespace MR
 
       // Custom API:
       ReconMatrix(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad,
-                  const int lmax, const vector<Eigen::MatrixXf>& rf, const SSP<float,2>& ssp, const float reg)
+                  const int lmax, const vector<Eigen::MatrixXf>& rf, const SSP<float,2>& ssp,
+                  const float reg, const float zreg)
         : lmax (lmax),
           nx (in.size(0)), ny (in.size(1)), nz (in.size(2)), nv (in.size(3)),
           nxy (nx*ny), nc (get_ncoefs(rf)), ne (rigid.rows() / nv),
@@ -138,6 +139,7 @@ namespace MR
         INFO("Multiband factor " + str(nz/ne) + " detected.");
         init_Y(grad);
         init_laplacian(nv*reg*reg);
+        init_zreg(nv*zreg*zreg);
         assert (motion.rows() == nv*ne);
 
         // set header for temporary images.
@@ -228,6 +230,7 @@ namespace MR
             T.noalias() += r * Y.row(idx);
           }, zero);
         Xo += L.adjoint() * (L * Xi);
+        Xo += Z.adjoint() * (Z * Xi);
         //Xo += std::numeric_limits<float>::epsilon() * Xi;
       }
 
@@ -242,7 +245,7 @@ namespace MR
       RowMatrixXf motion;
       RowMatrixXf Y;
       Eigen::MatrixXf W;
-      SparseMat L;
+      SparseMat L, Z;
 
       Header htmp;
 
@@ -544,6 +547,38 @@ namespace MR
           }
         }
         L.makeCompressed();
+      }
+
+      void init_zreg(const float lambda)
+      {
+        DEBUG("Initialising slice regularizer.");
+        Eigen::Matrix<Scalar, 5, 1> D;
+        //D << 0.375 , -0.25 , 0.0625 ;
+        D << 0.2734375, -0.21875, 0.109375, -0.03125, 0.00390625;
+        D *= std::sqrt(lambda);
+
+        Z.resize(nxy*nz, nxy*nz);
+        Z.reserve(Eigen::VectorXi::Constant(nxy*nz, 9));
+        for (size_t z = 0; z < nz; z++) {
+          for (size_t y = 0; y < ny; y++) {
+            for (size_t x = 0; x < nx; x++) {
+              Z.coeffRef(get_idx(x, y, z), get_idx(x, y, z)) += D[0];
+
+              Z.coeffRef(get_idx(x, y, z), get_idx(x, y, (z) ? z-1 : 0)) += D[1];
+              Z.coeffRef(get_idx(x, y, z), get_idx(x, y, (z < nz-1) ? z+1 : nz-1)) += D[1];
+
+              Z.coeffRef(get_idx(x, y, z), get_idx(x, y, (z > 1) ? z-2 : 0)) += D[2];
+              Z.coeffRef(get_idx(x, y, z), get_idx(x, y, (z < nz-2) ? z+2 : nz-1)) += D[2];
+
+              Z.coeffRef(get_idx(x, y, z), get_idx(x, y, (z > 2) ? z-3 : 0)) += D[3];
+              Z.coeffRef(get_idx(x, y, z), get_idx(x, y, (z < nz-3) ? z+3 : nz-1)) += D[3];
+
+              Z.coeffRef(get_idx(x, y, z), get_idx(x, y, (z > 3) ? z-4 : 0)) += D[4];
+              Z.coeffRef(get_idx(x, y, z), get_idx(x, y, (z < nz-4) ? z+4 : nz-1)) += D[4];
+            }
+          }
+        }
+        Z.makeCompressed();
       }
 
     };
