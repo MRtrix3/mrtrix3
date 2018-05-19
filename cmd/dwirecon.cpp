@@ -25,8 +25,8 @@
 
 #define DEFAULT_LMAX 4
 #define DEFAULT_SSPW 1.0f
-#define DEFAULT_REG 0.01
-#define DEFAULT_ZREG 0.1
+#define DEFAULT_REG 0.001
+#define DEFAULT_ZREG 0.01
 #define DEFAULT_TOL 1e-4
 #define DEFAULT_MAXITER 10
 
@@ -249,6 +249,7 @@ void run ()
   R.setWeights(Wsub);
   if (hasfield)
     R.setField(fieldmap, fieldidx, PEsub);
+
 
   size_t ncoefs = R.getY().cols();
   size_t padding = get_option_value("padding", Math::SH::NforL(lmax));
