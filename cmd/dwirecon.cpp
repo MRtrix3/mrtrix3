@@ -237,7 +237,7 @@ void run ()
     lmax = std::min(lmax, (int) get_option_value("lmax", lmax));
   
   float reg = get_option_value("reg", DEFAULT_REG);
-  float zreg = get_option_value("reg", DEFAULT_ZREG);
+  float zreg = get_option_value("zreg", DEFAULT_ZREG);
 
   value_type tol = get_option_value("tolerance", DEFAULT_TOL);
   size_t maxiter = get_option_value("maxiter", DEFAULT_MAXITER);
