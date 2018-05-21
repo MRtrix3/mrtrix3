@@ -139,6 +139,8 @@ void run ()
     } else {
       WARN ("Input image does not perfectly conform to 5TT format, but may still be applicable" + vox_option_suggestion);
     }
+  } else {
+    CONSOLE(std::string(argument.size() > 1 ? "All images" : "Input image") + " checked OK");
   }
 }
 
