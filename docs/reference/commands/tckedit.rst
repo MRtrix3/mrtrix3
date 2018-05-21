@@ -31,11 +31,11 @@ Options
 Region Of Interest processing options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-include image** specify an inclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines must traverse ALL inclusion regions to be accepted.
+-  **-include spec** specify an inclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines must traverse ALL inclusion regions to be accepted.
 
--  **-exclude image** specify an exclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines that enter ANY exclude region will be discarded.
+-  **-exclude spec** specify an exclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines that enter ANY exclude region will be discarded.
 
--  **-mask image** specify a masking region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, streamlines exiting the mask will be truncated.
+-  **-mask spec** specify a masking region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, streamlines exiting the mask will be truncated.
 
 Streamline length threshold options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -77,15 +77,13 @@ Standard options
 
 -  **-info** display information messages.
 
--  **-quiet** do not display information messages or progress status.
+-  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages.
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
-
--  **-failonwarn** terminate program if a warning is produced
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
 -  **-help** display this information page and exit.
 
@@ -97,16 +95,16 @@ Standard options
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/.
+file, you can obtain one at http://mozilla.org/MPL/2.0/
 
-MRtrix is distributed in the hope that it will be useful,
+MRtrix3 is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty
 of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see http://www.mrtrix.org/.
+For more details, see http://www.mrtrix.org/
 
 

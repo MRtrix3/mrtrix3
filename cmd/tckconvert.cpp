@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -49,7 +50,7 @@ void usage ()
    + "will produce files named output-0000.txt, output-0001.txt, output-0002.txt, ...";
 
   ARGUMENTS
-  + Argument ("input", "the input track file.").type_text ()
+  + Argument ("input", "the input track file.").type_various ()
   + Argument ("output", "the output track file.").type_file_out ();
 
   OPTIONS
@@ -121,6 +122,7 @@ public:
     }
 
     ~VTKWriter() {
+      try {
         // write out list of tracks:
         VTKout << "LINES " << track_list.size() << " " << track_list.size() + current_index << "\n";
         for (const auto track : track_list) {
@@ -137,6 +139,10 @@ public:
         VTKout.write (num_points.c_str(), 10);
 
         VTKout.close();
+      } catch (Exception& e) {
+        e.display();
+        App::exit_error_code = 1;
+      }
     }
 
 private:
@@ -166,12 +172,12 @@ public:
         if ( sscanf ( line.c_str(), "POINTS %d float", &number_of_points ) == 1) {
           points = new float[3*number_of_points];
           input.read((char*) points, 3*number_of_points * sizeof(float) );
-          
+
           // swap
           for ( int i = 0; i < 3*number_of_points; i++ ) {
             points[i] = Raw::fetch_BE<float>(points, i);
           }
-      
+
           continue;
         } else {
           if ( sscanf ( line.c_str(), "LINES %d %d", &number_of_lines, &number_of_line_indices ) == 2) {
@@ -201,7 +207,7 @@ public:
             tck.push_back(f);
             lineIdx++;
           }
-          return true;          
+          return true;
         }
         return false;
     }
@@ -481,6 +487,7 @@ public:
     }
 
     ~PLYWriter() {
+      try {
         // write out list of tracks:
         vertexOF.close();
         faceOF.close();
@@ -488,7 +495,7 @@ public:
         out <<
             "ply\n"
             "format ascii 1.0\n"
-            "comment written by tckconvert v" << mrtrix_version << "\n"
+            "comment written by tckconvert v" << App::mrtrix_version << "\n"
             "comment part of the mtrix3 suite of tools (http://www.mrtrix.org/)\n"
             "element vertex " << num_vertices << "\n"
             "property float32 x\n"
@@ -504,14 +511,18 @@ public:
         std::ifstream vertexIF (vertexFilename);
         out << vertexIF.rdbuf();
         vertexIF.close();
-        File::unlink (vertexFilename.c_str());
+        File::unlink (vertexFilename);
 
         std::ifstream faceIF (faceFilename);
         out << faceIF.rdbuf();
         faceIF.close();
-        File::unlink (faceFilename.c_str());
+        File::unlink (faceFilename);
 
         out.close();
+      } catch (Exception& e) {
+        e.display();
+        App::exit_error_code = 1;
+      }
     }
 
 private:
@@ -537,12 +548,11 @@ RibWriter(const std::string& file, float radius = 0.1, bool dec = false) : out(f
   decFilename = File::create_tempfile(0,".dec");
   decOF.open ( decFilename );
   decOF << "\"varying color dec\" [";
-  
   // Header
   out << "##RenderMan RIB\n"
       << "# Written by tckconvert\n"
       << "# Part of the MRtrix package (http://mrtrix.org)\n"
-      << "# version: " << mrtrix_version << "\n";
+      << "# version: " << App::mrtrix_version << "\n";
 
 }
 
@@ -574,30 +584,38 @@ RibWriter(const std::string& file, float radius = 0.1, bool dec = false) : out(f
   }
 
   ~RibWriter() {
-    if ( hasPoints ) {
-      pointsOF << "]\n" ;
-      pointsOF.close();
-      decOF << "]\n" ;
-      decOF.close();
-      out << "] \"nonperiodic\" ";
-    
-      std::ifstream pointsIF ( pointsFilename );
-      out << pointsIF.rdbuf();
+    try {
+      if ( hasPoints ) {
+        pointsOF << "]\n" ;
+        pointsOF.close();
+        decOF << "]\n" ;
+        decOF.close();
+        out << "] \"nonperiodic\" ";
 
-      if ( writeDEC ) {
-        std::ifstream decIF ( decFilename );
-        out << decIF.rdbuf();
-        decIF.close();
+        std::ifstream pointsIF ( pointsFilename );
+        out << pointsIF.rdbuf();
+
+        if ( writeDEC ) {
+          std::ifstream decIF ( decFilename );
+          out << decIF.rdbuf();
+          decIF.close();
+        }
+
+        out << " \"constantwidth\" " << radius << "\n";
       }
-      out << " \"constantwidth\" " << radius << "\n";
+
       out.close();
+
+      File::unlink (pointsFilename);
+      File::unlink (decFilename);
+
+    } catch (Exception& e) {
+      e.display();
+      App::exit_error_code = 1;
     }
-    
-    File::unlink(pointsFilename.c_str());
-    File::unlink(decFilename.c_str());
-    
+
   }
-    
+
   private:
   std::string pointsFilename;
   std::string decFilename;
