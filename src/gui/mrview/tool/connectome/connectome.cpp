@@ -82,6 +82,7 @@ namespace MR
             edge_size (edge_size_t::FIXED),
             edge_alpha (edge_alpha_t::FIXED),
             have_exemplars (false),
+            have_streamtubes (false),
             edge_fixed_colour { 0.5f, 0.5f, 0.5f },
             edge_colourmap_index (1),
             edge_colourmap_invert (false),
