@@ -195,7 +195,7 @@ def pipe_errors_to_less_handler():
 def disp (msg):
   print_lock.acquire()
   logfile.write (msg.encode (errors='ignore'))
-  sys.stdout.write (msg)
+  sys.stderr.write (msg)
   print_lock.release()
 
 def log (msg):
@@ -717,21 +717,21 @@ class Entry:
 
   def display (self, indent=''):
     show_rebuild = lambda x: x+' [REBUILD]' if todo[x].need_rebuild() else x
-    sys.stdout.write (indent + '[' + self.action + '] ' + show_rebuild (self.name) + ':\n')
-    sys.stdout.write (indent + '  timestamp: ' + str(self.timestamp))
+    sys.stderr.write (indent + '[' + self.action + '] ' + show_rebuild (self.name) + ':\n')
+    sys.stderr.write (indent + '  timestamp: ' + str(self.timestamp))
     if len(self.deps):
-      sys.stdout.write (', dep timestamp: ' + str(self.dep_timestamp) + ', diff: ' + str(self.timestamp-self.dep_timestamp))
-    sys.stdout.write ('\n')
+      sys.stderr.write (', dep timestamp: ' + str(self.dep_timestamp) + ', diff: ' + str(self.timestamp-self.dep_timestamp))
+    sys.stderr.write ('\n')
     if len(self.cmd):
-      sys.stdout.write (indent + '  command:   ' + ' '.join(self.cmd) + '\n')
+      sys.stderr.write (indent + '  command:   ' + ' '.join(self.cmd) + '\n')
     if len(self.deps):
-      sys.stdout.write (indent + '  deps:      ')
+      sys.stderr.write (indent + '  deps:      ')
       if dep_recursive:
-        sys.stdout.write ('\n')
+        sys.stderr.write ('\n')
         for x in self.deps:
           todo[x].display (indent + '    ')
       else:
-        sys.stdout.write ((indent+'\n             ').join([ show_rebuild(x) for x in self.deps ]) + '\n')
+        sys.stderr.write ((indent+'\n             ').join([ show_rebuild(x) for x in self.deps ]) + '\n')
 
 
 
@@ -819,11 +819,11 @@ def execute (message, cmd, working_dir=None):
 
 def print_deps (current_file, indent=''):
   current_file = os.path.normpath (current_file)
-  sys.stdout.write (indent + current_file)
+  sys.stderr.write (indent + current_file)
   if current_file in file_flags:
     if len(file_flags[current_file]):
-      sys.stdout.write (' [' + file_flags[current_file] + ']')
-  sys.stdout.write (os.linesep)
+      sys.stderr.write (' [' + file_flags[current_file] + ']')
+  sys.stderr.write (os.linesep)
   if len(todo[current_file].deps):
     for entry in todo[current_file].deps:
       print_deps (entry, indent + '    ')
