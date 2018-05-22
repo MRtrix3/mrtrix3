@@ -44,7 +44,7 @@ namespace MR
         // For initial segmentation of mesh - identify voxels on the mesh, inside & outside
         enum vox_mesh_t { UNDEFINED, ON_MESH, PRELIM_OUTSIDE, PRELIM_INSIDE, FILL_TEMP, OUTSIDE, INSIDE };
 
-        ProgressBar progress ("converting mesh to partial volume image", 7);
+        ProgressBar progress ("converting mesh to partial volume image", 8);
 
         // For speed, want the vertex data to be in voxel positions
         Filter::VertexTransform transform (image);
@@ -76,6 +76,8 @@ namespace MR
         // Stores a flag for each voxel as encoded in enum vox_mesh_t
         Header H (image);
         auto init_seg = Image<uint8_t>::scratch (H);
+        for (auto l = Loop(init_seg) (init_seg); l; ++l)
+          init_seg.value() = vox_mesh_t::UNDEFINED;
 
         // For every voxel, stores those polygons that may intersect the voxel
         using Vox2Poly = std::map< Vox, vector<size_t> >;
@@ -196,7 +198,7 @@ namespace MR
                   } else {
                     // Only call this once each voxel, regardless of the number of intersecting polygons
                     assign_pos_of (voxel).to (init_seg);
-                    init_seg.value() = ON_MESH;
+                    init_seg.value() = vox_mesh_t::ON_MESH;
                   }
                   this_voxel_polys.push_back (poly_index);
                   voxel2poly.insert (std::make_pair (voxel, this_voxel_polys));
@@ -206,38 +208,39 @@ namespace MR
         ++progress;
 
 
-        // New implementation of filling in the centre of the mesh
-        // Rather than selecting the eight external corners and filling in outside the
-        //   mesh (which may omit some areas), selecting anything remaining as 'inside',
-        //   fill inwards from vertices according to their normals, and select anything
-        //   remaining as 'outside'.
-        std::stack<Vox> to_expand;
+
+        // For *any* voxel not on the mesh but neighbouring a voxel in which a vertex lies,
+        //   track a floating-point value corresponding to its distance from the plane defined
+        //   by the normal at the vertex.
+        // Each voxel not directly on the mesh should then be assigned as prelim_inside or prelim_outside
+        //   depending on whether the summed value is positive or negative
+        auto sum_distances = Image<float>::scratch (H, "Sum of distances from polygon planes");
+        Vox adj_voxel;
         for (size_t i = 0; i != mesh.num_vertices(); ++i) {
-          const Vox voxel (mesh.vert (i));
-          Eigen::Vector3 normal (mesh.norm (i));
-          // Scale the normal such that the maximum length along any individual axis is 1.0 (but may be negative)
-          normal /= normal.array().abs().maxCoeff();
-          // Use this to select an adjacent voxel outside the structure (based on the
-          const Vox outside_neighbour (voxel + Vox(normal));
-          // Add this to the set of exterior voxels to be expanded if appropriate
-          assign_pos_of (outside_neighbour).to (init_seg);
-          if (!is_out_of_bounds (init_seg)) {
-            if (init_seg.value() == vox_mesh_t::UNDEFINED) {
-              init_seg.value() = vox_mesh_t::PRELIM_OUTSIDE;
-              //to_expand.push (outside_neighbour);
-            }
-          }
-          // Now do the same for inside the structure
-          const Vox inside_neighbour (voxel - Vox(normal));
-          assign_pos_of (inside_neighbour).to (init_seg);
-          if (!is_out_of_bounds (init_seg)) {
-            if (init_seg.value() == vox_mesh_t::UNDEFINED) {
-              init_seg.value() = vox_mesh_t::PRELIM_INSIDE;
-              //to_expand.push (inside_neighbour);
+          const Vox centre_voxel (mesh.vert(i));
+          for (adj_voxel[2] = centre_voxel[2]-1; adj_voxel[2] <= centre_voxel[2]+1; ++adj_voxel[2]) {
+            for (adj_voxel[1] = centre_voxel[1]-1; adj_voxel[1] <= centre_voxel[1]+1; ++adj_voxel[1]) {
+              for (adj_voxel[0] = centre_voxel[0]-1; adj_voxel[0] <= centre_voxel[0]+1; ++adj_voxel[0]) {
+                if (!is_out_of_bounds (H, adj_voxel) && (adj_voxel - centre_voxel).any()) {
+                  const Eigen::Vector3 offset (adj_voxel.cast<default_type>().matrix() - mesh.vert(i));
+                  const default_type dp_normal = offset.dot (mesh.norm(i));
+                  const default_type offset_on_plane = (offset - (mesh.norm(i) * dp_normal)).norm();
+                  assign_pos_of (adj_voxel).to (sum_distances);
+                  // If offset_on_plane is close to zero, this vertex should contribute strongly toward
+                  //   the sum of distances from the surface within this voxel
+                  sum_distances.value() += (1.0 / (1.0 + offset_on_plane)) * dp_normal;
+                }
+              }
             }
           }
         }
         ++progress;
+        for (auto l = Loop(init_seg) (init_seg, sum_distances); l; ++l) {
+          if (static_cast<float> (sum_distances.value()) != 0.0f && init_seg.value() != vox_mesh_t::ON_MESH)
+            init_seg.value() = sum_distances.value() < 0.0 ? vox_mesh_t::PRELIM_INSIDE : vox_mesh_t::PRELIM_OUTSIDE;
+        }
+        ++progress;
+
 
         // Can't guarantee that mesh might have a single isolated polygon pointing the wrong way
         // Therefore, need to:
@@ -246,6 +249,7 @@ namespace MR
         //   - For the final region selection, assign values to voxels based on a majority vote
         Image<uint8_t> seed (init_seg);
         vector<Vox> to_fill;
+        std::stack<Vox> to_expand;
         for (auto l = Loop(seed) (seed); l; ++l) {
           if (seed.value() == vox_mesh_t::PRELIM_INSIDE || seed.value() == vox_mesh_t::PRELIM_OUTSIDE) {
             size_t prelim_inside_count = 0, prelim_outside_count = 0;
@@ -362,7 +366,8 @@ namespace MR
                 Vertex p (*i_p);
                 p += Eigen::Vector3 (voxel[0], voxel[1], voxel[2]);
 
-                default_type best_min_edge_distance = -std::numeric_limits<default_type>::infinity();
+                default_type best_min_edge_distance_on_plane = -std::numeric_limits<default_type>::infinity();
+                //default_type best_interior_distance_from_plane = std::numeric_limits<default_type>::infinity();
                 bool best_result_inside = false;
 
                 // Only test against those polygons that are near this voxel
@@ -373,7 +378,14 @@ namespace MR
                   VertexList v;
 
                   bool is_inside = false;
-                  default_type min_edge_distance = std::numeric_limits<default_type>::infinity();
+                  default_type min_edge_distance_on_plane = std::numeric_limits<default_type>::infinity();
+
+                  // FIXME
+                  // If point does not lie within projection of polygon, compute the
+                  //   distance of the point projected onto the plane to the nearest edge of that polygon;
+                  //   use this distance to decide which polygon classifies the point
+                  // If point does lie within projection of polygon (potentially more than one), then the
+                  //   polygon to which the distance from the plane is minimal classifies the point
 
                   if (polygon_num_vertices == 3) {
 
@@ -394,7 +406,7 @@ namespace MR
                     edge_distances[0] = (p_on_plane-v[0]).dot (zero);
                     edge_distances[1] = (p_on_plane-v[2]).dot (one);
                     edge_distances[2] = (p_on_plane-v[1]).dot (two);
-                    min_edge_distance = std::min (edge_distances[0], std::min (edge_distances[1], edge_distances[2]));
+                    min_edge_distance_on_plane = std::min ( { edge_distances[0], edge_distances[1], edge_distances[2] } );
 
                   } else {
 
@@ -430,14 +442,14 @@ namespace MR
 
                       // Now, how far away is the point within the plane from this edge?
                       const default_type this_edge_distance = (p_on_plane - p1).dot (edge_normal);
-                      min_edge_distance = std::min (min_edge_distance, this_edge_distance);
+                      min_edge_distance_on_plane = std::min (min_edge_distance_on_plane, this_edge_distance);
 
                     }
 
                   }
 
-                  if (min_edge_distance > best_min_edge_distance) {
-                    best_min_edge_distance = min_edge_distance;
+                  if (min_edge_distance_on_plane > best_min_edge_distance_on_plane) {
+                    best_min_edge_distance_on_plane = min_edge_distance_on_plane;
                     best_result_inside = is_inside;
                   }
 
