@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -318,7 +319,7 @@ void run() {
   matrix_type empirical_enhanced_statistic;
   if (do_nonstationarity_adjustment) {
     if (!use_tfce)
-      throw Exception ("Nonstationary adjustment is not currently implemented for threshold-based cluster analysis");
+      throw Exception ("Nonstationarity adjustment is not currently implemented for threshold-based cluster analysis");
     Stats::PermTest::precompute_empirical_stat (glm_test, enhancer, empirical_enhanced_statistic);
     for (size_t i = 0; i != num_contrasts; ++i)
       write_output (empirical_enhanced_statistic.col(i), *v2v, prefix + "empirical" + postfix(i) + ".mif", output_header);

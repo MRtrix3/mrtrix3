@@ -1,6 +1,4 @@
-def initialise(base_parser, subparsers):
-  import argparse
-  from mrtrix3 import app
+def initialise(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('fa', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Use the old FA-threshold heuristic for single-fibre voxel selection and response function estimation', parents=[base_parser])
   parser.addCitation('', 'Tournier, J.-D.; Calamante, F.; Gadian, D. G. & Connelly, A. Direct estimation of the fiber orientation density function from diffusion-weighted MRI data using spherical deconvolution. NeuroImage, 2004, 23, 1176-1185', False)
   parser.add_argument('input', help='The input DWI')
@@ -13,26 +11,26 @@ def initialise(base_parser, subparsers):
 
 
 
-def checkOutputPaths():
+def checkOutputPaths(): #pylint: disable=unused-variable
   from mrtrix3 import app
   app.checkOutputPath(app.args.output)
 
 
 
-def getInputs():
+def getInputs(): #pylint: disable=unused-variable
   pass
 
 
 
-def needsSingleShell():
+def needsSingleShell(): #pylint: disable=unused-variable
   return False
 
 
 
-def execute():
-  import os, shutil
+def execute(): #pylint: disable=unused-variable
+  import shutil
   from mrtrix3 import app, image, path, run
-  bvalues = [ int(round(float(x))) for x in image.headerField('dwi.mif', 'shells').split() ]
+  bvalues = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shell_bvalues').split() ]
   if len(bvalues) < 2:
     app.error('Need at least 2 unique b-values (including b=0).')
   lmax_option = ''
@@ -52,4 +50,3 @@ def execute():
   run.command('dwiextract dwi.mif - -singleshell -no_bzero | amp2response - voxels.mif vector.mif response.txt' + lmax_option)
 
   run.function(shutil.copyfile, 'response.txt', path.fromUser(app.args.output, False))
-

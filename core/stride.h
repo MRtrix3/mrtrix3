@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -77,7 +78,7 @@ namespace MR
                 return false;
               if (S.stride(b) == 0)
                 return true;
-              return std::abs (S.stride (a)) < std::abs (S.stride (b));
+              return abs (S.stride (a)) < abs (S.stride (b));
             }
           private:
             const HeaderType& S;
@@ -194,14 +195,14 @@ namespace MR
           if (!header.stride (i)) continue;
           for (size_t j = i+1; j < header.ndim(); ++j) {
             if (!header.stride (j)) continue;
-            if (std::abs (header.stride (i)) == std::abs (header.stride (j))) header.stride (j) = 0;
+            if (abs (header.stride (i)) == abs (header.stride (j))) header.stride (j) = 0;
           }
         }
 
         size_t max = 0;
         for (size_t i = 0; i < header.ndim(); ++i)
-          if (size_t (std::abs (header.stride (i))) > max)
-            max = std::abs (header.stride (i));
+          if (size_t (abs (header.stride (i))) > max)
+            max = abs (header.stride (i));
 
         for (size_t i = 0; i < header.ndim(); ++i) {
           if (header.stride (i)) continue;
@@ -370,7 +371,7 @@ namespace MR
 
         for (size_t i = 0; i < out.size(); ++i) 
           if (out[i]) 
-            if (std::abs (out[i]) != std::abs (in[i])) 
+            if (abs (out[i]) != abs (in[i])) 
               return sanitise (in, out, dims);
 
         sanitise (in, current);

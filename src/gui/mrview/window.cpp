@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -108,6 +109,9 @@ namespace MR
           grabGesture (Qt::PinchGesture);
           grabGesture (Qt::PanGesture);
           QFont font_ = font();
+          //CONF option: FontSize
+          //CONF The size (in points) of the font to be used in OpenGL viewports (mrview and shview).
+          //CONF default: 10
           font_.setPointSize (MR::File::Config::get_int ("FontSize", 10));
           setFont (font_);
           QSizePolicy policy (QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
@@ -118,7 +122,7 @@ namespace MR
 
       QSize Window::GLArea::sizeHint () const {
         //CONF option: MRViewInitWindowSize
-        //CONF initial window size of MRView in pixels
+        //CONF Initial window size of MRView in pixels.
         //CONF default: 512,512
         std::string init_size_string = lowercase (MR::File::Config::get ("MRViewInitWindowSize"));
         vector<int> init_window_size;
@@ -417,7 +421,7 @@ namespace MR
 
           //CONF option: ImageInterpolation
           //CONF default: true
-          //CONF Interpolation switched on in the main image
+          //CONF Interpolation switched on in the main image.
           image_interpolate_action = colourmap_menu->addAction (tr ("Interpolate"), this, SLOT (image_interpolate_slot()));
           image_interpolate_action->setShortcut (tr ("I"));
           image_interpolate_action->setCheckable (true);
@@ -489,7 +493,7 @@ namespace MR
 
           //CONF option: MRViewShowFocus
           //CONF default: true
-          //CONF Focus cross hair shown in main image
+          //CONF Focus cross hair shown in main image.
           show_crosshairs_action = menu->addAction (tr ("Show focus"), glarea, SLOT (update()));
           show_crosshairs_action->setShortcut (tr("F"));
           show_crosshairs_action->setCheckable (true);
@@ -498,7 +502,7 @@ namespace MR
 
           //CONF option: MRViewShowComments
           //CONF default: true
-          //CONF Comments shown in main image overlay
+          //CONF Comments shown in main image overlay.
           show_comments_action = menu->addAction (tr ("Show comments"), glarea, SLOT (update()));
           show_comments_action->setToolTip (tr ("Show/hide image comments\n\nShortcut: H"));
           show_comments_action->setShortcut (tr("H"));
@@ -508,7 +512,7 @@ namespace MR
 
           //CONF option: MRViewShowVoxelInformation
           //CONF default: true
-          //CONF Voxel information shown in main image overlay
+          //CONF Voxel information shown in main image overlay.
           show_voxel_info_action = menu->addAction (tr ("Show voxel information"), glarea, SLOT (update()));
           show_voxel_info_action->setShortcut (tr("V"));
           show_voxel_info_action->setCheckable (true);
@@ -517,7 +521,7 @@ namespace MR
 
           //CONF option: MRViewShowOrientationLabel
           //CONF default: true
-          //CONF Anatomical orientation information shown in main image overlay
+          //CONF Anatomical orientation information shown in main image overlay.
           show_orientation_labels_action = menu->addAction (tr ("Show orientation labels"), glarea, SLOT (update()));
           show_orientation_labels_action->setShortcut (tr("O"));
           show_orientation_labels_action->setCheckable (true);
@@ -526,7 +530,7 @@ namespace MR
 
           //CONF option: MRViewShowColourbar
           //CONF default: true
-          //CONF Colourbar shown in main image overlay
+          //CONF Colourbar shown in main image overlay.
           show_colourbar_action = menu->addAction (tr ("Show colour bar"), glarea, SLOT (update()));
           show_colourbar_action->setShortcut (tr("B"));
           show_colourbar_action->setCheckable (true);
@@ -1048,12 +1052,8 @@ namespace MR
 
       void Window::image_reset_slot ()
       {
-        Image* imagep = image();
-        if (imagep) {
-          imagep->reset_windowing (anatomical_plane, snap_to_image_action->isChecked());
-          on_scaling_changed();
-          glarea->update();
-        }
+        if (image())
+          mode->reset_windowing ();
       }
 
 
@@ -1131,6 +1131,18 @@ namespace MR
         }
 
       }
+
+
+      void Window::set_image_volume (size_t axis, ssize_t index)
+      {
+        assert (image());
+        image()->image.index (axis) = index;
+        set_image_navigation_menu();
+        emit volumeChanged (index);
+        updateGL();
+      }
+
+
 
 
       void Window::set_image_visibility (bool flag) {
@@ -1635,6 +1647,7 @@ namespace MR
           default: return;
         }
         event->accept();
+        glarea->update();
       }
 
 
@@ -1789,9 +1802,11 @@ namespace MR
           }
 
           if (opt.opt->is ("size")) {
-            vector<int> glsize = opt[0];
+            vector<int> glsize = parse_ints (opt[0]);
             if (glsize.size() != 2)
-              throw Exception ("invalid argument \"" + std::string(opt.args[0]) + "\" to view.size batch command");
+              throw Exception ("invalid argument \"" + std::string(opt.args[0]) + "\" to -size batch command");
+            if (glsize[0] < 1 || glsize[1] < 1)
+              throw Exception ("values provided to -size option must be positive");
             QSize oldsize = glarea->size();
             QSize winsize = size();
             resize (winsize.width() - oldsize.width() + glsize[0], winsize.height() - oldsize.height() + glsize[1]);
@@ -1826,6 +1841,17 @@ namespace MR
               }
             }
             glarea->update();
+            return;
+          }
+
+          if (opt.opt->is ("target")) {
+            if (image()) {
+              vector<default_type> pos = parse_floats (opt[0]);
+              if (pos.size() != 3)
+                throw Exception ("-target option expects a comma-separated list of 3 floating-point values");
+              set_target (Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
+              glarea->update();
+            }
             return;
           }
 
@@ -1912,6 +1938,7 @@ namespace MR
               throw Exception ("-interpolation option expects a boolean");
             }
             image_interpolate_slot();
+            return;
           }
 
           if (opt.opt->is ("intensity_range")) {
@@ -2043,6 +2070,10 @@ namespace MR
               "show or hide the focus cross hair using a boolean value as argument.").allow_multiple()
           +   Argument ("x,y,z or boolean")
 
+          + Option ("target", "Set the target location for the viewing window (the scanner coordinate "
+              "that will appear at the centre of the viewing window")
+          +   Argument ("x,y,z").type_sequence_float()
+
           + Option ("voxel", "Set the position of the crosshairs in voxel coordinates, "
               "relative the image currently displayed. The new position should be supplied "
               "as a comma-separated list of floating-point values.").allow_multiple()
@@ -2087,7 +2118,7 @@ namespace MR
           +   Argument ("boolean").type_bool ()
 
           + Option ("intensity_range", "Set the image intensity range to that specified.").allow_multiple()
-          +   Argument ("min,max").type_sequence_int()
+          +   Argument ("min,max").type_sequence_float()
 
           + OptionGroup ("Window management options")
 

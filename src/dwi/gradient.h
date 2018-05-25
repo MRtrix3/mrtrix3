@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -41,7 +42,7 @@ namespace MR
       Eigen::MatrixXd& normalise_grad (MatrixType& grad)
       {
         if (grad.cols() < 3)
-          throw Exception ("invalid diffusion gradient table dimensions");
+          throw Exception ("invalid diffusion gradient table dimensions (" + str(grad.rows()) + " x " + str(grad.cols()) + ")");
         for (ssize_t i = 0; i < grad.rows(); i++) {
           auto norm = grad.row(i).template head<3>().norm();
           if (norm)
@@ -215,7 +216,7 @@ namespace MR
           throw Exception ("dwi image should contain 4 dimensions");
 
         if (header.size (3) != (int) grad.rows())
-          throw Exception ("number of studies in base image does not match that in diffusion gradient table");
+          throw Exception ("number of studies in base image (" + str(header.size(3)) + ") does not match number of rows in diffusion gradient table (" + str(grad.rows()) + ")");
       }
 
 

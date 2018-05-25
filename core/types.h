@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -271,19 +272,18 @@ namespace MR
       return std::unique_ptr<X> (new X (std::forward<Args> (args)...));
     }
 
+
+  // required to allow use of abs() call on unsigned integers in template
+  // functions, etc, since the standard labels such calls ill-formed:
+  // http://en.cppreference.com/w/cpp/numeric/math/abs
+  template <typename X>
+    inline constexpr typename std::enable_if<std::is_arithmetic<X>::value && std::is_unsigned<X>::value,X>::type abs (X x) { return x; }
+  template <typename X>
+    inline constexpr typename std::enable_if<std::is_arithmetic<X>::value && !std::is_unsigned<X>::value,X>::type abs (X x) { return std::abs(x); }
 }
 
 namespace std
 {
-  // these are not defined in the standard, but are needed
-  // for use in generic templates
-  // Note: Get defined in std_abs.h on GCC7.1, so need to skip
-#ifndef _GLIBCXX_BITS_STD_ABS_H
-  FORCE_INLINE uint8_t abs (uint8_t x) { return x; }
-  FORCE_INLINE uint16_t abs (uint16_t x) { return x; }
-  FORCE_INLINE uint32_t abs (uint32_t x) { return x; }
-  FORCE_INLINE uint64_t abs (uint64_t x) { return x; }
-#endif
 
   template <class T> inline ostream& operator<< (ostream& stream, const vector<T>& V)
   {

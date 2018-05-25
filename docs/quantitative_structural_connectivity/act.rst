@@ -3,17 +3,9 @@
 Anatomically-Constrained Tractography (ACT)
 ===========================================
 
-This page describes the recommended processing steps for taking advantage of the Anatomically-Constrained Tractography (ACT) framework, the image format used, and the commands available for manipulating these data.   There are also instructions for anyone looking to make use of alternative tissue segmentation approaches.
+This page describes the recommended processing steps for taking advantage of the Anatomically-Constrained Tractography (ACT) framework [Smith2012]_, the image format used, and the commands available for manipulating these data.   There are also instructions for anyone looking to make use of alternative tissue segmentation approaches.
 
-References
-----------
-
-For full details on ACT, please refer to the following journal article:
-
-    `Smith, R. E., Tournier, J.-D., Calamante, F., & Connelly, A. (2012). Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. NeuroImage, 62(3), 1924–1938. doi:10.1016/j.neuroimage.2012.06.005 <http://www.ncbi.nlm.nih.gov/pubmed/22705374/>`_
-
-If you use ACT in your research, please cite the article above in your manuscripts.
-
+.. _act_preproc:
 
 Pre-processing steps
 --------------------
@@ -45,6 +37,9 @@ Once the necessary pre-processing steps are completed, using ACT is simple: just
 
 In addition, since the propagation and termination of streamlines is primarily handled by the 5TT image, it is no longer necessary to provide a mask using the ``-mask`` option. In fact, for whole-brain tractography, it is recommend that you _not_ provide such an image when using ACT: depending on the accuracy of the DWI brain mask, its inclusion may only cause erroneous termination of streamlines inside the white matter due to exiting this mask. If the mask encompasses all of the white matter, then its inclusion does not provide any additional information to the tracking algorithm.
 
+
+.. _5TT:
+
 The 5TT format
 --------------
 
@@ -62,6 +57,7 @@ The following binaries are provided for working with the 5TT format:
 
 * ``5tt2gmwmi``: Produces a mask image suitable for seeding streamlines from the grey matter - white matter interface (GMWMI). The resulting image should then be provided to the ``tckgen`` command using the ``-seed_gmwmi`` option.
 * ``5tt2vis``: Produces a 3D greyscale image suitable for visualisation purposes.
+* ``5ttcheck``: Check that one or more input images conform to the 5TT format.
 * ``5ttedit``: Allows the user to edit the tissue segmentations. Useful for manually correcting tissue segmentations that are known to be erroneous (e.g. dark blobs in the white matter being labelled as grey matter); see the command's help page for more details.
 
 Alternative tissue segmentation software
