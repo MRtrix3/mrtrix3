@@ -51,6 +51,7 @@ namespace MR
         public:
           SubjectDataImportBase (const std::string& path) :
               path (path) { }
+          virtual ~SubjectDataImportBase() { }
 
           /*!
           * @param row the row of a matrix into which the data from this
