@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -37,13 +38,13 @@ void usage ()
     "then re-normalising the vector.";
 
   ARGUMENTS
-  + Argument ("fixel_in", "the fixel directory").type_text ()
+  + Argument ("fixel_in", "the input fixel directory").type_directory_in()
   + Argument ("warp", "a 4D deformation field used to perform reorientation. "
                       "Reorientation is performed by applying the Jacobian affine transform in each voxel in the warp, "
                       "then re-normalising the vector representing the fixel direction").type_image_in ()
-  + Argument ("fixel_out", "the output fixel directory. If the the input and output directorys are the same, the existing directions file will "
-                           "be replaced (providing the --force option is supplied). If a new directory is supplied then the fixel directions and all "
-                           "other fixel data will be copied to the new directory.").type_text ();
+  + Argument ("fixel_out", "the output fixel directory. If the the input and output directories are the same, the existing directions file will "
+                           "be replaced (providing the -force option is supplied). If a new directory is supplied then the fixel directions and all "
+                           "other fixel data will be copied to the new directory.").type_directory_out();
 }
 
 

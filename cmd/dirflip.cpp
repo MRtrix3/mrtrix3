@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -37,7 +38,7 @@ void usage ()
   + "The orientations themselves are not affected, only their "
     "polarity; this is necessary to ensure near-optimal distribution of DW "
     "directions for eddy-current correction.";
-     
+
   ARGUMENTS
     + Argument ("in", "the input files for the directions.").type_file_in()
     + Argument ("out", "the output files for the directions.").type_file_out();
@@ -62,7 +63,7 @@ class Shared { MEMALIGN(Shared)
       progress ("optimising directions for eddy-currents", target_num_permutations),
       best_signs (directions.rows(), 1), best_eddy (std::numeric_limits<value_type>::max()) { }
 
-    bool update (value_type eddy, const vector<int>& signs) 
+    bool update (value_type eddy, const vector<int>& signs)
     {
       std::lock_guard<std::mutex> lock (mutex);
       if (eddy < best_eddy) {
@@ -98,7 +99,7 @@ class Shared { MEMALIGN(Shared)
     vector<int> best_signs;
     value_type best_eddy;
     std::mutex mutex;
-  
+
 };
 
 
@@ -113,7 +114,7 @@ class Processor { MEMALIGN(Processor)
       uniform (0, signs.size()-1) { }
 
     void execute () {
-      while (eval()); 
+      while (eval());
     }
 
 
@@ -127,8 +128,8 @@ class Processor { MEMALIGN(Processor)
       next_permutation();
 
       value_type eddy = 0.0;
-      for (size_t i = 0; i < signs.size(); ++i) 
-        for (size_t j = i+1; j < signs.size(); ++j) 
+      for (size_t i = 0; i < signs.size(); ++i)
+        for (size_t j = i+1; j < signs.size(); ++j)
           eddy += shared.eddy (i, j, signs);
 
       return shared.update (eddy, signs);
@@ -148,18 +149,20 @@ class Processor { MEMALIGN(Processor)
 
 
 
-void run () 
+void run ()
 {
   auto directions = DWI::Directions::load_cartesian (argument[0]);
 
   size_t num_permutations = get_option_value ("permutations", DEFAULT_PERMUTATIONS);
 
-  Shared eddy_shared (directions, num_permutations);
-  Thread::run (Thread::multi (Processor (eddy_shared)), "eval thread");
+  vector<int> signs;
+  {
+    Shared eddy_shared (directions, num_permutations);
+    Thread::run (Thread::multi (Processor (eddy_shared)), "eval thread");
+    signs = eddy_shared.get_best_signs();
+  }
 
-  auto& signs = eddy_shared.get_best_signs();
-
-  for (ssize_t n = 0; n < directions.rows(); ++n) 
+  for (ssize_t n = 0; n < directions.rows(); ++n)
     if (signs[n] < 0)
       directions.row(n) *= -1.0;
 

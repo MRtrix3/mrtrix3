@@ -19,6 +19,14 @@ To install *MRtrix3*, you will need the following:
 -  `Eigen <http://eigen.tuxfamily.org>`__ version >= 3.2 
 -  `Qt <http://www.qt.io/>`__ version >= 4.7 *[GUI components only]*
 
+and optionally:
+
+- `libTIFF <http://www.libtiff.org/>`__ version >= 4.0 (for TIFF support)
+- `FFTW <http://www.fftw.org/>`__ version >= 3.0 (for improved performance in
+  certain applications, currently only ``mrdegibbs``)
+  
+  
+
 .. WARNING:: 
 
     To run the GUI components of *MRtrix3* (``mrview`` &
@@ -41,20 +49,20 @@ for hints on how to proceed in this case.
 
 -  Ubuntu Linux (and derivatives, e.g. Linux Mint)::
 
-       sudo apt-get install git g++ python python-numpy libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev
+       sudo apt-get install git g++ python python-numpy libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev libfftw3-dev libtiff5-dev
 
 -  RPM-based distros (Fedora, CentOS)::
 
-       sudo yum install git g++ python numpy eigen3-devel zlib-devel libqt4-devel libgl1-mesa-dev
+       sudo yum install git g++ python numpy eigen3-devel zlib-devel libqt4-devel libgl1-mesa-dev fftw-devel libtiff-devel
 
    on Fedora 24, this is reported to work::
 
-           sudo yum install git gcc-c++ python numpy eigen3-devel zlib-devel qt-devel mesa-libGL-devel
+           sudo yum install git gcc-c++ python numpy eigen3-devel zlib-devel qt-devel mesa-libGL-devel fftw-devel libtiff-devel
 
 
 -  Arch Linux::
 
-       sudo pacman -Syu git python python-numpy gcc zlib eigen qt5-svg
+       sudo pacman -Syu git python python-numpy gcc zlib eigen qt5-svg fftw libtiff
 
 If this doesn't work
 ^^^^^^^^^^^^^^^^^^^^
@@ -188,24 +196,8 @@ Keeping *MRtrix3* up to date
    and re-run step 1 again.
 
 
-.. _linux_standalone:
-
-Standalone installation on Linux
---------------------------------
-
-In some cases, users need to install *MRtrix3* on systems running older
-distributions, over which they have little or no control, for example
-centrally-managed HPC clusters. In such cases, there genuinely is no way
-to install the dependencies required to compile and run *MRtrix3*. There
-are two ways to address this problem: `static
-executables <#static-build>`__, and the `standalone
-packager <#standalone-packager>`__. With both approaches, you can
-compile *MRtrix3* on a modern distro (within a virtual machine for
-example), package it up, and install it on any Linux system without
-worrying about dependencies.
-
 Setting the CPU architecture for optimal performance
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------------------------------
 
 By default, ``configure`` will cause the build script to produce generic code
 suitable for any current CPU. If you want to ensure optimal performance on your
@@ -236,6 +228,23 @@ specifiers understood by the compiler
 <https://gcc.gnu.org/onlinedocs/gcc-6.2.0/gcc/x86-Options.html#x86-Options>`_,
 for example ``ARCH='sandybridge' ./configure``
 
+
+.. _linux_standalone:
+
+Standalone installation on Linux
+--------------------------------
+
+In some cases, users need to install *MRtrix3* on systems running older
+distributions, over which they have little or no control, for example
+centrally-managed HPC clusters. In such cases, there genuinely is no way
+to install the dependencies required to compile and run *MRtrix3*. There
+are two ways to address this problem: `static
+executables <#static-build>`__, and the `standalone
+packager <#standalone-packager>`__. With both approaches, you can
+compile *MRtrix3* on a modern distro (within a virtual machine for
+example), package it up, and install it on any Linux system without
+worrying about dependencies.
+
 Static build
 ^^^^^^^^^^^^
 
@@ -262,30 +271,8 @@ Qt <http://doc.qt.io/qt-5/linux-deployment.html#building-qt-statically>`__
 beforehand. Use the ``-nogui`` option to skip installation of GUI
 components, which rely on Qt.
 
-You can then copy the contents of the ``bin/``, ``lib/`` and ``share/`` folders
-onto target systems, make sure the ``bin/`` folder location is listed in the
-``PATH``, and start using these commands. For example:
-
-1. Create a single archive of the relevant folders (for easy deployment)::
-   
-     tar cvfz mrtrix3_static.tgz bin/ lib/ share/
-
-2. Copy the resulting ``mrtrix3_static.tgz`` file over to the target system,
-   into a suitable location.
-
-3. Extract the archive in this location::
-
-     tar xvfz mrtrix3_static.tgz
-
-   You can safely remove the ``mrtrix3_static.tgz`` file at this point.
-
-4. Add the ``bin/`` folder to the system ``PATH``, e.g.::
-
-     export PATH="$(pwd)/bin:$PATH"
-
-   Note that the above command will only add *MRtrix3* to the ``PATH`` for the
-   current session. You would need to add the equivalent line to your users'
-   startup scripts, using whichever mechanism is appropriate for your system. 
+You can then deploy the software onto target systems, as described in the
+:ref:`deployment` section. 
 
 
 Standalone packager

@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -290,7 +291,7 @@ namespace MR
           const Eigen::Vector3 computed_normal = Surface::normal (*this, triangles.back());
           if (computed_normal.dot (normal.cast<default_type>()) < 0.0)
             warn_right_hand_rule = true;
-          if (std::abs (computed_normal.dot (normal.cast<default_type>())) < 0.99)
+          if (abs (computed_normal.dot (normal.cast<default_type>())) < 0.99)
             warn_nonstandard_normals = true;
         }
         if (triangles.size() != count)
@@ -354,7 +355,7 @@ namespace MR
             const Eigen::Vector3 computed_normal = Surface::normal (*this, triangles.back());
             if (computed_normal.dot (normal) < 0.0)
               warn_right_hand_rule = true;
-            if (std::abs (computed_normal.dot (normal)) < 0.99)
+            if (abs (computed_normal.dot (normal)) < 0.99)
               warn_nonstandard_normals = true;
           } else if (line.substr(0, 8) == "endsolid") {
             if (inside_facet)

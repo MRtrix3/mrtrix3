@@ -1,23 +1,20 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
 #ifndef __math_SH_h__
 #define __math_SH_h__
-
-#ifdef USE_NON_ORTHONORMAL_SH_BASIS
-# warning using non-orthonormal SH basis
-#endif
 
 #include "math/legendre.h"
 #include "math/least_squares.h"
@@ -97,13 +94,8 @@ namespace MR
             for (int m = 1; m <= lmax; m++) {
               Legendre::Plm_sph (AL, lmax, m, x);
               for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
-#ifndef USE_NON_ORTHONORMAL_SH_BASIS
                 SHT(i, index(l, m)) = Math::sqrt2 * AL[l]*std::cos (m*dirs (i,0));
                 SHT(i, index(l,-m)) = Math::sqrt2 * AL[l]*std::sin (m*dirs (i,0));
-#else
-                SHT(i, index(l, m)) = AL[l]*std::cos (m*dirs (i,0));
-                SHT(i, index(l,-m)) = AL[l]*std::sin (m*dirs (i,0));
-#endif
               }
             }
           }
@@ -218,13 +210,8 @@ namespace MR
             Legendre::Plm_sph (AL, lmax, m, cos_elevation);
             value_type c = c0 * cos_azimuth - s0 * sin_azimuth;  // std::cos(m*azimuth)
             value_type s = s0 * cos_azimuth + c0 * sin_azimuth;  // std::sin(m*azimuth)
-            for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
-#ifndef USE_NON_ORTHONORMAL_SH_BASIS
+            for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2)
               amplitude += AL[l] * Math::sqrt2 * (c * coefs[index (l,m)] + s * coefs[index (l,-m)]);
-#else
-              amplitude += AL[l] * (c * coefs[index (l,m)] + s * coefs[index (l,-m)]);
-#endif
-            }
             c0 = c;
             s0 = s;
           }
@@ -269,13 +256,8 @@ namespace MR
             value_type c = c0 * cp - s0 * sp;
             value_type s = s0 * cp + c0 * sp;
             for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
-#ifndef USE_NON_ORTHONORMAL_SH_BASIS
               delta_vec[index (l,m)]  = AL[l] * Math::sqrt2 * c;
               delta_vec[index (l,-m)] = AL[l] * Math::sqrt2 * s;
-#else
-              delta_vec[index (l,m)]  = AL[l] * 2.0 * c;
-              delta_vec[index (l,-m)] = AL[l] * 2.0 * s;
-#endif
             }
             c0 = c;
             s0 = s;
@@ -358,11 +340,6 @@ namespace MR
           typename vector<ValueType>::const_iterator p1, p2;
       };
 
-#ifndef USE_NON_ORTHONORMAL_SH_BASIS
-#define SH_NON_M0_SCALE_FACTOR (m ? Math::sqrt2 : 1.0)*
-#else
-#define SH_NON_M0_SCALE_FACTOR
-#endif
 
       //! Precomputed Associated Legrendre Polynomials - used to speed up SH calculation
       template <typename ValueType> class PrecomputedAL
@@ -396,7 +373,7 @@ namespace MR
               for (int m = 0; m <= lmax; m++) {
                 Legendre::Plm_sph (buf, lmax, m, cos_el);
                 for (int l = ( (m&1) ?m+1:m); l <= lmax; l+=2)
-                  p[index_mpos (l,m)] = SH_NON_M0_SCALE_FACTOR buf[l];
+                  p[index_mpos (l,m)] = buf[l];
               }
             }
           }
@@ -496,8 +473,12 @@ namespace MR
             derivatives (sh, lmax, el, az, amplitude, dSH_del, dSH_daz, d2SH_del2, d2SH_deldaz, d2SH_daz2, precomputer);
 
             value_type del = sqrt (dSH_del*dSH_del + dSH_daz*dSH_daz);
-            value_type daz = dSH_daz/del;
-            del = dSH_del/del;
+            value_type daz = 0.0;
+            if (del != 0.0) {
+              daz = dSH_daz/del;
+              del = dSH_del/del;
+            }
+
 
             value_type dSH_dt = daz*dSH_daz + del*dSH_del;
             value_type d2SH_dt2 = daz*daz*d2SH_daz2 + 2.0*daz*del*d2SH_deldaz + del*del*d2SH_del2;
@@ -575,13 +556,8 @@ namespace MR
           }
 
           for (int m = 1; m <= lmax; m++) {
-#ifndef USE_NON_ORTHONORMAL_SH_BASIS
             value_type caz = Math::sqrt2 * std::cos (m*azimuth);
             value_type saz = Math::sqrt2 * std::sin (m*azimuth);
-#else
-            value_type caz = std::cos (m*azimuth);
-            value_type saz = std::sin (m*azimuth);
-#endif
             for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
               const value_type& vp (sh[index (l,m)]);
               const value_type& vm (sh[index (l,-m)]);

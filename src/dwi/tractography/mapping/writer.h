@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -102,8 +103,8 @@ namespace MR {
 
           public:
           MapWriter (const Header& header, const std::string& name, const vox_stat_t voxel_statistic = V_SUM, const writer_dim type = GREYSCALE) :
-            MapWriterBase (header, name, voxel_statistic, type),
-            buffer (Image<value_type>::scratch (header, "TWI " + str(writer_dims[type]) + " buffer"))
+              MapWriterBase (header, name, voxel_statistic, type),
+              buffer (Image<value_type>::scratch (header, "TWI " + str(writer_dims[type]) + " buffer"))
           {
             auto loop = Loop (buffer);
             if (type == DEC || type == TOD) {
@@ -177,8 +178,8 @@ namespace MR {
                 break;
 
               case V_MEAN:
-                assert (counts);
                 if (type == GREYSCALE) {
+                  assert (counts);
                   for (auto l = loop (buffer, *counts); l; ++l) {
                     if (counts->value())
                       buffer.value() /= value_type(counts->value());
@@ -192,6 +193,7 @@ namespace MR {
                   }
                 }
                 else if (type == TOD) {
+                  assert (counts);
                   for (auto l = loop (buffer, *counts); l; ++l) {
                     if (counts->value()) {
                       VoxelTOD::vector_type value;
@@ -201,6 +203,7 @@ namespace MR {
                     }
                   }
                 } else { // Dixel
+                  assert (counts);
                   // TODO For dixels, should this be a voxel mean i.e. normalise each non-zero voxel to unit density,
                   //   rather than a per-dixel mean?
                   for (auto l = Loop (buffer) (buffer, *counts); l; ++l) {
@@ -340,9 +343,6 @@ namespace MR {
                   break;
                 case V_MEAN:
                   set_dec (current_value + (scaled_colour * weight));
-                  assert (counts);
-                  assign_pos_of (i).to (*counts);
-                  counts->value() += weight;
                   break;
                 case V_MAX:
                   if (scaled_colour.squaredNorm() > current_value.squaredNorm())

@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -182,7 +183,7 @@ class Processor { MEMALIGN(Processor)
         eigval = es.eigenvalues();
         ith_eig[0] = 0; ith_eig[1] = 1; ith_eig[2] = 2;
         std::sort (std::begin (ith_eig), std::end (ith_eig), 
-            [&eigval](size_t a, size_t b) { return std::abs(eigval[a]) > std::abs(eigval[b]); });
+            [&eigval](size_t a, size_t b) { return abs(eigval[a]) > abs(eigval[b]); });
       }
         
       /* output value */

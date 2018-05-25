@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -63,7 +64,7 @@ class TrackProcessor { MEMALIGN (TrackProcessor)
          float largest_dp = 0.0;
          const Eigen::Vector3 dir (i->get_dir().normalized());
          for (uint32_t j = first_index; j < last_index; ++j) {
-           const float dp = std::abs (dir.dot (fixel_directions[j]));
+           const float dp = abs (dir.dot (fixel_directions[j]));
            if (dp > largest_dp) {
              largest_dp = dp;
              closest_fixel_index = j;
@@ -95,9 +96,9 @@ void usage ()
 
   ARGUMENTS
   + Argument ("tracks",  "the input tracks.").type_tracks_in()
-  + Argument ("fixel_folder_in", "the input fixel folder. Used to define the fixels and their directions").type_text()
-  + Argument ("fixel_folder_out", "the output fixel folder. This can be the same as the input folder if desired").type_text()
-  + Argument ("fixel_data_out", "the name of the fixel data image.").type_image_out();
+  + Argument ("fixel_folder_in", "the input fixel folder. Used to define the fixels and their directions").type_directory_in()
+  + Argument ("fixel_folder_out", "the fixel folder to which the output will be written. This can be the same as the input folder if desired").type_text()
+  + Argument ("fixel_data_out", "the name of the fixel data image.").type_text();
 
   OPTIONS
   + Option ("angle", "the max angle threshold for assigning streamline tangents to fixels (Default: " + str(DEFAULT_ANGLE_THRESHOLD, 2) + " degrees)")
