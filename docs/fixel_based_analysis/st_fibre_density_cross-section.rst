@@ -155,28 +155,11 @@ Register the FOD image from each subject to the FOD template::
 13. Compute a white matter template analysis fixel mask
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Here we perform a 2-step threshold to identify template white matter fixels to be included in the analysis. Fixels in the template fixel analysis mask are also used to identify the best fixel correspondence across all subjects (i.e. match fixels across subjects within a voxel).
-       
-Compute a template AFD peaks fixel image::
-    
-    fod2fixel ../template/wmfod_template.mif -mask ../template/template_mask.mif ../template/fixel_temp -peak peaks.mif
-    
+In this step, we segment fixels from the FOD template. The result is the *fixel mask* that defines the fixels for which statistical analysis will later on be performed (and hence also which fixels' statistics can support others via the mechanism of connectivity-based fixel enhancement (CFE) [Raffelt2015]_)::
+
+   fod2fixel -mask ../template/template_mask.mif -fmls_peak_value 0.1 ../template/wmfod_template.mif ../template/fixel_mask
+
 .. NOTE:: Fixel images, which appear in the pipeline from this step onwards, are stored using the :ref:`fixel_format`, which stores all fixel data for a fixel image in a directory (i.e. a folder).
-
-Next view the peaks file using the fixel plot tool in :ref:`mrview` and identify an appropriate threshold that removes peaks from grey matter, yet does not introduce any large gaps in your white matter (e.g. 0.25; this should be tuned manually to be suitable for your data).
-
-Threshold the peaks fixel image::
-
-    mrthreshold ../template/fixel_temp/peaks.mif -abs 0.25 ../template/fixel_temp/mask.mif
-
-Generate an analysis voxel mask from the fixel mask. The median filter in this step should remove spurious voxels outside the brain, and fill in the holes in deep white matter where you have small peaks due to 3-fibre crossings::
-
-    fixel2voxel ../template/fixel_temp/mask.mif max - | mrfilter - median ../template/voxel_mask.mif
-    rm -rf ../template/fixel_temp
-
-Recompute the fixel mask using the analysis voxel mask. Using the mask allows us to use a lower AFD threshold than possible in the steps above, to ensure we have included fixels with low AFD inside white matter (e.g. regions with fibre crossings)::
- 
-    fod2fixel -mask ../template/voxel_mask.mif -fmls_peak_value 0.1 ../template/wmfod_template.mif ../template/fixel_mask
 
 .. WARNING:: This step ultimately determines the fixel mask in which statistical analysis will be performed, and hence also which fixels' statistics can contribute to others via the CFE mechanism; so it may have a substantial impact on the final result. Essentially, it can be detrimental to the result if the threshold value specified via the :code:`-fmls_peak_value` is *too high* and hence *excludes* genuine white matter fixels. This risk is substantially higher in voxels containing crossing fibres (and higher the more fibres are crossing in a single voxel). Even though 0.1 has been observed to be a reasonable value for single-tissue CSD population templates, it is still **strongly advised** to visualise the output fixel mask using :ref:`mrview`. Do this by opening the :code:`index.mif` found in :code:`../template/fixel_mask` via the *fixel plot tool*. If, with respect to known or normal anatomy, fixels are missing (especially paying attention to crossing areas), regenerate the mask with a lower value supplied to the :code:`-fmls_peak_value` option. At the same time, try to avoid introducing too many noisy fixels, especially in gray matter areas. For single-tissue CSD, this balance is however not always easy to find. For an *adult human* brain template, and using an isotropic template voxel size of 1.3 mm, it is expected to have several *hundreds of thousands* of fixels in the fixel mask (you can check this by :code:`mrinfo -size ../template/fixel_mask/directions.mif`, and looking at the size of the image along the first dimension).
 
