@@ -8,10 +8,13 @@ This tutorial explains how to perform fixel-based analysis of fibre density and 
 
 All steps in this tutorial are written as if the commands are being **run on a cohort of images**, and make extensive use of the :ref:`foreach script to simplify batch processing <batch_processing>`. This tutorial also assumes that the imaging dataset is organised with one directory identifying each subject, and all files within identifying the image type (i.e. processing step outcome). For example::
 
-    study/subjects/001_patient/dwi.mif
-    study/subjects/001_patient/wmfod.mif
+    study/subjects/001_control/dwi.mif
     study/subjects/002_control/dwi.mif
-    study/subjects/002_control/wmfod.mif
+    ...
+    study/subjects/020_control/dwi.mif
+    study/subjects/021_patient/dwi.mif
+    ...
+    study/subjects/040_patient/dwi.mif
 
 .. NOTE:: All commands at the start of this tutorial are run **from the subjects path**. From the step where tractography is performed on the template onwards, we change directory **to the template path**.
 
@@ -204,6 +207,8 @@ Statistical analysis using connectivity-based fixel enhancement (CFE) [Raffelt20
 
     cd ../template
     tckgen -angle 22.5 -maxlen 250 -minlen 10 -power 1.0 wmfod_template.mif -seed_image template_mask.mif -mask template_mask.mif -select 20000000 -cutoff 0.10 tracks_20_million.tck
+
+.. WARNING:: *The command line above assumes you're working with MRtrix3 RC3 or above*. An important bug in the tractography code was fixed in that version of the software. If you are not able to update your installation, and are still working with an older version of MRtrix3, you should remove the `-cutoff 0.10` option in the command line above, in line with the instructions for older versions of MRtrix3.
     
 21. Reduce biases in tractogram densities
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
