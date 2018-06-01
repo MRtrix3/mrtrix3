@@ -88,7 +88,8 @@ namespace MR {
 
             const char* key () const { return name; }
 
-            uint32_t size () const { return num; }
+            uint32_t num_items() const { return nitems; }
+            uint32_t size() const { return num; }
 
             int get_int () const {
               const uint8_t* p = start + 84;
@@ -122,7 +123,7 @@ namespace MR {
                   v[m] = length ? to<default_type> (std::string (reinterpret_cast<const char*> (p)+16, 4*((length+3)/4))) : NaN;
                   p += 16 + 4*((length+3)/4);
                 }
-                for (uint32_t m = nitems; m < v.size(); ++m) 
+                for (uint32_t m = nitems; m < v.size(); ++m)
                   v[m] = NaN;
               }
 
