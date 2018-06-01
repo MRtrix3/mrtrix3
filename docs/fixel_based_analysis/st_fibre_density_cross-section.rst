@@ -8,10 +8,13 @@ This tutorial explains how to perform fixel-based analysis of fibre density and 
 
 All steps in this tutorial are written as if the commands are being **run on a cohort of images**, and make extensive use of the :ref:`foreach script to simplify batch processing <batch_processing>`. This tutorial also assumes that the imaging dataset is organised with one directory identifying each subject, and all files within identifying the image type (i.e. processing step outcome). For example::
 
-    study/subjects/001_patient/dwi.mif
-    study/subjects/001_patient/wmfod.mif
+    study/subjects/001_control/dwi.mif
     study/subjects/002_control/dwi.mif
-    study/subjects/002_control/wmfod.mif
+    ...
+    study/subjects/020_control/dwi.mif
+    study/subjects/021_patient/dwi.mif
+    ...
+    study/subjects/040_patient/dwi.mif
 
 .. NOTE:: All commands at the start of this tutorial are run **from the subjects path**. From the step where tractography is performed on the template onwards, we change directory **to the template path**.
 
@@ -157,7 +160,7 @@ Register the FOD image from each subject to the FOD template::
 
 In this step, we segment fixels from the FOD template. The result is the *fixel mask* that defines the fixels for which statistical analysis will later on be performed (and hence also which fixels' statistics can support others via the mechanism of connectivity-based fixel enhancement (CFE) [Raffelt2015]_)::
 
-   fod2fixel -mask ../template/template_mask.mif -fmls_peak_value 0.1 ../template/wmfod_template.mif ../template/fixel_mask
+   fod2fixel -mask ../template/template_mask.mif -fmls_peak_value 0.10 ../template/wmfod_template.mif ../template/fixel_mask
 
 .. NOTE:: Fixel images, which appear in the pipeline from this step onwards, are stored using the :ref:`fixel_format`, which stores all fixel data for a fixel image in a directory (i.e. a folder).
 
@@ -200,7 +203,12 @@ Note that here we warp FOD images into template space *without* FOD reorientatio
 20. Perform whole-brain fibre tractography on the FOD template
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. include:: common_fba_steps/tractography.rst
+Statistical analysis using connectivity-based fixel enhancement (CFE) [Raffelt2015]_ exploits local connectivity information derived from probabilistic fibre tractography, which acts as a neighbourhood definition for threshold-free enhancement of locally clustered statistic values. To generate a whole-brain tractogram from the FOD template (note the remaining steps from here on are executed from the template directory)::
+
+    cd ../template
+    tckgen -angle 22.5 -maxlen 250 -minlen 10 -power 1.0 wmfod_template.mif -seed_image template_mask.mif -mask template_mask.mif -select 20000000 -cutoff 0.10 tracks_20_million.tck
+
+.. WARNING:: *The command line above assumes you're working with MRtrix3 RC3 or above*. An important bug in the tractography code was fixed in that version of the software. If you are not able to update your installation, and are still working with an older version of MRtrix3, you should remove the `-cutoff 0.10` option in the command line above, in line with the instructions for older versions of MRtrix3.
     
 21. Reduce biases in tractogram densities
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
