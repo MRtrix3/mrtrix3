@@ -32,7 +32,7 @@ address all MRtrix3-related queries there. You can use you GitHub or Google logi
 
       or edit the startup `~/.bashrc` or `/etc/bash.bashrc` file manually by adding this line:
 
-	    $ export PATH=/<edit as appropriate>/mrtrix3/bin:$PATH
+            $ export PATH=/<edit as appropriate>/mrtrix3/bin:$PATH
 
     * C shell:
 
@@ -55,7 +55,7 @@ address all MRtrix3-related queries there. You can use you GitHub or Google logi
 1. You can update your installation at any time by opening a terminal in the mrtrix3 folder, and typing:
 
         git pull
- 	./build
+        ./build
 
 2. If this doesn't work immediately, it may be that you need to re-run the configure script:
 
