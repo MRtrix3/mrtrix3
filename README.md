@@ -2,12 +2,12 @@
 
 [![Build Status](https://travis-ci.org/MRtrix3/mrtrix3.svg?branch=updated_syntax)](https://travis-ci.org/MRtrix3/mrtrix3)
 
-Please visit the [official website for MRtrix](http://www.mrtrix.org) to access the [documentation for MRtrix3](http://mrtrix.readthedocs.org/), including detailed installation instructions. 
+Please visit the [official website for MRtrix](http://www.mrtrix.org) to access the [documentation for MRtrix3](http://mrtrix.readthedocs.org/), including detailed installation instructions.
 
-## Getting help 
+## Getting help
 
 Support and general discussion is hosted on the [MRtrix3 Community Forum](http://community.mrtrix.org/). Please
-address all MRtrix3-related queries there. You can use you GitHub or Google login to post questions. 
+address all MRtrix3-related queries there. You can use you GitHub or Google login to post questions.
 
 ## Quick install
 
@@ -15,11 +15,11 @@ address all MRtrix3-related queries there. You can use you GitHub or Google logi
    These include: Python (>=2.6), a C++ compiler with full C++11 support (`g++` 4.9 or later, `clang++`), 
    Eigen (>=3.2.8), zlib, OpenGL (>=3.3), and Qt (>=4.8, or at least 5.1 on MacOSX).
 
-2. Clone Git repository and compile: 
+2. Clone Git repository and compile:
 
         $ git clone https://github.com/MRtrix3/mrtrix3.git
         $ cd mrtrix3/
-        $ ./configure 
+        $ ./configure
         $ ./build
 
 3. Set the `PATH`:
@@ -27,20 +27,20 @@ address all MRtrix3-related queries there. You can use you GitHub or Google logi
     * Bash shell:
 
       run the `set_path` script provided:
-      
+
             $ ./set_path
-	    
+
       or edit the startup `~/.bashrc` or `/etc/bash.bashrc` file manually by adding this line:
-      
+
 	    $ export PATH=/<edit as appropriate>/mrtrix3/bin:$PATH
- 
+
     * C shell:
 
       edit the startup `~/.cshrc` or `/etc/csh.cshrc` file manually by adding this line:
 
             $ setenv PATH /<edit as appropriate>/mrtrix3/bin:$PATH
 
-4. Test installation: 
+4. Test installation:
 
     Command-line:
 
@@ -56,7 +56,7 @@ address all MRtrix3-related queries there. You can use you GitHub or Google logi
 
         git pull
  	./build
-		
+
 2. If this doesn't work immediately, it may be that you need to re-run the configure script:
 
         ./configure
