@@ -178,7 +178,7 @@ namespace MR
           // check voxel sizes:
           for (size_t axis = 0; axis != 3; ++axis) {
             if (size_t(ndim) > axis)
-                if (abs(H.spacing(axis) - std::sqrt (Math::pow2 (M(0,axis)) + Math::pow2 (M(1,axis)) + Math::pow2 (M(2,axis)))) > 1e-4) {
+                if (abs(H.spacing(axis) - M.col(axis).head<3>().norm()) > 1e-4) {
                     WARN ("voxel spacings inconsistent between NIFTI s-form and header field pixdim");
                     break;
                 }
@@ -187,7 +187,7 @@ namespace MR
           // normalize each transform axis:
           for (size_t axis = 0; axis != 3; ++axis) {
             if (size_t(ndim) > axis)
-              M.col(axis).array() /= H.spacing (axis);
+              M.col(axis).normalize();
           }
 
         }
