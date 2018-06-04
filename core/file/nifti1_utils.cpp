@@ -203,8 +203,10 @@ namespace MR
 
             Eigen::Quaterniond Q (0.0, Raw::fetch_<float32> (&NH.quatern_b, is_BE), Raw::fetch_<float32> (&NH.quatern_c, is_BE), Raw::fetch_<float32> (&NH.quatern_d, is_BE));
             const double w = 1.0 - Q.squaredNorm();
-            Q.w() = w < 1.0e-7 ? 0.0 : std::sqrt (w);
-            Q.normalize();
+            if (w < 1.0e-7)
+              Q.normalize();
+            else
+              Q.w() = std::sqrt (w);
             M_qform.matrix().topLeftCorner<3,3>() = Q.matrix();
 
             M_qform.translation()[0] = Raw::fetch_<float32> (&NH.qoffset_x, is_BE);
