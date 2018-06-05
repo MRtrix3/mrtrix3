@@ -227,7 +227,7 @@ if eddy_mporder:
               line = line.strip()
               if line:
                 slice_timing.append(float(line))
-          app.warning('\"slspec\" file provided to FSL eddy should contain slice indices for slice groups, not slice timing; nevertheless, slice timing has been imported from file \"' + slspec_file_path + '\"')
+          app.warn('\"slspec\" file provided to FSL eddy should contain slice indices for slice groups, not slice timing; nevertheless, slice timing has been imported from file \"' + slspec_file_path + '\"')
           app.var(slice_timing)
           if len(slice_timing) != dwi_num_slices:
             app.error('Cannot use slice timing information from file \"' + slspec_file_path + '\" for slice-to-volume correction: Number of entries (' + len(slice_timing) + ') does not match number of slices (' + dwi_header.size()[2] + ')')
