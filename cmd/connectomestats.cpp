@@ -258,8 +258,8 @@ void run()
     save_matrix (first_std_effect, output_prefix + "_std_effect.csv");
     ++progress;
 
-    const matrix_type stdevs = Math::Stats::GLM::stdev (data, design);
-    save_vector (stdevs.col(0), output_prefix + "_std_dev.csv");
+    const matrix_type stdev = Math::Stats::GLM::stdev (data, design);
+    save_matrix (mat2vec.V2M(stdev.row(0)), output_prefix + "_std_dev.csv");
   }
 
   Math::Stats::GLMTTest glm_ttest (data, design, contrast);
