@@ -197,7 +197,7 @@ namespace MR
 
           Eigen::Quaterniond Q (0.0, Raw::fetch_<float64> (&NH.quatern_b, is_BE), Raw::fetch_<float64> (&NH.quatern_c, is_BE), Raw::fetch_<float64> (&NH.quatern_d, is_BE));
           const double w = 1.0 - Q.squaredNorm();
-          if (w < 1.0e-7)
+          if (w < 1.0e-15)
             Q.normalize();
           else
             Q.w() = std::sqrt (w);
