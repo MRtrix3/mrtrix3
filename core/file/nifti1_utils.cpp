@@ -221,7 +221,7 @@ namespace MR
             if (sform_code) {
               Header header2 (H);
               header2.transform() = M_qform;
-              if (!voxel_grids_match_in_scanner_space (H, header2)) {
+              if (!voxel_grids_match_in_scanner_space (H, header2, 0.1)) {
                 //CONF option: NIfTIUseSform
                 //CONF default: 0 (false)
                 //CONF A boolean value to control whether, in cases where both
