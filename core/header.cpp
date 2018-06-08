@@ -465,12 +465,6 @@ namespace MR
       WARN ("transform matrix contains invalid entries - resetting to sane defaults");
       transform() = Transform::get_default (*this);
     }
-    else {
-      auto R = transform().rotation();
-      if (!R.isApprox (transform().linear(), 1.0e-6))
-        WARN ("transform matrix contains non-rigid rotation - setting to nearest rigid-body rotation");
-      transform().matrix().topLeftCorner<3,3>() = R;
-    }
   }
 
 
@@ -514,6 +508,12 @@ namespace MR
 
     // copy back transform:
     transform() = std::move (M);
+
+    // verify that transform is rigid-body:
+    auto R = transform().rotation();
+    if (!R.isApprox (transform().linear(), 1.0e-6))
+      WARN ("transform matrix contains non-rigid rotation - setting to nearest rigid-body rotation");
+    transform().matrix().topLeftCorner<3,3>() = R;
 
     // switch axes to match:
     Axis a[] = {
