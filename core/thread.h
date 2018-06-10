@@ -299,7 +299,10 @@ namespace MR
      *   ...
      *   // do something else while my_thread is running
      *   ...
-     * } // my_thread goes out of scope: current thread will halt until my_thread has completed
+     *   // wait for my_thread to complete - this is necessary to catch
+     *   // exceptions - see below
+     *   my_thread.wait();
+     * }
      * \endcode
      *
      * It is also possible to launch an array of threads in parallel, by
@@ -307,6 +310,8 @@ namespace MR
      * \code
      * ...
      * auto my_threads = Thread::run (Thread::multi (func), "my function");
+     * ...
+     * my_thread.wait();
      * ...
      * \endcode
      *
@@ -326,7 +331,7 @@ namespace MR
      * was originally thrown if a single thread was run). This means the
      * application will continue processing if any of the remaining threads
      * remain active, and it may be a while before the application itself is
-     * allowed to handle the error appropriately. If this is behaviour is not
+     * allowed to handle the error appropriately. If this behaviour is not
      * appropriate, and you expect exceptions to be thrown occasionally, you
      * should take steps to handle these yourself (e.g. by setting / checking
      * some flag within your threads, etc.).
@@ -338,7 +343,7 @@ namespace MR
      * within the same scope, each of which might throw. In these cases, it is
      * best to explicitly call wait() for each of the objects returned by
      * Thread::run(), rather than relying on the destructor alone (note
-     * Thread::Queue already does this).
+     * Thread::Queue ThreadedLoop already do this).
      *
      * \sa Thread::multi()
      */
