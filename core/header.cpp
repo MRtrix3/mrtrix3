@@ -509,12 +509,6 @@ namespace MR
     // copy back transform:
     transform() = std::move (M);
 
-    // verify that transform is rigid-body:
-    auto R = transform().rotation();
-    if (!R.isApprox (transform().linear(), 1.0e-6))
-      WARN ("transform matrix contains non-rigid rotation - setting to nearest rigid-body rotation");
-    transform().matrix().topLeftCorner<3,3>() = R;
-
     // switch axes to match:
     Axis a[] = {
       axes_[perm[0]],
