@@ -179,7 +179,7 @@ namespace MR
               }
             } loop_thread = { shared, functor };
 
-            Thread::run (Thread::multi (loop_thread), "loop threads");
+            Thread::run (Thread::multi (loop_thread), "loop threads").wait();
           }
 
 
