@@ -299,7 +299,7 @@ namespace MR {
           for (const uint8_t* p = data; p < data + size; p += sizeof (int16_t))
             V.push_back (Raw::fetch_<int16_t> (p, is_BE));
         else if (VR == VR_IS) {
-          vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
+          auto strings = split (std::string (reinterpret_cast<const char*> (data), size), "\\", false);
           V.resize (strings.size());
           for (size_t n = 0; n < V.size(); n++)
             V[n] = to<int32_t> (strings[n]);
@@ -323,9 +323,10 @@ namespace MR {
           for (const uint8_t* p = data; p < data + size; p += sizeof (uint16_t))
             V.push_back (Raw::fetch_<uint16_t> (p, is_BE));
         else if (VR == VR_IS) {
-          vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
+          auto strings = split (std::string (reinterpret_cast<const char*> (data), size), "\\", false);
           V.resize (strings.size());
-          for (size_t n = 0; n < V.size(); n++) V[n] = to<uint32_t> (strings[n]);
+          for (size_t n = 0; n < V.size(); n++)
+            V[n] = to<uint32_t> (strings[n]);
         }
         else
           report_unknown_tag_with_implicit_syntax();
@@ -344,7 +345,7 @@ namespace MR {
           for (const uint8_t* p = data; p < data + size; p += sizeof (float32))
             V.push_back (Raw::fetch_<float32> (p, is_BE));
         else if (VR == VR_DS || VR == VR_IS) {
-          vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
+          auto strings = split (std::string (reinterpret_cast<const char*> (data), size), "\\", false);
           V.resize (strings.size());
           for (size_t n = 0; n < V.size(); n++)
             V[n] = to<default_type> (strings[n]);
@@ -378,16 +379,13 @@ namespace MR {
 
       vector<std::string> Element::get_string () const
       {
-        if (VR == VR_AT) {
-          vector<std::string> strings;
-          strings.push_back (printf ("%04X %04X", Raw::fetch_<uint16_t> (data, is_BE), Raw::fetch_<uint16_t> (data+2, is_BE)));
-          return strings;
-        }
+        if (VR == VR_AT)
+          return { printf ("%04X %04X", Raw::fetch_<uint16_t> (data, is_BE), Raw::fetch_<uint16_t> (data+2, is_BE)) };
 
-        vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
-        for (vector<std::string>::iterator i = strings.begin(); i != strings.end(); ++i) {
-          *i = strip (*i);
-          replace (*i, '^', ' ');
+        auto strings = split (std::string (reinterpret_cast<const char*> (data), size), "\\", false);
+        for (auto& entry: strings) {
+          entry = strip (entry);
+          replace (entry, '^', ' ');
         }
         return strings;
       }
@@ -398,8 +396,8 @@ namespace MR {
         template <class T>
           inline void print_vec (const vector<T>& V)
           {
-            for (size_t n = 0; n < V.size(); n++)
-              fprintf (stdout, "%s ", str (V[n]).c_str());
+            for (const auto& entry: V)
+              fprintf (stdout, "%s ", str(entry).c_str());
           }
       }
 
