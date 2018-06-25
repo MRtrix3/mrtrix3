@@ -1,0 +1,38 @@
+# This container includes MRtrix3's compile-time dependencies and is meant to
+# compile static non-gui Linux binaries. These binaries should work on Linux
+# systems with glibc newer than version 2.12 (circa 2010).
+#
+# To compile:
+#   ./configure -nogui -static
+#   ./build
+
+FROM centos:6.9
+
+ENV EIGEN_CFLAGS="-isystem /src/eigen3"
+
+RUN yum install -y -q centos-release-SCL \
+    && yum install -y -q \
+        devtoolset-3-gcc-c++ \
+        python27 \
+        git \
+        glibc-static \
+        make \
+    && yum clean all -y -q \
+    # Install eigen3 sources.
+    && mkdir -p /src/eigen3 \
+    && curl -fsSL http://bitbucket.org/eigen/eigen/get/3.3.4.tar.bz2 \
+    | tar -xjC /src/eigen3 --strip-components 1 \
+    # Compile and install zlib.
+    && git clone https://github.com/madler/zlib.git /tmp/zlib \
+    && cd /tmp/zlib \
+    && . /opt/rh/devtoolset-3/enable \
+    && . /opt/rh/python27/enable \
+    && ./configure \
+    && make test \
+    && make install \
+    && rm -rf /tmp/* \
+    && echo '. /opt/rh/devtoolset-3/enable' >> /root/.bashrc \
+    && echo '. /opt/rh/python27/enable' >> /root/.bashrc
+
+WORKDIR /src/mrtrix3
+COPY [".", "."]
