@@ -47,6 +47,7 @@ List of MRtrix3 commands
     commands/fod2fixel
     commands/label2colour
     commands/label2mesh
+    commands/labelcentre
     commands/labelconvert
     commands/maskdump
     commands/maskfilter
@@ -56,6 +57,7 @@ List of MRtrix3 commands
     commands/mraverageheader
     commands/mrcalc
     commands/mrcat
+    commands/mrcentre
     commands/mrcheckerboardmask
     commands/mrclusterstats
     commands/mrconvert
@@ -159,6 +161,7 @@ List of MRtrix3 commands
     :ref:`fod2fixel`, "Perform segmentation of continuous Fibre Orientation Distributions (FODs) to produce discrete fixels"
     :ref:`label2colour`, "Convert a parcellated image (where values are node indices) into a colour image"
     :ref:`label2mesh`, "Generate meshes from a label image"
+    :ref:`labelcentre`, "Determine the centre of mass / centre of gravity of each parcel within a label image"
     :ref:`labelconvert`, "Convert a connectome node image from one lookup table to another"
     :ref:`maskdump`, "Print out the locations of all non-zero voxels in a mask image"
     :ref:`maskfilter`, "Perform filtering operations on 3D / 4D mask images"
@@ -168,6 +171,7 @@ List of MRtrix3 commands
     :ref:`mraverageheader`, "Calculate the average (unbiased) coordinate space of all input images"
     :ref:`mrcalc`, "Apply generic voxel-wise mathematical operations to images"
     :ref:`mrcat`, "Concatenate several images into one"
+    :ref:`mrcentre`, "Determine the centre of mass / centre of gravity of an image"
     :ref:`mrcheckerboardmask`, "Create bitwise checkerboard image"
     :ref:`mrclusterstats`, "Voxel-based analysis using permutation testing and threshold-free cluster enhancement"
     :ref:`mrconvert`, "Perform conversion between different file types and optionally extract a subset of the input image"
