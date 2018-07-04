@@ -366,8 +366,8 @@ namespace MR
                 p += Eigen::Vector3 (voxel[0], voxel[1], voxel[2]);
 
                 default_type best_min_edge_distance_on_plane = -std::numeric_limits<default_type>::infinity();
-                //default_type best_interior_distance_from_plane = std::numeric_limits<default_type>::infinity();
                 bool best_result_inside = false;
+                default_type best_min_distance_from_interior_projection = std::numeric_limits<default_type>::infinity();
 
                 // Only test against those polygons that are near this voxel
                 for (vector<size_t>::const_iterator polygon_index = in.second.begin(); polygon_index != in.second.end(); ++polygon_index) {
@@ -378,6 +378,7 @@ namespace MR
 
                   bool is_inside = false;
                   default_type min_edge_distance_on_plane = std::numeric_limits<default_type>::infinity();
+                  default_type distance_from_plane = 0.0;
 
                   // FIXME
                   // If point does not lie within projection of polygon, compute the
@@ -393,17 +394,18 @@ namespace MR
                     // First: is it aligned with the normal?
                     const Vertex poly_centre ((v[0] + v[1] + v[2]) * (1.0/3.0));
                     const Vertex diff (p - poly_centre);
-                    is_inside = (diff.dot (n) <= 0.0);
+                    distance_from_plane = diff.dot (n);
+                    is_inside = (distance_from_plane <= 0.0);
 
                     // Second: how well does it project onto this polygon?
                     const Vertex p_on_plane (p - (n * (diff.dot (n))));
 
                     std::array<default_type, 3> edge_distances;
-                    Vertex zero = (v[2]-v[0]).cross (n); zero.normalize();
-                    Vertex one  = (v[1]-v[2]).cross (n); one .normalize();
+                    Vertex zero = (v[1]-v[2]).cross (n); zero.normalize();
+                    Vertex one  = (v[2]-v[0]).cross (n); one .normalize();
                     Vertex two  = (v[0]-v[1]).cross (n); two .normalize();
-                    edge_distances[0] = (p_on_plane-v[0]).dot (zero);
-                    edge_distances[1] = (p_on_plane-v[2]).dot (one);
+                    edge_distances[0] = (p_on_plane-v[2]).dot (zero);
+                    edge_distances[1] = (p_on_plane-v[0]).dot (one);
                     edge_distances[2] = (p_on_plane-v[1]).dot (two);
                     min_edge_distance_on_plane = std::min ( { edge_distances[0], edge_distances[1], edge_distances[2] } );
 
@@ -417,7 +419,8 @@ namespace MR
                     // First: is it aligned with the normal?
                     const Vertex poly_centre ((v[0] + v[1] + v[2] + v[3]) * 0.25);
                     const Vertex diff (p - poly_centre);
-                    is_inside = (diff.dot (n) <= 0.0);
+                    distance_from_plane = diff.dot (n);
+                    is_inside = (distance_from_plane <= 0.0);
 
                     // Second: how well does it project onto this polygon?
                     const Vertex p_on_plane (p - (n * (diff.dot (n))));
@@ -447,9 +450,16 @@ namespace MR
 
                   }
 
-                  if (min_edge_distance_on_plane > best_min_edge_distance_on_plane) {
-                    best_min_edge_distance_on_plane = min_edge_distance_on_plane;
-                    best_result_inside = is_inside;
+                  if (min_edge_distance_on_plane > 0.0) {
+                    if (std::abs (distance_from_plane) < std::abs (best_min_distance_from_interior_projection)) {
+                      best_min_distance_from_interior_projection = distance_from_plane;
+                      best_result_inside = is_inside;
+                    }
+                  } else if (!std::isfinite (best_min_distance_from_interior_projection)) {
+                    if (min_edge_distance_on_plane > best_min_edge_distance_on_plane) {
+                      best_min_edge_distance_on_plane = min_edge_distance_on_plane;
+                      best_result_inside = is_inside;
+                    }
                   }
 
                 }
