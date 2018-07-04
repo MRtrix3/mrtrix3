@@ -68,8 +68,6 @@ void run ()
   template_header.datatype().set_byte_order_native();
 
   // Create the output image
-  template_header.datatype() = DataType::Float32;
-  template_header.datatype().set_byte_order_native();
   Image<float> output = Image<float>::create (argument[2], template_header);
 
   // Perform the partial volume estimation
