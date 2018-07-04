@@ -202,16 +202,16 @@ def execute():
                  (63,  1, 'Right-choroid-plexus'),
                  (72,  3, '5th-Ventricle'),
                  (192, 2, 'Corpus_Callosum'),
-                 (250, 2, 'Fornix'),
-                 # TODO Would rather combine CC segments into a single mask before converting to mesh
-                 (251, 2, 'CC_Posterior'),
-                 (252, 2, 'CC_Mid_Posterior'),
-                 (253, 2, 'CC_Central'),
-                 (254, 2, 'CC_Mid_Anterior'),
-                 (255, 2, 'CC_Anterior') ]
-                 # TODO Need to do something about anterior commissure
+                 (250, 2, 'Fornix') ]
 
 
+  corpus_callosum = [ (251, 'CC_Posterior'),
+                      (252, 'CC_Mid_Posterior'),
+                      (253, 'CC_Central'),
+                      (254, 'CC_Mid_Anterior'),
+                      (255, 'CC_Anterior') ]
+
+  # TODO Need to do something about anterior commissure
 
   # Get the main cerebrum segments; these are already smooth
   # FIXME There may be some minor mismatch between the WM and pial segments within the medial section
@@ -231,7 +231,7 @@ def execute():
   progress.done()
 
   # Get other structures that need to be converted from the voxel image
-  progress = app.progressBar('Smoothing non-cortical structures segmented by FreeSurfer', len(structures))
+  progress = app.progressBar('Smoothing non-cortical structures segmented by FreeSurfer', len(structures) + 1)
   for (index, tissue, name) in structures:
     # Don't segment anything for which we have instead obtained estimates using FIRST
     # Also don't segment the hippocampi from the aparc+aseg image if we're using the hippocampal subfields module
@@ -252,6 +252,17 @@ def execute():
         run.command('mesh2voxel ' + smoothed_mesh_path + ' ' + template_image + ' ' + name + '.mif')
         file.delTemporary(smoothed_mesh_path)
     progress.increment()
+
+  # Combine corpus callosum segments before smoothing
+  for (index, name) in corpus_callosum:
+    run.command('mrcalc ' + aparc_image + ' ' + str(index) + ' -eq ' + name + '.mif -datatype bit')
+  cc_init_mesh_path = 'combined_corpus_callosum_init.vtk'
+  cc_smoothed_mesh_path = 'combined_corpus_callosum.vtk'
+  run.command('mrmath ' + ' '.join([ name + '.mif' for (index, name) in corpus_callosum ]) + ' sum - | mrmesh - -threshold 0.5 ' + cc_init_mesh_path)
+  run.command('meshfilter ' + cc_init_mesh_path + ' smooth ' + cc_smoothed_mesh_path)
+  file.delTemporary(cc_init_mesh_path)
+  run.command('mesh2voxel ' + cc_smoothed_mesh_path + ' ' + template_image + ' combined_corpus_callosum.mif')
+  file.delTemporary(cc_smoothed_mesh_path)
   progress.done()
 
   # Construct images with the partial volume of each tissue
@@ -262,7 +273,7 @@ def execute():
     if tissue == 0:
       image_list.extend([ 'lh.pial.mif', 'rh.pial.mif' ])
     elif tissue == 2:
-      image_list.extend([ 'lh.white.mif', 'rh.white.mif' ])
+      image_list.extend([ 'lh.white.mif', 'rh.white.mif', 'combined_corpus_callosum.mif' ])
     run.command('mrmath ' + ' '.join(image_list) + ' sum - | mrcalc - 1.0 -min tissue' + str(tissue) + '_init.mif')
     # TODO Update file.delTemporary() to support list input
     for entry in image_list:
