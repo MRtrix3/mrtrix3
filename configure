@@ -156,7 +156,6 @@ if sys.executable[0].isalpha() and sys.executable[1] == ':':
 
 debug = False
 asserts = False
-nooptim = False
 profile = False
 nogui = False
 noshared = False
@@ -166,12 +165,18 @@ R_module = False
 openmp = False
 dev = False
 
+optimlevel = 3
+
 for arg in sys.argv[1:]:
-  if '-debug'.startswith (arg): debug = nooptim = True
+  if '-debug'.startswith (arg):
+    debug = True
+    optimlevel = 0
   elif '-dev'.startswith (arg): dev = True
   elif '-assert'.startswith (arg): asserts = True
-  elif '-nooptim'.startswith (arg): nooptim = True
-  elif '-profile'.startswith (arg): profile = nooptim = True
+  elif '-nooptim'.startswith (arg): optimlevel = 0
+  elif '-profile'.startswith (arg):
+    profile = True
+    optimlevel = 0
   elif '-nogui'.startswith (arg): nogui = True
   elif '-noshared'.startswith (arg): noshared = True
   elif '-static'.startswith (arg):
@@ -221,9 +226,9 @@ else: build_type = 'release version'
 
 build_options = []
 if asserts: build_options.append ('asserts')
-if nooptim: build_options.append ('nooptim')
+if optimlevel <= 1: build_options.append ('nooptim')
 if nogui: build_options.append ('nogui')
-if noshared: build_options.application ('noshared')
+if noshared: build_options.append ('noshared')
 if static: build_options.append ('static')
 if openmp: build_options.append ('openmp')
 
@@ -638,6 +643,8 @@ elif system == 'windows':
   ld_flags += [ '-pthread', '-Wl,--allow-multiple-definition' ]
   ld_lib_flags += [ '-shared' ]
   runpath = ''
+  if debug and not optimlevel: # Compilation will fail otherwise
+    optimlevel = 1
 elif system == 'darwin':
   if 'MACOSX_DEPLOYMENT_TARGET' in os.environ and 'QMAKE_MACOSX_DEPLOYMENT_TARGET' in os.environ:
     if not os.environ['QMAKE_MACOSX_DEPLOYMENT_TARGET'] == os.environ['MACOSX_DEPLOYMENT_TARGET']:
@@ -1269,14 +1276,11 @@ if profile:
   ld_flags += [ '-g', '-pg' ]
   ld_lib_flags += [ '-g', '-pg' ]
 elif debug:
-  cpp_flags += [ '-O0', '-g' ]
+  cpp_flags += [ '-g' ]
   ld_flags += [ '-g' ]
   ld_lib_flags += [ '-g' ]
 
-if nooptim:
-  cpp_flags += [ '-O0' ]
-else:
-  cpp_flags += [ '-O3' ]
+cpp_flags += [ '-O' + str(optimlevel) ]
 
 if asserts:
   cpp_flags += [ '-D_GLIBCXX_DEBUG=1', '-D_GLIBCXX_DEBUG_PEDANTIC=1' ]

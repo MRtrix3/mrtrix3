@@ -166,7 +166,7 @@ vector<default_type> summarise_E (const vector<double>& E)
 
 
 
-class Metrics 
+class Metrics
 { MEMALIGN (Metrics)
   public:
     vector<default_type> BN, UN, BE, UE, SH;
@@ -196,7 +196,7 @@ Metrics compute (Eigen::MatrixXd& directions)
       double cos_angle = directions.row(i).head(3).normalized().dot (directions.row(j).head(3).normalized());
       NN_unipolar[i] = std::max (NN_unipolar[i], cos_angle);
       NN_unipolar[j] = std::max (NN_unipolar[j], cos_angle);
-      cos_angle = std::abs (cos_angle);
+      cos_angle = abs (cos_angle);
       NN_bipolar[i] = std::max (NN_bipolar[i], cos_angle);
       NN_bipolar[j] = std::max (NN_bipolar[j], cos_angle);
 

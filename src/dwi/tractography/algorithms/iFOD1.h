@@ -56,7 +56,7 @@ namespace MR
             throw Exception ("Algorithm iFOD1 expects as input a spherical harmonic (SH) image");
           }
 
-          set_step_size (0.1);
+          set_step_size (0.1f);
           if (rk4) {
             max_angle = 0.5 * max_angle_rk4;
             INFO ("minimum radius of curvature = " + str(step_size / (max_angle_rk4 / (0.5 * Math::pi))) + " mm");
@@ -64,6 +64,8 @@ namespace MR
             INFO ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
           }
           sin_max_angle = std::sin (max_angle);
+
+          set_cutoff (TCKGEN_DEFAULT_CUTOFF_FOD);
 
           properties["method"] = "iFOD1";
           properties.set (lmax, "lmax");
