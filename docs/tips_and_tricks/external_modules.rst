@@ -38,6 +38,37 @@ directory to your ``PATH`` environment variable.
 
 
 
+Single-``cpp``-file commands
+----------------------------
+
+In many instances, you may be provided with a single ``.cpp`` file that contains
+all of the code necessary to compile a particular command that makes use of the
+*MRtrix3* libraries: a developer may choose to distribute *just* the relevant 
+``.cpp`` file for a particular functionality, rather than enclosing it within the
+requisite directory structure required for an external *MRtrix3* module.
+
+In such a circumstance, the steps to compile the command are as follows:
+
+1. Create a new directory on your file system for this 'module'; for this example,
+   let's suppose this is created at ``~/src/mrtrix/mymodule/``.
+
+2. Create a sub-directory called ``cmd/`` within this directory (so the complete
+   path to this new sub-directory in this instance would be: ``~/src/mrtrix/mymodule/cmd/``.
+
+3. Place the ``.cpp`` file provided to you by the developer into the ``cmd/``
+   sub-directory.
+
+4. Within the root directory of this 'module', create a soft-link to the ``build``
+   script that is stored within the root directory of your core *MRtrix3*
+   installation, as described above.
+
+5. Execute the ``build`` script from inside this module directory.
+
+The ``build`` script should *automatically* generate a sub-directory ``bin/``
+within your module directory, containing the executable file for the command
+provided to you.
+
+
 
 Note for Windows users
 ----------------------
