@@ -149,19 +149,20 @@ namespace MR
 
   inline std::string printf (const char* format, ...)
   {
-    va_list list;
-    va_start (list, format);
-    size_t len = vsnprintf (NULL, 0, format, list) + 1;
-    va_end (list);
+    size_t len = 0;
+    va_list list1, list2;
+    va_start (list1, format);
+    va_copy (list2, list1);
+    len = vsnprintf (nullptr, 0, format, list1) + 1;
+    va_end (list1);
     VLA(buf, char, len);
-    va_start (list, format);
-    vsnprintf (buf, len, format, list);
-    va_end (list);
+    vsnprintf (buf, len, format, list2);
+    va_end (list2);
     return buf;
   }
 
 
-  inline std::string strip (const std::string& string, const char* ws = " \t\n", bool left = true, bool right = true)
+  inline std::string strip (const std::string& string, const std::string& ws = {" \0\t\n", 4}, bool left = true, bool right = true)
   {
     std::string::size_type start = (left ? string.find_first_not_of (ws) : 0);
     if (start == std::string::npos)
@@ -174,15 +175,15 @@ namespace MR
 
   inline void replace (std::string& string, char orig, char final)
   {
-    for (std::string::iterator i = string.begin(); i != string.end(); ++i)
-      if (*i == orig) *i = final;
+    for (auto& c: string)
+      if (c == orig) c = final;
   }
 
   inline void replace (std::string& str, const std::string& from, const std::string& to)
   {
     if (from.empty()) return;
     size_t start_pos = 0;
-    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+    while ((start_pos = str.find (from, start_pos)) != std::string::npos) {
       str.replace (start_pos, from.length(), to);
       start_pos += to.length();
     }

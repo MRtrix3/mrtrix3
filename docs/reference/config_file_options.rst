@@ -349,6 +349,11 @@ List of MRtrix3 configuration file options
 
      A boolean value to indicate whether, when writing NIfTI images, a corresponding JSON file should be automatically created in order to save any header entries that cannot be stored in the NIfTI header.
 
+*  **NIfTIUseSform**
+    *default: 0 (false)*
+
+     A boolean value to control whether, in cases where both the sform and qform transformations are defined in an input NIfTI image, but those transformations differ, the sform transformation should be used in preference to the qform matrix (the default behaviour).
+
 *  **NeedOpenGLCoreProfile**
     *default: 1 (true)*
 
@@ -417,7 +422,7 @@ List of MRtrix3 configuration file options
 *  **ScriptTmpDir**
     *default: `.`*
 
-     The location in which to generate the temporary directories to be used by MRtrix Python scripts. By default they will be generated in the working directory.
+     The location in which to generate the temporary directories to be used by MRtrix Python scripts. By default they will be generated in the working directory. Note that this setting does not influence the location in which piped images and other temporary files are created by MRtrix3; that is determined based on config file option TmpFileDir.
 
 *  **ScriptTmpPrefix**
     *default: `<script>-tmp-`*
@@ -452,7 +457,7 @@ List of MRtrix3 configuration file options
 *  **TmpFileDir**
     *default: `/tmp` (on Unix), `.` (on Windows)*
 
-     The prefix for temporary files (as used in pipelines). By default, these files get written to the current folder on Windows machines, which may cause performance issues, particularly when operating over distributed file systems. On Unix machines, the default is /tmp/, which is typically a RAM file system and should therefore be fast; but may cause issues on machines with little RAM capacity or where write-access to this location is not permitted.
+     The prefix for temporary files (as used in pipelines). By default, these files get written to the current folder on Windows machines, which may cause performance issues, particularly when operating over distributed file systems. On Unix machines, the default is /tmp/, which is typically a RAM file system and should therefore be fast; but may cause issues on machines with little RAM capacity or where write-access to this location is not permitted. Note that this setting does not influence the location in which Python scripts construct their temporary directories; that is determined based on config file option ScriptTmpDir.
 
 *  **TmpFilePrefix**
     *default: `mrtrix-tmp-`*

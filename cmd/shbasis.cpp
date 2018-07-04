@@ -32,7 +32,7 @@ using namespace MR;
 using namespace App;
 
 
-const char* conversions[] = { "old", "new", "native", "force_oldtonew", "force_newtoold", NULL };
+const char* conversions[] = { "old", "new", "force_oldtonew", "force_newtoold", nullptr };
 enum conv_t { NONE, OLD, NEW, FORCE_OLDTONEW, FORCE_NEWTOOLD };
 
 
@@ -52,7 +52,11 @@ void usage ()
 
     + "This command provides a mechanism for testing the basis used in storage of image data "
       "representing a spherical harmonic series per voxel, and allows the user to forcibly "
-      "modify the raw image data to conform to the desired basis.";
+      "modify the raw image data to conform to the desired basis."
+
+    + "Note that the \"force_*\" conversion choices should only be used in cases where this "
+      "command has previously been unable to automatically determine the SH basis from the "
+      "image data, but the user themselves are confident of the SH basis of the data.";
 
 
   ARGUMENTS
@@ -60,12 +64,8 @@ void usage ()
 
 
   OPTIONS
-    + Option ("convert", "convert the image data in-place to the desired basis (if necessary). "
-                         "Options are: old, new, native (whichever basis MRtrix is compiled for; "
-                         "most likely the new orthonormal basis), force_oldtonew, force_newtoold. "
-                         "Note that for the \"force_*\" choices should ideally only be used in "
-                         "cases where the command is unable to automatically determine the SH basis "
-                         "using the existing image data.")
+    + Option ("convert", "convert the image data in-place to the desired basis; "
+                         "options are: " + join(conversions, ",") + ".")
       + Argument ("mode").type_choice (conversions);
 
 }
@@ -266,7 +266,7 @@ void check_and_update (Header& H, const conv_t conversion)
   // Decide whether the user needs to be warned about a poor diffusion encoding scheme
   if (regression.second)
     DEBUG ("Gradient of regression is " + str(regression.second) + "; threshold is " + str(grad_threshold));
-  if (std::abs(regression.second) > grad_threshold) {
+  if (abs(regression.second) > grad_threshold) {
     WARN ("Image \"" + H.name() + "\" may have been derived from poor directional encoding, or have some other underlying data problem");
     WARN ("(m!=0 to m==0 power ratio changing by " + str(2.0*regression.second) + " per even order)");
   }
@@ -305,9 +305,8 @@ void run ()
     switch (int(opt[0][0])) {
       case 0: conversion = OLD; break;
       case 1: conversion = NEW; break;
-      case 2: conversion = NEW; break;
-      case 3: conversion = FORCE_OLDTONEW; break;
-      case 4: conversion = FORCE_NEWTOOLD; break;
+      case 2: conversion = FORCE_OLDTONEW; break;
+      case 3: conversion = FORCE_NEWTOOLD; break;
       default: assert (0); break;
     }
   }

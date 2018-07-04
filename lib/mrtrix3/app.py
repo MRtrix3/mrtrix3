@@ -181,6 +181,12 @@ def parse(): #pylint: disable=unused-variable
   if hasattr(args, 'cont') and args.cont:
     continueOption = True
     tempDir = os.path.abspath(args.cont[0])
+    # Prevent error from re-appearing at end of terminal output if script continuation results in success
+    #   and -nocleanup is used
+    try:
+      os.remove(os.path.join(tempDir, 'error.txt'))
+    except OSError:
+      pass
     run.setContinue(args.cont[1])
 
 
@@ -264,7 +270,8 @@ def complete(): #pylint: disable=unused-variable
     # This needs to be printed even if the -quiet option is used
     if os.path.isfile(os.path.join(tempDir, 'error.txt')):
       with open(os.path.join(tempDir, 'error.txt'), 'r') as errortext:
-        sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'Script failed while executing the command: ' + errortext.readline().rstrip() + colourClear + '\n')
+        sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'Following command failed during execution of the script:' + colourClear + '\n')
+        sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + errortext.readline().rstrip() + colourClear + '\n')
       sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'For debugging, inspect contents of temporary directory: ' + tempDir + colourClear + '\n')
     else:
       sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourConsole + 'Contents of temporary directory kept, location: ' + tempDir + colourClear + '\n')

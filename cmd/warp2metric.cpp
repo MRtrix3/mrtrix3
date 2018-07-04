@@ -47,7 +47,7 @@ void usage ()
                   "plane to the fixel orientation. e.g. warp2metric warp.mif -fc fixel_template_directory output_fixel_directory fc.mif")
     + Argument ("template_fixel_directory").type_image_in()
     + Argument ("output_fixel_directory").type_text()
-    + Argument ("output_fixel_data").type_image_out()
+    + Argument ("output_fixel_data").type_text()
 
   + Option ("jmat", "output a Jacobian matrix image stored in column-major order along the 4th dimension."
                     "Note the output jacobian describes the warp gradient w.r.t the scanner space coordinate system")
