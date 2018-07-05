@@ -15,7 +15,7 @@ shallow_clone: true
 clone_depth: 5
 
 matrix:
-  fast_finish: false # set this flag to immediately finish build once one of the jobs fails.
+  fast_finish: false
 
 environment:
   test: run
@@ -29,7 +29,9 @@ environment:
 build: off
 
 build_script:
-  - cmd: C:\msys64\usr\bin\bash -e -l -c "pacman -S --noconfirm mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5 mingw-w64-x86_64-fftw mingw-w64-x86_64-libtiff"
-  - sh: curl -sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh' | bash -e -
+  - cmd: C:\msys64\usr\bin\bash -e -l -c "pacman -S --noconfirm mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5 mingw-w64-x86_64-python3 mingw-w64-x86_64-fftw mingw-w64-x86_64-libtiff"
   - cmd: C:\msys64\usr\bin\bash -e -l -c "cd /mrtrix3/ && ./travis.sh"
+
+on_finish:
+  - sh: curl -sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh' | bash -e -
 
