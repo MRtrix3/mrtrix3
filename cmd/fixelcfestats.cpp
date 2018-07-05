@@ -406,77 +406,86 @@ void run()
   Stats::CFE::norm_connectivity_matrix_type norm_connectivity_matrix (mask_fixels);
   // Also pre-compute fixel-fixel weights for smoothing.
   Stats::CFE::norm_connectivity_matrix_type smoothing_weights (mask_fixels);
-  bool do_smoothing = false;
 
+  const bool do_smoothing = (smooth_std_dev > 0.0);
+  const float gaussian_const1 = do_smoothing ? (1.0 / (smooth_std_dev *  std::sqrt (2.0 * Math::pi))) : 1.0;
   const float gaussian_const2 = 2.0 * smooth_std_dev * smooth_std_dev;
-  float gaussian_const1 = 1.0;
-  if (smooth_std_dev > 0.0) {
-    do_smoothing = true;
-    gaussian_const1 = 1.0 / (smooth_std_dev *  std::sqrt (2.0 * Math::pi));
-  }
 
   {
-    // TODO This could trivially be multi-threaded; fixels are handled independently
-    ProgressBar progress ("Normalising and thresholding fixel-fixel connectivity matrix", num_fixels);
-    for (index_type fixel = 0; fixel < num_fixels; ++fixel) {
-
-      mask.index(0) = fixel;
-      if (mask.value()) {
-
-        const int32_t column = fixel2column[fixel];
-
-        // Here, the connectivity matrix needs to be modified to reflect the
-        //   fact that fixel indices in the template fixel image may not
-        //   correspond to rows in the statistical analysis
-        connectivity_value_type sum_weights = 0.0;
-        for (auto& it : connectivity_matrix[fixel]) {
-
-#ifndef NDEBUG
-          // Even if this fixel is within the mask, it should still not
-          //   connect to any fixel that is outside the mask
-          mask.index(0) = it.first;
-          assert (mask.value());
-#endif
-          const connectivity_value_type connectivity = it.second.value / connectivity_value_type (fixel_TDI[fixel]);
-          if (connectivity >= connectivity_threshold) {
-            if (do_smoothing) {
-              const value_type distance = std::sqrt (Math::pow2 (positions[fixel][0] - positions[it.first][0]) +
-                                                     Math::pow2 (positions[fixel][1] - positions[it.first][1]) +
-                                                     Math::pow2 (positions[fixel][2] - positions[it.first][2]));
-              const connectivity_value_type smoothing_weight = connectivity * gaussian_const1 * std::exp (-Math::pow2 (distance) / gaussian_const2);
-              if (smoothing_weight >= connectivity_threshold) {
-                smoothing_weights[column].push_back (Stats::CFE::NormMatrixElement (fixel2column[it.first], smoothing_weight));
-                sum_weights += smoothing_weight;
-              }
+    class Source
+    { MEMALIGN(Source)
+      public:
+        Source (Image<bool>& mask) :
+            mask (mask),
+            num_fixels (mask.size (0)),
+            counter (0),
+            progress ("normalising and thresholding fixel-fixel connectivity matrix", num_fixels) { }
+        bool operator() (size_t& fixel_index) {
+          while (counter < num_fixels) {
+            mask.index(0) = counter;
+            ++progress;
+            if (mask.value()) {
+              fixel_index = counter++;
+              return true;
             }
-
-            // Here we pre-exponentiate each connectivity value by C
-            norm_connectivity_matrix[column].push_back (Stats::CFE::NormMatrixElement (fixel2column[it.first], std::pow (connectivity, cfe_c)));
+            ++counter;
           }
+          fixel_index = num_fixels;
+          return false;
         }
+      private:
+        Image<bool> mask;
+        const size_t num_fixels;
+        size_t counter;
+        ProgressBar progress;
+    };
 
-        // Make sure the fixel is fully connected to itself
-        norm_connectivity_matrix[column].push_back (Stats::CFE::NormMatrixElement (uint32_t(column), connectivity_value_type(1.0)));
-        smoothing_weights[column].push_back (Stats::CFE::NormMatrixElement (uint32_t(column), connectivity_value_type(gaussian_const1)));
-        sum_weights += connectivity_value_type(gaussian_const1);
+    auto Sink = [&] (const size_t& fixel_index)
+    {
+      assert (fixel_index < connectivity_matrix.size());
+      const int32_t column = fixel2column[fixel_index];
+      assert (column >= 0 && column < norm_connectivity_matrix.size());
 
-        // Normalise smoothing weights
-        const connectivity_value_type norm_factor = connectivity_value_type(1.0) / sum_weights;
-        for (auto i : smoothing_weights[column])
-          i.normalise (norm_factor);
-
-        // Force deallocation of memory used for this fixel in the original matrix
-        std::map<uint32_t, Stats::CFE::connectivity>().swap (connectivity_matrix[fixel]);
-
-      } else {
-
-        // If fixel is not in the mask, tract_processor should never assign
-        //   any connections to it
-        assert (connectivity_matrix[fixel].empty());
-
+      // Here, the connectivity matrix needs to be modified to reflect the
+      //   fact that fixel indices in the template fixel image may not
+      //   correspond to rows in the statistical analysis
+      connectivity_value_type sum_weights = 0.0;
+      for (auto& it : connectivity_matrix[fixel_index]) {
+        const connectivity_value_type connectivity = it.second.value / connectivity_value_type (fixel_TDI[fixel_index]);
+        if (connectivity >= connectivity_threshold) {
+          if (do_smoothing) {
+            const value_type distance = std::sqrt (Math::pow2 (positions[fixel_index][0] - positions[it.first][0]) +
+                Math::pow2 (positions[fixel_index][1] - positions[it.first][1]) +
+                Math::pow2 (positions[fixel_index][2] - positions[it.first][2]));
+            const connectivity_value_type smoothing_weight = connectivity * gaussian_const1 * std::exp (-Math::pow2 (distance) / gaussian_const2);
+            if (smoothing_weight >= connectivity_threshold) {
+              smoothing_weights[column].push_back (Stats::CFE::NormMatrixElement (fixel2column[it.first], smoothing_weight));
+              sum_weights += smoothing_weight;
+            }
+          }
+          // Here we pre-exponentiate each connectivity value by C
+          norm_connectivity_matrix[column].push_back (Stats::CFE::NormMatrixElement (fixel2column[it.first], std::pow (connectivity, cfe_c)));
+        }
       }
-      progress++;
-    }
+
+      // Make sure the fixel is fully connected to itself
+      norm_connectivity_matrix[column].push_back (Stats::CFE::NormMatrixElement (uint32_t(column), connectivity_value_type(1.0)));
+      smoothing_weights[column].push_back (Stats::CFE::NormMatrixElement (uint32_t(column), connectivity_value_type(gaussian_const1)));
+      sum_weights += connectivity_value_type (gaussian_const1);
+
+      // Normalise smoothing weights
+      const connectivity_value_type norm_factor = connectivity_value_type(1.0) / sum_weights;
+      for (auto i : smoothing_weights[column])
+        i.normalise (norm_factor);
+
+      // Force deallocation of memory used for this fixel in the original matrix
+      std::map<uint32_t, Stats::CFE::connectivity>().swap (connectivity_matrix[fixel_index]);
+
+      return true;
+    };
+
+    Source source (mask);
+    Thread::run_queue (source, size_t(), Thread::multi (Sink));
   }
 
 
