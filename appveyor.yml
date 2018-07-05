@@ -23,6 +23,8 @@ environment:
     - py: python2
     - py: python3
 
-test_script:
+build: off
+
+build_script:
   - cmd: C:\msys64\usr\bin\bash -e -l -c "cd /mrtrix3/ && ./travis.sh"
 
