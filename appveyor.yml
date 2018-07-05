@@ -1,0 +1,28 @@
+version: 1.0.{build}
+
+image: Visual Studio 2017
+
+platform: x64
+
+configuration: Release
+
+init:
+  - git config --global core.autocrlf input
+
+clone_folder: c:\msys64\mrtrix3
+
+shallow_clone: true
+clone_depth: 5
+
+matrix:
+  fast_finish: false # set this flag to immediately finish build once one of the jobs fails.
+
+environment:
+  test: run
+  matrix:
+    - py: python2
+    - py: python3
+
+test_script:
+  - cmd: C:\msys64\usr\bin\bash -e -l -c "cd /mrtrix3/ && ./travis.sh"
+
