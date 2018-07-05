@@ -798,9 +798,7 @@ if do_topup:
   else:
     run.command('mrcat ' + ' '.join(applytopup_image_list) + ' - -axis 3 | dwi2mask - - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32 -strides -1,+2,+3')
 
-  for entry in applytopup_image_list:
-    file.delTemporary(entry)
-
+  file.delTemporary(applytopup_image_list)
   eddy_in_topup_option = ' --topup=field'
 
 else:
@@ -1056,8 +1054,7 @@ else:
 
   # Finally the recombined volumes must be concatenated to produce the resulting image series
   run.command('mrcat ' + ' '.join(combined_image_list) + ' - -axis 3 | mrconvert - result.mif' + dwi_post_eddy_crop_option + ' -fslgrad bvecs_combined bvals_combined' + stride_option)
-  for entry in combined_image_list:
-    file.delTemporary(entry)
+  file.delTemporary(combined_image_list)
 
 
 # Grab any relevant files that eddy has created, and copy them to the requested directory
