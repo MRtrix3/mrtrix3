@@ -6,9 +6,6 @@ platform: x64
 
 configuration: Release
 
-init:
-  - git config --global core.autocrlf input
-
 clone_folder: c:\msys64\mrtrix3
 
 shallow_clone: true
@@ -25,13 +22,13 @@ environment:
   APPVEYOR_SSH_KEY: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQClwDCeYLhtrdMlMFMmTDo+xmPARbPoHaGS5/6QyIxieDDNjUdMONu5+P+XAV8R7wt9vzu3ET5xZwDauG17SDle14nP43zE6H/klk+RQpu+Eq1Z+G0eI2LbJSqtf7JqRo1L2LjBAB0YupUi3Kxj3woUSBIcl9sdhm/9hhmSM43Z8ggFIK//rZsEfZ6ZDWrZ7AjrIeyjW5aTMcOCHehiuqpd3c4Er9oKJHS9bpRFxG6OfCfFxh4vB/h24m2kASPGS4GNv3K/p64lJzDUkC2/wB1xZLpj22Moee+KQ/Fxe/vdHPfV3/d5w9Hfh9JjlFJOdBIiDyiiGM7nv9QoGeYiAqkyGi4maMt3utkiXJw1EP/V7NJjpTNe5+8xNfM/nb0umeEYfRkEk/iLDcZ4x3kNd5zviBls5tDejkEmdLvnzw0mtFWW74HWRKR1gS9gkN/5ZD/8OYOnlt7g7RLPB0O961SbzTFitcDJu209Okq7ebbXJudmMd8epv8797XoM9lIk9imITGnZ2vz2PJ/IumrTotbjamNh+jhSQUKc7qzyHQ4TJav7MiCSJV4CZ+TRX0wi08rFnGXhYZ/Cgju/Y9z/8F+A1JMMyuXecQAPIcHaJ1SRG4xWe6IPL+VBOlIM3FQSJGUYaPVr7pVJYfPO1nllvy2+ojz70q8jhH3YnohJDCS8Q== robert.smith@florey.edu.au"
   APPVEYOR_SSH_BLOCK: true
 
+init:
+  - git config --global core.autocrlf input
+  - sh: curl -sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh' | bash -e -
 
 build: off
 
 build_script:
-  - cmd: C:\msys64\usr\bin\bash -e -l -c "pacman -S --noconfirm mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5 mingw-w64-x86_64-python3 mingw-w64-x86_64-fftw mingw-w64-x86_64-libtiff"
+  - cmd: C:\msys64\usr\bin\bash -e -l -c "pacman -S --noconfirm mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5 mingw-w64-x86_64-fftw mingw-w64-x86_64-libtiff"
   - cmd: C:\msys64\usr\bin\bash -e -l -c "cd /mrtrix3/ && ./travis.sh"
-
-on_finish:
-  - sh: curl -sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh' | bash -e -
 
