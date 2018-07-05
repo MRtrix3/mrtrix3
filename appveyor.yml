@@ -26,5 +26,6 @@ environment:
 build: off
 
 build_script:
+  - cmd: C:\msys64\usr\bin\bash -e -l -c "pacman -S --noconfirm pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5 mingw-w64-x86_64-fftw mingw-w64-x86_64-libtiff"
   - cmd: C:\msys64\usr\bin\bash -e -l -c "cd /mrtrix3/ && ./travis.sh"
 
