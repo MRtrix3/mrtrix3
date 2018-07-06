@@ -23,7 +23,6 @@ environment:
   APPVEYOR_SSH_BLOCK: true
 
 init:
-  - git config --global core.autocrlf input
   - sh: curl -sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh' | bash -e -
 
 build: off
