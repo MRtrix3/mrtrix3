@@ -19,7 +19,6 @@ environment:
   matrix:
     - py: python2
     - py: python3
-  APPVEYOR_RDP_PASSWORD: mrtrix-guest
 
 init:
   - git config --global core.autocrlf input
