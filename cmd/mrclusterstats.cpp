@@ -37,6 +37,8 @@ using namespace App;
 using namespace MR::Math::Stats;
 using namespace MR::Math::Stats::GLM;
 
+using Stats::PermTest::count_matrix_type;
+
 
 #define DEFAULT_TFCE_DH 0.1
 #define DEFAULT_TFCE_H 2.0
@@ -335,23 +337,24 @@ void run() {
 
   if (!get_options ("notest").size()) {
 
-    matrix_type perm_distribution, uncorrected_pvalue;
+    matrix_type null_distribution, uncorrected_pvalue;
+    count_matrix_type null_contributions;
 
     Stats::PermTest::run_permutations (glm_test, enhancer, empirical_enhanced_statistic,
-                                       default_enhanced_output, perm_distribution, uncorrected_pvalue);
+                                       default_enhanced_output, null_distribution, null_contributions, uncorrected_pvalue);
 
     for (size_t i = 0; i != num_contrasts; ++i)
-      save_vector (perm_distribution.col(i), prefix + "perm_dist" + postfix(i) + ".txt");
+      save_vector (null_distribution.col(i), prefix + "perm_dist" + postfix(i) + ".txt");
 
-    ProgressBar progress ("Generating output images", 1 + (2 * num_contrasts));
-    for (size_t i = 0; i != num_contrasts; ++i) {
-      write_output (uncorrected_pvalue.col(i), *v2v, prefix + "uncorrected_pvalue" + postfix(i) + ".mif", output_header);
-      ++progress;
-    }
-    const matrix_type fwe_pvalue_output = MR::Math::Stats::fwe_pvalue (perm_distribution, default_enhanced_output);
+    ProgressBar progress ("Generating output images", 1 + (3 * num_contrasts));
+    const matrix_type fwe_pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, default_enhanced_output);
     ++progress;
     for (size_t i = 0; i != num_contrasts; ++i) {
       write_output (fwe_pvalue_output.col(i), *v2v, prefix + "fwe_pvalue" + postfix(i) + ".mif", output_header);
+      ++progress;
+      write_output (uncorrected_pvalue.col(i), *v2v, prefix + "uncorrected_pvalue" + postfix(i) + ".mif", output_header);
+      ++progress;
+      write_output (null_contributions.col(i), *v2v, prefix + "null_contributions" + postfix(i) + ".mif", output_header);
       ++progress;
     }
 
