@@ -71,6 +71,7 @@ void usage ()
 
 using Math::Stats::matrix_type;
 using Math::Stats::vector_type;
+using Stats::PermTest::count_matrix_type;
 
 
 
@@ -224,14 +225,16 @@ void run()
 
     std::shared_ptr<Stats::EnhancerBase> enhancer;
     matrix_type null_distribution, uncorrected_pvalues;
+    count_matrix_type null_contributions;
     matrix_type empirical_distribution; // unused
     Stats::PermTest::run_permutations (glm_test, enhancer, empirical_distribution,
-                                       default_tvalues, null_distribution, uncorrected_pvalues);
+                                       default_tvalues, null_distribution, null_contributions, uncorrected_pvalues);
 
     const matrix_type fwe_pvalues = MR::Math::Stats::fwe_pvalue (null_distribution, default_tvalues);
     for (size_t i = 0; i != num_contrasts; ++i) {
       save_vector (fwe_pvalues.col(i), output_prefix + "fwe_pvalue" + postfix(i) + ".csv");
       save_vector (uncorrected_pvalues.col(i), output_prefix + "uncorrected_pvalue" + postfix(i) + ".csv");
+      save_vector (null_contributions.col(i), output_prefix + "null_contributions" + postfix(i) + ".csv");
     }
 
   }

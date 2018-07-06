@@ -44,6 +44,7 @@ using namespace MR::Math::Stats::GLM;
 using Stats::CFE::direction_type;
 using Stats::CFE::connectivity_value_type;
 using Stats::CFE::index_type;
+using Stats::PermTest::count_matrix_type;
 
 #define DEFAULT_CFE_DH 0.1
 #define DEFAULT_CFE_E 2.0
@@ -620,23 +621,26 @@ void run()
   // Perform permutation testing
   if (!get_options ("notest").size()) {
 
-    matrix_type perm_distribution, uncorrected_pvalues;
+    matrix_type null_distribution, uncorrected_pvalues;
+    count_matrix_type null_contributions;
     Stats::PermTest::run_permutations (glm_test, cfe_integrator, empirical_cfe_statistic,
-                                       cfe_output, perm_distribution, uncorrected_pvalues);
+                                       cfe_output, null_distribution, null_contributions, uncorrected_pvalues);
 
-    ProgressBar progress ("Outputting final results", 3*num_contrasts + 1);
+    ProgressBar progress ("Outputting final results", 4*num_contrasts + 1);
 
     for (size_t i = 0; i != num_contrasts; ++i) {
-      save_vector (perm_distribution.col(i), Path::join (output_fixel_directory, "perm_dist" + postfix(i) + ".txt"));
+      save_vector (null_distribution.col(i), Path::join (output_fixel_directory, "perm_dist" + postfix(i) + ".txt"));
       ++progress;
     }
 
-    const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue (perm_distribution, cfe_output);
+    const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, cfe_output);
     ++progress;
     for (size_t i = 0; i != num_contrasts; ++i) {
       write_fixel_output (Path::join (output_fixel_directory, "fwe_pvalue" + postfix(i) + ".mif"), pvalue_output.col(i), output_header);
       ++progress;
       write_fixel_output (Path::join (output_fixel_directory, "uncorrected_pvalue" + postfix(i) + ".mif"), uncorrected_pvalues.col(i), output_header);
+      ++progress;
+      write_fixel_output (Path::join (output_fixel_directory, "null_contributions" + postfix(i) + ".mif"), null_contributions.col(i), output_header);
       ++progress;
     }
   }
