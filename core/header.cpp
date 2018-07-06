@@ -21,6 +21,7 @@
 #include "transform.h"
 #include "image_io/default.h"
 #include "image_io/scratch.h"
+#include "file/json_utils.h"
 #include "file/name_parser.h"
 #include "formats/list.h"
 
@@ -184,18 +185,40 @@ namespace MR
     try {
       INFO ("creating image \"" + image_name + "\"...");
 
+      auto opt = App::get_options ("compel_keyvalues");
+      if (opt.size()) {
+
+        H.keyval().clear();
+        if (str(opt[0][0]) != "NULL") {
+          try {
+            const Header source = Header::open (opt[0][0]);
+            H.keyval() = source.keyval();
+          } catch (...) {
+            try {
+              File::JSON::load (H, opt[0][0]);
+            } catch (...) {
+              throw Exception ("Unable to obtain header key-value entries from spec \"" + str(opt[0][0]) + "\"");
+            }
+          }
+        }
+        add_line (H.keyval()["command_history"], opt[0][1]);
+
+      } else {
+
+        std::string cmd = App::argv[0];
+        for (int n = 1; n < App::argc; ++n)
+          cmd += std::string(" \"") + App::argv[n] + "\"";
+        cmd += std::string ("  (version=") + App::mrtrix_version;
+        if (App::project_version)
+          cmd += std::string (", project=") + App::project_version;
+        cmd += ")";
+        add_line (H.keyval()["command_history"], cmd);
+
+      }
+
       H.keyval()["mrtrix_version"] = App::mrtrix_version;
       if (App::project_version)
         H.keyval()["project_version"] = App::project_version;
-
-      std::string cmd = App::argv[0];
-      for (int n = 1; n < App::argc; ++n)
-        cmd += std::string(" \"") + App::argv[n] + "\"";
-      cmd += std::string ("  (version=") + App::mrtrix_version;
-      if (App::project_version)
-        cmd += std::string (", project=") + App::project_version;
-      cmd += ")";
-      add_line (H.keyval()["command_history"], cmd);
 
       H.sanitise();
 

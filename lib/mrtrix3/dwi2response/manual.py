@@ -62,4 +62,5 @@ def execute(): #pylint: disable=unused-variable
   run.command('amp2response dwi.mif in_voxels.mif dirs.mif response.txt' + bvalues_option + lmax_option)
 
   run.function(shutil.copyfile, 'response.txt', path.fromUser(app.args.output, False))
-  run.function(shutil.copyfile, 'in_voxels.mif', 'voxels.mif')
+  if app.args.voxels:
+    run.command('mrconvert in_voxels.mif ' + path.fromUser(app.args.voxels, True) + app.mrconvertOutputOption(path.fromUser(app.args.input, True)))

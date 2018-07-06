@@ -106,3 +106,5 @@ def execute(): #pylint: disable=unused-variable
     run.function(shutil.move, 'iter' + str(app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
 
   run.function(shutil.copyfile, 'response.txt', path.fromUser(app.args.output, False))
+  if app.args.voxels:
+    run.command('mrconvert voxels.mif ' + path.fromUser(app.args.voxels, True) + app.mrconvertOutputOption(path.fromUser(app.args.input, True)))

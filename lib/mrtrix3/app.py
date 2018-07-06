@@ -280,6 +280,29 @@ def complete(): #pylint: disable=unused-variable
 
 
 
+
+
+# This function should be used to insert text into any mrconvert call writing an output image
+#   to the user's requested destination
+# It will ensure that the header contents of any output images reflect the execution of the script itself,
+#   rather than its internal processes
+def mrconvertOutputOption(input_image): #pylint: disable=unused-variable
+  import sys
+  from ._version import __version__
+  global forceOverwrite
+  s = ' -compel_keyvalues ' + input_image + ' "' + sys.argv[0]
+  for arg in sys.argv[1:]:
+    s += ' \\"' + arg + '\\"'
+  s += '  (version=' + __version__ + ')"'
+  if forceOverwrite:
+    s += ' -force'
+  return s
+
+
+
+
+
+
 # A set of functions and variables for printing various information at the command-line.
 def console(text): #pylint: disable=unused-variable
   import os, sys

@@ -162,7 +162,12 @@ void usage ()
   + DWI::GradExportOptions()
 
   + PhaseEncoding::ImportOptions
-  + PhaseEncoding::ExportOptions;
+  + PhaseEncoding::ExportOptions
+
+  + OptionGroup ("Hidden option for manipulating header key-value entries").hidden()
+  + Option ("compel_keyvalues", "force the header key-value contents to reflect invocation of a higher-level script of which this is the last step")
+  + Argument ("basis").type_text()
+  + Argument ("command").type_text();
 }
 
 

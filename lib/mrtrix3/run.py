@@ -77,7 +77,11 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
   app.debug('To execute: ' + str(cmdstack))
 
   if app.verbosity:
-    sys.stderr.write(app.colourExec + 'Command:' + app.colourClear + '  ' + cmd + '\n')
+    # Hide use of the hidden option used in mrconvert to alter header key-values and command history
+    if '-compel_keyvalues' in cmdsplit:
+      index = cmdsplit.index('-compel_keyvalues')
+      del cmdsplit[index:index+3]
+    sys.stderr.write(app.colourExec + 'Command:' + app.colourClear + '  ' + ' '.join(cmdsplit) + '\n')
     sys.stderr.flush()
 
   # Disable interrupt signal handler while threads are running
