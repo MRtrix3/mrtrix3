@@ -44,6 +44,8 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrcat cGM.mif sGM.mif WM.mif CSF.mif lsn.mif 5tt.mif -axis 3')
 
   if app.args.nocrop:
-    run.command('mrconvert 5tt.mif result.mif')
+    run.function(os.rename, '5tt.mif', 'result.mif')
   else:
     run.command('mrmath 5tt.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrcrop 5tt.mif result.mif -mask -')
+
+  run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + app.mrconvertOutputOption(path.fromUser(app.args.input, True)))

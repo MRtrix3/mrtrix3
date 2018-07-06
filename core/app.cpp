@@ -402,13 +402,15 @@ namespace MR
         size_t n = i;
         while ((*this)[n].name != group_names[i])
           ++n;
-        s += (*this)[n].header (format);
-        while (n < size()) {
-          if ((*this)[n].name == group_names[i])
-            s += (*this)[n].contents (format);
-          ++n;
+        if ((*this)[n].show) {
+          s += (*this)[n].header (format);
+          while (n < size()) {
+            if ((*this)[n].name == group_names[i])
+              s += (*this)[n].contents (format);
+            ++n;
+          }
+          s += OptionGroup::footer (format);
         }
-        s += OptionGroup::footer (format);
       }
 
       return s;
@@ -683,14 +685,16 @@ namespace MR
         size_t n = i;
         while (OPTIONS[n].name != group_names[i])
           ++n;
-        if (OPTIONS[n].name != std::string("OPTIONS"))
-          s += std::string ("#### ") + OPTIONS[n].name + "\n\n";
-        while (n < OPTIONS.size()) {
-          if (OPTIONS[n].name == group_names[i]) {
-            for (size_t o = 0; o < OPTIONS[n].size(); ++o)
-              s += format_option (OPTIONS[n][o]);
+        if (OPTIONS[n].show) {
+          if (OPTIONS[n].name != std::string("OPTIONS"))
+            s += std::string ("#### ") + OPTIONS[n].name + "\n\n";
+          while (n < OPTIONS.size()) {
+            if (OPTIONS[n].name == group_names[i]) {
+              for (size_t o = 0; o < OPTIONS[n].size(); ++o)
+                s += format_option (OPTIONS[n][o]);
+            }
+            ++n;
           }
-          ++n;
         }
       }
 
@@ -773,13 +777,11 @@ namespace MR
         s += std::string("-  *") + ARGUMENTS[i].id + "*: " + escape_special (indent_newlines (ARGUMENTS[i].desc)) + "\n";
       s += "\n";
 
-
       if (DESCRIPTION.size()) {
         s += "Description\n-----------\n\n";
         for (size_t i = 0; i < DESCRIPTION.size(); ++i)
           s += indent_newlines (DESCRIPTION[i]) + "\n\n";
       }
-
 
       vector<std::string> group_names;
       for (size_t i = 0; i < OPTIONS.size(); ++i) {
@@ -800,14 +802,16 @@ namespace MR
         size_t n = i;
         while (OPTIONS[n].name != group_names[i])
           ++n;
-        if (OPTIONS[n].name != std::string("OPTIONS"))
-          s += OPTIONS[n].name + std::string("\n") + std::string(std::strlen(OPTIONS[n].name), '^') + "\n\n";
-        while (n < OPTIONS.size()) {
-          if (OPTIONS[n].name == group_names[i]) {
-            for (size_t o = 0; o < OPTIONS[n].size(); ++o)
-              s += format_option (OPTIONS[n][o]);
+        if (OPTIONS[n].show) {
+          if (OPTIONS[n].name != std::string("OPTIONS"))
+            s += OPTIONS[n].name + std::string("\n") + std::string(std::strlen(OPTIONS[n].name), '^') + "\n\n";
+          while (n < OPTIONS.size()) {
+            if (OPTIONS[n].name == group_names[i]) {
+              for (size_t o = 0; o < OPTIONS[n].size(); ++o)
+                s += format_option (OPTIONS[n][o]);
+            }
+            ++n;
           }
-          ++n;
         }
       }
 

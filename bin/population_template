@@ -737,13 +737,18 @@ if dononlinear:
         run.function(move, os.path.join('warps_' + str(level), '%s.mif' % i.prefix), 'warps')
 
 
-run.command('mrconvert ' + current_template + ' ' + path.fromUser(app.args.template, True) + (' -force' if app.forceOverwrite else ''))
+run.command('mrconvert ' + current_template + ' ' + path.fromUser(app.args.template, True) + app.mrconvertOutputOption('NULL'))
 
 if app.args.warp_dir:
   warp_path = path.fromUser(app.args.warp_dir, False)
   if os.path.exists(warp_path):
     run.function(rmtree, warp_path)
-  run.function(copytree, 'warps', warp_path)
+  os.makedirs(warp_path)
+  progress = app.progressBar('Copying non-linear warps to output directory "' + warp_path + '"')
+  for i in inputs:
+    run.command('mrconvert ' + os.path.join('warps', '%s.mif' % i.prefix) + ' ' + os.path.join(warp_path, '%s.mif' % i.prefix) + app.mrconvertOutputOption(path.fromUser(os.path.join(inputDir, i.filename), True)))
+    progress.increment()
+  progress.done()
 
 if app.args.linear_transformations_dir:
   linear_transformations_path = path.fromUser(app.args.linear_transformations_dir, False)
@@ -755,9 +760,14 @@ if app.args.transformed_dir:
   transformed_path = path.fromUser(app.args.transformed_dir, False)
   if os.path.exists(transformed_path):
     run.function(rmtree, transformed_path)
-  run.function(copytree, 'inputs_transformed', transformed_path)
+  os.makedirs(transformed_path)
+  progress = app.progressBar('Copying transformed images to output directory "' + transformed_path + '"')
+  for i in inputs:
+    run.command('mrconvert ' + os.path.join('inputs_transformed', '%s.mif' % i.prefix) + ' ' + os.path.join(transformed_path, '%s.mif' % i.prefix) + app.mrconvertOutputOption(path.fromUser(os.path.join(inputDir, i.filename), True)))
+    progress.increment()
+  progress.done()
 
 if app.args.template_mask:
-  run.command('mrconvert ' + current_template_mask + ' ' + path.fromUser(app.args.template_mask, True) + (' -force' if app.forceOverwrite else ''))
+  run.command('mrconvert ' + current_template_mask + ' ' + path.fromUser(app.args.template_mask, True) + app.mrconvertOutputOption('NULL'))
 
 app.complete()
