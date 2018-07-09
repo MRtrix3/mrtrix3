@@ -216,6 +216,14 @@ namespace MR
 
       }
 
+      if (App::get_options ("anonymise").size()) {
+        H.keyval().erase ("comments");
+        // Erase subsequently to the steps above, so that even the
+        //   currently-executed command doesn't get included
+        //   (may contain identifying file / directory names)
+        H.keyval().erase ("command_history");
+      }
+
       H.keyval()["mrtrix_version"] = App::mrtrix_version;
       if (App::project_version)
         H.keyval()["project_version"] = App::project_version;
