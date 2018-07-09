@@ -67,6 +67,8 @@ Options to modify generic header entries
 
 -  **-append_property key value** append the given value to the specified key in the image header (this adds the value specified as a new line in the header value).
 
+-  **-anonymise** make a simple attempt to anonymise data; this involves removing the "comments" and "command_history" fields (which may contain traces of subject information from previous steps)
+
 Stride options
 ^^^^^^^^^^^^^^
 
