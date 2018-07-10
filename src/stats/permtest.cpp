@@ -156,6 +156,8 @@ namespace MR
           for (size_t element = 0; element != stats_calculator->num_elements(); ++element) {
             if (global_enhanced_count(element, contrast) > 0)
               empirical_statistic(element, contrast) /= static_cast<default_type> (global_enhanced_count(element, contrast));
+            else
+              empirical_statistic(element, contrast) = std::numeric_limits<default_type>::infinity();
           }
         }
       }
