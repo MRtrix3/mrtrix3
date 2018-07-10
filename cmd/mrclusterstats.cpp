@@ -44,7 +44,7 @@ using Stats::PermTest::count_matrix_type;
 #define DEFAULT_TFCE_H 2.0
 #define DEFAULT_TFCE_E 0.5
 
-#define DEFAULT_EMPIRICAL_SKEW 0.666667
+#define DEFAULT_EMPIRICAL_SKEW 1.0
 
 
 void usage ()
