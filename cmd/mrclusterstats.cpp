@@ -44,6 +44,8 @@ using Stats::PermTest::count_matrix_type;
 #define DEFAULT_TFCE_H 2.0
 #define DEFAULT_TFCE_E 0.5
 
+#define DEFAULT_EMPIRICAL_SKEW 0.666667
+
 
 void usage ()
 {
@@ -78,7 +80,7 @@ void usage ()
 
 
   OPTIONS
-  + Math::Stats::shuffle_options (true)
+  + Math::Stats::shuffle_options (true, DEFAULT_EMPIRICAL_SKEW)
 
   + Stats::TFCE::Options (DEFAULT_TFCE_DH, DEFAULT_TFCE_E, DEFAULT_TFCE_H)
 
@@ -185,6 +187,7 @@ void run() {
   const bool use_tfce = !std::isfinite (cluster_forming_threshold);
   const bool do_26_connectivity = get_options("connectivity").size();
   const bool do_nonstationarity_adjustment = get_options ("nonstationarity").size();
+  const default_type empirical_skew = get_option_value ("skew_nonstationarity", DEFAULT_EMPIRICAL_SKEW);
 
   // Load analysis mask and compute adjacency
   auto mask_header = Header::open (argument[3]);
@@ -322,7 +325,7 @@ void run() {
   if (do_nonstationarity_adjustment) {
     if (!use_tfce)
       throw Exception ("Nonstationarity adjustment is not currently implemented for threshold-based cluster analysis");
-    Stats::PermTest::precompute_empirical_stat (glm_test, enhancer, empirical_enhanced_statistic);
+    Stats::PermTest::precompute_empirical_stat (glm_test, enhancer, empirical_skew, empirical_enhanced_statistic);
     for (size_t i = 0; i != num_contrasts; ++i)
       write_output (empirical_enhanced_statistic.col(i), *v2v, prefix + "empirical" + postfix(i) + ".mif", output_header);
   }

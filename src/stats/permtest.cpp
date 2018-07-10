@@ -26,10 +26,12 @@ namespace MR
 
       PreProcessor::PreProcessor (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                                   const std::shared_ptr<EnhancerBase> enhancer,
+                                  const default_type skew,
                                   matrix_type& global_enhanced_sum,
                                   count_matrix_type& global_enhanced_count) :
           stats_calculator (stats_calculator),
           enhancer (enhancer),
+          skew (skew),
           global_enhanced_sum (global_enhanced_sum),
           global_enhanced_count (global_enhanced_count),
           enhanced_sum (matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_outputs())),
@@ -62,7 +64,7 @@ namespace MR
         for (size_t c = 0; c != stats_calculator->num_outputs(); ++c) {
           for (size_t i = 0; i != stats_calculator->num_elements(); ++i) {
             if (enhanced_stats(i, c) > 0.0) {
-              enhanced_sum(i, c) += enhanced_stats(i, c);
+              enhanced_sum(i, c) += std::pow (enhanced_stats(i, c), skew);
               enhanced_count(i, c)++;
             }
           }
@@ -142,6 +144,7 @@ namespace MR
 
       void precompute_empirical_stat (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                                       const std::shared_ptr<EnhancerBase> enhancer,
+                                      const default_type skew,
                                       matrix_type& empirical_statistic)
       {
         assert (stats_calculator);
@@ -149,13 +152,13 @@ namespace MR
         count_matrix_type global_enhanced_count (count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_outputs()));
         {
           Math::Stats::Shuffler shuffler (stats_calculator->num_subjects(), true, "Pre-computing empirical statistic for non-stationarity correction");
-          PreProcessor preprocessor (stats_calculator, enhancer, empirical_statistic, global_enhanced_count);
+          PreProcessor preprocessor (stats_calculator, enhancer, skew, empirical_statistic, global_enhanced_count);
           Thread::run_queue (shuffler, Math::Stats::Shuffle(), Thread::multi (preprocessor));
         }
         for (size_t contrast = 0; contrast != stats_calculator->num_outputs(); ++contrast) {
           for (size_t element = 0; element != stats_calculator->num_elements(); ++element) {
             if (global_enhanced_count(element, contrast) > 0)
-              empirical_statistic(element, contrast) /= static_cast<default_type> (global_enhanced_count(element, contrast));
+              empirical_statistic(element, contrast) = std::pow (empirical_statistic(element, contrast) / static_cast<default_type> (global_enhanced_count(element, contrast)), 1.0/skew);
             else
               empirical_statistic(element, contrast) = std::numeric_limits<default_type>::infinity();
           }

@@ -49,6 +49,8 @@ const char* algorithms[] = { "nbs", "nbse", "none", nullptr };
 #define TFCE_E_DEFAULT 0.4
 #define TFCE_H_DEFAULT 3.0
 
+#define EMPIRICAL_SKEW_DEFAULT 1.0
+
 
 
 void usage ()
@@ -76,7 +78,7 @@ void usage ()
 
   OPTIONS
 
-  + Math::Stats::shuffle_options (true)
+  + Math::Stats::shuffle_options (true, EMPIRICAL_SKEW_DEFAULT)
 
   // TODO OptionGroup these, and provide a generic loader function
   + Stats::TFCE::Options (TFCE_DH_DEFAULT, TFCE_E_DEFAULT, TFCE_H_DEFAULT)
@@ -202,6 +204,7 @@ void run()
   }
 
   const bool do_nonstationarity_adjustment = get_options ("nonstationarity").size();
+  const default_type empirical_skew = get_option_value ("skew_nonstationarity", EMPIRICAL_SKEW_DEFAULT);
 
   // Load design matrix
   const matrix_type design = load_matrix (argument[2]);
@@ -295,7 +298,7 @@ void run()
   // If performing non-stationarity adjustment we need to pre-compute the empirical statistic
   matrix_type empirical_statistic;
   if (do_nonstationarity_adjustment) {
-    Stats::PermTest::precompute_empirical_stat (glm_test, enhancer, empirical_statistic);
+    Stats::PermTest::precompute_empirical_stat (glm_test, enhancer, empirical_skew, empirical_statistic);
     for (size_t i = 0; i != num_contrasts; ++i)
       save_matrix (mat2vec.V2M (empirical_statistic.col(i)), output_prefix + "empirical" + postfix(i) + ".csv");
   }

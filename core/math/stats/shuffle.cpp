@@ -30,7 +30,7 @@ namespace MR
       const char* error_types[] = { "ee", "ise", "both", nullptr };
 
 
-      App::OptionGroup shuffle_options (const bool include_nonstationarity)
+      App::OptionGroup shuffle_options (const bool include_nonstationarity, const default_type default_skew)
       {
         using namespace App;
 
@@ -59,6 +59,9 @@ namespace MR
 
           result
           + Option ("nonstationarity", "perform non-stationarity correction")
+
+          + Option ("skew", "specify the skew parameter for empirical statistic calculation (default for this command is " + str(default_skew) + ")")
+            + Argument ("value").type_float (0.0)
 
           + Option ("nshuffles_nonstationarity", "the number of shuffles to use when precomputing the empirical statistic image for non-stationarity correction (default: " + str(DEFAULT_NUMBER_SHUFFLES_NONSTATIONARITY) + ")")
             + Argument ("number").type_integer (1)
