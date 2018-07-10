@@ -53,7 +53,7 @@ using Stats::PermTest::count_matrix_type;
 #define DEFAULT_ANGLE_THRESHOLD 45.0
 #define DEFAULT_CONNECTIVITY_THRESHOLD 0.01
 #define DEFAULT_SMOOTHING_STD 10.0
-#define DEFAULT_EMPIRICAL_SKEW 0.5
+#define DEFAULT_EMPIRICAL_SKEW 1.0
 
 void usage ()
 {
