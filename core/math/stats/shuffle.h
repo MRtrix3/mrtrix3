@@ -45,7 +45,7 @@ namespace MR
       // - (future) Set exchangeability blocks
 
       extern const char* error_types[];
-      App::OptionGroup shuffle_options (const bool include_nonstationarity);
+      App::OptionGroup shuffle_options (const bool include_nonstationarity, const default_type default_skew = 1.0);
 
 
 

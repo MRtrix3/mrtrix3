@@ -53,6 +53,7 @@ using Stats::PermTest::count_matrix_type;
 #define DEFAULT_ANGLE_THRESHOLD 45.0
 #define DEFAULT_CONNECTIVITY_THRESHOLD 0.01
 #define DEFAULT_SMOOTHING_STD 10.0
+#define DEFAULT_EMPIRICAL_SKEW 0.5
 
 void usage ()
 {
@@ -96,7 +97,9 @@ void usage ()
 
   OPTIONS
 
-  + Math::Stats::shuffle_options (true)
+  + Math::Stats::shuffle_options (true, DEFAULT_EMPIRICAL_SKEW)
+
+  + Option ("fast_nonstationarity", "perform a fast non-stationarity correction that does not require permutations")
 
   + OptionGroup ("Parameters for the Connectivity-based Fixel Enhancement algorithm")
 
@@ -254,9 +257,13 @@ void run()
   const value_type cfe_c = get_option_value ("cfe_c", DEFAULT_CFE_C);
   const value_type smooth_std_dev = get_option_value ("smooth", DEFAULT_SMOOTHING_STD) / 2.3548;
   const value_type connectivity_threshold = get_option_value ("connectivity", DEFAULT_CONNECTIVITY_THRESHOLD);
-  const bool do_nonstationarity_adjustment = get_options ("nonstationarity").size();
   const value_type angular_threshold = get_option_value ("angle", DEFAULT_ANGLE_THRESHOLD);
 
+  const bool do_full_nonstationarity_adjustment = get_options ("nonstationarity").size();
+  const bool do_fast_nonstationarity_adjustment = get_options ("fast_nonstationarity").size();
+  if (do_full_nonstationarity_adjustment && do_fast_nonstationarity_adjustment)
+    throw Exception ("Can only do either permutation-based or \'fast\' non-stationarity correction; not both");
+  const default_type empirical_skew = get_option_value ("skew_nonstationarity", DEFAULT_EMPIRICAL_SKEW);
 
   const std::string input_fixel_directory = argument[0];
   SubjectFixelImport::set_fixel_directory (input_fixel_directory);
@@ -601,13 +608,24 @@ void run()
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical CFE statistic
   matrix_type empirical_cfe_statistic;
-  if (do_nonstationarity_adjustment) {
-    Stats::PermTest::precompute_empirical_stat (glm_test, cfe_integrator, empirical_cfe_statistic);
-    output_header.keyval()["nonstationary adjustment"] = str(true);
+  if (do_full_nonstationarity_adjustment) {
+    Stats::PermTest::precompute_empirical_stat (glm_test, cfe_integrator, empirical_skew, empirical_cfe_statistic);
+    output_header.keyval()["nonstationarity adjustment"] = "permutation";
     for (size_t i = 0; i != num_contrasts; ++i)
       write_fixel_output (Path::join (output_fixel_directory, "cfe_empirical" + postfix(i) + ".mif"), empirical_cfe_statistic.col(i), output_header);
+  } else if (do_fast_nonstationarity_adjustment) {
+    ProgressBar progress ("Computing non-stationarity correction from fixel-fixel connectivity", mask_fixels);
+    empirical_cfe_statistic.resize (num_fixels, num_contrasts);
+    for (size_t f = 0; f != mask_fixels; ++f) {
+      default_type sum = 0.0;
+      for (auto c : norm_connectivity_matrix[f])
+        sum += c.value();
+      empirical_cfe_statistic.row (f).fill (sum);
+      ++progress;
+    }
+    output_header.keyval()["nonstationarity adjustment"] = "fast";
   } else {
-    output_header.keyval()["nonstationary adjustment"] = str(false);
+    output_header.keyval()["nonstationarity adjustment"] = str(false);
   }
 
   // Precompute default statistic and CFE statistic

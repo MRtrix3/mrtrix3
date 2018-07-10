@@ -57,6 +57,7 @@ namespace MR
         public:
           PreProcessor (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                         const std::shared_ptr<EnhancerBase> enhancer,
+                        const default_type skew,
                         matrix_type& global_enhanced_sum,
                         count_matrix_type& global_enhanced_count);
 
@@ -67,6 +68,7 @@ namespace MR
         protected:
           std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator;
           std::shared_ptr<EnhancerBase> enhancer;
+          const default_type skew;
           matrix_type& global_enhanced_sum;
           count_matrix_type& global_enhanced_count;
           matrix_type enhanced_sum;
@@ -115,6 +117,7 @@ namespace MR
       // Precompute the empircal test statistic for non-stationarity adjustment
       void precompute_empirical_stat (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                                       const std::shared_ptr<EnhancerBase> enhancer,
+                                      const default_type skew,
                                       matrix_type& empirical_statistic);
 
 

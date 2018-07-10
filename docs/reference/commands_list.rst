@@ -56,6 +56,7 @@ List of MRtrix3 commands
     commands/mraverageheader
     commands/mrcalc
     commands/mrcat
+    commands/mrcentre
     commands/mrcheckerboardmask
     commands/mrclusterstats
     commands/mrconvert
@@ -78,6 +79,7 @@ List of MRtrix3 commands
     commands/mrview
     commands/mtnormalise
     commands/peaks2amp
+    commands/quaterniontest
     commands/sh2amp
     commands/sh2peaks
     commands/sh2power
@@ -168,6 +170,7 @@ List of MRtrix3 commands
     :ref:`mraverageheader`, "Calculate the average (unbiased) coordinate space of all input images"
     :ref:`mrcalc`, "Apply generic voxel-wise mathematical operations to images"
     :ref:`mrcat`, "Concatenate several images into one"
+    :ref:`mrcentre`, "Determine the centre of mass / centre of gravity of an image"
     :ref:`mrcheckerboardmask`, "Create bitwise checkerboard image"
     :ref:`mrclusterstats`, "Voxel-based analysis using permutation testing and threshold-free cluster enhancement"
     :ref:`mrconvert`, "Perform conversion between different file types and optionally extract a subset of the input image"
@@ -190,6 +193,7 @@ List of MRtrix3 commands
     :ref:`mrview`, "The MRtrix image viewer."
     :ref:`mtnormalise`, "Multi-tissue informed log-domain intensity normalisation"
     :ref:`peaks2amp`, "Convert peak directions image to amplitudes"
+    :ref:`quaterniontest`, "Test appropriate threshold for detection of floating-point rounding errors in quaternion truncated representation"
     :ref:`sh2amp`, "Evaluate the amplitude of an image of spherical harmonic functions along specified directions"
     :ref:`sh2peaks`, "Extract the peaks of a spherical harmonic function at each voxel, by commencing a Newton search along a set of specified directions"
     :ref:`sh2power`, "Compute the total power of a spherical harmonics image"
