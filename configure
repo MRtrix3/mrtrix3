@@ -451,14 +451,14 @@ def commit (name, variable):
 
 
 
-def fillin (template, keyvalue):
+def fillin (template, keyvalues):
   command_string = []
   for item in template:
-    if item in keyvalue:
-      if isinstance(keyvalue[item], list):
-        command_string += keyvalue[item]
+    if item in keyvalues:
+      if isinstance(keyvalues[item], list):
+        command_string += keyvalues[item]
       else:
-        command_string += [ keyvalue[item] ]
+        command_string += [ keyvalues[item] ]
     else:
       command_string += [ item ]
   return command_string
@@ -484,7 +484,7 @@ def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
     log ('error invoking command "' + cmd[0] + '": ' + e.strerror + '\n>>\n\n')
     raise exception
   except:
-    print ('Unexpected error:', str(sys.exc_info()))
+    sys.stderr.write('Unexpected error: ' + str(sys.exc_info()) + '\n')
     raise
   else:
     if raise_on_non_zero_exit_code and process.returncode != 0:
