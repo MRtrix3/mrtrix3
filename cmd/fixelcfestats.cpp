@@ -624,6 +624,8 @@ void run()
       ++progress;
     }
     output_header.keyval()["nonstationarity adjustment"] = "fast";
+    // Identical for all contrasts, so only need to write one
+    write_fixel_output (Path::join (output_fixel_directory, "cfe_pseudo_empirical.mif"), empirical_cfe_statistic.col(0), output_header);
   } else {
     output_header.keyval()["nonstationarity adjustment"] = str(false);
   }
