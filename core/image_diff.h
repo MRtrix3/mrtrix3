@@ -31,13 +31,13 @@ namespace MR
         if (std::isfinite (in1.spacing(i)))
           if (abs ((in1.spacing(i) - in2.spacing(i)) / (in1.spacing(i) + in2.spacing(i))) > 1e-4)
             throw Exception ("images \"" + in1.name() + "\" and \"" + in2.name() + "\" do not have matching voxel spacings " +
-                                           str(in1.spacing(i)) + " vs " + str(in2.spacing(i)));
+                str(in1.spacing(i)) + " vs " + str(in2.spacing(i)));
       }
       for (size_t i  = 0; i < 3; ++i) {
         for (size_t j  = 0; j < 4; ++j) {
           if (abs (in1.transform().matrix()(i,j) - in2.transform().matrix()(i,j)) > 0.001)
-            throw Exception ("images \"" + in1.name() + "\" and \"" + in2.name() + "\" do not have matching header transforms "
-                               + "\n" + str(in1.transform().matrix()) + "vs \n " + str(in2.transform().matrix()) + ")");
+            throw Exception ("images \"" + in1.name() + "\" and \"" + in2.name() + "\" do not have matching header transforms:\n" +
+                str(in1.transform().matrix()) + "\nvs:\n " + str(in2.transform().matrix()) + ")");
         }
       }
     }
@@ -111,7 +111,7 @@ namespace MR
      {
        if (!dimensions_match (in1, in2))
          return false;
-       if (!spacings_match (in1, in2, 1e-6)) // implicitly checked in voxel_grids_match_in_scanner_space but with different tolerance 
+       if (!spacings_match (in1, in2, 1e-6)) // implicitly checked in voxel_grids_match_in_scanner_space but with different tolerance
          return false;
        if (!voxel_grids_match_in_scanner_space (in1, in2))
          return false;
