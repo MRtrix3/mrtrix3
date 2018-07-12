@@ -48,8 +48,8 @@
 
 #define GROUP_BYTE_ORDER                0x0002U
 #define GROUP_BYTE_ORDER_SWAPPED        0x0200U
-#define GROUP_SEQUENCE                  0xFFFEU 
-#define GROUP_DATA                      0x7FE0U 
+#define GROUP_SEQUENCE                  0xFFFEU
+#define GROUP_DATA                      0x7FE0U
 
 #define ELEMENT_TRANSFER_SYNTAX_UID     0x0010U
 #define ELEMENT_SEQUENCE_ITEM           0xE000U
@@ -64,7 +64,7 @@ namespace MR {
 
       inline std::string format_date (const std::string& date)
       {
-        if (date.empty() || date.size() < 8) 
+        if (date.empty() || date.size() < 8)
           return date;
         return date.substr(6,2) + "/" + date.substr(4,2) + "/" + date.substr(0,4);
       }
@@ -73,7 +73,7 @@ namespace MR {
 
       inline std::string format_time (const std::string& time)
       {
-        if (time.empty()) 
+        if (time.empty())
           return time;
         return time.substr(0,2) + ":" + time.substr(2,2) + ":" + time.substr(4,2);
       }
@@ -82,7 +82,7 @@ namespace MR {
 
       inline std::string format_ID (const std::string& ID)
       {
-        if (ID.empty()) 
+        if (ID.empty())
           return ID;
         return "(" + ID + ")";
       }

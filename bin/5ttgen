@@ -49,7 +49,7 @@ alg.execute()
 stderr = run.command('5ttcheck result.mif')[1]
 if stderr:
   app.warn('Generated image does not perfectly conform to 5TT format:')
-  for line in stderr:
+  for line in stderr.splitlines():
     app.warn(line)
 
 run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + (' -force' if app.forceOverwrite else ''))
