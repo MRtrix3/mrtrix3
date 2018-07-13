@@ -203,8 +203,8 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
   _processes = [ ]
 
   if error:
-    app.cleanup = False
     if exitOnError:
+      app.cleanup = False
       caller = inspect.getframeinfo(inspect.stack()[1][0])
       script_name = os.path.basename(sys.argv[0])
       app.console('')
