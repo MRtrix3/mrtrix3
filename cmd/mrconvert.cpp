@@ -153,10 +153,6 @@ void usage ()
   + Argument ("key").type_text()
   + Argument ("value").type_text()
 
-  + Option ("anonymise",
-            "make a simple attempt to anonymise data; this involves removing the \"comments\" and \"command_history\" fields "
-            "(which may contain traces of subject information from previous steps)")
-
 
   + Stride::Options
 
