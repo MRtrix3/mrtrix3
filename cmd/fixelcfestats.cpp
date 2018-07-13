@@ -188,8 +188,9 @@ void run() {
     data_header.size(0) = num_fixels;
     data_header.size(1) = 1;
     data_header.size(2) = 1;
-    data_header.spacing(0) = data_header.spacing(1) = data_header.spacing(2) = NaN;
+    data_header.spacing(0) = data_header.spacing(1) = data_header.spacing(2) = 1.0;
     data_header.stride(0) = 1; data_header.stride(1) = 2; data_header.stride(2) = 3;
+    data_header.transform().setIdentity();
     mask = Image<bool>::scratch (data_header, "scratch fixel mask");
     for (index_type f = 0; f != num_fixels; ++f) {
       mask.index(0) = f;
