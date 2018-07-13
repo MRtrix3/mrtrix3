@@ -74,8 +74,12 @@ OPTIONS
        keep trying to build regardless of failures, until none of the remaining
        jobs succeed.
 
+    -timings
+       write compile times out to timings.log file.
+
     -nopaginate
        do not feed error log to the paginator, even if running in a TTY
+
 '''
 
 
@@ -85,6 +89,7 @@ OPTIONS
 ############################################################################
 
 import platform, sys, os, time, threading, subprocess, copy, codecs, glob, atexit, tempfile, shutil
+from timeit import default_timer as timer
 
 # on Windows, need to use MSYS2 version of python - not MinGW version:
 if sys.executable[0].isalpha() and sys.executable[1] == ':':
@@ -92,7 +97,7 @@ if sys.executable[0].isalpha() and sys.executable[1] == ':':
   sys.exit (subprocess.call ([ python_cmd ] + sys.argv))
 
 global todo, headers, object_deps, file_flags, lock, print_lock, stop, main_cindex
-global include_paths
+global include_paths, timingfile
 
 bin_dir = 'bin'
 cmd_dir = 'cmd'
@@ -128,6 +133,7 @@ error_stream = None
 main_cindex = 0
 
 logfile = open ('build.log', 'wb')
+timingfile = None
 
 
 bcolors = {
@@ -148,7 +154,6 @@ bcolors = {
     "error" : '\033[01;31m',
     "failed" : '\033[91m',
     "note" : '\033[94m'}
-
 
 
 
@@ -195,8 +200,9 @@ def pipe_errors_to_less_handler():
 def disp (msg):
   print_lock.acquire()
   logfile.write (msg.encode (errors='ignore'))
-  sys.stdout.write (msg)
+  sys.stderr.write (msg)
   print_lock.release()
+
 
 def log (msg):
   print_lock.acquire()
@@ -204,6 +210,16 @@ def log (msg):
   if verbose:
     sys.stderr.write (msg)
   print_lock.release()
+
+
+
+def logtime (msg):
+  print_lock.acquire()
+  timingfile.write (msg.encode (errors='ignore'))
+  timingfile.flush()
+  print_lock.release()
+
+
 
 def error (msg):
   global error_stream
@@ -286,6 +302,8 @@ for arg in sys.argv[1:]:
       sys.exit (1)
   elif '-tree'.startswith(arg):
     dep_recursive = True
+  elif '-timings'.startswith(arg):
+    timingfile = open ('timings.log', 'wb')
   elif '-nopaginate'.startswith(arg):
     paginate = False
   elif arg[0] == '-':
@@ -311,7 +329,7 @@ if paginate and sys.stderr.isatty():
 
 
 ############################################################################
-#                        PROJECT / MODULE DETECTION                        #
+#                            PROJECT DETECTION                             #
 ############################################################################
 
 mrtrix_dir = [ '.' ]
@@ -497,7 +515,7 @@ please run "./configure" prior to invoking this script
   sys.exit (1)
 
 if separate_project:
-  cpp_flags += [ '-DMRTRIX_MODULE' ]
+  cpp_flags += [ '-DMRTRIX_PROJECT' ]
 
 environ = os.environ.copy()
 environ.update ({ 'PATH': PATH })
@@ -717,21 +735,21 @@ class Entry:
 
   def display (self, indent=''):
     show_rebuild = lambda x: x+' [REBUILD]' if todo[x].need_rebuild() else x
-    sys.stdout.write (indent + '[' + self.action + '] ' + show_rebuild (self.name) + ':\n')
-    sys.stdout.write (indent + '  timestamp: ' + str(self.timestamp))
+    sys.stderr.write (indent + '[' + self.action + '] ' + show_rebuild (self.name) + ':\n')
+    sys.stderr.write (indent + '  timestamp: ' + str(self.timestamp))
     if len(self.deps):
-      sys.stdout.write (', dep timestamp: ' + str(self.dep_timestamp) + ', diff: ' + str(self.timestamp-self.dep_timestamp))
-    sys.stdout.write ('\n')
+      sys.stderr.write (', dep timestamp: ' + str(self.dep_timestamp) + ', diff: ' + str(self.timestamp-self.dep_timestamp))
+    sys.stderr.write ('\n')
     if len(self.cmd):
-      sys.stdout.write (indent + '  command:   ' + ' '.join(self.cmd) + '\n')
+      sys.stderr.write (indent + '  command:   ' + ' '.join(self.cmd) + '\n')
     if len(self.deps):
-      sys.stdout.write (indent + '  deps:      ')
+      sys.stderr.write (indent + '  deps:      ')
       if dep_recursive:
-        sys.stdout.write ('\n')
+        sys.stderr.write ('\n')
         for x in self.deps:
           todo[x].display (indent + '    ')
       else:
-        sys.stdout.write ((indent+'\n             ').join([ show_rebuild(x) for x in self.deps ]) + '\n')
+        sys.stderr.write ((indent+'\n             ').join([ show_rebuild(x) for x in self.deps ]) + '\n')
 
 
 
@@ -789,8 +807,13 @@ def execute (message, cmd, working_dir=None):
   log (' '.join(cmd) + os.linesep)
 
   try:
+    start = timer()
     process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=environ, cwd=working_dir)
     ( stdout, stderr ) = process.communicate()
+    end = timer()
+    if timingfile is not None:
+      logtime ('[{:>8.3f}s] '.format(end-start) + message + os.linesep)
+
     if process.returncode != 0:
       if error_stream is not None:
         disp ('ERROR: ' + message + os.linesep)
@@ -819,11 +842,11 @@ def execute (message, cmd, working_dir=None):
 
 def print_deps (current_file, indent=''):
   current_file = os.path.normpath (current_file)
-  sys.stdout.write (indent + current_file)
+  sys.stderr.write (indent + current_file)
   if current_file in file_flags:
     if len(file_flags[current_file]):
-      sys.stdout.write (' [' + file_flags[current_file] + ']')
-  sys.stdout.write (os.linesep)
+      sys.stderr.write (' [' + file_flags[current_file] + ']')
+  sys.stderr.write (os.linesep)
   if len(todo[current_file].deps):
     for entry in todo[current_file].deps:
       print_deps (entry, indent + '    ')

@@ -20,7 +20,7 @@
 #include <xmmintrin.h>
 #include "app.h"
 #include "exec_version.h"
-#ifdef MRTRIX_MODULE
+#ifdef MRTRIX_PROJECT
 namespace MR {
   namespace App {
     void set_project_version ();
@@ -35,7 +35,7 @@ namespace MR {
 extern "C" void R_main (int* cmdline_argc, char** cmdline_argv)
 {
   ::MR::App::set_executable_uses_mrtrix_version();
-#ifdef MRTRIX_MODULE
+#ifdef MRTRIX_PROJECT
   ::MR::App::set_project_version();
 #endif
   ::MR::App::DESCRIPTION.clear();
@@ -82,7 +82,7 @@ int main (int cmdline_argc, char** cmdline_argv)
   _mm_setcsr (mxcsr);
 #endif
   ::MR::App::set_executable_uses_mrtrix_version();
-#ifdef MRTRIX_MODULE
+#ifdef MRTRIX_PROJECT
   ::MR::App::set_project_version();
 #endif
   try {
