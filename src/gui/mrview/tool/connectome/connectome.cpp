@@ -82,6 +82,7 @@ namespace MR
             edge_size (edge_size_t::FIXED),
             edge_alpha (edge_alpha_t::FIXED),
             have_exemplars (false),
+            have_streamtubes (false),
             edge_fixed_colour { 0.5f, 0.5f, 0.5f },
             edge_colourmap_index (1),
             edge_colourmap_invert (false),
@@ -442,10 +443,9 @@ namespace MR
           edge_visibility_combobox->setToolTip (tr ("Set which edges are visible"));
           edge_visibility_combobox->addItem ("All");
           edge_visibility_combobox->addItem ("None");
-          edge_visibility_combobox->addItem ("By nodes");
           edge_visibility_combobox->addItem ("Connectome");
           edge_visibility_combobox->addItem ("Matrix file");
-          edge_visibility_combobox->setCurrentIndex (3);
+          edge_visibility_combobox->setCurrentIndex (2);
           connect (edge_visibility_combobox, SIGNAL (activated(int)), this, SLOT (edge_visibility_selection_slot (int)));
           gridlayout->addWidget (edge_visibility_combobox, 0, 2);
           edge_visibility_warning_icon = new QLabel();
