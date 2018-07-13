@@ -185,7 +185,16 @@ namespace MR
     try {
       INFO ("creating image \"" + image_name + "\"...");
 
-      auto opt = App::get_options ("compel_keyvalues");
+      bool add_to_command_history = true;
+      auto opt = App::get_options ("clear_property");
+      for (const auto& o : opt) {
+        if (str(o[0]) == "command_history") {
+          add_to_command_history = false;
+          break;
+        }
+      }
+
+      opt = App::get_options ("compel_keyvalues");
       if (opt.size()) {
 
         H.keyval().clear();
@@ -201,9 +210,10 @@ namespace MR
             }
           }
         }
-        add_line (H.keyval()["command_history"], opt[0][1]);
+        if (add_to_command_history)
+          add_line (H.keyval()["command_history"], opt[0][1]);
 
-      } else {
+      } else if (add_to_command_history) {
 
         std::string cmd = App::argv[0];
         for (int n = 1; n < App::argc; ++n)
@@ -214,14 +224,6 @@ namespace MR
         cmd += ")";
         add_line (H.keyval()["command_history"], cmd);
 
-      }
-
-      if (App::get_options ("anonymise").size()) {
-        H.keyval().erase ("comments");
-        // Erase subsequently to the steps above, so that even the
-        //   currently-executed command doesn't get included
-        //   (may contain identifying file / directory names)
-        H.keyval().erase ("command_history");
       }
 
       H.keyval()["mrtrix_version"] = App::mrtrix_version;
