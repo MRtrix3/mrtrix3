@@ -149,7 +149,7 @@ namespace MR {
 
           MapWriter (const MapWriter&) = delete;
 
-          void finalise () {
+          void finalise () override {
 
             auto loop = Loop (buffer, 0, 3);
             switch (voxel_statistic) {
