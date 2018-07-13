@@ -1,25 +1,28 @@
-.. _labelcentre:
+.. _labelstats:
 
-labelcentre
+labelstats
 ===================
 
 Synopsis
 --------
 
-Determine the centre of mass / centre of gravity of each parcel within a label image
+Compute statistics of parcels within a label image
 
 Usage
 --------
 
 ::
 
-    labelcentre [ options ]  input space
+    labelstats [ options ]  input
 
 -  *input*: the input label image
--  *space*: the coordinate space in which to provide the centres (options are: scanner,voxel)
 
 Options
 -------
+
+-  **-output choice** output only the field specified; options are: mass,centre
+
+-  **-voxelspace** report parcel centres of mass in voxel space rather than scanner space
 
 Standard options
 ^^^^^^^^^^^^^^^^

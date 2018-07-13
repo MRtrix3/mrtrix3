@@ -47,8 +47,8 @@ List of MRtrix3 commands
     commands/fod2fixel
     commands/label2colour
     commands/label2mesh
-    commands/labelcentre
     commands/labelconvert
+    commands/labelstats
     commands/maskdump
     commands/maskfilter
     commands/mesh2voxel
@@ -161,8 +161,8 @@ List of MRtrix3 commands
     :ref:`fod2fixel`, "Perform segmentation of continuous Fibre Orientation Distributions (FODs) to produce discrete fixels"
     :ref:`label2colour`, "Convert a parcellated image (where values are node indices) into a colour image"
     :ref:`label2mesh`, "Generate meshes from a label image"
-    :ref:`labelcentre`, "Determine the centre of mass / centre of gravity of each parcel within a label image"
     :ref:`labelconvert`, "Convert a connectome node image from one lookup table to another"
+    :ref:`labelstats`, "Compute statistics of parcels within a label image"
     :ref:`maskdump`, "Print out the locations of all non-zero voxels in a mask image"
     :ref:`maskfilter`, "Perform filtering operations on 3D / 4D mask images"
     :ref:`mesh2voxel`, "Convert a mesh surface to a partial volume estimation image"
