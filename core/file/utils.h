@@ -55,7 +55,7 @@ namespace MR
       //CONF capacity or where write-access to this location is not permitted.
       //CONF Note that this setting does not influence the location in which
       //CONF Python scripts construct their temporary directories; that is
-      //CONF determined based on config file option ScriptTmpDir.
+      //CONF determined based on config file option :option:`ScriptTmpDir`.
       const std::string& tmpfile_dir () {
         static const std::string __tmpfile_dir = File::Config::get ("TmpFileDir",
 #ifdef MRTRIX_WINDOWS
@@ -99,7 +99,7 @@ namespace MR
       //CONF in the working directory.
       //CONF Note that this setting does not influence the location in which
       //CONF piped images and other temporary files are created by MRtrix3;
-      //CONF that is determined based on config file option TmpFileDir.
+      //CONF that is determined based on config file option :option:`TmpFileDir`.
 
       //CONF option: ScriptTmpPrefix
       //CONF default: `<script>-tmp-`
