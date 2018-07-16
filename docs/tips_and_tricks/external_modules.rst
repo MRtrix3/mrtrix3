@@ -15,7 +15,7 @@ folder, and potentially also its own ``src/`` folder if required. The build proc
 is then almost identical to that for the *MRtrix3* core, with a few differences.
 
 The most relevant difference is how the build script is invoked. For a module,
-compilation is started by invoking the *MRtrix3* core's ``build`` script, but with 
+compilation is started by invoking the *MRtrix3* core's ``build`` script, but with
 the module's top-level folder being the current working directory. For example, if
 the *MRtrix3* core resides in the directory ``~/src/mrtrix/core``, and the module
 resides in ``~/src/mrtrix/mymodule``, then the module can be compiled by typing::
@@ -31,10 +31,37 @@ For routine use, it is more convenient to set up a symbolic link pointing to the
    $ ./build
 
 Regardless of which technique is used to invoke the build script, there should now
-be compiled binaries present in the newly-created directory
-``~/src/mrtrix/mymodule/bin/``. You can then invoke such commands either by providing
-the full path to the executable file, or by adding the location of the module's ``bin/``
-directory to your ``PATH`` environment variable.
+be one or more compiled binaries present in the newly-created directory
+``~/src/mrtrix/mymodule/bin/``.
+
+Because these binaries are not placed into the same directory as those provided
+as part of the core *MRtrix3* installation, simply typing the name of the command
+into the terminal will not work, as your system will not yet be configured to
+look for executable files in this new location. You can solve this in one of two
+ways:
+
+   1. Provide the *full path* to the binary file when executing it. So for
+      instance, instead of typing::
+
+         $ newcommand argument1 argument2 ...
+
+      , you would use::
+
+         $ ~/src/mrtrix/mymodule/bin/newcommand argument1 argument2 ...
+
+   2. Add the location of the ``bin/`` directory of this new module to your
+      system's ``PATH`` environment variable. Most likely you will want this
+      location to be already stored within ``PATH`` whenever you open a new
+      terminal; therefore you will most likely want to add a line such as that
+      below to the appropriate configuration file for your system (e.g.
+      ``~/.bashrc`` or ``~/.bash_profile``; the appropriate file will depend
+      on your particular system)::
+
+         $ export PATH=/home/username/src/mrtrix/mymodule/bin:$PATH
+
+      Obviously you will need to modify this line according to both your user
+      name, and the location on your file system where you have installed the
+      module.
 
 
 
@@ -43,7 +70,7 @@ Single-``cpp``-file commands
 
 In many instances, you may be provided with a single ``.cpp`` file that contains
 all of the code necessary to compile a particular command that makes use of the
-*MRtrix3* libraries: a developer may choose to distribute *just* the relevant 
+*MRtrix3* libraries: a developer may choose to distribute *just* the relevant
 ``.cpp`` file for a particular functionality, rather than enclosing it within the
 requisite directory structure required for an external *MRtrix3* module.
 
