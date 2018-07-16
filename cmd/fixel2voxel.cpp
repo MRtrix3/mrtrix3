@@ -524,6 +524,7 @@ void run ()
   H_out.datatype().set_byte_order_native();
   H_out.keyval().erase (Fixel::n_fixels_key);
   if (op == 7) { // count
+    H_out.ndim() = 3;
     H_out.datatype() = DataType::UInt8;
   } else if (op == 10 || op == 11) { // dec
     H_out.ndim() = 4;
@@ -542,6 +543,8 @@ void run ()
       // 3 volumes per fixel if performing split_dir
       H_out.size(3) = (op == 13) ? (3 * max_count) : max_count;
     }
+  } else {
+    H_out.ndim() = 3;
   }
 
   if (op == 10 || op == 11 || op == 13)  // dec or split_dir

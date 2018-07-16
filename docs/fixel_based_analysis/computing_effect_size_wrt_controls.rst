@@ -5,9 +5,9 @@ The apparent Fibre Density (FD) and Fibre Density and Cross-section (FDC) are re
 
 To compute FD and FDC percentage decrease effect size use::
 
-    mrcalc fd_stats/abs_effect.mif fd_stats/beta1.mif  -div 100 -mult fd_stats/percentage_effect.mif
+    mrcalc stats_fd/abs_effect.mif stats_fd/beta0.mif -div 100 -mult stats_fd/percentage_effect.mif
 
-where beta1.mif is the beta output that corresponds to your control population mean.
+where beta0.mif is the beta output that corresponds to your control population mean.
 
 Because the Fibre Cross-section (FC) measure is a scale factor it is slightly more complicated to compute the percentage decrease. The FC ratio between two subjects (or groups) tells us the direct scale factor between them.
 
@@ -15,4 +15,4 @@ For example, for a given fixel if the patient group mean FC is 0.7, and control 
 
 Because we peform FBA of log(FC), the abs_effect that is output from :ref:`fixelcfestats` is: abs_effect = log(FC_controls) - log(FC_patients) = log(FC_controls/FC_patients). Therefore to get the percentage effect we need to perform  1 - 1/exp(abs_effect)::
 
-   mrcalc 1 1 fc_stats/abs_effect.mif -exp -div -sub fc_stats/fc_percentage_effect.mif
+   mrcalc 1 1 stats_fc/abs_effect.mif -exp -div -sub stats_fc/fc_percentage_effect.mif
