@@ -155,14 +155,15 @@ There are three main reasons for this:
 3. **Your installation does support OpenGL 3.3, but only provides access
    to the 3.3 functionality through the _compatibility_ profile, not through the
    (default) core profile.** To see whether this is the problem,
-   you only need to add the line:
+   you only need to try setting the :option:`NeedOpenGLCoreProfile`
+   option in your `MRtrix configuration file <config>`__ (typically
+   ``~/.mrtrix.conf``):
 
    ::
 
        NeedOpenGLCoreProfile: 0
 
-   to your `MRtrix configuration file <config>`__ (typically, ``~/.mrtrix.conf``). If
-   it doesn't work, you're probably stuck with reason 2.
+   If this doesn't work, you're probably stuck with reason 2.
 
 
 MRView runs with visual artefacts or no display
@@ -170,7 +171,8 @@ MRView runs with visual artefacts or no display
 
 If you find that MRView displays with visual glitches or a blank screen,
 particularly in volume render mode, and on ATI/AMD hardware, you may find that
-setting::
+setting the `configuration file <config>`__ option :option:`NeedOpenGLCoreProfile`
+to zero::
 
     NeedOpenGLCoreProfile: 0
 
