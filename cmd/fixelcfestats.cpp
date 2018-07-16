@@ -99,6 +99,7 @@ void usage ()
 
   + Math::Stats::shuffle_options (true, DEFAULT_EMPIRICAL_SKEW)
 
+  // TODO Instead of being an explicit option, incorporate this correction directly into the CFE equation
   + Option ("fast_nonstationarity", "perform a fast non-stationarity correction that does not require permutations")
 
   + OptionGroup ("Parameters for the Connectivity-based Fixel Enhancement algorithm")
