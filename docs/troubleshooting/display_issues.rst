@@ -244,8 +244,9 @@ the **'MinGW-w64 Win64 Shell'** provided in this installation is known to
 support VT100 codes.
 
 2. Terminal colouring can be disabled using the MRtrix
-`configuration file <config>`__. Add the following line to either the
-system-wide or user config file to disable these advanced terminal features:
+`configuration file <config>`__. Set the config file option :option:`TerminalColor`
+within either the system-wide or user config file to disable these
+advanced terminal features:
 
 .. code::
 
