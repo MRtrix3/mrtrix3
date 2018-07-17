@@ -198,40 +198,45 @@ Using ``eddy``'s slice-to-volume correction capability
 ------------------------------------------------------
 
 As of September 2017, FSL's ``eddy`` tool has the capability of not only
-estimating and correcting motion _between_ DWI volumes, but also motion
-_within_ volumes. Details of this method can be found within the relevant
+estimating and correcting motion *between* DWI volumes, but also motion
+*within* volumes. Details of this method can be found within the relevant
 `publication <https://www.sciencedirect.com/science/article/pii/S1053811917301945>`__.
-*MRtrix3* is capable of supporting this underlying `eddy`` functionality
+*MRtrix3* is capable of supporting this underlying ``eddy`` functionality
 within the wrapping ``dwipreproc`` script. Below are a few relevant details
 to assist users in getting this working:
 
 -  At time of writing, only the CUDA version of the ``eddy`` executable
    provides the slice-to-volume correction capability. Therefore, this
-   version must be installed on your system, CUDA itself must be appropriately
-   set up, and ``dwipreproc`` must be provided with the ``-cuda`` command-line
-   option.
+   version must be installed on your system, and CUDA itself must be appropriately
+   set up. Note that with *MRtrix3* version ``3.0_RC3``, presence of the
+   CUDA version of ``eddy`` will be automatically detected within your
+   ``PATH`` by ``dwipreproc``, and this version will be executed in preference
+   to the OpenMP version.
 
 -  ``eddy``'s slice-to-volume correction is triggered by the presence of the
-   ``--mporder=#`` command-line option. Therefore, to trigger this behaviour,
+   ``--mporder=#`` command-line option. Therefore, to activate this behaviour,
    the contents of the ``-eddy_options`` command-line option passed to
-   ``dwipreproc`` must additionally contain this entry.
+   ``dwipreproc`` must contain this entry.
 
 -  The timing of acquisition of each slice must be known in order to perform
    slice-to-volume correction. This is provided to ``eddy`` via the
-   ` ``--slspec`` <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/eddy/UsersGuide#A--slspec>`__
-   command-line option, where a text file is provided that defines the order
+   command-line `option <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/eddy/UsersGuide#A--slspec>`__
+   ``--slspec=``, where a text file is provided that defines the order
    in which the slices are acquired within each volume. In ``dwipreproc``,
    there are two ways in which this information can be provided:
 
    -  If you include the string ``--slspec=path/to/file.txt`` within the
-      contents of the ``--eddy_options`` command-line option, then ``dwipreproc``
-      will find the file to which you have provided the path, and pass that
-      file through to ``eddy``.
+      contents of the ``-eddy_options`` command-line option, then ``dwipreproc``
+      will copy the file to which you have provided the path into the
+      temporary directory created by the script, such that ``eddy``
+      appropriately locates that file.
 
    -  If DICOM conversion & all subsequent processing is performed solely
-      using *MRtrix3* commands, and _header_keyvalue_pairs_ are preserved,
-      then ``dwipreproc`` will use the fields "``SliceEncodingDirection``"
-      and "``SliceTiming``" captured during DICOM import, and use these to
-      internally generate the "``slspec``" file required by ``eddy``. Note
-      that the naming of these fields is consistent with the
-      `BIDS specification <http://bids.neuroimaging.io/>`__.
+      using *MRtrix3* commands, and :ref:`header_keyvalue_pairs` are preserved,
+      then where possible, *MRtrix3* will store fields
+      "``SliceEncodingDirection``" and "``SliceTiming``" based on DICOM
+      information (note that the naming of these fields is consistent with the
+      `BIDS specification <http://bids.neuroimaging.io/>`__). ``dwipreproc``
+      will then use these fields to *internally* generate the "``slspec``"
+      file required by ``eddy`` without user intervention; as long as the
+      user does *not* provide the ``--slspec=`` option within ``-eddy_options``. 

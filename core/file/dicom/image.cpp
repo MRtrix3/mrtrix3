@@ -13,6 +13,7 @@
  */
 
 
+#include "exception.h"
 #include "file/path.h"
 #include "file/dicom/image.h"
 #include "file/dicom/series.h"
@@ -307,19 +308,22 @@ namespace MR {
 
       void Image::read ()
       {
-        Element item;
-        item.set (filename);
+        {
+          Element item;
+          item.set (filename);
 
-        while (item.read())
-          parse_item (item);
+          while (item.read())
+            parse_item (item);
 
-        calc_distance();
+          calc_distance();
 
-        if (frame_offset > 0)
-          frames.push_back (std::shared_ptr<Frame> (new Frame (*this)));
+          if (frame_offset > 0)
+            frames.push_back (std::shared_ptr<Frame> (new Frame (*this)));
 
-        for (size_t n = 0; n < frames.size(); ++n)
-          frames[n]->data = data + frames[n]->frame_offset;
+          for (size_t n = 0; n < frames.size(); ++n)
+            frames[n]->data = data + frames[n]->frame_offset;
+        }
+        check_app_exit_code();
       }
 
 
@@ -348,7 +352,7 @@ namespace MR {
           else if (strcmp ("BandwidthPerPixelPhaseEncode", entry.key()) == 0)
             bandwidth_per_pixel_phase_encode = entry.get_float();
           else if (strcmp ("MosaicRefAcqTimes", entry.key()) == 0) {
-            mosaic_slices_timing.resize (entry.size(), NaN);
+            mosaic_slices_timing.resize (entry.num_items());
             entry.get_float (mosaic_slices_timing);
           }
           else if (strcmp ("TimeAfterStart", entry.key()) == 0)
@@ -484,7 +488,7 @@ namespace MR {
 
         for (size_t n = 0; n < nslices-1; ++n) {
           const default_type separation = frames[n+1]->distance - frames[n]->distance;
-          const default_type gap = std::abs (separation - frames[n]->slice_thickness);
+          const default_type gap = abs (separation - frames[n]->slice_thickness);
           max_gap = std::max (gap, max_gap);
           min_separation = std::min (min_separation, separation);
           max_separation = std::max (max_separation, separation);

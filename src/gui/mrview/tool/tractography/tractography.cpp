@@ -832,25 +832,28 @@ namespace MR
             +   Argument ("tracks").type_file_in()
 
             + Option ("tractography.thickness", "Line thickness of tractography display, [-1.0, 1.0], default is 0.0.").allow_multiple()
-            +   Argument("value").type_float ( -1.0, 1.0 )
+            +   Argument ("value").type_float ( -1.0, 1.0 )
 
-            + Option ("tractography.geometry", "The geometry type to use when rendering tractograms (options are: " + join(tractogram_geometry_types, ", ") + ")")
-            +   Argument("value").type_choice (tractogram_geometry_types)
+            + Option ("tractography.geometry", "The geometry type to use when rendering tractograms (options are: " + join(tractogram_geometry_types, ", ") + ")").allow_multiple()
+            +   Argument ("value").type_choice (tractogram_geometry_types)
 
             + Option ("tractography.opacity", "Opacity of tractography display, [0.0, 1.0], default is 1.0.").allow_multiple()
-            +   Argument("value").type_float ( 0.0, 1.0 )
+            +   Argument ("value").type_float ( 0.0, 1.0 )
 
-            + Option("tractography.slab", "Slab thickness of tractography display, in mm. -1 to turn off crop to slab.").allow_multiple()
-            +   Argument("value").type_float(-1, 1e6)
+            + Option ("tractography.slab", "Slab thickness of tractography display, in mm. -1 to turn off crop to slab.").allow_multiple()
+            +   Argument ("value").type_float(-1, 1e6)
+
+            + Option ("tractography.lighting", "Toggle the use of lighting of tractogram geometry").allow_multiple()
+            +  Argument ("value").type_bool()
 
             + Option ("tractography.tsf_load", "Load the specified tractography scalar file.").allow_multiple()
-            +  Argument("tsf").type_file_in()
+            +  Argument ("tsf").type_file_in()
 
-            + Option ("tractography.tsf_range", "Set range for the tractography scalar file. Requires tractography.tsf_load already provided. RangeMin,RangeMax").allow_multiple()
-            +  Argument("range").type_sequence_float()
+            + Option ("tractography.tsf_range", "Set range for the tractography scalar file. Requires -tractography.tsf_load already provided.").allow_multiple()
+            +  Argument ("RangeMin,RangeMax").type_sequence_float()
 
-            + Option ("tractography.tsf_thresh", "Set thresholds for the tractography scalar file. Requires tractography.tsf_load already provided. ThresholdMin,ThesholdMax").allow_multiple()
-            +  Argument("thresh").type_sequence_float();
+            + Option ("tractography.tsf_thresh", "Set thresholds for the tractography scalar file. Requires -tractography.tsf_load already provided.").allow_multiple()
+            +  Argument ("ThresholdMin,ThesholdMax").type_sequence_float();
         }
 
         /*
@@ -971,7 +974,7 @@ namespace MR
             return true;
           }
 
-          if (opt.opt->is("tractography.slab")) {
+          if (opt.opt->is ("tractography.slab")) {
             float thickness = opt[0];
             try {
               bool crop = thickness > 0;
@@ -984,6 +987,13 @@ namespace MR
               }
             }
             catch (Exception& E) { E.display(); }
+            return true;
+          }
+
+          if (opt.opt->is ("tractography.lighting")) {
+            const bool value = bool(opt[0]);
+            lighting_group_box->setChecked (value);
+            use_lighting = bool(value);
             return true;
           }
 

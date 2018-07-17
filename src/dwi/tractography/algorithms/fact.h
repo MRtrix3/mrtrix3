@@ -51,7 +51,8 @@ namespace MR
           if (rk4)
             throw Exception ("4th-order Runge-Kutta integration not valid for FACT algorithm");
 
-          set_step_size (0.1);
+          set_step_size (0.1f);
+          set_cutoff (TCKGEN_DEFAULT_CUTOFF_FIXEL);
           // If user specifies the angle threshold manually, want to enforce this as-is at each step
           // If it's calculated automatically, it needs to be corrected for the fact that the permissible
           //   angle per step has been calculated within set_step_size(), but FACT will not curve at each
@@ -90,20 +91,20 @@ namespace MR
 
 
 
-      bool init()
+      bool init() override
       {
         if (!get_data (source)) return false;
         if (!S.init_dir.allFinite()) {
           if (!dir.allFinite())
             dir = random_direction();
-        } 
-        else 
+        }
+        else
           dir = S.init_dir;
-        
+
         return do_next (dir) >= S.threshold;
       }
 
-      term_t next ()
+      term_t next () override
       {
         if (!get_data (source))
           return EXIT_IMAGE;
@@ -118,7 +119,7 @@ namespace MR
       }
 
 
-      float get_metric()
+      float get_metric() override
       {
         Eigen::Vector3f d (dir);
         return do_next (d);
@@ -138,8 +139,8 @@ namespace MR
         for (size_t n = 0; n < S.num_vec; ++n) {
           Eigen::Vector3f v (values[3*n], values[3*n+1], values[3*n+2]);
           float norm = v.norm();
-          float dot = v.dot(d) / norm; 
-          float abs_dot = std::abs (dot);
+          float dot = v.dot(d) / norm;
+          float abs_dot = abs (dot);
           if (abs_dot < S.dot_threshold) continue;
           if (max_abs_dot < abs_dot) {
             max_abs_dot = abs_dot;
@@ -153,7 +154,7 @@ namespace MR
 
         d = { values[3*idx], values[3*idx+1], values[3*idx+2] };
         d.normalize();
-        if (max_dot < 0.0) 
+        if (max_dot < 0.0)
           d = -d;
 
         return max_norm;

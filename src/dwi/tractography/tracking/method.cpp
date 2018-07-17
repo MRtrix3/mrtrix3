@@ -28,6 +28,29 @@ namespace MR
 
 
 
+        void MethodBase::truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step)
+        {
+          if (tck.get_seed_index() + revert_step >= length_to_revert_from) {
+            tck.clear();
+            pos = { NaN, NaN, NaN };
+            dir = { NaN, NaN, NaN };
+            return;
+          }
+          if (tck.size() + revert_step == length_to_revert_from)
+            return;
+          const size_t new_size = length_to_revert_from - revert_step;
+          if (tck.size() == 2 || new_size == 1)
+            dir = (tck[1] - tck[0]).normalized();
+          else
+            dir = (tck[new_size] - tck[new_size - 2]).normalized();
+          tck.resize (length_to_revert_from - revert_step);
+          pos = tck.back();
+          if (act_method_additions)
+            act().sgm_depth = (act().sgm_depth > revert_step) ? act().sgm_depth - revert_step : 0;
+        }
+
+
+
         bool MethodBase::check_seed()
         {
           if (!pos.allFinite())
@@ -41,27 +64,6 @@ namespace MR
           }
 
           return true;
-        }
-
-
-
-        void MethodBase::truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step)
-        {
-          if (tck.get_seed_index() + revert_step >= length_to_revert_from) {
-            tck.clear();
-            pos = { NaN, NaN, NaN };
-            dir = { NaN, NaN, NaN };
-            return;
-          }
-          const size_t new_size = length_to_revert_from - revert_step;
-          if (tck.size() == 2 || new_size == 1)
-            dir = (tck[1] - tck[0]).normalized();
-          else
-            dir = (tck[new_size] - tck[new_size - 2]).normalized();
-          tck.resize (length_to_revert_from - revert_step);
-          pos = tck.back();
-          if (S.is_act())
-            act().sgm_depth = (act().sgm_depth > revert_step) ? act().sgm_depth - revert_step : 0;
         }
 
 
