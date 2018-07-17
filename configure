@@ -1108,7 +1108,8 @@ class Foo: public QObject {
 };
 '''
       log ('\nsource file "qt.h":\n---\n' + file + '---\n')
-
+      print(os.path.join (qt_dir.name, 'qt.h'))
+	  
       f=open (os.path.join (qt_dir.name, 'qt.h'), 'w')
       f.write (file)
       f.close();
@@ -1132,12 +1133,13 @@ int main() { Foo f; }
 
       file = 'CONFIG += c++11'
       if debug: file += ' debug'
-      file += '\nQT += core gui opengl svg\n'
+      file += '\nQT += core gui opengl svg network\n' #QT libraries to include in the build
       file += 'HEADERS += qt.h\nSOURCES += qt.cpp\n'
       if system == "darwin":
         file += 'QMAKE_MACOSX_DEPLOYMENT_TARGET = '+macosx_version + '\n'
 
       log ('\nproject file "qt.pro":\n---\n' + file + '---\n')
+      
       f=open (os.path.join (qt_dir.name, 'qt.pro'), 'w')
       f.write (file)
       f.close();
