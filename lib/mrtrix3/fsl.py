@@ -30,7 +30,7 @@ def eddyBinary(cuda): #pylint: disable=unused-variable
   from distutils.spawn import find_executable
   if cuda:
     if find_executable('eddy_cuda'):
-      app.debug('Selected CUDA version (eddy_cuda)')
+      app.debug('Selected soft-linked CUDA version (\'eddy_cuda\')')
       return 'eddy_cuda'
     else:
       # Cuda versions are now provided with a CUDA trailing version number
@@ -57,7 +57,8 @@ def eddyBinary(cuda): #pylint: disable=unused-variable
       if exe_path:
         app.debug('CUDA version ' + str(max_version) + ': ' + exe_path)
         return exe_path
-      app.warn('CUDA version of eddy not found; running standard version')
+    app.debug('No CUDA version of eddy found')
+    return ''
   if find_executable('eddy_openmp'):
     exe_path = 'eddy_openmp'
   else:

@@ -41,6 +41,13 @@ DW shell selection options
 
 -  **-shells b-values** specify one or more b-values to use during processing, as a comma-separated list of the desired approximate b-values (b-values are clustered to allow for small deviations). Note that some commands are incompatible with multiple b-values, and will report an error if more than one b-value is provided. WARNING: note that, even though the b=0 volumes are never referred to as shells in the literature, they still have to be explicitly included in the list of b-values as provided to the -shell option! Several algorithms which include the b=0 volumes in their computations may otherwise return an undesired result.
 
+DW gradient table export options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-export_grad_mrtrix path** export the diffusion-weighted gradient table to file in MRtrix format
+
+-  **-export_grad_fsl bvecs_path bvals_path** export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format
+
 Options for importing phase-encode tables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -56,7 +63,7 @@ Options for selecting volumes based on phase-encoding
 Stride options
 ^^^^^^^^^^^^^^
 
--  **-strides spec** specify the strides of the output data in memory, as a comma-separated list. The actual strides produced will depend on whether the output image format can support it.
+-  **-strides spec** specify the strides of the output data in memory; either as a comma-separated list of (signed) integers, or as a template image from which the strides shall be extracted and used. The actual strides produced will depend on whether the output image format can support it.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -79,7 +86,7 @@ Standard options
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)
+**Author:** David Raffelt (david.raffelt@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
 

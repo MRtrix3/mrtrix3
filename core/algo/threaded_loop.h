@@ -27,7 +27,7 @@ namespace MR
   /** \addtogroup thread_classes
    * @{
    *
-   * \defgroup image_thread_looping Thread-safe image looping 
+   * \defgroup image_thread_looping Thread-safe image looping
    *
    * These functions allows arbitrary looping operations to be performed in
    * parallel, using a versatile multi-threading framework. It works
@@ -93,7 +93,7 @@ namespace MR
    * is to be processed, since its order of traversal will have the most
    * influence on performance (by making the most efficient use of the
    * hardware's RAM access and CPU cache). It is also possible to supply a
-   * `vector<size_t>` directly if required. 
+   * `vector<size_t>` directly if required.
    *
    * These axes can be restricted to a specific range to allow volume-wise
    * processing, etc.  The inner axes can be specified by supplying how many
@@ -132,8 +132,8 @@ namespace MR
    *
    * ~~~{.cpp}
    * class MyFunction {
-   *   public: 
-   *     template <class ImageType> 
+   *   public:
+   *     template <class ImageType>
    *       void operator() (ImageType& vox) {
    *         vox.value() = std::exp (vox.value());
    *       }
@@ -158,39 +158,39 @@ namespace MR
    * As a further example, the following snippet performs the addition of any
    * `ImageTypes` \a vox1 and \a vox2, this time storing the results in \a
    * vox_out, with no progress display, and looping according to the strides
-   * in \a vox1: 
+   * in \a vox1:
    * ~~~{.cpp}
    * struct MyAdd {
    *   template <class ImageType1, class ImageType2, class ImageType3>
    *     void operator() (ImageType1& out, const ImageType2& in1, const ImageType3& in2) {
-   *       out.value() = in1.value() + in2.value(); 
+   *       out.value() = in1.value() + in2.value();
    *     }
    * };
    *
    * ...
    *
-   * ThreadedLoop (vox1).run (MyAdd(), vox_out, vox1, vox2); 
+   * ThreadedLoop (vox1).run (MyAdd(), vox_out, vox1, vox2);
    * ~~~
    *
    * Note that the `ImageType` arguments to run() must be provided in the same
-   * order as expected by the Functor's `operator()` method. 
+   * order as expected by the Functor's `operator()` method.
    *
    * Again, such a simple operation can be written more compactly using C++11
-   * lambda expressions: 
+   * lambda expressions:
    * ~~~{.cpp}
    * auto f = [](decltype(vox_out)& out, decltype(vox1)& in1, decltype(vox2)& in2) {
    *   out.value() = in1.value() + in2.value();
    * }
    * ThreadedLoop (vox1).run (f, vox_out, vox1, vox2);
    * ~~~
-   * 
-   * 
+   *
+   *
    * This example uses a functor to computes the root-mean-square of \a vox:
-   * \code 
+   * \code
    * class RMS {
    *   public:
-   *     // We pass a reference to the same double to all threads. 
-   *     // Each thread accumulates its own sum-of-squares, and 
+   *     // We pass a reference to the same double to all threads.
+   *     // Each thread accumulates its own sum-of-squares, and
    *     // updates the overal sum-of-squares in the destructor, which is
    *     // guaranteed to be invoked after all threads have re-joined,
    *     // thereby avoiding race conditions.
@@ -199,15 +199,15 @@ namespace MR
    *
    *     // accumulate the thread-local sum-of-squares:
    *     template <class ImageType>
-   *       void operator() (const ImageType& in) { 
-   *         SoS += Math::pow2 (in.value()); 
-   *       } 
+   *       void operator() (const ImageType& in) {
+   *         SoS += Math::pow2 (in.value());
+   *       }
    *
    *   protected:
    *     double SoS;
    *     double& grand_SoS;
    * };
-   * 
+   *
    * ...
    *
    * double SoS = 0.0;
@@ -228,7 +228,7 @@ namespace MR
    * case, any `ImageType` classes to be looped over will need to be stored as
    * members to the functor, since it will only receive an `Iterator` for each
    * invocation - the functor will need to then implement looping over the
-   * inner axes from the position provided in the `Iterator`. 
+   * inner axes from the position provided in the `Iterator`.
    *
    * \sa Loop
    * \sa Thread::run()
@@ -272,12 +272,12 @@ namespace MR
             const Functor& functor, ImageType&... voxels) :
           outer_axes (outer_axes),
           loop (Loop (inner_axes)),
-          func (functor), 
+          func (functor),
           vox (voxels...) { }
 
         void operator() (const Iterator& pos) {
           assign_pos_of (pos, outer_axes).to (vox);
-          for (auto i = unpack (loop, vox); i; ++i) 
+          for (auto i = unpack (loop, vox); i; ++i)
             unpack (func, vox);
         }
       };
@@ -310,7 +310,7 @@ namespace MR
         vector<size_t> inner_axes;
 
         //! invoke \a functor (const Iterator& pos) per voxel <em> in the outer axes only</em>
-        template <class Functor> 
+        template <class Functor>
           void run_outer (Functor&& functor)
           {
             if (Thread::number_of_threads() == 0) {
@@ -346,8 +346,7 @@ namespace MR
               }
             } loop_thread = { shared, functor };
 
-            auto t = Thread::run (Thread::multi (loop_thread), "loop threads");
-            t.wait();
+            Thread::run (Thread::multi (loop_thread), "loop threads").wait();
           }
 
 
@@ -356,12 +355,13 @@ namespace MR
         template <class Functor, class... ImageType>
           void run (Functor&& functor, ImageType&&... vox)
           {
-            ThreadedLoopRunInner< 
+            ThreadedLoopRunInner<
               sizeof...(ImageType),
-              typename std::remove_reference<Functor>::type, 
+              typename std::remove_reference<Functor>::type,
               typename std::remove_reference<ImageType>::type...
                 > loop_thread (outer_loop.axes, inner_axes, functor, vox...);
             run_outer (loop_thread);
+            check_app_exit_code();
           }
 
       };
@@ -391,7 +391,7 @@ namespace MR
         const HeaderType& source,
         const vector<size_t>& axes,
         size_t num_inner_axes = 1) {
-      return { source, Loop (get_outer_axes (axes, num_inner_axes)), get_inner_axes (axes, num_inner_axes) }; 
+      return { source, Loop (get_outer_axes (axes, num_inner_axes)), get_inner_axes (axes, num_inner_axes) };
     }
 
   //! Multi-threaded loop object
@@ -402,8 +402,8 @@ namespace MR
         size_t from_axis = 0,
         size_t to_axis = std::numeric_limits<size_t>::max(),
         size_t num_inner_axes = 1) {
-      return { source, 
-        Loop (get_outer_axes (source, num_inner_axes, from_axis, to_axis)), 
+      return { source,
+        Loop (get_outer_axes (source, num_inner_axes, from_axis, to_axis)),
         get_inner_axes (source, num_inner_axes, from_axis, to_axis) };
       }
 
@@ -426,7 +426,7 @@ namespace MR
         const HeaderType& source,
         const vector<size_t>& axes,
         size_t num_inner_axes = 1) {
-      return { source, 
+      return { source,
         Loop (progress_message, get_outer_axes (axes, num_inner_axes)),
         get_inner_axes (axes, num_inner_axes) };
       }
@@ -438,7 +438,7 @@ namespace MR
         const std::string& progress_message,
         const HeaderType& source,
         size_t from_axis = 0,
-        size_t to_axis = std::numeric_limits<size_t>::max(), 
+        size_t to_axis = std::numeric_limits<size_t>::max(),
         size_t num_inner_axes = 1) {
       return { source,
         Loop (progress_message, get_outer_axes (source, num_inner_axes, from_axis, to_axis)),

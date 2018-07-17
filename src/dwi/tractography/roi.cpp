@@ -33,7 +33,7 @@ namespace MR {
             "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
             "must traverse ALL inclusion regions to be accepted.")
           .allow_multiple()
-          + Argument ("image").type_text()
+          + Argument ("spec").type_various()
 
        + Option("include_ordered",
           "specify an inclusion region of interest, as either a binary mask image, "
@@ -48,14 +48,14 @@ namespace MR {
             "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
             "that enter ANY exclude region will be discarded.")
           .allow_multiple()
-          + Argument ("image").type_text()
+          + Argument ("spec").type_various()
 
       + Option ("mask",
             "specify a masking region of interest, as either a binary mask image, "
             "or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, "
             "streamlines exiting the mask will be truncated.")
           .allow_multiple()
-          + Argument ("image").type_text();
+          + Argument ("spec").type_various();
 
 
 
@@ -100,7 +100,7 @@ namespace MR {
             if (size_t(data.index(1)) > top[1])    top[1]    = data.index(1);
             if (size_t(data.index(2)) < bottom[2]) bottom[2] = data.index(2);
             if (size_t(data.index(2)) > top[2])    top[2]    = data.index(2);
-          } 
+          }
         }
 
         if (!sum)

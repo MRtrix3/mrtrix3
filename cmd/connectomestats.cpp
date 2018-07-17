@@ -258,8 +258,8 @@ void run()
     save_matrix (first_std_effect, output_prefix + "_std_effect.csv");
     ++progress;
 
-    const matrix_type stdevs = Math::Stats::GLM::stdev (data, design);
-    save_vector (stdevs.col(0), output_prefix + "_std_dev.csv");
+    const matrix_type stdev = Math::Stats::GLM::stdev (data, design);
+    save_matrix (mat2vec.V2M(stdev.row(0)), output_prefix + "_std_dev.csv");
   }
 
   Math::Stats::GLMTTest glm_ttest (data, design, contrast);
@@ -267,6 +267,7 @@ void run()
   // If performing non-stationarity adjustment we need to pre-compute the empirical statistic
   vector_type empirical_statistic;
   if (do_nonstationary_adjustment) {
+    empirical_statistic = vector_type::Zero (num_edges);
     if (permutations_nonstationary.size()) {
       Stats::PermTest::PermutationStack perm_stack (permutations_nonstationary, "precomputing empirical statistic for non-stationarity adjustment...");
       Stats::PermTest::precompute_empirical_stat (glm_ttest, enhancer, perm_stack, empirical_statistic);

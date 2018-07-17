@@ -188,8 +188,9 @@ void run() {
     data_header.size(0) = num_fixels;
     data_header.size(1) = 1;
     data_header.size(2) = 1;
-    data_header.spacing(0) = data_header.spacing(1) = data_header.spacing(2) = NaN;
+    data_header.spacing(0) = data_header.spacing(1) = data_header.spacing(2) = 1.0;
     data_header.stride(0) = 1; data_header.stride(1) = 2; data_header.stride(2) = 3;
+    data_header.transform().setIdentity();
     mask = Image<bool>::scratch (data_header, "scratch fixel mask");
     for (index_type f = 0; f != num_fixels; ++f) {
       mask.index(0) = f;
@@ -463,7 +464,7 @@ void run() {
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical CFE statistic
   if (do_nonstationary_adjustment) {
-
+    empirical_cfe_statistic = vector_type::Zero (mask_fixels);
     if (permutations_nonstationary.size()) {
       Stats::PermTest::PermutationStack permutations (permutations_nonstationary, "precomputing empirical statistic for non-stationarity adjustment");
       Stats::PermTest::precompute_empirical_stat (glm_ttest, cfe_integrator, permutations, empirical_cfe_statistic);

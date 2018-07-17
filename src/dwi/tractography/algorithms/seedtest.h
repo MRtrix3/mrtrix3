@@ -38,7 +38,8 @@ class Seedtest : public MethodBase { MEMALIGN(Seedtest)
     Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
         SharedBase (diff_path, property_set)
     {
-      set_step_size (1.0);
+      set_step_size (1.0f);
+      set_cutoff (0.0f);
       min_num_points = 1;
       max_num_points = 2;
       unidirectional = true;
@@ -51,9 +52,9 @@ class Seedtest : public MethodBase { MEMALIGN(Seedtest)
     S (shared) { }
 
 
-  bool init() { return true; }
-  term_t next () { return EXIT_IMAGE; }
-  float get_metric() { return 1.0; }
+  bool init() override { return true; }
+  term_t next () override { return EXIT_IMAGE; }
+  float get_metric() override { return 1.0f; }
 
 
   protected:
