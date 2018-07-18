@@ -796,10 +796,10 @@ namespace MR
 
 
 
-      void Window::sync_slot ()
-	  {
-		  emit syncChanged();
-	  }
+      void Window::sync_slot()
+      {
+        emit syncChanged();
+      }
 
 
       void Window::image_open_slot ()
@@ -1976,7 +1976,7 @@ namespace MR
             full_screen_slot();
             return;
           }
-		  
+
           if (opt.opt->is ("noannotations")) {
             toggle_annotations_slot ();
             return;
@@ -2051,13 +2051,13 @@ namespace MR
             return;
           }
 
-		  
-		  if (opt.opt->is ("sync.focus")) {
+
+          if (opt.opt->is ("sync.focus")) {
             sync_focus_action->setChecked (true);
             sync_slot();
             return;
           }
-		  
+
           assert (opt.opt->is ("info") or opt.opt->is ("debug") or ("shouldn't reach here!" && false));
         }
         catch (Exception& E) {
@@ -2145,15 +2145,15 @@ namespace MR
 
           + Option ("position", "Set the position of the main window, in pixel units.").allow_multiple()
           +   Argument ("x,y").type_sequence_int()
-		  
+
           + Option ("fullscreen", "Start fullscreen.")
 
           + Option ("exit", "Quit MRView.")
 
-		  + OptionGroup ("Sync Options")
-		  
-		  + Option ("sync.focus", "Sync the focus with other MRViw windows that also have this turned on.")
-		  
+          + OptionGroup ("Sync Options")
+
+          + Option ("sync.focus", "Sync the focus with other MRViw windows that also have this turned on.")
+
           + OptionGroup ("Debugging options")
 
           + Option ("fps", "Display frames per second, averaged over the last 10 frames. "

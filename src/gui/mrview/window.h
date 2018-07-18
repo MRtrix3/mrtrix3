@@ -141,8 +141,8 @@ namespace MR
           bool show_orientation_labels () const { return show_orientation_labels_action->isChecked(); }
           bool show_colourbar () const { return show_colourbar_action->isChecked(); }
 
-		  bool sync_focus_on ()  const { return sync_focus_action->isChecked(); }
-		  
+          bool sync_focus_on ()  const { return sync_focus_action->isChecked(); }
+
           void captureGL (std::string filename) {
             QImage image (glarea->grabFramebuffer());
             image.save (filename.c_str());
@@ -168,7 +168,7 @@ namespace MR
           void scalingChanged ();
           void volumeChanged (size_t);
           void volumeGroupChanged (size_t);
-		  void syncChanged();
+          void syncChanged();
 
         public slots:
           void on_scaling_changed ();
@@ -192,8 +192,8 @@ namespace MR
           void full_screen_slot ();
           void toggle_annotations_slot ();
           void snap_to_image_slot ();
-		  
-		  void sync_slot();
+
+          void sync_slot();
 
           void hide_image_slot ();
           void slice_next_slot ();
@@ -296,8 +296,8 @@ namespace MR
                   *show_colourbar_action,
                   *image_interpolate_action,
                   *full_screen_action,
-				  
-				  *sync_focus_action,
+
+                  *sync_focus_action,
 
                   *OpenGL_action,
                   *about_action,
