@@ -120,7 +120,7 @@ namespace MR
               }
               default:
               {
-                DEBUG("Unknown data key received: " + idOfDataEntry);
+                DEBUG("Unknown data key received: " + std::to_string(idOfDataEntry));
                 break;
               }
             }
