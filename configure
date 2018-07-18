@@ -290,8 +290,6 @@ class TempFile:
       os.unlink (self.name)
     except OSError as error:
       log ('error deleting temporary file "' + self.name + '": ' + error.strerror)
-    except:
-      raise
 
 
 
@@ -307,8 +305,6 @@ class DeleteAfter:
       os.unlink (self.name)
     except OSError as error:
       log ('error deleting temporary file "' + self.name + '": ' + error.strerror)
-    except:
-      raise
 
 
 class TempDir:
@@ -330,8 +326,6 @@ class TempDir:
 
     except OSError as error:
       log ('error deleting temporary folder "' + self.name + '": ' + error.strerror)
-    except:
-      raise
 
 
 
@@ -459,7 +453,7 @@ def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
   except OSError as error:
     log ('error invoking command "' + cmd[0] + '": ' + error.strerror + '\n>>\n\n')
     raise exception
-  except:
+  except Exception:
     print ('Unexpected error:', str(sys.exc_info()))
     raise
   else:
@@ -528,7 +522,7 @@ def get_flags (default=None, env=None, pkg_config_flags=None):
         else:
           flags += [ entry ]
       return flags
-    except:
+    except Exception:
       log('error running "pkg-config ' + pkg_config_flags + '"\n\n')
   return default
 
@@ -552,7 +546,7 @@ def compile_test (name, cflags, ldflags, code, on_success='ok', on_failure='not 
     else:
       report (on_success+'\n')
     return True
-  except:
+  except Exception:
     report (on_failure+'\n')
     return False
 
@@ -607,7 +601,7 @@ def compile_check (full_name, name, cflags, ldflags, code, cflags_env=None, cfla
     error ('''runtime error!
 
    Unable to configure ''' + name + configure_log_hint)
-  except:
+  except Exception:
     error ('unexpected exception!' + configure_log_hint)
 
 
@@ -707,7 +701,7 @@ for candidate in cxx:
     compiler_version = execute ([ cpp[0], '--version' ], CompileError)[1]
     if len(compiler_version) == 0: report ('(no version information)\n')
     else: report (compiler_version.splitlines()[0] + '\n')
-  except:
+  except Exception:
     report ('not found\n')
     continue
 
@@ -750,7 +744,7 @@ if not noshared:
       try: execute (cmd, CompileError)
       except CompileError:
         error ('compiler not found!' + configure_log_hint)
-      except:
+      except Exception:
         error ('unexpected exception!' + configure_log_hint)
       with DeleteAfter (lib_prefix + 'test' + lib_suffix) as lib:
         cmd = fillin (ld_lib, {
@@ -762,7 +756,7 @@ if not noshared:
           error ('''linker not found!
 
   MRtrix3 was unable to employ the linker program for shared library generation.''' + compiler_hint ('shared library linker', 'LDLIB_FLAGS', '"-L/usr/local/lib"', 'LDLIB_ARGS', '"-shared LDLIB_FLAGS OBJECTS -o LIB"'))
-        except:
+        except Exception:
           error ('unexpected exception!' + configure_log_hint)
 
         report ('ok\n')
@@ -789,7 +783,7 @@ int main() {
   if pointer_size == 8: cpp_flags += [ '-DMRTRIX_WORD64' ]
   elif pointer_size != 4:
     error ('unexpected pointer size!')
-except:
+except Exception:
   error ('unable to determine pointer size!' + configure_log_hint)
 
 
@@ -1039,7 +1033,7 @@ if not nogui:
     error (''' Qt moc not found!
 
   MRtrix3 was unable to locate the Qt meta-object compiler 'moc'.''' + qt_path_hint)
-  except:
+  except Exception:
     error ('unexpected exception!' + configure_log_hint)
 
   report ('Checking for Qt qmake: ')
@@ -1059,7 +1053,7 @@ if not nogui:
     error (''' Qt qmake not found!
 
   MRtrix3 was unable to locate the Qt command 'qmake'.''' + qt_path_hint)
-  except:
+  except Exception:
     error ('unexpected exception!' + configure_log_hint)
 
 
@@ -1082,7 +1076,7 @@ if not nogui:
     error (''' Qt rcc not found!
 
   MRtrix3 was unable to locate the Qt command 'rcc'.''' + qt_path_hint)
-  except:
+  except Exception:
     error ('unexpected exception!' + configure_log_hint)
 
 
@@ -1154,7 +1148,7 @@ int main() { Foo f; }
         error ('''error issuing qmake command!
 
   Use the QMAKE environment variable to set the correct qmake command for use with Qt''')
-      except:
+      except Exception:
         raise
 
 
@@ -1228,7 +1222,7 @@ int main() { Foo f; }
     error ('error running Qt application!' + configure_log_hint)
   except OSError as e:
     error ('unexpected error: ' + str(e) + configure_log_hint)
-  except:
+  except Exception:
     error ('unexpected exception!' + configure_log_hint)
 
 
