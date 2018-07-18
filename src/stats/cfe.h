@@ -75,10 +75,36 @@ namespace MR
 
 
 
+      // With the internally normalised CFE expression, want to store a
+      //   multiplicative factor per fixel
+      class NormMatrixFixel : public vector<NormMatrixElement>
+      { MEMALIGN(NormMatrixFixel)
+        public:
+          using BaseType = vector<NormMatrixElement>;
+          NormMatrixFixel() :
+            norm_multiplier (Stats::CFE::value_type (1.0)) { }
+          NormMatrixFixel (const BaseType& i) :
+              BaseType (i),
+              norm_multiplier (Stats::CFE::value_type (1.0)) { }
+          NormMatrixFixel (BaseType&& i) :
+              BaseType (std::move (i)),
+              norm_multiplier (Stats::CFE::value_type (1.0)) { }
+          void normalise() {
+            norm_multiplier = Stats::CFE::value_type (0.0);
+            for (const auto& c : *this)
+              norm_multiplier += c.value();
+            norm_multiplier = Stats::CFE::value_type (1.0) / norm_multiplier;
+          }
+          Stats::CFE::value_type norm_multiplier;
+
+      };
+
+
+
       // Different types are used depending on whether the connectivity matrix
       //   is in the process of being built, or whether it has been normalised
       using init_connectivity_matrix_type = vector<std::map<index_type, connectivity>>;
-      using norm_connectivity_matrix_type = vector<vector<NormMatrixElement>>;
+      using norm_connectivity_matrix_type = vector<NormMatrixFixel>;
 
 
 

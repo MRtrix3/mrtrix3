@@ -116,6 +116,7 @@ namespace MR
                 extent += connected_fixel->value();
             enhanced_stats[fixel] += std::pow (extent, E) * std::pow (h, H);
           }
+          enhanced_stats[fixel] *= connectivity_matrix[fixel].norm_multiplier;
         }
       }
 
