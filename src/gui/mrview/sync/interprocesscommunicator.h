@@ -11,8 +11,8 @@
 *
 * For more details, see http://www.mrtrix.org/
 */
-#ifndef __sync_interprocesssyncer_h__
-#define __sync_interprocesssyncer_h__
+#ifndef __sync_interprocesscommunicator_h__
+#define __sync_interprocesscommunicator_h__
 
 #include "gui/mrview/sync/localsocketreader.h"
 #include <qlocalsocket.h>
@@ -35,12 +35,12 @@ namespace MR
         /**
         * Sends and receives information from other MRView processes
         */
-        class InterprocessSyncer : public QObject
+        class InterprocessCommunicator : public QObject
         {
           Q_OBJECT
 
         public:
-          InterprocessSyncer();
+          InterprocessCommunicator();
           static void Int32ToChar(char a[], int n);
           static int CharTo32bitNum(char a[]);
           bool SendData(QByteArray data);//sends data to be synced
@@ -56,7 +56,7 @@ namespace MR
           int id;//id which is unique between mrview processes
           std::vector<std::shared_ptr<GUI::MRView::Sync::Client>> senders;//send information
           QLocalServer *receiver;//listens for information
-          void TryConnectTo(int connectToId);//tries to connect with another interprocesssyncer
+          void TryConnectTo(int connectToId);//tries to connect with another interprocesscommunicator
 
 
         };

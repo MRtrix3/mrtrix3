@@ -16,7 +16,7 @@
 
 
 #include "gui/mrview/sync/enums.h"
-#include "gui/mrview/sync/interprocesssyncer.h"
+#include "gui/mrview/sync/interprocesscommunicator.h"
 #include "gui/mrview/window.h"
 
 #include "progressbar.h"
@@ -36,7 +36,14 @@ namespace MR
       namespace Sync
       {
         /**
-        * Syncs values from mrview's window, using the interprocess syncer
+        * Syncs values from mrview's window, using the interprocess syncer. In a diagram:
+        * _____________Process 1______________		_______________Process 2_____________
+        * |                                   |		|                                    |
+        * |                                   |		|				                             |
+        * | window <--> SyncManager <--> IPC  <===> IPC <---> SyncManager <---> window |
+        * |___________________________________|   |____________________________________|
+        *
+        * IPC=InterprocessCommunicator
         */
         class SyncManager :public QObject
         {
@@ -45,6 +52,7 @@ namespace MR
         public:
           SyncManager();
           void SetWindow(MR::GUI::MRView::Window* wind);
+          bool GetInErrorState();
 
         private slots:
           void OnWindowFocusChanged();
@@ -52,7 +60,7 @@ namespace MR
 
         private:
           MR::GUI::MRView::Window* win;//window we sync with
-          InterprocessSyncer* ips;//used to communicate with other processes
+          InterprocessCommunicator* ips;//used to communicate with other processes
           QByteArray ToQByteArray(Eigen::Vector3f data);//conversion utility
           Eigen::Vector3f FromQByteArray(QByteArray vec, unsigned int offset);//conversion utility
           bool SendData(DataKey code, QByteArray data);//sends data to other processes via the ips

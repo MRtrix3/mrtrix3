@@ -89,7 +89,10 @@ void run ()
 {
   GUI::MRView::Window window;
   MR::GUI::MRView::Sync::SyncManager sync;//sync allows syncing between mrview windows in different processes
-  sync.SetWindow(&window);
+  if (!sync.GetInErrorState()) 
+  {
+    sync.SetWindow(&window);
+  }
   window.show();
   try {
     window.parse_arguments();
