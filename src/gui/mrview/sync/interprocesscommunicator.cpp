@@ -15,10 +15,14 @@
 #include <QtNetwork>
 
 #include "gui/mrview/sync/localsocketreader.h"
-#include "gui/mrview/sync/interprocesssyncer.h"
+#include "gui/mrview/sync/interprocesscommunicator.h"
 #include "gui/mrview/sync/enums.h"
+#include "gui/mrview/sync/processlock.h"
 #include <iostream> //temp
 #include <memory> //shared_ptr
+#include <string> 
+#include <thread> 
+#include <chrono> 
 #include "exception.h" 
 #define MAX_NO_ALLOWED 32 //maximum number of inter process syncers that are allowed. This can be raised, but may reduce performance when new IPS are created.
 namespace MR
@@ -29,14 +33,27 @@ namespace MR
     {
       namespace Sync
       {
-        InterprocessSyncer::InterprocessSyncer() : QObject(0)
+        InterprocessCommunicator::InterprocessCommunicator() : QObject(0)
         {
+          
+
           //***Set up a socket which listens for incoming messages***
           bool listenerSetUp = false;
           id = -1;
           int freeEntry;
+          ProcessLock lock("Mrtrix InterprocessCommunicator");
           for (int i_attempt = 0; i_attempt < 100; i_attempt++)
           {
+            //Don't let two processes enter this code block at the same 
+            //time. While Qt is supposed to prevent QLocalSockets having 
+            //identical ids, it often fails to do so on windows if processes
+            //start at the same time
+            if (!lock.TryToRun())
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                continue;
+            }
+
             //Search for a free id
             QLocalSocket *socket = new QLocalSocket(this);
             freeEntry = -1;
@@ -73,12 +90,14 @@ namespace MR
             }
             //else we didn't connect OK. This can occur when two processes start simultaneously and both try for the same number. Loop back and re-try
           }
+          //Release the lock, so that other processes can obtain an id
+          lock.Release();
 
           if (!listenerSetUp)
           {
+            //Do not allow creation of this object in a bad state
             throw std::runtime_error("Could not find any free id to use for listening. Have you reached the maximum number of open windows allowed?");
           }
-
 
           //Set up outgoing connections
           for (int i = 0; i < MAX_NO_ALLOWED; i++)
@@ -91,7 +110,7 @@ namespace MR
         /**
         * Fires when another process tries to set up a connection from them --> us. I.e. when another MRView calls TryConnectTo with our id as the argument
         */
-        void InterprocessSyncer::OnNewIncomingConnection()
+        void InterprocessCommunicator::OnNewIncomingConnection()
         {
           LocalSocketReader* lsr = new LocalSocketReader(receiver->nextPendingConnection());
           connect(lsr, SIGNAL(DataReceived(std::vector<std::shared_ptr<QByteArray>>)), this, SLOT(OnDataReceived(std::vector<std::shared_ptr<QByteArray>>)));
@@ -100,7 +119,7 @@ namespace MR
         /**
         * Tries to set an outgoing connection to the specified ID (another process), and tells that process what our id is, so it can connect back to us
         */
-        void InterprocessSyncer::TryConnectTo(int connectToId)
+        void InterprocessCommunicator::TryConnectTo(int connectToId)
         {
           if (connectToId != id)//don't connect to ourself!
           {
@@ -141,7 +160,7 @@ namespace MR
         /**
         * Fires when 1+ messages are received from another process. 
         */
-        void InterprocessSyncer::OnDataReceived(std::vector<std::shared_ptr<QByteArray>> allMessages)
+        void InterprocessCommunicator::OnDataReceived(std::vector<std::shared_ptr<QByteArray>> allMessages)
         {
           std::vector<std::shared_ptr<QByteArray>> toSync;
 
@@ -153,7 +172,7 @@ namespace MR
 
             if (dataLength < 4)
             {
-              DEBUG("Bad data received to interprocesssyncer: too short");
+              DEBUG("Bad data received to interprocesscommunicator: too short");
               continue;
             }
             int code = CharTo32bitNum(data);
@@ -179,7 +198,7 @@ namespace MR
               }
               default:
               {
-                DEBUG("Bad data received to interprocesssyncer: unknown code");
+                DEBUG("Bad data received to interprocesscommunicator: unknown code");
               }
             }
           }
@@ -196,7 +215,7 @@ namespace MR
         /**
         * Sends data for syncing with other processes
         */
-        bool InterprocessSyncer::SendData(QByteArray dat)
+        bool InterprocessCommunicator::SendData(QByteArray dat)
         {
           //We only send sync data if we are the active application of the OS. This is to avoid 
           //infinite loops, which are easy to induce on slow systems otherwise. There are other 
@@ -209,7 +228,7 @@ namespace MR
             //make an array: the message key followed by the message
             //--Key
             char codeAsChar[4];
-            InterprocessSyncer::Int32ToChar(codeAsChar, (int)MessageKey::SyncData);
+            InterprocessCommunicator::Int32ToChar(codeAsChar, (int)MessageKey::SyncData);
             QByteArray data;
             data.insert(0, codeAsChar, 4);
             //--Data
@@ -244,14 +263,14 @@ namespace MR
         /**
         * Serialises int as char[]
         */
-        void InterprocessSyncer::Int32ToChar(char a[], int n) {
+        void InterprocessCommunicator::Int32ToChar(char a[], int n) {
           memcpy(a, &n, 4);
         }
 
         /**
         * Deserialises char[] as int
         */
-        int InterprocessSyncer::CharTo32bitNum(char a[]) {
+        int InterprocessCommunicator::CharTo32bitNum(char a[]) {
           int n = 0;
           memcpy(&n, a, 4);
           return n;

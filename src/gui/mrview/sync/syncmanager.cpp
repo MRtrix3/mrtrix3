@@ -28,15 +28,35 @@ namespace MR
       {
         SyncManager::SyncManager() : QObject(0)
         {
-          ips = new InterprocessSyncer();
-          connect(ips, SIGNAL(SyncDataReceived(std::vector<std::shared_ptr<QByteArray>>)), this, SLOT(OnIPSDataReceived(std::vector<std::shared_ptr<QByteArray>>)));
+          try
+          {
+            ips = new InterprocessCommunicator();//will throw exception if it fails to set up a server
+            connect(ips, SIGNAL(SyncDataReceived(std::vector<std::shared_ptr<QByteArray>>)), this, SLOT(OnIPSDataReceived(std::vector<std::shared_ptr<QByteArray>>)));
+          }
+          catch (...)
+          {
+            ips = 0;
+            WARN("Sync set up failed.");
+          }
         }
 
         /**
-        * Sets the window to connect to. Code currently assumes this only occurs once
+        * Returns true if this is in a state which is not appropriate to connect a window
+        */
+        bool SyncManager::GetInErrorState()
+        {
+          return ips == 0;
+        }
+
+        /**
+        * Sets the window to connect to. Code currently assumes this only occurs once. Also check GetInErrorState() before calling
         */
         void SyncManager::SetWindow(MR::GUI::MRView::Window* wind)
         {
+          if (GetInErrorState())
+          {
+            throw Exception("Attempt to set window while in an error state");
+          }
           win = wind;
           connect(win, SIGNAL(focusChanged()), this, SLOT(OnWindowFocusChanged()));
         }
@@ -60,7 +80,7 @@ namespace MR
         {
           QByteArray data;
           char codeAsChar[4];
-          InterprocessSyncer::Int32ToChar(codeAsChar, (int)code);
+          InterprocessCommunicator::Int32ToChar(codeAsChar, (int)code);
           data.insert(0, codeAsChar, 4);
           data.insert(4, dat, dat.size());
 
@@ -88,7 +108,7 @@ namespace MR
               continue;
             }
 
-            int idOfDataEntry = InterprocessSyncer::CharTo32bitNum(data->data());
+            int idOfDataEntry = InterprocessCommunicator::CharTo32bitNum(data->data());
 
             switch (idOfDataEntry)
             {
