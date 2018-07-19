@@ -324,6 +324,11 @@ List of MRtrix3 configuration file options
 
      The position of all visible tool colourbars within the main window in MRView. Valid values are: bottomleft, bottomright, topleft, topright.
 
+*  **MRViewSyncFocus**
+    *default: false*
+
+     Whether to sync the focus in mrview between other mrview processes.	 
+
 *  **MSAA**
     *default: 0 (false)*
 
