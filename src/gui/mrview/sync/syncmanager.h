@@ -37,9 +37,8 @@ namespace MR
       {
         /**
         * Syncs values from mrview's window, using the interprocess syncer. In a diagram:
-        * _____________Process 1______________		_______________Process 2_____________
-        * |                                   |		|                                    |
-        * |                                   |		|				                             |
+        * _____________Process 1______________    _______________Process 2_____________
+        * |                                   |   |                                    |
         * | window <--> SyncManager <--> IPC  <===> IPC <---> SyncManager <---> window |
         * |___________________________________|   |____________________________________|
         *
