@@ -60,4 +60,4 @@ namespace MR
     }
   }
 }
-#endif // RUNGUARD_H
+#endif // __sync_processlock_h__
