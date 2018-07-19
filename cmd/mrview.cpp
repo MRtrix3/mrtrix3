@@ -101,9 +101,6 @@ void run ()
     e.display();
     return;
   }
-
-   
-    GUI::MRView::Sync::Client client;
   
   if (qApp->exec())
     throw Exception ("error running Qt application");
