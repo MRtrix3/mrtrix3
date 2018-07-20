@@ -174,7 +174,7 @@ namespace MR
 
 
 
-  Header Header::create (const std::string& image_name, const Header& template_header)
+  Header Header::create (const std::string& image_name, const Header& template_header, bool add_to_command_history)
   {
     if (image_name.empty())
       throw Exception ("no name supplied to open image!");
@@ -184,36 +184,7 @@ namespace MR
 
     try {
       INFO ("creating image \"" + image_name + "\"...");
-
-      bool add_to_command_history = true;
-      auto opt = App::get_options ("clear_property");
-      for (const auto& o : opt) {
-        if (str(o[0]) == "command_history") {
-          add_to_command_history = false;
-          break;
-        }
-      }
-
-      opt = App::get_options ("compel_keyvalues");
-      if (opt.size()) {
-
-        H.keyval().clear();
-        if (str(opt[0][0]) != "NULL") {
-          try {
-            const Header source = Header::open (opt[0][0]);
-            H.keyval() = source.keyval();
-          } catch (...) {
-            try {
-              File::JSON::load (H, opt[0][0]);
-            } catch (...) {
-              throw Exception ("Unable to obtain header key-value entries from spec \"" + str(opt[0][0]) + "\"");
-            }
-          }
-        }
-        if (add_to_command_history)
-          add_line (H.keyval()["command_history"], opt[0][1]);
-
-      } else if (add_to_command_history) {
+      if (add_to_command_history) {
 
         std::string cmd = App::argv[0];
         for (int n = 1; n < App::argc; ++n)

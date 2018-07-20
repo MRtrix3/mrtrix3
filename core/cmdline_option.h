@@ -416,7 +416,7 @@ namespace MR
      */
     class OptionGroup : public vector<Option> { NOMEMALIGN
       public:
-        OptionGroup (const char* group_name = "OPTIONS") : name (group_name), show (true) { }
+        OptionGroup (const char* group_name = "OPTIONS") : name (group_name) { }
         const char* name;
 
         OptionGroup& operator+ (const Option& option) {
@@ -436,17 +436,9 @@ namespace MR
           return vector<Option>::back();
         }
 
-        OptionGroup& hidden() {
-          show = false;
-          return *this;
-        }
-
         std::string header (int format) const;
         std::string contents (int format) const;
         static std::string footer (int format);
-
-        //! Whether or not the option group should be shown in help pages
-        bool show;
     };
 
 
