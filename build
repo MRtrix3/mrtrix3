@@ -187,8 +187,6 @@ def pipe_errors_to_less_handler():
       os.unlink (name)
     except Exception as e: # pylint: disable=broad-except
       sys.stderr.write (str (e))
-    except:
-      raise
 
 
 
@@ -485,7 +483,7 @@ if 'clean' in targets:
       if os.path.isfile (filename):
         sys.stderr.write('delete file: ' + filename + '\n')
         os.remove (filename)
-  except:
+  except Exception:
     pass
 
   sys.exit (0)
@@ -853,7 +851,7 @@ def execute (message, cmd, working_dir=None):
   except OSError:
     error (cmd[0] + ': command not found')
     return 1
-  except:
+  except Exception:
     error ('unexpected exception: ' + str(sys.exc_info()))
     raise
 
@@ -1016,7 +1014,7 @@ def build_next ():
       del todo[current]
       lock.release()
 
-  except:
+  except Exception:
     stop = 2
     return
 
@@ -1048,7 +1046,7 @@ getting git version in folder "''' + folder + '"... ')
       git_version = git_version.decode(errors='ignore').strip()
       log (git_version + '\n')
       return git_version
-  except:
+  except Exception:
     pass
 
 
@@ -1063,7 +1061,7 @@ def update_git_version (folder, git_version_file, contents):
   try:
     with open (git_version_file) as fd:
       current_version_file_contents = fd.read()
-  except:
+  except Exception:
     pass
 
   if not current_version_file_contents or (version_file_contents != current_version_file_contents and git_version != 'unknown'):
@@ -1271,10 +1269,10 @@ log ('TODO list contains ' + str(len(todo)) + ''' items
 #  entry.display()
 try:
   num_processors = int(os.environ['NUMBER_OF_PROCESSORS'])
-except:
+except Exception:
   try:
     num_processors = os.sysconf('SC_NPROCESSORS_ONLN')
-  except:
+  except Exception:
     num_processors = 1
 
 while todo:
