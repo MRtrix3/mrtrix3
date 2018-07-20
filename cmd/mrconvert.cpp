@@ -31,6 +31,10 @@
 using namespace MR;
 using namespace App;
 
+
+
+bool add_to_command_history = true;
+
 void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)";
@@ -153,6 +157,10 @@ void usage ()
   + Argument ("key").type_text()
   + Argument ("value").type_text()
 
+  + Option ("copy_properties",
+            "clear all generic properties and replace with the properties from the image specified.")
+  + Argument ("image").type_image_in()
+
 
   + Stride::Options
 
@@ -162,12 +170,7 @@ void usage ()
   + DWI::GradExportOptions()
 
   + PhaseEncoding::ImportOptions
-  + PhaseEncoding::ExportOptions
-
-  + OptionGroup ("Hidden option for manipulating header key-value entries").hidden()
-  + Option ("compel_keyvalues", "force the header key-value contents to reflect invocation of a higher-level script of which this is the last step")
-  + Argument ("basis").type_text()
-  + Argument ("command").type_text();
+  + PhaseEncoding::ExportOptions;
 }
 
 
@@ -286,7 +289,7 @@ template <typename T, class InputType>
 void copy_permute (const InputType& in, Header& header_out, const std::string& output_filename)
 {
   const auto axes = set_header (header_out, in);
-  auto out = Image<T>::create (output_filename, header_out);
+  auto out = Image<T>::create (output_filename, header_out, add_to_command_history);
   DWI::export_grad_commandline (out);
   PhaseEncoding::export_commandline (out);
   auto perm = Adapter::make <Adapter::PermuteAxes> (in, axes);
@@ -341,8 +344,27 @@ void run ()
 
 
 
+  opt = get_options ("copy_properties");
+  if (opt.size()) {
+    header_out.keyval().clear();
+    if (str(opt[0][0]) != "NULL") {
+      try {
+        const Header source = Header::open (opt[0][0]);
+        header_out.keyval() = source.keyval();
+      } catch (...) {
+        try {
+          File::JSON::load (header_out, opt[0][0]);
+        } catch (...) {
+          throw Exception ("Unable to obtain header key-value entries from spec \"" + str(opt[0][0]) + "\"");
+        }
+      }
+    }
+  }
+
   opt = get_options ("clear_property");
   for (size_t n = 0; n < opt.size(); ++n) {
+    if (str(opt[n][0]) == "command_history")
+      add_to_command_history = false;
     auto entry = header_out.keyval().find (opt[n][0]);
     if (entry == header_out.keyval().end()) {
       WARN ("No header key/value entry \"" + opt[n][0] + "\" found; ignored");
@@ -352,12 +374,18 @@ void run ()
   }
 
   opt = get_options ("set_property");
-  for (size_t n = 0; n < opt.size(); ++n)
+  for (size_t n = 0; n < opt.size(); ++n) {
+    if (str(opt[n][0]) == "command_history")
+      add_to_command_history = false;
     header_out.keyval()[opt[n][0].as_text()] = opt[n][1].as_text();
+  }
 
   opt = get_options ("append_property");
-  for (size_t n = 0; n < opt.size(); ++n)
+  for (size_t n = 0; n < opt.size(); ++n) {
+    if (str(opt[n][0]) == "command_history")
+      add_to_command_history = false;
     add_line (header_out.keyval()[opt[n][0].as_text()], opt[n][1].as_text());
+  }
 
 
 
