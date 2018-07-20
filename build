@@ -329,7 +329,7 @@ if paginate and sys.stderr.isatty():
 
 
 ############################################################################
-#                        PROJECT / MODULE DETECTION                        #
+#                            PROJECT DETECTION                             #
 ############################################################################
 
 mrtrix_dir = [ '.' ]
@@ -519,7 +519,7 @@ please run "./configure" prior to invoking this script
   sys.exit (1)
 
 if separate_project:
-  cpp_flags += [ '-DMRTRIX_MODULE' ]
+  cpp_flags += [ '-DMRTRIX_PROJECT' ]
 
 environ = os.environ.copy()
 environ.update ({ 'PATH': PATH })
