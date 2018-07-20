@@ -290,7 +290,7 @@ def mrconvertOutputOption(input_image): #pylint: disable=unused-variable
   import sys
   from ._version import __version__
   global forceOverwrite
-  s = ' -compel_keyvalues ' + input_image + ' "' + sys.argv[0]
+  s = ' -copy_properties ' + input_image + ' -append_property command_history "' + sys.argv[0]
   for arg in sys.argv[1:]:
     s += ' \\"' + arg + '\\"'
   s += '  (version=' + __version__ + ')"'

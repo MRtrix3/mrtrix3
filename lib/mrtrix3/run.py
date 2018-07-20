@@ -78,9 +78,9 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
 
   if app.verbosity:
     # Hide use of the hidden option used in mrconvert to alter header key-values and command history
-    if '-compel_keyvalues' in cmdsplit:
-      index = cmdsplit.index('-compel_keyvalues')
-      del cmdsplit[index:index+3]
+    if '-copy_properties' in cmdsplit:
+      index = cmdsplit.index('-copy_properties')
+      del cmdsplit[index:index+5]
     sys.stderr.write(app.colourExec + 'Command:' + app.colourClear + '  ' + ' '.join(cmdsplit) + '\n')
     sys.stderr.flush()
 
