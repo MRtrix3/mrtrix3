@@ -26,6 +26,14 @@ build: off
 
 build_script:
   - cmd: C:\msys64\msys2_shell.cmd -mingw64 -c "pacman -S --noconfirm mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5 mingw-w64-x86_64-fftw mingw-w64-x86_64-libtiff"
-  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -c "cd /mrtrix3/ && $PYTHON ./configure -assert && $PYTHON ./build -nowarnings -persistent -nopaginate && ./run_tests"
+# - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -c "cd /mrtrix3/ && $PYTHON ./configure -assert"
+  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -c "cd /mrtrix3/ && $PYTHON ./build -nowarnings -persistent -nopaginate"
 
+test_script:
+  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -c "cd /mrtrix3/ && ./run_tests"
+
+artifacts:
+  - path: configure.log
+  - path: build.log
+  - path: testing.log
