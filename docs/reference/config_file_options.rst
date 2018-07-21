@@ -457,7 +457,7 @@ List of MRtrix3 configuration file options
 *  **TmpFileDir**
     *default: `/tmp` (on Unix), `.` (on Windows)*
 
-     The prefix for temporary files (as used in pipelines). By default, these files get written to the current folder on Windows machines, which may cause performance issues, particularly when operating over distributed file systems. On Unix machines, the default is /tmp/, which is typically a RAM file system and should therefore be fast; but may cause issues on machines with little RAM capacity or where write-access to this location is not permitted. Note that this setting does not influence the location in which Python scripts construct their temporary directories; that is determined based on config file option ScriptTmpDir.
+     The prefix for temporary files (as used in pipelines). By default, these files get written to the current folder on Windows machines, which may cause performance issues, particularly when operating over distributed file systems. On Unix machines, the default is /tmp/, which is typically a RAM file system and should therefore be fast; but may cause issues on machines with little RAM capacity or where write-access to this location is not permitted. Note that this location can also be manipulated using the `MRTRIX_TMPFILE_DIR` environment variable, without editing the config file. Note also that this setting does not influence the location in which Python scripts construct their temporary directories; that is determined based on config file option ScriptTmpDir.
 
 *  **TmpFilePrefix**
     *default: `mrtrix-tmp-`*
