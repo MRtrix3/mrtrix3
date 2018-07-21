@@ -13,15 +13,16 @@ Usage
 
 ::
 
-    mrcentre [ options ]  input space
+    mrcentre [ options ]  input
 
 -  *input*: the input image
--  *space*: the coordinate space in which to provide the centre (options are: scanner,voxel)
 
 Options
 -------
 
 -  **-mask image** only include voxels within a mask in the calculation
+
+-  **-voxelspace** report image centre of mass in voxel space rather than scanner space
 
 Standard options
 ^^^^^^^^^^^^^^^^
