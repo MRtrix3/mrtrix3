@@ -77,10 +77,12 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
   app.debug('To execute: ' + str(cmdstack))
 
   if app.verbosity:
-    # Hide use of the hidden option used in mrconvert to alter header key-values and command history
-    if '-copy_properties' in cmdsplit:
+    # Hide use of these options in mrconvert to alter header key-values and command history at the end of scripts
+    if all(key in cmdsplit for key in [ '-copy_properties', '-append_property', 'command_history' ]):
+      index = cmdsplit.index('-append_property')
+      del cmdsplit[index:index+3]
       index = cmdsplit.index('-copy_properties')
-      del cmdsplit[index:index+5]
+      del cmdsplit[index:index+2]
     sys.stderr.write(app.colourExec + 'Command:' + app.colourClear + '  ' + ' '.join(cmdsplit) + '\n')
     sys.stderr.flush()
 
