@@ -111,7 +111,7 @@ void run ()
             << std::setw(8) << std::right << "mass" << " "
             << std::setw(4) << std::right << " "
             << std::setw(com_width/2 + std::string("centre of mass").size()/2) << std::right << "centre of mass" << "\n";
-  for (size_t i = 0; i != masses.size(); ++i) {
+  for (ssize_t i = 0; i != masses.size(); ++i) {
     if (masses[i]) {
       std::cout << std::setw(8) << std::right << i+1 << " "
                 << std::setw(8) << std::right << masses[i] << " "

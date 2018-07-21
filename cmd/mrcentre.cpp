@@ -22,9 +22,6 @@ using namespace MR;
 using namespace App;
 
 
-const char* space_options[] = { "scanner", "voxel", nullptr };
-
-
 void usage ()
 {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
@@ -32,12 +29,13 @@ void usage ()
   SYNOPSIS = "Determine the centre of mass / centre of gravity of an image";
 
   ARGUMENTS
-  + Argument ("input", "the input image").type_image_in()
-  + Argument ("space", "the coordinate space in which to provide the centre (options are: " + join (space_options, ",") + ")").type_choice (space_options);
+  + Argument ("input", "the input image").type_image_in();
 
   OPTIONS
   + Option ("mask", "only include voxels within a mask in the calculation")
-    + Argument ("image").type_image_in();
+    + Argument ("image").type_image_in()
+
+  + Option ("voxelspace", "report image centre of mass in voxel space rather than scanner space");
 
 }
 
@@ -75,7 +73,7 @@ void run ()
   }
 
   com /= mass;
-  if (!int(argument[1]))
+  if (!get_options ("voxelspace").size())
     com = image.transform() * com;
 
   std::cout << com.transpose();
