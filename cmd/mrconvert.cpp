@@ -158,8 +158,8 @@ void usage ()
   + Argument ("value").type_text()
 
   + Option ("copy_properties",
-            "clear all generic properties and replace with the properties from the image specified.")
-  + Argument ("image").type_image_in()
+            "clear all generic properties and replace with the properties from the image / file specified.")
+  + Argument ("source").type_various()
 
 
   + Stride::Options
