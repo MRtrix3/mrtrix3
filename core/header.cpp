@@ -21,7 +21,6 @@
 #include "transform.h"
 #include "image_io/default.h"
 #include "image_io/scratch.h"
-#include "file/json_utils.h"
 #include "file/name_parser.h"
 #include "formats/list.h"
 
