@@ -15,10 +15,9 @@ matrix:
   fast_finish: false
 
 environment:
-  test: run
   matrix:
-    - py: python2
-    - py: python3
+    - PYTHON: python2
+    - PYTHON: python3
 
 init:
   - git config --global core.autocrlf input
@@ -28,5 +27,5 @@ build: off
 build_script:
   - cmd: C:\msys64\msys2_shell.cmd -mingw64 -c "pacman -S --noconfirm mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5 mingw-w64-x86_64-fftw mingw-w64-x86_64-libtiff"
   - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -c "cd /mrtrix3/ && ./travis.sh"
+  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -c "cd /mrtrix3/ && $PYTHON ./configure -assert && $PYTHON ./build -nowarnings -persistent -nopaginate && ./run_tests"
 
