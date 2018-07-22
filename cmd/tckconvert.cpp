@@ -96,7 +96,7 @@ void usage ()
 
 class VTKWriter: public WriterInterface<float> { MEMALIGN(VTKWriter)
 public:
-    VTKWriter(const std::string& file) : VTKout (file) {
+    VTKWriter(const std::string& file) : VTKout (file, std::ios_base::binary) {
         // create and write header of VTK output file:
         VTKout <<
           "# vtk DataFile Version 1.0\n"
@@ -542,10 +542,10 @@ private:
 class RibWriter: public WriterInterface<float> { MEMALIGN(RibWriter)
 public:
 RibWriter(const std::string& file, float radius = 0.1, bool dec = false) : out(file), writeDEC(dec), radius(radius), hasPoints(false), wroteHeader(false) {
-  pointsFilename = File::create_tempfile(0,".points");
+  pointsFilename = File::create_tempfile(0,"points");
   pointsOF.open(pointsFilename );
   pointsOF << "\"P\" [";
-  decFilename = File::create_tempfile(0,".dec");
+  decFilename = File::create_tempfile(0,"dec");
   decOF.open ( decFilename );
   decOF << "\"varying color dec\" [";
   // Header
