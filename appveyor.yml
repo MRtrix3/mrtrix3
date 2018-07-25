@@ -21,7 +21,7 @@ environment:
 
 init:
   - git config --global core.autocrlf input
-  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -c "echo 0 > success.status"
+  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -c "cd /mrtrix3/ && echo 0 > success.status"
 
 build: off
 
