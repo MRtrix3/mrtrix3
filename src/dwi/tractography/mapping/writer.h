@@ -236,15 +236,15 @@ namespace MR {
           }
 
 
-          bool operator() (const SetVoxel& in)    { receive_greyscale (in); return true; }
-          bool operator() (const SetVoxelDEC& in) { receive_dec       (in); return true; }
-          bool operator() (const SetDixel& in)    { receive_dixel     (in); return true; }
-          bool operator() (const SetVoxelTOD& in) { receive_tod       (in); return true; }
+          bool operator() (const SetVoxel& in)    override { receive_greyscale (in); return true; }
+          bool operator() (const SetVoxelDEC& in) override { receive_dec       (in); return true; }
+          bool operator() (const SetDixel& in)    override { receive_dixel     (in); return true; }
+          bool operator() (const SetVoxelTOD& in) override { receive_tod       (in); return true; }
 
-          bool operator() (const Gaussian::SetVoxel& in)    { receive_greyscale (in); return true; }
-          bool operator() (const Gaussian::SetVoxelDEC& in) { receive_dec       (in); return true; }
-          bool operator() (const Gaussian::SetDixel& in)    { receive_dixel     (in); return true; }
-          bool operator() (const Gaussian::SetVoxelTOD& in) { receive_tod       (in); return true; }
+          bool operator() (const Gaussian::SetVoxel& in)    override { receive_greyscale (in); return true; }
+          bool operator() (const Gaussian::SetVoxelDEC& in) override { receive_dec       (in); return true; }
+          bool operator() (const Gaussian::SetDixel& in)    override { receive_dixel     (in); return true; }
+          bool operator() (const Gaussian::SetVoxelTOD& in) override { receive_tod       (in); return true; }
 
 
           private:
