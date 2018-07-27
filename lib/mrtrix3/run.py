@@ -159,7 +159,7 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
           if do_indent and char in string.printable and char != '\r' and char != '\n':
             sys.stderr.write('          ')
             do_indent = False
-          elif char == '\r' or char == '\n':
+          elif char in [ '\r', '\n' ]:
             do_indent = True
           sys.stderr.write(char)
           sys.stderr.flush()
@@ -269,8 +269,6 @@ def function(fn, *args, **kwargs): #pylint: disable=unused-variable
       result = fn(*args, **kwargs)
     else:
       result = fn(*args)
-  except (KeyboardInterrupt, SystemExit):
-    raise
   except Exception as e: # pylint: disable=broad-except
     app.cleanup = False
     caller = inspect.getframeinfo(inspect.stack()[1][0])
@@ -428,7 +426,7 @@ def _triggerContinue(entries):
       totest = entry.split('=')[1]
     else:
       totest = entry
-    if totest == _lastFile or totest == os.path.splitext(_lastFile)[0]:
+    if totest in [ _lastFile, os.path.splitext(_lastFile)[0] ]:
       _lastFile = ''
       return True
   return False
