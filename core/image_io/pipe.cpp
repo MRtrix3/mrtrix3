@@ -54,7 +54,7 @@ namespace MR
 
       if (!is_new && files.size() == 1) {
         DEBUG ("deleting piped image file \"" + files[0].name + "\"...");
-        unlink (files[0].name.c_str());
+        std::remove (files[0].name.c_str());
         SignalHandler::unmark_file_for_deletion (files[0].name);
       }
 

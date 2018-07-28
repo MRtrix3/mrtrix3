@@ -535,12 +535,12 @@ class PLYWriter: public WriterInterface<float> { MEMALIGN(PLYWriter)
         std::ifstream vertexIF (vertexFilename);
         out << vertexIF.rdbuf();
         vertexIF.close();
-        File::unlink (vertexFilename);
+        File::remove (vertexFilename);
 
         std::ifstream faceIF (faceFilename);
         out << faceIF.rdbuf();
         faceIF.close();
-        File::unlink (faceFilename);
+        File::remove (faceFilename);
 
         out.close();
       } catch (Exception& e) {
@@ -625,6 +625,7 @@ class RibWriter: public WriterInterface<float> { MEMALIGN(RibWriter)
           pointsOF.close();
           decOF << "]\n" ;
           decOF.close();
+
           out << "] \"nonperiodic\" ";
 
           std::ifstream pointsIF ( pointsFilename );
@@ -641,8 +642,8 @@ class RibWriter: public WriterInterface<float> { MEMALIGN(RibWriter)
 
         out.close();
 
-        File::unlink (pointsFilename);
-        File::unlink (decFilename);
+        File::remove (pointsFilename);
+        File::remove (decFilename);
 
       } catch (Exception& e) {
         e.display();
