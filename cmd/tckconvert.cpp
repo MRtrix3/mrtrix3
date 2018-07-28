@@ -620,12 +620,15 @@ class RibWriter: public WriterInterface<float> { MEMALIGN(RibWriter)
     ~RibWriter() {
       try {
 
-        if ( hasPoints ) {
+        if (hasPoints) {
           pointsOF << "]\n" ;
-          pointsOF.close();
           decOF << "]\n" ;
-          decOF.close();
+        }
 
+        pointsOF.close();
+        decOF.close();
+
+        if (hasPoints) {
           out << "] \"nonperiodic\" ";
 
           std::ifstream pointsIF ( pointsFilename );
