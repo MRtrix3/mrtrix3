@@ -209,9 +209,9 @@ namespace MR
         throw Exception ("error creating folder \"" + folder + "\": " + strerror (errno));
     }
 
-    inline void unlink (const std::string& file)
+    inline void remove (const std::string& file)
     {
-      if (::unlink (file.c_str()))
+      if (std::remove (file.c_str()))
         throw Exception ("error deleting file \"" + file + "\": " + strerror (errno));;
     }
 
@@ -225,7 +225,7 @@ namespace MR
           if (Path::is_dir (path))
             rmdir (path, true);
           else
-            unlink (path);
+            remove (path);
         }
       }
       DEBUG ("deleting folder \"" + folder + "\"...");
