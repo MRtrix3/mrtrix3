@@ -477,9 +477,8 @@ def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
   except OSError as e:
     log ('error invoking command "' + cmd[0] + '": ' + e.strerror + '\n>>\n\n')
     raise exception
-  except Exception:
-    sys.stderr.write('Unexpected error: ' + str(sys.exc_info()) + '\n')
-    raise
+  except Exception as excp:
+    error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
   else:
     if raise_on_non_zero_exit_code and process.returncode != 0:
       raise exception (stderr)
@@ -621,8 +620,8 @@ def compile_check (full_name, name, cflags, ldflags, code, cflags_env=None, cfla
     error ('''runtime error!
 
    Unable to configure ''' + name + configure_log_hint)
-  except Exception:
-    error ('unexpected exception!' + configure_log_hint)
+  except Exception as excp:
+    error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
 
 
 
@@ -774,8 +773,8 @@ if not noshared:
             'OBJECT': bogus_obj.name }), CompileError)
       except CompileError:
         error ('compiler not found!' + configure_log_hint)
-      except Exception:
-        error ('unexpected exception!' + configure_log_hint)
+      except Exception as excp:
+        error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
       with DeleteAfter (lib_prefix + 'test' + lib_suffix) as lib:
         try:
           execute (fillin (ld_lib, {
@@ -786,8 +785,8 @@ if not noshared:
           error ('''linker not found!
 
   MRtrix3 was unable to employ the linker program for shared library generation.''' + compiler_hint ('shared library linker', 'LDLIB_FLAGS', '"-L/usr/local/lib"', 'LDLIB_ARGS', '"-shared LDLIB_FLAGS OBJECTS -o LIB"'))
-        except Exception:
-          error ('unexpected exception!' + configure_log_hint)
+        except Exception as excp:
+          error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
 
         report ('ok\n')
 
@@ -814,8 +813,8 @@ int main() {
     cpp_flags += [ '-DMRTRIX_WORD64' ]
   elif pointer_size != 4:
     error ('unexpected pointer size!')
-except Exception:
-  error ('unable to determine pointer size!' + configure_log_hint)
+except Exception as excp:
+  error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
 
 
 
@@ -1064,8 +1063,8 @@ if not nogui:
     error (''' Qt moc not found!
 
   MRtrix3 was unable to locate the Qt meta-object compiler 'moc'.''' + qt_path_hint)
-  except Exception:
-    error ('unexpected exception!' + configure_log_hint)
+  except Exception as excp:
+    error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
 
   report ('Checking for Qt qmake: ')
   qmake = 'qmake'
@@ -1084,8 +1083,8 @@ if not nogui:
     error (''' Qt qmake not found!
 
   MRtrix3 was unable to locate the Qt command 'qmake'.''' + qt_path_hint)
-  except Exception:
-    error ('unexpected exception!' + configure_log_hint)
+  except Exception as excp:
+    error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
 
 
 
@@ -1107,8 +1106,8 @@ if not nogui:
     error (''' Qt rcc not found!
 
   MRtrix3 was unable to locate the Qt command 'rcc'.''' + qt_path_hint)
-  except Exception:
-    error ('unexpected exception!' + configure_log_hint)
+  except Exception as excp:
+    error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
 
 
 
@@ -1251,8 +1250,8 @@ int main() { Foo f; }
     error ('error running Qt application!' + configure_log_hint)
   except OSError as e:
     error ('unexpected error: ' + str(e) + configure_log_hint)
-  except Exception:
-    error ('unexpected exception!' + configure_log_hint)
+  except Exception as excp:
+    error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
 
 
 
