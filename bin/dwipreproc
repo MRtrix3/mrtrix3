@@ -908,7 +908,7 @@ for index1 in range(dwi_num_volumes):
           break
 
 
-if not len(volume_pairs) == int(dwi_num_volumes/2):
+if len(volume_pairs) != int(dwi_num_volumes/2):
 
   if do_topup:
     file.delTemporary('topup_in.nii')
