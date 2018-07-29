@@ -180,7 +180,7 @@ def pipe_errors_to_less_handler():
       [ fid, name ] = tempfile.mkstemp()
       try:
         fid = os.fdopen (fid, 'wb')
-        fid.write ([ x.encode (errors='ignore') for x in colorize(error_stream) ])
+        fid.write (''.join (colorize(error_stream)).encode (errors='ignore'))
         fid.close()
         os.system ("less -RX " + name)
       except Exception as e: # pylint: disable=broad-except
