@@ -364,9 +364,8 @@ def get_active_build (directory):
     if os.listdir (name):
       raise Exception ('ERROR: active config directory (' + name + ') is not empty')
     return name[:-len('.active')]
-  else:
-    os.mkdir (os.path.join (directory, 'build.default.active'))
-    return os.path.join (directory, 'build.default')
+  os.mkdir (os.path.join (directory, 'build.default.active'))
+  return os.path.join (directory, 'build.default')
 
 
 
@@ -854,6 +853,7 @@ def execute (message, cmd, working_dir=None):
   except Exception:
     error ('unexpected exception: ' + str(sys.exc_info()))
     raise
+  return None
 
 
 def print_deps (current_file, indent=''):
@@ -1085,15 +1085,15 @@ def update_bash_completion ():
   # Check whether both command files and completion file exist and completion file is newer than commands
   if not os.path.isdir (target_bin_dir):
     return
-  else:
-    # Only look at relevant executables in bin file
-    commands = [comm for comm in os.listdir (target_bin_dir) if os.access( os.path.join( target_bin_dir, comm ), os.X_OK)]
-    if not commands:
-      return
-    else:
-      command_freshness_time = max (commands, key = lambda x: time.ctime ( os.path.getmtime( os.path.join( target_bin_dir, x ) ) ) )
-      if os.path.isfile (completion_path) and time.ctime ( os.path.getmtime(completion_path) ) >= command_freshness_time:
-        return
+
+  # Only look at relevant executables in bin file
+  commands = [comm for comm in os.listdir (target_bin_dir) if os.access( os.path.join( target_bin_dir, comm ), os.X_OK)]
+  if not commands:
+    return
+
+  command_freshness_time = max (commands, key = lambda x: time.ctime ( os.path.getmtime( os.path.join( target_bin_dir, x ) ) ) )
+  if os.path.isfile (completion_path) and time.ctime ( os.path.getmtime(completion_path) ) >= command_freshness_time:
+    return
 
   execute ('[SH] ' + completion_path, [ script_path, "-c", completion_path, "-m", target_bin_dir ] )
 
