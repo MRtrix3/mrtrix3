@@ -85,8 +85,10 @@ install:
   - |
     if [[ "${test}" == "pylint" ]]; then
         if [[ "${py}" == "python2" ]]; then
+            pip install --user --upgrade setuptools;
             pip install --user pylint;
         else
+            pip3 install --user --upgrade setuptools;
             pip3 install --user pylint;
         fi
     fi
