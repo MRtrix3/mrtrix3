@@ -300,8 +300,8 @@ class TempFile(object):
   def __exit__(self, exception_type, value, traceback):
     try:
       os.unlink (self.name)
-    except OSError as error:
-      log ('error deleting temporary file "' + self.name + '": ' + error.strerror)
+    except OSError as excp:
+      log ('error deleting temporary file "' + self.name + '": ' + excp.strerror)
 
 
 
@@ -315,8 +315,8 @@ class DeleteAfter(object):
   def __exit__(self, exception_type, value, traceback):
     try:
       os.unlink (self.name)
-    except OSError as error:
-      log ('error deleting temporary file "' + self.name + '": ' + error.strerror)
+    except OSError as excp:
+      log ('error deleting temporary file "' + self.name + '": ' + excp.strerror)
 
 
 class TempDir(object):
@@ -336,8 +336,8 @@ class TempDir(object):
           os.unlink (fullpath)
       os.rmdir (self.name)
 
-    except OSError as error:
-      log ('error deleting temporary folder "' + self.name + '": ' + error.strerror)
+    except OSError as excp:
+      log ('error deleting temporary folder "' + self.name + '": ' + excp.strerror)
 
 
 
@@ -1163,7 +1163,7 @@ int main() { Foo f; }
       if system == "darwin":
         filetext += 'QMAKE_MACOSX_DEPLOYMENT_TARGET = ' + macosx_version + '\n'
 
-      log ('\nproject file "qt.pro":\n---\n' + file + '---\n')
+      log ('\nproject file "qt.pro":\n---\n' + filetext + '---\n')
       f = open (os.path.join (qt_dir.name, 'qt.pro'), 'w')
       f.write (filetext)
       f.close()
@@ -1180,8 +1180,6 @@ int main() { Foo f; }
         error ('''error issuing qmake command!
 
   Use the QMAKE environment variable to set the correct qmake command for use with Qt''')
-      except Exception:
-        raise
 
 
       qt_defines = []
