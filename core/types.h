@@ -72,7 +72,11 @@ namespace MR {
 #define EIGEN_MATRIX_PLUGIN "eigen_plugins/matrix.h"
 #define EIGEN_ARRAY_PLUGIN "eigen_plugins/array.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wint-in-bool-context"
+#pragma GCC diagnostic ignored "-Wattributes"
 #include <Eigen/Geometry>
+#pragma GCC diagnostic pop
 
 /*! \defgroup VLA Variable-length array macros
  *

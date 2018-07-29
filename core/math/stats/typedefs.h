@@ -18,8 +18,6 @@
 
 #include "types.h"
 
-#include <Eigen/Dense>
-
 namespace MR
 {
   namespace Math

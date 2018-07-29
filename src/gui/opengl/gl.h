@@ -19,6 +19,8 @@
 #include "mrtrix.h"
 #include "debug.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wattributes"
 #include <QtGlobal>
 #if QT_VERSION >= 0x050000
 #include <QtWidgets>
@@ -26,6 +28,8 @@
 #include <QtGui>
 #endif
 #include <QGLWidget>
+#pragma GCC diagnostic pop
+
 #include "gui/opengl/gl_core_3_3.h"
 
 // necessary to avoid conflict with Qt4's macros:
