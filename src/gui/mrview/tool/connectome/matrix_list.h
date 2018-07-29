@@ -18,11 +18,13 @@
 
 #include <memory>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wattributes"
 #include <QAbstractItemModel>
+#pragma GCC diagnostic pop
 
 #include "mrtrix.h"
 #include "gui/mrview/tool/connectome/file_data_vector.h"
-
 
 namespace MR
 {
@@ -58,7 +60,7 @@ namespace MR
             }
 
             QModelIndex parent (const QModelIndex&) const override {
-              return QModelIndex(); 
+              return QModelIndex();
             }
 
             int rowCount (const QModelIndex& parent = QModelIndex()) const override {

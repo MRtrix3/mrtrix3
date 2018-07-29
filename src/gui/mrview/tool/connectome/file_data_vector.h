@@ -16,7 +16,10 @@
 #ifndef __gui_mrview_tool_connectome_filedatavector_h__
 #define __gui_mrview_tool_connectome_filedatavector_h__
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wattributes"
 #include <QString>
+#pragma GCC diagnostic pop
 
 #include "mrtrix.h"
 
