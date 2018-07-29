@@ -176,18 +176,12 @@ def colorize(s):
 def pipe_errors_to_less_handler():
   global error_stream
   if error_stream:
-    try:
-      [ fid, name ] = tempfile.mkstemp()
-      try:
-        fid = os.fdopen (fid, 'wb')
-        fid.write (''.join (colorize(error_stream)).encode (errors='ignore'))
-        fid.close()
-        os.system ("less -RX " + name)
-      except Exception as e: # pylint: disable=broad-except
-        sys.stderr.write (str (e))
-      os.unlink (name)
-    except Exception as e: # pylint: disable=broad-except
-      sys.stderr.write (str (e))
+    [ fid, name ] = tempfile.mkstemp()
+    fid = os.fdopen (fid, 'wb')
+    fid.write (''.join (colorize(error_stream)).encode (errors='ignore'))
+    fid.close()
+    os.system ("less -RX " + name)
+    os.unlink (name)
 
 
 
@@ -353,6 +347,9 @@ while os.path.abspath (os.path.dirname (get_real_name (build_script))) != os.pat
 #                             CONFIG HANDLING                              #
 ############################################################################
 
+class ConfigException (Exception):
+  pass
+
 def get_active_build (directory):
   active_configs = glob.glob (os.path.join (directory, 'build.*.active'))
   if len (active_configs) > 1:
@@ -361,9 +358,9 @@ def get_active_build (directory):
   if active_configs:
     name = active_configs[0]
     if not os.path.isdir (name):
-      raise Exception ('ERROR: active config (' + name + ') is not a directory')
+      raise ConfigException ('ERROR: active config (' + name + ') is not a directory')
     if os.listdir (name):
-      raise Exception ('ERROR: active config directory (' + name + ') is not empty')
+      raise ConfigException ('ERROR: active config directory (' + name + ') is not empty')
     return name[:-len('.active')]
   os.mkdir (os.path.join (directory, 'build.default.active'))
   return os.path.join (directory, 'build.default')
@@ -394,7 +391,7 @@ def restore_build (config_name, directory = '.'):
           os.rmdir (os.path.join(root, name))
   else:
     if os.path.exists (stored_path):
-      raise Exception ('ERROR config to be restored (' + stored_path + ') is not a directory')
+      raise ConfigException ('ERROR config to be restored (' + stored_path + ') is not a directory')
     sys.stderr.write('in "' + directory + '": creating empty "' + stored_path + '"...\n')
   if not os.path.isdir (active_path):
     os.mkdir (active_path)
@@ -463,28 +460,42 @@ if 'clean' in targets:
       for entry in files:
         filename = os.path.join(root, entry)
         sys.stderr.write('delete file: ' + filename + '\n')
-        os.remove (filename)
+        try:
+          os.remove (filename)
+        except OSError:
+          error ('error deleting file "' + filename + '": ' + os.strerror (e.errno))
+          pass
       for entry in dirs:
         dirname = os.path.join(root, entry)
         sys.stderr.write('delete directory: ' + dirname + '\n')
-        os.rmdir (dirname)
+        try:
+          os.rmdir (dirname)
+        except OSError:
+          error ('error deleting folder "' + dirname + '": ' + os.strerror (e.errno))
+          pass
     sys.stderr.write('delete directory: ' + f + '\n')
-    os.rmdir (f)
+    try:
+      os.rmdir (f)
+    except OSError:
+      error ('error deleting folder "' + f + '": ' + os.strerror (e.errno))
+      pass
 
-  try:
-    for filename in list_untracked_bin_files():
-      sys.stderr.write('delete file: ' + filename + '\n')
+  for filename in list_untracked_bin_files():
+    sys.stderr.write('delete file: ' + filename + '\n')
+    try:
       os.remove (filename)
-  except:
-    pass
+    except OSError:
+      error ('error deleting file "' + filename + '": ' + os.strerror (e.errno))
+      pass
 
-  try:
-    for filename in glob.glob (os.path.join ('lib', 'libmrtrix*')):
-      if os.path.isfile (filename):
-        sys.stderr.write('delete file: ' + filename + '\n')
+  for filename in glob.glob (os.path.join ('lib', 'libmrtrix*')):
+    if os.path.isfile (filename):
+      sys.stderr.write('delete file: ' + filename + '\n')
+      try:
         os.remove (filename)
-  except Exception:
-    pass
+      except OSError:
+        error ('error deleting file "' + filename + '": ' + os.strerror (e.errno))
+        pass
 
   sys.exit (0)
 
@@ -574,6 +585,9 @@ for entry in glob.glob (os.path.normpath (os.path.join (target_lib_dir, '*' + li
 #                           TO-DO LIST ENTRY                              #
 ###########################################################################
 
+class TargetException (Exception):
+  pass
+
 class Entry(object):
   def __init__ (self, name):
     global todo
@@ -602,7 +616,7 @@ class Entry(object):
     elif is_moc (self.name):
       self.set_moc()
     elif not os.path.exists (self.name):
-      raise Exception ('unknown target "' + self.name + '"')
+      raise TargetException ('unknown target "' + self.name + '"')
 
 
     [ Entry(item) for item in self.deps ] # pylint: disable=expression-not-assigned
@@ -851,9 +865,6 @@ def execute (message, cmd, working_dir=None):
   except OSError:
     error (cmd[0] + ': command not found')
     return 1
-  except Exception:
-    error ('unexpected exception: ' + str(sys.exc_info()))
-    raise
   return None
 
 
@@ -1047,9 +1058,8 @@ getting git version in folder "''' + folder + '"... ')
       git_version = git_version.decode(errors='ignore').strip()
       log (git_version + '\n')
       return git_version
-  except Exception:
+  except OSError:
     pass
-
 
   log ('not found\n')
   return 'unknown'
@@ -1062,7 +1072,7 @@ def update_git_version (folder, git_version_file, contents):
   try:
     with open (git_version_file) as fd:
       current_version_file_contents = fd.read()
-  except Exception:
+  except (IOError, OSError):
     pass
 
   if not current_version_file_contents or (version_file_contents != current_version_file_contents and git_version != 'unknown'):
@@ -1212,8 +1222,11 @@ namespace MR {
 log ('''
 compiling TODO list...
 ''')
-
-[ Entry(item) for item in targets ] # pylint: disable=expression-not-assigned
+try:
+  [ Entry(item) for item in targets ] # pylint: disable=expression-not-assigned
+except TargetException as excp:
+  sys.stderr.write ('ERROR: ' + str(excp) + '\n')
+  sys.exit (1)
 
 
 
@@ -1270,10 +1283,10 @@ log ('TODO list contains ' + str(len(todo)) + ''' items
 #  entry.display()
 try:
   num_processors = int(os.environ['NUMBER_OF_PROCESSORS'])
-except Exception:
+except (KeyError, TypeError):
   try:
     num_processors = os.sysconf('SC_NPROCESSORS_ONLN')
-  except Exception:
+  except (ValueError):
     num_processors = 1
 
 while todo:
