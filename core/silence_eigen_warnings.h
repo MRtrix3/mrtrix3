@@ -19,6 +19,7 @@
 // Make sure the warnings are indeed Eigen-specific first!
 
 #pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
 #pragma GCC diagnostic ignored "-Wattributes"
 #pragma GCC diagnostic ignored "-Wint-in-bool-context"
 
