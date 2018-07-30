@@ -131,7 +131,7 @@ def check_linear_transformation (transformation, cmd, max_scaling = 0.5, max_she
       app.console(newcmd)
       run.command(newcmd)
       return check_linear_transformation (transformation, newcmd, max_scaling, max_shear, max_rot, pause_on_warn = pause_on_warn)
-    elif pause_on_warn:
+    if pause_on_warn:
       app.warn("you might want to manually repeat mrregister with different parameters and overwrite the transformation file: \n%s" % transformation)
       app.console('The command that failed the test was: \n' + cmd)
       app.console('Working directory: \n' + os.getcwd())
