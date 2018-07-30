@@ -462,40 +462,35 @@ if 'clean' in targets:
         sys.stderr.write('delete file: ' + filename + '\n')
         try:
           os.remove (filename)
-        except OSError:
-          error ('error deleting file "' + filename + '": ' + os.strerror (e.errno))
-          pass
+        except OSError as excp:
+          error ('error deleting file "' + filename + '": ' + os.strerror (excp.errno))
       for entry in dirs:
         dirname = os.path.join(root, entry)
         sys.stderr.write('delete directory: ' + dirname + '\n')
         try:
           os.rmdir (dirname)
-        except OSError:
-          error ('error deleting folder "' + dirname + '": ' + os.strerror (e.errno))
-          pass
+        except OSError as excp:
+          error ('error deleting folder "' + dirname + '": ' + os.strerror (excp.errno))
     sys.stderr.write('delete directory: ' + f + '\n')
     try:
       os.rmdir (f)
-    except OSError:
-      error ('error deleting folder "' + f + '": ' + os.strerror (e.errno))
-      pass
+    except OSError as excp:
+      error ('error deleting folder "' + f + '": ' + os.strerror (excp.errno))
 
   for filename in list_untracked_bin_files():
     sys.stderr.write('delete file: ' + filename + '\n')
     try:
       os.remove (filename)
-    except OSError:
-      error ('error deleting file "' + filename + '": ' + os.strerror (e.errno))
-      pass
+    except OSError as excp:
+      error ('error deleting file "' + filename + '": ' + os.strerror (excp.errno))
 
   for filename in glob.glob (os.path.join ('lib', 'libmrtrix*')):
     if os.path.isfile (filename):
       sys.stderr.write('delete file: ' + filename + '\n')
       try:
         os.remove (filename)
-      except OSError:
-        error ('error deleting file "' + filename + '": ' + os.strerror (e.errno))
-        pass
+      except OSError as excp:
+        error ('error deleting file "' + filename + '": ' + os.strerror (excp.errno))
 
   sys.exit (0)
 
@@ -631,9 +626,9 @@ class Entry(object):
     folder = os.path.dirname (self.name)
     try:
       os.makedirs (folder)
-    except OSError as e:
+    except OSError as excp:
       if not os.path.isdir (folder):
-        error ('ERROR: can''t create target folder "' + folder + '": ' + os.strerror (e.errno))
+        error ('ERROR: can''t create target folder "' + folder + '": ' + os.strerror (excp.errno))
         exit (1)
 
     if self.action == 'RCC':
@@ -1286,7 +1281,7 @@ try:
 except (KeyError, TypeError):
   try:
     num_processors = os.sysconf('SC_NPROCESSORS_ONLN')
-  except (ValueError):
+  except ValueError:
     num_processors = 1
 
 while todo:
