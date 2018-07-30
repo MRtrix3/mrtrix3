@@ -18,8 +18,7 @@
 
 #include <memory>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wattributes"
+#include "gui/silence_qt_warnings.h"
 #include <QAbstractItemModel>
 #pragma GCC diagnostic pop
 
