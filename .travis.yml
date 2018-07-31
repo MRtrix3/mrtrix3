@@ -32,7 +32,7 @@ matrix:
     # (Note: Run this one first, since it'll be the longest job)        #
     #####################################################################
     - os: linux
-      env: CFLAGS="-Werror -Wno-inconsistent-missing-override" TRAVIS_CXX=clang++-6.0 py=python3 test=run
+      env: CFLAGS="-Werror -Wno-inconsistent-missing-override -Wno-deprecated-register" TRAVIS_CXX=clang++-6.0 py=python3 test=run
     #######################################################################
     # Build binaries (without optimisation): GCC, Python2                 #
     # (Also ensures both Python 2 and 3 are tested for configure & build) #
