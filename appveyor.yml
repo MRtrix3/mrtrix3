@@ -26,7 +26,7 @@ init:
 build: off
 
 build_script:
-  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -c "pacman -S --noconfirm bc mingw-w64-x86_64-diffutils mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5 mingw-w64-x86_64-fftw mingw-w64-x86_64-libtiff"
+  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -c "pacman -S --noconfirm bc mingw-w64-x86_64-diffutils mingw-w64-x86_64-eigen3 mingw-w64-x86_64-fftw mingw-w64-x86_64-libtiff mingw-w64-x86_64-qt5 python3"
 # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
   - cmd: C:\msys64\msys2_shell.cmd -mingw64 -c "cd /mrtrix3/ && $PYTHON ./configure -assert; echo $? > configure.status"
   - cmd: fc configure.status success.status || appveyor PushArtifact %APPVEYOR_BUILD_FOLDER%/configure.log
@@ -36,6 +36,7 @@ build_script:
 test_script:
   - cmd: C:\msys64\msys2_shell.cmd -mingw64 -c "cd /mrtrix3/ && ./run_tests; echo $? > testing.status"
   - cmd: fc testing.status success.status || appveyor PushArtifact %APPVEYOR_BUILD_FOLDER%/testing.log
+  - cmd: fc testing.status success.status
 
 artifacts:
   - path: configure.log
