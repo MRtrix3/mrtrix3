@@ -33,7 +33,7 @@ class Input(object):
 app.init('David Raffelt (david.raffelt@florey.edu.au)',
          'Performs a global DWI intensity normalisation on a group of subjects using the median b=0 white matter value as the reference')
 app.cmdline.addDescription('The white matter mask is estimated from a population average FA template then warped back to each subject to perform the intensity normalisation. Note that bias field correction should be performed prior to this step.')
-app.cmdline.add_argument('input_dir', help='The input directory containing all DWI images')
+app.cmdline.add_argument('input_dir', help='The input directory containing all DWI images with embedded diffusion-weighted gradient scheme (in .mif or .mif.gz file format)')
 app.cmdline.add_argument('mask_dir', help='Input directory containing brain masks, corresponding to one per input image (with the same file name prefix)')
 app.cmdline.add_argument('output_dir', help='The output directory containing all of the intensity normalised DWI images')
 app.cmdline.add_argument('fa_template', help='The output population specific FA template, which is threshold to estimate a white matter mask')
