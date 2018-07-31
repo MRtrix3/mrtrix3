@@ -161,13 +161,13 @@ bcolors = {
 
 
 def colorize(s):
-  out = []
+  out = ''
   for l in s.splitlines():
     for st in bcolors:
       if st in l:
         l = l.replace (st, bcolors[st] + st) + '\033[0m'
         break
-    out.append(l + '\n')
+    out += l + '\n'
   return out
 
 
@@ -178,7 +178,7 @@ def pipe_errors_to_less_handler():
   if error_stream:
     [ fid, name ] = tempfile.mkstemp()
     fid = os.fdopen (fid, 'wb')
-    fid.write (''.join (colorize(error_stream)).encode (errors='ignore'))
+    fid.write (colorize(error_stream).encode (errors='ignore'))
     fid.close()
     os.system ("less -RX " + name)
     os.unlink (name)
@@ -1085,7 +1085,7 @@ def update_bash_completion ():
   script_path = os.path.join (mrtrix_dir[-1], 'generate_bash_completion.py')
   completion_path = os.path.join (mrtrix_dir[-1], 'mrtrix_bash_completion')
   if not os.path.isfile (script_path):
-    disp (colorize('WARNING: Skipping bash completion generation. Could not find script at ' + script_path + '\n')[0])
+    disp (colorize('WARNING: Skipping bash completion generation. Could not find script at ' + script_path + '\n'))
     return
 
   # Check whether both command files and completion file exist and completion file is newer than commands
@@ -1116,7 +1116,7 @@ def update_user_docs ():
 
   # Check whether generate docs script exists
   if not os.path.isfile (script_path):
-    disp (colorize('WARNING: Skipping user documentation generation. Could not find script at ' + script_path + '\n')[0])
+    disp (colorize('WARNING: Skipping user documentation generation. Could not find script at ' + script_path + '\n'))
     return
 
   # Check whether commands dir exists
