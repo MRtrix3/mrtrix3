@@ -319,7 +319,7 @@ namespace MR
                   // Need to reduce the data and design matrices to contain only finite data
                   matrix_type element_data_finite (valid_rows, 1);
                   matrix_type element_design_finite (valid_rows, element_design.cols());
-                  size_t output_row = 0;
+                  ssize_t output_row = 0;
                   for (ssize_t row = 0; row != data.rows(); ++row) {
                     if (std::isfinite (element_data(row)) && element_design.row (row).allFinite()) {
                       element_data_finite(output_row, 0) = element_data(row);
