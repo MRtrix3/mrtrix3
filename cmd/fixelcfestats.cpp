@@ -255,7 +255,7 @@ void run()
   const value_type cfe_h = get_option_value ("cfe_h", DEFAULT_CFE_H);
   const value_type cfe_e = get_option_value ("cfe_e", DEFAULT_CFE_E);
   const value_type cfe_c = get_option_value ("cfe_c", DEFAULT_CFE_C);
-  const bool cfe_norm = get_option_value ("cfe_norm", false);
+  const bool cfe_norm = get_options ("cfe_norm").size();
   const value_type smooth_std_dev = get_option_value ("smooth", DEFAULT_SMOOTHING_STD) / 2.3548;
   const value_type connectivity_threshold = get_option_value ("connectivity", DEFAULT_CONNECTIVITY_THRESHOLD);
   const value_type angular_threshold = get_option_value ("angle", DEFAULT_ANGLE_THRESHOLD);
@@ -450,7 +450,7 @@ void run()
     {
       assert (fixel_index < connectivity_matrix.size());
       const int32_t column = fixel2column[fixel_index];
-      assert (column >= 0 && column < norm_connectivity_matrix.size());
+      assert (column >= 0 && column < int32_t(norm_connectivity_matrix.size()));
 
       // Here, the connectivity matrix needs to be modified to reflect the
       //   fact that fixel indices in the template fixel image may not
