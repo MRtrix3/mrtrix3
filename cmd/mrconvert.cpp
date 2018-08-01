@@ -62,7 +62,8 @@ void usage ()
   + "The -vox option is used to change the size of the voxels in the output "
     "image. Note that this does not re-sample the image based on a new "
     "voxel size (that is done using the mrresize command); this only changes "
-    "the voxel size as reported in the image header. Voxel sizes for "
+    "the voxel size as reported in the image header. Providing a single value "
+    "will result in isotropic voxels of that size; alternatively, voxel sizes for "
     "individual axes can be set independently, using a comma-separated list of "
     "values; e.g. "
     "-vox 1,,3.5 "
@@ -259,9 +260,11 @@ inline vector<int> set_header (Header& header, const ImageType& input)
 
   opt = get_options ("vox");
   if (opt.size()) {
-    vector<default_type> vox = opt[0][0];
+    vector<default_type> vox = parse_floats (opt[0][0]);
     if (vox.size() > header.ndim())
       throw Exception ("too many axes supplied to -vox option");
+    if (vox.size() == 1)
+      vox.resize (3, vox[0]);
     for (size_t n = 0; n < vox.size(); ++n) {
       if (std::isfinite (vox[n]))
         header.spacing(n) = vox[n];
