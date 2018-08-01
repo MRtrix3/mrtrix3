@@ -108,6 +108,4 @@ alg.execute()
 
 
 # Finalize for all algorithms
-if app.args.voxels:
-  run.command('mrconvert voxels.mif ' + path.fromUser(app.args.voxels, True) + (' -force' if app.forceOverwrite else ''))
 app.complete()
