@@ -17,12 +17,12 @@
 #define __registration_transform_base_h__
 
 #include "types.h"
-#include <unsupported/Eigen/MatrixFunctions> // Eigen::MatrixBase::sqrt()
-#include <Eigen/SVD>
-#include <Eigen/Geometry> // Eigen::Translation
 #include "datatype.h" // debug
 #include "file/config.h"
 #include "registration/transform/convergence_check.h"
+
+#include <unsupported/Eigen/MatrixFunctions> // Eigen::MatrixBase::sqrt()
+#include <Eigen/SVD>
 
 namespace MR
 {

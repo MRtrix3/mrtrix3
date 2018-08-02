@@ -14,7 +14,6 @@
 
 
 #include "phase_encoding.h"
-
 #include "math/math.h"
 
 namespace MR
