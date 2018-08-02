@@ -16,8 +16,7 @@
 #ifndef __mrtrix_types_h__
 #define __mrtrix_types_h__
 
-
-#include <stdint.h>
+#include <cinttypes>
 #include <complex>
 #include <iostream>
 #include <vector>
@@ -26,6 +25,17 @@
 #include <memory>
 
 #define NOMEMALIGN
+
+#ifdef _WIN32
+#  ifdef _WIN64
+#    define PRI_SIZET PRIu64
+#  else
+#    define PRI_SIZET PRIu32
+#  endif
+#else
+#  define PRI_SIZET "zu"
+#endif
+
 
 namespace MR {
 
@@ -62,7 +72,9 @@ namespace MR {
 #define EIGEN_MATRIX_PLUGIN "eigen_plugins/matrix.h"
 #define EIGEN_ARRAY_PLUGIN "eigen_plugins/array.h"
 
+#include "silence_eigen_warnings.h"
 #include <Eigen/Geometry>
+#pragma GCC diagnostic pop
 
 /*! \defgroup VLA Variable-length array macros
  *

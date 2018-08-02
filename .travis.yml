@@ -32,7 +32,7 @@ matrix:
     # (Note: Run this one first, since it'll be the longest job)        #
     #####################################################################
     - os: linux
-      env: CFLAGS="-Werror" TRAVIS_CXX=clang++-6.0 py=python3 test=run
+      env: CFLAGS="-Werror -Wno-inconsistent-missing-override -Wno-deprecated-register" TRAVIS_CXX=clang++-6.0 py=python3 test=run
     #######################################################################
     # Build binaries (without optimisation): GCC, Python2                 #
     # (Also ensures both Python 2 and 3 are tested for configure & build) #
@@ -85,8 +85,10 @@ install:
   - |
     if [[ "${test}" == "pylint" ]]; then
         if [[ "${py}" == "python2" ]]; then
+            pip install --user --upgrade setuptools;
             pip install --user pylint;
         else
+            pip3 install --user --upgrade setuptools;
             pip3 install --user pylint;
         fi
     fi

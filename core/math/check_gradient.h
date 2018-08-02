@@ -16,9 +16,10 @@
 #ifndef __math_check_gradient_h__
 #define __math_check_gradient_h__
 
-#include <Eigen/SVD>
 #include "debug.h"
 #include "datatype.h"
+
+#include <Eigen/SVD>
 
 namespace MR {
   namespace Math {
