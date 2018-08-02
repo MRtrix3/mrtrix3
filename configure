@@ -150,7 +150,7 @@ system = platform.system().lower()
 
 # on Windows, need to use MSYS2 version of python - not MinGW version:
 if sys.executable[0].isalpha() and sys.executable[1] == ':':
-  python_cmd = subprocess.check_output ([ 'cygpath.exe', '-w', '/usr/bin/python' ]).splitlines()[0].strip()
+  python_cmd = subprocess.check_output ([ 'cygpath.exe', '-w', '/usr/bin/python' ]).decode(errors='ignore').splitlines()[0].strip()
   sys.exit (subprocess.call ([ python_cmd ] + sys.argv))
 
 
@@ -534,13 +534,7 @@ def get_flags (default=None, env=None, pkg_config_flags=None):
       return shlex.split (os.environ[env])
   if pkg_config_flags:
     try:
-      flags = []
-      for flag in shlex.split (execute ([ 'pkg-config' ] + pkg_config_flags.split(), RunError)[1]):
-        if flag.startswith ('-I'):
-          flags += [ '-isystem', flag[2:] ]
-        else:
-          flags += [ flag ]
-      return flags
+      return shlex.split (execute ([ 'pkg-config' ] + pkg_config_flags.split(), RunError)[1])
     except Exception:
       log('error running "pkg-config ' + pkg_config_flags + '"\n\n')
   return default
@@ -1211,11 +1205,7 @@ int main() { Foo f; }
       qt_cflags = []
       for entry in qt:
         if entry[0] != '$' and not entry == '-I.':
-          entry = entry.replace('\"','').replace("'",'')
-          if entry.startswith('-I'):
-            qt_cflags += [ '-isystem', entry[2:] ]
-          else:
-            qt_cflags += [ entry ]
+          qt_cflags += [ entry.replace('\"','').replace("'",'') ]
 
       qt = qt_ldflags + qt_libs
       qt_ldflags = []
