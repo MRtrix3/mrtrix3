@@ -222,15 +222,9 @@ def makeTempDir(): #pylint: disable=unused-variable
   if hasattr(args, 'tempdir') and args.tempdir:
     dir_path = os.path.abspath(args.tempdir)
   else:
-    if 'ScriptTmpDir' in config:
-      dir_path = config['ScriptTmpDir']
-    else:
-      # Defaulting to working directory since too many users have encountered storage issues
-      dir_path = workingDir
-  if 'ScriptTmpPrefix' in config:
-    prefix = config['ScriptTmpPrefix']
-  else:
-    prefix = os.path.basename(sys.argv[0]) + '-tmp-'
+    # Defaulting to working directory since too many users have encountered storage issues
+    dir_path = dict.get('ScriptTmpDir', workingDir)
+  prefix = config.get('ScriptTmpPrefix', os.path.basename(sys.argv[0]) + '-tmp-')
   tempDir = dir_path
   while os.path.isdir(tempDir):
     random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
@@ -276,6 +270,29 @@ def complete(): #pylint: disable=unused-variable
     else:
       sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourConsole + 'Contents of temporary directory kept, location: ' + tempDir + colourClear + '\n')
     sys.stderr.flush()
+
+
+
+
+
+
+# This function should be used to insert text into any mrconvert call writing an output image
+#   to the user's requested destination
+# It will ensure that the header contents of any output images reflect the execution of the script itself,
+#   rather than its internal processes
+def mrconvertOutputOption(input_image): #pylint: disable=unused-variable
+  import sys
+  from ._version import __version__
+  global forceOverwrite
+  s = ' -copy_properties ' + input_image + ' -append_property command_history "' + sys.argv[0]
+  for arg in sys.argv[1:]:
+    s += ' \\"' + arg + '\\"'
+  s += '  (version=' + __version__ + ')"'
+  if forceOverwrite:
+    s += ' -force'
+  return s
+
+
 
 
 
@@ -633,10 +650,7 @@ class Parser(argparse.ArgumentParser):
           s += w.fill('* ' + entry[0] + ':') + '\n'
         s += w.fill(entry[1]) + '\n'
         s += '\n'
-    if 'HelpCommand' in config:
-      command = config['HelpCommand']
-    else:
-      command = 'less -X'
+    command = config.get('HelpCommand', 'less -X')
     if command:
       try:
         process = subprocess.Popen(command.split(' '), stdin=subprocess.PIPE)
