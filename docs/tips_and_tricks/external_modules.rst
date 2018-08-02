@@ -37,7 +37,7 @@ be one or more compiled binaries present in the newly-created directory
 Because these binaries are not placed into the same directory as those provided
 as part of the core *MRtrix3* installation, simply typing the name of the command
 into the terminal will not work, as your system will not yet be configured to
-look for executable files in this new location. You can solve this in one of two
+look for executable files in this new location. You can solve this in one of three
 ways:
 
    1. Provide the *full path* to the binary file when executing it. So for
@@ -49,8 +49,13 @@ ways:
 
          $ ~/src/mrtrix/mymodule/bin/newcommand argument1 argument2 ...
 
-   2. Add the location of the ``bin/`` directory of this new module to your
-      system's ``PATH`` environment variable. Most likely you will want this
+      While this may be inconvenient in some circumstances, in others it can
+      be beneficial, as it is entirely explicit and clear as to where the command
+      is being run from. This is especially the case when experimenting with
+      different versions of a command where the name of the command has not changed.
+
+   2. Manually add the location of the ``bin/`` directory of this new module to
+      your system's ``PATH`` environment variable. Most likely you will want this
       location to be already stored within ``PATH`` whenever you open a new
       terminal; therefore you will most likely want to add a line such as that
       below to the appropriate configuration file for your system (e.g.
@@ -63,6 +68,13 @@ ways:
       name, and the location on your file system where you have installed the
       module.
 
+   3. Use the ``set_path`` script provided with *MRtrix3* to automatically add
+      the location of the module's ``bin/`` directory to ``PATH`` whenever a
+      terminal session is created. To do this, execute the ``set_path`` script
+      while residing in the top-level directory of the module::
+
+         $ cd ~/src/mrtrix/mymodule
+         $ ../core/set_path
 
 
 Single-``cpp``-file commands
