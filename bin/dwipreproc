@@ -22,7 +22,7 @@ if not os.path.isdir(lib_folder):
   sys.exit(1)
 sys.path.insert(0, lib_folder)
 
-import math, itertools, shutil
+import itertools, json, math, shutil
 from mrtrix3 import app, file, fsl, image, path, phaseEncoding, run #pylint: disable=redefined-builtin
 
 
@@ -156,10 +156,11 @@ if app.args.grad:
   grad_option = ' -grad ' + path.fromUser(app.args.grad, True)
 elif app.args.fslgrad:
   grad_option = ' -fslgrad ' + path.fromUser(app.args.fslgrad[0], True) + ' ' + path.fromUser(app.args.fslgrad[1], True)
-json_option = ''
+json_import_option = ''
 if app.args.json_import:
-  json_option = ' -json_import ' + path.fromUser(app.args.json_import, True)
-run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('dwi.mif', True) + grad_option + json_option)
+  json_import_option = ' -json_import ' + path.fromUser(app.args.json_import, True)
+json_export_option = ' -json_export ' + path.toTemp('dwi.json', True)
+run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('dwi.mif', True) + grad_option + json_import_option + json_export_option)
 if app.args.se_epi:
   image.check3DNonunity(path.fromUser(app.args.se_epi, False))
   run.command('mrconvert ' + path.fromUser(app.args.se_epi, True) + ' ' + path.toTemp('se_epi.mif', True))
@@ -908,7 +909,7 @@ for index1 in range(dwi_num_volumes):
           break
 
 
-if not len(volume_pairs) == int(dwi_num_volumes/2):
+if len(volume_pairs) != int(dwi_num_volumes/2):
 
   if do_topup:
     file.delTemporary('topup_in.nii')
@@ -1072,14 +1073,17 @@ if eddyqc_path:
 #   output image, as they may have been useful for controlling pre-processing
 #   but are no longer required, and will just bloat the key-value listings of
 #   all subsequent derived images
-# Disabled this for now: The output from eddy is a NIfTI, so all these fields
-#   have been lost. For now just neglect to re-introduce them; in the future,
-#   this may be combined with GitHub Issue #1188 (proper behaviour of
-#   command_history header key-value entry when running a Python script)
-#keys_to_remove = [ 'EchoTime', 'FlipAngle', 'MultibandAccelerationFactor', 'PhaseEncodingDirection', 'RepetitionTime', 'SliceEncodingDirection', 'SliceTiming', 'TotalReadoutTime', 'pe_scheme' ]
-#clear_property_options = ' ' + ' '.join(['-clear_property '+key for key in keys_to_remove if key in dwi_header.keyval() ])
+keys_to_remove = [ 'EchoTime', 'FlipAngle', 'MultibandAccelerationFactor', 'PhaseEncodingDirection', 'RepetitionTime', 'SliceEncodingDirection', 'SliceTiming', 'TotalReadoutTime', 'pe_scheme' ]
 
+# Get the header key-value entries from the input DWI, remove those we don't wish to keep, and
+#   export the result to a new JSON file so that they can be inserted into the output header
+with open('dwi.json', 'r') as f:
+  kv = json.load(f)
+for key in keys_to_remove:
+  kv.pop(key, None)
+with open('output.json', 'w') as f:
+  json.dump(kv, f)
 
 # Finish!
-run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + grad_export_option + (' -force' if app.forceOverwrite else ''))
+run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + grad_export_option + app.mrconvertOutputOption('output.json'))
 app.complete()

@@ -13,15 +13,14 @@
  */
 
 
-#include <Eigen/Geometry>
-#include <Eigen/Dense>
-#include <Eigen/Eigenvalues>
 #include "registration/transform/initialiser_helpers.h"
 #include "registration/transform/search.h"
-
 #include "algo/loop.h"
 #include "debug.h"
 // #include "timer.h"
+
+#include <Eigen/Eigenvalues>
+
 // #define DEBUG_INIT
 
 namespace MR

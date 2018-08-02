@@ -27,7 +27,7 @@ The -coord option is used to select the coordinates within the input image that 
 
 The colon operator can be particularly useful in conjunction with the -coord option, in order to select multiple coordinates. For instance: -coord 3 1:59 would select all but the first volume from an image containing 60 volumes.
 
-The -vox option is used to change the size of the voxels in the output image. Note that this does not re-sample the image based on a new voxel size (that is done using the mrresize command); this only changes the voxel size as reported in the image header. Voxel sizes for individual axes can be set independently, using a comma-separated list of values; e.g. -vox 1,,3.5 will change the voxel size along the x & z axes to 1.0mm and 3.5mm respectively, and leave the y-axis voxel size unchanged.
+The -vox option is used to change the size of the voxels in the output image. Note that this does not re-sample the image based on a new voxel size (that is done using the mrresize command); this only changes the voxel size as reported in the image header. Providing a single value will result in isotropic voxels of that size; alternatively, voxel sizes for individual axes can be set independently, using a comma-separated list of values; e.g. -vox 1,,3.5 will change the voxel size along the x & z axes to 1.0mm and 3.5mm respectively, and leave the y-axis voxel size unchanged.
 
 The -axes option specifies which axes from the input image will be used to form the output image. This allows the permutation, omission, or addition of axes into the output image. The axes should be supplied as a comma-separated list of axis indices, e.g. -axes 0,1,2 would select only the three spatial axes to form the output image. If an axis from the input image is to be omitted from the output image, it must have dimension 1; either in the input image itself, or a single coordinate along that axis must be selected by the user by using the -coord option. An axis of unity dimension can be inserted by supplying -1 at the corresponding position in the list.
 
@@ -66,6 +66,8 @@ Options to modify generic header entries
 -  **-set_property key value** set the value of the specified key in the image header.
 
 -  **-append_property key value** append the given value to the specified key in the image header (this adds the value specified as a new line in the header value).
+
+-  **-copy_properties source** clear all generic properties and replace with the properties from the image / file specified.
 
 Stride options
 ^^^^^^^^^^^^^^
