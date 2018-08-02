@@ -16,12 +16,6 @@
 #ifndef __dwi_tractography_algorithms_tensor_det_h__
 #define __dwi_tractography_algorithms_tensor_det_h__
 
-// These lines are to silence deprecation warnings with Eigen & GCC v5
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#include <Eigen/Eigenvalues>
-#pragma GCC diagnostic pop
-
 #include "math/least_squares.h"
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
@@ -29,6 +23,7 @@
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/types.h"
 
+#include <Eigen/Eigenvalues>
 
 
 namespace MR
