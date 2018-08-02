@@ -213,12 +213,26 @@ if eddy_mporder:
     if os.path.isfile(slspec_file_path):
       # Since there's a chance that we may need to pad this info, we can't just copy this file
       #   to the temporary directory...
-      with open(slspec_file_path, 'r') as f:
-        for line in f:
-          line = line.strip()
-          if line:
-            slice_groups.append([int(value) for value in line.split()])
-      app.var(slice_groups)
+      try:
+        with open(slspec_file_path, 'r') as f:
+          for line in f:
+            line = line.strip()
+            if line:
+              slice_groups.append([int(value) for value in line.split()])
+        app.var(slice_groups)
+      except ValueError:
+        try:
+          with open(slspec_file_path, 'r') as f:
+            for line in f:
+              line = line.strip()
+              if line:
+                slice_timing.append(float(line))
+          app.warn('\"slspec\" file provided to FSL eddy should contain slice indices for slice groups, not slice timing; nevertheless, slice timing has been imported from file \"' + slspec_file_path + '\"')
+          app.var(slice_timing)
+          if len(slice_timing) != dwi_num_slices:
+            app.error('Cannot use slice timing information from file \"' + slspec_file_path + '\" for slice-to-volume correction: Number of entries (' + len(slice_timing) + ') does not match number of slices (' + dwi_header.size()[2] + ')')
+        except ValueError:
+          app.error('Error parsing \"slspec\" file (this should contain integer values indicating slice groups, not slice timing; please see FSL eddy help page)')
       # Remove this entry from eddy_manual_options; it'll be inserted later, with the
       #   path to the new slspec file
       eddy_manual_options = [ s for s in eddy_manual_options if not s.startswith('--slspec') ]
@@ -784,9 +798,7 @@ if do_topup:
   else:
     run.command('mrcat ' + ' '.join(applytopup_image_list) + ' - -axis 3 | dwi2mask - - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32 -strides -1,+2,+3')
 
-  for entry in applytopup_image_list:
-    file.delTemporary(entry)
-
+  file.delTemporary(applytopup_image_list)
   eddy_in_topup_option = ' --topup=field'
 
 else:
@@ -1042,8 +1054,7 @@ else:
 
   # Finally the recombined volumes must be concatenated to produce the resulting image series
   run.command('mrcat ' + ' '.join(combined_image_list) + ' - -axis 3 | mrconvert - result.mif' + dwi_post_eddy_crop_option + ' -fslgrad bvecs_combined bvals_combined' + stride_option)
-  for entry in combined_image_list:
-    file.delTemporary(entry)
+  file.delTemporary(combined_image_list)
 
 
 # Grab any relevant files that eddy has created, and copy them to the requested directory

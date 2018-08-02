@@ -215,11 +215,14 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
         filename = caller[1]
         lineno = caller[2]
       sys.stderr.write(script_name + ': ' + app.colourError + '[ERROR] Command failed: ' + cmd + app.colourClear + app.colourDebug + ' (' + os.path.basename(filename) + ':' + str(lineno) + ')' + app.colourClear + '\n')
-      sys.stderr.write(script_name + ': ' + app.colourConsole + 'Output of failed command:' + app.colourClear + '\n')
-      for line in error_text.splitlines():
-        sys.stderr.write(' ' * (len(script_name)+2) + line + '\n')
-      app.console('')
+      if error_text:
+        sys.stderr.write(script_name + ': ' + app.colourConsole + 'Output of failed command:' + app.colourClear + '\n')
+        for line in error_text.splitlines():
+          sys.stderr.write(' ' * (len(script_name)+2) + line + '\n')
+      else:
+        sys.stderr.write(script_name + ': ' + app.colourConsole + 'Failed command did not provide any diagnostic information' + app.colourClear + '\n')
       sys.stderr.flush()
+      app.console('')
       if app.tempDir:
         with open(os.path.join(app.tempDir, 'error.txt'), 'w') as outfile:
           outfile.write(cmd + '\n\n' + error_text + '\n')
