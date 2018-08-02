@@ -67,6 +67,8 @@ Options to modify generic header entries
 
 -  **-append_property key value** append the given value to the specified key in the image header (this adds the value specified as a new line in the header value).
 
+-  **-copy_properties source** clear all generic properties and replace with the properties from the image / file specified.
+
 Stride options
 ^^^^^^^^^^^^^^
 
