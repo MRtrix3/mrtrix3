@@ -60,3 +60,5 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrcalc ' + image + ' 5 -eq path.mif')
 
   run.command('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | mrconvert - result.mif -datatype float32')
+
+  run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + app.mrconvertOutputOption(path.fromUser(app.args.input, True)))
