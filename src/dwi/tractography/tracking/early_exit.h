@@ -16,7 +16,7 @@
 #ifndef __dwi_tractography_tracking_early_exit_h__
 #define __dwi_tractography_tracking_early_exit_h__
 
-#include <Eigen/Core>
+#include "dwi/tractography/tracking/shared.h"
 
 #if EIGEN_VERSION_AT_LEAST(3,3,0)
 #define TCKGEN_EARLY_EXIT_USE_FULL_BINOMIAL
@@ -27,7 +27,6 @@
 #define TCKGEN_EARLY_EXIT_ZVALUE -4.753408 // For a p-value of 1e-6; should be negative
 #endif
 
-#include "dwi/tractography/tracking/shared.h"
 
 
 #define TCKGEN_EARLY_EXIT_STOP_TESTING_PERCENTAGE 0.20

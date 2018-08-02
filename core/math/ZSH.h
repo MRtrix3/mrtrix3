@@ -16,8 +16,6 @@
 #ifndef __math_ZSH_h__
 #define __math_ZSH_h__
 
-#include <Eigen/Dense>
-
 #include "math/legendre.h"
 #include "math/least_squares.h"
 #include "math/SH.h"
@@ -49,7 +47,7 @@ namespace MR
         return (l/2);
       }
 
-      //! returns the largest \e lmax given \a N parameters 
+      //! returns the largest \e lmax given \a N parameters
       inline size_t LforN (int N)
       {
         return (2 * (N-1));

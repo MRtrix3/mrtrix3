@@ -95,6 +95,7 @@ These applications have been written from scratch in C++, using the functionalit
 
    tips_and_tricks/dicom_handling
    tips_and_tricks/batch_processing_with_foreach
+   tips_and_tricks/external_modules
 
 .. toctree::
    :maxdepth: 1

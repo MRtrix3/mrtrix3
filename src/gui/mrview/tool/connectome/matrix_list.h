@@ -18,11 +18,12 @@
 
 #include <memory>
 
+#include "gui/silence_qt_warnings.h"
 #include <QAbstractItemModel>
+#pragma GCC diagnostic pop
 
 #include "mrtrix.h"
 #include "gui/mrview/tool/connectome/file_data_vector.h"
-
 
 namespace MR
 {
@@ -58,7 +59,7 @@ namespace MR
             }
 
             QModelIndex parent (const QModelIndex&) const override {
-              return QModelIndex(); 
+              return QModelIndex();
             }
 
             int rowCount (const QModelIndex& parent = QModelIndex()) const override {
