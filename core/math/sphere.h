@@ -20,9 +20,8 @@
 #include <sys/types.h>
 #include <type_traits>
 
-#include <Eigen/Core>
-
 #include "math/math.h"
+
 
 namespace MR
 {
