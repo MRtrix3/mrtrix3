@@ -222,15 +222,9 @@ def makeTempDir(): #pylint: disable=unused-variable
   if hasattr(args, 'tempdir') and args.tempdir:
     dir_path = os.path.abspath(args.tempdir)
   else:
-    if 'ScriptTmpDir' in config:
-      dir_path = config['ScriptTmpDir']
-    else:
-      # Defaulting to working directory since too many users have encountered storage issues
-      dir_path = workingDir
-  if 'ScriptTmpPrefix' in config:
-    prefix = config['ScriptTmpPrefix']
-  else:
-    prefix = os.path.basename(sys.argv[0]) + '-tmp-'
+    # Defaulting to working directory since too many users have encountered storage issues
+    dir_path = config.get('ScriptTmpDir', workingDir)
+  prefix = config.get('ScriptTmpPrefix', os.path.basename(sys.argv[0]) + '-tmp-')
   tempDir = dir_path
   while os.path.isdir(tempDir):
     random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
@@ -633,10 +627,7 @@ class Parser(argparse.ArgumentParser):
           s += w.fill('* ' + entry[0] + ':') + '\n'
         s += w.fill(entry[1]) + '\n'
         s += '\n'
-    if 'HelpCommand' in config:
-      command = config['HelpCommand']
-    else:
-      command = 'less -X'
+    command = config.get('HelpCommand', 'less -X')
     if command:
       try:
         process = subprocess.Popen(command.split(' '), stdin=subprocess.PIPE)
