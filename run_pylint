@@ -11,6 +11,7 @@ cat > $LOGFILE <<EOD
 EOD
 
 # generate list of tests to run:
+tests="build configure"
 if [ $# == 0 ]; then
   for lib_path in lib/mrtrix3/*; do
     if [[ -d ${lib_path} && ! ( ${lib_path} == *"__pycache__"* ) ]]; then
