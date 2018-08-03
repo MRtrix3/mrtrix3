@@ -165,7 +165,7 @@ namespace MR
                 axis[i] = 1.0;
                 if (separating_axis (axis))
                   return false;
-                for (size_t j = 0; j != num_vertices; ++j) {
+                for (size_t j = 0; j != num_vertices-1; ++j) {
                   if (separating_axis (axis.cross (vertices[j+1] - vertices[j])))
                     return false;
                 }
@@ -456,7 +456,7 @@ namespace MR
                   }
 
                   if (min_edge_distance_on_plane > 0.0) {
-                    if (std::abs (distance_from_plane) < std::abs (best_min_distance_from_interior_projection)) {
+                    if (abs (distance_from_plane) < abs (best_min_distance_from_interior_projection)) {
                       best_min_distance_from_interior_projection = distance_from_plane;
                       best_result_inside = is_inside;
                     }
