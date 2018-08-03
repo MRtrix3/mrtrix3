@@ -27,7 +27,7 @@ using namespace MR::Surface;
 
 
 
-const char* transform_choices[] = { "first2real", "real2first", "voxel2real", "real2voxel", nullptr };
+const char* transform_choices[] = { "first2real", "real2first", "voxel2real", "real2voxel", "fs2real", nullptr };
 
 
 
@@ -79,6 +79,7 @@ void run ()
       case 1: transform->set_real2first(); break;
       case 2: transform->set_voxel2real(); break;
       case 3: transform->set_real2voxel(); break;
+      case 4: transform->set_fs2real   (); break;
       default: throw Exception ("Unexpected mode for spatial transformation of vertices");
     }
     MeshMulti temp;

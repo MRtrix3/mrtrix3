@@ -42,6 +42,11 @@ namespace MR
         const size_t T = in.num_triangles();
         if (V == 3*T)
           throw Exception ("Cannot perform smoothing on this mesh: no triangulation information");
+        if (V <= 8) {
+          WARN ("No mesh smoothing applied; structure is too small");
+          out = in;
+          return;
+        }
 
         // Pre-compute polygon centroids and areas
         VertexList centroids;
