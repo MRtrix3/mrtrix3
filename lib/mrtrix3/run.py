@@ -82,7 +82,13 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
   app.debug('To execute: ' + str(cmdstack))
 
   if app.verbosity:
-    sys.stderr.write(app.colourExec + 'Command:' + app.colourClear + '  ' + cmd + '\n')
+    # Hide use of these options in mrconvert to alter header key-values and command history at the end of scripts
+    if all(key in cmdsplit for key in [ '-copy_properties', '-append_property', 'command_history' ]):
+      index = cmdsplit.index('-append_property')
+      del cmdsplit[index:index+3]
+      index = cmdsplit.index('-copy_properties')
+      del cmdsplit[index:index+2]
+    sys.stderr.write(app.colourExec + 'Command:' + app.colourClear + '  ' + ' '.join(cmdsplit) + '\n')
     sys.stderr.flush()
 
   # Disable interrupt signal handler while threads are running
@@ -125,7 +131,7 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
     # Set off the processes
     try:
       try:
-        process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=_env, preexec_fn=os.setpgrp)
+        process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=_env, preexec_fn=os.setpgrp) # pylint: disable=bad-option-value,subprocess-popen-preexec-fn
       except AttributeError:
         process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=_env)
       _processes.append(process)
@@ -164,7 +170,7 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
           if do_indent and char in string.printable and char != '\r' and char != '\n':
             sys.stderr.write('          ')
             do_indent = False
-          elif char == '\r' or char == '\n':
+          elif char in [ '\r', '\n' ]:
             do_indent = True
           sys.stderr.write(char)
           sys.stderr.flush()
@@ -208,8 +214,8 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
   _processes = [ ]
 
   if error:
-    app.cleanup = False
     if exitOnError:
+      app.cleanup = False
       caller = inspect.getframeinfo(inspect.stack()[1][0])
       script_name = os.path.basename(sys.argv[0])
       app.console('')
@@ -277,8 +283,6 @@ def function(fn, *args, **kwargs): #pylint: disable=unused-variable
       result = fn(*args, **kwargs)
     else:
       result = fn(*args)
-  except (KeyboardInterrupt, SystemExit):
-    raise
   except Exception as e: # pylint: disable=broad-except
     app.cleanup = False
     caller = inspect.getframeinfo(inspect.stack()[1][0])
@@ -436,7 +440,7 @@ def _triggerContinue(entries):
       totest = entry.split('=')[1]
     else:
       totest = entry
-    if totest == _lastFile or totest == os.path.splitext(_lastFile)[0]:
+    if totest in [ _lastFile, os.path.splitext(_lastFile)[0] ]:
       _lastFile = ''
       return True
   return False

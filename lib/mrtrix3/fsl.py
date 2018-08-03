@@ -32,37 +32,33 @@ def eddyBinary(cuda): #pylint: disable=unused-variable
     if find_executable('eddy_cuda'):
       app.debug('Selected soft-linked CUDA version (\'eddy_cuda\')')
       return 'eddy_cuda'
-    else:
-      # Cuda versions are now provided with a CUDA trailing version number
-      # Users may not necessarily create a softlink to one of these and
-      #   call it "eddy_cuda"
-      # Therefore, hunt through PATH looking for them; if more than one,
-      #   select the one with the highest version number
-      binaries = [ ]
-      for directory in os.environ['PATH'].split(os.pathsep):
-        if os.path.isdir(directory):
-          for entry in os.listdir(directory):
-            if entry.startswith('eddy_cuda'):
-              binaries.append(entry)
-      max_version = 0.0
-      exe_path = ''
-      for entry in binaries:
-        try:
-          version = float(entry.lstrip('eddy_cuda'))
-          if version > max_version:
-            max_version = version
-            exe_path = entry
-        except:
-          pass
-      if exe_path:
-        app.debug('CUDA version ' + str(max_version) + ': ' + exe_path)
-        return exe_path
+    # Cuda versions are now provided with a CUDA trailing version number
+    # Users may not necessarily create a softlink to one of these and
+    #   call it "eddy_cuda"
+    # Therefore, hunt through PATH looking for them; if more than one,
+    #   select the one with the highest version number
+    binaries = [ ]
+    for directory in os.environ['PATH'].split(os.pathsep):
+      if os.path.isdir(directory):
+        for entry in os.listdir(directory):
+          if entry.startswith('eddy_cuda'):
+            binaries.append(entry)
+    max_version = 0.0
+    exe_path = ''
+    for entry in binaries:
+      try:
+        version = float(entry.lstrip('eddy_cuda'))
+        if version > max_version:
+          max_version = version
+          exe_path = entry
+      except:
+        pass
+    if exe_path:
+      app.debug('CUDA version ' + str(max_version) + ': ' + exe_path)
+      return exe_path
     app.debug('No CUDA version of eddy found')
     return ''
-  if find_executable('eddy_openmp'):
-    exe_path = 'eddy_openmp'
-  else:
-    exe_path = exeName('eddy')
+  exe_path = 'eddy_openmp' if find_executable('eddy_openmp') else exeName('eddy')
   app.debug(exe_path)
   return exe_path
 
@@ -72,14 +68,14 @@ def eddyBinary(cuda): #pylint: disable=unused-variable
 #   makes it more convenient to locate these commands.
 # Note that if FSL 4 and 5 are installed side-by-side, the approach taken in this
 #   function will select the version 5 executable.
-def exeName(name): #pylint: disable=unused-variable
+def exeName(name, required=True): #pylint: disable=unused-variable
   from mrtrix3 import app
   from distutils.spawn import find_executable
   if find_executable('fsl5.0-' + name):
     output = 'fsl5.0-' + name
   elif find_executable(name):
     output = name
-  else:
+  elif required:
     app.error('Could not find FSL program \"' + name + '\"; please verify FSL install')
   app.debug(output)
   return output

@@ -12,30 +12,14 @@
  * For more details, see http://www.mrtrix.org/
  */
 
+#pragma GCC diagnostic push
 
-#ifndef __math_stats_types_h__
-#define __math_stats_types_h__
+// add any warnings here that emenate from within the Eigen headers as you
+// encounter them.
+// Make sure the warnings are indeed Eigen-specific first!
 
-#include "types.h"
+#pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
+#pragma GCC diagnostic ignored "-Wattributes"
+#pragma GCC diagnostic ignored "-Wint-in-bool-context"
 
-namespace MR
-{
-  namespace Math
-  {
-    namespace Stats
-    {
-
-
-
-      using value_type = MR::default_type;
-      using matrix_type = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>;
-      using vector_type = Eigen::Array<value_type, Eigen::Dynamic, 1>;
-
-
-
-    }
-  }
-}
-
-
-#endif
