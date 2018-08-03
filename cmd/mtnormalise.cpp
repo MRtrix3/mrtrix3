@@ -52,9 +52,11 @@ void usage ()
    + "Example usage: mtnormalise wmfod.mif wmfod_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif.";
 
   ARGUMENTS
-    + Argument ("input output", "list of all input and output tissue compartment files. See example usage in the description.").type_image_in().allow_multiple();
+    + Argument ("input output", "list of all input and output tissue compartment files. See example usage in the description.").type_various().allow_multiple();
 
   OPTIONS
+    + OptionGroup ("Options that affect the operation of the mtnormalise command")
+
     + Option ("mask", "the mask defines the data used to compute the intensity normalisation. This option is mandatory.").required ()
     + Argument ("image").type_image_in ()
 
@@ -64,6 +66,16 @@ void usage ()
     + Option ("niter", "set the number of iterations. (default: " + str(DEFAULT_MAIN_ITER_VALUE) + ")")
     + Argument ("number").type_integer()
 
+    + Option ("value", "specify the (positive) reference value to which the summed tissue compartments will be normalised. "
+                       "(default: " + str(DEFAULT_NORM_VALUE, 6) + ", SH DC term for unit angular integral)")
+    + Argument ("number").type_float (std::numeric_limits<default_type>::min())
+
+    + Option ("balanced", "incorporate the per-tissue balancing factors into scaling of the output images "
+                          "(NOTE: use of this option has critical consequences for AFD intensity normalisation; "
+                          "should not be used unless these consequences are fully understood)")
+
+    + OptionGroup ("Options for outputting data to verify successful operation of the mtnormalise command")
+
     + Option ("check_norm", "output the final estimated spatially varying intensity level that is used for normalisation.")
     + Argument ("image").type_image_out ()
 
@@ -71,9 +83,8 @@ void usage ()
                             "This mask excludes regions identified as outliers by the optimisation process.")
     + Argument ("image").type_image_out ()
 
-    + Option ("value", "specify the (positive) reference value to which the summed tissue compartments will be normalised. "
-                       "(default: " + str(DEFAULT_NORM_VALUE, 6) + ", SH DC term for unit angular integral)")
-    + Argument ("number").type_float (std::numeric_limits<default_type>::min());
+    + Option ("check_factors", "output the tissue balance factors computed during normalisation.")
+    + Argument ("file").type_file_out ();
 
 }
 
@@ -224,7 +235,7 @@ void run_primitive () {
   vector<Header> output_headers;
   vector<std::string> output_filenames;
 
-  ProgressBar input_progress ("loading input images");
+  ProgressBar input_progress ("loading input images", 3*argument.size()/2);
 
   // Open input images and prepare output image headers
   for (size_t i = 0; i < argument.size(); i += 2) {
@@ -482,7 +493,7 @@ void run_primitive () {
 
   progress.done();
 
-  ProgressBar output_progress("writing output images");
+  ProgressBar output_progress("writing output images", output_filenames.size());
 
   opt = get_options ("check_norm");
   if (opt.size()) {
@@ -496,22 +507,34 @@ void run_primitive () {
     threaded_copy (mask, mask_output);
   }
 
+  opt = get_options ("check_factors");
+  if (opt.size()) {
+    File::OFStream factors_output (opt[0][0]);
+    factors_output << balance_factors;
+  }
+
   // Compute log-norm scale parameter (geometric mean of normalisation field in outlier-free mask).
-  float lognorm_scale (0.f);
+  double lognorm_scale (0.0);
   if (num_voxels) {
     for (auto i = Loop (0,3) (mask, norm_field_log); i; ++i) {
       if (mask.value ())
         lognorm_scale += norm_field_log.value ();
     }
 
-    lognorm_scale = std::exp(lognorm_scale / (float)num_voxels);
+    lognorm_scale = std::exp(lognorm_scale / (double)num_voxels);
   }
 
+  const bool output_balanced = get_options("balanced").size();
 
   for (size_t j = 0; j < output_filenames.size(); ++j) {
     output_progress++;
 
+    float balance_multiplier = 1.0f;
     output_headers[j].keyval()["lognorm_scale"] = str(lognorm_scale);
+    if (output_balanced) {
+      balance_multiplier = balance_factors[j];
+      output_headers[j].keyval()["lognorm_balance"] = str(balance_multiplier);
+    }
     auto output_image = ImageType::create (output_filenames[j], output_headers[j]);
     const size_t n_vols = input_images[j].size(3);
     const Eigen::VectorXf zero_vec = Eigen::VectorXf::Zero (n_vols);
@@ -522,7 +545,7 @@ void run_primitive () {
       if (input_images[j].value() < 0.f)
         output_image.row(3) = zero_vec;
       else
-        output_image.row(3) = Eigen::VectorXf{input_images[j].row(3)} / norm_field_image.value();
+        output_image.row(3) = Eigen::VectorXf{input_images[j].row(3)} * balance_multiplier / norm_field_image.value();
     }
   }
 }
