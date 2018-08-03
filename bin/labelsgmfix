@@ -148,5 +148,5 @@ progress.done()
 # Insert the new delineations of all SGM structures in a single call
 # Enforce unsigned integer datatype of output image
 run.command('mrcalc sgm_new_labels.mif 0.5 -gt sgm_new_labels.mif parc.mif -if result.mif -datatype uint32')
-run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + (' -force' if app.forceOverwrite else ''))
+run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + app.mrconvertOutputOption(path.fromUser(app.args.parc, True)))
 app.complete()

@@ -12,9 +12,6 @@
  * For more details, see http://www.mrtrix.org/
  */
 
-
-#include <Eigen/Geometry>
-
 #include "mrtrix.h"
 #include "file/path.h"
 #include "gui/mrview/window.h"
@@ -421,7 +418,7 @@ namespace MR
             start_index->setValue (i + 1);
             this->window().updateGL();
             qApp->processEvents();
-          } 
+          }
 
           is_playing = false;
         }
@@ -456,8 +453,8 @@ namespace MR
 
 
 
-        void Capture::add_commandline_options (MR::App::OptionList& options) 
-        { 
+        void Capture::add_commandline_options (MR::App::OptionList& options)
+        {
           using namespace MR::App;
           options
             + OptionGroup ("Screen Capture tool options")
@@ -471,7 +468,7 @@ namespace MR
             + Option ("capture.grab", "Start the screen capture process.").allow_multiple();
         }
 
-        bool Capture::process_commandline_option (const MR::App::ParsedOption& opt) 
+        bool Capture::process_commandline_option (const MR::App::ParsedOption& opt)
         {
           if (opt.opt->is ("capture.folder")) {
             directory->setPath (std::string(opt[0]).c_str());
