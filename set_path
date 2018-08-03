@@ -50,7 +50,30 @@ else:
   filename = os.path.join(filename, '.bashrc')
 
 
+# check for the -remove flag:
+remove = False
+if '-remove' in sys.argv[1:]:
+  remove = True
+  sys.argv.remove ('-remove')
+
+
 # check whether destination file has been specified explicitly:
+if len(sys.argv) > 2:
+  print ('''
+ERROR: usage is:
+
+  ./set_path [-remove] [rc_path]
+
+Where:
+
+  rc_path    [optional] allows the user to specify the startup file to be
+             modified (e.g. './set_path ~/.bash_profile').
+
+  -remove    [optional] indicates that the path should be removed from the
+             startup file
+''')
+  sys.exit (1)
+
 if len(sys.argv) == 2:
   filename = sys.argv[1]
 
@@ -86,29 +109,34 @@ one of two ways:
    ''' + comment + '''
 ''')
           sys.exit (1)
-        if line == set_path:
-          print ('File "' + filename + '" is already up to date')
-          sys.exit (0)
 
-        output += set_path
+        if not remove:
+          if line == set_path:
+            print ('File "' + filename + '" is already up to date')
+            sys.exit (0)
+          output += set_path
+
         is_next_line = False
         append_path = False
         continue
 
       if line == comment:
         is_next_line = True
+        if remove:
+          continue
 
       output += line
 
-
-# comment was the last line:
-if is_next_line is True:
-  output += set_path
-# if previous modification not detected:
-elif append_path is True:
-  output += '\n' + comment + set_path
+if not remove:
+  # comment was the last line:
+  if is_next_line is True:
+    output += set_path
+  # if previous modification not detected:
+  elif append_path is True:
+    output += '\n' + comment + set_path
 
 with open (filename, 'w') as f:
   f.write (output)
 print ('File "''' + filename + '" succesfully updated')
 print ('(Close terminal and open a new one for change to take effect)')
+
