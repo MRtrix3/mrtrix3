@@ -352,7 +352,7 @@ namespace MR {
           else if (strcmp ("BandwidthPerPixelPhaseEncode", entry.key()) == 0)
             bandwidth_per_pixel_phase_encode = entry.get_float();
           else if (strcmp ("MosaicRefAcqTimes", entry.key()) == 0) {
-            mosaic_slices_timing.resize (entry.size(), NaN);
+            mosaic_slices_timing.resize (entry.num_items());
             entry.get_float (mosaic_slices_timing);
           }
           else if (strcmp ("TimeAfterStart", entry.key()) == 0)

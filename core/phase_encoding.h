@@ -16,9 +16,6 @@
 #ifndef __phaseencoding_h__
 #define __phaseencoding_h__
 
-
-#include <Eigen/Dense>
-
 #include "app.h"
 #include "axes.h"
 #include "header.h"
