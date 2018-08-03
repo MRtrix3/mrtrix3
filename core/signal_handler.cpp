@@ -46,21 +46,21 @@ namespace MR
         if (!flag.test_and_set()) {
 
           // Try to do a tempfile cleanup before printing the error, since the latter's not guaranteed to work...
-          // Don't use File::unlink: may throw an exception
-          for (const auto& i : marked_files) 
-            ::unlink (i.c_str());
+          // Don't use File::remove: may throw an exception
+          for (const auto& i : marked_files)
+            std::remove (i.c_str());
 
 
           const char* sig = nullptr;
           const char* msg = nullptr;
           switch (i) {
 
-#define __SIGNAL(SIG,MSG) case SIG: sig = #SIG; msg = MSG; break; 
+#define __SIGNAL(SIG,MSG) case SIG: sig = #SIG; msg = MSG; break;
 #include "signals.h"
 #undef __SIGNAL
 
             default:
-              sig = "UNKNOWN"; 
+              sig = "UNKNOWN";
               msg = "Unknown fatal system signal";
               break;
           }
