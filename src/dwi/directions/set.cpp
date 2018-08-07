@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -16,7 +17,6 @@
 
 #include <list>
 #include <set>
-#include <vector>
 
 #include "bitset.h"
 #include "math/rng.h"
@@ -332,10 +332,10 @@ namespace MR {
         const size_t grid_index = dir2gridindex (p);
 
         index_type best_dir = grid_lookup[grid_index].front();
-        default_type max_dp = std::abs (p.dot (get_dir (best_dir)));
+        default_type max_dp = abs (p.dot (get_dir (best_dir)));
         for (size_t i = 1; i != grid_lookup[grid_index].size(); ++i) {
           const index_type this_dir = (grid_lookup[grid_index])[i];
-          const default_type this_dp = std::abs (p.dot (get_dir (this_dir)));
+          const default_type this_dp = abs (p.dot (get_dir (this_dir)));
           if (this_dp > max_dp) {
             max_dp = this_dp;
             best_dir = this_dir;
@@ -352,9 +352,9 @@ namespace MR {
       {
 
         index_type dir = 0;
-        default_type max_dot_product = std::abs (p.dot (unit_vectors[0]));
+        default_type max_dot_product = abs (p.dot (unit_vectors[0]));
         for (size_t i = 1; i != size(); ++i) {
-          const default_type this_dot_product = std::abs (p.dot (unit_vectors[i]));
+          const default_type this_dot_product = abs (p.dot (unit_vectors[i]));
           if (this_dot_product > max_dot_product) {
             max_dot_product = this_dot_product;
             dir = i;
@@ -375,7 +375,7 @@ namespace MR {
         for (size_t i = 0; i != size(); ++i) {
           for (vector<index_type>::const_iterator j = adj_dirs[i].begin(); j != adj_dirs[i].end(); ++j) {
             if (*j > i) {
-              adj_dot_product_sum += std::abs (unit_vectors[i].dot (unit_vectors[*j]));
+              adj_dot_product_sum += abs (unit_vectors[i].dot (unit_vectors[*j]));
               ++adj_dot_product_count;
             }
           }

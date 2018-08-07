@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -16,15 +17,15 @@
 #define __cmdline_option_h__
 
 #include <cassert>
-#include <string>
-#include <vector>
 #include <limits>
+#include <string>
 
 #ifdef None
 # undef None
 #endif
 
 #include "mrtrix.h"
+#include "types.h"
 
 namespace MR
 {
@@ -47,13 +48,16 @@ namespace MR
       Float,
       ArgFileIn,
       ArgFileOut,
+      ArgDirectoryIn,
+      ArgDirectoryOut,
       Choice,
       ImageIn,
       ImageOut,
       IntSeq,
       FloatSeq,
       TracksIn,
-      TracksOut
+      TracksOut,
+      Various
     };
 
     using ArgFlags = int;
@@ -75,7 +79,7 @@ namespace MR
      *
      * The list of arguments is provided by adding to the ARGUMENTS vector, like this:
      * \code
-     * ARGUMENTS 
+     * ARGUMENTS
      *   + Argument ("input", "the input image")
      *     .type_image_in()
      *
@@ -157,7 +161,7 @@ namespace MR
           return *this;
         }
 
-        //! specifies that the argument should be a text string */
+        //! specifies that the argument should be a text string
         Argument& type_text () {
           assert (type == Undefined);
           type = Text;
@@ -239,6 +243,20 @@ namespace MR
           return *this;
         }
 
+        //! specifies that the argument should be an input directory
+        Argument& type_directory_in () {
+          assert (type == Undefined);
+          type = ArgDirectoryIn;
+          return *this;
+        }
+
+        //! specifies that the argument should be an output directory
+        Argument& type_directory_out () {
+          assert (type == Undefined);
+          type = ArgDirectoryOut;
+          return *this;
+        }
+
         //! specifies that the argument should be a sequence of comma-separated integer values
         Argument& type_sequence_int () {
           assert (type == Undefined);
@@ -267,6 +285,13 @@ namespace MR
           return *this;
         }
 
+        //! specifies that the argument could be one of various types
+        Argument& type_various () {
+          assert (type == Undefined);
+          type = Various;
+          return *this;
+        }
+
 
         std::string syntax (int format) const;
         std::string usage () const;
@@ -286,7 +311,7 @@ namespace MR
      * The list of options is provided using the OPTIONS macro, like this:
      * \code
      * OPTIONS
-     *   + Option ("exact", 
+     *   + Option ("exact",
      *        "do not use approximations when processing")
      *
      *   + Option ("mask",
@@ -294,11 +319,11 @@ namespace MR
      *        "the binary image specified")
      *     + Argument ("image").type_image_in()
      *
-     *   + Option ("regularisation", 
+     *   + Option ("regularisation",
      *        "set the regularisation term")
      *     + Argument ("value").type_float (0.0, 1.0, 100.0)
      *
-     *   Option ("dump", 
+     *   Option ("dump",
      *        "dump all intermediate values to file")
      *     + Argument ("file").type_file();
      * \endcode
@@ -388,18 +413,18 @@ namespace MR
      *   + Option ("option2", ...);
      * }
      * \endcode
-     */  
+     */
     class OptionGroup : public vector<Option> { NOMEMALIGN
       public:
         OptionGroup (const char* group_name = "OPTIONS") : name (group_name) { }
         const char* name;
 
-        OptionGroup& operator+ (const Option& option) { 
+        OptionGroup& operator+ (const Option& option) {
           push_back (option);
           return *this;
         }
 
-        OptionGroup& operator+ (const Argument& argument) { 
+        OptionGroup& operator+ (const Argument& argument) {
           assert (!empty());
           back() + argument;
           return *this;

@@ -1,18 +1,20 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
 #include "command.h"
+#include "phase_encoding.h"
 #include "progressbar.h"
 #include "image.h"
 #include "algo/threaded_copy.h"
@@ -21,7 +23,6 @@
 
 using namespace MR;
 using namespace App;
-using namespace std;
 
 using value_type = float;
 
@@ -180,6 +181,7 @@ void run ()
   header.datatype() = DataType::Float32;
   header.ndim() = 4;
   DWI::stash_DW_scheme (header, grad);
+  PhaseEncoding::clear_scheme (header);
   
   Image<value_type>* predict = nullptr;
   opt = get_options ("predicted_signal");

@@ -1,23 +1,26 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
 #include <sstream>
 #include <string>
-#include <vector>
 
 #include "command.h"
+#include "image.h"
 #include "progressbar.h"
+#include "thread_queue.h"
+#include "types.h"
 
 #include "connectome/connectome.h"
 
@@ -27,11 +30,6 @@
 #include "dwi/tractography/connectome/extract.h"
 #include "dwi/tractography/connectome/streamline.h"
 #include "dwi/tractography/mapping/loader.h"
-
-#include "image.h"
-
-#include "thread_queue.h"
-
 
 
 
@@ -297,7 +295,7 @@ void run ()
               writer.add (one, two, prefix + str(one) + "-" + str(two) + ".tck", weights_prefix.size() ? (weights_prefix + str(one) + "-" + str(two) + ".csv") : "");
             }
           } else {
-            // Allow duplication of edges; want to have a set of files for each node
+            // Allow duplication of edges; want to have an exhaustive set of files for each node
             for (node_t two = first_node; two <= max_node_index; ++two)
               writer.add (one, two, prefix + str(one) + "-" + str(two) + ".tck", weights_prefix.size() ? (weights_prefix + str(one) + "-" + str(two) + ".csv") : "");
           }

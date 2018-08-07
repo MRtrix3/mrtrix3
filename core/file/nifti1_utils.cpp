@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -63,7 +64,7 @@ namespace MR
           H.size(i) = Raw::fetch_<int16_t> (&NH.dim[i+1], is_BE);
           if (H.size (i) < 0) {
             INFO ("dimension along axis " + str (i) + " specified as negative in NIfTI-1.1 image \"" + H.name() + "\" - taking absolute value");
-            H.size(i) = std::abs (H.size (i));
+            H.size(i) = abs (H.size (i));
           }
           if (!H.size (i))
             H.size(i) = 1;
@@ -133,7 +134,7 @@ namespace MR
           H.spacing(i) = Raw::fetch_<float32> (&NH.pixdim[i+1], is_BE);
           if (H.spacing (i) < 0.0) {
             INFO ("voxel size along axis " + str (i) + " specified as negative in NIfTI-1.1 image \"" + H.name() + "\" - taking absolute value");
-            H.spacing(i) = std::abs (H.spacing (i));
+            H.spacing(i) = abs (H.spacing (i));
           }
         }
 
@@ -145,7 +146,7 @@ namespace MR
           if (!std::isfinite (H.intensity_offset()))
             H.intensity_offset() = 0.0;
         }
-        else 
+        else
           H.reset_intensity_scaling();
 
         size_t data_offset = (size_t) Raw::fetch_<float32> (&NH.vox_offset, is_BE);
@@ -161,7 +162,8 @@ namespace MR
         }
 
         if (is_nifti) {
-          if (Raw::fetch_<int16_t> (&NH.sform_code, is_BE)) {
+          bool sform_code = Raw::fetch_<int16_t> (&NH.sform_code, is_BE);
+          if (sform_code) {
             auto& M (H.transform().matrix());
 
             M(0,0) = Raw::fetch_<float32> (&NH.srow_x[0], is_BE);
@@ -179,41 +181,69 @@ namespace MR
             M(2,2) = Raw::fetch_<float32> (&NH.srow_z[2], is_BE);
             M(2,3) = Raw::fetch_<float32> (&NH.srow_z[3], is_BE);
 
-            // get voxel sizes:
+            // check voxel sizes:
             for (size_t axis = 0; axis != 3; ++axis) {
               if (size_t(ndim) > axis)
-                H.spacing(axis) = std::sqrt (Math::pow2 (M(0,axis)) + Math::pow2 (M(1,axis)) + Math::pow2 (M(2,axis)));
+                if (abs(H.spacing(axis) - M.col(axis).head<3>().norm()) > 1e-4) {
+                    WARN ("voxel spacings inconsistent between NIFTI s-form and header field pixdim");
+                    break;
+                }
             }
 
             // normalize each transform axis:
             for (size_t axis = 0; axis != 3; ++axis) {
               if (size_t(ndim) > axis)
-                M.col(axis).array() /= H.spacing (axis);
+                M.col(axis).normalize();
             }
 
           }
-          else if (Raw::fetch_<int16_t> (&NH.qform_code, is_BE)) {
-            { // TODO update with Eigen3 Quaternions
-              Eigen::Quaterniond Q (0.0, Raw::fetch_<float32> (&NH.quatern_b, is_BE), Raw::fetch_<float32> (&NH.quatern_c, is_BE), Raw::fetch_<float32> (&NH.quatern_d, is_BE));
-              Q.w() = std::sqrt (std::max (1.0 - Q.squaredNorm(), 0.0));
-              H.transform().matrix().topLeftCorner<3,3>() = Q.matrix();
-            }
 
-            H.transform().translation()[0] = Raw::fetch_<float32> (&NH.qoffset_x, is_BE);
-            H.transform().translation()[1] = Raw::fetch_<float32> (&NH.qoffset_y, is_BE);
-            H.transform().translation()[2] = Raw::fetch_<float32> (&NH.qoffset_z, is_BE);
+          if (Raw::fetch_<int16_t> (&NH.qform_code, is_BE)) {
+            transform_type M_qform;
+
+            Eigen::Quaterniond Q (0.0, Raw::fetch_<float32> (&NH.quatern_b, is_BE), Raw::fetch_<float32> (&NH.quatern_c, is_BE), Raw::fetch_<float32> (&NH.quatern_d, is_BE));
+            const double w = 1.0 - Q.squaredNorm();
+            if (w < 1.0e-7)
+              Q.normalize();
+            else
+              Q.w() = std::sqrt (w);
+            M_qform.matrix().topLeftCorner<3,3>() = Q.matrix();
+
+            M_qform.translation()[0] = Raw::fetch_<float32> (&NH.qoffset_x, is_BE);
+            M_qform.translation()[1] = Raw::fetch_<float32> (&NH.qoffset_y, is_BE);
+            M_qform.translation()[2] = Raw::fetch_<float32> (&NH.qoffset_z, is_BE);
 
             // qfac:
             float qfac = Raw::fetch_<float32> (&NH.pixdim[0], is_BE) >= 0.0 ? 1.0 : -1.0;
-            if (qfac < 0.0) 
-              H.transform().matrix().col(2) *= qfac;
+            if (qfac < 0.0)
+              M_qform.matrix().col(2) *= qfac;
+
+            if (sform_code) {
+              Header header2 (H);
+              header2.transform() = M_qform;
+              if (!voxel_grids_match_in_scanner_space (H, header2, 0.1)) {
+                //CONF option: NIfTIUseSform
+                //CONF default: 0 (false)
+                //CONF A boolean value to control whether, in cases where both
+                //CONF the sform and qform transformations are defined in an
+                //CONF input NIfTI image, but those transformations differ, the
+                //CONF sform transformation should be used in preference to the
+                //CONF qform matrix (the default behaviour).
+                const bool use_sform = File::Config::get_bool ("NIfTIUseSform", false);
+                WARN ("qform and sform are inconsistent in NIfTI image \"" + H.name() + "\" - using " + (use_sform ? "sform" : "qform"));
+                if (!use_sform)
+                  H.transform() = M_qform;
+              }
+            }
+            else
+              H.transform() = M_qform;
           }
 
-          //CONF option: NIfTI.AutoLoadJSON
+          //CONF option: NIfTIAutoLoadJSON
           //CONF default: 0 (false)
           //CONF A boolean value to indicate whether, when opening NIfTI images,
-          //CONF any corresponding JSON file should be automatically loaded
-          if (File::Config::get_bool ("NIfTI.AutoLoadJSON", false)) {
+          //CONF any corresponding JSON file should be automatically loaded.
+          if (File::Config::get_bool ("NIfTIAutoLoadJSON", false)) {
             std::string json_path = H.name();
             if (Path::has_suffix (json_path, ".nii.gz"))
               json_path = json_path.substr (0, json_path.size()-7);
@@ -284,7 +314,7 @@ namespace MR
 
           // pad out the other dimensions with 1, fix for fslview
           ++i;
-          for (; i < 8; i++) 
+          for (; i < 8; i++)
             Raw::store<int16_t> (1, &NH.dim[i], is_BE);
         }
 
@@ -380,7 +410,7 @@ namespace MR
         }
         Eigen::Quaterniond Q (R);
 
-        if (Q.w() < 0.0) 
+        if (Q.w() < 0.0)
           Q.vec() = -Q.vec();
 
         Raw::store<float32> (Q.x(), &NH.quatern_b, is_BE);
@@ -411,13 +441,13 @@ namespace MR
 
         strncpy ( (char*) &NH.magic, single_file ? "n+1\0" : "ni1\0", 4);
 
-        //CONF option: NIfTI.AutoSaveJSON
+        //CONF option: NIfTIAutoSaveJSON
         //CONF default: 0 (false)
         //CONF A boolean value to indicate whether, when writing NIfTI images,
         //CONF a corresponding JSON file should be automatically created in order
         //CONF to save any header entries that cannot be stored in the NIfTI
-        //CONF header
-        if (single_file && File::Config::get_bool ("NIfTI.AutoSaveJSON", false)) {
+        //CONF header.
+        if (single_file && File::Config::get_bool ("NIfTIAutoSaveJSON", false)) {
           std::string json_path = H.name();
           if (Path::has_suffix (json_path, ".nii.gz"))
             json_path = json_path.substr (0, json_path.size()-7);

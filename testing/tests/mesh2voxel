@@ -1,0 +1,1 @@
+mesh2voxel meshconvert/in.vtk meshconvert/image.mif.gz - | testing_diff_image - mesh2voxel/out.mif.gz -abs 1.5e-3

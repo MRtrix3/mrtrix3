@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -22,8 +23,6 @@
 #include "gui/opengl/lighting.h"
 #include "gui/lighting_dock.h"
 
- // as a fraction of the image FOV:
-#define MRTRIX_DEFAULT_LINE_THICKNESS 0.002f
 
 namespace MR
 {
@@ -33,6 +32,31 @@ namespace MR
     {
       namespace Tool
       {
+        const char* tractogram_geometry_types[] = { "pseudotubes", "lines", "points", nullptr };
+
+        TrackGeometryType geometry_index2type (const int idx)
+        {
+          switch (idx) {
+            case 0: return TrackGeometryType::Pseudotubes;
+            case 1: return TrackGeometryType::Lines;
+            case 2: return TrackGeometryType::Points;
+            default: assert (0); return TrackGeometryType::Pseudotubes;
+          }
+        }
+
+        size_t geometry_string2index (std::string type_str)
+        {
+          type_str = lowercase (type_str);
+          size_t index = 0;
+          for (const char* const* p = tractogram_geometry_types; *p; ++p, ++index) {
+            if (type_str == *p)
+              return index;
+          }
+          throw Exception ("Unrecognised value for tractogram geometry \"" + type_str + "\" (options are: " + join(tractogram_geometry_types, ", ") + "); ignoring");
+          return 0;
+        }
+
+
 
         class Tractography::Model : public ListModelBase
         { MEMALIGN(Tractography::Model)
@@ -66,7 +90,6 @@ namespace MR
 
         Tractography::Tractography (Dock* parent) :
           Base (parent),
-          line_thickness (MRTRIX_DEFAULT_LINE_THICKNESS),
           do_crop_to_slab (true),
           use_lighting (false),
           not_3D (true),
@@ -158,6 +181,37 @@ namespace MR
 
             main_box->addLayout (hlayout);
 
+            hlayout = new HBoxLayout;
+            hlayout->setContentsMargins (0, 0, 0, 0);
+            hlayout->setSpacing (0);
+
+            hlayout->addWidget (new QLabel ("geometry"));
+
+            geom_type_combobox = new ComboBoxWithErrorMsg (this, "(variable)");
+            geom_type_combobox->setToolTip (tr ("Set the tractogram geometry type"));
+            geom_type_combobox->addItem ("Pseudotubes");
+            geom_type_combobox->addItem ("Lines");
+            geom_type_combobox->addItem ("Points");
+            connect (geom_type_combobox, SIGNAL (activated(int)), this, SLOT (geom_type_selection_slot (int)));
+            hlayout->addWidget (geom_type_combobox);
+
+            main_box->addLayout (hlayout);
+
+            hlayout = new HBoxLayout;
+            hlayout->setContentsMargins (0, 0, 0, 0);
+            hlayout->setSpacing (0);
+
+            thickness_label = new QLabel ("thickness");
+            hlayout->addWidget (thickness_label);
+
+            thickness_slider = new QSlider (Qt::Horizontal);
+            thickness_slider->setRange (-1000,1000);
+            thickness_slider->setSliderPosition (0);
+            connect (thickness_slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
+            hlayout->addWidget (thickness_slider);
+
+            main_box->addLayout (hlayout);
+
             scalar_file_options = new TrackScalarFileOptions (this);
             main_box->addWidget (scalar_file_options);
 
@@ -175,14 +229,7 @@ namespace MR
             general_opt_grid->addWidget (new QLabel ("opacity"), 0, 0);
             general_opt_grid->addWidget (opacity_slider, 0, 1);
 
-            thickness_slider = new QSlider (Qt::Horizontal);
-            thickness_slider->setRange (-1000,1000);
-            thickness_slider->setSliderPosition (0);
-            connect (thickness_slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
-            general_opt_grid->addWidget (new QLabel ("line thickness"), 1, 0);
-            general_opt_grid->addWidget (thickness_slider, 1, 1);
-
-            QGroupBox* slab_group_box = new QGroupBox (tr("crop to slab"));
+            slab_group_box = new QGroupBox (tr("crop to slab"));
             slab_group_box->setCheckable (true);
             slab_group_box->setChecked (true);
             general_opt_grid->addWidget (slab_group_box, 4, 0, 1, 2);
@@ -198,7 +245,7 @@ namespace MR
             connect (slab_entry, SIGNAL (valueChanged()), this, SLOT (on_slab_thickness_slot()));
             slab_layout->addWidget (slab_entry, 0, 1);
 
-            QGroupBox* lighting_group_box = new QGroupBox (tr("use lighting"));
+            lighting_group_box = new QGroupBox (tr("use lighting"));
             lighting_group_box->setCheckable (true);
             lighting_group_box->setChecked (false);
             general_opt_grid->addWidget (lighting_group_box, 5, 0, 1, 2);
@@ -206,14 +253,14 @@ namespace MR
             connect (lighting_group_box, SIGNAL (clicked (bool)), this, SLOT (on_use_lighting_slot (bool)));
 
             VBoxLayout* lighting_layout = new VBoxLayout (lighting_group_box);
-            QPushButton* lighting_button = new QPushButton ("Track lighting...");
+            lighting_button = new QPushButton ("Track lighting...");
             lighting_button->setIcon (QIcon (":/light.svg"));
             connect (lighting_button, SIGNAL (clicked()), this, SLOT (on_lighting_settings()));
             lighting_layout->addWidget (lighting_button);
 
             main_box->addWidget (general_groupbox, 0);
 
-            lighting = new GL::Lighting (parent); 
+            lighting = new GL::Lighting (parent);
             lighting->diffuse = 0.8;
             lighting->shine = 5.0;
             connect (lighting, SIGNAL (changed()), SLOT (hide_all_slot()));
@@ -236,6 +283,27 @@ namespace MR
             action = new QAction("&Colour by (track) scalar file", this);
             connect (action, SIGNAL(triggered()), this, SLOT (colour_by_scalar_file_slot()));
             track_option_menu->addAction (action);
+
+            //CONF option: MRViewDefaultTractGeomType
+            //CONF default: Pseudotubes
+            //CONF The default geometry type used to render tractograms.
+            //CONF Options are Pseudotubes, Lines or Points
+            const std::string default_geom_type = File::Config::get ("MRViewDefaultTractGeomType", tractogram_geometry_types[0]);
+            try {
+              const size_t default_geom_index = geometry_string2index (default_geom_type);
+              Tractogram::default_tract_geom = geometry_index2type (default_geom_index);
+              geom_type_combobox->setCurrentIndex (default_geom_index);
+            } catch (Exception& e) {
+              e.display();
+            }
+
+            // In the instance where pseudotubes are _not_ the default, enable lighting by default
+            if (Tractogram::default_tract_geom != TrackGeometryType::Pseudotubes) {
+              use_lighting = true;
+              lighting_group_box->setChecked (true);
+            }
+
+            update_geometry_type_gui();
         }
 
 
@@ -287,17 +355,31 @@ namespace MR
 
         void Tractography::tractogram_open_slot ()
         {
+
           vector<std::string> list = Dialog::File::get_files (this, "Select tractograms to open", "Tractograms (*.tck)");
+          add_tractogram(list);
+        }
+
+
+
+
+
+        void Tractography::add_tractogram (vector<std::string>& list)
+        {
           if (list.empty())
-            return;
+          { return; }
           try {
             tractogram_list_model->add_items (list, *this);
-            window().updateGL();
+            select_last_added_tractogram();
           }
           catch (Exception& E) {
             E.display();
           }
+
         }
+
+
+
 
 
         void Tractography::dropEvent (QDropEvent* event)
@@ -336,7 +418,7 @@ namespace MR
         }
 
 
-        void Tractography::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2) 
+        void Tractography::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2)
         {
           if (index.row() == index2.row()) {
             tractogram_list_view->setCurrentIndex(index);
@@ -404,10 +486,10 @@ namespace MR
 
         void Tractography::line_thickness_slot (int thickness)
         {
-          line_thickness = MRTRIX_DEFAULT_LINE_THICKNESS * std::exp (2.0e-3f * thickness);
-
-          for (size_t i = 0, N = tractogram_list_model->rowCount(); i < N; ++i) {
-            Tractogram* tractogram = dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get());
+          QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i)  {
+            Tractogram* tractogram = tractogram_list_model->get_tractogram (indices[i]);
+            tractogram->line_thickness = thickness;
             tractogram->should_update_stride = true;
           }
 
@@ -443,8 +525,8 @@ namespace MR
           update_scalar_options();
           window().updateGL();
         }
-        
-        
+
+
         void Tractography::colour_track_by_ends_slot()
         {
           QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
@@ -532,6 +614,7 @@ namespace MR
                                   QMessageBox::Ok);
             return;
           }
+
           Tractogram* tractogram = tractogram_list_model->get_tractogram (indices[0]);
           scalar_file_options->set_tractogram (tractogram);
           if (tractogram->intensity_scalar_filename.empty()) {
@@ -559,7 +642,7 @@ namespace MR
         }
 
 
-        void Tractography::colour_mode_selection_slot (int /*unused*/)
+        void Tractography::colour_mode_selection_slot (int)
         {
           switch (colour_combobox->currentIndex()) {
             case 0: colour_track_by_direction_slot(); break;
@@ -593,9 +676,32 @@ namespace MR
         }
 
 
+
+        void Tractography::geom_type_selection_slot (int selected_index)
+        {
+          // Combo box shows the "(variable)" message, and the user has
+          //   re-clicked on it -> nothing to do
+          if (selected_index == 3)
+            return;
+
+          TrackGeometryType geom_type = geometry_index2type (selected_index);
+
+          QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i)
+            tractogram_list_model->get_tractogram (indices[i])->set_geometry_type (geom_type);
+
+          update_geometry_type_gui();
+
+          window().updateGL();
+        }
+
+
+
         void Tractography::selection_changed_slot (const QItemSelection &, const QItemSelection &)
         {
           update_scalar_options();
+          update_geometry_type_gui();
+
           QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
           if (!indices.size()) {
             colour_combobox->setEnabled (false);
@@ -603,15 +709,21 @@ namespace MR
             return;
           }
           colour_combobox->setEnabled (true);
-          TrackColourType color_type = tractogram_list_model->get_tractogram (indices[0])->get_color_type();
-          Eigen::Array3f color = tractogram_list_model->get_tractogram (indices[0])->colour;
-          bool color_type_consistent = true;
+
+          const Tractogram* first_tractogram = tractogram_list_model->get_tractogram (indices[0]);
+
+          TrackColourType color_type = first_tractogram->get_color_type();
+          Eigen::Array3f color = first_tractogram->colour;
+          TrackGeometryType geom_type = first_tractogram->get_geometry_type();
+          bool color_type_consistent = true, geometry_type_consistent = true;
+          float mean_thickness = first_tractogram->line_thickness;
           for (int i = 1; i != indices.size(); ++i) {
             const Tractogram* tractogram = tractogram_list_model->get_tractogram (indices[i]);
-            if (tractogram->get_color_type() != color_type) {
+            if (tractogram->get_color_type() != color_type)
               color_type_consistent = false;
-              break;
-            }
+            if (tractogram->get_geometry_type() != geom_type)
+              geometry_type_consistent = false;
+            mean_thickness += tractogram->line_thickness;
           }
           if (color_type_consistent) {
             colour_combobox->blockSignals (true);
@@ -639,6 +751,29 @@ namespace MR
           } else {
             colour_combobox->setError();
           }
+
+          if (geometry_type_consistent) {
+            geom_type_combobox->blockSignals (true);
+            switch (geom_type) {
+              case TrackGeometryType::Pseudotubes:
+                geom_type_combobox->setCurrentIndex (0);
+                break;
+              case TrackGeometryType::Lines:
+                geom_type_combobox->setCurrentIndex (1);
+                break;
+              case TrackGeometryType::Points:
+                geom_type_combobox->setCurrentIndex (2);
+                break;
+            }
+            geom_type_combobox->clearError();
+            geom_type_combobox->blockSignals (false);
+          } else {
+            geom_type_combobox->setError();
+          }
+
+          thickness_slider->blockSignals (true);
+          thickness_slider->setSliderPosition (mean_thickness / float(indices.size()));
+          thickness_slider->blockSignals (false);
         }
 
 
@@ -655,9 +790,40 @@ namespace MR
 
 
 
+        void Tractography::update_geometry_type_gui()
+        {
+          thickness_slider->setHidden (true);
+          thickness_label->setHidden (true);
+          lighting_button->setEnabled (false);
+          lighting_group_box->setEnabled (false);
+          geom_type_combobox->setEnabled (false);
 
-        void Tractography::add_commandline_options (MR::App::OptionList& options) 
-        { 
+          QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+          if (!indices.size())
+            return;
+
+          geom_type_combobox->setEnabled (true);
+
+          const Tractogram* first_tractogram = tractogram_list_model->get_tractogram (indices[0]);
+          const TrackGeometryType geom_type = first_tractogram->get_geometry_type();
+
+          if (geom_type == TrackGeometryType::Pseudotubes || geom_type == TrackGeometryType::Points) {
+            thickness_slider->setHidden (false);
+            thickness_label->setHidden (false);
+            lighting_button->setEnabled (true);
+            lighting_group_box->setEnabled (true);
+          }
+
+        }
+
+
+
+
+
+
+
+        void Tractography::add_commandline_options (MR::App::OptionList& options)
+        {
           using namespace MR::App;
           options
             + OptionGroup ("Tractography tool options")
@@ -666,35 +832,137 @@ namespace MR
             +   Argument ("tracks").type_file_in()
 
             + Option ("tractography.thickness", "Line thickness of tractography display, [-1.0, 1.0], default is 0.0.").allow_multiple()
-            +   Argument("value").type_float ( -1.0, 1.0 )
+            +   Argument ("value").type_float ( -1.0, 1.0 )
+
+            + Option ("tractography.geometry", "The geometry type to use when rendering tractograms (options are: " + join(tractogram_geometry_types, ", ") + ")").allow_multiple()
+            +   Argument ("value").type_choice (tractogram_geometry_types)
 
             + Option ("tractography.opacity", "Opacity of tractography display, [0.0, 1.0], default is 1.0.").allow_multiple()
-            +   Argument("value").type_float ( 0.0, 1.0 )
-            ;
-          
+            +   Argument ("value").type_float ( 0.0, 1.0 )
+
+            + Option ("tractography.slab", "Slab thickness of tractography display, in mm. -1 to turn off crop to slab.").allow_multiple()
+            +   Argument ("value").type_float(-1, 1e6)
+
+            + Option ("tractography.lighting", "Toggle the use of lighting of tractogram geometry").allow_multiple()
+            +  Argument ("value").type_bool()
+
+            + Option ("tractography.tsf_load", "Load the specified tractography scalar file.").allow_multiple()
+            +  Argument ("tsf").type_file_in()
+
+            + Option ("tractography.tsf_range", "Set range for the tractography scalar file. Requires -tractography.tsf_load already provided.").allow_multiple()
+            +  Argument ("RangeMin,RangeMax").type_sequence_float()
+
+            + Option ("tractography.tsf_thresh", "Set thresholds for the tractography scalar file. Requires -tractography.tsf_load already provided.").allow_multiple()
+            +  Argument ("ThresholdMin,ThesholdMax").type_sequence_float();
         }
 
-        bool Tractography::process_commandline_option (const MR::App::ParsedOption& opt) 
+        /*
+          Selects the last tractogram in the tractogram_list_view and updates the window. If no tractograms are in the list view, no action is taken.
+        */
+        void Tractography::select_last_added_tractogram()
         {
-          if (opt.opt->is ("tractography.load")) {
+          int count = tractogram_list_model->rowCount();
+          if(count != 0){
+            QModelIndex index = tractogram_list_view->model()->index(count-1, 0);
+            tractogram_list_view->setCurrentIndex(index);
+            window().updateGL();
+          }
+        }
+
+
+
+
+
+        bool Tractography::process_commandline_option (const MR::App::ParsedOption& opt)
+        {
+
+          if (opt.opt->is ("tractography.load"))
+          {
             vector<std::string> list (1, std::string(opt[0]));
-            try { 
-              tractogram_list_model->add_items (list, *this); 
-              window().updateGL();
+            add_tractogram(list);
+            return true;
+          }
+
+
+          if (opt.opt->is ("tractography.tsf_load"))
+          {
+            try {
+
+              if (process_commandline_option_tsf_check_tracto_loaded()) {
+                QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+
+                if (indices.size() == 1) {//just in case future edits break this assumption
+                  Tractogram* tractogram = tractogram_list_model->get_tractogram (indices[0]);
+
+                  //set its tsf filename and load the tsf file
+                  scalar_file_options->set_tractogram (tractogram);
+                  scalar_file_options->open_intensity_track_scalar_file_slot (std::string(opt[0]));
+
+                  //Set the GUI to use the file for visualisation
+                  colour_combobox->setCurrentIndex(4); // Set combobox to "File"
+                }
+              }
+            }
+            catch (Exception& E) { E.display(); }
+
+            return true;
+          }
+
+          if (opt.opt->is ("tractography.tsf_range"))
+          {
+            try {
+              //Set the tsf visualisation range
+              vector<default_type> range;
+              if (process_commandline_option_tsf_option(opt,2, range))
+                scalar_file_options->set_scaling (range[0], range[1]);
             }
             catch (Exception& E) { E.display(); }
             return true;
           }
 
+
+          if (opt.opt->is ("tractography.tsf_thresh"))
+          {
+            try {
+              //Set the tsf visualisation threshold
+              vector<default_type> range;
+              if (process_commandline_option_tsf_option(opt,2, range))
+                scalar_file_options->set_threshold (TrackThresholdType::UseColourFile,range[0], range[1]);
+            }
+            catch(Exception& E) { E.display(); }
+            return true;
+          }
+
+
+
           if (opt.opt->is ("tractography.thickness")) {
-            // Thickness runs from -1000 to 1000, 
+            // Thickness runs from -1000 to 1000,
             float thickness = float(opt[0]) * 1000.0f;
-            try { 
+            try {
               thickness_slider->setValue(thickness);
             }
             catch (Exception& E) { E.display(); }
             return true;
           }
+
+
+
+          if (opt.opt-> is ("tractography.geometry")) {
+            try {
+              const TrackGeometryType geom_type = geometry_index2type (geometry_string2index (opt[0]));
+              QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+              if (indices.size()) {
+                for (int i = 0; i < indices.size(); ++i)
+                  tractogram_list_model->get_tractogram (indices[i])->set_geometry_type (geom_type);
+              } else {
+                Tractogram::default_tract_geom = geom_type;
+              }
+              update_geometry_type_gui();
+            }
+            catch (Exception& E) { E.display(); }
+            return true;
+          }
+
 
           if (opt.opt->is ("tractography.opacity")) {
             // Opacity runs from 0 to 1000, so multiply by 1000
@@ -706,11 +974,79 @@ namespace MR
             return true;
           }
 
+          if (opt.opt->is ("tractography.slab")) {
+            float thickness = opt[0];
+            try {
+              bool crop = thickness > 0;
+              slab_group_box->setChecked(crop);
+              on_crop_to_slab_slot(crop);//Needs to be manually bumped
+              if(crop)
+              {
+                slab_entry->setValue(thickness);
+                on_slab_thickness_slot();//Needs to be manually bumped
+              }
+            }
+            catch (Exception& E) { E.display(); }
+            return true;
+          }
+
+          if (opt.opt->is ("tractography.lighting")) {
+            const bool value = bool(opt[0]);
+            lighting_group_box->setChecked (value);
+            use_lighting = bool(value);
+            return true;
+          }
+
           return false;
         }
 
 
 
+
+
+
+      /*Checks whether any tractography has been loaded and warns the user if it has not*/
+        bool Tractography::process_commandline_option_tsf_check_tracto_loaded()
+        {
+          int count = tractogram_list_model->rowCount();
+          if (count == 0){
+            //Error to std error to save many dialogs appearing for a single missed argument
+            std::cerr << "TSF argument specified but no tractography loaded. Ensure TSF arguments follow the tractography.load argument.\n";
+          }
+          return count != 0;
+        }
+
+
+
+
+
+
+      /*Checks whether legal to apply tsf options and prepares the scalar_file_options to do so. Returns the vector of floats parsed from the options, or null on fail*/
+        bool Tractography::process_commandline_option_tsf_option(const MR::App::ParsedOption& opt, uint reqArgSize, vector<default_type>& range)
+        {
+          if(process_commandline_option_tsf_check_tracto_loaded()){
+            QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+            range = opt[0].as_sequence_float();
+            if(indices.size() == 1 && range.size() == reqArgSize){
+              //values supplied
+              Tractogram* tractogram = tractogram_list_model->get_tractogram (indices[0]);
+              if(tractogram->get_color_type() == TrackColourType::ScalarFile){
+                //prereq options supplied/executed
+                scalar_file_options->set_tractogram(tractogram);
+                return true;
+              }
+              else
+              {
+                std::cerr << "Could not apply TSF argument - tractography.load_tsf not supplied.\n";
+              }
+            }
+            else
+            {
+              std::cerr << "Could not apply TSF argument - insufficient number of arguments provided.\n";
+            }
+          }
+        return false;
+        }
       }
     }
   }

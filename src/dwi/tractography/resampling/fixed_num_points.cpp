@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -57,9 +58,12 @@ namespace MR {
               out.push_back (temp[s]);
               break;
             }
-            const value_type mu = (target_length - cumulative_length) / steps[input_index];
+            const value_type mu = steps[input_index] ?
+                                  (target_length - cumulative_length) / steps[input_index] :
+                                  0.5;
             interp.set (mu);
             out.push_back (interp.value (temp[input_index], temp[input_index+1], temp[input_index+2], temp[input_index+3]));
+            assert (out.back().allFinite());
           }
 
           return true;

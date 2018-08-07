@@ -1,22 +1,22 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
-#include <vector>
-
 #include "command.h"
-#include "progressbar.h"
 #include "memory.h"
+#include "progressbar.h"
+#include "types.h"
 
 #include "file/ofstream.h"
 
@@ -65,6 +65,9 @@ void usage ()
   + Option ("dump", "dump the streamlines lengths to a text file")
     + Argument ("path").type_file_out()
 
+  + Option ("explicit", "explicitly calculate the length of each streamline, "
+                        "ignoring any step size information present in the header")
+
   + Option ("ignorezero", "do not generate a warning if the track file contains streamlines with zero length")
 
   + Tractography::TrackWeightsInOption;
@@ -106,7 +109,7 @@ void run ()
   float step_size = NaN;
   size_t count = 0, header_count = 0;
   float min_length = std::numeric_limits<float>::infinity();
-  float max_length = 0.0f;
+  float max_length = -std::numeric_limits<float>::infinity();
   double sum_lengths = 0.0, sum_weights = 0.0;
   vector<double> histogram;
   vector<LW> all_lengths;
@@ -119,12 +122,13 @@ void run ()
     if (properties.find ("count") != properties.end())
       header_count = to<size_t> (properties["count"]);
 
-    step_size = get_step_size (properties);
-
-    if (!std::isfinite (step_size) || !step_size) {
-      INFO ("Streamline step size undefined in header; lengths will be calculated manually");
-      if (get_options ("histogram").size()) {
-        WARN ("Do not have streamline step size with which to construct histogram; histogram will be generated using 1mm bin widths");
+    if (!get_options ("explicit").size()) {
+      step_size = get_step_size (properties);
+      if (!std::isfinite (step_size) || !step_size) {
+        INFO ("Streamline step size undefined in header; lengths will be calculated manually");
+        if (get_options ("histogram").size()) {
+          WARN ("Do not have streamline step size with which to construct histogram; histogram will be generated using 1mm bin widths");
+        }
       }
     }
 
@@ -155,29 +159,37 @@ void run ()
     }
   }
 
-  if (histogram.front() && !get_options ("ignorezero").size())
+  if (histogram.size() && histogram.front() && !get_options ("ignorezero").size())
     WARN ("read " + str(histogram.front()) + " zero-length tracks");
   if (count != header_count)
     WARN ("expected " + str(header_count) + " tracks according to header; read " + str(count));
+  if (!std::isfinite (min_length))
+    min_length = NaN;
+  if (!std::isfinite (max_length))
+    max_length = NaN;
 
-  const float mean_length = sum_lengths / sum_weights;
+  const float mean_length = sum_weights ? (sum_lengths / sum_weights) : NaN;
 
   float median_length = 0.0f;
-  if (weights_provided) {
-    // Perform a weighted median calculation
-    std::sort (all_lengths.begin(), all_lengths.end());
-    size_t median_index = 0;
-    double sum = sum_weights - all_lengths[0].get_weight();
-    while (sum > 0.5 * sum_weights) { sum -= all_lengths[++median_index].get_weight(); }
-    median_length = all_lengths[median_index].get_length();
+  if (count) {
+    if (weights_provided) {
+      // Perform a weighted median calculation
+      std::sort (all_lengths.begin(), all_lengths.end());
+      size_t median_index = 0;
+      double sum = sum_weights - all_lengths[0].get_weight();
+      while (sum > 0.5 * sum_weights) { sum -= all_lengths[++median_index].get_weight(); }
+      median_length = all_lengths[median_index].get_length();
+    } else {
+      median_length = Math::median (all_lengths).get_length();
+    }
   } else {
-    median_length = Math::median (all_lengths).get_length();
+    median_length = NaN;
   }
 
   double stdev = 0.0;
   for (vector<LW>::const_iterator i = all_lengths.begin(); i != all_lengths.end(); ++i)
     stdev += i->get_weight() * Math::pow2 (i->get_length() - mean_length);
-  stdev = std::sqrt (stdev / (((count - 1) / float(count)) * sum_weights));
+  stdev = sum_weights ? (std::sqrt (stdev / (((count - 1) / float(count)) * sum_weights))) : NaN;
 
   vector<std::string> fields;
   auto opt = get_options ("output");

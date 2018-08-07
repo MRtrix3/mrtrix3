@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -46,11 +47,17 @@ namespace MR
       //CONF option: TmpFileDir
       //CONF default: `/tmp` (on Unix), `.` (on Windows)
       //CONF The prefix for temporary files (as used in pipelines). By default,
-      //CONF these files get written to the current folder, which may cause
-      //CONF performance issues when operating over distributed file systems. 
-      //CONF In this case, it may be better to specify `/tmp/` here.
+      //CONF these files get written to the current folder on Windows machines,
+      //CONF which may cause performance issues, particularly when operating
+      //CONF over distributed file systems. On Unix machines, the default is
+      //CONF /tmp/, which is typically a RAM file system and should therefore
+      //CONF be fast; but may cause issues on machines with little RAM
+      //CONF capacity or where write-access to this location is not permitted.
+      //CONF Note that this setting does not influence the location in which
+      //CONF Python scripts construct their temporary directories; that is
+      //CONF determined based on config file option :option:`ScriptTmpDir`.
       const std::string& tmpfile_dir () {
-        static const std::string __tmpfile_dir = File::Config::get ("TmpFileDir", 
+        static const std::string __tmpfile_dir = File::Config::get ("TmpFileDir",
 #ifdef MRTRIX_WINDOWS
             "."
 #else
@@ -68,10 +75,10 @@ namespace MR
       //CONF suffix (depending on file type). Note that this prefix can also be
       //CONF manipulated using the `MRTRIX_TMPFILE_PREFIX` environment
       //CONF variable, without editing the config file.
-      const std::string __get_tmpfile_prefix () { 
+      const std::string __get_tmpfile_prefix () {
         const char* from_env = getenv ("MRTRIX_TMPFILE_PREFIX");
         if (from_env) return from_env;
-        return File::Config::get ("TmpFilePrefix", "mrtrix-tmp-"); 
+        return File::Config::get ("TmpFilePrefix", "mrtrix-tmp-");
       }
 
       const std::string& tmpfile_prefix () {
@@ -90,6 +97,9 @@ namespace MR
       //CONF The location in which to generate the temporary directories to be
       //CONF used by MRtrix Python scripts. By default they will be generated
       //CONF in the working directory.
+      //CONF Note that this setting does not influence the location in which
+      //CONF piped images and other temporary files are created by MRtrix3;
+      //CONF that is determined based on config file option :option:`TmpFileDir`.
 
       //CONF option: ScriptTmpPrefix
       //CONF default: `<script>-tmp-`
@@ -110,7 +120,7 @@ namespace MR
 
       int fid = open (filename.c_str(), O_CREAT | O_RDWR | ( App::overwrite_files ? O_TRUNC : O_EXCL ), 0666);
       if (fid < 0) {
-        if (App::check_overwrite_files_func && errno == EEXIST) 
+        if (App::check_overwrite_files_func && errno == EEXIST)
           App::check_overwrite_files_func (filename);
         else if (errno == EEXIST)
           throw Exception ("output file \"" + filename + "\" already exists (use -force option to force overwrite)");
@@ -120,7 +130,7 @@ namespace MR
       }
       if (fid < 0) {
         std::string mesg ("error creating file \"" + filename + "\": " + strerror (errno));
-        if (errno == EEXIST) 
+        if (errno == EEXIST)
           mesg += " (use -force option to force overwrite)";
         throw Exception (mesg);
       }
@@ -128,7 +138,7 @@ namespace MR
       if (size) size = ftruncate (fid, size);
       close (fid);
 
-      if (size) 
+      if (size)
         throw Exception ("cannot resize file \"" + filename + "\": " + strerror (errno));
     }
 
@@ -152,10 +162,10 @@ namespace MR
 
     inline bool is_tempfile (const std::string& name, const char* suffix = NULL)
     {
-      if (Path::basename (name).compare (0, tmpfile_prefix().size(), tmpfile_prefix())) 
+      if (Path::basename (name).compare (0, tmpfile_prefix().size(), tmpfile_prefix()))
         return false;
-      if (suffix) 
-        if (!Path::has_suffix (name, suffix)) 
+      if (suffix)
+        if (!Path::has_suffix (name, suffix))
           return false;
       return true;
     }
@@ -179,7 +189,7 @@ namespace MR
       } while (fid < 0 && errno == EEXIST);
 
       if (fid < 0)
-        throw Exception (std::string ("error creating temporary file in current working directory: ") + strerror (errno));
+        throw Exception (std::string ("error creating temporary file in directory \"" + tmpfile_dir() + "\": ") + strerror (errno));
 
 
 
@@ -191,7 +201,7 @@ namespace MR
     }
 
 
-    inline void mkdir (const std::string& folder) 
+    inline void mkdir (const std::string& folder)
     {
       if (::mkdir (folder.c_str()
 #ifndef MRTRIX_WINDOWS
@@ -201,7 +211,7 @@ namespace MR
         throw Exception ("error creating folder \"" + folder + "\": " + strerror (errno));
     }
 
-    inline void unlink (const std::string& file) 
+    inline void unlink (const std::string& file)
     {
       if (::unlink (file.c_str()))
         throw Exception ("error deleting file \"" + file + "\": " + strerror (errno));;
@@ -216,7 +226,7 @@ namespace MR
           std::string path = Path::join (folder, entry);
           if (Path::is_dir (path))
             rmdir (path, true);
-          else 
+          else
             unlink (path);
         }
       }

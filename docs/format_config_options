@@ -24,9 +24,8 @@ string += 'List of MRtrix3 configuration file options\n'
 string += '##########################################\n\n'
 
 for entry in optionlist:
-  string += '*  **' + entry[0] + '**\n'
+  string += '.. option:: ' + entry[0] + '\n\n'
   string += '    *' + entry[1] + '*\n\n'
   string += '     ' + entry[2] + '\n\n'
 
-with open('reference/config_file_options.rst', 'w') as f:
-  f.write(string)
+sys.stdout.write(string)

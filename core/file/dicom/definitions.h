@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -47,8 +48,8 @@
 
 #define GROUP_BYTE_ORDER                0x0002U
 #define GROUP_BYTE_ORDER_SWAPPED        0x0200U
-#define GROUP_SEQUENCE                  0xFFFEU 
-#define GROUP_DATA                      0x7FE0U 
+#define GROUP_SEQUENCE                  0xFFFEU
+#define GROUP_DATA                      0x7FE0U
 
 #define ELEMENT_TRANSFER_SYNTAX_UID     0x0010U
 #define ELEMENT_SEQUENCE_ITEM           0xE000U
@@ -63,7 +64,7 @@ namespace MR {
 
       inline std::string format_date (const std::string& date)
       {
-        if (date.empty() || date.size() < 8) 
+        if (date.empty() || date.size() < 8)
           return date;
         return date.substr(6,2) + "/" + date.substr(4,2) + "/" + date.substr(0,4);
       }
@@ -72,7 +73,7 @@ namespace MR {
 
       inline std::string format_time (const std::string& time)
       {
-        if (time.empty()) 
+        if (time.empty())
           return time;
         return time.substr(0,2) + ":" + time.substr(2,2) + ":" + time.substr(4,2);
       }
@@ -81,7 +82,7 @@ namespace MR {
 
       inline std::string format_ID (const std::string& ID)
       {
-        if (ID.empty()) 
+        if (ID.empty())
           return ID;
         return "(" + ID + ")";
       }

@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -19,6 +20,35 @@
 namespace MR {
   namespace File {
     namespace Dicom {
+
+
+
+      std::ostream& operator<< (std::ostream& stream, const Date& item)
+      {
+        stream << item.year << "/"
+               << std::setfill('0') << std::setw(2) << item.month << "/"
+               << std::setfill('0') << std::setw(2) << item.day;
+        return stream;
+      }
+
+
+
+
+
+      std::ostream& operator<< (std::ostream& stream, const Time& item)
+      {
+        stream << std::setfill('0') << std::setw(2) << item.hour << ":"
+               << std::setfill('0') << std::setw(2) << item.minute << ":"
+               << std::setfill('0') << std::setw(2) << item.second;
+        if (item.fraction)
+          stream << str(item.fraction, 6).substr(1);
+        return stream;
+      }
+
+
+
+
+
 
       void Element::set (const std::string& filename, bool force_read, bool read_write)
       {
@@ -147,7 +177,7 @@ namespace MR {
           // implicit encoding:
           std::string name = tag_name();
           if (!name.size()) {
-            DEBUG (printf ("WARNING: unknown DICOM tag (%02X %02X) "
+            DEBUG (printf ("WARNING: unknown DICOM tag (%04X %04X) "
                   "with implicit encoding in file \"", group, element)
                 + fmap->name() + "\"");
             VR = VR_UN;
@@ -160,7 +190,7 @@ namespace MR {
         next = data;
 
         if (size == LENGTH_UNDEFINED) {
-          if (VR != VR_SQ && !(group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_ITEM)) 
+          if (VR != VR_SQ && !(group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_ITEM))
             INFO ("undefined length used for DICOM tag " + ( tag_name().size() ? tag_name().substr (2) : "" )
                 + MR::printf ("(%04X, %04X) in file \"", group, element) + fmap->name() + "\"");
         }
@@ -182,9 +212,9 @@ namespace MR {
 
 
 
-        if (parents.size()) 
+        if (parents.size())
           if ((parents.back().end && data > parents.back().end) ||
-              (group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_DELIMITATION_ITEM)) 
+              (group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_DELIMITATION_ITEM))
             parents.pop_back();
 
         if (is_new_sequence()) {
@@ -248,10 +278,12 @@ namespace MR {
         if (VR == VR_SL || VR == VR_SS) return INT;
         if (VR == VR_UL || VR == VR_US) return UINT;
         if (VR == VR_SQ) return SEQ;
-        if (VR == VR_AE || VR == VR_AS || VR == VR_CS || VR == VR_DA ||
+        if (VR == VR_DA) return DATE;
+        if (VR == VR_TM) return TIME;
+        if (VR == VR_AE || VR == VR_AS || VR == VR_CS ||
             VR == VR_DS || VR == VR_DT || VR == VR_IS || VR == VR_LO ||
             VR == VR_LT || VR == VR_PN || VR == VR_SH || VR == VR_ST ||
-            VR == VR_TM || VR == VR_UI || VR == VR_UT || VR == VR_AT) return STRING;
+            VR == VR_UI || VR == VR_UT || VR == VR_AT) return STRING;
         return OTHER;
       }
 
@@ -267,7 +299,7 @@ namespace MR {
           for (const uint8_t* p = data; p < data + size; p += sizeof (int16_t))
             V.push_back (Raw::fetch_<int16_t> (p, is_BE));
         else if (VR == VR_IS) {
-          vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
+          auto strings = split (std::string (reinterpret_cast<const char*> (data), size), "\\", false);
           V.resize (strings.size());
           for (size_t n = 0; n < V.size(); n++)
             V[n] = to<int32_t> (strings[n]);
@@ -291,9 +323,10 @@ namespace MR {
           for (const uint8_t* p = data; p < data + size; p += sizeof (uint16_t))
             V.push_back (Raw::fetch_<uint16_t> (p, is_BE));
         else if (VR == VR_IS) {
-          vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
+          auto strings = split (std::string (reinterpret_cast<const char*> (data), size), "\\", false);
           V.resize (strings.size());
-          for (size_t n = 0; n < V.size(); n++) V[n] = to<uint32_t> (strings[n]);
+          for (size_t n = 0; n < V.size(); n++)
+            V[n] = to<uint32_t> (strings[n]);
         }
         else
           report_unknown_tag_with_implicit_syntax();
@@ -302,9 +335,9 @@ namespace MR {
 
 
 
-      vector<double> Element::get_float () const
+      vector<default_type> Element::get_float () const
       {
-        vector<double> V;
+        vector<default_type> V;
         if (VR == VR_FD)
           for (const uint8_t* p = data; p < data + size; p += sizeof (float64))
             V.push_back (Raw::fetch_<float64> (p, is_BE));
@@ -312,14 +345,32 @@ namespace MR {
           for (const uint8_t* p = data; p < data + size; p += sizeof (float32))
             V.push_back (Raw::fetch_<float32> (p, is_BE));
         else if (VR == VR_DS || VR == VR_IS) {
-          vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
+          auto strings = split (std::string (reinterpret_cast<const char*> (data), size), "\\", false);
           V.resize (strings.size());
           for (size_t n = 0; n < V.size(); n++)
-            V[n] = to<double> (strings[n]);
+            V[n] = to<default_type> (strings[n]);
         }
         else
           report_unknown_tag_with_implicit_syntax();
         return V;
+      }
+
+
+
+
+      Date Element::get_date () const
+      {
+        assert (type() == DATE);
+        return Date (std::string (reinterpret_cast<const char*> (data), size));
+      }
+
+
+
+
+      Time Element::get_time () const
+      {
+        assert (type() == TIME);
+        return Time (std::string (reinterpret_cast<const char*> (data), size));
       }
 
 
@@ -328,16 +379,13 @@ namespace MR {
 
       vector<std::string> Element::get_string () const
       {
-        if (VR == VR_AT) {
-          vector<std::string> strings;
-          strings.push_back (printf ("%02X %02X", Raw::fetch_<uint16_t> (data, is_BE), Raw::fetch_<uint16_t> (data+2, is_BE)));
-          return strings;
-        }
+        if (VR == VR_AT)
+          return { printf ("%04X %04X", Raw::fetch_<uint16_t> (data, is_BE), Raw::fetch_<uint16_t> (data+2, is_BE)) };
 
-        vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
-        for (vector<std::string>::iterator i = strings.begin(); i != strings.end(); ++i) {
-          *i = strip (*i);
-          replace (*i, '^', ' ');
+        auto strings = split (std::string (reinterpret_cast<const char*> (data), size), "\\", false);
+        for (auto& entry: strings) {
+          entry = strip (entry);
+          replace (entry, '^', ' ');
         }
         return strings;
       }
@@ -348,13 +396,29 @@ namespace MR {
         template <class T>
           inline void print_vec (const vector<T>& V)
           {
-            for (size_t n = 0; n < V.size(); n++)
-              fprintf (stdout, "%s ", str (V[n]).c_str());
+            for (const auto& entry: V)
+              fprintf (stdout, "%s ", str(entry).c_str());
           }
       }
 
 
+      void Element::error_in_get (size_t idx) const
+      {
+        const std::string& name (tag_name());
+        DEBUG ("value not found for DICOM tag " + printf("%04X %04X ", group, element) + ( name.size() ? name.substr(2) : "unknown" ) + " (at index " + str(idx) + ")");
+      }
 
+      void Element::error_in_check_size (size_t min_size, size_t actual_size) const
+      {
+        const std::string& name (tag_name());
+        throw Exception ("not enough items in for DICOM tag " + printf("%04X %04X ", group, element) + ( name.size() ? name.substr(2) : "unknown" ) + " (expected " + str(min_size) + ", got " + str(actual_size) + ")");
+      }
+
+      void Element::report_unknown_tag_with_implicit_syntax () const
+      {
+        DEBUG (MR::printf ("attempt to read data of unknown value representation "
+              "in DICOM implicit syntax for tag (%04X %04X) - ignored", group, element));
+      }
 
 
 
@@ -395,6 +459,12 @@ namespace MR {
             break;
           case Element::FLOAT:
             stream << item.get_float();
+            break;
+          case Element::DATE:
+            stream << "[ " << item.get_date() << " ]";
+            break;
+          case Element::TIME:
+            stream << "[ " << item.get_time() << " ]";
             break;
           case Element::STRING:
             if (item.group == GROUP_DATA && item.element == ELEMENT_DATA)

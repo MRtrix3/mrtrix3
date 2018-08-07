@@ -1,11 +1,17 @@
 ISMRM tutorial - Structural connectome for Human Connectome Project (HCP)
 ==========================================================================
 
+.. WARNING:: This page describes an outdated example from 2015, currently retained only for historical reference. The steps described in this page are not up to date with current optimised practices. We do not recommend to use the steps below in connectomics processing for any project, using either HCP or other data.
+
 This document duplicates the information provided during the *MRtrix3*
 demonstration at ISMRM 2015 in Toronto. We will generate a structural
 connectome for quintessential Human Connectome Project subject 100307.
 Some of these instructions will be specific to HCP data, others will be
 more general recommendations.
+
+Note that this page is being retained as a reference of the steps
+demonstrated during the ISMRM 2015 meeting; it does *not* constitute an
+up-to-date 'recommended' processing pipeline for HCP data.
 
 Necessary files
 ---------------
@@ -91,7 +97,7 @@ Diffusion image processing
    in memory for each voxel, and convert to floating-point representation
    (makes data access faster in subsequent commands):
 
-``mrconvert data.nii.gz DWI.mif -fslgrad bvecs bvals -datatype float32 -stride 0,0,0,1``
+``mrconvert data.nii.gz DWI.mif -fslgrad bvecs bvals -datatype float32 -strides 0,0,0,1``
 
 2. Generate a mean *b*\ =0 image (useful for visualisation):
 
@@ -164,7 +170,7 @@ hardware can successfully execute the :ref:`tcksift` command, e.g.:
 ``tckedit 100M.tck 50M.tck -number 50M``
 
 Alternatively, if you're feeling brave, you can give
-`SIFT2 <Handling-SIFT2-weights>`__ a try...
+`SIFT2 <FAQ/Handling-SIFT2-weights>`__ a try...
 
 3. Map streamlines to the parcellated image to produce a connectome:
 
