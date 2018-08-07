@@ -1,0 +1,75 @@
+name: mrtrix3
+version: master
+summary: set of tools to perform various advanced diffusion MRI analyses
+description: |
+  MRtrix provides a set of tools to perform various advanced diffusion MRI
+  analyses, including constrained spherical deconvolution (CSD), probabilistic
+  tractography, track-density imaging, and apparent fibre density
+
+grade: devel # must be 'stable' to release into candidate/stable channels
+confinement: strict
+
+apps:
+  mrview:
+    command: desktop-launch mrview
+    plugs: [x11, unity7, opengl, home]
+    aliases: [mrview]
+    desktop: mrtrix-mrview.desktop
+  mraverageheader:
+    command: mraverageheader
+  mrcalc:
+    command: mrcalc
+  mrcat:
+    command: mrcat
+  mrcheckerboardmask:
+    command: mrcheckerboardmask
+  mrclusterstats:
+    command: mrclusterstats
+  mrconvert:
+    command: mrconvert
+  mrcrop:
+    command: mrcrop
+  mrfilter:
+    command: mrfilter
+  mrinfo:
+    command: mrinfo
+  mrmath:
+    command: mrmath
+  mrmesh:
+    command: mrmesh
+  mrmetric:
+    command: mrmetric
+  mrpad:
+    command: mrpad
+  mrregister:
+    command: mrregister
+  mrresize:
+    command: mrresize
+  mrstats:
+    command: mrstats
+  mrthreshold:
+    command: mrthreshold
+  mrtransform:
+    command: mrtransform
+
+parts:
+  mrtrix3:
+    source: .
+    plugin: nil
+    build: |
+      ARCH= ./configure
+      ./build
+    install: |
+      mv release/* $SNAPCRAFT_PART_INSTALL
+      mv icons/desktop/128x128/mrtrix.png $SNAPCRAFT_PART_INSTALL/
+      sed -i "s/Icon=*/Icon=\$SNAP\/mrtrix.png/g" mrtrix-mrview.desktop
+      mv mrtrix-mrview.desktop $SNAPCRAFT_PART_INSTALL/
+    build-packages:
+      - g++
+      - python
+      - python-numpy
+      - libeigen3-dev
+      - zlib1g-dev
+      - libqt4-opengl-dev
+      - libgl1-mesa-dev
+    after: [desktop-qt5]
