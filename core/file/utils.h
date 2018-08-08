@@ -61,16 +61,22 @@ namespace MR
       //CONF ScriptTmpDir.
       const std::string __get_tmpfile_dir () {
         const char* from_env_mrtrix = getenv ("MRTRIX_TMPFILE_DIR");
-        if (from_env_mrtrix) return from_env_mrtrix;
-        const char* from_env_general = getenv ("TMPDIR");
-        if (from_env_general) return from_env_general;
-        return File::Config::get ("TmpFileDir",
+        if (from_env_mrtrix)
+          return from_env_mrtrix;
+
+        const char* default_tmpdir =
 #ifdef MRTRIX_WINDOWS
             "."
 #else
             "/tmp"
 #endif
-            );
+            ;
+
+        const char* from_env_general = getenv ("TMPDIR");
+        if (from_env_general)
+          default_tmpdir = from_env_general;
+
+        return File::Config::get ("TmpFileDir", default_tmpdir);
       }
 
       const std::string& tmpfile_dir () {
