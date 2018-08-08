@@ -5,10 +5,11 @@ import sys
 varlist =  [ ]
 
 for line in sys.stdin:
+  line = line.split ('//ENVVAR')[1][1:]
   if line.startswith ('name:'):
     varlist += [ [ line[6:].strip(), '', '' ] ]
   else:
-    varlist[-1][1] += line
+    varlist[-1][1] += line.rstrip() + '\n'
 
 varlist.sort()
 
@@ -19,8 +20,8 @@ string += 'List of MRtrix3 environment variables\n'
 string += '##########################################\n\n'
 
 for entry in varlist:
-  string += '*  **' + entry[0] + '**\n'
-  for line in entry[2].splitlines():
+  string += '.. envvar:: ' + entry[0] + '\n\n'
+  for line in entry[1].splitlines():
     string += '     ' + line + '\n'
   string += '\n'
 

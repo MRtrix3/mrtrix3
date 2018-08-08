@@ -5,12 +5,13 @@ import sys
 optionlist =  [ ]
 
 for line in sys.stdin:
+  line = line.split ('//CONF')[1][1:]
   if line.startswith ('option:'):
     optionlist += [ [ line[8:].strip(), '', '' ] ]
   elif line.startswith ('default:'):
     optionlist[-1][1] = line.strip()
   else:
-    optionlist[-1][2] += line
+    optionlist[-1][2] += line.rstrip() + '\n'
 
 optionlist.sort()
 
