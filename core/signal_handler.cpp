@@ -89,6 +89,9 @@ namespace MR
 
     void init()
     {
+      if (getenv ("MRTRIX_NOSIGNALS"))
+        return;
+
 #ifdef MRTRIX_WINDOWS
       // Use signal() rather than sigaction() for Windows, as the latter is not supported
 # define __SIGNAL(SIG,MSG) signal (SIG, handler)
