@@ -352,7 +352,7 @@ namespace MR {
           else if (strcmp ("BandwidthPerPixelPhaseEncode", entry.key()) == 0)
             bandwidth_per_pixel_phase_encode = entry.get_float();
           else if (strcmp ("MosaicRefAcqTimes", entry.key()) == 0) {
-            mosaic_slices_timing.resize (entry.size(), NaN);
+            mosaic_slices_timing.resize (entry.num_items());
             entry.get_float (mosaic_slices_timing);
           }
           else if (strcmp ("TimeAfterStart", entry.key()) == 0)
@@ -488,7 +488,7 @@ namespace MR {
 
         for (size_t n = 0; n < nslices-1; ++n) {
           const default_type separation = frames[n+1]->distance - frames[n]->distance;
-          const default_type gap = std::abs (separation - frames[n]->slice_thickness);
+          const default_type gap = abs (separation - frames[n]->slice_thickness);
           max_gap = std::max (gap, max_gap);
           min_separation = std::min (min_separation, separation);
           max_separation = std::max (max_separation, separation);

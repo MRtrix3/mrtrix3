@@ -86,19 +86,21 @@ else: # Don't discard b=0 in multi-shell algorithms
   run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('dwi.mif', True) + ' -strides 0,0,0,1' + grad_import_option)
 if app.args.mask:
   run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit')
-else:
-  run.command('dwi2mask ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('mask.mif', True))
 
 alg.getInputs()
 
 app.gotoTempDir()
 
 
-# Check that the brain mask is appropriate
-if image.Header('mask.mif').size()[:3] != image.Header('dwi.mif').size()[:3]:
-  app.error('Dimensions of provided mask image do not match DWI')
+if app.args.mask:
+  # Check that the brain mask is appropriate
+  if image.Header('mask.mif').size()[:3] != image.Header('dwi.mif').size()[:3]:
+    app.error('Dimensions of provided mask image do not match DWI')
+else:
+  run.command('dwi2mask dwi.mif mask.mif')
+
 if int(image.statistic('mask.mif', 'count', '-mask mask.mif')) == 0:
-  app.error('Input mask does not contain any voxels')
+  app.error(('Provided' if app.args.mask else 'Generated') + ' mask image does not contain any voxels')
 
 
 # From here, the script splits depending on what estimation algorithm is being used
@@ -106,6 +108,4 @@ alg.execute()
 
 
 # Finalize for all algorithms
-if app.args.voxels:
-  run.command('mrconvert voxels.mif ' + path.fromUser(app.args.voxels, True) + (' -force' if app.forceOverwrite else ''))
 app.complete()

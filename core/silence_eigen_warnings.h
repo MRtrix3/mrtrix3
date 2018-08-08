@@ -12,4 +12,14 @@
  * For more details, see http://www.mrtrix.org/
  */
 
+#pragma GCC diagnostic push
+
+// add any warnings here that emenate from within the Eigen headers as you
+// encounter them.
+// Make sure the warnings are indeed Eigen-specific first!
+
+#pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
+#pragma GCC diagnostic ignored "-Wattributes"
+#pragma GCC diagnostic ignored "-Wint-in-bool-context"
 

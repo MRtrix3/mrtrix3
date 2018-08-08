@@ -16,9 +16,8 @@
 #ifndef __math_least_squares_h__
 #define __math_least_squares_h__
 
-#include <Eigen/Cholesky>
-
 #include "types.h"
+#include <Eigen/Cholesky>
 
 namespace MR
 {
@@ -37,9 +36,9 @@ namespace MR
     template <class MatrixType>
       inline Eigen::Matrix<typename MatrixType::Scalar,Eigen::Dynamic, Eigen::Dynamic> pinv (const MatrixType& M)
       {
-        if (M.rows() >= M.cols()) 
+        if (M.rows() >= M.cols())
          return (M.transpose()*M).ldlt().solve (M.transpose());
-        else 
+        else
           return (M*M.transpose()).ldlt().solve (M).transpose();
       }
 

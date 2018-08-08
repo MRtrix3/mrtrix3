@@ -38,7 +38,7 @@ namespace MR {
           ++total_count;
 
           if (in.empty()) {
-            writer (in);
+            writer.skip();
             progress.update (display_func);
             return true;
           }
