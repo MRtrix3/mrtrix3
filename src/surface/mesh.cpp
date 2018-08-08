@@ -656,7 +656,7 @@ namespace MR
 
         File::OFStream out (path, std::ios_base::binary | std::ios_base::out);
         const std::string string = std::string ("mrtrix_version: ") + App::mrtrix_version;
-        char header[80];
+        char header[81];
         strncpy (header, string.c_str(), 80);
         out.write (header, 80);
         const uint32_t count = triangles.size();
