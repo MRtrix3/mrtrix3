@@ -116,7 +116,7 @@ namespace MR
       //CONF in the working directory.
       //CONF Note that this setting does not influence the location in which
       //CONF piped images and other temporary files are created by MRtrix3;
-      //CONF that is determined based on config file option TmpFileDir.
+      //CONF that is determined based on config file option :option:`TmpFileDir`.
 
       //CONF option: ScriptTmpPrefix
       //CONF default: `<script>-tmp-`
