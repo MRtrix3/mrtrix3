@@ -96,7 +96,18 @@ List of MRtrix3 scripts
   cat $toctree_file $table_file >> ${mrtrix_root}/docs/reference/scripts_list.rst
   rm -f $toctree_file $temp_file
 
+
+
+
 # Generating list of configuration file options
 
   grep -rn --include=\*.h --include=\*.cpp '^\s*//CONF\b ' "${mrtrix_root}" | sed -ne 's/^.*CONF \(.*\)/\1/p' | "${mrtrix_root}"/docs/format_config_options > ${mrtrix_root}/docs/reference/config_file_options.rst
+
+
+
+
+
+# Generating list of environment variables
+
+  grep -rn --include=\*.h --include=\*.cpp '^\s*//ENVVAR\b ' "${mrtrix_root}" | sed -ne 's/^.*ENVVAR \(.*\)/\1/p' | "${mrtrix_root}"/docs/format_environment_variables > ${mrtrix_root}/docs/reference/environment_variables.rst
 
