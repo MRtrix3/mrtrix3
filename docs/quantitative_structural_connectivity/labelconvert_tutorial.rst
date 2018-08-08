@@ -99,7 +99,7 @@ This is what the actual command call looks like:
 
 .. code::
 
-    labelconvert $FREESURFER_HOME/subjects/bert/mri/aparc+aseg.mgz $FREESURFER_HOME/FreeSurferColorLUT.txt ~/mrtrix3/src/connectome/config/fs_default.txt bert_parcels.mif
+    labelconvert $FREESURFER_HOME/subjects/bert/mri/aparc+aseg.mgz $FREESURFER_HOME/FreeSurferColorLUT.txt ~/mrtrix3/share/mrtrix3/labelconfig/fs_default.txt bert_parcels.mif
 
 And this is what the resulting image looks like:
 
