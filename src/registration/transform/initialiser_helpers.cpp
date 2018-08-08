@@ -13,15 +13,14 @@
  */
 
 
-#include <Eigen/Geometry>
-#include <Eigen/Dense>
-#include <Eigen/Eigenvalues>
 #include "registration/transform/initialiser_helpers.h"
 #include "registration/transform/search.h"
-
 #include "algo/loop.h"
 #include "debug.h"
 // #include "timer.h"
+
+#include <Eigen/Eigenvalues>
+
 // #define DEBUG_INIT
 
 namespace MR
@@ -370,7 +369,7 @@ namespace MR
           Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> A (3,3);
           A = dec.solve(im1_evec_transpose);
           assert((A * im1_evec).isApprox(im2_evec));
-          assert(std::abs(A.determinant() - 1.0) < 0.0001);
+          assert(abs(A.determinant() - 1.0) < 0.0001);
           A = A.transpose().eval(); // A * im2_evec = im1_evec
 
           // MAT(A);

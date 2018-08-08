@@ -173,7 +173,7 @@ namespace MR
 
 
 
-  Header Header::create (const std::string& image_name, const Header& template_header)
+  Header Header::create (const std::string& image_name, const Header& template_header, bool add_to_command_history)
   {
     if (image_name.empty())
       throw Exception ("no name supplied to open image!");
@@ -183,19 +183,22 @@ namespace MR
 
     try {
       INFO ("creating image \"" + image_name + "\"...");
+      if (add_to_command_history) {
+
+        std::string cmd = App::argv[0];
+        for (int n = 1; n < App::argc; ++n)
+          cmd += std::string(" \"") + App::argv[n] + "\"";
+        cmd += std::string ("  (version=") + App::mrtrix_version;
+        if (App::project_version)
+          cmd += std::string (", project=") + App::project_version;
+        cmd += ")";
+        add_line (H.keyval()["command_history"], cmd);
+
+      }
 
       H.keyval()["mrtrix_version"] = App::mrtrix_version;
       if (App::project_version)
         H.keyval()["project_version"] = App::project_version;
-
-      std::string cmd = App::argv[0];
-      for (int n = 1; n < App::argc; ++n)
-        cmd += std::string(" \"") + App::argv[n] + "\"";
-      cmd += std::string ("  (version=") + App::mrtrix_version;
-      if (App::project_version)
-        cmd += std::string (", project=") + App::project_version;
-      cmd += ")";
-      add_line (H.keyval()["command_history"], cmd);
 
       H.sanitise();
 
@@ -276,7 +279,7 @@ namespace MR
         for (size_t i = 0; i < H.ndim(); ++i) {
           if (H.stride(i)) {
             ++n;
-            next_stride = std::max (next_stride, std::abs (H.stride(i)));
+            next_stride = std::max (next_stride, abs (H.stride(i)));
           }
         }
 

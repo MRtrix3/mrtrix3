@@ -13,14 +13,14 @@
  */
 
 
-#include <unsupported/Eigen/FFT>
-
 #include "axes.h"
 #include "command.h"
 #include "image.h"
 #include "progressbar.h"
 #include "algo/threaded_loop.h"
 #include <numeric>
+
+#include <unsupported/Eigen/FFT>
 
 using namespace MR;
 using namespace App;
@@ -239,10 +239,10 @@ class ComputeSlice
             TV1arr[j] = 0.0;
             TV2arr[j] = 0.0;
             for (int t = minW; t <= maxW; t++) {
-              TV1arr[j] += std::abs (shifted((n-t)%n,j).real() - shifted((n-t-1)%n,j).real());
-              TV1arr[j] += std::abs (shifted((n-t)%n,j).imag() - shifted((n-t-1)%n,j).imag());
-              TV2arr[j] += std::abs (shifted((n+t)%n,j).real() - shifted((n+t+1)%n,j).real());
-              TV2arr[j] += std::abs (shifted((n+t)%n,j).imag() - shifted((n+t+1)%n,j).imag());
+              TV1arr[j] += abs (shifted((n-t)%n,j).real() - shifted((n-t-1)%n,j).real());
+              TV1arr[j] += abs (shifted((n-t)%n,j).imag() - shifted((n-t-1)%n,j).imag());
+              TV2arr[j] += abs (shifted((n+t)%n,j).real() - shifted((n+t+1)%n,j).real());
+              TV2arr[j] += abs (shifted((n+t)%n,j).imag() - shifted((n+t+1)%n,j).imag());
             }
           }
 
@@ -260,15 +260,15 @@ class ComputeSlice
                 minidx = j;
               }
 
-              TV1arr[j] += std::abs (shifted((l-minW+1+n)%n,j).real() - shifted((l-(minW  )+n)%n,j).real());
-              TV1arr[j] -= std::abs (shifted((l-maxW  +n)%n,j).real() - shifted((l-(maxW+1)+n)%n,j).real());
-              TV2arr[j] += std::abs (shifted((l+maxW+1+n)%n,j).real() - shifted((l+(maxW+2)+n)%n,j).real());
-              TV2arr[j] -= std::abs (shifted((l+minW  +n)%n,j).real() - shifted((l+(minW+1)+n)%n,j).real());
+              TV1arr[j] += abs (shifted((l-minW+1+n)%n,j).real() - shifted((l-(minW  )+n)%n,j).real());
+              TV1arr[j] -= abs (shifted((l-maxW  +n)%n,j).real() - shifted((l-(maxW+1)+n)%n,j).real());
+              TV2arr[j] += abs (shifted((l+maxW+1+n)%n,j).real() - shifted((l+(maxW+2)+n)%n,j).real());
+              TV2arr[j] -= abs (shifted((l+minW  +n)%n,j).real() - shifted((l+(minW+1)+n)%n,j).real());
 
-              TV1arr[j] += std::abs (shifted((l-minW+1+n)%n,j).imag() - shifted((l-(minW  )+n)%n,j).imag());
-              TV1arr[j] -= std::abs (shifted((l-maxW  +n)%n,j).imag() - shifted((l-(maxW+1)+n)%n,j).imag());
-              TV2arr[j] += std::abs (shifted((l+maxW+1+n)%n,j).imag() - shifted((l+(maxW+2)+n)%n,j).imag());
-              TV2arr[j] -= std::abs (shifted((l+minW  +n)%n,j).imag() - shifted((l+(minW+1)+n)%n,j).imag());
+              TV1arr[j] += abs (shifted((l-minW+1+n)%n,j).imag() - shifted((l-(minW  )+n)%n,j).imag());
+              TV1arr[j] -= abs (shifted((l-maxW  +n)%n,j).imag() - shifted((l-(maxW+1)+n)%n,j).imag());
+              TV2arr[j] += abs (shifted((l+maxW+1+n)%n,j).imag() - shifted((l+(maxW+2)+n)%n,j).imag());
+              TV2arr[j] -= abs (shifted((l+minW  +n)%n,j).imag() - shifted((l+(minW+1)+n)%n,j).imag());
             }
 
             double a0r = shifted((l-1+n)%n,minidx).real();

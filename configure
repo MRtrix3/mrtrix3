@@ -145,12 +145,12 @@ ENVIRONMENT VARIABLES
         specified correctly at configure time.
 '''
 
-import subprocess, sys, os, platform, tempfile, shutil, shlex, re, copy
+import subprocess, sys, os, platform, tempfile, shlex, re, copy
 system = platform.system().lower()
 
 # on Windows, need to use MSYS2 version of python - not MinGW version:
 if sys.executable[0].isalpha() and sys.executable[1] == ':':
-  python_cmd = subprocess.check_output ([ 'cygpath.exe', '-w', '/usr/bin/python' ]).splitlines()[0].strip()
+  python_cmd = subprocess.check_output ([ 'cygpath.exe', '-w', '/usr/bin/python' ]).decode(errors='ignore').splitlines()[0].strip()
   sys.exit (subprocess.call ([ python_cmd ] + sys.argv))
 
 
@@ -171,30 +171,36 @@ for arg in sys.argv[1:]:
   if '-debug'.startswith (arg):
     debug = True
     optimlevel = 0
-  elif '-dev'.startswith (arg): dev = True
-  elif '-assert'.startswith (arg): asserts = True
-  elif '-nooptim'.startswith (arg): optimlevel = 0
+  elif '-dev'.startswith (arg):
+    dev = True
+  elif '-assert'.startswith (arg):
+    asserts = True
+  elif '-nooptim'.startswith (arg):
+    optimlevel = 0
   elif '-profile'.startswith (arg):
     profile = True
     optimlevel = 0
-  elif '-nogui'.startswith (arg): nogui = True
-  elif '-noshared'.startswith (arg): noshared = True
+  elif '-nogui'.startswith (arg):
+    nogui = True
+  elif '-noshared'.startswith (arg):
+    noshared = True
   elif '-static'.startswith (arg):
     static = True
     noshared = True
-  elif '-verbose'.startswith (arg): verbose = True
+  elif '-verbose'.startswith (arg):
+    verbose = True
   elif '-R'.startswith (arg):
     R_module = True
     #noshared = True
     nogui = True
-  elif '-openmp'.startswith (arg): openmp = True
+  elif '-openmp'.startswith (arg):
+    openmp = True
   else:
-    print (usage_string)
+    sys.stderr.write (usage_string)
     sys.exit (1)
 
 
 
-global logfile, config_report
 logfile = open (os.path.join (os.path.dirname(sys.argv[0]), 'configure.log'), 'wb')
 config_report = ''
 
@@ -202,7 +208,7 @@ config_report = ''
 def log (message):
   global logfile
   logfile.write (message.encode (errors='ignore'))
-  if (verbose):
+  if verbose:
     sys.stdout.write (message)
     sys.stdout.flush()
 
@@ -220,19 +226,28 @@ def error (message):
   sys.exit (1)
 
 
-if profile: build_type = 'profiling version'
-elif debug: build_type = 'debug version'
-else: build_type = 'release version'
+if profile:
+  build_type = 'profiling version'
+elif debug:
+  build_type = 'debug version'
+else:
+  build_type = 'release version'
 
 build_options = []
-if asserts: build_options.append ('asserts')
-if optimlevel <= 1: build_options.append ('nooptim')
-if nogui: build_options.append ('nogui')
-if noshared: build_options.application ('noshared')
-if static: build_options.append ('static')
-if openmp: build_options.append ('openmp')
+if asserts:
+  build_options.append ('asserts')
+if optimlevel <= 1:
+  build_options.append ('nooptim')
+if nogui:
+  build_options.append ('nogui')
+if noshared:
+  build_options.append ('noshared')
+if static:
+  build_options.append ('static')
+if openmp:
+  build_options.append ('openmp')
 
-if len(build_options):
+if build_options:
   build_type += ' with ' + ', '.join (build_options)
 
 report ("""
@@ -243,11 +258,8 @@ MRtrix build type requested: """ + build_type + '\n\n')
 path = os.environ['PATH']
 if path.endswith ('\\'):
   path = path[:-1]
-cleanpath = [];
 oldpath = path.split(':')
-for entry in oldpath:
-  if 'anaconda' not in entry.lower():
-    cleanpath += [ entry ]
+cleanpath = [ entry for entry in oldpath if 'anaconda' not in entry ]
 if not oldpath == cleanpath:
   report ('WARNING: Anaconda removed from PATH to avoid conflicts\n\n')
 path = os.pathsep.join(cleanpath)
@@ -258,7 +270,7 @@ os.environ['PATH'] = path
 
 
 
-global cpp, cpp_cmd, ld, ld_args, ld_cmd
+cpp = ld = None
 
 cxx = [ 'clang++', 'g++' ]
 cxx_args = '-c CFLAGS SRC -o OBJECT'.split()
@@ -275,7 +287,7 @@ if static:
 ld_lib_args = 'OBJECTS LDLIB_FLAGS -o LIB'.split()
 
 
-class TempFile:
+class TempFile(object):
   def __init__ (self, suffix):
     self.fid = None
     self.name = None
@@ -285,17 +297,15 @@ class TempFile:
   def __enter__ (self):
     return self
 
-  def __exit__(self, type, value, traceback):
+  def __exit__(self, exception_type, value, traceback):
     try:
       os.unlink (self.name)
-    except OSError as error:
-      log ('error deleting temporary file "' + self.name + '": ' + error.strerror)
-    except:
-      raise
+    except OSError as excp:
+      log ('error deleting temporary file "' + self.name + '": ' + excp.strerror)
 
 
 
-class DeleteAfter:
+class DeleteAfter(object):
   def __init__ (self, name):
     self.name = name
 
@@ -305,44 +315,45 @@ class DeleteAfter:
   def __exit__(self, exception_type, value, traceback):
     try:
       os.unlink (self.name)
-    except OSError as error:
-      log ('error deleting temporary file "' + self.name + '": ' + error.strerror)
-    except:
-      raise
+    except OSError as excp:
+      log ('error deleting temporary file "' + self.name + '": ' + excp.strerror)
 
 
-class TempDir:
+class TempDir(object):
   def __init__ (self):
-    self.name = tempfile.mkdtemp ();
+    self.name = tempfile.mkdtemp()
 
   def __enter__ (self):
     return self
 
-  def __exit__(self, type, value, traceback):
+  def __exit__(self, exception_type, value, traceback):
     try:
-      for entry in os.listdir (self.name):
-        fname = os.path.join (self.name, entry)
-        if os.path.isdir (fname):
-          os.rmdir (fname)
+      for basename in os.listdir (self.name):
+        fullpath = os.path.join (self.name, basename)
+        if os.path.isdir (fullpath):
+          os.rmdir (fullpath)
         else:
-          os.unlink (fname)
+          os.unlink (fullpath)
       os.rmdir (self.name)
 
-    except OSError as error:
-      log ('error deleting temporary folder "' + self.name + '": ' + error.strerror)
-    except:
-      raise
+    except OSError as excp:
+      log ('error deleting temporary folder "' + self.name + '": ' + excp.strerror)
 
 
 
 # error handling helpers:
-
-class VersionError (Exception): pass
-class QMakeError (Exception): pass
-class QMOCError (Exception): pass
-class CompileError (Exception): pass
-class LinkError (Exception): pass
-class RuntimeError (Exception): pass
+class VersionError (Exception):
+  pass
+class QMakeError (Exception):
+  pass
+class QMOCError (Exception):
+  pass
+class CompileError (Exception):
+  pass
+class LinkError (Exception):
+  pass
+class RunError (Exception):
+  pass
 
 def compiler_hint (cmd, flags_var, flags, args_var=None, args=None):
   ret='''
@@ -424,22 +435,27 @@ def qt_exec_hint (name):
 
 def commit (name, variable):
   cache.write (name + ' = ')
-  if type (variable) == type([]):
+  if isinstance (variable, list):
     cache.write ('[')
-    if len(variable): cache.write(' \'' + '\', \''.join (variable) + '\' ')
+    if variable:
+      cache.write(' \'' + '\', \''.join (variable) + '\' ')
     cache.write (']\n')
-  else: cache.write ('\'' + variable + '\'\n')
+  else:
+    cache.write ('\'' + variable + '\'\n')
 
 
 
-def fillin (template, keyvalue):
-  cmd = []
+def fillin (template, keyvalues):
+  command_string = []
   for item in template:
-    if item in keyvalue:
-      if type(keyvalue[item]) == type ([]): cmd += keyvalue[item]
-      else: cmd += [ keyvalue[item] ]
-    else: cmd += [ item ]
-  return cmd
+    if item in keyvalues:
+      if isinstance(keyvalues[item], list):
+        command_string += keyvalues[item]
+      else:
+        command_string += [ keyvalues[item] ]
+    else:
+      command_string += [ item ]
+  return command_string
 
 
 
@@ -451,17 +467,18 @@ def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
 
     log ('EXIT: ' + str(process.returncode) + '\n')
     stdout = stdout.decode(errors='ignore').rstrip()
-    if len (stdout): log ('STDOUT:\n' + stdout + '\n')
+    if stdout:
+      log ('STDOUT:\n' + stdout + '\n')
     stderr = stderr.decode(errors='ignore').rstrip()
-    if len (stderr): log ('STDERR:\n' + stderr + '\n')
+    if stderr:
+      log ('STDERR:\n' + stderr + '\n')
     log ('>>\n\n')
 
-  except OSError as error:
-    log ('error invoking command "' + cmd[0] + '": ' + error.strerror + '\n>>\n\n')
+  except OSError as e:
+    log ('error invoking command "' + cmd[0] + '": ' + e.strerror + '\n>>\n\n')
     raise exception
-  except:
-    print ('Unexpected error:', str(sys.exc_info()))
-    raise
+  except Exception as excp:
+    error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
   else:
     if raise_on_non_zero_exit_code and process.returncode != 0:
       raise exception (stderr)
@@ -471,39 +488,35 @@ def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
 
 
 
-def compile (source, compiler_flags = [], linker_flags = []):
+def compile (source, compiler_flags, linker_flags): # pylint: disable=redefined-builtin
   global cpp, ld
-  with TempFile ('.cpp') as F:
-    log ('\nCOMPILE ' + F.name + ':\n---\n' + source + '\n---\n')
-    F.fid.write (source)
-    F.fid.flush()
-    F.fid.close()
-    with DeleteAfter (F.name[:-4] + '.o') as obj:
-      cmd = fillin (cpp, {
-        'CFLAGS': compiler_flags,
-        'SRC': F.name,
-        'OBJECT': obj.name })
-      execute (cmd, CompileError)
+  with TempFile ('.cpp') as srcfile:
+    log ('\nCOMPILE ' + srcfile.name + ':\n---\n' + source + '\n---\n')
+    srcfile.fid.write (source)
+    srcfile.fid.flush()
+    srcfile.fid.close()
+    with DeleteAfter (srcfile.name[:-4] + '.o') as objfile:
+      execute (fillin (cpp, {
+          'CFLAGS': compiler_flags,
+          'SRC': srcfile.name,
+          'OBJECT': objfile.name }), CompileError)
 
       with DeleteAfter ('a.out') as out:
-        cmd = fillin (ld, {
-          'LDFLAGS': linker_flags,
-          'OBJECTS': obj.name,
-          'EXECUTABLE': out.name })
-        execute (cmd, LinkError)
+        execute (fillin (ld, {
+            'LDFLAGS': linker_flags,
+            'OBJECTS': objfile.name,
+            'EXECUTABLE': out.name }), LinkError)
 
-        ret = execute ([ './'+out.name ], RuntimeError)
-
-  return ret[1]
+        return execute ([ './'+out.name ], RunError)[1]
 
 
-def compare_version (needed, observed):
-  needed = [ float(n) for n in needed.split()[0].split('.') ]
-  observed = [ float(n) for n in observed.split()[0].split('.') ]
-  for n in zip (needed, observed):
-    if n[0] > n[1]:
-      return False
-  return True
+#def compare_version (needed, observed):
+#  needed = [ float(n) for n in needed.split()[0].split('.') ]
+#  observed = [ float(n) for n in observed.split()[0].split('.') ]
+#  for n in zip (needed, observed):
+#    if n[0] > n[1]:
+#      return False
+#  return True
 
 
 
@@ -521,14 +534,8 @@ def get_flags (default=None, env=None, pkg_config_flags=None):
       return shlex.split (os.environ[env])
   if pkg_config_flags:
     try:
-      flags = []
-      for entry in shlex.split (execute ([ 'pkg-config' ] + pkg_config_flags.split(), RuntimeError)[1]):
-        if entry.startswith ('-I'):
-          flags += [ '-isystem', entry[2:] ]
-        else:
-          flags += [ entry ]
-      return flags
-    except:
+      return shlex.split (execute ([ 'pkg-config' ] + pkg_config_flags.split(), RunError)[1])
+    except Exception:
       log('error running "pkg-config ' + pkg_config_flags + '"\n\n')
   return default
 
@@ -547,12 +554,12 @@ def compile_test (name, cflags, ldflags, code, on_success='ok', on_failure='not 
   report ('Checking for ' + name + ': ')
   try:
     stdout = compile (code, cflags, ldflags)
-    if len(stdout):
+    if stdout:
       report (stdout.splitlines()[0] + '\n')
     else:
       report (on_success+'\n')
     return True
-  except:
+  except Exception:
     report (on_failure+'\n')
     return False
 
@@ -583,7 +590,7 @@ def compile_check (full_name, name, cflags, ldflags, code, cflags_env=None, cfla
   report ('Checking for ' + full_name + ': ')
   try:
     stdout = compile (code, cflags, ldflags)
-    if len(stdout):
+    if stdout:
       report (stdout.splitlines()[0] + '\n')
     else:
       report (on_success+'\n')
@@ -595,7 +602,7 @@ def compile_check (full_name, name, cflags, ldflags, code, cflags_env=None, cfla
     error ('error compiling ' + name + ''' application!
 
     MRtrix3 was unable to compile a test program involving ''' + name + '.' + hint)
-  except LinkError as e:
+  except LinkError:
     if cflags_env and cflags_hint:
       hint = linker_flags_hint (name, ldflags_env, ldflags_hint)
     else:
@@ -603,12 +610,12 @@ def compile_check (full_name, name, cflags, ldflags, code, cflags_env=None, cfla
     error ('error linking ' + name + ''' application!
 
     MRtrix3 was unable to link a test program involving ''' + name + '.' + hint)
-  except RuntimeError:
+  except RunError:
     error ('''runtime error!
 
    Unable to configure ''' + name + configure_log_hint)
-  except:
-    error ('unexpected exception!' + configure_log_hint)
+  except Exception as excp:
+    error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
 
 
 
@@ -655,7 +662,7 @@ elif system == 'darwin':
   elif 'MACOSX_DEPLOYMENT_TARGET' in os.environ:
     macosx_version = os.environ['MACOSX_DEPLOYMENT_TARGET']
   else:
-    macosx_version =  ('.'.join(execute([ 'sw_vers', '-productVersion' ], RuntimeError)[1].split('.')[:2]))
+    macosx_version =  ('.'.join(execute([ 'sw_vers', '-productVersion' ], RunError)[1].split('.')[:2]))
   report ('OS X deployment target: ' +  macosx_version + '\n')
   cpp_flags += [ '-DMRTRIX_MACOSX', '-fPIC', '-mmacosx-version-min='+macosx_version ]
   ld_flags += [ '-mmacosx-version-min='+macosx_version ]
@@ -677,21 +684,29 @@ if 'ARCH' in os.environ.keys():
 
 # set CPP compiler:
 ld_cmdline = None
-if 'CXX' in os.environ.keys(): cxx = shlex.split (os.environ['CXX'])
-if 'CXX_ARGS' in os.environ.keys(): cxx_args = shlex.split (os.environ['CXX_ARGS'])
-if 'LD' in os.environ.keys(): ld_cmdline = shlex.split (os.environ['LD'])
-if 'LD_ARGS' in os.environ.keys(): ld_args = shlex.split (os.environ['LD_ARGS'])
-if 'LDLIB_ARGS' in os.environ.keys(): ld_lib_args = shlex.split (os.environ['LDLIB_ARGS'])
+if 'CXX' in os.environ.keys():
+  cxx = shlex.split (os.environ['CXX'])
+if 'CXX_ARGS' in os.environ.keys():
+  cxx_args = shlex.split (os.environ['CXX_ARGS'])
+if 'LD' in os.environ.keys():
+  ld_cmdline = shlex.split (os.environ['LD'])
+if 'LD_ARGS' in os.environ.keys():
+  ld_args = shlex.split (os.environ['LD_ARGS'])
+if 'LDLIB_ARGS' in os.environ.keys():
+  ld_lib_args = shlex.split (os.environ['LDLIB_ARGS'])
 
 
 
 
 # CPP flags:
 
-if 'CFLAGS' in os.environ.keys(): cpp_flags += shlex.split (os.environ['CFLAGS'])
-if 'LDFLAGS' in os.environ.keys(): ld_flags += shlex.split (os.environ['LDFLAGS'])
+if 'CFLAGS' in os.environ.keys():
+  cpp_flags += shlex.split (os.environ['CFLAGS'])
+if 'LDFLAGS' in os.environ.keys():
+  ld_flags += shlex.split (os.environ['LDFLAGS'])
 ld_lib_flags += ld_flags
-if 'LDLIB_FLAGS' in os.environ.keys(): ld_lib_flags += shlex.split (os.environ['LDLIB_FLAGS'])
+if 'LDLIB_FLAGS' in os.environ.keys():
+  ld_lib_flags += shlex.split (os.environ['LDLIB_FLAGS'])
 
 for candidate in cxx:
   report ('Looking for compiler [' + candidate + ']: ')
@@ -705,9 +720,11 @@ for candidate in cxx:
 
   try:
     compiler_version = execute ([ cpp[0], '--version' ], CompileError)[1]
-    if len(compiler_version) == 0: report ('(no version information)\n')
-    else: report (compiler_version.splitlines()[0] + '\n')
-  except:
+    if not compiler_version:
+      report ('(no version information)\n')
+    else:
+      report (compiler_version.splitlines()[0] + '\n')
+  except Exception:
     report ('not found\n')
     continue
 
@@ -738,32 +755,32 @@ else:
 if not noshared:
   report ('Checking shared library generation: ')
 
-  with TempFile ('.cpp') as F:
-    F.fid.write ('int bogus() { return (1); }')
-    F.fid.flush()
-    F.fid.close()
-    with DeleteAfter (F.name[:-4] + '.o') as obj:
-      cmd = fillin (cpp, {
-        'CFLAGS': cpp_flags,
-        'SRC': F.name,
-        'OBJECT': obj.name })
-      try: execute (cmd, CompileError)
+  with TempFile ('.cpp') as bogus_cpp:
+    bogus_cpp.fid.write ('int bogus() { return (1); }')
+    bogus_cpp.fid.flush()
+    bogus_cpp.fid.close()
+    with DeleteAfter (bogus_cpp.name[:-4] + '.o') as bogus_obj:
+      try:
+        execute (fillin (cpp, {
+            'CFLAGS': cpp_flags,
+            'SRC': bogus_cpp.name,
+            'OBJECT': bogus_obj.name }), CompileError)
       except CompileError:
         error ('compiler not found!' + configure_log_hint)
-      except:
-        error ('unexpected exception!' + configure_log_hint)
+      except Exception as excp:
+        error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
       with DeleteAfter (lib_prefix + 'test' + lib_suffix) as lib:
-        cmd = fillin (ld_lib, {
-          'LDLIB_FLAGS': ld_lib_flags,
-          'OBJECTS': obj.name,
-          'LIB': lib.name })
-        try: execute (cmd, LinkError)
+        try:
+          execute (fillin (ld_lib, {
+              'LDLIB_FLAGS': ld_lib_flags,
+              'OBJECTS': bogus_obj.name,
+              'LIB': lib.name }), LinkError)
         except LinkError:
           error ('''linker not found!
 
   MRtrix3 was unable to employ the linker program for shared library generation.''' + compiler_hint ('shared library linker', 'LDLIB_FLAGS', '"-L/usr/local/lib"', 'LDLIB_ARGS', '"-shared LDLIB_FLAGS OBJECTS -o LIB"'))
-        except:
-          error ('unexpected exception!' + configure_log_hint)
+        except Exception as excp:
+          error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
 
         report ('ok\n')
 
@@ -786,11 +803,12 @@ int main() {
 }
 ''', cpp_flags, ld_flags))
   report (str(8*pointer_size) + ' bit\n')
-  if pointer_size == 8: cpp_flags += [ '-DMRTRIX_WORD64' ]
+  if pointer_size == 8:
+    cpp_flags += [ '-DMRTRIX_WORD64' ]
   elif pointer_size != 4:
     error ('unexpected pointer size!')
-except:
-  error ('unable to determine pointer size!' + configure_log_hint)
+except Exception as excp:
+  error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
 
 
 
@@ -875,8 +893,7 @@ int main() {
 
 eigen_cflags = get_flags ([ '-isystem', '/usr/include/eigen3' ], 'EIGEN_CFLAGS', '--cflags eigen3')
 
-compile_check ('Eigen3 library', 'Eigen3', cpp_flags + eigen_cflags, ld_flags,
-  '''
+compile_check ('Eigen3 library', 'Eigen3', cpp_flags + eigen_cflags, ld_flags, '''
 #include <cstddef>
 #include <Eigen/Core>
 #include <iostream>
@@ -922,8 +939,8 @@ ld_lib_flags += zlib_ldflags
 
 # Test that JSON for Modern C++ will compile, since it enforces its own requirements
 
-compile_check ('"JSON for Modern C++" requirements', 'JSON for modern C++',
-cpp_flags + [ '-I'+os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), 'core')) ], ld_flags, '''
+compile_check ('"JSON for Modern C++" requirements', 'JSON for modern C++', \
+    cpp_flags + [ '-I'+os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), 'core')) ], ld_flags, '''
 #include "''' + os.path.join('file', 'json.h') + '''"
 int main (int argc, char* argv[])
 {
@@ -1008,8 +1025,9 @@ def get_qt_version(cmd_list, raise_on_non_zero_exit_code):
   out = execute (cmd_list, raise_on_non_zero_exit_code, False)
   stdouterr = ' '.join(out[1:]).replace(r'\n',' ').replace(r'\r','')
   version_found = version_regex.search(stdouterr)
-  if version_found: return version_found.group()
-  else: raise raise_on_non_zero_exit_code('Version not Found')
+  if version_found:
+    return version_found.group()
+  raise raise_on_non_zero_exit_code('Version not Found')
 
 
 moc = ''
@@ -1039,8 +1057,8 @@ if not nogui:
     error (''' Qt moc not found!
 
   MRtrix3 was unable to locate the Qt meta-object compiler 'moc'.''' + qt_path_hint)
-  except:
-    error ('unexpected exception!' + configure_log_hint)
+  except Exception as excp:
+    error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
 
   report ('Checking for Qt qmake: ')
   qmake = 'qmake'
@@ -1059,8 +1077,8 @@ if not nogui:
     error (''' Qt qmake not found!
 
   MRtrix3 was unable to locate the Qt command 'qmake'.''' + qt_path_hint)
-  except:
-    error ('unexpected exception!' + configure_log_hint)
+  except Exception as excp:
+    error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
 
 
 
@@ -1082,8 +1100,8 @@ if not nogui:
     error (''' Qt rcc not found!
 
   MRtrix3 was unable to locate the Qt command 'rcc'.''' + qt_path_hint)
-  except:
-    error ('unexpected exception!' + configure_log_hint)
+  except Exception as excp:
+    error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
 
 
 
@@ -1092,7 +1110,7 @@ if not nogui:
 
   try:
     with TempDir() as qt_dir:
-      file = '''#include <QObject>
+      filetext = '''#include <QObject>
 
 class Foo: public QObject {
   Q_OBJECT;
@@ -1107,13 +1125,13 @@ class Foo: public QObject {
     int value_;
 };
 '''
-      log ('\nsource file "qt.h":\n---\n' + file + '---\n')
+      log ('\nsource file "qt.h":\n---\n' + filetext + '---\n')
 
-      f=open (os.path.join (qt_dir.name, 'qt.h'), 'w')
-      f.write (file)
-      f.close();
+      f = open (os.path.join (qt_dir.name, 'qt.h'), 'w')
+      f.write (filetext)
+      f.close()
 
-      file = '''#include <iostream>
+      filetext = '''#include <iostream>
 #include "qt.h"
 
 Foo::Foo() : value_ (42) { connect (this, SIGNAL(valueChanged(int)), this, SLOT(setValue(int))); }
@@ -1125,37 +1143,36 @@ void Foo::setValue (int value) { value_ = value; }
 int main() { Foo f; }
 '''
 
-      log ('\nsource file "qt.cpp":\n---\n' + file + '---\n')
-      f=open (os.path.join (qt_dir.name, 'qt.cpp'), 'w')
-      f.write (file)
-      f.close();
+      log ('\nsource file "qt.cpp":\n---\n' + filetext + '---\n')
+      f = open (os.path.join (qt_dir.name, 'qt.cpp'), 'w')
+      f.write (filetext)
+      f.close()
 
-      file = 'CONFIG += c++11'
-      if debug: file += ' debug'
-      file += '\nQT += core gui opengl svg\n'
-      file += 'HEADERS += qt.h\nSOURCES += qt.cpp\n'
+      filetext = 'CONFIG += c++11'
+      if debug:
+        filetext += ' debug'
+      filetext += '\nQT += core gui opengl svg\n'
+      filetext += 'HEADERS += qt.h\nSOURCES += qt.cpp\n'
       if system == "darwin":
-        file += 'QMAKE_MACOSX_DEPLOYMENT_TARGET = '+macosx_version + '\n'
+        filetext += 'QMAKE_MACOSX_DEPLOYMENT_TARGET = ' + macosx_version + '\n'
 
-      log ('\nproject file "qt.pro":\n---\n' + file + '---\n')
-      f=open (os.path.join (qt_dir.name, 'qt.pro'), 'w')
-      f.write (file)
-      f.close();
+      log ('\nproject file "qt.pro":\n---\n' + filetext + '---\n')
+      f = open (os.path.join (qt_dir.name, 'qt.pro'), 'w')
+      f.write (filetext)
+      f.close()
 
       qmake_cmd = [ qmake ]
 
       try:
-         (retcode, stdout, stderr) = execute (qmake_cmd, QMakeError, raise_on_non_zero_exit_code = False, cwd=qt_dir.name)
-         if retcode != 0:
-           error ('''qmake returned with error:
+        (qmake_retcode, qmake_stderr) = execute (qmake_cmd, QMakeError, raise_on_non_zero_exit_code = False, cwd=qt_dir.name)[0:3:2]
+        if qmake_retcode != 0:
+          error ('''qmake returned with error:
 
-''' + stderr)
-      except QMakeError as E:
+''' + qmake_stderr)
+      except QMakeError:
         error ('''error issuing qmake command!
 
   Use the QMAKE environment variable to set the correct qmake command for use with Qt''')
-      except:
-        raise
 
 
       qt_defines = []
@@ -1183,37 +1200,32 @@ int main() { Foo f; }
         if entry[2:].startswith('..'):
           qt_includes[index] = '-I' + os.path.abspath(qt_dir.name + '/' + entry[2:])
 
-      qt_cflags = [e for e in qt_cflags if e != '-O2']
+      qt_cflags = [ entry for entry in qt_cflags if entry != '-O2' ]
       qt = qt_cflags + qt_defines + qt_includes
       qt_cflags = []
       for entry in qt:
         if entry[0] != '$' and not entry == '-I.':
-          entry = entry.replace('\"','').replace("'",'')
-          if entry.startswith('-I'):
-            qt_cflags += [ '-isystem', entry[2:] ]
-          else:
-            qt_cflags += [ entry ]
+          qt_cflags += [ entry.replace('\"','').replace("'",'') ]
 
       qt = qt_ldflags + qt_libs
       qt_ldflags = []
       for entry in qt:
-        if entry[0] != '$': qt_ldflags += [ entry.replace('\"','').replace("'",'') ]
+        if entry[0] != '$':
+          qt_ldflags += [ entry.replace('\"','').replace("'",'') ]
 
-      cmd = [ moc, 'qt.h', '-o', 'qt_moc.cpp' ]
-      execute (cmd, QMOCError, cwd=qt_dir.name) #process = subprocess.Popen (cmd, cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      execute ([ moc, 'qt.h', '-o', 'qt_moc.cpp' ], \
+          QMOCError, cwd=qt_dir.name)
 
-      cmd = [ cpp[0], '-c' ] + cpp_flags + qt_cflags + [ 'qt.cpp', '-o', 'qt.o' ]
-      execute (cmd, CompileError, cwd=qt_dir.name)
+      execute ([ cpp[0], '-c' ] + cpp_flags + qt_cflags + [ 'qt.cpp', '-o', 'qt.o' ], \
+          CompileError, cwd=qt_dir.name)
 
-      cmd = [ cpp[0], '-c' ] + cpp_flags + qt_cflags + [ 'qt_moc.cpp', '-o', 'qt_moc.o' ]
-      execute (cmd, CompileError, cwd=qt_dir.name)
+      execute ([ cpp[0], '-c' ] + cpp_flags + qt_cflags + [ 'qt_moc.cpp', '-o', 'qt_moc.o' ], \
+          CompileError, cwd=qt_dir.name)
 
-      cmd = [ cpp[0] ] + ld_flags + [ 'qt_moc.o', 'qt.o', '-o', 'qt' ] + qt_ldflags
-      execute (cmd, LinkError, cwd=qt_dir.name)
+      execute ([ cpp[0] ] + ld_flags + [ 'qt_moc.o', 'qt.o', '-o', 'qt' ] + qt_ldflags, \
+          LinkError, cwd=qt_dir.name)
 
-      cmd = [ os.path.join(qt_dir.name, 'qt') ]
-      ret = execute (cmd, RuntimeError)
-      report (ret[1] + '\n')
+      report (execute ([ os.path.join(qt_dir.name, 'qt') ], RunError)[1] + '\n')
 
 
   except QMakeError:
@@ -1224,20 +1236,19 @@ int main() { Foo f; }
     error ('error linking Qt application!' + configure_log_hint)
   except CompileError:
     error ('error compiling Qt application!' + configure_log_hint)
-  except RuntimeError:
+  except RunError:
     error ('error running Qt application!' + configure_log_hint)
   except OSError as e:
     error ('unexpected error: ' + str(e) + configure_log_hint)
-  except:
-    error ('unexpected exception!' + configure_log_hint)
+  except Exception as excp:
+    error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
 
 
 
 
 
   if system == "darwin":
-    if '-Wall' in qt_cflags: qt_cflags.remove ('-Wall')
-    if '-W' in qt_cflags: qt_cflags.remove ('-W')
+    qt_cflags = [ x for x in qt_cflags if x not in [ '-Wall', '-W' ] ]
 
 
 # output R module:
@@ -1317,18 +1328,18 @@ commit ('obj_suffix', obj_suffix)
 commit ('exe_suffix', exe_suffix)
 commit ('lib_prefix', lib_prefix)
 commit ('lib_suffix', lib_suffix)
-commit ('cpp', cpp);
-commit ('cpp_flags', cpp_flags);
-commit ('ld', ld);
-commit ('ld_flags', ld_flags);
-commit ('runpath', runpath);
+commit ('cpp', cpp)
+commit ('cpp_flags', cpp_flags)
+commit ('ld', ld)
+commit ('ld_flags', ld_flags)
+commit ('runpath', runpath)
 cache.write ('ld_enabled = ')
 if noshared:
   cache.write ('False\n')
 else:
   cache.write ('True\n')
-  commit ('ld_lib', ld_lib);
-  commit ('ld_lib_flags', ld_lib_flags);
+  commit ('ld_lib', ld_lib)
+  commit ('ld_lib_flags', ld_lib_flags)
 commit ('eigen_cflags', eigen_cflags)
 
 commit ('moc', moc)
@@ -1346,4 +1357,3 @@ if dev:
 
 cache.close()
 sys.stdout.write ('ok\n\n')
-

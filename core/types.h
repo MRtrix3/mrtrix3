@@ -16,8 +16,7 @@
 #ifndef __mrtrix_types_h__
 #define __mrtrix_types_h__
 
-
-#include <stdint.h>
+#include <cinttypes>
 #include <complex>
 #include <iostream>
 #include <vector>
@@ -26,6 +25,17 @@
 #include <memory>
 
 #define NOMEMALIGN
+
+#ifdef _WIN32
+#  ifdef _WIN64
+#    define PRI_SIZET PRIu64
+#  else
+#    define PRI_SIZET PRIu32
+#  endif
+#else
+#  define PRI_SIZET "zu"
+#endif
+
 
 namespace MR {
 
@@ -62,7 +72,9 @@ namespace MR {
 #define EIGEN_MATRIX_PLUGIN "eigen_plugins/matrix.h"
 #define EIGEN_ARRAY_PLUGIN "eigen_plugins/array.h"
 
+#include "silence_eigen_warnings.h"
 #include <Eigen/Geometry>
+#pragma GCC diagnostic pop
 
 /*! \defgroup VLA Variable-length array macros
  *
@@ -272,19 +284,18 @@ namespace MR
       return std::unique_ptr<X> (new X (std::forward<Args> (args)...));
     }
 
+
+  // required to allow use of abs() call on unsigned integers in template
+  // functions, etc, since the standard labels such calls ill-formed:
+  // http://en.cppreference.com/w/cpp/numeric/math/abs
+  template <typename X>
+    inline constexpr typename std::enable_if<std::is_arithmetic<X>::value && std::is_unsigned<X>::value,X>::type abs (X x) { return x; }
+  template <typename X>
+    inline constexpr typename std::enable_if<std::is_arithmetic<X>::value && !std::is_unsigned<X>::value,X>::type abs (X x) { return std::abs(x); }
 }
 
 namespace std
 {
-  // these are not defined in the standard, but are needed
-  // for use in generic templates
-#ifdef MRTRIX_MACOSX
-  FORCE_INLINE uint8_t abs (uint8_t x) { return x; }
-  FORCE_INLINE uint16_t abs (uint16_t x) { return x; }
-  FORCE_INLINE uint32_t abs (uint32_t x) { return x; }
-  FORCE_INLINE uint64_t abs (uint64_t x) { return x; }
-#endif
-
 
   template <class T> inline ostream& operator<< (ostream& stream, const vector<T>& V)
   {

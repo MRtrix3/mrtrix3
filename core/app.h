@@ -39,6 +39,7 @@ namespace MR
 
 
     extern const char* mrtrix_version;
+    extern const char* build_date;
     extern int log_level;
     extern int exit_error_code;
     extern std::string NAME;
@@ -51,7 +52,7 @@ namespace MR
     extern const char* const* argv;
 
     extern const char* project_version;
-    extern const char* build_date;
+    extern const char* project_build_date;
 
 
     const char* argtype_description (ArgType type);
@@ -60,7 +61,6 @@ namespace MR
     std::string help_synopsis (int format);
     std::string help_tail (int format);
     std::string usage_syntax (int format);
-
 
 
 
@@ -243,7 +243,9 @@ namespace MR
             opt (option), args (arguments)
         {
           for (size_t i = 0; i != option->size(); ++i) {
-            if (arguments[i][0] == '-') {
+            if (arguments[i][0] == '-' &&
+                !(((*option)[i].type == ImageIn || (*option)[i].type == ImageOut) && !strcmp(arguments[i], std::string("-").c_str())) &&
+                !((*option)[i].type == Integer || (*option)[i].type == Float || (*option)[i].type == IntSeq || (*option)[i].type == FloatSeq || (*option)[i].type == Various)) {
               WARN (std::string("Value \"") + arguments[i] + "\" is being used as " +
                     ((option->size() == 1) ? "the expected argument" : ("one of the " + str(option->size()) + " expected arguments")) +
                     " for option \"-" + option->id + "\"; is this what you intended?");

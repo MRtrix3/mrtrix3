@@ -77,10 +77,10 @@ void usage ()
   + Argument ("output", "the output file. If all input transformations are linear, then the output will also be a linear "
                         "transformation saved as a 4x4 matrix in a text file. If a template image is supplied, then the output will "
                         "always be a deformation field (see below). If all inputs are warps, or a mix of linear and warps, then the "
-                        "output will be a deformation field defined on the grid of the last input warp supplied.").type_file_out ();
+                        "output will be a deformation field defined on the grid of the last input warp supplied.").type_various();
 
   OPTIONS
-  + Option ("template", "define the output  grid defined by a template image")
+  + Option ("template", "define the output grid defined by a template image")
   + Argument ("image").type_image_in();
 
 }

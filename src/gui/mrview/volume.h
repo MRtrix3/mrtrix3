@@ -46,6 +46,7 @@ namespace MR
               //CONF default: true
               //CONF Define default interplation setting for image and image overlay.
               interpolation (File::Config::get_bool("ImageInterpolation", true) ? gl::LINEAR : gl::NEAREST),
+              _current_texture (&_texture),
               texture_mode_changed (true) { }
 
           virtual ~Volume();
@@ -54,8 +55,8 @@ namespace MR
           bool interpolate () const { return interpolation == gl::LINEAR; }
 
           void set_colourmap (size_t index) {
-            if (ColourMap::maps[index].special || ColourMap::maps[colourmap].special) 
-              if (index != colourmap) 
+            if (ColourMap::maps[index].special || ColourMap::maps[colourmap].special)
+              if (index != colourmap)
                 texture_mode_changed = true;
             Displayable::colourmap = index;
           }
@@ -63,26 +64,26 @@ namespace MR
           void render (Displayable::Shader& shader_program, const Projection& projection, float depth) {
             start (shader_program, _scale_factor);
             projection.set (shader_program);
-            _texture.bind();
+            texture().bind();
             set_vertices_for_slice_render (projection, depth);
             draw_vertices ();
             stop (shader_program);
           }
 
           void bind () {
-            if (!_texture) { // allocate:
-              _texture.gen (gl::TEXTURE_3D);
-              _texture.bind();
+            if (!texture()) { // allocate:
+              texture().gen (gl::TEXTURE_3D);
+              texture().bind();
             }
-            else 
-              _texture.bind();
-            _texture.set_interp (interpolation);
+            else
+              texture().bind();
+            texture().set_interp (interpolation);
           }
 
           void allocate();
 
           float focus_rate () const {
-            return 1.0e-3 * (std::pow ( 
+            return 1.0e-3 * (std::pow (
                   _header.size(0) * _header.spacing(0) *
                   _header.size(1) * _header.spacing(1) *
                   _header.size(2) * _header.spacing(2),
@@ -90,7 +91,8 @@ namespace MR
           }
 
           float scale_factor () const { return _scale_factor; }
-          const GL::Texture& texture () const { return _texture; }
+          const GL::Texture& texture () const { return *_current_texture; }
+          GL::Texture& texture () { return *_current_texture; }
           const MR::Header& header () const { return _header; }
           MR::Header& header () { return _header; }
           const MR::Transform& transform () const { return _transform; }
@@ -100,6 +102,7 @@ namespace MR
             if (std::isnan (display_midpoint) || std::isnan (display_range))
               reset_windowing();
           }
+
 
 
           inline void upload_data (const std::array<ssize_t,3>& x, const std::array<ssize_t,3>& size, const void* data) {
@@ -114,6 +117,7 @@ namespace MR
           MR::Transform _transform;
           int interpolation;
           GL::Texture _texture;
+          GL::Texture* _current_texture;
           GL::VertexBuffer vertex_buffer;
           GL::VertexArrayObject vertex_array_object;
           GLenum type, format, internal_format;
@@ -123,12 +127,11 @@ namespace MR
           Eigen::Vector3f pos[4], tex[4], z, im_z;
           Eigen::Vector3f vertices[8];
 
-
           inline Eigen::Vector3f div (const Eigen::Vector3f& a, const Eigen::Vector3f& b) {
             return Eigen::Vector3f (a[0]/b[0], a[1]/b[1], a[2]/b[2]);
           }
 
-          void set_vertices_for_slice_render (const Projection& projection, float depth) 
+          void set_vertices_for_slice_render (const Projection& projection, float depth)
           {
             vertices[0] = projection.screen_to_model (projection.x_position(), projection.y_position()+projection.height(), depth);
             vertices[2] = projection.screen_to_model (projection.x_position(), projection.y_position(), depth);

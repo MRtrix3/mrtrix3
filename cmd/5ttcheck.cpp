@@ -83,7 +83,7 @@ void run ()
         for (auto inner = Loop(3) (in); inner; ++inner)
           sum += in.value();
         if (!sum) continue;
-        if (std::abs (sum-1.0) > MAX_ERROR) {
+        if (abs (sum-1.0) > MAX_ERROR) {
           ++voxel_error_sum;
           if (voxels.valid()) {
             assign_pos_of (in, 0, 3).to (voxels);
@@ -139,6 +139,8 @@ void run ()
     } else {
       WARN ("Input image does not perfectly conform to 5TT format, but may still be applicable" + vox_option_suggestion);
     }
+  } else {
+    CONSOLE(std::string(argument.size() > 1 ? "All images" : "Input image") + " checked OK");
   }
 }
 

@@ -50,3 +50,5 @@ def execute(): #pylint: disable=unused-variable
   run.command('dwiextract dwi.mif - -singleshell -no_bzero | amp2response - voxels.mif vector.mif response.txt' + lmax_option)
 
   run.function(shutil.copyfile, 'response.txt', path.fromUser(app.args.output, False))
+  if app.args.voxels:
+    run.command('mrconvert voxels.mif ' + path.fromUser(app.args.voxels, True) + app.mrconvertOutputOption(path.fromUser(app.args.input, True)))

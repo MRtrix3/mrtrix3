@@ -64,7 +64,7 @@ namespace MR
           H.size(i) = Raw::fetch_<int16_t> (&NH.dim[i+1], is_BE);
           if (H.size (i) < 0) {
             INFO ("dimension along axis " + str (i) + " specified as negative in NIfTI-1.1 image \"" + H.name() + "\" - taking absolute value");
-            H.size(i) = std::abs (H.size (i));
+            H.size(i) = abs (H.size (i));
           }
           if (!H.size (i))
             H.size(i) = 1;
@@ -134,7 +134,7 @@ namespace MR
           H.spacing(i) = Raw::fetch_<float32> (&NH.pixdim[i+1], is_BE);
           if (H.spacing (i) < 0.0) {
             INFO ("voxel size along axis " + str (i) + " specified as negative in NIfTI-1.1 image \"" + H.name() + "\" - taking absolute value");
-            H.spacing(i) = std::abs (H.spacing (i));
+            H.spacing(i) = abs (H.spacing (i));
           }
         }
 
@@ -184,7 +184,7 @@ namespace MR
             // check voxel sizes:
             for (size_t axis = 0; axis != 3; ++axis) {
               if (size_t(ndim) > axis)
-                if (std::abs(H.spacing(axis) - std::sqrt (Math::pow2 (M(0,axis)) + Math::pow2 (M(1,axis)) + Math::pow2 (M(2,axis)))) > 1e-4) {
+                if (abs(H.spacing(axis) - M.col(axis).head<3>().norm()) > 1e-4) {
                     WARN ("voxel spacings inconsistent between NIFTI s-form and header field pixdim");
                     break;
                 }
@@ -193,7 +193,7 @@ namespace MR
             // normalize each transform axis:
             for (size_t axis = 0; axis != 3; ++axis) {
               if (size_t(ndim) > axis)
-                M.col(axis).array() /= H.spacing (axis);
+                M.col(axis).normalize();
             }
 
           }
@@ -202,7 +202,11 @@ namespace MR
             transform_type M_qform;
 
             Eigen::Quaterniond Q (0.0, Raw::fetch_<float32> (&NH.quatern_b, is_BE), Raw::fetch_<float32> (&NH.quatern_c, is_BE), Raw::fetch_<float32> (&NH.quatern_d, is_BE));
-            Q.w() = std::sqrt (std::max (1.0 - Q.squaredNorm(), 0.0));
+            const double w = 1.0 - Q.squaredNorm();
+            if (w < 1.0e-7)
+              Q.normalize();
+            else
+              Q.w() = std::sqrt (w);
             M_qform.matrix().topLeftCorner<3,3>() = Q.matrix();
 
             M_qform.translation()[0] = Raw::fetch_<float32> (&NH.qoffset_x, is_BE);
@@ -217,7 +221,7 @@ namespace MR
             if (sform_code) {
               Header header2 (H);
               header2.transform() = M_qform;
-              if (!voxel_grids_match_in_scanner_space (H, header2)) {
+              if (!voxel_grids_match_in_scanner_space (H, header2, 0.1)) {
                 //CONF option: NIfTIUseSform
                 //CONF default: 0 (false)
                 //CONF A boolean value to control whether, in cases where both
