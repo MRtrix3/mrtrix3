@@ -42,9 +42,6 @@ namespace MR
               Displayable (header.name()),
               _header (std::move (header)),
               _transform (_header),
-              //CONF option: ImageInterpolation
-              //CONF default: true
-              //CONF Define default interplation setting for image and image overlay.
               interpolation (File::Config::get_bool("ImageInterpolation", true) ? gl::LINEAR : gl::NEAREST),
               _current_texture (&_texture),
               texture_mode_changed (true) { }
