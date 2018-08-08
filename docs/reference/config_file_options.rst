@@ -611,8 +611,9 @@ List of MRtrix3 configuration file options
      /tmp/, which is typically a RAM file system and should therefore
      be fast; but may cause issues on machines with little RAM
      capacity or where write-access to this location is not permitted.
+     
      Note that this location can also be manipulated using the
-     `MRTRIX_TMPFILE_DIR` environment variable, without editing the
+     :envvar:`MRTRIX_TMPFILE_DIR` environment variable, without editing the
      config file. Note also that this setting does not influence the
      location in which Python scripts construct their temporary
      directories; that is determined based on config file option

@@ -71,7 +71,7 @@ namespace MR
           //ENVVAR Note that to obtain the same results
           //ENVVAR from a multi-threaded command, you should also disable
           //ENVVAR multi-threading (using the option ``-nthread 0`` or by
-          //ENVVAR setting the MRTRIX_NTHREADS environment variable to zero).
+          //ENVVAR setting the :envvar:`MRTRIX_NTHREADS` environment variable to zero).
           //ENVVAR Multi-threading introduces randomness in the order of execution, which
           //ENVVAR will generally also affect the reproducibility of results.
           const char* from_env = getenv ("MRTRIX_RNG_SEED");
