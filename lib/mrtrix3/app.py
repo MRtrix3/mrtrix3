@@ -224,7 +224,7 @@ def makeTempDir(): #pylint: disable=unused-variable
     dir_path = os.path.abspath(args.tempdir)
   else:
     # Defaulting to working directory since too many users have encountered storage issues
-    dir_path = dict.get('ScriptTmpDir', workingDir)
+    dir_path = config.get('ScriptTmpDir', workingDir)
   prefix = config.get('ScriptTmpPrefix', os.path.basename(sys.argv[0]) + '-tmp-')
   tempDir = dir_path
   while os.path.isdir(tempDir):
