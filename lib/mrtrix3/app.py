@@ -213,6 +213,7 @@ def checkOutputPath(path): #pylint: disable=unused-variable
 
 def makeTempDir(): #pylint: disable=unused-variable
   import os, random, string, sys
+  from mrtrix3 import run
   global args, config, continueOption, tempDir, workingDir
   if continueOption:
     debug('Skipping temporary directory creation due to use of -continue option')
@@ -236,6 +237,8 @@ def makeTempDir(): #pylint: disable=unused-variable
   with open(os.path.join(tempDir, 'command.txt'), 'w') as outfile:
     outfile.write(' '.join(sys.argv) + '\n')
   open(os.path.join(tempDir, 'log.txt'), 'w').close()
+  # Also use this temporary directory for any piped images within run.command() calls
+  run.setTmpDir(tempDir)
 
 
 
