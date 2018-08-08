@@ -15,7 +15,7 @@ Usage
 
     dwi2response algorithm [ options ] ...
 
--  *algorithm*: Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: dhollander, dhollander_old, fa, manual, msmt_5tt, tax, tournier
+-  *algorithm*: Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: dhollander_new, dhollander_old, fa, manual, msmt_5tt, tax, tournier
 
 Description
 -----------
@@ -81,10 +81,10 @@ of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 For more details, see http://www.mrtrix.org/
 
-.. _dwi2response_dhollander:
+.. _dwi2response_dhollander_new:
 
-dwi2response dhollander
-=======================
+dwi2response dhollander_new
+===========================
 
 Synopsis
 --------
@@ -96,7 +96,7 @@ Usage
 
 ::
 
-    dwi2response dhollander input out_sfwm out_gm out_csf [ options ]
+    dwi2response dhollander_new input out_sfwm out_gm out_csf [ options ]
 
 -  *input*: The input DWI
 -  *out_sfwm*: Output single-fibre WM response text file
@@ -106,8 +106,8 @@ Usage
 Options
 -------
 
-Options specific to the 'dhollander' algorithm
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options specific to the 'dhollander_new' algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-erode** Number of erosion passes to apply to initial (whole brain) mask. (default: 3)
 
