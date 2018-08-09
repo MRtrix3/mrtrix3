@@ -259,7 +259,7 @@ def registrationstep(k):
                 ' -mb ' + (str(mb) if iters[k].svr else '0') + (' -init motion.txt' if k>0 else '') +
                 ssp_option + ' -force' + nthr)
     if app.args.sorder:
-        run.command('motionfilter motion.txt sliceweights.txt motion.txt ' + motfilt_option)
+        run.command('motionfilter motion.txt sliceweights.txt motion.txt -medfilt 5 ' + motfilt_option)
 
 
 def fieldalignstep(k):
