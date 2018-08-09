@@ -50,6 +50,7 @@ options.add_argument('-fieldmap', help='B0 field map for distortion correction')
 options.add_argument('-fieldidx', help='Index of volume to which field map is aligned (default = 0)')
 options.add_argument('-pe_table', help='Phase encoding table in MRtrix format')
 options.add_argument('-pe_eddy', nargs=2, help='Phase encoding table in FSL acqp/index format')
+options.add_argument('-sliceweights', help='Import fixed slice weights')
 options.add_argument('-export_motion', help='Export rigid motion parameters')
 options.add_argument('-export_weights', help='Export slice weights')
 app.cmdline.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
@@ -181,6 +182,10 @@ if app.args.sorder:
     p,s = app.args.sorder.split(',')
     motfilt_option += ' -packs ' + p + ' -shift ' + s
 
+# Import fixed slice weights
+if app.args.sliceweights:
+    run.command('cp ' + path.fromUser(app.args.sliceweights, True) + ' sliceweights0.txt')
+
 
 # Configuration
 class Config:
@@ -217,6 +222,8 @@ def reconstep(k):
 
 
 def sliceweightstep(k):
+    #if app.args.sliceweights:
+    #    return
     mask_opt = ' -mask mask.mif' + (' -motion motion.txt' if k>0 else '')
     if app.args.matchintensity:
         run.command('dwisliceoutliers ' + inputfn + ' spred.mif' + mask_opt + ' sliceweights.txt' + or_option + ' -imscale imscale.mif -force')
@@ -228,6 +235,12 @@ def sliceweightstep(k):
             run.command('mrcalc biasfield.mif tmp2.mif 0 -eq 0 tmp1.mif tmp2.mif -divide -if -sub - | mrconvert - biasfield.mif -force')
     else:
         run.command('dwisliceoutliers ' + inputfn + ' spred.mif' + mask_opt + ' sliceweights.txt' + or_option + ' -force')
+    if app.args.sliceweights:
+        import numpy as np
+        w0 = np.loadtxt('sliceweights0.txt')
+        w1 = np.loadtxt('sliceweights.txt')
+        w1 *= w0 / np.mean(w0)
+        np.savetxt('sliceweights.txt', w1)
 
 
 def basisupdatestep(k):
@@ -246,7 +259,7 @@ def registrationstep(k):
                 ' -mb ' + (str(mb) if iters[k].svr else '0') + (' -init motion.txt' if k>0 else '') +
                 ssp_option + ' -force' + nthr)
     if app.args.sorder:
-        run.command('motionfilter motion.txt sliceweights.txt motion.txt' + motfilt_option)
+        run.command('motionfilter motion.txt sliceweights.txt motion.txt ' + motfilt_option)
 
 
 def fieldalignstep(k):
