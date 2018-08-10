@@ -132,10 +132,11 @@ class GMModel {
 
     void fit(const Eigen::VectorXf& x) {
       init(x);
+      float eps = 1e-5;
       for (int n = 0; n < niter; n++) {
         // E-Step
-        p1 = gaussian(x, Min, Sin);
-        p2 = gaussian(x, Mout, Sout);
+        p1 = gaussian(x, Min, Sin) + eps*ones;
+        p2 = gaussian(x, Mout, Sout) + eps*ones;
         w = Pin * p1.cwiseQuotient(Pin * p1 + Pout * p2);
         // M-Step
         Pin = w.sum();
@@ -145,8 +146,6 @@ class GMModel {
         Sin = std::sqrt( (x.array() - Min).square().matrix().dot(w) / Pin );
         Sout = std::sqrt( (x.array() - Mout).square().matrix().dot(ones - w) / Pout );
       }
-      VAR(Pin / (Pin+Pout));
-      VAR(Pout / (Pin+Pout));
     }
 
     Eigen::VectorXf get_prob() const { return w; }
