@@ -16,8 +16,12 @@ class Header(object):
     result = subprocess.call(command, stdout=None, stderr=None)
     if result:
       app.error('Could not access header information for image \'' + image_path + '\'')
-    with open(filename, 'r') as f:
-      data = json.load(f)
+    try:
+      with open(filename, 'r') as f:
+        data = json.load(f)
+    except UnicodeDecodeError:
+      with open(filename, 'r') as f:
+        data = json.load(f.read().decode('utf-8', errors='replace'))
     os.remove(filename)
     try:
       #self.__dict__.update(data)
