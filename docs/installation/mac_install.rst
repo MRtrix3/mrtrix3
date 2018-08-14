@@ -121,8 +121,9 @@ Install Dependencies
 Git setup
 ---------
 
-Set up your git environment as per the `Git instructions
-page <https://help.github.com/articles/set-up-git/#setting-up-git>`__
+If you intend to contribute to the development of *MRtrix3*, set up your git
+environment as per the `Git instructions page
+<https://help.github.com/articles/set-up-git/#setting-up-git>`__
 
 Build *MRtrix3* 
 ---------------
@@ -131,7 +132,7 @@ Build *MRtrix3*
 
        git clone https://github.com/MRtrix3/mrtrix3.git
 
-   or if you have set up your SSH keys (for collaborators)::
+   or if you have set up your SSH keys (for contributors)::
 
        git clone git@github.com:MRtrix3/mrtrix3.git
 
