@@ -25,7 +25,7 @@ If used correctly, this program can be a very useful workhorse. In addition to c
 
 The -coord option is used to select the coordinates within the input image that are to be retained in the output image. This can therefore be used to include or exclude subsets of slices along a particular spatial axis, or volumes / series within higher dimensions. For instance: -coord 3 0 extracts the first volume from a 4D image; -coord 1 24 extracts slice number 24 along the y-axis.
 
-The colon operator can be particularly useful in conjunction with the -coord option, in order to select multiple coordinates. For instance: -coord 3 1:59 would select all but the first volume from an image containing 60 volumes.
+You can use any valid number sequence in the selection, as well as the 'end' keyword (see the main documentation for details) This can be particularly useful to select multiple coordinates. For instance: -coord 3 1:2:end would select every other volume from an image, starting from the second volume. 
 
 The -vox option is used to change the size of the voxels in the output image. Note that this does not re-sample the image based on a new voxel size (that is done using the mrresize command); this only changes the voxel size as reported in the image header. Providing a single value will result in isotropic voxels of that size; alternatively, voxel sizes for individual axes can be set independently, using a comma-separated list of values; e.g. -vox 1,,3.5 will change the voxel size along the x & z axes to 1.0mm and 3.5mm respectively, and leave the y-axis voxel size unchanged.
 
@@ -43,7 +43,7 @@ Options
 Options for manipulating fundamental image properties
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-coord axis coord** retain data from the input image only at the coordinates specified
+-  **-coord axis selection** retain data from the input image only at the coordinates specified in the selection along the specified axis. The selection  argument expects a number sequence, which can also include the 'end' keyword.
 
 -  **-vox sizes** change the voxel dimensions of the output image
 
