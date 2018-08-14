@@ -11,7 +11,7 @@ init:
 build_script:
   - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "pacman -S --noconfirm bc mingw-w64-x86_64-diffutils mingw-w64-x86_64-eigen3 mingw-w64-x86_64-fftw mingw-w64-x86_64-libtiff mingw-w64-x86_64-qt5 python"
   - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "./configure -assert"
-  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "./build"
+  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "./build -nowarnings -nopaginate -persistent"
 
 test_script:
   - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "./run_tests"
