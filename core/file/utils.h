@@ -53,12 +53,20 @@ namespace MR
       //CONF /tmp/, which is typically a RAM file system and should therefore
       //CONF be fast; but may cause issues on machines with little RAM
       //CONF capacity or where write-access to this location is not permitted.
+      //CONF
       //CONF Note that this location can also be manipulated using the
-      //CONF `MRTRIX_TMPFILE_DIR` environment variable, without editing the
+      //CONF :envvar:`MRTRIX_TMPFILE_DIR` environment variable, without editing the
       //CONF config file. Note also that this setting does not influence the
       //CONF location in which Python scripts construct their temporary
       //CONF directories; that is determined based on config file option
       //CONF ScriptTmpDir.
+
+      //ENVVAR name: MRTRIX_TMPFILE_DIR
+      //ENVVAR This has the same effect as the :option:`TmpFileDir`
+      //ENVVAR configuration file entry, and can be used to set the location of
+      //ENVVAR temporary files (as used in Unix pipes) for a single session,
+      //ENVVAR within a single script, or for a single command without
+      //ENVVAR modifying the configuration  file.
       const std::string __get_tmpfile_dir () {
         const char* from_env_mrtrix = getenv ("MRTRIX_TMPFILE_DIR");
         if (from_env_mrtrix)
@@ -92,6 +100,13 @@ namespace MR
       //CONF suffix (depending on file type). Note that this prefix can also be
       //CONF manipulated using the `MRTRIX_TMPFILE_PREFIX` environment
       //CONF variable, without editing the config file.
+
+      //ENVVAR name: MRTRIX_TMPFILE_PREFIX
+      //ENVVAR This has the same effect as the :option:`TmpFilePrefix`
+      //ENVVAR configuration file entry, and can be used to set the prefix for
+      //ENVVAR the name  of temporary files (as used in Unix pipes) for a
+      //ENVVAR single session, within a single script, or for a single command
+      //ENVVAR without modifying the configuration file.
       const std::string __get_tmpfile_prefix () {
         const char* from_env = getenv ("MRTRIX_TMPFILE_PREFIX");
         if (from_env) return from_env;
