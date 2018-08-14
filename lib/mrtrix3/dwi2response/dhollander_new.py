@@ -37,6 +37,10 @@ def execute(): #pylint: disable=unused-variable
   import shutil
   from mrtrix3 import app, image, path, run
 
+  bzero_threshold = 10.0
+  if 'BZeroThreshold' in app.config:
+    bzero_threshold = float(app.config['BZeroThreshold'])
+
 
   # CHECK INPUTS AND OPTIONS
 
@@ -164,16 +168,28 @@ def execute(): #pylint: disable=unused-variable
   # Get final voxels for single-fibre WM response function estimation from refined WM.
   refwmcount = float(image.statistic('refined_wm.mif', 'count', '-mask refined_wm.mif'))
   voxsfwmcount = int(round(refwmcount * app.args.sfwm / 100.0))
-  run.command('mrcalc refined_wm.mif safe_fa.mif 0 -if - | mrthreshold - - -top ' + str(voxsfwmcount) + ' -ignorezero | mrcalc refined_wm.mif - 0 -if - -datatype bit | mrconvert - init_voxels_sfwm.mif -axes 0,1,2')
-  run.command('amp2response dwi.mif init_voxels_sfwm.mif safe_vecs.mif init_response_sfwm.txt' + bvalues_option + sfwm_lmax_option)
-  run.command('dwi2fod msmt_csd dwi.mif init_response_sfwm.txt fod_wm.mif response_gm.txt abs_gm.mif -mask refined_wm.mif' + bvalues_option)
-  run.command('mrconvert fod_wm.mif abs_wm.mif -coord 3 0')
-  run.command('sh2peaks fod_wm.mif wm_peak.mif -num 1 -fast -mask refined_wm.mif')
-  run.command('peaks2amp wm_peak.mif - | mrconvert - abs_wm_amp.mif -coord 3 0 -axes 0,1,2')
-  run.command('mrcalc abs_wm_amp.mif abs_wm.mif abs_gm.mif -add -divide frac_wm_amp.mif')
-  run.command('mrcalc refined_wm.mif frac_wm_amp.mif 0 -if - | mrthreshold - - -top ' + str(voxsfwmcount) + ' -ignorezero | mrcalc refined_wm.mif - 0 -if - -datatype bit | mrconvert - voxels_sfwm.mif -axes 0,1,2')
+  run.command('mrmath dwi.mif mean mean_sig.mif -axis 3')
+  refwmcoef = float(image.statistic('mean_sig.mif', 'median', '-mask refined_wm.mif')) / 0.282
+  if sfwm_lmax:
+    isiso = [ x == 0 for x in sfwm_lmax ]
+  else:
+    isiso = [ x < bzero_threshold for x in bvalues ]
+  with open('esfwm', 'w') as f:
+    for ii in isiso:
+      if ii:
+        f.write("%s 0 0\n" % refwmcoef)
+      else:
+        f.write("%s -%s %s\n" % (refwmcoef, refwmcoef, refwmcoef))
+  run.command('dwi2fod msmt_csd dwi.mif esfwm abs_wm2.mif response_csf.txt abs_csf2.mif -mask refined_wm.mif -lmax 2,0' + bvalues_option)
+  run.command('mrconvert abs_wm2.mif - -coord 3 0 | mrcalc - abs_csf2.mif -add abs_sum2.mif')
+  run.command('sh2peaks abs_wm2.mif - -num 1 -mask refined_wm.mif | peaks2amp - - | mrcalc - abs_sum2.mif -divide - | mrconvert - sfwm2.mif -coord 3 0 -axes 0,1,2')
+  run.command('mrcalc refined_wm.mif sfwm2.mif 0 -if - | mrthreshold - - -top ' + str(voxsfwmcount * 2) + ' -ignorezero | mrcalc refined_wm.mif - 0 -if - -datatype bit | mrconvert - refined_sfwm.mif -axes 0,1,2')
+  run.command('dwi2fod msmt_csd dwi.mif esfwm abs_wm4.mif response_csf.txt abs_csf4.mif -mask refined_sfwm.mif -lmax 4,0' + bvalues_option)
+  run.command('mrconvert abs_wm4.mif - -coord 3 0 | mrcalc - abs_csf4.mif -add abs_sum4.mif')
+  run.command('sh2peaks abs_wm4.mif - -num 1 -mask refined_sfwm.mif | peaks2amp - - | mrcalc - abs_sum4.mif -divide - | mrconvert - sfwm4.mif -coord 3 0 -axes 0,1,2')
+  run.command('mrcalc refined_sfwm.mif sfwm4.mif 0 -if - | mrthreshold - - -top ' + str(voxsfwmcount) + ' -ignorezero | mrcalc refined_sfwm.mif - 0 -if - -datatype bit | mrconvert - voxels_sfwm.mif -axes 0,1,2')
   # Estimate SF WM response function
-  run.command('amp2response dwi.mif voxels_sfwm.mif wm_peak.mif response_sfwm.txt' + bvalues_option + sfwm_lmax_option)
+  run.command('amp2response dwi.mif voxels_sfwm.mif safe_vecs.mif response_sfwm.txt' + bvalues_option + sfwm_lmax_option)
 
 
   # SUMMARY AND OUTPUT
