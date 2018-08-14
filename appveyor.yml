@@ -16,3 +16,8 @@ build_script:
 test_script:
   - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "./run_tests"
 
+artifacts:
+  - path: configure.log
+  - path: build.log
+  - path: testing.log
+
