@@ -14,25 +14,34 @@ List of MRtrix3 configuration file options
 
     *default: 0 (false)*
 
-     A boolean value to indicate whether images in Analyse format should be assumed to be in LAS orientation (default) or RAS (when this is option is turned on).
+     A boolean value to indicate whether images in Analyse format
+     should be assumed to be in LAS orientation (default) or RAS
+     (when this is option is turned on).
 
 .. option:: BValueScaling
 
     *default: 1 (true)*
 
-     Specifies whether the b-values should be scaled by the squared norm of the gradient vectors when loading a DW gradient scheme. This is commonly required to correctly interpret images acquired on scanners that nominally only allow a single b-value, as the common workaround is to scale the gradient vectors to modulate the actual b-value.
+     Specifies whether the b-values should be scaled by the squared
+     norm of the gradient vectors when loading a DW gradient scheme.
+     This is commonly required to correctly interpret images acquired
+     on scanners that nominally only allow a single b-value, as the
+     common workaround is to scale the gradient vectors to modulate
+     the actual b-value.
 
 .. option:: BZeroThreshold
 
     *default: 10.0*
 
-     Specifies the b-value threshold for determining those image volumes that correspond to b=0.
+     Specifies the b-value threshold for determining those image
+     volumes that correspond to b=0.
 
 .. option:: BackgroundColor
 
     *default: 1.0,1.0,1.0*
 
-     The default colour to use for the background in OpenGL panels, notably the SH viewer.
+     The default colour to use for the background in OpenGL panels, notably
+     the SH viewer.
 
 .. option:: ConnectomeEdgeAssociatedAlphaMultiplier
 
@@ -212,7 +221,8 @@ List of MRtrix3 configuration file options
 
     *default: 0 (false)*
 
-     A boolean value specifying whether MRtrix applications should abort as soon as any (otherwise non-fatal) warning is issued.
+     A boolean value specifying whether MRtrix applications should
+     abort as soon as any (otherwise non-fatal) warning is issued.
 
 .. option:: FontSize
 
@@ -224,7 +234,8 @@ List of MRtrix3 configuration file options
 
     *default: less*
 
-     The command to use to display each command's help page (leave empty to send directly to the terminal).
+     The command to use to display each command's help page (leave
+     empty to send directly to the terminal).
 
 .. option:: IconSize
 
@@ -242,13 +253,15 @@ List of MRtrix3 configuration file options
 
     *default: top*
 
-     The starting position of the MRView toolbar. Valid values are: top, bottom, left, right.
+     The starting position of the MRView toolbar. Valid values are:
+     top, bottom, left, right.
 
 .. option:: LightPosition
 
     *default: 1.0,1.0,3.0*
 
-     The default position vector to use for the light in OpenGL renders.
+     The default position vector to use for the light in OpenGL
+     renders.
 
 .. option:: MRViewColourBarHeight
 
@@ -260,19 +273,22 @@ List of MRtrix3 configuration file options
 
     *default: 20*
 
-     How far away from the edge of the main window to place the colourbar in MRView, in pixels.
+     How far away from the edge of the main window to place the
+     colourbar in MRView, in pixels.
 
 .. option:: MRViewColourBarPosition
 
     *default: bottomright*
 
-     The position of the colourbar within the main window in MRView. Valid values are: bottomleft, bottomright, topleft, topright.
+     The position of the colourbar within the main window in MRView.
+     Valid values are: bottomleft, bottomright, topleft, topright.
 
 .. option:: MRViewColourBarTextOffset
 
     *default: 10*
 
-     How far away from the colourbar to place the associated text, in pixels.
+     How far away from the colourbar to place the associated text,
+     in pixels.
 
 .. option:: MRViewColourBarWidth
 
@@ -290,19 +306,23 @@ List of MRtrix3 configuration file options
 
     *default: Pseudotubes*
 
-     The default geometry type used to render tractograms. Options are Pseudotubes, Lines or Points
+     The default geometry type used to render tractograms.
+     Options are Pseudotubes, Lines or Points
 
 .. option:: MRViewDockFloating
 
     *default: 0 (false)*
 
-     Whether MRView tools should start docked in the main window, or floating (detached from the main window).
+     Whether MRView tools should start docked in the main window, or
+     floating (detached from the main window).
 
 .. option:: MRViewFocusModifierKey
 
     *default: meta (cmd on MacOSX)*
 
-     Modifier key to select focus mode in MRView. Valid choices include shift, alt, ctrl, meta (on MacOSX: shift, alt, ctrl, cmd).
+     Modifier key to select focus mode in MRView. Valid
+     choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
+     ctrl, cmd).
 
 .. option:: MRViewImageBackgroundColour
 
@@ -320,13 +340,16 @@ List of MRtrix3 configuration file options
 
     *default: 3*
 
-     The maximal number of rows used to layout a collection of rendered colourbars Note, that all tool-specific colourbars will form a single collection.
+     The maximal number of rows used to layout a collection of rendered colourbars
+     Note, that all tool-specific colourbars will form a single collection.
 
 .. option:: MRViewMoveModifierKey
 
     *default: shift*
 
-     Modifier key to select move mode in MRView. Valid choices include shift, alt, ctrl, meta (on MacOSX: shift, alt, ctrl, cmd).
+     Modifier key to select move mode in MRView. Valid
+     choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
+     ctrl, cmd).
 
 .. option:: MRViewOdfScale
 
@@ -338,7 +361,9 @@ List of MRtrix3 configuration file options
 
     *default: ctrl*
 
-     Modifier key to select rotate mode in MRView. Valid choices include shift, alt, ctrl, meta (on MacOSX: shift, alt, ctrl, cmd).
+     Modifier key to select rotate mode in MRView. Valid
+     choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
+     ctrl, cmd).
 
 .. option:: MRViewShowColourbar
 
@@ -380,49 +405,70 @@ List of MRtrix3 configuration file options
 
     *default: topright*
 
-     The position of all visible tool colourbars within the main window in MRView. Valid values are: bottomleft, bottomright, topleft, topright.
+     The position of all visible tool colourbars within the main window in MRView.
+     Valid values are: bottomleft, bottomright, topleft, topright.
 
 .. option:: MSAA
 
     *default: 0 (false)*
 
-     How many samples to use for multi-sample anti-aliasing (to improve display quality).
+     How many samples to use for multi-sample anti-aliasing (to
+     improve display quality).
 
 .. option:: NIfTIAllowBitwise
 
     *default: 0 (false)*
 
-     A boolean value to indicate whether bitwise storage of binary data is permitted (most 3rd party software packages don't support bitwise data). If false (the default), data will be stored using more widely supported unsigned 8-bit integers.
+     A boolean value to indicate whether bitwise storage of binary
+     data is permitted (most 3rd party software packages don't
+     support bitwise data). If false (the default), data will be
+     stored using more widely supported unsigned 8-bit integers.
 
 .. option:: NIfTIAlwaysUseVer2
 
     *default: 0 (false)*
 
-     A boolean value to indicate whether NIfTI images should always be written in the new NIfTI-2 format. If false, images will be written in the older NIfTI-1 format by default, with the exception being files where the number of voxels along any axis exceeds the maximum permissible in that format (32767), in which case the output file will automatically switch to the NIfTI-2 format.
+     A boolean value to indicate whether NIfTI images should
+     always be written in the new NIfTI-2 format. If false,
+     images will be written in the older NIfTI-1 format by
+     default, with the exception being files where the number
+     of voxels along any axis exceeds the maximum permissible
+     in that format (32767), in which case the output file
+     will automatically switch to the NIfTI-2 format.
 
 .. option:: NIfTIAutoLoadJSON
 
     *default: 0 (false)*
 
-     A boolean value to indicate whether, when opening NIfTI images, any corresponding JSON file should be automatically loaded.
+     A boolean value to indicate whether, when opening NIfTI images,
+     any corresponding JSON file should be automatically loaded.
 
 .. option:: NIfTIAutoSaveJSON
 
     *default: 0 (false)*
 
-     A boolean value to indicate whether, when writing NIfTI images, a corresponding JSON file should be automatically created in order to save any header entries that cannot be stored in the NIfTI header.
+     A boolean value to indicate whether, when writing NIfTI images,
+     a corresponding JSON file should be automatically created in order
+     to save any header entries that cannot be stored in the NIfTI
+     header.
 
 .. option:: NIfTIUseSform
 
     *default: 0 (false)*
 
-     A boolean value to control whether, in cases where both the sform and qform transformations are defined in an input NIfTI image, but those transformations differ, the sform transformation should be used in preference to the qform matrix (the default behaviour).
+     A boolean value to control whether, in cases where both
+     the sform and qform transformations are defined in an
+     input NIfTI image, but those transformations differ, the
+     sform transformation should be used in preference to the
+     qform matrix (the default behaviour).
 
 .. option:: NeedOpenGLCoreProfile
 
     *default: 1 (true)*
 
-     Whether the creation of an OpenGL 3.3 context requires it to be a core profile (needed on newer versions of the ATI drivers on Linux, for instance).
+     Whether the creation of an OpenGL 3.3 context requires it to be
+     a core profile (needed on newer versions of the ATI drivers on
+     Linux, for instance).
 
 .. option:: NumberOfThreads
 
@@ -440,13 +486,15 @@ List of MRtrix3 configuration file options
 
     *default: 1,1,0 (yellow)*
 
-     The default colour to use for objects (i.e. SH glyphs) when not colouring by direction.
+     The default colour to use for objects (i.e. SH glyphs) when not
+     colouring by direction.
 
 .. option:: RegAnalyseDescent
 
     *default: 0 (false)*
 
-     Linear registration: write comma separated gradient descent parameters and gradients to stdout and verbose gradient descent output to stderr.
+     Linear registration: write comma separated gradient descent parameters and gradients
+     to stdout and verbose gradient descent output to stderr.
 
 .. option:: RegCoherenceLen
 
@@ -458,7 +506,8 @@ List of MRtrix3 configuration file options
 
     *default: 0.8*
 
-     Linear registration: control point trajectory smoothing value used in convergence check parameter range: [0...1].
+     Linear registration: control point trajectory smoothing value used in convergence check
+     parameter range: [0...1].
 
 .. option:: RegGdConvergenceMinIter
 
@@ -470,13 +519,15 @@ List of MRtrix3 configuration file options
 
     *default: 0.1*
 
-     Linear registration: control point trajectory slope smoothing value used in convergence check parameter range: [0...1].
+     Linear registration: control point trajectory slope smoothing value used in convergence check
+     parameter range: [0...1].
 
 .. option:: RegGdConvergenceThresh
 
     *default: 5e-3*
 
-     Linear registration: threshold for convergence check using the smoothed control point trajectories measured in fraction of a voxel.
+     Linear registration: threshold for convergence check using the smoothed control point trajectories
+     measured in fraction of a voxel.
 
 .. option:: RegGdWeightMatrix
 
@@ -500,13 +551,22 @@ List of MRtrix3 configuration file options
 
     *default: `.`*
 
-     The location in which to generate the temporary directories to be used by MRtrix Python scripts. By default they will be generated in the working directory. Note that this setting does not influence the location in which piped images and other temporary files are created by MRtrix3; that is determined based on config file option :option:`TmpFileDir`.
+     The location in which to generate the temporary directories to be
+     used by MRtrix Python scripts. By default they will be generated
+     in the working directory.
+     Note that this setting does not influence the location in which
+     piped images and other temporary files are created by MRtrix3;
+     that is determined based on config file option :option:`TmpFileDir`.
 
 .. option:: ScriptTmpPrefix
 
     *default: `<script>-tmp-`*
 
-     The prefix to use when generating a unique name for a Python script temporary directory. By default the name of the invoked script itself will be used, followed by `-tmp-` (six random characters are then appended to produce a unique name in cases where a script may be run multiple times in parallel).
+     The prefix to use when generating a unique name for a Python
+     script temporary directory. By default the name of the invoked
+     script itself will be used, followed by `-tmp-` (six random
+     characters are then appended to produce a unique name in cases
+     where a script may be run multiple times in parallel).
 
 .. option:: SparseDataInitialSize
 
@@ -530,7 +590,9 @@ List of MRtrix3 configuration file options
 
     *default: 0 (false)*
 
-     Specifies whether tckgen should be terminated prematurely in cases where it appears as though the target number of accepted streamlines is not going to be met.
+     Specifies whether tckgen should be terminated prematurely
+     in cases where it appears as though the target number of
+     accepted streamlines is not going to be met.
 
 .. option:: TerminalColor
 
@@ -542,29 +604,52 @@ List of MRtrix3 configuration file options
 
     *default: `/tmp` (on Unix), `.` (on Windows)*
 
-     The prefix for temporary files (as used in pipelines). By default, these files get written to the current folder on Windows machines, which may cause performance issues, particularly when operating over distributed file systems. On Unix machines, the default is /tmp/, which is typically a RAM file system and should therefore be fast; but may cause issues on machines with little RAM capacity or where write-access to this location is not permitted. Note that this location can also be manipulated using the `MRTRIX_TMPFILE_DIR` environment variable, without editing the config file. Note also that this setting does not influence the location in which Python scripts construct their temporary directories; that is determined based on config file option ScriptTmpDir.
+     The prefix for temporary files (as used in pipelines). By default,
+     these files get written to the current folder on Windows machines,
+     which may cause performance issues, particularly when operating
+     over distributed file systems. On Unix machines, the default is
+     /tmp/, which is typically a RAM file system and should therefore
+     be fast; but may cause issues on machines with little RAM
+     capacity or where write-access to this location is not permitted.
+     
+     Note that this location can also be manipulated using the
+     :envvar:`MRTRIX_TMPFILE_DIR` environment variable, without editing the
+     config file. Note also that this setting does not influence the
+     location in which Python scripts construct their temporary
+     directories; that is determined based on config file option
+     ScriptTmpDir.
 
 .. option:: TmpFilePrefix
 
     *default: `mrtrix-tmp-`*
 
-     The prefix to use for the basename of temporary files. This will be used to generate a unique filename for the temporary file, by adding random characters to this prefix, followed by a suitable suffix (depending on file type). Note that this prefix can also be manipulated using the `MRTRIX_TMPFILE_PREFIX` environment variable, without editing the config file.
+     The prefix to use for the basename of temporary files. This will
+     be used to generate a unique filename for the temporary file, by
+     adding random characters to this prefix, followed by a suitable
+     suffix (depending on file type). Note that this prefix can also be
+     manipulated using the `MRTRIX_TMPFILE_PREFIX` environment
+     variable, without editing the config file.
 
 .. option:: ToolbarStyle
 
     *default: 2*
 
-     The style of the main toolbar buttons in MRView. See Qt's documentation for Qt::ToolButtonStyle.
+     The style of the main toolbar buttons in MRView. See Qt's
+     documentation for Qt::ToolButtonStyle.
 
 .. option:: TrackWriterBufferSize
 
     *default: 16777216*
 
-     The size of the write-back buffer (in bytes) to use when writing track files. MRtrix will store the output tracks in a relatively large buffer to limit the number of write() calls, avoid associated issues such as file fragmentation.
+     The size of the write-back buffer (in bytes) to use when
+     writing track files. MRtrix will store the output tracks in a
+     relatively large buffer to limit the number of write() calls,
+     avoid associated issues such as file fragmentation.
 
 .. option:: VSync
 
     *default: 0 (false)*
 
-     Whether the screen update should synchronise with the monitor's vertical refresh (to avoid tearing artefacts).
+     Whether the screen update should synchronise with the monitor's
+     vertical refresh (to avoid tearing artefacts).
 

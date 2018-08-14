@@ -49,6 +49,11 @@ namespace MR
         return __number_of_threads;
       }
 
+      //ENVVAR name: MRTRIX_NTHREADS
+      //ENVVAR set the number of threads that MRtrix3 applications should use.
+      //ENVVAR This overrides the automatically determined number, or the
+      //ENVVAR :option:`NumberOfThreads` setting in the configuration file, but
+      //ENVVAR will be overridden by the ENVVAR ``-nthreads`` command-line option.
       const char* from_env = getenv ("MRTRIX_NTHREADS");
       if (from_env) {
         __number_of_threads = to<size_t> (from_env);
