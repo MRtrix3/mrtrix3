@@ -77,6 +77,9 @@ namespace MR
     std::string NAME;
     vector<ParsedArgument> argument;
     vector<ParsedOption> option;
+    //ENVVAR name: MRTRIX_QUIET
+    //ENVVAR Do not display information messages or progress status. This has
+    //ENVVAR the same effect as the ``-quiet`` command-line option.
     int log_level = getenv("MRTRIX_QUIET") ? 0 : 1;
     int exit_error_code = 0;
     bool fail_on_warn = false;
