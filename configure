@@ -196,7 +196,7 @@ for arg in sys.argv[1:]:
   elif '-openmp'.startswith (arg):
     openmp = True
   else:
-    sys.stderr.write (usage_string)
+    print (usage_string)
     sys.exit (1)
 
 
@@ -222,7 +222,8 @@ def report (message):
 def error (message):
   global logfile
   logfile.write (('\nERROR: ' + message.rstrip() + '\n\n').encode (errors='ignore'))
-  sys.stderr.write ('\nERROR: ' + message.rstrip() + '\n\n')
+  sys.stdout.write ('\nERROR: ' + message.rstrip() + '\n\n')
+  sys.stdout.flush()
   sys.exit (1)
 
 

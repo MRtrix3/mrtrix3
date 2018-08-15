@@ -191,7 +191,8 @@ def pipe_errors_to_less_handler():
 def disp (msg):
   print_lock.acquire()
   logfile.write (msg.encode (errors='ignore'))
-  sys.stderr.write (msg)
+  sys.stdout.write (msg)
+  sys.stdout.flush()
   print_lock.release()
 
 
@@ -199,7 +200,8 @@ def log (msg):
   print_lock.acquire()
   logfile.write (msg.encode (errors='ignore'))
   if verbose:
-    sys.stderr.write (msg)
+    sys.stdout.write (msg)
+    sys.stdout.flush()
   print_lock.release()
 
 
@@ -219,8 +221,18 @@ def error (msg):
   if error_stream is not None:
     error_stream += msg
   else:
-    sys.stderr.write (msg)
+    sys.stdout.write (msg)
+    sys.stdout.flush()
   print_lock.release()
+
+
+def fail (msg):
+  print_lock.acquire()
+  logfile.write (msg.encode (errors='ignore'))
+  sys.stdout.write (msg)
+  sys.stdout.flush()
+  print_lock.release()
+  sys.exit (1)
 
 
 
@@ -275,7 +287,7 @@ bash_completion = False
 
 for arg in sys.argv[1:]:
   if '-help'.startswith(arg):
-    sys.stderr.write(usage_string + '\n')
+    print (usage_string)
     exit (0)
   elif '-verbose'.startswith(arg):
     verbose = True
@@ -291,7 +303,7 @@ for arg in sys.argv[1:]:
     elif arg[9:] == 'all':
       dependencies = 2
     else:
-      sys.stderr.write ('invalid specified for option "-showdep" (expected target, all)\n')
+      print ('invalid specified for option "-showdep" (expected target, all)')
       sys.exit (1)
   elif '-tree'.startswith(arg):
     dep_recursive = True
@@ -300,7 +312,7 @@ for arg in sys.argv[1:]:
   elif '-nopaginate'.startswith(arg):
     paginate = False
   elif arg[0] == '-':
-    sys.stderr.write ('unknown command-line option "' + arg + '"\n')
+    print ('unknown command-line option "' + arg + '"')
     sys.exit (1)
   elif arg == 'bash':
     bash_completion = True
@@ -314,7 +326,7 @@ for arg in sys.argv[1:]:
 
 
 
-if paginate and sys.stderr.isatty():
+if paginate and sys.stdout.isatty():
   error_stream = ''
   atexit.register (pipe_errors_to_less_handler)
 
@@ -353,7 +365,7 @@ class ConfigException (Exception):
 def get_active_build (directory):
   active_configs = glob.glob (os.path.join (directory, 'build.*.active'))
   if len (active_configs) > 1:
-    sys.stderr.write ('ERROR: more than one config is currently marked as active!\n')
+    print ('ERROR: more than one config is currently marked as active!')
     sys.exit (1)
   if active_configs:
     name = active_configs[0]
@@ -370,7 +382,7 @@ def get_active_build (directory):
 def store_current_build (directory = '.'):
   stored_config = get_active_build (directory)
   os.rename (stored_config + '.active', stored_config)
-  sys.stderr.write('in "' + directory + '": storing "' + stored_config + '"...\n')
+  disp ('in "' + directory + '": storing "' + stored_config + '"...\n')
   for f in [ tmp_dir, 'config' ] + list_untracked_bin_files (directory) + glob.glob ('lib/libmrtrix*'):
     if os.path.exists (os.path.join (directory, f)):
       os.renames (os.path.join (directory, f), os.path.join (stored_config, f))
@@ -381,7 +393,7 @@ def restore_build (config_name, directory = '.'):
   stored_path = os.path.join (directory, 'build.' + config_name)
   active_path = stored_path + '.active'
   if os.path.isdir (stored_path):
-    sys.stderr.write('in "' + directory + '": restoring "' + stored_path + '"...\n')
+    disp ('in "' + directory + '": restoring "' + stored_path + '"...\n')
     os.rename (stored_path, active_path)
     for root, dirs, files in os.walk(active_path, topdown=False):
       for name in files:
@@ -392,7 +404,7 @@ def restore_build (config_name, directory = '.'):
   else:
     if os.path.exists (stored_path):
       raise ConfigException ('ERROR config to be restored (' + stored_path + ') is not a directory')
-    sys.stderr.write('in "' + directory + '": creating empty "' + stored_path + '"...\n')
+    disp ('in "' + directory + '": creating empty "' + stored_path + '"...\n')
   if not os.path.isdir (active_path):
     os.mkdir (active_path)
 
@@ -416,16 +428,15 @@ if targets and targets[0] == 'select':
 
   if len(targets) == 1:
     active_config = os.path.basename (get_active_build ('.'))
-    sys.stderr.write('current config is "' + active_config + '"\n')
+    disp ('current config is "' + active_config + '"\n')
     for entry in mrtrix_dir[1:]:
       other_config = os.path.basename (get_active_build (entry))
       if active_config != other_config:
-        sys.stderr.write('WARNING: directory "' + entry + '" contains config "' + other_config + '"\n')
+        disp ('WARNING: directory "' + entry + '" contains config "' + other_config + '"\n')
     sys.exit (0)
 
   if len(targets) != 2:
-    sys.stderr.write ('ERROR: select target expects a single configuration name\n')
-    sys.exit (1)
+    fail ('ERROR: select target expects a single configuration name\n')
 
   activate_build (targets[1], mrtrix_dir)
 
@@ -441,7 +452,7 @@ active_config = os.path.basename (get_active_build ('.'))[6:]
 log ('active config is ' + active_config + '\n\n')
 active_config_core = os.path.basename (get_active_build (mrtrix_dir[-1]))[6:]
 if active_config_core != active_config:
-  sys.stderr.write('active config differs from core - switching to core active config\n')
+  disp ('active config differs from core - switching to core active config\n')
 activate_build (active_config_core, mrtrix_dir)
 
 
@@ -459,38 +470,38 @@ if 'clean' in targets:
     for root, dirs, files in os.walk(f, topdown=False):
       for entry in files:
         filename = os.path.join(root, entry)
-        sys.stderr.write('delete file: ' + filename + '\n')
+        disp ('delete file: ' + filename + '\n')
         try:
           os.remove (filename)
         except OSError as excp:
-          error ('error deleting file "' + filename + '": ' + os.strerror (excp.errno))
+          disp ('error deleting file "' + filename + '": ' + os.strerror (excp.errno))
       for entry in dirs:
         dirname = os.path.join(root, entry)
-        sys.stderr.write('delete directory: ' + dirname + '\n')
+        disp ('delete directory: ' + dirname + '\n')
         try:
           os.rmdir (dirname)
         except OSError as excp:
-          error ('error deleting folder "' + dirname + '": ' + os.strerror (excp.errno))
-    sys.stderr.write('delete directory: ' + f + '\n')
+          disp ('error deleting folder "' + dirname + '": ' + os.strerror (excp.errno))
+    disp ('delete directory: ' + f + '\n')
     try:
       os.rmdir (f)
     except OSError as excp:
-      error ('error deleting folder "' + f + '": ' + os.strerror (excp.errno))
+      disp ('error deleting folder "' + f + '": ' + os.strerror (excp.errno))
 
   for filename in list_untracked_bin_files():
-    sys.stderr.write('delete file: ' + filename + '\n')
+    disp ('delete file: ' + filename + '\n')
     try:
       os.remove (filename)
     except OSError as excp:
-      error ('error deleting file "' + filename + '": ' + os.strerror (excp.errno))
+      disp ('error deleting file "' + filename + '": ' + os.strerror (excp.errno))
 
   for filename in glob.glob (os.path.join ('lib', 'libmrtrix*')):
     if os.path.isfile (filename):
-      sys.stderr.write('delete file: ' + filename + '\n')
+      disp ('delete file: ' + filename + '\n')
       try:
         os.remove (filename)
       except OSError as excp:
-        error ('error deleting file "' + filename + '": ' + os.strerror (excp.errno))
+        disp ('error deleting file "' + filename + '": ' + os.strerror (excp.errno))
 
   sys.exit (0)
 
@@ -516,11 +527,10 @@ try:
   log ('reading configuration from "' + config_file + '"...' + os.linesep)
   exec (codecs.open (config_file, mode='r', encoding='utf-8').read()) # pylint: disable=exec-used
 except IOError:
-  sys.stderr.write ('''no configuration file found!
+  fail ('''no configuration file found!
 please run "./configure" prior to invoking this script
 
 ''')
-  sys.exit (1)
 
 if separate_project:
   cpp_flags += [ '-DMRTRIX_PROJECT' ]
@@ -628,8 +638,7 @@ class Entry(object):
       os.makedirs (folder)
     except OSError as excp:
       if not os.path.isdir (folder):
-        error ('ERROR: can''t create target folder "' + folder + '": ' + os.strerror (excp.errno))
-        exit (1)
+        fail ('ERROR: can''t create target folder "' + folder + '": ' + os.strerror (excp.errno))
 
     if self.action == 'RCC':
       with codecs.open (self.cmd[1], mode='w', encoding='utf-8') as fd:
@@ -724,8 +733,7 @@ class Entry(object):
 
   def set_library (self):
     if not ld_enabled:
-      error ('ERROR: shared library generation is disabled in this configuration')
-      exit (1)
+      fail ('ERROR: shared library generation is disabled in this configuration')
 
     self.action = 'LD'
     self.deps = list_lib_deps()
@@ -759,21 +767,21 @@ class Entry(object):
 
   def display (self, indent=''):
     show_rebuild = lambda x: x+' [REBUILD]' if todo[x].need_rebuild() else x
-    sys.stderr.write (indent + '[' + self.action + '] ' + show_rebuild (self.name) + ':\n')
-    sys.stderr.write (indent + '  timestamp: ' + str(self.timestamp))
+    msg = indent + '[' + self.action + '] ' + show_rebuild (self.name) + ':\n'
+    msg += indent + '  timestamp: ' + str(self.timestamp)
     if self.deps:
-      sys.stderr.write (', dep timestamp: ' + str(self.dep_timestamp) + ', diff: ' + str(self.timestamp-self.dep_timestamp))
-    sys.stderr.write ('\n')
+      msg += ', dep timestamp: ' + str(self.dep_timestamp) + ', diff: ' + str(self.timestamp-self.dep_timestamp)
+    msg += '\n'
     if self.cmd:
-      sys.stderr.write (indent + '  command:   ' + ' '.join(self.cmd) + '\n')
+      msg += indent + '  command:   ' + ' '.join(self.cmd) + '\n'
     if self.deps:
-      sys.stderr.write (indent + '  deps:      ')
+      msg += indent + '  deps:      '
       if dep_recursive:
-        sys.stderr.write ('\n')
+        disp (msg + '\n')
         for x in self.deps:
           todo[x].display (indent + '    ')
       else:
-        sys.stderr.write ((indent+'\n             ').join([ show_rebuild(x) for x in self.deps ]) + '\n')
+        disp (msg + (indent+'\n             ').join([ show_rebuild(x) for x in self.deps ]) + '\n')
 
 
 
@@ -787,8 +795,7 @@ class Entry(object):
 
 def default_targets():
   if not os.path.isdir (cmd_dir):
-    sys.stderr.write ('ERROR: no "cmd" folder - unable to determine default targets' + os.linesep)
-    sys.exit (1)
+    fail ('ERROR: no "cmd" folder - unable to determine default targets' + os.linesep)
   for entry in os.listdir (cmd_dir):
     if entry.endswith(cpp_suffix):
       targets.append (os.path.normpath (os.path.join (target_bin_dir, entry[:-len(cpp_suffix)] + exe_suffix)))
@@ -840,9 +847,7 @@ def execute (message, cmd, working_dir=None):
       logtime ('[{:>8.3f}s] '.format(end-start) + message + os.linesep)
 
     if process.returncode != 0:
-      if error_stream is not None:
-        disp ('ERROR: ' + message + os.linesep)
-      error ('\nERROR: ' + message + '\n\n' + ' '.join(cmd) + '\n\nfailed with output\n\n' + stderr.decode (errors='ignore'))
+      disp ('\nERROR: ' + message + '\n\n' + ' '.join(cmd) + '\n\nfailed with output\n\n' + stderr.decode (errors='ignore'))
       return 1
 
     errstr = None
@@ -858,18 +863,19 @@ def execute (message, cmd, working_dir=None):
       disp (errstr)
 
   except OSError:
-    error (cmd[0] + ': command not found')
+    disp (cmd[0] + ': command not found')
     return 1
   return None
 
 
 def print_deps (current_file, indent=''):
   current_file = os.path.normpath (current_file)
-  sys.stderr.write (indent + current_file)
+  msg = indent + current_file
   if current_file in file_flags:
     if file_flags[current_file]:
-      sys.stderr.write (' [' + file_flags[current_file] + ']')
-  sys.stderr.write (os.linesep)
+      msg += ' [' + file_flags[current_file] + ']'
+  msg += os.linesep
+  disp (msg)
   for entry in todo[current_file].deps:
     print_deps (entry, indent + '    ')
 
@@ -906,8 +912,7 @@ def list_headers (current_file):
     if not os.path.exists (current_file):
       if os.path.basename(current_file) == 'icons'+cpp_suffix:
         return headers[current_file]
-      sys.stderr.write ('ERROR: cannot find file "' + current_file + '"' + os.linesep)
-      sys.exit(1)
+      fail ('ERROR: cannot find file "' + current_file + '"' + os.linesep)
     with codecs.open (current_file, mode='r', encoding='utf-8') as fd:
       for line in fd:
         line = line.strip()
@@ -923,8 +928,7 @@ def list_headers (current_file):
                   headers[current_file].add (entry)
                 break
             else:
-              sys.stderr.write ('ERROR: cannot find header file \"' + line + '\" (from file \"' + current_file + '\")' + os.linesep)
-              sys.exit(1)
+              fail ('ERROR: cannot find header file \"' + line + '\" (from file \"' + current_file + '\")' + os.linesep)
         elif line == 'Q_OBJECT':
           if 'M' not in file_flags[current_file]:
             file_flags[current_file] += 'M'
@@ -1220,8 +1224,7 @@ compiling TODO list...
 try:
   [ Entry(item) for item in targets ] # pylint: disable=expression-not-assigned
 except TargetException as excp:
-  sys.stderr.write ('ERROR: ' + str(excp) + '\n')
-  sys.exit (1)
+  fail ('ERROR: ' + str(excp) + '\n')
 
 
 
@@ -1247,7 +1250,7 @@ log ('building targets: ' + ' '.join (targets) + os.linesep)
 
 
 if dependencies==1:
-  sys.stderr.write ('''
+  disp ('''
 Printing dependencies for targets:
 
 ''')
@@ -1255,7 +1258,7 @@ Printing dependencies for targets:
     todo[entry].display()
   sys.exit (0)
 elif dependencies==2:
-  sys.stderr.write ('''
+  disp ('''
 Printing dependencies for all files:
 
 ''')
