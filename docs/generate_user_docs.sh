@@ -14,7 +14,7 @@
 mrtrix_root=$( cd "$(dirname "${BASH_SOURCE}")"/../ ; pwd -P )
 export PATH=$mrtrix_root/bin:"$PATH"
 
-  echo "
+echo "
 .. _list-of-mrtrix3-commands:
 
 ########################
@@ -23,42 +23,42 @@ List of MRtrix3 commands
 
 " > ${mrtrix_root}/docs/reference/commands_list.rst
 
-  rm -rf   ${mrtrix_root}/docs/reference/commands
-  mkdir -p ${mrtrix_root}/docs/reference/commands
-  toctree_file=$(mktemp)
-  table_file=$(mktemp)
+rm -rf   ${mrtrix_root}/docs/reference/commands
+mkdir -p ${mrtrix_root}/docs/reference/commands
+toctree_file=$(mktemp)
+table_file=$(mktemp)
 
-  echo "
+echo "
 
 .. toctree::
     :hidden:
 " > $toctree_file
 
-  echo "
+echo "
 
 .. csv-table::
     :header: \"Command\", \"Synopsis\"
 " > $table_file
 
-  for n in `find "${mrtrix_root}"/cmd/ -name "*.cpp" | sort`; do
-    dirpath=${mrtrix_root}'/docs/reference/commands'
-    cppname=`basename $n`
-    cmdname=${cppname%".cpp"}
-    cmdpath=$cmdname
-    if [ "$OSTYPE" == "cygwin" ] || [ "$OSTYPE" == "msys" ] || [ "$OSTYPE" == "win32" ]; then
-      cmdpath=${cmdpath}'.exe'
-    fi
-    $cmdpath __print_usage_rst__ > $dirpath/$cmdname.rst
-    sed -ie "1i.. _$cmdname:\n\n$cmdname\n===================\n" $dirpath/$cmdname.rst
-    echo '    commands/'"$cmdname" >> $toctree_file
-    echo '    :ref:`'"$cmdname"'`, "'`$cmdpath __print_synopsis__`'"' >> $table_file
-  done
-  cat $toctree_file $table_file >> ${mrtrix_root}/docs/reference/commands_list.rst
-  rm -f $toctree_file $temp_file
+for n in `find "${mrtrix_root}"/cmd/ -name "*.cpp" | sort`; do
+  dirpath=${mrtrix_root}'/docs/reference/commands'
+  cppname=`basename $n`
+  cmdname=${cppname%".cpp"}
+  cmdpath=$cmdname
+  if [ "$OSTYPE" == "cygwin" ] || [ "$OSTYPE" == "msys" ] || [ "$OSTYPE" == "win32" ]; then
+    cmdpath=${cmdpath}'.exe'
+  fi
+  $cmdpath __print_usage_rst__ > $dirpath/$cmdname.rst
+  sed -ie "1i.. _$cmdname:\n\n$cmdname\n===================\n" $dirpath/$cmdname.rst
+  echo '    commands/'"$cmdname" >> $toctree_file
+  echo '    :ref:`'"$cmdname"'`, "'`$cmdpath __print_synopsis__`'"' >> $table_file
+done
+cat $toctree_file $table_file >> ${mrtrix_root}/docs/reference/commands_list.rst
+rm -f $toctree_file $temp_file
 
 # Generating documentation for all scripts
 
-  echo "
+echo "
 .. _list-of-mrtrix3-scripts:
 
 #######################
@@ -67,36 +67,49 @@ List of MRtrix3 scripts
 
 " > ${mrtrix_root}/docs/reference/scripts_list.rst
 
-  rm -rf   ${mrtrix_root}/docs/reference/scripts
-  mkdir -p ${mrtrix_root}/docs/reference/scripts
-  toctree_file=$(mktemp)
-  table_file=$(mktemp)
+rm -rf   ${mrtrix_root}/docs/reference/scripts
+mkdir -p ${mrtrix_root}/docs/reference/scripts
+toctree_file=$(mktemp)
+table_file=$(mktemp)
 
-  echo "
+echo "
 
 .. toctree::
     :hidden:
 " > $toctree_file
 
-  echo "
+echo "
 
 .. csv-table::
     :header: \"Command\", \"Synopsis\"
 " > $table_file
 
-  for n in `find "${mrtrix_root}"/bin/ -type f -print0 | xargs -0 grep -l "app.parse" | sort`; do
-    filepath=${mrtrix_root}'/docs/reference/scripts'
-    filename=`basename $n`
-    $n __print_usage_rst__ > $filepath/$filename.rst
-    #sed -ie "1i$filename\n===========\n" $filepath/$filename.rst
+for n in `find "${mrtrix_root}"/bin/ -type f -print0 | xargs -0 grep -l "app.parse" | sort`; do
+  filepath=${mrtrix_root}'/docs/reference/scripts'
+  filename=`basename $n`
+  $n __print_usage_rst__ > $filepath/$filename.rst
+  #sed -ie "1i$filename\n===========\n" $filepath/$filename.rst
 
-    echo '    scripts/'"$filename" >> $toctree_file
-    echo '    :ref:`'"$filename"'`, "'`$filename __print_synopsis__`'"' >> $table_file
-  done
-  cat $toctree_file $table_file >> ${mrtrix_root}/docs/reference/scripts_list.rst
-  rm -f $toctree_file $temp_file
+  echo '    scripts/'"$filename" >> $toctree_file
+  echo '    :ref:`'"$filename"'`, "'`$filename __print_synopsis__`'"' >> $table_file
+done
+cat $toctree_file $table_file >> ${mrtrix_root}/docs/reference/scripts_list.rst
+rm -f $toctree_file $temp_file
+
+
+
 
 # Generating list of configuration file options
 
-  grep -rn --include=\*.h --include=\*.cpp '^\s*//CONF\b ' "${mrtrix_root}" | sed -ne 's/^.*CONF \(.*\)/\1/p' | "${mrtrix_root}"/docs/format_config_options > ${mrtrix_root}/docs/reference/config_file_options.rst
+grep -rn --include=\*.h --include=\*.cpp '^\s*//CONF\b' "${mrtrix_root}" |\
+  "${mrtrix_root}"/docs/format_config_options > ${mrtrix_root}/docs/reference/config_file_options.rst
+
+
+
+
+
+# Generating list of environment variables
+
+grep -rn --include=\*.h --include=\*.cpp '^\s*//ENVVAR\b' "${mrtrix_root}" |\
+  "${mrtrix_root}"/docs/format_environment_variables > ${mrtrix_root}/docs/reference/environment_variables.rst
 
