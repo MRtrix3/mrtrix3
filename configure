@@ -196,7 +196,7 @@ for arg in sys.argv[1:]:
   elif '-openmp'.startswith (arg):
     openmp = True
   else:
-    print (usage_string)
+    sys.stdout.write (usage_string)
     sys.exit (1)
 
 

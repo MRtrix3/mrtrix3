@@ -287,7 +287,7 @@ bash_completion = False
 
 for arg in sys.argv[1:]:
   if '-help'.startswith(arg):
-    print (usage_string)
+    sys.stdout.write (usage_string)
     exit (0)
   elif '-verbose'.startswith(arg):
     verbose = True
@@ -303,8 +303,7 @@ for arg in sys.argv[1:]:
     elif arg[9:] == 'all':
       dependencies = 2
     else:
-      print ('invalid specified for option "-showdep" (expected target, all)')
-      sys.exit (1)
+      fail ('invalid specified for option "-showdep" (expected target, all)')
   elif '-tree'.startswith(arg):
     dep_recursive = True
   elif '-timings'.startswith(arg):
@@ -312,8 +311,7 @@ for arg in sys.argv[1:]:
   elif '-nopaginate'.startswith(arg):
     paginate = False
   elif arg[0] == '-':
-    print ('unknown command-line option "' + arg + '"')
-    sys.exit (1)
+    fail ('unknown command-line option "' + arg + '"')
   elif arg == 'bash':
     bash_completion = True
   elif arg == 'doc':
@@ -365,8 +363,7 @@ class ConfigException (Exception):
 def get_active_build (directory):
   active_configs = glob.glob (os.path.join (directory, 'build.*.active'))
   if len (active_configs) > 1:
-    print ('ERROR: more than one config is currently marked as active!')
-    sys.exit (1)
+    fail ('ERROR: more than one config is currently marked as active!')
   if active_configs:
     name = active_configs[0]
     if not os.path.isdir (name):
@@ -847,7 +844,7 @@ def execute (message, cmd, working_dir=None):
       logtime ('[{:>8.3f}s] '.format(end-start) + message + os.linesep)
 
     if process.returncode != 0:
-      disp ('\nERROR: ' + message + '\n\n' + ' '.join(cmd) + '\n\nfailed with output\n\n' + stderr.decode (errors='ignore'))
+      error ('\nERROR: ' + message + '\n\n' + ' '.join(cmd) + '\n\nfailed with output\n\n' + stderr.decode (errors='ignore'))
       return 1
 
     errstr = None
