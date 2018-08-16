@@ -43,7 +43,7 @@ Options
 Options for manipulating fundamental image properties
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-coord axis selection** retain data from the input image only at the coordinates specified in the selection along the specified axis. The selection  argument expects a number sequence, which can also include the 'end' keyword.
+-  **-coord axis selection** retain data from the input image only at the coordinates specified in the selection along the specified axis. The selection argument expects a number sequence, which can also include the 'end' keyword.
 
 -  **-vox sizes** change the voxel dimensions of the output image
 

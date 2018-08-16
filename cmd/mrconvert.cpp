@@ -119,7 +119,7 @@ void usage ()
   + Option ("coord",
             "retain data from the input image only at the coordinates "
             "specified in the selection along the specified axis. The selection "
-            " argument expects a number sequence, which can also include the "
+            "argument expects a number sequence, which can also include the "
             "'end' keyword.").allow_multiple()
     + Argument ("axis").type_integer (0)
     + Argument ("selection").type_sequence_int()
