@@ -297,6 +297,8 @@ void run ()
 
         // Generate the ZSH -> amplitude transform
         Eigen::MatrixXd transform = Math::ZSH::init_amp_transform<default_type> (rotated_dirs_azel.col(1), lmax[shell_index]);
+        if (!transform.allFinite())
+          throw Exception ("Unable to construct A2SH transformation for shell b=" + str(int(std::round((*shells)[shell_index].get_mean()))) + "; lmax (" + str(lmax[shell_index]) + ") may be too large for this shell");
 
         // Concatenate these data to the ICLS matrices
         cat_transforms.block (voxel_counter * data.size(), 0, transform.rows(), transform.cols()) = transform;
