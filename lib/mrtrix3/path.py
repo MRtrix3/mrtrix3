@@ -46,14 +46,13 @@ def allindir(directory, dir_path=True, ignore_hidden_files=True): #pylint: disab
 #     (e.g. to be passed to run.command()); without these quotation marks, paths that include spaces would be
 #     erroneously split, subsequently confusing whatever command is being invoked.
 def fromUser(filename, is_command): #pylint: disable=unused-variable
-  import os
+  import os, shlex
   from mrtrix3 import app
-  wrapper=''
-  if is_command and (filename.count(' ') or app.workingDir.count(' ')):
-    wrapper='\"'
-  path = wrapper + os.path.abspath(os.path.join(app.workingDir, filename)) + wrapper
-  app.debug(filename + ' -> ' + path)
-  return path
+  fullpath = os.path.abspath(os.path.join(app.workingDir, filename))
+  if is_command:
+    fullpath = shlex.quote(fullpath)
+  app.debug(filename + ' -> ' + fullpath)
+  return fullpath
 
 
 
@@ -116,12 +115,12 @@ def sharedDataPath(): #pylint: disable=unused-variable
 
 
 # Get the full absolute path to a location in the temporary script directory
+# Also deals with the potential for special characters in a path (e.g. spaces) by wrapping in quotes
 def toTemp(filename, is_command): #pylint: disable=unused-variable
-  import os
+  import os, shlex
   from mrtrix3 import app
-  wrapper=''
-  if is_command and (filename.count(' ') or app.tempDir.count(' ')):
-    wrapper='\"'
-  path = wrapper + os.path.abspath(os.path.join(app.tempDir, filename)) + wrapper
-  app.debug(filename + ' -> ' + path)
-  return path
+  fullpath = os.path.abspath(os.path.join(app.tempDir, filename))
+  if is_command:
+    fullpath = shlex.quote(fullpath)
+  app.debug(filename + ' -> ' + fullpath)
+  return fullpath
