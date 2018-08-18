@@ -16,6 +16,7 @@
 #ifndef __gt_spatiallock_h__
 #define __gt_spatiallock_h__
 
+#include <Eigen/Dense>
 #include <mutex>
 
 #include "types.h"
@@ -25,7 +26,7 @@ namespace MR {
   namespace DWI {
     namespace Tractography {
       namespace GT {
-
+        
         /**
          * @brief SpatialLock manages a mutex lock on n positions in 3D space.
          */
@@ -35,19 +36,19 @@ namespace MR {
         public:
           using value_type = T;
           using point_type = Eigen::Matrix<value_type, 3, 1>;
-
+          
           SpatialLock() : _tx(0), _ty(0), _tz(0) { }
           SpatialLock(const value_type t) : _tx(t), _ty(t), _tz(t) { }
           SpatialLock(const value_type tx, const value_type ty, const value_type tz) : _tx(tx), _ty(ty), _tz(tz) { }
-
+          
           ~SpatialLock() {
             lockcentres.clear();
           }
-
+          
           void setThreshold(const value_type t) {
             _tx = _ty = _tz = t;
           }
-
+          
           void setThreshold(const value_type tx, const value_type ty, const value_type tz) {
             _tx = tx;
             _ty = ty;
@@ -79,7 +80,7 @@ namespace MR {
 
           };
 
-
+          
         protected:
           std::mutex mutex;
           vector< std::pair<point_type, bool> > lockcentres;

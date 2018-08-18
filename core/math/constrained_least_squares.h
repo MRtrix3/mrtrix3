@@ -19,7 +19,7 @@
 #include <set>
 #include "math/math.h"
 
-#include <Eigen/Cholesky>
+#include <Eigen/Cholesky> 
 
 
 //#define DEBUG_ICLS
@@ -32,7 +32,7 @@ namespace MR
     /** @addtogroup linalg
       @{ */
 
-    /** @defgroup icls Inequality-constrained Least-squares
+    /** @defgroup icls Inequality-constrained Least-squares 
       @{ */
 
 
@@ -54,8 +54,8 @@ namespace MR
             /*! the problem is to solve norm(\e Hx - \e b) subject to \e Ax >=
              * 0. This sets up a class to be re-used and shared across threads,
              * assuming the matrices \e H & \e A don't change, but the vector
-             * \e b does.
-             *
+             * \e b does. 
+             *  
              *  - \a problem_matrix: \e H
              *  - \a constraint_matrix: \e A
              *  - \a solution_min_norm_regularisation: an additional minimum
@@ -70,14 +70,14 @@ namespace MR
              *  - \a max_iterations: the maximum number of iterations to run.
              *  If zero (default), this number is set to 10x the size of \e x.
              */
-            Problem (const matrix_type& problem_matrix,
-                const matrix_type& constraint_matrix,
+            Problem (const matrix_type& problem_matrix, 
+                const matrix_type& constraint_matrix, 
                 value_type solution_min_norm_regularisation = 0.0,
                 value_type constraint_min_norm_regularisation = 0.0,
                 size_t max_iterations = 0,
                 value_type tolerance = 0.0) :
               H (problem_matrix),
-              chol_HtH (H.cols(), H.cols()),
+              chol_HtH (H.cols(), H.cols()), 
               lambda_min_norm (constraint_min_norm_regularisation),
               tol (tolerance),
               max_niter (max_iterations ? max_iterations : 10*problem_matrix.cols()) {
@@ -106,11 +106,11 @@ namespace MR
                 // quadratic problem chol_HtH\H:
                 b2d.noalias() = chol_HtH.template triangularView<Eigen::Lower>().transpose().template solve<Eigen::OnTheRight> (H);
 
-                // project constraint onto preconditioned quadratic domain,
+                // project constraint onto preconditioned quadratic domain, 
                 // and normalise each row to help preconditioning (the norm of
                 // each row is irrelevant to the constraint itself):
                 B.noalias() = chol_HtH.template triangularView<Eigen::Lower>().transpose().template solve<Eigen::OnTheRight> (constraint_matrix);
-                for (ssize_t n = 0; n < B.rows(); ++n)
+                for (ssize_t n = 0; n < B.rows(); ++n) 
                   B.row(n).normalize();
               }
 
@@ -146,7 +146,7 @@ namespace MR
               l (lambda.size()),
               active (lambda.size(), false) { }
 
-            size_t operator() (vector_type& x, const vector_type& b)
+            size_t operator() (vector_type& x, const vector_type& b) 
             {
 #ifdef MRTRIX_ICLS_DEBUG
               std::ofstream l_stream ("l.txt");
@@ -194,9 +194,9 @@ namespace MR
                   BtB.diagonal().array() += P.lambda_min_norm;
                   BtB.template selfadjointView<Eigen::Lower>().llt().solveInPlace (l_active);
 
-                  // update lambda values in full vector
+                  // update lambda values in full vector 
                   // and identify worst offender if any lambda < 0
-                  // by projection from previous onto feasible
+                  // by projection from previous onto feasible 
                   // subset (i.e. l>=0):
                   value_type s_min = std::numeric_limits<value_type>::infinity();
                   size_t s_min_index = 0;
@@ -227,7 +227,7 @@ namespace MR
                 l_stream << lambda << "\n";
 #endif
 
-                  // remove worst offending lambda from active set,
+                  // remove worst offending lambda from active set, 
                   // and re-estimate remaining lambdas:
                   if (active[s_min_index])
                     active_set_changed = true;
@@ -246,7 +246,7 @@ namespace MR
 #endif
 
                 ++niter;
-                if (!active_set_changed || niter > P.max_niter)
+                if (!active_set_changed || niter > P.max_niter) 
                   break;
 
                 // compute constraint values at updated solution:

@@ -13,6 +13,8 @@
  */
 
 
+#include <Eigen/Geometry>
+#include <unsupported/Eigen/MatrixFunctions>
 #include <algorithm>
 #include "command.h"
 #include "math/math.h"
@@ -22,7 +24,6 @@
 #include "transform.h"
 #include "file/key_value.h"
 
-#include <unsupported/Eigen/MatrixFunctions>
 
 using namespace MR;
 using namespace App;
