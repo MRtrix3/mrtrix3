@@ -524,7 +524,7 @@ def get_flags (default=None, env=None, pkg_config_flags=None):
       flags = []
       for entry in shlex.split (execute ([ 'pkg-config' ] + pkg_config_flags.split(), RuntimeError)[1]):
         if entry.startswith ('-I'):
-          flags += [ '-isystem', entry[2:] ]
+          flags += [ '-idirafter', entry[2:] ]
         else:
           flags += [ entry ]
       return flags
@@ -1190,7 +1190,7 @@ int main() { Foo f; }
         if entry[0] != '$' and not entry == '-I.':
           entry = entry.replace('\"','').replace("'",'')
           if entry.startswith('-I'):
-            qt_cflags += [ '-isystem', entry[2:] ]
+            qt_cflags += [ '-idirafter', entry[2:] ]
           else:
             qt_cflags += [ entry ]
 
