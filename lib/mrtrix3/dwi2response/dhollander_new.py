@@ -171,45 +171,44 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrmath dwi.mif mean mean_sig.mif -axis 3')
   refwmcoef = float(image.statistic('mean_sig.mif', 'median', '-mask refined_wm.mif')) / 0.282
   if sfwm_lmax:
-    isiso = [ x == 0 for x in sfwm_lmax ]
+    isiso = [ lm == 0 for lm in sfwm_lmax ]
   else:
-    isiso = [ x < bzero_threshold for x in bvalues ]
-  with open('esfwm', 'w') as f:
+    isiso = [ bv < bzero_threshold for bv in bvalues ]
+  with open('ewmrf.txt', 'w') as f:
     for ii in isiso:
       if ii:
         f.write("%s 0 0\n" % refwmcoef)
       else:
         f.write("%s -%s %s\n" % (refwmcoef, refwmcoef, refwmcoef))
-  run.command('dwi2fod msmt_csd dwi.mif esfwm abs_wm2.mif response_csf.txt abs_csf2.mif -mask refined_wm.mif -lmax 2,0' + bvalues_option)
-  run.command('mrconvert abs_wm2.mif - -coord 3 0 | mrcalc - abs_csf2.mif -add abs_sum2.mif')
-  run.command('sh2peaks abs_wm2.mif - -num 1 -mask refined_wm.mif | peaks2amp - - | mrcalc - abs_sum2.mif -divide - | mrconvert - sfwm2.mif -coord 3 0 -axes 0,1,2')
-  run.command('mrcalc refined_wm.mif sfwm2.mif 0 -if - | mrthreshold - - -top ' + str(voxsfwmcount * 2) + ' -ignorezero | mrcalc refined_wm.mif - 0 -if - -datatype bit | mrconvert - refined_sfwm.mif -axes 0,1,2')
-  run.command('dwi2fod msmt_csd dwi.mif esfwm abs_wm4.mif response_csf.txt abs_csf4.mif -mask refined_sfwm.mif -lmax 4,0' + bvalues_option)
-  run.command('mrconvert abs_wm4.mif - -coord 3 0 | mrcalc - abs_csf4.mif -add abs_sum4.mif')
-  run.command('sh2peaks abs_wm4.mif - -num 1 -mask refined_sfwm.mif | peaks2amp - - | mrcalc - abs_sum4.mif -divide - | mrconvert - sfwm4.mif -coord 3 0 -axes 0,1,2')
-  run.command('mrcalc refined_sfwm.mif sfwm4.mif 0 -if - | mrthreshold - - -top ' + str(voxsfwmcount) + ' -ignorezero | mrcalc refined_sfwm.mif - 0 -if - -datatype bit | mrconvert - voxels_sfwm.mif -axes 0,1,2')
+  run.command('dwi2fod msmt_csd dwi.mif ewmrf.txt abs_ewm2.mif response_csf.txt abs_csf2.mif -mask refined_wm.mif -lmax 2,0' + bvalues_option)
+  run.command('mrconvert abs_ewm2.mif - -coord 3 0 | mrcalc - abs_csf2.mif -add abs_sum2.mif')
+  run.command('sh2peaks abs_ewm2.mif - -num 1 -mask refined_wm.mif | peaks2amp - - | mrcalc - abs_sum2.mif -divide - | mrconvert - metric_sfwm2.mif -coord 3 0 -axes 0,1,2')
+  run.command('mrcalc refined_wm.mif metric_sfwm2.mif 0 -if - | mrthreshold - - -top ' + str(voxsfwmcount * 2) + ' -ignorezero | mrcalc refined_wm.mif - 0 -if - -datatype bit | mrconvert - refined_sfwm.mif -axes 0,1,2')
+  run.command('dwi2fod msmt_csd dwi.mif ewmrf.txt abs_ewm4.mif response_csf.txt abs_csf4.mif -mask refined_sfwm.mif -lmax 4,0' + bvalues_option)
+  run.command('mrconvert abs_ewm4.mif - -coord 3 0 | mrcalc - abs_csf4.mif -add abs_sum4.mif')
+  run.command('sh2peaks abs_ewm4.mif - -num 1 -mask refined_sfwm.mif | peaks2amp - - | mrcalc - abs_sum4.mif -divide - | mrconvert - metric_sfwm4.mif -coord 3 0 -axes 0,1,2')
+  run.command('mrcalc refined_sfwm.mif metric_sfwm4.mif 0 -if - | mrthreshold - - -top ' + str(voxsfwmcount) + ' -ignorezero | mrcalc refined_sfwm.mif - 0 -if - -datatype bit | mrconvert - voxels_sfwm.mif -axes 0,1,2')
   # Estimate SF WM response function
   run.command('amp2response dwi.mif voxels_sfwm.mif safe_vecs.mif response_sfwm.txt' + bvalues_option + sfwm_lmax_option)
 
 
   # SUMMARY AND OUTPUT
 
-  # Generate 4D binary images with voxel selections at major stages in algorithm (RGB as in MSMT-CSD paper).
-  run.command('mrcat crude_csf.mif crude_gm.mif crude_wm.mif crude.mif -axis 3')
-  run.command('mrcat refined_csf.mif refined_gm.mif refined_wm.mif refined.mif -axis 3')
-  run.command('mrcat voxels_csf.mif voxels_gm.mif voxels_sfwm.mif voxels.mif -axis 3')
-
-  # Show final summary of voxels counts.
-  textarrow = ' --> '
-  app.console('Summary of voxel counts:')
-  app.console('Mask: ' + str(int(image.statistic('mask.mif', 'count', '-mask mask.mif'))) + textarrow + str(int(image.statistic('eroded_mask.mif', 'count', '-mask eroded_mask.mif'))) + textarrow + str(int(image.statistic('safe_mask.mif', 'count', '-mask safe_mask.mif'))))
-  app.console('WM: ' + str(int(image.statistic('crude_wm.mif', 'count', '-mask crude_wm.mif'))) + textarrow + str(int(image.statistic('refined_wm.mif', 'count', '-mask refined_wm.mif'))) + textarrow + str(int(image.statistic('voxels_sfwm.mif', 'count', '-mask voxels_sfwm.mif'))) + ' (SF)')
-  app.console('GM: ' + str(int(image.statistic('crude_gm.mif', 'count', '-mask crude_gm.mif'))) + textarrow + str(int(image.statistic('refined_gm.mif', 'count', '-mask refined_gm.mif'))) + textarrow + str(int(image.statistic('voxels_gm.mif', 'count', '-mask voxels_gm.mif'))))
-  app.console('CSF: ' + str(int(image.statistic('crude_csf.mif', 'count', '-mask crude_csf.mif'))) + textarrow + str(int(image.statistic('refined_csf.mif', 'count', '-mask refined_csf.mif'))) + textarrow + str(int(image.statistic('voxels_csf.mif', 'count', '-mask voxels_csf.mif'))))
+  # Generate 4D binary images with voxel selections at major stages in algorithm (RGB: WM=blue, GM=green, CSF=red).
+  run.command('mrcat crude_csf.mif crude_gm.mif crude_wm.mif check_crude.mif -axis 3')
+  run.command('mrcat refined_csf.mif refined_gm.mif refined_wm.mif check_refined.mif -axis 3')
+  run.command('mrcat voxels_csf.mif voxels_gm.mif voxels_sfwm.mif check_voxels.mif -axis 3')
 
   # Copy response functions to output files
   run.function(shutil.copyfile, 'response_sfwm.txt', path.fromUser(app.args.out_sfwm, False))
   run.function(shutil.copyfile, 'response_gm.txt', path.fromUser(app.args.out_gm, False))
   run.function(shutil.copyfile, 'response_csf.txt', path.fromUser(app.args.out_csf, False))
   if app.args.voxels:
-    run.command('mrconvert voxels.mif ' + path.fromUser(app.args.voxels, True) + app.mrconvertOutputOption(path.fromUser(app.args.input, True)))
+    run.command('mrconvert check_voxels.mif ' + path.fromUser(app.args.voxels, True) + app.mrconvertOutputOption(path.fromUser(app.args.input, True)))
+
+  # Show final summary of voxels counts.
+  app.console('Voxel counts at main steps:')
+  app.console('* mask: ' + str(int(image.statistic('mask.mif', 'count', '-mask mask.mif'))) + ' -> ' + str(int(image.statistic('eroded_mask.mif', 'count', '-mask eroded_mask.mif'))) + ' -> ' + str(int(image.statistic('safe_mask.mif', 'count', '-mask safe_mask.mif'))))
+  app.console(' * WM : ' + str(int(image.statistic('crude_wm.mif', 'count', '-mask crude_wm.mif'))) + ' -> ' + str(int(image.statistic('refined_wm.mif', 'count', '-mask refined_wm.mif'))) + ' -> ' + str(int(image.statistic('voxels_sfwm.mif', 'count', '-mask voxels_sfwm.mif'))) + ' (SF)')
+  app.console(' * GM : ' + str(int(image.statistic('crude_gm.mif', 'count', '-mask crude_gm.mif'))) + ' -> ' + str(int(image.statistic('refined_gm.mif', 'count', '-mask refined_gm.mif'))) + ' -> ' + str(int(image.statistic('voxels_gm.mif', 'count', '-mask voxels_gm.mif'))))
+  app.console(' * CSF: ' + str(int(image.statistic('crude_csf.mif', 'count', '-mask crude_csf.mif'))) + ' -> ' + str(int(image.statistic('refined_csf.mif', 'count', '-mask refined_csf.mif'))) + ' -> ' + str(int(image.statistic('voxels_csf.mif', 'count', '-mask voxels_csf.mif'))))
