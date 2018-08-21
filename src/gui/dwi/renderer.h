@@ -16,15 +16,15 @@
 #ifndef __gui_dwi_renderer_h__
 #define __gui_dwi_renderer_h__
 
+#include <QGLWidget>
+#include <Eigen/Eigenvalues>
+
 #include "gui/gui.h"
 #include "dwi/directions/set.h"
 #include "gui/shapes/halfsphere.h"
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
 #include "math/SH.h"
-
-#include <Eigen/Eigenvalues>
-#include <QGLWidget>
 
 namespace MR
 {
