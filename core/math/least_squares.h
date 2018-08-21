@@ -16,8 +16,9 @@
 #ifndef __math_least_squares_h__
 #define __math_least_squares_h__
 
-#include "types.h"
 #include <Eigen/Cholesky>
+
+#include "types.h"
 
 namespace MR
 {
