@@ -188,16 +188,27 @@ namespace MR
     try {
       INFO ("creating image \"" + image_name + "\"...");
       if (add_to_command_history) {
+        const std::string path_separators = std::string(PATH_SEPARATORS);
 
-        auto argv_quoted = [] (const std::string& s) -> std::string {
-          static const size_t pathsep_length = std::string(PATH_SEPARATOR).size();
+        auto argv_quoted = [&] (const std::string& s) -> std::string {
           for (size_t i = 0; i != s.size(); ++i) {
             if (!(isalnum(s[i]) || s[i] == '.' || s[i] == '_' || s[i] == '-'
 #ifdef MRTRIX_WINDOWS
                   || (i == 1 && s[i] == ':')
 #endif
-                  || (i < s.size()-pathsep_length && s.substr(i, pathsep_length) == PATH_SEPARATOR)))
-              return std::string("\"" + s + "\"");
+                  || (path_separators.find_first_of (s[i]) != std::string::npos))) {
+
+              std::string escaped_string ("\'");
+              for (auto c : s) {
+                switch (c) {
+                  case '\'': escaped_string.append ("\\\'"); break;
+                  case '\\': escaped_string.append ("\\\\"); break;
+                  default: escaped_string.push_back (c); break;
+                }
+              }
+              escaped_string.push_back ('\'');
+              return escaped_string;
+            }
           }
           return s;
         };
