@@ -16,6 +16,8 @@
 #include <fstream>
 
 #include "command.h"
+
+#include <Eigen/Dense>
 #include "math/math.h"
 
 using namespace MR;

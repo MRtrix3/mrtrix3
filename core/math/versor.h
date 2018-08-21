@@ -16,6 +16,8 @@
 #ifndef __math_versor_h__
 #define __math_versor_h__
 
+#include <Eigen/Geometry>
+
 #include "debug.h"
 #include "math/math.h"
 

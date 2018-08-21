@@ -16,6 +16,9 @@
 #ifndef __connectome_connectome_h__
 #define __connectome_connectome_h__
 
+
+#include <Eigen/Dense>
+
 #include "app.h"
 #include "exception.h"
 #include "header.h"
