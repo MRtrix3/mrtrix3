@@ -29,10 +29,21 @@
 #include "exception.h"
 
 #define HOME_ENV "HOME"
+
+//! symbols used for separating directories in filesystem paths
+/*! The PATH_SEPARATORS macro contains all characters that may be used
+ *  to delimit directory / file names in a filesystem path. On
+ *  POSIX-compliant systems, this is simply the forward-slash character
+ *  '/'; on Windows however, either forward-slashes or back-slashes
+ *  can appear. Therefore any code that performs such direct
+ *  manipiulation of filesystem paths should both use this macro, and
+ *  be written accounting for the possibility of this string containing
+ *  either one or two characters depending on the target system. */
 #ifdef MRTRIX_WINDOWS
-#define PATH_SEPARATOR "\\/"
+// Preferentially use forward-slash when inserting via PATH_SEPARATORS[0]
+#define PATH_SEPARATORS "/\\"
 #else
-#define PATH_SEPARATOR "/"
+#define PATH_SEPARATORS "/"
 #endif
 
 
@@ -43,15 +54,15 @@ namespace MR
 
     inline std::string basename (const std::string& name)
     {
-      size_t i = name.find_last_of (PATH_SEPARATOR);
+      size_t i = name.find_last_of (PATH_SEPARATORS);
       return (i == std::string::npos ? name : name.substr (i+1));
     }
 
 
     inline std::string dirname (const std::string& name)
     {
-      size_t i = name.find_last_of (PATH_SEPARATOR);
-      return (i == std::string::npos ? std::string ("") : (i ? name.substr (0,i) : std::string (PATH_SEPARATOR)));
+      size_t i = name.find_last_of (PATH_SEPARATORS);
+      return (i == std::string::npos ? std::string ("") : (i ? name.substr (0,i) : std::string(1, PATH_SEPARATORS[0])));
     }
 
 
@@ -59,12 +70,12 @@ namespace MR
     {
       if (first.empty())
         return second;
-      if (first[first.size()-1] != PATH_SEPARATOR[0]
+      if (first[first.size()-1] != PATH_SEPARATORS[0]
 #ifdef MRTRIX_WINDOWS
-          && first[first.size()-1] != PATH_SEPARATOR[1]
+          && first[first.size()-1] != PATH_SEPARATORS[1]
 #endif
           )
-        return first + PATH_SEPARATOR[0] + second;
+        return first + PATH_SEPARATORS[0] + second;
       return first + second;
     }
 
