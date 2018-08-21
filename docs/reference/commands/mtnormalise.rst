@@ -29,21 +29,18 @@ Example usage: mtnormalise wmfod.mif wmfod_norm.mif gm.mif gm_norm.mif csf.mif c
 Options
 -------
 
-Options that affect the operation of the mtnormalise command
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 -  **-mask image** the mask defines the data used to compute the intensity normalisation. This option is mandatory.
 
 -  **-order number** the maximum order of the polynomial basis used to fit the normalisation field in the log-domain. An order of 0 is equivalent to not allowing spatial variance of the intensity normalisation factor. (default: 3)
 
 -  **-niter number** set the number of iterations. (default: 15)
 
--  **-value number** specify the (positive) reference value to which the summed tissue compartments will be normalised. (default: 0.282095, SH DC term for unit angular integral)
+-  **-reference number** specify the (positive) reference value to which the summed tissue compartments will be normalised. (default: 0.282095, SH DC term for unit angular integral)
 
 -  **-balanced** incorporate the per-tissue balancing factors into scaling of the output images (NOTE: use of this option has critical consequences for AFD intensity normalisation; should not be used unless these consequences are fully understood)
 
-Options for outputting data to verify successful operation of the mtnormalise command
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Debugging options
+^^^^^^^^^^^^^^^^^
 
 -  **-check_norm image** output the final estimated spatially varying intensity level that is used for normalisation.
 

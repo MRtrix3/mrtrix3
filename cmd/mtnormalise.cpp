@@ -24,7 +24,7 @@
 using namespace MR;
 using namespace App;
 
-#define DEFAULT_NORM_VALUE 0.28209479177
+#define DEFAULT_REFERENCE_VALUE 0.28209479177
 #define DEFAULT_MAIN_ITER_VALUE 15
 #define DEFAULT_BALANCE_MAXITER_VALUE 7
 #define DEFAULT_POLY_ORDER 3
@@ -55,8 +55,6 @@ void usage ()
     + Argument ("input output", "list of all input and output tissue compartment files. See example usage in the description.").type_various().allow_multiple();
 
   OPTIONS
-    + OptionGroup ("Options that affect the operation of the mtnormalise command")
-
     + Option ("mask", "the mask defines the data used to compute the intensity normalisation. This option is mandatory.").required ()
     + Argument ("image").type_image_in ()
 
@@ -66,15 +64,15 @@ void usage ()
     + Option ("niter", "set the number of iterations. (default: " + str(DEFAULT_MAIN_ITER_VALUE) + ")")
     + Argument ("number").type_integer()
 
-    + Option ("value", "specify the (positive) reference value to which the summed tissue compartments will be normalised. "
-                       "(default: " + str(DEFAULT_NORM_VALUE, 6) + ", SH DC term for unit angular integral)")
+    + Option ("reference", "specify the (positive) reference value to which the summed tissue compartments will be normalised. "
+                           "(default: " + str(DEFAULT_REFERENCE_VALUE, 6) + ", SH DC term for unit angular integral)")
     + Argument ("number").type_float (std::numeric_limits<default_type>::min())
 
     + Option ("balanced", "incorporate the per-tissue balancing factors into scaling of the output images "
                           "(NOTE: use of this option has critical consequences for AFD intensity normalisation; "
                           "should not be used unless these consequences are fully understood)")
 
-    + OptionGroup ("Options for outputting data to verify successful operation of the mtnormalise command")
+    + OptionGroup ("Debugging options")
 
     + Option ("check_norm", "output the final estimated spatially varying intensity level that is used for normalisation.")
     + Argument ("image").type_image_out ()
@@ -315,8 +313,8 @@ void run_primitive () {
     throw Exception ("Mask contains no valid voxels.");
 
 
-  const float normalisation_value = get_option_value ("value", DEFAULT_NORM_VALUE);
-  const float log_norm_value = std::log (normalisation_value);
+  const float reference_value = get_option_value ("reference", DEFAULT_REFERENCE_VALUE);
+  const float log_ref_value = std::log (reference_value);
   const size_t max_iter = get_option_value ("niter", DEFAULT_MAIN_ITER_VALUE);
   const size_t max_balance_iter = DEFAULT_BALANCE_MAXITER_VALUE;
 
@@ -470,7 +468,7 @@ void run_primitive () {
           combined_tissue.index(3) = j;
           sum += balance_factors(j) * combined_tissue.value() ;
         }
-        y (index++) = std::log(sum) - log_norm_value;
+        y (index++) = std::log(sum) - log_ref_value;
       }
     }
 
