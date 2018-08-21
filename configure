@@ -534,7 +534,13 @@ def get_flags (default=None, env=None, pkg_config_flags=None):
       return shlex.split (os.environ[env])
   if pkg_config_flags:
     try:
-      return shlex.split (execute ([ 'pkg-config' ] + pkg_config_flags.split(), RunError)[1])
+      flags = []
+      for flag in shlex.split (execute ([ 'pkg-config' ] + pkg_config_flags.split(), RunError)[1]):
+        if flag.startswith ('-I'):
+          flags += [ '-idirafter', flag[2:] ]
+        else:
+          flags += [ flag ]
+      return flags
     except Exception:
       log('error running "pkg-config ' + pkg_config_flags + '"\n\n')
   return default
@@ -1205,7 +1211,11 @@ int main() { Foo f; }
       qt_cflags = []
       for entry in qt:
         if entry[0] != '$' and not entry == '-I.':
-          qt_cflags += [ entry.replace('\"','').replace("'",'') ]
+          entry = entry.replace('\"','').replace("'",'')
+          if entry.startswith('-I'):
+            qt_cflags += [ '-idirafter', entry[2:] ]
+          else:
+            qt_cflags += [ entry ]
 
       qt = qt_ldflags + qt_libs
       qt_ldflags = []
