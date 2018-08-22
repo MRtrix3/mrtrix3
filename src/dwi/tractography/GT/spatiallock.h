@@ -16,6 +16,7 @@
 #ifndef __gt_spatiallock_h__
 #define __gt_spatiallock_h__
 
+#include <Eigen/Dense>
 #include <mutex>
 
 #include "types.h"

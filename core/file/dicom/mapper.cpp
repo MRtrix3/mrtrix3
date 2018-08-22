@@ -19,6 +19,7 @@
 #include "phase_encoding.h"
 #include "image_io/default.h"
 #include "image_io/mosaic.h"
+#include "image_io/variable_scaling.h"
 #include "file/dicom/mapper.h"
 #include "file/dicom/image.h"
 #include "file/dicom/series.h"
@@ -202,11 +203,17 @@ namespace MR {
 
         PhaseEncoding::set_scheme (H, Frame::get_PE_scheme (frames, dim[1]));
 
-        for (size_t n = 1; n < frames.size(); ++n) // check consistency of data scaling:
+        bool inconsistent_scaling = false;
+        for (size_t n = 1; n < frames.size(); ++n) { // check consistency of data scaling:
           if (frames[n]->scale_intercept != frames[n-1]->scale_intercept ||
-              frames[n]->scale_slope != frames[n-1]->scale_slope)
-            throw Exception ("unable to load series due to inconsistent data scaling between DICOM images");
-
+              frames[n]->scale_slope != frames[n-1]->scale_slope) {
+            if (image.images_in_mosaic)
+              throw Exception ("unable to load series due to inconsistent data scaling between DICOM mosaic frames");
+            inconsistent_scaling = true;
+            INFO ("DICOM images contain inconsistency scaling - data will be rescaled and stored in 32-bit floating-point format");
+            break;
+          }
+        }
 
         // Slice timing may come from a few different potential sources
         vector<float> slices_timing;
@@ -284,7 +291,21 @@ namespace MR {
 
           io_handler.reset (new MR::ImageIO::Mosaic (H, frame.dim[0], frame.dim[1], H.size (0), H.size (1), H.size (2)));
 
-        } else {
+        }
+        else if (inconsistent_scaling) {
+
+          H.reset_intensity_scaling();
+          H.datatype() = DataType::Float32;
+          H.datatype().set_byte_order_native();
+
+          MR::ImageIO::VariableScaling* handler = new MR::ImageIO::VariableScaling (H);
+
+          for (size_t n = 0; n < frames.size(); ++n)
+            handler->scale_factors.push_back ({ frames[n]->scale_intercept, frames[n]->scale_slope });
+
+          io_handler.reset (handler);
+        }
+        else {
 
           io_handler.reset (new MR::ImageIO::Default (H));
 

@@ -15,6 +15,7 @@
 
 #include "command.h"
 #include "image.h"
+#include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
 
 #define DEFAULT_SIZE 5
