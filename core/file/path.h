@@ -30,13 +30,15 @@
 
 #define HOME_ENV "HOME"
 
-//! symbols used for separating directories in filesystem paths
-/*! The PATH_SEPARATORS macro contains all characters that may be used
+/*! \def PATH_SEPARATORS
+ *  \brief symbols used for separating directories in filesystem paths
+ *
+ *  The PATH_SEPARATORS macro contains all characters that may be used
  *  to delimit directory / file names in a filesystem path. On
  *  POSIX-compliant systems, this is simply the forward-slash character
  *  '/'; on Windows however, either forward-slashes or back-slashes
  *  can appear. Therefore any code that performs such direct
- *  manipiulation of filesystem paths should both use this macro, and
+ *  manipulation of filesystem paths should both use this macro, and
  *  be written accounting for the possibility of this string containing
  *  either one or two characters depending on the target system. */
 #ifdef MRTRIX_WINDOWS
