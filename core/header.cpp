@@ -192,12 +192,7 @@ namespace MR
 
         auto argv_quoted = [&] (const std::string& s) -> std::string {
           for (size_t i = 0; i != s.size(); ++i) {
-            if (!(isalnum(s[i]) || s[i] == '.' || s[i] == '_' || s[i] == '-'
-#ifdef MRTRIX_WINDOWS
-                  || (i == 1 && s[i] == ':')
-#endif
-                  || (path_separators.find_first_of (s[i]) != std::string::npos))) {
-
+            if (!(isalnum(s[i]) || s[i] == '.' || s[i] == '_' || s[i] == '-' || s[i] == '/')) {
               std::string escaped_string ("\'");
               for (auto c : s) {
                 switch (c) {
