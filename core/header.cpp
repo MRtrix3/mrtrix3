@@ -190,7 +190,7 @@ namespace MR
       if (add_to_command_history) {
         const std::string path_separators = std::string(PATH_SEPARATORS);
 
-        auto argv_quoted = [&] (const std::string& s) -> std::string {
+        auto argv_quoted = [] (const std::string& s) -> std::string {
           for (size_t i = 0; i != s.size(); ++i) {
             if (!(isalnum(s[i]) || s[i] == '.' || s[i] == '_' || s[i] == '-' || s[i] == '/')) {
               std::string escaped_string ("\'");
