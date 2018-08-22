@@ -17,6 +17,7 @@
 #define __registration_transform_initialiser_helpers_h__
 
 #include <algorithm>
+#include <Eigen/Geometry>
 #include "image.h"
 #include "transform.h"
 #include "math/math.h"

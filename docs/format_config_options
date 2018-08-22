@@ -5,15 +5,13 @@ import sys
 optionlist =  [ ]
 
 for line in sys.stdin:
-  line = line.strip()
+  line = line.split ('//CONF')[1][1:]
   if line.startswith ('option:'):
-    optionlist += [ [ line[8:], '', '' ] ]
+    optionlist += [ [ line[8:].strip(), '', '' ] ]
   elif line.startswith ('default:'):
-    optionlist[-1][1] = line
+    optionlist[-1][1] = line.strip()
   else:
-    if optionlist[-1][2]:
-      optionlist[-1][2] += ' '
-    optionlist[-1][2] += line
+    optionlist[-1][2] += line.rstrip() + '\n'
 
 optionlist.sort()
 
@@ -24,8 +22,10 @@ string += 'List of MRtrix3 configuration file options\n'
 string += '##########################################\n\n'
 
 for entry in optionlist:
-  string += '*  **' + entry[0] + '**\n'
+  string += '.. option:: ' + entry[0] + '\n\n'
   string += '    *' + entry[1] + '*\n\n'
-  string += '     ' + entry[2] + '\n\n'
+  for line in entry[2].splitlines():
+    string += '     ' + line + '\n'
+  string += '\n'
 
 sys.stdout.write(string)

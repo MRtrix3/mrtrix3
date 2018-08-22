@@ -13,14 +13,14 @@
  */
 
 
+#include <unsupported/Eigen/FFT>
+
 #include "axes.h"
 #include "command.h"
 #include "image.h"
 #include "progressbar.h"
 #include "algo/threaded_loop.h"
 #include <numeric>
-
-#include <unsupported/Eigen/FFT>
 
 using namespace MR;
 using namespace App;

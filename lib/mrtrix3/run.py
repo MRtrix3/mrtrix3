@@ -23,6 +23,11 @@ def setContinue(filename): #pylint: disable=unused-variable
 
 
 
+def setTmpDir(path): #pylint: disable=unused-variable
+  global _env
+  _env['MRTRIX_TMPFILE_DIR'] = path
+
+
 
 def command(cmd, exitOnError=True): #pylint: disable=unused-variable
 

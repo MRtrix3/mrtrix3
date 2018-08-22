@@ -53,17 +53,42 @@ namespace MR
       //CONF /tmp/, which is typically a RAM file system and should therefore
       //CONF be fast; but may cause issues on machines with little RAM
       //CONF capacity or where write-access to this location is not permitted.
-      //CONF Note that this setting does not influence the location in which
-      //CONF Python scripts construct their temporary directories; that is
-      //CONF determined based on config file option ScriptTmpDir.
-      const std::string& tmpfile_dir () {
-        static const std::string __tmpfile_dir = File::Config::get ("TmpFileDir",
+      //CONF
+      //CONF Note that this location can also be manipulated using the
+      //CONF :envvar:`MRTRIX_TMPFILE_DIR` environment variable, without editing the
+      //CONF config file. Note also that this setting does not influence the
+      //CONF location in which Python scripts construct their temporary
+      //CONF directories; that is determined based on config file option
+      //CONF ScriptTmpDir.
+
+      //ENVVAR name: MRTRIX_TMPFILE_DIR
+      //ENVVAR This has the same effect as the :option:`TmpFileDir`
+      //ENVVAR configuration file entry, and can be used to set the location of
+      //ENVVAR temporary files (as used in Unix pipes) for a single session,
+      //ENVVAR within a single script, or for a single command without
+      //ENVVAR modifying the configuration  file.
+      const std::string __get_tmpfile_dir () {
+        const char* from_env_mrtrix = getenv ("MRTRIX_TMPFILE_DIR");
+        if (from_env_mrtrix)
+          return from_env_mrtrix;
+
+        const char* default_tmpdir =
 #ifdef MRTRIX_WINDOWS
             "."
 #else
             "/tmp"
 #endif
-            );
+            ;
+
+        const char* from_env_general = getenv ("TMPDIR");
+        if (from_env_general)
+          default_tmpdir = from_env_general;
+
+        return File::Config::get ("TmpFileDir", default_tmpdir);
+      }
+
+      const std::string& tmpfile_dir () {
+        static const std::string __tmpfile_dir = __get_tmpfile_dir();
         return __tmpfile_dir;
       }
 
@@ -75,6 +100,13 @@ namespace MR
       //CONF suffix (depending on file type). Note that this prefix can also be
       //CONF manipulated using the `MRTRIX_TMPFILE_PREFIX` environment
       //CONF variable, without editing the config file.
+
+      //ENVVAR name: MRTRIX_TMPFILE_PREFIX
+      //ENVVAR This has the same effect as the :option:`TmpFilePrefix`
+      //ENVVAR configuration file entry, and can be used to set the prefix for
+      //ENVVAR the name  of temporary files (as used in Unix pipes) for a
+      //ENVVAR single session, within a single script, or for a single command
+      //ENVVAR without modifying the configuration file.
       const std::string __get_tmpfile_prefix () {
         const char* from_env = getenv ("MRTRIX_TMPFILE_PREFIX");
         if (from_env) return from_env;
@@ -99,7 +131,7 @@ namespace MR
       //CONF in the working directory.
       //CONF Note that this setting does not influence the location in which
       //CONF piped images and other temporary files are created by MRtrix3;
-      //CONF that is determined based on config file option TmpFileDir.
+      //CONF that is determined based on config file option :option:`TmpFileDir`.
 
       //CONF option: ScriptTmpPrefix
       //CONF default: `<script>-tmp-`

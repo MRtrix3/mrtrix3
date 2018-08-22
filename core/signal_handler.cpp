@@ -89,6 +89,15 @@ namespace MR
 
     void init()
     {
+      //ENVVAR name: MRTRIX_NOSIGNALS
+      //ENVVAR If this variable is set to any value, disable MRtrix3's custom
+      //ENVVAR signal handlers. This may sometimes be useful when debugging.
+      //ENVVAR Note however that this prevents the
+      //ENVVAR deletion of temporary files when the command terminates
+      //ENVVAR abnormally.
+      if (getenv ("MRTRIX_NOSIGNALS"))
+        return;
+
 #ifdef MRTRIX_WINDOWS
       // Use signal() rather than sigaction() for Windows, as the latter is not supported
 # define __SIGNAL(SIG,MSG) signal (SIG, handler)

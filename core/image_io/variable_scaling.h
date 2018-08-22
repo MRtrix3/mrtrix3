@@ -13,8 +13,8 @@
  */
 
 
-#ifndef __image_handler_default_h__
-#define __image_handler_default_h__
+#ifndef __image_handler_variable_scaling_h__
+#define __image_handler_variable_scaling_h__
 
 #include "types.h"
 #include "image_io/base.h"
@@ -25,25 +25,25 @@ namespace MR
   namespace ImageIO
   {
 
-    class Default : public Base
+    class VariableScaling : public Base
     { NOMEMALIGN
       public:
-        Default (const Header& header) :
-          Base (header),
-          bytes_per_segment (0) { }
-        Default (Default&&) noexcept = default;
-        Default& operator=(Default&&) = default;
+        VariableScaling (const Header& header) :
+          Base (header) { }
+
+        VariableScaling (VariableScaling&&) noexcept = default;
+        VariableScaling& operator=(VariableScaling&&) = default;
+
+        class ScaleFactor { NOMEMALIGN
+          public:
+            default_type offset, scale;
+        };
+
+        vector<ScaleFactor> scale_factors;
 
       protected:
-        vector<std::shared_ptr<File::MMap> > mmaps;
-        int64_t bytes_per_segment;
-
         virtual void load (const Header&, size_t);
         virtual void unload (const Header&);
-
-        void map_files (const Header&);
-        void copy_to_mem (const Header&);
-
     };
 
   }
