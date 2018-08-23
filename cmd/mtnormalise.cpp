@@ -68,10 +68,6 @@ void usage ()
                            "(default: " + str(DEFAULT_REFERENCE_VALUE, 6) + ", SH DC term for unit angular integral)")
     + Argument ("number").type_float (std::numeric_limits<default_type>::min())
 
-    + Option ("balanced", "incorporate the per-tissue balancing factors into scaling of the output images "
-                          "(NOTE: use of this option has critical consequences for AFD intensity normalisation; "
-                          "should not be used unless these consequences are fully understood)")
-
     + OptionGroup ("Debugging options")
 
     + Option ("check_norm", "output the final estimated spatially varying intensity level that is used for normalisation.")
@@ -522,17 +518,9 @@ void run_primitive () {
     lognorm_scale = std::exp(lognorm_scale / (double)num_voxels);
   }
 
-  const bool output_balanced = get_options("balanced").size();
-
   for (size_t j = 0; j < output_filenames.size(); ++j) {
     output_progress++;
-
-    float balance_multiplier = 1.0f;
     output_headers[j].keyval()["lognorm_scale"] = str(lognorm_scale);
-    if (output_balanced) {
-      balance_multiplier = balance_factors[j];
-      output_headers[j].keyval()["lognorm_balance"] = str(balance_multiplier);
-    }
     auto output_image = ImageType::create (output_filenames[j], output_headers[j]);
     const size_t n_vols = input_images[j].size(3);
     const Eigen::VectorXf zero_vec = Eigen::VectorXf::Zero (n_vols);
@@ -543,7 +531,7 @@ void run_primitive () {
       if (input_images[j].value() < 0.f)
         output_image.row(3) = zero_vec;
       else
-        output_image.row(3) = Eigen::VectorXf{input_images[j].row(3)} * balance_multiplier / norm_field_image.value();
+        output_image.row(3) = Eigen::VectorXf{input_images[j].row(3)} / norm_field_image.value();
     }
   }
 }

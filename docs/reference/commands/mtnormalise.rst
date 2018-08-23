@@ -37,8 +37,6 @@ Options
 
 -  **-reference number** specify the (positive) reference value to which the summed tissue compartments will be normalised. (default: 0.282095, SH DC term for unit angular integral)
 
--  **-balanced** incorporate the per-tissue balancing factors into scaling of the output images (NOTE: use of this option has critical consequences for AFD intensity normalisation; should not be used unless these consequences are fully understood)
-
 Debugging options
 ^^^^^^^^^^^^^^^^^
 
