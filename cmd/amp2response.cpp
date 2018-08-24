@@ -175,8 +175,11 @@ void run ()
       max_lmax = std::max (max_lmax, i);
     }
     if ((*shells)[0].is_bzero() && lmax.front()) {
-      WARN ("Non-zero lmax requested for first shell, which MRtrix3 classifies as b=0;");
-      WARN ("  this is likely to fail as b=0 contains no orientation contrast");
+      WARN ("Non-zero lmax requested for " +
+            ((*shells)[0].get_mean() ?
+            "first shell (mean b=" + str((*shells)[0].get_mean()) + "), which MRtrix3 has classified as b=0;" :
+            "b=0 shell;"));
+      WARN ("  unless intended, this is likely to fail, as b=0 contains no orientation contrast");
     }
   } else {
     // Auto-fill lmax
