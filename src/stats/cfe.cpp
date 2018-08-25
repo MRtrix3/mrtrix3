@@ -73,6 +73,15 @@ namespace MR
           }
         }
 
+        while (self_index < (*this).size()) {
+          assert (in_index == indices.size());
+          combined_indices.emplace_back (InitMatrixElement ((*this)[self_index++]));
+        }
+        while (in_index < indices.size()) {
+          assert (self_index == (*this).size());
+          combined_indices.emplace_back (InitMatrixElement (indices[in_index++]));
+        }
+
         //std::swap (BaseType (*this), combined_indices);
         BaseType (*this) = std::move (combined_indices);
         ++track_count;
