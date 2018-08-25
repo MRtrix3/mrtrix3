@@ -398,13 +398,14 @@ void run()
     DWI::Tractography::Mapping::TrackMapperBase mapper (index_image);
     mapper.set_upsample_ratio (DWI::Tractography::Mapping::determine_upsample_ratio (index_header, properties, 0.333f));
     mapper.set_use_precise_mapping (true);
-    Stats::CFE::TrackProcessor tract_processor (index_image, directions, mask, fixel_TDI, connectivity_matrix, angular_threshold);
-    Thread::run_queue (
+    Stats::CFE::TrackProcessor tract_processor (mapper, index_image, directions, mask, fixel_TDI, connectivity_matrix, angular_threshold);
+    /*Thread::run_queue (
         loader,
         Thread::batch (DWI::Tractography::Streamline<float>()),
         mapper,
         Thread::batch (DWI::Tractography::Mapping::SetVoxelDir()),
-        tract_processor);
+        tract_processor);*/
+    Thread::run_queue (loader, Thread::batch (DWI::Tractography::Streamline<float>()), Thread::multi (tract_processor));
   }
   track_file.close();
 
@@ -457,20 +458,20 @@ void run()
       //   correspond to rows in the statistical analysis
       connectivity_value_type sum_weights = 0.0;
       for (auto& it : connectivity_matrix[fixel_index]) {
-        const connectivity_value_type connectivity = it.second.value / connectivity_value_type (fixel_TDI[fixel_index]);
+        const connectivity_value_type connectivity = it.value() / connectivity_value_type (fixel_TDI[fixel_index]);
         if (connectivity >= connectivity_threshold) {
           if (do_smoothing) {
-            const value_type distance = std::sqrt (Math::pow2 (positions[fixel_index][0] - positions[it.first][0]) +
-                Math::pow2 (positions[fixel_index][1] - positions[it.first][1]) +
-                Math::pow2 (positions[fixel_index][2] - positions[it.first][2]));
+            const value_type distance = std::sqrt (Math::pow2 (positions[fixel_index][0] - positions[it.index()][0]) +
+                Math::pow2 (positions[fixel_index][1] - positions[it.index()][1]) +
+                Math::pow2 (positions[fixel_index][2] - positions[it.index()][2]));
             const connectivity_value_type smoothing_weight = connectivity * gaussian_const1 * std::exp (-Math::pow2 (distance) / gaussian_const2);
             if (smoothing_weight >= connectivity_threshold) {
-              smoothing_weights[column].push_back (Stats::CFE::NormMatrixElement (fixel2column[it.first], smoothing_weight));
+              smoothing_weights[column].push_back (Stats::CFE::NormMatrixElement (fixel2column[it.index()], smoothing_weight));
               sum_weights += smoothing_weight;
             }
           }
           // Here we pre-exponentiate each connectivity value by C
-          norm_connectivity_matrix[column].push_back (Stats::CFE::NormMatrixElement (fixel2column[it.first], std::pow (connectivity, cfe_c)));
+          norm_connectivity_matrix[column].push_back (Stats::CFE::NormMatrixElement (fixel2column[it.index()], std::pow (connectivity, cfe_c)));
         }
       }
 
@@ -489,7 +490,8 @@ void run()
         norm_connectivity_matrix[column].normalise();
 
       // Force deallocation of memory used for this fixel in the original matrix
-      std::map<uint32_t, Stats::CFE::connectivity>().swap (connectivity_matrix[fixel_index]);
+      //std::map<uint32_t, Stats::CFE::connectivity>().swap (connectivity_matrix[fixel_index]);
+      Stats::CFE::InitMatrixFixel().swap (connectivity_matrix[fixel_index]);
 
       return true;
     };

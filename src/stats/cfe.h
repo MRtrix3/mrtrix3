@@ -16,12 +16,15 @@
 #ifndef __stats_cfe_h__
 #define __stats_cfe_h__
 
+#include <atomic>
+
 #include "image.h"
 #include "image_helpers.h"
 #include "types.h"
 #include "math/math.h"
 #include "math/stats/typedefs.h"
 
+#include "dwi/tractography/streamline.h"
 #include "dwi/tractography/mapping/mapper.h"
 #include "stats/enhance.h"
 
@@ -46,6 +49,47 @@ namespace MR
 
       /** \addtogroup Statistics
       @{ */
+
+
+      // TODO Classes for dealing with dynamic multi-threaded construction of the
+      //   fixel-fixel connectivity matrix
+      class InitMatrixElement
+      { NOMEMALIGN
+        public:
+          InitMatrixElement() = delete;
+          InitMatrixElement (const index_type fixel_index) :
+              fixel_index (fixel_index),
+              track_count (1) { }
+          InitMatrixElement (const index_type fixel_index, const index_type track_count) :
+              fixel_index (fixel_index),
+              track_count (track_count) { }
+          InitMatrixElement (const InitMatrixElement&) = default;
+          FORCE_INLINE index_type index() const { return fixel_index; }
+          FORCE_INLINE index_type value() const { return track_count; }
+        private:
+          const index_type fixel_index;
+          index_type track_count;
+      };
+
+
+
+      // TODO Ideally base class would be private, but need simple access to iterators for now
+      class InitMatrixFixel : public vector<InitMatrixElement>
+      { MEMALIGN(InitMatrixFixel)
+        public:
+          using BaseType = vector<InitMatrixElement>;
+          InitMatrixFixel() :
+              spinlock (ATOMIC_FLAG_INIT),
+              track_count (0) { }
+          void add (const vector<index_type>& indices);
+        private:
+          std::atomic_flag spinlock;
+          index_type track_count;
+      };
+
+
+
+
 
 
       class connectivity { NOMEMALIGN
@@ -101,9 +145,11 @@ namespace MR
 
 
 
+
       // Different types are used depending on whether the connectivity matrix
       //   is in the process of being built, or whether it has been normalised
-      using init_connectivity_matrix_type = vector<std::map<index_type, connectivity>>;
+      //using init_connectivity_matrix_type = vector<std::map<index_type, connectivity>>;
+      using init_connectivity_matrix_type = vector<InitMatrixFixel>;
       using norm_connectivity_matrix_type = vector<NormMatrixFixel>;
 
 
@@ -111,19 +157,25 @@ namespace MR
       /**
        * Process each track by converting each streamline to a set of dixels, and map these to fixels.
        */
+      // TODO Modify this by incorporating the track mapping functor, doing the dixel->fixel mapping,
+      //   then calling the appropriate add() functions within the initial connectivity matrix
+      // TODO Eventually check whether or not it would be preferable to remove the explicit fixel TDI
       class TrackProcessor { MEMALIGN(TrackProcessor)
 
         public:
-          TrackProcessor (Image<index_type>& fixel_indexer,
+          TrackProcessor (const DWI::Tractography::Mapping::TrackMapperBase& mapper,
+                          Image<index_type>& fixel_indexer,
                           const vector<direction_type>& fixel_directions,
                           Image<bool>& fixel_mask,
                           vector<uint16_t>& fixel_TDI,
                           init_connectivity_matrix_type& connectivity_matrix,
                           const value_type angular_threshold);
 
-          bool operator () (const SetVoxelDir& in);
+          //bool operator () (const SetVoxelDir& in);
+          bool operator () (const DWI::Tractography::Streamline<>& in);
 
         private:
+          const DWI::Tractography::Mapping::TrackMapperBase& mapper;
           Image<index_type> fixel_indexer;
           const vector<direction_type>& fixel_directions;
           Image<bool> fixel_mask;
