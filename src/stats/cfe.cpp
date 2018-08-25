@@ -24,12 +24,67 @@ namespace MR
 
 
 
-      TrackProcessor::TrackProcessor (Image<index_type>& fixel_indexer,
+      void InitMatrixFixel::add (const vector<index_type>& indices)
+      {
+        while (spinlock.test_and_set (std::memory_order_acquire));
+
+        size_t self_index = 0, in_index = 0;
+        //int last_sign = 0;
+
+        // For anything in indices that doesn't yet appear in *this,
+        //   add to this list; once completed, extend *this by the appropriate
+        //   amount, and insert these into the appropriate locations
+        // Save both the index of the new fixel, and the location in the array
+        //   where it should be inserted to preserve sorted order
+        //vector<std::pair<index_t, size_t>> new_entries;
+
+        // TODO Cancel that idea;
+        // Construct a new vector as the sorted combination of the existing and new ones,
+        //   then do a std::swap
+        vector<InitMatrixElement> combined_indices;
+        combined_indices.reserve ((*this).size() + indices.size());
+
+        while (self_index < (*this).size() && in_index < indices.size()) {
+          if ((*this)[self_index].index() == indices[in_index]) {
+            combined_indices.emplace_back (InitMatrixElement ((*this)[self_index].index(), (*this)[self_index].value()+1));
+            ++self_index;
+            //++(*this)[self_index++];
+            //last_sign = 0;
+            //++self_index;
+            //++in_index;
+          } else if ((*this)[self_index].index() > indices[in_index]) {
+            //if (last_sign > 0)
+            //  new_entries.push_back (InitMatrixElement(indices[in_index]));
+            combined_indices.emplace_back (InitMatrixElement (indices[in_index++])); // Will set count to 1 in the constructor
+            //++in_index;
+            //last_sign = -1;
+          } else {
+            combined_indices.emplace_back (InitMatrixElement ((*this)[self_index++]));
+            //self_index++;
+            //last_sign = 1;
+          }
+        }
+
+        //std::swap (BaseType (*this), combined_indices);
+        BaseType (*this) = std::move (combined_indices);
+        ++track_count;
+
+        //(*this).resize ((*this).size() + new_entries.size());
+
+        spinlock.clear (std::memory_order_release);
+      }
+
+
+
+
+      TrackProcessor::TrackProcessor (const DWI::Tractography::Mapping::TrackMapperBase& mapper,
+                                      Image<index_type>& fixel_indexer,
                                       const vector<direction_type>& fixel_directions,
                                       Image<bool>& fixel_mask,
                                       vector<uint16_t>& fixel_TDI,
                                       init_connectivity_matrix_type& connectivity_matrix,
                                       const value_type angular_threshold) :
+                                        mapper               (mapper),
                                         fixel_indexer        (fixel_indexer) ,
                                         fixel_directions     (fixel_directions),
                                         fixel_mask           (fixel_mask),
@@ -38,7 +93,7 @@ namespace MR
                                         angular_threshold_dp (std::cos (angular_threshold * (Math::pi/180.0))) { }
 
 
-
+/*
       bool TrackProcessor::operator() (const SetVoxelDir& in)
       {
         // For each voxel tract tangent, assign to a fixel
@@ -85,7 +140,56 @@ namespace MR
           return false;
         }
       }
+*/
 
+
+      bool TrackProcessor::operator() (const DWI::Tractography::Streamline<>& tck)
+      {
+        DWI::Tractography::Mapping::SetVoxelDir in;
+        mapper (tck, in);
+
+        // For each voxel tract tangent, assign to a fixel
+        vector<index_type> tract_fixel_indices;
+        for (SetVoxelDir::const_iterator i = in.begin(); i != in.end(); ++i) {
+          assign_pos_of (*i).to (fixel_indexer);
+          fixel_indexer.index(3) = 0;
+          const index_type num_fixels = fixel_indexer.value();
+          if (num_fixels > 0) {
+            fixel_indexer.index(3) = 1;
+            const index_type first_index = fixel_indexer.value();
+            const index_type last_index = first_index + num_fixels;
+            // Note: Streamlines can still be assigned to a fixel that is outside the mask;
+            //   however this will not be permitted to contribute to the matrix
+            index_type closest_fixel_index = num_fixels;
+            value_type largest_dp = 0.0;
+            const direction_type dir (i->get_dir().normalized());
+            for (index_type j = first_index; j < last_index; ++j) {
+              const value_type dp = abs (dir.dot (fixel_directions[j]));
+              if (dp > largest_dp) {
+                largest_dp = dp;
+                fixel_mask.index(0) = j;
+                if (fixel_mask.value())
+                  closest_fixel_index = j;
+              }
+            }
+            if (closest_fixel_index != num_fixels && largest_dp > angular_threshold_dp) {
+              tract_fixel_indices.push_back (closest_fixel_index);
+              fixel_TDI[closest_fixel_index]++;
+            }
+          }
+        }
+
+        std::sort (tract_fixel_indices.begin(), tract_fixel_indices.end());
+
+        try {
+          for (auto f : tract_fixel_indices)
+            connectivity_matrix[f].add (tract_fixel_indices);
+          return true;
+        } catch (...) {
+          throw Exception ("Error assigning memory for CFE connectivity matrix");
+          return false;
+        }
+      }
 
 
 
