@@ -85,6 +85,11 @@ namespace MR
         private:
           std::atomic_flag spinlock;
           index_type track_count;
+
+          InitMatrixFixel& operator= (vector<InitMatrixElement>&& that) {
+            BaseType (*this) = std::move (that);
+            return *this;
+          }
       };
 
 

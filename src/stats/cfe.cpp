@@ -83,7 +83,7 @@ namespace MR
         }
 
         //std::swap (BaseType (*this), combined_indices);
-        BaseType (*this) = std::move (combined_indices);
+        *this = std::move (combined_indices);
         ++track_count;
 
         //(*this).resize ((*this).size() + new_entries.size());
