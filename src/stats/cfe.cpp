@@ -44,6 +44,14 @@ namespace MR
         vector<InitMatrixElement> combined_indices;
         combined_indices.reserve ((*this).size() + indices.size());
 
+        std::cerr << "\n\n\nCurrent contents:\n";
+        for (auto i : *this)
+          std::cerr << "[" << i.index() << ": " << i.value() << "] ";
+        std::cerr << "\nIncoming contents:\n";
+        for (auto i : indices)
+          std::cerr << i << " ";
+        std::cerr << "\n";
+
         while (self_index < (*this).size() && in_index < indices.size()) {
           if ((*this)[self_index].index() == indices[in_index]) {
             combined_indices.emplace_back (InitMatrixElement ((*this)[self_index].index(), (*this)[self_index].value()+1));
@@ -70,6 +78,11 @@ namespace MR
         ++track_count;
 
         //(*this).resize ((*this).size() + new_entries.size());
+
+        std::cerr << "New contents:\n";
+        for (auto i : *this)
+          std::cerr << "[" << i.index() << ": " << i.value() << "] ";
+        std::cerr << "\n";
 
         spinlock.clear (std::memory_order_release);
       }
