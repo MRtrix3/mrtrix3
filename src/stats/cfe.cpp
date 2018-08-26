@@ -36,6 +36,25 @@ namespace MR
           return;
         }
 
+        // Comprehensive test:
+        // Do a memory-expensive merge, and make sure that the result of the
+        //   optimised algorithm matches
+        using map_type = std::map<index_type, index_type>;
+        map_type map_merged;
+        for (auto i : (*this))
+          map_merged[i.index()] = i.value();
+        for (auto i : indices) {
+          const auto it = map_merged.find (i);
+          if (it == map_merged.end())
+            map_merged[i] = 1;
+          else
+            it->second++;
+        }
+        vector<InitMatrixElement> vector_merged;
+        for (auto i : map_merged)
+          vector_merged.emplace_back (InitMatrixElement (i.first, i.second));
+
+
         ssize_t self_index = 0, in_index = 0;
 
         std::cerr << "\n\n\nCurrent contents:\n";
@@ -86,7 +105,7 @@ namespace MR
         self_index = old_size - 1;
         in_index = indices.size() - 1;
 
-        (*this).resize ((*this).size() + indices.size() - 2*intersection);
+        (*this).resize ((*this).size() + indices.size() - intersection);
         ssize_t out_index = (*this).size() - 1;
 
         // TESTME
@@ -107,7 +126,7 @@ namespace MR
           }
           --out_index;
         }
-        while (in_index >= 0)
+        while (in_index >= 0 && out_index >= 0)
           (*this)[out_index--] = InitMatrixElement (indices[in_index--]);
 
         ++track_count;
@@ -116,6 +135,13 @@ namespace MR
         for (auto i : *this)
           std::cerr << "[" << i.index() << ": " << i.value() << "] ";
         std::cerr << "\n";
+
+        // Slow verification of contents
+        assert ((*this).size() == vector_merged.size());
+        for (size_t i = 0; i != (*this).size(); ++i) {
+          assert ((*this)[i].index() == vector_merged[i].index());
+          assert ((*this)[i].value() == vector_merged[i].value());
+        }
 
         spinlock.clear (std::memory_order_release);
       }
