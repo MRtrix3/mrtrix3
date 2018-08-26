@@ -93,7 +93,7 @@ namespace MR
         // For each output vector location, need to determine whether it should come from copying an existing entry,
         //   or creating a new one
         //while (intersection < (*this).size()) {
-        while (out_index > self_index && in_index >= 0) {
+        while (out_index > self_index && self_index >= 0 && in_index >= 0) {
           if ((*this)[self_index].index() == indices[in_index]) {
             (*this)[out_index] = (*this)[self_index];
             --self_index;
@@ -107,6 +107,8 @@ namespace MR
           }
           --out_index;
         }
+        while (in_index >= 0)
+          (*this)[out_index--] = InitMatrixElement (indices[in_index--]);
 
         ++track_count;
 
