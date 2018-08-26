@@ -56,7 +56,10 @@ namespace MR
       class InitMatrixElement
       { NOMEMALIGN
         public:
-          InitMatrixElement() = delete;
+          //InitMatrixElement() = delete; // Can't delete this if calling vector.resize();
+          InitMatrixElement() :
+              fixel_index (std::numeric_limits<index_type>::max()),
+              track_count (0) { }
           InitMatrixElement (const index_type fixel_index) :
               fixel_index (fixel_index),
               track_count (1) { }
@@ -64,10 +67,12 @@ namespace MR
               fixel_index (fixel_index),
               track_count (track_count) { }
           InitMatrixElement (const InitMatrixElement&) = default;
+          FORCE_INLINE InitMatrixElement& operator++() { track_count++; return *this; }
+          FORCE_INLINE InitMatrixElement& operator= (const InitMatrixElement& that) { fixel_index = that.fixel_index; track_count = that.track_count; return *this; }
           FORCE_INLINE index_type index() const { return fixel_index; }
           FORCE_INLINE index_type value() const { return track_count; }
         private:
-          const index_type fixel_index;
+          index_type fixel_index;
           index_type track_count;
       };
 
@@ -87,7 +92,7 @@ namespace MR
           index_type track_count;
 
           InitMatrixFixel& operator= (vector<InitMatrixElement>&& that) {
-            BaseType (*this) = std::move (that);
+            this->BaseType::operator= (std::move (that));
             return *this;
           }
       };
