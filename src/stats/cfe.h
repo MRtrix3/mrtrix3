@@ -71,6 +71,7 @@ namespace MR
           FORCE_INLINE InitMatrixElement& operator= (const InitMatrixElement& that) { fixel_index = that.fixel_index; track_count = that.track_count; return *this; }
           FORCE_INLINE index_type index() const { return fixel_index; }
           FORCE_INLINE index_type value() const { return track_count; }
+          FORCE_INLINE bool operator< (const InitMatrixElement& that) const { return fixel_index < that.fixel_index; }
         private:
           index_type fixel_index;
           index_type track_count;
