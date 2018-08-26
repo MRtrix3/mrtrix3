@@ -28,8 +28,15 @@ namespace MR
       {
         while (spinlock.test_and_set (std::memory_order_acquire));
 
-        size_t self_index = 0, in_index = 0;
-        //int last_sign = 0;
+        ssize_t self_index = 0, in_index = 0;
+
+        std::cerr << "\n\n\nCurrent contents:\n";
+        for (auto i : *this)
+          std::cerr << "[" << i.index() << ": " << i.value() << "] ";
+        std::cerr << "\nIncoming contents:\n";
+        for (auto i : indices)
+          std::cerr << i << " ";
+        std::cerr << "\n";
 
         // For anything in indices that doesn't yet appear in *this,
         //   add to this list; once completed, extend *this by the appropriate
@@ -38,9 +45,72 @@ namespace MR
         //   where it should be inserted to preserve sorted order
         //vector<std::pair<index_t, size_t>> new_entries;
 
-        // TODO Cancel that idea;
+        // Cancel that idea;
         // Construct a new vector as the sorted combination of the existing and new ones,
         //   then do a std::swap
+
+        // TODO Needs another rethink:
+        // Because memory is being re-allocated from scratch for every new fixel visitation, memory usage
+        //   is actually running out faster.
+        // Instead, need to continue making use of the existing allocated memory
+        // Break into two passes:
+        // - On first pass, increment those elements that already exist, and count the number of
+        //   fixels that are not yet part of the set (but don't store them)
+        // - Extend the length of the vector by as much as is required to fit the new elements
+        // - On second pass, from back to front, move elements from previous back of vector to new back,
+        //   inserting new elements at appropriate locations to retain sortedness of list
+        const ssize_t old_size = (*this).size();
+        const ssize_t in_count = indices.size();
+        size_t intersection = 0;
+        while (self_index < old_size && in_index < in_count) {
+          if ((*this)[self_index].index() == indices[in_index]) {
+            ++(*this)[self_index];
+            ++self_index;
+            ++in_index;
+            ++intersection;
+          } else if ((*this)[self_index].index() > indices[in_index]) {
+            ++in_index;
+          } else {
+            ++self_index;
+          }
+        }
+
+        self_index = old_size - 1;
+        in_index = indices.size() - 1;
+
+        (*this).resize ((*this).size() + indices.size() - 2*intersection);
+        ssize_t out_index = (*this).size() - 1;
+
+        // TESTME
+        // For each output vector location, need to determine whether it should come from copying an existing entry,
+        //   or creating a new one
+        //while (intersection < (*this).size()) {
+        while (out_index > self_index) {
+          if ((*this)[self_index].index() == indices[in_index]) {
+            (*this)[out_index] = (*this)[self_index];
+            --self_index;
+            --in_index;
+          } else if ((*this)[self_index].index() > indices[in_index]) {
+            (*this)[out_index] = (*this)[self_index];
+            --self_index;
+          } else {
+            (*this)[out_index] = InitMatrixElement (indices[in_index]);
+            --in_index;
+          }
+          --out_index;
+        }
+
+        ++track_count;
+
+        std::cerr << "New contents:\n";
+        for (auto i : *this)
+          std::cerr << "[" << i.index() << ": " << i.value() << "] ";
+        std::cerr << "\n";
+
+        spinlock.clear (std::memory_order_release);
+      }
+/*
+
         vector<InitMatrixElement> combined_indices;
         combined_indices.reserve ((*this).size() + indices.size());
 
@@ -56,6 +126,7 @@ namespace MR
           if ((*this)[self_index].index() == indices[in_index]) {
             combined_indices.emplace_back (InitMatrixElement ((*this)[self_index].index(), (*this)[self_index].value()+1));
             ++self_index;
+            ++in_index;
             //++(*this)[self_index++];
             //last_sign = 0;
             //++self_index;
@@ -95,7 +166,7 @@ namespace MR
 
         spinlock.clear (std::memory_order_release);
       }
-
+*/
 
 
 
