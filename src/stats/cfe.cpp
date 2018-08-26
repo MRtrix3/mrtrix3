@@ -28,6 +28,14 @@ namespace MR
       {
         while (spinlock.test_and_set (std::memory_order_acquire));
 
+        if ((*this).empty()) {
+          (*this).reserve (indices.size());
+          for (auto i : indices)
+            (*this).emplace_back (InitMatrixElement (i));
+          spinlock.clear (std::memory_order_release);
+          return;
+        }
+
         ssize_t self_index = 0, in_index = 0;
 
         std::cerr << "\n\n\nCurrent contents:\n";
@@ -85,7 +93,7 @@ namespace MR
         // For each output vector location, need to determine whether it should come from copying an existing entry,
         //   or creating a new one
         //while (intersection < (*this).size()) {
-        while (out_index > self_index) {
+        while (out_index > self_index && in_index >= 0) {
           if ((*this)[self_index].index() == indices[in_index]) {
             (*this)[out_index] = (*this)[self_index];
             --self_index;
