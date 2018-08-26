@@ -15,7 +15,6 @@
 
 #include "debug.h"
 #include "command.h"
-#include "timer.h" // for testing
 #include "file/mmap.h"
 
 #include <atomic>
@@ -43,7 +42,6 @@ void usage ()
 
 
 
-size_t ncollisions = 0; // for testing - delete for production
 
 
 
@@ -99,21 +97,6 @@ class Sync
       release();
     }
 
-    // for testing - remove for production
-    void read_stall (SyncData& data)
-    {
-      lock();
-      previous_state = shm.state;
-      memcpy (&data, &shm.data, sizeof(SyncData));
-      static size_t count = 0;
-      if (++count > 1e6) {
-        WARN ("stalling for 1s");
-        std::this_thread::sleep_for (std::chrono::seconds(1));
-        count = 0;
-      }
-      release();
-    }
-
   private:
     File::MMap mmap;
     SHM& shm;
@@ -121,11 +104,8 @@ class Sync
 
     void lock () {
       int expected = 0, attempts = 0;
-      Timer timer; // for testing
       while (!shm.pid_lock.compare_exchange_weak (expected, getpid())) {
-        ncollisions++; // for performance monitoring - remove this line for production
         if (++attempts > 50) { // try for at least 50ms
-          WARN ("time elapsed = " + str(timer.elapsed())); // for testing
           WARN ("lock has not been released! Trying to grab lock");
           if (shm.pid_lock.compare_exchange_weak (expected, getpid()))
             return;
@@ -232,12 +212,11 @@ void run ()
     for (int n = 0; n < 100000; ++n) {
       prepare_sync_data (data);
       sync.write (data);
-      //sync.read (data);
-      sync.read_stall (data);
+      sync.read (data);
       failures += verify_sync_data (data);
       total++;
     }
-    std::cerr << failures << " / " << total << ", mean collisions: " << double (ncollisions) / total << "\n";
+    std::cerr << failures << " / " << total << "\n";
   }
 
 
