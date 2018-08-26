@@ -15,6 +15,8 @@
 
 #include "stats/cfe.h"
 
+#define CFE_MERGESORT_TEST
+
 namespace MR
 {
   namespace Stats
@@ -36,6 +38,7 @@ namespace MR
           return;
         }
 
+#ifdef CFE_MERGESORT_TEST
         // Comprehensive test:
         // Do a memory-expensive merge, and make sure that the result of the
         //   optimised algorithm matches
@@ -53,7 +56,8 @@ namespace MR
         vector<InitMatrixElement> vector_merged;
         for (auto i : map_merged)
           vector_merged.emplace_back (InitMatrixElement (i.first, i.second));
-
+        const vector<InitMatrixElement> original_data = (*this);
+#endif
 
         ssize_t self_index = 0, in_index = 0;
 
@@ -102,9 +106,17 @@ namespace MR
           }
         }
 
+#ifdef CFE_MERGESORT_TEST
+        const vector<InitMatrixElement> after_sweep = (*this);
+#endif
         self_index = old_size - 1;
         in_index = indices.size() - 1;
 
+        // TODO It's possible that a resize() call may always result in requesting
+        //   a re-assignment of memory that exactly matches the size, which may in turn
+        //   lead to memory bloat due to inability to return the old memory
+        // If this occurs, iteratively calling push_back() may instead engage the
+        //   memory-reservation-doubling behaviour
         (*this).resize ((*this).size() + indices.size() - intersection);
         ssize_t out_index = (*this).size() - 1;
 
@@ -136,12 +148,14 @@ namespace MR
           std::cerr << "[" << i.index() << ": " << i.value() << "] ";
         std::cerr << "\n";
 
+#ifdef CFE_MERGESORT_TEST
         // Slow verification of contents
         assert ((*this).size() == vector_merged.size());
         for (size_t i = 0; i != (*this).size(); ++i) {
           assert ((*this)[i].index() == vector_merged[i].index());
           assert ((*this)[i].value() == vector_merged[i].value());
         }
+#endif
 
         spinlock.clear (std::memory_order_release);
       }
