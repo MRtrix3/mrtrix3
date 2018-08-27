@@ -35,6 +35,14 @@ namespace MR {
           .allow_multiple()
           + Argument ("spec").type_various()
 
+       + Option("include_ordered",
+          "specify an inclusion region of interest, as either a binary mask image, "
+          "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
+          "must traverse ALL inclusion_ordered regions in the order they are "
+          "specified in order to be accepted.")
+       .allow_multiple()
+       + Argument("image").type_text()
+
       + Option ("exclude",
             "specify an exclusion region of interest, as either a binary mask image, "
             "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
@@ -56,6 +64,10 @@ namespace MR {
         auto opt = get_options ("include");
         for (size_t i = 0; i < opt.size(); ++i)
           properties.include.add (ROI (opt[i][0]));
+
+        opt = get_options("include_ordered");
+        for (size_t i = 0; i < opt.size(); ++i)
+           properties.include.add_ordered(ROI(opt[i][0]));
 
         opt = get_options ("exclude");
         for (size_t i = 0; i < opt.size(); ++i)

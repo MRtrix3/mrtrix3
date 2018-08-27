@@ -41,8 +41,8 @@ namespace MR {
           // Assign to ROIs
           if (properties.include.size() || properties.exclude.size()) {
 
-            include_visited.assign (properties.include.size(), false);
-
+            include_visited.reset();
+            
             if (ends_only) {
               for (size_t i = 0; i != 2; ++i) {
                 const Eigen::Vector3f& p (i ? in.back() : in.front());
@@ -63,14 +63,12 @@ namespace MR {
                 }
               }
             }
-
+            
             // Make sure all of the include regions were visited
-            for (const auto& i : include_visited) {
-              if (!i) {
-                if (inverse)
-                  in.swap (out);
-                return true;
-              }
+            if (!include_visited.all_entered()) {   
+               if (inverse)
+                  in.swap(out);
+               return true;
             }
 
           }

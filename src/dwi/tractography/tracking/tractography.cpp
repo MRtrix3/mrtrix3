@@ -86,9 +86,16 @@ namespace MR
           + Argument ("factor").type_integer (1);
 
 
-
-      void load_streamline_properties (Properties& properties)
+      /**
+      Loads properties related to streamlines AND loads include etc ROIs. 
+      */
+      void load_streamline_properties_and_rois (Properties& properties)
       {
+
+         //Validity check
+         if (get_options("include_ordered").size() && !get_options("seed_unidirectional").size())
+            throw Exception("-include_ordered requires that -seed_unidirectional is set, but this is not so");
+
 
         using namespace MR::App;
 
@@ -119,17 +126,7 @@ namespace MR
         opt = get_options ("rk4");
         if (opt.size()) properties["rk4"] = "1";
 
-        opt = get_options ("include");
-        for (size_t i = 0; i < opt.size(); ++i)
-          properties.include.add (ROI (opt[i][0]));
-
-        opt = get_options ("exclude");
-        for (size_t i = 0; i < opt.size(); ++i)
-          properties.exclude.add (ROI (opt[i][0]));
-
-        opt = get_options ("mask");
-        for (size_t i = 0; i < opt.size(); ++i)
-          properties.mask.add (ROI (opt[i][0]));
+        load_rois(properties);//rois must be loaded before stop parameter in order to check its validity
 
         opt = get_options ("stop");
         if (opt.size()) {

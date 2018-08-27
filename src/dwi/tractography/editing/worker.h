@@ -43,14 +43,14 @@ namespace MR {
               inverse (inv),
               ends_only (end),
               thresholds (p),
-              include_visited (properties.include.size(), false) { }
+              include_visited (properties.include.size_unordered(), properties.include.size_ordered()) { }
 
             Worker (const Worker& that) :
               properties (that.properties),
               inverse (that.inverse),
               ends_only (that.ends_only),
               thresholds (that.thresholds),
-              include_visited (properties.include.size(), false) { }
+              include_visited (properties.include.size_unordered(), properties.include.size_ordered()) { }
 
 
             bool operator() (Streamline<>&, Streamline<>&) const;
@@ -72,7 +72,7 @@ namespace MR {
                 float step_size;
             } thresholds;
 
-            mutable vector<bool> include_visited;
+            mutable ROISet_ContainsLoopState include_visited;
 
         };
 

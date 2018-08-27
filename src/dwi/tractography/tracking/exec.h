@@ -112,7 +112,8 @@ namespace MR
               S (shared),
               method (shared),
               track_excluded (false),
-              track_included (S.properties.include.size(), false) { }
+              track_included(S.properties.include.size_unordered(), S.properties.include.size_ordered())
+            { }
 
 
             bool operator() (GeneratedTrack& item) {
@@ -142,7 +143,7 @@ namespace MR
             Math::RNG thread_local_RNG;
             Method method;
             bool track_excluded;
-            vector<bool> track_included;
+            ROISet_ContainsLoopState track_included;
 
 
             term_t iterate ()
@@ -170,7 +171,7 @@ namespace MR
               if (!(S.is_act() && S.act().backtrack()))
                 S.properties.include.contains (method.pos, track_included);
 
-              if (S.stop_on_all_include && traversed_all_include_regions())
+              if (S.stop_on_all_include && track_included.all_entered())
                 return TRAVERSE_ALL_INCLUDE;
 
               return CONTINUE;
@@ -183,7 +184,7 @@ namespace MR
             {
               tck.clear();
               track_excluded = false;
-              track_included.assign (track_included.size(), false);
+              track_included.reset();
               method.dir = { NaN, NaN, NaN };
 
               if (S.properties.seeds.is_finite()) {
@@ -411,7 +412,7 @@ namespace MR
 
               }
 
-              if (!traversed_all_include_regions()) {
+              if (!track_included.all_entered()) {
                 S.add_rejection (MISSED_INCLUDE_REGION);
                 return true;
               }
@@ -419,18 +420,6 @@ namespace MR
               return false;
 
             }
-
-
-
-            bool traversed_all_include_regions ()
-            {
-              for (size_t n = 0; n < track_included.size(); ++n)
-                if (!track_included[n])
-                  return false;
-              return true;
-            }
-
-
 
             bool satisfy_wm_requirement (const vector<Eigen::Vector3f>& tck)
             {
