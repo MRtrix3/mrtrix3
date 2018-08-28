@@ -9,12 +9,17 @@ init:
   - git config --global core.autocrlf input
 
 build_script:
-  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "pacman -S --noconfirm bc mingw-w64-x86_64-diffutils mingw-w64-x86_64-eigen3 mingw-w64-x86_64-fftw mingw-w64-x86_64-libtiff mingw-w64-x86_64-qt5 python"
+  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "pacman -S --noconfirm bc mingw-w64-x86_64-diffutils mingw-w64-x86_64-eigen3 mingw-w64-x86_64-fftw mingw-w64-x86_64-libtiff mingw-w64-x86_64-qt5 python python2"
+  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "python --version"
+  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "python2 --version"
   - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "./configure -assert"
   - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "./build -nowarnings -nopaginate"
 
 test_script:
   - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "./run_tests"
+  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "touch core/mrtrix.cpp && python2 ./build -nowarnings -nopaginate"
+  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "cp config config.python3 && python2 ./configure -assert && diff config config.python3"
+  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "python2 ./run_tests"
 
 artifacts:
   - path: configure.log
