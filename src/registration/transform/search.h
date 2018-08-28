@@ -17,6 +17,8 @@
 #define __registration_transform_search_h__
 
 #include <iostream>
+#include <Eigen/Geometry>
+#include <Eigen/Eigen>
 
 #include "debug.h"
 #include "image.h"

@@ -62,6 +62,17 @@ namespace MR
       bool is_signed () const {
         return dt & Signed;
       }
+      bool is_byte_order_native () {
+        if (bits() <= 8)
+          return true;
+        if (!is_little_endian() && !is_big_endian())
+          throw Exception ("byte order not set!");
+#ifdef MRTRIX_BYTE_ORDER_BIG_ENDIAN
+        return is_big_endian();
+#else
+        return is_little_endian();
+#endif
+      }
       bool is_little_endian () const {
         return dt & LittleEndian;
       }

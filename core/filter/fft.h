@@ -18,15 +18,14 @@
 
 #include <complex>
 
+#include <unsupported/Eigen/FFT>
+
 #include "datatype.h"
 #include "memory.h"
 #include "image.h"
 #include "algo/copy.h"
 #include "algo/threaded_copy.h"
 #include "filter/base.h"
-
-#include <unsupported/Eigen/FFT>
-
 
 namespace MR
 {
