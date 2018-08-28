@@ -172,7 +172,7 @@ if app.args.mb:
     mb = int(app.args.mb)
 
 # Set OR loss
-or_option = ' -mb ' + str(mb)
+or_option = ' -mb ' + str(mb) + ' -export_error sliceerror.txt'
 if app.args.or_loss:
     or_option += ' -loss ' + app.args.or_loss
 
@@ -221,9 +221,23 @@ def reconstep(k):
                 ' -rf ' + ' -rf '.join(rfs) + ('' if k==0 else ' -motion motion.txt -weights sliceweights.txt -init recon-' + str(k-1) + '.mif') + ' -force' + nthr)
 
 
+def calcoutlierweights():
+    import numpy as np
+    from sklearn import mixture as mix
+    E = np.loadtxt('sliceerror.txt')
+    med = np.median(E)
+    mad = np.median(np.abs(E - med)) * 1.4826
+    gmm = mix.GaussianMixture(2, 'spherical', means_init=((med,), (3*med,)), precisions_init=(1/mad, 1/(3*mad)), weights_init=(.9, .1))
+    gmm.fit(E.reshape((-1,1)))
+    P = gmm.predict_proba(E.reshape((-1,1)))[:,0].reshape(dims[2:4])
+    if app.args.sliceweights:
+        W0 = np.loadtxt('sliceweights0.txt')
+        np.savetxt('sliceweights.txt', P*W0)
+    else:
+        np.savetxt('sliceweights.txt', P)
+
+
 def sliceweightstep(k):
-    #if app.args.sliceweights:
-    #    return
     mask_opt = ' -mask mask.mif' + (' -motion motion.txt' if k>0 else '')
     if app.args.matchintensity:
         run.command('dwisliceoutliers ' + inputfn + ' spred.mif' + mask_opt + ' sliceweights.txt' + or_option + ' -imscale imscale.mif -force')
@@ -235,12 +249,7 @@ def sliceweightstep(k):
             run.command('mrcalc biasfield.mif tmp2.mif 0 -eq 0 tmp1.mif tmp2.mif -divide -if -sub - | mrconvert - biasfield.mif -force')
     else:
         run.command('dwisliceoutliers ' + inputfn + ' spred.mif' + mask_opt + ' sliceweights.txt' + or_option + ' -force')
-    if app.args.sliceweights:
-        import numpy as np
-        w0 = np.loadtxt('sliceweights0.txt')
-        w1 = np.loadtxt('sliceweights.txt')
-        w1 *= w0 / np.mean(w0)
-        np.savetxt('sliceweights.txt', w1)
+    calcoutlierweights()
 
 
 def basisupdatestep(k):
