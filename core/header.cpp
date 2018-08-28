@@ -188,7 +188,6 @@ namespace MR
     try {
       INFO ("creating image \"" + image_name + "\"...");
       if (add_to_command_history) {
-        const std::string path_separators = std::string(PATH_SEPARATORS);
 
         auto argv_quoted = [] (const std::string& s) -> std::string {
           for (size_t i = 0; i != s.size(); ++i) {
