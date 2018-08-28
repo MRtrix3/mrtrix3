@@ -19,7 +19,6 @@ test_script:
   - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "./run_tests"
   - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "touch core/mrtrix.cpp && python2 ./build -nowarnings -nopaginate"
   - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "cp config config.python3 && python2 ./configure -assert && diff config config.python3"
-  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "python2 ./run_tests"
 
 artifacts:
   - path: configure.log
