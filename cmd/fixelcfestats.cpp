@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -73,7 +74,7 @@ void usage ()
     "NeuroImage, 2011, 54(3), 2006-19\n" ;
 
   ARGUMENTS
-  + Argument ("in_fixel_directory", "the fixel directory containing the data files for each subject (after obtaining fixel correspondence").type_file_in ()
+  + Argument ("in_fixel_directory", "the fixel directory containing the data files for each subject (after obtaining fixel correspondence").type_directory_in()
 
   + Argument ("subjects", "a text file listing the subject identifiers (one per line). This should correspond with the filenames "
                           "in the fixel directory (including the file extension), and be listed in the same order as the rows of the design matrix.").type_image_in ()
@@ -187,8 +188,9 @@ void run() {
     data_header.size(0) = num_fixels;
     data_header.size(1) = 1;
     data_header.size(2) = 1;
-    data_header.spacing(0) = data_header.spacing(1) = data_header.spacing(2) = NaN;
+    data_header.spacing(0) = data_header.spacing(1) = data_header.spacing(2) = 1.0;
     data_header.stride(0) = 1; data_header.stride(1) = 2; data_header.stride(2) = 3;
+    data_header.transform().setIdentity();
     mask = Image<bool>::scratch (data_header, "scratch fixel mask");
     for (index_type f = 0; f != num_fixels; ++f) {
       mask.index(0) = f;
@@ -229,10 +231,10 @@ void run() {
     std::ifstream ifs (argument[1].c_str());
     std::string temp;
     while (getline (ifs, temp)) {
-      std::string filename (Path::join (input_fixel_directory, temp));
-      size_t p = filename.find_last_not_of(" \t");
-      if (std::string::npos != p)
-        filename.erase(p+1);
+      temp = strip (temp);
+      if (temp.empty())
+        continue;
+      const std::string filename = Path::join (input_fixel_directory, temp);
       if (!MR::Path::exists (filename))
         throw Exception ("input fixel image not found: " + filename);
       header = Header::open (filename);
@@ -462,7 +464,7 @@ void run() {
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical CFE statistic
   if (do_nonstationary_adjustment) {
-
+    empirical_cfe_statistic = vector_type::Zero (mask_fixels);
     if (permutations_nonstationary.size()) {
       Stats::PermTest::PermutationStack permutations (permutations_nonstationary, "precomputing empirical statistic for non-stationarity adjustment");
       Stats::PermTest::precompute_empirical_stat (glm_ttest, cfe_integrator, permutations, empirical_cfe_statistic);

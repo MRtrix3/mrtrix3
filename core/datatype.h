@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -60,6 +61,17 @@ namespace MR
       }
       bool is_signed () const {
         return dt & Signed;
+      }
+      bool is_byte_order_native () {
+        if (bits() <= 8)
+          return true;
+        if (!is_little_endian() && !is_big_endian())
+          throw Exception ("byte order not set!");
+#ifdef MRTRIX_BYTE_ORDER_BIG_ENDIAN
+        return is_big_endian();
+#else
+        return is_little_endian();
+#endif
       }
       bool is_little_endian () const {
         return dt & LittleEndian;

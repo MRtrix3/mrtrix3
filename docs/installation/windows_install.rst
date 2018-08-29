@@ -169,37 +169,3 @@ Keeping *MRtrix3* up to date
 
    and re-run step 1 again.
 
-Compiling external projects with ``msys2``
-------------------------------------------
-
-In ``msys2``, the ``ln -s`` command actually creates a *copy* of the
-target, *not* a symbolic link. By doing so, the build script is unable
-to identify the location of the MRtrix libraries when trying to compile
-an external module.
-
-The simplest way around this is simply to invoke the build script of the main
-*MRtrix3* install directly. For example, if compiling an external project called
-``myproject``, residing in a folder alongside the main ``mrtrix3`` folder, the
-build script can be invoked with::
-
-    # current working directory is 'myproject':
-    ../mrtrix3/build
-
-If you really want a symbolic link, one solution is to use a standard Windows
-command prompt, with Administrator privileges: In the file explorer, go to
-``C:\Windows\system32``, locate the file ``cmd.exe``, right-click and
-select 'Run as administrator'. Within this prompt, use the ``mklink``
-command (note that the argument order passed to ``mklink`` is reversed
-with respect to ``ln -s``; i.e. provide the location of the link, *then*
-the target). Make sure that you provide the *full path* to both link and
-target, e.g.::
-
-    mklink C:\msys64\home\username\src\my_project\build C:\msys64\home\username\src\MRtrix3\build
-
-and ``msys64`` should be able to interpret the softlink path correctly
-(confirm with ``ls -la``).
-
-I have also found recently that the build script will not correctly detect use
-of a softlink for compiling an external project when run under Python2, so
-Python3 must be used explicitly.
- 

@@ -15,7 +15,7 @@ Usage
 
     dwiintensitynorm input_dir mask_dir output_dir fa_template wm_mask [ options ]
 
--  *input_dir*: The input directory containing all DWI images
+-  *input_dir*: The input directory containing all DWI images with embedded diffusion-weighted gradient scheme (in .mif or .mif.gz file format)
 -  *mask_dir*: Input directory containing brain masks, corresponding to one per input image (with the same file name prefix)
 -  *output_dir*: The output directory containing all of the intensity normalised DWI images
 -  *fa_template*: The output population specific FA template, which is threshold to estimate a white matter mask
@@ -32,7 +32,7 @@ Options
 Options for the dwiintensitynorm script
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-fa_threshold** The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask
+- **-fa_threshold** The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask (default: 0.4)
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -61,15 +61,15 @@ Standard options
 
 **Author:** David Raffelt (david.raffelt@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/.
+file, you can obtain one at http://mozilla.org/MPL/2.0/
 
-MRtrix is distributed in the hope that it will be useful,
+MRtrix3 is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty
 of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see http://www.mrtrix.org/.
+For more details, see http://www.mrtrix.org/
 

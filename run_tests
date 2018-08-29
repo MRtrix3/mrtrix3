@@ -1,7 +1,7 @@
 #!/bin/bash
 
 LOGFILE=testing.log
-echo logging to \""$LOGFILE"\" 
+echo logging to \""$LOGFILE"\"
 
 cat > $LOGFILE <<EOD
 -------------------------------------------
@@ -27,14 +27,18 @@ cat >> $LOGFILE <<EOD
 
 -------------------------------------------
 
-## building test commands... 
+## building test commands...
 
 EOD
 (
   cd testing
-  ../build 
+  if [ -z "$PYTHON" ]; then
+    ../build
+  else
+    $PYTHON ../build
+  fi
 ) >> $LOGFILE 2>&1
-if [ $? != 0 ]; then 
+if [ $? != 0 ]; then
   echo ERROR!
   exit 1
 else
@@ -55,7 +59,7 @@ a_script_has_failed=false
 
 cat >> $LOGFILE <<EOD
 
-PATH is set to $PATH 
+PATH is set to $PATH
 EOD
 
 
@@ -73,18 +77,20 @@ EOD
   ((ntests=0))
   ((success=0))
   while IFS='' read -r cmd || [[ -n "$cmd" ]]; do
-    echo -n '# command: '$cmd >> $LOGFILE 
+    cmd="${cmd%\#*}"
+    [[ -n "$cmd" ]] || continue
+    echo -n '# command: '$cmd >> $LOGFILE
     (
-      export PATH="$(pwd)/testing/bin:$(pwd)/bin:$PATH"; 
+      export PATH="$(pwd)/testing/bin:$(pwd)/bin:$PATH";
       cd testing/data/
       eval $cmd
-    ) > .__tmp.log 2>&1 
+    ) > .__tmp.log 2>&1
 
-    if [[ $? -ne 0 ]]; then 
+    if [[ $? -ne 0 ]]; then
       echo " [ ERROR ]" >> $LOGFILE
-    else 
+    else
       echo " [ ok ]" >> $LOGFILE
-      ((success++)); 
+      ((success++));
     fi
     cat .__tmp.log >> $LOGFILE
     echo "" >> $LOGFILE
@@ -94,7 +100,7 @@ EOD
   echo -n $success of $ntests passed
   if [[ $success -lt $ntests ]]; then
     echo "    <-------- ERROR"
-    a_script_has_failed=true 
+    a_script_has_failed=true
     cat >> $LOGFILE <<EOD
 
 ## ERROR: $(($ntests-$success)) tests failed for "${script}"
@@ -110,7 +116,7 @@ EOD
 
 done
 
-if [ ${a_script_has_failed} = true ]; 
+if [ ${a_script_has_failed} = true ];
 then
   exit 1
 fi

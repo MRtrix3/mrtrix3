@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -25,7 +26,7 @@ namespace MR {
   namespace DWI {
     namespace Tractography {
       namespace GT {
-        
+
         /**
          * @brief SpatialLock manages a mutex lock on n positions in 3D space.
          */
@@ -35,19 +36,19 @@ namespace MR {
         public:
           using value_type = T;
           using point_type = Eigen::Matrix<value_type, 3, 1>;
-          
+
           SpatialLock() : _tx(0), _ty(0), _tz(0) { }
           SpatialLock(const value_type t) : _tx(t), _ty(t), _tz(t) { }
           SpatialLock(const value_type tx, const value_type ty, const value_type tz) : _tx(tx), _ty(ty), _tz(tz) { }
-          
+
           ~SpatialLock() {
             lockcentres.clear();
           }
-          
+
           void setThreshold(const value_type t) {
             _tx = _ty = _tz = t;
           }
-          
+
           void setThreshold(const value_type tx, const value_type ty, const value_type tz) {
             _tx = tx;
             _ty = ty;
@@ -79,7 +80,7 @@ namespace MR {
 
           };
 
-          
+
         protected:
           std::mutex mutex;
           vector< std::pair<point_type, bool> > lockcentres;

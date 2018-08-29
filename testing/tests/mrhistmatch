@@ -1,0 +1,5 @@
+# Test "scale" mode
+M=$(bc <<< "scale=9; $RANDOM/16384") && echo $M > tmp1.txt && mrcalc b0.nii.gz $M -mult tmp1.mif -force && mrhistmatch scale b0.nii.gz tmp1.mif tmp2.mif -force && mrinfo tmp2.mif -property mrhistmatch_scale > tmp2.txt && testing_diff_matrix tmp1.txt tmp2.txt -frac 1e-4
+# Test "linear" mode
+# Note: Use fractional tolerance for scale parameter, absolute tolerance for offset parameter
+M=$(bc <<< "scale=9; $RANDOM/16384") && C=$(bc <<< "$RANDOM-16384") && echo $M > tmp1.txt && echo $C > tmp2.txt && mrcalc b0.nii.gz $M -mult $C -add tmp1.mif -force && mrhistmatch linear b0.nii.gz tmp1.mif tmp2.mif -force && mrinfo tmp2.mif -property mrhistmatch_scale > tmp3.txt && mrinfo tmp2.mif -property mrhistmatch_offset > tmp4.txt && testing_diff_matrix tmp1.txt tmp3.txt -frac 1e-4 && testing_diff_matrix tmp2.txt tmp4.txt -abs 0.5

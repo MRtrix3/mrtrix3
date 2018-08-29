@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -33,13 +34,11 @@ namespace MR
               const auto& p = tck[tck.get_seed_index()];
               (*output_seeds) << str(writer.count) << "," << str(tck.get_seed_index()) << "," << str(p[0]) << "," << str(p[1]) << "," << str(p[2]) << ",\n";
             }
-            writer (tck);
             switch (tck.get_status()) {
               case GeneratedTrack::status_t::INVALID: assert (0); break;
-              // Note intentiional lack of break usage
-              case GeneratedTrack::status_t::ACCEPTED: ++selected;
-              case GeneratedTrack::status_t::TRACK_REJECTED: ++streamlines;
-              case GeneratedTrack::status_t::SEED_REJECTED: ++seeds;
+              case GeneratedTrack::status_t::ACCEPTED: ++selected; ++streamlines; ++seeds; writer (tck); break;
+              case GeneratedTrack::status_t::TRACK_REJECTED: ++streamlines; ++seeds; writer.skip(); break;
+              case GeneratedTrack::status_t::SEED_REJECTED: ++seeds; break;
             }
             progress.update ([&](){ return printf ("%8" PRIu64 " seeds, %8" PRIu64 " streamlines, %8" PRIu64 " selected", seeds, streamlines, selected); }, always_increment ? true : tck.size());
             if (early_exit (seeds, selected)) {

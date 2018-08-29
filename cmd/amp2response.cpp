@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -56,10 +57,7 @@ void usage ()
 
    + "If multi-shell data are provided, and one or more b-value shells are not explicitly "
      "requested, the command will generate a response function for every b-value shell "
-     "(including b=0 if present)."
-
-   + "For details on the method provided by this command see: "
-     "https://www.researchgate.net/publication/307862932_Constrained_linear_least_squares_estimation_of_anisotropic_response_function_for_spherical_deconvolution";
+     "(including b=0 if present).";
 
   ARGUMENTS
     + Argument ("amps", "the amplitudes image").type_image_in()
@@ -75,11 +73,16 @@ void usage ()
     + Option ("directions", "provide an external text file containing the directions along which the amplitudes are sampled")
       + Argument("path").type_file_in()
 
-    + DWI::ShellOption
+    + DWI::ShellsOption
 
     + Option ("lmax", "specify the maximum harmonic degree of the response function to estimate "
                       "(can be a comma-separated list for multi-shell data)")
       + Argument ("values").type_sequence_int();
+
+  REFERENCES
+    + "Smith, R. E.; Dhollander, T. & Connelly, A. " // Internal
+      "Constrained linear least squares estimation of anisotropic response function for spherical deconvolution. "
+      "ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 23.";
 }
 
 
@@ -114,7 +117,7 @@ vector<size_t> all_volumes (const size_t num)
 }
 
 
-void run () 
+void run ()
 {
 
   // Get directions from either selecting a b-value shell, or the header, or external file
@@ -191,10 +194,20 @@ void run ()
   auto image = header.get_image<float>();
   auto mask = Image<bool>::open (argument[1]);
   check_dimensions (image, mask, 0, 3);
+  if (!(mask.ndim() == 3 || (mask.ndim() == 4 && mask.size(3) == 1)))
+    throw Exception ("input mask must be a 3D image");
   auto dir_image = Image<float>::open (argument[2]);
   if (dir_image.ndim() < 4 || dir_image.size(3) < 3)
     throw Exception ("input direction image \"" + std::string (argument[2]) + "\" does not have expected dimensions");
   check_dimensions (image, dir_image, 0, 3);
+
+  size_t num_voxels = 0;
+  for (auto l = Loop (mask, 0, 3) (mask); l; ++l) {
+    if (mask.value())
+      ++num_voxels;
+  }
+  if (!num_voxels)
+    throw Exception ("input mask does not contain any voxels");
 
   Eigen::MatrixXd responses (dirs_azel.size(), Math::ZSH::NforL (max_lmax));
 
@@ -205,8 +218,8 @@ void run ()
     Eigen::MatrixXd dirs_cartesian = Math::Sphere::spherical2cartesian (dirs_azel[shell_index]);
 
     // All directions from all SF voxels get concatenated into a single large matrix
-    Eigen::MatrixXd cat_transforms;
-    Eigen::VectorXd cat_data;
+    Eigen::MatrixXd cat_transforms (num_voxels * dirs_azel[shell_index].rows(), Math::ZSH::NforL (lmax[shell_index]));
+    Eigen::VectorXd cat_data (num_voxels * dirs_azel[shell_index].rows());
 
 #ifdef AMP2RESPONSE_DEBUG
     // To make sure we've got our data rotated correctly, let's generate a scatterplot of
@@ -214,8 +227,8 @@ void run ()
     Eigen::MatrixXd scatter;
 #endif
 
-    size_t sf_counter = 0;
-    for (auto l = Loop (mask) (image, mask, dir_image); l; ++l) {
+    size_t voxel_counter = 0;
+    for (auto l = Loop (mask, 0, 3) (image, mask, dir_image); l; ++l) {
       if (mask.value()) {
 
         // Grab the image data
@@ -288,11 +301,8 @@ void run ()
         Eigen::MatrixXd transform = Math::ZSH::init_amp_transform<default_type> (rotated_dirs_azel.col(1), lmax[shell_index]);
 
         // Concatenate these data to the ICLS matrices
-        const size_t old_rows = cat_transforms.rows();
-        cat_transforms.conservativeResize (old_rows + transform.rows(), transform.cols());
-        cat_transforms.block (old_rows, 0, transform.rows(), transform.cols()) = transform;
-        cat_data.conservativeResize (old_rows + data.size());
-        cat_data.tail (data.size()) = data;
+        cat_transforms.block (voxel_counter * data.size(), 0, transform.rows(), transform.cols()) = transform;
+        cat_data.segment (voxel_counter * data.size(), data.size()) = data;
 
 #ifdef AMP2RESPONSE_DEBUG
         scatter.conservativeResize (cat_data.size(), 2);
@@ -300,7 +310,7 @@ void run ()
         scatter.block (old_rows, 1, data.size(), 1) = data;
 #endif
 
-        ++sf_counter;
+        ++voxel_counter;
 
       }
     }
@@ -320,13 +330,12 @@ void run ()
         Eigen::HouseholderQR<Eigen::MatrixXd> solver (cat_transforms);
         rf = solver.solve (cat_data);
 
-        CONSOLE (shell_desc + "Response function [" + str(rf.transpose().cast<float>()) + "] solved via ordinary least-squares from " + str(sf_counter) + " voxels");
+        CONSOLE (shell_desc + "Response function [" + str(rf.transpose().cast<float>()) + "] solved via ordinary least-squares from " + str(voxel_counter) + " voxels");
 
       } else {
 
         // Generate the constraint matrix
         // We are going to both constrain the amplitudes to be non-negative, and constrain the derivatives to be non-negative
-        Eigen::MatrixXd constraints;
         const size_t num_angles_constraint = 90;
         Eigen::VectorXd els;
         els.resize (num_angles_constraint+1);
@@ -335,7 +344,7 @@ void run ()
         Eigen::MatrixXd amp_transform   = Math::ZSH::init_amp_transform  <default_type> (els, lmax[shell_index]);
         Eigen::MatrixXd deriv_transform = Math::ZSH::init_deriv_transform<default_type> (els, lmax[shell_index]);
 
-        constraints.resize (amp_transform.rows() + deriv_transform.rows(), amp_transform.cols());
+        Eigen::MatrixXd constraints (amp_transform.rows() + deriv_transform.rows(), amp_transform.cols());
         constraints.block (0, 0, amp_transform.rows(), amp_transform.cols()) = amp_transform;
         constraints.block (amp_transform.rows(), 0, deriv_transform.rows(), deriv_transform.cols()) = deriv_transform;
 
@@ -346,7 +355,7 @@ void run ()
         // Estimate the solution
         const size_t niter = solver (rf, cat_data);
 
-        CONSOLE (shell_desc + "Response function [" + str(rf.transpose().cast<float>()) + " ] solved after " + str(niter) + " constraint iterations from " + str(sf_counter) + " voxels");
+        CONSOLE (shell_desc + "Response function [" + str(rf.transpose().cast<float>()) + " ] solved after " + str(niter) + " constraint iterations from " + str(voxel_counter) + " voxels");
 
       }
 
@@ -356,7 +365,7 @@ void run ()
       rf.resize(1);
       rf[0] = cat_data.mean() * std::sqrt(4*Math::pi);
 
-      CONSOLE (shell_desc + "Response function [ " + str(float(rf[0])) + " ] from average of " + str(sf_counter) + " voxels");
+      CONSOLE (shell_desc + "Response function [ " + str(float(rf[0])) + " ] from average of " + str(voxel_counter) + " voxels");
 
     }
 
