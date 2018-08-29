@@ -13,8 +13,11 @@
  */
 
 
-#include "axes.h"
 #include "header.h"
+
+#include <cctype>
+
+#include "axes.h"
 #include "mrtrix.h"
 #include "phase_encoding.h"
 #include "stride.h"
@@ -22,6 +25,7 @@
 #include "image_io/default.h"
 #include "image_io/scratch.h"
 #include "file/name_parser.h"
+#include "file/path.h"
 #include "formats/list.h"
 
 namespace MR
@@ -185,9 +189,29 @@ namespace MR
       INFO ("creating image \"" + image_name + "\"...");
       if (add_to_command_history) {
 
+        auto argv_quoted = [] (const std::string& s) -> std::string {
+          for (size_t i = 0; i != s.size(); ++i) {
+            if (!(isalnum(s[i]) || s[i] == '.' || s[i] == '_' || s[i] == '-' || s[i] == '/')) {
+
+              std::string escaped_string ("\'");
+              for (auto c : s) {
+                switch (c) {
+                  case '\'': escaped_string.append ("\\\'"); break;
+                  case '\\': escaped_string.append ("\\\\"); break;
+                  default: escaped_string.push_back (c); break;
+                }
+              }
+              escaped_string.push_back ('\'');
+              return escaped_string;
+
+            }
+          }
+          return s;
+        };
+
         std::string cmd = App::argv[0];
         for (int n = 1; n < App::argc; ++n)
-          cmd += std::string(" \"") + App::argv[n] + "\"";
+          cmd += std::string(" ") + argv_quoted (App::argv[n]);
         cmd += std::string ("  (version=") + App::mrtrix_version;
         if (App::project_version)
           cmd += std::string (", project=") + App::project_version;
