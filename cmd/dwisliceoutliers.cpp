@@ -250,7 +250,8 @@ void run ()
 
   opt = get_options("export_error");
   if (opt.size()) {
-    save_matrix(E.cwiseQuotient(scale.replicate(E.rows(), 1)).replicate(mb, 1), opt[0][0]);
+    Eigen::MatrixXf Es = E.array().rowwise() / scale.transpose().array();
+    save_matrix(Es.replicate(mb, 1), opt[0][0]);
   }
 
   // Image scale output

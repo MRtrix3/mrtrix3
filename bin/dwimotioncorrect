@@ -217,8 +217,14 @@ def reconstep(k):
     if k > 0 and app.args.matchintensity:
         im = 'scaled.mif'
         run.command('mrcalc ' + inputfn + (' biasfield.mif -exp -mult' if app.args.matchintensity=='full' else '') + ' imscale.mif -mult ' + im + ' -force')
-    run.command('dwirecon ' + im + ' recon-' + str(k) + '.mif -spred spred.mif -maxiter ' + str(iters[k].recit) + reg_option + ssp_option +
-                ' -rf ' + ' -rf '.join(rfs) + ('' if k==0 else ' -motion motion.txt -weights sliceweights.txt -init recon-' + str(k-1) + '.mif') + ' -force' + nthr)
+    rcmd = 'dwirecon ' + im + ' recon-' + str(k) + '.mif -spred spred.mif -maxiter ' + str(iters[k].recit)
+    rcmd += reg_option + ssp_option + ' -rf ' + ' -rf '.join(rfs)
+    if k>0:
+        rcmd += ' -motion motion.txt -weights sliceweights.txt -init recon-' + str(k-1) + '.mif'
+    else if app.args.sliceweights:
+        rcmd += ' -weights sliceweights0.txt'
+    rcmd += ' -force' + nthr
+    run.command(rcmd)
 
 
 def calcoutlierweights():
