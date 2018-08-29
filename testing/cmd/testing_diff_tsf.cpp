@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -62,7 +63,7 @@ void run ()
         throw Exception ("track scalar length mismatch - test FAILED");
 
       for (size_t i = 0; i < tck_scalar1.size(); ++i) {
-        if (std::abs ((tck_scalar1[i] - tck_scalar2[i]) / (0.5 * (tck_scalar1[i] + tck_scalar2[i]))) > tol)
+        if (abs ((tck_scalar1[i] - tck_scalar2[i]) / (0.5 * (tck_scalar1[i] + tck_scalar2[i]))) > tol)
           throw Exception ("track scalar files \"" + str(argument[0]) + "\" and \"" + str(argument[1]) + "\" do not match within fractional precision of " + str(tol)
                            + " (" + str(cdouble (tck_scalar1[i])) + " vs " + str(cdouble (tck_scalar2[i])) + ")");
       }
@@ -82,7 +83,7 @@ void run ()
         throw Exception ("track scalar length mismatch - test FAILED");
 
       for (size_t i = 0; i < tck_scalar1.size(); ++i) {
-        if (std::abs (tck_scalar1[i] - tck_scalar2[i]) > tol)
+        if (abs (tck_scalar1[i] - tck_scalar2[i]) > tol)
           throw Exception ("track scalar files \"" + str(argument[0]) + "\" and \"" + str(argument[1]) + "\" do not match within absolute precision of " + str(tol)
                            + " (" + str(cdouble (tck_scalar1[i])) + " vs " + str(cdouble (tck_scalar2[i])) + ")");
       }

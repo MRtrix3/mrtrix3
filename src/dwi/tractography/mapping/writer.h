@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -102,8 +103,8 @@ namespace MR {
 
           public:
           MapWriter (const Header& header, const std::string& name, const vox_stat_t voxel_statistic = V_SUM, const writer_dim type = GREYSCALE) :
-            MapWriterBase (header, name, voxel_statistic, type),
-            buffer (Image<value_type>::scratch (header, "TWI " + str(writer_dims[type]) + " buffer"))
+              MapWriterBase (header, name, voxel_statistic, type),
+              buffer (Image<value_type>::scratch (header, "TWI " + str(writer_dims[type]) + " buffer"))
           {
             auto loop = Loop (buffer);
             if (type == DEC || type == TOD) {
@@ -125,7 +126,7 @@ namespace MR {
               } else if (voxel_statistic == V_MAX) {
                 for (auto l = loop (buffer); l; ++l )
                   buffer.value() = std::numeric_limits<value_type>::lowest();
-              } 
+              }
 /* shouldn't be needed: scratch IO class memset to zero already:
               else {
                 buffer.zero();
@@ -140,7 +141,7 @@ namespace MR {
                 (type == DEC && voxel_statistic == V_SUM))
             {
               Header H_counts (header);
-              if (type == DEC || type == TOD) 
+              if (type == DEC || type == TOD)
                 H_counts.ndim() = 3;
               counts.reset (new Image<float> (Image<float>::scratch (H_counts, "TWI streamline count buffer")));
             }
@@ -148,7 +149,7 @@ namespace MR {
 
           MapWriter (const MapWriter&) = delete;
 
-          void finalise () {
+          void finalise () override {
 
             auto loop = Loop (buffer, 0, 3);
             switch (voxel_statistic) {
@@ -177,21 +178,22 @@ namespace MR {
                 break;
 
               case V_MEAN:
-                assert (counts);
                 if (type == GREYSCALE) {
+                  assert (counts);
                   for (auto l = loop (buffer, *counts); l; ++l) {
                     if (counts->value())
                       buffer.value() /= value_type(counts->value());
                   }
-                } 
+                }
                 else if (type == DEC) {
                   for (auto l = loop (buffer); l; ++l) {
                     auto value = get_dec();
-                    if (value.squaredNorm()) 
+                    if (value.squaredNorm())
                       set_dec (value.normalized());
                   }
-                } 
+                }
                 else if (type == TOD) {
+                  assert (counts);
                   for (auto l = loop (buffer, *counts); l; ++l) {
                     if (counts->value()) {
                       VoxelTOD::vector_type value;
@@ -201,6 +203,7 @@ namespace MR {
                     }
                   }
                 } else { // Dixel
+                  assert (counts);
                   // TODO For dixels, should this be a voxel mean i.e. normalise each non-zero voxel to unit density,
                   //   rather than a per-dixel mean?
                   for (auto l = Loop (buffer) (buffer, *counts); l; ++l) {
@@ -233,15 +236,15 @@ namespace MR {
           }
 
 
-          bool operator() (const SetVoxel& in)    { receive_greyscale (in); return true; }
-          bool operator() (const SetVoxelDEC& in) { receive_dec       (in); return true; }
-          bool operator() (const SetDixel& in)    { receive_dixel     (in); return true; }
-          bool operator() (const SetVoxelTOD& in) { receive_tod       (in); return true; }
+          bool operator() (const SetVoxel& in)    override { receive_greyscale (in); return true; }
+          bool operator() (const SetVoxelDEC& in) override { receive_dec       (in); return true; }
+          bool operator() (const SetDixel& in)    override { receive_dixel     (in); return true; }
+          bool operator() (const SetVoxelTOD& in) override { receive_tod       (in); return true; }
 
-          bool operator() (const Gaussian::SetVoxel& in)    { receive_greyscale (in); return true; }
-          bool operator() (const Gaussian::SetVoxelDEC& in) { receive_dec       (in); return true; }
-          bool operator() (const Gaussian::SetDixel& in)    { receive_dixel     (in); return true; }
-          bool operator() (const Gaussian::SetVoxelTOD& in) { receive_tod       (in); return true; }
+          bool operator() (const Gaussian::SetVoxel& in)    override { receive_greyscale (in); return true; }
+          bool operator() (const Gaussian::SetVoxelDEC& in) override { receive_dec       (in); return true; }
+          bool operator() (const Gaussian::SetDixel& in)    override { receive_dixel     (in); return true; }
+          bool operator() (const Gaussian::SetVoxelTOD& in) override { receive_tod       (in); return true; }
 
 
           private:
@@ -293,7 +296,7 @@ namespace MR {
           void MapWriter<value_type>::receive_greyscale (const Cont& in)
           {
             assert (MapWriterBase::type == GREYSCALE);
-            for (const auto& i : in) { 
+            for (const auto& i : in) {
               assign_pos_of (i).to (buffer);
               const default_type factor = get_factor (i, in);
               const default_type weight = in.weight * i.get_length();
@@ -320,7 +323,7 @@ namespace MR {
           void MapWriter<value_type>::receive_dec (const Cont& in)
           {
             assert (type == DEC);
-            for (const auto& i : in) { 
+            for (const auto& i : in) {
               assign_pos_of (i).to (buffer);
               const default_type factor = get_factor (i, in);
               const default_type weight = in.weight * i.get_length();
@@ -340,9 +343,6 @@ namespace MR {
                   break;
                 case V_MEAN:
                   set_dec (current_value + (scaled_colour * weight));
-                  assert (counts);
-                  assign_pos_of (i).to (*counts);
-                  counts->value() += weight;
                   break;
                 case V_MAX:
                   if (scaled_colour.squaredNorm() > current_value.squaredNorm())
@@ -361,7 +361,7 @@ namespace MR {
           void MapWriter<value_type>::receive_dixel (const Cont& in)
           {
             assert (type == DIXEL);
-            for (const auto& i : in) { 
+            for (const auto& i : in) {
               assign_pos_of (i, 0, 3).to (buffer);
               buffer.index(3) = i.get_dir();
               const default_type factor = get_factor (i, in);
@@ -391,7 +391,7 @@ namespace MR {
           {
             assert (type == TOD);
             VoxelTOD::vector_type sh_coefs;
-            for (const auto& i : in) { 
+            for (const auto& i : in) {
               assign_pos_of (i, 0, 3).to (buffer);
               const default_type factor = get_factor (i, in);
               const default_type weight = in.weight * i.get_length();
@@ -485,7 +485,7 @@ namespace MR {
           {
             assert (type == TOD);
             sh_coefs.resize (buffer.size(3));
-            for (auto l = Loop (3) (buffer); l; ++l) 
+            for (auto l = Loop (3) (buffer); l; ++l)
               sh_coefs[buffer.index(3)] = buffer.value();
           }
 
@@ -494,7 +494,7 @@ namespace MR {
           {
             assert (type == TOD);
             assert (sh_coefs.size() == buffer.size(3));
-            for (auto l = Loop (3) (buffer); l; ++l) 
+            for (auto l = Loop (3) (buffer); l; ++l)
               buffer.value() = sh_coefs[buffer.index(3)];
           }
 

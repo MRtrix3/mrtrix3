@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -59,8 +60,11 @@ namespace MR
           + Argument ("value").type_float (0.0)
 
       + Option ("cutoff",
-            "set the FA or FOD amplitude cutoff for terminating tracks "
-            "(default is " + str(TCKGEN_DEFAULT_CUTOFF, 2) + ").")
+            "set the FOD amplitude / fixel size / tensor FA cutoff for terminating tracks "
+            "(defaults are: " +
+            str(TCKGEN_DEFAULT_CUTOFF_FOD, 2) + " for FOD-based algorithms; " +
+            str(TCKGEN_DEFAULT_CUTOFF_FIXEL, 2) + " for fixel-based algorithms; " +
+            str(TCKGEN_DEFAULT_CUTOFF_FA, 2) + " for tensor-based algorithms).")
           + Argument ("value").type_float (0.0)
 
       + Option ("trials",
@@ -72,15 +76,6 @@ namespace MR
             "do NOT pre-compute legendre polynomial values. Warning: "
             "this will slow down the algorithm by a factor of approximately 4.")
 
-      + Option ("power",
-            "raise the FOD to the power specified (default is 1/nsamples).")
-          + Argument ("value").type_float (0.0)
-
-      + Option ("samples",
-            "set the number of FOD samples to take per step for the 2nd order "
-            "(iFOD2) method (Default: " + str(TCKGEN_DEFAULT_IFOD2_NSAMPLES) + ").")
-          + Argument ("number").type_integer (2, 100)
-
       + Option ("rk4", "use 4th-order Runge-Kutta integration "
                        "(slower, but eliminates curvature overshoot in 1st-order deterministic methods)")
 
@@ -88,7 +83,7 @@ namespace MR
 
       + Option ("downsample", "downsample the generated streamlines to reduce output file size "
                               "(default is (samples-1) for iFOD2, no downsampling for all other algorithms)")
-          + Argument ("factor").type_integer (2);
+          + Argument ("factor").type_integer (1);
 
 
 
@@ -120,12 +115,6 @@ namespace MR
 
         opt = get_options ("noprecomputed");
         if (opt.size()) properties["sh_precomputed"] = "0";
-
-        opt = get_options ("power");
-        if (opt.size()) properties["fod_power"] = std::string (opt[0][0]);
-
-        opt = get_options ("samples");
-        if (opt.size()) properties["samples_per_step"] = str<unsigned int> (opt[0][0]);
 
         opt = get_options ("rk4");
         if (opt.size()) properties["rk4"] = "1";

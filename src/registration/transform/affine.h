@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -102,14 +103,14 @@ namespace MR
 
 
           Affine () : Base (12) {
-            //CONF option: reg_gdweight_matrix
+            //CONF option: RegGdWeightMatrix
             //CONF default: 0.0003
-            //CONF Linear registration: weight for optimisation of linear (3x3) matrix parameters
-            default_type w1 (MR::File::Config::get_float ("reg_gdweight_matrix", 0.0003f));
-            //CONF option: reg_gdweight_translation
+            //CONF Linear registration: weight for optimisation of linear (3x3) matrix parameters.
+            default_type w1 (MR::File::Config::get_float ("RegGdWeightMatrix", 0.0003f));
+            //CONF option: RegGdWeightTranslation
             //CONF default: 1
-            //CONF Linear registration: weight for optimisation of translation parameters
-            default_type w2 (MR::File::Config::get_float ("reg_gdweight_translation", 1.0f));
+            //CONF Linear registration: weight for optimisation of translation parameters.
+            default_type w2 (MR::File::Config::get_float ("RegGdWeightTranslation", 1.0f));
             const Eigen::Vector4d weights (w1, w1, w1, w2);
             this->optimiser_weights << weights, weights, weights;
           }

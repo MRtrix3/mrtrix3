@@ -1,6 +1,4 @@
-def initialise(base_parser, subparsers):
-  import argparse
-  from mrtrix3 import app
+def initialise(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('fsl', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Use FSL commands to generate the 5TT image based on a T1-weighted image', parents=[base_parser])
   parser.addCitation('', 'Smith, S. M. Fast robust automated brain extraction. Human Brain Mapping, 2002, 17, 143-155', True)
   parser.addCitation('', 'Zhang, Y.; Brady, M. & Smith, S. Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. IEEE Transactions on Medical Imaging, 2001, 20, 45-57', True)
@@ -16,30 +14,28 @@ def initialise(base_parser, subparsers):
 
 
 
-def checkOutputPaths():
+def checkOutputPaths(): #pylint: disable=unused-variable
   pass
 
 
 
-def getInputs():
-  import os
+def getInputs(): #pylint: disable=unused-variable
   from mrtrix3 import app, image, path, run
   image.check3DNonunity(path.fromUser(app.args.input, False))
   run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('input.mif', True))
   if app.args.mask:
-    run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit -stride -1,+2,+3')
+    run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit -strides -1,+2,+3')
   if app.args.t2:
     if not image.match(app.args.input, app.args.t2):
       app.error('Provided T2 image does not match input T1 image')
-    run.command('mrconvert ' + path.fromUser(app.args.t2, True) + ' ' + path.toTemp('T2.nii', True) + ' -stride -1,+2,+3')
+    run.command('mrconvert ' + path.fromUser(app.args.t2, True) + ' ' + path.toTemp('T2.nii', True) + ' -strides -1,+2,+3')
 
 
 
 
-def execute():
-  import os
-  from distutils.spawn import find_executable
-  from mrtrix3 import app, file, fsl, image, path, run
+def execute(): #pylint: disable=unused-variable
+  import math, os
+  from mrtrix3 import app, fsl, image, path, run
 
   if app.isWindows():
     app.error('\'fsl\' algorithm of 5ttgen script cannot be run on Windows: FSL not available on Windows')
@@ -48,32 +44,12 @@ def execute():
   if not fsl_path:
     app.error('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
 
-  ssroi_cmd = 'standard_space_roi'
-  if not find_executable(ssroi_cmd):
-    ssroi_cmd = 'fsl5.0-standard_space_roi'
-    if not find_executable(ssroi_cmd):
-      app.error('Could not find FSL program standard_space_roi; please verify FSL install')
-
-  bet_cmd = 'bet'
-  if not find_executable(bet_cmd):
-    bet_cmd = 'fsl5.0-bet'
-    if not find_executable(bet_cmd):
-      app.error('Could not find FSL program bet; please verify FSL install')
-
-  fast_cmd = 'fast'
-  if not find_executable(fast_cmd):
-    fast_cmd = 'fsl5.0-fast'
-    if not find_executable(fast_cmd):
-      app.error('Could not find FSL program fast; please verify FSL install')
-
-  first_cmd = 'run_first_all'
-  if not find_executable(first_cmd):
-    first_cmd = "fsl5.0-run_first_all"
-    if not find_executable(first_cmd):
-      app.error('Could not find FSL program run_first_all; please verify FSL install')
+  bet_cmd = fsl.exeName('bet')
+  fast_cmd = fsl.exeName('fast')
+  first_cmd = fsl.exeName('run_first_all')
+  ssroi_cmd = fsl.exeName('standard_space_roi')
 
   first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
-
   if not os.path.isdir(first_atlas_path):
     app.error('Atlases required for FSL\'s FIRST program not installed; please install fsl-first-data using your relevant package manager')
 
@@ -83,7 +59,16 @@ def execute():
   if app.args.sgm_amyg_hipp:
     sgm_structures.extend([ 'L_Amyg', 'R_Amyg', 'L_Hipp', 'R_Hipp' ])
 
-  run.command('mrconvert input.mif T1.nii -stride -1,+2,+3')
+  t1_spacing = image.Header('input.mif').spacing()
+  upsample_for_first = False
+  # If voxel size is 1.25mm or larger, make a guess that the user has erroneously re-gridded their data
+  if math.pow(t1_spacing[0] * t1_spacing[1] * t1_spacing[2], 1.0/3.0) > 1.225:
+    app.warn('Voxel size larger than expected for T1-weighted images (' + str(t1_spacing) + '); '
+             'note that ACT does not require re-gridding of T1 image to DWI space, and indeed '
+             'retaining the original higher resolution of the T1 image is preferable')
+    upsample_for_first = True
+
+  run.command('mrconvert input.mif T1.nii -strides -1,+2,+3')
 
   fast_t1_input = 'T1.nii'
   fast_t2_input = ''
@@ -99,8 +84,8 @@ def execute():
       mask_path = 'mask.mif'
     else:
       app.warn('Mask image does not match input image - re-gridding')
-      run.command('mrtransform mask.mif mask_regrid.mif -template T1.nii')
-      run.command('mrcalc T1.nii mask_regrid.mif ' + fast_t1_input)
+      run.command('mrtransform mask.mif mask_regrid.mif -template T1.nii -datatype bit')
+      run.command('mrcalc T1.nii mask_regrid.mif -mult ' + fast_t1_input)
       mask_path = 'mask_regrid.mif'
 
     if os.path.exists('T2.nii'):
@@ -119,13 +104,13 @@ def execute():
     # Also reduce the FoV of the image
     # Using MNI 1mm dilated brain mask rather than the -b option in standard_space_roi (which uses the 2mm mask); the latter looks 'buggy' to me... Unfortunately even with the 1mm 'dilated' mask, it can still cut into some brain areas, hence the explicit dilation
     mni_mask_path = os.path.join(fsl_path, 'data', 'standard', 'MNI152_T1_1mm_brain_mask_dil.nii.gz')
-    mni_mask_dilation = 0;
+    mni_mask_dilation = 0
     if os.path.exists (mni_mask_path):
-      mni_mask_dilation = 4;
+      mni_mask_dilation = 4
     else:
       mni_mask_path = os.path.join(fsl_path, 'data', 'standard', 'MNI152_T1_2mm_brain_mask_dil.nii.gz')
       if os.path.exists (mni_mask_path):
-        mni_mask_dilation = 2;
+        mni_mask_dilation = 2
     if mni_mask_dilation:
       run.command('maskfilter ' + mni_mask_path + ' dilate mni_mask.nii -npass ' + str(mni_mask_dilation))
       if app.args.nocrop:
@@ -158,38 +143,36 @@ def execute():
     run.command(fast_cmd + ' ' + fast_t1_input)
 
   # FIRST
-  first_input_is_brain_extracted = ''
+  first_input = 'T1.nii'
+  if upsample_for_first:
+    app.warn('Generating 1mm isotropic T1 image for FIRST in hope of preventing failure, since input image is of lower resolution')
+    run.command('mrresize T1.nii T1_1mm.nii -voxel 1.0 -interp sinc')
+    first_input = 'T1_1mm.nii'
+  first_input_brain_extracted_option = ''
   if app.args.premasked:
-    first_input_is_brain_extracted = ' -b'
-  run.command(first_cmd + ' -m none -s ' + ','.join(sgm_structures) + ' -i T1.nii -o first' + first_input_is_brain_extracted)
-
-  # Test to see whether or not FIRST has succeeded
-  # However if the expected image is absent, it may be due to FIRST being run
-  #   on SGE; in this case it is necessary to wait and see if the file appears.
-  #   But even in this case, FIRST may still fail, and the file will never appear...
-  combined_image_path = 'first_all_none_firstseg' + fsl_suffix
-  if not os.path.isfile(combined_image_path):
-    if 'SGE_ROOT' in os.environ:
-      app.console('FSL FIRST job has been submitted to SGE; awaiting completion')
-      app.console('(note however that FIRST may fail silently, and hence this script may hang indefinitely)')
-      file.waitFor(combined_image_path)
-    else:
-      combined_image_path = fsl.findImage('first_all_none_firstseg')
-      if not os.path.isfile(combined_image_path):
-        app.error('FSL FIRST has failed; not all structures were segmented successfully (check ' + 
-path.toTemp('first.logs', False) + ')')
+    first_input_brain_extracted_option = ' -b'
+  first_debug_option = ''
+  if not app.cleanup:
+    first_debug_option = ' -d'
+  first_verbosity_option = ''
+  if app.verbosity == 3:
+    first_verbosity_option = ' -v'
+  run.command(first_cmd + ' -m none -s ' + ','.join(sgm_structures) + ' -i ' + first_input + ' -o first' + first_input_brain_extracted_option + first_debug_option + first_verbosity_option)
+  fsl.checkFirst('first', sgm_structures)
 
   # Convert FIRST meshes to partial volume images
   pve_image_list = [ ]
+  progress = app.progressBar('Generating partial volume images for SGM structures', len(sgm_structures))
   for struct in sgm_structures:
-    pve_image_path = 'mesh2pve_' + struct + '.mif'
+    pve_image_path = 'mesh2voxel_' + struct + '.mif'
     vtk_in_path = 'first-' + struct + '_first.vtk'
     vtk_temp_path = struct + '.vtk'
-    run.command('meshconvert ' + vtk_in_path + ' ' + vtk_temp_path + ' -transform first2real T1.nii')
-    run.command('mesh2pve ' + vtk_temp_path + ' ' + fast_t1_input + ' ' + pve_image_path)
+    run.command('meshconvert ' + vtk_in_path + ' ' + vtk_temp_path + ' -transform first2real ' + first_input)
+    run.command('mesh2voxel ' + vtk_temp_path + ' ' + fast_t1_input + ' ' + pve_image_path)
     pve_image_list.append(pve_image_path)
-  pve_cat = ' '.join(pve_image_list)
-  run.command('mrmath ' + pve_cat + ' sum - | mrcalc - 1.0 -min all_sgms.mif')
+    progress.increment()
+  progress.done()
+  run.command('mrmath ' + ' '.join(pve_image_list) + ' sum - | mrcalc - 1.0 -min all_sgms.mif')
 
   # Combine the tissue images into the 5TT format within the script itself
   fast_output_prefix = fast_t1_input.split('.')[0]
@@ -209,11 +192,12 @@ path.toTemp('first.logs', False) + ')')
   run.command('mrcalc ' + fast_gm_output + ' multiplier_noNAN.mif -mult remove_unconnected_wm_mask.mif -mult cgm.mif')
   run.command('mrcalc ' + fast_wm_output + ' multiplier_noNAN.mif -mult remove_unconnected_wm_mask.mif -mult wm.mif')
   run.command('mrcalc 0 wm.mif -min path.mif')
-  run.command('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | mrconvert - combined_precrop.mif -stride +2,+3,+4,+1')
+  run.command('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | mrconvert - combined_precrop.mif -strides +2,+3,+4,+1')
 
   # Use mrcrop to reduce file size (improves caching of image data during tracking)
   if app.args.nocrop:
-    run.command('mrconvert combined_precrop.mif result.mif')
+    run.function(os.rename, 'combined_precrop.mif', 'result.mif')
   else:
     run.command('mrmath combined_precrop.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrcrop combined_precrop.mif result.mif -mask -')
 
+  run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + app.mrconvertOutputOption(path.fromUser(app.args.input, True)))
