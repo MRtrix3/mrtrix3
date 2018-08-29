@@ -35,8 +35,8 @@ namespace MR
                 "non-negativity constraint (default = " + str(DEFAULT_MSMTCSD_NEG_LAMBDA, 2) + ").")
       + Argument ("value").type_float (0.0)
 
-      + Option ("modelled",
-                "return the modelled dwi image.")
+      + Option ("predicted_signal",
+                "the predicted dwi image.")
       + Argument ("image").type_image_out();
 
 

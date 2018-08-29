@@ -292,7 +292,7 @@ void run ()
     }
 
     Image<float> dwi_modelled;
-    auto opt = get_options ("modelled");
+    auto opt = get_options ("predicted_signal");
     if (opt.size())
       dwi_modelled = Image<float>::create (opt[0][0], header_in);
 
