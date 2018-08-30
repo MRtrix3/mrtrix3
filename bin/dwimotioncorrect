@@ -221,7 +221,7 @@ def reconstep(k):
     rcmd += reg_option + ssp_option + ' -rf ' + ' -rf '.join(rfs)
     if k>0:
         rcmd += ' -motion motion.txt -weights sliceweights.txt -init recon-' + str(k-1) + '.mif'
-    else if app.args.sliceweights:
+    elif app.args.sliceweights:
         rcmd += ' -weights sliceweights0.txt'
     rcmd += ' -force' + nthr
     run.command(rcmd)
@@ -230,7 +230,7 @@ def reconstep(k):
 def calcoutlierweights():
     import numpy as np
     from sklearn import mixture as mix
-    E = np.loadtxt('sliceerror.txt')
+    E = np.log(np.loadtxt('sliceerror.txt'))
     med = np.median(E)
     mad = np.median(np.abs(E - med)) * 1.4826
     gmm = mix.GaussianMixture(2, 'spherical', means_init=((med,), (3*med,)), precisions_init=(1/mad, 1/(3*mad)), weights_init=(.9, .1))
