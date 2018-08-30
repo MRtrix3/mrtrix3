@@ -192,14 +192,14 @@ def execute(): #pylint: disable=unused-variable
   run.command('amp2response dwi.mif voxels_sfwm.mif safe_vecs.mif response_sfwm.txt' + bvalues_option + sfwm_lmax_option)
 
 
-  # SUMMARY AND OUTPUT
+  # OUTPUT AND SUMMARY
 
   # Generate 4D binary images with voxel selections at major stages in algorithm (RGB: WM=blue, GM=green, CSF=red).
   run.command('mrcat crude_csf.mif crude_gm.mif crude_wm.mif check_crude.mif -axis 3')
   run.command('mrcat refined_csf.mif refined_gm.mif refined_wm.mif check_refined.mif -axis 3')
   run.command('mrcat voxels_csf.mif voxels_gm.mif voxels_sfwm.mif check_voxels.mif -axis 3')
 
-  # Copy response functions to output files
+  # Copy results to output files
   run.function(shutil.copyfile, 'response_sfwm.txt', path.fromUser(app.args.out_sfwm, False))
   run.function(shutil.copyfile, 'response_gm.txt', path.fromUser(app.args.out_gm, False))
   run.function(shutil.copyfile, 'response_csf.txt', path.fromUser(app.args.out_csf, False))
