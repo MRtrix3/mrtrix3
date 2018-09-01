@@ -7,7 +7,7 @@ _suffix = ''
 #   the output files to appear.
 def checkFirst(prefix, structures): #pylint: disable=unused-variable
   import os
-  from mrtrix3 import app, file, path # pylint: disable=redefined-builtin
+  from mrtrix3 import app, file, MRtrixException, path # pylint: disable=redefined-builtin
   vtk_files = [ prefix + '-' + struct + '_first.vtk' for struct in structures ]
   existing_file_count = sum([ os.path.exists(filename) for filename in vtk_files ])
   if existing_file_count != len(vtk_files):
@@ -16,7 +16,7 @@ def checkFirst(prefix, structures): #pylint: disable=unused-variable
       app.console('(note however that FIRST may fail silently, and hence this script may hang indefinitely)')
       file.waitFor(vtk_files)
     else:
-      app.error('FSL FIRST has failed; only ' + str(existing_file_count) + ' of ' + str(len(vtk_files)) + ' structures were segmented successfully (check ' + path.toTemp('first.logs', False) + ')')
+      raise MRtrixException('FSL FIRST has failed; only ' + str(existing_file_count) + ' of ' + str(len(vtk_files)) + ' structures were segmented successfully (check ' + path.toTemp('first.logs', False) + ')')
 
 
 
@@ -68,15 +68,15 @@ def eddyBinary(cuda): #pylint: disable=unused-variable
 #   makes it more convenient to locate these commands.
 # Note that if FSL 4 and 5 are installed side-by-side, the approach taken in this
 #   function will select the version 5 executable.
-def exeName(name, required=True): #pylint: disable=unused-variable
-  from mrtrix3 import app
+def exeName(name): #pylint: disable=unused-variable
+  from mrtrix3 import app, MRtrixException
   from distutils.spawn import find_executable
   if find_executable('fsl5.0-' + name):
     output = 'fsl5.0-' + name
   elif find_executable(name):
     output = name
-  elif required:
-    app.error('Could not find FSL program \"' + name + '\"; please verify FSL install')
+  else:
+    raise MRtrixException('Could not find FSL program \"' + name + '\"; please verify FSL install')
   app.debug(output)
   return output
 
@@ -88,7 +88,7 @@ def exeName(name, required=True): #pylint: disable=unused-variable
 # Whenever receiving an output image from an FSL command, explicitly search for the path
 def findImage(name): #pylint: disable=unused-variable
   import os
-  from mrtrix3 import app
+  from mrtrix3 import app, MRtrixException
   prefix = os.path.join(os.path.dirname(name), os.path.basename(name).split('.')[0])
   if os.path.isfile(prefix + suffix()):
     app.debug('Image at expected location: \"' + prefix + suffix() + '\"')
@@ -97,8 +97,7 @@ def findImage(name): #pylint: disable=unused-variable
     if os.path.isfile(prefix + suf):
       app.debug('Expected image at \"' + prefix + suffix() + '\", but found at \"' + prefix + suf + '\"')
       return prefix + suf
-  app.error('Unable to find FSL output file for path \"' + name + '\"')
-  return ''
+  raise MRtrixException('Unable to find FSL output file for path \"' + name + '\"')
 
 
 
@@ -108,7 +107,7 @@ def findImage(name): #pylint: disable=unused-variable
 #   of images provided by FSL commands will be.
 def suffix(): #pylint: disable=unused-variable
   import os
-  from mrtrix3 import app
+  from mrtrix3 import app, MRtrixException
   global _suffix
   if _suffix:
     return _suffix
@@ -123,7 +122,7 @@ def suffix(): #pylint: disable=unused-variable
     app.debug('NIFTI_PAIR -> .img')
     _suffix = '.img'
   elif fsl_output_type == 'NIFTI_PAIR_GZ':
-    app.error('MRtrix3 does not support compressed NIFTI pairs; please change FSLOUTPUTTYPE environment variable')
+    raise MRtrixException('MRtrix3 does not support compressed NIFTI pairs; please change FSLOUTPUTTYPE environment variable')
   elif fsl_output_type:
     app.warn('Unrecognised value for environment variable FSLOUTPUTTYPE (\"' + fsl_output_type + '\"): Expecting compressed NIfTIs, but FSL commands may fail')
     _suffix = '.nii.gz'

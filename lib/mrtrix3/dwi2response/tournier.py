@@ -1,5 +1,7 @@
-def initialise(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('tournier', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Use the Tournier et al. (2013) iterative algorithm for single-fibre voxel selection and response function estimation', parents=[base_parser])
+def usage(base_parser, subparsers): #pylint: disable=unused-variable
+  parser = subparsers.add_parser('tournier', parents=[base_parser])
+  parser.setAuthor('Robert E. Smith (robert.smith@florey.edu.au)')
+  parser.setSynopsis('Use the Tournier et al. (2013) iterative algorithm for single-fibre voxel selection and response function estimation')
   parser.addCitation('', 'Tournier, J.-D.; Calamante, F. & Connelly, A. Determination of the appropriate b-value and number of gradient directions for high-angular-resolution diffusion-weighted imaging. NMR Biomedicine, 2013, 26, 1775-1786', False)
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('output', help='The output response function text file')
@@ -29,14 +31,14 @@ def needsSingleShell(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import os, shutil
-  from mrtrix3 import app, file, image, path, run #pylint: disable=redefined-builtin
+  from mrtrix3 import app, file, image, MRtrixException, path, run #pylint: disable=redefined-builtin
 
   lmax_option = ''
   if app.args.lmax:
     lmax_option = ' -lmax ' + app.args.lmax
 
   if app.args.max_iters < 2:
-    app.error('Number of iterations must be at least 2')
+    raise MRtrixException('Number of iterations must be at least 2')
 
   for iteration in range(0, app.args.max_iters):
     prefix = 'iter' + str(iteration) + '_'

@@ -7,7 +7,7 @@
 class Header(object):
   def __init__(self, image_path):
     import json, os, subprocess
-    from mrtrix3 import app, path, run
+    from mrtrix3 import app, MRtrixException, path, run
     filename = path.newTemporary('json')
     command = [ run.exeName(run.versionMatch('mrinfo')), image_path, '-json_all', filename ]
     if app.verbosity > 1:
@@ -15,7 +15,7 @@ class Header(object):
     app.debug(str(command))
     result = subprocess.call(command, stdout=None, stderr=None)
     if result:
-      app.error('Could not access header information for image \'' + image_path + '\'')
+      raise MRtrixException('Could not access header information for image \'' + image_path + '\'')
     with open(filename, 'r') as f:
       data = json.load(f)
     os.remove(filename)
@@ -38,7 +38,7 @@ class Header(object):
       else:
         self._keyval = data['keyval']
     except:
-      app.error('Error in reading header information from file \'' + image_path + '\'')
+      raise MRtrixException('Error in reading header information from file \'' + image_path + '\'')
     app.debug(str(vars(self)))
 
   def name(self):
@@ -70,7 +70,7 @@ class Header(object):
 #   an axis index, nor a phase-encoding indication string (e.g. AP);
 #   it only accepts NIfTI codes, i.e. i, i-, j, j-, k, k-
 def axis2dir(string): #pylint: disable=unused-variable
-  from mrtrix3 import app
+  from mrtrix3 import app, MRtrixException
   if string == 'i':
     direction = [1,0,0]
   elif string == 'i-':
@@ -84,7 +84,7 @@ def axis2dir(string): #pylint: disable=unused-variable
   elif string == 'k-':
     direction = [0,0,-1]
   else:
-    app.error('Unrecognized NIfTI axis & direction specifier: ' + string)
+    raise MRtrixException('Unrecognized NIfTI axis & direction specifier: ' + string)
   app.debug(string + ' -> ' + str(direction))
   return direction
 
@@ -94,15 +94,15 @@ def axis2dir(string): #pylint: disable=unused-variable
 #   have dimension greater than one: This means that the data can plausibly represent
 #   spatial information, and 3D interpolation can be performed
 def check3DNonunity(image_in): #pylint: disable=unused-variable
-  from mrtrix3 import app
+  from mrtrix3 import app, MRtrixException
   if not isinstance(image_in, Header):
     if not isinstance(image_in, str):
-      app.error('Error trying to test \'' + str(image_in) + '\': Not an image header or file path')
+      raise MRtrixException('Error trying to test \'' + str(image_in) + '\': Not an image header or file path')
     image_in = Header(image_in)
   if len(image_in.size()) < 3:
-    app.error('Image \'' + image_in.name() + '\' does not contain 3 spatial dimensions')
+    raise MRtrixException('Image \'' + image_in.name() + '\' does not contain 3 spatial dimensions')
   if min(image_in.size()[:3]) == 1:
-    app.error('Image \'' + image_in.name() + '\' does not contain 3D spatial information (has axis with size 1)')
+    raise MRtrixException('Image \'' + image_in.name() + '\' does not contain 3D spatial information (has axis with size 1)')
   app.debug('Image \'' + image_in.name() + '\' is >= 3D, and does not contain a unity spatial dimension')
 
 
@@ -133,14 +133,14 @@ def mrinfo(image_path, field): #pylint: disable=unused-variable
 # Inputs can be either _Header class instances, or file paths
 def match(image_one, image_two, max_dim=0): #pylint: disable=unused-variable, too-many-return-statements
   import math
-  from mrtrix3 import app
+  from mrtrix3 import app, MRtrixException
   if not isinstance(image_one, Header):
     if not isinstance(image_one, str):
-      app.error('Error trying to test \'' + str(image_one) + '\': Not an image header or file path')
+      raise MRtrixException('Error trying to test \'' + str(image_one) + '\': Not an image header or file path')
     image_one = Header(image_one)
   if not isinstance(image_two, Header):
     if not isinstance(image_two, str):
-      app.error('Error trying to test \'' + str(image_two) + '\': Not an image header or file path')
+      raise MRtrixException('Error trying to test \'' + str(image_two) + '\': Not an image header or file path')
     image_two = Header(image_two)
   debug_prefix = '\'' + image_one.name() + '\' \'' + image_two.name() + '\''
   # Handle possibility of only checking up to a certain axis
@@ -181,7 +181,7 @@ def match(image_one, image_two, max_dim=0): #pylint: disable=unused-variable, to
 # Computes image statistics using mrstats.
 def statistic(image_path, stat, options=''): #pylint: disable=unused-variable
   import shlex, subprocess
-  from mrtrix3 import app, run
+  from mrtrix3 import app, MRtrixException, run
   command = [ run.exeName(run.versionMatch('mrstats')), image_path, '-output', stat ]
   if options:
     command.extend(shlex.split(options))
@@ -193,5 +193,5 @@ def statistic(image_path, stat, options=''): #pylint: disable=unused-variable
   if app.verbosity > 1:
     app.console('Result: ' + result)
   if proc.returncode:
-    app.error('Error trying to calculate statistic \'' + statistic + '\' from image \'' + image_path + '\'')
+    raise MRtrixException('Error trying to calculate statistic \'' + statistic + '\' from image \'' + image_path + '\'')
   return result

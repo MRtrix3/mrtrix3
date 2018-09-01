@@ -65,18 +65,10 @@ def makeDir(path): #pylint: disable=unused-variable
 # Note: Doesn't actually create a file; just gives a unique name that won't over-write anything
 def newTempFile(suffix): #pylint: disable=unused-variable
   import os.path, random, string
-  from mrtrix3 import app
-  if 'TmpFileDir' in app.config:
-    dir_path = app.config['TmpFileDir']
-  elif app.tempDir:
-    dir_path = app.tempDir
-  else:
-    dir_path = os.getcwd()
+  from mrtrix3 import app, config
+  dir_path = config['TmpFileDir'] if 'TmpFileDir' in config else (app.tempDir if app.tempDir else os.getcwd())
   app.debug(dir_path)
-  if 'TmpFilePrefix' in app.config:
-    prefix = app.config['TmpFilePrefix']
-  else:
-    prefix = 'mrtrix-tmp-'
+  prefix = config['TmpFilePrefix'] if 'TmpFilePrefix' in config else 'mrtrix-tmp-'
   app.debug(prefix)
   full_path = dir_path
   suffix = suffix.lstrip('.')
@@ -107,14 +99,14 @@ def newTempFile(suffix): #pylint: disable=unused-variable
 #   for the file once a minute.
 def waitFor(paths): #pylint: disable=unused-variable
   import os, time
-  from mrtrix3 import app
+  from mrtrix3 import app, isWindows
 
   def inUse(path):
     import subprocess
     from distutils.spawn import find_executable
     if not os.path.isfile(path):
       return None
-    if app.isWindows():
+    if isWindows():
       if not os.access(path, os.W_OK):
         return None
       try:

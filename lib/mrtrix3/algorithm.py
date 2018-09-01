@@ -32,15 +32,15 @@ def getList(): #pylint: disable=unused-variable
 # Note: This function essentially duplicates the current state of app.cmdline in order for command-line
 #   options common to all algorithms of a particular script to be applicable once any particular sub-parser
 #   is invoked. Therefore this function must be called _after_ all such options are set up.
-def initialise(): #pylint: disable=unused-variable
+def usage(cmdline): #pylint: disable=unused-variable
   import importlib, pkgutil
   from mrtrix3 import app, path
   initlist = [ ]
-  base_parser = app.Parser(description='Base parser for construction of subparsers', parents=[app.cmdline])
-  subparsers = app.cmdline.add_subparsers(title='Algorithm choices', help='Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: ' + ', '.join(getList()), dest='algorithm')
+  base_parser = app.Parser(description='Base parser for construction of subparsers', parents=[cmdline])
+  subparsers = cmdline.add_subparsers(title='Algorithm choices', help='Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: ' + ', '.join(getList()), dest='algorithm')
   for dummy_importer, package_name, dummy_ispkg in pkgutil.iter_modules( [ _algorithmsPath() ] ):
     module = importlib.import_module('mrtrix3.' + path.scriptSubDirName() + '.' + package_name)
-    module.initialise(base_parser, subparsers)
+    module.usage(base_parser, subparsers)
     initlist.extend(package_name)
   app.debug('Initialised algorithms: ' + str(initlist))
 

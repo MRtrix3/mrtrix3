@@ -1,5 +1,7 @@
-def initialise(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('fsl', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Use FSL commands to generate the 5TT image based on a T1-weighted image', parents=[base_parser])
+def usage(base_parser, subparsers): #pylint: disable=unused-variable
+  parser = subparsers.add_parser('fsl', parents=[base_parser])
+  parser.setAuthor('Robert E. Smith (robert.smith@florey.edu.au)')
+  parser.setSynopsis('Use FSL commands to generate the 5TT image based on a T1-weighted image')
   parser.addCitation('', 'Smith, S. M. Fast robust automated brain extraction. Human Brain Mapping, 2002, 17, 143-155', True)
   parser.addCitation('', 'Zhang, Y.; Brady, M. & Smith, S. Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. IEEE Transactions on Medical Imaging, 2001, 20, 45-57', True)
   parser.addCitation('', 'Patenaude, B.; Smith, S. M.; Kennedy, D. N. & Jenkinson, M. A Bayesian model of shape and appearance for subcortical brain segmentation. NeuroImage, 2011, 56, 907-922', True)
@@ -15,19 +17,20 @@ def initialise(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def checkOutputPaths(): #pylint: disable=unused-variable
-  pass
+  from mrtrix3 import app
+  app.checkOutputPath(app.args.output)
 
 
 
 def getInputs(): #pylint: disable=unused-variable
-  from mrtrix3 import app, image, path, run
+  from mrtrix3 import app, image, MRtrixException, path, run
   image.check3DNonunity(path.fromUser(app.args.input, False))
   run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('input.mif', True))
   if app.args.mask:
     run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit -strides -1,+2,+3')
   if app.args.t2:
     if not image.match(app.args.input, app.args.t2):
-      app.error('Provided T2 image does not match input T1 image')
+      raise MRtrixException('Provided T2 image does not match input T1 image')
     run.command('mrconvert ' + path.fromUser(app.args.t2, True) + ' ' + path.toTemp('T2.nii', True) + ' -strides -1,+2,+3')
 
 
@@ -35,14 +38,14 @@ def getInputs(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import math, os
-  from mrtrix3 import app, fsl, image, path, run
+  from mrtrix3 import app, fsl, image, isWindows, MRtrixException, path, run
 
-  if app.isWindows():
-    app.error('\'fsl\' algorithm of 5ttgen script cannot be run on Windows: FSL not available on Windows')
+  if isWindows():
+    raise MRtrixException('\'fsl\' algorithm of 5ttgen script cannot be run on Windows: FSL not available on Windows')
 
   fsl_path = os.environ.get('FSLDIR', '')
   if not fsl_path:
-    app.error('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
+    raise MRtrixException('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
 
   bet_cmd = fsl.exeName('bet')
   fast_cmd = fsl.exeName('fast')
@@ -51,7 +54,7 @@ def execute(): #pylint: disable=unused-variable
 
   first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
   if not os.path.isdir(first_atlas_path):
-    app.error('Atlases required for FSL\'s FIRST program not installed; please install fsl-first-data using your relevant package manager')
+    raise MRtrixException('Atlases required for FSL\'s FIRST program not installed; please install fsl-first-data using your relevant package manager')
 
   fsl_suffix = fsl.suffix()
 
@@ -111,16 +114,24 @@ def execute(): #pylint: disable=unused-variable
       mni_mask_path = os.path.join(fsl_path, 'data', 'standard', 'MNI152_T1_2mm_brain_mask_dil.nii.gz')
       if os.path.exists (mni_mask_path):
         mni_mask_dilation = 2
-    if mni_mask_dilation:
-      run.command('maskfilter ' + mni_mask_path + ' dilate mni_mask.nii -npass ' + str(mni_mask_dilation))
-      if app.args.nocrop:
-        ssroi_roi_option = ' -roiNONE'
+    try:
+      if mni_mask_dilation:
+        run.command('maskfilter ' + mni_mask_path + ' dilate mni_mask.nii -npass ' + str(mni_mask_dilation))
+        if app.args.nocrop:
+          ssroi_roi_option = ' -roiNONE'
+        else:
+          ssroi_roi_option = ' -roiFOV'
+        run.command(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -maskMASK mni_mask.nii' + ssroi_roi_option)
       else:
-        ssroi_roi_option = ' -roiFOV'
-      run.command(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -maskMASK mni_mask.nii' + ssroi_roi_option, False)
-    else:
-      run.command(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -b', False)
-    pre_bet_image = fsl.findImage('T1_preBET')
+        run.command(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -b')
+    except run.MRtrixCmdException:
+      pass
+    try:
+      pre_bet_image = fsl.findImage('T1_preBET')
+    except MRtrixException:
+      app.warn('FSL script \'standard_space_roi\' did not complete successfully; '
+               'attempting to continue by providing un-cropped image to BET')
+      pre_bet_image = 'T1.nii'
 
     # BET
     run.command(bet_cmd + ' ' + pre_bet_image + ' T1_BET' + fsl_suffix + ' -f 0.15 -R')
