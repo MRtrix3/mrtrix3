@@ -54,9 +54,9 @@ A robust and fully automated (unsupervised) method to obtain 3-tissue response f
 
 It is crucial for fixel-based analysis to only use a single *unique* set of the (three) response functions to perform (3-tissue) spherical deconvolution of all subjects: as the (3-tissue) spherical deconvolution results will be expressed in function of this set of response functions, they can (in an abstract way) be seen as the units of both the final apparent fibre density metric and the other compartments estimated in the model. A possible way to obtain a unique set of response functions, is to average the response functions obtained from all subjects for each tissue type::
 
-    average_response */response_wm.txt ../group_average_response_wm.txt
-    average_response */response_gm.txt ../group_average_response_gm.txt
-    average_response */response_csf.txt ../group_average_response_csf.txt
+    responsemean */response_wm.txt ../group_average_response_wm.txt
+    responsemean */response_gm.txt ../group_average_response_gm.txt
+    responsemean */response_csf.txt ../group_average_response_csf.txt
 
 There is however no strict requirement for the final set of response functions to be the average of *all* subject response functions (for each tissue type). In certain very specific cases, it may even be wise to leave out subjects (for this step) where the response functions could not reliably be obtained, or where pathology affected the brain globally.
 

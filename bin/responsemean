@@ -1,0 +1,81 @@
+#!/usr/bin/env python
+
+def usage(cmdline): #pylint: disable=unused-variable
+  cmdline.setAuthor('David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)')
+  cmdline.setSynopsis('Calculate the mean response function from a set of text files')
+  cmdline.addDescription('Example usage: ' + sys.argv[0] + ' input_response1.txt input_response2.txt input_response3.txt ... output_average_response.txt')
+  cmdline.addDescription('All response function files provided must contain the same number of unique b-values (lines), as well as the same number of coefficients per line.')
+  cmdline.addDescription('As long as the number of unique b-values is identical across all input files, the coefficients will be averaged. This is performed on the assumption that the actual acquired b-values are identical. This is however impossible for the ' + os.path.basename(sys.argv[0]) + ' command to determine based on the data provided; it is therefore up to the user to ensure that this requirement is satisfied.')
+  cmdline.add_argument('inputs', help='The input response functions', nargs='+')
+  cmdline.add_argument('output', help='The output mean response function')
+  cmdline.add_argument('-legacy', help='Use the legacy behaviour of former command \'average_response\': average response function coefficients directly, without compensating for global magnitude differences between input files')
+
+
+
+def execute(): #pylint: disable=unused-variable
+  from mrtrix3 import MRtrixException
+  import math
+
+  app.checkOutputPath(app.args.output)
+
+  data = [ ] # 3D matrix: Subject, b-value, ZSH coefficient
+  for filepath in app.args.inputs:
+    with open(filepath, 'r') as f:
+      try:
+        subject = [ [ float(f) for f in line.split() ] for line in f.read().splitlines() ]
+      except ValueError:
+        raise MRtrixException('File \'' + filepath + '\' contains non-numerical values')
+    if any(len(line) != len(subject[0]) for line in subject[1:]):
+      raise MRtrixException('File \'' + filepath + '\' does not contain the same number of entries per line (multi-shell response functions must have the same number of coefficients per b-value; pad the data with zeroes if necessary)')
+    if data:
+      if len(subject) != len(data[0]):
+        raise MRtrixException('File \'' + filepath + '\' contains ' + str(len(subject)) + ' b-value' + ('s' if len(subject) > 1 else '') + ' (line' + ('s' if len(subject) > 1 else '') + '); this differs from the first file read (' + sys.argv[1] + '), which contains ' + str(len(data[0])) + ' line' + ('s' if len(data[0]) > 1 else ''))
+      if len(subject[0]) != len(data[0][0]):
+        raise MRtrixException('File \'' + filepath + '\' contains ' + str(len(subject[0])) + ' coefficient' + ('s' if len(subject[0]) > 1 else '') + ' per b-value (line); this differs from the first file read (' + sys.argv[1] + '), which contains ' + str(len(data[0][0])) + ' coefficient' + ('s' if len(data[0][0]) > 1 else '') + ' per line')
+    data.append(subject)
+
+  app.console('Calculating mean RF across ' + str(len(data)) + ' inputs, with ' + str(len(data[0])) + ' b-value' + ('s' if len(data[0])>1 else '') + ' and lmax=' + str(2*(len(data[0][0])-1)))
+
+  # Old approach: Just take the average across all subjects
+  # New approach: Calculate a multiplier to use for each subject, based on the geometric mean
+  #   scaling factor required to bring the subject toward the group mean l=0 terms (across shells)
+
+  mean_lzero_terms = [ sum([ subject[row][0] for subject in data ])/len(data) for row in range(len(data[0])) ]
+  app.var(mean_lzero_terms)
+
+  weighted_sum_coeffs = [[0.0] * len(data[0][0]) for _ in range(len(data[0]))] #pylint: disable=unused-variable
+  sum_weights = 0.0
+  for subject in data:
+    if app.args.legacy:
+      multiplier = 1.0
+    else:
+      subj_lzero_terms = [line[0] for line in subject]
+      log_multiplier = 0.0
+      for subj_lzero, mean_lzero in zip(subj_lzero_terms, mean_lzero_terms):
+        log_multiplier += math.log(mean_lzero / subj_lzero)
+      log_multiplier /= len(data[0])
+      multiplier = math.exp(log_multiplier)
+      app.var(subj_lzero_terms, multiplier)
+    weighted_sum_coeffs = [ [ a + multiplier*b for a, b in zip(linea, lineb) ] for linea, lineb in zip(weighted_sum_coeffs, subject) ]
+    sum_weights += multiplier
+  app.var(sum_weights)
+  mean_coeffs = [ [ f/sum_weights for f in line ] for line in weighted_sum_coeffs ]
+
+  with open(app.args.output, 'w') as f:
+    for line in mean_coeffs:
+      f.write(' '.join([ "{0:.5f}".format(f) for f in line ]) + '\n')
+
+
+
+
+
+# Make the corresponding MRtrix3 Python libraries available
+import inspect, os, sys
+lib_folder = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
+if not os.path.isdir(lib_folder):
+  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
+  sys.exit(1)
+sys.path.insert(0, lib_folder)
+# Execute the script
+from mrtrix3 import app
+app.execute()

@@ -99,7 +99,7 @@ A robust and fully automated (unsupervised) method to obtain single-shell respon
 
 It is crucial for fixel-based analysis to only use a single *unique* response function to perform spherical deconvolution of all subjects: as all resulting fibre orientation distributions will be expressed in function of it, it can (in an abstract way) be seen as the unit of the final apparent fibre density metric. A possible way to obtain a unique response function, is to average the response functions obtained from all subjects::
 
-    average_response */response.txt ../group_average_response.txt
+    responsemean */response.txt ../group_average_response.txt
 
 There is however no strict requirement for the (one) final response function to be the average of *all* subject response functions. In certain very specific cases, it may even be wise to leave out subjects (for this step) where a response function could not reliably be obtained, or where pathology affected the brain globally.
 
