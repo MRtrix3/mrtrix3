@@ -27,6 +27,7 @@ def getInputs(): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
+  import os
   from mrtrix3 import app, path, run
 
   # Generate the images related to each tissue

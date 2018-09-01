@@ -12,7 +12,7 @@ opt_N4BiasFieldCorrection = {
 
 def usage(cmdline): #pylint: disable=unused-variable
   cmdline.setAuthor('Robert E. Smith (robert.smith@florey.edu.au)')
-  cmdline.ssetSynopsis('Perform B1 field inhomogeneity correction for a DWI volume series')
+  cmdline.setSynopsis('Perform B1 field inhomogeneity correction for a DWI volume series')
   cmdline.addCitation('If using -fast option', 'Zhang, Y.; Brady, M. & Smith, S. Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. IEEE Transactions on Medical Imaging, 2001, 20, 45-57', True)
   cmdline.addCitation('If using -fast option', 'Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219', True)
   cmdline.addCitation('If using -ants option', 'Tustison, N.; Avants, B.; Cook, P.; Zheng, Y.; Egan, A.; Yushkevich, P. & Gee, J. N4ITK: Improved N3 Bias Correction. IEEE Transactions on Medical Imaging, 2010, 29, 1310-1320', True)
