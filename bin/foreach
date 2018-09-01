@@ -1,130 +1,191 @@
-#!/bin/bash
-
-if [ $# -eq 0 ]; then
-  cat <<HELP_PAGE
-USAGE: 
-  $ foreach [-N] [-v] <pattern> : command ...
-
-  For example: 
-    $ foreach folder/*.mif : mrinfo IN
-  will run mrinfo for each matching file in "folder"
-
-AVAILABLE SUBSTITUTIONS:
-  IN:   the full matching pattern, including leading folders
-        For example, if the target list contains a file "folder/image.mif",
-        any occurrence of "IN" will be substituted with "folder/image.mif".
-  NAME: the basename of the matching pattern 
-        For example, if the target list contains a file "folder/image.mif",
-        any occurrence of "NAME" will be substituted with "image.mif".
-  PRE:  the prefix of the matching pattern 
-        For example, if the target list contains a file "folder/image.mif",
-        any occurrence of "PRE" will be substituted with "image".
-  UNI:  the unique prefix of the matching pattern after removing the common suffix
-        For example, if the target list contains files:
-        "folder/001dwi.mif", "folder/002dwi.mif", "folder/003dwi.mif" 
-        any occurrence of "UNI" will be substituted with "001", "002", "003".
-
-PARALLEL PROCESSING: 
-  To run multiple jobs at once, add the -N option before the colon,
-  where N is the number of concurrent jobs required. 
-  
-  For example: 
-    $ foreach -32 input/* : mrconvert IN output/NAME
-  will run up to 32 of the required jobs in parallel
-
-SEQUENTIAL PROCESSING:
-  To run a series of sequential jobs for each input file, you can 
-  use these standard shell constructs: 
-     | ; && ||
-  Note that these will need to quoted in inverted commas to prevent 
-  the shell from interpreting them.
-  
-  For example:
-
-    $ foreach -8 images/*.nii : \\
-      echo processing NAME... ";" \\
-      mrcalc IN mask/PRE.mif -mult "images masked"/PRE.mif -quiet "&&" \\
-      mrstats IN -mask images\\ masked/PRE.mif \\| tail -n 1
-
-  will run the three commands specified for each input file one 
-  after the other, and run 8 of these processing pipelines in parallel. 
-  It will only invoke the mrstats command if the previous mrmath 
-  command completes without errors, since the "&&" construct was used 
-  (see below). Note that the backslash character ("\\") can be used to 
-  break a command over multiple lines; this can help to make your
-  scripts more readable.
-
-  For reference:
-     |   pipe the output of current command into the input of the next
-     ;   means "run next command regardless of what happens with the 
-         current command"
-     &&  means "run next command only if current command succeeds
-         without error (i.e. returns with a zero exit code)
-     ||  means "run next command only if current command fails
-
-HANDLING SPACES IN FILE NAMES:
-  The example above also illustrates how spaces in filenames (and other 
-  non-standard characters) can be handled (the "images masked" folder):
-  either using inverted commas, or by prefixing the relevant characters 
-  with a backslash ("\\").
-
-HELP_PAGE
-
-  exit 1
-fi
+#!/usr/bin/env python
 
 
-# extract list of targets and number of jobs if specified:
-args=()
-njobs=""
-verbose=""
-while (( "$#" )); do
-  if [ "x$1" == "x:" ]; then break; fi
-  if [ "x$1" == "x-v" ]; then
-    verbose="true"
-  elif [ "x${1:0:1}" == "x-" ]; then 
-    njobs="-P ${1:1} "
-  else
-    args+=("$1")
-  fi
-  shift
-done
+
+def usage(cmdline): #pylint: disable=unused-variable
+  cmdline.setAuthor('Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)')
+  cmdline.setSynopsis('Perform some arbitrary processing step for each of a set of inputs')
+  cmdline.addDescription('EXAMPLE USAGE: \n' \
+                             '  $ foreach folder/*.mif "mrinfo IN"   \n'
+                             '  will run mrinfo for each .mif file in "folder"')
+  cmdline.addDescription('AVAILABLE SUBSTITUTIONS: \n' \
+                             '  IN:   The full matching pattern, including leading folders. For example, if the target list contains a file "folder/image.mif", any occurrence of "IN" will be substituted with "folder/image.mif".' \
+                             '  NAME: The basename of the matching pattern. For example, if the target list contains a file "folder/image.mif", any occurrence of "NAME" will be substituted with "image.mif".' \
+                             '  PRE:  The prefix of the basename. For example, if the target list contains a file "folder/image.mif", any occurrence of "PRE" will be substituted with "image".' \
+                             '  UNI:  The unique prefix of the basename after removing the common suffix. For example, if the target list contains files: "folder/001dwi.mif", "folder/002dwi.mif", "folder/003dwi.mif", any occurrence of "UNI" will be substituted with "001", "002", "003".')
+  cmdline.add_argument('inputs',  help='Each of the inputs for which processing should be run', nargs='+')
+  cmdline.add_argument('command', help='The command string to run for each input, containing the substitutions listed in the Description section', type=str)
 
 
-# extract command to run:
-shift
-while (( "$#" )); do
-  cmd+="\"$1\" "
-  shift
-done
 
-if [ x"$cmd" == "x" ]; then
-  echo "error: no command specified!"
-  exit 1
-fi
 
-common_suffix=`printf '%s\n' "${args[@]}" | rev | sed -e '1{h;d;}' -e 'G;s,\(.*\).*\n\1.*,\1,;h;$!d' | rev`
 
-( for arg in "${args[@]}"; do 
-  name=$(basename "$arg")
-  pre="${name%.*}"
-  uni=$(basename "$arg" "$common_suffix")
+import threading
 
-  actual_cmd=${cmd//IN/$arg}
-  actual_cmd=${actual_cmd//NAME/$name}
-  actual_cmd=${actual_cmd//PRE/$pre}
-  actual_cmd=${actual_cmd//UNI/$uni}
-  actual_cmd=${actual_cmd//\"|\"/|}
-  actual_cmd=${actual_cmd//\";\"/;}
-  actual_cmd=${actual_cmd//\"&&\"/&&}
-  actual_cmd=${actual_cmd//\"||\"/||}
-  
-  if [ "x$verbose" == "xtrue" ]; then 
-    printf "executing: %s\n" "$actual_cmd" 1>&2
-  fi
-  
-  echo $actual_cmd
+# These need to be globals in order to be accessible from execute_parallel()
+job_index = 0
+lock = threading.Lock()
+stop = False
 
-#done ) | tr '\n' '\0' |  xargs -0 printf "\"%s\"\n"
-done ) | tr '\n' '\0' |  xargs -0 $njobs -n 1 bash -c 
 
+
+
+
+def execute(): #pylint: disable=unused-variable
+  import shlex
+  from mrtrix3 import MRtrixException, run
+
+  app.var(str(app.args.inputs))
+  app.var(app.args.command)
+
+  common_prefix = os.path.commonprefix(app.args.inputs)
+  common_suffix = os.path.commonprefix([i[::-1] for i in app.args.inputs])[::-1]
+  app.var(common_prefix, common_suffix)
+
+  cmdsplit = shlex.split(app.args.command)
+  app.var(cmdsplit)
+
+  for entry in cmdsplit:
+    if os.path.exists(entry):
+      keys_present = [ key for key in [ 'IN', 'NAME', 'PRE', 'UNI' ] if key in entry ]
+      if keys_present:
+        app.warn('Performing text substitution of ' + str(keys_present) + ' within command: "' + entry + '"; but the original text exists as a path on the file system... is this a problematic filesystem path?')
+
+  class Entry(object):
+    def __init__(self, input_text):
+      self.sub_in = input_text
+      self.sub_name = os.path.basename(input_text)
+      self.sub_pre = self.sub_name.split('.')[0]
+      self.sub_uni = self.sub_name[:-len(common_suffix)]
+
+      self.substitutions = { 'IN': self.sub_in, 'NAME': self.sub_name, 'PRE': self.sub_pre, 'UNI': self.sub_uni }
+      app.var(input, self.substitutions)
+
+      self.cmd = [ ]
+      for entry in cmdsplit:
+        for (key, value) in self.substitutions.items():
+          entry = entry.replace(key, value)
+        if ' ' in entry:
+          entry = '"' + entry + '"'
+        self.cmd.append(entry)
+      app.var(self.cmd)
+
+      self.outputtext = None
+      self.returncode = None
+
+  jobs = [ ]
+  for i in app.args.inputs:
+    jobs.append(Entry(i))
+
+  parallel = app.numThreads is not None and app.numThreads > 1
+
+  progress = app.progressBar('Executing ' + str(len(jobs)) + ' jobs ' + ('across ' + str(app.numThreads) + ' threads' if parallel else 'sequentially'), len(jobs))
+
+  def execute_parallel():
+    global job_index, lock, stop
+    while not stop:
+      my_job = None
+      with lock:
+        if job_index < len(jobs):
+          my_job = jobs[job_index]
+          job_index += 1
+          stop = job_index == len(jobs)
+      if not my_job:
+        return
+      try:
+        if any([ 'foreach' in s for s in my_job.cmd ]):
+          raise run.MRtrixCmdException(my_job.cmd, 1, '', 'Running for foreach')
+        result = run.command(' '.join(my_job.cmd))
+        my_job.outputtext = result.stdout + result.stderr
+        my_job.returncode = 0
+      except run.MRtrixCmdException as e:
+        my_job.outputtext = str(e)
+        my_job.returncode = e.returncode
+      except Exception as e: # pylint: disable=broad-except
+        my_job.outputtext = str(e)
+        my_job.returncode = 1
+      with lock:
+        progress.increment()
+
+  if parallel:
+    threads = [ ]
+    for i in range (1, app.numThreads):
+      t = threading.Thread(target=execute_parallel)
+      t.start()
+      threads.append(t)
+    execute_parallel()
+    for t in threads:
+      t.join()
+
+  else:
+    for job in jobs:
+      try:
+        if any([ 'foreach' in s for s in job.cmd ]):
+          raise run.MRtrixCmdException(job.cmd, 1, '', 'Running for foreach')
+        result = run.command(' '.join(job.cmd))
+        job.outputtext = result.stdout + result.stderr
+        job.returncode = 0
+      except run.MRtrixCmdException as e:
+        job.outputtext = str(e)
+        job.returncode = e.returncode
+      except Exception as e: # pylint: disable=broad-except
+        job.outputtext = str(e)
+        job.returncode = 1
+      progress.increment()
+
+  progress.done()
+
+  assert all([ job.returncode is not None for job in jobs ])
+  fail_count = sum([ 1 if job.returncode else 0 for job in jobs ])
+  app.var(fail_count)
+  if fail_count:
+    app.warn(str(fail_count) + ' of ' + str(len(jobs)) + ' jobs did not complete successfully')
+    if fail_count > 1:
+      app.warn('Outputs from failed commands:')
+      sys.stderr.write(app.execName + ':\n')
+    else:
+      app.warn('Output from failed command:')
+    for job in jobs:
+      if job.returncode:
+        if job.outputtext:
+          app.warn('For input "' + job.sub_in + '" (returncode = ' + str(job.returncode) + '):')
+          for line in job.outputtext.splitlines():
+            sys.stderr.write(' ' * (len(app.execName)+2) + line + '\n')
+        else:
+          app.warn('No output from command for input "' + job.sub_in + '" (return code = ' + str(job.returncode) + ')')
+        if fail_count > 1:
+          sys.stderr.write(app.execName + ':\n')
+    raise MRtrixException(str(fail_count) + ' of ' + str(len(jobs)) + ' jobs did not complete successfully')
+
+  if app.verbosity > 1:
+    if any(job.outputtext for job in jobs):
+      sys.stderr.write(app.execName + ':\n')
+      for job in jobs:
+        if job.outputtext:
+          app.console('Output of command for input "' + job.sub_in + '":')
+          for line in job.outputtext.splitlines():
+            sys.stderr.write(' ' * (len(app.execName)+2) + line + '\n')
+        else:
+          app.console('No output from command for input "' + job.sub_in + '"')
+        sys.stderr.write(app.execName + ':\n')
+    else:
+      app.console('No output from command for any inputs')
+
+  app.console('Command reported successful completion for all inputs')
+
+
+
+
+
+
+
+# Make the corresponding MRtrix3 Python libraries available
+import inspect, os, sys
+lib_folder = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
+if not os.path.isdir(lib_folder):
+  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
+  sys.exit(1)
+sys.path.insert(0, lib_folder)
+# Execute the script
+from mrtrix3 import app
+app.execute()

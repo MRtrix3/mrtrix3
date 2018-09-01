@@ -3,7 +3,7 @@
 Batch processing with ``foreach``
 =====================================
 
-Image processing often involves executing the same command on many different subjects or time points within a study. MRtrix includes a bash script called ``foreach`` to simplify this process. The main benefit of using ``foreach`` compared to a bash ``for`` loop is a simpler and less verbose syntax. However other benefits include multi-threaded job execution (to exploit modern multi-core CPUs when the command being run is not already multi-threaded), and automatic identification of path basenames and prefixes. To view the full help page run ``foreach`` on the command line with no arguments.
+Image processing often involves executing the same command on many different subjects or time points within a study. *MRtrix3* includes a Python script called ``foreach`` to simplify this process. The main benefit of using ``foreach`` compared to a bash ``for`` loop is a simpler and less verbose syntax. However other benefits include multi-threaded job execution (to exploit modern multi-core CPUs when the command being run is not already multi-threaded), and automatic identification of path basenames and prefixes. To view the full help page run ``foreach`` on the command line with no arguments.
 
 
 Example 1 - using IN
@@ -19,9 +19,9 @@ Many people like to organise their imaging datasets with one directory per subje
 
 The foreach script can be used to run the same command on each subject, for example::
 
-  $ foreach study/* : dwidenoise IN/dwi.mif IN/dwi_denoised.mif
+  $ foreach study/* "dwidenoise IN/dwi.mif IN/dwi_denoised.mif"
 
-The first part of the command above is the ``foreach`` script name, followed by the pattern matching string (``study/*``) to identify all the files (which in this case are directories) to be looped over. The colon is used to separate the pattern matching from the start of the command. In this example the ``dwidenoise`` command will be run multiple times, by substituting the keyword ``IN`` with each of the directories that match the pattern (``study/001_patient``, ``study/002_patient``, etc).
+The first part of the command above is the ``foreach`` script name, followed by the pattern matching string (``study/*``) to identify all the files (which in this case are directories) to be looped over. The final string input is the command to be executed. In this example the ``dwidenoise`` command will be run multiple times, by substituting the keyword ``IN`` with each of the directories that match the pattern (``study/001_patient``, ``study/002_patient``, etc).
 
 Example 2 - using NAME
 -----------------------
@@ -41,7 +41,7 @@ The ``NAME`` keyword can be used in this situation to obtain the basename of the
 .. code-block:: console
 
   $ mkdir study/dwi_denoised
-  $ foreach study/dwi/* : dwidenoise IN study/dwi_denoised/NAME
+  $ foreach study/dwi/* "dwidenoise IN study/dwi_denoised/NAME"
 
 Here, the IN keyword will be substituted with the full string from the matching pattern (``study/dwi/001_patient.mif``, ``study/dwi/002_patient.mif``, etc), however the NAME keyword will be replaced with the *basename* of the matching pattern (``001_patient.mif``, ``002_patient.mif``, etc).
 
@@ -51,7 +51,7 @@ Alternatively, the same result can be achieved by running foreach from inside th
 
   $ mkdir study/dwi_denoised
   $ cd study/dwi
-  $ foreach * : dwidenoise IN ../dwi_denoised/IN
+  $ foreach * "dwidenoise IN ../dwi_denoised/IN"
 
 
 Example 3 - using PRE
@@ -60,7 +60,7 @@ For this example let us assume we want to convert all dwi.mif files from example
 
 .. code-block:: console
 
-  $ foreach study/dwi/* : mrconvert IN study/dwi/PRE.nii
+  $ foreach study/dwi/* "mrconvert IN study/dwi/PRE.nii"
   $ rm *.mif
 
 There the PRE keyword will be replaced by the file basename, without the file extension.
@@ -68,32 +68,28 @@ There the PRE keyword will be replaced by the file basename, without the file ex
 
 Example 4 - Sequential Processing
 ---------------------------------
-As an example of a single ``foreach`` command running multiple sequential commands (e.g. with the bash ``;``, ``|``, ``&&``, ``||`` operators), lets assume in the previous example we wanted to remove the ``*.mif`` files as they were converted. We could use the ``&&`` operator, which means "run next command only if current command succeeds without error".
+As an example of a single ``foreach`` command running multiple sequential commands (e.g. with the bash ``;``, ``|``, ``&&``, ``||`` operators), let's assume in the previous example we wanted to remove the ``*.mif`` files as they were converted. We could use the ``&&`` operator, which means "run next command only if current command succeeds without error".
 
 .. code-block:: console
 
-  $ foreach study/dwi/* : mrconvert IN study/dwi/PRE.nii "&&" rm IN
+  $ foreach study/dwi/* "mrconvert IN study/dwi/PRE.nii && rm IN"
 
 
-As shown the ``&&`` operator must be escaped with quotes to prevent the shell from interpreting it. Bash operator characters can also be escaped with the "\" character, for example to :ref:`pipe an image <unix_pipelines>` between two MRtrix commands (assuming the data set directory layout from example 1):
+The ``&&`` operator does not need to be escaped here since it is defined within a string input. The same applies to the piping character `|`, to :ref:`pipe an image <unix_pipelines>` between two MRtrix commands (assuming the data set directory layout from example 1):
 
 .. code-block:: console
 
-  $ foreach study/* : dwiextract -bzero IN/dwi.mif - \| mrmath - mean -axis 3 IN/mean_b0.mif
+  $ foreach study/* "dwiextract -bzero IN/dwi.mif - | mrmath - mean -axis 3 IN/mean_b0.mif"
 
 
 Example 5 - Parallel Processing
 -------------------------------
-To run multiple jobs at once, add the -N option before the colon, where N is the number of concurrent jobs required. For example:
+To run multiple jobs at once, use the standard *MRtrix3* command-line option ``-nthreads N``, where N is the number of concurrent jobs required. For example:
 
 .. code-block:: console
 
-  $ foreach -8 study/* : dwidenoise IN/dwi.mif IN/dwi_denoised.mif
+  $ foreach study/* "dwidenoise IN/dwi.mif IN/dwi_denoised.mif" -nthreads 8
 
-will run up to 8 of the required jobs in parallel. Note that most MRtrix commands are multi-threaded and will use all available CPU cores, and therefore running multiple jobs in parallel is unlikely to benefit the computation time.
-
-
-
-
+will run up to 8 of the required jobs in parallel. Note that most *MRtrix3* commands are multi-threaded, and will hence *individually* use all available CPU cores; in this case, running multiple jobs in parallel using ``foreach`` is unlikely to benefit the computation time. If however a particular command is known to be single-threaded (and your system possesses enough RAM to support running multiple instances of that command at once), this usage may yield a considerable reduction in processing time.
 
 

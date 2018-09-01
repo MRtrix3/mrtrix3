@@ -17,6 +17,7 @@ List of MRtrix3 scripts
     scripts/dwigradcheck
     scripts/dwiintensitynorm
     scripts/dwipreproc
+    scripts/foreach
     scripts/labelsgmfix
     scripts/population_template
     scripts/responsemean
@@ -31,6 +32,7 @@ List of MRtrix3 scripts
     :ref:`dwigradcheck`, "Check the orientation of the diffusion gradient table"
     :ref:`dwiintensitynorm`, "Performs a global DWI intensity normalisation on a group of subjects using the median b=0 white matter value as the reference"
     :ref:`dwipreproc`, "Perform diffusion image pre-processing using FSL's eddy tool; including inhomogeneity distortion correction using FSL's topup tool if possible"
+    :ref:`foreach`, "Perform some arbitrary processing step for each of a set of inputs"
     :ref:`labelsgmfix`, "In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST"
     :ref:`population_template`, "Generates an unbiased group-average template from a series of images"
     :ref:`responsemean`, "Calculate the mean response function from a set of text files"
