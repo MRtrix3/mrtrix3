@@ -18,14 +18,14 @@ def checkOutputPaths(): #pylint: disable=unused-variable
 
 def getInputs(): #pylint: disable=unused-variable
   import os
-  from mrtrix3 import app, path, run
-  mask_path = path.toTemp('mask.mif', False)
+  from mrtrix3 import app, fsys, run
+  mask_path = fsys.toTemp('mask.mif', False)
   if os.path.exists(mask_path):
     app.warn('-mask option is ignored by algorithm \'manual\'')
     os.remove(mask_path)
-  run.command('mrconvert ' + path.fromUser(app.args.in_voxels, True) + ' ' + path.toTemp('in_voxels.mif', True))
+  run.command('mrconvert ' + fsys.fromUser(app.args.in_voxels, True) + ' ' + fsys.toTemp('in_voxels.mif', True))
   if app.args.dirs:
-    run.command('mrconvert ' + path.fromUser(app.args.dirs, True) + ' ' + path.toTemp('dirs.mif', True) + ' -strides 0,0,0,1')
+    run.command('mrconvert ' + fsys.fromUser(app.args.dirs, True) + ' ' + fsys.toTemp('dirs.mif', True) + ' -strides 0,0,0,1')
 
 
 
@@ -36,7 +36,7 @@ def needsSingleShell(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import os, shutil
-  from mrtrix3 import app, image, MRtrixException, path, run
+  from mrtrix3 import app, fsys, image, MRtrixException, run
 
   shells = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shell_bvalues').split() ]
 
@@ -63,6 +63,6 @@ def execute(): #pylint: disable=unused-variable
     lmax_option = ' -lmax ' + ','.join(map(str,lmax))
   run.command('amp2response dwi.mif in_voxels.mif dirs.mif response.txt' + bvalues_option + lmax_option)
 
-  run.function(shutil.copyfile, 'response.txt', path.fromUser(app.args.output, False))
+  run.function(shutil.copyfile, 'response.txt', fsys.fromUser(app.args.output, False))
   if app.args.voxels:
-    run.command('mrconvert in_voxels.mif ' + path.fromUser(app.args.voxels, True) + app.mrconvertOutputOption(path.fromUser(app.args.input, True)))
+    run.command('mrconvert in_voxels.mif ' + fsys.fromUser(app.args.voxels, True) + app.mrconvertOutputOption(fsys.fromUser(app.args.input, True)))

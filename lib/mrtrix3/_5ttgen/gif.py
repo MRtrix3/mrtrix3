@@ -21,14 +21,14 @@ def checkGIFinput(image_path):
 
 
 def getInputs(): #pylint: disable=unused-variable
-  from mrtrix3 import app, path, run
-  checkGIFinput(path.fromUser(app.args.input, True))
-  run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('input.mif', True))
+  from mrtrix3 import app, fsys, run
+  checkGIFinput(fsys.fromUser(app.args.input, True))
+  run.command('mrconvert ' + fsys.fromUser(app.args.input, True) + ' ' + fsys.toTemp('input.mif', True))
 
 
 def execute(): #pylint: disable=unused-variable
   import os
-  from mrtrix3 import app, path, run
+  from mrtrix3 import app, fsys, run
 
   # Generate the images related to each tissue
   run.command('mrconvert input.mif -coord 3 1 CSF.mif')
@@ -50,4 +50,4 @@ def execute(): #pylint: disable=unused-variable
   else:
     run.command('mrmath 5tt.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrcrop 5tt.mif result.mif -mask -')
 
-  run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + app.mrconvertOutputOption(path.fromUser(app.args.input, True)))
+  run.command('mrconvert result.mif ' + fsys.fromUser(app.args.output, True) + app.mrconvertOutputOption(fsys.fromUser(app.args.input, True)))

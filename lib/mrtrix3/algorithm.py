@@ -8,8 +8,8 @@
 # These will be in a sub-directory relative to this library file
 def _algorithmsPath():
   import os
-  from mrtrix3 import path
-  return os.path.join(os.path.dirname(__file__), path.scriptSubDirName())
+  from mrtrix3 import fsys
+  return os.path.join(os.path.dirname(__file__), fsys.scriptSubDirName())
 
 
 
@@ -34,12 +34,12 @@ def getList(): #pylint: disable=unused-variable
 #   is invoked. Therefore this function must be called _after_ all such options are set up.
 def usage(cmdline): #pylint: disable=unused-variable
   import importlib, pkgutil
-  from mrtrix3 import app, path
+  from mrtrix3 import app, fsys
   initlist = [ ]
   base_parser = app.Parser(description='Base parser for construction of subparsers', parents=[cmdline])
   subparsers = cmdline.add_subparsers(title='Algorithm choices', help='Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: ' + ', '.join(getList()), dest='algorithm')
   for dummy_importer, package_name, dummy_ispkg in pkgutil.iter_modules( [ _algorithmsPath() ] ):
-    module = importlib.import_module('mrtrix3.' + path.scriptSubDirName() + '.' + package_name)
+    module = importlib.import_module('mrtrix3.' + fsys.scriptSubDirName() + '.' + package_name)
     module.usage(base_parser, subparsers)
     initlist.extend(package_name)
   app.debug('Initialised algorithms: ' + str(initlist))
@@ -48,5 +48,5 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 def getModule(name): #pylint: disable=unused-variable
   import sys
-  from mrtrix3 import path
-  return sys.modules['mrtrix3.' + path.scriptSubDirName() + '.' + name]
+  from mrtrix3 import fsys
+  return sys.modules['mrtrix3.' + fsys.scriptSubDirName() + '.' + name]

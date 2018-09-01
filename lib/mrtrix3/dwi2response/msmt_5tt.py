@@ -25,10 +25,10 @@ def checkOutputPaths(): #pylint: disable=unused-variable
 
 
 def getInputs(): #pylint: disable=unused-variable
-  from mrtrix3 import app, path, run
-  run.command('mrconvert ' + path.fromUser(app.args.in_5tt, True) + ' ' + path.toTemp('5tt.mif', True))
+  from mrtrix3 import app, fsys, run
+  run.command('mrconvert ' + fsys.fromUser(app.args.in_5tt, True) + ' ' + fsys.toTemp('5tt.mif', True))
   if app.args.dirs:
-    run.command('mrconvert ' + path.fromUser(app.args.dirs, True) + ' ' + path.toTemp('dirs.mif', True) + ' -strides 0,0,0,1')
+    run.command('mrconvert ' + fsys.fromUser(app.args.dirs, True) + ' ' + fsys.toTemp('dirs.mif', True) + ' -strides 0,0,0,1')
 
 
 
@@ -39,7 +39,7 @@ def needsSingleShell(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import os, shutil
-  from mrtrix3 import app, image, MRtrixException, path, run
+  from mrtrix3 import app, fsys, image, MRtrixException, run
 
   # Ideally want to use the oversampling-based regridding of the 5TT image from the SIFT model, not mrtransform
   # May need to commit 5ttregrid...
@@ -119,11 +119,11 @@ def execute(): #pylint: disable=unused-variable
   run.command('amp2response dwi.mif wm_sf_mask.mif dirs.mif wm.txt' + bvalues_option + sfwm_lmax_option)
   run.command('amp2response dwi.mif gm_mask.mif dirs.mif gm.txt' + bvalues_option + ' -isotropic')
   run.command('amp2response dwi.mif csf_mask.mif dirs.mif csf.txt' + bvalues_option + ' -isotropic')
-  run.function(shutil.copyfile, 'wm.txt',  path.fromUser(app.args.out_wm,  False))
-  run.function(shutil.copyfile, 'gm.txt',  path.fromUser(app.args.out_gm,  False))
-  run.function(shutil.copyfile, 'csf.txt', path.fromUser(app.args.out_csf, False))
+  run.function(shutil.copyfile, 'wm.txt',  fsys.fromUser(app.args.out_wm,  False))
+  run.function(shutil.copyfile, 'gm.txt',  fsys.fromUser(app.args.out_gm,  False))
+  run.function(shutil.copyfile, 'csf.txt', fsys.fromUser(app.args.out_csf, False))
 
   # Generate output 4D binary image with voxel selections; RGB as in MSMT-CSD paper
   run.command('mrcat csf_mask.mif gm_mask.mif wm_sf_mask.mif voxels.mif -axis 3')
   if app.args.voxels:
-    run.command('mrconvert voxels.mif ' + path.fromUser(app.args.voxels, True) + app.mrconvertOutputOption(path.fromUser(app.args.input, True)))
+    run.command('mrconvert voxels.mif ' + fsys.fromUser(app.args.voxels, True) + app.mrconvertOutputOption(fsys.fromUser(app.args.input, True)))

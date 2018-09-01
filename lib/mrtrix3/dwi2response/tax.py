@@ -30,7 +30,7 @@ def needsSingleShell(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import math, os, shutil
-  from mrtrix3 import app, file, image, MRtrixException, path, run #pylint: disable=redefined-builtin
+  from mrtrix3 import app, fsys, image, MRtrixException, run
 
   lmax_option = ''
   if app.args.lmax:
@@ -69,28 +69,28 @@ def execute(): #pylint: disable=unused-variable
     run.command('dwi2fod csd dwi.mif ' + RF_in_path + ' ' + prefix + 'FOD.mif -mask ' + mask_in_path)
     # Get amplitudes of two largest peaks, and directions of largest
     run.command('fod2fixel ' + prefix + 'FOD.mif ' + prefix + 'fixel -peak peaks.mif -mask ' + mask_in_path + ' -fmls_no_thresholds')
-    file.delTemporary(prefix + 'FOD.mif')
+    fsys.delTemporary(prefix + 'FOD.mif')
     run.command('fixel2voxel ' + prefix + 'fixel/peaks.mif split_data ' + prefix + 'amps.mif')
     run.command('mrconvert ' + prefix + 'amps.mif ' + prefix + 'first_peaks.mif -coord 3 0 -axes 0,1,2')
     run.command('mrconvert ' + prefix + 'amps.mif ' + prefix + 'second_peaks.mif -coord 3 1 -axes 0,1,2')
-    file.delTemporary(prefix + 'amps.mif')
+    fsys.delTemporary(prefix + 'amps.mif')
     run.command('fixel2voxel ' + prefix + 'fixel/directions.mif split_dir ' + prefix + 'all_dirs.mif')
-    file.delTemporary(prefix + 'fixel')
+    fsys.delTemporary(prefix + 'fixel')
     run.command('mrconvert ' + prefix + 'all_dirs.mif ' + prefix + 'first_dir.mif -coord 3 0:2')
-    file.delTemporary(prefix + 'all_dirs.mif')
+    fsys.delTemporary(prefix + 'all_dirs.mif')
     # Revise single-fibre voxel selection based on ratio of tallest to second-tallest peak
     run.command('mrcalc ' + prefix + 'second_peaks.mif ' + prefix + 'first_peaks.mif -div ' + prefix + 'peak_ratio.mif')
-    file.delTemporary(prefix + 'first_peaks.mif')
-    file.delTemporary(prefix + 'second_peaks.mif')
+    fsys.delTemporary(prefix + 'first_peaks.mif')
+    fsys.delTemporary(prefix + 'second_peaks.mif')
     run.command('mrcalc ' + prefix + 'peak_ratio.mif ' + str(app.args.peak_ratio) + ' -lt ' + mask_in_path + ' -mult ' + prefix + 'SF.mif -datatype bit')
-    file.delTemporary(prefix + 'peak_ratio.mif')
+    fsys.delTemporary(prefix + 'peak_ratio.mif')
     # Make sure image isn't empty
     SF_voxel_count = int(image.statistic(prefix + 'SF.mif', 'count', '-mask ' + prefix + 'SF.mif'))
     if not SF_voxel_count:
       raise MRtrixException('Aborting: All voxels have been excluded from single-fibre selection')
     # Generate a new response function
     run.command('amp2response dwi.mif ' + prefix + 'SF.mif ' + prefix + 'first_dir.mif ' + prefix + 'RF.txt' + lmax_option)
-    file.delTemporary(prefix + 'first_dir.mif')
+    fsys.delTemporary(prefix + 'first_dir.mif')
 
     # Detect convergence
     # Look for a change > some percentage - don't bother looking at the masks
@@ -112,8 +112,8 @@ def execute(): #pylint: disable=unused-variable
         run.function(shutil.copyfile, prefix + 'SF.mif', 'voxels.mif')
         break
 
-    file.delTemporary(RF_in_path)
-    file.delTemporary(mask_in_path)
+    fsys.delTemporary(RF_in_path)
+    fsys.delTemporary(mask_in_path)
   # Go to the next iteration
 
   # If we've terminated due to hitting the iteration limiter, we still need to copy the output file(s) to the correct location
@@ -122,6 +122,6 @@ def execute(): #pylint: disable=unused-variable
     run.function(shutil.copyfile, 'iter' + str(app.args.max_iters-1) + '_RF.txt', 'response.txt')
     run.function(shutil.copyfile, 'iter' + str(app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
 
-  run.function(shutil.copyfile, 'response.txt', path.fromUser(app.args.output, False))
+  run.function(shutil.copyfile, 'response.txt', fsys.fromUser(app.args.output, False))
   if app.args.voxels:
-    run.command('mrconvert voxels.mif ' + path.fromUser(app.args.voxels, True) + app.mrconvertOutputOption(path.fromUser(app.args.input, True)))
+    run.command('mrconvert voxels.mif ' + fsys.fromUser(app.args.voxels, True) + app.mrconvertOutputOption(fsys.fromUser(app.args.input, True)))

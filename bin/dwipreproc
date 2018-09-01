@@ -65,12 +65,12 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import itertools, json, math, shutil
-  from mrtrix3 import config, file, fsl, image, isWindows, MRtrixException, path, phaseEncoding, run #pylint: disable=redefined-builtin
+  from mrtrix3 import config, fsl, fsys, image, isWindows, MRtrixException, phaseEncoding, run
 
   if isWindows():
     raise MRtrixException('Script cannot run on Windows due to FSL dependency')
 
-  image.check3DNonunity(path.fromUser(app.args.input, False))
+  image.check3DNonunity(fsys.fromUser(app.args.input, False))
 
   PE_design = ''
   if app.args.rpe_none:
@@ -108,12 +108,12 @@ def execute(): #pylint: disable=unused-variable
   # Export the gradient table to the path requested by the user if necessary
   grad_export_option = ''
   if app.args.export_grad_mrtrix:
-    grad_export_option = ' -export_grad_mrtrix ' + path.fromUser(app.args.export_grad_mrtrix, True)
-    app.checkOutputPath(path.fromUser(app.args.export_grad_mrtrix, False))
+    grad_export_option = ' -export_grad_mrtrix ' + fsys.fromUser(app.args.export_grad_mrtrix, True)
+    app.checkOutputPath(fsys.fromUser(app.args.export_grad_mrtrix, False))
   elif app.args.export_grad_fsl:
-    grad_export_option = ' -export_grad_fsl ' + path.fromUser(app.args.export_grad_fsl[0], True) + ' ' + path.fromUser(app.args.export_grad_fsl[1], True)
-    app.checkOutputPath(path.fromUser(app.args.export_grad_fsl[0], False))
-    app.checkOutputPath(path.fromUser(app.args.export_grad_fsl[1], False))
+    grad_export_option = ' -export_grad_fsl ' + fsys.fromUser(app.args.export_grad_fsl[0], True) + ' ' + fsys.fromUser(app.args.export_grad_fsl[1], True)
+    app.checkOutputPath(fsys.fromUser(app.args.export_grad_fsl[0], False))
+    app.checkOutputPath(fsys.fromUser(app.args.export_grad_fsl[1], False))
 
 
   eddyqc_path = None
@@ -122,9 +122,9 @@ def execute(): #pylint: disable=unused-variable
                    'eddy_outlier_report', 'eddy_outlier_map', 'eddy_outlier_n_stdev_map', 'eddy_outlier_n_sqr_stdev_map', \
                    'eddy_movement_over_time' ]
   if app.args.eddyqc_text:
-    eddyqc_path = path.fromUser(app.args.eddyqc_text, False)
+    eddyqc_path = fsys.fromUser(app.args.eddyqc_text, False)
   elif app.args.eddyqc_all:
-    eddyqc_path = path.fromUser(app.args.eddyqc_all, False)
+    eddyqc_path = fsys.fromUser(app.args.eddyqc_all, False)
     eddyqc_files.extend([ 'eddy_outlier_free_data.nii.gz', 'eddy_cnr_maps.nii.gz', 'eddy_residuals.nii.gz' ])
   if eddyqc_path:
     if os.path.exists(eddyqc_path):
@@ -152,16 +152,16 @@ def execute(): #pylint: disable=unused-variable
 
   grad_option = ''
   if app.args.grad:
-    grad_option = ' -grad ' + path.fromUser(app.args.grad, True)
+    grad_option = ' -grad ' + fsys.fromUser(app.args.grad, True)
   elif app.args.fslgrad:
-    grad_option = ' -fslgrad ' + path.fromUser(app.args.fslgrad[0], True) + ' ' + path.fromUser(app.args.fslgrad[1], True)
+    grad_option = ' -fslgrad ' + fsys.fromUser(app.args.fslgrad[0], True) + ' ' + fsys.fromUser(app.args.fslgrad[1], True)
   json_import_option = ''
   if app.args.json_import:
-    json_import_option = ' -json_import ' + path.fromUser(app.args.json_import, True)
-  run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('dwi.mif', True) + grad_option + json_import_option)
+    json_import_option = ' -json_import ' + fsys.fromUser(app.args.json_import, True)
+  run.command('mrconvert ' + fsys.fromUser(app.args.input, True) + ' ' + fsys.toTemp('dwi.mif', True) + grad_option + json_import_option)
   if app.args.se_epi:
-    image.check3DNonunity(path.fromUser(app.args.se_epi, False))
-    run.command('mrconvert ' + path.fromUser(app.args.se_epi, True) + ' ' + path.toTemp('se_epi.mif', True))
+    image.check3DNonunity(fsys.fromUser(app.args.se_epi, False))
+    run.command('mrconvert ' + fsys.fromUser(app.args.se_epi, True) + ' ' + fsys.toTemp('se_epi.mif', True))
 
   app.gotoTempDir()
 
@@ -208,7 +208,7 @@ def execute(): #pylint: disable=unused-variable
     if len(slspec_option) > 1:
       raise MRtrixException('--slspec option appears more than once in -eddy_options input; cannot import slice timing')
     elif len(slspec_option) == 1:
-      slspec_file_path = path.fromUser(slspec_option[0][9:], False)
+      slspec_file_path = fsys.fromUser(slspec_option[0][9:], False)
       if os.path.isfile(slspec_file_path):
         # Since there's a chance that we may need to pad this info, we can't just copy this file
         #   to the temporary directory...
@@ -467,7 +467,7 @@ def execute(): #pylint: disable=unused-variable
                   'the latter will be automatically re-gridded to match the former')
       new_se_epi_path = 'se_epi_regrid.mif'
       run.command('mrtransform ' + se_epi_path + ' - -interp sinc -template dwi.mif | mrcalc - 0.0 -max ' + new_se_epi_path)
-      file.delTemporary(se_epi_path)
+      fsys.delTemporary(se_epi_path)
       se_epi_path = new_se_epi_path
       se_epi_header = image.Header(se_epi_path)
 
@@ -531,7 +531,7 @@ def execute(): #pylint: disable=unused-variable
           se_epi_header = image.Header(new_se_epi_path)
           se_epi_pe_scheme_has_contrast = 'pe_scheme' in se_epi_header.keyval()
           if se_epi_pe_scheme_has_contrast:
-            file.delTemporary(se_epi_path)
+            fsys.delTemporary(se_epi_path)
             se_epi_path = new_se_epi_path
             se_epi_pe_scheme = phaseEncoding.getScheme(se_epi_header)
             dwi_bzero_added_to_se_epi = True
@@ -621,8 +621,8 @@ def execute(): #pylint: disable=unused-variable
             se_epi_manual_pe_scheme = [ first_line, se_epi_manual_pe_scheme ]
 
         # Ended branching based on balanced-ness of PE acquisition scheme within SE-EPI volumes
-        file.delTemporary(se_epi_path)
-        file.delTemporary('dwi_first_bzero.mif')
+        fsys.delTemporary(se_epi_path)
+        fsys.delTemporary('dwi_first_bzero.mif')
         se_epi_path = new_se_epi_path
 
       # Ended branching based on:
@@ -716,11 +716,11 @@ def execute(): #pylint: disable=unused-variable
         if int(axis_size%2):
           new_se_epi_path = os.path.splitext(se_epi_path)[0] + '_pad' + str(axis) + '.mif'
           run.command('mrconvert ' + se_epi_path + ' -coord ' + str(axis) + ' ' + str(axis_size-1) + ' - | mrcat ' + se_epi_path + ' - ' + new_se_epi_path + ' -axis ' + str(axis))
-          file.delTemporary(se_epi_path)
+          fsys.delTemporary(se_epi_path)
           se_epi_path = new_se_epi_path
           new_dwi_path = os.path.splitext(dwi_path)[0] + '_pad' + str(axis) + '.mif'
           run.command('mrconvert ' + dwi_path + ' -coord ' + str(axis) + ' ' + str(axis_size-1) + ' - | mrcat ' + dwi_path + ' - ' + new_dwi_path + ' -axis ' + str(axis))
-          file.delTemporary(dwi_path)
+          fsys.delTemporary(dwi_path)
           dwi_path = new_dwi_path
           dwi_post_eddy_crop_option += ' -coord ' + str(axis) + ' 0:' + str(axis_size-1)
           # If we are padding the slice axis, and performing slice-to-volume correction,
@@ -745,7 +745,7 @@ def execute(): #pylint: disable=unused-variable
 
     # Do the conversion in preparation for topup
     run.command('mrconvert ' + se_epi_path + ' topup_in.nii' + import_se_epi_manual_pe_table_option + ' -strides -1,+2,+3,+4 -export_pe_table topup_datain.txt')
-    file.delTemporary(se_epi_path)
+    fsys.delTemporary(se_epi_path)
 
     # Run topup
     topup_manual_options = ''
@@ -781,11 +781,11 @@ def execute(): #pylint: disable=unused-variable
         output_path = prefix + '_applytopup.mif'
         run.command('dwiextract ' + dwi_path + import_dwi_pe_table_option + ' -pe ' + ','.join(line.split()) + ' - | mrconvert - ' + input_path + ' -json_export ' + json_path)
         run.command(applytopup_cmd + ' --imain=' + input_path + ' --datain=applytopup_config.txt --inindex=' + str(index) + ' --topup=field --out=' + temp_path + ' --method=jac')
-        file.delTemporary(input_path)
+        fsys.delTemporary(input_path)
         temp_path = fsl.findImage(temp_path)
         run.command('mrconvert ' + temp_path + ' ' + output_path + ' -json_import ' + json_path)
-        file.delTemporary(json_path)
-        file.delTemporary(temp_path)
+        fsys.delTemporary(json_path)
+        fsys.delTemporary(temp_path)
         applytopup_image_list.append(output_path)
         index += 1
 
@@ -795,7 +795,7 @@ def execute(): #pylint: disable=unused-variable
     else:
       run.command('mrcat ' + ' '.join(applytopup_image_list) + ' - -axis 3 | dwi2mask - - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32 -strides -1,+2,+3')
 
-    file.delTemporary(applytopup_image_list)
+    fsys.delTemporary(applytopup_image_list)
 
     eddy_in_topup_option = ' --topup=field'
 
@@ -842,7 +842,7 @@ def execute(): #pylint: disable=unused-variable
 
   # Prepare input data for eddy
   run.command('mrconvert ' + dwi_path + import_dwi_pe_table_option + dwi_permute_volumes_pre_eddy_option + ' eddy_in.nii -strides -1,+2,+3,+4 -export_grad_fsl bvecs bvals -export_pe_eddy eddy_config.txt eddy_indices.txt')
-  file.delTemporary(dwi_path)
+  fsys.delTemporary(dwi_path)
 
   # Run eddy
   # If a CUDA version is in PATH, run that first; if it fails, re-try using the non-CUDA version
@@ -863,10 +863,10 @@ def execute(): #pylint: disable=unused-variable
     eddy_output = run.command(eddy_openmp_cmd + ' ' + eddy_all_options)
   if app.verbosity > 2:
     app.console('Output of OpenMP eddy command:\n' + eddy_output.stdout + '\n' + eddy_output.stderr)
-  file.delTemporary('eddy_in.nii')
-  file.delTemporary('eddy_mask.nii')
+  fsys.delTemporary('eddy_in.nii')
+  fsys.delTemporary('eddy_mask.nii')
   if do_topup:
-    file.delTemporary(fsl.findImage('field_fieldcoef'))
+    fsys.delTemporary(fsl.findImage('field_fieldcoef'))
   with open('eddy_output.txt', 'w') as f:
     f.write(eddy_output.stdout + '\n' + eddy_output.stderr)
   eddy_output_image_path = fsl.findImage('dwi_post_eddy')
@@ -909,12 +909,12 @@ def execute(): #pylint: disable=unused-variable
   if len(volume_pairs) != int(dwi_num_volumes/2):
 
     if do_topup:
-      file.delTemporary('topup_in.nii')
-      file.delTemporary(fsl.findImage('field_map'))
+      fsys.delTemporary('topup_in.nii')
+      fsys.delTemporary(fsl.findImage('field_map'))
 
     # Convert the resulting volume to the output image, and re-insert the diffusion encoding
     run.command('mrconvert ' + eddy_output_image_path + ' result.mif' + dwi_permute_volumes_post_eddy_option + dwi_post_eddy_crop_option + stride_option + ' -fslgrad ' + bvecs_path + ' bvals')
-    file.delTemporary(eddy_output_image_path)
+    fsys.delTemporary(eddy_output_image_path)
 
   else:
     app.console('Detected matching DWI volumes with opposing phase encoding; performing explicit volume recombination')
@@ -978,9 +978,9 @@ def execute(): #pylint: disable=unused-variable
       app.warn('topup output field image has erroneous header; recommend updating FSL to version 5.0.8 or later')
       new_field_map_image = 'field_map_fix.mif'
       run.command('mrtransform ' + field_map_image + ' -replace topup_in.nii ' + new_field_map_image)
-      file.delTemporary(field_map_image)
+      fsys.delTemporary(field_map_image)
       field_map_image = new_field_map_image
-    file.delTemporary('topup_in.nii')
+    fsys.delTemporary('topup_in.nii')
 
 
     # Derive the weight images
@@ -1006,10 +1006,10 @@ def execute(): #pylint: disable=unused-variable
       run.command('mrcalc ' + field_map_image + ' ' + str(config[3]) + ' -mult' + sign_multiplier + ' - | mrfilter - gradient - | mrconvert - ' + field_derivative_path + ' -coord 3 ' + str(pe_axis) + ' -axes 0,1,2')
       jacobian_path = 'jacobian_' + str(index+1) + '.mif'
       run.command('mrcalc 1.0 ' + field_derivative_path + ' -add 0.0 -max ' + jacobian_path)
-      file.delTemporary(field_derivative_path)
+      fsys.delTemporary(field_derivative_path)
       run.command('mrcalc ' + jacobian_path + ' ' + jacobian_path + ' -mult weight' + str(index+1) + '.mif')
-      file.delTemporary(jacobian_path)
-    file.delTemporary(field_map_image)
+      fsys.delTemporary(jacobian_path)
+    fsys.delTemporary(field_map_image)
 
     # If eddy provides its main image output in a compressed format, the code block below will need to
     #   uncompress that image independently for every volume pair. Instead, if this is the case, let's
@@ -1017,7 +1017,7 @@ def execute(): #pylint: disable=unused-variable
     if eddy_output_image_path.endswith('.gz'):
       new_eddy_output_image_path = 'dwi_post_eddy_uncompressed.mif'
       run.command('mrconvert ' + eddy_output_image_path + ' ' + new_eddy_output_image_path)
-      file.delTemporary(eddy_output_image_path)
+      fsys.delTemporary(eddy_output_image_path)
       eddy_output_image_path = new_eddy_output_image_path
 
     # If the DWI volumes were permuted prior to running eddy, then the simplest approach is to permute them
@@ -1026,7 +1026,7 @@ def execute(): #pylint: disable=unused-variable
     if dwi_permute_volumes_post_eddy_option:
       new_eddy_output_image_path = os.path.splitext(eddy_output_image_path)[0] + '_volpermuteundo.mif'
       run.command('mrconvert ' + eddy_output_image_path + dwi_permute_volumes_post_eddy_option + ' ' + new_eddy_output_image_path)
-      file.delTemporary(eddy_output_image_path)
+      fsys.delTemporary(eddy_output_image_path)
       eddy_output_image_path = new_eddy_output_image_path
 
     # This section extracts the two volumes corresponding to each reversed phase-encoded volume pair, and
@@ -1046,13 +1046,13 @@ def execute(): #pylint: disable=unused-variable
       progress.increment()
     progress.done()
 
-    file.delTemporary(eddy_output_image_path)
+    fsys.delTemporary(eddy_output_image_path)
     for index in range(0, len(eddy_config)):
-      file.delTemporary('weight' + str(index+1) + '.mif')
+      fsys.delTemporary('weight' + str(index+1) + '.mif')
 
     # Finally the recombined volumes must be concatenated to produce the resulting image series
     run.command('mrcat ' + ' '.join(combined_image_list) + ' - -axis 3 | mrconvert - result.mif' + dwi_post_eddy_crop_option + ' -fslgrad bvecs_combined bvals_combined' + stride_option)
-    file.delTemporary(combined_image_list)
+    fsys.delTemporary(combined_image_list)
 
 
   # Grab any relevant files that eddy has created, and copy them to the requested directory
@@ -1078,7 +1078,7 @@ def execute(): #pylint: disable=unused-variable
 
 
   # Finish!
-  run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + grad_export_option + app.mrconvertOutputOption('output.json'))
+  run.command('mrconvert result.mif ' + fsys.fromUser(app.args.output, True) + grad_export_option + app.mrconvertOutputOption('output.json'))
 
 
 

@@ -27,9 +27,9 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import copy, numbers, shutil
-  from mrtrix3 import image, MRtrixException, path, run
+  from mrtrix3 import fsys, image, MRtrixException, run
 
-  image_dimensions = image.Header(path.fromUser(app.args.input, False)).size()
+  image_dimensions = image.Header(fsys.fromUser(app.args.input, False)).size()
   if len(image_dimensions) != 4:
     raise MRtrixException('Input image must be a 4D image')
   if min(image_dimensions) == 1:
@@ -39,15 +39,15 @@ def execute(): #pylint: disable=unused-variable
   app.makeTempDir()
 
   # Make sure the image data can be memory-mapped
-  run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('data.mif', True) + ' -strides 0,0,0,1 -datatype float32')
+  run.command('mrconvert ' + fsys.fromUser(app.args.input, True) + ' ' + fsys.toTemp('data.mif', True) + ' -strides 0,0,0,1 -datatype float32')
 
   if app.args.grad:
-    shutil.copy(path.fromUser(app.args.grad, False), path.toTemp('grad.b', False))
+    shutil.copy(fsys.fromUser(app.args.grad, False), fsys.toTemp('grad.b', False))
   elif app.args.fslgrad:
-    shutil.copy(path.fromUser(app.args.fslgrad[0], False), path.toTemp('bvecs', False))
-    shutil.copy(path.fromUser(app.args.fslgrad[1], False), path.toTemp('bvals', False))
+    shutil.copy(fsys.fromUser(app.args.fslgrad[0], False), fsys.toTemp('bvecs', False))
+    shutil.copy(fsys.fromUser(app.args.fslgrad[1], False), fsys.toTemp('bvals', False))
   if app.args.mask:
-    run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit')
+    run.command('mrconvert ' + fsys.fromUser(app.args.mask, True) + ' ' + fsys.toTemp('mask.mif', True) + ' -datatype bit')
 
   app.gotoTempDir()
 
@@ -193,9 +193,9 @@ def execute(): #pylint: disable=unused-variable
   #   export it in the format requested by the user
   grad_export_option = ''
   if app.args.export_grad_mrtrix:
-    grad_export_option = ' -export_grad_mrtrix ' + path.fromUser(app.args.export_grad_mrtrix, True)
+    grad_export_option = ' -export_grad_mrtrix ' + fsys.fromUser(app.args.export_grad_mrtrix, True)
   elif app.args.export_grad_fsl:
-    grad_export_option = ' -export_grad_fsl ' + path.fromUser(app.args.export_grad_fsl[0], True) + ' ' + path.fromUser(app.args.export_grad_fsl[1], True)
+    grad_export_option = ' -export_grad_fsl ' + fsys.fromUser(app.args.export_grad_fsl[0], True) + ' ' + fsys.fromUser(app.args.export_grad_fsl[1], True)
   if grad_export_option:
     best = lengths[0]
     suffix = '_flip' + str(best[1]) + '_perm' + ''.join(str(item) for item in best[2]) + '_' + best[3]
