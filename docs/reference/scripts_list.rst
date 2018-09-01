@@ -19,6 +19,7 @@ List of MRtrix3 scripts
     scripts/dwipreproc
     scripts/labelsgmfix
     scripts/population_template
+    scripts/responsemean
 
 
 .. csv-table::
@@ -32,3 +33,4 @@ List of MRtrix3 scripts
     :ref:`dwipreproc`, "Perform diffusion image pre-processing using FSL's eddy tool; including inhomogeneity distortion correction using FSL's topup tool if possible"
     :ref:`labelsgmfix`, "In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST"
     :ref:`population_template`, "Generates an unbiased group-average template from a series of images"
+    :ref:`responsemean`, "Calculate the mean response function from a set of text files"
