@@ -55,10 +55,18 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 
+# Make the corresponding MRtrix3 Python libraries available
+import inspect, os, sys
+lib_folder = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
+if not os.path.isdir(lib_folder):
+  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
+  sys.exit(1)
+sys.path.insert(0, lib_folder)
+from mrtrix3 import app
 
 
 
-import math, os
+import math
 
 # Binds raw_input() to input() in Python2, so that input() can be used
 #   and the code will work on both Python 2 and 3
@@ -778,13 +786,5 @@ def execute(): #pylint: disable=unused-variable
 
 
 
-# Make the corresponding MRtrix3 Python libraries available
-import inspect, sys
-lib_folder = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
-if not os.path.isdir(lib_folder):
-  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
-  sys.exit(1)
-sys.path.insert(0, lib_folder)
 # Execute the script
-from mrtrix3 import app
 app.execute()
