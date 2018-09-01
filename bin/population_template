@@ -56,7 +56,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 # Make the corresponding MRtrix3 Python libraries available
-import inspect, os, sys
+import inspect, math, os, sys
 lib_folder = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
 if not os.path.isdir(lib_folder):
   sys.stderr.write('Unable to locate MRtrix3 Python libraries')
@@ -65,8 +65,6 @@ sys.path.insert(0, lib_folder)
 from mrtrix3 import app
 
 
-
-import math
 
 # Binds raw_input() to input() in Python2, so that input() can be used
 #   and the code will work on both Python 2 and 3
@@ -197,7 +195,7 @@ class Input(object):
 
 def execute(): #pylint: disable=unused-variable
   import shutil
-  from mrtrix3 import file, image, MRtrixException, path, run #pylint: disable=redefined-builtin
+  from mrtrix3 import fsys, image, MRtrixException, run
   global rigid_scales, rigid_lmax, affine_scales, affine_lmax, nl_scales, nl_lmax, nl_niter
 
   if not app.args.type in registration_modes:
@@ -212,7 +210,7 @@ def execute(): #pylint: disable=unused-variable
   inputDir = app.args.input_dir
   if not os.path.exists(inputDir):
     raise MRtrixException('input directory not found')
-  inFiles = sorted(path.allindir(inputDir, dir_path=False))
+  inFiles = sorted(fsys.allInDir(inputDir, dir_path=False))
   if len(inFiles) <= 1:
     raise MRtrixException('Not enough images found in input directory. More than one image is needed to generate a population template')
   else:
@@ -247,10 +245,10 @@ def execute(): #pylint: disable=unused-variable
     maskDir = app.args.mask_dir
     if not os.path.exists(maskDir):
       raise MRtrixException('mask directory not found')
-    maskFiles = path.allindir(maskDir, dir_path=False)
+    maskFiles = fsys.allInDir(maskDir, dir_path=False)
     if len(maskFiles) < len(inFiles):
       raise MRtrixException('there are not enough mask images for the number of images in the input directory')
-    maskCommonPostfix = path.commonPostfix(maskFiles)
+    maskCommonPostfix = fsys.commonPostfix(maskFiles)
     maskPrefixes = []
     for m in maskFiles:
       maskPrefixes.append(m.split(maskCommonPostfix)[0])
@@ -261,18 +259,18 @@ def execute(): #pylint: disable=unused-variable
   if app.args.template_mask and not useMasks:
     raise MRtrixException('you cannot output a template mask because no subject masks were input using -mask_dir')
 
-  commonPostfix = path.commonPostfix(inFiles)
+  commonPostfix = fsys.commonPostfix(inFiles)
   inputs = []
   for i in inFiles:
-    image.check3DNonunity(os.path.join(path.fromUser(inputDir, False), i))
+    image.check3DNonunity(os.path.join(fsys.fromUser(inputDir, False), i))
     subj_prefix = i.split(commonPostfix)[0]
     if useMasks:
       if subj_prefix not in maskPrefixes:
         raise MRtrixException ('no matching mask image was found for input image ' + i)
       index = maskPrefixes.index(subj_prefix)
-      inputs.append(Input(i, subj_prefix, path.fromUser(inputDir, False), maskFiles[index], path.fromUser(maskDir, False)))
+      inputs.append(Input(i, subj_prefix, fsys.fromUser(inputDir, False), maskFiles[index], fsys.fromUser(maskDir, False)))
     else:
-      inputs.append(Input(i, subj_prefix, path.fromUser(inputDir, False)))
+      inputs.append(Input(i, subj_prefix, fsys.fromUser(inputDir, False)))
 
 
   noreorientation = app.args.noreorientation
@@ -422,19 +420,19 @@ def execute(): #pylint: disable=unused-variable
   app.makeTempDir()
   app.gotoTempDir()
 
-  file.makeDir('inputs_transformed')
-  file.makeDir('linear_transforms_initial')
-  file.makeDir('linear_transforms')
+  fsys.makeDir('inputs_transformed')
+  fsys.makeDir('linear_transforms_initial')
+  fsys.makeDir('linear_transforms')
   for level in range(0, len(linear_scales)):
-    file.makeDir('linear_transforms_%i' % level)
+    fsys.makeDir('linear_transforms_%i' % level)
   for level in range(0, len(nl_scales)):
-    file.makeDir('warps_%i' % level)
+    fsys.makeDir('warps_%i' % level)
 
   if useMasks:
-    file.makeDir('masks_transformed')
+    fsys.makeDir('masks_transformed')
   write_log = (app.verbosity >= 2)
   if write_log:
-    file.makeDir('log')
+    fsys.makeDir('log')
 
   # Make initial template in average space
   app.console('Generating initial template')
@@ -561,7 +559,7 @@ def execute(): #pylint: disable=unused-variable
     progress.done()
 
 
-  run.command(['mrmath', path.allindir('inputs_transformed'), 'mean', 'initial_template.mif'])
+  run.command(['mrmath', fsys.allInDir('inputs_transformed'), 'mean', 'initial_template.mif'])
   current_template = 'initial_template.mif'
 
 
@@ -630,7 +628,7 @@ def execute(): #pylint: disable=unused-variable
       progress.done()
 
       # Here we ensure the template doesn't drift or scale
-      run.command(['transformcalc', path.allindir('linear_transforms_%i' % level), 'average', 'linear_transform_average.txt', '-force', '-quiet'])
+      run.command(['transformcalc', fsys.allInDir('linear_transforms_%i' % level), 'average', 'linear_transform_average.txt', '-force', '-quiet'])
       if linear_type[level] == 'rigid':
         run.command('transformcalc linear_transform_average.txt rigid linear_transform_average.txt -force -quiet')
       run.command('transformcalc linear_transform_average.txt invert linear_transform_average_inv.txt -force -quiet')
@@ -652,7 +650,7 @@ def execute(): #pylint: disable=unused-variable
         progress.increment()
       progress.done()
 
-      run.command(['mrmath', path.allindir('inputs_transformed'), 'mean', 'linear_template' + str(level) + '.mif', '-force'])
+      run.command(['mrmath', fsys.allInDir('inputs_transformed'), 'mean', 'linear_template' + str(level) + '.mif', '-force'])
       current_template = 'linear_template' + str(level) + '.mif'
 
     for entry in os.listdir('linear_transforms_%i' % level):
@@ -670,14 +668,14 @@ def execute(): #pylint: disable=unused-variable
                   '-force')
       progress.increment()
     progress.done()
-    run.command(['mrmath', path.allindir('masks_transformed'), 'min', '-', '|', \
+    run.command(['mrmath', fsys.allInDir('masks_transformed'), 'min', '-', '|', \
                  'maskfilter', '-', 'median', '-', '|', \
                  'maskfilter', '-', 'dilate', '-npass', '5', 'init_nl_template_mask.mif', '-force'])
     current_template_mask = 'init_nl_template_mask.mif'
 
   if dononlinear:
     # Optimise the template with non-linear registration
-    file.makeDir('warps')
+    fsys.makeDir('warps')
     for level, (scale, niter, lmax) in enumerate(zip(nl_scales, nl_niter, nl_lmax)):
       progress = app.progressBar('Optimising template with non-linear registration (stage {0} of {1})'.format(level+1, len(nl_scales)), len(inputs))
       for i in inputs:
@@ -728,11 +726,11 @@ def execute(): #pylint: disable=unused-variable
         progress.increment()
       progress.done()
 
-      run.command(['mrmath', path.allindir('inputs_transformed'), 'mean', 'nl_template' + str(level) + '.mif'])
+      run.command(['mrmath', fsys.allInDir('inputs_transformed'), 'mean', 'nl_template' + str(level) + '.mif'])
       current_template = 'nl_template' + str(level) + '.mif'
 
       if useMasks:
-        run.command(['mrmath', path.allindir('masks_transformed'), 'min', '-', '|', \
+        run.command(['mrmath', fsys.allInDir('masks_transformed'), 'min', '-', '|', \
                      'maskfilter', '-', 'median', '-', '|', \
                      'maskfilter', '-', 'dilate', '-npass', '5', 'nl_template_mask' + str(level) + '.mif'])
         current_template_mask = 'nl_template_mask' + str(level) + '.mif'
@@ -748,38 +746,38 @@ def execute(): #pylint: disable=unused-variable
           run.function(shutil.move, os.path.join('warps_' + str(level), '%s.mif' % i.prefix), 'warps')
 
 
-  run.command('mrconvert ' + current_template + ' ' + path.fromUser(app.args.template, True) + app.mrconvertOutputOption('NULL'))
+  run.command('mrconvert ' + current_template + ' ' + fsys.fromUser(app.args.template, True) + app.mrconvertOutputOption('NULL'))
 
   if app.args.warp_dir:
-    warp_path = path.fromUser(app.args.warp_dir, False)
+    warp_path = fsys.fromUser(app.args.warp_dir, False)
     if os.path.exists(warp_path):
       run.function(shutil.rmtree, warp_path)
     os.makedirs(warp_path)
     progress = app.progressBar('Copying non-linear warps to output directory "' + warp_path + '"')
     for i in inputs:
-      run.command('mrconvert ' + os.path.join('warps', '%s.mif' % i.prefix) + ' ' + os.path.join(warp_path, '%s.mif' % i.prefix) + app.mrconvertOutputOption(path.fromUser(os.path.join(inputDir, i.filename), True)))
+      run.command('mrconvert ' + os.path.join('warps', '%s.mif' % i.prefix) + ' ' + os.path.join(warp_path, '%s.mif' % i.prefix) + app.mrconvertOutputOption(fsys.fromUser(os.path.join(inputDir, i.filename), True)))
       progress.increment()
     progress.done()
 
   if app.args.linear_transformations_dir:
-    linear_transformations_path = path.fromUser(app.args.linear_transformations_dir, False)
+    linear_transformations_path = fsys.fromUser(app.args.linear_transformations_dir, False)
     if os.path.exists(linear_transformations_path):
       run.function(shutil.rmtree, linear_transformations_path)
     run.function(shutil.copytree, 'linear_transforms', linear_transformations_path)
 
   if app.args.transformed_dir:
-    transformed_path = path.fromUser(app.args.transformed_dir, False)
+    transformed_path = fsys.fromUser(app.args.transformed_dir, False)
     if os.path.exists(transformed_path):
       run.function(shutil.rmtree, transformed_path)
     os.makedirs(transformed_path)
     progress = app.progressBar('Copying transformed images to output directory "' + transformed_path + '"')
     for i in inputs:
-      run.command('mrconvert ' + os.path.join('inputs_transformed', '%s.mif' % i.prefix) + ' ' + os.path.join(transformed_path, '%s.mif' % i.prefix) + app.mrconvertOutputOption(path.fromUser(os.path.join(inputDir, i.filename), True)))
+      run.command('mrconvert ' + os.path.join('inputs_transformed', '%s.mif' % i.prefix) + ' ' + os.path.join(transformed_path, '%s.mif' % i.prefix) + app.mrconvertOutputOption(fsys.fromUser(os.path.join(inputDir, i.filename), True)))
       progress.increment()
     progress.done()
 
   if app.args.template_mask:
-    run.command('mrconvert ' + current_template_mask + ' ' + path.fromUser(app.args.template_mask, True) + app.mrconvertOutputOption('NULL'))
+    run.command('mrconvert ' + current_template_mask + ' ' + fsys.fromUser(app.args.template_mask, True) + app.mrconvertOutputOption('NULL'))
 
 
 

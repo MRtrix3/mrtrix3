@@ -41,13 +41,13 @@ class Input(object):
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import file, image, MRtrixException, path, run #pylint: disable=redefined-builtin
+  from mrtrix3 import fsys, image, MRtrixException, run
 
   app.args.input_dir = relpath(app.args.input_dir)
   inputDir = app.args.input_dir
   if not os.path.exists(inputDir):
     raise MRtrixException('input directory not found')
-  inFiles = path.allindir(inputDir, dir_path=False)
+  inFiles = fsys.allInDir(inputDir, dir_path=False)
   if len(inFiles) <= 1:
     app.console('not enough images found in input directory. More than one image is needed to perform a group-wise intensity normalisation')
   else:
@@ -57,28 +57,28 @@ def execute(): #pylint: disable=unused-variable
   maskDir = app.args.mask_dir
   if not os.path.exists(maskDir):
     raise MRtrixException('mask directory not found')
-  maskFiles = path.allindir(maskDir, dir_path=False)
+  maskFiles = fsys.allInDir(maskDir, dir_path=False)
   if len(maskFiles) != len(inFiles):
     raise MRtrixException('the number of images in the mask directory does not equal the number of images in the input directory')
-  maskCommonPostfix = path.commonPostfix(maskFiles)
+  maskCommonPostfix = fsys.commonPostfix(maskFiles)
   maskPrefixes = []
   for m in maskFiles:
     maskPrefixes.append(m.split(maskCommonPostfix)[0])
 
-  commonPostfix = path.commonPostfix(inFiles)
+  commonPostfix = fsys.commonPostfix(inFiles)
   input_list = []
   for i in inFiles:
     subj_prefix = i.split(commonPostfix)[0]
     if subj_prefix not in maskPrefixes:
       raise MRtrixException ('no matching mask image was found for input image ' + i)
-    image.check3DNonunity(os.path.join(path.fromUser(inputDir, False), i))
+    image.check3DNonunity(os.path.join(fsys.fromUser(inputDir, False), i))
     index = maskPrefixes.index(subj_prefix)
-    input_list.append(Input(i, subj_prefix, path.fromUser(inputDir, False), maskFiles[index], path.fromUser(maskDir, False)))
+    input_list.append(Input(i, subj_prefix, fsys.fromUser(inputDir, False), maskFiles[index], fsys.fromUser(maskDir, False)))
 
   app.checkOutputPath(app.args.fa_template)
   app.checkOutputPath(app.args.wm_mask)
   app.checkOutputPath(app.args.output_dir)
-  file.makeDir(app.args.output_dir)
+  fsys.makeDir(app.args.output_dir)
 
   app.makeTempDir()
 
@@ -87,7 +87,7 @@ def execute(): #pylint: disable=unused-variable
 
   app.gotoTempDir()
 
-  file.makeDir('fa')
+  fsys.makeDir('fa')
   progress = app.progressBar('Computing FA images', len(input_list))
   for i in input_list:
     run.command('dwi2tensor ' + abspath(i.directory, i.filename) + ' -mask ' + abspath(i.mask_directory, i.mask_filename) + ' - | tensor2metric - -fa ' + os.path.join('fa', i.prefix + '.mif'))
@@ -101,16 +101,16 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrthreshold fa_template.mif -abs ' +  app.args.fa_threshold + ' template_wm_mask.mif')
 
   progress = app.progressBar('Intensity normalising subject images', len(input_list))
-  file.makeDir('wm_mask_warped')
+  fsys.makeDir('wm_mask_warped')
   for i in input_list:
     run.command('mrtransform template_wm_mask.mif -interp nearest -warp_full ' + os.path.join('population_template', 'warps', i.prefix + '.mif') + ' ' + os.path.join('wm_mask_warped', i.prefix + '.mif') + ' -from 2 -template ' + os.path.join('fa', i.prefix + '.mif'))
-    run.command('dwinormalise ' + abspath(i.directory, i.filename) + ' ' + os.path.join('wm_mask_warped', i.prefix + '.mif') + ' ' + path.fromUser(os.path.join(app.args.output_dir, i.filename), True) + app.mrconvertOutputOption(path.fromUser(os.path.join(inputDir, i.filename), True)))
+    run.command('dwinormalise ' + abspath(i.directory, i.filename) + ' ' + os.path.join('wm_mask_warped', i.prefix + '.mif') + ' ' + fsys.fromUser(os.path.join(app.args.output_dir, i.filename), True) + app.mrconvertOutputOption(fsys.fromUser(os.path.join(inputDir, i.filename), True)))
     progress.increment()
   progress.done()
 
   app.console('Exporting template images to user locations')
-  run.command('mrconvert template_wm_mask.mif ' + path.fromUser(app.args.wm_mask, True) + app.mrconvertOutputOption('NULL'))
-  run.command('mrconvert fa_template.mif ' + path.fromUser(app.args.fa_template, True) + app.mrconvertOutputOption('NULL'))
+  run.command('mrconvert template_wm_mask.mif ' + fsys.fromUser(app.args.wm_mask, True) + app.mrconvertOutputOption('NULL'))
+  run.command('mrconvert fa_template.mif ' + fsys.fromUser(app.args.fa_template, True) + app.mrconvertOutputOption('NULL'))
 
 
 

@@ -7,8 +7,8 @@
 class Header(object):
   def __init__(self, image_path):
     import json, os, subprocess
-    from mrtrix3 import app, MRtrixException, path, run
-    filename = path.newTemporary('json')
+    from mrtrix3 import app, fsys, MRtrixException, run
+    filename = fsys.newTemporary('json')
     command = [ run.exeName(run.versionMatch('mrinfo')), image_path, '-json_all', filename ]
     if app.verbosity > 1:
       app.console('Loading header for image file \'' + image_path + '\'')

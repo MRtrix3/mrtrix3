@@ -23,22 +23,22 @@ def checkOutputPaths(): #pylint: disable=unused-variable
 
 
 def getInputs(): #pylint: disable=unused-variable
-  from mrtrix3 import app, image, MRtrixException, path, run
-  image.check3DNonunity(path.fromUser(app.args.input, False))
-  run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('input.mif', True))
+  from mrtrix3 import app, fsys, image, MRtrixException, run
+  image.check3DNonunity(fsys.fromUser(app.args.input, False))
+  run.command('mrconvert ' + fsys.fromUser(app.args.input, True) + ' ' + fsys.toTemp('input.mif', True))
   if app.args.mask:
-    run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit -strides -1,+2,+3')
+    run.command('mrconvert ' + fsys.fromUser(app.args.mask, True) + ' ' + fsys.toTemp('mask.mif', True) + ' -datatype bit -strides -1,+2,+3')
   if app.args.t2:
     if not image.match(app.args.input, app.args.t2):
       raise MRtrixException('Provided T2 image does not match input T1 image')
-    run.command('mrconvert ' + path.fromUser(app.args.t2, True) + ' ' + path.toTemp('T2.nii', True) + ' -strides -1,+2,+3')
+    run.command('mrconvert ' + fsys.fromUser(app.args.t2, True) + ' ' + fsys.toTemp('T2.nii', True) + ' -strides -1,+2,+3')
 
 
 
 
 def execute(): #pylint: disable=unused-variable
   import math, os
-  from mrtrix3 import app, fsl, image, isWindows, MRtrixException, path, run
+  from mrtrix3 import app, fsl, fsys, image, isWindows, MRtrixException, run
 
   if isWindows():
     raise MRtrixException('\'fsl\' algorithm of 5ttgen script cannot be run on Windows: FSL not available on Windows')
@@ -211,4 +211,4 @@ def execute(): #pylint: disable=unused-variable
   else:
     run.command('mrmath combined_precrop.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrcrop combined_precrop.mif result.mif -mask -')
 
-  run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + app.mrconvertOutputOption(path.fromUser(app.args.input, True)))
+  run.command('mrconvert result.mif ' + fsys.fromUser(app.args.output, True) + app.mrconvertOutputOption(fsys.fromUser(app.args.input, True)))

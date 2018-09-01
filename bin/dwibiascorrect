@@ -38,7 +38,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   from distutils.spawn import find_executable
-  from mrtrix3 import fsl, image, isWindows, MRtrixException, path, run
+  from mrtrix3 import fsl, fsys, image, isWindows, MRtrixException, run
 
   if app.args.fsl:
 
@@ -71,18 +71,18 @@ def execute(): #pylint: disable=unused-variable
 
   grad_import_option = ''
   if app.args.grad:
-    grad_import_option = ' -grad ' + path.fromUser(app.args.grad, True)
+    grad_import_option = ' -grad ' + fsys.fromUser(app.args.grad, True)
   elif app.args.fslgrad:
-    grad_import_option = ' -fslgrad ' + path.fromUser(app.args.fslgrad[0], True) + ' ' + path.fromUser(app.args.fslgrad[1], True)
+    grad_import_option = ' -fslgrad ' + fsys.fromUser(app.args.fslgrad[0], True) + ' ' + fsys.fromUser(app.args.fslgrad[1], True)
 
   app.checkOutputPath(app.args.output)
   app.checkOutputPath(app.args.bias)
 
   app.makeTempDir()
 
-  run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('in.mif', True) + grad_import_option)
+  run.command('mrconvert ' + fsys.fromUser(app.args.input, True) + ' ' + fsys.toTemp('in.mif', True) + grad_import_option)
   if app.args.mask:
-    run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True))
+    run.command('mrconvert ' + fsys.fromUser(app.args.mask, True) + ' ' + fsys.toTemp('mask.mif', True))
 
   app.gotoTempDir()
 
@@ -138,9 +138,9 @@ def execute(): #pylint: disable=unused-variable
 
   # Common final steps for all algorithms
   run.command('mrcalc in.mif ' + bias_path + ' -div result.mif')
-  run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + app.mrconvertOutputOption(path.fromUser(app.args.input, True)))
+  run.command('mrconvert result.mif ' + fsys.fromUser(app.args.output, True) + app.mrconvertOutputOption(fsys.fromUser(app.args.input, True)))
   if app.args.bias:
-    run.command('mrconvert ' + bias_path + ' ' + path.fromUser(app.args.bias, True) + app.mrconvertOutputOption(path.fromUser(app.args.input, True)))
+    run.command('mrconvert ' + bias_path + ' ' + fsys.fromUser(app.args.bias, True) + app.mrconvertOutputOption(fsys.fromUser(app.args.input, True)))
 
 
 

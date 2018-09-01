@@ -34,9 +34,9 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import math
-  from mrtrix3 import fsl, image, isWindows, MRtrixException, path, run
-  app.checkOutputPath(path.fromUser(app.args.output, False))
-  image.check3DNonunity(path.fromUser(app.args.t1, False))
+  from mrtrix3 import fsys, fsl, image, isWindows, MRtrixException, run
+  app.checkOutputPath(fsys.fromUser(app.args.output, False))
+  image.check3DNonunity(fsys.fromUser(app.args.t1, False))
 
   if isWindows():
     raise MRtrixException('Script cannot run on Windows due to FSL dependency')
@@ -62,7 +62,7 @@ def execute(): #pylint: disable=unused-variable
     structure_map.update({ 'L_Amyg':'Left-Amygdala',    'R_Amyg':'Right-Amygdala',
                            'L_Hipp':'Left-Hippocampus', 'R_Hipp':'Right-Hippocampus' })
 
-  t1_spacing = image.Header(path.fromUser(app.args.t1, False)).spacing()
+  t1_spacing = image.Header(fsys.fromUser(app.args.t1, False)).spacing()
   upsample_for_first = False
   # If voxel size is 1.25mm or larger, make a guess that the user has erroneously re-gridded their data
   if math.pow(t1_spacing[0] * t1_spacing[1] * t1_spacing[2], 1.0/3.0) > 1.225:
@@ -74,11 +74,11 @@ def execute(): #pylint: disable=unused-variable
   app.makeTempDir()
 
   # Get the parcellation and T1 images into the temporary directory, with conversion of the T1 into the correct format for FSL
-  run.command('mrconvert ' + path.fromUser(app.args.parc, True) + ' ' + path.toTemp('parc.mif', True))
+  run.command('mrconvert ' + fsys.fromUser(app.args.parc, True) + ' ' + fsys.toTemp('parc.mif', True))
   if upsample_for_first:
-    run.command('mrresize ' + path.fromUser(app.args.t1, True) + ' - -voxel 1.0 -interp sinc | mrcalc - 0.0 -max - | mrconvert - ' + path.toTemp('T1.nii', True) + ' -strides -1,+2,+3')
+    run.command('mrresize ' + fsys.fromUser(app.args.t1, True) + ' - -voxel 1.0 -interp sinc | mrcalc - 0.0 -max - | mrconvert - ' + fsys.toTemp('T1.nii', True) + ' -strides -1,+2,+3')
   else:
-    run.command('mrconvert ' + path.fromUser(app.args.t1, True) + ' ' + path.toTemp('T1.nii', True) + ' -strides -1,+2,+3')
+    run.command('mrconvert ' + fsys.fromUser(app.args.t1, True) + ' ' + fsys.toTemp('T1.nii', True) + ' -strides -1,+2,+3')
 
   app.gotoTempDir()
 
@@ -96,7 +96,7 @@ def execute(): #pylint: disable=unused-variable
   # This will map a structure name to an index
   sgm_lut = {}
   sgm_lut_file_name = 'FreeSurferSGM.txt'
-  sgm_lut_file_path = os.path.join(path.sharedDataPath(), path.scriptSubDirName(), sgm_lut_file_name)
+  sgm_lut_file_path = os.path.join(fsys.sharedDataPath(), fsys.scriptSubDirName(), sgm_lut_file_name)
   with open(sgm_lut_file_path) as f:
     for line in f:
       line = line.rstrip()
@@ -128,7 +128,7 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrcalc sgm_overlap_mask.mif 0 sgm.mif -if sgm_masked.mif')
 
   # Convert the SGM label image to the indices that are required based on the user-provided LUT file
-  run.command('labelconvert sgm_masked.mif ' + sgm_lut_file_path + ' ' + path.fromUser(app.args.lut, True) + ' sgm_new_labels.mif')
+  run.command('labelconvert sgm_masked.mif ' + sgm_lut_file_path + ' ' + fsys.fromUser(app.args.lut, True) + ' sgm_new_labels.mif')
 
   # For each SGM structure:
   # * Figure out what index the structure has been mapped to; this can only be done using mrstats
@@ -147,7 +147,7 @@ def execute(): #pylint: disable=unused-variable
   # Insert the new delineations of all SGM structures in a single call
   # Enforce unsigned integer datatype of output image
   run.command('mrcalc sgm_new_labels.mif 0.5 -gt sgm_new_labels.mif parc.mif -if result.mif -datatype uint32')
-  run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + app.mrconvertOutputOption(path.fromUser(app.args.parc, True)))
+  run.command('mrconvert result.mif ' + fsys.fromUser(app.args.output, True) + app.mrconvertOutputOption(fsys.fromUser(app.args.parc, True)))
 
 
 

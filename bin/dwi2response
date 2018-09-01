@@ -32,7 +32,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import algorithm, image, MRtrixException, path, run
+  from mrtrix3 import algorithm, fsys, image, MRtrixException, run
 
   # Find out which algorithm the user has requested
   alg = algorithm.getModule(app.args.algorithm)
@@ -67,21 +67,21 @@ def execute(): #pylint: disable=unused-variable
 
   grad_import_option = ''
   if app.args.grad:
-    grad_import_option = ' -grad ' + path.fromUser(app.args.grad, True)
+    grad_import_option = ' -grad ' + fsys.fromUser(app.args.grad, True)
   elif app.args.fslgrad:
-    grad_import_option = ' -fslgrad ' + path.fromUser(app.args.fslgrad[0], True) + ' ' + path.fromUser(app.args.fslgrad[1], True)
-  elif 'dw_scheme' not in image.Header(path.fromUser(app.args.input, False)).keyval():
+    grad_import_option = ' -fslgrad ' + fsys.fromUser(app.args.fslgrad[0], True) + ' ' + fsys.fromUser(app.args.fslgrad[1], True)
+  elif 'dw_scheme' not in image.Header(fsys.fromUser(app.args.input, False)).keyval():
     raise MRtrixException('Script requires diffusion gradient table: either in image header, or using -grad / -fslgrad option')
 
   app.makeTempDir()
 
   # Get standard input data into the temporary directory
   if alg.needsSingleShell() or shells_option:
-    run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' - -strides 0,0,0,1' + grad_import_option + ' | dwiextract - ' + path.toTemp('dwi.mif', True) + shells_option + singleshell_option)
+    run.command('mrconvert ' + fsys.fromUser(app.args.input, True) + ' - -strides 0,0,0,1' + grad_import_option + ' | dwiextract - ' + fsys.toTemp('dwi.mif', True) + shells_option + singleshell_option)
   else: # Don't discard b=0 in multi-shell algorithms
-    run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('dwi.mif', True) + ' -strides 0,0,0,1' + grad_import_option)
+    run.command('mrconvert ' + fsys.fromUser(app.args.input, True) + ' ' + fsys.toTemp('dwi.mif', True) + ' -strides 0,0,0,1' + grad_import_option)
   if app.args.mask:
-    run.command('mrconvert ' + path.fromUser(app.args.mask, True) + ' ' + path.toTemp('mask.mif', True) + ' -datatype bit')
+    run.command('mrconvert ' + fsys.fromUser(app.args.mask, True) + ' ' + fsys.toTemp('mask.mif', True) + ' -datatype bit')
 
   alg.getInputs()
 

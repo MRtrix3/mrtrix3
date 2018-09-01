@@ -17,16 +17,16 @@ def checkOutputPaths(): #pylint: disable=unused-variable
 
 def getInputs(): #pylint: disable=unused-variable
   import shutil
-  from mrtrix3 import app, path, run
-  run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('input.mif', True))
+  from mrtrix3 import app, fsys, run
+  run.command('mrconvert ' + fsys.fromUser(app.args.input, True) + ' ' + fsys.toTemp('input.mif', True))
   if app.args.lut:
-    run.function(shutil.copyfile, path.fromUser(app.args.lut, False), path.toTemp('LUT.txt', False))
+    run.function(shutil.copyfile, fsys.fromUser(app.args.lut, False), fsys.toTemp('LUT.txt', False))
 
 
 
 def execute(): #pylint: disable=unused-variable
-  import os.path #pylint: disable=unused-variable
-  from mrtrix3 import app, MRtrixException, path, run
+  import os.path
+  from mrtrix3 import app, fsys, MRtrixException, run
 
   lut_input_path = 'LUT.txt'
   if not os.path.exists('LUT.txt'):
@@ -41,7 +41,7 @@ def execute(): #pylint: disable=unused-variable
     lut_output_file_name = 'FreeSurfer2ACT_sgm_amyg_hipp.txt'
   else:
     lut_output_file_name = 'FreeSurfer2ACT.txt'
-  lut_output_path = os.path.join(path.sharedDataPath(), path.scriptSubDirName(), lut_output_file_name)
+  lut_output_path = os.path.join(fsys.sharedDataPath(), fsys.scriptSubDirName(), lut_output_file_name)
   if not os.path.isfile(lut_output_path):
     raise MRtrixException('Could not find lookup table file for converting FreeSurfer parcellation output to tissues (expected location: ' + lut_output_path + ')')
 
@@ -64,4 +64,4 @@ def execute(): #pylint: disable=unused-variable
 
   run.command('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | mrconvert - result.mif -datatype float32')
 
-  run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + app.mrconvertOutputOption(path.fromUser(app.args.input, True)))
+  run.command('mrconvert result.mif ' + fsys.fromUser(app.args.output, True) + app.mrconvertOutputOption(fsys.fromUser(app.args.input, True)))

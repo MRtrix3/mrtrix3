@@ -31,7 +31,7 @@ def needsSingleShell(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import shutil
-  from mrtrix3 import app, image, MRtrixException, path, run
+  from mrtrix3 import app, fsys, image, MRtrixException, run
   bvalues = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shell_bvalues').split() ]
   if len(bvalues) < 2:
     raise MRtrixException('Need at least 2 unique b-values (including b=0).')
@@ -51,6 +51,6 @@ def execute(): #pylint: disable=unused-variable
     run.command('mrthreshold fa.mif voxels.mif -top ' + str(app.args.number))
   run.command('dwiextract dwi.mif - -singleshell -no_bzero | amp2response - voxels.mif vector.mif response.txt' + lmax_option)
 
-  run.function(shutil.copyfile, 'response.txt', path.fromUser(app.args.output, False))
+  run.function(shutil.copyfile, 'response.txt', fsys.fromUser(app.args.output, False))
   if app.args.voxels:
-    run.command('mrconvert voxels.mif ' + path.fromUser(app.args.voxels, True) + app.mrconvertOutputOption(path.fromUser(app.args.input, True)))
+    run.command('mrconvert voxels.mif ' + fsys.fromUser(app.args.voxels, True) + app.mrconvertOutputOption(fsys.fromUser(app.args.input, True)))

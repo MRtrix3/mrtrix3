@@ -29,7 +29,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import algorithm, path, run
+  from mrtrix3 import algorithm, run
 
   # Find out which algorithm the user has requested
   alg = algorithm.getModule(app.args.algorithm)
@@ -47,8 +47,6 @@ def execute(): #pylint: disable=unused-variable
     app.warn('Generated image does not perfectly conform to 5TT format:')
     for line in stderr.splitlines():
       app.warn(line)
-
-  run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + (' -force' if app.forceOverwrite else ''))
 
 
 
