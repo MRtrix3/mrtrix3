@@ -1,5 +1,7 @@
-def initialise(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('tax', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Use the Tax et al. (2014) recursive calibration algorithm for single-fibre voxel selection and response function estimation', parents=[base_parser])
+def usage(base_parser, subparsers): #pylint: disable=unused-variable
+  parser = subparsers.add_parser('tax', parents=[base_parser])
+  parser.setAuthor('Robert E. Smith (robert.smith@florey.edu.au)')
+  parser.setSynopsis('Use the Tax et al. (2014) recursive calibration algorithm for single-fibre voxel selection and response function estimation')
   parser.addCitation('', 'Tax, C. M.; Jeurissen, B.; Vos, S. B.; Viergever, M. A. & Leemans, A. Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data. NeuroImage, 2014, 86, 67-80', False)
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('output', help='The output response function text file')
@@ -28,7 +30,7 @@ def needsSingleShell(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import math, os, shutil
-  from mrtrix3 import app, file, image, path, run #pylint: disable=redefined-builtin
+  from mrtrix3 import app, file, image, MRtrixException, path, run #pylint: disable=redefined-builtin
 
   lmax_option = ''
   if app.args.lmax:
@@ -85,7 +87,7 @@ def execute(): #pylint: disable=unused-variable
     # Make sure image isn't empty
     SF_voxel_count = int(image.statistic(prefix + 'SF.mif', 'count', '-mask ' + prefix + 'SF.mif'))
     if not SF_voxel_count:
-      app.error('Aborting: All voxels have been excluded from single-fibre selection')
+      raise MRtrixException('Aborting: All voxels have been excluded from single-fibre selection')
     # Generate a new response function
     run.command('amp2response dwi.mif ' + prefix + 'SF.mif ' + prefix + 'first_dir.mif ' + prefix + 'RF.txt' + lmax_option)
     file.delTemporary(prefix + 'first_dir.mif')

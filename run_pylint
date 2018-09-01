@@ -18,7 +18,7 @@ if [ $# == 0 ]; then
       for src_file in ${lib_path}/*.py; do
         tests="$tests $src_file"
       done
-    elif [[ ${lib_path} == *.py && ! ( ${lib_path} == *"_"* ) ]]; then
+    elif [[ ${lib_path} == *.py ]]; then
       tests="$tests $lib_path"
     fi
   done

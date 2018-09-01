@@ -22,9 +22,9 @@ def commonPostfix(inputFiles): #pylint: disable=unused-variable
 # List the content of a directory
 def allindir(directory, dir_path=True, ignore_hidden_files=True): #pylint: disable=unused-variable
   import ctypes, os
-  from mrtrix3 import app
+  from mrtrix3 import isWindows
   def is_hidden(directory, filename):
-    if app.isWindows():
+    if isWindows():
       try:
         attrs = ctypes.windll.kernel32.GetFileAttributesW(u"%s" % str(os.path.join(directory, filename)))
         assert attrs != -1
@@ -60,17 +60,9 @@ def fromUser(filename, is_command): #pylint: disable=unused-variable
 # Note: Doesn't actually create anything; just gives a unique name that won't over-write anything
 def newTemporary(suffix): #pylint: disable=unused-variable
   import os.path, random, string
-  from mrtrix3 import app
-  if 'TmpFileDir' in app.config:
-    dir_path = app.config['TmpFileDir']
-  elif app.tempDir:
-    dir_path = app.tempDir
-  else:
-    dir_path = os.getcwd()
-  if 'TmpFilePrefix' in app.config:
-    prefix = app.config['TmpFilePrefix']
-  else:
-    prefix = 'mrtrix-tmp-'
+  from mrtrix3 import app, config
+  dir_path = config['TmpFileDir'] if 'TmpFileDir' in config else (app.tempDir if app.tempDir else os.getcwd())
+  prefix = config['TmpFilePrefix'] if 'TmpFilePrefix' in config else 'mrtrix-tmp-'
   full_path = dir_path
   suffix = suffix.lstrip('.')
   while os.path.exists(full_path):

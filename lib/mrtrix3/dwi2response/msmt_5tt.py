@@ -1,5 +1,7 @@
-def initialise(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('msmt_5tt', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Derive MSMT-CSD tissue response functions based on a co-registered five-tissue-type (5TT) image', parents=[base_parser])
+def usage(base_parser, subparsers): #pylint: disable=unused-variable
+  parser = subparsers.add_parser('msmt_5tt', parents=[base_parser])
+  parser.setAuthor('Robert E. Smith (robert.smith@florey.edu.au)')
+  parser.setSynopsis('Derive MSMT-CSD tissue response functions based on a co-registered five-tissue-type (5TT) image')
   parser.addCitation('', 'Jeurissen, B.; Tournier, J.-D.; Dhollander, T.; Connelly, A. & Sijbers, J. Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data. NeuroImage, 2014, 103, 411-426', False)
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('in_5tt', help='Input co-registered 5TT image')
@@ -37,13 +39,13 @@ def needsSingleShell(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import os, shutil
-  from mrtrix3 import app, image, path, run
+  from mrtrix3 import app, image, MRtrixException, path, run
 
   # Ideally want to use the oversampling-based regridding of the 5TT image from the SIFT model, not mrtransform
   # May need to commit 5ttregrid...
 
   # Verify input 5tt image
-  stderr_5ttcheck = run.command('5ttcheck 5tt.mif')[1]
+  stderr_5ttcheck = run.command('5ttcheck 5tt.mif').stderr
   if stderr_5ttcheck:
     app.warn('Command 5ttcheck indicates minor problems with provided input 5TT image \'' + app.args.in_5tt + '\':')
     for line in stderr_5ttcheck.splitlines():
@@ -60,12 +62,12 @@ def execute(): #pylint: disable=unused-variable
   if app.args.lmax:
     wm_lmax = [ int(x.strip()) for x in app.args.lmax.split(',') ]
     if not len(wm_lmax) == len(shells):
-      app.error('Number of manually-defined lmax\'s (' + str(len(wm_lmax)) + ') does not match number of b-values (' + str(len(shells)) + ')')
+      raise MRtrixException('Number of manually-defined lmax\'s (' + str(len(wm_lmax)) + ') does not match number of b-values (' + str(len(shells)) + ')')
     for l in wm_lmax:
       if l%2:
-        app.error('Values for lmax must be even')
+        raise MRtrixException('Values for lmax must be even')
       if l<0:
-        app.error('Values for lmax must be non-negative')
+        raise MRtrixException('Values for lmax must be non-negative')
 
   run.command('dwi2tensor dwi.mif - -mask mask.mif | tensor2metric - -fa fa.mif -vector vector.mif')
   if not os.path.exists('dirs.mif'):
@@ -107,7 +109,7 @@ def execute(): #pylint: disable=unused-variable
     message += ' empty; cannot estimate response function'
     if len(empty_masks) > 1:
       message += 's'
-    app.error(message)
+    raise MRtrixException(message)
 
   # For each of the three tissues, generate a multi-shell response
   bvalues_option = ' -shells ' + ','.join(map(str,shells))

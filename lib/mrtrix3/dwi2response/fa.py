@@ -1,5 +1,7 @@
-def initialise(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('fa', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Use the old FA-threshold heuristic for single-fibre voxel selection and response function estimation', parents=[base_parser])
+def usage(base_parser, subparsers): #pylint: disable=unused-variable
+  parser = subparsers.add_parser('fa', parents=[base_parser])
+  parser.setAuthor('Robert E. Smith (robert.smith@florey.edu.au)')
+  parser.setSynopsis('Use the old FA-threshold heuristic for single-fibre voxel selection and response function estimation')
   parser.addCitation('', 'Tournier, J.-D.; Calamante, F.; Gadian, D. G. & Connelly, A. Direct estimation of the fiber orientation density function from diffusion-weighted MRI data using spherical deconvolution. NeuroImage, 2004, 23, 1176-1185', False)
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('output', help='The output response function text file')
@@ -29,10 +31,10 @@ def needsSingleShell(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import shutil
-  from mrtrix3 import app, image, path, run
+  from mrtrix3 import app, image, MRtrixException, path, run
   bvalues = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shell_bvalues').split() ]
   if len(bvalues) < 2:
-    app.error('Need at least 2 unique b-values (including b=0).')
+    raise MRtrixException('Need at least 2 unique b-values (including b=0).')
   lmax_option = ''
   if app.args.lmax:
     lmax_option = ' -lmax ' + app.args.lmax

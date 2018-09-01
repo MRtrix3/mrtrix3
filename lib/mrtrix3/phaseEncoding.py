@@ -2,12 +2,12 @@
 
 # From a user-specified string, determine the axis and direction of phase encoding
 def direction(string): #pylint: disable=unused-variable
-  from mrtrix3 import app
+  from mrtrix3 import app, MRtrixException
   pe_dir = ''
   try:
     PE_axis = abs(int(string))
     if PE_axis > 2:
-      app.error('When specified as a number, phase encode axis must be either 0, 1 or 2 (positive or negative)')
+      raise MRtrixException('When specified as a number, phase encode axis must be either 0, 1 or 2 (positive or negative)')
     reverse = (string.contains('-')) # Allow -0
     pe_dir = [0,0,0]
     if reverse:
@@ -41,7 +41,7 @@ def direction(string): #pylint: disable=unused-variable
     elif string == 'k-':
       pe_dir = [0,0,-1]
     else:
-      app.error('Unrecognized phase encode direction specifier: ' + string)
+      raise MRtrixException('Unrecognized phase encode direction specifier: ' + string)
   app.debug(string + ' -> ' + str(pe_dir))
   return pe_dir
 
@@ -50,10 +50,10 @@ def direction(string): #pylint: disable=unused-variable
 # Extract a phase-encoding scheme from a pre-loaded image header,
 #   or from a path to the image
 def getScheme(arg): #pylint: disable=unused-variable
-  from mrtrix3 import app, image
+  from mrtrix3 import app, image, MRtrixException
   if not isinstance(arg, image.Header):
     if not isinstance(arg, str):
-      app.error('Error trying to derive phase-encoding scheme from \'' + str(arg) + '\': Not an image header or file path')
+      raise MRtrixException('Error trying to derive phase-encoding scheme from \'' + str(arg) + '\': Not an image header or file path')
     arg = image.Header(arg)
   if 'pe_scheme' in arg.keyval():
     app.debug(str(arg.keyval()['pe_scheme']))

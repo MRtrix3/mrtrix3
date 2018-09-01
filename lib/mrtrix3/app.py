@@ -1,52 +1,35 @@
-# This is the primary file that should be included by all Python scripts aiming to use the
-#   functionality provided by the MRtrix3 Python script library.
-#
-# Functions and variables defined here must be called / filled in the appropriate order
-#   for the command-line interface to be set up correctly:
-# - init()
-# - cmdline.addCitation(), cmdline.addDescription(), cmdline.setCopyright() as needed
-# - Add arguments and options to 'cmdline' as needed
-# - parse()
-# - checkOutputPath() as needed
-# - makeTempDir() if the script requires a temporary directory
-# - gotoTempDir() if the script is using a temporary directory
-# - complete()
-#
+import argparse
 
-
-
-# These global variables can / should be accessed directly by scripts
-# - 'cmdline' needs to have the compulsory arguments and optional command-line inputs
-#   necessary for the script to be added manually
-# - Upon parsing the command-line, the user's command-line inputs will be stored and
-#   made accessible through 'args'
-# - 'config' contains those entries present in the MRtrix config files
-# - 'force' will be True if the user has requested for existing output files to be
+# These global variables can / should be accessed directly by scripts:
+# - 'args' will contain the user's command-line inputs upon parsing of the command-line
+# - 'cleanup' will indicate whether or not the temporary directory will be deleted on script completion
+# - 'exeName' will be the basename of the executed script
+# - 'forceOverwrite' will be True if the user has requested for existing output files to be
 #   re-written, and at least one output target already exists
-# - 'mrtrix' provides functionality for interfacing with other MRtrix3 components
+# - 'numThreads' will be updated based on the user specifying -nthreads at the command-line,
+#   or will remain as None if nothing is explicitly specified
+# - 'tempDir' will contain the path to any temporary directory constructed for the executable script,
+#   or will be an empty string if none is requested
+# - 'verbosity' controls how much information will be printed at the terminal:
+#   # 0 = quiet; 1 = default; 2 = info; 3 = debug
+# - 'workingDir' will simply contain the current working directory when the executable script is run
 args = None
 cleanup = True
-cmdline = None
-config = { }
 continueOption = False
+execName = ''
 forceOverwrite = False #pylint: disable=unused-variable
 numThreads = None #pylint: disable=unused-variable
 tempDir = ''
-verbosity = 1 # 0 = quiet; 1 = default; 2 = info; 3 = debug
-workingDir = ''
+verbosity = 1
+workingDir = None
 
 
 
-
-
-
-clearLine = ''
-colourClear = ''
-colourConsole = ''
-colourDebug = ''
-colourError = ''
-colourExec = '' #pylint: disable=unused-variable
-colourWarn = ''
+# - '_cmdline' needs to be updated with any compulsory arguments and optional command-line inputs
+#   necessary for the executable script to be added via its usage() function
+#   It will however be passed to the calling executable as a parameter in the usage() function,
+#   and should not be modified outside of this module outside of such functions
+_cmdline = None
 
 
 
@@ -85,29 +68,12 @@ _signals = { 'SIGALRM': 'Timer expiration',
            # 'CTRL_BREAK_EVENT': Terminated by user Ctrl-Break input'
 
 
+def execute(): #pylint: disable=unused-variable
+  import inspect, os, shutil, signal, sys
+  from mrtrix3 import ansi, MRtrixException, run
+  from mrtrix3.run import MRtrixCmdException, MRtrixFnException
+  global args, cleanup, _cmdline, continueOption, execName, numThreads, tempDir, verbosity, workingDir
 
-
-
-def init(author, synopsis): #pylint: disable=unused-variable
-  import os, signal
-  global cmdline, config, workingDir
-  cmdline = Parser(author=author, synopsis=synopsis)
-  workingDir = os.getcwd()
-  # Load the MRtrix configuration files here, and create a dictionary
-  # Load system config first, user second: Allows user settings to override
-  for path in [ os.environ.get ('MRTRIX_CONFIGFILE', os.path.join(os.path.sep, 'etc', 'mrtrix.conf')),
-                os.path.join(os.path.expanduser('~'), '.mrtrix.conf') ]:
-    try:
-      f = open (path, 'r')
-      for line in f:
-        line = line.strip().split(': ')
-        if len(line) != 2:
-          continue
-        if line[0][0] == '#':
-          continue
-        config[line[0]] = line[1]
-    except IOError:
-      pass
   # Set up signal handlers
   for s in _signals:
     try:
@@ -115,56 +81,47 @@ def init(author, synopsis): #pylint: disable=unused-variable
     except:
       pass
 
+  execName = os.path.basename(sys.argv[0])
+  workingDir = os.getcwd()
 
+  module = inspect.getmodule(inspect.stack()[-1][0])
+  _cmdline = Parser()
+  try:
+    module.usage(_cmdline)
+  except AttributeError:
+    _cmdline = None
+    raise
 
-def parse(): #pylint: disable=unused-variable
-  import os, sys
-  global args, cleanup, cmdline, continueOption, numThreads, tempDir, verbosity
-  global clearLine, colourClear, colourConsole, colourDebug, colourError, colourExec, colourWarn
-  from mrtrix3 import run
+  ########################################################################################################################
+  # Note that everything after this point will only be executed if the script is designed to operate against the library #
+  ########################################################################################################################
 
-  if not cmdline:
-    sys.stderr.write('Script error: app.init() must be called before app.parse()\n')
-    sys.exit(1)
-
+  # Deal with special command-line uses
   if len(sys.argv) == 1:
-    cmdline.printHelp()
+    _cmdline.printHelp()
     sys.exit(0)
   elif sys.argv[-1] == '__print_full_usage__':
-    cmdline.printFullUsage()
+    _cmdline.printFullUsage()
     sys.exit(0)
   elif sys.argv[-1] == '__print_synopsis__':
-    sys.stdout.write(cmdline.synopsis)
+    sys.stdout.write(_cmdline._synopsis) #pylint: disable=protected-access
     sys.exit(0)
   elif sys.argv[-1] == '__print_usage_markdown__':
-    cmdline.printUsageMarkdown()
+    _cmdline.printUsageMarkdown()
     sys.exit(0)
   elif sys.argv[-1] == '__print_usage_rst__':
-    cmdline.printUsageRst()
+    _cmdline.printUsageRst()
     sys.exit(0)
 
-  args = cmdline.parse_args()
+  # Do the main command-line input parsing
+  args = _cmdline.parse_args()
 
+  # Check for usage of standard options;
+  #   need to check for the presence of these keys first, since there's a chance that
+  #   an external script may have erased the standard options
   if hasattr(args, 'help') and args.help:
-    cmdline.printHelp()
+    _cmdline.printHelp()
     sys.exit(0)
-
-  use_colour = True
-  if 'TerminalColor' in config:
-    use_colour = config['TerminalColor'].lower() in ('yes', 'true', '1')
-  if not sys.stderr.isatty():
-    use_colour = False
-  if use_colour:
-    clearLine = '\033[0K'
-    colourClear = '\033[0m'
-    colourConsole = '\033[03;32m'
-    colourDebug = '\033[03;34m'
-    colourError = '\033[01;31m'
-    colourExec = '\033[03;36m' #pylint: disable=unused-variable
-    colourWarn = '\033[00;31m'
-
-  # Need to check for the presence of these keys first, since there's a chance that an external script may have
-  #   erased the standard options
   if hasattr(args, 'nocleanup') and args.nocleanup:
     cleanup = False
   if hasattr(args, 'nthreads') and args.nthreads:
@@ -175,8 +132,6 @@ def parse(): #pylint: disable=unused-variable
     verbosity = 2
   elif hasattr(args, 'debug') and args.debug:
     verbosity = 3
-
-  cmdline.printCitationWarning()
 
   if hasattr(args, 'cont') and args.cont:
     continueOption = True
@@ -189,10 +144,83 @@ def parse(): #pylint: disable=unused-variable
       pass
     run.setContinue(args.cont[1])
 
+  _cmdline.printCitationWarning()
+
+  return_code = 0
+  try:
+    module.execute()
+  except (MRtrixCmdException, MRtrixFnException) as e:
+    return_code = 1
+    is_cmd = isinstance(e, MRtrixCmdException)
+    cleanup = False
+    if tempDir:
+      with open(os.path.join(tempDir, 'error.txt'), 'w') as outfile:
+        outfile.write((e.command if is_cmd else e.function) + '\n\n' + str(e) + '\n')
+    exception_frame = inspect.getinnerframes(sys.exc_info()[2])[-2]
+    try:
+      filename = exception_frame.filename
+      lineno = exception_frame.lineno
+    except: # Prior to Python 3.5
+      filename = exception_frame[1]
+      lineno = exception_frame[2]
+    sys.stderr.write('\n')
+    sys.stderr.write(execName + ': ' + ansi.error + '[ERROR] ' + str(e) + ':' + ansi.clear + '\n')
+    sys.stderr.write(execName + ': ' + ansi.error + '[ERROR] ' + (e.command if is_cmd else e.function) + ansi.clear + ansi.debug + ' (' + os.path.basename(filename) + ':' + str(lineno) + ')' + ansi.clear + '\n')
+    if str(e):
+      sys.stderr.write(execName + ': ' + ansi.error + '[ERROR] Information from failed ' + ('command' if is_cmd else 'function') + ':' + ansi.clear + '\n')
+      sys.stderr.write(execName + ':\n')
+      for line in str(e).splitlines():
+        sys.stderr.write(' ' * (len(execName)+2) + line + '\n')
+      sys.stderr.write(execName + ':\n')
+    else:
+      sys.stderr.write(execName + ': ' + ansi.error + '[ERROR] Failed ' + ('command' if is_cmd else 'function') + ' did not provide any output information' + ansi.clear + '\n')
+    sys.stderr.write(execName + ': ' + ansi.error + '[ERROR] For debugging, inspect contents of temporary directory: ' + tempDir + ansi.clear + '\n')
+    sys.stderr.flush()
+  except MRtrixException as e:
+    sys.stderr.write('\n')
+    sys.stderr.write(execName + ': ' + ansi.error + '[ERROR] ' + str(e) + ansi.clear + '\n')
+    sys.stderr.flush()
+  except Exception as e: # pylint: disable=broad-except
+    sys.stderr.write('\n')
+    sys.stderr.write(execName + ': ' + ansi.error + '[ERROR] Unhandled Python exception:' + ansi.clear + '\n')
+    sys.stderr.write(execName + ': ' + ansi.error + '[ERROR]' + ansi.clear + '   ' + ansi.console + type(e).__name__ + ': ' + str(e) + ansi.clear + '\n')
+    tb = sys.exc_info()[2]
+    sys.stderr.write(execName + ': ' + ansi.error + '[ERROR] Traceback:' + ansi.clear + '\n')
+    for item in inspect.getinnerframes(tb)[1:]:
+      try:
+        filename = item.filename
+        lineno = item.lineno
+        function = item.function
+        calling_code = item.code_context
+      except AttributeError: # Prior to Python 3.5
+        filename = item[1]
+        lineno = item[2]
+        function = item[3]
+        calling_code = item[4]
+      sys.stderr.write(execName + ': ' + ansi.error + '[ERROR]' + ansi.clear + ' ' + ansi.console + filename + ':' + str(lineno) + ' (in ' + function + '())' + ansi.clear + '\n')
+      for line in calling_code:
+        sys.stderr.write(execName + ': ' + ansi.error + '[ERROR]' + ansi.clear + '  ' + ansi.debug + line.strip() + ansi.clear + '\n')
+  finally:
+    run.killAll()
+    if os.getcwd() != workingDir:
+      if not return_code:
+        console('Changing back to original directory (' + workingDir + ')')
+      os.chdir(workingDir)
+    if cleanup and tempDir:
+      if not return_code:
+        console('Deleting temporary directory (' + tempDir + ')')
+      try:
+        shutil.rmtree(tempDir)
+      except FileNotFoundError:
+        pass
+      tempDir = ''
+    sys.exit(return_code)
+
 
 
 def checkOutputPath(path): #pylint: disable=unused-variable
   import os
+  from mrtrix3 import MRtrixException
   global args, forceOverwrite, workingDir
   if not path:
     return
@@ -207,25 +235,25 @@ def checkOutputPath(path): #pylint: disable=unused-variable
       warn('Output' + output_type + ' \'' + path + '\' already exists; will be overwritten at script completion')
       forceOverwrite = True #pylint: disable=unused-variable
     else:
-      error('Output' + output_type + ' \'' + path + '\' already exists (use -force to override)')
+      raise MRtrixException('Output' + output_type + ' \'' + path + '\' already exists (use -force to override)')
 
 
 
 def makeTempDir(): #pylint: disable=unused-variable
   import os, random, string, sys
-  from mrtrix3 import run
-  global args, config, continueOption, tempDir, workingDir
+  from mrtrix3 import config, run
+  global args, continueOption, execName, tempDir, workingDir
   if continueOption:
     debug('Skipping temporary directory creation due to use of -continue option')
     return
   if tempDir:
-    error('Script error: Cannot use multiple temporary directories')
+    raise Exception('Cannot use multiple temporary directories')
   if hasattr(args, 'tempdir') and args.tempdir:
     dir_path = os.path.abspath(args.tempdir)
   else:
     # Defaulting to working directory since too many users have encountered storage issues
     dir_path = config.get('ScriptTmpDir', workingDir)
-  prefix = config.get('ScriptTmpPrefix', os.path.basename(sys.argv[0]) + '-tmp-')
+  prefix = config.get('ScriptTmpPrefix', execName + '-tmp-')
   tempDir = dir_path
   while os.path.isdir(tempDir):
     random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
@@ -246,33 +274,12 @@ def gotoTempDir(): #pylint: disable=unused-variable
   import os
   global tempDir
   if not tempDir:
-    error('Script error: No temporary directory location set')
+    raise Exception('No temporary directory location set')
   if verbosity:
     console('Changing to temporary directory (' + tempDir + ')')
   os.chdir(tempDir)
 
 
-
-def complete(): #pylint: disable=unused-variable
-  import os, shutil, sys
-  global cleanup, tempDir, workingDir
-  global colourClear, colourConsole, colourWarn
-  if os.getcwd() != workingDir:
-    console('Changing back to original directory (' + workingDir + ')')
-    os.chdir(workingDir)
-  if cleanup and tempDir:
-    console('Deleting temporary directory ' + tempDir)
-    shutil.rmtree(tempDir)
-  elif tempDir:
-    # This needs to be printed even if the -quiet option is used
-    if os.path.isfile(os.path.join(tempDir, 'error.txt')):
-      with open(os.path.join(tempDir, 'error.txt'), 'r') as errortext:
-        sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'Following command failed during execution of the script:' + colourClear + '\n')
-        sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + errortext.readline().rstrip() + colourClear + '\n')
-      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'For debugging, inspect contents of temporary directory: ' + tempDir + colourClear + '\n')
-    else:
-      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourConsole + 'Contents of temporary directory kept, location: ' + tempDir + colourClear + '\n')
-    sys.stderr.flush()
 
 
 
@@ -302,16 +309,16 @@ def mrconvertOutputOption(input_image): #pylint: disable=unused-variable
 
 # A set of functions and variables for printing various information at the command-line.
 def console(text): #pylint: disable=unused-variable
-  import os, sys
-  global colourClear, colourConsole
+  import sys
+  from mrtrix3 import ansi
   global verbosity
   if verbosity:
-    sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourConsole + text + colourClear + '\n')
+    sys.stderr.write(execName + ': ' + ansi.console + text + ansi.clear + '\n')
 
 def debug(text): #pylint: disable=unused-variable
   import inspect, os, sys
-  global colourClear, colourDebug
-  global verbosity
+  from mrtrix3 import ansi
+  global execName, verbosity
   if verbosity <= 2:
     return
   outer_frames = inspect.getouterframes(inspect.currentframe())
@@ -326,7 +333,7 @@ def debug(text): #pylint: disable=unused-variable
       try:
         filename = nearest.filename
         funcname = nearest.function + '()'
-      except: # Prior to Python 3.5
+      except AttributeError: # Prior to Python 3.5
         filename = nearest[1]
         funcname = nearest[3] + '()'
       modulename = inspect.getmodulename(filename)
@@ -340,22 +347,13 @@ def debug(text): #pylint: disable=unused-variable
         origin += ' (from ' + os.path.basename(caller[1]) + ':' + str(caller[2]) + ')'
       finally:
         del caller
-    sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourDebug + '[DEBUG] ' + origin + ': ' + text + colourClear + '\n')
+    sys.stderr.write(execName + ': ' + ansi.debug + '[DEBUG] ' + origin + ': ' + text + ansi.clear + '\n')
   finally:
     del nearest
 
-def error(text): #pylint: disable=unused-variable
-  import os, sys
-  global colourClear, colourError
-  global cleanup
-  sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourError + '[ERROR] ' + text + colourClear + '\n')
-  cleanup = False
-  complete()
-  sys.exit(1)
-
 def var(*variables): #pylint: disable=unused-variable
   import inspect, os, sys
-  global colourClear, colourDebug
+  from mrtrix3 import ansi
   global verbosity
   if verbosity <= 2:
     return
@@ -372,17 +370,97 @@ def var(*variables): #pylint: disable=unused-variable
     var_string = calling_code[calling_code.find('var(')+4:].rstrip('\n').rstrip(' ')[:-1].replace(',', ' ')
     var_names, var_values = var_string.split(), variables
     for name, value in zip(var_names, var_values):
-      sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourDebug + '[DEBUG] (from ' + os.path.basename(filename) + ':' + str(lineno) + ') \'' + name + '\' = ' + str(value) + colourClear + '\n')
+      sys.stderr.write(execName + ': ' + ansi.debug + '[DEBUG] (from ' + os.path.basename(filename) + ':' + str(lineno) + ') \'' + name + '\' = ' + str(value) + ansi.clear + '\n')
   finally:
     del calling_frame
 
 def warn(text): #pylint: disable=unused-variable
-  import os, sys
-  global colourClear, colourWarn
-  sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + '[WARNING] ' + text + colourClear + '\n')
+  import sys
+  from mrtrix3 import ansi
+  global execName
+  sys.stderr.write(execName + ': ' + ansi.warn + '[WARNING] ' + text + ansi.clear + '\n')
 
 
 
+# A class that can be used to display a progress bar on the terminal,
+#   mimicing the behaviour of MRtrix3 binary commands
+class progressBar(object): #pylint: disable=unused-variable
+
+  _busy = [ '.   ',
+            ' .  ',
+            '  . ',
+            '   .',
+            '  . ',
+            ' .  ' ]
+
+  def _update(self):
+    import sys
+    from mrtrix3 import ansi
+    assert not self.iscomplete
+    if self.isatty:
+      sys.stderr.write('\r' + self.execName + ': ' + ansi.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else progressBar._busy[self.counter%6]) + ']' + ansi.clear + ' ' + ansi.console + self.message + '... ' + ansi.clear + ansi.lineclear + self.newline)
+    else:
+      if self.newline:
+        sys.stderr.write(self.execName + ': ' + self.message + '... [' + ('=' * int(self.value/2)) + self.newline)
+      else:
+        sys.stderr.write('=' * (int(self.value/2) - int(self.old_value/2)))
+    sys.stderr.flush()
+
+  def __init__(self, msg, target=0):
+    import os, sys
+    from mrtrix3 import ansi
+    global verbosity
+    self.counter = 0
+    self.isatty = sys.stderr.isatty()
+    self.iscomplete = False
+    self.message = msg
+    self.multiplier = 100.0/target if target else 0
+    self.newline = '\n' if verbosity > 1 else '' # If any more than default verbosity, may still get details printed in between progress updates
+    self.old_value = 0
+    self.origverbosity = verbosity
+    self.execName = os.path.basename(sys.argv[0])
+    self.value = 0
+    verbosity = verbosity - 1 if verbosity else 0
+    if self.isatty:
+      sys.stderr.write(self.execName + ': ' + ansi.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else progressBar._busy[0]) + ']' + ansi.clear + ' ' + ansi.console + self.message + '... ' + ansi.clear + ansi.lineclear + self.newline)
+    else:
+      sys.stderr.write(self.execName + ': ' + self.message + '... [' + self.newline)
+    sys.stderr.flush()
+
+  def increment(self, msg=''):
+    import math
+    assert not self.iscomplete
+    self.counter += 1
+    force_update = False
+    if msg:
+      self.message = msg
+      force_update = True
+    if self.multiplier:
+      new_value = int(round(self.counter * self.multiplier))
+    else:
+      new_value = math.log(self.counter, 2)
+    if new_value != self.value:
+      self.old_value = self.value
+      self.value = new_value
+      force_update = True
+    if force_update:
+      self._update()
+
+  def done(self):
+    import sys
+    from mrtrix3 import ansi
+    global verbosity
+    self.iscomplete = True
+    self.value = 100
+    if self.isatty:
+      sys.stderr.write('\r' + self.execName + ': ' + ansi.execute + '[' + ('100%' if self.multiplier else 'done') + ']' + ansi.clear + ' ' + ansi.console + self.message + ansi.clear + ansi.lineclear + '\n')
+    else:
+      if self.newline:
+        sys.stderr.write(self.execName + ': ' + self.message + ' [' + ('=' * (self.value/2)) + ']\n')
+      else:
+        sys.stderr.write('=' * (int(self.value/2) - int(self.old_value/2)) + ']\n')
+    sys.stderr.flush()
+    verbosity = self.origverbosity
 
 
 
@@ -391,32 +469,18 @@ def warn(text): #pylint: disable=unused-variable
 #   that are common for all scripts, providing a custom help page that is consistent with the
 #   MRtrix3 binaries, and defining functions for exporting the help page for the purpose of
 #   automated self-documentation.
-
-import argparse
 class Parser(argparse.ArgumentParser):
 
-  #pylint: disable=protected-access
+  # pylint: disable=protected-access
 
   def __init__(self, *args_in, **kwargs_in):
     global _defaultCopyright
-    if 'author' in kwargs_in:
-      self._author = kwargs_in['author']
-      del kwargs_in['author']
-    else:
-      self._author = None
+    self._author = None
     self.citationList = [ ]
-    if 'copyright' in kwargs_in:
-      self._copyright = kwargs_in['copyright']
-      del kwargs_in['copyright']
-    else:
-      self._copyright = _defaultCopyright
+    self._copyright = _defaultCopyright
     self._description = [ ]
     self.externalCitations = False
-    if 'synopsis' in kwargs_in:
-      self.synopsis = kwargs_in['synopsis']
-      del kwargs_in['synopsis']
-    else:
-      self.synopsis = None
+    self._synopsis = None
     kwargs_in['add_help'] = False
     argparse.ArgumentParser.__init__(self, *args_in, **kwargs_in)
     self.mutuallyExclusiveOptionGroups = [ ]
@@ -430,12 +494,18 @@ class Parser(argparse.ArgumentParser):
       standard_options.add_argument('-force', action='store_true', help='Force overwrite of output files if pre-existing')
       standard_options.add_argument('-help', action='store_true', help='Display help information for the script')
       standard_options.add_argument('-nocleanup', action='store_true', help='Do not delete temporary files during script, or temporary directory at script completion')
-      standard_options.add_argument('-nthreads', metavar='number', help='Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)')
+      standard_options.add_argument('-nthreads', metavar='number', type=int, help='Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)')
       standard_options.add_argument('-tempdir', metavar='/path/to/tmp/', help='Manually specify the path in which to generate the temporary directory')
       standard_options.add_argument('-quiet',   action='store_true', help='Suppress all console output during script execution')
       standard_options.add_argument('-info', action='store_true', help='Display additional information and progress for every command invoked')
       standard_options.add_argument('-debug', action='store_true', help='Display additional debugging information over and above the output of -info')
       self.flagMutuallyExclusiveOptions( [ 'quiet', 'info', 'debug' ] )
+
+  def setAuthor(self, text):
+    self._author = text
+
+  def setSynopsis(self, text):
+    self._synopsis = text
 
   def addCitation(self, condition, reference, is_external): #pylint: disable=unused-variable
     self.citationList.append( (condition, reference) )
@@ -450,14 +520,15 @@ class Parser(argparse.ArgumentParser):
 
   # Mutually exclusive options need to be added before the command-line input is parsed
   def flagMutuallyExclusiveOptions(self, options, required=False): #pylint: disable=unused-variable
-    import sys
     if not isinstance(options, list) or not isinstance(options[0], str):
-      sys.stderr.write('Script error: Parser.flagMutuallyExclusiveOptions() only accepts a list of strings\n')
-      sys.stderr.flush()
-      sys.exit(1)
+      raise Exception('Parser.flagMutuallyExclusiveOptions() only accepts a list of strings')
     self.mutuallyExclusiveOptionGroups.append( (options, required) )
 
   def parse_args(self):
+    if not self._author:
+      raise Exception('Script author MUST be set in script\'s usage() function')
+    if not self._synopsis:
+      raise Exception('Script synopsis MUST be set in script\'s usage() function')
     result = argparse.ArgumentParser.parse_args(self)
     self.checkMutuallyExclusiveOptions(result)
     if self._subparsers:
@@ -546,6 +617,7 @@ class Parser(argparse.ArgumentParser):
 
   def printHelp(self):
     import subprocess, sys, textwrap
+    from mrtrix3 import config
 
     def bold(text):
       return ''.join( c + chr(0x08) + c for c in text)
@@ -555,8 +627,8 @@ class Parser(argparse.ArgumentParser):
 
     def appVersion():
       import subprocess, os
-      from mrtrix3.run import _mrtrix_bin_path
-      p = subprocess.Popen([os.path.join(_mrtrix_bin_path,'mrinfo'),'-version'],stdout=subprocess.PIPE)
+      import mrtrix3
+      p = subprocess.Popen([os.path.join(mrtrix3.bin_path,'mrinfo'),'-version'],stdout=subprocess.PIPE)
       line = p.stdout.readline().decode()
       return line.replace('==','').replace('mrinfo','').lstrip().rstrip()
 
@@ -570,12 +642,12 @@ class Parser(argparse.ArgumentParser):
     s += '\n'
     s += bold('SYNOPSIS') + '\n'
     s += '\n'
-    s += w.fill(self.synopsis) + '\n'
+    s += w.fill(self._synopsis) + '\n'
     s += '\n'
     s += bold('USAGE') + '\n'
     s += '\n'
     usage = self.prog + ' [ options ]'
-    # Compulsory sub-cmdline algorithm selection (if present)
+    # Compulsory subparser algorithm selection (if present)
     if self._subparsers:
       usage += ' ' + self._subparsers._group_actions[0].dest + ' ...'
     # Find compulsory input arguments
@@ -610,7 +682,7 @@ class Parser(argparse.ArgumentParser):
     # Option groups
     for group in reversed(self._action_groups):
       # * Don't display empty groups
-      # * Don't display the subcmdline option; that's dealt with in the usage
+      # * Don't display the subparser option; that's dealt with in the usage
       # * Don't re-display any compulsory positional arguments; they're also dealt with in the usage
       if group._group_actions and not (len(group._group_actions) == 1 and isinstance(group._group_actions[0], argparse._SubParsersAction)) and not group == self._positionals:
         s += bold(group.title) + '\n'
@@ -667,7 +739,7 @@ class Parser(argparse.ArgumentParser):
 
   def printFullUsage(self):
     import sys
-    sys.stdout.write(self.synopsis + '\n')
+    sys.stdout.write(self._synopsis + '\n')
     if self._description:
       if isinstance(self._description, list):
         for line in self._description:
@@ -704,9 +776,9 @@ class Parser(argparse.ArgumentParser):
         if alg == sys.argv[-2]:
           self._subparsers._group_actions[0].choices[alg].printUsageMarkdown()
           return
-      self.error('Invalid subcmdline nominated')
+      self.error('Invalid subparser nominated')
     s = '## Synopsis\n\n'
-    s += self.synopsis + '\n\n'
+    s += self._synopsis + '\n\n'
     s += '## Usage\n\n'
     s += '    ' + self.formatUsage() + '\n\n'
     if self._subparsers:
@@ -753,7 +825,7 @@ class Parser(argparse.ArgumentParser):
 
   def printUsageRst(self):
     import os, subprocess, sys
-    # Need to check here whether it's the documentation for a particular subcmdline that's being requested
+    # Need to check here whether it's the documentation for a particular subparser that's being requested
     if self._subparsers and len(sys.argv) == 3:
       for alg in self._subparsers._group_actions[0].choices:
         if alg == sys.argv[-2]:
@@ -765,7 +837,7 @@ class Parser(argparse.ArgumentParser):
     s += '='*len(self.prog) + '\n\n'
     s += 'Synopsis\n'
     s += '--------\n\n'
-    s += self.synopsis + '\n\n'
+    s += self._synopsis + '\n\n'
     s += 'Usage\n'
     s += '--------\n\n'
     s += '::\n\n'
@@ -824,101 +896,12 @@ class Parser(argparse.ArgumentParser):
 
 
 
-# A class that can be used to display a progress bar on the terminal,
-#   mimicing the behaviour of MRtrix3 binary commands
-class progressBar(object): #pylint: disable=unused-variable
-
-  _busy = [ '.   ',
-            ' .  ',
-            '  . ',
-            '   .',
-            '  . ',
-            ' .  ' ]
-
-  def _update(self):
-    import sys
-    global clearLine, colourConsole, colourClear, colourExec
-    assert not self.iscomplete
-    if self.isatty:
-      sys.stderr.write('\r' + self.scriptname + ': ' + colourExec + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else progressBar._busy[self.counter%6]) + ']' + colourClear + ' ' + colourConsole + self.message + '... ' + colourClear + clearLine + self.newline)
-    else:
-      if self.newline:
-        sys.stderr.write(self.scriptname + ': ' + self.message + '... [' + ('=' * int(self.value/2)) + self.newline)
-      else:
-        sys.stderr.write('=' * (int(self.value/2) - int(self.old_value/2)))
-    sys.stderr.flush()
-
-  def __init__(self, msg, target=0):
-    import os, sys
-    global verbosity
-    self.counter = 0
-    self.isatty = sys.stderr.isatty()
-    self.iscomplete = False
-    self.message = msg
-    self.multiplier = 100.0/target if target else 0
-    self.newline = '\n' if verbosity > 1 else '' # If any more than default verbosity, may still get details printed in between progress updates
-    self.old_value = 0
-    self.origverbosity = verbosity
-    self.scriptname = os.path.basename(sys.argv[0])
-    self.value = 0
-    verbosity = verbosity - 1 if verbosity else 0
-    if self.isatty:
-      sys.stderr.write(self.scriptname + ': ' + colourExec + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else progressBar._busy[0]) + ']' + colourClear + ' ' + colourConsole + self.message + '... ' + colourClear + clearLine + self.newline)
-    else:
-      sys.stderr.write(self.scriptname + ': ' + self.message + '... [' + self.newline)
-    sys.stderr.flush()
-
-  def increment(self, msg=''):
-    import math
-    assert not self.iscomplete
-    self.counter += 1
-    force_update = False
-    if msg:
-      self.message = msg
-      force_update = True
-    if self.multiplier:
-      new_value = int(round(self.counter * self.multiplier))
-    else:
-      new_value = math.log(self.counter, 2)
-    if new_value != self.value:
-      self.old_value = self.value
-      self.value = new_value
-      force_update = True
-    if force_update:
-      self._update()
-
-  def done(self):
-    import sys
-    global verbosity
-    global clearLine, colourConsole, colourClear, colourExec
-    self.iscomplete = True
-    self.value = 100
-    if self.isatty:
-      sys.stderr.write('\r' + self.scriptname + ': ' + colourExec + '[' + ('100%' if self.multiplier else 'done') + ']' + colourClear + ' ' + colourConsole + self.message + colourClear + clearLine + '\n')
-    else:
-      if self.newline:
-        sys.stderr.write(self.scriptname + ': ' + self.message + ' [' + ('=' * (self.value/2)) + ']\n')
-      else:
-        sys.stderr.write('=' * (int(self.value/2) - int(self.old_value/2)) + ']\n')
-    sys.stderr.flush()
-    verbosity = self.origverbosity
-
-
-
-
-# Return a boolean flag to indicate whether or not script is being run on a Windows machine
-def isWindows(): #pylint: disable=unused-variable
-  import platform
-  system = platform.system().lower()
-  return system.startswith('mingw') or system.startswith('msys') or system.startswith('nt') or system.startswith('windows')
-
-
-
 
 # Handler function for dealing with system signals
 def handler(signum, _frame):
-  import os, signal, sys
-  global _signals
+  import os, shutil, signal, sys
+  from mrtrix3 import ansi
+  global _signals, execName, tempDir, workingDir
   # Ignore any other incoming signals
   for s in _signals:
     try:
@@ -927,12 +910,8 @@ def handler(signum, _frame):
       pass
   # Kill any child processes in the run module
   try:
-    from mrtrix3.run import _processes
-    for p in _processes:
-      if p:
-        p.terminate()
-        p.communicate() # Flushes the I/O buffers
-    _processes = [ ]
+    from mrtrix3.run import killAll
+    killAll()
   except ImportError:
     pass
   # Generate the error message
@@ -948,6 +927,13 @@ def handler(signum, _frame):
       pass
   if not signal_found:
     msg += '?] Unknown system signal'
-  sys.stderr.write('\n' + os.path.basename(sys.argv[0]) + ': ' + colourError + msg + colourClear + '\n')
-  complete()
-  exit(signum)
+  sys.stderr.write('\n' + execName + ': ' + ansi.error + msg + ansi.clear + '\n')
+  if os.getcwd() != workingDir:
+    os.chdir(workingDir)
+  if tempDir:
+    try:
+      shutil.rmtree(tempDir)
+    except FileNotFoundError:
+      pass
+    tempDir = ''
+  sys.exit(signum)

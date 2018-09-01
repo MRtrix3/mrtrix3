@@ -1,5 +1,7 @@
-def initialise(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('dhollander', author='Thijs Dhollander (thijs.dhollander@gmail.com)', synopsis='Use the Dhollander et al. (2016) algorithm for unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof)', parents=[base_parser])
+def usage(base_parser, subparsers): #pylint: disable=unused-variable
+  parser = subparsers.add_parser('dhollander', parents=[base_parser])
+  parser.setAuthor('Thijs Dhollander (thijs.dhollander@gmail.com)')
+  parser.setSynopsis('Use the Dhollander et al. (2016) algorithm for unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof)')
   parser.addCitation('', 'Dhollander, T.; Raffelt, D. & Connelly, A. Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5', False)
   parser.addCitation('', 'Dhollander, T.; Raffelt, D. & Connelly, A. Accuracy of response function estimation algorithms for 3-tissue spherical deconvolution of diverse quality diffusion MRI data. Proc Intl Soc Mag Reson Med, 2018, 26, 1569', False)
   parser.add_argument('input', help='The input DWI')
@@ -35,7 +37,7 @@ def needsSingleShell(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import shutil
-  from mrtrix3 import app, image, path, run
+  from mrtrix3 import app, image, MRtrixException, path, run
 
 
   # Get b-values and number of volumes per b-value.
@@ -43,7 +45,7 @@ def execute(): #pylint: disable=unused-variable
   bvolumes = [ int(x) for x in image.mrinfo('dwi.mif', 'shell_sizes').split() ]
   app.console(str(len(bvalues)) + ' unique b-value(s) detected: ' + ','.join(map(str,bvalues)) + ' with ' + ','.join(map(str,bvolumes)) + ' volumes.')
   if len(bvalues) < 2:
-    app.error('Need at least 2 unique b-values (including b=0).')
+    raise MRtrixException('Need at least 2 unique b-values (including b=0).')
 
 
   # Get lmax information (if provided).
@@ -51,12 +53,12 @@ def execute(): #pylint: disable=unused-variable
   if app.args.lmax:
     sfwm_lmax = [ int(x.strip()) for x in app.args.lmax.split(',') ]
     if not len(sfwm_lmax) == len(bvalues):
-      app.error('Number of lmax\'s (' + str(len(sfwm_lmax)) + ', as supplied to the -lmax option: ' + ','.join(map(str,sfwm_lmax)) + ') does not match number of unique b-values.')
+      raise MRtrixException('Number of lmax\'s (' + str(len(sfwm_lmax)) + ', as supplied to the -lmax option: ' + ','.join(map(str,sfwm_lmax)) + ') does not match number of unique b-values.')
     for l in sfwm_lmax:
       if l%2:
-        app.error('Values supplied to the -lmax option must be even.')
+        raise MRtrixException('Values supplied to the -lmax option must be even.')
       if l<0:
-        app.error('Values supplied to the -lmax option must be non-negative.')
+        raise MRtrixException('Values supplied to the -lmax option must be non-negative.')
 
 
   # Erode (brain) mask.

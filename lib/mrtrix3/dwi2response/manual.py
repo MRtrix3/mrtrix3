@@ -1,5 +1,7 @@
-def initialise(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('manual', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Derive a response function using an input mask image alone (i.e. pre-selected voxels)', parents=[base_parser])
+def usage(base_parser, subparsers): #pylint: disable=unused-variable
+  parser = subparsers.add_parser('manual', parents=[base_parser])
+  parser.setAuthor('Robert E. Smith (robert.smith@florey.edu.au)')
+  parser.setSynopsis('Derive a response function using an input mask image alone (i.e. pre-selected voxels)')
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('in_voxels', help='Input voxel selection mask')
   parser.add_argument('output', help='Output response function text file')
@@ -34,7 +36,7 @@ def needsSingleShell(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import os, shutil
-  from mrtrix3 import app, image, path, run
+  from mrtrix3 import app, image, MRtrixException, path, run
 
   shells = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shell_bvalues').split() ]
 
@@ -43,12 +45,12 @@ def execute(): #pylint: disable=unused-variable
   if app.args.lmax:
     lmax = [ int(x.strip()) for x in app.args.lmax.split(',') ]
     if not len(lmax) == len(shells):
-      app.error('Number of manually-defined lmax\'s (' + str(len(lmax)) + ') does not match number of b-value shells (' + str(len(shells)) + ')')
+      raise MRtrixException('Number of manually-defined lmax\'s (' + str(len(lmax)) + ') does not match number of b-value shells (' + str(len(shells)) + ')')
     for l in lmax:
       if l%2:
-        app.error('Values for lmax must be even')
+        raise MRtrixException('Values for lmax must be even')
       if l<0:
-        app.error('Values for lmax must be non-negative')
+        raise MRtrixException('Values for lmax must be non-negative')
 
   # Do we have directions, or do we need to calculate them?
   if not os.path.exists('dirs.mif'):
