@@ -15,7 +15,7 @@
 
 #include "stats/cfe.h"
 
-#define CFE_MERGESORT_TEST
+//#define CFE_MERGESORT_TEST
 
 namespace MR
 {
@@ -28,13 +28,14 @@ namespace MR
 
       void InitMatrixFixel::add (const vector<index_type>& indices)
       {
-        while (spinlock.test_and_set (std::memory_order_acquire));
+        //while (spinlock.test_and_set (std::memory_order_acquire));
 
         if ((*this).empty()) {
           (*this).reserve (indices.size());
           for (auto i : indices)
             (*this).emplace_back (InitMatrixElement (i));
-          spinlock.clear (std::memory_order_release);
+          track_count = 1;
+          //spinlock.clear (std::memory_order_release);
           return;
         }
 
@@ -57,9 +58,6 @@ namespace MR
         for (auto i : map_merged)
           vector_merged.emplace_back (InitMatrixElement (i.first, i.second));
         const vector<InitMatrixElement> original_data = (*this);
-#endif
-
-        ssize_t self_index = 0, in_index = 0;
 
         std::cerr << "\n\n\nCurrent contents:\n";
         for (auto i : *this)
@@ -68,6 +66,9 @@ namespace MR
         for (auto i : indices)
           std::cerr << i << " ";
         std::cerr << "\n";
+#endif
+
+        ssize_t self_index = 0, in_index = 0;
 
         // For anything in indices that doesn't yet appear in *this,
         //   add to this list; once completed, extend *this by the appropriate
@@ -117,7 +118,9 @@ namespace MR
         //   lead to memory bloat due to inability to return the old memory
         // If this occurs, iteratively calling push_back() may instead engage the
         //   memory-reservation-doubling behaviour
-        (*this).resize ((*this).size() + indices.size() - intersection);
+        //(*this).resize ((*this).size() + indices.size() - intersection);
+        while ((*this).size() < old_size + indices.size() - intersection)
+          (*this).push_back (InitMatrixElement());
         ssize_t out_index = (*this).size() - 1;
 
         // TESTME
@@ -138,17 +141,20 @@ namespace MR
           }
           --out_index;
         }
-        while (in_index >= 0 && out_index >= 0)
-          (*this)[out_index--] = InitMatrixElement (indices[in_index--]);
+        // TODO Need better conditions on this
+        if (self_index < 0) {
+          while (in_index >= 0 && out_index >= 0)
+            (*this)[out_index--] = InitMatrixElement (indices[in_index--]);
+        }
 
         ++track_count;
 
+#ifdef CFE_MERGESORT_TEST
         std::cerr << "New contents:\n";
         for (auto i : *this)
           std::cerr << "[" << i.index() << ": " << i.value() << "] ";
         std::cerr << "\n";
 
-#ifdef CFE_MERGESORT_TEST
         // Slow verification of contents
         assert ((*this).size() == vector_merged.size());
         for (size_t i = 0; i != (*this).size(); ++i) {
@@ -157,7 +163,7 @@ namespace MR
         }
 #endif
 
-        spinlock.clear (std::memory_order_release);
+        //spinlock.clear (std::memory_order_release);
       }
 /*
 
@@ -224,15 +230,11 @@ namespace MR
                                       Image<index_type>& fixel_indexer,
                                       const vector<direction_type>& fixel_directions,
                                       Image<bool>& fixel_mask,
-                                      vector<uint16_t>& fixel_TDI,
-                                      init_connectivity_matrix_type& connectivity_matrix,
                                       const value_type angular_threshold) :
                                         mapper               (mapper),
                                         fixel_indexer        (fixel_indexer) ,
                                         fixel_directions     (fixel_directions),
                                         fixel_mask           (fixel_mask),
-                                        fixel_TDI            (fixel_TDI),
-                                        connectivity_matrix  (connectivity_matrix),
                                         angular_threshold_dp (std::cos (angular_threshold * (Math::pi/180.0))) { }
 
 
@@ -286,7 +288,8 @@ namespace MR
 */
 
 
-      bool TrackProcessor::operator() (const DWI::Tractography::Streamline<>& tck)
+      bool TrackProcessor::operator() (const DWI::Tractography::Streamline<>& tck,
+                                       vector<index_type>& out)
       {
         DWI::Tractography::Mapping::SetVoxelDir in;
         mapper (tck, in);
@@ -317,13 +320,13 @@ namespace MR
             }
             if (closest_fixel_index != num_fixels && largest_dp > angular_threshold_dp) {
               tract_fixel_indices.push_back (closest_fixel_index);
-              fixel_TDI[closest_fixel_index]++;
+              //fixel_TDI[closest_fixel_index]++;
             }
           }
         }
 
         std::sort (tract_fixel_indices.begin(), tract_fixel_indices.end());
-
+/*
         try {
           for (auto f : tract_fixel_indices)
             connectivity_matrix[f].add (tract_fixel_indices);
@@ -332,8 +335,27 @@ namespace MR
           throw Exception ("Error assigning memory for CFE connectivity matrix");
           return false;
         }
+*/
+        std::swap (tract_fixel_indices, out);
+        return true;
       }
 
+
+
+
+      bool MappedTrackReceiver::operator() (const vector<index_type>& fixels)
+      {
+        try {
+          for (auto f : fixels) {
+            connectivity_matrix[f].add (fixels);
+            ++fixel_TDI[f];
+          }
+          return true;
+        } catch (...) {
+          throw Exception ("Error assigning memory for CFE connectivity matrix");
+          return false;
+        }
+      }
 
 
 

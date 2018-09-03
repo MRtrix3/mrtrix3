@@ -398,14 +398,21 @@ void run()
     DWI::Tractography::Mapping::TrackMapperBase mapper (index_image);
     mapper.set_upsample_ratio (DWI::Tractography::Mapping::determine_upsample_ratio (index_header, properties, 0.333f));
     mapper.set_use_precise_mapping (true);
-    Stats::CFE::TrackProcessor tract_processor (mapper, index_image, directions, mask, fixel_TDI, connectivity_matrix, angular_threshold);
+    //Stats::CFE::TrackProcessor tract_processor (mapper, index_image, directions, mask, fixel_TDI, connectivity_matrix, angular_threshold);
     /*Thread::run_queue (
         loader,
         Thread::batch (DWI::Tractography::Streamline<float>()),
         mapper,
         Thread::batch (DWI::Tractography::Mapping::SetVoxelDir()),
         tract_processor);*/
-    Thread::run_queue (loader, Thread::batch (DWI::Tractography::Streamline<float>()), Thread::multi (tract_processor));
+    //Thread::run_queue (loader, Thread::batch (DWI::Tractography::Streamline<float>()), Thread::multi (tract_processor));
+    Stats::CFE::TrackProcessor tract_processor (mapper, index_image, directions, mask, angular_threshold);
+    Stats::CFE::MappedTrackReceiver receiver (fixel_TDI, connectivity_matrix);
+    Thread::run_queue (loader,
+                       Thread::batch (DWI::Tractography::Streamline<float>()),
+                       Thread::multi (tract_processor),
+                       Thread::batch (vector<index_type>()),
+                       receiver);
   }
   track_file.close();
 

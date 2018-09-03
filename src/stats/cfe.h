@@ -171,6 +171,9 @@ namespace MR
       // TODO Modify this by incorporating the track mapping functor, doing the dixel->fixel mapping,
       //   then calling the appropriate add() functions within the initial connectivity matrix
       // TODO Eventually check whether or not it would be preferable to remove the explicit fixel TDI
+      // TODO Abandon the multi-threaded matrix updating for now; just focus on the RAM reduction
+      // Make a worker class that does track mapping, dixel->fixel, and fixel index sorting;
+      //   then pass that data down a queue for single-threaded matrix & TDI updating
       class TrackProcessor { MEMALIGN(TrackProcessor)
 
         public:
@@ -178,21 +181,33 @@ namespace MR
                           Image<index_type>& fixel_indexer,
                           const vector<direction_type>& fixel_directions,
                           Image<bool>& fixel_mask,
-                          vector<uint16_t>& fixel_TDI,
-                          init_connectivity_matrix_type& connectivity_matrix,
                           const value_type angular_threshold);
 
           //bool operator () (const SetVoxelDir& in);
-          bool operator () (const DWI::Tractography::Streamline<>& in);
+          bool operator () (const DWI::Tractography::Streamline<>& in,
+                            vector<index_type>& out);
 
         private:
           const DWI::Tractography::Mapping::TrackMapperBase& mapper;
           Image<index_type> fixel_indexer;
           const vector<direction_type>& fixel_directions;
           Image<bool> fixel_mask;
+          const value_type angular_threshold_dp;
+      };
+
+
+
+      class MappedTrackReceiver
+      { MEMALIGN(MappedTrackReceiver)
+        public:
+          MappedTrackReceiver (vector<uint16_t>& fixel_TDI,
+                               init_connectivity_matrix_type& connectivity_matrix) :
+              fixel_TDI (fixel_TDI),
+              connectivity_matrix (connectivity_matrix) { }
+          bool operator() (const vector<index_type>&);
+        private:
           vector<uint16_t>& fixel_TDI;
           init_connectivity_matrix_type& connectivity_matrix;
-          const value_type angular_threshold_dp;
       };
 
 
