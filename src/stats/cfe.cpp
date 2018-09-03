@@ -230,10 +230,8 @@ namespace MR
       bool MappedTrackReceiver::operator() (const vector<index_type>& fixels)
       {
         try {
-          for (auto f : fixels) {
+          for (auto f : fixels)
             connectivity_matrix[f].add (fixels);
-            ++fixel_TDI[f];
-          }
           return true;
         } catch (...) {
           throw Exception ("Error assigning memory for CFE connectivity matrix");

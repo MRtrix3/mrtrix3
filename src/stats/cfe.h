@@ -16,8 +16,6 @@
 #ifndef __stats_cfe_h__
 #define __stats_cfe_h__
 
-#include <atomic>
-
 #include "image.h"
 #include "image_helpers.h"
 #include "types.h"
@@ -51,12 +49,11 @@ namespace MR
       @{ */
 
 
-      // TODO Classes for dealing with dynamic multi-threaded construction of the
+      // Classes for dealing with dynamic multi-threaded construction of the
       //   fixel-fixel connectivity matrix
       class InitMatrixElement
       { NOMEMALIGN
         public:
-          //InitMatrixElement() = delete; // Can't delete this if calling vector.resize();
           InitMatrixElement() :
               fixel_index (std::numeric_limits<index_type>::max()),
               track_count (0) { }
@@ -79,23 +76,16 @@ namespace MR
 
 
 
-      // TODO Ideally base class would be private, but need simple access to iterators for now
       class InitMatrixFixel : public vector<InitMatrixElement>
       { MEMALIGN(InitMatrixFixel)
         public:
           using BaseType = vector<InitMatrixElement>;
           InitMatrixFixel() :
-              spinlock (ATOMIC_FLAG_INIT),
               track_count (0) { }
           void add (const vector<index_type>& indices);
+          index_type count() const { return track_count; }
         private:
-          std::atomic_flag spinlock;
           index_type track_count;
-
-          InitMatrixFixel& operator= (vector<InitMatrixElement>&& that) {
-            this->BaseType::operator= (std::move (that));
-            return *this;
-          }
       };
 
 
@@ -109,6 +99,7 @@ namespace MR
           connectivity (const connectivity_value_type v) : value (v) { }
           connectivity_value_type value;
       };
+
 
 
       // A class to store fixel index / connectivity value pairs
@@ -151,29 +142,21 @@ namespace MR
             norm_multiplier = Stats::CFE::value_type (1.0) / norm_multiplier;
           }
           Stats::CFE::value_type norm_multiplier;
-
       };
-
 
 
 
       // Different types are used depending on whether the connectivity matrix
       //   is in the process of being built, or whether it has been normalised
-      //using init_connectivity_matrix_type = vector<std::map<index_type, connectivity>>;
       using init_connectivity_matrix_type = vector<InitMatrixFixel>;
       using norm_connectivity_matrix_type = vector<NormMatrixFixel>;
 
 
 
       /**
-       * Process each track by converting each streamline to a set of dixels, and map these to fixels.
+       * Process each track by converting each streamline to a set of dixels,
+       * mapping these to fixels, and sorting the list of fixel indices.
        */
-      // TODO Modify this by incorporating the track mapping functor, doing the dixel->fixel mapping,
-      //   then calling the appropriate add() functions within the initial connectivity matrix
-      // TODO Eventually check whether or not it would be preferable to remove the explicit fixel TDI
-      // TODO Abandon the multi-threaded matrix updating for now; just focus on the RAM reduction
-      // Make a worker class that does track mapping, dixel->fixel, and fixel index sorting;
-      //   then pass that data down a queue for single-threaded matrix & TDI updating
       class TrackProcessor { MEMALIGN(TrackProcessor)
 
         public:
@@ -199,15 +182,14 @@ namespace MR
       class MappedTrackReceiver
       { MEMALIGN(MappedTrackReceiver)
         public:
-          MappedTrackReceiver (vector<uint16_t>& fixel_TDI,
-                               init_connectivity_matrix_type& connectivity_matrix) :
-              fixel_TDI (fixel_TDI),
+          MappedTrackReceiver (init_connectivity_matrix_type& connectivity_matrix) :
               connectivity_matrix (connectivity_matrix) { }
           bool operator() (const vector<index_type>&);
         private:
-          vector<uint16_t>& fixel_TDI;
           init_connectivity_matrix_type& connectivity_matrix;
       };
+
+
 
 
 
