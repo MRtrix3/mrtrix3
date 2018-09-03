@@ -93,15 +93,6 @@ namespace MR
 
 
 
-      class connectivity { NOMEMALIGN
-        public:
-          connectivity () : value (0.0) { }
-          connectivity (const connectivity_value_type v) : value (v) { }
-          connectivity_value_type value;
-      };
-
-
-
       // A class to store fixel index / connectivity value pairs
       //   only after the connectivity matrix has been thresholded / normalised
       class NormMatrixElement
