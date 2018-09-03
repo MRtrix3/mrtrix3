@@ -59,13 +59,13 @@ namespace MR
           vector_merged.emplace_back (InitMatrixElement (i.first, i.second));
         const vector<InitMatrixElement> original_data = (*this);
 
-        std::cerr << "\n\n\nCurrent contents:\n";
-        for (auto i : *this)
-          std::cerr << "[" << i.index() << ": " << i.value() << "] ";
-        std::cerr << "\nIncoming contents:\n";
-        for (auto i : indices)
-          std::cerr << i << " ";
-        std::cerr << "\n";
+        //std::cerr << "\n\n\nCurrent contents:\n";
+        //for (auto i : *this)
+        //  std::cerr << "[" << i.index() << ": " << i.value() << "] ";
+        //std::cerr << "\nIncoming contents:\n";
+        //for (auto i : indices)
+        //  std::cerr << i << " ";
+        //std::cerr << "\n";
 #endif
 
         ssize_t self_index = 0, in_index = 0;
@@ -150,10 +150,10 @@ namespace MR
         ++track_count;
 
 #ifdef CFE_MERGESORT_TEST
-        std::cerr << "New contents:\n";
-        for (auto i : *this)
-          std::cerr << "[" << i.index() << ": " << i.value() << "] ";
-        std::cerr << "\n";
+        //std::cerr << "New contents:\n";
+        //for (auto i : *this)
+        //  std::cerr << "[" << i.index() << ": " << i.value() << "] ";
+        //std::cerr << "\n";
 
         // Slow verification of contents
         assert ((*this).size() == vector_merged.size());
@@ -165,64 +165,8 @@ namespace MR
 
         //spinlock.clear (std::memory_order_release);
       }
-/*
 
-        vector<InitMatrixElement> combined_indices;
-        combined_indices.reserve ((*this).size() + indices.size());
 
-        std::cerr << "\n\n\nCurrent contents:\n";
-        for (auto i : *this)
-          std::cerr << "[" << i.index() << ": " << i.value() << "] ";
-        std::cerr << "\nIncoming contents:\n";
-        for (auto i : indices)
-          std::cerr << i << " ";
-        std::cerr << "\n";
-
-        while (self_index < (*this).size() && in_index < indices.size()) {
-          if ((*this)[self_index].index() == indices[in_index]) {
-            combined_indices.emplace_back (InitMatrixElement ((*this)[self_index].index(), (*this)[self_index].value()+1));
-            ++self_index;
-            ++in_index;
-            //++(*this)[self_index++];
-            //last_sign = 0;
-            //++self_index;
-            //++in_index;
-          } else if ((*this)[self_index].index() > indices[in_index]) {
-            //if (last_sign > 0)
-            //  new_entries.push_back (InitMatrixElement(indices[in_index]));
-            combined_indices.emplace_back (InitMatrixElement (indices[in_index++])); // Will set count to 1 in the constructor
-            //++in_index;
-            //last_sign = -1;
-          } else {
-            combined_indices.emplace_back (InitMatrixElement ((*this)[self_index++]));
-            //self_index++;
-            //last_sign = 1;
-          }
-        }
-
-        while (self_index < (*this).size()) {
-          assert (in_index == indices.size());
-          combined_indices.emplace_back (InitMatrixElement ((*this)[self_index++]));
-        }
-        while (in_index < indices.size()) {
-          assert (self_index == (*this).size());
-          combined_indices.emplace_back (InitMatrixElement (indices[in_index++]));
-        }
-
-        //std::swap (BaseType (*this), combined_indices);
-        *this = std::move (combined_indices);
-        ++track_count;
-
-        //(*this).resize ((*this).size() + new_entries.size());
-
-        std::cerr << "New contents:\n";
-        for (auto i : *this)
-          std::cerr << "[" << i.index() << ": " << i.value() << "] ";
-        std::cerr << "\n";
-
-        spinlock.clear (std::memory_order_release);
-      }
-*/
 
 
 
@@ -238,64 +182,17 @@ namespace MR
                                         angular_threshold_dp (std::cos (angular_threshold * (Math::pi/180.0))) { }
 
 
-/*
-      bool TrackProcessor::operator() (const SetVoxelDir& in)
-      {
-        // For each voxel tract tangent, assign to a fixel
-        vector<index_type> tract_fixel_indices;
-        for (SetVoxelDir::const_iterator i = in.begin(); i != in.end(); ++i) {
-          assign_pos_of (*i).to (fixel_indexer);
-          fixel_indexer.index(3) = 0;
-          const index_type num_fixels = fixel_indexer.value();
-          if (num_fixels > 0) {
-            fixel_indexer.index(3) = 1;
-            const index_type first_index = fixel_indexer.value();
-            const index_type last_index = first_index + num_fixels;
-            // Note: Streamlines can still be assigned to a fixel that is outside the mask;
-            //   however this will not be permitted to contribute to the matrix
-            index_type closest_fixel_index = num_fixels;
-            value_type largest_dp = 0.0;
-            const direction_type dir (i->get_dir().normalized());
-            for (index_type j = first_index; j < last_index; ++j) {
-              const value_type dp = abs (dir.dot (fixel_directions[j]));
-              if (dp > largest_dp) {
-                largest_dp = dp;
-                fixel_mask.index(0) = j;
-                if (fixel_mask.value())
-                  closest_fixel_index = j;
-              }
-            }
-            if (closest_fixel_index != num_fixels && largest_dp > angular_threshold_dp) {
-              tract_fixel_indices.push_back (closest_fixel_index);
-              fixel_TDI[closest_fixel_index]++;
-            }
-          }
-        }
-
-        try {
-          for (size_t i = 0; i < tract_fixel_indices.size(); i++) {
-            for (size_t j = i + 1; j < tract_fixel_indices.size(); j++) {
-              connectivity_matrix[tract_fixel_indices[i]][tract_fixel_indices[j]].value++;
-              connectivity_matrix[tract_fixel_indices[j]][tract_fixel_indices[i]].value++;
-            }
-          }
-          return true;
-        } catch (...) {
-          throw Exception ("Error assigning memory for CFE connectivity matrix");
-          return false;
-        }
-      }
-*/
 
 
       bool TrackProcessor::operator() (const DWI::Tractography::Streamline<>& tck,
-                                       vector<index_type>& out)
+                                       vector<index_type>& out) const
       {
         DWI::Tractography::Mapping::SetVoxelDir in;
         mapper (tck, in);
 
         // For each voxel tract tangent, assign to a fixel
-        vector<index_type> tract_fixel_indices;
+        out.clear();
+        out.reserve (in.size());
         for (SetVoxelDir::const_iterator i = in.begin(); i != in.end(); ++i) {
           assign_pos_of (*i).to (fixel_indexer);
           fixel_indexer.index(3) = 0;
@@ -318,25 +215,12 @@ namespace MR
                   closest_fixel_index = j;
               }
             }
-            if (closest_fixel_index != num_fixels && largest_dp > angular_threshold_dp) {
-              tract_fixel_indices.push_back (closest_fixel_index);
-              //fixel_TDI[closest_fixel_index]++;
-            }
+            if (closest_fixel_index != num_fixels && largest_dp > angular_threshold_dp)
+              out.push_back (closest_fixel_index);
           }
         }
 
-        std::sort (tract_fixel_indices.begin(), tract_fixel_indices.end());
-/*
-        try {
-          for (auto f : tract_fixel_indices)
-            connectivity_matrix[f].add (tract_fixel_indices);
-          return true;
-        } catch (...) {
-          throw Exception ("Error assigning memory for CFE connectivity matrix");
-          return false;
-        }
-*/
-        std::swap (tract_fixel_indices, out);
+        std::sort (out.begin(), out.end());
         return true;
       }
 

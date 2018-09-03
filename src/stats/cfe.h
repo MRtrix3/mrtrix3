@@ -183,15 +183,14 @@ namespace MR
                           Image<bool>& fixel_mask,
                           const value_type angular_threshold);
 
-          //bool operator () (const SetVoxelDir& in);
           bool operator () (const DWI::Tractography::Streamline<>& in,
-                            vector<index_type>& out);
+                            vector<index_type>& out) const;
 
         private:
           const DWI::Tractography::Mapping::TrackMapperBase& mapper;
-          Image<index_type> fixel_indexer;
+          mutable Image<index_type> fixel_indexer;
           const vector<direction_type>& fixel_directions;
-          Image<bool> fixel_mask;
+          mutable Image<bool> fixel_mask;
           const value_type angular_threshold_dp;
       };
 
