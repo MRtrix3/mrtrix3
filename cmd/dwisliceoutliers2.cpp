@@ -130,16 +130,24 @@ class RMSErrorFunctor {
 /**
  * @brief 2-component Gaussian Mixture Model
  */
+template <typename T>
 class GMModel {
   MEMALIGN(GMModel)
   public:
-    GMModel (const int max_iters = 50, const float eps = 1e-3, const float reg_covar = 1e-6)
+
+    using float_t = T;
+    using VecType = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+
+    GMModel (const int max_iters = 50, const float_t eps = 1e-3, const float_t reg_covar = 1e-6)
       : niter (max_iters), tol(eps), reg(reg_covar) { }
 
-  void fit(const Eigen::VectorXf& x) {
+    /**
+     * Fit GMM to vector x.
+     */
+    void fit(const VecType& x) {
       // initialise
       init(x);
-      float ll, ll0 = -INFINITY;
+      float_t ll, ll0 = -std::numeric_limits<float_t>::infinity();
       // Expectation-Maximization
       for (int n = 0; n < niter; n++) {
         ll = e_step(x);
@@ -150,64 +158,71 @@ class GMModel {
       }
     }
 
-    Eigen::VectorXf get_prob() const { return p1.array().exp(); }
+    /**
+     * Get posterior probability of the fit.
+     */
+    VecType posterior() const { return Rin.array().exp(); }
 
   private:
     const int niter;
-    const float tol, reg;
+    const float_t tol, reg;
 
-    float Min, Mout;
-    float Sin, Sout;
-    float Pin, Pout;
-    Eigen::VectorXf p1, p2;
+    float_t Min, Mout;
+    float_t Sin, Sout;
+    float_t Pin, Pout;
+    VecType Rin, Rout;
 
-    inline void init(const Eigen::VectorXf& x) {
-      float med = median(x);
-      float mad = median(Eigen::abs(x.array() - med)) * 1.4826f;
+    // initialise inlier and outlier classes.
+    inline void init(const VecType& x) {
+      float_t med = median(x);
+      float_t mad = median(Eigen::abs(x.array() - med)) * 1.4826;
       Min = med; Mout = 3*med;
       Sin = mad; Sout = 3*mad;
       Pin = 0.9; Pout = 0.1;
     }
 
-    inline float e_step(const Eigen::VectorXf& x) {
-      p1 = log_gaussian(x, Min, Sin);
-      p1 = p1.array() + std::log(Pin);
-      p2 = log_gaussian(x, Mout, Sout);
-      p2 = p2.array() + std::log(Pout);
-      Eigen::VectorXf log_prob_norm = Eigen::log(p1.array().exp() + p2.array().exp());
-      p1 -= log_prob_norm;
-      p2 -= log_prob_norm;
+    // E-step: update sample log-responsabilies and return log-likelohood.
+    inline float_t e_step(const VecType& x) {
+      Rin = log_gaussian(x, Min, Sin);
+      Rin = Rin.array() + std::log(Pin);
+      Rout = log_gaussian(x, Mout, Sout);
+      Rout = Rout.array() + std::log(Pout);
+      VecType log_prob_norm = Eigen::log(Rin.array().exp() + Rout.array().exp());
+      Rin -= log_prob_norm;
+      Rout -= log_prob_norm;
       return log_prob_norm.mean();
     }
 
-    inline void m_step(const Eigen::VectorXf& x) {
-      Eigen::VectorXf w1 = p1.array().exp();
-      Eigen::VectorXf w2 = p2.array().exp();
-      Pin = w1.sum();
-      Pout = w2.sum();
-      Min = x.dot(w1) / Pin;
-      Mout = x.dot(w2) / Pout;
-      Sin = (x.array() - Min).square().matrix().dot(w1);
-      Sin = std::sqrt(Sin/Pin + reg);
-      Sout = (x.array() - Mout).square().matrix().dot(w2);
-      Sout = std::sqrt(Sout/Pout + reg);
-      Pin /= x.size();
-      Pout /= x.size();
+    // M-step: update component mean and variance.
+    inline void m_step(const VecType& x) {
+      VecType w1 = Rin.array().exp();
+      VecType w2 = Rout.array().exp();
+      Pin = w1.mean();
+      Pout = w2.mean();
+      Min = average(x, w1);
+      Mout = average(x, w2);
+      Sin = std::sqrt(average((x.array() - Min).square(), w1) + reg);
+      Sout = std::sqrt(average((x.array() - Min).square(), w2) + reg);
     }
 
-    inline Eigen::VectorXf log_gaussian(const Eigen::VectorXf& x, float mu = 0., float std = 1.) const {
-      Eigen::VectorXf resp = x.array() - mu; resp /= std;
+    inline VecType log_gaussian(const VecType& x, float_t mu = 0., float_t std = 1.) const {
+      VecType resp = x.array() - mu; resp /= std;
       resp = resp.array().square() + std::log(2*M_PI);
       resp *= -0.5f; resp = resp.array() - std::log(std);
       return resp;
     }
 
-    inline float median(const Eigen::VectorXf& x) const {
-      vector<float> vec (x.size());
+    inline float_t median(const VecType& x) const {
+      vector<float_t> vec (x.size());
       for (size_t i = 0; i < x.size(); i++)
         vec[i] = x[i];
       return Math::median(vec);
     }
+
+    inline float_t average(const VecType& x, const VecType& w) const {
+      return x.dot(w) / w.sum();
+    }
+
 };
 
 
@@ -256,14 +271,14 @@ void run ()
   
   // Compute weights
   Eigen::MatrixXf W = Eigen::MatrixXf::Ones(E.rows(), E.cols());
-  GMModel gmm;
+  GMModel<value_type> gmm;
   for (size_t s = 0; s < shells.count(); s++) {
     int k = 0;
     Eigen::VectorXf r2 (E.rows() * shells[s].count());
     for (size_t v : shells[s].get_volumes())
-      r2.segment(E.rows() * (k++), E.rows()) = E.col(v); //.array().square();
+      r2.segment(E.rows() * (k++), E.rows()) = E.col(v);
     gmm.fit(r2);
-    Eigen::VectorXf p = gmm.get_prob();
+    Eigen::VectorXf p = gmm.posterior();
     k = 0;
     for (size_t v : shells[s].get_volumes())
       W.col(v) = p.segment(E.rows() * (k++), E.rows());
