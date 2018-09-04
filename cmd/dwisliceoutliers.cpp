@@ -67,6 +67,9 @@ void usage ()
   + Option ("imscale", "intensity matching scale output")
     + Argument ("s").type_image_out()
 
+  + Option ("export_error", "export RMSE matrix, scaled by the median error in each shell.")
+    + Argument ("E").type_file_out()
+
   + DWI::GradImportOptions();
 
 }
@@ -244,6 +247,12 @@ void run ()
   // Output
   Eigen::ArrayXXf Wfull = W.replicate(mb, 1);
   save_matrix(Wfull, argument[2]);
+
+  opt = get_options("export_error");
+  if (opt.size()) {
+    Eigen::MatrixXf Es = E.array().rowwise() / scale.transpose().array();
+    save_matrix(Es.replicate(mb, 1), opt[0][0]);
+  }
 
   // Image scale output
   opt = get_options("imscale");
