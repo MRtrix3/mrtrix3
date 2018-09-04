@@ -45,12 +45,12 @@ options.add_argument('-sorder', help='Slice order (default = 2,1, for odd-even)'
 options.add_argument('-sspwidth', help='Slice thickness for Gaussian SSP (default = 1)')
 options.add_argument('-sspfile', help='Slice sensitivity profile as vector')
 options.add_argument('-or_loss', help='Outlier rejection loss function (default = softl1)')
-options.add_argument('-matchintensity', help='Activate "slice" or "full" intensity matching (default = off)')
+#options.add_argument('-matchintensity', help='Activate "slice" or "full" intensity matching (default = off)')
 options.add_argument('-fieldmap', help='B0 field map for distortion correction')
 options.add_argument('-fieldidx', help='Index of volume to which field map is aligned (default = 0)')
 options.add_argument('-pe_table', help='Phase encoding table in MRtrix format')
 options.add_argument('-pe_eddy', nargs=2, help='Phase encoding table in FSL acqp/index format')
-options.add_argument('-sliceweights', help='Import fixed slice weights')
+options.add_argument('-priorweights', help='Import prior slice weights')
 options.add_argument('-export_motion', help='Export rigid motion parameters')
 options.add_argument('-export_weights', help='Export slice weights')
 app.cmdline.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
@@ -183,8 +183,8 @@ if app.args.sorder:
     motfilt_option += ' -packs ' + p + ' -shift ' + s
 
 # Import fixed slice weights
-if app.args.sliceweights:
-    run.command('cp ' + path.fromUser(app.args.sliceweights, True) + ' sliceweights0.txt')
+if app.args.priorweights:
+    run.command('cp ' + path.fromUser(app.args.priorweights, True) + ' priorweights.txt')
 
 
 # Configuration
@@ -214,48 +214,37 @@ inputfn = 'in.mif'
 
 def reconstep(k):
     im = inputfn;
-    if k > 0 and app.args.matchintensity:
-        im = 'scaled.mif'
-        run.command('mrcalc ' + inputfn + (' biasfield.mif -exp -mult' if app.args.matchintensity=='full' else '') + ' imscale.mif -mult ' + im + ' -force')
+#    if k > 0 and app.args.matchintensity:
+#        im = 'scaled.mif'
+#        run.command('mrcalc ' + inputfn + (' biasfield.mif -exp -mult' if app.args.matchintensity=='full' else '') + ' imscale.mif -mult ' + im + ' -force')
     rcmd = 'dwirecon ' + im + ' recon-' + str(k) + '.mif -spred spred.mif -maxiter ' + str(iters[k].recit)
     rcmd += reg_option + ssp_option + ' -rf ' + ' -rf '.join(rfs)
     if k>0:
         rcmd += ' -motion motion.txt -weights sliceweights.txt -init recon-' + str(k-1) + '.mif'
-    elif app.args.sliceweights:
-        rcmd += ' -weights sliceweights0.txt'
+    elif app.args.priorweights:
+        rcmd += ' -weights priorweights.txt'
     rcmd += ' -force' + nthr
     run.command(rcmd)
 
 
-def calcoutlierweights():
-    import numpy as np
-    from sklearn import mixture as mix
-    E = np.log(np.loadtxt('sliceerror.txt'))
-    med = np.median(E)
-    mad = np.median(np.abs(E - med)) * 1.4826
-    gmm = mix.GaussianMixture(2, 'spherical', means_init=((med,), (3*med,)), precisions_init=(1/mad, 1/(3*mad)), weights_init=(.9, .1))
-    gmm.fit(E.reshape((-1,1)))
-    P = gmm.predict_proba(E.reshape((-1,1)))[:,0].reshape(dims[2:4])
-    if app.args.sliceweights:
-        W0 = np.loadtxt('sliceweights0.txt')
-        np.savetxt('sliceweights.txt', P*W0)
-    else:
-        np.savetxt('sliceweights.txt', P)
-
-
 def sliceweightstep(k):
     mask_opt = ' -mask mask.mif' + (' -motion motion.txt' if k>0 else '')
-    if app.args.matchintensity:
-        run.command('dwisliceoutliers ' + inputfn + ' spred.mif' + mask_opt + ' sliceweights.txt' + or_option + ' -imscale imscale.mif -force')
-        if app.args.matchintensity == 'full':
-            run.command('mrcalc spred.mif -abs -log in.mif -abs -log -sub - ' +
-                        '| mrfilter - smooth - -stdev 5,5,0 -extent 45,45,1 | mrcalc - biasfield.mif -force')
-            run.command('mrcalc biasfield.mif mask.mif -mult - | mrmath -axis 0 - sum - | mrmath -axis 1 - sum tmp1.mif -force')
-            run.command('mrmath -axis 0 mask.mif sum - | mrmath -axis 1 - sum tmp2.mif -force')
-            run.command('mrcalc biasfield.mif tmp2.mif 0 -eq 0 tmp1.mif tmp2.mif -divide -if -sub - | mrconvert - biasfield.mif -force')
-    else:
-        run.command('dwisliceoutliers ' + inputfn + ' spred.mif' + mask_opt + ' sliceweights.txt' + or_option + ' -force')
-    calcoutlierweights()
+#    if app.args.matchintensity:
+#        run.command('dwisliceoutliers ' + inputfn + ' spred.mif' + mask_opt + ' sliceweights.txt' + or_option + ' -imscale imscale.mif -force')
+#        if app.args.matchintensity == 'full':
+#            run.command('mrcalc spred.mif -abs -log in.mif -abs -log -sub - ' +
+#                        '| mrfilter - smooth - -stdev 5,5,0 -extent 45,45,1 | mrcalc - biasfield.mif -force')
+#            run.command('mrcalc biasfield.mif mask.mif -mult - | mrmath -axis 0 - sum - | mrmath -axis 1 - sum tmp1.mif -force')
+#            run.command('mrmath -axis 0 mask.mif sum - | mrmath -axis 1 - sum tmp2.mif -force')
+#            run.command('mrcalc biasfield.mif tmp2.mif 0 -eq 0 tmp1.mif tmp2.mif -divide -if -sub - | mrconvert - biasfield.mif -force')
+#    else:
+#        run.command('dwisliceoutliers ' + inputfn + ' spred.mif' + mask_opt + ' sliceweights.txt' + or_option + ' -force')
+    run.command('dwisliceoutliergmm ' + inputfn + ' spred.mif' + mask_opt + ' sliceweights.txt -force')
+    if app.args.priorweights:
+        import numpy as np
+        W0 = np.loadtxt('priorweights.txt')
+        W1 = np.loadtxt('sliceweights.txt')
+        np.savetxt('sliceweights.txt', W1 * W0)
 
 
 def basisupdatestep(k):
