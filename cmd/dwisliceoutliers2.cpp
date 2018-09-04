@@ -52,6 +52,9 @@ void usage ()
   + Option ("motion", "rigid motion parameters (used for masking)")
     + Argument ("param").type_file_in()
 
+  + Option ("export_error", "export RMSE matrix, scaled by the median error in each shell.")
+    + Argument ("E").type_file_out()
+
   + DWI::GradImportOptions();
 
 }
@@ -60,6 +63,9 @@ void usage ()
 using value_type = float;
 
 
+/**
+ * @brief RMSE Functor
+ */
 class RMSErrorFunctor {
   MEMALIGN(RMSErrorFunctor)
   public:
@@ -118,59 +124,85 @@ class RMSErrorFunctor {
     std::shared_ptr<Eigen::MatrixXf> E;
     std::shared_ptr<Eigen::MatrixXi> N;
 
-    static std::mutex mx;
-
 };
 
-std::mutex RMSErrorFunctor::mx;
 
-
+/**
+ * @brief 2-component Gaussian Mixture Model
+ */
 class GMModel {
   MEMALIGN(GMModel)
   public:
-    GMModel (const int niters = 10) : niter (niters) { }
+    GMModel (const int max_iters = 50, const float eps = 1e-3, const float reg_covar = 1e-6)
+      : niter (max_iters), tol(eps), reg(reg_covar) { }
 
-    void fit(const Eigen::VectorXf& x) {
+  void fit(const Eigen::VectorXf& x) {
+      // initialise
       init(x);
-      float eps = 1e-5;
+      float ll, ll0 = -INFINITY;
+      // Expectation-Maximization
       for (int n = 0; n < niter; n++) {
-        // E-Step
-        p1 = gaussian(x, Min, Sin) + eps*ones;
-        p2 = gaussian(x, Mout, Sout) + eps*ones;
-        w = Pin * p1.cwiseQuotient(Pin * p1 + Pout * p2);
-        // M-Step
-        Pin = w.sum();
-        Pout = (ones - w).sum();
-        Min = x.dot(w) / Pin; 
-        Mout = x.dot(ones - w) / Pout;
-        Sin = std::sqrt( (x.array() - Min).square().matrix().dot(w) / Pin );
-        Sout = std::sqrt( (x.array() - Mout).square().matrix().dot(ones - w) / Pout );
+        ll = e_step(x);
+        m_step(x);
+        // check convergence
+        if (std::fabs(ll - ll0) < tol) break;
+        ll0 = ll;
       }
     }
 
-    Eigen::VectorXf get_prob() const { return w; }
+    Eigen::VectorXf get_prob() const { return p1.array().exp(); }
 
   private:
     const int niter;
+    const float tol, reg;
+
     float Min, Mout;
     float Sin, Sout;
     float Pin, Pout;
-    Eigen::VectorXf p1, p2, w, ones;
+    Eigen::VectorXf p1, p2;
 
-    void init(const Eigen::VectorXf& x) {
-      ones.resizeLike(x); ones.setOnes();
+    inline void init(const Eigen::VectorXf& x) {
       float med = median(x);
-      float mad = median(Eigen::abs(x.array() - med)) * 1.4826;
+      float mad = median(Eigen::abs(x.array() - med)) * 1.4826f;
       Min = med; Mout = 3*med;
       Sin = mad; Sout = 3*mad;
       Pin = 0.9; Pout = 0.1;
     }
 
-    Eigen::VectorXf gaussian(const Eigen::VectorXf& x, float mu = 0., float std = 1.) const {
-      return Eigen::exp((x.array() - mu).square() / (-2*std*std)) / (std::sqrt(2*M_PI) * std);
+    inline float e_step(const Eigen::VectorXf& x) {
+      p1 = log_gaussian(x, Min, Sin);
+      p1 = p1.array() + std::log(Pin);
+      p2 = log_gaussian(x, Mout, Sout);
+      p2 = p2.array() + std::log(Pout);
+      Eigen::VectorXf log_prob_norm = Eigen::log(p1.array().exp() + p2.array().exp());
+      p1 -= log_prob_norm;
+      p2 -= log_prob_norm;
+      return log_prob_norm.mean();
     }
 
-    float median(const Eigen::VectorXf& x) const {
+    inline void m_step(const Eigen::VectorXf& x) {
+      Eigen::VectorXf w1 = p1.array().exp();
+      Eigen::VectorXf w2 = p2.array().exp();
+      Pin = w1.sum();
+      Pout = w2.sum();
+      Min = x.dot(w1) / Pin;
+      Mout = x.dot(w2) / Pout;
+      Sin = (x.array() - Min).square().matrix().dot(w1);
+      Sin = std::sqrt(Sin/Pin + reg);
+      Sout = (x.array() - Mout).square().matrix().dot(w2);
+      Sout = std::sqrt(Sout/Pout + reg);
+      Pin /= x.size();
+      Pout /= x.size();
+    }
+
+    inline Eigen::VectorXf log_gaussian(const Eigen::VectorXf& x, float mu = 0., float std = 1.) const {
+      Eigen::VectorXf resp = x.array() - mu; resp /= std;
+      resp = resp.array().square() + std::log(2*M_PI);
+      resp *= -0.5f; resp = resp.array() - std::log(std);
+      return resp;
+    }
+
+    inline float median(const Eigen::VectorXf& x) const {
       vector<float> vec (x.size());
       for (size_t i = 0; i < x.size(); i++)
         vec[i] = x[i];
@@ -216,6 +248,11 @@ void run ()
   RMSErrorFunctor rmse (data, mask, motion, mb);
   ThreadedLoop("Computing root-mean-squared error", data, 2, 4).run(rmse, data, pred);
   Eigen::MatrixXf E = rmse.result();
+
+  opt = get_options("export_error");
+  if (opt.size()) {
+    save_matrix(E.replicate(mb, 1), opt[0][0]);
+  }
   
   // Compute weights
   Eigen::MatrixXf W = Eigen::MatrixXf::Ones(E.rows(), E.cols());
