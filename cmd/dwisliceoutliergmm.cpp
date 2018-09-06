@@ -273,12 +273,17 @@ void run ()
   Eigen::MatrixXf W = Eigen::MatrixXf::Ones(E.rows(), E.cols());
   GMModel<value_type> gmm;
   for (size_t s = 0; s < shells.count(); s++) {
-    // log-residuals
+    // Log-residuals
     int k = 0;
-    Eigen::VectorXf logres (E.rows() * shells[s].count());
+    Eigen::VectorXf res (E.rows() * shells[s].count());
     for (size_t v : shells[s].get_volumes())
-      logres.segment(E.rows() * (k++), E.rows()) = E.col(v);
-    logres = logres.array().log();
+      res.segment(E.rows() * (k++), E.rows()) = E.col(v);
+    // clip at non-zero minimum
+    value_type min = res.redux([](value_type a, value_type b) {
+      if (a > 0) return (b > 0) ? std::min(a,b) : a;
+      else return (b > 0) ? b : std::numeric_limits<value_type>::infinity();
+    });
+    Eigen::VectorXf logres = res.array().max(min).log();
     // Fit GMM
     gmm.fit(logres);
     // Save posterior probabilities

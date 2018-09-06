@@ -171,11 +171,6 @@ mb = 1
 if app.args.mb:
     mb = int(app.args.mb)
 
-# Set OR loss
-or_option = ' -mb ' + str(mb) + ' -export_error sliceerror.txt'
-if app.args.or_loss:
-    or_option += ' -loss ' + app.args.or_loss
-
 # Slice order
 motfilt_option = ''
 if app.args.sorder:
@@ -239,7 +234,7 @@ def sliceweightstep(k):
 #            run.command('mrcalc biasfield.mif tmp2.mif 0 -eq 0 tmp1.mif tmp2.mif -divide -if -sub - | mrconvert - biasfield.mif -force')
 #    else:
 #        run.command('dwisliceoutliers ' + inputfn + ' spred.mif' + mask_opt + ' sliceweights.txt' + or_option + ' -force')
-    run.command('dwisliceoutliergmm ' + inputfn + ' spred.mif' + mask_opt + ' sliceweights.txt -force')
+    run.command('dwisliceoutliergmm ' + inputfn + ' spred.mif -mb ' + str(mb) + mask_opt + ' sliceweights.txt -force')
     if app.args.priorweights:
         import numpy as np
         W0 = np.loadtxt('priorweights.txt')
