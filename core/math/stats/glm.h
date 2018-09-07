@@ -268,11 +268,6 @@ namespace MR
             const matrix_type pinvM;
             const matrix_type Rm;
 
-          private:
-            // Temporary objects used in calculations, for which memory should remain allocated
-            mutable matrix_type Sy, lambdas, XtX, beta;
-            mutable vector_type sse;
-
         };
         //! @}
 
@@ -314,14 +309,6 @@ namespace MR
           protected:
             const vector<CohortDataImport>& importers;
             const bool nans_in_data, nans_in_columns;
-
-          private:
-            // Temporary objects used during calculations; keep memory allocated for them
-            mutable matrix_type extra_data;
-            mutable BitSet element_mask, perm_matrix_mask;
-            mutable matrix_type shuffling_matrix_masked, Mfull_masked, pinvMfull_masked, Rm;
-            mutable vector_type y_masked, Sy, lambda;
-            mutable matrix_type XtX, beta;
 
         };
 
