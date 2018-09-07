@@ -73,18 +73,7 @@ namespace MR
         // For anything in indices that doesn't yet appear in *this,
         //   add to this list; once completed, extend *this by the appropriate
         //   amount, and insert these into the appropriate locations
-        // Save both the index of the new fixel, and the location in the array
-        //   where it should be inserted to preserve sorted order
-        //vector<std::pair<index_t, size_t>> new_entries;
-
-        // Cancel that idea;
-        // Construct a new vector as the sorted combination of the existing and new ones,
-        //   then do a std::swap
-
-        // TODO Needs another rethink:
-        // Because memory is being re-allocated from scratch for every new fixel visitation, memory usage
-        //   is actually running out faster.
-        // Instead, need to continue making use of the existing allocated memory
+        // Need to continue making use of the existing allocated memory
         // Break into two passes:
         // - On first pass, increment those elements that already exist, and count the number of
         //   fixels that are not yet part of the set (but don't store them)
@@ -113,20 +102,17 @@ namespace MR
         self_index = old_size - 1;
         in_index = indices.size() - 1;
 
-        // TODO It's possible that a resize() call may always result in requesting
+        // It's possible that a resize() call may always result in requesting
         //   a re-assignment of memory that exactly matches the size, which may in turn
         //   lead to memory bloat due to inability to return the old memory
         // If this occurs, iteratively calling push_back() may instead engage the
         //   memory-reservation-doubling behaviour
-        //(*this).resize ((*this).size() + indices.size() - intersection);
         while ((*this).size() < old_size + indices.size() - intersection)
           (*this).push_back (InitMatrixElement());
         ssize_t out_index = (*this).size() - 1;
 
-        // TESTME
         // For each output vector location, need to determine whether it should come from copying an existing entry,
         //   or creating a new one
-        //while (intersection < (*this).size()) {
         while (out_index > self_index && self_index >= 0 && in_index >= 0) {
           if ((*this)[self_index].index() == indices[in_index]) {
             (*this)[out_index] = (*this)[self_index];
@@ -141,7 +127,6 @@ namespace MR
           }
           --out_index;
         }
-        // TODO Need better conditions on this
         if (self_index < 0) {
           while (in_index >= 0 && out_index >= 0)
             (*this)[out_index--] = InitMatrixElement (indices[in_index--]);

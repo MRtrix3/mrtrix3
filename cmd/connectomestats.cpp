@@ -71,7 +71,7 @@ void usage ()
 
   + Argument ("design", "the design matrix").type_file_in ()
 
-  + Argument ("contrast", "the contrast vector, specified as a single row of weights").type_file_in ()
+  + Argument ("contrast", "the contrast matrix").type_file_in ()
 
   + Argument ("output", "the filename prefix for all output.").type_text();
 
@@ -211,12 +211,12 @@ void run()
   if (size_t(design.rows()) != importer.size())
     throw Exception ("number of subjects (" + str(importer.size()) + ") does not match number of rows in design matrix (" + str(design.rows()) + ")");
 
-  // Load contrasts
-  const vector<Contrast> contrasts = Math::Stats::GLM::load_contrasts (argument[3]);
-  const size_t num_contrasts = contrasts.size();
-  CONSOLE ("Number of contrasts: " + str(num_contrasts));
+  // Load hypotheses
+  const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[3]);
+  const size_t num_hypotheses = hypotheses.size();
+  CONSOLE ("Number of hypotheses: " + str(num_hypotheses));
 
-  // Before validating the contrasts, we first need to see if there are any
+  // Before validating the contrast matrix, we first need to see if there are any
   //   additional design matrix columns coming from edge-wise subject data
   vector<CohortDataImport> extra_columns;
   bool nans_in_columns = false;
@@ -235,9 +235,9 @@ void run()
 
   // Now we can check the contrast matrix
   const ssize_t num_factors = design.cols() + extra_columns.size();
-  if (contrasts[0].cols() != num_factors)
+  if (hypotheses[0].cols() != num_factors)
     // TODO Re-word this error message
-    throw Exception ("the number of columns per contrast (" + str(contrasts[0].cols()) + ")"
+    throw Exception ("the number of columns in the contrast matrix (" + str(hypotheses[0].cols()) + ")"
                      + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")"
                      + (extra_columns.size() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
 
@@ -258,24 +258,24 @@ void run()
   }
   const bool nans_in_data = data.allFinite();
 
-  // Only add contrast row number to image outputs if there's more than one contrast
-  auto postfix = [&] (const size_t i) { return (num_contrasts > 1) ? ("_" + contrasts[i].name()) : ""; };
+  // Only add contrast matrix row number to image outputs if there's more than one hypothesis
+  auto postfix = [&] (const size_t i) { return (num_hypotheses > 1) ? ("_" + hypotheses[i].name()) : ""; };
 
   {
     matrix_type betas (num_factors, num_edges);
-    matrix_type abs_effect_size (num_edges, num_contrasts), std_effect_size (num_edges, num_contrasts);
+    matrix_type abs_effect_size (num_edges, num_hypotheses), std_effect_size (num_edges, num_hypotheses);
     vector_type cond (num_edges), stdev (num_edges);
 
-    Math::Stats::GLM::all_stats (data, design, extra_columns, contrasts,
+    Math::Stats::GLM::all_stats (data, design, extra_columns, hypotheses,
                                  cond, betas, abs_effect_size, std_effect_size, stdev);
 
-    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_contrasts) + 1 + (nans_in_data || extra_columns.size() ? 1 : 0));
+    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_hypotheses) + 1 + (nans_in_data || extra_columns.size() ? 1 : 0));
     for (ssize_t i = 0; i != num_factors; ++i) {
       save_matrix (mat2vec.V2M (betas.row(i)), "beta" + str(i) + ".csv");
       ++progress;
     }
-    for (size_t i = 0; i != num_contrasts; ++i) {
-      if (!contrasts[i].is_F()) {
+    for (size_t i = 0; i != num_hypotheses; ++i) {
+      if (!hypotheses[i].is_F()) {
         save_matrix (mat2vec.V2M (abs_effect_size.col(i)), "abs_effect" + postfix(i) + ".csv"); ++progress;
         save_matrix (mat2vec.V2M (std_effect_size.col(i)), "std_effect" + postfix(i) + ".csv"); ++progress;
       }
@@ -290,24 +290,24 @@ void run()
   // Construct the class for performing the initial statistical tests
   std::shared_ptr<GLM::TestBase> glm_test;
   if (extra_columns.size() || nans_in_data) {
-    glm_test.reset (new GLM::TestVariable (extra_columns, data, design, contrasts, nans_in_data, nans_in_columns));
+    glm_test.reset (new GLM::TestVariable (extra_columns, data, design, hypotheses, nans_in_data, nans_in_columns));
   } else {
-    glm_test.reset (new GLM::TestFixed (data, design, contrasts));
+    glm_test.reset (new GLM::TestFixed (data, design, hypotheses));
   }
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical statistic
   matrix_type empirical_statistic;
   if (do_nonstationarity_adjustment) {
     Stats::PermTest::precompute_empirical_stat (glm_test, enhancer, empirical_skew, empirical_statistic);
-    for (size_t i = 0; i != num_contrasts; ++i)
+    for (size_t i = 0; i != num_hypotheses; ++i)
       save_matrix (mat2vec.V2M (empirical_statistic.col(i)), output_prefix + "empirical" + postfix(i) + ".csv");
   }
 
   // Precompute default statistic and enhanced statistic
   matrix_type tvalue_output, enhanced_output;
   Stats::PermTest::precompute_default_permutation (glm_test, enhancer, empirical_statistic, enhanced_output, tvalue_output);
-  for (size_t i = 0; i != num_contrasts; ++i) {
-    save_matrix (mat2vec.V2M (tvalue_output.col(i)),   output_prefix + (contrasts[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".csv");
+  for (size_t i = 0; i != num_hypotheses; ++i) {
+    save_matrix (mat2vec.V2M (tvalue_output.col(i)),   output_prefix + (hypotheses[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".csv");
     save_matrix (mat2vec.V2M (enhanced_output.col(i)), output_prefix + "enhanced" + postfix(i) + ".csv");
   }
 
@@ -318,11 +318,11 @@ void run()
     count_matrix_type null_contributions;
     Stats::PermTest::run_permutations (glm_test, enhancer, empirical_statistic,
                                        enhanced_output, null_distribution, null_contributions, uncorrected_pvalues);
-    for (size_t i = 0; i != num_contrasts; ++i)
+    for (size_t i = 0; i != num_hypotheses; ++i)
       save_vector (null_distribution.col(i), output_prefix + "null_dist" + postfix(i) + ".txt");
 
     const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, enhanced_output);
-    for (size_t i = 0; i != num_contrasts; ++i) {
+    for (size_t i = 0; i != num_hypotheses; ++i) {
       save_matrix (mat2vec.V2M (pvalue_output.col(i)),       output_prefix + "fwe_pvalue" + postfix(i) + ".csv");
       save_matrix (mat2vec.V2M (uncorrected_pvalues.col(i)), output_prefix + "uncorrected_pvalue" + postfix(i) + ".csv");
       save_matrix (mat2vec.V2M (null_contributions.col(i)),  output_prefix + "null_contributions" + postfix(i) + ".csv");

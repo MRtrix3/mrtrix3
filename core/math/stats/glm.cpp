@@ -66,12 +66,12 @@ namespace MR
 
 
 
-        vector<Contrast> load_contrasts (const std::string& file_path)
+        vector<Hypothesis> load_hypotheses (const std::string& file_path)
         {
-          vector<Contrast> contrasts;
+          vector<Hypothesis> hypotheses;
           const matrix_type contrast_matrix = load_matrix (file_path);
           for (ssize_t row = 0; row != contrast_matrix.rows(); ++row)
-            contrasts.emplace_back (Contrast (contrast_matrix.row (row), row));
+            hypotheses.emplace_back (Hypothesis (contrast_matrix.row (row), row));
           auto opt = App::get_options ("ftests");
           if (opt.size()) {
             const matrix_type ftest_matrix = load_matrix (opt[0][0]);
@@ -88,18 +88,18 @@ namespace MR
                 if (ftest_matrix (ftest_index, contrast_row))
                   this_f_matrix.row (ftest_row++) = contrast_matrix.row (contrast_row);
               }
-              contrasts.emplace_back (Contrast (this_f_matrix, ftest_index));
+              hypotheses.emplace_back (Hypothesis (this_f_matrix, ftest_index));
             }
             if (App::get_options ("fonly").size()) {
-              vector<Contrast> new_contrasts;
-              for (size_t index = contrast_matrix.rows(); index != contrasts.size(); ++index)
-                new_contrasts.push_back (std::move (contrasts[index]));
-              std::swap (contrasts, new_contrasts);
+              vector<Hypothesis> new_hypotheses;
+              for (size_t index = contrast_matrix.rows(); index != hypotheses.size(); ++index)
+                new_hypotheses.push_back (std::move (hypotheses[index]));
+              std::swap (hypotheses, new_hypotheses);
             }
           } else if (App::get_options ("fonly").size()) {
             throw Exception ("Cannot perform F-tests exclusively (-fonly option): No F-test matrix was provided (-ftests option)");
           }
-          return contrasts;
+          return hypotheses;
         }
 
 
@@ -114,19 +114,19 @@ namespace MR
 
 
 
-        vector_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const Contrast& contrast)
+        vector_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const Hypothesis& hypothesis)
         {
-          if (contrast.is_F())
+          if (hypothesis.is_F())
             return vector_type::Constant (measurements.rows(), NaN);
           else
-            return contrast.matrix() * solve_betas (measurements, design);
+            return hypothesis.matrix() * solve_betas (measurements, design);
         }
 
-        matrix_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Contrast>& contrasts)
+        matrix_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses)
         {
-          matrix_type result (measurements.cols(), contrasts.size());
-          for (size_t ic = 0; ic != contrasts.size(); ++ic)
-            result.col (ic) = abs_effect_size (measurements, design, contrasts[ic]);
+          matrix_type result (measurements.cols(), hypotheses.size());
+          for (size_t ic = 0; ic != hypotheses.size(); ++ic)
+            result.col (ic) = abs_effect_size (measurements, design, hypotheses[ic]);
           return result;
         }
 
@@ -140,20 +140,20 @@ namespace MR
 
 
 
-        vector_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const Contrast& contrast)
+        vector_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const Hypothesis& hypothesis)
         {
-          if (contrast.is_F())
+          if (hypothesis.is_F())
             return vector_type::Constant (measurements.cols(), NaN);
           else
-            return abs_effect_size (measurements, design, contrast).array() / stdev (measurements, design);
+            return abs_effect_size (measurements, design, hypothesis).array() / stdev (measurements, design);
         }
 
-        matrix_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Contrast>& contrasts)
+        matrix_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses)
         {
           const auto stdev_reciprocal = vector_type::Ones (measurements.cols()) / stdev (measurements, design);
-          matrix_type result (measurements.cols(), contrasts.size());
-          for (size_t ic = 0; ic != contrasts.size(); ++ic)
-            result.col (ic) = abs_effect_size (measurements, design, contrasts[ic]) * stdev_reciprocal;
+          matrix_type result (measurements.cols(), hypotheses.size());
+          for (size_t ic = 0; ic != hypotheses.size(); ++ic)
+            result.col (ic) = abs_effect_size (measurements, design, hypotheses[ic]) * stdev_reciprocal;
           return result;
         }
 
@@ -163,7 +163,7 @@ namespace MR
 
         void all_stats (const matrix_type& measurements,
                         const matrix_type& design,
-                        const vector<Contrast>& contrasts,
+                        const vector<Hypothesis>& hypotheses,
                         matrix_type& betas,
                         matrix_type& abs_effect_size,
                         matrix_type& std_effect_size,
@@ -184,12 +184,12 @@ namespace MR
           if (progress)
             ++*progress;
 #endif
-          abs_effect_size.resize (measurements.cols(), contrasts.size());
-          for (size_t ic = 0; ic != contrasts.size(); ++ic) {
-            if (contrasts[ic].is_F()) {
+          abs_effect_size.resize (measurements.cols(), hypotheses.size());
+          for (size_t ic = 0; ic != hypotheses.size(); ++ic) {
+            if (hypotheses[ic].is_F()) {
               abs_effect_size.col (ic).fill (NaN);
             } else {
-              abs_effect_size.col (ic) = (contrasts[ic].matrix() * betas).row (0);
+              abs_effect_size.col (ic) = (hypotheses[ic].matrix() * betas).row (0);
             }
           }
 #ifdef GLM_ALL_STATS_DEBUG
@@ -237,7 +237,7 @@ namespace MR
         void all_stats (const matrix_type& measurements,
                         const matrix_type& fixed_design,
                         const vector<CohortDataImport>& extra_columns,
-                        const vector<Contrast>& contrasts,
+                        const vector<Hypothesis>& hypotheses,
                         vector_type& cond,
                         matrix_type& betas,
                         matrix_type& abs_effect_size,
@@ -245,7 +245,7 @@ namespace MR
                         vector_type& stdev)
         {
           if (extra_columns.empty() && measurements.allFinite()) {
-            all_stats (measurements, fixed_design, contrasts, betas, abs_effect_size, std_effect_size, stdev);
+            all_stats (measurements, fixed_design, hypotheses, betas, abs_effect_size, std_effect_size, stdev);
             return;
           }
 
@@ -276,19 +276,19 @@ namespace MR
           class Functor
           { MEMALIGN(Functor)
             public:
-              Functor (const matrix_type& data, const matrix_type& design_fixed, const vector<CohortDataImport>& extra_columns, const vector<Contrast>& contrasts,
+              Functor (const matrix_type& data, const matrix_type& design_fixed, const vector<CohortDataImport>& extra_columns, const vector<Hypothesis>& hypotheses,
                        vector_type& cond, matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, vector_type& stdev) :
                   data (data),
                   design_fixed (design_fixed),
                   extra_columns (extra_columns),
-                  contrasts (contrasts),
+                  hypotheses (hypotheses),
                   global_cond (cond),
                   global_betas (betas),
                   global_abs_effect_size (abs_effect_size),
                   global_std_effect_size (std_effect_size),
                   global_stdev (stdev)
               {
-                assert (size_t(design_fixed.cols()) + extra_columns.size() == size_t(contrasts[0].cols()));
+                assert (size_t(design_fixed.cols()) + extra_columns.size() == size_t(hypotheses[0].cols()));
               }
               bool operator() (const size_t& element_index)
               {
@@ -312,7 +312,7 @@ namespace MR
                   if (!std::isfinite (condition_number) || condition_number > 1e5) {
                     zero();
                   } else {
-                    Math::Stats::GLM::all_stats (element_data, element_design, contrasts,
+                    Math::Stats::GLM::all_stats (element_data, element_design, hypotheses,
                                                  local_betas, local_abs_effect_size, local_std_effect_size, local_stdev);
                   }
                 } else if (valid_rows >= element_design.cols()) {
@@ -334,7 +334,7 @@ namespace MR
                   if (!std::isfinite (condition_number) || condition_number > 1e5) {
                     zero();
                   } else {
-                    Math::Stats::GLM::all_stats (element_data_finite, element_design_finite, contrasts,
+                    Math::Stats::GLM::all_stats (element_data_finite, element_design_finite, hypotheses,
                                                  local_betas, local_abs_effect_size, local_std_effect_size, local_stdev);
                   }
                 } else { // Insufficient data to fit model at all
@@ -351,7 +351,7 @@ namespace MR
               const matrix_type& data;
               const matrix_type& design_fixed;
               const vector<CohortDataImport>& extra_columns;
-              const vector<Contrast>& contrasts;
+              const vector<Hypothesis>& hypotheses;
               vector_type& global_cond;
               matrix_type& global_betas;
               matrix_type& global_abs_effect_size;
@@ -362,14 +362,14 @@ namespace MR
 
               void zero () {
                 local_betas = matrix_type::Zero (global_betas.rows(), 1);
-                local_abs_effect_size = matrix_type::Zero (1, contrasts.size());
-                local_std_effect_size = matrix_type::Zero (1, contrasts.size());
+                local_abs_effect_size = matrix_type::Zero (1, hypotheses.size());
+                local_std_effect_size = matrix_type::Zero (1, hypotheses.size());
                 local_stdev = vector_type::Zero (1);
               }
           };
 
           Source source (measurements.cols());
-          Functor functor (measurements, fixed_design, extra_columns, contrasts,
+          Functor functor (measurements, fixed_design, extra_columns, hypotheses,
                            cond, betas, abs_effect_size, std_effect_size, stdev);
           Thread::run_queue (source, Thread::batch (size_t()), Thread::multi (functor));
         }
@@ -384,7 +384,7 @@ namespace MR
 
 
         // Same model partitioning as is used in FSL randomise
-        Contrast::Partition Contrast::partition (const matrix_type& design) const
+        Hypothesis::Partition Hypothesis::partition (const matrix_type& design) const
         {
           // eval() calls necessary for older versions of Eigen / compiler to work:
           //   can't seem to map Eigen template result to const matrix_type& as the Math::pinv() input
@@ -402,7 +402,7 @@ namespace MR
 
 
 
-        void Contrast::check_nonzero() const
+        void Hypothesis::check_nonzero() const
         {
           if (c.isZero())
             throw Exception ("Cannot specify a contrast that consists entirely of zeroes");
@@ -410,7 +410,7 @@ namespace MR
 
 
 
-        matrix_type Contrast::check_rank (const matrix_type& in, const size_t index) const
+        matrix_type Hypothesis::check_rank (const matrix_type& in, const size_t index) const
         {
           // FullPivLU.image() provides column-space of matrix;
           //   here we want the row-space (since it's degeneracy in contrast matrix rows
@@ -437,15 +437,15 @@ namespace MR
 
 
 
-        TestFixed::TestFixed (const matrix_type& measurements, const matrix_type& design, const vector<Contrast>& contrasts) :
-            TestBase (measurements, design, contrasts),
+        TestFixed::TestFixed (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses) :
+            TestBase (measurements, design, hypotheses),
             pinvM (Math::pinv (M)),
             Rm (matrix_type::Identity (num_subjects(), num_subjects()) - (M*pinvM))
         {
-          assert (contrasts[0].cols() == design.cols());
-          // When the design matrix is fixed, we can pre-calculate the model partitioning for each contrast
-          for (const auto c : contrasts)
-            partitions.emplace_back (c.partition (design));
+          assert (hypotheses[0].cols() == design.cols());
+          // When the design matrix is fixed, we can pre-calculate the model partitioning for each hypothesis
+          for (const auto h : hypotheses)
+            partitions.emplace_back (h.partition (design));
         }
 
 
@@ -456,23 +456,20 @@ namespace MR
           if (!(size_t(output.rows()) == num_elements() && size_t(output.cols()) == num_outputs()))
             output.resize (num_elements(), num_outputs());
 
-          matrix_type Sy, lambdas, XtX, beta;
-          vector_type sse;
-
           // Freedman-Lane for fixed design matrix case
-          // Each contrast needs to be handled explicitly on its own
-          for (size_t ic = 0; ic != c.size(); ++ic) {
+          // Each hypothesis needs to be handled explicitly on its own
+          for (size_t ih = 0; ih != c.size(); ++ih) {
 
             // First, we perform permutation of the input data
             // In Freedman-Lane, the initial 'effective' regression against the nuisance
             //   variables, and permutation of the data, are done in a single step
             //VAR (shuffling_matrix.rows());
             //VAR (shuffling_matrix.cols());
-            //VAR (partitions[ic].Rz.rows());
-            //VAR (partitions[ic].Rz.cols());
+            //VAR (partitions[ih].Rz.rows());
+            //VAR (partitions[ih].Rz.cols());
             //VAR (y.rows());
             //VAR (y.cols());
-            Sy.noalias() = shuffling_matrix * partitions[ic].Rz * y;
+            Sy.noalias() = shuffling_matrix * partitions[ih].Rz * y;
             //VAR (Sy.rows());
             //VAR (Sy.cols());
             // Now, we regress this shuffled data against the full model
@@ -481,29 +478,29 @@ namespace MR
             lambdas.noalias() = pinvM * Sy;
             //VAR (lambda.rows());
             //VAR (lambda.cols());
-            //VAR (matrix_type(c[ic]).rows());
-            //VAR (matrix_type(c[ic]).cols());
+            //VAR (matrix_type(c[ih]).rows());
+            //VAR (matrix_type(c[ih]).cols());
             //VAR (Rm.rows());
             //VAR (Rm.cols());
-            XtX.noalias() = partitions[ic].X.transpose()*partitions[ic].X;
+            XtX.noalias() = partitions[ih].X.transpose()*partitions[ih].X;
             //VAR (XtX.rows());
             //VAR (XtX.cols());
-            const default_type one_over_dof = 1.0 / (num_subjects() - partitions[ic].rank_x - partitions[ic].rank_z);
+            const default_type one_over_dof = 1.0 / (num_subjects() - partitions[ih].rank_x - partitions[ih].rank_z);
             sse = (Rm*Sy).colwise().squaredNorm();
             //VAR (sse.size());
             for (size_t ie = 0; ie != num_elements(); ++ie) {
-              beta.noalias() = c[ic].matrix() * lambdas.col (ie);
+              beta.noalias() = c[ih].matrix() * lambdas.col (ie);
               //VAR (beta.rows());
               //VAR (beta.cols());
-              const value_type F = ((beta.transpose() * XtX * beta) (0,0) / c[ic].rank()) /
+              const value_type F = ((beta.transpose() * XtX * beta) (0,0) / c[ih].rank()) /
                                    (one_over_dof * sse[ie]);
               if (!std::isfinite (F)) {
-                output (ie, ic) = value_type(0);
-              } else if (c[ic].is_F()) {
-                output (ie, ic) = F;
+                output (ie, ih) = value_type(0);
+              } else if (c[ih].is_F()) {
+                output (ie, ih) = F;
               } else {
                 assert (beta.rows() == 1);
-                output (ie, ic) = std::sqrt (F) * (beta.sum() > 0.0 ? 1.0 : -1.0);
+                output (ie, ih) = std::sqrt (F) * (beta.sum() > 0.0 ? 1.0 : -1.0);
               }
             }
 
@@ -523,17 +520,20 @@ namespace MR
         TestVariable::TestVariable (const vector<CohortDataImport>& importers,
                                     const matrix_type& measurements,
                                     const matrix_type& design,
-                                    const vector<Contrast>& contrasts,
+                                    const vector<Hypothesis>& hypotheses,
                                     const bool nans_in_data,
                                     const bool nans_in_columns) :
-            TestBase (measurements, design, contrasts),
+            TestBase (measurements, design, hypotheses),
             importers (importers),
             nans_in_data (nans_in_data),
-            nans_in_columns (nans_in_columns)
+            nans_in_columns (nans_in_columns),
+            extra_data (num_subjects(), importers.size()),
+            element_mask (num_subjects()),
+            perm_matrix_mask (num_subjects())
         {
-          // Make sure that the specified contrasts reflect the full design matrix (with additional
+          // Make sure that the specified contrast matrix reflects the full design matrix (with additional
           //   data loaded)
-          assert (contrasts[0].cols() == M.cols() + ssize_t(importers.size()));
+          assert (hypotheses[0].cols() == M.cols() + ssize_t(importers.size()));
         }
 
 
@@ -543,13 +543,7 @@ namespace MR
           if (!(size_t(output.rows()) == num_elements() && size_t(output.cols()) == num_outputs()))
             output.resize (num_elements(), num_outputs());
 
-          matrix_type extra_data (num_subjects(), importers.size());
-          BitSet element_mask (num_subjects()), perm_matrix_mask (num_subjects());
-          matrix_type shuffling_matrix_masked, Mfull_masked, pinvMfull_masked, Rm;
-          vector_type y_masked, Sy, lambda;
-          matrix_type XtX, beta;
-
-          // Let's loop over elements first, then contrasts in the inner loop
+          // Let's loop over elements first, then hypotheses in the inner loop
           for (ssize_t ie = 0; ie != y.cols(); ++ie) {
 
             // For each element (row in y), need to load the additional data for that element
@@ -561,7 +555,7 @@ namespace MR
             for (ssize_t col = 0; col != ssize_t(importers.size()); ++col)
               extra_data.col (col) = importers[col] (ie);
 
-            // What can we do here that's common across all contrasts?
+            // What can we do here that's common across all hypotheses?
             // - Import the element-wise data
             // - Identify rows to be excluded based on NaNs in the design matrix
             // - Identify rows to be excluded based on NaNs in the input data
@@ -667,18 +661,18 @@ namespace MR
                 Rm.noalias() = matrix_type::Identity (finite_count, finite_count) - (Mfull_masked*pinvMfull_masked);
 
                 // We now have our permutation (shuffling) matrix and design matrix prepared,
-                //   and can commence regressing the partitioned model of each contrast
-                for (size_t ic = 0; ic != c.size(); ++ic) {
+                //   and can commence regressing the partitioned model of each hypothesis
+                for (size_t ih = 0; ih != c.size(); ++ih) {
 
-                  const auto partition = c[ic].partition (Mfull_masked);
+                  const auto partition = c[ih].partition (Mfull_masked);
                   const ssize_t dof = finite_count - partition.rank_x - partition.rank_z;
                   if (dof < 1) {
-                    output (ie, ic) = value_type(0);
+                    output (ie, ih) = value_type(0);
                   } else {
 
                     XtX.noalias() = partition.X.transpose()*partition.X;
 
-                    // Now that we have the individual contrast model partition for these data,
+                    // Now that we have the individual hypothesis model partition for these data,
                     //   the rest of this function should proceed similarly to the fixed
                     //   design matrix case
                     //VAR (shuffling_matrix_masked.rows());
@@ -689,24 +683,24 @@ namespace MR
                     //VAR (y_masked.cols());
                     Sy = shuffling_matrix_masked * partition.Rz * y_masked.matrix();
                     lambda = pinvMfull_masked * Sy.matrix();
-                    beta.noalias() = c[ic].matrix() * lambda.matrix();
+                    beta.noalias() = c[ih].matrix() * lambda.matrix();
                     const default_type sse = (Rm*Sy.matrix()).squaredNorm();
 
-                    const default_type F = ((beta.transpose() * XtX * beta) (0, 0) / c[ic].rank()) /
+                    const default_type F = ((beta.transpose() * XtX * beta) (0, 0) / c[ih].rank()) /
                         (sse / value_type (dof));
 
                     if (!std::isfinite (F)) {
-                      output (ie, ic) = value_type(0);
-                    } else if (c[ic].is_F()) {
-                      output (ie, ic) = F;
+                      output (ie, ih) = value_type(0);
+                    } else if (c[ih].is_F()) {
+                      output (ie, ih) = F;
                     } else {
                       assert (beta.rows() == 1);
-                      output (ie, ic) = std::sqrt (F) * (beta.sum() > 0 ? 1.0 : -1.0);
+                      output (ie, ih) = std::sqrt (F) * (beta.sum() > 0 ? 1.0 : -1.0);
                     }
 
                   } // End checking for sufficient degrees of freedom
 
-                } // End looping over contrasts
+                } // End looping over hypotheses
 
               } // End checking for adequate condition number after NaN removal
 

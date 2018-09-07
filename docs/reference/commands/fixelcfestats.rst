@@ -45,15 +45,13 @@ Options relating to shuffling of data for nonparametric statistical inference
 
 -  **-nonstationarity** perform non-stationarity correction
 
--  **-skew value** specify the skew parameter for empirical statistic calculation (default for this command is 0.5)
+-  **-skew_nonstationarity value** specify the skew parameter for empirical statistic calculation (default for this command is 1)
 
 -  **-nshuffles_nonstationarity number** the number of shuffles to use when precomputing the empirical statistic image for non-stationarity correction (default: 5000)
 
 -  **-permutations_nonstationarity file** manually define the permutations (relabelling) for computing the emprical statistics for non-stationarity correction. The input should be a text file defining a m x n matrix, where each relabelling is defined as a column vector of size m, and the number of columns, n, defines the number of permutations. Can be generated with the palm_quickperms function in PALM (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM) Overrides the -nshuffles_nonstationarity option.
 
 -  **-signflips_nonstationarity file** manually define the signflips for computing the empirical statistics for non-stationarity correction
-
--  **-fast_nonstationarity** perform a fast non-stationarity correction that does not require permutations
 
 Parameters for the Connectivity-based Fixel Enhancement algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -65,6 +63,8 @@ Parameters for the Connectivity-based Fixel Enhancement algorithm
 -  **-cfe_h value** cfe height exponent (default: 3)
 
 -  **-cfe_c value** cfe connectivity exponent (default: 0.5)
+
+-  **-cfe_norm** use a normalised form of the cfe equation
 
 Options related to the General Linear Model (GLM)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
