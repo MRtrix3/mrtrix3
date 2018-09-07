@@ -17,7 +17,7 @@ Usage
 
 -  *input*: a text file containing the file names of the input images, one file per line
 -  *design*: the design matrix
--  *contrast*: the contrast matrix, only specify one contrast as it will automatically compute the opposite contrast.
+-  *contrast*: the contrast matrix
 -  *mask*: a mask used to define voxels included in the analysis.
 -  *output*: the filename prefix for all output.
 
@@ -42,7 +42,7 @@ Options relating to shuffling of data for nonparametric statistical inference
 
 -  **-nonstationarity** perform non-stationarity correction
 
--  **-skew value** specify the skew parameter for empirical statistic calculation (default for this command is 0.66666700000000001)
+-  **-skew_nonstationarity value** specify the skew parameter for empirical statistic calculation (default for this command is 1)
 
 -  **-nshuffles_nonstationarity number** the number of shuffles to use when precomputing the empirical statistic image for non-stationarity correction (default: 5000)
 

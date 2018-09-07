@@ -18,7 +18,7 @@ Usage
 -  *input*: a text file listing the file names of the input connectomes
 -  *algorithm*: the algorithm to use in network-based clustering/enhancement. Options are: nbs, nbse, none
 -  *design*: the design matrix
--  *contrast*: the contrast vector, specified as a single row of weights
+-  *contrast*: the contrast matrix
 -  *output*: the filename prefix for all output.
 
 Description
@@ -42,7 +42,7 @@ Options relating to shuffling of data for nonparametric statistical inference
 
 -  **-nonstationarity** perform non-stationarity correction
 
--  **-skew value** specify the skew parameter for empirical statistic calculation (default for this command is 1)
+-  **-skew_nonstationarity value** specify the skew parameter for empirical statistic calculation (default for this command is 1)
 
 -  **-nshuffles_nonstationarity number** the number of shuffles to use when precomputing the empirical statistic image for non-stationarity correction (default: 5000)
 

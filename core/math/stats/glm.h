@@ -43,19 +43,17 @@ namespace MR
 
 
 
-        // TODO Define a base class to contain information regarding an individual contrast, and
+        // Define a base class to contain information regarding an individual hypothesis, and
         //   pre-compute as much as possible with regards to Freedman-Lane
         // Note: This can be constructed for both t-tests and F-tests
         //   (This is why the constructor is a template: Could be created either from a row()
         //   call on the contrast matrix, or from a matrix explicitly constructed from a set of
         //   rows from the contrast matrix, which is how an F-test is constructed.
-        // TODO In the case of a single-row F-test, still need to be able to differentiate between
-        //   a t-test and an F-test for the sake of signedness (and maybe taking the square root)
-        //
-        // TODO Exactly how this may be utilised depends on whether a fixed or variable design
-        //   matrix will be used; ideally the interface to the Contrast class should deal with this
-        class Contrast
-        { MEMALIGN(Contrast)
+        // In the case of a single-row F-test, still need to be able to differentiate between
+        //   a t-test and an F-test for the sake of signedness (and taking the square root);
+        //   this is managed by having two separate constructor templates
+        class Hypothesis
+        { MEMALIGN(Hypothesis)
           public:
 
             class Partition
@@ -81,13 +79,13 @@ namespace MR
                 const size_t rank_x, rank_z;
             };
 
-            Contrast (matrix_type::ConstRowXpr& in, const size_t index) :
+            Hypothesis (matrix_type::ConstRowXpr& in, const size_t index) :
                 c (in),
                 r (Math::rank (c)),
                 F (false),
                 i (index) { check_nonzero(); }
 
-            Contrast (const matrix_type& in, const size_t index) :
+            Hypothesis (const matrix_type& in, const size_t index) :
                 c (check_rank (in, index)),
                 r (Math::rank (c)),
                 F (true),
@@ -114,7 +112,7 @@ namespace MR
 
 
 
-        vector<Contrast> load_contrasts (const std::string& file_path);
+        vector<Hypothesis> load_hypotheses (const std::string& file_path);
 
 
 
@@ -132,11 +130,11 @@ namespace MR
         /*! Compute the effect of interest
          * @param measurements a matrix storing the measured data across subjects in each column
          * @param design the design matrix
-         * @param contrast a Contrast class instance defining the contrast of interest
+         * @param hypothesis a Hypothesis class instance defining the effect of interest
          * @return the matrix containing the output absolute effect sizes (one column of element effect sizes per contrast)
          */
-        vector_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const Contrast& contrast);
-        matrix_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Contrast>& contrasts);
+        vector_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const Hypothesis& hypothesis);
+        matrix_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses);
 
 
 
@@ -152,11 +150,11 @@ namespace MR
         /*! Compute cohen's d, the standardised effect size between two means
          * @param measurements a matrix storing the measured data across subjects in each column
          * @param design the design matrix
-         * @param contrast a Contrast class instance defining the contrast of interest
+         * @param hypothesis a Hypothesis class instance defining the effect of interest
          * @return the matrix containing the output standardised effect sizes (one column of element effect sizes per contrast)
          */
-        vector_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const Contrast& contrast);
-        matrix_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Contrast>& contrasts);
+        vector_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const Hypothesis& hypothesis);
+        matrix_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses);
 
 
 
@@ -165,13 +163,13 @@ namespace MR
          * elements to be tested.
          * @param measurements a matrix storing the measured data for each subject in a column
          * @param design the design matrix
-         * @param contrasts a vector of Contrast class instances defining the contrasts of interest
+         * @param hypotheses a vector of Hypothesis class instances defining the effects of interest
          * @param betas the matrix containing the output GLM betas
          * @param abs_effect_size the matrix containing the output effect
          * @param std_effect_size the matrix containing the output standardised effect size
          * @param stdev the matrix containing the output standard deviation
          */
-        void all_stats (const matrix_type& measurements, const matrix_type& design, const vector<Contrast>& contrasts,
+        void all_stats (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses,
                         matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, vector_type& stdev);
 
         /*! Compute all GLM-related statistics
@@ -180,13 +178,13 @@ namespace MR
          * @param measurements a matrix storing the measured data for each subject in a column
          * @param design the fixed portion of the design matrix
          * @param extra_columns the variable columns of the design matrix
-         * @param contrasts a vector of Contrast class instances defining the contrasts of interest
+         * @param hypotheses a vector of Hypothesis class instances defining the effects of interest
          * @param betas the matrix containing the output GLM betas
          * @param abs_effect_size the matrix containing the output effect
          * @param std_effect_size the matrix containing the output standardised effect size
          * @param stdev the matrix containing the output standard deviation
          */
-        void all_stats (const matrix_type& measurements, const matrix_type& design, const vector<CohortDataImport>& extra_columns, const vector<Contrast>& contrasts,
+        void all_stats (const matrix_type& measurements, const matrix_type& design, const vector<CohortDataImport>& extra_columns, const vector<Hypothesis>& hypotheses,
                         vector_type& cond, matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, vector_type& stdev);
 
         //! @}
@@ -200,10 +198,10 @@ namespace MR
         class TestBase
         { MEMALIGN(TestBase)
           public:
-            TestBase (const matrix_type& measurements, const matrix_type& design, const vector<Contrast>& contrasts) :
+            TestBase (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses) :
                 y (measurements),
                 M (design),
-                c (contrasts)
+                c (hypotheses)
             {
               assert (y.rows() == M.rows());
               // Can no longer apply this assertion here; GLMTTestVariable later
@@ -221,7 +219,7 @@ namespace MR
 
             /*! Compute the statistics
              * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
-             * @param output the matrix containing the output statistics (one column per contrast)
+             * @param output the matrix containing the output statistics (one column per hypothesis)
              */
             virtual void operator() (const matrix_type& shuffling_matrix, matrix_type& output) const = 0;
 
@@ -232,7 +230,7 @@ namespace MR
 
           protected:
             const matrix_type& y, M;
-            const vector<Contrast>& c;
+            const vector<Hypothesis>& c;
 
         };
 
@@ -242,7 +240,7 @@ namespace MR
         /** \addtogroup Statistics
         @{ */
         /*! A class to compute statistics using a fixed General Linear Model.
-         * This class produces a statistic per contrast of interest: t-statistic for
+         * This class produces a statistic per effect of interest: t-statistic for
          * t-tests, F-statistic for F-tests. It should be used in
          * cases where the same design matrix is to be applied for all image elements being
          * tested; able to pre-compute a number of matrices before testing, improving
@@ -256,19 +254,24 @@ namespace MR
              * @param design the design matrix
              * @param contrasts a vector of Contrast instances
              */
-            TestFixed (const matrix_type& measurements, const matrix_type& design, const vector<Contrast>& contrasts);
+            TestFixed (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses);
 
             /*! Compute the statistics
              * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
-             * @param output the vector containing the output t-statistics (one column per contrast)
+             * @param output the vector containing the output t-statistics (one column per hypothesis)
              */
             void operator() (const matrix_type& shuffling_matrix, matrix_type& output) const override;
 
           protected:
             // New classes to store information relevant to Freedman-Lane implementation
-            vector<Contrast::Partition> partitions;
+            vector<Hypothesis::Partition> partitions;
             const matrix_type pinvM;
             const matrix_type Rm;
+
+          private:
+            // Temporary objects used in calculations, for which memory should remain allocated
+            mutable matrix_type Sy, lambdas, XtX, beta;
+            mutable vector_type sse;
 
         };
         //! @}
@@ -278,7 +281,7 @@ namespace MR
         /** \addtogroup Statistics
         @{ */
         /*! A class to compute statistics using a 'variable' General Linear Model.
-         * This class produces a statistic per contrast of interest. It should be used in
+         * This class produces a statistic per effect of interest. It should be used in
          * cases where additional subject data must be imported into the design matrix before
          * computing t-values; the design matrix therefore does not remain fixed for all
          * elements being tested, but varies depending on the particular element being tested.
@@ -293,7 +296,7 @@ namespace MR
             TestVariable (const vector<CohortDataImport>& importers,
                           const matrix_type& measurements,
                           const matrix_type& design,
-                          const vector<Contrast>& contrasts,
+                          const vector<Hypothesis>& hypotheses,
                           const bool nans_in_data,
                           const bool nans_in_columns);
 
@@ -311,6 +314,14 @@ namespace MR
           protected:
             const vector<CohortDataImport>& importers;
             const bool nans_in_data, nans_in_columns;
+
+          private:
+            // Temporary objects used during calculations; keep memory allocated for them
+            mutable matrix_type extra_data;
+            mutable BitSet element_mask, perm_matrix_mask;
+            mutable matrix_type shuffling_matrix_masked, Mfull_masked, pinvMfull_masked, Rm;
+            mutable vector_type y_masked, Sy, lambda;
+            mutable matrix_type XtX, beta;
 
         };
 

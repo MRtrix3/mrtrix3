@@ -72,7 +72,7 @@ void usage ()
 
   + Argument ("design", "the design matrix").type_file_in()
 
-  + Argument ("contrast", "the contrast matrix, only specify one contrast as it will automatically compute the opposite contrast.").type_file_in()
+  + Argument ("contrast", "the contrast matrix").type_file_in()
 
   + Argument ("mask", "a mask used to define voxels included in the analysis.").type_image_in()
 
@@ -213,12 +213,12 @@ void run() {
   if (design.rows() != (ssize_t)importer.size())
     throw Exception ("Number of input files does not match number of rows in design matrix");
 
-  // Load contrasts
-  const vector<Contrast> contrasts = Math::Stats::GLM::load_contrasts (argument[2]);
-  const size_t num_contrasts = contrasts.size();
-  CONSOLE ("Number of contrasts: " + str(num_contrasts));
+  // Load hypotheses
+  const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[2]);
+  const size_t num_hypotheses = hypotheses.size();
+  CONSOLE ("Number of hypotheses: " + str(num_hypotheses));
 
-  // Before validating the contrasts, we first need to see if there are any
+  // Before validating the contrast matrix, we first need to see if there are any
   //   additional design matrix columns coming from voxel-wise subject data
   // TODO Functionalise this
   vector<CohortDataImport> extra_columns;
@@ -237,8 +237,8 @@ void run() {
   }
 
   const ssize_t num_factors = design.cols() + extra_columns.size();
-  if (contrasts[0].cols() != num_factors)
-    throw Exception ("The number of columns per contrast (" + str(contrasts[0].cols()) + ")"
+  if (hypotheses[0].cols() != num_factors)
+    throw Exception ("The number of columns in the contrast matrix (" + str(hypotheses[0].cols()) + ")"
                      + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")"
                      + (extra_columns.size() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
 
@@ -274,24 +274,24 @@ void run() {
 
   const std::string prefix (argument[4]);
 
-  // Only add contrast row number to image outputs if there's more than one contrast
-  auto postfix = [&] (const size_t i) { return (num_contrasts > 1) ? ("_" + contrasts[i].name()) : ""; };
+  // Only add contrast matrix row number to image outputs if there's more than one hypothesis
+  auto postfix = [&] (const size_t i) { return (num_hypotheses > 1) ? ("_" + hypotheses[i].name()) : ""; };
 
   {
     matrix_type betas (num_factors, num_voxels);
-    matrix_type abs_effect_size (num_voxels, num_contrasts), std_effect_size (num_voxels, num_contrasts);
+    matrix_type abs_effect_size (num_voxels, num_hypotheses), std_effect_size (num_voxels, num_hypotheses);
     vector_type cond (num_voxels), stdev (num_voxels);
 
-    Math::Stats::GLM::all_stats (data, design, extra_columns, contrasts,
+    Math::Stats::GLM::all_stats (data, design, extra_columns, hypotheses,
                                  cond, betas, abs_effect_size, std_effect_size, stdev);
 
-    ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_contrasts) + 1 + (nans_in_data || extra_columns.size() ? 1 : 0));
+    ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_hypotheses) + 1 + (nans_in_data || extra_columns.size() ? 1 : 0));
     for (ssize_t i = 0; i != num_factors; ++i) {
       write_output (betas.row(i), *v2v, prefix + "beta" + str(i) + ".mif", output_header);
       ++progress;
     }
-    for (size_t i = 0; i != num_contrasts; ++i) {
-      if (!contrasts[i].is_F()) {
+    for (size_t i = 0; i != num_hypotheses; ++i) {
+      if (!hypotheses[i].is_F()) {
         write_output (abs_effect_size.col(i), *v2v, prefix + "abs_effect" + postfix(i) + ".mif", output_header);
         ++progress;
         write_output (std_effect_size.col(i), *v2v, prefix + "std_effect" + postfix(i) + ".mif", output_header);
@@ -308,9 +308,9 @@ void run() {
   // Construct the class for performing the initial statistical tests
   std::shared_ptr<GLM::TestBase> glm_test;
   if (extra_columns.size() || nans_in_data) {
-    glm_test.reset (new GLM::TestVariable (extra_columns, data, design, contrasts, nans_in_data, nans_in_columns));
+    glm_test.reset (new GLM::TestVariable (extra_columns, data, design, hypotheses, nans_in_data, nans_in_columns));
   } else {
-    glm_test.reset (new GLM::TestFixed (data, design, contrasts));
+    glm_test.reset (new GLM::TestFixed (data, design, hypotheses));
   }
 
   std::shared_ptr<Stats::EnhancerBase> enhancer;
@@ -326,15 +326,15 @@ void run() {
     if (!use_tfce)
       throw Exception ("Nonstationarity adjustment is not currently implemented for threshold-based cluster analysis");
     Stats::PermTest::precompute_empirical_stat (glm_test, enhancer, empirical_skew, empirical_enhanced_statistic);
-    for (size_t i = 0; i != num_contrasts; ++i)
+    for (size_t i = 0; i != num_hypotheses; ++i)
       write_output (empirical_enhanced_statistic.col(i), *v2v, prefix + "empirical" + postfix(i) + ".mif", output_header);
   }
 
   // Precompute statistic value and enhanced statistic for the default permutation
   matrix_type default_output, default_enhanced_output;
   Stats::PermTest::precompute_default_permutation (glm_test, enhancer, empirical_enhanced_statistic, default_enhanced_output, default_output);
-  for (size_t i = 0; i != num_contrasts; ++i) {
-    write_output (default_output.col (i), *v2v, prefix + (contrasts[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".mif", output_header);
+  for (size_t i = 0; i != num_hypotheses; ++i) {
+    write_output (default_output.col (i), *v2v, prefix + (hypotheses[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".mif", output_header);
     write_output (default_enhanced_output.col (i), *v2v, prefix + (use_tfce ? "tfce" : "clustersize") + postfix(i) + ".mif", output_header);
   }
 
@@ -346,13 +346,13 @@ void run() {
     Stats::PermTest::run_permutations (glm_test, enhancer, empirical_enhanced_statistic,
                                        default_enhanced_output, null_distribution, null_contributions, uncorrected_pvalue);
 
-    for (size_t i = 0; i != num_contrasts; ++i)
+    for (size_t i = 0; i != num_hypotheses; ++i)
       save_vector (null_distribution.col(i), prefix + "perm_dist" + postfix(i) + ".txt");
 
-    ProgressBar progress ("Generating output images", 1 + (3 * num_contrasts));
+    ProgressBar progress ("Generating output images", 1 + (3 * num_hypotheses));
     const matrix_type fwe_pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, default_enhanced_output);
     ++progress;
-    for (size_t i = 0; i != num_contrasts; ++i) {
+    for (size_t i = 0; i != num_hypotheses; ++i) {
       write_output (fwe_pvalue_output.col(i), *v2v, prefix + "fwe_pvalue" + postfix(i) + ".mif", output_header);
       ++progress;
       write_output (uncorrected_pvalue.col(i), *v2v, prefix + "uncorrected_pvalue" + postfix(i) + ".mif", output_header);

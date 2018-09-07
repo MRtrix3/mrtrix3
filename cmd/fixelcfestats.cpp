@@ -269,7 +269,7 @@ void run()
   auto index_image = index_header.get_image<index_type>();
 
   const index_type num_fixels = Fixel::get_number_of_fixels (index_header);
-  CONSOLE ("Number of fixels: " + str(num_fixels));
+  CONSOLE ("Total number of fixels: " + str(num_fixels));
 
   Image<bool> mask;
   index_type mask_fixels;
@@ -283,7 +283,7 @@ void run()
     mask_fixels = 0;
     for (mask.index(0) = 0; mask.index(0) != num_fixels; ++mask.index(0))
       fixel2column[mask.index(0)] = mask.value() ? mask_fixels++ : -1;
-    CONSOLE ("Fixel mask contains " + str(mask_fixels) + " fixels");
+    CONSOLE ("Number of fixels in mask: " + str(mask_fixels));
 #ifdef NDEBUG
     column2fixel.resize (mask_fixels);
 #else
@@ -351,10 +351,10 @@ void run()
   if (design.rows() != (ssize_t)importer.size())
     throw Exception ("Number of input files does not match number of rows in design matrix");
 
-  // Load contrasts
-  const vector<Contrast> contrasts = Math::Stats::GLM::load_contrasts (argument[3]);
-  const size_t num_contrasts = contrasts.size();
-  CONSOLE ("Number of contrasts: " + str(num_contrasts));
+  // Load hypotheses
+  const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[3]);
+  const size_t num_hypotheses = hypotheses.size();
+  CONSOLE ("Number of hypotheses: " + str(num_hypotheses));
 
   // Before validating the contrast matrix, we first need to see if there are any
   //   additional design matrix columns coming from fixel-wise subject data
@@ -375,8 +375,8 @@ void run()
 
   const ssize_t num_factors = design.cols() + extra_columns.size();
   CONSOLE ("Number of factors: " + str(num_factors));
-  if (contrasts[0].cols() != num_factors)
-    throw Exception ("The number of columns per contrast (" + str(contrasts[0].cols()) + ")"
+  if (hypotheses[0].cols() != num_factors)
+    throw Exception ("The number of columns in the contrast matrix (" + str(hypotheses[0].cols()) + ")"
                      + (extra_columns.size() ? " (in addition to the " + str(extra_columns.size()) + " uses of -column)" : "")
                      + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")");
 
@@ -483,7 +483,6 @@ void run()
         norm_connectivity_matrix[column].normalise();
 
       // Force deallocation of memory used for this fixel in the original matrix
-      //std::map<uint32_t, Stats::CFE::connectivity>().swap (connectivity_matrix[fixel_index]);
       Stats::CFE::InitMatrixFixel().swap (connectivity_matrix[fixel_index]);
 
       return true;
@@ -560,25 +559,25 @@ void run()
   // Free the memory occupied by the data smoothing filter; no longer required
   Stats::CFE::norm_connectivity_matrix_type().swap (smoothing_weights);
 
-  // Only add contrast row number to image outputs if there's more than one contrast
-  auto postfix = [&] (const size_t i) { return (num_contrasts > 1) ? ("_" + contrasts[i].name()) : ""; };
+  // Only add contrast matrix row number to image outputs if there's more than one hypothesis
+  auto postfix = [&] (const size_t i) { return (num_hypotheses > 1) ? ("_" + hypotheses[i].name()) : ""; };
 
   {
     matrix_type betas (num_factors, num_fixels);
-    matrix_type abs_effect_size (num_fixels, num_contrasts), std_effect_size (num_fixels, num_contrasts);
+    matrix_type abs_effect_size (num_fixels, num_hypotheses), std_effect_size (num_fixels, num_hypotheses);
     vector_type cond (num_fixels), stdev (num_fixels);
 
-    Math::Stats::GLM::all_stats (data, design, extra_columns, contrasts,
+    Math::Stats::GLM::all_stats (data, design, extra_columns, hypotheses,
                                  cond, betas, abs_effect_size, std_effect_size, stdev);
 
-    ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_contrasts) + 1 + (nans_in_data || extra_columns.size() ? 1 : 0));
+    ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_hypotheses) + 1 + (nans_in_data || extra_columns.size() ? 1 : 0));
 
     for (ssize_t i = 0; i != num_factors; ++i) {
       write_fixel_output (Path::join (output_fixel_directory, "beta" + str(i) + ".mif"), betas.row(i), output_header);
       ++progress;
     }
-    for (size_t i = 0; i != num_contrasts; ++i) {
-      if (!contrasts[i].is_F()) {
+    for (size_t i = 0; i != num_hypotheses; ++i) {
+      if (!hypotheses[i].is_F()) {
         write_fixel_output (Path::join (output_fixel_directory, "abs_effect" + postfix(i) + ".mif"), abs_effect_size.col(i), output_header);
         ++progress;
         write_fixel_output (Path::join (output_fixel_directory, "std_effect" + postfix(i) + ".mif"), std_effect_size.col(i), output_header);
@@ -595,9 +594,9 @@ void run()
   // Construct the class for performing the initial statistical tests
   std::shared_ptr<GLM::TestBase> glm_test;
   if (extra_columns.size() || nans_in_data) {
-    glm_test.reset (new GLM::TestVariable (extra_columns, data, design, contrasts, nans_in_data, nans_in_columns));
+    glm_test.reset (new GLM::TestVariable (extra_columns, data, design, hypotheses, nans_in_data, nans_in_columns));
   } else {
-    glm_test.reset (new GLM::TestFixed (data, design, contrasts));
+    glm_test.reset (new GLM::TestFixed (data, design, hypotheses));
   }
 
   // Construct the class for performing fixel-based statistical enhancement
@@ -608,7 +607,7 @@ void run()
   if (do_nonstationarity_adjustment) {
     Stats::PermTest::precompute_empirical_stat (glm_test, cfe_integrator, empirical_skew, empirical_cfe_statistic);
     output_header.keyval()["nonstationarity adjustment"] = str(true);
-    for (size_t i = 0; i != num_contrasts; ++i)
+    for (size_t i = 0; i != num_hypotheses; ++i)
       write_fixel_output (Path::join (output_fixel_directory, "cfe_empirical" + postfix(i) + ".mif"), empirical_cfe_statistic.col(i), output_header);
   } else {
     output_header.keyval()["nonstationarity adjustment"] = str(false);
@@ -617,9 +616,9 @@ void run()
   // Precompute default statistic and CFE statistic
   matrix_type cfe_output, tvalue_output;
   Stats::PermTest::precompute_default_permutation (glm_test, cfe_integrator, empirical_cfe_statistic, cfe_output, tvalue_output);
-  for (size_t i = 0; i != num_contrasts; ++i) {
+  for (size_t i = 0; i != num_hypotheses; ++i) {
     write_fixel_output (Path::join (output_fixel_directory, "cfe" + postfix(i) + ".mif"), cfe_output.col(i), output_header);
-    write_fixel_output (Path::join (output_fixel_directory, std::string(contrasts[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".mif"), tvalue_output.col(i), output_header);
+    write_fixel_output (Path::join (output_fixel_directory, std::string(hypotheses[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".mif"), tvalue_output.col(i), output_header);
   }
 
   // Perform permutation testing
@@ -630,16 +629,16 @@ void run()
     Stats::PermTest::run_permutations (glm_test, cfe_integrator, empirical_cfe_statistic,
                                        cfe_output, null_distribution, null_contributions, uncorrected_pvalues);
 
-    ProgressBar progress ("Outputting final results", 4*num_contrasts + 1);
+    ProgressBar progress ("Outputting final results", 4*num_hypotheses + 1);
 
-    for (size_t i = 0; i != num_contrasts; ++i) {
+    for (size_t i = 0; i != num_hypotheses; ++i) {
       save_vector (null_distribution.col(i), Path::join (output_fixel_directory, "perm_dist" + postfix(i) + ".txt"));
       ++progress;
     }
 
     const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, cfe_output);
     ++progress;
-    for (size_t i = 0; i != num_contrasts; ++i) {
+    for (size_t i = 0; i != num_hypotheses; ++i) {
       write_fixel_output (Path::join (output_fixel_directory, "fwe_pvalue" + postfix(i) + ".mif"), pvalue_output.col(i), output_header);
       ++progress;
       write_fixel_output (Path::join (output_fixel_directory, "uncorrected_pvalue" + postfix(i) + ".mif"), uncorrected_pvalues.col(i), output_header);
