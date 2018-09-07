@@ -473,11 +473,6 @@ void run()
         }
       }
 
-      // Make sure the fixel is fully connected to itself
-      norm_connectivity_matrix[column].push_back (Stats::CFE::NormMatrixElement (uint32_t(column), connectivity_value_type(1.0)));
-      smoothing_weights[column].push_back (Stats::CFE::NormMatrixElement (uint32_t(column), connectivity_value_type(gaussian_const1)));
-      sum_weights += connectivity_value_type (gaussian_const1);
-
       // Normalise smoothing weights
       const connectivity_value_type norm_factor = connectivity_value_type(1.0) / sum_weights;
       for (auto i : smoothing_weights[column])
