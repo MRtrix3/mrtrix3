@@ -456,6 +456,9 @@ namespace MR
           if (!(size_t(output.rows()) == num_elements() && size_t(output.cols()) == num_outputs()))
             output.resize (num_elements(), num_outputs());
 
+          matrix_type Sy, lambdas, XtX, beta;
+          vector_type sse;
+
           // Freedman-Lane for fixed design matrix case
           // Each hypothesis needs to be handled explicitly on its own
           for (size_t ih = 0; ih != c.size(); ++ih) {
@@ -526,10 +529,7 @@ namespace MR
             TestBase (measurements, design, hypotheses),
             importers (importers),
             nans_in_data (nans_in_data),
-            nans_in_columns (nans_in_columns),
-            extra_data (num_subjects(), importers.size()),
-            element_mask (num_subjects()),
-            perm_matrix_mask (num_subjects())
+            nans_in_columns (nans_in_columns)
         {
           // Make sure that the specified contrast matrix reflects the full design matrix (with additional
           //   data loaded)
@@ -542,6 +542,12 @@ namespace MR
         {
           if (!(size_t(output.rows()) == num_elements() && size_t(output.cols()) == num_outputs()))
             output.resize (num_elements(), num_outputs());
+
+          matrix_type extra_data (num_subjects(), importers.size());
+          BitSet element_mask (num_subjects()), perm_matrix_mask (num_subjects());
+          matrix_type shuffling_matrix_masked, Mfull_masked, pinvMfull_masked, Rm;
+          vector_type y_masked, Sy, lambda;
+          matrix_type XtX, beta;
 
           // Let's loop over elements first, then hypotheses in the inner loop
           for (ssize_t ie = 0; ie != y.cols(); ++ie) {
