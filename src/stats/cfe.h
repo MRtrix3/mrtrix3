@@ -54,24 +54,25 @@ namespace MR
       class InitMatrixElement
       { NOMEMALIGN
         public:
+          using ValueType = index_type;
           InitMatrixElement() :
               fixel_index (std::numeric_limits<index_type>::max()),
               track_count (0) { }
           InitMatrixElement (const index_type fixel_index) :
               fixel_index (fixel_index),
               track_count (1) { }
-          InitMatrixElement (const index_type fixel_index, const index_type track_count) :
+          InitMatrixElement (const index_type fixel_index, const ValueType track_count) :
               fixel_index (fixel_index),
               track_count (track_count) { }
           InitMatrixElement (const InitMatrixElement&) = default;
           FORCE_INLINE InitMatrixElement& operator++() { track_count++; return *this; }
           FORCE_INLINE InitMatrixElement& operator= (const InitMatrixElement& that) { fixel_index = that.fixel_index; track_count = that.track_count; return *this; }
           FORCE_INLINE index_type index() const { return fixel_index; }
-          FORCE_INLINE index_type value() const { return track_count; }
+          FORCE_INLINE ValueType value() const { return track_count; }
           FORCE_INLINE bool operator< (const InitMatrixElement& that) const { return fixel_index < that.fixel_index; }
         private:
           index_type fixel_index;
-          index_type track_count;
+          ValueType track_count;
       };
 
 
@@ -98,13 +99,14 @@ namespace MR
       class NormMatrixElement
       { NOMEMALIGN
         public:
+          using ValueType = connectivity_value_type;
           NormMatrixElement (const index_type fixel_index,
-                             const connectivity_value_type connectivity_value) :
+                             const ValueType connectivity_value) :
               fixel_index (fixel_index),
               connectivity_value (connectivity_value) { }
           FORCE_INLINE index_type index() const { return fixel_index; }
-          FORCE_INLINE connectivity_value_type value() const { return connectivity_value; }
-          FORCE_INLINE void normalise (const connectivity_value_type norm_factor) { connectivity_value *= norm_factor; }
+          FORCE_INLINE ValueType value() const { return connectivity_value; }
+          FORCE_INLINE void normalise (const ValueType norm_factor) { connectivity_value *= norm_factor; }
         private:
           const index_type fixel_index;
           connectivity_value_type connectivity_value;
@@ -141,6 +143,44 @@ namespace MR
       //   is in the process of being built, or whether it has been normalised
       using init_connectivity_matrix_type = vector<InitMatrixFixel>;
       using norm_connectivity_matrix_type = vector<NormMatrixFixel>;
+
+
+
+      // Debugging: Template functions to save/load sparse matrices to/from file
+      template <class FixelType>
+      void save (vector<FixelType>& data, const std::string& filepath)
+      {
+        File::OFStream out (filepath);
+        for (const auto& f : data) {
+          for (size_t i = 0; i != f.size(); ++i) {
+            if (i)
+              out << ",";
+            out << f[i].index() << ":" << f[i].value();
+          }
+          out << "\n";
+        }
+      }
+      template <class FixelType>
+      void load (const std::string& filepath, vector<FixelType>& data)
+      {
+        data.clear();
+        std::ifstream in (filepath);
+        for (std::string line; std::getline (in, line); ) {
+          data.emplace_back (FixelType());
+          auto entries = MR::split (line, ",");
+          for (const auto& entry : entries) {
+            auto pair = MR::split (entry, ":");
+            if (pair.size() != 2) {
+              Exception e ("Malformed sparse matrix in file \"" + filepath + "\":");
+              e.push_back ("Line: \"" + line + "\"");
+              e.push_back ("Entry: \"" + entry + "\"");
+              throw e;
+            }
+            data[data.size()-1].emplace_back (FixelType (to<index_type>(pair[0]), to<typename FixelType::ValueType>(pair[1])));
+          }
+        }
+      }
+
 
 
 

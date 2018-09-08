@@ -135,6 +135,8 @@ void usage ()
 
 
 
+
+
 // Global variabes that need to be set via run() but accessed by other functions / classes
 
 // Lookup table that maps from input fixel index to column number
@@ -407,6 +409,8 @@ void run()
   }
   track_file.close();
 
+  Stats::CFE::save (connectivity_matrix, Path::join (output_fixel_directory, "init_matrix.csv"));
+
   // Normalise connectivity matrix, threshold, and put in a more efficient format
   Stats::CFE::norm_connectivity_matrix_type norm_connectivity_matrix (mask_fixels);
   // Also pre-compute fixel-fixel weights for smoothing.
@@ -491,6 +495,9 @@ void run()
     Source source (mask);
     Thread::run_queue (source, size_t(), Thread::multi (Sink));
   }
+
+  Stats::CFE::save (norm_connectivity_matrix, Path::join (output_fixel_directory, "norm_matrix.csv"));
+  Stats::CFE::save (smoothing_weights, Path::join (output_fixel_directory, "smoothing_matrix.csv"));
 
 
   // The connectivity matrix is now in vector rather than matrix form;
