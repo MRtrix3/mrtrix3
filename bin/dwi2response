@@ -59,7 +59,7 @@ if app.args.lmax:
 shells_option = ''
 if app.args.shells:
   try:
-    shells_values = [ int(x) for x in app.args.shells.split(',') ]
+    shells_values = [ int(round(float(x))) for x in app.args.shells.split(',') ]
   except:
     app.error('-shells option should provide a comma-separated list of b-values')
   if alg.needsSingleShell() and not len(shells_values) == 1:
