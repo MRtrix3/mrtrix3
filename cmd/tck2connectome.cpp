@@ -146,6 +146,8 @@ void execute (Image<node_t>& node_image, const node_t max_node_index, const std:
 void run ()
 {
   auto node_image = Image<node_t>::open (argument[1]);
+  if (node_image.ndim() != 3)
+    throw Exception("Node image must be a 3-D volume of node labels.");
 
   // First, find out how many segmented nodes there are, so the matrix can be pre-allocated
   // Also check for node volume for all nodes
