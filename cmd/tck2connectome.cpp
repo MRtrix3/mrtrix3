@@ -145,15 +145,15 @@ void execute (Image<node_t>& node_image, const node_t max_node_index, const std:
 
 void run ()
 {
-  auto node_image = Image<node_t>::open (argument[1]);
-  if (node_image.ndim() != 3)
-    throw Exception("Node image must be a 3-D volume of node labels.");
+  auto node_header = Header::open (argument[1]);
+  MR::Connectome::check (node_header);
+  auto node_image = node_header.get_image<node_t>();
 
   // First, find out how many segmented nodes there are, so the matrix can be pre-allocated
   // Also check for node volume for all nodes
   vector<uint32_t> node_volumes (1, 0);
   node_t max_node_index = 0;
-  for (auto i = Loop (node_image) (node_image); i; ++i) {
+  for (auto i = Loop (node_image, 0, 3) (node_image); i; ++i) {
     if (node_image.value() > max_node_index) {
       max_node_index = node_image.value();
       node_volumes.resize (max_node_index + 1, 0);
