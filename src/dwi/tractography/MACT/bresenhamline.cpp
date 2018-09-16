@@ -14,6 +14,7 @@
 
 
 #include "dwi/tractography/MACT/bresenhamline.h"
+#include "exception.h"
 
 
 namespace MR
@@ -144,7 +145,7 @@ void BresenhamLine::point2voxel( const Eigen::Vector3d& point,
 
 void BresenhamLine::neighbouringVoxels(
                            const Eigen::Vector3i& voxel,
-                           const int32_t& stride,
+                           const int32_t& layer,
                            std::set< Eigen::Vector3i, Vector3iCompare >& voxels,
                            bool clearVoxelsAtBeginning ) const
 {
@@ -153,20 +154,65 @@ void BresenhamLine::neighbouringVoxels(
     voxels.clear();
   }
 
-  Eigen::Vector3i offset;
-  for ( int32_t x = -stride; x <= stride; x++ )
+  if ( layer >= 0 )
   {
-    offset[ 0 ] = x;
-    for ( int32_t y = -stride; y <= stride; y++ )
+    Eigen::Vector3i offset, neighbour;
+    for ( int32_t x = -layer; x <= layer; x++ )
     {
-      offset[ 1 ] = y;
-      for ( int32_t z = -stride; z <= stride; z++ )
+      offset[ 0 ] = x;
+      for ( int32_t y = -layer; y <= layer; y++ )
       {
-        offset[ 2 ] = z;
-        voxels.insert( voxel + offset );
+        offset[ 1 ] = y;
+        for ( int32_t z = -layer; z <= layer; z++ )
+        {
+          offset[ 2 ] = z;
+          neighbour = voxel + offset;
+          if ( ( neighbour[ 0 ] >= 0 ) && ( neighbour[ 0 ] <= _cacheSizeMinusOne[ 0 ] ) &&
+               ( neighbour[ 1 ] >= 0 ) && ( neighbour[ 1 ] <= _cacheSizeMinusOne[ 1 ] ) &&
+               ( neighbour[ 2 ] >= 0 ) && ( neighbour[ 2 ] <= _cacheSizeMinusOne[ 2 ] ) )
+          {
+            voxels.insert( voxel + offset );
+          }
+        }
       }
     }
-  }  
+  }
+  else
+  {
+    throw Exception( "BresenhamLine::neighbouringVoxels : layer must not be negative" );
+  }
+}
+
+
+void BresenhamLine::layerVoxels(
+                           const Eigen::Vector3i& voxel,
+                           const int32_t& layer,
+                           std::set< Eigen::Vector3i, Vector3iCompare >& voxels,
+                           bool clearVoxelsAtBeginning ) const
+{
+  if ( clearVoxelsAtBeginning )
+  {
+    voxels.clear();
+  }
+
+  if ( layer > 0 )
+  {
+    neighbouringVoxels( voxel, layer, voxels );
+    std::set< Eigen::Vector3i, Vector3iCompare > innerVoxels;
+    neighbouringVoxels( voxel, layer-1, innerVoxels );
+    for ( auto i = innerVoxels.begin(); i != innerVoxels.end(); ++i )
+    {
+      auto f = voxels.find( *i );
+      if ( f != voxels.end() )
+      {
+        voxels.erase( f );
+      }
+    }
+  }
+  else
+  {
+    throw Exception( "BresenhamLine::layerVoxels : layer must be a positive integer" );
+  }
 }
 
 
