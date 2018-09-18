@@ -15,8 +15,6 @@
 
 #include "stats/cfe.h"
 
-//#define CFE_MERGESORT_TEST
-
 namespace MR
 {
   namespace Stats
@@ -28,45 +26,13 @@ namespace MR
 
       void InitMatrixFixel::add (const vector<index_type>& indices)
       {
-        //while (spinlock.test_and_set (std::memory_order_acquire));
-
         if ((*this).empty()) {
           (*this).reserve (indices.size());
           for (auto i : indices)
             (*this).emplace_back (InitMatrixElement (i));
           track_count = 1;
-          //spinlock.clear (std::memory_order_release);
           return;
         }
-
-#ifdef CFE_MERGESORT_TEST
-        // Comprehensive test:
-        // Do a memory-expensive merge, and make sure that the result of the
-        //   optimised algorithm matches
-        using map_type = std::map<index_type, index_type>;
-        map_type map_merged;
-        for (auto i : (*this))
-          map_merged[i.index()] = i.value();
-        for (auto i : indices) {
-          const auto it = map_merged.find (i);
-          if (it == map_merged.end())
-            map_merged[i] = 1;
-          else
-            it->second++;
-        }
-        vector<InitMatrixElement> vector_merged;
-        for (auto i : map_merged)
-          vector_merged.emplace_back (InitMatrixElement (i.first, i.second));
-        const vector<InitMatrixElement> original_data = (*this);
-
-        //std::cerr << "\n\n\nCurrent contents:\n";
-        //for (auto i : *this)
-        //  std::cerr << "[" << i.index() << ": " << i.value() << "] ";
-        //std::cerr << "\nIncoming contents:\n";
-        //for (auto i : indices)
-        //  std::cerr << i << " ";
-        //std::cerr << "\n";
-#endif
 
         ssize_t self_index = 0, in_index = 0;
 
@@ -96,9 +62,6 @@ namespace MR
           }
         }
 
-#ifdef CFE_MERGESORT_TEST
-        const vector<InitMatrixElement> after_sweep = (*this);
-#endif
         self_index = old_size - 1;
         in_index = indices.size() - 1;
 
@@ -132,23 +95,9 @@ namespace MR
             (*this)[out_index--] = InitMatrixElement (indices[in_index--]);
         }
 
+        // Track total number of streamlines intersecting this fixel,
+        //   independently of the extent of fixel-fixel connectivity
         ++track_count;
-
-#ifdef CFE_MERGESORT_TEST
-        //std::cerr << "New contents:\n";
-        //for (auto i : *this)
-        //  std::cerr << "[" << i.index() << ": " << i.value() << "] ";
-        //std::cerr << "\n";
-
-        // Slow verification of contents
-        assert ((*this).size() == vector_merged.size());
-        for (size_t i = 0; i != (*this).size(); ++i) {
-          assert ((*this)[i].index() == vector_merged[i].index());
-          assert ((*this)[i].value() == vector_merged[i].value());
-        }
-#endif
-
-        //spinlock.clear (std::memory_order_release);
       }
 
 
