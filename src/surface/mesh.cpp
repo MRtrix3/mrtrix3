@@ -820,6 +820,18 @@ namespace MR
         for (size_t j = 0; j != 4; ++j)
           if ((*i)[j] >= vertices.size())
             throw Exception ("Mesh vertex index exceeds number of vertices read");
+
+      for ( auto t = triangles.begin(); t != triangles.end(); ++t )
+      {
+        Eigen::Vector3d u = ( vert( ( *t )[ 1 ] ) - vert( ( *t )[ 0 ] ) );
+        Eigen::Vector3d v = ( vert( ( *t )[ 2 ] ) - vert( ( *t )[ 0 ] ) );
+        Eigen::Vector3d n = u.cross( v );
+        if ( std::abs( n.dot( n ) ) <= std::numeric_limits< double >::epsilon() )
+        {
+          // cross product equals to zero --> invalid triangle
+          throw Exception( "Mesh contains an invalid triangle" );
+        }
+      }
     }
 
 
