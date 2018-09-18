@@ -111,6 +111,7 @@ namespace MR
 
 
 
+        void check_design (const matrix_type&);
 
         vector<Hypothesis> load_hypotheses (const std::string& file_path);
 
@@ -207,12 +208,6 @@ namespace MR
               // Can no longer apply this assertion here; GLMTTestVariable later
               //   expands the number of columns in M
               //assert (c.cols() == M.cols());
-              const default_type cond = Math::condition_number (design);
-              if (cond > 10.0) {
-                WARN ("Design matrix conditioning is poor (condition number = " + str(cond) + "); some calculations may be unstable");
-              } else if (!std::isfinite (cond) || cond > 1e5) {
-                throw Exception ("Design matrix may contain collinear elements (condition number = " + str(cond) + "); check derivation of design matrix");
-              }
             }
 
             virtual ~TestBase() { }

@@ -129,6 +129,7 @@ void run()
   const matrix_type design = load_matrix (argument[1]);
   if (size_t(design.rows()) != num_subjects)
     throw Exception ("Number of subjects (" + str(num_subjects) + ") does not match number of rows in design matrix (" + str(design.rows()) + ")");
+  check_design (design);
 
   // Load hypotheses
   const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[2]);
