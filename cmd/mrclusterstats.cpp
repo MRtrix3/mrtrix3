@@ -212,6 +212,7 @@ void run() {
   const matrix_type design = load_matrix<value_type> (argument[1]);
   if (design.rows() != (ssize_t)importer.size())
     throw Exception ("Number of input files does not match number of rows in design matrix");
+  check_design (design);
 
   // Load hypotheses
   const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[2]);

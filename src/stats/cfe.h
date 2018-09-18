@@ -146,7 +146,7 @@ namespace MR
 
 
 
-      // Debugging: Template functions to save/load sparse matrices to/from file
+      // Template functions to save/load sparse matrices to/from file
       template <class FixelType>
       void save (vector<FixelType>& data, const std::string& filepath)
       {

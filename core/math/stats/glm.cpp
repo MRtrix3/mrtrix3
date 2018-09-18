@@ -66,6 +66,26 @@ namespace MR
 
 
 
+        void check_design (const matrix_type& design)
+        {
+          Eigen::ColPivHouseholderQR<matrix_type> decomp;
+          decomp.setThreshold (1e-5);
+          decomp = decomp.compute (design);
+          if (decomp.rank() < design.cols()) {
+            WARN ("Design matrix is rank-deficient; processing may proceed, but manually checking your matrix is advised");
+          } else {
+            const default_type cond = Math::condition_number (design);
+            if (cond > 100.0) {
+              WARN ("Design matrix conditioning is poor (condition number = " + str(cond, 6) + "); model fitting may be highly influenced by noise");
+            } else {
+              CONSOLE ("Design matrix condition number is " + str(cond, 6));
+            }
+          }
+        }
+
+
+
+
         vector<Hypothesis> load_hypotheses (const std::string& file_path)
         {
           vector<Hypothesis> hypotheses;
