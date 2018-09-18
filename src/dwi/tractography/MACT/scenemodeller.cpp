@@ -34,6 +34,21 @@ namespace MACT
 
 
 SceneModeller::SceneModeller( const BoundingBox< double >& boundingBox,
+                              const Eigen::Vector3i& lutSize,
+                              const Header& header )
+              : _boundingBox( boundingBox ),
+                _integerBoundingBox( 0, lutSize[ 0 ] - 1,
+                                     0, lutSize[ 1 ] - 1,
+                                     0, lutSize[ 2 ] - 1 ),
+                _lutSize( lutSize ),
+                _bresenhamLine( boundingBox, lutSize ),
+                _tissueLut( std::shared_ptr< SceneModeller >( this ) ),
+                _lutHeader( header )
+{
+}
+
+
+SceneModeller::SceneModeller( const BoundingBox< double >& boundingBox,
                               const Eigen::Vector3i& lutSize )
               : _boundingBox( boundingBox ),
                 _integerBoundingBox( 0, lutSize[ 0 ] - 1,
@@ -106,7 +121,7 @@ const TissueLut& SceneModeller::tissueLut() const
 
 bool SceneModeller::nearestTissue( const Eigen::Vector3d& point,
                                    Intersection& intersection,
-                                   const int32_t& stride ) const
+                                   const int32_t& layer ) const
 {
   if ( _tissues.empty() )
   {
@@ -117,33 +132,19 @@ bool SceneModeller::nearestTissue( const Eigen::Vector3d& point,
     Eigen::Vector3i voxel;
     _bresenhamLine.point2voxel( point, voxel );
 
-    // unless specified, increase the stride until the nearest tissue is found
+    // unless specified, increase the layer until the nearest tissue is found
     // (min numner of voxels: 3x3x3=27)
-    int32_t s = 1;
+    int32_t l = 1;
     do
     {
-      std::set< Eigen::Vector3i, Vector3iCompare > voxels, neighbours;
-      _bresenhamLine.neighbouringVoxels( voxel, s, neighbours );
-      for ( auto n = neighbours.begin(); n != neighbours.end(); ++n )
+      std::set< Eigen::Vector3i, Vector3iCompare > voxels;
+      if ( l == 1 )
       {
-        if ( _integerBoundingBox.contains( *n ) )
-        {
-          voxels.insert( *n );
-        }
+        _bresenhamLine.neighbouringVoxels( voxel, l, voxels );
       }
-      if ( s > 1 )
+      else
       {
-        // remove inner grid voxels as already checked
-        std::set< Eigen::Vector3i, Vector3iCompare > inner_voxels;
-        _bresenhamLine.neighbouringVoxels( voxel, s-1, inner_voxels );
-        for ( auto i = inner_voxels.begin(); i != inner_voxels.end(); ++i )
-        {
-          auto f = voxels.find( *i );
-          if ( f != voxels.end() )
-          {
-            voxels.erase( f );
-          }
-        }
+        _bresenhamLine.layerVoxels( voxel, l, voxels );
       }
 
       // loop over all unique polygons
@@ -179,8 +180,8 @@ bool SceneModeller::nearestTissue( const Eigen::Vector3d& point,
           ++ t;
         }
       }
-      ++ s;
-    } while ( s < stride && !intersection._tissue );
+      ++ l;
+    } while ( l < layer && !intersection._tissue );
 
     return intersection._tissue ? true : false;
   }
@@ -189,7 +190,7 @@ bool SceneModeller::nearestTissue( const Eigen::Vector3d& point,
 
 bool SceneModeller::nearestVertex( const Eigen::Vector3d& point,
                                    int32_t& vertex,
-                                   const int32_t& stride ) const
+                                   const int32_t& layer ) const
 {
   if ( _tissues.empty() )
   {
@@ -200,34 +201,20 @@ bool SceneModeller::nearestVertex( const Eigen::Vector3d& point,
     Eigen::Vector3i voxel;
     _bresenhamLine.point2voxel( point, voxel );
 
-    // unless specified, increase the stride until the nearest tissue is found
+    // unless specified, increase the layer until the nearest tissue is found
     // (min numner of voxels: 3x3x3=27)
     vertex = -1;
-    int32_t s = 1;
+    int32_t l = 1;
     do
     {
-      std::set< Eigen::Vector3i, Vector3iCompare > voxels, neighbours;
-      _bresenhamLine.neighbouringVoxels( voxel, s, neighbours );
-      for ( auto n = neighbours.begin(); n != neighbours.end(); ++n )
+      std::set< Eigen::Vector3i, Vector3iCompare > voxels;
+      if ( l == 1 )
       {
-        if ( _integerBoundingBox.contains( *n ) )
-        {
-          voxels.insert( *n );
-        }
+        _bresenhamLine.neighbouringVoxels( voxel, l, voxels );
       }
-      if ( s > 1 )
+      else
       {
-        // remove inner grid voxels as already checked
-        std::set< Eigen::Vector3i, Vector3iCompare > inner_voxels;
-        _bresenhamLine.neighbouringVoxels( voxel, s-1, inner_voxels );
-        for ( auto i = inner_voxels.begin(); i != inner_voxels.end(); ++i )
-        {
-          auto f = voxels.find( *i );
-          if ( f != voxels.end() )
-          {
-            voxels.erase( f );
-          }
-        }
+        _bresenhamLine.layerVoxels( voxel, l, voxels );
       }
 
       // loop over all unique polygons
@@ -260,8 +247,8 @@ bool SceneModeller::nearestVertex( const Eigen::Vector3d& point,
           ++ t;
         }
       }
-      ++ s;
-    } while ( s < stride && vertex < 0 );
+      ++ l;
+    } while ( l < layer && vertex < 0 );
 
     return ( vertex >= 0 );
   }

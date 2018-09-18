@@ -41,6 +41,9 @@ class SceneModeller
   public:
 
     SceneModeller( const BoundingBox< double >& boundingBox,
+                   const Eigen::Vector3i& lutSize,
+                   const Header& header );
+    SceneModeller( const BoundingBox< double >& boundingBox,
                    const Eigen::Vector3i& lutSize );
     virtual ~SceneModeller();
 
@@ -57,12 +60,12 @@ class SceneModeller
     // methods to find the nearest tissue from a given point
     bool nearestTissue( const Eigen::Vector3d& point,
                         struct Intersection& intersection,
-                        const int32_t& stride = std::numeric_limits< int32_t >::max() ) const;
+                        const int32_t& layer = std::numeric_limits< uint32_t >::max() ) const;
 
     // methods to find the nearest mesh vertex from a given point
     bool nearestVertex( const Eigen::Vector3d& point,
                         int32_t& vertex,
-                        const int32_t& stride = std::numeric_limits< int32_t >::max() ) const;
+                        const int32_t& layer = std::numeric_limits< uint32_t >::max() ) const;
 
     // methods to check whether a point is inside/on a target tissue type
     bool inTissue( const Eigen::Vector3d& point, const TissueType& type,
@@ -78,6 +81,7 @@ class SceneModeller
     BresenhamLine _bresenhamLine;
     std::map< TissueType, Tissue_ptr > _tissues;
     TissueLut _tissueLut;
+    Header _lutHeader;
 
     double pointToTriangleDistance( const Eigen::Vector3d& point,
                                     const Eigen::Vector3d& vertex1,
