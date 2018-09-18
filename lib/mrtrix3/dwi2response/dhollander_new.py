@@ -177,17 +177,17 @@ def execute(): #pylint: disable=unused-variable
   with open('ewmrf.txt', 'w') as f:
     for ii in isiso:
       if ii:
-        f.write("%s 0 0\n" % refwmcoef)
+        f.write("%s 0 0 0\n" % refwmcoef)
       else:
-        f.write("%s -%s %s\n" % (refwmcoef, refwmcoef, refwmcoef))
+        f.write("%s -%s %s -%s\n" % (refwmcoef, refwmcoef, refwmcoef, refwmcoef))
   run.command('dwi2fod msmt_csd dwi.mif ewmrf.txt abs_ewm2.mif response_csf.txt abs_csf2.mif -mask refined_wm.mif -lmax 2,0' + bvalues_option)
   run.command('mrconvert abs_ewm2.mif - -coord 3 0 | mrcalc - abs_csf2.mif -add abs_sum2.mif')
   run.command('sh2peaks abs_ewm2.mif - -num 1 -mask refined_wm.mif | peaks2amp - - | mrcalc - abs_sum2.mif -divide - | mrconvert - metric_sfwm2.mif -coord 3 0 -axes 0,1,2')
   run.command('mrcalc refined_wm.mif metric_sfwm2.mif 0 -if - | mrthreshold - - -top ' + str(voxsfwmcount * 2) + ' -ignorezero | mrcalc refined_wm.mif - 0 -if - -datatype bit | mrconvert - refined_sfwm.mif -axes 0,1,2')
-  run.command('dwi2fod msmt_csd dwi.mif ewmrf.txt abs_ewm4.mif response_csf.txt abs_csf4.mif -mask refined_sfwm.mif -lmax 4,0' + bvalues_option)
-  run.command('mrconvert abs_ewm4.mif - -coord 3 0 | mrcalc - abs_csf4.mif -add abs_sum4.mif')
-  run.command('sh2peaks abs_ewm4.mif - -num 1 -mask refined_sfwm.mif | peaks2amp - - | mrcalc - abs_sum4.mif -divide - | mrconvert - metric_sfwm4.mif -coord 3 0 -axes 0,1,2')
-  run.command('mrcalc refined_sfwm.mif metric_sfwm4.mif 0 -if - | mrthreshold - - -top ' + str(voxsfwmcount) + ' -ignorezero | mrcalc refined_sfwm.mif - 0 -if - -datatype bit | mrconvert - voxels_sfwm.mif -axes 0,1,2')
+  run.command('dwi2fod msmt_csd dwi.mif ewmrf.txt abs_ewm6.mif response_csf.txt abs_csf6.mif -mask refined_sfwm.mif -lmax 6,0' + bvalues_option)
+  run.command('mrconvert abs_ewm6.mif - -coord 3 0 | mrcalc - abs_csf6.mif -add abs_sum6.mif')
+  run.command('sh2peaks abs_ewm6.mif - -num 1 -mask refined_sfwm.mif | peaks2amp - - | mrcalc - abs_sum6.mif -divide - | mrconvert - metric_sfwm6.mif -coord 3 0 -axes 0,1,2')
+  run.command('mrcalc refined_sfwm.mif metric_sfwm6.mif 0 -if - | mrthreshold - - -top ' + str(voxsfwmcount) + ' -ignorezero | mrcalc refined_sfwm.mif - 0 -if - -datatype bit | mrconvert - voxels_sfwm.mif -axes 0,1,2')
   # Estimate SF WM response function
   run.command('amp2response dwi.mif voxels_sfwm.mif safe_vecs.mif response_sfwm.txt' + bvalues_option + sfwm_lmax_option)
 
