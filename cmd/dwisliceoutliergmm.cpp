@@ -195,8 +195,8 @@ class GMModel {
 
     // M-step: update component mean and variance.
     inline void m_step(const VecType& x) {
-      VecType w1 = Rin.array().exp();
-      VecType w2 = Rout.array().exp();
+      VecType w1 = Rin.array().exp() + std::numeric_limits<float_t>::epsilon();
+      VecType w2 = Rout.array().exp() + std::numeric_limits<float_t>::epsilon();
       Pin = w1.mean();
       Pout = w2.mean();
       Min = average(x, w1);
