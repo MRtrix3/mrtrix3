@@ -464,8 +464,8 @@ void run()
         if (connectivity >= connectivity_threshold) {
           if (do_smoothing) {
             const value_type distance = std::sqrt (Math::pow2 (positions[fixel_index][0] - positions[it.index()][0]) +
-                Math::pow2 (positions[fixel_index][1] - positions[it.index()][1]) +
-                Math::pow2 (positions[fixel_index][2] - positions[it.index()][2]));
+                                                   Math::pow2 (positions[fixel_index][1] - positions[it.index()][1]) +
+                                                   Math::pow2 (positions[fixel_index][2] - positions[it.index()][2]));
             const connectivity_value_type smoothing_weight = connectivity * gaussian_const1 * std::exp (-Math::pow2 (distance) / gaussian_const2);
             if (smoothing_weight >= connectivity_threshold) {
               smoothing_weights[column].push_back (Stats::CFE::NormMatrixElement (fixel2column[it.index()], smoothing_weight));
@@ -477,10 +477,18 @@ void run()
         }
       }
 
-      // Normalise smoothing weights
-      const connectivity_value_type norm_factor = connectivity_value_type(1.0) / sum_weights;
-      for (auto i : smoothing_weights[column])
-        i.normalise (norm_factor);
+      // If no streamlines traversed this fixel, connectivity matrix will be empty;
+      //   let's at least inform it that it is "fully connected" to itself
+      if (connectivity_matrix[fixel_index].empty()) {
+        norm_connectivity_matrix[column].push_back (Stats::CFE::NormMatrixElement (column, 1.0));
+        if (do_smoothing)
+          smoothing_weights[column].push_back (Stats::CFE::NormMatrixElement (column, 1.0));
+      } else if (do_smoothing) {
+        // Normalise smoothing weights
+        const connectivity_value_type norm_factor = connectivity_value_type(1.0) / sum_weights;
+        for (auto i : smoothing_weights[column])
+          i.normalise (norm_factor);
+      }
 
       // Calculate multiplicative factor for CFE normalisation
       if (cfe_norm)
@@ -499,7 +507,6 @@ void run()
   Stats::CFE::save (norm_connectivity_matrix, Path::join (output_fixel_directory, "norm_matrix.csv"));
   Stats::CFE::save (smoothing_weights, Path::join (output_fixel_directory, "smoothing_matrix.csv"));
 
-
   // The connectivity matrix is now in vector rather than matrix form;
   //   throw out the structure holding the original data
   // (Note however that all entries in the original structure should
@@ -509,7 +516,7 @@ void run()
 
   Header output_header (dynamic_cast<SubjectFixelImport*>(importer[0].get())->header());
   //output_header.keyval()["num permutations"] = str(num_perms);
-  output_header.keyval()["dh"] = str(cfe_dh);
+  output_header.keyval()["cfe_dh"] = str(cfe_dh);
   output_header.keyval()["cfe_e"] = str(cfe_e);
   output_header.keyval()["cfe_h"] = str(cfe_h);
   output_header.keyval()["cfe_c"] = str(cfe_c);
