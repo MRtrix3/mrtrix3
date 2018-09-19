@@ -2,19 +2,47 @@
 
 
 
+# Since we're going to capture everything after the colon character and "hide" it from argparse,
+#   we need to store the contents from there in a global so as for it to be accessible from execute()
+cmdsplit = [ ]
+
 def usage(cmdline): #pylint: disable=unused-variable
+  global cmdsplit
   cmdline.setAuthor('Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)')
   cmdline.setSynopsis('Perform some arbitrary processing step for each of a set of inputs')
   cmdline.addDescription('EXAMPLE USAGE: \n' \
-                             '  $ foreach folder/*.mif "mrinfo IN"   \n'
+                             '  $ foreach folder/*.mif : mrinfo IN   \n'
                              '  will run mrinfo for each .mif file in "folder"')
   cmdline.addDescription('AVAILABLE SUBSTITUTIONS: \n' \
                              '  IN:   The full matching pattern, including leading folders. For example, if the target list contains a file "folder/image.mif", any occurrence of "IN" will be substituted with "folder/image.mif".' \
                              '  NAME: The basename of the matching pattern. For example, if the target list contains a file "folder/image.mif", any occurrence of "NAME" will be substituted with "image.mif".' \
                              '  PRE:  The prefix of the basename. For example, if the target list contains a file "folder/image.mif", any occurrence of "PRE" will be substituted with "image".' \
-                             '  UNI:  The unique prefix of the basename after removing the common suffix. For example, if the target list contains files: "folder/001dwi.mif", "folder/002dwi.mif", "folder/003dwi.mif", any occurrence of "UNI" will be substituted with "001", "002", "003".')
+                             '  UNI:  The unique part of the input after removing any common prefix and common suffix. For example, if the target list contains files: "folder/001dwi.mif", "folder/002dwi.mif", "folder/003dwi.mif", any occurrence of "UNI" will be substituted with "001", "002", "003".')
+  cmdline.addDescription('Note that any command-line options provided before the colon separator will be interpreted by the foreach script; any command-line options provided after this colon will form part of the input to the executed command.')
   cmdline.add_argument('inputs',  help='Each of the inputs for which processing should be run', nargs='+')
-  cmdline.add_argument('command', help='The command string to run for each input, containing the substitutions listed in the Description section', type=str)
+  cmdline.add_argument('colon',   help='Colon symbol (":") delimiting the foreach inputs & command-line options from the actual command to be executed', type=str, choices=[':'])
+  cmdline.add_argument('command', help='The command string to run for each input, containing any number of substitutions listed in the Description section', type=str)
+
+  # Usage of foreach needs to be handled slightly differently here:
+  # We want argparse to parse only the contents of the command-line before the colon symbol,
+  #   as these are the items that pertain to the invocation of the foreach script;
+  #   anything after the colon should instead form a part of the command that
+  #   foreach is responsible for executing
+  try:
+    index = next(i for i,s in enumerate(sys.argv) if s == ':')
+    try:
+      cmdsplit = sys.argv[index+1:]
+      sys.argv = sys.argv[:index+1]
+      sys.argv.append(' '.join(cmdsplit))
+    except IndexError:
+      sys.stderr.write('Erroneous usage: No command specified (colon separator cannot be the last entry provided)\n')
+      sys.exit(0)
+  except StopIteration:
+    if len(sys.argv) > 2:
+      sys.stderr.write('Erroneous usage: A colon must be used to separate foreach inputs from the command to be executed\n')
+      sys.exit(0)
+
+
 
 
 
@@ -32,34 +60,39 @@ stop = False
 
 
 def execute(): #pylint: disable=unused-variable
-  import shlex
   from mrtrix3 import MRtrixException, run
+  global cmdsplit
 
   app.var(str(app.args.inputs))
   app.var(app.args.command)
+  app.var(cmdsplit)
 
   common_prefix = os.path.commonprefix(app.args.inputs)
   common_suffix = os.path.commonprefix([i[::-1] for i in app.args.inputs])[::-1]
   app.var(common_prefix, common_suffix)
 
-  cmdsplit = shlex.split(app.args.command)
-  app.var(cmdsplit)
+  keylist = [ 'IN', 'NAME', 'PRE', 'UNI' ]
 
   for entry in cmdsplit:
     if os.path.exists(entry):
-      keys_present = [ key for key in [ 'IN', 'NAME', 'PRE', 'UNI' ] if key in entry ]
+      keys_present = [ key for key in keylist if key in entry ]
       if keys_present:
         app.warn('Performing text substitution of ' + str(keys_present) + ' within command: "' + entry + '"; but the original text exists as a path on the file system... is this a problematic filesystem path?')
+
+  try:
+    next(entry for entry in cmdsplit if any(key for key in keylist if key in entry))
+  except StopIteration:
+    raise MRtrixException('None of the unique foreach keys ' + str(keylist) + ' appear in command string "' + app.args.command + '"; no substitution can occur')
 
   class Entry(object):
     def __init__(self, input_text):
       self.sub_in = input_text
       self.sub_name = os.path.basename(input_text)
       self.sub_pre = self.sub_name.split('.')[0]
-      self.sub_uni = self.sub_name[:-len(common_suffix)]
+      self.sub_uni = input_text[len(common_prefix):-len(common_suffix)]
 
       self.substitutions = { 'IN': self.sub_in, 'NAME': self.sub_name, 'PRE': self.sub_pre, 'UNI': self.sub_uni }
-      app.var(input, self.substitutions)
+      app.var(input_text, self.substitutions)
 
       self.cmd = [ ]
       for entry in cmdsplit:
