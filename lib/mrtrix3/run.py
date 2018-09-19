@@ -411,15 +411,16 @@ def killAll(): #pylint: disable=unused-variable
   _processes = [ ]
   # Also destroy any remaining temporary files
   for tlist in _tempFiles:
-    for tpair in tlist:
-      for t in tpair:
-        if t:
-          try:
-            os.remove(t)
-          except OSError:
-            pass
-      tpair = [ None, None ]
-    tlist = [ ]
+    if tlist:
+      for tpair in tlist:
+        for t in tpair:
+          if t:
+            try:
+              os.remove(t)
+            except OSError:
+              pass
+        tpair = [ None, None ]
+      tlist = None
   _tempFiles = [ ]
   _lock.release()
 
