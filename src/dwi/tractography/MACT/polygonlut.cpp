@@ -52,13 +52,13 @@ PolygonLut::PolygonLut( const std::shared_ptr< Tissue >& tissue )
       {
         // LUT does not have this voxel :
         // initialise a new set of polygon indices and add to this voxel
-        Surface::TriangleList newPolygons{ *p };
+        TriangleSet newPolygons{ *p };
         _lut[ *v ] = newPolygons;
       }
       else
       {
         // LUT has this voxel --> add the polygon index to the list of the voxel
-        _lut[ *v ].push_back( *p );
+        _lut[ *v ].insert( *p );
       }
       ++ v;
     }
@@ -72,12 +72,11 @@ PolygonLut::~PolygonLut()
 }
 
 
-Surface::TriangleList
-PolygonLut::getTriangles( const Eigen::Vector3i& voxel ) const
+TriangleSet PolygonLut::getTriangles( const Eigen::Vector3i& voxel ) const
 {
   if ( _lut.count( voxel ) == 0 )
   {
-    return Surface::TriangleList();
+    return TriangleSet();
   }
   else
   {
@@ -86,8 +85,7 @@ PolygonLut::getTriangles( const Eigen::Vector3i& voxel ) const
 }
 
 
-Surface::TriangleList
-PolygonLut::getTriangles( const Eigen::Vector3d& point ) const
+TriangleSet PolygonLut::getTriangles( const Eigen::Vector3d& point ) const
 {
   Eigen::Vector3i voxel;
   _tissue->sceneModeller()->lutVoxel( point, voxel );
@@ -95,23 +93,21 @@ PolygonLut::getTriangles( const Eigen::Vector3d& point ) const
 }
 
 
-Surface::TriangleList
-PolygonLut::getTriangles( const std::set< Eigen::Vector3i, Vector3iCompare >& voxels ) const
+TriangleSet PolygonLut::getTriangles( const std::set< Eigen::Vector3i, Vector3iCompare >& voxels ) const
 {
-  std::set< Surface::Triangle, PolygonCompare > triangleSet;
+  TriangleSet triangleSet;
   for ( auto v = voxels.begin(); v != voxels.end(); ++v )
   {
-    auto triangleList = getTriangles( *v );
-    triangleSet.insert( triangleList.begin(), triangleList.end() );
+    auto triangles = getTriangles( *v );
+    triangleSet.insert( triangles.begin(), triangles.end() );
   }
-  return Surface::TriangleList( triangleSet.begin(), triangleSet.end() );
+  return triangleSet;
 }
 
 
-Surface::TriangleList
-PolygonLut::getTriangles( const std::set< Eigen::Vector3d >& points ) const
+TriangleSet PolygonLut::getTriangles( const std::set< Eigen::Vector3d >& points ) const
 {
-  std::set< Surface::Triangle, PolygonCompare > triangleSet;
+  TriangleSet triangleSet;
   for ( auto p = points.begin(); p != points.end(); ++p )
   {
     Eigen::Vector3i voxel;
@@ -119,7 +115,7 @@ PolygonLut::getTriangles( const std::set< Eigen::Vector3d >& points ) const
     auto triangleList = getTriangles( voxel );
     triangleSet.insert( triangleList.begin(), triangleList.end() );
   }
-  return Surface::TriangleList( triangleSet.begin(), triangleSet.end() );
+  return triangleSet;
 }
 
 

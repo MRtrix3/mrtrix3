@@ -48,26 +48,15 @@ struct PolygonCompare : public std::binary_function< Surface::Polygon< 3 >,
   bool operator()( const Surface::Polygon< 3 >& p1,
                    const Surface::Polygon< 3 >& p2 ) const
   {
-    uint32_t d, D = 3;
-    if ( p1[ D - 1 ] < p2[ D - 1 ] )
-    {
-      return true;
-    }
-    else
-    {
-      for ( d = D - 1; d > 0; d-- )
-      {
-        if ( ( p1[ d ] == p2[ d ] ) && ( p1[ d - 1 ] < p2[ d - 1 ] ) )
-        {
-          return true;
-        }
-      }
-    }
-    return false;
+    return ( p1[ 2 ] < p2[ 2 ] ) ||
+           ( ( p1[ 2 ] == p2[ 2 ] ) &&
+               ( ( p1[ 1 ] < p2[ 1 ] ) ||
+                 ( ( p1[ 1 ] == p2[ 1 ] ) && ( p1[ 0 ] < p2[ 0 ] ) ) ) );
   }
 };
+typedef std::set< Surface::Triangle, PolygonCompare > TriangleSet;
 
-	
+
 class PolygonLut
 {
 
@@ -76,16 +65,16 @@ class PolygonLut
     PolygonLut( const Tissue_ptr& tissue );
     virtual ~PolygonLut();
 
-    Surface::TriangleList getTriangles( const Eigen::Vector3i& voxel ) const;
-    Surface::TriangleList getTriangles( const Eigen::Vector3d& point ) const;
+    TriangleSet getTriangles( const Eigen::Vector3i& voxel ) const;
+    TriangleSet getTriangles( const Eigen::Vector3d& point ) const;
 
-    Surface::TriangleList getTriangles( const std::set< Eigen::Vector3i, Vector3iCompare >& voxels ) const;
-    Surface::TriangleList getTriangles( const std::set< Eigen::Vector3d >& points ) const;
+    TriangleSet getTriangles( const std::set< Eigen::Vector3i, Vector3iCompare >& voxels ) const;
+    TriangleSet getTriangles( const std::set< Eigen::Vector3d >& points ) const;
 
   private:
 
     Tissue_ptr _tissue;
-    std::map< Eigen::Vector3i, Surface::TriangleList, Vector3iCompare > _lut;
+    std::map< Eigen::Vector3i, TriangleSet, Vector3iCompare > _lut;
 
 };
 
