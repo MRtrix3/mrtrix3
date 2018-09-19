@@ -15,8 +15,6 @@
 
 #include "dwi/tractography/MACT/intersectionset.h"
 
-#define EPSILON std::numeric_limits< double >::epsilon()
-
 
 namespace MR
 {
@@ -98,14 +96,12 @@ IntersectionSet::IntersectionSet( const SceneModeller& sceneModeller,
   std::set< Eigen::Vector3i, Vector3iCompare > voxels;
   sceneModeller.bresenhamLine().rayVoxels( from, to, voxels );
 
-  // calculating from->to vector and its norm
-  Eigen::Vector3d fromTo = to - from;
-  double fromToLength = fromTo.norm();
+  // calculating from->to length
+  double fromToLength = ( to - from ).norm();
 
   // looping over tissue & polygons to get interseting points & arc lengths
   std::set< double > arcLengths;
   Eigen::Vector3d intersectionPoint;
-  Eigen::Vector3d fromIntersection;
   double fromIntersectionLength;
   bool hasIntersection = false;
 
@@ -115,12 +111,12 @@ IntersectionSet::IntersectionSet( const SceneModeller& sceneModeller,
     auto t = tissues.begin(), te = tissues.end();
     while ( t != te )
     {
+      auto mesh = ( *t )->mesh();
       auto polygons = ( *t )->polygonLut().getTriangles( voxels );
       auto p = polygons.begin(), pe = polygons.end();
       while ( p != pe )
       {
         // perform ray/triangle intersection to find intersecting point
-        auto mesh = ( *t )->mesh();
         hasIntersection = rayTriangleIntersection( from, to,
                                                    mesh.vert( ( *p )[ 0 ] ),
                                                    mesh.vert( ( *p )[ 1 ] ),
@@ -128,12 +124,10 @@ IntersectionSet::IntersectionSet( const SceneModeller& sceneModeller,
                                                    intersectionPoint );
         if ( hasIntersection )
         {
-          fromIntersection = intersectionPoint - from;
-          fromIntersectionLength = fromIntersection.norm();
+          fromIntersectionLength = ( intersectionPoint - from ).norm();
           // check whether the intersecting point is in the segment of
           // [ from , to ]
-          if ( ( fromIntersectionLength <= fromToLength ) &&
-               ( fromIntersection.dot( fromTo ) > 0.0 ) )
+          if ( fromIntersectionLength <= fromToLength )
           {
             Intersection intersection( fromIntersectionLength,
                                        intersectionPoint,
@@ -147,16 +141,8 @@ IntersectionSet::IntersectionSet( const SceneModeller& sceneModeller,
       ++ t;
     }
   }
-  // copying the arclength set to a vector
   _arcLengths.resize( arcLengths.size() );
-  auto a = arcLengths.begin(), ae = arcLengths.end();
-  size_t index = 0;
-  while ( a != ae )
-  {
-    _arcLengths[ index ] = *a;
-    ++ a;
-    ++ index;
-  }
+  std::copy( arcLengths.begin(), arcLengths.end(), _arcLengths.begin() );
 }
 
 
@@ -169,14 +155,12 @@ IntersectionSet::IntersectionSet( const SceneModeller& sceneModeller,
   std::set< Eigen::Vector3i, Vector3iCompare > voxels;
   sceneModeller.bresenhamLine().rayVoxels( from, to, voxels );
 
-  // calculating from->to vector and its norm
-  Eigen::Vector3d fromTo = to - from;
-  double fromToLength = fromTo.norm();
+  // calculating from->to length
+  double fromToLength = ( to - from ).norm();
 
   // looping over polygons of target tissue to get interseting points & arc lengths
   std::set< double > arcLengths;
   Eigen::Vector3d intersectionPoint;
-  Eigen::Vector3d fromIntersection;
   double fromIntersectionLength;
   bool hasIntersection = false;
 
@@ -188,12 +172,12 @@ IntersectionSet::IntersectionSet( const SceneModeller& sceneModeller,
     {
       if ( ( *t )->name() == targetTissue->name() )
       {
+        auto mesh = ( *t )->mesh();
         auto polygons = ( *t )->polygonLut().getTriangles( voxels );
         auto p = polygons.begin(), pe = polygons.end();
         while ( p != pe )
         {
           // perform ray/triangle intersection to find intersecting point
-          auto mesh = ( *t )->mesh();
           hasIntersection = rayTriangleIntersection( from, to,
                                                      mesh.vert( ( *p )[ 0 ] ),
                                                      mesh.vert( ( *p )[ 1 ] ),
@@ -201,12 +185,10 @@ IntersectionSet::IntersectionSet( const SceneModeller& sceneModeller,
                                                      intersectionPoint );
           if ( hasIntersection )
           {
-            fromIntersection = intersectionPoint - from;
-            fromIntersectionLength = fromIntersection.norm();
+            fromIntersectionLength = ( intersectionPoint - from ).norm();
             // check whether the intersecting point is in the segment of
             // [ from , to ]
-            if ( ( fromIntersectionLength <= fromToLength ) &&
-                 ( fromIntersection.dot( fromTo ) > 0.0 ) )
+            if ( fromIntersectionLength <= fromToLength )
             {
               Intersection intersection( fromIntersectionLength,
                                          intersectionPoint,
@@ -221,16 +203,8 @@ IntersectionSet::IntersectionSet( const SceneModeller& sceneModeller,
       ++ t;
     }
   }
-  // copying the arclength set to a vector
   _arcLengths.resize( arcLengths.size() );
-  auto a = arcLengths.begin(), ae = arcLengths.end();
-  size_t index = 0;
-  while ( a != ae )
-  {
-    _arcLengths[ index ] = *a;
-    ++ a;
-    ++ index;
-  }
+  std::copy( arcLengths.begin(), arcLengths.end(), _arcLengths.begin() );
 }
 
 
@@ -268,11 +242,6 @@ bool IntersectionSet::rayTriangleIntersection(
   Eigen::Vector3d u = vertex2 - vertex1;
   Eigen::Vector3d v = vertex3 - vertex1;
   Eigen::Vector3d n = u.cross( v );
-  if ( std::abs( n.dot( n ) ) <= EPSILON )
-  {
-    // cross product equals to zero --> invalid triangle
-    throw Exception( "Invalid ray/triangle intersection: invalid triangle" );
-  }
   n.normalize();
   Eigen::Vector3d rayDirection = to - from;
   Eigen::Vector3d w0 = from - vertex1;
@@ -337,7 +306,4 @@ bool IntersectionSet::rayTriangleIntersection(
 }
 
 }
-
-
-#undef EPSILON
 
