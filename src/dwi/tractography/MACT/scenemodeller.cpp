@@ -16,7 +16,6 @@
 #include "dwi/tractography/MACT/scenemodeller.h"
 
 
-#define EPSILON std::numeric_limits< double >::epsilon()
 #define CUSTOM_PRECISION 1e-5
 
 
@@ -162,11 +161,12 @@ bool SceneModeller::nearestTissue( const Eigen::Vector3d& point,
             {
               auto mesh = ( *t )->mesh();
               Eigen::Vector3d projectionPoint;
-              double dist = pointToTriangleDistance( point,
-                                                     mesh.vert( ( *p )[ 0 ] ),
-                                                     mesh.vert( ( *p )[ 1 ] ),
-                                                     mesh.vert( ( *p )[ 2 ] ),
-                                                     projectionPoint );
+              double dist = MACT::pointToTriangleDistance( 
+                                                       point,
+                                                       mesh.vert( ( *p )[ 0 ] ),
+                                                       mesh.vert( ( *p )[ 1 ] ),
+                                                       mesh.vert( ( *p )[ 2 ] ),
+                                                       projectionPoint );
               if ( dist < intersection._arcLength )
               {
                 intersection._arcLength = dist;
@@ -333,86 +333,6 @@ bool SceneModeller::onTissue( const Eigen::Vector3d& point,
 }
 
 
-double SceneModeller::pointToTriangleDistance(
-                                        const Eigen::Vector3d& point,
-                                        const Eigen::Vector3d& vertex1,
-                                        const Eigen::Vector3d& vertex2,
-                                        const Eigen::Vector3d& vertex3,
-                                        Eigen::Vector3d& projectionPoint ) const
-{
-  double distance = -1.0;
-
-  //  Projection of a point on a plane
-  Eigen::Vector3d v12 = vertex2 - vertex1;
-  Eigen::Vector3d v13 = vertex3 - vertex1;
-  Eigen::Vector3d v23 = vertex3 - vertex2;
-  Eigen::Vector3d normal = v12.cross( v13 );
-  if ( std::abs( normal.dot( normal ) ) < EPSILON )
-  {
-    throw Exception( "triangle normal is a null vector: invalid triangle" );
-  }
-  normal.normalize();
-  double t = normal.dot( vertex1 - point );
-  projectionPoint = point + normal * t;
-  // checking if the projection point is inside the triangle or on the edge
-  if ( ( ( ( projectionPoint - vertex1 ).cross( v12 ) ).
-                                               dot( v13.cross( v12 ) ) >= 0 ) &&
-       ( ( ( projectionPoint - vertex2 ).cross( v23 ) ).
-                                              dot( -v12.cross( v23 ) ) >= 0 ) &&
-       ( ( ( projectionPoint - vertex3 ).cross( -v13 ) ).
-                                               dot( v23.cross( v13 ) ) >= 0 ) )
-  {
-    // case: the projection point is inside the triangle or on the edge
-    distance = ( t == 0 ) ? 0 : ( point - projectionPoint ).norm();
-  }
-  else
-  {
-    // case: the projection point is outside the triangle -> comparing the
-    // distances between the projection point and each line segment defined
-    // by the vertices
-    distance = std::min( std::min(
-                        pointToLineSegmentDistance( point, vertex1, vertex2 ),
-                        pointToLineSegmentDistance( point, vertex2, vertex3 ) ),
-                        pointToLineSegmentDistance( point, vertex3, vertex1 ) );
-  }
-  if ( distance < 0 )
-  {
-    throw Exception( "Invalid point to triangle distance: negative distance" );
-  }
-  return distance;
-}
-
-
-double SceneModeller::pointToLineSegmentDistance(
-                                        const Eigen::Vector3d& point,
-                                        const Eigen::Vector3d& endPoint1,
-                                        const Eigen::Vector3d& endPoint2 ) const
-{
-  Eigen::Vector3d direction = endPoint2 - endPoint1;
-  double t = direction.dot( point - endPoint1 ) / direction.dot( direction );
-
-  double distance = -1.0;
-  if ( t <= 0 )
-  {
-    distance = ( point - endPoint1 ).norm();
-  }
-  else if ( ( 0 < t ) && ( t < 1 ) )
-  {
-    distance = ( point - ( endPoint1 + direction * t ) ).norm();
-  }
-  else if ( t >= 1 )
-  {
-    distance = ( point - endPoint2 ).norm();
-  }
-
-  if ( distance < 0 )
-  {
-    throw Exception( "Invalid point to segment distance: negative distance" );
-  }
-  return distance;
-}
-
-
 }
 
 }
@@ -420,7 +340,4 @@ double SceneModeller::pointToLineSegmentDistance(
 }
 
 }
-
-
-#undef EPSILON
 

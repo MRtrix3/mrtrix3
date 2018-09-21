@@ -20,6 +20,7 @@
 #include "dwi/tractography/MACT/bresenhamline.h"
 #include "dwi/tractography/MACT/tissuelut.h"
 #include "dwi/tractography/MACT/intersectionset.h"
+#include "dwi/tractography/MACT/pointtrianglemath.h"
 
 
 namespace MR
@@ -82,16 +83,6 @@ class SceneModeller
     std::map< TissueType, Tissue_ptr > _tissues;
     TissueLut _tissueLut;
     Header _lutHeader;
-
-    double pointToTriangleDistance( const Eigen::Vector3d& point,
-                                    const Eigen::Vector3d& vertex1,
-                                    const Eigen::Vector3d& vertex2,
-                                    const Eigen::Vector3d& vertex3,
-                                    Eigen::Vector3d& projectionPoint ) const;
-
-    double pointToLineSegmentDistance( const Eigen::Vector3d& point,
-                                       const Eigen::Vector3d& endPoint1,
-                                       const Eigen::Vector3d& endPoint2 ) const;
 
 };
 
