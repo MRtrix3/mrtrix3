@@ -38,12 +38,7 @@ void usage ()
   + Argument ("target", "the target mesh file").type_file_in()
   + Argument ("transform", "the output transform").type_file_out();
 
-  OPTIONS
-  + Option ("scale", "also allow isotropic scaling");
-
 }
-
-
 
 void run ()
 {
@@ -53,15 +48,27 @@ void run ()
   Mesh target (argument[1]);
 
   // Scaling
-  auto opt = get_options ("scale");
-  bool scale = opt.size();
+  bool scale = false;
 
   // Register
   Eigen::MatrixXd vsource = Surface::Algo::vert2mat(source.get_vertices());
   Eigen::MatrixXd vtarget = Surface::Algo::vert2mat(target.get_vertices());
-  transform_type T = Surface::Algo::iterative_closest_point(vtarget, vsource, scale);
+
+  double cost, costopt;
+  transform_type T, Topt;
+
+  Topt = Surface::Algo::iterative_closest_point(vtarget, vsource, scale, costopt);
+  for (int k = 0; k < 500; k++) {    // random restarts
+    Eigen::Matrix3d R = Eigen::Quaterniond::UnitRandom().toRotationMatrix();
+    T = Surface::Algo::iterative_closest_point(vtarget, vsource * R.transpose(), scale, cost);
+    T.prerotate(R);
+    if (cost < costopt) {
+      Topt = T;
+      costopt = cost;
+    }
+  }
 
   // Save transform
-  save_transform (T, argument[2]);
+  save_transform (Topt, argument[2]);
 
 }

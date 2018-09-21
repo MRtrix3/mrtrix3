@@ -78,7 +78,7 @@ namespace MR
         Eigen::VectorXd target_centre = target_vertices.colwise().mean();
         Eigen::MatrixXd moving_centered = moving_vertices.rowwise() - moving_centre.transpose();
         Eigen::MatrixXd target_centered = target_vertices.rowwise() - target_centre.transpose();
-        Eigen::MatrixXd cov = (target_centered.adjoint() * moving_centered) / default_type (n - 1);
+        Eigen::MatrixXd cov = (moving_centered.adjoint() * target_centered);
   
         Eigen::JacobiSVD<Eigen::Matrix3d> svd (cov, Eigen::ComputeFullU | Eigen::ComputeFullV);
   
@@ -87,7 +87,7 @@ namespace MR
   
         // calculate determinant of V*U^T to disambiguate rotation sign
         default_type f_det = R.determinant();
-        Eigen::Vector3d e(1, 1, (f_det < 0)? -1 : 1);
+        Eigen::Vector3d e (1, 1, (f_det < 0)? -1 : 1);
   
         // recompute the rotation if the determinant was negative
         if (f_det < 0)
@@ -112,22 +112,27 @@ namespace MR
       }
 
 
-      transform_type iterative_closest_point (const Eigen::MatrixXd& target, const Eigen::MatrixXd& source, bool scale)
+      transform_type iterative_closest_point (const Eigen::MatrixXd& target, const Eigen::MatrixXd& source, bool scale, double& dist)
       {
         transform_type T;
         Eigen::MatrixXd target_t = target;
         Eigen::MatrixXd source_map (target.rows(), 3);
-        double dist, mindist = std::numeric_limits<double>::infinity();
-        for (int k = 0; k < 50; k++) {
+        double prevdist = std::numeric_limits<double>::infinity();
+        for (int k = 0; k < 10; k++) {
           dist = find_closest_vertices(target_t, source, source_map);
-          VAR(dist);
           T = align_corresponding_vertices(target, source_map, scale);
-          target_t.transpose() = T * target.leftCols<3>().transpose();
-          if (std::fabs(dist - mindist) < 1e-3) break;
+          target_t.transpose() = T.inverse() * target.leftCols<3>().transpose();
+          if (std::fabs(dist - prevdist) < 1e-3) break;
+          prevdist = dist;
         }
         return T;
       }
 
+      transform_type iterative_closest_point (const Eigen::MatrixXd& target, const Eigen::MatrixXd& source, bool scale)
+      {
+        double dist;
+        return iterative_closest_point(target, source, scale, dist);
+      }
 
 
     }
