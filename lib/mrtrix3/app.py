@@ -197,9 +197,9 @@ def execute(): #pylint: disable=unused-variable
         lineno = item[2]
         function = item[3]
         calling_code = item[4]
-      sys.stderr.write(execName + ': ' + ansi.error + '[ERROR]' + ansi.clear + ' ' + ansi.console + filename + ':' + str(lineno) + ' (in ' + function + '())' + ansi.clear + '\n')
+      sys.stderr.write(execName + ': ' + ansi.error + '[ERROR]' + ansi.clear + '   ' + ansi.console + filename + ':' + str(lineno) + ' (in ' + function + '())' + ansi.clear + '\n')
       for line in calling_code:
-        sys.stderr.write(execName + ': ' + ansi.error + '[ERROR]' + ansi.clear + '  ' + ansi.debug + line.strip() + ansi.clear + '\n')
+        sys.stderr.write(execName + ': ' + ansi.error + '[ERROR]' + ansi.clear + '     ' + ansi.debug + line.strip() + ansi.clear + '\n')
   finally:
     run.killAll()
     if os.getcwd() != workingDir:

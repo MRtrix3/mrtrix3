@@ -40,6 +40,8 @@ def execute(): #pylint: disable=unused-variable
   if app.args.max_iters < 2:
     raise MRtrixException('Number of iterations must be at least 2')
 
+  progress = app.progressBar('Optimising')
+
   for iteration in range(0, app.args.max_iters):
     prefix = 'iter' + str(iteration) + '_'
 
@@ -81,6 +83,11 @@ def execute(): #pylint: disable=unused-variable
     # Generate a new response function based on this selection
     run.command('amp2response dwi.mif ' + prefix + 'SF.mif ' + prefix + 'first_dir.mif ' + prefix + 'RF.txt' + iter_lmax_option)
     fsys.delTemporary(prefix + 'first_dir.mif')
+
+    with open(prefix + 'RF.txt', 'r') as f:
+      new_RF = [ float(x) for x in f.read().split() ]
+    progress.increment('Optimising (' + str(iteration+1) + ' iterations, RF: [ ' + ', '.join('{:.3f}'.format(n) for n in new_RF) + '] )')
+
     # Should we terminate?
     if iteration > 0:
       run.command('mrcalc ' + prefix + 'SF.mif iter' + str(iteration-1) + '_SF.mif -sub ' + prefix + 'SF_diff.mif')
@@ -88,7 +95,6 @@ def execute(): #pylint: disable=unused-variable
       max_diff = image.statistic(prefix + 'SF_diff.mif', 'max')
       fsys.delTemporary(prefix + 'SF_diff.mif')
       if int(max_diff) == 0:
-        app.console('Convergence of SF voxel selection detected at iteration ' + str(iteration))
         fsys.delTemporary(prefix + 'CF.mif')
         run.function(shutil.copyfile, prefix + 'RF.txt', 'response.txt')
         run.function(shutil.move, prefix + 'SF.mif', 'voxels.mif')
@@ -99,10 +105,14 @@ def execute(): #pylint: disable=unused-variable
     run.command('mrthreshold ' + prefix + 'CF.mif -top ' + str(app.args.iter_voxels) + ' - | maskfilter - dilate - -npass ' + str(app.args.dilate) + ' | mrcalc mask.mif - -mult ' + prefix + 'SF_dilated.mif')
     fsys.delTemporary(prefix + 'CF.mif')
 
-  # Commence the next iteration
+    # Commence the next iteration
+
+  progress.done()
 
   # If terminating due to running out of iterations, still need to put the results in the appropriate location
-  if not os.path.exists('response.txt'):
+  if os.path.exists('response.txt'):
+    app.console('Convergence of SF voxel selection detected at iteration ' + str(iteration+1))
+  else:
     app.console('Exiting after maximum ' + str(app.args.max_iters) + ' iterations')
     run.function(shutil.copyfile, 'iter' + str(app.args.max_iters-1) + '_RF.txt', 'response.txt')
     run.function(shutil.move, 'iter' + str(app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
