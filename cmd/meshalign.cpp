@@ -17,8 +17,9 @@
 #include "header.h"
 #include "surface/mesh.h"
 #include "surface/algo/vertex_align.h"
+#include "progressbar.h"
 
-
+#define NUMINIT 100
 
 using namespace MR;
 using namespace App;
@@ -38,17 +39,24 @@ void usage ()
   + Argument ("target", "the target mesh file").type_file_in()
   + Argument ("transform", "the output transform").type_file_out();
 
+  OPTIONS
+  + Option ("scale", "allow isotropic scaling")
+  + Option ("numinit", "number of random initialisations")
+    + Argument ("n").type_integer();
+
 }
 
 void run ()
 {
-
   // Read in the mesh data
   Mesh source (argument[0]);
   Mesh target (argument[1]);
 
   // Scaling
-  bool scale = false;
+  auto opt = get_options ("scale");
+  bool scale = opt.size();
+
+  int numinit = get_option_value("numinit", NUMINIT);
 
   // Register
   Eigen::MatrixXd vsource = Surface::Algo::vert2mat(source.get_vertices());
@@ -56,9 +64,9 @@ void run ()
 
   double cost, costopt;
   transform_type T, Topt;
-
   Topt = Surface::Algo::iterative_closest_point(vtarget, vsource, scale, costopt);
-  for (int k = 0; k < 500; k++) {    // random restarts
+  ProgressBar progress ("Aligning meshes", numinit);
+  for (int k = 0; k < numinit; k++, progress++) {    // random restarts
     Eigen::Matrix3d R = Eigen::Quaterniond::UnitRandom().toRotationMatrix();
     T = Surface::Algo::iterative_closest_point(vtarget, vsource * R.transpose(), scale, cost);
     T.prerotate(R);
@@ -67,6 +75,9 @@ void run ()
       costopt = cost;
     }
   }
+  progress.done();
+
+  std::cout << costopt << std::endl;
 
   // Save transform
   save_transform (Topt, argument[2]);
