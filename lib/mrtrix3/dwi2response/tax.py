@@ -38,6 +38,8 @@ def execute(): #pylint: disable=unused-variable
 
   convergence_change = 0.01 * app.args.convergence
 
+  progress = app.progressBar('Optimising')
+
   for iteration in range(0, app.args.max_iters):
     prefix = 'iter' + str(iteration) + '_'
 
@@ -92,13 +94,15 @@ def execute(): #pylint: disable=unused-variable
     run.command('amp2response dwi.mif ' + prefix + 'SF.mif ' + prefix + 'first_dir.mif ' + prefix + 'RF.txt' + lmax_option)
     fsys.delTemporary(prefix + 'first_dir.mif')
 
+    with open(prefix + 'RF.txt', 'r') as new_RF_file:
+      new_RF = [ float(x) for x in new_RF_file.read().split() ]
+    progress.increment('Optimising (' + str(iteration+1) + ' iterations, ' + str(SF_voxel_count) + ' voxels, RF: [ ' + ', '.join('{:.3f}'.format(n) for n in new_RF) + '] )')
+
     # Detect convergence
     # Look for a change > some percentage - don't bother looking at the masks
     if iteration > 0:
       with open(RF_in_path, 'r') as old_RF_file:
         old_RF = [ float(x) for x in old_RF_file.read().split() ]
-      with open(prefix + 'RF.txt', 'r') as new_RF_file:
-        new_RF = [ float(x) for x in new_RF_file.read().split() ]
       reiterate = False
       for old_value, new_value in zip(old_RF, new_RF):
         mean = 0.5 * (old_value + new_value)
@@ -107,18 +111,22 @@ def execute(): #pylint: disable=unused-variable
         if ratio > convergence_change:
           reiterate = True
       if not reiterate:
-        app.console('Exiting at iteration ' + str(iteration) + ' with ' + str(SF_voxel_count) + ' SF voxels due to unchanged response function coefficients')
         run.function(shutil.copyfile, prefix + 'RF.txt', 'response.txt')
         run.function(shutil.copyfile, prefix + 'SF.mif', 'voxels.mif')
         break
 
     fsys.delTemporary(RF_in_path)
     fsys.delTemporary(mask_in_path)
-  # Go to the next iteration
+
+    # Go to the next iteration
+
+  progress.done()
 
   # If we've terminated due to hitting the iteration limiter, we still need to copy the output file(s) to the correct location
-  if not os.path.exists('response.txt'):
-    app.console('Exiting after maximum ' + str(app.args.max_iters-1) + ' iterations with ' + str(SF_voxel_count) + ' SF voxels')
+  if os.path.exists('response.txt'):
+    app.console('Exited at iteration ' + str(iteration+1) + ' with ' + str(SF_voxel_count) + ' SF voxels due to unchanged RF coefficients')
+  else:
+    app.console('Exited after maximum ' + str(app.args.max_iters) + ' iterations with ' + str(SF_voxel_count) + ' SF voxels')
     run.function(shutil.copyfile, 'iter' + str(app.args.max_iters-1) + '_RF.txt', 'response.txt')
     run.function(shutil.copyfile, 'iter' + str(app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
 
