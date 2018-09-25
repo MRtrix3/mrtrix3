@@ -1,5 +1,5 @@
 import collections, threading, os
-from mrtrix3 import MRtrixBaseException
+from mrtrix3 import MRtrixBaseError
 
 
 
@@ -35,9 +35,9 @@ _tempFiles = [ ]
 
 
 
-class MRtrixCmdException(MRtrixBaseException):
+class MRtrixCmdError(MRtrixBaseError):
   def __init__(self, cmd, code, stdout, stderr):
-    super(MRtrixCmdException, self).__init__('Command failed')
+    super(MRtrixCmdError, self).__init__('Command failed')
     self.command = cmd
     self.returncode = code
     self.stdout = stdout
@@ -45,9 +45,9 @@ class MRtrixCmdException(MRtrixBaseException):
   def __str__(self):
     return self.stdout + self.stderr
 
-class MRtrixFnException(MRtrixBaseException):
+class MRtrixFnError(MRtrixBaseError):
   def __init__(self, fn, text):
-    super(MRtrixFnException, self).__init__('Function failed')
+    super(MRtrixFnError, self).__init__('Function failed')
     self.function = fn
     self.errortext = text
   def __str__(self):
@@ -126,7 +126,7 @@ def command(cmd): #pylint: disable=unused-variable
       if operator == '||':
         app.debug('Due to success of "' + cmdsplit[:index] + '", "' + cmdsplit[index+1:] + '" will not be run')
         return pre_result
-    except MRtrixCmdException:
+    except MRtrixCmdError:
       if operator == '&&':
         raise
     return command(cmdsplit[index+1:])
@@ -225,7 +225,7 @@ def command(cmd): #pylint: disable=unused-variable
       thisTempFiles.append( [ file_out, file_err ])
     # FileNotFoundError not defined in Python 2.7
     except OSError as e:
-      raise MRtrixCmdException(cmdstring, 1, '', str(e))
+      raise MRtrixCmdError(cmdstring, 1, '', str(e))
 
   # Write process & temporary file information to globals
   with _lock:
@@ -303,7 +303,7 @@ def command(cmd): #pylint: disable=unused-variable
     _tempFiles[thisCommandIndex] = None
 
     if error:
-      raise MRtrixCmdException(cmdstring, return_code, stdout_text, stderr_text)
+      raise MRtrixCmdError(cmdstring, return_code, stdout_text, stderr_text)
 
     # Re-enable interrupt signal handler
     #   Note: Only re-enable if there appears to not be any processes running in parallel from other commands
@@ -355,7 +355,7 @@ def function(fn, *args, **kwargs): #pylint: disable=unused-variable
     else:
       result = fn(*args)
   except Exception as e: # pylint: disable=broad-except
-    raise MRtrixFnException(fnstring, str(e))
+    raise MRtrixFnError(fnstring, str(e))
 
   # Only now do we append to the script log, since the function has completed successfully
   _lock.acquire()
@@ -433,7 +433,7 @@ def killAll(): #pylint: disable=unused-variable
 #   which checks system32\ before PATH)
 def versionMatch(item):
   from distutils.spawn import find_executable
-  from mrtrix3 import app, bin_path, exe_list, MRtrixException
+  from mrtrix3 import app, bin_path, exe_list, MRtrixError
 
   if not item in exe_list:
     app.debug('Command ' + item + ' not found in MRtrix3 bin/ directory')
@@ -449,14 +449,14 @@ def versionMatch(item):
     app.debug('Using non-version-matched executable for ' + item + ': ' + exe_path_sys)
     return exe_path_sys
 
-  raise MRtrixException('Unable to find executable for MRtrix3 command ' + item)
+  raise MRtrixError('Unable to find executable for MRtrix3 command ' + item)
 
 
 
 # If the target executable is not a binary, but is actually a script, use the
 #   shebang at the start of the file to alter the subprocess call
 def _shebang(item):
-  from mrtrix3 import app, isWindows, MRtrixException
+  from mrtrix3 import app, isWindows, MRtrixError
   from distutils.spawn import find_executable
   # If a complete path has been provided rather than just a file name, don't perform any additional file search
   if os.sep in item:
@@ -495,7 +495,7 @@ def _shebang(item):
           new_shebang.extend(shebang[1:])
           shebang = new_shebang
         if not shebang or not shebang[0]:
-          raise MRtrixException('Malformed shebang in file \"' + item + '\": \"' + line + '\"')
+          raise MRtrixError('Malformed shebang in file \"' + item + '\": \"' + line + '\"')
       app.debug('File \"' + item + '\": string \"' + line + '\": ' + str(shebang))
       return shebang
   app.debug('File \"' + item + '\": No shebang found')

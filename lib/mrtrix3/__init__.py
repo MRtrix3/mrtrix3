@@ -4,10 +4,10 @@ from mrtrix3._version import __version__  #pylint: disable=unused-variable
 
 
 
-class MRtrixBaseException(Exception):
+class MRtrixBaseError(Exception):
   pass
 
-class MRtrixException(MRtrixBaseException): #pylint: disable=unused-variable
+class MRtrixError(MRtrixBaseError): #pylint: disable=unused-variable
   pass
 
 

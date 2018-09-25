@@ -27,13 +27,13 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import copy, numbers, shutil
-  from mrtrix3 import fsys, image, MRtrixException, run
+  from mrtrix3 import fsys, image, MRtrixError, run
 
   image_dimensions = image.Header(fsys.fromUser(app.args.input, False)).size()
   if len(image_dimensions) != 4:
-    raise MRtrixException('Input image must be a 4D image')
+    raise MRtrixError('Input image must be a 4D image')
   if min(image_dimensions) == 1:
-    raise MRtrixException('Cannot perform tractography on an image with a unity dimension')
+    raise MRtrixError('Cannot perform tractography on an image with a unity dimension')
   num_volumes = image_dimensions[3]
 
   app.makeTempDir()
@@ -79,9 +79,9 @@ def execute(): #pylint: disable=unused-variable
   grad_fsl = [ [ float(f) for f in line.split() ] for line in grad_fsl ]
   # Is our gradient table of the correct length?
   if not len(grad_mrtrix) == num_volumes:
-    raise MRtrixException('Number of entries in gradient table does not match number of DWI volumes')
+    raise MRtrixError('Number of entries in gradient table does not match number of DWI volumes')
   if not len(grad_fsl) == 3 or not len(grad_fsl[0]) == num_volumes:
-    raise MRtrixException('Internal error (inconsistent gradient table storage)')
+    raise MRtrixError('Internal error (inconsistent gradient table storage)')
 
 
   # Generate a brain mask if we weren't provided with one

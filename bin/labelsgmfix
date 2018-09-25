@@ -34,22 +34,22 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import math
-  from mrtrix3 import fsys, fsl, image, isWindows, MRtrixException, run
+  from mrtrix3 import fsys, fsl, image, isWindows, MRtrixError, run
   app.checkOutputPath(fsys.fromUser(app.args.output, False))
   image.check3DNonunity(fsys.fromUser(app.args.t1, False))
 
   if isWindows():
-    raise MRtrixException('Script cannot run on Windows due to FSL dependency')
+    raise MRtrixError('Script cannot run on Windows due to FSL dependency')
 
   fsl_path = os.environ.get('FSLDIR', '')
   if not fsl_path:
-    raise MRtrixException('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
+    raise MRtrixError('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
 
   first_cmd = fsl.exeName('run_first_all')
 
   first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
   if not os.path.isdir(first_atlas_path):
-    raise MRtrixException('Atlases required for FSL\'s FIRST program not installed;\nPlease install fsl-first-data using your relevant package manager')
+    raise MRtrixError('Atlases required for FSL\'s FIRST program not installed;\nPlease install fsl-first-data using your relevant package manager')
 
   # Want a mapping between FreeSurfer node names and FIRST structure names
   # Just deal with the 5 that are used in ACT; FreeSurfer's hippocampus / amygdala segmentations look good enough.

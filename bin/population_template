@@ -195,11 +195,11 @@ class Input(object):
 
 def execute(): #pylint: disable=unused-variable
   import shutil
-  from mrtrix3 import fsys, image, MRtrixException, run
+  from mrtrix3 import fsys, image, MRtrixError, run
   global rigid_scales, rigid_lmax, affine_scales, affine_lmax, nl_scales, nl_lmax, nl_niter
 
   if not app.args.type in registration_modes:
-    raise MRtrixException("registration type must be one of %s. provided: %s" % (str(["rigid", "affine", "rigid_affine"]), app.args.type))
+    raise MRtrixError("registration type must be one of %s. provided: %s" % (str(["rigid", "affine", "rigid_affine"]), app.args.type))
   dorigid     = "rigid"     in app.args.type
   doaffine    = "affine"    in app.args.type
   dolinear    = dorigid or doaffine
@@ -209,10 +209,10 @@ def execute(): #pylint: disable=unused-variable
   app.args.input_dir = relpath(app.args.input_dir)
   inputDir = app.args.input_dir
   if not os.path.exists(inputDir):
-    raise MRtrixException('input directory not found')
+    raise MRtrixError('input directory not found')
   inFiles = sorted(fsys.allInDir(inputDir, dir_path=False))
   if len(inFiles) <= 1:
-    raise MRtrixException('Not enough images found in input directory. More than one image is needed to generate a population template')
+    raise MRtrixError('Not enough images found in input directory. More than one image is needed to generate a population template')
   else:
     app.console('Generating a population-average template from ' + str(len(inFiles)) + ' input images')
 
@@ -225,18 +225,18 @@ def execute(): #pylint: disable=unused-variable
       assert len(voxel_size) == 3
       [float(v) for v in voxel_size] #pylint: disable=expression-not-assigned
     except:
-      raise MRtrixException('voxel size needs to be a single or three comma-separated floating point numbers; received: ' + str(app.args.voxel_size))
+      raise MRtrixError('voxel size needs to be a single or three comma-separated floating point numbers; received: ' + str(app.args.voxel_size))
 
   initial_alignment = app.args.initial_alignment
   if initial_alignment not in ["mass", "geometric", "none"]:
-    raise MRtrixException('initial_alignment must be one of ' + " ".join(["mass", "geometric", "none"]))
+    raise MRtrixError('initial_alignment must be one of ' + " ".join(["mass", "geometric", "none"]))
 
   linear_estimator = app.args.linear_estimator
   if linear_estimator:
     if not dononlinear:
-      raise MRtrixException('linear_estimator specified when no linear registration is requested')
+      raise MRtrixError('linear_estimator specified when no linear registration is requested')
     if linear_estimator not in ["l1", "l2", "lp"]:
-      raise MRtrixException('linear_estimator must be one of ' + " ".join(["l1", "l2", "lp"]))
+      raise MRtrixError('linear_estimator must be one of ' + " ".join(["l1", "l2", "lp"]))
 
   useMasks = False
   if app.args.mask_dir:
@@ -244,10 +244,10 @@ def execute(): #pylint: disable=unused-variable
     app.args.mask_dir = relpath(app.args.mask_dir)
     maskDir = app.args.mask_dir
     if not os.path.exists(maskDir):
-      raise MRtrixException('mask directory not found')
+      raise MRtrixError('mask directory not found')
     maskFiles = fsys.allInDir(maskDir, dir_path=False)
     if len(maskFiles) < len(inFiles):
-      raise MRtrixException('there are not enough mask images for the number of images in the input directory')
+      raise MRtrixError('there are not enough mask images for the number of images in the input directory')
     maskCommonPostfix = fsys.commonPostfix(maskFiles)
     maskPrefixes = []
     for m in maskFiles:
@@ -257,7 +257,7 @@ def execute(): #pylint: disable=unused-variable
     app.warn('no masks input. Use input masks to reduce computation time and improve robustness')
 
   if app.args.template_mask and not useMasks:
-    raise MRtrixException('you cannot output a template mask because no subject masks were input using -mask_dir')
+    raise MRtrixError('you cannot output a template mask because no subject masks were input using -mask_dir')
 
   commonPostfix = fsys.commonPostfix(inFiles)
   inputs = []
@@ -266,7 +266,7 @@ def execute(): #pylint: disable=unused-variable
     subj_prefix = i.split(commonPostfix)[0]
     if useMasks:
       if subj_prefix not in maskPrefixes:
-        raise MRtrixException ('no matching mask image was found for input image ' + i)
+        raise MRtrixError ('no matching mask image was found for input image ' + i)
       index = maskPrefixes.index(subj_prefix)
       inputs.append(Input(i, subj_prefix, fsys.fromUser(inputDir, False), maskFiles[index], fsys.fromUser(maskDir, False)))
     else:
@@ -279,7 +279,7 @@ def execute(): #pylint: disable=unused-variable
   if app.args.linear_no_pause:
     do_pause_on_warn = False
     if not dolinear:
-      raise MRtrixException("linear option set when no linear registration is performed")
+      raise MRtrixError("linear option set when no linear registration is performed")
 
   app.args.template = relpath(app.args.template)
   app.checkOutputPath(app.args.template)
@@ -294,7 +294,7 @@ def execute(): #pylint: disable=unused-variable
 
   if app.args.linear_transformations_dir:
     if not dolinear:
-      raise MRtrixException("linear option set when no linear registration is performed")
+      raise MRtrixError("linear option set when no linear registration is performed")
     app.args.linear_transformations_dir = relpath(app.args.linear_transformations_dir)
     app.checkOutputPath(app.args.linear_transformations_dir)
 
@@ -303,7 +303,7 @@ def execute(): #pylint: disable=unused-variable
   do_fod_registration = False
   image_size = image.Header(relpath(inputs[0].directory, inputs[0].filename)).size()
   if len(image_size) < 3 or len(image_size) > 4:
-    raise MRtrixException('only 3 and 4 dimensional images can be used to build a template')
+    raise MRtrixError('only 3 and 4 dimensional images can be used to build a template')
   if len(image_size) == 4:
     val = (math.sqrt (1 + 8 * image_size[3]) - 3.0) / 4.0
     if not (val - int(val)) and not noreorientation:
@@ -314,45 +314,45 @@ def execute(): #pylint: disable=unused-variable
   if app.args.rigid_scale:
     rigid_scales = [float(x) for x in app.args.rigid_scale.split(',')]
     if not dorigid:
-      raise MRtrixException("rigid_scales option set when no rigid registration is performed")
+      raise MRtrixError("rigid_scales option set when no rigid registration is performed")
   if app.args.rigid_lmax:
     if not dorigid:
-      raise MRtrixException("rigid_lmax option set when no rigid registration is performed")
+      raise MRtrixError("rigid_lmax option set when no rigid registration is performed")
     rigid_lmax = [int(x) for x in app.args.rigid_lmax.split(',')]
     if do_fod_registration and len(rigid_scales) != len(rigid_lmax):
-      raise MRtrixException('rigid_scales and rigid_lmax schedules are not equal in length')
+      raise MRtrixError('rigid_scales and rigid_lmax schedules are not equal in length')
 
   rigid_niter = [100] * len(rigid_scales)
   if app.args.rigid_niter:
     if not dorigid:
-      raise MRtrixException("rigid_niter specified when no rigid registration is performed")
+      raise MRtrixError("rigid_niter specified when no rigid registration is performed")
     rigid_niter = [int(x) for x in app.args.rigid_niter.split(',')]
     if len(rigid_niter) == 1:
       rigid_niter = rigid_niter * len(rigid_scales)
     elif len(rigid_scales) != len(rigid_niter):
-      raise MRtrixException('rigid_scales and rigid_niter schedules are not equal in length')
+      raise MRtrixError('rigid_scales and rigid_niter schedules are not equal in length')
 
   # affine options
   if app.args.affine_scale:
     affine_scales = [float(x) for x in app.args.affine_scale.split(',')]
     if not doaffine:
-      raise MRtrixException("affine_scale option set when no affine registration is performed")
+      raise MRtrixError("affine_scale option set when no affine registration is performed")
   if app.args.affine_lmax:
     if not doaffine:
-      raise MRtrixException("affine_lmax option set when no affine registration is performed")
+      raise MRtrixError("affine_lmax option set when no affine registration is performed")
     affine_lmax = [int(x) for x in app.args.affine_lmax.split(',')]
     if do_fod_registration and len(affine_scales) != len(affine_lmax):
-      raise MRtrixException('affine_scales and affine_lmax schedules are not equal in length')
+      raise MRtrixError('affine_scales and affine_lmax schedules are not equal in length')
 
   affine_niter = [500] * len(affine_scales)
   if app.args.affine_niter:
     if not doaffine:
-      raise MRtrixException("affine_niter specified when no affine registration is performed")
+      raise MRtrixError("affine_niter specified when no affine registration is performed")
     affine_niter = [int(x) for x in app.args.affine_niter.split(',')]
     if len(affine_niter) == 1:
       affine_niter = affine_niter * len(affine_scales)
     elif len(affine_scales) != len(affine_niter):
-      raise MRtrixException('affine_scales and affine_niter schedules are not equal in length')
+      raise MRtrixError('affine_scales and affine_niter schedules are not equal in length')
 
   linear_scales = []
   linear_lmax   = []
@@ -393,7 +393,7 @@ def execute(): #pylint: disable=unused-variable
     nl_lmax   = []
     nl_niter  = []
     if app.args.warp_dir:
-      raise MRtrixException('warp_dir specified when no nonlinear registration is performed')
+      raise MRtrixError('warp_dir specified when no nonlinear registration is performed')
   else:
     if app.args.nl_scale:
       nl_scales = [float(x) for x in app.args.nl_scale.split(',')]
@@ -403,12 +403,12 @@ def execute(): #pylint: disable=unused-variable
       nl_lmax = [int(x) for x in app.args.nl_lmax.split(',')]
 
     if len(nl_scales) != len(nl_niter):
-      raise MRtrixException('nl_scales and nl_niter schedules are not equal in length')
+      raise MRtrixError('nl_scales and nl_niter schedules are not equal in length')
 
     app.console('nonlinear registration stages:')
     if do_fod_registration:
       if len(nl_scales) != len(nl_lmax):
-        raise MRtrixException('nl_scales and nl_lmax schedules are not equal in length')
+        raise MRtrixError('nl_scales and nl_lmax schedules are not equal in length')
 
     if do_fod_registration:
       for istage, [scale, lmax, niter] in enumerate(zip (nl_scales, nl_lmax, nl_niter)):

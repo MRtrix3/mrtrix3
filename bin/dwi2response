@@ -32,7 +32,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import algorithm, fsys, image, MRtrixException, run
+  from mrtrix3 import algorithm, fsys, image, MRtrixError, run
 
   # Find out which algorithm the user has requested
   alg = algorithm.getModule(app.args.algorithm)
@@ -47,19 +47,19 @@ def execute(): #pylint: disable=unused-variable
     try:
       lmax = [ int(x) for x in app.args.lmax.split(',') ]
       if any([lmax_value%2 for lmax_value in lmax]):
-        raise MRtrixException('Value of lmax must be even')
+        raise MRtrixError('Value of lmax must be even')
     except:
-      raise MRtrixException('Parameter lmax must be a number')
+      raise MRtrixError('Parameter lmax must be a number')
     if alg.needsSingleShell() and not len(lmax) == 1:
-      raise MRtrixException('Can only specify a single lmax value for single-shell algorithms')
+      raise MRtrixError('Can only specify a single lmax value for single-shell algorithms')
   shells_option = ''
   if app.args.shells:
     try:
       shells_values = [ int(x) for x in app.args.shells.split(',') ]
     except:
-      raise MRtrixException('-shells option should provide a comma-separated list of b-values')
+      raise MRtrixError('-shells option should provide a comma-separated list of b-values')
     if alg.needsSingleShell() and not len(shells_values) == 1:
-      raise MRtrixException('Can only specify a single b-value shell for single-shell algorithms')
+      raise MRtrixError('Can only specify a single b-value shell for single-shell algorithms')
     shells_option = ' -shells ' + app.args.shells
   singleshell_option = ''
   if alg.needsSingleShell():
@@ -71,7 +71,7 @@ def execute(): #pylint: disable=unused-variable
   elif app.args.fslgrad:
     grad_import_option = ' -fslgrad ' + fsys.fromUser(app.args.fslgrad[0], True) + ' ' + fsys.fromUser(app.args.fslgrad[1], True)
   elif 'dw_scheme' not in image.Header(fsys.fromUser(app.args.input, False)).keyval():
-    raise MRtrixException('Script requires diffusion gradient table: either in image header, or using -grad / -fslgrad option')
+    raise MRtrixError('Script requires diffusion gradient table: either in image header, or using -grad / -fslgrad option')
 
   app.makeTempDir()
 
@@ -90,12 +90,12 @@ def execute(): #pylint: disable=unused-variable
   if app.args.mask:
     # Check that the brain mask is appropriate
     if image.Header('mask.mif').size()[:3] != image.Header('dwi.mif').size()[:3]:
-      raise MRtrixException('Dimensions of provided mask image do not match DWI')
+      raise MRtrixError('Dimensions of provided mask image do not match DWI')
   else:
     run.command('dwi2mask dwi.mif mask.mif')
 
   if int(image.statistic('mask.mif', 'count', '-mask mask.mif')) == 0:
-    raise MRtrixException(('Provided' if app.args.mask else 'Generated') + ' mask image does not contain any voxels')
+    raise MRtrixError(('Provided' if app.args.mask else 'Generated') + ' mask image does not contain any voxels')
 
   # From here, the script splits depending on what estimation algorithm is being used
   alg.execute()

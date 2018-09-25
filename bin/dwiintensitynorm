@@ -41,12 +41,12 @@ class Input(object):
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import fsys, image, MRtrixException, run
+  from mrtrix3 import fsys, image, MRtrixError, run
 
   app.args.input_dir = relpath(app.args.input_dir)
   inputDir = app.args.input_dir
   if not os.path.exists(inputDir):
-    raise MRtrixException('input directory not found')
+    raise MRtrixError('input directory not found')
   inFiles = fsys.allInDir(inputDir, dir_path=False)
   if len(inFiles) <= 1:
     app.console('not enough images found in input directory. More than one image is needed to perform a group-wise intensity normalisation')
@@ -56,10 +56,10 @@ def execute(): #pylint: disable=unused-variable
   app.args.mask_dir = relpath(app.args.mask_dir)
   maskDir = app.args.mask_dir
   if not os.path.exists(maskDir):
-    raise MRtrixException('mask directory not found')
+    raise MRtrixError('mask directory not found')
   maskFiles = fsys.allInDir(maskDir, dir_path=False)
   if len(maskFiles) != len(inFiles):
-    raise MRtrixException('the number of images in the mask directory does not equal the number of images in the input directory')
+    raise MRtrixError('the number of images in the mask directory does not equal the number of images in the input directory')
   maskCommonPostfix = fsys.commonPostfix(maskFiles)
   maskPrefixes = []
   for m in maskFiles:
@@ -70,7 +70,7 @@ def execute(): #pylint: disable=unused-variable
   for i in inFiles:
     subj_prefix = i.split(commonPostfix)[0]
     if subj_prefix not in maskPrefixes:
-      raise MRtrixException ('no matching mask image was found for input image ' + i)
+      raise MRtrixError ('no matching mask image was found for input image ' + i)
     image.check3DNonunity(os.path.join(fsys.fromUser(inputDir, False), i))
     index = maskPrefixes.index(subj_prefix)
     input_list.append(Input(i, subj_prefix, fsys.fromUser(inputDir, False), maskFiles[index], fsys.fromUser(maskDir, False)))

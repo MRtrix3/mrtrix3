@@ -31,10 +31,10 @@ def needsSingleShell(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import shutil
-  from mrtrix3 import app, fsys, image, MRtrixException, run
+  from mrtrix3 import app, fsys, image, MRtrixError, run
   bvalues = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shell_bvalues').split() ]
   if len(bvalues) < 2:
-    raise MRtrixException('Need at least 2 unique b-values (including b=0).')
+    raise MRtrixError('Need at least 2 unique b-values (including b=0).')
   lmax_option = ''
   if app.args.lmax:
     lmax_option = ' -lmax ' + app.args.lmax

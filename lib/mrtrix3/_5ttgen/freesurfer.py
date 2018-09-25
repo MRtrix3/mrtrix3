@@ -26,16 +26,16 @@ def getInputs(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import os.path
-  from mrtrix3 import app, fsys, MRtrixException, run
+  from mrtrix3 import app, fsys, MRtrixError, run
 
   lut_input_path = 'LUT.txt'
   if not os.path.exists('LUT.txt'):
     freesurfer_home = os.environ.get('FREESURFER_HOME', '')
     if not freesurfer_home:
-      raise MRtrixException('Environment variable FREESURFER_HOME is not set; please run appropriate FreeSurfer configuration script, set this variable manually, or provide script with path to file FreeSurferColorLUT.txt using -lut option')
+      raise MRtrixError('Environment variable FREESURFER_HOME is not set; please run appropriate FreeSurfer configuration script, set this variable manually, or provide script with path to file FreeSurferColorLUT.txt using -lut option')
     lut_input_path = os.path.join(freesurfer_home, 'FreeSurferColorLUT.txt')
     if not os.path.isfile(lut_input_path):
-      raise MRtrixException('Could not find FreeSurfer lookup table file (expected location: ' + lut_input_path + '), and none provided using -lut')
+      raise MRtrixError('Could not find FreeSurfer lookup table file (expected location: ' + lut_input_path + '), and none provided using -lut')
 
   if app.args.sgm_amyg_hipp:
     lut_output_file_name = 'FreeSurfer2ACT_sgm_amyg_hipp.txt'
@@ -43,7 +43,7 @@ def execute(): #pylint: disable=unused-variable
     lut_output_file_name = 'FreeSurfer2ACT.txt'
   lut_output_path = os.path.join(fsys.sharedDataPath(), fsys.scriptSubDirName(), lut_output_file_name)
   if not os.path.isfile(lut_output_path):
-    raise MRtrixException('Could not find lookup table file for converting FreeSurfer parcellation output to tissues (expected location: ' + lut_output_path + ')')
+    raise MRtrixError('Could not find lookup table file for converting FreeSurfer parcellation output to tissues (expected location: ' + lut_output_path + ')')
 
   # Initial conversion from FreeSurfer parcellation to five principal tissue types
   run.command('labelconvert input.mif ' + lut_input_path + ' ' + lut_output_path + ' indices.mif')

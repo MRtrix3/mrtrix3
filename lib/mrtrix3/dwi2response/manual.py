@@ -36,7 +36,7 @@ def needsSingleShell(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import os, shutil
-  from mrtrix3 import app, fsys, image, MRtrixException, run
+  from mrtrix3 import app, fsys, image, MRtrixError, run
 
   shells = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shell_bvalues').split() ]
 
@@ -45,12 +45,12 @@ def execute(): #pylint: disable=unused-variable
   if app.args.lmax:
     lmax = [ int(x.strip()) for x in app.args.lmax.split(',') ]
     if not len(lmax) == len(shells):
-      raise MRtrixException('Number of manually-defined lmax\'s (' + str(len(lmax)) + ') does not match number of b-value shells (' + str(len(shells)) + ')')
+      raise MRtrixError('Number of manually-defined lmax\'s (' + str(len(lmax)) + ') does not match number of b-value shells (' + str(len(shells)) + ')')
     for l in lmax:
       if l%2:
-        raise MRtrixException('Values for lmax must be even')
+        raise MRtrixError('Values for lmax must be even')
       if l<0:
-        raise MRtrixException('Values for lmax must be non-negative')
+        raise MRtrixError('Values for lmax must be non-negative')
 
   # Do we have directions, or do we need to calculate them?
   if not os.path.exists('dirs.mif'):

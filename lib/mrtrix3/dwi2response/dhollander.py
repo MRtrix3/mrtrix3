@@ -37,7 +37,7 @@ def needsSingleShell(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import shutil
-  from mrtrix3 import app, fsys, image, MRtrixException, run
+  from mrtrix3 import app, fsys, image, MRtrixError, run
 
 
   # Get b-values and number of volumes per b-value.
@@ -45,7 +45,7 @@ def execute(): #pylint: disable=unused-variable
   bvolumes = [ int(x) for x in image.mrinfo('dwi.mif', 'shell_sizes').split() ]
   app.console(str(len(bvalues)) + ' unique b-value(s) detected: ' + ','.join(map(str,bvalues)) + ' with ' + ','.join(map(str,bvolumes)) + ' volumes.')
   if len(bvalues) < 2:
-    raise MRtrixException('Need at least 2 unique b-values (including b=0).')
+    raise MRtrixError('Need at least 2 unique b-values (including b=0).')
 
 
   # Get lmax information (if provided).
@@ -53,12 +53,12 @@ def execute(): #pylint: disable=unused-variable
   if app.args.lmax:
     sfwm_lmax = [ int(x.strip()) for x in app.args.lmax.split(',') ]
     if not len(sfwm_lmax) == len(bvalues):
-      raise MRtrixException('Number of lmax\'s (' + str(len(sfwm_lmax)) + ', as supplied to the -lmax option: ' + ','.join(map(str,sfwm_lmax)) + ') does not match number of unique b-values.')
+      raise MRtrixError('Number of lmax\'s (' + str(len(sfwm_lmax)) + ', as supplied to the -lmax option: ' + ','.join(map(str,sfwm_lmax)) + ') does not match number of unique b-values.')
     for l in sfwm_lmax:
       if l%2:
-        raise MRtrixException('Values supplied to the -lmax option must be even.')
+        raise MRtrixError('Values supplied to the -lmax option must be even.')
       if l<0:
-        raise MRtrixException('Values supplied to the -lmax option must be non-negative.')
+        raise MRtrixError('Values supplied to the -lmax option must be non-negative.')
 
 
   # Erode (brain) mask.
