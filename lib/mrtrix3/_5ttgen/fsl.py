@@ -23,14 +23,14 @@ def checkOutputPaths(): #pylint: disable=unused-variable
 
 
 def getInputs(): #pylint: disable=unused-variable
-  from mrtrix3 import app, fsys, image, MRtrixException, run
+  from mrtrix3 import app, fsys, image, MRtrixError, run
   image.check3DNonunity(fsys.fromUser(app.args.input, False))
   run.command('mrconvert ' + fsys.fromUser(app.args.input, True) + ' ' + fsys.toTemp('input.mif', True))
   if app.args.mask:
     run.command('mrconvert ' + fsys.fromUser(app.args.mask, True) + ' ' + fsys.toTemp('mask.mif', True) + ' -datatype bit -strides -1,+2,+3')
   if app.args.t2:
     if not image.match(app.args.input, app.args.t2):
-      raise MRtrixException('Provided T2 image does not match input T1 image')
+      raise MRtrixError('Provided T2 image does not match input T1 image')
     run.command('mrconvert ' + fsys.fromUser(app.args.t2, True) + ' ' + fsys.toTemp('T2.nii', True) + ' -strides -1,+2,+3')
 
 
@@ -38,14 +38,14 @@ def getInputs(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import math, os
-  from mrtrix3 import app, fsl, fsys, image, isWindows, MRtrixException, run
+  from mrtrix3 import app, fsl, fsys, image, isWindows, MRtrixError, run
 
   if isWindows():
-    raise MRtrixException('\'fsl\' algorithm of 5ttgen script cannot be run on Windows: FSL not available on Windows')
+    raise MRtrixError('\'fsl\' algorithm of 5ttgen script cannot be run on Windows: FSL not available on Windows')
 
   fsl_path = os.environ.get('FSLDIR', '')
   if not fsl_path:
-    raise MRtrixException('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
+    raise MRtrixError('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
 
   bet_cmd = fsl.exeName('bet')
   fast_cmd = fsl.exeName('fast')
@@ -54,7 +54,7 @@ def execute(): #pylint: disable=unused-variable
 
   first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
   if not os.path.isdir(first_atlas_path):
-    raise MRtrixException('Atlases required for FSL\'s FIRST program not installed; please install fsl-first-data using your relevant package manager')
+    raise MRtrixError('Atlases required for FSL\'s FIRST program not installed; please install fsl-first-data using your relevant package manager')
 
   fsl_suffix = fsl.suffix()
 
@@ -124,11 +124,11 @@ def execute(): #pylint: disable=unused-variable
         run.command(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -maskMASK mni_mask.nii' + ssroi_roi_option)
       else:
         run.command(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -b')
-    except run.MRtrixCmdException:
+    except run.MRtrixCmdError:
       pass
     try:
       pre_bet_image = fsl.findImage('T1_preBET')
-    except MRtrixException:
+    except MRtrixError:
       app.warn('FSL script \'standard_space_roi\' did not complete successfully; '
                'attempting to continue by providing un-cropped image to BET')
       pre_bet_image = 'T1.nii'

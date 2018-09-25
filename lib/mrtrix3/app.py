@@ -70,8 +70,8 @@ _signals = { 'SIGALRM': 'Timer expiration',
 
 def execute(): #pylint: disable=unused-variable
   import inspect, os, shutil, signal, sys
-  from mrtrix3 import ansi, MRtrixException, run
-  from mrtrix3.run import MRtrixCmdException, MRtrixFnException
+  from mrtrix3 import ansi, MRtrixError, run
+  from mrtrix3.run import MRtrixCmdError, MRtrixFnError
   global args, cleanup, _cmdline, continueOption, execName, numThreads, tempDir, verbosity, workingDir
 
   # Set up signal handlers
@@ -149,9 +149,9 @@ def execute(): #pylint: disable=unused-variable
   return_code = 0
   try:
     module.execute()
-  except (MRtrixCmdException, MRtrixFnException) as e:
+  except (MRtrixCmdError, MRtrixFnError) as e:
     return_code = 1
-    is_cmd = isinstance(e, MRtrixCmdException)
+    is_cmd = isinstance(e, MRtrixCmdError)
     cleanup = False
     if tempDir:
       with open(os.path.join(tempDir, 'error.txt'), 'w') as outfile:
@@ -176,7 +176,7 @@ def execute(): #pylint: disable=unused-variable
       sys.stderr.write(execName + ': ' + ansi.error + '[ERROR] Failed ' + ('command' if is_cmd else 'function') + ' did not provide any output information' + ansi.clear + '\n')
     sys.stderr.write(execName + ': ' + ansi.error + '[ERROR] For debugging, inspect contents of temporary directory: ' + tempDir + ansi.clear + '\n')
     sys.stderr.flush()
-  except MRtrixException as e:
+  except MRtrixError as e:
     sys.stderr.write('\n')
     sys.stderr.write(execName + ': ' + ansi.error + '[ERROR] ' + str(e) + ansi.clear + '\n')
     sys.stderr.flush()
@@ -220,7 +220,7 @@ def execute(): #pylint: disable=unused-variable
 
 def checkOutputPath(path): #pylint: disable=unused-variable
   import os
-  from mrtrix3 import MRtrixException
+  from mrtrix3 import MRtrixError
   global args, forceOverwrite, workingDir
   if not path:
     return
@@ -235,7 +235,7 @@ def checkOutputPath(path): #pylint: disable=unused-variable
       warn('Output' + output_type + ' \'' + path + '\' already exists; will be overwritten at script completion')
       forceOverwrite = True #pylint: disable=unused-variable
     else:
-      raise MRtrixException('Output' + output_type + ' \'' + path + '\' already exists (use -force to override)')
+      raise MRtrixError('Output' + output_type + ' \'' + path + '\' already exists (use -force to override)')
 
 
 

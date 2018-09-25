@@ -12,12 +12,12 @@ def checkOutputPaths(): #pylint: disable=unused-variable
 
 
 def checkGIFinput(image_path):
-  from mrtrix3 import image, MRtrixException
+  from mrtrix3 import image, MRtrixError
   dim = image.Header(image_path).size()
   if len(dim) < 4:
-    raise MRtrixException('Image \'' + image_path + '\' does not look like GIF segmentation (less than 4 spatial dimensions)')
+    raise MRtrixError('Image \'' + image_path + '\' does not look like GIF segmentation (less than 4 spatial dimensions)')
   if min(dim[:4]) == 1:
-    raise MRtrixException('Image \'' + image_path + '\' does not look like GIF segmentation (axis with size 1)')
+    raise MRtrixError('Image \'' + image_path + '\' does not look like GIF segmentation (axis with size 1)')
 
 
 def getInputs(): #pylint: disable=unused-variable

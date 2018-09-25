@@ -65,10 +65,10 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import itertools, json, math, shutil
-  from mrtrix3 import config, fsl, fsys, image, isWindows, MRtrixException, phaseEncoding, run
+  from mrtrix3 import config, fsl, fsys, image, isWindows, MRtrixError, phaseEncoding, run
 
   if isWindows():
-    raise MRtrixException('Script cannot run on Windows due to FSL dependency')
+    raise MRtrixError('Script cannot run on Windows due to FSL dependency')
 
   image.check3DNonunity(fsys.fromUser(app.args.input, False))
 
@@ -78,30 +78,30 @@ def execute(): #pylint: disable=unused-variable
   elif app.args.rpe_pair:
     PE_design = 'Pair'
     if not app.args.se_epi:
-      raise MRtrixException('If using the -rpe_pair option, the -se_epi option must be used to provide the spin-echo EPI data to be used by topup')
+      raise MRtrixError('If using the -rpe_pair option, the -se_epi option must be used to provide the spin-echo EPI data to be used by topup')
   elif app.args.rpe_all:
     PE_design = 'All'
   elif app.args.rpe_header:
     PE_design = 'Header'
   else:
-    raise MRtrixException('Must explicitly specify phase-encoding acquisition design (even if none)')
+    raise MRtrixError('Must explicitly specify phase-encoding acquisition design (even if none)')
 
   if app.args.align_seepi and not app.args.se_epi:
-    raise MRtrixException('-align_seepi option is only applicable when the -se_epi option is also used')
+    raise MRtrixError('-align_seepi option is only applicable when the -se_epi option is also used')
 
   fsl_path = os.environ.get('FSLDIR', '')
   if not fsl_path:
-    raise MRtrixException('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
+    raise MRtrixError('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
 
   if not PE_design == 'None':
     topup_config_path = os.path.join(fsl_path, 'etc', 'flirtsch', 'b02b0.cnf')
     if not os.path.isfile(topup_config_path):
-      raise MRtrixException('Could not find necessary default config file for FSL topup command\n(expected location: ' + topup_config_path + ')')
+      raise MRtrixError('Could not find necessary default config file for FSL topup command\n(expected location: ' + topup_config_path + ')')
     topup_cmd = fsl.exeName('topup')
     applytopup_cmd = fsl.exeName('applytopup')
 
   if not fsl.eddyBinary(True) and not fsl.eddyBinary(False):
-    raise MRtrixException('Could not find any version of FSL eddy command')
+    raise MRtrixError('Could not find any version of FSL eddy command')
   fsl_suffix = fsl.suffix()
   app.checkOutputPath(app.args.output)
 
@@ -133,12 +133,12 @@ def execute(): #pylint: disable=unused-variable
           if app.forceOverwrite:
             app.warn('Output eddy QC directory already contains relevant files; these will be overwritten on completion')
           else:
-            raise MRtrixException('Output eddy QC directory already contains relevant files (use -force to override)')
+            raise MRtrixError('Output eddy QC directory already contains relevant files (use -force to override)')
       else:
         if app.forceOverwrite:
           app.warn('Target for eddy QC output is not a directory; it will be overwritten on completion')
         else:
-          raise MRtrixException('Target for eddy QC output exists, and is not a directory (use -force to override)')
+          raise MRtrixError('Target for eddy QC output exists, and is not a directory (use -force to override)')
 
 
   eddy_manual_options = ''
@@ -169,7 +169,7 @@ def execute(): #pylint: disable=unused-variable
   # Get information on the input images, and check their validity
   dwi_header = image.Header('dwi.mif')
   if not len(dwi_header.size()) == 4:
-    raise MRtrixException('Input DWI must be a 4D image')
+    raise MRtrixError('Input DWI must be a 4D image')
   dwi_num_volumes = dwi_header.size()[3]
   app.var(dwi_num_volumes)
   dwi_num_slices = dwi_header.size()[2]
@@ -179,13 +179,13 @@ def execute(): #pylint: disable=unused-variable
     se_epi_header = image.Header('se_epi.mif')
     # This doesn't necessarily apply any more: May be able to combine e.g. a P>>A from -se_epi with an A>>P b=0 image from the DWIs
   #  if not len(se_epi_header.size()) == 4:
-  #    raise MRtrixException('File provided using -se_epi option must contain more than one image volume')
+  #    raise MRtrixError('File provided using -se_epi option must contain more than one image volume')
     se_epi_pe_scheme = phaseEncoding.getScheme(se_epi_header)
   if 'dw_scheme' not in dwi_header.keyval():
-    raise MRtrixException('No diffusion gradient table found')
+    raise MRtrixError('No diffusion gradient table found')
   grad = dwi_header.keyval()['dw_scheme']
   if not len(grad) == dwi_num_volumes:
-    raise MRtrixException('Number of lines in gradient table (' + str(len(grad)) + ') does not match input image (' + str(dwi_num_volumes) + ' volumes); check your input data')
+    raise MRtrixError('Number of lines in gradient table (' + str(len(grad)) + ') does not match input image (' + str(dwi_num_volumes) + ' volumes); check your input data')
 
   # Check the manual options being passed to eddy, ensure they make sense
   eddy_mporder = any(s.startswith('--mporder') for s in eddy_manual_options)
@@ -194,19 +194,19 @@ def execute(): #pylint: disable=unused-variable
       slice_encoding_direction = dwi_header.keyval()['SliceEncodingDirection']
       app.var(slice_encoding_direction)
       if not slice_encoding_direction.startswith('k'):
-        raise MRtrixException('DWI header indicates that 3rd spatial axis is not the slice axis; this is not yet compatible with --mporder option in eddy, nor supported in dwipreproc')
+        raise MRtrixError('DWI header indicates that 3rd spatial axis is not the slice axis; this is not yet compatible with --mporder option in eddy, nor supported in dwipreproc')
       slice_encoding_direction = image.axis2dir(slice_encoding_direction)
     else:
       app.console('No slice encoding direction information present; assuming third axis corresponds to slices')
       slice_encoding_direction = [0,0,1]
   if '--resamp=lsr' in eddy_manual_options:
-    raise MRtrixException('dwipreproc does not currently support least-squares reconstruction; this cannot be simply passed via -eddy_options')
+    raise MRtrixError('dwipreproc does not currently support least-squares reconstruction; this cannot be simply passed via -eddy_options')
   if eddy_mporder:
     slspec_option = [ s for s in eddy_manual_options if s.startswith('--slspec') ]
     slice_groups = [ ]
     slice_timing = [ ]
     if len(slspec_option) > 1:
-      raise MRtrixException('--slspec option appears more than once in -eddy_options input; cannot import slice timing')
+      raise MRtrixError('--slspec option appears more than once in -eddy_options input; cannot import slice timing')
     elif len(slspec_option) == 1:
       slspec_file_path = fsys.fromUser(slspec_option[0][9:], False)
       if os.path.isfile(slspec_file_path):
@@ -229,21 +229,21 @@ def execute(): #pylint: disable=unused-variable
             app.warn('\"slspec\" file provided to FSL eddy should contain slice indices for slice groups, not slice timing; nevertheless, slice timing has been imported from file \"' + slspec_file_path + '\"')
             app.var(slice_timing)
             if len(slice_timing) != dwi_num_slices:
-              raise MRtrixException('Cannot use slice timing information from file \"' + slspec_file_path + '\" for slice-to-volume correction: Number of entries (' + len(slice_timing) + ') does not match number of slices (' + dwi_header.size()[2] + ')')
+              raise MRtrixError('Cannot use slice timing information from file \"' + slspec_file_path + '\" for slice-to-volume correction: Number of entries (' + len(slice_timing) + ') does not match number of slices (' + dwi_header.size()[2] + ')')
           except ValueError:
-            raise MRtrixException('Error parsing \"slspec\" file (this should contain integer values indicating slice groups, not slice timing; please see FSL eddy help page)')
+            raise MRtrixError('Error parsing \"slspec\" file (this should contain integer values indicating slice groups, not slice timing; please see FSL eddy help page)')
         # Remove this entry from eddy_manual_options; it'll be inserted later, with the
         #   path to the new slspec file
         eddy_manual_options = [ s for s in eddy_manual_options if not s.startswith('--slspec') ]
       else:
-        raise MRtrixException('Unable to find \'slspec\' file provided via -eddy_options \" ... --slspec=/path/to/file ... \" (expected location: ' + slspec_file_path + ')')
+        raise MRtrixError('Unable to find \'slspec\' file provided via -eddy_options \" ... --slspec=/path/to/file ... \" (expected location: ' + slspec_file_path + ')')
     else:
       if 'SliceTiming' not in dwi_header.keyval():
-        raise MRtrixException('Cannot perform slice-to-volume correction in eddy: No slspec file provided, and no slice timing information present in header')
+        raise MRtrixError('Cannot perform slice-to-volume correction in eddy: No slspec file provided, and no slice timing information present in header')
       slice_timing = dwi_header.keyval()['SliceTiming'][0]
       app.var(slice_timing)
       if len(slice_timing) != dwi_num_slices:
-        raise MRtrixException('Cannot use slice timing information in image header for slice-to-volume correction: Number of entries (' + len(slice_timing) + ') does not match number of slices (' + dwi_header.size()[2] + ')')
+        raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: Number of entries (' + len(slice_timing) + ') does not match number of slices (' + dwi_header.size()[2] + ')')
 
   # Use new features of dirstat to query the quality of the diffusion acquisition scheme
   # Need to know the mean b-value in each shell, and the asymmetry value of each shell
@@ -256,7 +256,7 @@ def execute(): #pylint: disable=unused-variable
     if len(shell_bvalues) == len(shell_asymmetry) + 1:
       shell_bvalues = shell_bvalues[1:]
     elif len(shell_bvalues) != len(shell_asymmetry):
-      raise MRtrixException('Number of b-values reported by mrinfo (' + str(len(shell_bvalues)) + ') does not match number of outputs provided by dirstat (' + str(len(shell_asymmetry)) + ')')
+      raise MRtrixError('Number of b-values reported by mrinfo (' + str(len(shell_bvalues)) + ') does not match number of outputs provided by dirstat (' + str(len(shell_asymmetry)) + ')')
     for b, s in zip(shell_bvalues, shell_asymmetry):
       if s >= 0.1:
         app.warn('sampling of b=' + str(b) + ' shell is ' + ('strongly' if s >= 0.4 else 'moderately') + \
@@ -328,7 +328,7 @@ def execute(): #pylint: disable=unused-variable
       app.var(dwi_manual_pe_scheme)
       se_epi_num_volumes = se_epi_header.size()[3]
       if se_epi_num_volumes%2:
-        raise MRtrixException('If using -rpe_pair option, image provided using -se_epi must contain an even number of volumes')
+        raise MRtrixError('If using -rpe_pair option, image provided using -se_epi must contain an even number of volumes')
       # Assume that first half of volumes have same direction as series;
       #   second half have the opposite direction
       se_epi_manual_pe_scheme = [ line ] * int(se_epi_num_volumes/2)
@@ -348,7 +348,7 @@ def execute(): #pylint: disable=unused-variable
     #   that volumes must be matched between the first and second halves of the DWI data.
     elif PE_design == 'All':
       if dwi_num_volumes%2:
-        raise MRtrixException('If using -rpe_all option, input image must contain an even number of volumes')
+        raise MRtrixError('If using -rpe_all option, input image must contain an even number of volumes')
       grads_matched = [ dwi_num_volumes ] * dwi_num_volumes
       grad_pairs = [ ]
       app.debug('Commencing gradient direction matching; ' + str(dwi_num_volumes) + ' volumes')
@@ -363,9 +363,9 @@ def execute(): #pylint: disable=unused-variable
                 app.debug('Matched volume ' + str(index1) + ' with ' + str(index2) + ': ' + str(grad[index1]) + ' ' + str(grad[index2]))
                 break
           else:
-            raise MRtrixException('Unable to determine matching reversed phase-encode direction volume for DWI volume ' + str(index1))
+            raise MRtrixError('Unable to determine matching reversed phase-encode direction volume for DWI volume ' + str(index1))
       if not len(grad_pairs) == dwi_num_volumes/2:
-        raise MRtrixException('Unable to determine complete matching DWI volume pairs for reversed phase-encode combination')
+        raise MRtrixError('Unable to determine complete matching DWI volume pairs for reversed phase-encode combination')
       # Construct manual PE scheme here:
       #   Regardless of whether or not there's a scheme in the header, need to have it:
       #   if there's one in the header, want to compare to the manually-generated one
@@ -381,7 +381,7 @@ def execute(): #pylint: disable=unused-variable
   else: # No manual phase encode direction defined
 
     if not PE_design == 'Header':
-      raise MRtrixException('If not using -rpe_header, phase encoding direction must be provided using the -pe_dir option')
+      raise MRtrixError('If not using -rpe_header, phase encoding direction must be provided using the -pe_dir option')
 
 
 
@@ -424,9 +424,9 @@ def execute(): #pylint: disable=unused-variable
   else:
     # Nothing in the header; rely entirely on user specification
     if PE_design == 'Header':
-      raise MRtrixException('No phase encoding information found in DWI image header')
+      raise MRtrixError('No phase encoding information found in DWI image header')
     if not manual_pe_dir:
-      raise MRtrixException('No phase encoding information provided either in header or at command-line')
+      raise MRtrixError('No phase encoding information provided either in header or at command-line')
     if dwi_auto_trt_warning:
       app.console('Total readout time not provided at command-line; assuming sane default of ' + str(auto_trt))
     dwi_pe_scheme = dwi_manual_pe_scheme # May be needed later for triggering volume recombination
@@ -508,7 +508,7 @@ def execute(): #pylint: disable=unused-variable
       #     - Don't have enough information to proceed
       #     - Is this too harsh? (e.g. Have rules by which it may be inferred from the DWI header / command-line)
       if not se_epi_pe_scheme:
-        raise MRtrixException('If explicitly including SE EPI images when using -rpe_all option, they must come with their own associated phase-encoding information in the image header')
+        raise MRtrixError('If explicitly including SE EPI images when using -rpe_all option, they must come with their own associated phase-encoding information in the image header')
 
     elif PE_design == 'Header':
       # Criteria:
@@ -517,7 +517,7 @@ def execute(): #pylint: disable=unused-variable
       #   * If _not_ present in own header:
       #       Cannot proceed
       if not se_epi_pe_scheme:
-        raise MRtrixException('No phase-encoding information present in SE-EPI image header')
+        raise MRtrixError('No phase-encoding information present in SE-EPI image header')
       # If there is no phase encoding contrast within the SE-EPI series,
       #   try combining it with the DWI b=0 volumes, see if that produces some contrast
       # However, this should probably only be permitted if the -align_seepi option is defined
@@ -538,10 +538,10 @@ def execute(): #pylint: disable=unused-variable
             # Delay testing appropriateness of the concatenation of these images
             #   (i.e. differences in contrast) to later
           else:
-            raise MRtrixException('No phase-encoding contrast present in SE-EPI images, even after concatenating with b=0 images due to -align_seepi option; '
-                                  'cannot perform inhomogeneity field estimation')
+            raise MRtrixError('No phase-encoding contrast present in SE-EPI images, even after concatenating with b=0 images due to -align_seepi option; '
+                              'cannot perform inhomogeneity field estimation')
         else:
-          raise MRtrixException('No phase-encoding contrast present in SE-EPI images; cannot perform inhomogeneity field estimation')
+          raise MRtrixError('No phase-encoding contrast present in SE-EPI images; cannot perform inhomogeneity field estimation')
 
     if app.args.align_seepi:
 
@@ -646,7 +646,7 @@ def execute(): #pylint: disable=unused-variable
     # In this scenario, we will be unable to run topup, or volume recombination
     if 'pe_scheme' not in se_epi_header.keyval():
       if PE_design == 'All':
-        raise MRtrixException('DWI header indicates no phase encoding contrast between b=0 images; cannot proceed with volume recombination-based pre-processing')
+        raise MRtrixError('DWI header indicates no phase encoding contrast between b=0 images; cannot proceed with volume recombination-based pre-processing')
       else:
         app.warn('DWI header indicates no phase encoding contrast between b=0 images; proceeding without inhomogeneity field estimation')
         do_topup = False
@@ -854,7 +854,7 @@ def execute(): #pylint: disable=unused-variable
     # If running CUDA version, but OpenMP version is also available, don't stop the script if the CUDA version fails
     try:
       eddy_output = run.command(eddy_cuda_cmd + ' ' + eddy_all_options)
-    except run.MRtrixCmdException:
+    except run.MRtrixCmdError:
       if not eddy_openmp_cmd:
         raise
       app.console('CUDA version of \'eddy\' was not successful; attempting OpenMP version')

@@ -39,7 +39,7 @@ def needsSingleShell(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import os, shutil
-  from mrtrix3 import app, fsys, image, MRtrixException, run
+  from mrtrix3 import app, fsys, image, MRtrixError, run
 
   # Ideally want to use the oversampling-based regridding of the 5TT image from the SIFT model, not mrtransform
   # May need to commit 5ttregrid...
@@ -62,12 +62,12 @@ def execute(): #pylint: disable=unused-variable
   if app.args.lmax:
     wm_lmax = [ int(x.strip()) for x in app.args.lmax.split(',') ]
     if not len(wm_lmax) == len(shells):
-      raise MRtrixException('Number of manually-defined lmax\'s (' + str(len(wm_lmax)) + ') does not match number of b-values (' + str(len(shells)) + ')')
+      raise MRtrixError('Number of manually-defined lmax\'s (' + str(len(wm_lmax)) + ') does not match number of b-values (' + str(len(shells)) + ')')
     for l in wm_lmax:
       if l%2:
-        raise MRtrixException('Values for lmax must be even')
+        raise MRtrixError('Values for lmax must be even')
       if l<0:
-        raise MRtrixException('Values for lmax must be non-negative')
+        raise MRtrixError('Values for lmax must be non-negative')
 
   run.command('dwi2tensor dwi.mif - -mask mask.mif | tensor2metric - -fa fa.mif -vector vector.mif')
   if not os.path.exists('dirs.mif'):
@@ -109,7 +109,7 @@ def execute(): #pylint: disable=unused-variable
     message += ' empty; cannot estimate response function'
     if len(empty_masks) > 1:
       message += 's'
-    raise MRtrixException(message)
+    raise MRtrixError(message)
 
   # For each of the three tissues, generate a multi-shell response
   bvalues_option = ' -shells ' + ','.join(map(str,shells))

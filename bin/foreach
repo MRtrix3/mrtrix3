@@ -60,7 +60,7 @@ stop = False
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixException, run
+  from mrtrix3 import MRtrixError, run
   global cmdsplit
 
   app.var(str(app.args.inputs))
@@ -82,7 +82,7 @@ def execute(): #pylint: disable=unused-variable
   try:
     next(entry for entry in cmdsplit if any(key for key in keylist if key in entry))
   except StopIteration:
-    raise MRtrixException('None of the unique foreach keys ' + str(keylist) + ' appear in command string "' + app.args.command + '"; no substitution can occur')
+    raise MRtrixError('None of the unique foreach keys ' + str(keylist) + ' appear in command string "' + app.args.command + '"; no substitution can occur')
 
   class Entry(object):
     def __init__(self, input_text):
@@ -127,11 +127,11 @@ def execute(): #pylint: disable=unused-variable
         return
       try:
         if any([ 'foreach' in s for s in my_job.cmd ]):
-          raise run.MRtrixCmdException(my_job.cmd, 1, '', 'Running for foreach')
+          raise run.MRtrixCmdError(my_job.cmd, 1, '', 'Running for foreach')
         result = run.command(' '.join(my_job.cmd))
         my_job.outputtext = result.stdout + result.stderr
         my_job.returncode = 0
-      except run.MRtrixCmdException as e:
+      except run.MRtrixCmdError as e:
         my_job.outputtext = str(e)
         my_job.returncode = e.returncode
       except Exception as e: # pylint: disable=broad-except
@@ -154,11 +154,11 @@ def execute(): #pylint: disable=unused-variable
     for job in jobs:
       try:
         if any([ 'foreach' in s for s in job.cmd ]):
-          raise run.MRtrixCmdException(job.cmd, 1, '', 'Running for foreach')
+          raise run.MRtrixCmdError(job.cmd, 1, '', 'Running for foreach')
         result = run.command(' '.join(job.cmd))
         job.outputtext = result.stdout + result.stderr
         job.returncode = 0
-      except run.MRtrixCmdException as e:
+      except run.MRtrixCmdError as e:
         job.outputtext = str(e)
         job.returncode = e.returncode
       except Exception as e: # pylint: disable=broad-except
@@ -188,7 +188,7 @@ def execute(): #pylint: disable=unused-variable
           app.warn('No output from command for input "' + job.sub_in + '" (return code = ' + str(job.returncode) + ')')
         if fail_count > 1:
           sys.stderr.write(app.execName + ':\n')
-    raise MRtrixException(str(fail_count) + ' of ' + str(len(jobs)) + ' jobs did not complete successfully')
+    raise MRtrixError(str(fail_count) + ' of ' + str(len(jobs)) + ' jobs did not complete successfully')
 
   if app.verbosity > 1:
     if any(job.outputtext for job in jobs):

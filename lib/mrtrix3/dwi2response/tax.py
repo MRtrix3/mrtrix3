@@ -30,7 +30,7 @@ def needsSingleShell(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import math, os, shutil
-  from mrtrix3 import app, fsys, image, MRtrixException, run
+  from mrtrix3 import app, fsys, image, MRtrixError, run
 
   lmax_option = ''
   if app.args.lmax:
@@ -40,7 +40,8 @@ def execute(): #pylint: disable=unused-variable
 
   progress = app.progressBar('Optimising')
 
-  for iteration in range(0, app.args.max_iters):
+  iteration = 0
+  while iteration < app.args.max_iters:
     prefix = 'iter' + str(iteration) + '_'
 
     # How to initialise response function?
@@ -89,7 +90,7 @@ def execute(): #pylint: disable=unused-variable
     # Make sure image isn't empty
     SF_voxel_count = int(image.statistic(prefix + 'SF.mif', 'count', '-mask ' + prefix + 'SF.mif'))
     if not SF_voxel_count:
-      raise MRtrixException('Aborting: All voxels have been excluded from single-fibre selection')
+      raise MRtrixError('Aborting: All voxels have been excluded from single-fibre selection')
     # Generate a new response function
     run.command('amp2response dwi.mif ' + prefix + 'SF.mif ' + prefix + 'first_dir.mif ' + prefix + 'RF.txt' + lmax_option)
     fsys.delTemporary(prefix + 'first_dir.mif')
@@ -118,7 +119,7 @@ def execute(): #pylint: disable=unused-variable
     fsys.delTemporary(RF_in_path)
     fsys.delTemporary(mask_in_path)
 
-    # Go to the next iteration
+    iteration += 1
 
   progress.done()
 

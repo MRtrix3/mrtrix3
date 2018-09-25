@@ -31,18 +31,19 @@ def needsSingleShell(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import os, shutil
-  from mrtrix3 import app, fsys, image, MRtrixException, run
+  from mrtrix3 import app, fsys, image, MRtrixError, run
 
   lmax_option = ''
   if app.args.lmax:
     lmax_option = ' -lmax ' + app.args.lmax
 
   if app.args.max_iters < 2:
-    raise MRtrixException('Number of iterations must be at least 2')
+    raise MRtrixError('Number of iterations must be at least 2')
 
   progress = app.progressBar('Optimising')
 
-  for iteration in range(0, app.args.max_iters):
+  iteration = 0
+  while iteration < app.args.max_iters:
     prefix = 'iter' + str(iteration) + '_'
 
     if iteration == 0:
@@ -105,7 +106,7 @@ def execute(): #pylint: disable=unused-variable
     run.command('mrthreshold ' + prefix + 'CF.mif -top ' + str(app.args.iter_voxels) + ' - | maskfilter - dilate - -npass ' + str(app.args.dilate) + ' | mrcalc mask.mif - -mult ' + prefix + 'SF_dilated.mif')
     fsys.delTemporary(prefix + 'CF.mif')
 
-    # Commence the next iteration
+    iteration += 1
 
   progress.done()
 
