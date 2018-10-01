@@ -18,7 +18,8 @@ def usage(cmdline): #pylint: disable=unused-variable
                              '  NAME: The basename of the matching pattern. For example, if the target list contains a file "folder/image.mif", any occurrence of "NAME" will be substituted with "image.mif".' \
                              '  PRE:  The prefix of the basename. For example, if the target list contains a file "folder/image.mif", any occurrence of "PRE" will be substituted with "image".' \
                              '  UNI:  The unique part of the input after removing any common prefix and common suffix. For example, if the target list contains files: "folder/001dwi.mif", "folder/002dwi.mif", "folder/003dwi.mif", any occurrence of "UNI" will be substituted with "001", "002", "003".')
-  cmdline.addDescription('Note that any command-line options provided before the colon separator will be interpreted by the foreach script; any command-line options provided after this colon will form part of the input to the executed command.')
+  cmdline.addDescription('Note that due to a limitation of the Python argparse module, any command-line options provided to the foreach script must appear before any inputs are specified.')
+  cmdline.addDescription('Such command-line options provided before the list of inputs and colon separator will be interpreted by the foreach script; any command-line options provided after this colon will form part of the input to the executed command.')
   cmdline.add_argument('inputs',  help='Each of the inputs for which processing should be run', nargs='+')
   cmdline.add_argument('colon',   help='Colon symbol (":") delimiting the foreach inputs & command-line options from the actual command to be executed', type=str, choices=[':'])
   cmdline.add_argument('command', help='The command string to run for each input, containing any number of substitutions listed in the Description section', type=str)
@@ -128,7 +129,7 @@ def execute(): #pylint: disable=unused-variable
       try:
         if any([ 'foreach' in s for s in my_job.cmd ]):
           raise run.MRtrixCmdError(my_job.cmd, 1, '', 'Running for foreach')
-        result = run.command(' '.join(my_job.cmd))
+        result = run.command(' '.join(my_job.cmd), True) # Run in shell mode
         my_job.outputtext = result.stdout + result.stderr
         my_job.returncode = 0
       except run.MRtrixCmdError as e:
@@ -155,7 +156,7 @@ def execute(): #pylint: disable=unused-variable
       try:
         if any([ 'foreach' in s for s in job.cmd ]):
           raise run.MRtrixCmdError(job.cmd, 1, '', 'Running for foreach')
-        result = run.command(' '.join(job.cmd))
+        result = run.command(' '.join(job.cmd), True) # Run in shell mode
         job.outputtext = result.stdout + result.stderr
         job.returncode = 0
       except run.MRtrixCmdError as e:
