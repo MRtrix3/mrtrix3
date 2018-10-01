@@ -214,7 +214,7 @@ def execute(): #pylint: disable=unused-variable
     else:
       app.console('No output from command for any inputs')
 
-  app.console('Command reported successful completion for all inputs')
+  app.console('Script reported successful completion for all inputs')
 
 
 
