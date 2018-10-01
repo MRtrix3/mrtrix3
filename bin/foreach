@@ -127,8 +127,6 @@ def execute(): #pylint: disable=unused-variable
       if not my_job:
         return
       try:
-        if any([ 'foreach' in s for s in my_job.cmd ]):
-          raise run.MRtrixCmdError(my_job.cmd, 1, '', 'Running for foreach')
         result = run.command(' '.join(my_job.cmd), True) # Run in shell mode
         my_job.outputtext = result.stdout + result.stderr
         my_job.returncode = 0
@@ -154,8 +152,6 @@ def execute(): #pylint: disable=unused-variable
   else:
     for job in jobs:
       try:
-        if any([ 'foreach' in s for s in job.cmd ]):
-          raise run.MRtrixCmdError(job.cmd, 1, '', 'Running for foreach')
         result = run.command(' '.join(job.cmd), True) # Run in shell mode
         job.outputtext = result.stdout + result.stderr
         job.returncode = 0
