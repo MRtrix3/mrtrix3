@@ -71,7 +71,7 @@ def setTmpDir(path): #pylint: disable=unused-variable
 
 
 
-def command(cmd): #pylint: disable=unused-variable
+def command(cmd, shell=False): #pylint: disable=unused-variable
 
   import inspect, itertools, shlex, signal, string, subprocess, sys, tempfile
   from distutils.spawn import find_executable
@@ -81,6 +81,8 @@ def command(cmd): #pylint: disable=unused-variable
   global _processes, _tempFiles
 
   if isinstance(cmd, list):
+    if shell:
+      raise TypeError('When using run.command() with shell=True, input must be a text string')
     cmdstring = ''
     cmdsplit = []
     for entry in cmd:
@@ -116,116 +118,178 @@ def command(cmd): #pylint: disable=unused-variable
       sys.stderr.flush()
     return CommandReturn(None, '', '')
 
-  # Need to identify presence of list constructs && or ||, and process accordingly
-  try:
-    (index, operator) = next((i,v) for i,v in enumerate(cmdsplit) if v in [ '&&', '||' ])
-    # If operator is '&&', next command should be executed only if first is successful
-    # If operator is '||', next command should be executed only if the first is not successful
+
+
+  # Some helper functions that are used in both the shell=True and shell=False cases:
+
+  # Disable handler for SIGINT signal if appropriate
+  #   (there are no other commands currently running)
+  def disableSIGINTHandler():
+    global _lock, _processes
+    with _lock:
+      if not any(plist is not None for plist in _processes):
+        try:
+          signal.signal(signal.SIGINT, signal.default_int_handler)
+        except:
+          pass
+
+  # Re-enable the handler for SIGINT signal if appropriate
+  #   (appears to not be any other processes running in parallel)
+  def enableSIGINTHandler():
+    global _lock, _processes
+    with _lock:
+      if all(plist is None for plist in _processes):
+        try:
+          signal.signal(signal.SIGINT, app.handler)
+        except:
+          pass
+
+  # Acquire a unique index within global lists _processes and _tempFiles
+  # This ensures that if command() is executed in parallel using different threads, they will
+  #   not interfere with one another; but killAll() will also have access to all relevant data
+  def getCommandIndex():
+    global _processes, _tempFiles
     try:
-      pre_result = command(cmdsplit[:index])
-      if operator == '||':
-        app.debug('Due to success of "' + cmdsplit[:index] + '", "' + cmdsplit[index+1:] + '" will not be run')
-        return pre_result
-    except MRtrixCmdError:
-      if operator == '&&':
-        raise
-    return command(cmdsplit[index+1:])
-  except StopIteration:
-    pass
-
-  # This splits the command string based on the piping character '|', such that each
-  #   individual executable (along with its arguments) appears as its own list
-  cmdstack = [ list(g) for k, g in itertools.groupby(cmdsplit, lambda s : s != '|') if k ]
-
-  for line in cmdstack:
-    is_mrtrix_exe = line[0] in exe_list
-    if is_mrtrix_exe:
-      line[0] = versionMatch(line[0])
-      if app.numThreads is not None:
-        line.extend( [ '-nthreads', str(app.numThreads) ] )
-      # Get MRtrix3 binaries to output additional INFO-level information if running in debug mode
-      if app.verbosity == 3:
-        line.append('-info')
-      elif not app.verbosity:
-        line.append('-quiet')
-    else:
-      line[0] = exeName(line[0])
-    shebang = _shebang(line[0])
-    if shebang:
-      if not is_mrtrix_exe:
-        # If a shebang is found, and this call is therefore invoking an
-        #   interpreter, can't rely on the interpreter finding the script
-        #   from PATH; need to find the full path ourselves.
-        line[0] = find_executable(line[0])
-      for item in reversed(shebang):
-        line.insert(0, item)
-
-  with _lock:
-    app.debug('To execute: ' + str(cmdstack))
-    if app.verbosity:
-      # Hide use of these options in mrconvert to alter header key-values and command history at the end of scripts
-      if all(key in cmdsplit for key in [ '-copy_properties', '-append_property', 'command_history' ]):
-        index = cmdsplit.index('-append_property')
-        del cmdsplit[index:index+3]
-        index = cmdsplit.index('-copy_properties')
-        del cmdsplit[index:index+2]
-      sys.stderr.write(ansi.execute + 'Command:' + ansi.clear + '  ' + ' '.join(cmdsplit) + '\n')
-      sys.stderr.flush()
-
-    # Disable interrupt signal handler while threads are running
-    # Only explicitly disable if there do not appear to be other commands running in parallel
-    if not any(plist is not None for plist in _processes):
-      try:
-        signal.signal(signal.SIGINT, signal.default_int_handler)
-      except:
-        pass
-
-    # Acquire a (temporarily) unique index for this command() call
-    try:
-      thisCommandIndex = next(i for i, v in enumerate(_processes) if v is None)
-      _processes[thisCommandIndex] = [ ]
-      _tempFiles[thisCommandIndex] = [ ]
+      index = next(i for i, v in enumerate(_processes) if v is None)
+      _processes[index] = [ ]
+      _tempFiles[index] = [ ]
     except StopIteration:
-      thisCommandIndex = len(_processes)
+      index = len(_processes)
       _processes.append([ ])
       _tempFiles.append([ ])
+    return index
 
-  # Execute all processes for this command
-  thisProcesses = [ ]
-  thisTempFiles = [ ]
-  for index, to_execute in enumerate(cmdstack):
-    file_out = None
-    file_err = None
-    # If there's at least one command prior to this, need to receive the stdout from the prior command
-    #   at the stdin of this command; otherwise, nothing to receive
-    if index > 0:
-      handle_in = thisProcesses[index-1].stdout
-    else:
-      handle_in = None
-    # If this is not the last command, then stdout needs to be piped to the next command;
-    #   otherwise, write stdout to a temporary file so that the contents can be read later
-    if index < len(cmdstack)-1:
-      handle_out = subprocess.PIPE
-    else:
-      handle_out, file_out = tempfile.mkstemp()
-    # If we're in debug / info mode, the contents of stderr will be read and printed to the terminal
-    #   as the command progresses, hence this needs to go to a pipe; otherwise, write it to a temporary
-    #   file so that the contents can be read later
+
+
+  # If operating in shell=True mode, handling of command execution is significantly different:
+  #   Unmodified command string is executed using subprocess, with the shell being responsible for its parsing
+  #   Only a single process per run.command() invocation is possible (since e.g. any piping will be
+  #     handled by the spawned shell)
+  if shell:
+
+    cmdstack = [ cmdsplit ]
+    with _lock:
+      app.debug('To execute: ' + str(cmdstring))
+      if app.verbosity:
+        sys.stderr.write(ansi.execute + 'Command:' + ansi.clear + '  ' + cmdstring + '\n')
+        sys.stderr.flush()
+      thisCommandIndex = getCommandIndex()
+    disableSIGINTHandler()
+    # No locking required for actual creation of new process
+    thisProcesses = [ ]
+    thisTempFiles = [ ]
+    handle_out, file_out = tempfile.mkstemp()
     if app.verbosity > 1:
       handle_err = subprocess.PIPE
+      file_err = None
     else:
       handle_err, file_err = tempfile.mkstemp()
-    # Set off the processes
     try:
+      process = subprocess.Popen (cmdstring, shell=True, stdin=None, stdout=handle_out, stderr=handle_err, env=_env, preexec_fn=os.setpgrp) # pylint: disable=bad-option-value,subprocess-popen-preexec-fn
+    except AttributeError:
+      process = subprocess.Popen (cmdstring, shell=True, stdin=None, stdout=handle_out, stderr=handle_err, env=_env)
+    thisProcesses.append(process)
+    thisTempFiles.append( [ file_out, file_err ])
+
+  else: # shell=False
+
+    # Need to identify presence of list constructs && or ||, and process accordingly
+    try:
+      (index, operator) = next((i,v) for i,v in enumerate(cmdsplit) if v in [ '&&', '||' ])
+      # If operator is '&&', next command should be executed only if first is successful
+      # If operator is '||', next command should be executed only if the first is not successful
       try:
-        process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=_env, preexec_fn=os.setpgrp) # pylint: disable=bad-option-value,subprocess-popen-preexec-fn
-      except AttributeError:
-        process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=_env)
-      thisProcesses.append(process)
-      thisTempFiles.append( [ file_out, file_err ])
-    # FileNotFoundError not defined in Python 2.7
-    except OSError as e:
-      raise MRtrixCmdError(cmdstring, 1, '', str(e))
+        pre_result = command(cmdsplit[:index])
+        if operator == '||':
+          app.debug('Due to success of "' + cmdsplit[:index] + '", "' + cmdsplit[index+1:] + '" will not be run')
+          return pre_result
+      except MRtrixCmdError:
+        if operator == '&&':
+          raise
+      return command(cmdsplit[index+1:])
+    except StopIteration:
+      pass
+
+    # This splits the command string based on the piping character '|', such that each
+    #   individual executable (along with its arguments) appears as its own list
+    cmdstack = [ list(g) for k, g in itertools.groupby(cmdsplit, lambda s : s != '|') if k ]
+
+    for line in cmdstack:
+      is_mrtrix_exe = line[0] in exe_list
+      if is_mrtrix_exe:
+        line[0] = versionMatch(line[0])
+        if app.numThreads is not None:
+          line.extend( [ '-nthreads', str(app.numThreads) ] )
+        # Get MRtrix3 binaries to output additional INFO-level information if running in debug mode
+        if app.verbosity == 3:
+          line.append('-info')
+        elif not app.verbosity:
+          line.append('-quiet')
+      else:
+        line[0] = exeName(line[0])
+      shebang = _shebang(line[0])
+      if shebang:
+        if not is_mrtrix_exe:
+          # If a shebang is found, and this call is therefore invoking an
+          #   interpreter, can't rely on the interpreter finding the script
+          #   from PATH; need to find the full path ourselves.
+          line[0] = find_executable(line[0])
+        for item in reversed(shebang):
+          line.insert(0, item)
+
+    with _lock:
+      app.debug('To execute: ' + str(cmdstack))
+      if app.verbosity:
+        # Hide use of these options in mrconvert to alter header key-values and command history at the end of scripts
+        if all(key in cmdsplit for key in [ '-copy_properties', '-append_property', 'command_history' ]):
+          index = cmdsplit.index('-append_property')
+          del cmdsplit[index:index+3]
+          index = cmdsplit.index('-copy_properties')
+          del cmdsplit[index:index+2]
+        sys.stderr.write(ansi.execute + 'Command:' + ansi.clear + '  ' + ' '.join(cmdsplit) + '\n')
+        sys.stderr.flush()
+      thisCommandIndex = getCommandIndex()
+
+    disableSIGINTHandler()
+
+    # Execute all processes for this command
+    thisProcesses = [ ]
+    thisTempFiles = [ ]
+    for index, to_execute in enumerate(cmdstack):
+      file_out = None
+      file_err = None
+      # If there's at least one command prior to this, need to receive the stdout from the prior command
+      #   at the stdin of this command; otherwise, nothing to receive
+      if index > 0:
+        handle_in = thisProcesses[index-1].stdout
+      else:
+        handle_in = None
+      # If this is not the last command, then stdout needs to be piped to the next command;
+      #   otherwise, write stdout to a temporary file so that the contents can be read later
+      if index < len(cmdstack)-1:
+        handle_out = subprocess.PIPE
+      else:
+        handle_out, file_out = tempfile.mkstemp()
+      # If we're in debug / info mode, the contents of stderr will be read and printed to the terminal
+      #   as the command progresses, hence this needs to go to a pipe; otherwise, write it to a temporary
+      #   file so that the contents can be read later
+      if app.verbosity > 1:
+        handle_err = subprocess.PIPE
+      else:
+        handle_err, file_err = tempfile.mkstemp()
+      # Set off the processes
+      try:
+        try:
+          process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=_env, preexec_fn=os.setpgrp) # pylint: disable=bad-option-value,subprocess-popen-preexec-fn
+        except AttributeError:
+          process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=_env)
+        thisProcesses.append(process)
+        thisTempFiles.append( [ file_out, file_err ])
+      # FileNotFoundError not defined in Python 2.7
+      except OSError as e:
+        raise MRtrixCmdError(cmdstring, 1, '', str(e))
+
+  # End branching based on shell=True/False
 
   # Write process & temporary file information to globals
   with _lock:
@@ -275,6 +339,9 @@ def command(cmd): #pylint: disable=unused-variable
   except (KeyboardInterrupt, SystemExit):
     app.handler(signal.SIGINT, inspect.currentframe())
 
+  # Re-enable interrupt signal handler
+  enableSIGINTHandler()
+
   # For any command stdout / stderr data that wasn't either passed to another command or
   #   printed to the terminal during execution, read it here.
   for index in range(len(cmdstack)):
@@ -304,14 +371,6 @@ def command(cmd): #pylint: disable=unused-variable
 
     if error:
       raise MRtrixCmdError(cmdstring, return_code, stdout_text, stderr_text)
-
-    # Re-enable interrupt signal handler
-    #   Note: Only re-enable if there appears to not be any processes running in parallel from other commands
-    if all(plist is None for plist in _processes):
-      try:
-        signal.signal(signal.SIGINT, app.handler)
-      except:
-        pass
 
     # Only now do we append to the script log, since the command has completed successfully
     # Note: Writing the command as it was formed as the input to run.command():
