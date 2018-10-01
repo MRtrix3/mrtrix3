@@ -113,7 +113,20 @@ def execute(): #pylint: disable=unused-variable
 
   parallel = app.numThreads is not None and app.numThreads > 1
 
-  progress = app.progressBar('Executing ' + str(len(jobs)) + ' jobs ' + ('across ' + str(app.numThreads) + ' threads' if parallel else 'sequentially'), len(jobs))
+
+
+  def progressString():
+    s = str(sum([ 1 if job.returncode is not None else 0 for job in jobs ])) + \
+        '/' + \
+        str(len(jobs)) + \
+        ' jobs completed ' + \
+        ('across ' + str(app.numThreads) + ' threads' if parallel else 'sequentially')
+    fail_count = sum([ 1 if job.returncode else 0 for job in jobs ])
+    if fail_count:
+      s += ' (' + str(fail_count) + ' errors)'
+    return s
+
+  progress = app.progressBar(progressString(), len(jobs))
 
   def execute_parallel():
     global job_index, lock, stop
@@ -137,7 +150,7 @@ def execute(): #pylint: disable=unused-variable
         my_job.outputtext = str(e)
         my_job.returncode = 1
       with lock:
-        progress.increment()
+        progress.increment(progressString())
 
   if parallel:
     threads = [ ]
@@ -161,7 +174,7 @@ def execute(): #pylint: disable=unused-variable
       except Exception as e: # pylint: disable=broad-except
         job.outputtext = str(e)
         job.returncode = 1
-      progress.increment()
+      progress.increment(progressString())
 
   progress.done()
 
