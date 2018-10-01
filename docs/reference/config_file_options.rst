@@ -10,20 +10,6 @@ List of MRtrix3 configuration file options
 
      The default intensity for the ambient light in OpenGL renders.
 
-.. option:: AmbientIntensity
-
-    *default: 0.6*
-
-     The default intensity for the ambient light in OpenGL renders
-
-.. option:: Analyse.LeftToRight
-
-    *default: 0 (false)*
-
-     A boolean value to indicate whether images in Analyse format
-     should be assumed to be in LAS orientation (default) or RAS
-     (when this is option is turned on).
-
 .. option:: AnalyseLeftToRight
 
     *default: 0 (false)*
@@ -43,44 +29,12 @@ List of MRtrix3 configuration file options
      common workaround is to scale the gradient vectors to modulate
      the actual b-value.
 
-.. option:: BValueScaling
-
-    *default: 1 (true)*
-
-     specifies whether the b-values should be scaled by the squared
-     norm of the gradient vectors when loading a DW gradient scheme.
-     This is commonly required to correctly interpret images acquired
-     on scanners that nominally only allow a single b-value, as the
-     common workaround is to scale the gradient vectors to modulate
-     the actual b-value.
-
-.. option:: BValueScaling
-
-    *default: yes*
-
-     specifies whether b-values should be scaled according the DW gradient
-     amplitudes - see the -bvalue_scaling option for details.
-
 .. option:: BZeroThreshold
 
     *default: 10.0*
 
      Specifies the b-value threshold for determining those image
      volumes that correspond to b=0.
-
-.. option:: BZeroThreshold
-
-    *default: 10.0*
-
-     specifies the b-value threshold for determining those image
-     volumes that correspond to b=0
-
-.. option:: BackgroundColor
-
-    *default: 1,1,1 (white)*
-
-     The default colour to use for the background in OpenGL panels, notably
-     the SH viewer.
 
 .. option:: BackgroundColor
 
@@ -259,22 +213,9 @@ List of MRtrix3 configuration file options
 
 .. option:: DiffuseIntensity
 
-    *default: 0.3*
-
-     The default intensity for the diffuse light in OpenGL renders
-
-.. option:: DiffuseIntensity
-
     *default: 0.5*
 
      The default intensity for the diffuse light in OpenGL renders.
-
-.. option:: FailOnWarn
-
-    *default: 0 (false)*
-
-     A boolean value specifying whether MRtrix applications should
-     abort as soon as any (otherwise non-fatal) warning is issued.
 
 .. option:: FailOnWarn
 
@@ -296,30 +237,11 @@ List of MRtrix3 configuration file options
      The command to use to display each command's help page (leave
      empty to send directly to the terminal).
 
-.. option:: HelpCommand
-
-    *default: less*
-
-     the command to use to display each command's help page (leave
-     empty to send directly to the terminal).
-
-.. option:: IconSize
-
-    *default: 24*
-
-     The size of the icons in the main MRView toolbar.
-
 .. option:: IconSize
 
     *default: 30*
 
      The size of the icons in the main MRView toolbar.
-
-.. option:: ImageBackgroundColour
-
-    *default: 0,0,0 (black)*
-
-     The default image background colour
 
 .. option:: ImageInterpolation
 
@@ -334,20 +256,6 @@ List of MRtrix3 configuration file options
      The starting position of the MRView toolbar. Valid values are:
      top, bottom, left, right.
 
-.. option:: InitialToolBarPosition
-
-    *default: top*
-
-     The starting position of the MRView toolbar. Valid values are:
-     top, bottom, left, right.
-
-.. option:: LightPosition
-
-    *default: 1,1,3*
-
-     The default position vector to use for the light in OpenGL
-     renders
-
 .. option:: LightPosition
 
     *default: 1.0,1.0,3.0*
@@ -361,19 +269,6 @@ List of MRtrix3 configuration file options
 
      The height of the colourbar in MRView, in pixels.
 
-.. option:: MRViewColourBarHeight
-
-    *default: 100*
-
-     The height of the colourbar in MRView, in pixels.
-
-.. option:: MRViewColourBarInset
-
-    *default: 20*
-
-     How far away from the edge of the main window to place the
-     colourbar in MRView, in pixels.
-
 .. option:: MRViewColourBarInset
 
     *default: 20*
@@ -388,32 +283,12 @@ List of MRtrix3 configuration file options
      The position of the colourbar within the main window in MRView.
      Valid values are: bottomleft, bottomright, topleft, topright.
 
-.. option:: MRViewColourBarPosition
-
-    *default: bottomright*
-
-     The position of the colourbar within the main window in MRView.
-     Valid values are: bottomleft, bottomright, topleft, topright.
-
 .. option:: MRViewColourBarTextOffset
 
     *default: 10*
 
      How far away from the colourbar to place the associated text,
      in pixels.
-
-.. option:: MRViewColourBarTextOffset
-
-    *default: 10*
-
-     How far away from the colourbar to place the associated text,
-     in pixels.
-
-.. option:: MRViewColourBarWidth
-
-    *default: 20*
-
-     The width of the colourbar in MRView, in pixels.
 
 .. option:: MRViewColourBarWidth
 
@@ -440,21 +315,6 @@ List of MRtrix3 configuration file options
 
      Whether MRView tools should start docked in the main window, or
      floating (detached from the main window).
-
-.. option:: MRViewDockFloating
-
-    *default: 0 (false)*
-
-     Whether Tools should start docked in the main window, or
-     floating (detached from the main window).
-
-.. option:: MRViewFocusModifierKey
-
-    *default: alt (cmd on MacOSX)*
-
-     modifier key to select focus mode in MRView. Valid
-     choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
-     ctrl, cmd).
 
 .. option:: MRViewFocusModifierKey
 
@@ -491,14 +351,6 @@ List of MRtrix3 configuration file options
      choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
      ctrl, cmd).
 
-.. option:: MRViewMoveModifierKey
-
-    *default: shift*
-
-     modifier key to select move mode in MRView. Valid
-     choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
-     ctrl, cmd).
-
 .. option:: MRViewOdfScale
 
     *default: 1.0*
@@ -510,14 +362,6 @@ List of MRtrix3 configuration file options
     *default: ctrl*
 
      Modifier key to select rotate mode in MRView. Valid
-     choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
-     ctrl, cmd).
-
-.. option:: MRViewRotateModifierKey
-
-    *default: ctrl*
-
-     modifier key to select rotate mode in MRView. Valid
      choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
      ctrl, cmd).
 
@@ -555,12 +399,6 @@ List of MRtrix3 configuration file options
 
     *default: 2 points less than the standard system font*
 
-     The point size for the font to use in MRView Tools.
-
-.. option:: MRViewToolFontSize
-
-    *default: 2 points less than the standard system font*
-
      The point size for the font to use in MRView tools.
 
 .. option:: MRViewToolsColourBarPosition
@@ -576,22 +414,6 @@ List of MRtrix3 configuration file options
 
      How many samples to use for multi-sample anti-aliasing (to
      improve display quality).
-
-.. option:: MSAA
-
-    *default: 0 (false)*
-
-     How many samples to use for multi-sample anti-aliasing (to
-     improve display quality).
-
-.. option:: NIFTI.AllowBitwise
-
-    *default: 0 (false)*
-
-     A boolean value to indicate whether bitwise storage of binary
-     data is permitted (most 3rd party software packages don't
-     support bitwise data). If false (the default), data will be
-     stored using more widely supported unsigned 8-bit integers.
 
 .. option:: NIfTIAllowBitwise
 
@@ -642,14 +464,6 @@ List of MRtrix3 configuration file options
 
 .. option:: NeedOpenGLCoreProfile
 
-    *default: 0 (true on MacOSX, false otherwise)*
-
-     Whether the creation of an OpenGL 3.3 context requires it to be
-     a core profile (needed on newer versions of the ATI drivers on
-     Linux, for instance).
-
-.. option:: NeedOpenGLCoreProfile
-
     *default: 1 (true)*
 
      Whether the creation of an OpenGL 3.3 context requires it to be
@@ -662,30 +476,11 @@ List of MRtrix3 configuration file options
 
      Set the default number of CPU threads to use for multi-threading.
 
-.. option:: NumberOfThreads
-
-    *default: number of threads provided by hardware*
-
-     set the default number of CPU threads to use for multi-threading.
-
-.. option:: NumberOfUndos
-
-    *default: 16*
-
-     The number of undo operations permitted in the MRView ROI editor tool
-
 .. option:: NumberOfUndos
 
     *default: 16*
 
      The number of undo operations permitted in the MRView ROI editor tool.
-
-.. option:: ObjectColor
-
-    *default: 1,1,0 (yellow)*
-
-     The default colour to use for objects (i.e. SH glyphs) when not
-     colouring by direction.
 
 .. option:: ObjectColor
 
@@ -779,29 +574,11 @@ List of MRtrix3 configuration file options
 
      Initial buffer size for data in MRtrix sparse image format file (in bytes).
 
-.. option:: SparseDataInitialSize
-
-    *default: 16777216*
-
-     initial buffer size for data in MRtrix sparse image format file (in bytes).
-
-.. option:: SpecularExponent
-
-    *default: 1*
-
-     The default exponent for the specular light in OpenGL renders
-
 .. option:: SpecularExponent
 
     *default: 5.0*
 
      The default exponent for the specular light in OpenGL renders.
-
-.. option:: SpecularIntensity
-
-    *default: 0.4*
-
-     The default intensity for the specular light in OpenGL renders
 
 .. option:: SpecularIntensity
 
@@ -816,12 +593,6 @@ List of MRtrix3 configuration file options
      Specifies whether tckgen should be terminated prematurely
      in cases where it appears as though the target number of
      accepted streamlines is not going to be met.
-
-.. option:: TerminalColor
-
-    *default: 1 (true)*
-
-     A boolean value to indicate whether colours should be used in the terminal.
 
 .. option:: TerminalColor
 
@@ -848,26 +619,6 @@ List of MRtrix3 configuration file options
      directories; that is determined based on config file option
      ScriptTmpDir.
 
-.. option:: TmpFileDir
-
-    *default: `/tmp` (on Unix), `.` (on Windows)*
-
-     The prefix for temporary files (as used in pipelines). By default,
-     these files get written to the current folder, which may cause
-     performance issues when operating over distributed file systems.
-     In this case, it may be better to specify `/tmp/` here.
-
-.. option:: TmpFilePrefix
-
-    *default: `mrtrix-tmp-`*
-
-     The prefix to use for the basename of temporary files. This will
-     be used to generate a unique filename for the temporary file, by
-     adding random characters to this prefix, followed by a suitable
-     suffix (depending on file type). Note that this prefix can also be
-     manipulated using the `MRTRIX_TMPFILE_PREFIX` environment
-     variable, without editing the config file.
-
 .. option:: TmpFilePrefix
 
     *default: `mrtrix-tmp-`*
@@ -886,13 +637,6 @@ List of MRtrix3 configuration file options
      The style of the main toolbar buttons in MRView. See Qt's
      documentation for Qt::ToolButtonStyle.
 
-.. option:: ToolbarStyle
-
-    *default: 2*
-
-     The style of the main toolbar buttons in MRView. See Qt's
-     documentation for Qt::ToolButtonStyle.
-
 .. option:: TrackWriterBufferSize
 
     *default: 16777216*
@@ -901,22 +645,6 @@ List of MRtrix3 configuration file options
      writing track files. MRtrix will store the output tracks in a
      relatively large buffer to limit the number of write() calls,
      avoid associated issues such as file fragmentation.
-
-.. option:: TrackWriterBufferSize
-
-    *default: 16777216*
-
-     The size of the write-back buffer (in bytes) to use when
-     writing track files. MRtrix will store the output tracks in a
-     relatively large buffer to limit the number of write() calls,
-     avoid associated issues such as file fragmentation.
-
-.. option:: VSync
-
-    *default: 0 (false)*
-
-     Whether the screen update should synchronise with the monitor's
-     vertical refresh (to avoid tearing artefacts).
 
 .. option:: VSync
 
