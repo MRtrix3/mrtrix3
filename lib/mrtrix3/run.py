@@ -159,6 +159,18 @@ def command(cmd, shell=False): #pylint: disable=unused-variable
       _tempFiles.append([ ])
     return index
 
+  # Wrap tempfile.mkstemp() in a convenience function, which also
+  #   catches the case where the user does not have write access to the
+  #   temporary directory location selected by default, and in that case
+  #   re-runs mkstemp() manually specifying the temporary directory
+  def makeTemporaryFile():
+    try:
+      return tempfile.mkstemp()
+    except OSError:
+      print ('OSError')
+      if app.tempDir:
+        return tempfile.mkstemp('', 'tmp', app.tempDir)
+      return tempfile.mkstemp('', 'tmp', os.getcwd())
 
 
   # If operating in shell=True mode, handling of command execution is significantly different:
@@ -178,12 +190,12 @@ def command(cmd, shell=False): #pylint: disable=unused-variable
     # No locking required for actual creation of new process
     thisProcesses = [ ]
     thisTempFiles = [ ]
-    handle_out, file_out = tempfile.mkstemp()
+    handle_out, file_out = makeTemporaryFile()
     if app.verbosity > 1:
       handle_err = subprocess.PIPE
       file_err = None
     else:
-      handle_err, file_err = tempfile.mkstemp()
+      handle_err, file_err = makeTemporaryFile()
     try:
       process = subprocess.Popen (cmdstring, shell=True, stdin=None, stdout=handle_out, stderr=handle_err, env=_env, preexec_fn=os.setpgrp) # pylint: disable=bad-option-value,subprocess-popen-preexec-fn
     except AttributeError:
@@ -269,14 +281,14 @@ def command(cmd, shell=False): #pylint: disable=unused-variable
       if index < len(cmdstack)-1:
         handle_out = subprocess.PIPE
       else:
-        handle_out, file_out = tempfile.mkstemp()
+        handle_out, file_out = makeTemporaryFile()
       # If we're in debug / info mode, the contents of stderr will be read and printed to the terminal
       #   as the command progresses, hence this needs to go to a pipe; otherwise, write it to a temporary
       #   file so that the contents can be read later
       if app.verbosity > 1:
         handle_err = subprocess.PIPE
       else:
-        handle_err, file_err = tempfile.mkstemp()
+        handle_err, file_err = makeTemporaryFile()
       # Set off the processes
       try:
         try:
