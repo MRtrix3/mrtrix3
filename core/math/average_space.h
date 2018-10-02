@@ -16,12 +16,13 @@
 #ifndef __math_average_space_h__
 #define __math_average_space_h__
 
+#include <unsupported/Eigen/MatrixFunctions>
+#include <Eigen/SVD>
+#include <Eigen/Geometry>
 #include "transform.h"
 #include "image.h"
 #include "debug.h"
 
-#include <unsupported/Eigen/MatrixFunctions>
-#include <Eigen/SVD>
 
 namespace MR
 {

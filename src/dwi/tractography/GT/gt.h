@@ -23,6 +23,8 @@
 #include <iostream>
 #include <mutex>
 
+#include <Eigen/Dense>
+
 #include "progressbar.h"
 #include "types.h"
 

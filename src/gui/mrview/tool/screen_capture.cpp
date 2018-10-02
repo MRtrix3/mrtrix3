@@ -12,6 +12,9 @@
  * For more details, see http://www.mrtrix.org/
  */
 
+
+#include <Eigen/Geometry>
+
 #include "mrtrix.h"
 #include "file/path.h"
 #include "gui/mrview/window.h"

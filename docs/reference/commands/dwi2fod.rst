@@ -63,6 +63,15 @@ Options for the Constrained Spherical Deconvolution algorithm
 
 -  **-niter number** the maximum number of iterations to perform for each voxel (default = 50). Use '-niter 0' for a linear unconstrained spherical deconvolution.
 
+Options for the Multi-Shell, Multi-Tissue Constrained Spherical Deconvolution algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-norm_lambda value** the regularisation parameter lambda that controls the strength of the constraint on the norm of the solution (default = 1e-10).
+
+-  **-neg_lambda value** the regularisation parameter lambda that controls the strength of the non-negativity constraint (default = 1e-10).
+
+-  **-predicted_signal image** the predicted dwi image.
+
 Stride options
 ^^^^^^^^^^^^^^
 
