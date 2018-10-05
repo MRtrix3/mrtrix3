@@ -119,12 +119,10 @@ def execute(): #pylint: disable=unused-variable
   # REFINED SEGMENTATION
 
   # Refine WM: remove high SDM outliers.
-  crudewmmedian = image.statistic('safe_sdm.mif', 'median', '-mask crude_wm.mif')
-  run.command('mrcalc crude_wm.mif safe_sdm.mif 0 -if ' + str(crudewmmedian) + ' -gt _crudewmhigh.mif -datatype bit')
-  run.command('mrcalc _crudewmhigh.mif 0 crude_wm.mif -if _crudewmlow.mif -datatype bit')
-  crudewmQ1 = float(image.statistic('safe_sdm.mif', 'median', '-mask _crudewmlow.mif'))
-  crudewmQ3 = float(image.statistic('safe_sdm.mif', 'median', '-mask _crudewmhigh.mif'))
-  crudewmoutlthresh = crudewmQ3 + (crudewmQ3 - crudewmQ1)
+  crudewmmedian = float(image.statistic('safe_sdm.mif', 'median', '-mask crude_wm.mif'))
+  run.command('mrcalc crude_wm.mif safe_sdm.mif ' + str(crudewmmedian) + ' -subtract -abs 0 -if _crudewm_sdmad.mif')
+  crudewmmad = float(image.statistic('_crudewm_sdmad.mif', 'median', '-mask crude_wm.mif'))
+  crudewmoutlthresh = crudewmmedian + (1.4826 * crudewmmad * 2.0)
   run.command('mrcalc crude_wm.mif safe_sdm.mif 0 -if ' + str(crudewmoutlthresh) + ' -gt _crudewmoutliers.mif -datatype bit')
   run.command('mrcalc _crudewmoutliers.mif 0 crude_wm.mif -if refined_wm.mif -datatype bit')
 
