@@ -150,16 +150,10 @@ def execute(): #pylint: disable=unused-variable
   run.command('amp2response dwi.mif voxels_csf.mif safe_vecs.mif response_csf.txt' + bvalues_option + ' -isotropic')
 
   # Get final voxels for GM response function estimation from refined GM.
+  refgmcount = float(image.statistic('refined_gm.mif', 'count', '-mask refined_gm.mif'))
+  voxgmcount = int(round(refgmcount * app.args.gm / 100.0))
   refgmmedian = image.statistic('safe_sdm.mif', 'median', '-mask refined_gm.mif')
-  run.command('mrcalc refined_gm.mif safe_sdm.mif 0 -if ' + str(refgmmedian) + ' -gt _refinedgmhigh.mif -datatype bit')
-  run.command('mrcalc _refinedgmhigh.mif 0 refined_gm.mif -if _refinedgmlow.mif -datatype bit')
-  refgmhighcount = float(image.statistic('_refinedgmhigh.mif', 'count', '-mask _refinedgmhigh.mif'))
-  refgmlowcount = float(image.statistic('_refinedgmlow.mif', 'count', '-mask _refinedgmlow.mif'))
-  voxgmhighcount = int(round(refgmhighcount * app.args.gm / 100.0))
-  voxgmlowcount = int(round(refgmlowcount * app.args.gm / 100.0))
-  run.command('mrcalc _refinedgmhigh.mif safe_sdm.mif 0 -if - | mrthreshold - - -bottom ' + str(voxgmhighcount) + ' -ignorezero | mrcalc _refinedgmhigh.mif - 0 -if _refinedgmhighselect.mif -datatype bit')
-  run.command('mrcalc _refinedgmlow.mif safe_sdm.mif 0 -if - | mrthreshold - - -top ' + str(voxgmlowcount) + ' -ignorezero | mrcalc _refinedgmlow.mif - 0 -if _refinedgmlowselect.mif -datatype bit')
-  run.command('mrcalc _refinedgmhighselect.mif 1 _refinedgmlowselect.mif -if - -datatype bit | mrconvert - voxels_gm.mif -axes 0,1,2')
+  run.command('mrcalc refined_gm.mif safe_sdm.mif ' + str(refgmmedian) + ' -subtract -abs 1 -add 0 -if - | mrthreshold - - -bottom ' + str(voxgmcount) + ' -ignorezero | mrcalc refined_gm.mif - 0 -if - -datatype bit | mrconvert - voxels_gm.mif -axes 0,1,2')
   # Estimate GM response function
   run.command('amp2response dwi.mif voxels_gm.mif safe_vecs.mif response_gm.txt' + bvalues_option + ' -isotropic')
 
