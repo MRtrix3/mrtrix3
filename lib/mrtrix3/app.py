@@ -464,6 +464,44 @@ class progressBar(object): #pylint: disable=unused-variable
 
 
 
+# A simple wrapper class for executing a set of commands of some known length,
+#   generating and managing a progress bar as it does so
+# Can use in one of two ways:
+# - Construct using a progress bar message, and the number of commands that are to be executed;
+#   each command is then executed using the run() member function
+# - Construct using a progress bar message, and a list of command strings to run;
+#   all commands within the list will be executed sequentially without any further member function invocations
+class runCommandList(object): #pylint: disable=unused-variable
+  def __init__(self, message, value):
+    from mrtrix3 import run
+    if isinstance(value, int):
+      self.progress = progressBar(message, value)
+      self.target_count = value
+      self.counter = 0
+      self.valid = True
+    elif isinstance(value, list):
+      assert all(isinstance(entry, str) for entry in value)
+      self.progress = progressBar(message, len(value))
+      for entry in value:
+        run.command(entry)
+        self.progress.increment()
+      self.progress.done()
+      self.valid = False
+    else:
+      raise TypeError
+  def execute(self, command):
+    from mrtrix3 import run
+    assert self.valid
+    run.command(command)
+    self.counter += 1
+    if self.counter == self.target_count:
+      self.progress.done()
+      self.valid = False
+    else:
+      self.progress.increment()
+
+
+
 # The Parser class is responsible for setting up command-line parsing for the script.
 #   This includes proper configuration of the argparse functionality, adding standard options
 #   that are common for all scripts, providing a custom help page that is consistent with the
