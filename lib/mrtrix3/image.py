@@ -21,7 +21,7 @@ class Header(object):
         data = json.load(f)
     except UnicodeDecodeError:
       with open(filename, 'r') as f:
-        data = json.load(f.read().decode('utf-8', errors='replace'))
+        data = json.loads(f.read().decode('utf-8', errors='replace'))
     os.remove(filename)
     try:
       #self.__dict__.update(data)
