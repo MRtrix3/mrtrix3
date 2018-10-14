@@ -1,4 +1,4 @@
-import argparse
+import argparse, mrtrix3
 
 # These global variables can / should be accessed directly by scripts:
 # - 'args' will contain the user's command-line inputs upon parsing of the command-line
@@ -20,7 +20,7 @@ execName = ''
 forceOverwrite = False #pylint: disable=unused-variable
 numThreads = None #pylint: disable=unused-variable
 tempDir = ''
-verbosity = 1
+verbosity = 0 if 'MRTRIX_QUIET' in mrtrix3.config else 1
 workingDir = None
 
 
@@ -122,6 +122,10 @@ def execute(): #pylint: disable=unused-variable
   if hasattr(args, 'help') and args.help:
     _cmdline.printHelp()
     sys.exit(0)
+  # Can't activate -version here: argparse.parse_args() will fail first
+  #if hasattr(args, 'version') and args.version:
+  #  _cmdline.printVersion()
+  #  sys.exit(0)
   if hasattr(args, 'nocleanup') and args.nocleanup:
     cleanup = False
   if hasattr(args, 'nthreads') and args.nthreads:
@@ -474,6 +478,7 @@ class Parser(argparse.ArgumentParser):
   # pylint: disable=protected-access
 
   def __init__(self, *args_in, **kwargs_in):
+    import inspect, os, subprocess
     global _defaultCopyright
     self._author = None
     self.citationList = [ ]
@@ -490,16 +495,26 @@ class Parser(argparse.ArgumentParser):
         self.externalCitations = self.externalCitations or parent.externalCitations
     else:
       standard_options = self.add_argument_group('Standard options')
-      standard_options.add_argument('-continue', nargs=2, dest='cont', metavar=('<TempDir>', '<LastFile>'), help='Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file')
-      standard_options.add_argument('-force', action='store_true', help='Force overwrite of output files if pre-existing')
-      standard_options.add_argument('-help', action='store_true', help='Display help information for the script')
-      standard_options.add_argument('-nocleanup', action='store_true', help='Do not delete temporary files during script, or temporary directory at script completion')
-      standard_options.add_argument('-nthreads', metavar='number', type=int, help='Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)')
-      standard_options.add_argument('-tempdir', metavar='/path/to/tmp/', help='Manually specify the path in which to generate the temporary directory')
-      standard_options.add_argument('-quiet',   action='store_true', help='Suppress all console output during script execution')
-      standard_options.add_argument('-info', action='store_true', help='Display additional information and progress for every command invoked')
-      standard_options.add_argument('-debug', action='store_true', help='Display additional debugging information over and above the output of -info')
-      self.flagMutuallyExclusiveOptions( [ 'quiet', 'info', 'debug' ] )
+      standard_options.add_argument('-info', action='store_true', help='display information messages.')
+      standard_options.add_argument('-quiet', action='store_true', help='do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.')
+      standard_options.add_argument('-debug', action='store_true', help='display debugging messages.')
+      self.flagMutuallyExclusiveOptions( [ 'info', 'quiet', 'debug' ] )
+      standard_options.add_argument('-force', action='store_true', help='force overwrite of output files.')
+      standard_options.add_argument('-nthreads', metavar='number', type=int, help='use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)')
+      standard_options.add_argument('-help', action='store_true', help='display this information page and exit.')
+      standard_options.add_argument('-version', action='store_true', help='display version information and exit.')
+      script_options = self.add_argument_group('Python script options')
+      script_options.add_argument('-nocleanup', action='store_true', help='do not delete temporary files during script execution, and do not delete temporary directory at script completion')
+      script_options.add_argument('-tempdir', metavar='/path/to/tmp/', help='manually specify the path in which to generate the temporary directory')
+      script_options.add_argument('-continue', nargs=2, dest='cont', metavar=('<TempDir>', '<LastFile>'), help='continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file')
+    module_file = inspect.getsourcefile(inspect.stack()[-1][0])
+    self._isProject = os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir, 'lib', 'mrtrix3', 'app.py')) != os.path.abspath(__file__)
+    try:
+      process = subprocess.Popen ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir)), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      self._gitVersion = process.communicate()[0]
+      self._gitVersion = str(self._gitVersion.decode(errors='ignore')).strip() if process.returncode == 0 else 'unknown'
+    except OSError:
+      self._gitVersion = 'unknown'
 
   def setAuthor(self, text):
     self._author = text
@@ -525,10 +540,14 @@ class Parser(argparse.ArgumentParser):
     self.mutuallyExclusiveOptionGroups.append( (options, required) )
 
   def parse_args(self):
+    import sys
     if not self._author:
       raise Exception('Script author MUST be set in script\'s usage() function')
     if not self._synopsis:
       raise Exception('Script synopsis MUST be set in script\'s usage() function')
+    if '-version' in sys.argv:
+      self.printVersion()
+      sys.exit(0)
     result = argparse.ArgumentParser.parse_args(self)
     self.checkMutuallyExclusiveOptions(result)
     if self._subparsers:
@@ -618,6 +637,7 @@ class Parser(argparse.ArgumentParser):
   def printHelp(self):
     import subprocess, sys, textwrap
     from mrtrix3 import config
+    from ._version import __version__
 
     def bold(text):
       return ''.join( c + chr(0x08) + c for c in text)
@@ -625,20 +645,18 @@ class Parser(argparse.ArgumentParser):
     def underline(text):
       return ''.join( '_' + chr(0x08) + c for c in text)
 
-    def appVersion():
-      import subprocess, os
-      import mrtrix3
-      p = subprocess.Popen([os.path.join(mrtrix3.bin_path,'mrinfo'),'-version'],stdout=subprocess.PIPE)
-      line = p.stdout.readline().decode()
-      return line.replace('==','').replace('mrinfo','').lstrip().rstrip()
-
     w = textwrap.TextWrapper(width=80, initial_indent='     ', subsequent_indent='     ')
     w_arg = textwrap.TextWrapper(width=80, initial_indent='', subsequent_indent='                     ')
-    from ._version import __version__
-
-    s = 'MRtrix ' + __version__ + '\t' + bold(self.prog) + '\t bin version: ' + appVersion() + '\n\n'
+    if self._isProject:
+      s = 'Version ' + self._gitVersion
+    else:
+      s = 'MRtrix ' + __version__
+    s += ' ' * max(1, 40 - len(s) - int(len(self.prog)/2))
+    s += bold(self.prog) + '\n'
+    if self._isProject:
+      s += 'using MRtrix3 ' + __version__ + '\n'
     s += '\n'
-    s += '     ' + bold(self.prog) + ': Script using the MRtrix3 Python library\n'
+    s += '     ' + bold(self.prog) + ': ' + ('external MRtrix3 project' if self._isProject else 'part of the MRtrix3 package') + '\n'
     s += '\n'
     s += bold('SYNOPSIS') + '\n'
     s += '\n'
@@ -893,6 +911,17 @@ class Parser(argparse.ArgumentParser):
     if self._subparsers:
       for alg in self._subparsers._group_actions[0].choices:
         subprocess.call ([ sys.executable, os.path.realpath(sys.argv[0]), alg, '__print_usage_rst__' ])
+
+  def printVersion(self):
+    import sys
+    from ._version import __version__
+    s = '== ' + self.prog + ' ' + (self._gitVersion if self._isProject else __version__) + ' ==\n'
+    if self._isProject:
+      s += 'executing against MRtrix ' + __version__ + '\n'
+    s += 'Author(s): ' + self._author + '\n'
+    s += self._copyright + '\n'
+    sys.stdout.write(s)
+    sys.stdout.flush()
 
 
 
