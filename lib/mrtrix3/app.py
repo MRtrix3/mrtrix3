@@ -503,7 +503,7 @@ class Parser(argparse.ArgumentParser):
       standard_options.add_argument('-nthreads', metavar='number', type=int, help='use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)')
       standard_options.add_argument('-help', action='store_true', help='display this information page and exit.')
       standard_options.add_argument('-version', action='store_true', help='display version information and exit.')
-      script_options = self.add_argument_group('Python script options')
+      script_options = self.add_argument_group('Options specific to Python scripts')
       script_options.add_argument('-nocleanup', action='store_true', help='do not delete temporary files during script execution, and do not delete temporary directory at script completion')
       script_options.add_argument('-tempdir', metavar='/path/to/tmp/', help='manually specify the path in which to generate the temporary directory')
       script_options.add_argument('-continue', nargs=2, dest='cont', metavar=('<TempDir>', '<LastFile>'), help='continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file')

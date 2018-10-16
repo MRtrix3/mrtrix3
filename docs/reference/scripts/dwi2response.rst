@@ -42,26 +42,31 @@ Options common to all dwi2response algorithms
 
 - **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
+Options specific to Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
+
+- **-tempdir /path/to/tmp/** manually specify the path in which to generate the temporary directory
+
+- **-continue <TempDir> <LastFile>** continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-info** display information messages.
 
-- **-force** Force overwrite of output files if pre-existing
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-help** Display help information for the script
+- **-debug** display debugging messages.
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-force** force overwrite of output files.
 
-- **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-help** display this information page and exit.
 
-- **-quiet** Suppress all console output during script execution
-
-- **-info** Display additional information and progress for every command invoked
-
-- **-debug** Display additional debugging information over and above the output of -info
+- **-version** display version information and exit.
 
 --------------
 
@@ -134,26 +139,31 @@ Options common to all dwi2response algorithms
 
 - **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
+Options specific to Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
+
+- **-tempdir /path/to/tmp/** manually specify the path in which to generate the temporary directory
+
+- **-continue <TempDir> <LastFile>** continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-info** display information messages.
 
-- **-force** Force overwrite of output files if pre-existing
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-help** Display help information for the script
+- **-debug** display debugging messages.
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-force** force overwrite of output files.
 
-- **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-help** display this information page and exit.
 
-- **-quiet** Suppress all console output during script execution
-
-- **-info** Display additional information and progress for every command invoked
-
-- **-debug** Display additional debugging information over and above the output of -info
+- **-version** display version information and exit.
 
 References
 ^^^^^^^^^^
@@ -227,26 +237,31 @@ Options common to all dwi2response algorithms
 
 - **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
+Options specific to Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
+
+- **-tempdir /path/to/tmp/** manually specify the path in which to generate the temporary directory
+
+- **-continue <TempDir> <LastFile>** continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-info** display information messages.
 
-- **-force** Force overwrite of output files if pre-existing
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-help** Display help information for the script
+- **-debug** display debugging messages.
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-force** force overwrite of output files.
 
-- **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-help** display this information page and exit.
 
-- **-quiet** Suppress all console output during script execution
-
-- **-info** Display additional information and progress for every command invoked
-
-- **-debug** Display additional debugging information over and above the output of -info
+- **-version** display version information and exit.
 
 References
 ^^^^^^^^^^
@@ -315,26 +330,31 @@ Options common to all dwi2response algorithms
 
 - **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
+Options specific to Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
+
+- **-tempdir /path/to/tmp/** manually specify the path in which to generate the temporary directory
+
+- **-continue <TempDir> <LastFile>** continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-info** display information messages.
 
-- **-force** Force overwrite of output files if pre-existing
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-help** Display help information for the script
+- **-debug** display debugging messages.
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-force** force overwrite of output files.
 
-- **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-help** display this information page and exit.
 
-- **-quiet** Suppress all console output during script execution
-
-- **-info** Display additional information and progress for every command invoked
-
-- **-debug** Display additional debugging information over and above the output of -info
+- **-version** display version information and exit.
 
 --------------
 
@@ -408,26 +428,31 @@ Options common to all dwi2response algorithms
 
 - **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
+Options specific to Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
+
+- **-tempdir /path/to/tmp/** manually specify the path in which to generate the temporary directory
+
+- **-continue <TempDir> <LastFile>** continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-info** display information messages.
 
-- **-force** Force overwrite of output files if pre-existing
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-help** Display help information for the script
+- **-debug** display debugging messages.
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-force** force overwrite of output files.
 
-- **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-help** display this information page and exit.
 
-- **-quiet** Suppress all console output during script execution
-
-- **-info** Display additional information and progress for every command invoked
-
-- **-debug** Display additional debugging information over and above the output of -info
+- **-version** display version information and exit.
 
 References
 ^^^^^^^^^^
@@ -499,26 +524,31 @@ Options common to all dwi2response algorithms
 
 - **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
+Options specific to Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
+
+- **-tempdir /path/to/tmp/** manually specify the path in which to generate the temporary directory
+
+- **-continue <TempDir> <LastFile>** continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-info** display information messages.
 
-- **-force** Force overwrite of output files if pre-existing
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-help** Display help information for the script
+- **-debug** display debugging messages.
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-force** force overwrite of output files.
 
-- **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-help** display this information page and exit.
 
-- **-quiet** Suppress all console output during script execution
-
-- **-info** Display additional information and progress for every command invoked
-
-- **-debug** Display additional debugging information over and above the output of -info
+- **-version** display version information and exit.
 
 References
 ^^^^^^^^^^
@@ -592,26 +622,31 @@ Options common to all dwi2response algorithms
 
 - **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
+Options specific to Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
+
+- **-tempdir /path/to/tmp/** manually specify the path in which to generate the temporary directory
+
+- **-continue <TempDir> <LastFile>** continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-info** display information messages.
 
-- **-force** Force overwrite of output files if pre-existing
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-help** Display help information for the script
+- **-debug** display debugging messages.
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-force** force overwrite of output files.
 
-- **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-help** display this information page and exit.
 
-- **-quiet** Suppress all console output during script execution
-
-- **-info** Display additional information and progress for every command invoked
-
-- **-debug** Display additional debugging information over and above the output of -info
+- **-version** display version information and exit.
 
 References
 ^^^^^^^^^^
