@@ -13,44 +13,54 @@ Usage
 
 ::
 
-    foreach inputs command [ options ]
+    foreach inputs colon command [ options ]
 
 -  *inputs*: Each of the inputs for which processing should be run
--  *command*: The command string to run for each input, containing the substitutions listed in the Description section
+-  *colon*: Colon symbol (":") delimiting the foreach inputs & command-line options from the actual command to be executed
+-  *command*: The command string to run for each input, containing any number of substitutions listed in the Description section
 
 Description
 -----------
 
 EXAMPLE USAGE: 
-  $ foreach folder/*.mif "mrinfo IN"   
+  $ foreach folder/*.mif : mrinfo IN   
   will run mrinfo for each .mif file in "folder"
 
 AVAILABLE SUBSTITUTIONS: 
-  IN:   The full matching pattern, including leading folders. For example, if the target list contains a file "folder/image.mif", any occurrence of "IN" will be substituted with "folder/image.mif".  NAME: The basename of the matching pattern. For example, if the target list contains a file "folder/image.mif", any occurrence of "NAME" will be substituted with "image.mif".  PRE:  The prefix of the basename. For example, if the target list contains a file "folder/image.mif", any occurrence of "PRE" will be substituted with "image".  UNI:  The unique prefix of the basename after removing the common suffix. For example, if the target list contains files: "folder/001dwi.mif", "folder/002dwi.mif", "folder/003dwi.mif", any occurrence of "UNI" will be substituted with "001", "002", "003".
+  IN:   The full matching pattern, including leading folders. For example, if the target list contains a file "folder/image.mif", any occurrence of "IN" will be substituted with "folder/image.mif".  NAME: The basename of the matching pattern. For example, if the target list contains a file "folder/image.mif", any occurrence of "NAME" will be substituted with "image.mif".  PRE:  The prefix of the basename. For example, if the target list contains a file "folder/image.mif", any occurrence of "PRE" will be substituted with "image".  UNI:  The unique part of the input after removing any common prefix and common suffix. For example, if the target list contains files: "folder/001dwi.mif", "folder/002dwi.mif", "folder/003dwi.mif", any occurrence of "UNI" will be substituted with "001", "002", "003".
+
+Note that due to a limitation of the Python argparse module, any command-line options provided to the foreach script must appear before any inputs are specified.
+
+Such command-line options provided before the list of inputs and colon separator will be interpreted by the foreach script; any command-line options provided after this colon will form part of the input to the executed command.
 
 Options
 -------
 
+Options specific to Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
+
+- **-tempdir /path/to/tmp/** manually specify the path in which to generate the temporary directory
+
+- **-continue <TempDir> <LastFile>** continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-info** display information messages.
 
-- **-force** Force overwrite of output files if pre-existing
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-help** Display help information for the script
+- **-debug** display debugging messages.
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-force** force overwrite of output files.
 
-- **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-help** display this information page and exit.
 
-- **-quiet** Suppress all console output during script execution
-
-- **-info** Display additional information and progress for every command invoked
-
-- **-debug** Display additional debugging information over and above the output of -info
+- **-version** display version information and exit.
 
 --------------
 
