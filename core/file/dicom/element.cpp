@@ -392,6 +392,50 @@ namespace MR {
 
 
 
+
+      std::string Element::as_string () const
+      {
+        std::ostringstream out;
+        switch (type()) {
+          case Element::INT:
+            for (const auto& x : get_int())
+              out << x << " ";
+            return out.str();
+          case Element::UINT:
+            for (const auto& x : get_uint())
+              out << x << " ";
+            return out.str();
+          case Element::FLOAT:
+            for (const auto& x : get_float())
+              out << x << " ";
+            return out.str();
+          case Element::DATE:
+            return str(get_date());
+          case Element::TIME:
+            return str(get_time());
+          case Element::STRING:
+            if (group == GROUP_DATA && element == ELEMENT_DATA) {
+              return "(data)";
+            }
+            else {
+              for (const auto& x : get_string())
+                out << x << " ";
+              return out.str();
+            }
+          case Element::SEQ:
+            return "";
+          default:
+            if (group != GROUP_SEQUENCE || element != ELEMENT_SEQUENCE_ITEM)
+              return "unknown data type";
+        }
+        return "";
+      }
+
+
+
+
+
+
       namespace {
         template <class T>
           inline void print_vec (const vector<T>& V)
@@ -448,38 +492,7 @@ namespace MR {
           tmp += "  ";
         tmp += ( name.size() ? name.substr(2) : "unknown" );
         tmp.resize (40, ' ');
-        stream << tmp + ' ';
-
-        switch (item.type()) {
-          case Element::INT:
-            stream << item.get_int();
-            break;
-          case Element::UINT:
-            stream << item.get_uint();
-            break;
-          case Element::FLOAT:
-            stream << item.get_float();
-            break;
-          case Element::DATE:
-            stream << "[ " << item.get_date() << " ]";
-            break;
-          case Element::TIME:
-            stream << "[ " << item.get_time() << " ]";
-            break;
-          case Element::STRING:
-            if (item.group == GROUP_DATA && item.element == ELEMENT_DATA)
-              stream << "(data)";
-            else
-              stream << item.get_string();
-            break;
-          case Element::SEQ:
-            break;
-          default:
-            if (item.group != GROUP_SEQUENCE || item.element != ELEMENT_SEQUENCE_ITEM)
-              stream << "unknown data type";
-        }
-
-        stream << "\n";
+        stream << tmp << " " << item.as_string() << "\n";
 
         return stream;
       }
