@@ -38,7 +38,7 @@ void usage ()
   DESCRIPTION
   + "The program currently supports MRtrix .tck files (input/output), "
     "ascii text files (input/output), VTK polydata files (input/output), "
-    "and RenderMan RIB (export only)."
+    "RenderMan RIB (export only), and PBRT Curves (export only)."
 
   + "Note that ascii files will be stored with one streamline per numbered file. "
     "To support this, the command will use the multi-file numbering syntax, "
@@ -86,7 +86,7 @@ void usage ()
 
   + Option ("dec", "add DEC as a primvar")
 
-  + OptionGroup ("Options for both PLY and RIB writer")
+  + OptionGroup ("Options for PLY, RIB and PBRT writer")
 
   + Option ("radius", "radius of the streamlines")
   +   Argument("radius").type_float(0.0f);
@@ -629,6 +629,81 @@ RibWriter(const std::string& file, float radius = 0.1, bool dec = false) : out(f
 };
 
 
+class PbrtWriter: public WriterInterface<float> { MEMALIGN(RibWriter)
+public:
+PbrtWriter(const std::string& file, float radius = 0.1, int increment = 1) : out(file), radius(radius), streamline_count(0), increment(increment) {
+  out << "##PBRT Curves\n"
+      << "# Written by tckconvert\n"
+      << "# Part of the MRtrix package (http://mrtrix.org)\n"
+      << "# version: " << App::mrtrix_version << "\n";
+
+}
+
+  bool operator() (const Streamline<float>& intck) {
+    streamline_count++;
+    if ( intck.size() < 2 ) { return true; }
+    Streamline<float> tck;
+    // Push on the first 2 points
+    tck.push_back(intck[0]);
+    for (size_t idx = 3; idx < intck.size() - 2; idx += increment) {
+      tck.push_back(intck[idx]);
+    }
+    tck.push_back(intck[intck.size()-1]);
+    
+    // Can't handle less than 8...
+    if ( tck.size() < 8 ) {
+      return true;
+    }
+
+    // Fit a Bezier curve to the streamline.
+    // Follows the derivation in Graphics Gems I, pg 579
+    out << "\n# streamline " << streamline_count - 1 << "\n";
+    float a[] = { 0.0, 0.2479, -0.0718, 0.0192, -0.0052, 0.0014, -0.0004, 0.0001 };
+    
+    Streamline<float> D(tck.size());
+    // Calculate D matrix
+    auto n = tck.size()-1;
+    for ( auto i = 0; i <= n; i++ ) {
+      D[i].fill(0.0);
+      for ( auto k = 1; k <= 7; k++ ) {
+        auto left = i - k;
+        if ( left < 0 ) { left = -left; }
+        auto right = i + k;
+        // Reflect back
+        right = right > n ? 2 * n - right : right ;
+        D[i] = D[i] + a[k] * ( tck[right] - tck[left] );
+      }
+    }
+    // Write out the points using the calculated D's to form P_i, Q_i, R_i, P_{i+1}
+    Eigen::IOFormat f ( 4, 0, " ", " " );
+    for ( auto i = 0; i < n; i++ ) {
+      out << "Shape \"curve\" \"string type\" \"cylinder\" \"point P\" [ ";
+      out
+        << tck[i].format(f) << " "
+        << ( D[i] + tck[i] ).format(f) << " "
+        << ( tck[i+1] - D[i+1] ).format(f) << " "
+        << tck[i+1].format(f);
+      out << "] \"float width\" " << radius << " \"integer splitdepth\" 0\n";
+    }
+    return true;
+  }
+  ~PbrtWriter() {
+    try {
+      out.close();
+    } catch (Exception& e) {
+      e.display();
+      App::exit_error_code = 1;
+    }
+  }
+
+  private:
+  File::OFStream out;
+  float radius;
+  int streamline_count;
+  int increment;
+};
+
+
 
 
 bool has_suffix(const std::string &str, const std::string &suffix)
@@ -678,6 +753,10 @@ void run ()
         auto radius = get_options("radius").size() ? get_options("radius")[0][0].as_float() : 0.1f;
         writer.reset( new RibWriter(argument[1], radius) );
     }
+    else if (has_suffix(argument[1], ".pbrt")) {
+        auto increment = get_options("increment").size() ? get_options("increment")[0][0].as_int() : 1;
+        auto radius = get_options("radius").size() ? get_options("radius")[0][0].as_float() : 0.1f;
+        writer.reset( new PbrtWriter(argument[1], radius, increment) );
     }
     else if (has_suffix(argument[1], ".txt")) {
         writer.reset( new ASCIIWriter(argument[1]) );
