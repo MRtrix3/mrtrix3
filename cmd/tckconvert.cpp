@@ -675,7 +675,9 @@ void run ()
         writer.reset( new PLYWriter(argument[1], increment, radius, sides) );
     }
     else if (has_suffix(argument[1], ".rib")) {
-        writer.reset( new RibWriter(argument[1]) );
+        auto radius = get_options("radius").size() ? get_options("radius")[0][0].as_float() : 0.1f;
+        writer.reset( new RibWriter(argument[1], radius) );
+    }
     }
     else if (has_suffix(argument[1], ".txt")) {
         writer.reset( new ASCIIWriter(argument[1]) );
