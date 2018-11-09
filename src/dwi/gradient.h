@@ -16,6 +16,13 @@
 #ifndef __dwi_gradient_h__
 #define __dwi_gradient_h__
 
+// These lines are to silence deprecation warnings with Eigen & GCC v5
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#include <Eigen/SVD>
+#pragma GCC diagnostic pop
+
+
 #include "app.h"
 #include "file/path.h"
 #include "file/config.h"
@@ -24,7 +31,6 @@
 #include "math/SH.h"
 #include "dwi/shells.h"
 
-#include <Eigen/SVD>
 
 namespace MR
 {

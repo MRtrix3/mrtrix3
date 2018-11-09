@@ -1067,7 +1067,6 @@ namespace MR
       // check for the existence of all specified input files (including optional ones that have been provided)
       // if necessary, also check for pre-existence of any output files with known paths
       //   (if the output is e.g. given as a prefix, the argument should be flagged as type_text())
-      const size_t path_separator_length = std::string(PATH_SEPARATOR).size();
       for (const auto& i : argument) {
         const std::string text = std::string (i);
         if (i.arg->type == ArgFileIn || i.arg->type == TracksIn) {
@@ -1083,10 +1082,8 @@ namespace MR
             throw Exception ("required input \"" + text + "\" is not a directory");
         }
         if (i.arg->type == ArgFileOut || i.arg->type == TracksOut) {
-          if ((text.find_last_of (PATH_SEPARATOR) == text.size() - path_separator_length) &&
-              (text.size() >= path_separator_length)) {
-            throw Exception ("output path \"" + std::string(i) + "\" is not a valid file path (ends with \"" PATH_SEPARATOR "\")");
-          }
+          if (text.find_last_of (PATH_SEPARATORS) == text.size() - 1)
+            throw Exception ("output path \"" + std::string(i) + "\" is not a valid file path (ends with directory path separator)");
           check_overwrite (text);
         }
         if (i.arg->type == ArgDirectoryOut)
@@ -1113,8 +1110,8 @@ namespace MR
               throw Exception ("input \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a directory");
           }
           if (arg.type == ArgFileOut || arg.type == TracksOut) {
-            if (text.find_last_of (PATH_SEPARATOR) == text.size() - std::string (PATH_SEPARATOR).size())
-              throw Exception ("output path \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a valid file path (ends with \'" PATH_SEPARATOR "\")");
+            if (text.find_last_of (PATH_SEPARATORS) == text.size() - 1)
+              throw Exception ("output path \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a valid file path (ends with directory path separator)");
             check_overwrite (text);
           }
           if (arg.type == ArgDirectoryOut)
