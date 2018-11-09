@@ -3,7 +3,7 @@
 import sys, os.path
 
 if len (sys.argv) != 3:
-  print ("usage: convert_bruker 2dseq header.mih")
+  sys.stderr.write("usage: convert_bruker 2dseq header.mih\n")
   sys.exit (0)
 
 
@@ -12,21 +12,21 @@ if len (sys.argv) != 3:
   #sys.exit (1)
 
 if not sys.argv[2].endswith ('.mih'):
-  print ("expected .mih suffix as the second argument")
+  sys.stderr.write("expected .mih suffix as the second argument\n")
   sys.exit (1)
 
 with open (os.path.join (os.path.dirname (sys.argv[1]), 'reco')) as f:
-  lines = f.read().split ('##$'); 
+  lines = f.read().split ('##$')
 
 with open (os.path.join (os.path.dirname (sys.argv[1]), '../../acqp')) as f:
-  lines += f.read().split ('##$');
+  lines += f.read().split ('##$')
 
 with open (os.path.join (os.path.dirname (sys.argv[1]), '../../method')) as f:
-  lines += f.read().split ('##$');
+  lines += f.read().split ('##$')
 
 
 for line in lines:
-  line = line.lower();
+  line = line.lower()
   if line.startswith ('reco_size='):
     mat_size = line.splitlines()[1].split()
     print ('mat_size', mat_size)
@@ -62,28 +62,28 @@ with open (sys.argv[2], 'w') as f:
     f.write (',' + str(mat_size[2]))
   else:
     try:
-      nslices
+      nslices #pylint: disable=pointless-statement
       f.write (',' + str(nslices))
     except:
       pass
-  
+
   try:
-    nacq
+    nacq #pylint: disable=pointless-statement
     f.write (',' + str(nacq))
   except:
     pass
 
-  f.write ('\nvox: ' + str(res[0]) + ',' + str(res[1]));
-  if len(res) > 2: 
-    f.write (',' + str(res[2]));
+  f.write ('\nvox: ' + str(res[0]) + ',' + str(res[1]))
+  if len(res) > 2:
+    f.write (',' + str(res[2]))
   else:
     try:
-      slicethick
+      slicethick #pylint: disable=pointless-statement
       f.write (',' + str(slicethick))
     except:
       pass
   try:
-    nacq
+    nacq #pylint: disable=pointless-statement
     f.write (',')
   except:
     pass
@@ -101,24 +101,22 @@ with open (sys.argv[2], 'w') as f:
 
   f.write ('\nlayout: +0,+1')
   try:
-    nslices
+    nslices #pylint: disable=pointless-statement
     f.write (',+2')
   except:
     pass
   try:
-    nacq
+    nacq #pylint: disable=pointless-statement
     f.write (',+3')
   except:
     pass
 
-  f.write ('\nfile: ' + sys.argv[1] + '\n') 
+  f.write ('\nfile: ' + sys.argv[1] + '\n')
 
   try:
-    bvec
-    bval
-    for n in range (0, len (bval)):
-      f.write ('dw_scheme: ' + bvec[3*n] + ',' + bvec[3*n+1] + ',' + str(-float(bvec[3*n+2])) + ',' + bval[n] + '\n')
+    assert len(bvec) == 3*len(bval)
+    bvec = [ bvec[n:n+3] for n in range(0,len(bval),3) ]
+    for direction, value in zip(bvec, bval):
+      f.write ('dw_scheme: ' + direction[0] + ',' + direction[1] + ',' + str(-float(direction[2])) + ',' + value + '\n')
   except:
     pass
-
-    

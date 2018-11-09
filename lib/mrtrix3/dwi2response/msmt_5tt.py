@@ -1,6 +1,4 @@
-def initialise(base_parser, subparsers):
-  import argparse
-  from mrtrix3 import app
+def initialise(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('msmt_5tt', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Derive MSMT-CSD tissue response functions based on a co-registered five-tissue-type (5TT) image', parents=[base_parser])
   parser.addCitation('', 'Jeurissen, B.; Tournier, J.-D.; Dhollander, T.; Connelly, A. & Sijbers, J. Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data. NeuroImage, 2014, 103, 411-426', False)
   parser.add_argument('input', help='The input DWI')
@@ -10,13 +8,13 @@ def initialise(base_parser, subparsers):
   parser.add_argument('out_csf', help='Output CSF response text file')
   options = parser.add_argument_group('Options specific to the \'msmt_5tt\' algorithm')
   options.add_argument('-dirs', help='Manually provide the fibre direction in each voxel (a tensor fit will be used otherwise)')
-  options.add_argument('-fa', type=float, default=0.2, help='Upper fractional anisotropy threshold for GM and CSF voxel selection')
-  options.add_argument('-pvf', type=float, default=0.95, help='Partial volume fraction threshold for tissue voxel selection')
-  options.add_argument('-wm_algo', metavar='algorithm', default='tournier', help='dwi2response algorithm to use for WM single-fibre voxel selection')
+  options.add_argument('-fa', type=float, default=0.2, help='Upper fractional anisotropy threshold for GM and CSF voxel selection (default: 0.2)')
+  options.add_argument('-pvf', type=float, default=0.95, help='Partial volume fraction threshold for tissue voxel selection (default: 0.95)')
+  options.add_argument('-wm_algo', metavar='algorithm', default='tournier', help='dwi2response algorithm to use for WM single-fibre voxel selection (default: tournier)')
+  options.add_argument('-sfwm_fa_threshold', type=float, help='Sets -wm_algo to fa and allows to specify a hard FA threshold for single-fibre WM voxels, which is passed to the -threshold option of the fa algorithm (warning: overrides -wm_algo option)')
 
 
-
-def checkOutputPaths():
+def checkOutputPaths(): #pylint: disable=unused-variable
   from mrtrix3 import app
   app.checkOutputPath(app.args.out_wm)
   app.checkOutputPath(app.args.out_gm)
@@ -24,41 +22,45 @@ def checkOutputPaths():
 
 
 
-def getInputs():
-  import os
+def getInputs(): #pylint: disable=unused-variable
   from mrtrix3 import app, path, run
   run.command('mrconvert ' + path.fromUser(app.args.in_5tt, True) + ' ' + path.toTemp('5tt.mif', True))
   if app.args.dirs:
-    run.command('mrconvert ' + path.fromUser(app.args.dirs, True) + ' ' + path.toTemp('dirs.mif', True) + ' -stride 0,0,0,1')
+    run.command('mrconvert ' + path.fromUser(app.args.dirs, True) + ' ' + path.toTemp('dirs.mif', True) + ' -strides 0,0,0,1')
 
 
 
-def needsSingleShell():
+def needsSingleShell(): #pylint: disable=unused-variable
   return False
 
 
 
-def execute():
-  import math, os, shutil
+def execute(): #pylint: disable=unused-variable
+  import os, shutil
   from mrtrix3 import app, image, path, run
 
   # Ideally want to use the oversampling-based regridding of the 5TT image from the SIFT model, not mrtransform
   # May need to commit 5ttregrid...
 
   # Verify input 5tt image
-  run.command('5ttcheck 5tt.mif', False)
+  stderr_5ttcheck = run.command('5ttcheck 5tt.mif')[1]
+  if stderr_5ttcheck:
+    app.warn('Command 5ttcheck indicates minor problems with provided input 5TT image \'' + app.args.in_5tt + '\':')
+    for line in stderr_5ttcheck.splitlines():
+      app.warn(line)
+    app.warn('These may or may not interfere with the dwi2response msmt_5tt script')
 
   # Get shell information
-  shells = [ int(round(float(x))) for x in image.headerField('dwi.mif', 'shells').split() ]
+  shells = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shell_bvalues').split() ]
   if len(shells) < 3:
-    app.warn('Less than three b-value shells; response functions will not be applicable in resolving three tissues using MSMT-CSD algorithm')
+    app.warn('Less than three b-values; response functions will not be applicable in resolving three tissues using MSMT-CSD algorithm')
 
   # Get lmax information (if provided)
   wm_lmax = [ ]
   if app.args.lmax:
     wm_lmax = [ int(x.strip()) for x in app.args.lmax.split(',') ]
     if not len(wm_lmax) == len(shells):
-      app.error('Number of manually-defined lmax\'s (' + str(len(wm_lmax)) + ') does not match number of b-value shells (' + str(len(shells)) + ')')
+      app.error('Number of manually-defined lmax\'s (' + str(len(wm_lmax)) + ') does not match number of b-values (' + str(len(shells)) + ')')
     for l in wm_lmax:
       if l%2:
         app.error('Values for lmax must be even')
@@ -76,16 +78,20 @@ def execute():
   run.command('mrconvert 5tt_regrid.mif - -coord 3 3 -axes 0,1,2 | mrcalc - ' + str(app.args.pvf) + ' -gt fa.mif ' + str(app.args.fa) + ' -lt -mult mask.mif -mult csf_mask.mif')
 
   # Revise WM mask to only include single-fibre voxels
-  app.console('Calling dwi2response recursively to select WM single-fibre voxels using \'' + app.args.wm_algo + '\' algorithm')
   recursive_cleanup_option=''
-  if not app._cleanup:
+  if not app.cleanup:
     recursive_cleanup_option = ' -nocleanup'
-  run.command('dwi2response ' + app.args.wm_algo + ' dwi.mif wm_ss_response.txt -mask wm_mask.mif -voxels wm_sf_mask.mif -tempdir ' + app._tempDir + recursive_cleanup_option)
+  if not app.args.sfwm_fa_threshold:
+    app.console('Selecting WM single-fibre voxels using \'' + app.args.wm_algo + '\' algorithm')
+    run.command('dwi2response ' + app.args.wm_algo + ' dwi.mif wm_ss_response.txt -mask wm_mask.mif -voxels wm_sf_mask.mif -tempdir ' + app.tempDir + recursive_cleanup_option)
+  else:
+    app.console('Selecting WM single-fibre voxels using \'fa\' algorithm with a hard FA threshold of ' + str(app.args.sfwm_fa_threshold))
+    run.command('dwi2response fa dwi.mif wm_ss_response.txt -mask wm_mask.mif -threshold ' + str(app.args.sfwm_fa_threshold) + ' -voxels wm_sf_mask.mif -tempdir ' + app.tempDir + recursive_cleanup_option)
 
   # Check for empty masks
-  wm_voxels  = int(image.statistic('wm_sf_mask.mif', 'count', 'wm_sf_mask.mif'))
-  gm_voxels  = int(image.statistic('gm_mask.mif',    'count', 'gm_mask.mif'))
-  csf_voxels = int(image.statistic('csf_mask.mif',   'count', 'csf_mask.mif'))
+  wm_voxels  = int(image.statistic('wm_sf_mask.mif', 'count', '-mask wm_sf_mask.mif'))
+  gm_voxels  = int(image.statistic('gm_mask.mif',    'count', '-mask gm_mask.mif'))
+  csf_voxels = int(image.statistic('csf_mask.mif',   'count', '-mask csf_mask.mif'))
   empty_masks = [ ]
   if not wm_voxels:
     empty_masks.append('WM')
@@ -104,7 +110,7 @@ def execute():
     app.error(message)
 
   # For each of the three tissues, generate a multi-shell response
-  bvalues_option = ' -shell ' + ','.join(map(str,shells))
+  bvalues_option = ' -shells ' + ','.join(map(str,shells))
   sfwm_lmax_option = ''
   if wm_lmax:
     sfwm_lmax_option = ' -lmax ' + ','.join(map(str,wm_lmax))
@@ -117,4 +123,3 @@ def execute():
 
   # Generate output 4D binary image with voxel selections; RGB as in MSMT-CSD paper
   run.command('mrcat csf_mask.mif gm_mask.mif wm_sf_mask.mif voxels.mif -axis 3')
-

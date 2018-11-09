@@ -73,6 +73,8 @@ EOD
   ((ntests=0))
   ((success=0))
   while IFS='' read -r cmd || [[ -n "$cmd" ]]; do
+    cmd="${cmd%\#*}"
+    [[ -n "$cmd" ]] || continue
     echo -n '# command: '$cmd >> $LOGFILE 
     (
       export PATH="$(pwd)/testing/bin:$(pwd)/bin:$PATH"; 

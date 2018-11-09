@@ -21,7 +21,7 @@ The afdconnectivity command attempts to get around this issue by
 estimating a measure of 'connectivity' as follows:
 
 -  The integral of a discrete lobe of an FOD
-   (:ref:`fixel <dix_fix>`) is proportional to the volume of
+   (:ref:`fixel <fixels_dixels>`) is proportional to the volume of
    the MR-visible tissue (intra-cellular at high *b*-value) aligned in
    that direction.
 

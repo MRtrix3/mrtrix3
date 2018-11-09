@@ -2,38 +2,35 @@
 
 
 
-# These functions can (and should in some instances) be called upon any file / directory
+# This function can (and should in some instances) be called upon any file / directory
 #   that is no longer required by the script. If the script has been instructed to retain
 #   all temporaries, the resource will be retained; if not, it will be deleted (in particular
 #   to dynamically free up storage space used by the script).
-def delTempFile(path):
-  import os
+def delTemporary(path): #pylint: disable=unused-variable
+  import shutil, os
   from mrtrix3 import app
-  if not app._cleanup:
+  if not app.cleanup:
     return
-  if app._verbosity > 2:
-    app.console('Deleting temporary file: ' + path)
-  try:
-    os.remove(path)
-  except OSError:
-    app.debug('Unable to delete temporary file ' + path)
-
-def delTempFolder(path):
-  import shutil
-  from mrtrix3 import app
-  if not app._cleanup:
+  if os.path.isfile(path):
+    temporary_type = 'file'
+    func = os.remove
+  elif os.path.isdir(path):
+    temporary_type = 'directory'
+    func = shutil.rmtree
+  else:
+    app.debug('Unknown target \'' + path + '\'')
     return
-  if app._verbosity > 2:
-    app.console('Deleting temporary folder: ' + path)
+  if app.verbosity > 2:
+    app.console('Deleting temporary ' + temporary_type + ': \'' + path + '\'')
   try:
-    shutil.rmtree(path)
+    func(path)
   except OSError:
-    app.debug('Unable to delete temprary folder ' + path)
+    app.debug('Unable to delete temporary ' + temporary_type + ': \'' + path + '\'')
 
 
 
 # Make a directory if it doesn't exist; don't do anything if it does already exist
-def makeDir(path):
+def makeDir(path): #pylint: disable=unused-variable
   import errno, os
   from mrtrix3 import app
   try:
@@ -42,26 +39,29 @@ def makeDir(path):
   except OSError as exception:
     if exception.errno != errno.EEXIST:
       raise
-    app.debug('Directory ' + path + ' already exists')
+    app.debug('Directory \'' + path + '\' already exists')
 
 
 
 # Get an appropriate location and name for a new temporary file
 # Note: Doesn't actually create a file; just gives a unique name that won't over-write anything
-def newTempFile(suffix):
-  import os, random, string, sys
+def newTempFile(suffix): #pylint: disable=unused-variable
+  import os.path, random, string
   from mrtrix3 import app
   if 'TmpFileDir' in app.config:
     dir_path = app.config['TmpFileDir']
+  elif app.tempDir:
+    dir_path = app.tempDir
   else:
-    dir_path = app._tempDir
+    dir_path = os.getcwd()
+  app.debug(dir_path)
   if 'TmpFilePrefix' in app.config:
     prefix = app.config['TmpFilePrefix']
   else:
     prefix = 'mrtrix-tmp-'
+  app.debug(prefix)
   full_path = dir_path
-  if not suffix:
-    suffix = 'mif'
+  suffix = suffix.lstrip('.')
   while os.path.exists(full_path):
     random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
     full_path = os.path.join(dir_path, prefix + random_string + '.' + suffix)
@@ -87,18 +87,20 @@ def newTempFile(suffix):
 # Initially, checks for the file once every 1/1000th of a second; this gradually
 #   increases if the file still doesn't exist, until the program is only checking
 #   for the file once a minute.
-def waitFor(path):
+def waitFor(paths): #pylint: disable=unused-variable
   import os, time
   from mrtrix3 import app
 
   def inUse(path):
     import subprocess
     from distutils.spawn import find_executable
+    if not os.path.isfile(path):
+      return None
     if app.isWindows():
       if not os.access(path, os.W_OK):
         return None
       try:
-        with open(path, 'rb+') as f:
+        with open(path, 'rb+') as dummy_f:
           pass
         return False
       except:
@@ -109,29 +111,91 @@ def waitFor(path):
     # A fatal error will result in a non-zero code -> inUse() = False, so waitFor() can return
     return not subprocess.call(['fuser', '-s', path], shell=False, stdin=None, stdout=None, stderr=None)
 
-  if not os.path.exists(path):
+  def numExist(data):
+    count = 0
+    for entry in data:
+      if os.path.exists(entry):
+        count += 1
+    return count
+
+  def numInUse(data):
+    count = 0
+    valid_count = 0
+    for entry in data:
+      result = inUse(entry)
+      if result:
+        count += 1
+      if result is not None:
+        valid_count += 1
+    if not valid_count:
+      return None
+    return count
+
+  # Make sure the data we're dealing with is a list of strings;
+  #   or make it a list of strings if it's just a single entry
+  if isinstance(paths, str):
+    paths = [ paths ]
+  else:
+    assert isinstance(paths, list)
+    for entry in paths:
+      assert isinstance(entry, str)
+
+  app.debug(str(paths))
+
+  # Wait until all files exist
+  num_exist = numExist(paths)
+  if num_exist != len(paths):
+    progress = app.progressBar('Waiting for creation of ' + (('new item \"' + paths[0] + '\"') if len(paths) == 1 else (str(len(paths)) + ' new items')), len(paths))
+    for _ in range(num_exist):
+      progress.increment()
     delay = 1.0/1024.0
-    app.console('Waiting for creation of new file \"' + path + '\"')
-    while not os.path.exists(path):
+    while not num_exist == len(paths):
       time.sleep(delay)
-      delay = max(60.0, delay*2.0)
-    app.debug('File \"' + path + '\" appears to have been created')
-  if not os.path.isfile(path):
-    app.debug('Path \"' + path + '\" is not a file; not testing for finalization')
+      new_num_exist = numExist(paths)
+      if new_num_exist == num_exist:
+        delay = max(60.0, delay*2.0)
+      elif new_num_exist > num_exist:
+        for _ in range(new_num_exist - num_exist):
+          progress.increment()
+        num_exist = new_num_exist
+        delay = 1.0/1024.0
+    progress.done()
+  else:
+    app.debug('Item' + ('s' if len(paths) > 1 else '') + ' existed immediately')
+
+  # Check to see if active use of the file(s) needs to be tested
+  at_least_one_file = False
+  for entry in paths:
+    if os.path.isfile(entry):
+      at_least_one_file = True
+      break
+  if not at_least_one_file:
+    app.debug('No target files, directories only; not testing for finalization')
     return
-  init_test = inUse(path)
-  if init_test is None:
-    app.debug('Unable to test for finalization of new file \"' + path + '\"')
+
+  # Can we query the in-use status of any of these paths
+  num_in_use = numInUse(paths)
+  if num_in_use is None:
+    app.debug('Unable to test for finalization of new files')
     return
-  if not init_test:
-    app.debug('File \"' + path + '\" immediately ready')
+
+  # Wait until all files are not in use
+  if not num_in_use:
+    app.debug('Item' + ('s' if len(paths) > 1 else '') + ' immediately ready')
     return
-  app.console('Waiting for finalization of new file \"' + path + '\"')
+
+  progress = app.progressBar('Waiting for finalization of ' + (('new file \"' + paths[0] + '\"') if len(paths) == 1 else (str(len(paths)) + ' new files')))
+  for _ in range(len(paths) - num_in_use):
+    progress.increment()
   delay = 1.0/1024.0
-  while True:
-    if inUse(path):
-      time.sleep(delay)
+  while num_in_use:
+    time.sleep(delay)
+    new_num_in_use = numInUse(paths)
+    if new_num_in_use == num_in_use:
       delay = max(60.0, delay*2.0)
-    else:
-      app.debug('File \"' + path + '\" appears to have been finalized')
-      return
+    elif new_num_in_use < num_in_use:
+      for _ in range(num_in_use - new_num_in_use):
+        progress.increment()
+      num_in_use = new_num_in_use
+      delay = 1.0/1024.0
+  progress.done()

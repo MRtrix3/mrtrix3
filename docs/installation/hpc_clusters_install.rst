@@ -1,6 +1,6 @@
-=============
+=========================
 HPC clusters installation
-=============
+=========================
 
 These instructions outline a few issues specific to high-performance
 computing (HPC) systems.
