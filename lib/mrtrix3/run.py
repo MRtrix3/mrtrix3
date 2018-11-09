@@ -23,6 +23,11 @@ def setContinue(filename): #pylint: disable=unused-variable
 
 
 
+def setTmpDir(path): #pylint: disable=unused-variable
+  global _env
+  _env['MRTRIX_TMPFILE_DIR'] = path
+
+
 
 def command(cmd, exitOnError=True): #pylint: disable=unused-variable
 
@@ -77,7 +82,13 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
   app.debug('To execute: ' + str(cmdstack))
 
   if app.verbosity:
-    sys.stderr.write(app.colourExec + 'Command:' + app.colourClear + '  ' + cmd + '\n')
+    # Hide use of these options in mrconvert to alter header key-values and command history at the end of scripts
+    if all(key in cmdsplit for key in [ '-copy_properties', '-append_property', 'command_history' ]):
+      index = cmdsplit.index('-append_property')
+      del cmdsplit[index:index+3]
+      index = cmdsplit.index('-copy_properties')
+      del cmdsplit[index:index+2]
+    sys.stderr.write(app.colourExec + 'Command:' + app.colourClear + '  ' + ' '.join(cmdsplit) + '\n')
     sys.stderr.flush()
 
   # Disable interrupt signal handler while threads are running
@@ -215,11 +226,14 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
         filename = caller[1]
         lineno = caller[2]
       sys.stderr.write(script_name + ': ' + app.colourError + '[ERROR] Command failed: ' + cmd + app.colourClear + app.colourDebug + ' (' + os.path.basename(filename) + ':' + str(lineno) + ')' + app.colourClear + '\n')
-      sys.stderr.write(script_name + ': ' + app.colourConsole + 'Output of failed command:' + app.colourClear + '\n')
-      for line in error_text.splitlines():
-        sys.stderr.write(' ' * (len(script_name)+2) + line + '\n')
-      app.console('')
+      if error_text:
+        sys.stderr.write(script_name + ': ' + app.colourConsole + 'Output of failed command:' + app.colourClear + '\n')
+        for line in error_text.splitlines():
+          sys.stderr.write(' ' * (len(script_name)+2) + line + '\n')
+      else:
+        sys.stderr.write(script_name + ': ' + app.colourConsole + 'Failed command did not provide any diagnostic information' + app.colourClear + '\n')
       sys.stderr.flush()
+      app.console('')
       if app.tempDir:
         with open(os.path.join(app.tempDir, 'error.txt'), 'w') as outfile:
           outfile.write(cmd + '\n\n' + error_text + '\n')

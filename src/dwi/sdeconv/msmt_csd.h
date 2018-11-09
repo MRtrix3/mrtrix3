@@ -28,6 +28,8 @@
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
 
+#define DEFAULT_MSMTCSD_NORM_LAMBDA 1.0e-10
+#define DEFAULT_MSMTCSD_NEG_LAMBDA 1.0e-10
 
 namespace MR
 {
@@ -36,7 +38,7 @@ namespace MR
     namespace SDeconv
     {
 
-
+      extern const App::OptionGroup MSMT_CSD_options;
 
       class MSMT_CSD { MEMALIGN(MSMT_CSD)
         public:
@@ -46,7 +48,9 @@ namespace MR
               Shared (const Header& dwi_header) :
                   grad (DWI::get_valid_DW_scheme (dwi_header)),
                   shells (grad),
-                  HR_dirs (DWI::Directions::electrostatic_repulsion_300()) { shells.select_shells(false,false,false); }
+                  HR_dirs (DWI::Directions::electrostatic_repulsion_300()),
+                  solution_min_norm_regularisation (DEFAULT_MSMTCSD_NORM_LAMBDA),
+                  constraint_min_norm_regularisation (DEFAULT_MSMTCSD_NEG_LAMBDA) { shells.select_shells(false,false,false); }
 
 
               void parse_cmdline_options()
@@ -58,6 +62,12 @@ namespace MR
                 opt = get_options ("directions");
                 if (opt.size())
                   HR_dirs = load_matrix (opt[0][0]);
+                opt = get_options ("norm_lambda");
+                if (opt.size())
+                  solution_min_norm_regularisation = opt[0][0];
+                opt = get_options ("neg_lambda");
+                if (opt.size())
+                  constraint_min_norm_regularisation = opt[0][0];
               }
 
 
@@ -198,8 +208,8 @@ namespace MR
                   b_m += m[i];
                   b_n += n[i];
                 }
-
-                problem = Math::ICLS::Problem<double> (C, A, 1.0e-10, 1.0e-10);
+                problem = Math::ICLS::Problem<double> (C, A,
+                  solution_min_norm_regularisation, constraint_min_norm_regularisation);
 
                 INFO ("Multi-shell, multi-tissue CSD initialised successfully");
               }
@@ -215,6 +225,7 @@ namespace MR
               vector<int> lmax, lmax_response;
               vector<Eigen::MatrixXd> responses;
               Math::ICLS::Problem<double> problem;
+              double solution_min_norm_regularisation, constraint_min_norm_regularisation;
 
 
             private:

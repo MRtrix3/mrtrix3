@@ -31,6 +31,10 @@
 using namespace MR;
 using namespace App;
 
+
+
+bool add_to_command_history = true;
+
 void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)";
@@ -53,16 +57,19 @@ void usage ()
     "-coord 3 0 extracts the first volume from a 4D image; "
     "-coord 1 24 extracts slice number 24 along the y-axis."
 
-  + "The colon operator can be particularly useful in conjunction with the "
-    "-coord option, in order to select multiple coordinates. "
+  + "You can use any valid number sequence in the selection, as well as the "
+    "'end' keyword (see the main documentation for details) This can be "
+    "particularly useful to select multiple coordinates. "
     "For instance: "
-    "-coord 3 1:59 "
-    "would select all but the first volume from an image containing 60 volumes."
+    "-coord 3 1:2:end "
+    "would select every other volume from an image, starting from the second "
+    "volume. "
 
   + "The -vox option is used to change the size of the voxels in the output "
     "image. Note that this does not re-sample the image based on a new "
     "voxel size (that is done using the mrresize command); this only changes "
-    "the voxel size as reported in the image header. Voxel sizes for "
+    "the voxel size as reported in the image header. Providing a single value "
+    "will result in isotropic voxels of that size; alternatively, voxel sizes for "
     "individual axes can be set independently, using a comma-separated list of "
     "values; e.g. "
     "-vox 1,,3.5 "
@@ -110,10 +117,12 @@ void usage ()
   + OptionGroup ("Options for manipulating fundamental image properties")
 
   + Option ("coord",
-            "retain data from the input image only at the coordinates specified")
-  .allow_multiple()
+            "retain data from the input image only at the coordinates "
+            "specified in the selection along the specified axis. The selection "
+            "argument expects a number sequence, which can also include the "
+            "'end' keyword.").allow_multiple()
     + Argument ("axis").type_integer (0)
-    + Argument ("coord").type_sequence_int()
+    + Argument ("selection").type_sequence_int()
 
   + Option ("vox",
             "change the voxel dimensions of the output image")
@@ -152,6 +161,10 @@ void usage ()
             "append the given value to the specified key in the image header (this adds the value specified as a new line in the header value).").allow_multiple()
   + Argument ("key").type_text()
   + Argument ("value").type_text()
+
+  + Option ("copy_properties",
+            "clear all generic properties and replace with the properties from the image / file specified.")
+  + Argument ("source").type_various()
 
 
   + Stride::Options
@@ -259,9 +272,11 @@ inline vector<int> set_header (Header& header, const ImageType& input)
 
   opt = get_options ("vox");
   if (opt.size()) {
-    vector<default_type> vox = opt[0][0];
+    vector<default_type> vox = parse_floats (opt[0][0]);
     if (vox.size() > header.ndim())
       throw Exception ("too many axes supplied to -vox option");
+    if (vox.size() == 1)
+      vox.resize (3, vox[0]);
     for (size_t n = 0; n < vox.size(); ++n) {
       if (std::isfinite (vox[n]))
         header.spacing(n) = vox[n];
@@ -281,7 +296,7 @@ template <typename T, class InputType>
 void copy_permute (const InputType& in, Header& header_out, const std::string& output_filename)
 {
   const auto axes = set_header (header_out, in);
-  auto out = Image<T>::create (output_filename, header_out);
+  auto out = Image<T>::create (output_filename, header_out, add_to_command_history);
   DWI::export_grad_commandline (out);
   PhaseEncoding::export_commandline (out);
   auto perm = Adapter::make <Adapter::PermuteAxes> (in, axes);
@@ -336,8 +351,27 @@ void run ()
 
 
 
+  opt = get_options ("copy_properties");
+  if (opt.size()) {
+    header_out.keyval().clear();
+    if (str(opt[0][0]) != "NULL") {
+      try {
+        const Header source = Header::open (opt[0][0]);
+        header_out.keyval() = source.keyval();
+      } catch (...) {
+        try {
+          File::JSON::load (header_out, opt[0][0]);
+        } catch (...) {
+          throw Exception ("Unable to obtain header key-value entries from spec \"" + str(opt[0][0]) + "\"");
+        }
+      }
+    }
+  }
+
   opt = get_options ("clear_property");
   for (size_t n = 0; n < opt.size(); ++n) {
+    if (str(opt[n][0]) == "command_history")
+      add_to_command_history = false;
     auto entry = header_out.keyval().find (opt[n][0]);
     if (entry == header_out.keyval().end()) {
       WARN ("No header key/value entry \"" + opt[n][0] + "\" found; ignored");
@@ -347,12 +381,18 @@ void run ()
   }
 
   opt = get_options ("set_property");
-  for (size_t n = 0; n < opt.size(); ++n)
+  for (size_t n = 0; n < opt.size(); ++n) {
+    if (str(opt[n][0]) == "command_history")
+      add_to_command_history = false;
     header_out.keyval()[opt[n][0].as_text()] = opt[n][1].as_text();
+  }
 
   opt = get_options ("append_property");
-  for (size_t n = 0; n < opt.size(); ++n)
+  for (size_t n = 0; n < opt.size(); ++n) {
+    if (str(opt[n][0]) == "command_history")
+      add_to_command_history = false;
     add_line (header_out.keyval()[opt[n][0].as_text()], opt[n][1].as_text());
+  }
 
 
 

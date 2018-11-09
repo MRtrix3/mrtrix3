@@ -23,7 +23,7 @@ Options
 
 -  **-binary** write the output mesh file in binary format (if supported)
 
--  **-transform mode image** transform vertices from one coordinate space to another, based on a template image; options are: first2real, real2first, voxel2real, real2voxel
+-  **-transform mode image** transform vertices from one coordinate space to another, based on a template image; options are: first2real, real2first, voxel2real, real2voxel, fs2real
 
 Standard options
 ^^^^^^^^^^^^^^^^

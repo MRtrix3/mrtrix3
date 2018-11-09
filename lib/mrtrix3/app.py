@@ -213,6 +213,7 @@ def checkOutputPath(path): #pylint: disable=unused-variable
 
 def makeTempDir(): #pylint: disable=unused-variable
   import os, random, string, sys
+  from mrtrix3 import run
   global args, config, continueOption, tempDir, workingDir
   if continueOption:
     debug('Skipping temporary directory creation due to use of -continue option')
@@ -236,6 +237,8 @@ def makeTempDir(): #pylint: disable=unused-variable
   with open(os.path.join(tempDir, 'command.txt'), 'w') as outfile:
     outfile.write(' '.join(sys.argv) + '\n')
   open(os.path.join(tempDir, 'log.txt'), 'w').close()
+  # Also use this temporary directory for any piped images within run.command() calls
+  run.setTmpDir(tempDir)
 
 
 
@@ -264,11 +267,35 @@ def complete(): #pylint: disable=unused-variable
     # This needs to be printed even if the -quiet option is used
     if os.path.isfile(os.path.join(tempDir, 'error.txt')):
       with open(os.path.join(tempDir, 'error.txt'), 'r') as errortext:
-        sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'Script failed while executing the command: ' + errortext.readline().rstrip() + colourClear + '\n')
+        sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'Following command failed during execution of the script:' + colourClear + '\n')
+        sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + errortext.readline().rstrip() + colourClear + '\n')
       sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'For debugging, inspect contents of temporary directory: ' + tempDir + colourClear + '\n')
     else:
       sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourConsole + 'Contents of temporary directory kept, location: ' + tempDir + colourClear + '\n')
     sys.stderr.flush()
+
+
+
+
+
+
+# This function should be used to insert text into any mrconvert call writing an output image
+#   to the user's requested destination
+# It will ensure that the header contents of any output images reflect the execution of the script itself,
+#   rather than its internal processes
+def mrconvertOutputOption(input_image): #pylint: disable=unused-variable
+  import sys
+  from ._version import __version__
+  global forceOverwrite
+  s = ' -copy_properties ' + input_image + ' -append_property command_history "' + sys.argv[0]
+  for arg in sys.argv[1:]:
+    s += ' \\"' + arg + '\\"'
+  s += '  (version=' + __version__ + ')"'
+  if forceOverwrite:
+    s += ' -force'
+  return s
+
+
 
 
 

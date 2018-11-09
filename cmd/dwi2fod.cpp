@@ -55,9 +55,6 @@ OptionGroup CommonOptions = OptionGroup ("Options common to more than one algori
               "only perform computation within the specified binary brain mask image.")
       + Argument ("image").type_image_in();
 
-
-
-
 void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and Ben Jeurissen (ben.jeurissen@uantwerpen.be)";
@@ -95,6 +92,7 @@ void usage ()
     + DWI::ShellsOption
     + CommonOptions
     + DWI::SDeconv::CSD_options
+    + DWI::SDeconv::MSMT_CSD_options
     + Stride::Options;
 }
 
@@ -126,7 +124,7 @@ class CSD_Processor { MEMALIGN(CSD_Processor)
         INFO ("voxel [ " + str (dwi.index(0)) + " " + str (dwi.index(1)) + " " + str (dwi.index(2)) +
             " ] did not reach full convergence");
 
-      write_back (fod);
+      fod.row(3) = sdeconv.FOD();
     }
 
 
@@ -156,11 +154,6 @@ class CSD_Processor { MEMALIGN(CSD_Processor)
     }
 
 
-    void write_back (Image<float>& fod) {
-      for (auto l = Loop (3) (fod); l; ++l)
-        fod.value() = sdeconv.FOD() [fod.index(3)];
-    }
-
 };
 
 
@@ -168,10 +161,12 @@ class CSD_Processor { MEMALIGN(CSD_Processor)
 
 class MSMT_Processor { MEMALIGN (MSMT_Processor)
   public:
-    MSMT_Processor (const DWI::SDeconv::MSMT_CSD::Shared& shared, Image<bool>& mask_image, vector< Image<float> > odf_images) :
+    MSMT_Processor (const DWI::SDeconv::MSMT_CSD::Shared& shared, Image<bool>& mask_image,
+      vector< Image<float> > odf_images, Image<float> dwi_modelled = Image<float>()) :
         sdeconv (shared),
         mask_image (mask_image),
         odf_images (odf_images),
+        modelled_image (dwi_modelled),
         dwi_data (shared.grad.rows()),
         output_data (shared.problem.H.cols()) { }
 
@@ -184,8 +179,7 @@ class MSMT_Processor { MEMALIGN (MSMT_Processor)
           return;
       }
 
-      for (auto l = Loop (3) (dwi_image); l; ++l)
-        dwi_data[dwi_image.index(3)] = dwi_image.value();
+      dwi_data = dwi_image.row(3);
 
       sdeconv (dwi_data, output_data);
       if (sdeconv.niter >= sdeconv.shared.problem.max_niter) {
@@ -199,6 +193,12 @@ class MSMT_Processor { MEMALIGN (MSMT_Processor)
         for (auto l = Loop(3)(odf_images[i]); l; ++l)
           odf_images[i].value() = output_data[j++];
       }
+
+      if (modelled_image.valid()) {
+        assign_pos_of (dwi_image, 0, 3).to (modelled_image);
+        dwi_data = sdeconv.shared.problem.H * output_data;
+        modelled_image.row(3) = dwi_data;
+      }
     }
 
 
@@ -206,6 +206,7 @@ class MSMT_Processor { MEMALIGN (MSMT_Processor)
     DWI::SDeconv::MSMT_CSD sdeconv;
     Image<bool> mask_image;
     vector< Image<float> > odf_images;
+    Image<float> modelled_image;
     Eigen::VectorXd dwi_data;
     Eigen::VectorXd output_data;
 };
@@ -291,7 +292,12 @@ void run ()
       odfs.push_back (Image<float> (Image<float>::create (odf_paths[i], header_out)));
     }
 
-    MSMT_Processor processor (shared, mask, odfs);
+    Image<float> dwi_modelled;
+    auto opt = get_options ("predicted_signal");
+    if (opt.size())
+      dwi_modelled = Image<float>::create (opt[0][0], header_in);
+
+    MSMT_Processor processor (shared, mask, odfs, dwi_modelled);
     auto dwi = header_in.get_image<float>().with_direct_io (3);
     ThreadedLoop ("performing multi-shell, multi-tissue CSD", dwi, 0, 3)
         .run (processor, dwi);

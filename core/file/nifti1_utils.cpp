@@ -298,7 +298,12 @@ namespace MR
 
         const auto hit = H.keyval().find("comments");
         auto comments = split_lines (hit == H.keyval().end() ? std::string() : hit->second);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
         strncpy ( (char*) &NH.db_name, comments.size() ? comments[0].c_str() : "untitled\0\0\0\0\0\0\0\0\0\0\0", 18);
+#pragma GCC diagnostic pop
         Raw::store<int32_t> (16384, &NH.extents, is_BE);
         NH.regular = 'r';
         NH.dim_info = 0;

@@ -328,7 +328,7 @@ namespace MR
       std::map<std::string, std::string>& keyval () { return keyval_; }
 
       static Header open (const std::string& image_name);
-      static Header create (const std::string& image_name, const Header& template_header);
+      static Header create (const std::string& image_name, const Header& template_header, bool add_to_command_history = true);
       static Header scratch (const Header& template_header, const std::string& label = "scratch image");
 
       /*! use to prevent automatic realignment of transform matrix into
