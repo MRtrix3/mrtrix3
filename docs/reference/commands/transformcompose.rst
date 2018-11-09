@@ -26,7 +26,7 @@ The input linear transforms must be supplied in as a 4x4 matrix in a text file (
 Options
 -------
 
--  **-template image** define the output  grid defined by a template image
+-  **-template image** define the output grid defined by a template image
 
 Standard options
 ^^^^^^^^^^^^^^^^

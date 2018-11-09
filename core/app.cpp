@@ -77,6 +77,9 @@ namespace MR
     std::string NAME;
     vector<ParsedArgument> argument;
     vector<ParsedOption> option;
+    //ENVVAR name: MRTRIX_QUIET
+    //ENVVAR Do not display information messages or progress status. This has
+    //ENVVAR the same effect as the ``-quiet`` command-line option.
     int log_level = getenv("MRTRIX_QUIET") ? 0 : 1;
     int exit_error_code = 0;
     bool fail_on_warn = false;
@@ -1079,8 +1082,8 @@ namespace MR
             throw Exception ("required input \"" + text + "\" is not a directory");
         }
         if (i.arg->type == ArgFileOut || i.arg->type == TracksOut) {
-          if (text.find_last_of (PATH_SEPARATOR) == text.size() - std::string(PATH_SEPARATOR).size())
-            throw Exception ("output path \"" + std::string(i) + "\" is not a valid file path (ends with \'" PATH_SEPARATOR "\")");
+          if (text.find_last_of (PATH_SEPARATORS) == text.size() - 1)
+            throw Exception ("output path \"" + std::string(i) + "\" is not a valid file path (ends with directory path separator)");
           check_overwrite (text);
         }
         if (i.arg->type == ArgDirectoryOut)
@@ -1107,8 +1110,8 @@ namespace MR
               throw Exception ("input \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a directory");
           }
           if (arg.type == ArgFileOut || arg.type == TracksOut) {
-            if (text.find_last_of (PATH_SEPARATOR) == text.size() - std::string (PATH_SEPARATOR).size())
-              throw Exception ("output path \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a valid file path (ends with \'" PATH_SEPARATOR "\")");
+            if (text.find_last_of (PATH_SEPARATORS) == text.size() - 1)
+              throw Exception ("output path \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a valid file path (ends with directory path separator)");
             check_overwrite (text);
           }
           if (arg.type == ArgDirectoryOut)

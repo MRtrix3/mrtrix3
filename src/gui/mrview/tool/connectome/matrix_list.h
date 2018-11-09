@@ -58,7 +58,7 @@ namespace MR
             }
 
             QModelIndex parent (const QModelIndex&) const override {
-              return QModelIndex(); 
+              return QModelIndex();
             }
 
             int rowCount (const QModelIndex& parent = QModelIndex()) const override {

@@ -33,7 +33,7 @@ namespace MR
 
     class Projection;
 
-    namespace GL 
+    namespace GL
     {
       class Lighting;
     }
@@ -66,7 +66,7 @@ namespace MR
             mode = i;
           }
 
-          void start (const Projection& projection, const GL::Lighting& lighting, float scale, 
+          void start (const Projection& projection, const GL::Lighting& lighting, float scale,
               bool use_lighting, bool color_by_direction, bool hide_neg_lobes, bool orthographic = false);
 
           void draw (const Eigen::Vector3f& origin, int buffer_ID = 0) const {

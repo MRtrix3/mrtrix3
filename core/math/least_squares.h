@@ -37,9 +37,9 @@ namespace MR
     template <class MatrixType>
       inline Eigen::Matrix<typename MatrixType::Scalar,Eigen::Dynamic, Eigen::Dynamic> pinv (const MatrixType& M)
       {
-        if (M.rows() >= M.cols()) 
+        if (M.rows() >= M.cols())
          return (M.transpose()*M).ldlt().solve (M.transpose());
-        else 
+        else
           return (M*M.transpose()).ldlt().solve (M).transpose();
       }
 

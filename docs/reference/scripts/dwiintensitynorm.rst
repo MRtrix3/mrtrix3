@@ -15,7 +15,7 @@ Usage
 
     dwiintensitynorm input_dir mask_dir output_dir fa_template wm_mask [ options ]
 
--  *input_dir*: The input directory containing all DWI images
+-  *input_dir*: The input directory containing all DWI images with embedded diffusion-weighted gradient scheme (in .mif or .mif.gz file format)
 -  *mask_dir*: Input directory containing brain masks, corresponding to one per input image (with the same file name prefix)
 -  *output_dir*: The output directory containing all of the intensity normalised DWI images
 -  *fa_template*: The output population specific FA template, which is threshold to estimate a white matter mask

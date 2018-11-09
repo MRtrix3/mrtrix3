@@ -53,17 +53,42 @@ namespace MR
       //CONF /tmp/, which is typically a RAM file system and should therefore
       //CONF be fast; but may cause issues on machines with little RAM
       //CONF capacity or where write-access to this location is not permitted.
-      //CONF Note that this setting does not influence the location in which
-      //CONF Python scripts construct their temporary directories; that is
-      //CONF determined based on config file option :option:`ScriptTmpDir`.
-      const std::string& tmpfile_dir () {
-        static const std::string __tmpfile_dir = File::Config::get ("TmpFileDir",
+      //CONF
+      //CONF Note that this location can also be manipulated using the
+      //CONF :envvar:`MRTRIX_TMPFILE_DIR` environment variable, without editing the
+      //CONF config file. Note also that this setting does not influence the
+      //CONF location in which Python scripts construct their temporary
+      //CONF directories; that is determined based on config file option
+      //CONF ScriptTmpDir.
+
+      //ENVVAR name: MRTRIX_TMPFILE_DIR
+      //ENVVAR This has the same effect as the :option:`TmpFileDir`
+      //ENVVAR configuration file entry, and can be used to set the location of
+      //ENVVAR temporary files (as used in Unix pipes) for a single session,
+      //ENVVAR within a single script, or for a single command without
+      //ENVVAR modifying the configuration  file.
+      const std::string __get_tmpfile_dir () {
+        const char* from_env_mrtrix = getenv ("MRTRIX_TMPFILE_DIR");
+        if (from_env_mrtrix)
+          return from_env_mrtrix;
+
+        const char* default_tmpdir =
 #ifdef MRTRIX_WINDOWS
             "."
 #else
             "/tmp"
 #endif
-            );
+            ;
+
+        const char* from_env_general = getenv ("TMPDIR");
+        if (from_env_general)
+          default_tmpdir = from_env_general;
+
+        return File::Config::get ("TmpFileDir", default_tmpdir);
+      }
+
+      const std::string& tmpfile_dir () {
+        static const std::string __tmpfile_dir = __get_tmpfile_dir();
         return __tmpfile_dir;
       }
 
@@ -75,6 +100,13 @@ namespace MR
       //CONF suffix (depending on file type). Note that this prefix can also be
       //CONF manipulated using the `MRTRIX_TMPFILE_PREFIX` environment
       //CONF variable, without editing the config file.
+
+      //ENVVAR name: MRTRIX_TMPFILE_PREFIX
+      //ENVVAR This has the same effect as the :option:`TmpFilePrefix`
+      //ENVVAR configuration file entry, and can be used to set the prefix for
+      //ENVVAR the name  of temporary files (as used in Unix pipes) for a
+      //ENVVAR single session, within a single script, or for a single command
+      //ENVVAR without modifying the configuration file.
       const std::string __get_tmpfile_prefix () {
         const char* from_env = getenv ("MRTRIX_TMPFILE_PREFIX");
         if (from_env) return from_env;
@@ -118,7 +150,7 @@ namespace MR
     {
       DEBUG (std::string("creating ") + (size ? "" : "empty ") + "file \"" + filename + "\"" + (size ? " with size " + str (size) : ""));
 
-      int fid = open (filename.c_str(), O_CREAT | O_RDWR | ( App::overwrite_files ? O_TRUNC : O_EXCL ), 0666);
+      int fid = open (filename.c_str(), O_CREAT | O_RDWR | ( App::overwrite_files ? O_TRUNC : O_EXCL ), S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
       if (fid < 0) {
         if (App::check_overwrite_files_func && errno == EEXIST)
           App::check_overwrite_files_func (filename);
@@ -126,7 +158,7 @@ namespace MR
           throw Exception ("output file \"" + filename + "\" already exists (use -force option to force overwrite)");
         else
           throw Exception ("error creating output file \"" + filename + "\": " + std::strerror (errno));
-        fid = open (filename.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0666);
+        fid = open (filename.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
       }
       if (fid < 0) {
         std::string mesg ("error creating file \"" + filename + "\": " + strerror (errno));
@@ -148,7 +180,7 @@ namespace MR
     {
       DEBUG ("resizing file \"" + filename + "\" to " + str (size));
 
-      int fd = open (filename.c_str(), O_RDWR, 0666);
+      int fd = open (filename.c_str(), O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
       if (fd < 0)
         throw Exception ("error opening file \"" + filename + "\" for resizing: " + strerror (errno));
       int status = ftruncate (fd, size);
@@ -185,18 +217,16 @@ namespace MR
       do {
         for (int n = 0; n < 6; n++)
           filename[rand_index+n] = random_char();
-        fid = open (filename.c_str(), O_CREAT | O_RDWR | O_EXCL, 0666);
+        fid = open (filename.c_str(), O_CREAT | O_RDWR | O_EXCL, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
       } while (fid < 0 && errno == EEXIST);
 
       if (fid < 0)
         throw Exception (std::string ("error creating temporary file in directory \"" + tmpfile_dir() + "\": ") + strerror (errno));
 
-
-
-
       int status = size ? ftruncate (fid, size) : 0;
       close (fid);
       if (status) throw Exception ("cannot resize file \"" + filename + "\": " + strerror (errno));
+
       return filename;
     }
 
@@ -211,9 +241,9 @@ namespace MR
         throw Exception ("error creating folder \"" + folder + "\": " + strerror (errno));
     }
 
-    inline void unlink (const std::string& file)
+    inline void remove (const std::string& file)
     {
-      if (::unlink (file.c_str()))
+      if (std::remove (file.c_str()))
         throw Exception ("error deleting file \"" + file + "\": " + strerror (errno));;
     }
 
@@ -227,7 +257,7 @@ namespace MR
           if (Path::is_dir (path))
             rmdir (path, true);
           else
-            unlink (path);
+            remove (path);
         }
       }
       DEBUG ("deleting folder \"" + folder + "\"...");

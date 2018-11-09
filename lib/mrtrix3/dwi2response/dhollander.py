@@ -181,3 +181,5 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrcat crude_csf.mif crude_gm.mif crude_wm.mif crude.mif -axis 3')
   run.command('mrcat refined_csf.mif refined_gm.mif refined_wm.mif refined.mif -axis 3')
   run.command('mrcat voxels_csf.mif voxels_gm.mif voxels_sfwm.mif voxels.mif -axis 3')
+  if app.args.voxels:
+    run.command('mrconvert voxels.mif ' + path.fromUser(app.args.voxels, True) + app.mrconvertOutputOption(path.fromUser(app.args.input, True)))

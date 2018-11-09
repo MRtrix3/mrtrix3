@@ -34,6 +34,8 @@ namespace MR {
 
     void check (const Header& H)
     {
+      if (!(H.ndim() == 3 || (H.ndim() == 4 && H.size(3) == 1)))
+        throw Exception ("Image \"" + H.name() + "\" is not 3D, and hence is not a volume of node parcel indices");
       if (H.datatype().is_floating_point()) {
         CONSOLE ("Image \"" + H.name() + "\" stored with floating-point type; need to check for non-integer or negative values");
         // Need to open the image WITHOUT using the IO handler stored in H;

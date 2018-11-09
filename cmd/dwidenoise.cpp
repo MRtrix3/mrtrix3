@@ -27,7 +27,7 @@ using namespace App;
 void usage ()
 {
   SYNOPSIS = "Denoise DWI data and estimate the noise level based on the optimal threshold for PCA";
-    
+
   DESCRIPTION
     + "DWI data denoising and noise map estimation by exploiting data redundancy in the PCA domain "
     "using the prior knowledge that the eigenspectrum of random covariance matrices is described by "
@@ -35,11 +35,11 @@ void usage ()
 
     + "Important note: image denoising must be performed as the first step of the image processing pipeline. "
     "The routine will fail if interpolation or smoothing has been applied to the data prior to denoising."
-    
+
     + "Note that this function does not correct for non-Gaussian noise biases.";
-  
+
   AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk) & Jelle Veraart (jelle.veraart@nyumc.org) & J-Donald Tournier (jdtournier@gmail.com)";
-  
+
   REFERENCES
     + "Veraart, J.; Novikov, D.S.; Christiaens, D.; Ades-aron, B.; Sijbers, J. & Fieremans, E. " // Internal
     "Denoising of diffusion MRI using random matrix theory. "
@@ -48,7 +48,7 @@ void usage ()
     + "Veraart, J.; Fieremans, E. & Novikov, D.S. " // Internal
     "Diffusion MRI noise mapping using random matrix theory. "
     "Magn. Res. Med., 2016, 76(5), 1582-1593, doi: 10.1002/mrm.26059";
-  
+
   ARGUMENTS
   + Argument ("dwi", "the input diffusion-weighted image.").type_image_in ()
 
@@ -81,7 +81,7 @@ void usage ()
       "licenses under any patents or patent application owned by NYU. \n \n"
       "\t 5. The Software may only be used for non-commercial research and may not be used for clinical care. \n \n"
       "\t 6. Any publication by Recipient of research involving the Software shall cite the references listed below.";
-    
+
 }
 
 
@@ -96,12 +96,12 @@ class DenoisingFunctor { MEMALIGN(DenoisingFunctor)
       m (dwi.size(3)),
       n (extent[0]*extent[1]*extent[2]),
       r ((m<n) ? m : n),
-      X (m,n), 
-      pos {{0, 0, 0}}, 
+      X (m,n),
+      pos {{0, 0, 0}},
       mask (mask),
       noise (noise)
   { }
-  
+
   void operator () (ImageType& dwi, ImageType& out)
   {
     if (mask.valid()) {
@@ -117,12 +117,12 @@ class DenoisingFunctor { MEMALIGN(DenoisingFunctor)
     Eigen::MatrixXf XtX (r,r);
     if (m <= n)
       XtX.template triangularView<Eigen::Lower>() = X * X.transpose();
-    else 
+    else
       XtX.template triangularView<Eigen::Lower>() = X.transpose() * X;
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXf> eig (XtX);
     // eigenvalues provide squared singular values:
     Eigen::VectorXf s = eig.eigenvalues();
-   
+
     // Marchenko-Pastur optimal threshold
     const double lam_r = s[0] / n;
     double clam = 0.0;
@@ -139,16 +139,16 @@ class DenoisingFunctor { MEMALIGN(DenoisingFunctor)
       if (sigsq2 < sigsq1) {
         sigma2 = sigsq1;
         cutoff_p = p+1;
-      } 
+      }
     }
 
     if (cutoff_p > 0) {
       // recombine data using only eigenvectors above threshold:
       s.head (cutoff_p).setZero();
       s.tail (r-cutoff_p).setOnes();
-      if (m <= n) 
+      if (m <= n)
         X.col (n/2) = eig.eigenvectors() * ( s.asDiagonal() * ( eig.eigenvectors().adjoint() * X.col(n/2) ));
-      else 
+      else
         X.col (n/2) = X * ( eig.eigenvectors() * ( s.asDiagonal() * eig.eigenvectors().adjoint().col(n/2) ));
     }
 
@@ -163,8 +163,8 @@ class DenoisingFunctor { MEMALIGN(DenoisingFunctor)
       noise.value() = value_type (std::sqrt(sigma2));
     }
   }
-  
-  
+
+
   void load_data (ImageType& dwi)
   {
     pos[0] = dwi.index(0); pos[1] = dwi.index(1); pos[2] = dwi.index(2);
@@ -180,7 +180,7 @@ class DenoisingFunctor { MEMALIGN(DenoisingFunctor)
     dwi.index(1) = pos[1];
     dwi.index(2) = pos[2];
   }
-  
+
 private:
   const std::array<ssize_t, 3> extent;
   const ssize_t m, n, r;
@@ -189,7 +189,7 @@ private:
   double sigma2;
   Image<bool> mask;
   ImageType noise;
-  
+
 };
 
 
@@ -198,7 +198,7 @@ void run ()
 {
   auto dwi_in = Image<value_type>::open (argument[0]).with_direct_io(3);
 
-  if (dwi_in.ndim() != 4 || dwi_in.size(3) <= 1) 
+  if (dwi_in.ndim() != 4 || dwi_in.size(3) <= 1)
     throw Exception ("input image must be 4-dimensional");
 
   Image<bool> mask;
@@ -211,7 +211,7 @@ void run ()
   auto header = Header (dwi_in);
   header.datatype() = DataType::Float32;
   auto dwi_out = Image<value_type>::create (argument[1], header);
-  
+
   opt = get_options("extent");
   vector<int> extent = { DEFAULT_SIZE, DEFAULT_SIZE, DEFAULT_SIZE };
   if (opt.size()) {
@@ -224,7 +224,7 @@ void run ()
       if (!(e & 1))
         throw Exception ("-extent must be a (list of) odd numbers");
   }
-  
+
   Image<value_type> noise;
   opt = get_options("noise");
   if (opt.size()) {
