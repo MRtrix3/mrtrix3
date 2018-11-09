@@ -83,7 +83,7 @@ namespace MR
 
       + Option ("downsample", "downsample the generated streamlines to reduce output file size "
                               "(default is (samples-1) for iFOD2, no downsampling for all other algorithms)")
-          + Argument ("factor").type_integer (2);
+          + Argument ("factor").type_integer (1);
 
 
 

@@ -13,6 +13,8 @@
  */
 
 
+#include <Eigen/Dense>
+
 #include "command.h"
 #include "header.h"
 #include "image.h"

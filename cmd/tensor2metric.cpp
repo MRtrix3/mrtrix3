@@ -19,7 +19,6 @@
 #include "algo/threaded_copy.h"
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
-
 #include <Eigen/Eigenvalues>
 
 using namespace MR;

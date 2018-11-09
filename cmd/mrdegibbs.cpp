@@ -13,14 +13,14 @@
  */
 
 
+#include <unsupported/Eigen/FFT>
+
 #include "axes.h"
 #include "command.h"
 #include "image.h"
 #include "progressbar.h"
 #include "algo/threaded_loop.h"
 #include <numeric>
-
-#include <unsupported/Eigen/FFT>
 
 using namespace MR;
 using namespace App;
@@ -38,7 +38,7 @@ void usage ()
     + "This command is designed to run on data directly after it has been reconstructed by the scanner, "
     "before any interpolation of any kind has taken place. You should not run this command after any "
     "form of motion correction (e.g. not after dwipreproc). Similarly, if you intend running dwidenoise, "
-    "you should run this command afterwards, since it has the potential to alter the noise structure, "
+    "you should run denoising before this command to not alter the noise structure, "
     "which would impact on dwidenoise's performance."
 
     + "Note that this method is designed to work on images acquired with full k-space coverage. "
