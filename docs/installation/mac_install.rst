@@ -18,6 +18,12 @@ To install *MRtrix3* , you will need the following:
 -  `Qt <http://www.qt.io/>`__ version >= 5.1 *[GUI components only]* -
    important: versions prior to this will *not* work
 
+and optionally:
+
+- `libTIFF <http://www.libtiff.org/>`__ version >= 4.0 (for TIFF support)
+- `FFTW <http://www.fftw.org/>`__ version >= 3.0 (for improved performance in
+  certain applications, currently only ``mrdegibbs``)
+
 .. WARNING:: 
 
     To run the GUI components of *MRtrix3*  (``mrview`` & ``shview``), you will also need:
@@ -100,11 +106,24 @@ Install Dependencies
            Make sure *not* to include the final ``/Eigen`` folder in the path
            name - use the folder in which it resides instead!
 
+4. Install TIFF and FFTW library.
+
+   - With `Homebrew <http://brew.sh/>`__:
+
+       - Install TIFF: ``brew install libtiff``
+       - Install FFTW: ``brew install fftw``
+      
+   - With `MacPorts <http://macports.org/>`__:
+
+       - Install TIFF: ``port install tiff``
+       - Install FFTW: ``port install fftw-3``
+
 Git setup
 ---------
 
-Set up your git environment as per the `Git instructions
-page <https://help.github.com/articles/set-up-git/#setting-up-git>`__
+If you intend to contribute to the development of *MRtrix3*, set up your git
+environment as per the `Git instructions page
+<https://help.github.com/articles/set-up-git/#setting-up-git>`__
 
 Build *MRtrix3* 
 ---------------
@@ -113,7 +132,7 @@ Build *MRtrix3*
 
        git clone https://github.com/MRtrix3/mrtrix3.git
 
-   or if you have set up your SSH keys (for collaborators)::
+   or if you have set up your SSH keys (for contributors)::
 
        git clone git@github.com:MRtrix3/mrtrix3.git
 

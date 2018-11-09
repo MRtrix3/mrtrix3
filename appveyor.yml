@@ -1,0 +1,10 @@
+version: 1.0.{build}
+image: Visual Studio 2017
+platform: x64
+configuration: Release
+clone_folder: c:\msys64\mrtrix3
+shallow_clone: false
+
+build_script:
+  - cmd: echo "empty build to allow passing on master branch"
+
