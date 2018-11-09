@@ -132,31 +132,21 @@ public:
     // Compute Eigendecomposition:
     MatrixX XtX (r,r);
     if (m <= n)
-    {
-      Xm = X.rowwise().mean();
-      X.colwise() -= Xm;                // data centring
-
       XtX.template triangularView<Eigen::Lower>() = X * X.adjoint();
-    }
     else
-    {
-      Xm = X.colwise().mean();
-      X.rowwise() -= Xm.transpose();    // data centring
-
       XtX.template triangularView<Eigen::Lower>() = X.adjoint() * X;
-    }
     Eigen::SelfAdjointEigenSolver<MatrixX> eig (XtX);
     // eigenvalues provide squared singular values, sorted in increasing order:
     VectorX s = eig.eigenvalues();
 
     // Marchenko-Pastur optimal threshold
-    const double lam_r = std::max(double(s[0]), 0.0) / (std::max(m,n) - 1);
+    const double lam_r = std::max(double(s[0]), 0.0) / std::max(m,n);
     double clam = 0.0;
     sigma2 = NaN;
     ssize_t cutoff_p = 0;
     for (ssize_t p = 0; p < r; ++p)     // p+1 is the number of noise components
     {                                   // (as opposed to the paper where p is defined as the number of signal components)
-      double lam = std::max(double(s[p]), 0.0) / (std::max(m,n) - 1);
+      double lam = std::max(double(s[p]), 0.0) / std::max(m,n);
       clam += lam;
       double gam = double(p+1) / (std::max(m,n) - (r-p-1));
       double sigsq1 = clam / double(p+1);
@@ -182,11 +172,11 @@ public:
     assign_pos_of(dwi).to(out);
     if (m <= n) {
       for (auto l = Loop (3) (out); l; ++l)
-        out.value() = value_type (X(out.index(3), n/2) + Xm(out.index(3)));
+        out.value() = value_type (X(out.index(3), n/2));
     }
     else {
       for (auto l = Loop (3) (out); l; ++l)
-        out.value() = value_type (X(out.index(3), n/2) + Xm(n/2));
+        out.value() = value_type (X(out.index(3), n/2));
     }
 
     // store noise map if requested:
