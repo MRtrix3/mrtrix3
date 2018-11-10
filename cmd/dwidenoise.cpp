@@ -190,13 +190,18 @@ public:
   {
     pos[0] = dwi.index(0); pos[1] = dwi.index(1); pos[2] = dwi.index(2);
     X.setZero();
-    ssize_t k = 0;
-    for (dwi.index(2) = pos[2]-extent[2]; dwi.index(2) <= pos[2]+extent[2]; ++dwi.index(2))
-      for (dwi.index(1) = pos[1]-extent[1]; dwi.index(1) <= pos[1]+extent[1]; ++dwi.index(1))
-        for (dwi.index(0) = pos[0]-extent[0]; dwi.index(0) <= pos[0]+extent[0]; ++dwi.index(0), ++k)
-          if (! is_out_of_bounds(dwi,0,3))
-            X.col(k) = dwi.row(3);
-
+    size_t k = 0;
+    for (int z = -extent[2]; z <= extent[2]; z++) {
+      dwi.index(2) = wrapindex(z, 2, dwi.size(2));
+      for (int y = -extent[1]; y <= extent[1]; y++) {
+        dwi.index(1) = wrapindex(y, 1, dwi.size(1));
+        for (int x = -extent[0]; x <= extent[0]; x++, k++) {
+          dwi.index(0) = wrapindex(x, 0, dwi.size(0));
+          X.col(k) = dwi.row(3);
+        }
+      }
+    }
+    
     // reset image position
     dwi.index(0) = pos[0];
     dwi.index(1) = pos[1];
@@ -212,6 +217,15 @@ private:
   double sigma2;
   Image<bool> mask;
   ImageType noise;
+
+  inline size_t wrapindex(int r, int axis, int max) const {
+    int rr = pos[axis] + r;
+    if (rr < 0)
+      rr = pos[axis]+extent[axis]-rr;
+    if (rr > max)
+      rr = pos[axis]-extent[axis]-rr+max;
+    return rr;
+  }
 
 };
 
