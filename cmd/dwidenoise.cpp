@@ -142,7 +142,7 @@ public:
     // Marchenko-Pastur optimal threshold
     const double lam_r = std::max(double(s[0]), 0.0) / std::max(m,n);
     double clam = 0.0;
-    sigma2 = NaN;
+    sigma2 = 0.0;
     ssize_t cutoff_p = 0;
     for (ssize_t p = 0; p < r; ++p)     // p+1 is the number of noise components
     {                                   // (as opposed to the paper where p is defined as the number of signal components)
