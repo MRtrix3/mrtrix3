@@ -23,6 +23,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_argument('inputs',  help='Each of the inputs for which processing should be run', nargs='+')
   cmdline.add_argument('colon',   help='Colon symbol (":") delimiting the foreach inputs & command-line options from the actual command to be executed', type=str, choices=[':'])
   cmdline.add_argument('command', help='The command string to run for each input, containing any number of substitutions listed in the Description section', type=str)
+  cmdline.add_argument('-test',   help='Test the operation of the foreach script by printing the command strings post-substitution but not executing them', action='store_true', default=False)
 
   # Usage of foreach needs to be handled slightly differently here:
   # We want argparse to parse only the contents of the command-line before the colon symbol,
@@ -61,7 +62,7 @@ stop = False
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError, run
+  from mrtrix3 import ansi, MRtrixError, run
   global cmdsplit
 
   app.var(str(app.args.inputs))
@@ -87,6 +88,7 @@ def execute(): #pylint: disable=unused-variable
 
   class Entry(object):
     def __init__(self, input_text):
+      self.input_text = input_text
       self.sub_in = input_text
       self.sub_name = os.path.basename(input_text)
       self.sub_pre = self.sub_name.split('.')[0]
@@ -111,9 +113,14 @@ def execute(): #pylint: disable=unused-variable
   for i in app.args.inputs:
     jobs.append(Entry(i))
 
+  if app.args.test:
+    app.console('Command strings for ' + str(len(jobs)) + ' jobs:')
+    for job in jobs:
+      sys.stderr.write(ansi.execute + 'Input:' + ansi.clear + '   "' + job.input_text + '"\n')
+      sys.stderr.write(ansi.execute + 'Command:' + ansi.clear + ' ' + ' '.join(job.cmd) + '\n')
+    return
+
   parallel = app.numThreads is not None and app.numThreads > 1
-
-
 
   def progressString():
     s = str(sum([ 1 if job.returncode is not None else 0 for job in jobs ])) + \
