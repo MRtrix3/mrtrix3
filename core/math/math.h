@@ -32,6 +32,7 @@ namespace MR
     /** @defgroup mathconstants Mathematical constants
       @{ */
 
+    constexpr double e = 2.71828182845904523536;
     constexpr double pi = 3.14159265358979323846;
     constexpr double pi_2 = pi / 2.0;
     constexpr double pi_4 = pi / 4.0;
