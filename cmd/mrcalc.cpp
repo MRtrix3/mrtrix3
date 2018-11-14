@@ -75,7 +75,7 @@ DESCRIPTION
 ARGUMENTS
   + Argument ("operand", "an input image, intensity value, or the special keywords "
       "'rand' (random number between 0 and 1) or 'randn' (random number from unit "
-      "std.dev. normal distribution).").type_various().allow_multiple();
+      "std.dev. normal distribution) or the mathematical constants 'e' and 'pi'.").type_various().allow_multiple();
 
 OPTIONS
   + OptionGroup ("Unary operators")
@@ -245,7 +245,9 @@ class StackEntry { NOMEMALIGN
         catch (Exception&) {
           try {
             std::string a = lowercase (arg);
-            if      (a ==  "nan")  { value =  std::numeric_limits<real_type>::quiet_NaN(); }
+            if      (a == "pi")    { value = Math::pi; }
+            else if (a == "e")     { value = Math::e; }
+            else if (a ==  "nan")  { value =  std::numeric_limits<real_type>::quiet_NaN(); }
             else if (a == "-nan")  { value = -std::numeric_limits<real_type>::quiet_NaN(); }
             else if (a ==  "inf")  { value =  std::numeric_limits<real_type>::infinity(); }
             else if (a == "-inf")  { value = -std::numeric_limits<real_type>::infinity(); }
