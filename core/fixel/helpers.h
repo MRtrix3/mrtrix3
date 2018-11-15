@@ -31,6 +31,19 @@ namespace MR
         : Exception(previous_exception, msg) {}
   };
 
+  namespace Peaks
+  {
+    FORCE_INLINE void check (const Header& in)
+    {
+      if (!in.datatype().is_floating_point())
+        throw Exception ("Image \"" + in.name() + "\" is not a valid peaks image: Does not contain floating-point data");
+      if (in.ndim() != 4)
+        throw Exception ("Image \"" + in.name() + "\" is not a valid peaks image: Expect 4 dimensions");
+      if (in.size(3) % 3)
+        throw Exception ("Image \"" + in.name() + "\" is not a valid peaks image: Number of volumes must be a multiple of 3");
+    }
+  }
+
   namespace Fixel
   {
     FORCE_INLINE bool is_index_image (const Header& in)
