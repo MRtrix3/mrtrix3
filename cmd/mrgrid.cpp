@@ -42,11 +42,11 @@ void usage ()
   DESCRIPTION
   + "resize:\nNote that if the image is 4D, then only the first 3 dimensions can be resized."
   + "Also note that if the image is down-sampled, the appropriate smoothing is automatically applied using Gaussian smoothing.\n\n"
-  + "crop:\nExtent of cropping can be determined using either manual setting of axis dimensions, or a computed mask image corresponding to the brain." // TODO reference
+  + "crop:\nExtent of cropping can be determined using either manual setting of axis dimensions, or a computed mask image corresponding to the brain."
   + "If using a mask, a gap of 1 voxel will be left at all 6 edges of the image such that trilinear interpolation upon the resulting images is still valid."
   + "This is useful for axially-acquired brain images, where the image size can be reduced by a factor of 2 by removing the empty space on either side of the brain.\n\n"
-  + "pad:\n Zero pad an image to increase the FOV."
-  + "match:\n Provide a reference image to match its image grid (voxel size, image size and orientation).";
+  + "pad:\nZero pad an image to increase the FOV."
+  + "match:\nProvide a reference image to match its image grid (voxel size, image size and orientation).";
 
   ARGUMENTS
   + Argument ("input", "input image to be regridded.").type_image_in ()
@@ -75,7 +75,7 @@ void usage ()
     + Option   ("interp", "set the interpolation method to use when resizing (choices: nearest, linear, cubic, sinc. Default: cubic).")
     + Argument ("method").type_choice (interp_choices)
 
-  + OptionGroup ("Crop options") // TODO non-spatial axes
+  + OptionGroup ("Crop options")
     + Option   ("mask",  "crop the input image according to the spatial extent of a mask image")
     + Argument ("image", "the mask image").type_image_in()
 
@@ -83,12 +83,13 @@ void usage ()
     + Argument ("image").type_image_in ()
 
     + Option   ("axis",  "crop the input image in the provided axis. Overrides mask and template options.").allow_multiple()
-    + Argument ("index", "the index of the image axis to be cropped").type_integer (0, 2)
+    + Argument ("index", "the index of the image axis to be cropped").type_integer (0)
     + Argument ("start", "the first voxel along this axis to be included in the output image").type_integer (0)
     + Argument ("end",   "the last voxel along this axis to be included in the output image").type_integer (0)
 
+    + Option   ("nd", "Crop all, not just spatial axes.")
 
-  + OptionGroup ("Pad options") // TODO non-spatial axes
+  + OptionGroup ("Pad options")
     + Option   ("as", "pad the input image to match the specified template image grid.")
     + Argument ("image").type_image_in ()
 
@@ -97,16 +98,18 @@ void usage ()
 
     + Option   ("axis", "pad the input image along the provided axis (defined by index). Lower and upper define "
                 "the number of voxels to add to the lower and upper bounds of the axis").allow_multiple()
-    + Argument ("index").type_integer (0, 2)
+    + Argument ("index").type_integer (0)
     + Argument ("lower").type_integer (0)
     + Argument ("upper").type_integer (0)
 
     + Option   ("value", "pad the input image with value instead of zero.")
     + Argument ("number").type_float (0.0)
 
+    + Option   ("nd", "Pad all, not just spatial axes.")
+
   + OptionGroup ("Match options")
-    + Option   ("template", "match the input image grid (voxel spacing, image size and header transformation) to that of the template image.")
-    + Argument ("image").type_image_in () // TODO
+    + Option   ("template", "match the input image grid (voxel spacing, image size and header transformation) to that of the template image. mandatory option.")
+    + Argument ("image").type_image_in ()
 
     + Option ("interp", "set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: cubic).")
     + Argument ("method").type_choice (interp_choices)
@@ -128,13 +131,12 @@ void usage ()
 
 void run () {
   auto input_header = Header::open (argument[0]);
-  auto input = input_header.get_image<float>();
 
   const int op = argument[1];
 
   if (op == 0) { // resize
     CONSOLE("operation: " + str(operation_choices[op]));
-    Filter::Resize resize_filter (input);
+    Filter::Resize resize_filter (input_header);
 
     size_t resize_option_count = 0;
 
@@ -190,25 +192,29 @@ void run () {
     header.datatype() = DataType::from_command_line (DataType::from<float> ());
     auto output = Image<float>::create (argument[2], header);
 
+    auto input = input_header.get_image<float>();
     resize_filter (input, output);
 
   } else if (op == 1) { // crop
     CONSOLE("operation: " + str(operation_choices[op]));
-    vector<vector<ssize_t>> bounds (input.ndim(), vector<ssize_t> (2));
-    for (size_t axis = 0; axis < input.ndim(); axis++) {
+    const size_t nd = get_options ("nd").size() ? input_header.ndim() : 3;
+
+    vector<vector<ssize_t>> bounds (input_header.ndim(), vector<ssize_t> (2));
+    for (size_t axis = 0; axis < input_header.ndim(); axis++) {
       bounds[axis][0] = 0;
-      bounds[axis][1] = input.size (axis) - 1;
+      bounds[axis][1] = input_header.size (axis) - 1;
     }
 
     size_t crop_option_count = 0;
+
     auto opt = get_options ("mask");
     if (opt.size()) {
       ++crop_option_count;
       auto mask = Image<bool>::open (opt[0][0]);
-      check_dimensions (input, mask, 0, 3);
+      check_dimensions (input_header, mask, 0, 3);
 
       for (size_t axis = 0; axis != 3; ++axis) {
-        bounds[axis][0] = input.size (axis);
+        bounds[axis][0] = input_header.size (axis);
         bounds[axis][1] = 0;
       }
 
@@ -246,6 +252,7 @@ void run () {
       }
     }
 
+
     opt = get_options ("as");
     if (opt.size()) {
       if (crop_option_count)
@@ -254,7 +261,10 @@ void run () {
 
       Header template_header = Header::open(opt[0][0]);
 
-      for (size_t axis = 0; axis != 3; ++axis) {
+      for (size_t axis = 0; axis != nd; ++axis) {
+        if (axis >= template_header.ndim())
+          bounds[axis][1] = 0;
+        else
           bounds[axis][1] = std::min (bounds[axis][1], template_header.size(axis) - 1);
       }
     }
@@ -266,7 +276,7 @@ void run () {
       const ssize_t axis  = opt[i][0];
       const ssize_t start = opt[i][1];
       const ssize_t end   = opt[i][2];
-      if (start < 0 || end >= input.size(axis))
+      if (start < 0 || end >= input_header.size(axis))
         throw Exception ("Index supplied for axis " + str(axis) + " is out of bounds");
       if (end < start)
         throw Exception  ("End index supplied for axis " + str(axis) + " is less than start index");
@@ -274,15 +284,22 @@ void run () {
       bounds[axis][1] = end;
     }
 
-    vector<size_t> from (input.ndim());
-    vector<size_t> size (input.ndim());
-    for (size_t axis = 0; axis < input.ndim(); axis++) {
+    vector<size_t> from (input_header.ndim());
+    vector<size_t> size (input_header.ndim());
+    for (size_t axis = 0; axis < input_header.ndim(); axis++) {
       from[axis] = bounds[axis][0];
       size[axis] = bounds[axis][1] - from[axis] + 1;
     }
 
     if (crop_option_count == 0)
       throw Exception ("no crop option supplied");
+
+    for (size_t axis = 0; axis < nd; axis++) {
+      INFO("cropping axis " + str(axis) + " lower:" + str(bounds[axis][0]) + " upper:" + str(bounds[axis][1] - input_header.size(axis) + 1));
+    }
+
+    auto input = input_header.get_image<float>();
+
     auto cropped = Adapter::make<Adapter::Subset> (input, from, size);
     Header header (cropped);
     header.datatype() = DataType::from_command_line (DataType::from<float> ());
@@ -291,26 +308,48 @@ void run () {
 
   } else if (op == 2) { // pad
     CONSOLE("operation: " + str(operation_choices[op]));
+
     size_t pad_option_count = 0;
-    ssize_t bounds[3][2] = { {0, input.size (0) - 1},
-                         {0, input.size (1) - 1},
-                         {0, input.size (2) - 1} };
 
-    ssize_t padding[3][2] = { {0, 0}, {0, 0}, {0, 0} };
-
+    Header template_header;
     auto opt = get_options ("as");
     if (opt.size()) {
+      template_header = Header::open (opt[0][0]);
+      if (template_header.ndim() > input_header.ndim()) {
+        input_header.ndim() = get_options ("nd").size() ?
+          size_t(template_header.ndim()) : std::min<size_t> (input_header.ndim(), 3);
+      }
+    }
+
+    const size_t nd = get_options ("nd").size() ? input_header.ndim() : 3;
+
+    ssize_t bounds[nd][2];
+    for (size_t axis = 0; axis < nd; axis++) {
+      bounds[axis][0] = 0;
+      bounds[axis][1] = input_header.size(axis) - 1;
+    }
+
+    ssize_t padding[nd][2];
+    for (size_t axis = 0; axis < nd; axis++) {
+      padding[axis][0] = 0;
+      padding[axis][1] = 0;
+    }
+
+    if (template_header.valid()) {
       ++pad_option_count;
-      Header template_header = Header::open (opt[0][0]);
-      for (size_t axis = 0; axis < 3; axis++)
-        padding[axis][1] = std::max<ssize_t>(0, template_header.size(axis) - input.size(axis));
+      for (size_t axis = 0; axis < nd; axis++) {
+        if (axis >= template_header.ndim())
+          padding[axis][1] = 0;
+        else
+          padding[axis][1] = std::max<ssize_t>(0, template_header.size(axis) - input_header.size(axis));
+      }
     }
 
     opt = get_options ("uniform");
     if (opt.size()) {
       ++pad_option_count;
       ssize_t pad = opt[0][0];
-      for (size_t axis = 0; axis < 3; axis++) {
+      for (size_t axis = 0; axis < nd; axis++) {
         padding[axis][0] += pad;
         padding[axis][1] += pad;
       }
@@ -320,7 +359,9 @@ void run () {
     for (size_t i = 0; i != opt.size(); ++i) {
       ++pad_option_count;
       // Manual padding of axis overrides previous padding
-      const size_t axis  = opt[i][0];
+      const size_t axis = opt[i][0];
+      if (axis  >= input_header.ndim())
+        throw Exception ("axis selected larger than image dimensions");
       padding[axis][0] = opt[i][1];
       padding[axis][1] = opt[i][2];
     }
@@ -333,36 +374,44 @@ void run () {
     if (opt.size())
       pad_value = float(opt[0][0]);
 
-    Header output_header (input);
+    Header output_header (input_header);
     output_header.datatype() = DataType::from_command_line (DataType::from<float> ());
 
-    auto output_transform = input.transform();
+    auto output_transform = input_header.transform();
     for (size_t axis = 0; axis < 3; ++axis) {
       output_header.size (axis) = output_header.size(axis) + padding[axis][0] + padding[axis][1];
-      output_transform (axis, 3) += (output_transform (axis, 0) * (bounds[0][0] - padding[0][0]) * input.spacing (0))
-                                  + (output_transform (axis, 1) * (bounds[1][0] - padding[0][0]) * input.spacing (1))
-                                  + (output_transform (axis, 2) * (bounds[2][0] - padding[0][0]) * input.spacing (2));
+      output_transform (axis, 3) += (output_transform (axis, 0) * (bounds[0][0] - padding[0][0]) * input_header.spacing (0))
+                                  + (output_transform (axis, 1) * (bounds[1][0] - padding[0][0]) * input_header.spacing (1))
+                                  + (output_transform (axis, 2) * (bounds[2][0] - padding[0][0]) * input_header.spacing (2));
     }
     output_header.transform() = output_transform;
+    for (size_t axis = 3; axis < nd; ++axis)
+      output_header.size (axis) = output_header.size(axis) + padding[axis][0] + padding[axis][1];
     auto output = Image<float>::create (argument[2], output_header);
 
+    for (size_t axis = 0; axis < nd; axis++) {
+      INFO("padding axis " + str(axis) + " lower:" + str(padding[axis][0]) + " upper:" + str(padding[axis][1]));
+    }
+
+    auto input = input_header.get_image<float>();
     for (auto l = Loop ("padding image... ", output) (output); l; ++l) {
       bool in_bounds = true;
-      for (size_t axis = 0; axis < 3; ++axis) {
+      for (size_t axis = 0; axis < nd; ++axis) {
         input.index(axis) = output.index(axis) - padding[axis][0];
         if (input.index(axis) < 0 || input.index(axis) >= input.size (axis))
           in_bounds = false;
       }
-      if (input.ndim() > 3)
-        input.index (3) = output.index (3);
+      if (input.ndim() > nd)
+        input.index (nd) = output.index (nd);
       if (in_bounds)
         output.value() = input.value();
       else
         output.value() = pad_value;
     }
+
   } else if (op == 3) { // match
     CONSOLE("operation: " + str(operation_choices[op]));
-    Header output_header (input);
+    Header output_header (input_header);
 
     auto opt = get_options ("template");
     if (!opt.size())
@@ -416,6 +465,7 @@ void run () {
     transform_type linear_transform;
     linear_transform.setIdentity();
 
+    auto input = input_header.get_image<float>().with_direct_io();
     switch (interp) {
       case 0:
         Filter::reslice<Interp::Nearest> (input, output, linear_transform, oversample, out_of_bounds_value);
