@@ -21,16 +21,19 @@ Usage
 Options
 -------
 
-Options for the dwibiascorrect script
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- **-mask image** Manually provide a mask image for bias field estimation
 
-- **-mask** Manually provide a mask image for bias field estimation
+- **-bias image** Output the estimated bias field
 
-- **-bias** Output the estimated bias field
+Options for selection of bias field estimation software (one of these MUST be provided)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-ants** Use ANTS N4 to estimate the inhomogeneity field
 
 - **-fsl** Use FSL FAST to estimate the inhomogeneity field
+
+Options for providing the DWI gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-grad** Pass the diffusion gradient table in MRtrix format
 

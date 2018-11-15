@@ -20,10 +20,7 @@ Usage
 Options
 -------
 
-Options for the dwigradcheck script
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-mask** Provide a brain mask image
+- **-mask image** Provide a brain mask image
 
 - **-number** Set the number of tracks to generate for each test
 

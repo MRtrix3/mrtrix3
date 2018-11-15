@@ -29,9 +29,6 @@ The white matter mask is estimated from a population average FA template then wa
 Options
 -------
 
-Options for the dwiintensitynorm script
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 - **-fa_threshold** The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask (default: 0.4)
 
 Additional standard options for Python scripts

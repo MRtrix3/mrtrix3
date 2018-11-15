@@ -26,9 +26,6 @@ First a template is optimised with linear registration (rigid or affine, affine 
 Options
 -------
 
-Input, output and general options
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
 - **-type** Specifiy the types of registration stages to perform. Options are "rigid" (perform rigid registration only which might be useful for intra-subject registration in longitudinal analysis), "affine" (perform affine registration) and "nonlinear" as well as cominations of registration types: "rigid_affine", "rigid_nonlinear", "affine_nonlinear", "rigid_affine_nonlinear". Default: rigid_affine_nonlinear
 
 - **-voxel_size** Define the template voxel size in mm. Use either a single value for isotropic voxels or 3 comma separated values.
