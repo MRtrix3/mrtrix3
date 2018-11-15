@@ -45,17 +45,17 @@ Options common to all dwi2response algorithms
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-continue <ScratchDir> <LastFile>** Continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file
 
 - **-force** Force overwrite of output files if pre-existing
 
 - **-help** Display help information for the script
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-nocleanup** Do not delete intermediate files during script, or scratch directory at script completion
 
 - **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-scratch /path/to/scratch/** Manually specify the path in which to generate the scratch directory
 
 - **-quiet** Suppress all console output during script execution
 
@@ -137,17 +137,17 @@ Options common to all dwi2response algorithms
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-continue <ScratchDir> <LastFile>** Continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file
 
 - **-force** Force overwrite of output files if pre-existing
 
 - **-help** Display help information for the script
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-nocleanup** Do not delete intermediate files during script, or scratch directory at script completion
 
 - **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-scratch /path/to/scratch/** Manually specify the path in which to generate the scratch directory
 
 - **-quiet** Suppress all console output during script execution
 
@@ -230,17 +230,17 @@ Options common to all dwi2response algorithms
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-continue <ScratchDir> <LastFile>** Continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file
 
 - **-force** Force overwrite of output files if pre-existing
 
 - **-help** Display help information for the script
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-nocleanup** Do not delete intermediate files during script, or scratch directory at script completion
 
 - **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-scratch /path/to/scratch/** Manually specify the path in which to generate the scratch directory
 
 - **-quiet** Suppress all console output during script execution
 
@@ -318,17 +318,17 @@ Options common to all dwi2response algorithms
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-continue <ScratchDir> <LastFile>** Continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file
 
 - **-force** Force overwrite of output files if pre-existing
 
 - **-help** Display help information for the script
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-nocleanup** Do not delete intermediate files during script, or scratch directory at script completion
 
 - **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-scratch /path/to/scratch/** Manually specify the path in which to generate the scratch directory
 
 - **-quiet** Suppress all console output during script execution
 
@@ -411,17 +411,17 @@ Options common to all dwi2response algorithms
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-continue <ScratchDir> <LastFile>** Continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file
 
 - **-force** Force overwrite of output files if pre-existing
 
 - **-help** Display help information for the script
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-nocleanup** Do not delete intermediate files during script, or scratch directory at script completion
 
 - **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-scratch /path/to/scratch/** Manually specify the path in which to generate the scratch directory
 
 - **-quiet** Suppress all console output during script execution
 
@@ -502,17 +502,17 @@ Options common to all dwi2response algorithms
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-continue <ScratchDir> <LastFile>** Continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file
 
 - **-force** Force overwrite of output files if pre-existing
 
 - **-help** Display help information for the script
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-nocleanup** Do not delete intermediate files during script, or scratch directory at script completion
 
 - **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-scratch /path/to/scratch/** Manually specify the path in which to generate the scratch directory
 
 - **-quiet** Suppress all console output during script execution
 
@@ -595,17 +595,17 @@ Options common to all dwi2response algorithms
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-continue <ScratchDir> <LastFile>** Continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file
 
 - **-force** Force overwrite of output files if pre-existing
 
 - **-help** Display help information for the script
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-nocleanup** Do not delete intermediate files during script, or scratch directory at script completion
 
 - **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-scratch /path/to/scratch/** Manually specify the path in which to generate the scratch directory
 
 - **-quiet** Suppress all console output during script execution
 

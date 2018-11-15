@@ -2,24 +2,25 @@ import argparse
 
 # These global variables can / should be accessed directly by scripts:
 # - 'args' will contain the user's command-line inputs upon parsing of the command-line
-# - 'cleanup' will indicate whether or not the temporary directory will be deleted on script completion
+# - 'doCleanup' will indicate whether or not the scratch directory will be deleted on script completion,
+#   and whether intermediary files will be deleted when function cleanup() is called on them
 # - 'exeName' will be the basename of the executed script
 # - 'forceOverwrite' will be True if the user has requested for existing output files to be
 #   re-written, and at least one output target already exists
 # - 'numThreads' will be updated based on the user specifying -nthreads at the command-line,
 #   or will remain as None if nothing is explicitly specified
-# - 'tempDir' will contain the path to any temporary directory constructed for the executable script,
+# - 'scratchDir' will contain the path to any scratch directory constructed for the executable script,
 #   or will be an empty string if none is requested
 # - 'verbosity' controls how much information will be printed at the terminal:
 #   # 0 = quiet; 1 = default; 2 = info; 3 = debug
 # - 'workingDir' will simply contain the current working directory when the executable script is run
 args = None
-cleanup = True
+doCleanup = True
 continueOption = False
 execName = ''
 forceOverwrite = False #pylint: disable=unused-variable
 numThreads = None #pylint: disable=unused-variable
-tempDir = ''
+scratchDir = ''
 verbosity = 1
 workingDir = None
 
@@ -72,7 +73,7 @@ def execute(): #pylint: disable=unused-variable
   import inspect, os, shutil, signal, sys
   from mrtrix3 import ansi, MRtrixError, run
   from mrtrix3.run import MRtrixCmdError, MRtrixFnError
-  global args, cleanup, _cmdline, continueOption, execName, numThreads, tempDir, verbosity, workingDir
+  global args, _cmdline, continueOption, doCleanup, execName, numThreads, scratchDir, verbosity, workingDir
 
   # Set up signal handlers
   for s in _signals:
@@ -123,7 +124,7 @@ def execute(): #pylint: disable=unused-variable
     _cmdline.printHelp()
     sys.exit(0)
   if hasattr(args, 'nocleanup') and args.nocleanup:
-    cleanup = False
+    doCleanup = False
   if hasattr(args, 'nthreads') and args.nthreads:
     numThreads = args.nthreads #pylint: disable=unused-variable
   if hasattr(args, 'quiet') and args.quiet:
@@ -135,11 +136,11 @@ def execute(): #pylint: disable=unused-variable
 
   if hasattr(args, 'cont') and args.cont:
     continueOption = True
-    tempDir = os.path.abspath(args.cont[0])
+    scratchDir = os.path.abspath(args.cont[0])
     # Prevent error from re-appearing at end of terminal output if script continuation results in success
     #   and -nocleanup is used
     try:
-      os.remove(os.path.join(tempDir, 'error.txt'))
+      os.remove(os.path.join(scratchDir, 'error.txt'))
     except OSError:
       pass
     run.setContinue(args.cont[1])
@@ -152,9 +153,9 @@ def execute(): #pylint: disable=unused-variable
   except (MRtrixCmdError, MRtrixFnError) as e:
     return_code = 1
     is_cmd = isinstance(e, MRtrixCmdError)
-    cleanup = False
-    if tempDir:
-      with open(os.path.join(tempDir, 'error.txt'), 'w') as outfile:
+    doCleanup = False
+    if scratchDir:
+      with open(os.path.join(scratchDir, 'error.txt'), 'w') as outfile:
         outfile.write((e.command if is_cmd else e.function) + '\n\n' + str(e) + '\n')
     exception_frame = inspect.getinnerframes(sys.exc_info()[2])[-2]
     try:
@@ -174,7 +175,7 @@ def execute(): #pylint: disable=unused-variable
       sys.stderr.write(execName + ':\n')
     else:
       sys.stderr.write(execName + ': ' + ansi.error + '[ERROR] Failed ' + ('command' if is_cmd else 'function') + ' did not provide any output information' + ansi.clear + '\n')
-    sys.stderr.write(execName + ': ' + ansi.error + '[ERROR] For debugging, inspect contents of temporary directory: ' + tempDir + ansi.clear + '\n')
+    sys.stderr.write(execName + ': ' + ansi.error + '[ERROR] For debugging, inspect contents of scratch directory: ' + scratchDir + ansi.clear + '\n')
     sys.stderr.flush()
   except MRtrixError as e:
     sys.stderr.write('\n')
@@ -206,14 +207,14 @@ def execute(): #pylint: disable=unused-variable
       if not return_code:
         console('Changing back to original directory (' + workingDir + ')')
       os.chdir(workingDir)
-    if cleanup and tempDir:
+    if doCleanup and scratchDir:
       if not return_code:
-        console('Deleting temporary directory (' + tempDir + ')')
+        console('Deleting scratch directory (' + scratchDir + ')')
       try:
-        shutil.rmtree(tempDir)
+        shutil.rmtree(scratchDir)
       except FileNotFoundError:
         pass
-      tempDir = ''
+      scratchDir = ''
     sys.exit(return_code)
 
 
@@ -239,48 +240,90 @@ def checkOutputPath(path): #pylint: disable=unused-variable
 
 
 
-def makeTempDir(): #pylint: disable=unused-variable
+def makeScratchDir(): #pylint: disable=unused-variable
   import os, random, string, sys
   from mrtrix3 import config, run
-  global args, continueOption, execName, tempDir, workingDir
+  global args, continueOption, execName, scratchDir, workingDir
   if continueOption:
-    debug('Skipping temporary directory creation due to use of -continue option')
+    debug('Skipping scratch directory creation due to use of -continue option')
     return
-  if tempDir:
-    raise Exception('Cannot use multiple temporary directories')
-  if hasattr(args, 'tempdir') and args.tempdir:
-    dir_path = os.path.abspath(args.tempdir)
+  if scratchDir:
+    raise Exception('Cannot use multiple scratch directories')
+  if hasattr(args, 'scratch') and args.scratch:
+    dir_path = os.path.abspath(args.scratch)
   else:
     # Defaulting to working directory since too many users have encountered storage issues
     dir_path = config.get('ScriptTmpDir', workingDir)
   prefix = config.get('ScriptTmpPrefix', execName + '-tmp-')
-  tempDir = dir_path
-  while os.path.isdir(tempDir):
+  scratchDir = dir_path
+  while os.path.isdir(scratchDir):
     random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
-    tempDir = os.path.join(dir_path, prefix + random_string) + os.sep
-  os.makedirs(tempDir)
-  console('Generated temporary directory: ' + tempDir)
-  with open(os.path.join(tempDir, 'cwd.txt'), 'w') as outfile:
+    scratchDir = os.path.join(dir_path, prefix + random_string) + os.sep
+  os.makedirs(scratchDir)
+  console('Generated scratch directory: ' + scratchDir)
+  with open(os.path.join(scratchDir, 'cwd.txt'), 'w') as outfile:
     outfile.write(workingDir + '\n')
-  with open(os.path.join(tempDir, 'command.txt'), 'w') as outfile:
+  with open(os.path.join(scratchDir, 'command.txt'), 'w') as outfile:
     outfile.write(' '.join(sys.argv) + '\n')
-  open(os.path.join(tempDir, 'log.txt'), 'w').close()
-  # Also use this temporary directory for any piped images within run.command() calls
-  run.setTmpDir(tempDir)
+  open(os.path.join(scratchDir, 'log.txt'), 'w').close()
+  # Also use this scratch directory for any piped images within run.command() calls
+  run.setScratchDir(scratchDir)
 
 
 
-def gotoTempDir(): #pylint: disable=unused-variable
+def gotoScratchDir(): #pylint: disable=unused-variable
   import os
-  global tempDir
-  if not tempDir:
-    raise Exception('No temporary directory location set')
+  global scratchDir
+  if not scratchDir:
+    raise Exception('No scratch directory location set')
   if verbosity:
-    console('Changing to temporary directory (' + tempDir + ')')
-  os.chdir(tempDir)
+    console('Changing to scratch directory (' + scratchDir + ')')
+  os.chdir(scratchDir)
 
 
 
+# This function can (and should in some instances) be called upon any file / directory
+#   that is no longer required by the script. If the script has been instructed to retain
+#   all intermediates, the resource will be retained; if not, it will be deleted (in particular
+#   to dynamically free up storage space used by the script).
+def cleanup(path): #pylint: disable=unused-variable
+  import shutil, os
+  global doCleanup, verbosity
+  if not doCleanup:
+    return
+  if isinstance(path, list):
+    if len(path) == 1:
+      cleanup(path[0])
+      return
+    if verbosity > 2:
+      console('Cleaning up ' + str(len(path)) + ' intermediate items: ' + str(path))
+    for entry in path:
+      if os.path.isfile(entry):
+        func = os.remove
+      elif os.path.isdir(entry):
+        func = shutil.rmtree
+      else:
+        continue
+      try:
+        func(entry)
+      except OSError:
+        pass
+    return
+  if os.path.isfile(path):
+    temporary_type = 'file'
+    func = os.remove
+  elif os.path.isdir(path):
+    temporary_type = 'directory'
+    func = shutil.rmtree
+  else:
+    debug('Unknown target \'' + path + '\'')
+    return
+  if verbosity > 2:
+    console('Cleaning up intermediate ' + temporary_type + ': \'' + path + '\'')
+  try:
+    func(path)
+  except OSError:
+    debug('Unable to cleanup intermediate ' + temporary_type + ': \'' + path + '\'')
 
 
 
@@ -528,13 +571,13 @@ class Parser(argparse.ArgumentParser):
         self.externalCitations = self.externalCitations or parent.externalCitations
     else:
       standard_options = self.add_argument_group('Standard options')
-      standard_options.add_argument('-continue', nargs=2, dest='cont', metavar=('<TempDir>', '<LastFile>'), help='Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file')
+      standard_options.add_argument('-continue', nargs=2, dest='cont', metavar=('<ScratchDir>', '<LastFile>'), help='Continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file')
       standard_options.add_argument('-force', action='store_true', help='Force overwrite of output files if pre-existing')
       standard_options.add_argument('-help', action='store_true', help='Display help information for the script')
-      standard_options.add_argument('-nocleanup', action='store_true', help='Do not delete temporary files during script, or temporary directory at script completion')
+      standard_options.add_argument('-nocleanup', action='store_true', help='Do not delete intermediate files during script, or scratch directory at script completion')
       standard_options.add_argument('-nthreads', metavar='number', type=int, help='Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)')
-      standard_options.add_argument('-tempdir', metavar='/path/to/tmp/', help='Manually specify the path in which to generate the temporary directory')
-      standard_options.add_argument('-quiet',   action='store_true', help='Suppress all console output during script execution')
+      standard_options.add_argument('-scratch', metavar='/path/to/scratch/', help='Manually specify the path in which to generate the scratch directory')
+      standard_options.add_argument('-quiet', action='store_true', help='Suppress all console output during script execution')
       standard_options.add_argument('-info', action='store_true', help='Display additional information and progress for every command invoked')
       standard_options.add_argument('-debug', action='store_true', help='Display additional debugging information over and above the output of -info')
       self.flagMutuallyExclusiveOptions( [ 'quiet', 'info', 'debug' ] )
@@ -939,7 +982,7 @@ class Parser(argparse.ArgumentParser):
 def handler(signum, _frame):
   import os, shutil, signal, sys
   from mrtrix3 import ansi
-  global _signals, execName, tempDir, workingDir
+  global _signals, execName, scratchDir, workingDir
   # Ignore any other incoming signals
   for s in _signals:
     try:
@@ -968,10 +1011,10 @@ def handler(signum, _frame):
   sys.stderr.write('\n' + execName + ': ' + ansi.error + msg + ansi.clear + '\n')
   if os.getcwd() != workingDir:
     os.chdir(workingDir)
-  if tempDir:
+  if scratchDir:
     try:
-      shutil.rmtree(tempDir)
+      shutil.rmtree(scratchDir)
     except FileNotFoundError:
       pass
-    tempDir = ''
+    scratchDir = ''
   sys.exit(signum)

@@ -15,7 +15,7 @@ Usage
 
     dwiintensitynorm input_dir mask_dir output_dir fa_template wm_mask [ options ]
 
--  *input_dir*: The input directory containing all DWI images with embedded diffusion-weighted gradient scheme (in .mif or .mif.gz file format)
+-  *input_dir*: The input directory containing all DWI images
 -  *mask_dir*: Input directory containing brain masks, corresponding to one per input image (with the same file name prefix)
 -  *output_dir*: The output directory containing all of the intensity normalised DWI images
 -  *fa_template*: The output population specific FA template, which is threshold to estimate a white matter mask
@@ -37,17 +37,17 @@ Options for the dwiintensitynorm script
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-continue <ScratchDir> <LastFile>** Continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file
 
 - **-force** Force overwrite of output files if pre-existing
 
 - **-help** Display help information for the script
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-nocleanup** Do not delete intermediate files during script, or scratch directory at script completion
 
 - **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-scratch /path/to/scratch/** Manually specify the path in which to generate the scratch directory
 
 - **-quiet** Suppress all console output during script execution
 

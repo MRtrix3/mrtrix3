@@ -7,16 +7,16 @@ _suffix = ''
 #   the output files to appear.
 def checkFirst(prefix, structures): #pylint: disable=unused-variable
   import os
-  from mrtrix3 import app, fsys, MRtrixError
+  from mrtrix3 import app, MRtrixError, path
   vtk_files = [ prefix + '-' + struct + '_first.vtk' for struct in structures ]
   existing_file_count = sum([ os.path.exists(filename) for filename in vtk_files ])
   if existing_file_count != len(vtk_files):
     if 'SGE_ROOT' in os.environ:
       app.console('FSL FIRST job has been submitted to SGE; awaiting completion')
       app.console('(note however that FIRST may fail silently, and hence this script may hang indefinitely)')
-      fsys.waitFor(vtk_files)
+      path.waitFor(vtk_files)
     else:
-      raise MRtrixError('FSL FIRST has failed; only ' + str(existing_file_count) + ' of ' + str(len(vtk_files)) + ' structures were segmented successfully (check ' + fsys.toTemp('first.logs', False) + ')')
+      raise MRtrixError('FSL FIRST has failed; only ' + str(existing_file_count) + ' of ' + str(len(vtk_files)) + ' structures were segmented successfully (check ' + path.toScratch('first.logs', False) + ')')
 
 
 
