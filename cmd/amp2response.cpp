@@ -176,6 +176,13 @@ void run ()
         throw Exception ("Values specified for lmax must be even");
       max_lmax = std::max (max_lmax, i);
     }
+    if ((*shells)[0].is_bzero() && lmax.front()) {
+      WARN ("Non-zero lmax requested for " +
+            ((*shells)[0].get_mean() ?
+            "first shell (mean b=" + str((*shells)[0].get_mean()) + "), which MRtrix3 has classified as b=0;" :
+            "b=0 shell;"));
+      WARN ("  unless intended, this is likely to fail, as b=0 contains no orientation contrast");
+    }
   } else {
     // Auto-fill lmax
     // Because the amp->SH transform doesn't need to be applied per voxel,
@@ -299,6 +306,13 @@ void run ()
 
         // Generate the ZSH -> amplitude transform
         Eigen::MatrixXd transform = Math::ZSH::init_amp_transform<default_type> (rotated_dirs_azel.col(1), lmax[shell_index]);
+        if (!transform.allFinite()) {
+          Exception e ("Unable to construct A2SH transformation for shell b=" + str(int(std::round((*shells)[shell_index].get_mean()))) + ";");
+          e.push_back ("  lmax (" + str(lmax[shell_index]) + ") may be too large for this shell");
+          if (!shell_index && (*shells)[0].is_bzero())
+            e.push_back ("  (this appears to be a b=0 shell, and therefore lmax should be set to 0 for this shell)");
+          throw e;
+        }
 
         // Concatenate these data to the ICLS matrices
         cat_transforms.block (voxel_counter * data.size(), 0, transform.rows(), transform.cols()) = transform;
