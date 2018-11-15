@@ -16,6 +16,7 @@
 #include "command.h"
 #include "image.h"
 #include "algo/loop.h"
+#include "fixel/helpers.h"
 
 
 using namespace MR;
@@ -39,13 +40,15 @@ void usage ()
 
 void run ()
 {
-  auto dir = Image<float>::open (argument[0]);
+  Header H_in = Header::open (argument[0]);
+  Peaks::check (H_in);
+  auto dir = H_in.get_image<float>();
 
   Header header (dir);
   header.size(3) = header.size(3)/3;
 
   auto amp = Image<float>::create (argument[1], header);
-  
+
   auto loop = Loop("converting directions to amplitudes", 0, 3);
 
   for (auto i = loop (dir, amp); i; ++i) {
