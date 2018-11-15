@@ -43,7 +43,7 @@ Input, output and general options
 
 - **-linear_transformations_dir** Output a directory containing the linear transformations used to generate the template. If the folder does not exist it will be created
 
-- **-template_mask** Output a template mask. Only works in -mask_dir has been input. The template mask is computed as the intersection of all subject masks in template space.
+- **-template_mask** Output a template mask. Only works if -mask_dir has been provided. The template mask is computed as the intersection of all subject masks in template space.
 
 - **-noreorientation** Turn off FOD reorientation in mrregister. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc)
 
@@ -84,17 +84,17 @@ Options for the linear registration
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-continue <ScratchDir> <LastFile>** Continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file
 
 - **-force** Force overwrite of output files if pre-existing
 
 - **-help** Display help information for the script
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-nocleanup** Do not delete intermediate files during script, or scratch directory at script completion
 
 - **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-scratch /path/to/scratch/** Manually specify the path in which to generate the scratch directory
 
 - **-quiet** Suppress all console output during script execution
 
