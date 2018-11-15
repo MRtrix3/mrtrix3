@@ -697,8 +697,6 @@ class Parser(argparse.ArgumentParser):
       for line in self._description:
         s += w.fill(line) + '\n'
         s += '\n'
-    s += bold('OPTIONS') + '\n'
-    s += '\n'
 
     # Define a function for printing all text for a given option
     # This will be used in two separate locations:
@@ -736,6 +734,8 @@ class Parser(argparse.ArgumentParser):
     #   placed into an option group, and print those first
     ungrouped_options = self._getUngroupedOptions()
     if ungrouped_options and ungrouped_options._group_actions:
+      s += bold('OPTIONS') + '\n'
+      s += '\n'
       s += printGroupOptions(ungrouped_options)
     # Option groups
     for group in reversed(self._action_groups):
