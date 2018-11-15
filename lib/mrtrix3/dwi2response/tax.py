@@ -30,7 +30,7 @@ def needsSingleShell(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import math, os, shutil
-  from mrtrix3 import app, fsys, image, MRtrixError, run
+  from mrtrix3 import app, image, MRtrixError, path, run
 
   lmax_option = ''
   if app.args.lmax:
@@ -72,28 +72,28 @@ def execute(): #pylint: disable=unused-variable
     run.command('dwi2fod csd dwi.mif ' + RF_in_path + ' ' + prefix + 'FOD.mif -mask ' + mask_in_path)
     # Get amplitudes of two largest peaks, and directions of largest
     run.command('fod2fixel ' + prefix + 'FOD.mif ' + prefix + 'fixel -peak peaks.mif -mask ' + mask_in_path + ' -fmls_no_thresholds')
-    fsys.delTemporary(prefix + 'FOD.mif')
+    app.cleanup(prefix + 'FOD.mif')
     run.command('fixel2voxel ' + prefix + 'fixel/peaks.mif split_data ' + prefix + 'amps.mif')
     run.command('mrconvert ' + prefix + 'amps.mif ' + prefix + 'first_peaks.mif -coord 3 0 -axes 0,1,2')
     run.command('mrconvert ' + prefix + 'amps.mif ' + prefix + 'second_peaks.mif -coord 3 1 -axes 0,1,2')
-    fsys.delTemporary(prefix + 'amps.mif')
+    app.cleanup(prefix + 'amps.mif')
     run.command('fixel2voxel ' + prefix + 'fixel/directions.mif split_dir ' + prefix + 'all_dirs.mif')
-    fsys.delTemporary(prefix + 'fixel')
+    app.cleanup(prefix + 'fixel')
     run.command('mrconvert ' + prefix + 'all_dirs.mif ' + prefix + 'first_dir.mif -coord 3 0:2')
-    fsys.delTemporary(prefix + 'all_dirs.mif')
+    app.cleanup(prefix + 'all_dirs.mif')
     # Revise single-fibre voxel selection based on ratio of tallest to second-tallest peak
     run.command('mrcalc ' + prefix + 'second_peaks.mif ' + prefix + 'first_peaks.mif -div ' + prefix + 'peak_ratio.mif')
-    fsys.delTemporary(prefix + 'first_peaks.mif')
-    fsys.delTemporary(prefix + 'second_peaks.mif')
+    app.cleanup(prefix + 'first_peaks.mif')
+    app.cleanup(prefix + 'second_peaks.mif')
     run.command('mrcalc ' + prefix + 'peak_ratio.mif ' + str(app.args.peak_ratio) + ' -lt ' + mask_in_path + ' -mult ' + prefix + 'SF.mif -datatype bit')
-    fsys.delTemporary(prefix + 'peak_ratio.mif')
+    app.cleanup(prefix + 'peak_ratio.mif')
     # Make sure image isn't empty
     SF_voxel_count = int(image.statistic(prefix + 'SF.mif', 'count', '-mask ' + prefix + 'SF.mif'))
     if not SF_voxel_count:
       raise MRtrixError('Aborting: All voxels have been excluded from single-fibre selection')
     # Generate a new response function
     run.command('amp2response dwi.mif ' + prefix + 'SF.mif ' + prefix + 'first_dir.mif ' + prefix + 'RF.txt' + lmax_option)
-    fsys.delTemporary(prefix + 'first_dir.mif')
+    app.cleanup(prefix + 'first_dir.mif')
 
     with open(prefix + 'RF.txt', 'r') as new_RF_file:
       new_RF = [ float(x) for x in new_RF_file.read().split() ]
@@ -116,8 +116,8 @@ def execute(): #pylint: disable=unused-variable
         run.function(shutil.copyfile, prefix + 'SF.mif', 'voxels.mif')
         break
 
-    fsys.delTemporary(RF_in_path)
-    fsys.delTemporary(mask_in_path)
+    app.cleanup(RF_in_path)
+    app.cleanup(mask_in_path)
 
     iteration += 1
 
@@ -131,6 +131,6 @@ def execute(): #pylint: disable=unused-variable
     run.function(shutil.copyfile, 'iter' + str(app.args.max_iters-1) + '_RF.txt', 'response.txt')
     run.function(shutil.copyfile, 'iter' + str(app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
 
-  run.function(shutil.copyfile, 'response.txt', fsys.fromUser(app.args.output, False))
+  run.function(shutil.copyfile, 'response.txt', path.fromUser(app.args.output, False))
   if app.args.voxels:
-    run.command('mrconvert voxels.mif ' + fsys.fromUser(app.args.voxels, True) + app.mrconvertOutputOption(fsys.fromUser(app.args.input, True)))
+    run.command('mrconvert voxels.mif ' + path.fromUser(app.args.voxels) + app.mrconvertOutputOption(path.fromUser(app.args.input)))

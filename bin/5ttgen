@@ -36,9 +36,9 @@ def execute(): #pylint: disable=unused-variable
 
   alg.checkOutputPaths()
 
-  app.makeTempDir()
+  app.makeScratchDir()
   alg.getInputs()
-  app.gotoTempDir()
+  app.gotoScratchDir()
 
   alg.execute()
 

@@ -37,7 +37,7 @@ def needsSingleShell(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import shutil
-  from mrtrix3 import app, fsys, image, MRtrixError, run
+  from mrtrix3 import app, image, MRtrixError, path, run
 
 
   # Get b-values and number of volumes per b-value.
@@ -137,7 +137,7 @@ def execute(): #pylint: disable=unused-variable
   cleanopt = ''
   if not app.cleanup:
     cleanopt = ' -nocleanup'
-  run.command('dwi2response tournier dwi.mif _respsfwmss.txt -sf_voxels ' + str(voxsfwmcount) + ' -iter_voxels ' + str(voxsfwmcount * 10) + ' -mask refined_wm.mif -voxels voxels_sfwm.mif -tempdir ' + app.tempDir + cleanopt)
+  run.command('dwi2response tournier dwi.mif _respsfwmss.txt -sf_voxels ' + str(voxsfwmcount) + ' -iter_voxels ' + str(voxsfwmcount * 10) + ' -mask refined_wm.mif -voxels voxels_sfwm.mif -scratch ' + app.scratchDir + cleanopt)
 
   # Get final voxels for GM response function estimation from GM.
   refgmmedian = image.statistic('safe_sdm.mif', 'median', '-mask refined_gm.mif')
@@ -174,9 +174,9 @@ def execute(): #pylint: disable=unused-variable
   run.command('amp2response dwi.mif voxels_sfwm.mif safe_vecs.mif response_sfwm.txt' + bvalues_option + sfwm_lmax_option)
   run.command('amp2response dwi.mif voxels_gm.mif safe_vecs.mif response_gm.txt' + bvalues_option + ' -isotropic')
   run.command('amp2response dwi.mif voxels_csf.mif safe_vecs.mif response_csf.txt' + bvalues_option + ' -isotropic')
-  run.function(shutil.copyfile, 'response_sfwm.txt', fsys.fromUser(app.args.out_sfwm, False))
-  run.function(shutil.copyfile, 'response_gm.txt', fsys.fromUser(app.args.out_gm, False))
-  run.function(shutil.copyfile, 'response_csf.txt', fsys.fromUser(app.args.out_csf, False))
+  run.function(shutil.copyfile, 'response_sfwm.txt', path.fromUser(app.args.out_sfwm, False))
+  run.function(shutil.copyfile, 'response_gm.txt', path.fromUser(app.args.out_gm, False))
+  run.function(shutil.copyfile, 'response_csf.txt', path.fromUser(app.args.out_csf, False))
 
 
   # Generate 4D binary images with voxel selections at major stages in algorithm (RGB as in MSMT-CSD paper).
@@ -184,4 +184,4 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrcat refined_csf.mif refined_gm.mif refined_wm.mif refined.mif -axis 3')
   run.command('mrcat voxels_csf.mif voxels_gm.mif voxels_sfwm.mif voxels.mif -axis 3')
   if app.args.voxels:
-    run.command('mrconvert voxels.mif ' + fsys.fromUser(app.args.voxels, True) + app.mrconvertOutputOption(fsys.fromUser(app.args.input, True)))
+    run.command('mrconvert voxels.mif ' + path.fromUser(app.args.voxels) + app.mrconvertOutputOption(path.fromUser(app.args.input)))

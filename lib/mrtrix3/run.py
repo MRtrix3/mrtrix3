@@ -65,7 +65,7 @@ def setContinue(filename): #pylint: disable=unused-variable
 
 
 
-def setTmpDir(path): #pylint: disable=unused-variable
+def setScratchDir(path): #pylint: disable=unused-variable
   global _env
   _env['MRTRIX_TMPFILE_DIR'] = path
 
@@ -159,17 +159,16 @@ def command(cmd, shell=False): #pylint: disable=unused-variable
       _tempFiles.append([ ])
     return index
 
-  # Wrap tempfile.mkstemp() in a convenience function, which also
-  #   catches the case where the user does not have write access to the
-  #   temporary directory location selected by default, and in that case
-  #   re-runs mkstemp() manually specifying the temporary directory
+  # Wrap tempfile.mkstemp() in a convenience function, which also catches the case
+  #   where the user does not have write access to the temporary directory location
+  #   selected by default by the tempfile module, and in that case re-runs mkstemp()
+  #   manually specifying an alternative temporary directory
   def makeTemporaryFile():
     try:
       return tempfile.mkstemp()
     except OSError:
-      print ('OSError')
-      if app.tempDir:
-        return tempfile.mkstemp('', 'tmp', app.tempDir)
+      if app.scratchDir:
+        return tempfile.mkstemp('', 'tmp', app.scratchDir)
       return tempfile.mkstemp('', 'tmp', os.getcwd())
 
 
@@ -387,8 +386,8 @@ def command(cmd, shell=False): #pylint: disable=unused-variable
     # Only now do we append to the script log, since the command has completed successfully
     # Note: Writing the command as it was formed as the input to run.command():
     #   other flags may potentially change if this file is eventually used to resume the script
-    if app.tempDir:
-      with open(os.path.join(app.tempDir, 'log.txt'), 'a') as outfile:
+    if app.scratchDir:
+      with open(os.path.join(app.scratchDir, 'log.txt'), 'a') as outfile:
         outfile.write(cmdstring + '\n')
 
   return CommandReturn(return_stdout, return_stderr)
@@ -430,8 +429,8 @@ def function(fn, *args, **kwargs): #pylint: disable=unused-variable
 
   # Only now do we append to the script log, since the function has completed successfully
   _lock.acquire()
-  if app.tempDir:
-    with open(os.path.join(app.tempDir, 'log.txt'), 'a') as outfile:
+  if app.scratchDir:
+    with open(os.path.join(app.scratchDir, 'log.txt'), 'a') as outfile:
       outfile.write(fnstring + '\n')
   _lock.release()
 
