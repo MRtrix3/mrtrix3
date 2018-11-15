@@ -41,11 +41,11 @@ Options for exporting the estimated best gradient table
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
 
-- **-tempdir /path/to/tmp/** manually specify the path in which to generate the temporary directory
+- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
 
-- **-continue <TempDir> <LastFile>** continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^

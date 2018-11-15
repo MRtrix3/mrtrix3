@@ -1,4 +1,4 @@
-# Collection of convenience functions for manipulating files and directories, as well as filesystem paths
+# Collection of convenience functions for manipulating filesystem paths
 
 
 
@@ -22,84 +22,20 @@ def allInDir(directory, dir_path=True, ignore_hidden_files=True): #pylint: disab
 
 
 
-# Determines the common postfix for a list of filenames (including the file extension)
-def commonPostfix(inputFiles): #pylint: disable=unused-variable
-  from mrtrix3 import app
-  first = inputFiles[0]
-  cursor = 0
-  found = False
-  common = ''
-  for dummy_i in reversed(first):
-    if not found:
-      for j in inputFiles:
-        if j[len(j)-cursor-1] != first[len(first)-cursor-1]:
-          found = True
-          break
-      if not found:
-        common = first[len(first)-cursor-1] + common
-      cursor += 1
-  app.debug('Common postfix of ' + str(len(inputFiles)) + ' is \'' + common + '\'')
-  return common
-
-
-
-# This function can (and should in some instances) be called upon any file / directory
-#   that is no longer required by the script. If the script has been instructed to retain
-#   all temporaries, the resource will be retained; if not, it will be deleted (in particular
-#   to dynamically free up storage space used by the script).
-def delTemporary(path): #pylint: disable=unused-variable
-  import shutil, os
-  from mrtrix3 import app
-  if not app.cleanup:
-    return
-  if isinstance(path, list):
-    if len(path) == 1:
-      delTemporary(path[0])
-      return
-    if app.verbosity > 2:
-      app.console('Deleting ' + str(len(path)) + ' temporary items: ' + str(path))
-    for entry in path:
-      if os.path.isfile(entry):
-        func = os.remove
-      elif os.path.isdir(entry):
-        func = shutil.rmtree
-      else:
-        continue
-      try:
-        func(entry)
-      except OSError:
-        pass
-    return
-  if os.path.isfile(path):
-    temporary_type = 'file'
-    func = os.remove
-  elif os.path.isdir(path):
-    temporary_type = 'directory'
-    func = shutil.rmtree
-  else:
-    app.debug('Unknown target \'' + path + '\'')
-    return
-  if app.verbosity > 2:
-    app.console('Deleting temporary ' + temporary_type + ': \'' + path + '\'')
-  try:
-    func(path)
-  except OSError:
-    app.debug('Unable to delete temporary ' + temporary_type + ': \'' + path + '\'')
-
-
-
 # Get the full absolute path to a user-specified location.
-#   This function serves two purposes:
-#   To get the intended user-specified path when a script is operating inside a temporary directory, rather than
+# This function serves two purposes:
+# - To get the intended user-specified path when a script is operating inside a scratch directory, rather than
 #     the directory that was current when the user specified the path;
-#   To add quotation marks where the output path is being interpreted as part of a full command string
+# - To add quotation marks where the output path is being interpreted as part of a full command string
 #     (e.g. to be passed to run.command()); without these quotation marks, paths that include spaces would be
 #     erroneously split, subsequently confusing whatever command is being invoked.
-def fromUser(filename, is_command): #pylint: disable=unused-variable
+#   If the filesystem path provided by the script is to be interpreted in isolation, rather than as one part
+#     of a command string, then parameter 'escape' should be set to False in order to not add quotation marks
+def fromUser(filename, escape=True): #pylint: disable=unused-variable
   import os, shlex
   from mrtrix3 import app
   fullpath = os.path.abspath(os.path.join(app.workingDir, filename))
-  if is_command:
+  if escape:
     fullpath = shlex.quote(fullpath)
   app.debug(filename + ' -> ' + fullpath)
   return fullpath
@@ -120,12 +56,35 @@ def makeDir(path): #pylint: disable=unused-variable
 
 
 
+# Make a temporary empty file / directory with a unique name
+# If the filesystem path separator is provided as the 'suffix' input, then the function will generate a new
+#   directory rather than a file.
+def makeTemporary(suffix): #pylint: disable=unused-variable
+  import errno, os
+  from mrtrix3 import app
+  is_directory = suffix in '\\/' and len(suffix) == 1
+  while True:
+    temp_path = nameTemporary(suffix)
+    try:
+      if is_directory:
+        os.makedirs(temp_path)
+      else:
+        open(temp_path, 'a').close()
+      app.debug(temp_path)
+      return temp_path
+    except OSError as exception:
+      if exception.errno != errno.EEXIST:
+        raise
+
+
+
 # Get an appropriate location and name for a new temporary file / directory
-# Note: Doesn't actually create anything; just gives a unique name that won't over-write anything
-def newTemporary(suffix): #pylint: disable=unused-variable
+# Note: Doesn't actually create anything; just gives a unique name that won't over-write anything.
+# If you want to create a temporary file / directory, use the makeTemporary() function above.
+def nameTemporary(suffix): #pylint: disable=unused-variable
   import os.path, random, string
   from mrtrix3 import app, config
-  dir_path = config['TmpFileDir'] if 'TmpFileDir' in config else (app.tempDir if app.tempDir else os.getcwd())
+  dir_path = config['TmpFileDir'] if 'TmpFileDir' in config else (app.scratchDir if app.scratchDir else os.getcwd())
   prefix = config['TmpFilePrefix'] if 'TmpFilePrefix' in config else 'mrtrix-tmp-'
   full_path = dir_path
   suffix = suffix.lstrip('.')
@@ -138,7 +97,9 @@ def newTemporary(suffix): #pylint: disable=unused-variable
 
 
 # Determine the name of a sub-directory containing additional data / source files for a script
-# This can be algorithm files in lib/mrtrix3, or data files in /share/mrtrix3/
+# This can be algorithm files in lib/mrtrix3/, or data files in share/mrtrix3/
+# This function appears here rather than in the algorithm module as some scripts may
+#   need to access the shared data directory but not actually be using the algorithm module
 def scriptSubDirName(): #pylint: disable=unused-variable
   import inspect, os
   from mrtrix3 import app
@@ -170,13 +131,15 @@ def sharedDataPath(): #pylint: disable=unused-variable
 
 
 
-# Get the full absolute path to a location in the temporary script directory
-# Also deals with the potential for special characters in a path (e.g. spaces) by wrapping in quotes
-def toTemp(filename, is_command): #pylint: disable=unused-variable
+# Get the full absolute path to a location in the script's scratch directory
+# Also deals with the potential for special characters in a path (e.g. spaces) by wrapping in quotes,
+#   as long as parameter 'escape' is true (if the path yielded by this function is to be interpreted in
+#   isolation rather than as one part of a command string, parameter 'escape' should be set to False)
+def toScratch(filename, escape=True): #pylint: disable=unused-variable
   import os, shlex
   from mrtrix3 import app
-  fullpath = os.path.abspath(os.path.join(app.tempDir, filename))
-  if is_command:
+  fullpath = os.path.abspath(os.path.join(app.scratchDir, filename))
+  if escape:
     fullpath = shlex.quote(fullpath)
   app.debug(filename + ' -> ' + fullpath)
   return fullpath
