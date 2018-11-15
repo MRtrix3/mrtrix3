@@ -41,8 +41,8 @@ Options for exporting the estimated best gradient table
 
 - **-export_grad_fsl bvecs bvals** Export the final gradient table in FSL bvecs/bvals format
 
-Options specific to Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
 

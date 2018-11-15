@@ -45,8 +45,8 @@ Options for ANTS N4BiasFieldCorrection
 
 - **-ants.s 4** N4BiasFieldCorrection option -s. shrink-factor applied to spatial dimensions
 
-Options specific to Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
 
