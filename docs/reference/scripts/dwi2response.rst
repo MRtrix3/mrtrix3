@@ -42,8 +42,8 @@ Options common to all dwi2response algorithms
 
 - **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
-Options specific to Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
 
@@ -139,8 +139,8 @@ Options common to all dwi2response algorithms
 
 - **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
-Options specific to Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
 
@@ -237,8 +237,8 @@ Options common to all dwi2response algorithms
 
 - **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
-Options specific to Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
 
@@ -330,8 +330,8 @@ Options common to all dwi2response algorithms
 
 - **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
-Options specific to Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
 
@@ -428,8 +428,8 @@ Options common to all dwi2response algorithms
 
 - **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
-Options specific to Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
 
@@ -524,8 +524,8 @@ Options common to all dwi2response algorithms
 
 - **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
-Options specific to Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
 
@@ -622,8 +622,8 @@ Options common to all dwi2response algorithms
 
 - **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
-Options specific to Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
 

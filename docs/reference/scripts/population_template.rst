@@ -81,8 +81,8 @@ Options for the linear registration
 
 - **-affine_niter** Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:500 for each scale). This must be a single number or a list of same length as the linear_scale factor list
 
-Options specific to Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
 

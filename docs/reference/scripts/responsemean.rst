@@ -21,7 +21,7 @@ Usage
 Description
 -----------
 
-Example usage: /home/Rob/src/mrtrix3/bin/responsemean input_response1.txt input_response2.txt input_response3.txt ... output_average_response.txt
+Example usage: responsemean input_response1.txt input_response2.txt input_response3.txt ... output_average_response.txt
 
 All response function files provided must contain the same number of unique b-values (lines), as well as the same number of coefficients per line.
 
@@ -30,8 +30,10 @@ As long as the number of unique b-values is identical across all input files, th
 Options
 -------
 
-Options specific to Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- **-legacy** Use the legacy behaviour of former command 'average_response': average response function coefficients directly, without compensating for global magnitude differences between input files
+
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
 
@@ -55,11 +57,6 @@ Standard options
 - **-help** display this information page and exit.
 
 - **-version** display version information and exit.
-
-optional arguments
-^^^^^^^^^^^^^^^^^^
-
-- **-legacy** Use the legacy behaviour of former command 'average_response': average response function coefficients directly, without compensating for global magnitude differences between input files
 
 --------------
 

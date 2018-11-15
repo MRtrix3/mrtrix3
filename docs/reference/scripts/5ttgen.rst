@@ -34,8 +34,8 @@ Options common to all 5ttgen algorithms
 
 - **-sgm_amyg_hipp** Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image
 
-Options specific to Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
 
@@ -118,8 +118,8 @@ Options common to all 5ttgen algorithms
 
 - **-sgm_amyg_hipp** Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image
 
-Options specific to Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
 
@@ -206,8 +206,8 @@ Options common to all 5ttgen algorithms
 
 - **-sgm_amyg_hipp** Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image
 
-Options specific to Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
 
@@ -293,8 +293,8 @@ Options common to all 5ttgen algorithms
 
 - **-sgm_amyg_hipp** Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image
 
-Options specific to Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
 

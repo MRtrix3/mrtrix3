@@ -30,8 +30,8 @@ Options for the labelsgmfix script
 
 - **-sgm_amyg_hipp** Consider the amygdalae and hippocampi as sub-cortical grey matter structures, and also replace their estimates with those from FIRST
 
-Options specific to Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-nocleanup** do not delete temporary files during script execution, and do not delete temporary directory at script completion
 

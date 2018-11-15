@@ -503,7 +503,7 @@ class Parser(argparse.ArgumentParser):
       standard_options.add_argument('-nthreads', metavar='number', type=int, help='use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)')
       standard_options.add_argument('-help', action='store_true', help='display this information page and exit.')
       standard_options.add_argument('-version', action='store_true', help='display version information and exit.')
-      script_options = self.add_argument_group('Options specific to Python scripts')
+      script_options = self.add_argument_group('Additional standard options for Python scripts')
       script_options.add_argument('-nocleanup', action='store_true', help='do not delete temporary files during script execution, and do not delete temporary directory at script completion')
       script_options.add_argument('-tempdir', metavar='/path/to/tmp/', help='manually specify the path in which to generate the temporary directory')
       script_options.add_argument('-continue', nargs=2, dest='cont', metavar=('<TempDir>', '<LastFile>'), help='continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file')
@@ -697,38 +697,52 @@ class Parser(argparse.ArgumentParser):
       for line in self._description:
         s += w.fill(line) + '\n'
         s += '\n'
+    s += bold('OPTIONS') + '\n'
+    s += '\n'
+
+    # Define a function for printing all text for a given option
+    # This will be used in two separate locations:
+    #   - First locating and printing any ungrouped command-line options
+    #   - Printing all contents of option groups
+    def printGroupOptions(group):
+      s = ''
+      for option in group._group_actions:
+        s += '  ' + underline('/'.join(option.option_strings))
+        if option.metavar:
+          s += ' '
+          if isinstance(option.metavar, tuple):
+            s += ' '.join(option.metavar)
+          else:
+            s += option.metavar
+        elif option.nargs:
+          if isinstance(option.nargs, int):
+            s += (' ' + option.dest.upper())*option.nargs
+          elif option.nargs == '+' or option.nargs == '*':
+            s += ' <space-separated list>'
+          elif option.nargs == '?':
+            s += ' <optional value>'
+        elif option.type is not None:
+          s += ' ' + option.type.__name__.upper()
+        elif option.default is None:
+          s += ' ' + option.dest.upper()
+        # Any options that haven't tripped one of the conditions above should be a store_true or store_false, and
+        #   therefore there's nothing to be appended to the option instruction
+        s += '\n'
+        s += w.fill(option.help) + '\n'
+        s += '\n'
+      return s
+
+    # Before printing option groups, find any command-line options that have not explicitly been
+    #   placed into an option group, and print those first
+    ungrouped_options = self._getUngroupedOptions()
+    if ungrouped_options and ungrouped_options._group_actions:
+      s += printGroupOptions(ungrouped_options)
     # Option groups
     for group in reversed(self._action_groups):
-      # * Don't display empty groups
-      # * Don't display the subparser option; that's dealt with in the usage
-      # * Don't re-display any compulsory positional arguments; they're also dealt with in the usage
-      if group._group_actions and not (len(group._group_actions) == 1 and isinstance(group._group_actions[0], argparse._SubParsersAction)) and not group == self._positionals:
+      if self._isOptionGroup(group):
         s += bold(group.title) + '\n'
         s += '\n'
-        for option in group._group_actions:
-          s += '  ' + underline('/'.join(option.option_strings))
-          if option.metavar:
-            s += ' '
-            if isinstance(option.metavar, tuple):
-              s += ' '.join(option.metavar)
-            else:
-              s += option.metavar
-          elif option.nargs:
-            if isinstance(option.nargs, int):
-              s += (' ' + option.dest.upper())*option.nargs
-            elif option.nargs == '+' or option.nargs == '*':
-              s += ' <space-separated list>'
-            elif option.nargs == '?':
-              s += ' <optional value>'
-          elif option.type is not None:
-            s += ' ' + option.type.__name__.upper()
-          elif option.default is None:
-            s += ' ' + option.dest.upper()
-          # Any options that haven't tripped one of the conditions above should be a store_true or store_false, and
-          #   therefore there's nothing to be appended to the option instruction
-          s += '\n'
-          s += w.fill(option.help) + '\n'
-          s += '\n'
+        s += printGroupOptions(group)
     s += bold('AUTHOR') + '\n'
     s += w.fill(self._author) + '\n'
     s += '\n'
@@ -774,17 +788,24 @@ class Parser(argparse.ArgumentParser):
       # This will need updating if any scripts allow mulitple argument inputs
       sys.stdout.write('ARGUMENT ' + arg.dest + ' 0 0\n')
       sys.stdout.write(arg.help + '\n')
+
+    def printGroupOptions(group):
+      for option in group._group_actions:
+        sys.stdout.write('OPTION ' + '/'.join(option.option_strings) + ' 1 0\n')
+        sys.stdout.write(option.help + '\n')
+        if option.metavar:
+          if isinstance(option.metavar, tuple):
+            for arg in option.metavar:
+              sys.stdout.write('ARGUMENT ' + arg + ' 0 0\n')
+          else:
+            sys.stdout.write('ARGUMENT ' + option.metavar + ' 0 0\n')
+
+    ungrouped_options = self._getUngroupedOptions()
+    if ungrouped_options and ungrouped_options._group_actions:
+      printGroupOptions(ungrouped_options)
     for group in reversed(self._action_groups):
-      if group._group_actions and not (len(group._group_actions) == 1 and isinstance(group._group_actions[0], argparse._SubParsersAction)) and not group == self._positionals:
-        for option in group._group_actions:
-          sys.stdout.write('OPTION ' + '/'.join(option.option_strings) + ' 1 0\n')
-          sys.stdout.write(option.help + '\n')
-          if option.metavar:
-            if isinstance(option.metavar, tuple):
-              for arg in option.metavar:
-                sys.stdout.write('ARGUMENT ' + arg + ' 0 0\n')
-            else:
-              sys.stdout.write('ARGUMENT ' + option.metavar + ' 0 0\n')
+      if _isOptionGroup(group):
+        printGroupOptions(group)
     sys.stdout.flush()
 
   def printUsageMarkdown(self):
@@ -812,18 +833,27 @@ class Parser(argparse.ArgumentParser):
       for line in self._description:
         s += line + '\n\n'
     s += '## Options\n\n'
+
+    def printGroupOptions(group):
+      s = ''
+      for option in group._group_actions:
+        text = '/'.join(option.option_strings)
+        if option.metavar:
+          text += ' '
+          if isinstance(option.metavar, tuple):
+            text += ' '.join(option.metavar)
+          else:
+            text += option.metavar
+        s += '+ **-' + text + '**<br>' + option.help + '\n\n'
+      return s
+
+    ungrouped_options = self._getUngroupedOptions()
+    if ungrouped_options and ungrouped_options._group_actions:
+      s += printGroupOptions(ungrouped_options)
     for group in reversed(self._action_groups):
-      if group._group_actions and not (len(group._group_actions) == 1 and isinstance(group._group_actions[0], argparse._SubParsersAction)) and not group == self._positionals:
+      if self._isOptionGroup(group):
         s += '#### ' + group.title + '\n\n'
-        for option in group._group_actions:
-          text = '/'.join(option.option_strings)
-          if option.metavar:
-            text += ' '
-            if isinstance(option.metavar, tuple):
-              text += ' '.join(option.metavar)
-            else:
-              text += option.metavar
-          s += '+ **-' + text + '**<br>' + option.help + '\n\n'
+        s += printGroupOptions(group)
     if self.citationList:
       s += '## References\n\n'
       for ref in self.citationList:
@@ -876,8 +906,26 @@ class Parser(argparse.ArgumentParser):
         s += line + '\n\n'
     s += 'Options\n'
     s += '-------\n'
+
+    def printGroupOptions(group):
+      s = ''
+      for option in group._group_actions:
+        text = '/'.join(option.option_strings)
+        if option.metavar:
+          text += ' '
+          if isinstance(option.metavar, tuple):
+            text += ' '.join(option.metavar)
+          else:
+            text += option.metavar
+        s += '\n'
+        s += '- **' + text + '** ' + option.help.replace('|', '\\|') + '\n'
+      return s
+
+    ungrouped_options = self._getUngroupedOptions()
+    if ungrouped_options and ungrouped_options._group_actions:
+      s += printGroupOptions(ungrouped_options)
     for group in reversed(self._action_groups):
-      if group._group_actions and not (len(group._group_actions) == 1 and isinstance(group._group_actions[0], argparse._SubParsersAction)) and not group == self._positionals:
+      if self._isOptionGroup(group):
         s += '\n'
         s += group.title + '\n'
         s += '^'*len(group.title) + '\n'
@@ -923,6 +971,19 @@ class Parser(argparse.ArgumentParser):
     sys.stdout.write(s)
     sys.stdout.flush()
 
+  def _getUngroupedOptions(self):
+    return next((group for group in self._action_groups if group.title == 'optional arguments'), None)
+
+  def _isOptionGroup(self, group):
+    # * Don't display empty groups
+    # * Don't display the subparser option; that's dealt with in the usage
+    # * Don't re-display any compulsory positional arguments; they're also dealt with in the usage
+    # * Don't display any ungrouped options; those are dealt with explicitly
+    return group._group_actions and \
+           not (len(group._group_actions) == 1 and \
+           isinstance(group._group_actions[0], argparse._SubParsersAction)) and \
+           not group == self._positionals and \
+           group.title != 'optional arguments'
 
 
 
