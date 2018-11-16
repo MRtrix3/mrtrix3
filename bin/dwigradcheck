@@ -5,21 +5,20 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.setSynopsis('Check the orientation of the diffusion gradient table')
   cmdline.addCitation('','Jeurissen, B.; Leemans, A.; Sijbers, J. Automated correction of improperly rotated diffusion gradient orientations in diffusion weighted MRI. Medical Image Analysis, 2014, 18(7), 953-962', False)
   cmdline.add_argument('input', help='The input DWI series to be checked')
+  cmdline.add_argument('-mask', metavar='image', help='Provide a brain mask image')
+  cmdline.add_argument('-number', type=int, default=10000, help='Set the number of tracks to generate for each test')
 
   grad_export = cmdline.add_argument_group('Options for exporting the estimated best gradient table')
   grad_export.add_argument('-export_grad_mrtrix', metavar='grad', help='Export the final gradient table in MRtrix format')
   grad_export.add_argument('-export_grad_fsl', nargs=2, metavar=('bvecs', 'bvals'), help='Export the final gradient table in FSL bvecs/bvals format')
+  cmdline.flagMutuallyExclusiveOptions( ['export_grad_mrtrix', 'export_grad_fsl' ])
 
   grad_import = cmdline.add_argument_group('Options for importing the gradient table')
   grad_import.add_argument('-grad', help='Provide a gradient table in MRtrix format')
   grad_import.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Provide a gradient table in FSL bvecs/bvals format')
-
-  options = cmdline.add_argument_group('Options for the dwigradcheck script')
-  options.add_argument('-mask', help='Provide a brain mask image')
-  options.add_argument('-number', type=int, default=10000, help='Set the number of tracks to generate for each test')
-
   cmdline.flagMutuallyExclusiveOptions( ['grad', 'fslgrad' ])
-  cmdline.flagMutuallyExclusiveOptions( ['export_grad_mrtrix', 'export_grad_fsl' ])
+
+
 
 
 
