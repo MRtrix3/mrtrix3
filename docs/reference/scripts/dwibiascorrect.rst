@@ -21,16 +21,19 @@ Usage
 Options
 -------
 
-Options for the dwibiascorrect script
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- **-mask image** Manually provide a mask image for bias field estimation
 
-- **-mask** Manually provide a mask image for bias field estimation
+- **-bias image** Output the estimated bias field
 
-- **-bias** Output the estimated bias field
+Options for selection of bias field estimation software (one of these MUST be provided)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-ants** Use ANTS N4 to estimate the inhomogeneity field
 
 - **-fsl** Use FSL FAST to estimate the inhomogeneity field
+
+Options for providing the DWI gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-grad** Pass the diffusion gradient table in MRtrix format
 
@@ -45,26 +48,31 @@ Options for ANTS N4BiasFieldCorrection
 
 - **-ants.s 4** N4BiasFieldCorrection option -s. shrink-factor applied to spatial dimensions
 
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+
+- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <ScratchDir> <LastFile>** Continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file
+- **-info** display information messages.
 
-- **-force** Force overwrite of output files if pre-existing
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-help** Display help information for the script
+- **-debug** display debugging messages.
 
-- **-nocleanup** Do not delete intermediate files during script, or scratch directory at script completion
+- **-force** force overwrite of output files.
 
-- **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
-- **-scratch /path/to/scratch/** Manually specify the path in which to generate the scratch directory
+- **-help** display this information page and exit.
 
-- **-quiet** Suppress all console output during script execution
-
-- **-info** Display additional information and progress for every command invoked
-
-- **-debug** Display additional debugging information over and above the output of -info
+- **-version** display version information and exit.
 
 References
 ^^^^^^^^^^

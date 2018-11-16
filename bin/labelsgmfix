@@ -23,9 +23,8 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_argument('t1',     help='The T1 image to be provided to FIRST')
   cmdline.add_argument('lut',    help='The lookup table file that the parcellated image is based on')
   cmdline.add_argument('output', help='The output parcellation image')
-  options = cmdline.add_argument_group('Options for the labelsgmfix script')
-  options.add_argument('-premasked', action='store_true', default=False, help='Indicate that brain masking has been applied to the T1 input image')
-  options.add_argument('-sgm_amyg_hipp', action='store_true', default=False, help='Consider the amygdalae and hippocampi as sub-cortical grey matter structures, and also replace their estimates with those from FIRST')
+  cmdline.add_argument('-premasked', action='store_true', default=False, help='Indicate that brain masking has been applied to the T1 input image')
+  cmdline.add_argument('-sgm_amyg_hipp', action='store_true', default=False, help='Consider the amygdalae and hippocampi as sub-cortical grey matter structures, and also replace their estimates with those from FIRST')
 
 
 
