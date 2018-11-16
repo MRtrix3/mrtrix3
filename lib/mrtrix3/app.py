@@ -411,6 +411,7 @@ class Parser(argparse.ArgumentParser):
     else:
       self._copyright = _defaultCopyright
     self._description = [ ]
+    self._examples = [ ]
     self.externalCitations = False
     if 'synopsis' in kwargs_in:
       self.synopsis = kwargs_in['synopsis']
@@ -447,6 +448,9 @@ class Parser(argparse.ArgumentParser):
 
   def setCopyright(self, text): #pylint: disable=unused-variable
     self._copyright = text
+
+  def addExampleUsage(self, title, code, description = ''): #pylint: disable=unused-variable
+    self._examples.append( (title, code, description) )
 
   # Mutually exclusive options need to be added before the command-line input is parsed
   def flagMutuallyExclusiveOptions(self, options, required=False): #pylint: disable=unused-variable
@@ -607,6 +611,15 @@ class Parser(argparse.ArgumentParser):
       for line in self._description:
         s += w.fill(line) + '\n'
         s += '\n'
+    if self._examples:
+      s += bold('EXAMPLE USAGES') + '\n'
+      s += '\n'
+      for example in self._examples:
+        s += w.fill(underline(example[0] + ':')) + '\n'
+        s += ' '*7 + '$ ' + example[1] + '\n'
+        if example[2]:
+          s += w.fill(example[2]) + '\n'
+        s += '\n'
     # Option groups
     for group in reversed(self._action_groups):
       # * Don't display empty groups
@@ -674,6 +687,11 @@ class Parser(argparse.ArgumentParser):
           sys.stdout.write(line + '\n')
       else:
         sys.stdout.write(self._description + '\n')
+    for example in self._examples:
+      sys.stdout.write(example[0] + ': $ ' + example[1])
+      if example[2]:
+        sys.stdout.write('; ' + example[2])
+      sys.stdout.write('\n')
     if self._subparsers and len(sys.argv) == 3:
       for alg in self._subparsers._group_actions[0].choices:
         if alg == sys.argv[1]:
@@ -721,6 +739,14 @@ class Parser(argparse.ArgumentParser):
       s += '## Description\n\n'
       for line in self._description:
         s += line + '\n\n'
+    if self._examples:
+      s += '## Example usages\n\n'
+      for example in self._examples:
+        s += '__' + example[0] + ':__\n'
+        s += '`$ ' + example[1] + '`\n'
+        if example[2]:
+          s += example[2] + '\n'
+        s += '\n'
     s += '## Options\n\n'
     for group in reversed(self._action_groups):
       if group._group_actions and not (len(group._group_actions) == 1 and isinstance(group._group_actions[0], argparse._SubParsersAction)) and not group == self._positionals:
@@ -784,6 +810,14 @@ class Parser(argparse.ArgumentParser):
       s += '-----------\n\n'
       for line in self._description:
         s += line + '\n\n'
+    if self._examples:
+      s += 'Example usages\n'
+      s += '--------------\n\n'
+      for example in self._examples:
+        s += '-   *' + example[0] + '*::\n\n'
+        s += '        $ ' + example[1] + '\n\n'
+        if example[2]:
+          s += '    ' + example[2] + '\n\n'
     s += 'Options\n'
     s += '-------\n'
     for group in reversed(self._action_groups):
