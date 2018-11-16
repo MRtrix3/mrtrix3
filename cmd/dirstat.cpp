@@ -51,15 +51,28 @@ void usage ()
     "the direction set (important with respect to eddy-current resilience)."
 
     + "Specific metrics can also be queried independently via the \"-output\" "
-    "option, using these shorthands: U/B for unipolar/bipolar model, E/N "
-    "for energy and nearest-neighbour respectively, t/-/+ for total/min/max "
-    "respectively (mean implied otherwise); SHn for condition number of SH fit "
-    "at order n (with n an even integer); ASYM for asymmetry index (norm of "
-    "mean direction vector); and N for the number of directions. For example:"
-    + "-output BN,BN-,BN+   requests the mean, min and max nearest-neighour "
-    "angles assuming a bipolar model."
-    + "-output UE,SH8,SYM   requests the mean unipolar electrostatic energy, "
-    "condition number of SH fit at order 8, and the asymmetry index.";
+    "option, using these shorthands: \n"
+    "U/B for unipolar/bipolar model, \n"
+    "E/N for energy and nearest-neighbour respectively, \n"
+    "t/-/+ for total/min/max respectively (mean implied otherwise); \n"
+    "SHn for condition number of SH fit at order n (with n an even integer); \n"
+    "ASYM for asymmetry index (norm of mean direction vector); \n"
+    "N for the number of directions.";
+
+  EXAMPLES
+    + Example ("Default usage",
+               "dirstat directions.txt",
+               "This provides a pretty-printed list of all metrics available.")
+
+    + Example ("To output a single metric of interest",
+               "dirstat grad.b -shell 3000 -output SH8",
+               "requests the condition number of SH fit of b=3000 shell "
+               "directions at SH order 8")
+
+    + Example ("To output multiple metrics of interest",
+               "dirstat dwi.mif -output BN,BN-,BN+",
+               "requests the mean, min and max nearest-neighour "
+               "angles assuming a bipolar model.");
 
   ARGUMENTS
     + Argument ("dirs", "the text file or image containing the directions.").type_file_in();

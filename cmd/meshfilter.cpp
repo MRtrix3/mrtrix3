@@ -48,6 +48,18 @@ void usage ()
 
   SYNOPSIS = "Apply filter operations to meshes";
 
+  DESCRIPTION
+  + "While this command has only one filter operation currently available, it "
+    "nevertheless presents with a comparable interface to the MRtrix3 commands "
+    "maskfilter and mrfilter commands.";
+
+  EXAMPLES
+  + Example ("To apply a mesh smoothing filter (currently the only filter available",
+             "meshfilter input.vtk smooth output.vtk",
+             "The usage of this command may cause confusion due to the generic interface "
+             "despite only one filtering operation being currently available. This simple "
+             "example usage is therefore provided for clarity.");
+
   ARGUMENTS
   + Argument ("input",  "the input mesh file").type_file_in()
   + Argument ("filter", "the filter to apply."

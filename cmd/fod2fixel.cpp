@@ -88,8 +88,7 @@ void usage ()
 
   + OptionGroup ("Other options for fod2fixel")
 
-  + Option ("mask",
-                "only perform computation within the specified binary brain mask image.")
+  + Option ("mask", "only perform computation within the specified binary brain mask image.")
     + Argument ("image").type_image_in()
 
   + Option ("maxnum", "maximum number of fixels to output for any particular voxel (default: no limit)")

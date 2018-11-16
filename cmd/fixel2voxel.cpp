@@ -67,7 +67,15 @@ void usage ()
   + "- Some measure of crossing-fibre organisation: complexity, sf ('single-fibre')"
   + "- A 4D directionally-encoded colour image: dec_unit, dec_scaled"
   + "- A 4D scalar image of fixel values with one 3D volume per fixel: split_data"
-  + "- A 4D image of fixel directions, stored as three 3D volumes per fixel direction: split_dir";
+  + "- A 4D image of fixel directions, stored as three 3D volumes per fixel direction: split_dir"
+
+  + "The -weighted option deals with the case where there is some per-fixel metric of interest "
+    "that you wish to collapse into a single scalar measure per voxel, but each fixel possesses "
+    "a different volume, and you wish for those fixels with greater volume to have a greater "
+    "influence on the calculation than fixels with lesser volume. For instance, when estimating "
+    "a voxel-based measure of mean axon diameter from per-fixel mean axon diameters, a fixel's "
+    "mean axon diameter should be weigthed by its relative volume within the voxel in the "
+    "calculation of that voxel mean. Note that AFD can be used as a psuedomeasure of fixel volume.";
 
   REFERENCES
     + "* Reference for 'complexity' operation:\n"
@@ -86,9 +94,7 @@ void usage ()
                       "fixels, padding where necessary.")
       + Argument ("N").type_integer(1)
 
-  + Option ("weighted", "weight the contribution of each fixel to the per-voxel result according to its volume. "
-                        "E.g. when estimating a voxel-based measure of mean axon diameter, a fixel's mean axon diameter "
-                        "should be weigthed by its relative volume within the voxel. Note that AFD can be used as a psuedomeasure of fixel volume.")
+  + Option ("weighted", "weight the contribution of each fixel to the per-voxel result according to its volume.")
       + Argument ("fixel_in").type_image_in ();
 
 }

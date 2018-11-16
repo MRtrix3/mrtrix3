@@ -24,7 +24,14 @@ This command inputs any number of tissue components (e.g. from multi-tissue CSD)
 
 The -mask option is mandatory and is optimally provided with a brain mask (such as the one obtained from dwi2mask earlier in the processing pipeline). Outlier areas with exceptionally low or high combined tissue contributions are accounted for and reoptimised as the intensity inhomogeneity estimation becomes more accurate.
 
-Example usage: mtnormalise wmfod.mif wmfod_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif.
+Example usages
+--------------
+
+-   *Default usage (for a three-tissue decomposition)*::
+
+        $ mtnormalise wmfod.mif wmfod_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif
+
+    Note how for each tissue, the input and output images are provided as a consecutive pair.
 
 Options
 -------
