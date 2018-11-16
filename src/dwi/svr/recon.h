@@ -231,7 +231,6 @@ namespace MR
           }, zero);
         Xo += L.adjoint() * (L * Xi);
         Xo += Z.adjoint() * (Z * Xi);
-        //Xo += std::numeric_limits<float>::epsilon() * Xi;
       }
 
 
@@ -498,7 +497,6 @@ namespace MR
         DEBUG("Initialising Laplacian regularizer.");
         // Regularization convolution filter set as isotropic Laplacian filter.
         Eigen::Matrix<Scalar, 2, 1> D;
-        //D << 0.897355532912, -0.0596831149378, -0.0325677131043, -0.0161064216245, -0.00663148828241;     // 2nd order
         D << 0.90, -0.15;
         D *= std::sqrt(lambda);
 
@@ -516,34 +514,6 @@ namespace MR
               L.coeffRef(get_idx(x, y, z), get_idx(x, (y < ny-1) ? y+1 : ny-1, z)) += D[1];
               L.coeffRef(get_idx(x, y, z), get_idx(x, y, (z < nz-1) ? z+1 : nz-1)) += D[1];
 
-//              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, (y < ny-1) ? y+1 : ny-1, z)) += D[2];
-//              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           (y < ny-1) ? y+1 : ny-1, z)) += D[2];
-//              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, (y) ? y-1 : 0,           z)) += D[2];
-//              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           (y) ? y-1 : 0,           z)) += D[2];
-//              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, y, (z < nz-1) ? z+1 : nz-1)) += D[2];
-//              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           y, (z < nz-1) ? z+1 : nz-1)) += D[2];
-//              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, y, (z) ? z-1 : 0)          ) += D[2];
-//              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           y, (z) ? z-1 : 0)          ) += D[2];
-//              L.coeffRef(get_idx(x, y, z), get_idx(x, (y < ny-1) ? y+1 : ny-1, (z < nz-1) ? z+1 : nz-1)) += D[2];
-//              L.coeffRef(get_idx(x, y, z), get_idx(x, (y) ? y-1 : 0,           (z < nz-1) ? z+1 : nz-1)) += D[2];
-//              L.coeffRef(get_idx(x, y, z), get_idx(x, (y < ny-1) ? y+1 : ny-1, (z) ? z-1 : 0)          ) += D[2];
-//              L.coeffRef(get_idx(x, y, z), get_idx(x, (y) ? y-1 : 0,           (z) ? z-1 : 0)          ) += D[2];
-
-//              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           (y) ? y-1 : 0,           (z) ? z-1 : 0)) += D[3];
-//              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, (y) ? y-1 : 0,           (z) ? z-1 : 0)) += D[3];
-//              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           (y < ny-1) ? y+1 : ny-1, (z) ? z-1 : 0)) += D[3];
-//              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, (y < ny-1) ? y+1 : ny-1, (z) ? z-1 : 0)) += D[3];
-//              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           (y) ? y-1 : 0,           (z < nz-1) ? z+1 : nz-1)) += D[3];
-//              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, (y) ? y-1 : 0,           (z < nz-1) ? z+1 : nz-1)) += D[3];
-//              L.coeffRef(get_idx(x, y, z), get_idx((x) ? x-1 : 0,           (y < ny-1) ? y+1 : ny-1, (z < nz-1) ? z+1 : nz-1)) += D[3];
-//              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-1) ? x+1 : nx-1, (y < ny-1) ? y+1 : ny-1, (z < nz-1) ? z+1 : nz-1)) += D[3];
-
-//              L.coeffRef(get_idx(x, y, z), get_idx(x, y, (z > 1) ? z-2 : 0)) += D[4];
-//              L.coeffRef(get_idx(x, y, z), get_idx(x, (y > 1) ? y-2 : 0, z)) += D[4];
-//              L.coeffRef(get_idx(x, y, z), get_idx((x > 1) ? x-2 : 0, y, z)) += D[4];
-//              L.coeffRef(get_idx(x, y, z), get_idx((x < nx-2) ? x+2 : nx-1, y, z)) += D[4];
-//              L.coeffRef(get_idx(x, y, z), get_idx(x, (y < ny-2) ? y+2 : ny-1, z)) += D[4];
-//              L.coeffRef(get_idx(x, y, z), get_idx(x, y, (z < nz-2) ? z+2 : nz-1)) += D[4];
             }
           }
         }
@@ -554,7 +524,6 @@ namespace MR
       {
         DEBUG("Initialising slice regularizer.");
         Eigen::Matrix<Scalar, 5, 1> D;
-        //D << 0.375 , -0.25 , 0.0625 ;
         D << 0.2734375, -0.21875, 0.109375, -0.03125, 0.00390625;
         D *= std::sqrt(lambda);
 
