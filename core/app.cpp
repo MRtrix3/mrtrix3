@@ -338,7 +338,8 @@ namespace MR
     {
       std::string s = paragraph ("", format ? underline (title + ":") + "\n" : title + ": ", HELP_PURPOSE_INDENT);
       s += std::string (HELP_EXAMPLE_INDENT, ' ') + "$ " + code + "\n";
-      s += paragraph ("", description, HELP_PURPOSE_INDENT);
+      if (description.size())
+        s += paragraph ("", description, HELP_PURPOSE_INDENT);
       if (format)
         s += "\n";
       return s;
@@ -712,7 +713,9 @@ namespace MR
         for (size_t i = 0; i < EXAMPLES.size(); ++i) {
           s += std::string ("__") + EXAMPLES[i].title + ":__\n";
           s += std::string ("`$ ") + EXAMPLES[i].code + "`\n";
-          s += EXAMPLES[i].description + "\n\n";
+          if (EXAMPLES[i].description.size())
+            s += EXAMPLES[i].description + "\n";
+          s += "\n";
         }
       }
 
@@ -839,7 +842,8 @@ namespace MR
         for (size_t i = 0; i < EXAMPLES.size(); ++i) {
           s += std::string ("-   *") + EXAMPLES[i].title + "*::\n\n";
           s += std::string ("        $ ") + EXAMPLES[i].code + "\n\n";
-          s += std::string ("    ") + EXAMPLES[i].description + "\n\n";
+          if (EXAMPLES[i].description.size())
+            s += std::string ("    ") + EXAMPLES[i].description + "\n\n";
         }
       }
 
