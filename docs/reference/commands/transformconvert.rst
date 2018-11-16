@@ -15,14 +15,27 @@ Usage
 
     transformconvert [ options ]  input [ input ... ] operation output
 
--  *input*: the input for the specified operation
--  *operation*: the operation to perform, one of:flirt_import, itk_import.flirt_import: Convert a transformation matrix produced by FSL's flirt command into a format usable by MRtrix. You'll need to provide as additional arguments the NIfTI images that were passed to flirt with the -in and -ref options:matrix_in in ref flirt_import outputitk_import: Convert a plain text transformation matrix file produced by ITK's (ANTS, Slicer) affine registration into a format usable by MRtrix.
+-  *input*: the input(s) for the specified operation
+-  *operation*: the operation to perform, one of:flirt_import, itk_import
 -  *output*: the output transformation matrix.
 
 Description
 -----------
 
-This command allows to convert the transformation matrix provided by FSL's flirt command and ITK's linear transformation format to a format usable in MRtrix.
+This command allows to convert transformation matrices provided by other registration softwares to a format usable in MRtrix3. Example usages are provided below.
+
+Example usages
+--------------
+
+-   *Convert a transformation matrix produced by FSL's flirt command into a format usable by MRtrix3*::
+
+        $ transformconvert transform_flirt.mat flirt_in.nii flirt_ref.nii flirt_import transform_mrtrix.txt
+
+    The two images provided as inputs for this operation must be in the correct order: first the image that was provided to flirt via the -in option, second the image that was provided to flirt via the -ref option.
+
+-   *Convert a plain text transformation matrix file produced by ITK's affine registration (e.g. ANTS, Slicer) into a format usable by MRtrix3*::
+
+        $ transformconvert transform_itk.txt itk_import transform_mrtrix.txt
 
 Options
 -------

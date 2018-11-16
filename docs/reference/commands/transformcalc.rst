@@ -15,44 +15,50 @@ Usage
 
     transformcalc [ options ]  inputs [ inputs ... ] operation output
 
--  *inputs*: the inputs for the specified operation
+-  *inputs*: the input(s) for the specified operation
 -  *operation*: the operation to perform, one of: invert, half, rigid, header, average, interpolate, decompose, align_vertices_rigid (see description section for details).
 -  *output*: the output transformation matrix.
 
-Description
------------
+Example usages
+--------------
 
-invert: invert the input transformation:
+-   *Invert a transformation*::
 
-matrix_in invert output
+        $ transformcalc matrix_in.txt invert matrix_out.txt
 
-half: calculate the matrix square root of the input transformation:
+-   *Calculate the matrix square root of the input transformation (halfway transformation)*::
 
-matrix_in half output
+        $ transformcalc matrix_in.txt half matrix_out.txt
 
-rigid: calculate the rigid transformation of the affine input transformation:
+-   *Calculate the rigid component of an affine input transformation*::
 
-matrix_in rigid output
+        $ transformcalc affine_in.txt rigid rigid_out.txt
 
-header: calculate the transformation matrix from an original image and an image with modified header:
+-   *Calculate the transformation matrix from an original image and an image with modified header*::
 
-mov mapmovhdr header output
+        $ transformcalc mov mapmovhdr header output
 
-average: calculate the average affine matrix of all input matrices:
+-   *Calculate the average affine matrix of a set of input matrices*::
 
-input ... average output
+        $ transformcalc input1.txt ... inputN.txt average matrix_out.txt
 
-interpolate: create interpolated transformation matrix between input (t=0) and input2 (t=1). Based on matrix decomposition with linear interpolation of translation, rotation and stretch described in Shoemake, K., Hill, M., & Duff, T. (1992). Matrix Animation and Polar Decomposition. Matrix, 92, 258-264. doi:10.1.1.56.1336:
+-   *Create interpolated transformation matrix between two inputs*::
 
-input input2 interpolate output
+        $ transformcalc input1.txt input2.txt interpolate matrix_out.txt
 
-decompose: decompose transformation matrix M into translation, rotation and stretch and shear (M = T * R * S). The output is a key-value text file containing: scaling: vector of 3 scaling factors in x, y, z direction; shear: list of shear factors for xy, xz, yz axes; angles: list of Euler angles about static x, y, z axes in radians in the range [0:pi]x[-pi:pi]x[-pi:pi]; angle_axis: angle in radians and rotation axis; translation : translation vector along x, y, z axes in mm; R: composed roation matrix (R = rot_x * rot_y * rot_z); S: composed scaling and shear matrix:
+    Based on matrix decomposition with linear interpolation of translation, rotation and stretch described in: Shoemake, K., Hill, M., & Duff, T. (1992). Matrix Animation and Polar Decomposition. Matrix, 92, 258-264. doi:10.1.1.56.1336
 
-matrix_in decompose output
+-   *Decompose transformation matrix M into translation, rotation and stretch and shear (M = T * R * S)*::
 
-align_vertices_rigid: align two sets of landmarks using a rigid transformation. Vertex coordinates are in scanner space, corresponding vertices must be stored in the same row of moving.txt and fixed.txt. Requires 3 or more vertices in each file. Algorithm: Kabsch 'A solution for the best rotation to relate two sets of vectors' DOI:10.1107/S0567739476001873:
+        $ transformcalc matrix_in.txt decompose matrixes_out.txt
 
-input moving.txt fixed.txt align_vertices_rigid output
+    The output is a key-value text file containing: scaling: vector of 3 scaling factors in x, y, z direction; shear: list of shear factors for xy, xz, yz axes; angles: list of Euler angles about static x, y, z axes in radians in the range [0:pi]x[-pi:pi]x[-pi:pi]; angle_axis: angle in radians and rotation axis; translation : translation vector along x, y, z axes in mm; R: composed roation matrix (R = rot_x * rot_y * rot_z); S: composed scaling and shear matrix
+
+-   *Align two sets of landmarks using a rigid transformation*::
+
+        $ transformcalc input moving.txt fixed.txt align_vertices_rigid output
+
+    Vertex coordinates are in scanner space, corresponding vertices must be stored in the same row of moving.txt and fixed.txt. Requires 3 or more vertices in each file. Algorithm: Kabsch 'A solution for the best rotation to relate two sets of vectors' DOI:10.1107/S0567739476001873
 
 Options
 -------
