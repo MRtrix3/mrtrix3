@@ -217,7 +217,7 @@ def execute(): #pylint: disable=unused-variable
         console('Deleting scratch directory (' + scratchDir + ')')
       try:
         shutil.rmtree(scratchDir)
-      except FileNotFoundError:
+      except OSError:
         pass
       scratchDir = ''
     sys.exit(return_code)
@@ -886,7 +886,7 @@ class Parser(argparse.ArgumentParser):
     if ungrouped_options and ungrouped_options._group_actions:
       printGroupOptions(ungrouped_options)
     for group in reversed(self._action_groups):
-      if _isOptionGroup(group):
+      if self._isOptionGroup(group):
         printGroupOptions(group)
     sys.stdout.flush()
 
@@ -969,7 +969,7 @@ class Parser(argparse.ArgumentParser):
     s += '--------\n\n'
     s += self._synopsis + '\n\n'
     s += 'Usage\n'
-    s += '--------\n\n'
+    s += '-----\n\n'
     s += '::\n\n'
     s += '    ' + self.formatUsage() + '\n\n'
     if self._subparsers:
@@ -1105,7 +1105,7 @@ def handler(signum, _frame):
   if scratchDir:
     try:
       shutil.rmtree(scratchDir)
-    except FileNotFoundError:
+    except OSError:
       pass
     scratchDir = ''
   sys.exit(signum)
