@@ -51,6 +51,8 @@ void usage ()
               "index of the input volume to which the field is aligned. (default = none)")
       + Argument("vol").type_integer(0)
 
+    + Option ("nomodulation", "disable Jacobian intensity modulation")
+
     + PhaseEncoding::ImportOptions
 
     + DataType::options();
@@ -66,10 +68,10 @@ class FieldUnwarp {
 
     FieldUnwarp (const Image<value_type>& data, const Image<value_type>& field,
                  const Eigen::MatrixXd& petable, const Eigen::MatrixXd& motion,
-                 const int fidx = -1) :
+                 const int fidx = -1, const bool nomod = false) :
       dinterp (data, 0.0f), finterp (field, 0.0f),
       PE (petable.leftCols<3>()), motion (motion.leftCols<6>()), T0 (data),
-      nv (data.size(3)), nz (data.size(2)), ne (motion.rows() / nv)
+      nv (data.size(3)), nz (data.size(2)), ne (motion.rows() / nv), nomod (nomod)
     {
       PE.array().colwise() *= petable.col(3).array();
       if ((nv*nz) % motion.rows())
@@ -94,7 +96,8 @@ class FieldUnwarp {
         RdB0 = Ts2r.rotation().transpose() * dB0.transpose().cast<double>();
         pos = vox + B0 * PE.row(v).transpose();
         dinterp.voxel(pos);
-        jac = 1.0 + 2. * PE.row(v) * RdB0;
+        if (!nomod)
+          jac = 1.0 + 2. * PE.row(v) * RdB0;
         out.value() = jac * dinterp.value();
       }
     }
@@ -107,6 +110,7 @@ class FieldUnwarp {
     Transform T0;
     transform_type Tf;
     size_t nv, nz, ne;
+    bool nomod;
 
     inline transform_type get_transform(const Eigen::VectorXd& p) const
     {
@@ -152,6 +156,10 @@ void run ()
   int fidx = get_option_value("fidx", -1);
   if (fidx >= data.size(3)) throw Exception("field index invalid.");
 
+  // other options
+  opt = get_options("nomodulation");
+  bool nomod = opt.size();
+
   // Save output
   Header header (data);
   header.datatype() = DataType::from_command_line (DataType::Float32);
@@ -159,7 +167,7 @@ void run ()
   auto out = Image<value_type>::create(argument[2], header);
 
   // Loop through shells
-  FieldUnwarp func (data, field, petable, motion, fidx);
+  FieldUnwarp func (data, field, petable, motion, fidx, nomod);
   ThreadedLoop("unwarping field", out, {2, 3}).run(func, out);
 
 }
