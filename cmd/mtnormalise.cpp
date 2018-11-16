@@ -47,9 +47,13 @@ void usage ()
      "(such as the one obtained from dwi2mask earlier in the processing pipeline). "
      "Outlier areas with exceptionally low or high combined tissue contributions are "
      "accounted for and reoptimised as the intensity inhomogeneity estimation becomes "
-     "more accurate."
+     "more accurate.";
 
-   + "Example usage: mtnormalise wmfod.mif wmfod_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif.";
+  EXAMPLES
+   + Example ("Default usage (for a three-tissue decomposition)",
+              "mtnormalise wmfod.mif wmfod_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif",
+              "Note how for each tissue, the input and output images are provided as "
+              "a consecutive pair.");
 
   ARGUMENTS
     + Argument ("input output", "list of all input and output tissue compartment files. See example usage in the description.").type_image_in().allow_multiple();

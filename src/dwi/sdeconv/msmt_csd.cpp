@@ -36,7 +36,7 @@ namespace MR
       + Argument ("value").type_float (0.0)
 
       + Option ("predicted_signal",
-                "the predicted dwi image.")
+                "output the predicted dwi image.")
       + Argument ("image").type_image_out();
 
 

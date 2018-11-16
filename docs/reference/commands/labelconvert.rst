@@ -16,14 +16,23 @@ Usage
     labelconvert [ options ]  path_in lut_in lut_out image_out
 
 -  *path_in*: the input image
--  *lut_in*: the connectome lookup table for the input image
+-  *lut_in*: the connectome lookup table corresponding to the input image
 -  *lut_out*: the target connectome lookup table for the output image
 -  *image_out*: the output image
 
 Description
 -----------
 
-Typical usage is to convert a parcellation image provided by some other software, based on the lookup table provided by that software, to conform to a new lookup table, particularly one where the node indices increment from 1, in preparation for connectome construction; examples of such target lookup table files are provided in share//mrtrix3//labelconvert//
+Typical usage is to convert a parcellation image provided by some other software, based on the lookup table provided by that software, to conform to a new lookup table, particularly one where the node indices increment from 1, in preparation for connectome construction; examples of such target lookup table files are provided in share//mrtrix3//labelconvert//, but can be created by the user to provide the desired node set // ordering // colours.
+
+Example usages
+--------------
+
+-   *To convert a Desikan-Killiany parcellation image as provided by FreeSurfer to have nodes incrementing from 1*::
+
+        $ labelconvert aparc+aseg.mgz FreeSurferColorLUT.txt mrtrix3//share//mrtrix3//labelconvert//fs_default.txt nodes.mif
+
+    Paths to the files in the example above would need to be revised according to their locations on the user's system.
 
 Options
 -------

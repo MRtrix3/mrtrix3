@@ -24,6 +24,33 @@ Description
 
 The spherical harmonic coefficients are stored as follows. First, since the signal attenuation profile is real, it has conjugate symmetry, i.e. Y(l,-m) = Y(l,m)* (where * denotes the complex conjugate). Second, the diffusion profile should be antipodally symmetric (i.e. S(x) = S(-x)), implying that all odd l components should be zero. Therefore, only the even elements are computed. Note that the spherical harmonics equations used here differ slightly from those conventionally used, in that the (-1)^m factor has been omitted. This should be taken into account in all subsequent calculations. Each volume in the output image corresponds to a different spherical harmonic component. Each volume will correspond to the following: volume 0: l = 0, m = 0 ; volume 1: l = 2, m = -2 (imaginary part of m=2 SH) ; volume 2: l = 2, m = -1 (imaginary part of m=1 SH) ; volume 3: l = 2, m = 0 ; volume 4: l = 2, m = 1 (real part of m=1 SH) ; volume 5: l = 2, m = 2 (real part of m=2 SH) ; etc...
 
+Example usages
+--------------
+
+-   *To perform single-shell, single-tissue, soft-constraint CSD*::
+
+        $ dwi2fod csd dwi.mif -shells 3000 RF_WM_b3000.txt FODs.mif
+
+    This algorithm works strictly on single-shell data, and therefore must be provided with a single unique b-value only (even b=0 volumes must not be present). In addition, the response function file provided must contain a single row only, corresponding to the m=0 spherical harmonic coefficients for the response function for the b-value of interest only.
+
+-   *To perform single-shell, single-tissue, hard-constraint CSD*::
+
+        $ dwi2fod msmt_csd dwi.mif -shells 3000 RF_WM_b3000.txt FODs.mif
+
+    This approach uses the "multi-shell, multi-tissue" algorithm, butprovides the algorithm with a single unique b-value only. The difference to the first example is that a hard non-negativity constraint is used.
+
+-   *To perform single-shell (+ b=0), 2-tissue CSD*::
+
+        $ dwi2fod msmt_csd dwi.mif RF_WM.txt ODF_WM.mif RF_CSF.txt ODF_CSF.mif
+
+    This example exploits the availability of b=0 volumes in otherwise "single-shell" data in order to fit 2 tissue compartments to the data: A white matter compartment, and a CSF compartment. This provides something akin to "fluid attenuation" in the estimation of white matter FODs. The two response function text files are expected to contain two rows (corresponding to the two unique b-values in the DWI data) in this instance.
+
+-   *To perform multi-shell, multi-tissue CSD using three tissue compartments*::
+
+        $ dwi2fod msmt_csd dwi.mif RF_WM.txt ODF_WM.mif RF_GM.txt ODF_GM.mif RF_CSF.txt ODF_CSF.mif
+
+    This example is the most typical use case of multi-tissue CSD, estimating the three principal macroscopic sources of DWI signal in the brain. For this example to work, the DWI must contain at least three unique b-values, with corresponding number of rows in each of the response function text files.
+
 Options
 -------
 
@@ -70,7 +97,7 @@ Options for the Multi-Shell, Multi-Tissue Constrained Spherical Deconvolution al
 
 -  **-neg_lambda value** the regularisation parameter lambda that controls the strength of the non-negativity constraint (default = 1e-10).
 
--  **-predicted_signal image** the predicted dwi image.
+-  **-predicted_signal image** output the predicted dwi image.
 
 Stride options
 ^^^^^^^^^^^^^^
