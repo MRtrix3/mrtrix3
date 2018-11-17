@@ -28,7 +28,7 @@ Typical usage is to convert a parcellation image provided by some other software
 Example usages
 --------------
 
--   *To convert a Desikan-Killiany parcellation image as provided by FreeSurfer to have nodes incrementing from 1*::
+-   *Convert a Desikan-Killiany parcellation image as provided by FreeSurfer to have nodes incrementing from 1*::
 
         $ labelconvert aparc+aseg.mgz FreeSurferColorLUT.txt mrtrix3//share//mrtrix3//labelconvert//fs_default.txt nodes.mif
 

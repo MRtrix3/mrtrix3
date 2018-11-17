@@ -65,7 +65,7 @@ void usage ()
     + Math::SH::encoding_description;
 
   EXAMPLES
-    + Example ("To perform single-shell, single-tissue, soft-constraint CSD",
+    + Example ("Perform single-shell, single-tissue, soft-constraint CSD",
                "dwi2fod csd dwi.mif -shells 3000 RF_WM_b3000.txt FODs.mif",
                "This algorithm works strictly on single-shell data, and therefore must "
                "be provided with a single unique b-value only (even b=0 volumes must not "
@@ -73,13 +73,13 @@ void usage ()
                "contain a single row only, corresponding to the m=0 spherical harmonic "
                "coefficients for the response function for the b-value of interest only.")
 
-    + Example ("To perform single-shell, single-tissue, hard-constraint CSD",
+    + Example ("Perform single-shell, single-tissue, hard-constraint CSD",
                "dwi2fod msmt_csd dwi.mif -shells 3000 RF_WM_b3000.txt FODs.mif",
                "This approach uses the \"multi-shell, multi-tissue\" algorithm, but"
                "provides the algorithm with a single unique b-value only. The difference "
                "to the first example is that a hard non-negativity constraint is used.")
 
-    + Example ("To perform single-shell (+ b=0), 2-tissue CSD",
+    + Example ("Perform single-shell (+ b=0), 2-tissue CSD",
                "dwi2fod msmt_csd dwi.mif RF_WM.txt ODF_WM.mif RF_CSF.txt ODF_CSF.mif",
                "This example exploits the availability of b=0 volumes in otherwise "
                "\"single-shell\" data in order to fit 2 tissue compartments to the data: "
@@ -89,7 +89,7 @@ void usage ()
                "contain two rows (corresponding to the two unique b-values in the DWI "
                "data) in this instance.")
 
-    + Example ("To perform multi-shell, multi-tissue CSD using three tissue compartments",
+    + Example ("Perform multi-shell, multi-tissue CSD using three tissue compartments",
                "dwi2fod msmt_csd dwi.mif RF_WM.txt ODF_WM.mif RF_GM.txt ODF_GM.mif RF_CSF.txt ODF_CSF.mif",
                "This example is the most typical use case of multi-tissue CSD, estimating "
                "the three principal macroscopic sources of DWI signal in the brain. For "

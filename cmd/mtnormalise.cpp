@@ -56,7 +56,7 @@ void usage ()
               "a consecutive pair.");
 
   ARGUMENTS
-    + Argument ("input output", "list of all input and output tissue compartment files. See example usage in the description.").type_image_in().allow_multiple();
+    + Argument ("input output", "list of all input and output tissue compartment files (see example usage).").type_image_in().allow_multiple();
 
   OPTIONS
     + Option ("mask", "the mask defines the data used to compute the intensity normalisation. This option is mandatory.").required ()

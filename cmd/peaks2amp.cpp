@@ -26,7 +26,7 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  SYNOPSIS = "Convert peak directions image to amplitudes";
+  SYNOPSIS = "Extract amplitudes from a peak directions image";
 
   ARGUMENTS
   + Argument ("directions", "the input directions image. Each volume corresponds to the x, y & z "
@@ -45,7 +45,7 @@ void run ()
   header.size(3) = header.size(3)/3;
 
   auto amp = Image<float>::create (argument[1], header);
-  
+
   auto loop = Loop("converting directions to amplitudes", 0, 3);
 
   for (auto i = loop (dir, amp); i; ++i) {

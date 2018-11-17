@@ -36,49 +36,49 @@ The -axes option specifies which axes from the input image will be used to form 
 Example usages
 --------------
 
--   *To extract the first volume from a 4D image, and make the output a 3D image*::
+-   *Extract the first volume from a 4D image, and make the output a 3D image*::
 
         $ mrconvert in.mif -coord 3 0 -axes 0,1,2 out.mif
 
     The -coord 3 0 option extracts, from axis number 3 (which is the fourth axis since counting begins from 0; this is the axis that steps across image volumes), only coordinate number 0 (i.e. the first volume). The -axes 0,1,2 ensures that only the first three axes (i.e. the spatial axes) are retained; if this option were not used in this example, then image out.mif would be a 4D image, but it would only consist of a single volume, and mrinfo would report its size along the fourth axis as 1.
 
--   *To extract slice number 24 along the AP direction*::
+-   *Extract slice number 24 along the AP direction*::
 
         $ mrconvert volume.mif slice.mif -coord 1 24
 
     MRtrix3 uses a RAS (Right-Anterior-Superior) axis convention, and internally reorients images upon loading in order to conform to this as far as possible. So for non-exotic data, axis 1 should correspond (approximately) to the anterior-posterior direction.
 
--   *To extract only every other volume from a 4D image*::
+-   *Extract only every other volume from a 4D image*::
 
         $ mrconvert all.mif every_other.mif -coord 3 1:2:end
 
     This example demonstrates two features: Use of the colon syntax to conveniently specify a number sequence (in the format 'start:step:stop'); and use of the 'end' keyword to generate this sequence up to the size of the input image along that axis (i.e. the number of volumes).
 
--   *To alter the image header to report a new isotropic voxel size*::
+-   *Alter the image header to report a new isotropic voxel size*::
 
         $ mrconvert in.mif isotropic.mif -vox 1.25
 
     By providing a single value to the -vox option only, the specified value is used to set the voxel size in mm for all three spatial axes in the output image.
 
--   *To alter the image header to report a new anisotropic voxel size*::
+-   *Alter the image header to report a new anisotropic voxel size*::
 
         $ mrconvert in.mif anisotropic.mif -vox 1,,3.5
 
     This example will change the reported voxel size along the first and third axes (ideally left-right and inferior-superior) to 1.0mm and 3.5mm respectively, and leave the voxel size along the second axis (ideally anterior-posterior) unchanged.
 
--   *To turn a single-volume 4D image into a 3D image*::
+-   *Turn a single-volume 4D image into a 3D image*::
 
         $ mrconvert 4D.mif 3D.mif -axes 0,1,2
 
     Sometimes in the process of extracting or calculating a single 3D volume from a 4D image series, the size of the image reported by mrinfo will be "X x Y x Z x 1", indicating that the resulting image is in fact also 4D, it just happens to contain only one volume. This example demonstrates how to convert this into a genuine 3D image (i.e. mrinfo will report the size as "X x Y x Z".
 
--   *To insert an axis of size 1 into the image*::
+-   *Insert an axis of size 1 into the image*::
 
         $ mrconvert XYZD.mif XYZ1D.mif -axes 0,1,2,-1,3
 
     This example uses the value -1 as a flag to indicate to mrconvert where a new axis of unity size is to be inserted. In this particular example, the input image has four axes: the spatial axes X, Y and Z, and some form of data D is stored across the fourth axis (i.e. volumes). Due to insertion of a new axis, the output image is 5D: the three spatial axes (XYZ), a single volume (the size of the output image along the fourth axis will be 1), and data D will be stored as volume groups along the fifth axis of the image.
 
--   *To manually reset the data scaling parameters stored within the image header to defaults*::
+-   *Manually reset the data scaling parameters stored within the image header to defaults*::
 
         $ mrconvert with_scaling.mif without_scaling.mif -scaling 0.0,1.0
 

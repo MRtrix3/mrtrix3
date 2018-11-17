@@ -57,7 +57,7 @@ void usage ()
     "but can be created by the user to provide the desired node set // ordering // colours.";
 
   EXAMPLES
-  + Example ("To convert a Desikan-Killiany parcellation image as provided by FreeSurfer to have nodes incrementing from 1",
+  + Example ("Convert a Desikan-Killiany parcellation image as provided by FreeSurfer to have nodes incrementing from 1",
              "labelconvert aparc+aseg.mgz FreeSurferColorLUT.txt mrtrix3//share//mrtrix3//labelconvert//fs_default.txt nodes.mif",
              "Paths to the files in the example above would need to be revised according to their "
              "locations on the user's system.");

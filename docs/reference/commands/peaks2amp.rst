@@ -6,7 +6,7 @@ peaks2amp
 Synopsis
 --------
 
-Convert peak directions image to amplitudes
+Extract amplitudes from a peak directions image
 
 Usage
 --------

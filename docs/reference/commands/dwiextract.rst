@@ -21,7 +21,7 @@ Usage
 Example usages
 --------------
 
--   *To calculate the mean b=0 image*::
+-   *Calculate the mean b=0 image from a 4D DWI series*::
 
         $ dwiextract dwi.mif - -bzero | mrmath - mean mean_bzero.mif -axis 3
 

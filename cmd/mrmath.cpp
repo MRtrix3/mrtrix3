@@ -66,6 +66,18 @@ void usage ()
       "traversal. If you are seeking to instead perform mathematical calculations "
       "that are done independently for each voxel, pleaase see the 'mrcalc' command.";
 
+  EXAMPLES
+  + Example ("Calculate a 3D volume representing the mean intensity across a 4D image series",
+             "mrmath 4D.mif mean 3D_mean.mif -axis 3",
+             "This is a common operation for calculating e.g. the mean value within a "
+             "specific DWI b-value. Note that axis indices start from 0; thus, axes 0, 1 & 2 "
+             "are the three spatial axes, and axis 3 operates across volumes.")
+
+  + Example ("Generate a Maximum Intensity Projection (MIP) along the inferior-superior direction",
+             "mrmath input.mif max MIP.mif -axis 2",
+             "Since a MIP is literally the maximal value along a specific projection direction, "
+             "axis-aligned MIPs can be generated easily using mrmath with the \'max\' operation.");
+
   ARGUMENTS
   + Argument ("input", "the input image(s).").type_image_in ().allow_multiple()
   + Argument ("operation", "the operation to apply, one of: " + join(operations, ", ") + ".").type_choice (operations)
