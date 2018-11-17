@@ -54,7 +54,7 @@ void usage ()
     "maskfilter and mrfilter commands.";
 
   EXAMPLES
-  + Example ("To apply a mesh smoothing filter (currently the only filter available",
+  + Example ("Apply a mesh smoothing filter (currently the only filter available",
              "meshfilter input.vtk smooth output.vtk",
              "The usage of this command may cause confusion due to the generic interface "
              "despite only one filtering operation being currently available. This simple "

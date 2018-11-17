@@ -46,6 +46,43 @@ void usage ()
 
   SYNOPSIS = "Generate a connectome matrix from a streamlines file and a node parcellation image";
 
+
+  EXAMPLES
+  + Example ("Default usage",
+             "tck2connectome tracks.tck nodes.mif connectome.csv -tck_weights_in weights.csv -out_assignments assignments.txt",
+             "By default, the metric of connectivity quantified in the connectome matrix is the "
+             "number of streamlines; or, if tcksift2 is used, the sum of streamline weights via the "
+             "-tck_weights_in option. Use of the -out_assignments option is recommended as this "
+             "enables subsequent use of the connectome2tck command.")
+
+  + Example ("Generate a matrix consisting of the mean streamline length between each node pair",
+             "tck2connectome tracks.tck nodes.mif distances.csv -scale_length -stat_edge mean",
+             "By multiplying the contribution of each streamline to the connectome by the length "
+             "of that streamline, and then, for each edge, computing the mean value across the "
+             "contributing streamlines, one obtains a matrix where the value in each entry is the "
+             "mean length across those streamlines belonging to that edge.")
+
+  + Example ("Generate a connectome matrix where the value of connectivity is the \"mean FA\"",
+             "tcksample tracks.tck FA.mif mean_FA_per_streamline.csv -stat_tck mean; "
+             "tck2connectome tracks.tck nodes.mif mean_FA_connectome.csv -scale_file mean_FA_per_streamline.csv -stat_edge mean",
+             "Here, a connectome matrix that is \"weighted by FA\" is generated in multiple steps: "
+             "firstly, for each streamline, the value of the underlying FA image is sampled at each "
+             "vertex, and the mean of these values is calculated to produce a single scalar value of "
+             "\"mean FA\" per streamline; then, as each streamline is assigned to nodes within the "
+             "connectome, the magnitude of the contribution of that streamline to the matrix is "
+             "multiplied by the mean FA value calculated prior for that streamline; finally, for "
+             "each connectome edge, across the values of \"mean FA\" that were contributed by all "
+             "of the streamlines assigned to that particular edge, the mean value is calculated.")
+
+  + Example ("Generate the connectivity fingerprint for streamlines seeded from a particular region",
+             "tck2connectome fixed_seed_tracks.tck nodes.mif fingerprint.csv -vector",
+             "This usage assumes that the streamlines being provided to the command have all been "
+             "seeded from the (effectively) same location, and as such, only the endpoint of each "
+             "streamline (not their starting point) is assigned based on the provided parcellation "
+             "image. Accordingly, the output file contains only a vector of connectivity values "
+             "rather than a matrix, since each streamline is assigned to only one node rather than two.");
+
+
   ARGUMENTS
   + Argument ("tracks_in",      "the input track file").type_tracks_in()
   + Argument ("nodes_in",       "the input node parcellation image").type_image_in()

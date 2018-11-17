@@ -27,7 +27,7 @@ While this command has only one filter operation currently available, it neverth
 Example usages
 --------------
 
--   *To apply a mesh smoothing filter (currently the only filter available*::
+-   *Apply a mesh smoothing filter (currently the only filter available*::
 
         $ meshfilter input.vtk smooth output.vtk
 

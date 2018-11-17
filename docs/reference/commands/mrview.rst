@@ -6,7 +6,7 @@ mrview
 Synopsis
 --------
 
-The MRtrix image viewer.
+The MRtrix image viewer
 
 Usage
 --------

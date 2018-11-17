@@ -59,7 +59,7 @@ DESCRIPTION
   "that volume in the single-voxel image.";
 
 EXAMPLES
-  + Example ("To double the value stored in every voxel",
+  + Example ("Double the value stored in every voxel",
              "mrcalc a.mif 2 -mult r.mif",
              "This performs the operation: r = 2*a  for every voxel a,r in "
              "images a.mif and r.mif respectively.")
@@ -72,12 +72,12 @@ EXAMPLES
              "mrcalc a.mif b.mif -add c.mif d.mif -mult 4.2 -add -div r.mif",
              "This performs: r = (a+b)/(c*d+4.2).")
 
-  + Example ("To scale the densities in a SH l=0 image",
+  + Example ("Rescale the densities in a SH l=0 image",
              "mrcalc ODF_CSF.mif 4 pi -mult -sqrt -div ODF_CSF_scaled.mif",
              "This applies the spherical harmonic basis scaling factor: "
-             "1.0/sqrt(4*pi)  such that a single-tissue voxel containing the "
+             "1.0/sqrt(4*pi), such that a single-tissue voxel containing the "
              "same intensities as the response function of that tissue "
-             "should contain the value 1.0 ");
+             "should contain the value 1.0.");
 
 ARGUMENTS
   + Argument ("operand", "an input image, intensity value, or the special keywords "

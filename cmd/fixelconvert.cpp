@@ -44,14 +44,14 @@ void usage ()
   SYNOPSIS = "Convert between the old format fixel image (.msf / .msh) and the new fixel directory format";
 
   EXAMPLES
-  + Example ("To convert from the old file format to the new directory format",
+  + Example ("Convert from the old file format to the new directory format",
              "fixelconvert old_fixels.msf new_fixels/ -out_size",
              "This performs a simple conversion from old to new format, and "
              "additionally writes the contents of the \"size\" field within "
              "old-format fixel images stored using the \"FixelMetric\" class "
              "(likely all of them) as an additional fixel data file.")
 
-  + Example ("To convert multiple files from old to new format, preserving fixel correspondence",
+  + Example ("Convert multiple files from old to new format, preserving fixel correspondence",
              "foreach *.msf : fixelconvert IN NAME_new/ -template template_fixels/",
              "In this example, the foreach script is used to execute the fixelconvert "
              "command once for each of a series of input files in the old fixel format, "
@@ -61,7 +61,7 @@ void usage ()
              "fixel data files can be exchanged between them (e.g. accumulating fixel "
              "data files across subjects into a single template fixel directory")
 
-  + Example ("To convert from the new directory format to the old file format",
+  + Example ("Convert from the new directory format to the old file format",
              "fixelconvert new_fixels/ old_fixels.msf -value parameter.mif -in_size new_fixels/afd.mif",
              "Conversion from the new directory format will contain the value 1.0 "
              "for all output fixels in both the \"size\" and \"value\" fields of the "

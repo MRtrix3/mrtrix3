@@ -80,7 +80,7 @@ void usage ()
 
 
   EXAMPLES
-  + Example ("To extract the first volume from a 4D image, and make the output a 3D image",
+  + Example ("Extract the first volume from a 4D image, and make the output a 3D image",
              "mrconvert in.mif -coord 3 0 -axes 0,1,2 out.mif",
              "The -coord 3 0 option extracts, from axis number 3 (which is the "
              "fourth axis since counting begins from 0; this is the axis that "
@@ -91,7 +91,7 @@ void usage ()
              "but it would only consist of a single volume, and mrinfo would "
              "report its size along the fourth axis as 1.")
 
-  + Example ("To extract slice number 24 along the AP direction",
+  + Example ("Extract slice number 24 along the AP direction",
              "mrconvert volume.mif slice.mif -coord 1 24",
              "MRtrix3 uses a RAS (Right-Anterior-Superior) axis "
              "convention, and internally reorients images upon loading "
@@ -99,7 +99,7 @@ void usage ()
              "non-exotic data, axis 1 should correspond (approximately) to the "
              "anterior-posterior direction.")
 
-  + Example ("To extract only every other volume from a 4D image",
+  + Example ("Extract only every other volume from a 4D image",
              "mrconvert all.mif every_other.mif -coord 3 1:2:end",
              "This example demonstrates two features: Use of the "
              "colon syntax to conveniently specify a number sequence "
@@ -107,20 +107,20 @@ void usage ()
              "keyword to generate this sequence up to the size of the "
              "input image along that axis (i.e. the number of volumes).")
 
-  + Example ("To alter the image header to report a new isotropic voxel size",
+  + Example ("Alter the image header to report a new isotropic voxel size",
              "mrconvert in.mif isotropic.mif -vox 1.25",
              "By providing a single value to the -vox option only, the "
              "specified value is used to set the voxel size in mm for all "
              "three spatial axes in the output image.")
 
-  + Example ("To alter the image header to report a new anisotropic voxel size",
+  + Example ("Alter the image header to report a new anisotropic voxel size",
              "mrconvert in.mif anisotropic.mif -vox 1,,3.5",
              "This example will change the reported voxel size along the first "
              "and third axes (ideally left-right and inferior-superior) to "
              "1.0mm and 3.5mm respectively, and leave the voxel size along the "
              "second axis (ideally anterior-posterior) unchanged.")
 
-  + Example ("To turn a single-volume 4D image into a 3D image",
+  + Example ("Turn a single-volume 4D image into a 3D image",
              "mrconvert 4D.mif 3D.mif -axes 0,1,2",
              "Sometimes in the process of extracting or calculating a single "
              "3D volume from a 4D image series, the size of the image reported "
@@ -129,7 +129,7 @@ void usage ()
              "volume. This example demonstrates how to convert this into a "
              "genuine 3D image (i.e. mrinfo will report the size as \"X x Y x Z\".")
 
-  + Example ("To insert an axis of size 1 into the image",
+  + Example ("Insert an axis of size 1 into the image",
              "mrconvert XYZD.mif XYZ1D.mif -axes 0,1,2,-1,3",
              "This example uses the value -1 as a flag to indicate to mrconvert "
              "where a new axis of unity size is to be inserted. In this particular "
@@ -140,7 +140,7 @@ void usage ()
              "output image along the fourth axis will be 1), and data D "
              "will be stored as volume groups along the fifth axis of the image.")
 
-  + Example ("To manually reset the data scaling parameters stored within the image header to defaults",
+  + Example ("Manually reset the data scaling parameters stored within the image header to defaults",
              "mrconvert with_scaling.mif without_scaling.mif -scaling 0.0,1.0",
              "This command-line option alters the parameters stored within the image "
              "header that provide a linear mapping from raw intensity values stored "

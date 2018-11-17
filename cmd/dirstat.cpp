@@ -64,12 +64,12 @@ void usage ()
                "dirstat directions.txt",
                "This provides a pretty-printed list of all metrics available.")
 
-    + Example ("To output a single metric of interest",
+    + Example ("Write a single metric of interest to standard output",
                "dirstat grad.b -shell 3000 -output SH8",
                "requests the condition number of SH fit of b=3000 shell "
                "directions at SH order 8")
 
-    + Example ("To output multiple metrics of interest",
+    + Example ("Write multiple metrics of interest to standard output",
                "dirstat dwi.mif -output BN,BN-,BN+",
                "requests the mean, min and max nearest-neighour "
                "angles assuming a bipolar model.");

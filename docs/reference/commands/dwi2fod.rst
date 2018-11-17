@@ -27,25 +27,25 @@ The spherical harmonic coefficients are stored as follows. First, since the sign
 Example usages
 --------------
 
--   *To perform single-shell, single-tissue, soft-constraint CSD*::
+-   *Perform single-shell, single-tissue, soft-constraint CSD*::
 
         $ dwi2fod csd dwi.mif -shells 3000 RF_WM_b3000.txt FODs.mif
 
     This algorithm works strictly on single-shell data, and therefore must be provided with a single unique b-value only (even b=0 volumes must not be present). In addition, the response function file provided must contain a single row only, corresponding to the m=0 spherical harmonic coefficients for the response function for the b-value of interest only.
 
--   *To perform single-shell, single-tissue, hard-constraint CSD*::
+-   *Perform single-shell, single-tissue, hard-constraint CSD*::
 
         $ dwi2fod msmt_csd dwi.mif -shells 3000 RF_WM_b3000.txt FODs.mif
 
     This approach uses the "multi-shell, multi-tissue" algorithm, butprovides the algorithm with a single unique b-value only. The difference to the first example is that a hard non-negativity constraint is used.
 
--   *To perform single-shell (+ b=0), 2-tissue CSD*::
+-   *Perform single-shell (+ b=0), 2-tissue CSD*::
 
         $ dwi2fod msmt_csd dwi.mif RF_WM.txt ODF_WM.mif RF_CSF.txt ODF_CSF.mif
 
     This example exploits the availability of b=0 volumes in otherwise "single-shell" data in order to fit 2 tissue compartments to the data: A white matter compartment, and a CSF compartment. This provides something akin to "fluid attenuation" in the estimation of white matter FODs. The two response function text files are expected to contain two rows (corresponding to the two unique b-values in the DWI data) in this instance.
 
--   *To perform multi-shell, multi-tissue CSD using three tissue compartments*::
+-   *Perform multi-shell, multi-tissue CSD using three tissue compartments*::
 
         $ dwi2fod msmt_csd dwi.mif RF_WM.txt ODF_WM.mif RF_GM.txt ODF_GM.mif RF_CSF.txt ODF_CSF.mif
 
@@ -93,9 +93,9 @@ Options for the Constrained Spherical Deconvolution algorithm
 Options for the Multi-Shell, Multi-Tissue Constrained Spherical Deconvolution algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-norm_lambda value** the regularisation parameter lambda that controls the strength of the constraint on the norm of the solution (default = 1e-10).
+-  **-norm_lambda value** the regularisation parameter lambda that controls the strength of the constraint on the norm of the solution (default = 1e-010).
 
--  **-neg_lambda value** the regularisation parameter lambda that controls the strength of the non-negativity constraint (default = 1e-10).
+-  **-neg_lambda value** the regularisation parameter lambda that controls the strength of the non-negativity constraint (default = 1e-010).
 
 -  **-predicted_signal image** output the predicted dwi image.
 

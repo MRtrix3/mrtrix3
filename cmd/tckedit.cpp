@@ -57,13 +57,13 @@ void usage ()
   + DWI::Tractography::preserve_track_order_desc;
 
   EXAMPLES
-  + Example ("To concatenate data from multiple track files into one",
+  + Example ("Concatenate data from multiple track files into one",
              "tckedit *.tck all_tracks.tck",
              "Here the wildcard operator is used to select all files in the "
              "current working directory that have the .tck filetype suffix; but "
              "input files can equivalently be specified one at a time explicitly.")
 
-  + Example ("To extract a reduced number of streamlines",
+  + Example ("Extract a reduced number of streamlines",
              "tckedit in_many.tck out_few.tck -number 1k -skip 500",
              "The number of streamlines requested would typically be less "
              "than the number of streamlines in the input track file(s); if it "
@@ -73,7 +73,7 @@ void usage ()
              "command is instead instructed to skip the first 500 streamlines, and "
              "write to the output file streamlines 501-1500.")
 
-  + Example ("To extract streamlines based on selection criteria",
+  + Example ("Extract streamlines based on selection criteria",
              "tckedit in.tck out.tck -include ROI1.mif -include ROI2.mif -minlength 25",
              "Multiple criteria can be added in a single invocation of tckedit, "
              "and a streamline must satisfy all criteria imposed in order to be "
@@ -81,7 +81,7 @@ void usage ()
              "options can be specified multiple times to provide multiple "
              "waypoints / exclusion masks.")
 
-  + Example ("To select only those streamline vertices within a mask",
+  + Example ("Select only those streamline vertices within a mask",
              "tckedit in.tck cropped.tck -mask mask.mif",
              "The -mask option is applied to each streamline vertex independently, "
              "rather than to each streamline, retaining only those streamline vertices "
