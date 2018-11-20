@@ -84,8 +84,8 @@ void usage ()
 
     + Option   ("axis",  "crop the input image in the provided axis. Overrides mask and template options.").allow_multiple()
     + Argument ("index", "the index of the image axis to be cropped").type_integer (0)
-    + Argument ("start", "the first voxel along this axis to be included in the output image").type_integer (0)
-    + Argument ("end",   "the last voxel along this axis to be included in the output image").type_integer (0)
+    + Argument ("start", "the first voxel along this axis to be included in the output image").type_integer ()
+    + Argument ("end",   "the last voxel along this axis to be included in the output image").type_integer ()
 
     + Option   ("nd", "Crop all, not just spatial axes.")
 
@@ -94,13 +94,13 @@ void usage ()
     + Argument ("image").type_image_in ()
 
     + Option   ("uniform", "pad the input image by a uniform number of voxels on all sides (in 3D)")
-    + Argument ("number").type_integer (0)
+    + Argument ("number").type_integer ()
 
     + Option   ("axis", "pad the input image along the provided axis (defined by index). Lower and upper define "
                 "the number of voxels to add to the lower and upper bounds of the axis").allow_multiple()
     + Argument ("index").type_integer (0)
-    + Argument ("lower").type_integer (0)
-    + Argument ("upper").type_integer (0)
+    + Argument ("lower").type_integer ()
+    + Argument ("upper").type_integer ()
 
     + Option   ("value", "pad the input image with value instead of zero.")
     + Argument ("number").type_float (0.0)
@@ -124,7 +124,7 @@ void usage ()
 
     + Option ("nan", "Use NaN as the out of bounds value (Default: 0.0)")
 
-  // + Stride::Options // TODO
+  + Stride::Options
   + DataType::options();
 }
 
@@ -188,9 +188,10 @@ void run () {
     if (resize_option_count != 1)
       throw Exception ("only a single method can be used to resize the image (image resolution, voxel size or scale factor)");
 
-    Header header (resize_filter);
-    header.datatype() = DataType::from_command_line (DataType::from<float> ());
-    auto output = Image<float>::create (argument[2], header);
+    Header output_header (resize_filter);
+    output_header.datatype() = DataType::from_command_line (DataType::from<float> ());
+    Stride::set_from_command_line (output_header);
+    auto output = Image<float>::create (argument[2], output_header);
 
     auto input = input_header.get_image<float>();
     resize_filter (input, output);
@@ -252,7 +253,6 @@ void run () {
       }
     }
 
-
     opt = get_options ("as");
     if (opt.size()) {
       if (crop_option_count)
@@ -276,8 +276,12 @@ void run () {
       const ssize_t axis  = opt[i][0];
       const ssize_t start = opt[i][1];
       const ssize_t end   = opt[i][2];
-      if (start < 0 || end >= input_header.size(axis))
-        throw Exception ("Index supplied for axis " + str(axis) + " is out of bounds");
+      if (axis  >= input_header.ndim())
+        throw Exception ("axis " + str(axis) + " larger than image dimensions (" + str(input_header.ndim()) + ")");
+      if (start < 0)
+        WARN ("Start index " + str(start) + " supplied for axis " + str(axis) + " is out of bounds");
+      if (end >= input_header.size(axis))
+        throw Exception ("End index " + str(end) + " supplied for axis " + str(axis) + " is out of bounds");
       if (end < start)
         throw Exception  ("End index supplied for axis " + str(axis) + " is less than start index");
       bounds[axis][0] = start;
@@ -301,9 +305,10 @@ void run () {
     auto input = input_header.get_image<float>();
 
     auto cropped = Adapter::make<Adapter::Subset> (input, from, size);
-    Header header (cropped);
-    header.datatype() = DataType::from_command_line (DataType::from<float> ());
-    auto output = Image<float>::create (argument[2], header);
+    Header output_header (cropped);
+    output_header.datatype() = DataType::from_command_line (DataType::from<float> ());
+    Stride::set_from_command_line (output_header);
+    auto output = Image<float>::create (argument[2], output_header);
     threaded_copy_with_progress_message ("cropping image", cropped, output);
 
   } else if (op == 2) { // pad
@@ -376,6 +381,7 @@ void run () {
 
     Header output_header (input_header);
     output_header.datatype() = DataType::from_command_line (DataType::from<float> ());
+    Stride::set_from_command_line (output_header);
 
     auto output_transform = input_header.transform();
     for (size_t axis = 0; axis < 3; ++axis) {
@@ -435,6 +441,7 @@ void run () {
       output_header.datatype() = DataType::from_command_line (input_header.datatype());
     else
       output_header.datatype() = DataType::from_command_line (DataType::from<float> ());
+    Stride::set_from_command_line (output_header);
 
     // over-sampling
     vector<int> oversample = Adapter::AutoOverSample;
