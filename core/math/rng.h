@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -45,8 +46,8 @@ namespace MR
         RNG () : std::mt19937 (get_seed()) { }
         RNG (std::mt19937::result_type seed) : std::mt19937 (seed) { }
         RNG (const RNG&) : std::mt19937 (get_seed()) { }
-        template <typename ValueType> class Uniform; 
-        template <typename ValueType> class Normal; 
+        template <typename ValueType> class Uniform;
+        template <typename ValueType> class Normal;
         template <typename ValueType> class Integer;
 
         static std::mt19937::result_type get_seed () {
@@ -58,15 +59,30 @@ namespace MR
 
       private:
         static std::mt19937::result_type get_seed_private () {
+          //ENVVAR name: MRTRIX_RNG_SEED
+          //ENVVAR Set the seed used for the random number generator.
+          //ENVVAR Ordinarily, MRtrix applications will use random seeds to ensure
+          //ENVVAR repeat runs of stochastic processes are never the same.
+          //ENVVAR However, when experimenting or debugging, it may be useful to
+          //ENVVAR explicitly set the RNG seed to ensure reproducible results across
+          //ENVVAR runs. To do this, set this variable to a fixed number prior to
+          //ENVVAR running the command(s).
+          //ENVVAR
+          //ENVVAR Note that to obtain the same results
+          //ENVVAR from a multi-threaded command, you should also disable
+          //ENVVAR multi-threading (using the option ``-nthread 0`` or by
+          //ENVVAR setting the :envvar:`MRTRIX_NTHREADS` environment variable to zero).
+          //ENVVAR Multi-threading introduces randomness in the order of execution, which
+          //ENVVAR will generally also affect the reproducibility of results.
           const char* from_env = getenv ("MRTRIX_RNG_SEED");
-          if (from_env) 
+          if (from_env)
             return to<std::mt19937::result_type> (from_env);
 
 #ifdef MRTRIX_WINDOWS
           struct timeval tv;
           gettimeofday (&tv, nullptr);
           return tv.tv_sec ^ tv.tv_usec;
-#else 
+#else
           // TODO check whether this does in fact work on Windows...
           std::random_device rd;
           return rd();

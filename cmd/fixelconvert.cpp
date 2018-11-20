@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -43,8 +44,8 @@ void usage ()
   SYNOPSIS = "Convert between the old format fixel image (.msf / .msh) and the new fixel directory format";
 
   ARGUMENTS
-  + Argument ("fixel_in",  "the input fixel file / directory.").type_text()
-  + Argument ("fixel_out", "the output fixel file / directory.").type_text();
+  + Argument ("fixel_in",  "the input fixel file / directory.").type_various()
+  + Argument ("fixel_out", "the output fixel file / directory.").type_various();
 
   OPTIONS
   + OptionGroup ("Options for converting from old to new format")
@@ -53,7 +54,7 @@ void usage ()
     + Option ("nii", "output the index, directions and data file in NIfTI format instead of .mif")
     + Option ("out_size", "also output the 'size' field from the old format")
     + Option ("template", "specify an existing fixel directory (in the new format) to which the new output should conform")
-      + Argument ("path").type_text()
+      + Argument ("path").type_directory_in()
 
   + OptionGroup ("Options for converting from new to old format")
     + Option ("value", "nominate the data file to import to the 'value' field in the old format")

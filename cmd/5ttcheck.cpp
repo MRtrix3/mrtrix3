@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -20,6 +21,7 @@
 
 #include "algo/copy.h"
 #include "algo/loop.h"
+#include "formats/list.h"
 
 #include "dwi/tractography/ACT/act.h"
 
@@ -53,7 +55,7 @@ void run ()
 {
   const std::string mask_prefix = get_option_value<std::string> ("masks", "");
 
-  size_t error_count = 0;
+  size_t major_error_count = 0, minor_error_count = 0;
   for (size_t i = 0; i != argument.size(); ++i) {
 
     auto in = Image<float>::open (argument[i]);
@@ -81,7 +83,7 @@ void run ()
         for (auto inner = Loop(3) (in); inner; ++inner)
           sum += in.value();
         if (!sum) continue;
-        if (std::abs (sum-1.0) > MAX_ERROR) {
+        if (abs (sum-1.0) > MAX_ERROR) {
           ++voxel_error_sum;
           if (voxels.valid()) {
             assign_pos_of (in, 0, 3).to (voxels);
@@ -90,28 +92,55 @@ void run ()
         }
       }
 
-      if (voxel_error_sum) {
+      if (voxel_error_sum == 1) {
+        INFO ("Image \"" + argument[i] + "\" contains just one isolated voxel with non-unity sum of partial volume fractions");
+      } else if (voxel_error_sum) {
         WARN ("Image \"" + argument[i] + "\" contains " + str(voxel_error_sum) + " brain voxels with non-unity sum of partial volume fractions");
-        ++error_count;
+        ++minor_error_count;
         if (voxels.valid()) {
-          auto out = Image<bool>::create (mask_prefix + Path::basename (argument[i]), H_out);
+          std::string path = mask_prefix;
+          if (argument.size() > 1) {
+            path += Path::basename (argument[i]);
+          } else {
+            bool has_extension = false;
+            for (auto p = MR::Formats::known_extensions; *p; ++p) {
+              if (Path::has_suffix (path, std::string (*p))) {
+                has_extension = true;
+                break;
+              }
+            }
+            if (!has_extension)
+              path += ".mif";
+          }
+          auto out = Image<bool>::create (path, H_out);
           copy (voxels, out);
         }
       } else {
         INFO ("Image \"" + argument[i] + "\" conforms to 5TT format");
       }
 
-    } catch (...) {
+    } catch (Exception& e) {
+      e.display();
       WARN ("Image \"" + argument[i] + "\" does not conform to fundamental 5TT format requirements");
-      ++error_count;
+      ++major_error_count;
     }
   }
 
-  if (error_count) {
+  const std::string vox_option_suggestion = get_options ("masks").size() ? (" (suggest checking " + std::string(argument.size() > 1 ? "outputs from" : "output of") + " -masks option)") : " (suggest re-running using the -masks option to see voxels where tissue fractions do not sum to 1.0)";
+
+  if (major_error_count) {
     if (argument.size() > 1)
-      throw Exception (str(error_count) + " input image" + (error_count > 1 ? "s do" : " does") + " not conform to 5TT format");
+      throw Exception (str(major_error_count) + " input image" + (major_error_count > 1 ? "s do" : " does") + " not conform to 5TT format");
     else
       throw Exception ("Input image does not conform to 5TT format");
+  } else if (minor_error_count) {
+    if (argument.size() > 1) {
+      WARN (str(minor_error_count) + " input image" + (minor_error_count > 1 ? "s do" : " does") + " not perfectly conform to 5TT format, but may still be applicable" + vox_option_suggestion);
+    } else {
+      WARN ("Input image does not perfectly conform to 5TT format, but may still be applicable" + vox_option_suggestion);
+    }
+  } else {
+    CONSOLE(std::string(argument.size() > 1 ? "All images" : "Input image") + " checked OK");
   }
 }
 

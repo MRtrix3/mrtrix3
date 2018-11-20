@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -24,13 +25,17 @@ namespace MR
   namespace DWI
   {
 
-    const App::OptionGroup ShellOption = App::OptionGroup ("DW Shell selection options")
-      + App::Option ("shell",
-          "specify one or more diffusion-weighted gradient shells to use during "
-          "processing, as a comma-separated list of the desired approximate b-values. "
-          "Note that some commands are incompatible with multiple shells, and "
-          "will throw an error if more than one b-value is provided.")
-        + App::Argument ("list").type_sequence_float();
+    const App::OptionGroup ShellsOption = App::OptionGroup ("DW shell selection options")
+      + App::Option ("shells",
+          "specify one or more b-values to use during processing, as a comma-separated list "
+          "of the desired approximate b-values (b-values are clustered to allow for small "
+          "deviations). Note that some commands are incompatible with multiple b-values, "
+          "and will report an error if more than one b-value is provided. \n"
+          "WARNING: note that, even though the b=0 volumes are never referred to as shells "
+          "in the literature, they still have to be explicitly included in the list of "
+          "b-values as provided to the -shell option! Several algorithms which include the "
+          "b=0 volumes in their computations may otherwise return an undesired result.")
+        + App::Argument ("b-values").type_sequence_float();
 
 
 
@@ -96,7 +101,7 @@ namespace MR
 
       BitSet to_retain (count(), false);
 
-      auto opt = App::get_options ("shell");
+      auto opt = App::get_options ("shells");
       if (opt.size()) {
 
         vector<default_type> desired_bvalues = opt[0][0];
@@ -151,7 +156,7 @@ namespace MR
               size_t best_shell = 0;
               bool ambiguous = false;
               for (size_t s = 0; s != count(); ++s) {
-                if (std::abs (*b - shells[s].get_mean()) <= 1.0) {
+                if (abs (*b - shells[s].get_mean()) <= 1.0) {
                   if (shell_selected) {
                     ambiguous = true;
                   } else {
@@ -185,7 +190,7 @@ namespace MR
                 bool ambiguous = false;
                 for (size_t s = 0; s != count(); ++s) {
                   const default_type stdev = (shells[s].is_bzero() ? 0.5 * bzero_threshold() : (zero_stdev ? std::sqrt (shells[s].get_mean()) : shells[s].get_stdev()));
-                  const default_type num_stdev = std::abs ((*b - shells[s].get_mean()) / stdev);
+                  const default_type num_stdev = abs ((*b - shells[s].get_mean()) / stdev);
                   if (num_stdev < best_num_stdevs) {
                     ambiguous = (num_stdev >= 0.1 * best_num_stdevs);
                     best_shell = s;
@@ -204,7 +209,7 @@ namespace MR
                   }
                   throw Exception ("Unable to robustly select desired shell b=" + str(*b) + " (detected shells are: " + bvalues + ")");
                 } else {
-                  WARN ("User requested shell b=" + str(*b) + "; have selected shell " + str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()));
+                  WARN ("User requested shell b=" + str(*b) + "; have selected nearby shell " + str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()));
                   if (!to_retain[best_shell]) {
                     to_retain[best_shell] = true;
                     nonbzero_selected_count++;
@@ -235,7 +240,7 @@ namespace MR
         if (force_singleshell && !is_single_shell()) {
           if (count() == 1 && has_bzero())
             throw Exception ("No non b=0 data found, but the command requires a non b=0 shell");
-          WARN ("Multiple non-zero b-value shells detected; automatically selecting b=" + str(largest().get_mean()) + " with " + str(largest().count()) + " volumes");
+          WARN ("Multiple non-zero b-value shells detected, automatically selecting largest b-value: b=" + str(largest().get_mean()) + " with " + str(largest().count()) + " volumes");
           to_retain[count()-1] = true;
           if (has_bzero())
             to_retain[0] = true;
@@ -378,7 +383,7 @@ namespace MR
     void Shells::regionQuery (const BValueList& bvals, const default_type b, vector<size_t>& idx) const
     {
       for (ssize_t i = 0; i < bvals.size(); i++) {
-        if (std::abs (b - bvals[i]) < DWI_SHELLS_EPSILON)
+        if (abs (b - bvals[i]) < DWI_SHELLS_EPSILON)
           idx.push_back (i);
       }
     }

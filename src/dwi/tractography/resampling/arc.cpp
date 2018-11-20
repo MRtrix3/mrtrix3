@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -34,28 +35,27 @@ namespace MR {
 
           // Determine which points on the streamline correspond to the endpoints of the arc
           idx_start = idx_end = 0;
-          size_t a (0), b (0);
+          size_t a (in.size()), b (in.size());
 
-          int prev_s = -1;
+          state_t prev_s = state_t::BEFORE_START;
           for (size_t i = 0; i < in.size(); ++i) {
-            int s = state (in[i]);
+            const state_t s = state (in[i]);
             if (i) {
-              if (prev_s == -1 && s == 0) a = i-1;
-              if (prev_s == 0 && s == -1) a = i;
-              if (prev_s == 1 && s == 2)  b = i;
-              if (prev_s == 2 && s == 1)  b = i-1;
+              if (prev_s == state_t::BEFORE_START && s == state_t::AFTER_START)  a = i-1;
+              if (prev_s == state_t::AFTER_START  && s == state_t::BEFORE_START) a = i;
+              if (prev_s == state_t::BEFORE_END   && s == state_t::AFTER_END)    b = i;
+              if (prev_s == state_t::AFTER_END    && s == state_t::BEFORE_END)   b = i-1;
 
-              if (a && b) {
+              if (a != in.size() && b != in.size()) {
                 if (b - a > idx_end - idx_start) {
                   idx_start = a;
                   idx_end = b;
                 }
-                a = b = 0;
+                a = b = in.size();
               }
             }
             prev_s = s;
           }
-          ++idx_end;
 
           if (!(idx_start && idx_end))
             return false;
@@ -64,16 +64,19 @@ namespace MR {
           size_t i = idx_start;
 
           for (size_t n = 0; n < nsamples; n++) {
-            while (i != idx_end) {
+            do {
               const value_type d = planes[n].dist (in[i]);
               if (d > 0.0) {
                 const value_type f = d / (d - planes[n].dist (in[reverse ? i+1 : i-1]));
-                out.push_back (f*in[i-1] + (1.0f-f)*in[i]);
+                assert (f >= 0.0 && f <= 1.0);
+                out.push_back (f*in[reverse ? i+1 : i-1] + (1.0f-f)*in[i]);
                 break;
               }
               reverse ? --i : ++i;
-            }
+            } while ((!reverse && i <= idx_end) || (reverse && i >= idx_end));
           }
+
+          assert (out.size() == nsamples);
           return true;
         }
 
@@ -91,7 +94,7 @@ namespace MR {
 
 
 
-        void Arc::init_arc (const point_type& waypoint)
+        void Arc::init_arc()
         {
           mid_dir = (end - start).normalized();
 
@@ -141,15 +144,15 @@ namespace MR {
 
 
 
-        int Arc::state (const point_type& p) const
+        Arc::state_t Arc::state (const point_type& p) const
         {
-          const bool after_start = start_dir.dot (p - start) >= 0;
+          const bool after_start = start_dir.dot (p - start) >= 0.0;
           const bool after_mid = mid_dir.dot (p - mid) > 0.0;
           const bool after_end = end_dir.dot (p - end) >= 0.0;
-          if (!after_start && !after_mid) return -1; // before start
-          if (after_start && !after_mid) return 0; // after start
-          if (after_mid && !after_end) return 1; // before end
-          return 2; // after end
+          if (!after_start && !after_mid) return state_t::BEFORE_START;
+          if (after_start && !after_mid) return state_t::AFTER_START;
+          if (after_mid && !after_end) return state_t::BEFORE_END;
+          return state_t::AFTER_END;
         }
 
 

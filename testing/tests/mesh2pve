@@ -1,1 +1,0 @@
-mesh2pve meshconvert/in.vtk meshconvert/image.mif.gz - | testing_diff_image - mesh2pve/out.mif.gz -abs 1.5e-3

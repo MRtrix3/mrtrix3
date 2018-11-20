@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -101,7 +102,7 @@ namespace MR
 
 
             default_type speed = im2_image.value() - im1_image.value();
-            if (std::abs (speed) < robustness_parameter)
+            if (abs (speed) < robustness_parameter)
               speed = 0.0;
 
             default_type speed_squared = speed * speed;
@@ -112,7 +113,7 @@ namespace MR
 
             Eigen::Matrix<typename Im1ImageType::value_type, 3, 1> grad = (im2_gradient.value() + im1_gradient.value()).array() / 2.0;
             default_type denominator = speed_squared / normaliser + grad.squaredNorm();
-            if (std::abs (speed) < intensity_difference_threshold || denominator < denominator_threshold) {
+            if (abs (speed) < intensity_difference_threshold || denominator < denominator_threshold) {
               im1_update.row(3) = 0.0;
               im2_update.row(3) = 0.0;
             } else {

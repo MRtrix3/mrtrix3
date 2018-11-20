@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -32,7 +33,8 @@ ColourMapButton::ColourMapButton(QWidget* parent, ColourMapButtonObserver& obs,
                                  bool use_customise_state_items) :
     QToolButton(parent),
     observer(obs),
-    core_colourmaps_actions(new QActionGroup(parent))
+    core_colourmaps_actions(new QActionGroup(parent)),
+    fixed_colour_index (0)
 {
     setToolTip(tr("Colourmap menu"));
     setIcon(QIcon(":/colourmap.svg"));
@@ -72,6 +74,7 @@ void ColourMapButton::init_core_menu_items(bool create_shortcuts)
 
 void ColourMapButton::init_custom_colour_menu_items()
 {
+    fixed_colour_index = colourmap_actions.size();
     custom_colour_action = new QAction(tr("Custom colour..."), this);
     custom_colour_action->setCheckable(true);
     connect(custom_colour_action, SIGNAL(triggered ()), this, SLOT(select_colour_slot()));
@@ -156,6 +159,14 @@ void ColourMapButton::set_colourmap_index(size_t index)
         action->setChecked(true);
         select_colourmap_slot(action);
     }
+}
+
+
+void ColourMapButton::set_fixed_colour()
+{
+    QAction* action = colourmap_actions[fixed_colour_index];
+    action->setChecked(true);
+    select_colourmap_slot(action);
 }
 
 

@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -38,18 +39,6 @@ namespace MR
           Interp interp (interp_template);
           return get_normal (p, interp);
         }
-
-
-        bool GMWMI_finder::is_cgm (const Eigen::Vector3f& p) const
-        {
-          Interp interp (interp_template);
-          // TODO: this is no-op, what was it doing here?!?
-          // interp.scanner2voxel (p);
-          const Tissues tissues (interp);
-          return (tissues.valid() && (tissues.get_sgm() > tissues.get_cgm()));
-        }
-
-
 
 
 
@@ -91,13 +80,13 @@ namespace MR
             p += step;
             tissues = get_tissues (p, interp);
           } while (tissues.valid() && step.squaredNorm() && 
-              (std::abs (tissues.get_gm() - tissues.get_wm()) > GMWMI_ACCURACY) && 
+              (abs (tissues.get_gm() - tissues.get_wm()) > GMWMI_ACCURACY) && 
               (++gradient_iters < GMWMI_MAX_ITERS_TO_FIND_BOUNDARY));
 
           // Make sure an appropriate cost function minimum has been found, and that
           //   this would be an acceptable termination point if it were processed by the tracking algorithm
           if (!tissues.valid() || tissues.is_csf() || tissues.is_path() || !tissues.get_wm()
-              || (std::abs (tissues.get_gm() - tissues.get_wm()) > GMWMI_ACCURACY)) {
+              || (abs (tissues.get_gm() - tissues.get_wm()) > GMWMI_ACCURACY)) {
 
             p = { NaN, NaN, NaN };
             return false;

@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -36,10 +37,10 @@ void usage ()
 
   ARGUMENTS
   + Argument ("input_fixel_directory", "input fixel directory, all data files and directions "
-                                       "file will be cropped and saved in the output fixel directory").type_text ()
+                                       "file will be cropped and saved in the output fixel directory").type_directory_in()
   + Argument ("input_fixel_mask", "the input fixel data file defining which fixels to crop. "
                                   "Fixels with zero values will be removed").type_image_in ()
-  + Argument ("output_fixel_directory", "the output directory to store the cropped directions and data files").type_text ();
+  + Argument ("output_fixel_directory", "the output directory to store the cropped directions and data files").type_directory_out();
 }
 
 
@@ -58,7 +59,7 @@ void run ()
   Fixel::check_fixel_directory (out_fixel_directory, true);
 
   Header out_header = Header (in_index_image);
-  size_t total_nfixels = std::stoul (out_header.keyval ()[Fixel::n_fixels_key]);
+  size_t total_nfixels = Fixel::get_number_of_fixels (in_index_header);
 
   // We need to do a first pass of the mask image to determine the number of cropped fixels
   for (auto l = Loop (0) (mask_image); l; ++l) {

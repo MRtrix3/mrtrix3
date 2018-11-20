@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -28,10 +29,23 @@
 #include "exception.h"
 
 #define HOME_ENV "HOME"
+
+/*! \def PATH_SEPARATORS
+ *  \brief symbols used for separating directories in filesystem paths
+ *
+ *  The PATH_SEPARATORS macro contains all characters that may be used
+ *  to delimit directory / file names in a filesystem path. On
+ *  POSIX-compliant systems, this is simply the forward-slash character
+ *  '/'; on Windows however, either forward-slashes or back-slashes
+ *  can appear. Therefore any code that performs such direct
+ *  manipulation of filesystem paths should both use this macro, and
+ *  be written accounting for the possibility of this string containing
+ *  either one or two characters depending on the target system. */
 #ifdef MRTRIX_WINDOWS
-#define PATH_SEPARATOR "\\/"
+// Preferentially use forward-slash when inserting via PATH_SEPARATORS[0]
+#define PATH_SEPARATORS "/\\"
 #else
-#define PATH_SEPARATOR "/"
+#define PATH_SEPARATORS "/"
 #endif
 
 
@@ -42,28 +56,28 @@ namespace MR
 
     inline std::string basename (const std::string& name)
     {
-      size_t i = name.find_last_of (PATH_SEPARATOR);
+      size_t i = name.find_last_of (PATH_SEPARATORS);
       return (i == std::string::npos ? name : name.substr (i+1));
     }
 
 
     inline std::string dirname (const std::string& name)
     {
-      size_t i = name.find_last_of (PATH_SEPARATOR);
-      return (i == std::string::npos ? std::string ("") : (i ? name.substr (0,i) : std::string (PATH_SEPARATOR)));
+      size_t i = name.find_last_of (PATH_SEPARATORS);
+      return (i == std::string::npos ? std::string ("") : (i ? name.substr (0,i) : std::string(1, PATH_SEPARATORS[0])));
     }
 
 
     inline std::string join (const std::string& first, const std::string& second)
     {
-      if (first.empty()) 
+      if (first.empty())
         return second;
-      if (first[first.size()-1] != PATH_SEPARATOR[0]
+      if (first[first.size()-1] != PATH_SEPARATORS[0]
 #ifdef MRTRIX_WINDOWS
-          && first[first.size()-1] != PATH_SEPARATOR[1]
+          && first[first.size()-1] != PATH_SEPARATORS[1]
 #endif
-          ) 
-        return first + PATH_SEPARATOR[0] + second;
+          )
+        return first + PATH_SEPARATORS[0] + second;
       return first + second;
     }
 
@@ -99,9 +113,8 @@ namespace MR
 
     inline bool has_suffix (const std::string& name, const std::string& suffix)
     {
-      return (name.size() < suffix.size() ?
-              false :
-              name.substr (name.size()-suffix.size()) == suffix);
+      return name.size() >= suffix.size() &&
+        name.compare(name.size() - suffix.size(), suffix.size(), suffix) == 0;
     }
 
     inline bool has_suffix (const std::string&name, const std::initializer_list<const std::string> &suffix_list)
@@ -152,7 +165,7 @@ namespace MR
           struct dirent* entry = readdir (p);
           if (entry) {
             ret = entry->d_name;
-            if (ret == "." || ret == "..") 
+            if (ret == "." || ret == "..")
               ret = read_name();
           }
           return ret;

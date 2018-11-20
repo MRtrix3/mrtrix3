@@ -46,6 +46,8 @@ View options
 
 -  **-focus x,y,z or boolean** Either set the position of the crosshairs in scanner coordinates, with the new position supplied as a comma-separated list of floating-point values or show or hide the focus cross hair using a boolean value as argument.
 
+-  **-target x,y,z** Set the target location for the viewing window (the scanner coordinate that will appear at the centre of the viewing window
+
 -  **-voxel x,y,z** Set the position of the crosshairs in voxel coordinates, relative the image currently displayed. The new position should be supplied as a comma-separated list of floating-point values.
 
 -  **-volume idx** Set the volume index for the image displayed, as a comma-separated list of integers.
@@ -104,11 +106,21 @@ Overlay tool options
 
 -  **-overlay.opacity value** Sets the overlay opacity to floating value [0-1].
 
--  **-overlay.interpolation_on** Enables overlay image interpolation.
-
--  **-overlay.interpolation_off** Disables overlay image interpolation.
-
 -  **-overlay.colourmap index** Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.
+
+-  **-overlay.colour R,G,B** Specify a manual colour for the overlay, as three comma-separated values
+
+-  **-overlay.intensity Min,Max** Set the intensity windowing of the overlay
+
+-  **-overlay.threshold_min value** Set the lower threshold value of the overlay
+
+-  **-overlay.threshold_max value** Set the upper threshold value of the overlay
+
+-  **-overlay.no_threshold_min** Disable the lower threshold for the overlay
+
+-  **-overlay.no_threshold_max** Disable the upper threshold for the overlay
+
+-  **-overlay.interpolation value** Enable or disable overlay image interpolation.
 
 ROI editor tool options
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -117,6 +129,8 @@ ROI editor tool options
 
 -  **-roi.opacity value** Sets the overlay opacity to floating value [0-1].
 
+-  **-roi.colour R,G,B** Sets the colour of the ROI overlay
+
 Tractography tool options
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -124,7 +138,19 @@ Tractography tool options
 
 -  **-tractography.thickness value** Line thickness of tractography display, [-1.0, 1.0], default is 0.0.
 
+-  **-tractography.geometry value** The geometry type to use when rendering tractograms (options are: pseudotubes, lines, points)
+
 -  **-tractography.opacity value** Opacity of tractography display, [0.0, 1.0], default is 1.0.
+
+-  **-tractography.slab value** Slab thickness of tractography display, in mm. -1 to turn off crop to slab.
+
+-  **-tractography.lighting value** Toggle the use of lighting of tractogram geometry
+
+-  **-tractography.tsf_load tsf** Load the specified tractography scalar file.
+
+-  **-tractography.tsf_range RangeMin,RangeMax** Set range for the tractography scalar file. Requires -tractography.tsf_load already provided.
+
+-  **-tractography.tsf_thresh ThresholdMin,ThesholdMax** Set thresholds for the tractography scalar file. Requires -tractography.tsf_load already provided.
 
 ODF tool options
 ^^^^^^^^^^^^^^^^
@@ -161,15 +187,13 @@ Standard options
 
 -  **-info** display information messages.
 
--  **-quiet** do not display information messages or progress status.
+-  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages.
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
-
--  **-failonwarn** terminate program if a warning is produced
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
 -  **-help** display this information page and exit.
 
@@ -184,18 +208,18 @@ Tournier, J.-D.; Calamante, F. & Connelly, A. MRtrix: Diffusion tractography in 
 
 
 
-**Author:** J-Donald Tournier (jdtournier@gmail.com), Dave Raffelt (david.raffelt@florey.edu.au), Robert E. Smith (robert.smith@florey.edu.au), Max Pietsch (maximilian.pietsch@kcl.ac.uk), Thijs Dhollander (thijs.dhollander@gmail.com)
+**Author:** J-Donald Tournier (jdtournier@gmail.com), Dave Raffelt (david.raffelt@florey.edu.au), Robert E. Smith (robert.smith@florey.edu.au), Rami Tabbara (rami.tabbara@florey.edu.au), Max Pietsch (maximilian.pietsch@kcl.ac.uk), Thijs Dhollander (thijs.dhollander@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/.
+file, you can obtain one at http://mozilla.org/MPL/2.0/
 
-MRtrix is distributed in the hope that it will be useful,
+MRtrix3 is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty
 of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-For more details, see http://www.mrtrix.org/.
+For more details, see http://www.mrtrix.org/
 
 

@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -54,16 +55,7 @@ namespace MR
       Q_OBJECT
 
       public:
-        App (int& cmdline_argc, char** cmdline_argv) {
-          application = this;
-          ::MR::File::Config::init ();
-          ::MR::GUI::GL::set_default_context ();
-          QLocale::setDefault(QLocale::c());
-
-          new QApplication (cmdline_argc, cmdline_argv);
-          ::MR::App::init (cmdline_argc, cmdline_argv); 
-          qApp->setAttribute (Qt::AA_DontCreateNativeWidgetSiblings);
-        }
+        App (int& cmdline_argc, char** cmdline_argv);
 
         ~App () {
           delete qApp;
@@ -81,7 +73,7 @@ namespace MR
   auto __expected_context = ::MR::GUI::Context::get (window); \
   assert (__current_context == __expected_context); \
 }
-#else 
+#else
 # define ASSERT_GL_CONTEXT_IS_CURRENT(window)
 #endif
 

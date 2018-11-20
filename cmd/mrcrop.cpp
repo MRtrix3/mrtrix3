@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -88,7 +89,7 @@ void run ()
           overall_bounds[axis][1] = std::max (bounds[axis][1], overall_bounds[axis][1]);
         }
       }
-      void operator() (const decltype(mask)& m) { 
+      void operator() (const decltype(mask)& m) {
         if (m.value()) {
           for (size_t axis = 0; axis != 3; ++axis) {
             bounds[axis][0] = std::min (bounds[axis][0], m.index(axis));
@@ -136,6 +137,6 @@ void run ()
 
   auto cropped = Adapter::make<Adapter::Subset> (in, from, size);
   auto out = Image<float>::create (argument[1], cropped);
-  threaded_copy_with_progress_message ("cropping image...", cropped, out);
+  threaded_copy_with_progress_message ("cropping image", cropped, out);
 }
 

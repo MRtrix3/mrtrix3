@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -53,7 +54,7 @@ void run ()
   }
   for (size_t i  = 0; i < 3; ++i) {
     for (size_t j  = 0; j < 4; ++j) {
-      if (std::abs (buffer1.transform()(i,j) - buffer2.transform()(i,j)) > 0.001)
+      if (abs (buffer1.transform()(i,j) - buffer2.transform()(i,j)) > 0.001)
         throw Exception ("images \"" + buffer1.name() + "\" and \"" + buffer2.name() + "\" do not have matching header transforms "
                          + "\n" + str(buffer1.transform().matrix()) + "vs \n " + str(buffer2.transform().matrix()) + ")");
     }
@@ -68,16 +69,16 @@ void run ()
        // For each fixel
        for (size_t fixel = 0; fixel != a.value().size(); ++fixel) {
          // Check value
-         if (std::abs (a.value()[fixel].value - b.value()[fixel].value) > tol)
+         if (abs (a.value()[fixel].value - b.value()[fixel].value) > tol)
            throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match fixel value within specified precision of " + str(tol)
                + " (" + str(a.value()[fixel].value) + " vs " + str(b.value()[fixel].value) + ")");
          // Check size
-         if (std::abs (a.value()[fixel].size - b.value()[fixel].size) > tol)
+         if (abs (a.value()[fixel].size - b.value()[fixel].size) > tol)
            throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match fixel size within specified precision of " + str(tol)
                + " (" + str(a.value()[fixel].size) + " vs " + str(b.value()[fixel].size) + ")");
          // Check Direction
          for (size_t dim = 0; dim < 3; ++dim) {
-           if (std::abs (a.value()[fixel].dir[dim] - b.value()[fixel].dir[dim]) > tol)
+           if (abs (a.value()[fixel].dir[dim] - b.value()[fixel].dir[dim]) > tol)
              throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match fixel direction within specified precision of " + str(tol)
                  + " (" + str(a.value()[fixel].dir[dim]) + " vs " + str(b.value()[fixel].dir[dim]) + ")");
          }

@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -37,6 +38,8 @@ namespace MR
       namespace Tool
       {
 
+        extern const char* tractogram_geometry_types[];
+
         class Tractography : public Base
         { MEMALIGN(Tractography)
             Q_OBJECT
@@ -58,7 +61,6 @@ namespace MR
             virtual bool process_commandline_option (const MR::App::ParsedOption& opt) override;
 
             QPushButton* hide_all_button;
-            float line_thickness;
             bool do_crop_to_slab;
             bool use_lighting;
             bool use_threshold_scalarfile;
@@ -89,6 +91,7 @@ namespace MR
             void colour_by_scalar_file_slot ();
             void colour_mode_selection_slot (int);
             void colour_button_slot();
+            void geom_type_selection_slot (int);
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
 
           protected:
@@ -98,15 +101,27 @@ namespace MR
             ComboBoxWithErrorMsg *colour_combobox;
             QColorButton *colour_button;
 
+            ComboBoxWithErrorMsg *geom_type_combobox;
+
+            QLabel* thickness_label;
+            QSlider* thickness_slider;
+
             TrackScalarFileOptions *scalar_file_options;
             LightingDock *lighting_dock;
 
+            QGroupBox* slab_group_box;
+            QGroupBox* lighting_group_box;
+            QPushButton* lighting_button;
+
             QSlider* opacity_slider;
-            QSlider* thickness_slider;
-            
+
             void dropEvent (QDropEvent* event) override;
             void update_scalar_options();
-
+            void add_tractogram (vector<std::string>& list);
+            void select_last_added_tractogram();
+            bool process_commandline_option_tsf_check_tracto_loaded ();
+            bool process_commandline_option_tsf_option (const MR::App::ParsedOption&, uint, vector<default_type>& range);
+            void update_geometry_type_gui();
         };
       }
     }

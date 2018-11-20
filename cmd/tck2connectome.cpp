@@ -1,23 +1,24 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
-#include <vector>
 #include <set>
 
 #include "command.h"
 #include "image.h"
 #include "thread_queue.h"
+#include "types.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -71,6 +72,17 @@ void usage ()
 
   + Option ("vector", "output a vector representing connectivities from a given seed point to target nodes, "
                       "rather than a matrix of node-node connectivities");
+
+  REFERENCES
+  + "If using the default streamline-parcel assignment mechanism (or -assignment_radial_search option): " // Internal
+    "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+    "The effects of SIFT on the reproducibility and biological accuracy of the structural connectome. "
+    "NeuroImage, 2015, 104, 253-265"
+
+  + "If using -scale_invlength or -scale_invnodevol options: "
+    "Hagmann, P.; Cammoun, L.; Gigandet, X.; Meuli, R.; Honey, C.; Wedeen, V. & Sporns, O. "
+    "Mapping the Structural Core of Human Cerebral Cortex. "
+    "PLoS Biology 6(7), e159";
 
 }
 
@@ -133,13 +145,15 @@ void execute (Image<node_t>& node_image, const node_t max_node_index, const std:
 
 void run ()
 {
-  auto node_image = Image<node_t>::open (argument[1]);
+  auto node_header = Header::open (argument[1]);
+  MR::Connectome::check (node_header);
+  auto node_image = node_header.get_image<node_t>();
 
   // First, find out how many segmented nodes there are, so the matrix can be pre-allocated
   // Also check for node volume for all nodes
   vector<uint32_t> node_volumes (1, 0);
   node_t max_node_index = 0;
-  for (auto i = Loop (node_image) (node_image); i; ++i) {
+  for (auto i = Loop (node_image, 0, 3) (node_image); i; ++i) {
     if (node_image.value() > max_node_index) {
       max_node_index = node_image.value();
       node_volumes.resize (max_node_index + 1, 0);

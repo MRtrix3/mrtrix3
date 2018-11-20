@@ -1,0 +1,60 @@
+# Lookup table for converting LPBA40 parcellation into a numerical scheme appropriate for connectome construction
+
+#Index  Name                          Red   Green    Blue   Alpha
+ 0      background                      0       0       0       0
+ 1      L_superior_frontal_gyrus      255     128     128     255
+ 2      L_middle_frontal_gyrus        255       0       0     255
+ 3      L_inferior_frontal_gyrus      128     127       0     255
+ 4      L_precentral_gyrus            255     255       0     255
+ 5      L_middle_orbitofrontal_gyrus  255       0     128     255
+ 6      L_lateral_orbitofrontal_gyrus 128       0     255     255
+ 7      L_gyrus_rectus                128     128     255     255
+ 8      L_postcentral_gyrus           255       0       0     255
+ 9      L_superior_parietal_gyrus     127     128       0     255
+10      L_supramarginal_gyrus         255     255       0     255
+11      L_angular_gyrus               255     128     255     255
+12      L_precuneus                   128     255     128     255
+13      L_superior_occipital_gyrus    127     127     255     255
+14      L_middle_occipital_gyrus      255     127     128     255
+15      L_inferior_occipital_gyrus    160       0       0     255
+16      L_cuneus                      255     255     127     255
+17      L_superior_temporal_gyrus     128       0      64     255
+18      L_middle_temporal_gyrus        92      92     237     255
+19      L_inferior_temporal_gyrus      17     207     255     255
+20      L_parahippocampal_gyrus       105     180      31     255
+21      L_lingual_gyrus               255     255       0     255
+22      L_fusiform_gyrus               35     231     216     255
+23      L_insular_cortex              128     255       0     255
+24      L_cingulate_gyrus              64     128     255     255
+25      L_caudate                      48     255       0     255
+26      L_putamen                     128     160      48     255
+27      L_hippocampus                 133      10      31     255
+28      cerebellum                    240     128      48     255
+29      brainstem                     128     255       0     255
+30      R_caudate                     255       0     128     255
+31      R_putamen                     255     128       0     255
+32      R_hippocampus                 255     255       0     255
+33      R_superior_frontal_gyrus      255     128       0     255
+34      R_middle_frontal_gyrus        255     128     255     255
+35      R_inferior_frontal_gyrus      255       0       0     255
+36      R_precentral_gyrus            128       0       0     255
+37      R_middle_orbitofrontal_gyrus  128     128      64     255
+38      R_lateral_orbitofrontal_gyrus 255     128     127     255
+39      R_gyrus_rectus                255     255       0     255
+40      R_postcentral_gyrus           128     128      64     255
+41      R_superior_parietal_gyrus     255     255       0     255
+42      R_supramarginal_gyrus         128     128       0     255
+43      R_angular_gyrus                64       0     128     255
+44      R_precuneus                   255       0       0     255
+45      R_superior_occipital_gyrus    255     127       0     255
+46      R_middle_occipital_gyrus      127       0       0     255
+47      R_inferior_occipital_gyrus     83     166     166     255
+48      R_cuneus                      128       0       0     255
+49      R_superior_temporal_gyrus     128     255       0     255
+50      R_middle_temporal_gyrus       192     128     255     255
+51      R_inferior_temporal_gyrus     255       0     128     255
+52      R_parahippocampal_gyrus        64     255       0     255
+53      R_lingual_gyrus               255     255       0     255
+54      R_fusiform_gyrus              255       0       0     255
+55      R_insular_cortex              128     255     255     255
+56      R_cingulate_gyrus             255       0     255     255

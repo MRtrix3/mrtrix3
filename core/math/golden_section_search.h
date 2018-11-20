@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -57,7 +58,7 @@ namespace MR
         const ValueType g1 = 0.61803399, g2 = 1 - g1;
         ValueType x0 = min_bound, x1, x2, x3 = max_bound;
 
-        if (std::abs(max_bound - init_estimate) > std::abs(init_estimate - min_bound)) {
+        if (abs(max_bound - init_estimate) > abs(init_estimate - min_bound)) {
           x1 = init_estimate;
           x2 = init_estimate + g2 * (max_bound - init_estimate);
         } else {
@@ -68,7 +69,7 @@ namespace MR
         ValueType f1 = function(x1);
         ValueType f2 = function(x2);
 
-        while (tolerance * (std::abs(x1) + std::abs(x2)) < std::abs(x3 - x0)) {
+        while (tolerance * (abs(x1) + abs(x2)) < abs(x3 - x0)) {
           if (f2 < f1) {
             x0 = x1;
             x1 = x2;
