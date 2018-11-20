@@ -4,22 +4,22 @@
 
 # Since we're going to capture everything after the colon character and "hide" it from argparse,
 #   we need to store the contents from there in a global so as for it to be accessible from execute()
-cmdsplit = [ ]
+CMDSPLIT = [ ]
 
 def usage(cmdline): #pylint: disable=unused-variable
-  global cmdsplit
-  cmdline.setAuthor('Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)')
-  cmdline.setSynopsis('Perform some arbitrary processing step for each of a set of inputs')
-  cmdline.addDescription('EXAMPLE USAGE: \n' \
+  global CMDSPLIT
+  cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)')
+  cmdline.set_synopsis('Perform some arbitrary processing step for each of a set of inputs')
+  cmdline.add_description('EXAMPLE USAGE: \n' \
                              '  $ foreach folder/*.mif : mrinfo IN   \n'
                              '  will run mrinfo for each .mif file in "folder"')
-  cmdline.addDescription('AVAILABLE SUBSTITUTIONS: \n' \
+  cmdline.add_description('AVAILABLE SUBSTITUTIONS: \n' \
                              '  IN:   The full matching pattern, including leading folders. For example, if the target list contains a file "folder/image.mif", any occurrence of "IN" will be substituted with "folder/image.mif".' \
                              '  NAME: The basename of the matching pattern. For example, if the target list contains a file "folder/image.mif", any occurrence of "NAME" will be substituted with "image.mif".' \
                              '  PRE:  The prefix of the basename. For example, if the target list contains a file "folder/image.mif", any occurrence of "PRE" will be substituted with "image".' \
                              '  UNI:  The unique part of the input after removing any common prefix and common suffix. For example, if the target list contains files: "folder/001dwi.mif", "folder/002dwi.mif", "folder/003dwi.mif", any occurrence of "UNI" will be substituted with "001", "002", "003".')
-  cmdline.addDescription('Note that due to a limitation of the Python argparse module, any command-line options provided to the foreach script must appear before any inputs are specified.')
-  cmdline.addDescription('Such command-line options provided before the list of inputs and colon separator will be interpreted by the foreach script; any command-line options provided after this colon will form part of the input to the executed command.')
+  cmdline.add_description('Note that due to a limitation of the Python argparse module, any command-line options provided to the foreach script must appear before any inputs are specified.')
+  cmdline.add_description('Such command-line options provided before the list of inputs and colon separator will be interpreted by the foreach script; any command-line options provided after this colon will form part of the input to the executed command.')
   cmdline.add_argument('inputs',  help='Each of the inputs for which processing should be run', nargs='+')
   cmdline.add_argument('colon',   help='Colon symbol (":") delimiting the foreach inputs & command-line options from the actual command to be executed', type=str, choices=[':'])
   cmdline.add_argument('command', help='The command string to run for each input, containing any number of substitutions listed in the Description section', type=str)
@@ -33,9 +33,9 @@ def usage(cmdline): #pylint: disable=unused-variable
   try:
     index = next(i for i,s in enumerate(sys.argv) if s == ':')
     try:
-      cmdsplit = sys.argv[index+1:]
+      CMDSPLIT = sys.argv[index+1:]
       sys.argv = sys.argv[:index+1]
-      sys.argv.append(' '.join(cmdsplit))
+      sys.argv.append(' '.join(CMDSPLIT))
     except IndexError:
       sys.stderr.write('Erroneous usage: No command specified (colon separator cannot be the last entry provided)\n')
       sys.exit(0)
@@ -50,41 +50,54 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 
-import threading
 
 # These need to be globals in order to be accessible from execute_parallel()
-job_index = 0
-lock = threading.Lock()
-stop = False
+class Shared(object):
+  def __init__(self):
+    import threading
+    self._job_index = 0
+    self.lock = threading.Lock()
+    self.stop = False
+  def next(self, jobs):
+    job = None
+    with self.lock:
+      if self._job_index < len(jobs):
+        job = jobs[self._job_index]
+        self._job_index += 1
+        self.stop = self._job_index == len(jobs)
+    return job
+
+shared = Shared() #pylint: disable=invalid-name
 
 
+
+KEYLIST = [ 'IN', 'NAME', 'PRE', 'UNI' ]
 
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import ansi, MRtrixError, run
-  global cmdsplit
+  import threading
+  from mrtrix3 import ANSI, MRtrixError, run
+  global CMDSPLIT
 
-  app.var(str(app.args.inputs))
-  app.var(app.args.command)
-  app.var(cmdsplit)
+  app.var(str(app.ARGS.inputs))
+  app.var(app.ARGS.command)
+  app.var(CMDSPLIT)
 
-  common_prefix = os.path.commonprefix(app.args.inputs)
-  common_suffix = os.path.commonprefix([i[::-1] for i in app.args.inputs])[::-1]
+  common_prefix = os.path.commonprefix(app.ARGS.inputs)
+  common_suffix = os.path.commonprefix([i[::-1] for i in app.ARGS.inputs])[::-1]
   app.var(common_prefix, common_suffix)
 
-  keylist = [ 'IN', 'NAME', 'PRE', 'UNI' ]
-
-  for entry in cmdsplit:
+  for entry in CMDSPLIT:
     if os.path.exists(entry):
-      keys_present = [ key for key in keylist if key in entry ]
+      keys_present = [ key for key in KEYLIST if key in entry ]
       if keys_present:
         app.warn('Performing text substitution of ' + str(keys_present) + ' within command: "' + entry + '"; but the original text exists as a path on the file system... is this a problematic filesystem path?')
 
   try:
-    next(entry for entry in cmdsplit if any(key for key in keylist if key in entry))
+    next(entry for entry in CMDSPLIT if any(key for key in KEYLIST if key in entry))
   except StopIteration:
-    raise MRtrixError('None of the unique foreach keys ' + str(keylist) + ' appear in command string "' + app.args.command + '"; no substitution can occur')
+    raise MRtrixError('None of the unique foreach keys ' + str(KEYLIST) + ' appear in command string "' + app.ARGS.command + '"; no substitution can occur')
 
   class Entry(object):
     def __init__(self, input_text):
@@ -98,7 +111,7 @@ def execute(): #pylint: disable=unused-variable
       app.var(input_text, self.substitutions)
 
       self.cmd = [ ]
-      for entry in cmdsplit:
+      for entry in CMDSPLIT:
         for (key, value) in self.substitutions.items():
           entry = entry.replace(key, value)
         if ' ' in entry:
@@ -110,64 +123,59 @@ def execute(): #pylint: disable=unused-variable
       self.returncode = None
 
   jobs = [ ]
-  for i in app.args.inputs:
+  for i in app.ARGS.inputs:
     jobs.append(Entry(i))
 
-  if app.args.test:
+  if app.ARGS.test:
     app.console('Command strings for ' + str(len(jobs)) + ' jobs:')
     for job in jobs:
-      sys.stderr.write(ansi.execute + 'Input:' + ansi.clear + '   "' + job.input_text + '"\n')
-      sys.stderr.write(ansi.execute + 'Command:' + ansi.clear + ' ' + ' '.join(job.cmd) + '\n')
+      sys.stderr.write(ANSI.execute + 'Input:' + ANSI.clear + '   "' + job.input_text + '"\n')
+      sys.stderr.write(ANSI.execute + 'Command:' + ANSI.clear + ' ' + ' '.join(job.cmd) + '\n')
     return
 
-  parallel = app.numThreads is not None and app.numThreads > 1
+  parallel = app.NUM_THREADS is not None and app.NUM_THREADS > 1
 
-  def progressString():
-    s = str(sum([ 1 if job.returncode is not None else 0 for job in jobs ])) + \
+  def progress_string():
+    text = str(sum([ 1 if job.returncode is not None else 0 for job in jobs ])) + \
         '/' + \
         str(len(jobs)) + \
         ' jobs completed ' + \
-        ('across ' + str(app.numThreads) + ' threads' if parallel else 'sequentially')
+        ('across ' + str(app.NUM_THREADS) + ' threads' if parallel else 'sequentially')
     fail_count = sum([ 1 if job.returncode else 0 for job in jobs ])
     if fail_count:
-      s += ' (' + str(fail_count) + ' errors)'
-    return s
+      text += ' (' + str(fail_count) + ' errors)'
+    return text
 
-  progress = app.progressBar(progressString(), len(jobs))
+  progress = app.ProgressBar(progress_string(), len(jobs))
 
   def execute_parallel():
-    global job_index, lock, stop
-    while not stop:
-      my_job = None
-      with lock:
-        if job_index < len(jobs):
-          my_job = jobs[job_index]
-          job_index += 1
-          stop = job_index == len(jobs)
+    global shared #pylint: disable=invalid-name
+    while not shared.stop:
+      my_job = shared.next(jobs)
       if not my_job:
         return
       try:
         result = run.command(' '.join(my_job.cmd), True) # Run in shell mode
         my_job.outputtext = result.stdout + result.stderr
         my_job.returncode = 0
-      except run.MRtrixCmdError as e:
-        my_job.outputtext = str(e)
-        my_job.returncode = e.returncode
-      except Exception as e: # pylint: disable=broad-except
-        my_job.outputtext = str(e)
+      except run.MRtrixCmdError as exception:
+        my_job.outputtext = str(exception)
+        my_job.returncode = exception.returncode
+      except Exception as exception: # pylint: disable=broad-except
+        my_job.outputtext = str(exception)
         my_job.returncode = 1
-      with lock:
-        progress.increment(progressString())
+      with shared.lock:
+        progress.increment(progress_string())
 
   if parallel:
     threads = [ ]
-    for i in range (1, app.numThreads):
-      t = threading.Thread(target=execute_parallel)
-      t.start()
-      threads.append(t)
+    for i in range (1, app.NUM_THREADS):
+      thread = threading.Thread(target=execute_parallel)
+      thread.start()
+      threads.append(thread)
     execute_parallel()
-    for t in threads:
-      t.join()
+    for thread in threads:
+      thread.join()
 
   else:
     for job in jobs:
@@ -175,13 +183,13 @@ def execute(): #pylint: disable=unused-variable
         result = run.command(' '.join(job.cmd), True) # Run in shell mode
         job.outputtext = result.stdout + result.stderr
         job.returncode = 0
-      except run.MRtrixCmdError as e:
-        job.outputtext = str(e)
-        job.returncode = e.returncode
-      except Exception as e: # pylint: disable=broad-except
-        job.outputtext = str(e)
+      except run.MRtrixCmdError as exception:
+        job.outputtext = str(exception)
+        job.returncode = exception.returncode
+      except Exception as exception: # pylint: disable=broad-except
+        job.outputtext = str(exception)
         job.returncode = 1
-      progress.increment(progressString())
+      progress.increment(progress_string())
 
   progress.done()
 
@@ -192,7 +200,7 @@ def execute(): #pylint: disable=unused-variable
     app.warn(str(fail_count) + ' of ' + str(len(jobs)) + ' jobs did not complete successfully')
     if fail_count > 1:
       app.warn('Outputs from failed commands:')
-      sys.stderr.write(app.execName + ':\n')
+      sys.stderr.write(app.EXEC_NAME + ':\n')
     else:
       app.warn('Output from failed command:')
     for job in jobs:
@@ -200,24 +208,24 @@ def execute(): #pylint: disable=unused-variable
         if job.outputtext:
           app.warn('For input "' + job.sub_in + '" (returncode = ' + str(job.returncode) + '):')
           for line in job.outputtext.splitlines():
-            sys.stderr.write(' ' * (len(app.execName)+2) + line + '\n')
+            sys.stderr.write(' ' * (len(app.EXEC_NAME)+2) + line + '\n')
         else:
           app.warn('No output from command for input "' + job.sub_in + '" (return code = ' + str(job.returncode) + ')')
         if fail_count > 1:
-          sys.stderr.write(app.execName + ':\n')
+          sys.stderr.write(app.EXEC_NAME + ':\n')
     raise MRtrixError(str(fail_count) + ' of ' + str(len(jobs)) + ' jobs did not complete successfully')
 
-  if app.verbosity > 1:
+  if app.VERBOSITY > 1:
     if any(job.outputtext for job in jobs):
-      sys.stderr.write(app.execName + ':\n')
+      sys.stderr.write(app.EXEC_NAME + ':\n')
       for job in jobs:
         if job.outputtext:
           app.console('Output of command for input "' + job.sub_in + '":')
           for line in job.outputtext.splitlines():
-            sys.stderr.write(' ' * (len(app.execName)+2) + line + '\n')
+            sys.stderr.write(' ' * (len(app.EXEC_NAME)+2) + line + '\n')
         else:
           app.console('No output from command for input "' + job.sub_in + '"')
-        sys.stderr.write(app.execName + ':\n')
+        sys.stderr.write(app.EXEC_NAME + ':\n')
     else:
       app.console('No output from command for any inputs')
 
@@ -231,11 +239,11 @@ def execute(): #pylint: disable=unused-variable
 
 # Make the corresponding MRtrix3 Python libraries available
 import inspect, os, sys
-lib_folder = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
-if not os.path.isdir(lib_folder):
+LIB_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
+if not os.path.isdir(LIB_FOLDER):
   sys.stderr.write('Unable to locate MRtrix3 Python libraries')
   sys.exit(1)
-sys.path.insert(0, lib_folder)
+sys.path.insert(0, LIB_FOLDER)
 # Execute the script
 from mrtrix3 import app
 app.execute()

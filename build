@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name,invalid-name
 
 usage_string = '''
 USAGE

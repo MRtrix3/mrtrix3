@@ -1,37 +1,174 @@
-import collections, threading, os
+import collections
 from mrtrix3 import MRtrixBaseError
 
 
 
-# If the main script has been executed in an SGE environment, don't allow
-#   sub-processes to themselves fork SGE jobs; but if the main script is
-#   itself not an SGE job ('JOB_ID' environment variable absent), then
-#   whatever run.command() executes can send out SGE jobs without a problem.
-_env = os.environ.copy()
-if _env.get('SGE_ROOT') and _env.get('JOB_ID'):
-  del _env['SGE_ROOT']
+class Shared(object):
 
-# Flagged by calling the setContinue() function;
-#   run.command() and run.function() calls will be skipped until one of the inputs to
-#   these functions matches the given string
-_lastFile = ''
+  def __init__(self):
+    import os, threading
+    # If the main script has been executed in an SGE environment, don't allow
+    #   sub-processes to themselves fork SGE jobs; but if the main script is
+    #   itself not an SGE job ('JOB_ID' environment variable absent), then
+    #   whatever run.command() executes can send out SGE jobs without a problem.
+    self.env = os.environ.copy()
+    if self.env.get('SGE_ROOT') and self.env.get('JOB_ID'):
+      del self.env['SGE_ROOT']
 
-_lock = threading.Lock()
+    # Flagged by calling the set_continue() function;
+    #   run.command() and run.function() calls will be skipped until one of the inputs to
+    #   these functions matches the given string
+    self._last_file = ''
 
-# Store executing processes so that they can be killed appropriately on interrupt;
-#   e.g. by the signal handler in the mrtrix3.app module
-# Each sequential execution of run.command() either selects the first index for which the value is None,
-#   or extends the length of the list by 1, and uses this index as a unique identifier (within its own lifetime);
-#   each item is then itself a list of processes required for that command
-_processes = [ ]
+    self.lock = threading.Lock()
+    self._num_threads = None
 
-# Construct temporary text files for holding stdout / stderr contents when appropriate
-# Same as _processes: Index according to unique identifier for command() call
-#   Each item is then a list with one entry per process; each of these is then a tuple containing two entries,
-#   each of which is either a file-like object or None)
-_tempFiles = [ ]
+    # Store executing processes so that they can be killed appropriately on interrupt;
+    #   e.g. by the signal handler in the mrtrix3.app module
+    # Each sequential execution of run.command() either selects the first index for which the value is None,
+    #   or extends the length of the list by 1, and uses this index as a unique identifier (within its own lifetime);
+    #   each item is then itself a list of processes required for that command
+    self.process_lists = [ ]
 
-# TODO Consider combining the above two into a class that would be more easily nuked
+    self._scratch_dir = None
+
+    # Construct temporary text files for holding stdout / stderr contents when appropriate
+    # Same as _processes: Index according to unique identifier for command() call
+    #   Each item is then a list with one entry per process; each of these is then a tuple containing two entries,
+    #   each of which is either a file-like object or None)
+    self.temp_files = [ ]
+
+    self.verbosity = 0
+
+  # Disable handler for SIGINT signal if appropriate
+  #   (there are no other commands currently running)
+  def disable_sigint_handler(self):
+    import signal
+    from mrtrix3 import app
+    with self.lock:
+      if not any(process_list is not None for process_list in self.process_lists):
+        try:
+          signal.signal(signal.SIGINT, signal.default_int_handler)
+        except:
+          pass
+
+  # Re-enable the handler for SIGINT signal if appropriate
+  #   (appears to not be any other processes running in parallel)
+  def enable_sigint_handler(self, handler):
+    import signal
+    from mrtrix3 import app
+    with self.lock:
+      if all(process_list is None for process_list in self.process_lists):
+        try:
+          signal.signal(signal.SIGINT, handler)
+        except:
+          pass
+
+  # Acquire a unique index
+  # This ensures that if command() is executed in parallel using different threads, they will
+  #   not interfere with one another; but killAll() will also have access to all relevant data
+  def get_command_index(self):
+    from mrtrix3 import app
+    with self.lock:
+      try:
+        index = next(i for i, v in enumerate(self.process_lists) if v is None)
+        self.process_lists[index] = [ ]
+        self.temp_files[index] = [ ]
+      except StopIteration:
+        index = len(self.process_lists)
+        self.process_lists.append([ ])
+        self.temp_files.append([ ])
+    return index
+
+  def close_command_index(self, index):
+    from mrtrix3 import app
+    with shared.lock:
+      assert self.process_lists[index]
+      self.process_lists[index] = None
+      self.temp_files[index] = None
+
+  # Wrap tempfile.mkstemp() in a convenience function, which also catches the case
+  #   where the user does not have write access to the temporary directory location
+  #   selected by default by the tempfile module, and in that case re-runs mkstemp()
+  #   manually specifying an alternative temporary directory
+  def make_temporary_file(self):
+    import os, tempfile
+    try:
+      return tempfile.mkstemp()
+    except OSError:
+      return tempfile.mkstemp('', 'tmp', self._scratch_dir if self._scratch_dir else os.getcwd())
+
+  def set_continue(self, filename): #pylint: disable=unused-variable
+    self._last_file = filename
+
+  def get_continue(self):
+    return bool(self._last_file)
+
+  # New function for handling the -continue command-line option functionality
+  # Check to see if the last file produced in the previous script execution is
+  #   intended to be produced by this command; if it is, this will be the last
+  #   thing that gets skipped by the -continue option
+  def trigger_continue(self, entries):
+    import os
+    assert self.get_continue()
+    for entry in entries:
+      # It's possible that the file might be defined in a '--option=XXX' style argument
+      #   It's also possible that the filename in the command string has the file extension omitted
+      if entry.startswith('--') and '=' in entry:
+        totest = entry.split('=')[1]
+      else:
+        totest = entry
+      if totest in [ self._last_file, os.path.splitext(self._last_file)[0] ]:
+        self._last_file = ''
+        return True
+    return False
+
+  def get_num_threads(self):
+    return self._num_threads
+
+  def set_num_threads(self, value):
+    assert value is None or (isinstance(value, int) and value >= 0)
+    self._num_threads = value
+    if value is not None:
+      # Either -nthreads 0 or -nthreads 1 should result in disabling multi-threading
+      external_software_value = 1 if value <= 1 else value
+      self.env['ITK_GLOBAL_NUMBER_OF_THREADS'] = str(external_software_value)
+      self.env['OMP_NUM_THREADS'] = str(external_software_value)
+
+  def get_scratch_dir(self):
+    return self._scratch_dir
+
+  def set_scratch_dir(self, path):
+    self.env['MRTRIX_TMPFILE_DIR'] = path
+    self._scratch_dir = path
+
+  # Kill any and all running processes
+  def kill(self): #pylint: disable=unused-variable
+    import os
+    from mrtrix3 import app
+    for process_list in self.process_lists:
+      if process_list:
+        for process in process_list:
+          if process:
+            process.terminate()
+            process.communicate() # Flushes the I/O buffers
+        process_list = None
+    self.process_lists = [ ]
+    # Also destroy any remaining temporary files
+    for tempfile_list in self.temp_files:
+      if tempfile_list:
+        for tempfile_pair in tempfile_list:
+          for tempfile in tempfile_pair:
+            if tempfile:
+              try:
+                os.remove(tempfile)
+              except OSError:
+                pass
+          tempfile_pair = [ None, None ]
+        tempfile_list = None
+    self.temp_files = [ ]
+
+shared = Shared() #pylint: disable=invalid-name
 
 
 
@@ -59,26 +196,13 @@ CommandReturn = collections.namedtuple('CommandReturn', 'stdout stderr')
 
 
 
-def setContinue(filename): #pylint: disable=unused-variable
-  global _lastFile
-  _lastFile = filename
-
-
-
-def setScratchDir(path): #pylint: disable=unused-variable
-  global _env
-  _env['MRTRIX_TMPFILE_DIR'] = path
-
-
-
 def command(cmd, shell=False): #pylint: disable=unused-variable
 
-  import inspect, itertools, shlex, signal, string, subprocess, sys, tempfile
+  import inspect, itertools, os, shlex, signal, string, subprocess, sys
   from distutils.spawn import find_executable
-  from mrtrix3 import ansi, app, exe_list
+  from mrtrix3 import ANSI, app, EXE_LIST
 
-  # These are the only global variables that are _modified_ within this function
-  global _processes, _tempFiles
+  global shared #pylint: disable=invalid-name
 
   if isinstance(cmd, list):
     if shell:
@@ -110,66 +234,13 @@ def command(cmd, shell=False): #pylint: disable=unused-variable
   else:
     raise TypeError('run.command() function only operates on strings, or lists of strings')
 
-  if _lastFile:
-    if _triggerContinue(cmdsplit):
+  if shared.get_continue():
+    if shared.trigger_continue(cmdsplit):
       app.debug('Detected last file in command \'' + cmdstring + '\'; this is the last run.command() / run.function() call that will be skipped')
-    if app.verbosity:
-      sys.stderr.write(ansi.execute + 'Skipping command:' + ansi.clear + ' ' + cmdstring + '\n')
+    if shared.verbosity:
+      sys.stderr.write(ANSI.execute + 'Skipping command:' + ANSI.clear + ' ' + cmdstring + '\n')
       sys.stderr.flush()
     return CommandReturn(None, '', '')
-
-
-
-  # Some helper functions that are used in both the shell=True and shell=False cases:
-
-  # Disable handler for SIGINT signal if appropriate
-  #   (there are no other commands currently running)
-  def disableSIGINTHandler():
-    global _lock, _processes
-    with _lock:
-      if not any(plist is not None for plist in _processes):
-        try:
-          signal.signal(signal.SIGINT, signal.default_int_handler)
-        except:
-          pass
-
-  # Re-enable the handler for SIGINT signal if appropriate
-  #   (appears to not be any other processes running in parallel)
-  def enableSIGINTHandler():
-    global _lock, _processes
-    with _lock:
-      if all(plist is None for plist in _processes):
-        try:
-          signal.signal(signal.SIGINT, app.handler)
-        except:
-          pass
-
-  # Acquire a unique index within global lists _processes and _tempFiles
-  # This ensures that if command() is executed in parallel using different threads, they will
-  #   not interfere with one another; but killAll() will also have access to all relevant data
-  def getCommandIndex():
-    global _processes, _tempFiles
-    try:
-      index = next(i for i, v in enumerate(_processes) if v is None)
-      _processes[index] = [ ]
-      _tempFiles[index] = [ ]
-    except StopIteration:
-      index = len(_processes)
-      _processes.append([ ])
-      _tempFiles.append([ ])
-    return index
-
-  # Wrap tempfile.mkstemp() in a convenience function, which also catches the case
-  #   where the user does not have write access to the temporary directory location
-  #   selected by default by the tempfile module, and in that case re-runs mkstemp()
-  #   manually specifying an alternative temporary directory
-  def makeTemporaryFile():
-    try:
-      return tempfile.mkstemp()
-    except OSError:
-      if app.scratchDir:
-        return tempfile.mkstemp('', 'tmp', app.scratchDir)
-      return tempfile.mkstemp('', 'tmp', os.getcwd())
 
 
   # If operating in shell=True mode, handling of command execution is significantly different:
@@ -179,28 +250,28 @@ def command(cmd, shell=False): #pylint: disable=unused-variable
   if shell:
 
     cmdstack = [ cmdsplit ]
-    with _lock:
+    with shared.lock:
       app.debug('To execute: ' + str(cmdstring))
-      if app.verbosity:
-        sys.stderr.write(ansi.execute + 'Command:' + ansi.clear + '  ' + cmdstring + '\n')
+      if shared.verbosity:
+        sys.stderr.write(ANSI.execute + 'Command:' + ANSI.clear + '  ' + cmdstring + '\n')
         sys.stderr.flush()
-      thisCommandIndex = getCommandIndex()
-    disableSIGINTHandler()
+    this_command_index = shared.get_command_index()
+    shared.disable_sigint_handler()
     # No locking required for actual creation of new process
-    thisProcesses = [ ]
-    thisTempFiles = [ ]
-    handle_out, file_out = makeTemporaryFile()
-    if app.verbosity > 1:
+    this_process_list = [ ]
+    this_temp_files = [ ]
+    handle_out, file_out = shared.make_temporary_file()
+    if shared.verbosity > 1:
       handle_err = subprocess.PIPE
       file_err = None
     else:
-      handle_err, file_err = makeTemporaryFile()
+      handle_err, file_err = shared.make_temporary_file()
     try:
-      process = subprocess.Popen (cmdstring, shell=True, stdin=None, stdout=handle_out, stderr=handle_err, env=_env, preexec_fn=os.setpgrp) # pylint: disable=bad-option-value,subprocess-popen-preexec-fn
+      process = subprocess.Popen (cmdstring, shell=True, stdin=None, stdout=handle_out, stderr=handle_err, env=shared.env, preexec_fn=os.setpgrp) # pylint: disable=bad-option-value,subprocess-popen-preexec-fn
     except AttributeError:
-      process = subprocess.Popen (cmdstring, shell=True, stdin=None, stdout=handle_out, stderr=handle_err, env=_env)
-    thisProcesses.append(process)
-    thisTempFiles.append( [ file_out, file_err ])
+      process = subprocess.Popen (cmdstring, shell=True, stdin=None, stdout=handle_out, stderr=handle_err, env=shared.env)
+    this_process_list.append(process)
+    this_temp_files.append( [ file_out, file_err ])
 
   else: # shell=False
 
@@ -212,7 +283,8 @@ def command(cmd, shell=False): #pylint: disable=unused-variable
       try:
         pre_result = command(cmdsplit[:index])
         if operator == '||':
-          app.debug('Due to success of "' + cmdsplit[:index] + '", "' + cmdsplit[index+1:] + '" will not be run')
+          with shared.lock:
+            app.debug('Due to success of "' + cmdsplit[:index] + '", "' + cmdsplit[index+1:] + '" will not be run')
           return pre_result
       except MRtrixCmdError:
         if operator == '&&':
@@ -226,18 +298,18 @@ def command(cmd, shell=False): #pylint: disable=unused-variable
     cmdstack = [ list(g) for k, g in itertools.groupby(cmdsplit, lambda s : s != '|') if k ]
 
     for line in cmdstack:
-      is_mrtrix_exe = line[0] in exe_list
+      is_mrtrix_exe = line[0] in EXE_LIST
       if is_mrtrix_exe:
-        line[0] = versionMatch(line[0])
-        if app.numThreads is not None:
-          line.extend( [ '-nthreads', str(app.numThreads) ] )
+        line[0] = version_match(line[0])
+        if shared.get_num_threads() is not None:
+          line.extend( [ '-nthreads', str(shared.get_num_threads()) ] )
         # Get MRtrix3 binaries to output additional INFO-level information if running in debug mode
-        if app.verbosity == 3:
+        if shared.verbosity == 3:
           line.append('-info')
-        elif not app.verbosity:
+        elif not shared.verbosity:
           line.append('-quiet')
       else:
-        line[0] = exeName(line[0])
+        line[0] = exe_name(line[0])
       shebang = _shebang(line[0])
       if shebang:
         if not is_mrtrix_exe:
@@ -248,31 +320,31 @@ def command(cmd, shell=False): #pylint: disable=unused-variable
         for item in reversed(shebang):
           line.insert(0, item)
 
-    with _lock:
+    with shared.lock:
       app.debug('To execute: ' + str(cmdstack))
-      if app.verbosity:
+      if shared.verbosity:
         # Hide use of these options in mrconvert to alter header key-values and command history at the end of scripts
         if all(key in cmdsplit for key in [ '-copy_properties', '-append_property', 'command_history' ]):
           index = cmdsplit.index('-append_property')
           del cmdsplit[index:index+3]
           index = cmdsplit.index('-copy_properties')
           del cmdsplit[index:index+2]
-        sys.stderr.write(ansi.execute + 'Command:' + ansi.clear + '  ' + ' '.join(cmdsplit) + '\n')
+        sys.stderr.write(ANSI.execute + 'Command:' + ANSI.clear + '  ' + ' '.join(cmdsplit) + '\n')
         sys.stderr.flush()
-      thisCommandIndex = getCommandIndex()
 
-    disableSIGINTHandler()
+    this_command_index = shared.get_command_index()
+    shared.disable_sigint_handler()
 
     # Execute all processes for this command
-    thisProcesses = [ ]
-    thisTempFiles = [ ]
+    this_process_list = [ ]
+    this_temp_files = [ ]
     for index, to_execute in enumerate(cmdstack):
       file_out = None
       file_err = None
       # If there's at least one command prior to this, need to receive the stdout from the prior command
       #   at the stdin of this command; otherwise, nothing to receive
       if index > 0:
-        handle_in = thisProcesses[index-1].stdout
+        handle_in = this_process_list[index-1].stdout
       else:
         handle_in = None
       # If this is not the last command, then stdout needs to be piped to the next command;
@@ -280,32 +352,32 @@ def command(cmd, shell=False): #pylint: disable=unused-variable
       if index < len(cmdstack)-1:
         handle_out = subprocess.PIPE
       else:
-        handle_out, file_out = makeTemporaryFile()
+        handle_out, file_out = shared.make_temporary_file()
       # If we're in debug / info mode, the contents of stderr will be read and printed to the terminal
       #   as the command progresses, hence this needs to go to a pipe; otherwise, write it to a temporary
       #   file so that the contents can be read later
-      if app.verbosity > 1:
+      if shared.verbosity > 1:
         handle_err = subprocess.PIPE
       else:
-        handle_err, file_err = makeTemporaryFile()
+        handle_err, file_err = shared.make_temporary_file()
       # Set off the processes
       try:
         try:
-          process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=_env, preexec_fn=os.setpgrp) # pylint: disable=bad-option-value,subprocess-popen-preexec-fn
+          process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=shared.env, preexec_fn=os.setpgrp) # pylint: disable=bad-option-value,subprocess-popen-preexec-fn
         except AttributeError:
-          process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=_env)
-        thisProcesses.append(process)
-        thisTempFiles.append( [ file_out, file_err ])
+          process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=shared.env)
+        this_process_list.append(process)
+        this_temp_files.append( [ file_out, file_err ])
       # FileNotFoundError not defined in Python 2.7
-      except OSError as e:
-        raise MRtrixCmdError(cmdstring, 1, '', str(e))
+      except OSError as exception:
+        raise MRtrixCmdError(cmdstring, 1, '', str(exception))
 
   # End branching based on shell=True/False
 
   # Write process & temporary file information to globals
-  with _lock:
-    _processes[thisCommandIndex] = thisProcesses
-    _tempFiles[thisCommandIndex] = thisTempFiles
+  with shared.lock:
+    shared.process_lists[this_command_index] = this_process_list
+    shared.temp_files[this_command_index] = this_temp_files
 
   return_code = None
   return_stdout = ''
@@ -317,8 +389,8 @@ def command(cmd, shell=False): #pylint: disable=unused-variable
   # Switch how we monitor running processes / wait for them to complete
   #   depending on whether or not the user has specified -info or -debug option
   try:
-    if app.verbosity > 1:
-      for process in _processes[thisCommandIndex]:
+    if shared.verbosity > 1:
+      for process in shared.process_lists[this_command_index]:
         stderrdata = b''
         do_indent = True
         while True:
@@ -343,7 +415,7 @@ def command(cmd, shell=False): #pylint: disable=unused-variable
           error = True
           error_text += stderrdata
     else:
-      for process in _processes[thisCommandIndex]:
+      for process in shared.process_lists[this_command_index]:
         process.wait()
         if not return_code:
           return_code = process.returncode
@@ -351,43 +423,41 @@ def command(cmd, shell=False): #pylint: disable=unused-variable
     app.handler(signal.SIGINT, inspect.currentframe())
 
   # Re-enable interrupt signal handler
-  enableSIGINTHandler()
+  shared.enable_sigint_handler(app.handler)
 
   # For any command stdout / stderr data that wasn't either passed to another command or
   #   printed to the terminal during execution, read it here.
   for index in range(len(cmdstack)):
-    if thisTempFiles[index][0] is not None:
-      with open(thisTempFiles[index][0], 'rb') as stdout_file:
+    if this_temp_files[index][0] is not None:
+      with open(this_temp_files[index][0], 'rb') as stdout_file:
         stdout_text = stdout_file.read().decode('utf-8', errors='replace')
-      os.unlink(thisTempFiles[index][0])
+      os.unlink(this_temp_files[index][0])
       return_stdout += stdout_text
-      if _processes[thisCommandIndex][index].returncode:
+      if shared.process_lists[this_command_index][index].returncode:
         error = True
         error_text += stdout_text
-    if thisTempFiles[index][1] is not None:
-      with open(thisTempFiles[index][1], 'rb') as stderr_file:
+    if this_temp_files[index][1] is not None:
+      with open(this_temp_files[index][1], 'rb') as stderr_file:
         stderr_text = stderr_file.read().decode('utf-8', errors='replace')
-      os.unlink(thisTempFiles[index][1])
+      os.unlink(this_temp_files[index][1])
       return_stderr += stderr_text
-      if _processes[thisCommandIndex][index].returncode:
+      if shared.process_lists[this_command_index][index].returncode:
         error = True
         error_text += stderr_text
 
   # Get rid of any reference to the executed processes
-  thisProcesses = thisTempFiles = None
-  with _lock:
-    assert _processes[thisCommandIndex]
-    _processes[thisCommandIndex] = None
-    _tempFiles[thisCommandIndex] = None
+  this_process_list = this_temp_files = None
+  shared.close_command_index(this_command_index)
 
-    if error:
-      raise MRtrixCmdError(cmdstring, return_code, stdout_text, stderr_text)
+  if error:
+    raise MRtrixCmdError(cmdstring, return_code, stdout_text, stderr_text)
 
-    # Only now do we append to the script log, since the command has completed successfully
-    # Note: Writing the command as it was formed as the input to run.command():
-    #   other flags may potentially change if this file is eventually used to resume the script
-    if app.scratchDir:
-      with open(os.path.join(app.scratchDir, 'log.txt'), 'a') as outfile:
+  # Only now do we append to the script log, since the command has completed successfully
+  # Note: Writing the command as it was formed as the input to run.command():
+  #   other flags may potentially change if this file is eventually used to resume the script
+  if shared.get_scratch_dir():
+    with shared.lock:
+      with open(os.path.join(shared.get_scratch_dir(), 'log.txt'), 'a') as outfile:
         outfile.write(cmdstring + '\n')
 
   return CommandReturn(return_stdout, return_stderr)
@@ -396,64 +466,59 @@ def command(cmd, shell=False): #pylint: disable=unused-variable
 
 
 
-def function(fn, *args, **kwargs): #pylint: disable=unused-variable
+def function(fn_to_execute, *args, **kwargs): #pylint: disable=unused-variable
+  import os, sys
+  from mrtrix3 import ANSI, app
 
-  import sys
-  from mrtrix3 import ansi, app
-
-  fnstring = fn.__module__ + '.' + fn.__name__ + \
+  fnstring = fn_to_execute.__module__ + '.' + fn_to_execute.__name__ + \
              '(' + ', '.join(['\'' + str(a) + '\'' if isinstance(a, str) else str(a) for a in args]) + \
              (', ' if (args and kwargs) else '') + \
              ', '.join([key+'='+str(value) for key, value in kwargs.items()]) + ')'
 
-  if _lastFile:
-    if _triggerContinue(args) or _triggerContinue(kwargs.values()):
+  if shared.get_continue():
+    if shared.trigger_continue(args) or shared.trigger_continue(kwargs.values()):
       app.debug('Detected last file in function \'' + fnstring + '\'; this is the last run.command() / run.function() call that will be skipped')
-    if app.verbosity:
-      sys.stderr.write(ansi.execute + 'Skipping function:' + ansi.clear + ' ' + fnstring + '\n')
+    if shared.verbosity:
+      sys.stderr.write(ANSI.execute + 'Skipping function:' + ANSI.clear + ' ' + fnstring + '\n')
       sys.stderr.flush()
     return None
 
-  if app.verbosity:
-    sys.stderr.write(ansi.execute + 'Function:' + ansi.clear + ' ' + fnstring + '\n')
+  if shared.verbosity:
+    sys.stderr.write(ANSI.execute + 'Function:' + ANSI.clear + ' ' + fnstring + '\n')
     sys.stderr.flush()
 
   # Now we need to actually execute the requested function
   try:
     if kwargs:
-      result = fn(*args, **kwargs)
+      result = fn_to_execute(*args, **kwargs)
     else:
-      result = fn(*args)
-  except Exception as e: # pylint: disable=broad-except
-    raise MRtrixFnError(fnstring, str(e))
+      result = fn_to_execute(*args)
+  except Exception as exception: # pylint: disable=broad-except
+    raise MRtrixFnError(fnstring, str(exception))
 
   # Only now do we append to the script log, since the function has completed successfully
-  _lock.acquire()
-  if app.scratchDir:
-    with open(os.path.join(app.scratchDir, 'log.txt'), 'a') as outfile:
-      outfile.write(fnstring + '\n')
-  _lock.release()
+  if shared.get_scratch_dir():
+    with shared.lock:
+      with open(os.path.join(shared.get_scratch_dir(), 'log.txt'), 'a') as outfile:
+        outfile.write(fnstring + '\n')
 
   return result
 
 
 
-
-
-
-
 # When running on Windows, add the necessary '.exe' so that hopefully the correct
 #   command is found by subprocess
-def exeName(item):
+def exe_name(item):
+  import os
   from distutils.spawn import find_executable
-  from mrtrix3 import app, bin_path, isWindows
-  if not isWindows():
+  from mrtrix3 import app, BIN_PATH, is_windows
+  if not is_windows():
     path = item
   elif item.endswith('.exe'):
     path = item
-  elif os.path.isfile(os.path.join(bin_path, item)):
+  elif os.path.isfile(os.path.join(BIN_PATH, item)):
     path = item
-  elif os.path.isfile(os.path.join(bin_path, item + '.exe')):
+  elif os.path.isfile(os.path.join(BIN_PATH, item + '.exe')):
     path = item + '.exe'
   elif find_executable(item) is not None:
     path = item
@@ -467,58 +532,29 @@ def exeName(item):
 
 
 
-# Kill any and all running processes
-def killAll(): #pylint: disable=unused-variable
-  global _processes, _tempFiles
-  _lock.acquire()
-  for plist in _processes:
-    if plist:
-      for p in plist:
-        if p:
-          p.terminate()
-          p.communicate() # Flushes the I/O buffers
-      plist = None
-  _processes = [ ]
-  # Also destroy any remaining temporary files
-  for tlist in _tempFiles:
-    if tlist:
-      for tpair in tlist:
-        for t in tpair:
-          if t:
-            try:
-              os.remove(t)
-            except OSError:
-              pass
-        tpair = [ None, None ]
-      tlist = None
-  _tempFiles = [ ]
-  _lock.release()
-
-
-
 # Make sure we're not accidentally running an MRtrix executable on the system that
 #   belongs to a different version of MRtrix3 to the script library currently being used,
 #   or a non-MRtrix3 command with the same name as an MRtrix3 command
 #   (e.g. C:\Windows\system32\mrinfo.exe; On Windows, subprocess uses CreateProcess(),
 #   which checks system32\ before PATH)
-def versionMatch(item):
+def version_match(item):
+  import os
   from distutils.spawn import find_executable
-  from mrtrix3 import app, bin_path, exe_list, MRtrixError
+  from mrtrix3 import app, BIN_PATH, EXE_LIST, MRtrixError
 
-  if not item in exe_list:
+  if not item in EXE_LIST:
     app.debug('Command ' + item + ' not found in MRtrix3 bin/ directory')
     return item
 
-  exe_path_manual = os.path.join(bin_path, exeName(item))
+  exe_path_manual = os.path.join(BIN_PATH, exe_name(item))
   if os.path.isfile(exe_path_manual):
     app.debug('Version-matched executable for ' + item + ': ' + exe_path_manual)
     return exe_path_manual
 
-  exe_path_sys = find_executable(exeName(item))
+  exe_path_sys = find_executable(exe_name(item))
   if exe_path_sys and os.path.isfile(exe_path_sys):
     app.debug('Using non-version-matched executable for ' + item + ': ' + exe_path_sys)
     return exe_path_sys
-
   raise MRtrixError('Unable to find executable for MRtrix3 command ' + item)
 
 
@@ -526,25 +562,27 @@ def versionMatch(item):
 # If the target executable is not a binary, but is actually a script, use the
 #   shebang at the start of the file to alter the subprocess call
 def _shebang(item):
-  from mrtrix3 import app, isWindows, MRtrixError
+  import os
   from distutils.spawn import find_executable
+  from mrtrix3 import app, is_windows, MRtrixError
+
   # If a complete path has been provided rather than just a file name, don't perform any additional file search
   if os.sep in item:
     path = item
   else:
-    path = versionMatch(item)
+    path = version_match(item)
     if path == item:
-      path = find_executable(exeName(item))
+      path = find_executable(exe_name(item))
   if not path:
     app.debug('File \"' + item + '\": Could not find file to query')
     return []
   # Read the first 1024 bytes of the file
-  with open(path, 'rb') as f:
-    data = f.read(1024)
+  with open(path, 'rb') as file_in:
+    data = file_in.read(1024)
   # Try to find the shebang line
   for line in data.splitlines():
     # Are there any non-text characters? If so, it's a binary file, so no need to looking for a shebang
-    try :
+    try:
       line = str(line.decode('utf-8'))
     except:
       app.debug('File \"' + item + '\": Not a text file')
@@ -553,42 +591,20 @@ def _shebang(item):
     if len(line) > 2 and line[0:2] == '#!':
       # Need to strip first in case there's a gap between the shebang symbol and the interpreter path
       shebang = line[2:].strip().split(' ')
-      if isWindows():
+      if is_windows():
         # On Windows, /usr/bin/env can't be easily found, and any direct interpreter path will have a similar issue.
         #   Instead, manually find the right interpreter to call using distutils
         if os.path.basename(shebang[0]) == 'env':
-          new_shebang = [ os.path.abspath(find_executable(exeName(shebang[1]))) ]
+          new_shebang = [ os.path.abspath(find_executable(exe_name(shebang[1]))) ]
           new_shebang.extend(shebang[2:])
           shebang = new_shebang
         else:
-          new_shebang = [ os.path.abspath(find_executable(exeName(os.path.basename(shebang[0])))) ]
+          new_shebang = [ os.path.abspath(find_executable(exe_name(os.path.basename(shebang[0])))) ]
           new_shebang.extend(shebang[1:])
           shebang = new_shebang
         if not shebang or not shebang[0]:
-          raise MRtrixError('Malformed shebang in file \"' + item + '\": \"' + line + '\"')
+          raise MRtrixError('malformed shebang in file \"' + item + '\": \"' + line + '\"')
       app.debug('File \"' + item + '\": string \"' + line + '\": ' + str(shebang))
       return shebang
   app.debug('File \"' + item + '\": No shebang found')
   return []
-
-
-
-# New function for handling the -continue command-line option functionality
-# Check to see if the last file produced in the previous script execution is
-#   intended to be produced by this command; if it is, this will be the last
-#   thing that gets skipped by the -continue option
-def _triggerContinue(entries):
-  global _lastFile
-  if not _lastFile:
-    assert False
-  for entry in entries:
-    # It's possible that the file might be defined in a '--option=XXX' style argument
-    #   It's also possible that the filename in the command string has the file extension omitted
-    if entry.startswith('--') and '=' in entry:
-      totest = entry.split('=')[1]
-    else:
-      totest = entry
-    if totest in [ _lastFile, os.path.splitext(_lastFile)[0] ]:
-      _lastFile = ''
-      return True
-  return False

@@ -13,18 +13,18 @@ class MRtrixError(MRtrixBaseError): #pylint: disable=unused-variable
 
 
 # Location of binaries that belong to the same MRtrix3 installation as the Python library being invoked
-bin_path = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(os.path.abspath(__file__))), os.pardir, os.pardir, 'bin'))
+BIN_PATH = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(os.path.abspath(__file__))), os.pardir, os.pardir, 'bin'))
 # Must remove the '.exe' from Windows binary executables
-exe_list = [ os.path.splitext(name)[0] for name in os.listdir(bin_path) ] #pylint: disable=unused-variable
+EXE_LIST = [ os.path.splitext(name)[0] for name in os.listdir(BIN_PATH) ] #pylint: disable=unused-variable
 
 
 
-# - 'config' is a directory containing those entries present in the MRtrix config files
-config = { }
+# - 'CONFIG' is a directory containing those entries present in the MRtrix config files
+CONFIG = { }
 
 # Codes for printing information to the terminal
 ANSICodes = namedtuple('ANSI', 'lineclear clear console debug error execute warn')
-ansi = ANSICodes('', '', '', '', '', '', '') #pylint: disable=unused-variable
+ANSI = ANSICodes('', '', '', '', '', '', '') #pylint: disable=unused-variable
 
 
 
@@ -40,18 +40,18 @@ for config_path in [ os.environ.get ('MRTRIX_CONFIGFILE', os.path.join(os.path.s
         continue
       if line[0][0] == '#':
         continue
-      config[line[0]] = line[1]
+      CONFIG[line[0]] = line[1]
   except IOError:
     pass
 
 # Set up terminal special characters now, since they may be dependent on the config file
-if sys.stderr.isatty() and not ('TerminalColor' in config and config['TerminalColor'].lower() in ['no', 'false', '0']):
-  ansi = ANSICodes('\033[0K', '\033[0m', '\033[03;32m', '\033[03;34m', '\033[01;31m', '\033[03;36m', '\033[00;31m') #pylint: disable=unused-variable
+if sys.stderr.isatty() and not ('TerminalColor' in CONFIG and CONFIG['TerminalColor'].lower() in ['no', 'false', '0']):
+  ANSI = ANSICodes('\033[0K', '\033[0m', '\033[03;32m', '\033[03;34m', '\033[01;31m', '\033[03;36m', '\033[00;31m') #pylint: disable=unused-variable
 
 
 
 # Return a boolean flag to indicate whether or not script is being run on a Windows machine
-def isWindows(): #pylint: disable=unused-variable
+def is_windows(): #pylint: disable=unused-variable
   import platform
   system = platform.system().lower()
   return any(system.startswith(s) for s in [ 'mingw', 'msys', 'nt', 'windows' ])

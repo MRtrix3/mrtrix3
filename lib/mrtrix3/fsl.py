@@ -1,11 +1,11 @@
-_suffix = ''
+_SUFFIX = ''
 
 # Functions that may be useful for scripts that interface with FMRIB FSL tools
 
 # FSL's run_first_all script can be difficult to wrap, since it does not provide
 #   a meaningful return code, and may run via SGE, which then requires waiting for
 #   the output files to appear.
-def checkFirst(prefix, structures): #pylint: disable=unused-variable
+def check_first(prefix, structures): #pylint: disable=unused-variable
   import os
   from mrtrix3 import app, MRtrixError, path
   vtk_files = [ prefix + '-' + struct + '_first.vtk' for struct in structures ]
@@ -14,9 +14,9 @@ def checkFirst(prefix, structures): #pylint: disable=unused-variable
     if 'SGE_ROOT' in os.environ:
       app.console('FSL FIRST job has been submitted to SGE; awaiting completion')
       app.console('(note however that FIRST may fail silently, and hence this script may hang indefinitely)')
-      path.waitFor(vtk_files)
+      path.wait_for(vtk_files)
     else:
-      raise MRtrixError('FSL FIRST has failed; only ' + str(existing_file_count) + ' of ' + str(len(vtk_files)) + ' structures were segmented successfully (check ' + path.toScratch('first.logs', False) + ')')
+      raise MRtrixError('FSL FIRST has failed; only ' + str(existing_file_count) + ' of ' + str(len(vtk_files)) + ' structures were segmented successfully (check ' + path.to_scratch('first.logs', False) + ')')
 
 
 
@@ -24,7 +24,7 @@ def checkFirst(prefix, structures): #pylint: disable=unused-variable
 #   this depends on both whether or not the user has requested that the CUDA
 #   version of eddy be used, and the various names that this command could
 #   conceivably be installed as.
-def eddyBinary(cuda): #pylint: disable=unused-variable
+def eddy_binary(cuda): #pylint: disable=unused-variable
   import os
   from mrtrix3 import app
   from distutils.spawn import find_executable
@@ -58,7 +58,7 @@ def eddyBinary(cuda): #pylint: disable=unused-variable
       return exe_path
     app.debug('No CUDA version of eddy found')
     return ''
-  exe_path = 'eddy_openmp' if find_executable('eddy_openmp') else exeName('eddy')
+  exe_path = 'eddy_openmp' if find_executable('eddy_openmp') else exe_name('eddy')
   app.debug(exe_path)
   return exe_path
 
@@ -68,7 +68,7 @@ def eddyBinary(cuda): #pylint: disable=unused-variable
 #   makes it more convenient to locate these commands.
 # Note that if FSL 4 and 5 are installed side-by-side, the approach taken in this
 #   function will select the version 5 executable.
-def exeName(name): #pylint: disable=unused-variable
+def exe_name(name): #pylint: disable=unused-variable
   from mrtrix3 import app, MRtrixError
   from distutils.spawn import find_executable
   if find_executable(name):
@@ -86,7 +86,7 @@ def exeName(name): #pylint: disable=unused-variable
 #   FSL commands will generate based on the suffix() function, the FSL binaries themselves
 #   ignore the FSLOUTPUTTYPE environment variable. Therefore, the safest approach is:
 # Whenever receiving an output image from an FSL command, explicitly search for the path
-def findImage(name): #pylint: disable=unused-variable
+def find_image(name): #pylint: disable=unused-variable
   import os
   from mrtrix3 import app, MRtrixError
   prefix = os.path.join(os.path.dirname(name), os.path.basename(name).split('.')[0])
@@ -108,25 +108,25 @@ def findImage(name): #pylint: disable=unused-variable
 def suffix(): #pylint: disable=unused-variable
   import os
   from mrtrix3 import app, MRtrixError
-  global _suffix
-  if _suffix:
-    return _suffix
+  global _SUFFIX
+  if _SUFFIX:
+    return _SUFFIX
   fsl_output_type = os.environ.get('FSLOUTPUTTYPE', '')
   if fsl_output_type == 'NIFTI':
     app.debug('NIFTI -> .nii')
-    _suffix = '.nii'
+    _SUFFIX = '.nii'
   elif fsl_output_type == 'NIFTI_GZ':
     app.debug('NIFTI_GZ -> .nii.gz')
-    _suffix = '.nii.gz'
+    _SUFFIX = '.nii.gz'
   elif fsl_output_type == 'NIFTI_PAIR':
     app.debug('NIFTI_PAIR -> .img')
-    _suffix = '.img'
+    _SUFFIX = '.img'
   elif fsl_output_type == 'NIFTI_PAIR_GZ':
     raise MRtrixError('MRtrix3 does not support compressed NIFTI pairs; please change FSLOUTPUTTYPE environment variable')
   elif fsl_output_type:
     app.warn('Unrecognised value for environment variable FSLOUTPUTTYPE (\"' + fsl_output_type + '\"): Expecting compressed NIfTIs, but FSL commands may fail')
-    _suffix = '.nii.gz'
+    _SUFFIX = '.nii.gz'
   else:
     app.warn('Environment variable FSLOUTPUTTYPE not set; FSL commands may fail, or script may fail to locate FSL command outputs')
-    _suffix = '.nii.gz'
-  return _suffix
+    _SUFFIX = '.nii.gz'
+  return _SUFFIX
