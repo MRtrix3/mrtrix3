@@ -1,2 +1,2 @@
-population_template population_template/in population_template/out.mif.gz -type rigid_nonlinear -rigid_scale 0.2,0.3 -rigid_niter 20,20 -nl_scale 0.2,0.3 -nl_niter 1,1 -force && rm population_template/out.mif.gz  
-population_template population_template/in population_template/out.mif.gz -type nonlinear -nl_scale 0.2,0.3 -nl_niter 1,1 -force && rm population_template/out.mif.gz  
+mkdir -p tmp-population_template-in/ && ln moving.mif.gz tmp-population_template-in/s1.mif.gz && ln template.mif.gz tmp-population_template-in/s2.mif.gz && population_template tmp-population_template-in/ tmp-population_template-out1.mif.gz -type rigid_nonlinear -rigid_scale 0.2,0.3 -rigid_niter 20,20 -nl_scale 0.2,0.3 -nl_niter 1,1 -tempdir tmp-population_template-out1 -force
+population_template tmp-population_template-in/ tmp-population_template-out2.mif.gz -type nonlinear -nl_scale 0.2,0.3 -nl_niter 1,1 -tempdir tmp-population_template-out2 -force

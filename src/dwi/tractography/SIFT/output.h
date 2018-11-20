@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -223,7 +224,7 @@ namespace MR
             default_type max_abs_diff = 0.0, diff = 0.0, cost = 0.0;
             for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
               const default_type this_diff = i().get_diff (current_mu);
-              max_abs_diff = std::max (max_abs_diff, std::abs (this_diff));
+              max_abs_diff = std::max (max_abs_diff, abs (this_diff));
               diff += this_diff;
               cost += i().get_cost (current_mu) * i().get_weight();
             }

@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -117,8 +118,14 @@ void setup_metric (Metric& metric, Image<node_t>& nodes_data)
   if (get_options ("scale_invnodevol").size())
     metric.set_scale_invnodevol (nodes_data);
   auto opt = get_options ("scale_file");
-  if (opt.size())
-    metric.set_scale_file (opt[0][0]);
+  if (opt.size()) {
+    try {
+      metric.set_scale_file (opt[0][0]);
+    } catch (Exception& e) {
+      throw Exception (e, "-scale_file option expects a file containing a list of numbers (one for each streamline); "
+                          "file \"" + std::string(opt[0][0]) + "\" does not appear to contain this");
+    }
+  }
 }
 
 

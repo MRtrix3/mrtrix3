@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -66,9 +67,9 @@ static int TestPointer(const PROC pTest)
 	ptrdiff_t iTest;
 	if(!pTest) return 0;
 	iTest = (ptrdiff_t)pTest;
-	
+
 	if(iTest == 1 || iTest == 2 || iTest == 3 || iTest == -1) return 0;
-	
+
 	return 1;
 }
 
@@ -83,7 +84,12 @@ static PROC WinGetProcAddress(const char *name)
 	glMod = GetModuleHandleA("OpenGL32.dll");
 	return (PROC)GetProcAddress(glMod, (LPCSTR)name);
 }
-	
+
+
+
+
+#pragma GCC diagnostic ignored "-Wcast-function-type"
+
 #define IntGetProcAddress(name) WinGetProcAddress(name)
 #else
 	#if defined(__APPLE__)
@@ -104,7 +110,7 @@ namespace gl
 	namespace exts
 	{
 	}
-	
+
 	// Extension: 1.0
     using PFNBLENDFUNCPROC = void (CODEGEN_FUNCPTR *)(GLenum, GLenum);
     using PFNCLEARPROC = void (CODEGEN_FUNCPTR *)(GLbitfield);
@@ -154,7 +160,7 @@ namespace gl
 	using PFNTEXPARAMETERIPROC = void (CODEGEN_FUNCPTR *)(GLenum, GLenum, GLint);
 	using PFNTEXPARAMETERIVPROC = void (CODEGEN_FUNCPTR *)(GLenum, GLenum, const GLint *);
 	using PFNVIEWPORTPROC = void (CODEGEN_FUNCPTR *)(GLint, GLint, GLsizei, GLsizei);
-	
+
 	// Extension: 1.1
 	using PFNBINDTEXTUREPROC = void (CODEGEN_FUNCPTR *)(GLenum, GLuint);
 	using PFNCOPYTEXIMAGE1DPROC = void (CODEGEN_FUNCPTR *)(GLenum, GLint, GLenum, GLint, GLint, GLsizei, GLint);
@@ -169,7 +175,7 @@ namespace gl
 	using PFNPOLYGONOFFSETPROC = void (CODEGEN_FUNCPTR *)(GLfloat, GLfloat);
 	using PFNTEXSUBIMAGE1DPROC = void (CODEGEN_FUNCPTR *)(GLenum, GLint, GLint, GLsizei, GLenum, GLenum, const GLvoid *);
 	using PFNTEXSUBIMAGE2DPROC = void (CODEGEN_FUNCPTR *)(GLenum, GLint, GLint, GLint, GLsizei, GLsizei, GLenum, GLenum, const GLvoid *);
-	
+
 	// Extension: 1.2
 	using PFNBLENDCOLORPROC = void (CODEGEN_FUNCPTR *)(GLfloat, GLfloat, GLfloat, GLfloat);
 	using PFNBLENDEQUATIONPROC = void (CODEGEN_FUNCPTR *)(GLenum);
@@ -177,7 +183,7 @@ namespace gl
 	using PFNDRAWRANGEELEMENTSPROC = void (CODEGEN_FUNCPTR *)(GLenum, GLuint, GLuint, GLsizei, GLenum, const GLvoid *);
 	using PFNTEXIMAGE3DPROC = void (CODEGEN_FUNCPTR *)(GLenum, GLint, GLint, GLsizei, GLsizei, GLsizei, GLint, GLenum, GLenum, const GLvoid *);
 	using PFNTEXSUBIMAGE3DPROC = void (CODEGEN_FUNCPTR *)(GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei, GLenum, GLenum, const GLvoid *);
-	
+
 	// Extension: 1.3
 	using PFNACTIVETEXTUREPROC = void (CODEGEN_FUNCPTR *)(GLenum);
 	using PFNCOMPRESSEDTEXIMAGE1DPROC = void (CODEGEN_FUNCPTR *)(GLenum, GLint, GLenum, GLsizei, GLint, GLsizei, const GLvoid *);
@@ -188,7 +194,7 @@ namespace gl
 	using PFNCOMPRESSEDTEXSUBIMAGE3DPROC = void (CODEGEN_FUNCPTR *)(GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei, GLenum, GLsizei, const GLvoid *);
 	using PFNGETCOMPRESSEDTEXIMAGEPROC = void (CODEGEN_FUNCPTR *)(GLenum, GLint, GLvoid *);
 	using PFNSAMPLECOVERAGEPROC = void (CODEGEN_FUNCPTR *)(GLfloat, GLboolean);
-	
+
 	// Extension: 1.4
 	using PFNBLENDFUNCSEPARATEPROC = void (CODEGEN_FUNCPTR *)(GLenum, GLenum, GLenum, GLenum);
 	using PFNMULTIDRAWARRAYSPROC = void (CODEGEN_FUNCPTR *)(GLenum, const GLint *, const GLsizei *, GLsizei);
@@ -197,7 +203,7 @@ namespace gl
 	using PFNPOINTPARAMETERFVPROC = void (CODEGEN_FUNCPTR *)(GLenum, const GLfloat *);
 	using PFNPOINTPARAMETERIPROC = void (CODEGEN_FUNCPTR *)(GLenum, GLint);
 	using PFNPOINTPARAMETERIVPROC = void (CODEGEN_FUNCPTR *)(GLenum, const GLint *);
-	
+
 	// Extension: 1.5
 	using PFNBEGINQUERYPROC = void (CODEGEN_FUNCPTR *)(GLenum, GLuint);
 	using PFNBINDBUFFERPROC = void (CODEGEN_FUNCPTR *)(GLenum, GLuint);
@@ -218,7 +224,7 @@ namespace gl
 	using PFNISQUERYPROC = GLboolean (CODEGEN_FUNCPTR *)(GLuint);
 	using PFNMAPBUFFERPROC = void * (CODEGEN_FUNCPTR *)(GLenum, GLenum);
 	using PFNUNMAPBUFFERPROC = GLboolean (CODEGEN_FUNCPTR *)(GLenum);
-	
+
 	// Extension: 2.0
 	using PFNATTACHSHADERPROC = void (CODEGEN_FUNCPTR *)(GLuint, GLuint);
 	using PFNBINDATTRIBLOCATIONPROC = void (CODEGEN_FUNCPTR *)(GLuint, GLuint, const GLchar *);
@@ -313,7 +319,7 @@ namespace gl
 	using PFNVERTEXATTRIB4UIVPROC = void (CODEGEN_FUNCPTR *)(GLuint, const GLuint *);
 	using PFNVERTEXATTRIB4USVPROC = void (CODEGEN_FUNCPTR *)(GLuint, const GLushort *);
 	using PFNVERTEXATTRIBPOINTERPROC = void (CODEGEN_FUNCPTR *)(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid *);
-	
+
 	// Extension: 2.1
 	using PFNUNIFORMMATRIX2X3FVPROC = void (CODEGEN_FUNCPTR *)(GLint, GLsizei, GLboolean, const GLfloat *);
 	using PFNUNIFORMMATRIX2X4FVPROC = void (CODEGEN_FUNCPTR *)(GLint, GLsizei, GLboolean, const GLfloat *);
@@ -321,7 +327,7 @@ namespace gl
 	using PFNUNIFORMMATRIX3X4FVPROC = void (CODEGEN_FUNCPTR *)(GLint, GLsizei, GLboolean, const GLfloat *);
 	using PFNUNIFORMMATRIX4X2FVPROC = void (CODEGEN_FUNCPTR *)(GLint, GLsizei, GLboolean, const GLfloat *);
 	using PFNUNIFORMMATRIX4X3FVPROC = void (CODEGEN_FUNCPTR *)(GLint, GLsizei, GLboolean, const GLfloat *);
-	
+
 	// Extension: 3.0
 	using PFNBEGINCONDITIONALRENDERPROC = void (CODEGEN_FUNCPTR *)(GLuint, GLenum);
 	using PFNBEGINTRANSFORMFEEDBACKPROC = void (CODEGEN_FUNCPTR *)(GLenum);
@@ -407,7 +413,7 @@ namespace gl
 	using PFNVERTEXATTRIBI4UIVPROC = void (CODEGEN_FUNCPTR *)(GLuint, const GLuint *);
 	using PFNVERTEXATTRIBI4USVPROC = void (CODEGEN_FUNCPTR *)(GLuint, const GLushort *);
 	using PFNVERTEXATTRIBIPOINTERPROC = void (CODEGEN_FUNCPTR *)(GLuint, GLint, GLenum, GLsizei, const GLvoid *);
-	
+
 	// Extension: 3.1
 	using PFNCOPYBUFFERSUBDATAPROC = void (CODEGEN_FUNCPTR *)(GLenum, GLenum, GLintptr, GLintptr, GLsizeiptr);
 	using PFNDRAWARRAYSINSTANCEDPROC = void (CODEGEN_FUNCPTR *)(GLenum, GLint, GLsizei, GLsizei);
@@ -421,7 +427,7 @@ namespace gl
 	using PFNPRIMITIVERESTARTINDEXPROC = void (CODEGEN_FUNCPTR *)(GLuint);
 	using PFNTEXBUFFERPROC = void (CODEGEN_FUNCPTR *)(GLenum, GLenum, GLuint);
 	using PFNUNIFORMBLOCKBINDINGPROC = void (CODEGEN_FUNCPTR *)(GLuint, GLuint, GLuint);
-	
+
 	// Extension: 3.2
 	using PFNCLIENTWAITSYNCPROC = GLenum (CODEGEN_FUNCPTR *)(GLsync, GLbitfield, GLuint64);
 	using PFNDELETESYNCPROC = void (CODEGEN_FUNCPTR *)(GLsync);
@@ -442,7 +448,7 @@ namespace gl
 	using PFNTEXIMAGE2DMULTISAMPLEPROC = void (CODEGEN_FUNCPTR *)(GLenum, GLsizei, GLint, GLsizei, GLsizei, GLboolean);
 	using PFNTEXIMAGE3DMULTISAMPLEPROC = void (CODEGEN_FUNCPTR *)(GLenum, GLsizei, GLint, GLsizei, GLsizei, GLsizei, GLboolean);
 	using PFNWAITSYNCPROC = void (CODEGEN_FUNCPTR *)(GLsync, GLbitfield, GLuint64);
-	
+
 	// Extension: 3.3
 	using PFNBINDFRAGDATALOCATIONINDEXEDPROC = void (CODEGEN_FUNCPTR *)(GLuint, GLuint, GLuint, const GLchar *);
 	using PFNBINDSAMPLERPROC = void (CODEGEN_FUNCPTR *)(GLuint, GLuint);
@@ -472,8 +478,8 @@ namespace gl
 	using PFNVERTEXATTRIBP3UIVPROC = void (CODEGEN_FUNCPTR *)(GLuint, GLenum, GLboolean, const GLuint *);
 	using PFNVERTEXATTRIBP4UIPROC = void (CODEGEN_FUNCPTR *)(GLuint, GLenum, GLboolean, GLuint);
 	using PFNVERTEXATTRIBP4UIVPROC = void (CODEGEN_FUNCPTR *)(GLuint, GLenum, GLboolean, const GLuint *);
-	
-	
+
+
 	// Extension: 1.0
 	PFNBLENDFUNCPROC BlendFunc;
 	PFNCLEARPROC Clear;
@@ -523,7 +529,7 @@ namespace gl
 	PFNTEXPARAMETERIPROC TexParameteri;
 	PFNTEXPARAMETERIVPROC TexParameteriv;
 	PFNVIEWPORTPROC Viewport;
-	
+
 	// Extension: 1.1
 	PFNBINDTEXTUREPROC BindTexture;
 	PFNCOPYTEXIMAGE1DPROC CopyTexImage1D;
@@ -538,7 +544,7 @@ namespace gl
 	PFNPOLYGONOFFSETPROC PolygonOffset;
 	PFNTEXSUBIMAGE1DPROC TexSubImage1D;
 	PFNTEXSUBIMAGE2DPROC TexSubImage2D;
-	
+
 	// Extension: 1.2
 	PFNBLENDCOLORPROC BlendColor;
 	PFNBLENDEQUATIONPROC BlendEquation;
@@ -546,7 +552,7 @@ namespace gl
 	PFNDRAWRANGEELEMENTSPROC DrawRangeElements;
 	PFNTEXIMAGE3DPROC TexImage3D;
 	PFNTEXSUBIMAGE3DPROC TexSubImage3D;
-	
+
 	// Extension: 1.3
 	PFNACTIVETEXTUREPROC ActiveTexture;
 	PFNCOMPRESSEDTEXIMAGE1DPROC CompressedTexImage1D;
@@ -557,7 +563,7 @@ namespace gl
 	PFNCOMPRESSEDTEXSUBIMAGE3DPROC CompressedTexSubImage3D;
 	PFNGETCOMPRESSEDTEXIMAGEPROC GetCompressedTexImage;
 	PFNSAMPLECOVERAGEPROC SampleCoverage;
-	
+
 	// Extension: 1.4
 	PFNBLENDFUNCSEPARATEPROC BlendFuncSeparate;
 	PFNMULTIDRAWARRAYSPROC MultiDrawArrays;
@@ -566,7 +572,7 @@ namespace gl
 	PFNPOINTPARAMETERFVPROC PointParameterfv;
 	PFNPOINTPARAMETERIPROC PointParameteri;
 	PFNPOINTPARAMETERIVPROC PointParameteriv;
-	
+
 	// Extension: 1.5
 	PFNBEGINQUERYPROC BeginQuery;
 	PFNBINDBUFFERPROC BindBuffer;
@@ -587,7 +593,7 @@ namespace gl
 	PFNISQUERYPROC IsQuery;
 	PFNMAPBUFFERPROC MapBuffer;
 	PFNUNMAPBUFFERPROC UnmapBuffer;
-	
+
 	// Extension: 2.0
 	PFNATTACHSHADERPROC AttachShader;
 	PFNBINDATTRIBLOCATIONPROC BindAttribLocation;
@@ -682,7 +688,7 @@ namespace gl
 	PFNVERTEXATTRIB4UIVPROC VertexAttrib4uiv;
 	PFNVERTEXATTRIB4USVPROC VertexAttrib4usv;
 	PFNVERTEXATTRIBPOINTERPROC VertexAttribPointer;
-	
+
 	// Extension: 2.1
 	PFNUNIFORMMATRIX2X3FVPROC UniformMatrix2x3fv;
 	PFNUNIFORMMATRIX2X4FVPROC UniformMatrix2x4fv;
@@ -690,7 +696,7 @@ namespace gl
 	PFNUNIFORMMATRIX3X4FVPROC UniformMatrix3x4fv;
 	PFNUNIFORMMATRIX4X2FVPROC UniformMatrix4x2fv;
 	PFNUNIFORMMATRIX4X3FVPROC UniformMatrix4x3fv;
-	
+
 	// Extension: 3.0
 	PFNBEGINCONDITIONALRENDERPROC BeginConditionalRender;
 	PFNBEGINTRANSFORMFEEDBACKPROC BeginTransformFeedback;
@@ -776,7 +782,7 @@ namespace gl
 	PFNVERTEXATTRIBI4UIVPROC VertexAttribI4uiv;
 	PFNVERTEXATTRIBI4USVPROC VertexAttribI4usv;
 	PFNVERTEXATTRIBIPOINTERPROC VertexAttribIPointer;
-	
+
 	// Extension: 3.1
 	PFNCOPYBUFFERSUBDATAPROC CopyBufferSubData;
 	PFNDRAWARRAYSINSTANCEDPROC DrawArraysInstanced;
@@ -790,7 +796,7 @@ namespace gl
 	PFNPRIMITIVERESTARTINDEXPROC PrimitiveRestartIndex;
 	PFNTEXBUFFERPROC TexBuffer;
 	PFNUNIFORMBLOCKBINDINGPROC UniformBlockBinding;
-	
+
 	// Extension: 3.2
 	PFNCLIENTWAITSYNCPROC ClientWaitSync;
 	PFNDELETESYNCPROC DeleteSync;
@@ -811,7 +817,7 @@ namespace gl
 	PFNTEXIMAGE2DMULTISAMPLEPROC TexImage2DMultisample;
 	PFNTEXIMAGE3DMULTISAMPLEPROC TexImage3DMultisample;
 	PFNWAITSYNCPROC WaitSync;
-	
+
 	// Extension: 3.3
 	PFNBINDFRAGDATALOCATIONINDEXEDPROC BindFragDataLocationIndexed;
 	PFNBINDSAMPLERPROC BindSampler;
@@ -841,8 +847,8 @@ namespace gl
 	PFNVERTEXATTRIBP3UIVPROC VertexAttribP3uiv;
 	PFNVERTEXATTRIBP4UIPROC VertexAttribP4ui;
 	PFNVERTEXATTRIBP4UIVPROC VertexAttribP4uiv;
-	
-	
+
+
 	// Extension: 1.0
 	static void CODEGEN_FUNCPTR Switch_BlendFunc(GLenum sfactor, GLenum dfactor)
 	{
@@ -1132,7 +1138,7 @@ namespace gl
 		Viewport(x, y, width, height);
 	}
 
-	
+
 	// Extension: 1.1
 	static void CODEGEN_FUNCPTR Switch_BindTexture(GLenum target, GLuint texture)
 	{
@@ -1212,7 +1218,7 @@ namespace gl
 		TexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
 	}
 
-	
+
 	// Extension: 1.2
 	static void CODEGEN_FUNCPTR Switch_BlendColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha)
 	{
@@ -1250,7 +1256,7 @@ namespace gl
 		TexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
 	}
 
-	
+
 	// Extension: 1.3
 	static void CODEGEN_FUNCPTR Switch_ActiveTexture(GLenum texture)
 	{
@@ -1306,7 +1312,7 @@ namespace gl
 		SampleCoverage(value, invert);
 	}
 
-	
+
 	// Extension: 1.4
 	static void CODEGEN_FUNCPTR Switch_BlendFuncSeparate(GLenum sfactorRGB, GLenum dfactorRGB, GLenum sfactorAlpha, GLenum dfactorAlpha)
 	{
@@ -1350,7 +1356,7 @@ namespace gl
 		PointParameteriv(pname, params);
 	}
 
-	
+
 	// Extension: 1.5
 	static void CODEGEN_FUNCPTR Switch_BeginQuery(GLenum target, GLuint id)
 	{
@@ -1466,7 +1472,7 @@ namespace gl
 		return UnmapBuffer(target);
 	}
 
-	
+
 	// Extension: 2.0
 	static void CODEGEN_FUNCPTR Switch_AttachShader(GLuint program, GLuint shader)
 	{
@@ -2026,7 +2032,7 @@ namespace gl
 		VertexAttribPointer(index, size, type, normalized, stride, pointer);
 	}
 
-	
+
 	// Extension: 2.1
 	static void CODEGEN_FUNCPTR Switch_UniformMatrix2x3fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat * value)
 	{
@@ -2064,7 +2070,7 @@ namespace gl
 		UniformMatrix4x3fv(location, count, transpose, value);
 	}
 
-	
+
 	// Extension: 3.0
 	static void CODEGEN_FUNCPTR Switch_BeginConditionalRender(GLuint id, GLenum mode)
 	{
@@ -2570,7 +2576,7 @@ namespace gl
 		VertexAttribIPointer(index, size, type, stride, pointer);
 	}
 
-	
+
 	// Extension: 3.1
 	static void CODEGEN_FUNCPTR Switch_CopyBufferSubData(GLenum readTarget, GLenum writeTarget, GLintptr readOffset, GLintptr writeOffset, GLsizeiptr size)
 	{
@@ -2644,7 +2650,7 @@ namespace gl
 		UniformBlockBinding(program, uniformBlockIndex, uniformBlockBinding);
 	}
 
-	
+
 	// Extension: 3.2
 	static GLenum CODEGEN_FUNCPTR Switch_ClientWaitSync(GLsync sync, GLbitfield flags, GLuint64 timeout)
 	{
@@ -2760,7 +2766,7 @@ namespace gl
 		WaitSync(sync, flags, timeout);
 	}
 
-	
+
 	// Extension: 3.3
 	static void CODEGEN_FUNCPTR Switch_BindFragDataLocationIndexed(GLuint program, GLuint colorNumber, GLuint index, const GLchar * name)
 	{
@@ -2930,9 +2936,9 @@ namespace gl
 		VertexAttribP4uiv(index, type, normalized, value);
 	}
 
-	
-	
-	namespace 
+
+
+	namespace
 	{
 		struct InitializeVariables
 		{ NOMEMALIGN
@@ -2987,7 +2993,7 @@ namespace gl
 				TexParameteri = Switch_TexParameteri;
 				TexParameteriv = Switch_TexParameteriv;
 				Viewport = Switch_Viewport;
-				
+
 				// Extension: 1.1
 				BindTexture = Switch_BindTexture;
 				CopyTexImage1D = Switch_CopyTexImage1D;
@@ -3002,7 +3008,7 @@ namespace gl
 				PolygonOffset = Switch_PolygonOffset;
 				TexSubImage1D = Switch_TexSubImage1D;
 				TexSubImage2D = Switch_TexSubImage2D;
-				
+
 				// Extension: 1.2
 				BlendColor = Switch_BlendColor;
 				BlendEquation = Switch_BlendEquation;
@@ -3010,7 +3016,7 @@ namespace gl
 				DrawRangeElements = Switch_DrawRangeElements;
 				TexImage3D = Switch_TexImage3D;
 				TexSubImage3D = Switch_TexSubImage3D;
-				
+
 				// Extension: 1.3
 				ActiveTexture = Switch_ActiveTexture;
 				CompressedTexImage1D = Switch_CompressedTexImage1D;
@@ -3021,7 +3027,7 @@ namespace gl
 				CompressedTexSubImage3D = Switch_CompressedTexSubImage3D;
 				GetCompressedTexImage = Switch_GetCompressedTexImage;
 				SampleCoverage = Switch_SampleCoverage;
-				
+
 				// Extension: 1.4
 				BlendFuncSeparate = Switch_BlendFuncSeparate;
 				MultiDrawArrays = Switch_MultiDrawArrays;
@@ -3030,7 +3036,7 @@ namespace gl
 				PointParameterfv = Switch_PointParameterfv;
 				PointParameteri = Switch_PointParameteri;
 				PointParameteriv = Switch_PointParameteriv;
-				
+
 				// Extension: 1.5
 				BeginQuery = Switch_BeginQuery;
 				BindBuffer = Switch_BindBuffer;
@@ -3051,7 +3057,7 @@ namespace gl
 				IsQuery = Switch_IsQuery;
 				MapBuffer = Switch_MapBuffer;
 				UnmapBuffer = Switch_UnmapBuffer;
-				
+
 				// Extension: 2.0
 				AttachShader = Switch_AttachShader;
 				BindAttribLocation = Switch_BindAttribLocation;
@@ -3146,7 +3152,7 @@ namespace gl
 				VertexAttrib4uiv = Switch_VertexAttrib4uiv;
 				VertexAttrib4usv = Switch_VertexAttrib4usv;
 				VertexAttribPointer = Switch_VertexAttribPointer;
-				
+
 				// Extension: 2.1
 				UniformMatrix2x3fv = Switch_UniformMatrix2x3fv;
 				UniformMatrix2x4fv = Switch_UniformMatrix2x4fv;
@@ -3154,7 +3160,7 @@ namespace gl
 				UniformMatrix3x4fv = Switch_UniformMatrix3x4fv;
 				UniformMatrix4x2fv = Switch_UniformMatrix4x2fv;
 				UniformMatrix4x3fv = Switch_UniformMatrix4x3fv;
-				
+
 				// Extension: 3.0
 				BeginConditionalRender = Switch_BeginConditionalRender;
 				BeginTransformFeedback = Switch_BeginTransformFeedback;
@@ -3240,7 +3246,7 @@ namespace gl
 				VertexAttribI4uiv = Switch_VertexAttribI4uiv;
 				VertexAttribI4usv = Switch_VertexAttribI4usv;
 				VertexAttribIPointer = Switch_VertexAttribIPointer;
-				
+
 				// Extension: 3.1
 				CopyBufferSubData = Switch_CopyBufferSubData;
 				DrawArraysInstanced = Switch_DrawArraysInstanced;
@@ -3254,7 +3260,7 @@ namespace gl
 				PrimitiveRestartIndex = Switch_PrimitiveRestartIndex;
 				TexBuffer = Switch_TexBuffer;
 				UniformBlockBinding = Switch_UniformBlockBinding;
-				
+
 				// Extension: 3.2
 				ClientWaitSync = Switch_ClientWaitSync;
 				DeleteSync = Switch_DeleteSync;
@@ -3275,7 +3281,7 @@ namespace gl
 				TexImage2DMultisample = Switch_TexImage2DMultisample;
 				TexImage3DMultisample = Switch_TexImage3DMultisample;
 				WaitSync = Switch_WaitSync;
-				
+
 				// Extension: 3.3
 				BindFragDataLocationIndexed = Switch_BindFragDataLocationIndexed;
 				BindSampler = Switch_BindSampler;
@@ -3305,56 +3311,56 @@ namespace gl
 				VertexAttribP3uiv = Switch_VertexAttribP3uiv;
 				VertexAttribP4ui = Switch_VertexAttribP4ui;
 				VertexAttribP4uiv = Switch_VertexAttribP4uiv;
-				
+
 			}
 		};
 
 		InitializeVariables g_initVariables;
 	}
-	
+
 	namespace sys
 	{
-		namespace 
+		namespace
 		{
 			void ClearExtensionVariables()
 			{
 			}
-			
+
 			struct MapEntry
 			{ NOMEMALIGN
 				const char *extName;
 				bool *extVariable;
 			};
-			
+
 			struct MapCompare
 			{ NOMEMALIGN
 				MapCompare(const char *test_) : test(test_) {}
 				bool operator()(const MapEntry &other) { return strcmp(test, other.extName) == 0; }
 				const char *test;
 			};
-			
+
 			struct ClearEntry
 			{ NOMEMALIGN
 			  void operator()(MapEntry &entry) { *(entry.extVariable) = false;}
 			};
-			
-			MapEntry g_mappingTable[1]; //This is intensionally left uninitialized. 
-			
+
+			MapEntry g_mappingTable[1]; //This is intensionally left uninitialized.
+
 			void LoadExtByName(const char *extensionName)
 			{
 				MapEntry *tableEnd = &g_mappingTable[0];
 				MapEntry *entry = std::find_if(&g_mappingTable[0], tableEnd, MapCompare(extensionName));
-				
+
 				if(entry != tableEnd)
 					*(entry->extVariable) = true;
 			}
-			
+
 			void ProcExtsFromExtList()
 			{
 				GLint iLoop;
 				GLint iNumExtensions = 0;
 				GetIntegerv(NUM_EXTENSIONS, &iNumExtensions);
-			
+
 				for(iLoop = 0; iLoop < iNumExtensions; iLoop++)
 				{
 					const char *strExtensionName = (const char *)GetStringi(EXTENSIONS, iLoop);
@@ -3366,9 +3372,9 @@ namespace gl
 		{
 			ClearExtensionVariables();
 			std::for_each(&g_mappingTable[0], &g_mappingTable[0], ClearEntry());
-			
+
 			ProcExtsFromExtList();
 		}
-		
+
 	}
 }

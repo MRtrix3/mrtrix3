@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -29,7 +30,7 @@ using value_type = float;
 void usage ()
 {
 
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset";
 
@@ -42,13 +43,14 @@ void usage ()
     + Option ("no_bzero", "Output only non b=0 volumes (default, if -singleshell is not specified).")
     + Option ("singleshell", "Force a single-shell (single non b=0 shell) output. This will include b=0 volumes, if present. Use with -bzero to enforce presence of b=0 volumes (error if not present) or with -no_bzero to exclude them.")
     + DWI::GradImportOptions()
-    + DWI::ShellOption
+    + DWI::ShellsOption
+    + DWI::GradExportOptions()
     + PhaseEncoding::ImportOptions
     + PhaseEncoding::SelectOptions
     + Stride::Options;
 }
 
-void run() 
+void run()
 {
   auto input_header = Header::open (argument[0]);
   auto input_image = input_header.get_image<float>();
@@ -61,12 +63,12 @@ void run()
   //   of all dwis or all bzeros i.e. don't initialise the Shells class
   vector<int> volumes;
   bool bzero = get_options ("bzero").size();
-  if (get_options ("shell").size() || get_options ("singleshell").size()) {
+  if (get_options ("shells").size() || get_options ("singleshell").size()) {
     DWI::Shells shells (grad);
     shells.select_shells (get_options ("singleshell").size(),get_options ("bzero").size(),get_options ("no_bzero").size());
     for (size_t s = 0; s != shells.count(); ++s) {
       DEBUG ("Including data from shell b=" + str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev()));
-      for (const auto v : shells[s].get_volumes()) 
+      for (const auto v : shells[s].get_volumes())
         volumes.push_back (v);
     }
     bzero = (shells.count() == 1 && shells.has_bzero());
@@ -104,7 +106,7 @@ void run()
         }
       }
       if (filter.size() == 4) {
-        if (std::abs (pe_scheme(i, 3) - filter[3]) > 5e-3) {
+        if (abs (pe_scheme(i, 3) - filter[3]) > 5e-3) {
           keep = false;
           break;
         }
@@ -139,6 +141,7 @@ void run()
   }
 
   auto output_image = Image<float>::create (argument[1], header);
+  DWI::export_grad_commandline (header);
 
   auto input_volumes = Adapter::make<Adapter::Extract1D> (input_image, 3, volumes);
   threaded_copy_with_progress_message ("extracting volumes", input_volumes, output_image);

@@ -11,14 +11,14 @@
 
 # Make the corresponding MRtrix3 Python libraries available
 import inspect, os, sys
-lib_folder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile(inspect.currentframe()))[0], os.pardir, 'lib')))
+lib_folder = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
 if not os.path.isdir(lib_folder):
   sys.stderr.write('Unable to locate MRtrix3 Python libraries')
   sys.exit(1)
 sys.path.insert(0, lib_folder)
 
 
-from mrtrix3 import algorithm, app, path, run
+from mrtrix3 import algorithm, app, run
 
 app.init('Robert E. Smith (robert.smith@florey.edu.au)', 'Generate a 5TT image suitable for ACT')
 app.cmdline.addCitation('', 'Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. NeuroImage, 2012, 62, 1924-1938', False)
@@ -46,10 +46,10 @@ app.gotoTempDir()
 
 alg.execute()
 
-(stdout,stderr) = run.command('5ttcheck result.mif', False)
-if len(stderr) and 'ERROR' in stderr:
-  app.warn('Generated image does not perfectly conform to 5TT format')
+stderr = run.command('5ttcheck result.mif')[1]
+if stderr:
+  app.warn('Generated image does not perfectly conform to 5TT format:')
+  for line in stderr.splitlines():
+    app.warn(line)
 
-run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + (' -force' if app.force else ''))
 app.complete()
-

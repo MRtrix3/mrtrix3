@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -47,7 +48,7 @@ void run ()
 
   for (ssize_t i = 0; i < dir1.cols(); ++i) {
     for (ssize_t j = 0; j < dir1.rows(); ++j) {
-      if (std::abs (dir1(i,j) - dir2(i,j)) > tol)
+      if (abs (dir1(i,j) - dir2(i,j)) > tol)
         throw Exception ("direction files \"" + str(argument[0]) + "\" and \"" + str(argument[1]) + "\" do not match within specified precision of " + str(tol)
             + " (" + str(dir1(i,j)) + " vs " + str(dir2(i,j)) + ")");
     }

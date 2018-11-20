@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -41,9 +42,9 @@ namespace MR
       if (files.size() * double (bytes_per_segment) >= double (std::numeric_limits<size_t>::max()))
         throw Exception ("image \"" + header.name() + "\" is larger than maximum accessible memory");
 
-      if (files.size() > MAX_FILES_PER_IMAGE) 
+      if (files.size() > MAX_FILES_PER_IMAGE)
         copy_to_mem (header);
-      else 
+      else
         map_files (header);
     }
 
@@ -93,7 +94,7 @@ namespace MR
       DEBUG ("loading image \"" + header.name() + "\"...");
       addresses.resize (files.size() > 1 && header.datatype().bits() *segsize != 8*size_t (bytes_per_segment) ? files.size() : 1);
       addresses[0].reset (new uint8_t [files.size() * bytes_per_segment]);
-      if (!addresses[0]) 
+      if (!addresses[0])
         throw Exception ("failed to allocate memory for image \"" + header.name() + "\"");
 
       if (is_new) memset (addresses[0].get(), 0, files.size() * bytes_per_segment);

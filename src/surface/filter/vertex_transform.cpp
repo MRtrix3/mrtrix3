@@ -1,18 +1,20 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
 #include "surface/filter/vertex_transform.h"
+#include "file/nifti_utils.h"
 
 #include "exception.h"
 
@@ -84,6 +86,25 @@ namespace MR
             if (in.have_normals()) {
               for (size_t i = 0; i != V; ++i)
                 normals.push_back (transform.scanner2voxel.rotation() * in.norm(i));
+            }
+            break;
+
+          case transform_t::FS2REAL:
+            vector<size_t> axes( 3 );
+            auto M = File::NIfTI::adjust_transform( header, axes );
+            Eigen::Vector3 cras( 3, 1 );
+            for ( size_t i = 0; i < 3; i++ )
+            {
+              cras[ i ] = M( i, 3 );
+              for ( size_t j = 0; j < 3; j++ )
+              {
+                cras[ i ] += 0.5 * header.size( axes[ j ] )
+                                 * header.spacing( axes[ j ] ) * M( i, j );
+              }
+            }
+            for ( size_t i = 0; i != V; ++i )
+            {
+              vertices.push_back ( in.vert(i) + cras );
             }
             break;
 

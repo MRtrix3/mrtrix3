@@ -1,14 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/*
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
+ * MRtrix3 is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see http://www.mrtrix.org/.
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -24,7 +25,6 @@
 #include <algorithm>
 #include <cctype>
 #include <iostream>
-#include <vector>
 #include <array>
 #include <string>
 #include <cstring>
@@ -149,19 +149,20 @@ namespace MR
 
   inline std::string printf (const char* format, ...)
   {
-    va_list list;
-    va_start (list, format);
-    size_t len = vsnprintf (NULL, 0, format, list) + 1;
-    va_end (list);
+    size_t len = 0;
+    va_list list1, list2;
+    va_start (list1, format);
+    va_copy (list2, list1);
+    len = vsnprintf (nullptr, 0, format, list1) + 1;
+    va_end (list1);
     VLA(buf, char, len);
-    va_start (list, format);
-    vsnprintf (buf, len, format, list);
-    va_end (list);
+    vsnprintf (buf, len, format, list2);
+    va_end (list2);
     return buf;
   }
 
 
-  inline std::string strip (const std::string& string, const char* ws = " \t\n", bool left = true, bool right = true)
+  inline std::string strip (const std::string& string, const std::string& ws = {" \0\t\n", 4}, bool left = true, bool right = true)
   {
     std::string::size_type start = (left ? string.find_first_not_of (ws) : 0);
     if (start == std::string::npos)
@@ -172,17 +173,17 @@ namespace MR
 
 
 
-  inline void  replace (std::string& string, char orig, char final)
+  inline void replace (std::string& string, char orig, char final)
   {
-    for (std::string::iterator i = string.begin(); i != string.end(); ++i)
-      if (*i == orig) *i = final;
+    for (auto& c: string)
+      if (c == orig) c = final;
   }
 
-  inline void  replace (std::string& str, const std::string& from, const std::string& to)
+  inline void replace (std::string& str, const std::string& from, const std::string& to)
   {
     if (from.empty()) return;
     size_t start_pos = 0;
-    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+    while ((start_pos = str.find (from, start_pos)) != std::string::npos) {
       str.replace (start_pos, from.length(), to);
       start_pos += to.length();
     }
@@ -198,7 +199,8 @@ namespace MR
   inline vector<std::string> split_lines (
       const std::string& string,
       bool ignore_empty_fields = true,
-      size_t num = std::numeric_limits<size_t>::max()) {
+      size_t num = std::numeric_limits<size_t>::max())
+  {
     return split (string, "\n", ignore_empty_fields, num);
   }
 
@@ -210,6 +212,18 @@ namespace MR
     ret = V[0];
     for (vector<std::string>::const_iterator i = V.begin() +1; i != V.end(); ++i)
       ret += delimiter + *i;
+    return ret;
+  }
+
+  template <typename T>
+  inline std::string join (const vector<T>& V, const std::string& delimiter)
+  {
+    std::string ret;
+    if (V.empty())
+      return ret;
+    ret = str(V[0]);
+    for (typename vector<T>::const_iterator i = V.begin() +1; i != V.end(); ++i)
+      ret += delimiter + str(*i);
     return ret;
   }
 
@@ -225,7 +239,7 @@ namespace MR
   }
 
   vector<default_type> parse_floats (const std::string& spec);
-  vector<int>   parse_ints (const std::string& spec, int last = std::numeric_limits<int>::max());
+  vector<int> parse_ints (const std::string& spec, int last = std::numeric_limits<int>::max());
 
   /*
   inline int round (default_type x)

@@ -1,6 +1,4 @@
-def initialise(base_parser, subparsers):
-  import argparse
-  from mrtrix3 import app
+def initialise(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('manual', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Derive a response function using an input mask image alone (i.e. pre-selected voxels)', parents=[base_parser])
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('in_voxels', help='Input voxel selection mask')
@@ -10,13 +8,13 @@ def initialise(base_parser, subparsers):
 
 
 
-def checkOutputPaths():
+def checkOutputPaths(): #pylint: disable=unused-variable
   from mrtrix3 import app
   app.checkOutputPath(app.args.output)
 
 
 
-def getInputs():
+def getInputs(): #pylint: disable=unused-variable
   import os
   from mrtrix3 import app, path, run
   mask_path = path.toTemp('mask.mif', False)
@@ -25,20 +23,20 @@ def getInputs():
     os.remove(mask_path)
   run.command('mrconvert ' + path.fromUser(app.args.in_voxels, True) + ' ' + path.toTemp('in_voxels.mif', True))
   if app.args.dirs:
-    run.command('mrconvert ' + path.fromUser(app.args.dirs, True) + ' ' + path.toTemp('dirs.mif', True) + ' -stride 0,0,0,1')
+    run.command('mrconvert ' + path.fromUser(app.args.dirs, True) + ' ' + path.toTemp('dirs.mif', True) + ' -strides 0,0,0,1')
 
 
 
-def needsSingleShell():
+def needsSingleShell(): #pylint: disable=unused-variable
   return False
 
 
 
-def execute():
+def execute(): #pylint: disable=unused-variable
   import os, shutil
   from mrtrix3 import app, image, path, run
 
-  shells = [ int(round(float(x))) for x in image.headerField('dwi.mif', 'shells').split() ]
+  shells = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shell_bvalues').split() ]
 
   # Get lmax information (if provided)
   lmax = [ ]
@@ -57,12 +55,12 @@ def execute():
     run.command('dwi2tensor dwi.mif - -mask in_voxels.mif | tensor2metric - -vector dirs.mif')
 
   # Get response function
-  bvalues_option = ' -shell ' + ','.join(map(str,shells))
+  bvalues_option = ' -shells ' + ','.join(map(str,shells))
   lmax_option = ''
   if lmax:
     lmax_option = ' -lmax ' + ','.join(map(str,lmax))
   run.command('amp2response dwi.mif in_voxels.mif dirs.mif response.txt' + bvalues_option + lmax_option)
 
   run.function(shutil.copyfile, 'response.txt', path.fromUser(app.args.output, False))
-  run.function(shutil.copyfile, 'in_voxels.mif', 'voxels.mif')
-
+  if app.args.voxels:
+    run.command('mrconvert in_voxels.mif ' + path.fromUser(app.args.voxels, True) + app.mrconvertOutputOption(path.fromUser(app.args.input, True)))
