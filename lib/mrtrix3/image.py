@@ -8,16 +8,16 @@ class Header(object):
   def __init__(self, image_path):
     import json, os, subprocess
     from mrtrix3 import app, MRtrixError, path, run
-    filename = path.nameTemporary('json')
-    command = [ run.exeName(run.versionMatch('mrinfo')), image_path, '-json_all', filename ]
-    if app.verbosity > 1:
+    filename = path.name_temporary('json')
+    command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-json_all', filename ]
+    if app.VERBOSITY > 1:
       app.console('Loading header for image file \'' + image_path + '\'')
     app.debug(str(command))
     result = subprocess.call(command, stdout=None, stderr=None)
     if result:
       raise MRtrixError('Could not access header information for image \'' + image_path + '\'')
-    with open(filename, 'r') as f:
-      data = json.load(f)
+    with open(filename, 'r') as json_file:
+      data = json.load(json_file)
     os.remove(filename)
     try:
       #self.__dict__.update(data)
@@ -93,7 +93,7 @@ def axis2dir(string): #pylint: disable=unused-variable
 # Determine whether or not an image contains at least three axes, the first three of which
 #   have dimension greater than one: This means that the data can plausibly represent
 #   spatial information, and 3D interpolation can be performed
-def check3DNonunity(image_in): #pylint: disable=unused-variable
+def check_3d_nonunity(image_in): #pylint: disable=unused-variable
   from mrtrix3 import app, MRtrixError
   if not isinstance(image_in, Header):
     if not isinstance(image_in, str):
@@ -115,13 +115,13 @@ def check3DNonunity(image_in): #pylint: disable=unused-variable
 def mrinfo(image_path, field): #pylint: disable=unused-variable
   import subprocess
   from mrtrix3 import app, run
-  command = [ run.exeName(run.versionMatch('mrinfo')), image_path, '-' + field ]
-  if app.verbosity > 1:
+  command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-' + field ]
+  if app.VERBOSITY > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
   result, dummy_err = proc.communicate()
   result = result.rstrip().decode('utf-8')
-  if app.verbosity > 1:
+  if app.VERBOSITY > 1:
     app.console('Result: ' + result)
   # Don't exit on error; let the calling function determine whether or not
   #   the absence of the key is an issue
@@ -182,15 +182,15 @@ def match(image_one, image_two, max_dim=0): #pylint: disable=unused-variable, to
 def statistic(image_path, stat, options=''): #pylint: disable=unused-variable
   import shlex, subprocess
   from mrtrix3 import app, MRtrixError, run
-  command = [ run.exeName(run.versionMatch('mrstats')), image_path, '-output', stat ]
+  command = [ run.exe_name(run.version_match('mrstats')), image_path, '-output', stat ]
   if options:
     command.extend(shlex.split(options))
-  if app.verbosity > 1:
+  if app.VERBOSITY > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
   result, dummy_err = proc.communicate()
   result = result.rstrip().decode('utf-8')
-  if app.verbosity > 1:
+  if app.VERBOSITY > 1:
     app.console('Result: ' + result)
   if proc.returncode:
     raise MRtrixError('Error trying to calculate statistic \'' + statistic + '\' from image \'' + image_path + '\'')

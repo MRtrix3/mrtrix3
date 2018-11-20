@@ -14,11 +14,11 @@
 
 
 def usage(cmdline): #pylint: disable=unused-variable
-  cmdline.setAuthor('Robert E. Smith (robert.smith@florey.edu.au)')
-  cmdline.setSynopsis('In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST')
-  cmdline.addCitation('', 'Patenaude, B.; Smith, S. M.; Kennedy, D. N. & Jenkinson, M. A Bayesian model of shape and appearance for subcortical brain segmentation. NeuroImage, 2011, 56, 907-922', True)
-  cmdline.addCitation('', 'Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219', True)
-  cmdline.addCitation('', 'Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. The effects of SIFT on the reproducibility and biological accuracy of the structural connectome. NeuroImage, 2015, 104, 253-265', False)
+  cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
+  cmdline.set_synopsis('In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST')
+  cmdline.add_citation('', 'Patenaude, B.; Smith, S. M.; Kennedy, D. N. & Jenkinson, M. A Bayesian model of shape and appearance for subcortical brain segmentation. NeuroImage, 2011, 56, 907-922', True)
+  cmdline.add_citation('', 'Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219', True)
+  cmdline.add_citation('', 'Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. The effects of SIFT on the reproducibility and biological accuracy of the structural connectome. NeuroImage, 2015, 104, 253-265', False)
   cmdline.add_argument('parc',   help='The input FreeSurfer parcellation image')
   cmdline.add_argument('t1',     help='The T1 image to be provided to FIRST')
   cmdline.add_argument('lut',    help='The lookup table file that the parcellated image is based on')
@@ -33,18 +33,18 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import math
-  from mrtrix3 import fsl, image, isWindows, MRtrixError, path, run
-  app.checkOutputPath(path.fromUser(app.args.output, False))
-  image.check3DNonunity(path.fromUser(app.args.t1, False))
+  from mrtrix3 import fsl, image, is_windows, MRtrixError, path, run
+  app.check_output_path(path.from_user(app.ARGS.output, False))
+  image.check_3d_nonunity(path.from_user(app.ARGS.t1, False))
 
-  if isWindows():
+  if is_windows():
     raise MRtrixError('Script cannot run on Windows due to FSL dependency')
 
   fsl_path = os.environ.get('FSLDIR', '')
   if not fsl_path:
     raise MRtrixError('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
 
-  first_cmd = fsl.exeName('run_first_all')
+  first_cmd = fsl.exe_name('run_first_all')
 
   first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
   if not os.path.isdir(first_atlas_path):
@@ -57,11 +57,11 @@ def execute(): #pylint: disable=unused-variable
                     'L_Pall':'Left-Pallidum',        'R_Pall':'Right-Pallidum',
                     'L_Puta':'Left-Putamen',         'R_Puta':'Right-Putamen',
                     'L_Thal':'Left-Thalamus-Proper', 'R_Thal':'Right-Thalamus-Proper' }
-  if app.args.sgm_amyg_hipp:
+  if app.ARGS.sgm_amyg_hipp:
     structure_map.update({ 'L_Amyg':'Left-Amygdala',    'R_Amyg':'Right-Amygdala',
                            'L_Hipp':'Left-Hippocampus', 'R_Hipp':'Right-Hippocampus' })
 
-  t1_spacing = image.Header(path.fromUser(app.args.t1, False)).spacing()
+  t1_spacing = image.Header(path.from_user(app.ARGS.t1, False)).spacing()
   upsample_for_first = False
   # If voxel size is 1.25mm or larger, make a guess that the user has erroneously re-gridded their data
   if math.pow(t1_spacing[0] * t1_spacing[1] * t1_spacing[2], 1.0/3.0) > 1.225:
@@ -70,23 +70,23 @@ def execute(): #pylint: disable=unused-variable
              'FSL FIRST script succeeding')
     upsample_for_first = True
 
-  app.makeScratchDir()
+  app.make_scratch_dir()
 
   # Get the parcellation and T1 images into the scratch directory, with conversion of the T1 into the correct format for FSL
-  run.command('mrconvert ' + path.fromUser(app.args.parc) + ' ' + path.toScratch('parc.mif'))
+  run.command('mrconvert ' + path.from_user(app.ARGS.parc) + ' ' + path.to_scratch('parc.mif'))
   if upsample_for_first:
-    run.command('mrresize ' + path.fromUser(app.args.t1) + ' - -voxel 1.0 -interp sinc | mrcalc - 0.0 -max - | mrconvert - ' + path.toScratch('T1.nii') + ' -strides -1,+2,+3')
+    run.command('mrresize ' + path.from_user(app.ARGS.t1) + ' - -voxel 1.0 -interp sinc | mrcalc - 0.0 -max - | mrconvert - ' + path.to_scratch('T1.nii') + ' -strides -1,+2,+3')
   else:
-    run.command('mrconvert ' + path.fromUser(app.args.t1) + ' ' + path.toScratch('T1.nii') + ' -strides -1,+2,+3')
+    run.command('mrconvert ' + path.from_user(app.ARGS.t1) + ' ' + path.to_scratch('T1.nii') + ' -strides -1,+2,+3')
 
-  app.gotoScratchDir()
+  app.goto_scratch_dir()
 
   # Run FIRST
   first_input_is_brain_extracted = ''
-  if app.args.premasked:
+  if app.ARGS.premasked:
     first_input_is_brain_extracted = ' -b'
   run.command(first_cmd + ' -m none -s ' + ','.join(structure_map.keys()) + ' -i T1.nii' + first_input_is_brain_extracted + ' -o first')
-  fsl.checkFirst('first', structure_map.keys())
+  fsl.check_first('first', structure_map.keys())
 
   # Generate an empty image that will be used to construct the new SGM nodes
   run.command('mrcalc parc.mif 0 -min sgm.mif')
@@ -95,9 +95,9 @@ def execute(): #pylint: disable=unused-variable
   # This will map a structure name to an index
   sgm_lut = {}
   sgm_lut_file_name = 'FreeSurferSGM.txt'
-  sgm_lut_file_path = os.path.join(path.sharedDataPath(), path.scriptSubDirName(), sgm_lut_file_name)
-  with open(sgm_lut_file_path) as f:
-    for line in f:
+  sgm_lut_file_path = os.path.join(path.shared_data_path(), path.script_subdir_name(), sgm_lut_file_name)
+  with open(sgm_lut_file_path) as sgm_lut_file:
+    for line in sgm_lut_file:
       line = line.rstrip()
       if line and line[0]!='#':
         line = line.split()
@@ -106,7 +106,7 @@ def execute(): #pylint: disable=unused-variable
   # Convert FIRST meshes to node masks
   # In this use case, don't want the PVE images; want to threshold at 0.5
   mask_list = [ ]
-  progress = app.progressBar('Generating mask images for SGM structures', len(structure_map))
+  progress = app.ProgressBar('Generating mask images for SGM structures', len(structure_map))
   for key, value in structure_map.items():
     image_path = key + '_mask.mif'
     mask_list.append(image_path)
@@ -116,7 +116,7 @@ def execute(): #pylint: disable=unused-variable
     # Add to the SGM image; don't worry about overlap for now
     node_index = sgm_lut[value]
     run.command('mrcalc ' + image_path + ' ' + node_index + ' sgm.mif -if sgm_new.mif')
-    if not app.continueOption:
+    if not app.CONTINUE_OPTION:
       run.function(os.remove, 'sgm.mif')
       run.function(os.rename, 'sgm_new.mif', 'sgm.mif')
     progress.increment()
@@ -127,13 +127,13 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrcalc sgm_overlap_mask.mif 0 sgm.mif -if sgm_masked.mif')
 
   # Convert the SGM label image to the indices that are required based on the user-provided LUT file
-  run.command('labelconvert sgm_masked.mif ' + sgm_lut_file_path + ' ' + path.fromUser(app.args.lut) + ' sgm_new_labels.mif')
+  run.command('labelconvert sgm_masked.mif ' + sgm_lut_file_path + ' ' + path.from_user(app.ARGS.lut) + ' sgm_new_labels.mif')
 
   # For each SGM structure:
   # * Figure out what index the structure has been mapped to; this can only be done using mrstats
   # * Strip that index from the parcellation image
   # * Insert the new delineation of that structure
-  progress = app.progressBar('Replacing SGM parcellations', len(structure_map))
+  progress = app.ProgressBar('Replacing SGM parcellations', len(structure_map))
   for struct in structure_map:
     image_path = struct + '_mask.mif'
     index = image.statistic('sgm_new_labels.mif', 'median', '-mask ' + image_path)
@@ -146,7 +146,7 @@ def execute(): #pylint: disable=unused-variable
   # Insert the new delineations of all SGM structures in a single call
   # Enforce unsigned integer datatype of output image
   run.command('mrcalc sgm_new_labels.mif 0.5 -gt sgm_new_labels.mif parc.mif -if result.mif -datatype uint32')
-  run.command('mrconvert result.mif ' + path.fromUser(app.args.output) + app.mrconvertOutputOption(path.fromUser(app.args.parc)))
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output) + app.mrconvert_output_option(path.from_user(app.ARGS.parc)))
 
 
 
@@ -155,11 +155,11 @@ def execute(): #pylint: disable=unused-variable
 
 # Make the corresponding MRtrix3 Python libraries available
 import inspect, os, sys
-lib_folder = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
-if not os.path.isdir(lib_folder):
+LIB_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
+if not os.path.isdir(LIB_FOLDER):
   sys.stderr.write('Unable to locate MRtrix3 Python libraries')
   sys.exit(1)
-sys.path.insert(0, lib_folder)
+sys.path.insert(0, LIB_FOLDER)
 # Execute the script
 from mrtrix3 import app
 app.execute()

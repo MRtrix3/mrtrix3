@@ -1,8 +1,8 @@
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('tournier', parents=[base_parser])
-  parser.setAuthor('Robert E. Smith (robert.smith@florey.edu.au)')
-  parser.setSynopsis('Use the Tournier et al. (2013) iterative algorithm for single-fibre voxel selection and response function estimation')
-  parser.addCitation('', 'Tournier, J.-D.; Calamante, F. & Connelly, A. Determination of the appropriate b-value and number of gradient directions for high-angular-resolution diffusion-weighted imaging. NMR Biomedicine, 2013, 26, 1775-1786', False)
+  parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
+  parser.set_synopsis('Use the Tournier et al. (2013) iterative algorithm for single-fibre voxel selection and response function estimation')
+  parser.add_citation('', 'Tournier, J.-D.; Calamante, F. & Connelly, A. Determination of the appropriate b-value and number of gradient directions for high-angular-resolution diffusion-weighted imaging. NMR Biomedicine, 2013, 26, 1775-1786', False)
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('output', help='The output response function text file')
   options = parser.add_argument_group('Options specific to the \'tournier\' algorithm')
@@ -13,18 +13,18 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 
-def checkOutputPaths(): #pylint: disable=unused-variable
+def check_output_paths(): #pylint: disable=unused-variable
   from mrtrix3 import app
-  app.checkOutputPath(app.args.output)
+  app.check_output_path(app.ARGS.output)
 
 
 
-def getInputs(): #pylint: disable=unused-variable
+def get_inputs(): #pylint: disable=unused-variable
   pass
 
 
 
-def needsSingleShell(): #pylint: disable=unused-variable
+def needs_single_shell(): #pylint: disable=unused-variable
   return True
 
 
@@ -34,32 +34,32 @@ def execute(): #pylint: disable=unused-variable
   from mrtrix3 import app, image, MRtrixError, path, run
 
   lmax_option = ''
-  if app.args.lmax:
-    lmax_option = ' -lmax ' + app.args.lmax
+  if app.ARGS.lmax:
+    lmax_option = ' -lmax ' + app.ARGS.lmax
 
-  if app.args.max_iters < 2:
+  if app.ARGS.max_iters < 2:
     raise MRtrixError('Number of iterations must be at least 2')
 
-  progress = app.progressBar('Optimising')
+  progress = app.ProgressBar('Optimising')
 
   iteration = 0
-  while iteration < app.args.max_iters:
+  while iteration < app.ARGS.max_iters:
     prefix = 'iter' + str(iteration) + '_'
 
     if iteration == 0:
-      RF_in_path = 'init_RF.txt'
+      rf_in_path = 'init_RF.txt'
       mask_in_path = 'mask.mif'
-      init_RF = '1 -1 1'
-      with open(RF_in_path, 'w') as f:
-        f.write(init_RF)
+      init_rf = '1 -1 1'
+      with open(rf_in_path, 'w') as init_rf_file:
+        init_rf_file.write(init_rf)
       iter_lmax_option = ' -lmax 4'
     else:
-      RF_in_path = 'iter' + str(iteration-1) + '_RF.txt'
+      rf_in_path = 'iter' + str(iteration-1) + '_RF.txt'
       mask_in_path = 'iter' + str(iteration-1) + '_SF_dilated.mif'
       iter_lmax_option = lmax_option
 
     # Run CSD
-    run.command('dwi2fod csd dwi.mif ' + RF_in_path + ' ' + prefix + 'FOD.mif -mask ' + mask_in_path + iter_lmax_option)
+    run.command('dwi2fod csd dwi.mif ' + rf_in_path + ' ' + prefix + 'FOD.mif -mask ' + mask_in_path + iter_lmax_option)
     # Get amplitudes of two largest peaks, and direction of largest
     run.command('fod2fixel ' + prefix + 'FOD.mif ' + prefix + 'fixel -peak peaks.mif -mask ' + mask_in_path + ' -fmls_no_thresholds')
     app.cleanup(prefix + 'FOD.mif')
@@ -80,14 +80,14 @@ def execute(): #pylint: disable=unused-variable
     app.cleanup(prefix + 'first_peaks.mif')
     app.cleanup(prefix + 'second_peaks.mif')
     # Select the top-ranked voxels
-    run.command('mrthreshold ' + prefix + 'CF.mif -top ' + str(app.args.sf_voxels) + ' ' + prefix + 'SF.mif')
+    run.command('mrthreshold ' + prefix + 'CF.mif -top ' + str(app.ARGS.sf_voxels) + ' ' + prefix + 'SF.mif')
     # Generate a new response function based on this selection
     run.command('amp2response dwi.mif ' + prefix + 'SF.mif ' + prefix + 'first_dir.mif ' + prefix + 'RF.txt' + iter_lmax_option)
     app.cleanup(prefix + 'first_dir.mif')
 
-    with open(prefix + 'RF.txt', 'r') as f:
-      new_RF = [ float(x) for x in f.read().split() ]
-    progress.increment('Optimising (' + str(iteration+1) + ' iterations, RF: [ ' + ', '.join('{:.3f}'.format(n) for n in new_RF) + '] )')
+    with open(prefix + 'RF.txt', 'r') as new_rf_file:
+      new_rf = [ float(x) for x in new_rf_file.read().split() ]
+    progress.increment('Optimising (' + str(iteration+1) + ' iterations, RF: [ ' + ', '.join('{:.3f}'.format(n) for n in new_rf) + '] )')
 
     # Should we terminate?
     if iteration > 0:
@@ -103,7 +103,7 @@ def execute(): #pylint: disable=unused-variable
 
     # Select a greater number of top single-fibre voxels, and dilate (within bounds of initial mask);
     #   these are the voxels that will be re-tested in the next iteration
-    run.command('mrthreshold ' + prefix + 'CF.mif -top ' + str(app.args.iter_voxels) + ' - | maskfilter - dilate - -npass ' + str(app.args.dilate) + ' | mrcalc mask.mif - -mult ' + prefix + 'SF_dilated.mif')
+    run.command('mrthreshold ' + prefix + 'CF.mif -top ' + str(app.ARGS.iter_voxels) + ' - | maskfilter - dilate - -npass ' + str(app.ARGS.dilate) + ' | mrcalc mask.mif - -mult ' + prefix + 'SF_dilated.mif')
     app.cleanup(prefix + 'CF.mif')
 
     iteration += 1
@@ -114,10 +114,10 @@ def execute(): #pylint: disable=unused-variable
   if os.path.exists('response.txt'):
     app.console('Convergence of SF voxel selection detected at iteration ' + str(iteration+1))
   else:
-    app.console('Exiting after maximum ' + str(app.args.max_iters) + ' iterations')
-    run.function(shutil.copyfile, 'iter' + str(app.args.max_iters-1) + '_RF.txt', 'response.txt')
-    run.function(shutil.move, 'iter' + str(app.args.max_iters-1) + '_SF.mif', 'voxels.mif')
+    app.console('Exiting after maximum ' + str(app.ARGS.max_iters) + ' iterations')
+    run.function(shutil.copyfile, 'iter' + str(app.ARGS.max_iters-1) + '_RF.txt', 'response.txt')
+    run.function(shutil.move, 'iter' + str(app.ARGS.max_iters-1) + '_SF.mif', 'voxels.mif')
 
-  run.function(shutil.copyfile, 'response.txt', path.fromUser(app.args.output, False))
-  if app.args.voxels:
-    run.command('mrconvert voxels.mif ' + path.fromUser(app.args.voxels) + app.mrconvertOutputOption(path.fromUser(app.args.input)))
+  run.function(shutil.copyfile, 'response.txt', path.from_user(app.ARGS.output, False))
+  if app.ARGS.voxels:
+    run.command('mrconvert voxels.mif ' + path.from_user(app.ARGS.voxels) + app.mrconvert_output_option(path.from_user(app.ARGS.input)))

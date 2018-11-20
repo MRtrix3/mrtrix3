@@ -6,20 +6,19 @@
 
 # Helper function for finding where the files representing different script algorithms will be stored
 # These will be in a sub-directory relative to this library file
-def _algorithmsPath():
+def _algorithms_path():
   import os
   from mrtrix3 import path
-  return os.path.join(os.path.dirname(__file__), path.scriptSubDirName())
+  return os.path.join(os.path.dirname(__file__), path.script_subdir_name())
 
 
 
 # This function needs to be safe to run in order to populate the help page; that is, no app initialisation has been run
-def getList(): #pylint: disable=unused-variable
+def get_list(): #pylint: disable=unused-variable
   import os
   from mrtrix3 import app
   algorithm_list = [ ]
-  src_file_list = os.listdir(_algorithmsPath())
-  for filename in src_file_list:
+  for filename in os.listdir(_algorithms_path()):
     filename = filename.split('.')
     if len(filename) == 2 and filename[1] == 'py' and not filename[0] == '__init__':
       algorithm_list.append(filename[0])
@@ -37,16 +36,16 @@ def usage(cmdline): #pylint: disable=unused-variable
   from mrtrix3 import app, path
   initlist = [ ]
   base_parser = app.Parser(description='Base parser for construction of subparsers', parents=[cmdline])
-  subparsers = cmdline.add_subparsers(title='Algorithm choices', help='Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: ' + ', '.join(getList()), dest='algorithm')
-  for dummy_importer, package_name, dummy_ispkg in pkgutil.iter_modules( [ _algorithmsPath() ] ):
-    module = importlib.import_module('mrtrix3.' + path.scriptSubDirName() + '.' + package_name)
+  subparsers = cmdline.add_subparsers(title='Algorithm choices', help='Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: ' + ', '.join(get_list()), dest='algorithm')
+  for dummy_importer, package_name, dummy_ispkg in pkgutil.iter_modules( [ _algorithms_path() ] ):
+    module = importlib.import_module('mrtrix3.' + path.script_subdir_name() + '.' + package_name)
     module.usage(base_parser, subparsers)
     initlist.extend(package_name)
   app.debug('Initialised algorithms: ' + str(initlist))
 
 
 
-def getModule(name): #pylint: disable=unused-variable
+def get_module(name): #pylint: disable=unused-variable
   import sys
   from mrtrix3 import path
-  return sys.modules['mrtrix3.' + path.scriptSubDirName() + '.' + name]
+  return sys.modules['mrtrix3.' + path.script_subdir_name() + '.' + name]

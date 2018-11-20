@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
 def usage(cmdline): #pylint: disable=unused-variable
-  cmdline.setAuthor('David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)')
-  cmdline.setSynopsis('Calculate the mean response function from a set of text files')
-  cmdline.addDescription('Example usage: ' + os.path.basename(sys.argv[0]) + ' input_response1.txt input_response2.txt input_response3.txt ... output_average_response.txt')
-  cmdline.addDescription('All response function files provided must contain the same number of unique b-values (lines), as well as the same number of coefficients per line.')
-  cmdline.addDescription('As long as the number of unique b-values is identical across all input files, the coefficients will be averaged. This is performed on the assumption that the actual acquired b-values are identical. This is however impossible for the ' + os.path.basename(sys.argv[0]) + ' command to determine based on the data provided; it is therefore up to the user to ensure that this requirement is satisfied.')
+  cmdline.set_author('David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)')
+  cmdline.set_synopsis('Calculate the mean response function from a set of text files')
+  cmdline.add_description('Example usage: ' + os.path.basename(sys.argv[0]) + ' input_response1.txt input_response2.txt input_response3.txt ... output_average_response.txt')
+  cmdline.add_description('All response function files provided must contain the same number of unique b-values (lines), as well as the same number of coefficients per line.')
+  cmdline.add_description('As long as the number of unique b-values is identical across all input files, the coefficients will be averaged. This is performed on the assumption that the actual acquired b-values are identical. This is however impossible for the ' + os.path.basename(sys.argv[0]) + ' command to determine based on the data provided; it is therefore up to the user to ensure that this requirement is satisfied.')
   cmdline.add_argument('inputs', help='The input response functions', nargs='+')
   cmdline.add_argument('output', help='The output mean response function')
   cmdline.add_argument('-legacy', help='Use the legacy behaviour of former command \'average_response\': average response function coefficients directly, without compensating for global magnitude differences between input files')
@@ -13,16 +13,16 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError
   import math
+  from mrtrix3 import MRtrixError
 
-  app.checkOutputPath(app.args.output)
+  app.check_output_path(app.ARGS.output)
 
   data = [ ] # 3D matrix: Subject, b-value, ZSH coefficient
-  for filepath in app.args.inputs:
-    with open(filepath, 'r') as f:
+  for filepath in app.ARGS.inputs:
+    with open(filepath, 'r') as file_in:
       try:
-        subject = [ [ float(f) for f in line.split() ] for line in f.read().splitlines() ]
+        subject = [ [ float(f) for f in line.split() ] for line in file_in.read().splitlines() ]
       except ValueError:
         raise MRtrixError('File \'' + filepath + '\' contains non-numerical values')
     if any(len(line) != len(subject[0]) for line in subject[1:]):
@@ -46,7 +46,7 @@ def execute(): #pylint: disable=unused-variable
   weighted_sum_coeffs = [[0.0] * len(data[0][0]) for _ in range(len(data[0]))] #pylint: disable=unused-variable
   sum_weights = 0.0
   for subject in data:
-    if app.args.legacy:
+    if app.ARGS.legacy:
       multiplier = 1.0
     else:
       subj_lzero_terms = [line[0] for line in subject]
@@ -61,9 +61,9 @@ def execute(): #pylint: disable=unused-variable
   app.var(sum_weights)
   mean_coeffs = [ [ f/sum_weights for f in line ] for line in weighted_sum_coeffs ]
 
-  with open(app.args.output, 'w') as f:
+  with open(app.ARGS.output, 'w') as file_out:
     for line in mean_coeffs:
-      f.write(' '.join([ "{0:.5f}".format(f) for f in line ]) + '\n')
+      file_out.write(' '.join([ "{0:.5f}".format(f) for f in line ]) + '\n')
 
 
 
@@ -71,11 +71,11 @@ def execute(): #pylint: disable=unused-variable
 
 # Make the corresponding MRtrix3 Python libraries available
 import inspect, os, sys
-lib_folder = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
-if not os.path.isdir(lib_folder):
+LIB_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
+if not os.path.isdir(LIB_FOLDER):
   sys.stderr.write('Unable to locate MRtrix3 Python libraries')
   sys.exit(1)
-sys.path.insert(0, lib_folder)
+sys.path.insert(0, LIB_FOLDER)
 # Execute the script
 from mrtrix3 import app
 app.execute()

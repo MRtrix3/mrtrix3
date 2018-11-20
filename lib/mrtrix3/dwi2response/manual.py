@@ -1,7 +1,7 @@
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('manual', parents=[base_parser])
-  parser.setAuthor('Robert E. Smith (robert.smith@florey.edu.au)')
-  parser.setSynopsis('Derive a response function using an input mask image alone (i.e. pre-selected voxels)')
+  parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
+  parser.set_synopsis('Derive a response function using an input mask image alone (i.e. pre-selected voxels)')
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('in_voxels', help='Input voxel selection mask')
   parser.add_argument('output', help='Output response function text file')
@@ -10,26 +10,26 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 
-def checkOutputPaths(): #pylint: disable=unused-variable
+def check_output_paths(): #pylint: disable=unused-variable
   from mrtrix3 import app
-  app.checkOutputPath(app.args.output)
+  app.check_output_path(app.ARGS.output)
 
 
 
-def getInputs(): #pylint: disable=unused-variable
+def get_inputs(): #pylint: disable=unused-variable
   import os
   from mrtrix3 import app, path, run
-  mask_path = path.toScratch('mask.mif', False)
+  mask_path = path.to_scratch('mask.mif', False)
   if os.path.exists(mask_path):
     app.warn('-mask option is ignored by algorithm \'manual\'')
     os.remove(mask_path)
-  run.command('mrconvert ' + path.fromUser(app.args.in_voxels) + ' ' + path.toScratch('in_voxels.mif'))
-  if app.args.dirs:
-    run.command('mrconvert ' + path.fromUser(app.args.dirs) + ' ' + path.toScratch('dirs.mif') + ' -strides 0,0,0,1')
+  run.command('mrconvert ' + path.from_user(app.ARGS.in_voxels) + ' ' + path.to_scratch('in_voxels.mif'))
+  if app.ARGS.dirs:
+    run.command('mrconvert ' + path.from_user(app.ARGS.dirs) + ' ' + path.to_scratch('dirs.mif') + ' -strides 0,0,0,1')
 
 
 
-def needsSingleShell(): #pylint: disable=unused-variable
+def needs_single_shell(): #pylint: disable=unused-variable
   return False
 
 
@@ -42,14 +42,14 @@ def execute(): #pylint: disable=unused-variable
 
   # Get lmax information (if provided)
   lmax = [ ]
-  if app.args.lmax:
-    lmax = [ int(x.strip()) for x in app.args.lmax.split(',') ]
+  if app.ARGS.lmax:
+    lmax = [ int(x.strip()) for x in app.ARGS.lmax.split(',') ]
     if not len(lmax) == len(shells):
       raise MRtrixError('Number of manually-defined lmax\'s (' + str(len(lmax)) + ') does not match number of b-value shells (' + str(len(shells)) + ')')
-    for l in lmax:
-      if l%2:
+    for shell_l in lmax:
+      if shell_l % 2:
         raise MRtrixError('Values for lmax must be even')
-      if l<0:
+      if shell_l < 0:
         raise MRtrixError('Values for lmax must be non-negative')
 
   # Do we have directions, or do we need to calculate them?
@@ -63,6 +63,6 @@ def execute(): #pylint: disable=unused-variable
     lmax_option = ' -lmax ' + ','.join(map(str,lmax))
   run.command('amp2response dwi.mif in_voxels.mif dirs.mif response.txt' + bvalues_option + lmax_option)
 
-  run.function(shutil.copyfile, 'response.txt', path.fromUser(app.args.output, False))
-  if app.args.voxels:
-    run.command('mrconvert in_voxels.mif ' + path.fromUser(app.args.voxels) + app.mrconvertOutputOption(path.fromUser(app.args.input)))
+  run.function(shutil.copyfile, 'response.txt', path.from_user(app.ARGS.output, False))
+  if app.ARGS.voxels:
+    run.command('mrconvert in_voxels.mif ' + path.from_user(app.ARGS.voxels) + app.mrconvert_output_option(path.from_user(app.ARGS.input)))

@@ -3,11 +3,11 @@
 
 
 # List the content of a directory
-def allInDir(directory, dir_path=True, ignore_hidden_files=True): #pylint: disable=unused-variable
+def all_in_dir(directory, dir_path=True, ignore_hidden_files=True): #pylint: disable=unused-variable
   import ctypes, os
-  from mrtrix3 import isWindows
+  from mrtrix3 import is_windows
   def is_hidden(directory, filename):
-    if isWindows():
+    if is_windows():
       try:
         attrs = ctypes.windll.kernel32.GetFileAttributesW(u"%s" % str(os.path.join(directory, filename)))
         assert attrs != -1
@@ -31,10 +31,10 @@ def allInDir(directory, dir_path=True, ignore_hidden_files=True): #pylint: disab
 #     erroneously split, subsequently confusing whatever command is being invoked.
 #   If the filesystem path provided by the script is to be interpreted in isolation, rather than as one part
 #     of a command string, then parameter 'escape' should be set to False in order to not add quotation marks
-def fromUser(filename, escape=True): #pylint: disable=unused-variable
+def from_user(filename, escape=True): #pylint: disable=unused-variable
   import os, shlex
   from mrtrix3 import app
-  fullpath = os.path.abspath(os.path.join(app.workingDir, filename))
+  fullpath = os.path.abspath(os.path.join(app.WORKING_DIR, filename))
   if escape:
     fullpath = shlex.quote(fullpath)
   app.debug(filename + ' -> ' + fullpath)
@@ -43,7 +43,7 @@ def fromUser(filename, escape=True): #pylint: disable=unused-variable
 
 
 # Make a directory if it doesn't exist; don't do anything if it does already exist
-def makeDir(path): #pylint: disable=unused-variable
+def make_dir(path): #pylint: disable=unused-variable
   import errno, os
   from mrtrix3 import app
   try:
@@ -59,12 +59,12 @@ def makeDir(path): #pylint: disable=unused-variable
 # Make a temporary empty file / directory with a unique name
 # If the filesystem path separator is provided as the 'suffix' input, then the function will generate a new
 #   directory rather than a file.
-def makeTemporary(suffix): #pylint: disable=unused-variable
+def make_temporary(suffix): #pylint: disable=unused-variable
   import errno, os
   from mrtrix3 import app
   is_directory = suffix in '\\/' and len(suffix) == 1
   while True:
-    temp_path = nameTemporary(suffix)
+    temp_path = name_temporary(suffix)
     try:
       if is_directory:
         os.makedirs(temp_path)
@@ -80,12 +80,12 @@ def makeTemporary(suffix): #pylint: disable=unused-variable
 
 # Get an appropriate location and name for a new temporary file / directory
 # Note: Doesn't actually create anything; just gives a unique name that won't over-write anything.
-# If you want to create a temporary file / directory, use the makeTemporary() function above.
-def nameTemporary(suffix): #pylint: disable=unused-variable
+# If you want to create a temporary file / directory, use the make_temporary() function above.
+def name_temporary(suffix): #pylint: disable=unused-variable
   import os.path, random, string
-  from mrtrix3 import app, config
-  dir_path = config['TmpFileDir'] if 'TmpFileDir' in config else (app.scratchDir if app.scratchDir else os.getcwd())
-  prefix = config['TmpFilePrefix'] if 'TmpFilePrefix' in config else 'mrtrix-tmp-'
+  from mrtrix3 import app, CONFIG
+  dir_path = CONFIG['TmpFileDir'] if 'TmpFileDir' in CONFIG else (app.SCRATCH_DIR if app.SCRATCH_DIR else os.getcwd())
+  prefix = CONFIG['TmpFilePrefix'] if 'TmpFilePrefix' in CONFIG else 'mrtrix-tmp-'
   full_path = dir_path
   suffix = suffix.lstrip('.')
   while os.path.exists(full_path):
@@ -100,7 +100,7 @@ def nameTemporary(suffix): #pylint: disable=unused-variable
 # This can be algorithm files in lib/mrtrix3/, or data files in share/mrtrix3/
 # This function appears here rather than in the algorithm module as some scripts may
 #   need to access the shared data directory but not actually be using the algorithm module
-def scriptSubDirName(): #pylint: disable=unused-variable
+def script_subdir_name(): #pylint: disable=unused-variable
   import inspect, os
   from mrtrix3 import app
   frameinfo = inspect.stack()[-1]
@@ -122,7 +122,7 @@ def scriptSubDirName(): #pylint: disable=unused-variable
 # Some scripts come with additional requisite data files; this function makes it easy to find them.
 # For data that is stored in a named sub-directory specifically for a particular script, this function will
 #   need to be used in conjunction with scriptSubDirName()
-def sharedDataPath(): #pylint: disable=unused-variable
+def shared_data_path(): #pylint: disable=unused-variable
   import os
   from mrtrix3 import app
   result = os.path.realpath(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, os.pardir, 'share', 'mrtrix3')))
@@ -135,10 +135,10 @@ def sharedDataPath(): #pylint: disable=unused-variable
 # Also deals with the potential for special characters in a path (e.g. spaces) by wrapping in quotes,
 #   as long as parameter 'escape' is true (if the path yielded by this function is to be interpreted in
 #   isolation rather than as one part of a command string, parameter 'escape' should be set to False)
-def toScratch(filename, escape=True): #pylint: disable=unused-variable
+def to_scratch(filename, escape=True): #pylint: disable=unused-variable
   import os, shlex
   from mrtrix3 import app
-  fullpath = os.path.abspath(os.path.join(app.scratchDir, filename))
+  fullpath = os.path.abspath(os.path.join(app.SCRATCH_DIR, filename))
   if escape:
     fullpath = shlex.quote(fullpath)
   app.debug(filename + ' -> ' + fullpath)
@@ -163,16 +163,16 @@ def toScratch(filename, escape=True): #pylint: disable=unused-variable
 # Initially, checks for the file once every 1/1000th of a second; this gradually
 #   increases if the file still doesn't exist, until the program is only checking
 #   for the file once a minute.
-def waitFor(paths): #pylint: disable=unused-variable
+def wait_for(paths): #pylint: disable=unused-variable
   import os, time
-  from mrtrix3 import app, isWindows
+  from mrtrix3 import app, is_windows
 
-  def inUse(path):
+  def in_use(path):
     import subprocess
     from distutils.spawn import find_executable
     if not os.path.isfile(path):
       return None
-    if isWindows():
+    if is_windows():
       if not os.access(path, os.W_OK):
         return None
       try:
@@ -184,21 +184,21 @@ def waitFor(paths): #pylint: disable=unused-variable
     if not find_executable('fuser'):
       return None
     # fuser returns zero if there IS at least one process accessing the file
-    # A fatal error will result in a non-zero code -> inUse() = False, so waitFor() can return
+    # A fatal error will result in a non-zero code -> in_use() = False, so wait_for() can return
     return not subprocess.call(['fuser', '-s', path], shell=False, stdin=None, stdout=None, stderr=None)
 
-  def numExist(data):
+  def num_exit(data):
     count = 0
     for entry in data:
       if os.path.exists(entry):
         count += 1
     return count
 
-  def numInUse(data):
+  def num_in_use(data):
     count = 0
     valid_count = 0
     for entry in data:
-      result = inUse(entry)
+      result = in_use(entry)
       if result:
         count += 1
       if result is not None:
@@ -219,15 +219,15 @@ def waitFor(paths): #pylint: disable=unused-variable
   app.debug(str(paths))
 
   # Wait until all files exist
-  num_exist = numExist(paths)
+  num_exist = num_exit(paths)
   if num_exist != len(paths):
-    progress = app.progressBar('Waiting for creation of ' + (('new item \"' + paths[0] + '\"') if len(paths) == 1 else (str(len(paths)) + ' new items')), len(paths))
+    progress = app.ProgressBar('Waiting for creation of ' + (('new item \"' + paths[0] + '\"') if len(paths) == 1 else (str(len(paths)) + ' new items')), len(paths))
     for _ in range(num_exist):
       progress.increment()
     delay = 1.0/1024.0
     while not num_exist == len(paths):
       time.sleep(delay)
-      new_num_exist = numExist(paths)
+      new_num_exist = num_exit(paths)
       if new_num_exist == num_exist:
         delay = max(60.0, delay*2.0)
       elif new_num_exist > num_exist:
@@ -250,7 +250,7 @@ def waitFor(paths): #pylint: disable=unused-variable
     return
 
   # Can we query the in-use status of any of these paths
-  num_in_use = numInUse(paths)
+  num_in_use = num_in_use(paths)
   if num_in_use is None:
     app.debug('Unable to test for finalization of new files')
     return
@@ -260,13 +260,13 @@ def waitFor(paths): #pylint: disable=unused-variable
     app.debug('Item' + ('s' if len(paths) > 1 else '') + ' immediately ready')
     return
 
-  progress = app.progressBar('Waiting for finalization of ' + (('new file \"' + paths[0] + '\"') if len(paths) == 1 else (str(len(paths)) + ' new files')))
+  progress = app.ProgressBar('Waiting for finalization of ' + (('new file \"' + paths[0] + '\"') if len(paths) == 1 else (str(len(paths)) + ' new files')))
   for _ in range(len(paths) - num_in_use):
     progress.increment()
   delay = 1.0/1024.0
   while num_in_use:
     time.sleep(delay)
-    new_num_in_use = numInUse(paths)
+    new_num_in_use = num_in_use(paths)
     if new_num_in_use == num_in_use:
       delay = max(60.0, delay*2.0)
     elif new_num_in_use < num_in_use:

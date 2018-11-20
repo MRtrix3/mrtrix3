@@ -5,15 +5,15 @@ def direction(string): #pylint: disable=unused-variable
   from mrtrix3 import app, MRtrixError
   pe_dir = ''
   try:
-    PE_axis = abs(int(string))
-    if PE_axis > 2:
+    pe_axis = abs(int(string))
+    if pe_axis > 2:
       raise MRtrixError('When specified as a number, phase encode axis must be either 0, 1 or 2 (positive or negative)')
     reverse = (string.contains('-')) # Allow -0
     pe_dir = [0,0,0]
     if reverse:
-      pe_dir[PE_axis] = -1
+      pe_dir[pe_axis] = -1
     else:
-      pe_dir[PE_axis] = 1
+      pe_dir[pe_axis] = 1
   except:
     string = string.lower()
     if string == 'lr':
@@ -49,7 +49,7 @@ def direction(string): #pylint: disable=unused-variable
 
 # Extract a phase-encoding scheme from a pre-loaded image header,
 #   or from a path to the image
-def getScheme(arg): #pylint: disable=unused-variable
+def get_scheme(arg): #pylint: disable=unused-variable
   from mrtrix3 import app, image, MRtrixError
   if not isinstance(arg, image.Header):
     if not isinstance(arg, str):
