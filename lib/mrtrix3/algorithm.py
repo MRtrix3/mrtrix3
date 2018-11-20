@@ -7,9 +7,9 @@
 # Helper function for finding where the files representing different script algorithms will be stored
 # These will be in a sub-directory relative to this library file
 def _algorithms_path():
-  import os
+  import inspect, os
   from mrtrix3 import path
-  return os.path.join(os.path.dirname(__file__), path.script_subdir_name())
+  return os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getouterframes(inspect.currentframe())[-1][1])), os.pardir, 'src', 'mrtrix3', path.script_subdir_name()))
 
 
 
@@ -32,13 +32,14 @@ def get_list(): #pylint: disable=unused-variable
 #   options common to all algorithms of a particular script to be applicable once any particular sub-parser
 #   is invoked. Therefore this function must be called _after_ all such options are set up.
 def usage(cmdline): #pylint: disable=unused-variable
-  import importlib, pkgutil
+  import importlib, os, pkgutil, sys
   from mrtrix3 import app, path
   initlist = [ ]
   base_parser = app.Parser(description='Base parser for construction of subparsers', parents=[cmdline])
   subparsers = cmdline.add_subparsers(title='Algorithm choices', help='Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: ' + ', '.join(get_list()), dest='algorithm')
+  sys.path.insert(0, os.path.realpath(os.path.join(_algorithms_path(), os.pardir)))
   for dummy_importer, package_name, dummy_ispkg in pkgutil.iter_modules( [ _algorithms_path() ] ):
-    module = importlib.import_module('mrtrix3.' + path.script_subdir_name() + '.' + package_name)
+    module = importlib.import_module(path.script_subdir_name() + '.' + package_name)
     module.usage(base_parser, subparsers)
     initlist.extend(package_name)
   app.debug('Initialised algorithms: ' + str(initlist))
@@ -48,4 +49,4 @@ def usage(cmdline): #pylint: disable=unused-variable
 def get_module(name): #pylint: disable=unused-variable
   import sys
   from mrtrix3 import path
-  return sys.modules['mrtrix3.' + path.script_subdir_name() + '.' + name]
+  return sys.modules[path.script_subdir_name() + '.' + name]
