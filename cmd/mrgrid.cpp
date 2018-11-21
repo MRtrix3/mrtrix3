@@ -279,7 +279,7 @@ void run () {
       if (axis  >= input_header.ndim())
         throw Exception ("axis " + str(axis) + " larger than image dimensions (" + str(input_header.ndim()) + ")");
       if (start < 0)
-        WARN ("Start index " + str(start) + " supplied for axis " + str(axis) + " is out of bounds");
+        throw Exception ("Start index " + str(start) + " supplied for axis " + str(axis) + " is out of bounds");
       if (end >= input_header.size(axis))
         throw Exception ("End index " + str(end) + " supplied for axis " + str(axis) + " is out of bounds");
       if (end < start)
@@ -387,8 +387,8 @@ void run () {
     for (size_t axis = 0; axis < 3; ++axis) {
       output_header.size (axis) = output_header.size(axis) + padding[axis][0] + padding[axis][1];
       output_transform (axis, 3) += (output_transform (axis, 0) * (bounds[0][0] - padding[0][0]) * input_header.spacing (0))
-                                  + (output_transform (axis, 1) * (bounds[1][0] - padding[0][0]) * input_header.spacing (1))
-                                  + (output_transform (axis, 2) * (bounds[2][0] - padding[0][0]) * input_header.spacing (2));
+                                  + (output_transform (axis, 1) * (bounds[1][0] - padding[1][0]) * input_header.spacing (1))
+                                  + (output_transform (axis, 2) * (bounds[2][0] - padding[2][0]) * input_header.spacing (2));
     }
     output_header.transform() = output_transform;
     for (size_t axis = 3; axis < nd; ++axis)
