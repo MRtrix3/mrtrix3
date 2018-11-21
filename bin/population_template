@@ -216,7 +216,7 @@ options.add_argument('-transformed_dir', help='Output a directory containing the
 options.add_argument('-linear_transformations_dir', help='Output a directory containing the linear transformations used to generate the template. If the folder does not exist it will be created')
 options.add_argument('-template_mask', help='Output a template mask. Only works in -mask_dir has been input. The template mask is computed as the intersection of all subject masks in template space.')
 options.add_argument('-noreorientation', action='store_true', help='Turn off FOD reorientation in mrregister. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc)')
-options.add_argument('-leave_one_out', help='Register each input image to a template that does not contain that image. Valid choices: 0, 1, auto. (Default: auto (true if n_subjects < 15)) ')
+options.add_argument('-leave_one_out', help='Register each input image to a template that does not contain that image. Valid choices: 0, 1, auto. (Default: auto (true if n_subjects larger than 2 and smaller than 15)) ')
 
 app.parse()
 
@@ -394,9 +394,9 @@ if app.args.leave_one_out is not None:
     app.error('leave_one_out not understood: ' + str(leave_one_out))
 
 if leave_one_out == 'auto':
-  leave_one_out = len(inputs) < 15
+  leave_one_out = len(inputs) > 2 and len(inputs) < 15
 else:
-  leave_one_out = bool(leave_one_out)
+  leave_one_out = bool(int(leave_one_out))
 if leave_one_out:
   app.console('performing leave-one-out registration')
 noreorientation = app.args.noreorientation
@@ -669,10 +669,10 @@ if initial_alignment == 'none':
       if leave_one_out:
         if n_volumes[c] > 0:
           run.command('mrconvert ' + os.path.join('input_transformed' + i.contrasts[c], '%s.mif' % i.prefix) +
-                ' -coord 3 0 - | mrcalc - -finite isfinite%s/%s.mif' % (i.contrasts[c], i.prefix) + ' -force')
+                      ' -coord 3 0 - | mrcalc - -finite isfinite%s/%s.mif' % (i.contrasts[c], i.prefix) + ' -force')
         else:
           run.command('mrcalc ' + os.path.join('input_transformed' + i.contrasts[c], '%s.mif' % i.prefix) +
-                ' -finite isfinite%s/%s.mif' % (i.contrasts[c], i.prefix) + ' -force')
+                      ' -finite isfinite%s/%s.mif' % (i.contrasts[c], i.prefix) + ' -force')
       progress.increment()
   if leave_one_out:
     for c in range(n_contrasts):
@@ -684,11 +684,11 @@ if initial_alignment == 'none':
         fout.write('1 0 0 0\n0 1 0 0\n0 0 1 0\n0 0 0 1\n')
 else:
   progress = app.progressBar('Performing initial rigid registration to template', len(inputs))
-  mask = ''
+  mask_option = ''
   if do_fod_registration:
-    lmax = ' -rigid_lmax 0 '
+    lmax_option = ' -rigid_lmax 0 '
   else:
-    lmax = ' -noreorientation '
+    lmax_option = ' -noreorientation '
   if n_contrasts > 1:
     contrast_weight_option = ' -mc_weights ' + ','.join(app.args.mc_weight_initial_alignment) + ' '
   else:
@@ -733,14 +733,14 @@ else:
     # translate input images to centre of mass without interpolation
     for c in range(n_contrasts):
       run.command('mrtransform ' + i.paths_in[c] +
-            ' -linear ' + os.path.join('linear_transforms_initial', i.prefix + '.txt') +
-            datatype_option +
-            ' ' + os.path.join('input_transformed' + i.contrasts[c], i.prefix + '_translated.mif'))
+                  ' -linear ' + os.path.join('linear_transforms_initial', i.prefix + '.txt') +
+                  datatype_option +
+                  ' ' + os.path.join('input_transformed' + i.contrasts[c], i.prefix + '_translated.mif'))
     if useMasks:
       run.command('mrtransform ' + i.mask +
-            ' -linear ' + os.path.join('linear_transforms_initial', i.prefix + '.txt') +
-            datatype_option +
-            ' ' + os.path.join('masks_transformed', i.prefix + '_translated.mif'))
+                  ' -linear ' + os.path.join('linear_transforms_initial', i.prefix + '.txt') +
+                  datatype_option +
+                  ' ' + os.path.join('masks_transformed', i.prefix + '_translated.mif'))
     progress.increment()
   # update average space of first contrast to new extent, delete other average space images
   run.command('mraverageheader ' + ' '.join([os.path.join('input_transformed', i.prefix + '_translated.mif') for i in
@@ -751,7 +751,7 @@ else:
     run.command('mrpad -uniform 10 average_header_tight.mif average_header.mif -force')
   else:
     run.command('mrpad -uniform 10 average_header_tight.mif - | mrresize - -voxel ' + ','.join(map(str, voxel_size)) +
-          ' average_header.mif -force')
+                ' average_header.mif -force')
   run.function(remove, 'average_header_tight.mif')
   for c in range(1, n_contrasts):
     run.function(remove, 'average_header' + contrasts[c] + '.mif')
@@ -926,15 +926,15 @@ else:
     for c in range(n_contrasts):
       for i in inputs:
         run.command('mrtransform ' + i.paths_in[c] +
-              ' -template ' + current_template[c] +
-              ' -linear ' + os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix) +
-              ' ' + os.path.join('input_transformed' + i.contrasts[c], '%s.mif' % i.prefix) +
-              datatype_option +
-              ' -force')
+                    ' -template ' + current_template[c] +
+                    ' -linear ' + os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix) +
+                    ' ' + os.path.join('input_transformed' + i.contrasts[c], '%s.mif' % i.prefix) +
+                    datatype_option +
+                    ' -force')
         if leave_one_out:
           if n_volumes[c] > 0:
             run.command('mrconvert ' + os.path.join('input_transformed' + i.contrasts[c],'%s.mif' % i.prefix) +
-                  ' -coord 3 0 - | mrcalc - -finite isfinite%s/%s.mif' % (i.contrasts[c], i.prefix) + ' -force')
+                        ' -coord 3 0 - | mrcalc - -finite isfinite%s/%s.mif' % (i.contrasts[c], i.prefix) + ' -force')
           else:
             run.command('mrcalc ' + os.path.join('input_transformed' + i.contrasts[c], '%s.mif' % i.prefix) +
                         ' -finite isfinite%s/%s.mif' % (i.contrasts[c], i.prefix) + ' -force')
