@@ -65,36 +65,20 @@ void usage ()
     + Math::SH::encoding_description;
 
   EXAMPLES
-    + Example ("Perform single-shell, single-tissue, soft-constraint CSD",
-               "dwi2fod csd dwi.mif -shells 3000 RF_WM_b3000.txt FODs.mif",
-               "This algorithm works strictly on single-shell data, and therefore must "
-               "be provided with a single unique b-value only (even b=0 volumes must not "
-               "be present). In addition, the response function file provided must "
-               "contain a single row only, corresponding to the m=0 spherical harmonic "
-               "coefficients for the response function for the b-value of interest only.")
+    + Example ("Perform single-shell single-tissue CSD",
+               "dwi2fod csd dwi.mif response_wm.txt wmfod.mif",
+               "This algorithm is designed for single-shell data and only uses a single "
+               "b-value. The response function text file provided should only contain a "
+               "a single row, corresponding to the b-value used for CSD.")
 
-    + Example ("Perform single-shell, single-tissue, hard-constraint CSD",
-               "dwi2fod msmt_csd dwi.mif -shells 3000 RF_WM_b3000.txt FODs.mif",
-               "This approach uses the \"multi-shell, multi-tissue\" algorithm, but"
-               "provides the algorithm with a single unique b-value only. The difference "
-               "to the first example is that a hard non-negativity constraint is used.")
-
-    + Example ("Perform single-shell (+ b=0), 2-tissue CSD",
-               "dwi2fod msmt_csd dwi.mif RF_WM.txt ODF_WM.mif RF_CSF.txt ODF_CSF.mif",
-               "This example exploits the availability of b=0 volumes in otherwise "
-               "\"single-shell\" data in order to fit 2 tissue compartments to the data: "
-               "A white matter compartment, and a CSF compartment. This provides "
-               "something akin to \"fluid attenuation\" in the estimation of white "
-               "matter FODs. The two response function text files are expected to "
-               "contain two rows (corresponding to the two unique b-values in the DWI "
-               "data) in this instance.")
-
-    + Example ("Perform multi-shell, multi-tissue CSD using three tissue compartments",
-               "dwi2fod msmt_csd dwi.mif RF_WM.txt ODF_WM.mif RF_GM.txt ODF_GM.mif RF_CSF.txt ODF_CSF.mif",
-               "This example is the most typical use case of multi-tissue CSD, estimating "
-               "the three principal macroscopic sources of DWI signal in the brain. For "
-               "this example to work, the DWI must contain at least three unique b-values, "
-               "with corresponding number of rows in each of the response function text files.");
+    + Example ("Perform multi-shell multi-tissue CSD",
+               "dwi2fod msmt_csd dwi.mif response_wm.txt wmfod.mif response_gm.txt gm.mif response_csf.txt csf.mif",
+               "This example is the most common use case of multi-tissue CSD, estimating "
+               "a white matter FOD, and grey matter and CSF compartments. This algorithm "
+               "requires at least three unique b-values to estimate three tissue compartments. "
+               "Each response function text file should have a number of rows equal to the "
+               "number of b-values used. If only two unique b-values are available, it's also "
+               "possible to estimate only two tissue compartments, e.g., white matter and CSF.");
 
   REFERENCES
     + "* If using csd algorithm:\n"

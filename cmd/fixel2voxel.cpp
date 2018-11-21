@@ -75,7 +75,7 @@ void usage ()
     "influence on the calculation than fixels with lesser volume. For instance, when estimating "
     "a voxel-based measure of mean axon diameter from per-fixel mean axon diameters, a fixel's "
     "mean axon diameter should be weigthed by its relative volume within the voxel in the "
-    "calculation of that voxel mean. Note that AFD can be used as a psuedomeasure of fixel volume.";
+    "calculation of that voxel mean.";
 
   REFERENCES
     + "* Reference for 'complexity' operation:\n"
