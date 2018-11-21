@@ -50,9 +50,9 @@ void usage ()
      "more accurate.";
 
   EXAMPLES
-   + Example ("Default usage (for a three-tissue decomposition)",
+   + Example ("Default usage (for 3-tissue CSD compartments)",
               "mtnormalise wmfod.mif wmfod_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif",
-              "Note how for each tissue, the input and output images are provided as "
+              "Note how for each tissue compartment, the input and output images are provided as "
               "a consecutive pair.");
 
   ARGUMENTS
