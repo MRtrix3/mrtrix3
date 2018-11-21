@@ -371,7 +371,7 @@ if app.args.leave_one_out is not None:
 if leave_one_out == 'auto':
   leave_one_out = len(input) < 15
 else:
-  leave_one_out = bool(leave_one_out)
+  leave_one_out = bool(int(leave_one_out))
 if leave_one_out:
   app.console('performing leave-one-out registration')
 noreorientation = app.args.noreorientation
