@@ -9,7 +9,7 @@
  * statutory, including, without limitation, warranties that the
  * Covered Software is free of defects, merchantable, fit for a
  * particular purpose or non-infringing.
- * See the Mozila Public License v. 2.0 for more details.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
@@ -72,7 +72,7 @@ namespace MR
        "statutory, including, without limitation, warranties that the\n"
        "Covered Software is free of defects, merchantable, fit for a\n"
        "particular purpose or non-infringing.\n"
-       "See the Mozila Public License v. 2.0 for more details.\n"
+       "See the Mozilla Public License v. 2.0 for more details.\n"
        "\n"
        "For more details, see http://www.mrtrix.org/.\n";
     const char* SYNOPSIS = nullptr;

@@ -77,7 +77,7 @@ basis, without warranty of any kind, either expressed, implied, or
 statutory, including, without limitation, warranties that the
 Covered Software is free of defects, merchantable, fit for a
 particular purpose or non-infringing.
-See the Mozila Public License v. 2.0 for more details.
+See the Mozilla Public License v. 2.0 for more details.
 
 For more details, see http://www.mrtrix.org/.
 
@@ -159,7 +159,7 @@ basis, without warranty of any kind, either expressed, implied, or
 statutory, including, without limitation, warranties that the
 Covered Software is free of defects, merchantable, fit for a
 particular purpose or non-infringing.
-See the Mozila Public License v. 2.0 for more details.
+See the Mozilla Public License v. 2.0 for more details.
 
 For more details, see http://www.mrtrix.org/.
 
@@ -253,7 +253,7 @@ basis, without warranty of any kind, either expressed, implied, or
 statutory, including, without limitation, warranties that the
 Covered Software is free of defects, merchantable, fit for a
 particular purpose or non-infringing.
-See the Mozila Public License v. 2.0 for more details.
+See the Mozilla Public License v. 2.0 for more details.
 
 For more details, see http://www.mrtrix.org/.
 
@@ -330,7 +330,7 @@ basis, without warranty of any kind, either expressed, implied, or
 statutory, including, without limitation, warranties that the
 Covered Software is free of defects, merchantable, fit for a
 particular purpose or non-infringing.
-See the Mozila Public License v. 2.0 for more details.
+See the Mozilla Public License v. 2.0 for more details.
 
 For more details, see http://www.mrtrix.org/.
 
