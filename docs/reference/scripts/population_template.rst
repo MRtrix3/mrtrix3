@@ -9,7 +9,7 @@ Synopsis
 Generates an unbiased group-average template from a series of images
 
 Usage
---------
+-----
 
 ::
 
@@ -66,7 +66,7 @@ Options for the linear registration
 
 - **-linear_estimator** Choose estimator for intensity difference metric. Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), Default: l2
 
-- **-rigid_scale** Specifiy the multi-resolution pyramid used to build the rigid template, in the form of a list of scale factors (default: 0.3,0.4,0.6,0.8,1.0,1.0). This and affine_scale implicitly  define the number of template levels
+- **-rigid_scale** Specifiy the multi-resolution pyramid used to build the rigid template, in the form of a list of scale factors (default: 0.3,0.4,0.6,0.8,1.0,1.0). This and affine_scale implicitly define the number of template levels
 
 - **-rigid_lmax** Specifiy the lmax used for rigid registration for each scale factor, in the form of a list of integers (default: 2,2,2,4,4,4). The list must be the same length as the linear_scale factor list
 

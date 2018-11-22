@@ -9,7 +9,7 @@ Synopsis
 Perform some arbitrary processing step for each of a set of inputs
 
 Usage
---------
+-----
 
 ::
 

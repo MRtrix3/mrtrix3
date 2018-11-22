@@ -9,7 +9,7 @@ Synopsis
 Estimate response function(s) for spherical deconvolution
 
 Usage
---------
+-----
 
 ::
 
@@ -97,7 +97,7 @@ Synopsis
 Use the Dhollander et al. (2016) algorithm for unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof)
 
 Usage
---------
+-----
 
 ::
 
@@ -201,7 +201,7 @@ Synopsis
 Use the old FA-threshold heuristic for single-fibre voxel selection and response function estimation
 
 Usage
---------
+-----
 
 ::
 
@@ -297,7 +297,7 @@ Synopsis
 Derive a response function using an input mask image alone (i.e. pre-selected voxels)
 
 Usage
---------
+-----
 
 ::
 
@@ -385,7 +385,7 @@ Synopsis
 Derive MSMT-CSD tissue response functions based on a co-registered five-tissue-type (5TT) image
 
 Usage
---------
+-----
 
 ::
 
@@ -488,7 +488,7 @@ Synopsis
 Use the Tax et al. (2014) recursive calibration algorithm for single-fibre voxel selection and response function estimation
 
 Usage
---------
+-----
 
 ::
 
@@ -584,7 +584,7 @@ Synopsis
 Use the Tournier et al. (2013) iterative algorithm for single-fibre voxel selection and response function estimation
 
 Usage
---------
+-----
 
 ::
 

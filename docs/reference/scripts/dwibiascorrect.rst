@@ -9,7 +9,7 @@ Synopsis
 Perform B1 field inhomogeneity correction for a DWI volume series
 
 Usage
---------
+-----
 
 ::
 

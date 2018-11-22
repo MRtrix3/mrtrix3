@@ -795,32 +795,32 @@ class Parser(argparse.ArgumentParser):
     #   - First locating and printing any ungrouped command-line options
     #   - Printing all contents of option groups
     def print_group_options(group):
-      text = ''
+      group_text = ''
       for option in group._group_actions:
-        text += '  ' + underline('/'.join(option.option_strings))
+        group_text += '  ' + underline('/'.join(option.option_strings))
         if option.metavar:
-          text += ' '
+          group_text += ' '
           if isinstance(option.metavar, tuple):
-            text += ' '.join(option.metavar)
+            group_text += ' '.join(option.metavar)
           else:
-            text += option.metavar
+            group_text += option.metavar
         elif option.nargs:
           if isinstance(option.nargs, int):
-            text += (' ' + option.dest.upper())*option.nargs
+            group_text += (' ' + option.dest.upper())*option.nargs
           elif option.nargs == '+' or option.nargs == '*':
-            text += ' <space-separated list>'
+            group_text += ' <space-separated list>'
           elif option.nargs == '?':
-            text += ' <optional value>'
+            group_text += ' <optional value>'
         elif option.type is not None:
-          text += ' ' + option.type.__name__.upper()
+          group_text += ' ' + option.type.__name__.upper()
         elif option.default is None:
-          text += ' ' + option.dest.upper()
+          group_text += ' ' + option.dest.upper()
         # Any options that haven't tripped one of the conditions above should be a store_true or store_false, and
         #   therefore there's nothing to be appended to the option instruction
-        text += '\n'
-        text += wrapper_other.fill(option.help) + '\n'
-        text += '\n'
-      return text
+        group_text += '\n'
+        group_text += wrapper_other.fill(option.help) + '\n'
+        group_text += '\n'
+      return group_text
 
     # Before printing option groups, find any command-line options that have not explicitly been
     #   placed into an option group, and print those first
@@ -926,7 +926,7 @@ class Parser(argparse.ArgumentParser):
     text += '## Options\n\n'
 
     def print_group_options(group):
-      text = ''
+      group_text = ''
       for option in group._group_actions:
         option_text = '/'.join(option.option_strings)
         if option.metavar:
@@ -935,8 +935,8 @@ class Parser(argparse.ArgumentParser):
             option_text += ' '.join(option.metavar)
           else:
             option_text += option.metavar
-        text += '+ **-' + option_text + '**<br>' + option.help + '\n\n'
-      return text
+        group_text += '+ **-' + option_text + '**<br>' + option.help + '\n\n'
+      return group_text
 
     ungrouped_options = self._get_ungrouped_options()
     if ungrouped_options and ungrouped_options._group_actions:
@@ -948,11 +948,11 @@ class Parser(argparse.ArgumentParser):
     if self._citation_list:
       text += '## References\n\n'
       for ref in self._citation_list:
-        text = ''
+        ref_text = ''
         if ref[0]:
-          text += ref[0] + ': '
-        text += ref[1]
-        text += text + '\n\n'
+          ref_text += ref[0] + ': '
+        ref_text += ref[1]
+        text += ref_text + '\n\n'
     text += '---\n\n'
     text += '**Author:** ' + self._author + '\n\n'
     text += '**Copyright:** ' + self._copyright + '\n\n'
@@ -999,7 +999,7 @@ class Parser(argparse.ArgumentParser):
     text += '-------\n'
 
     def print_group_options(group):
-      text = ''
+      group_text = ''
       for option in group._group_actions:
         option_text = '/'.join(option.option_strings)
         if option.metavar:
@@ -1008,9 +1008,9 @@ class Parser(argparse.ArgumentParser):
             option_text += ' '.join(option.metavar)
           else:
             option_text += option.metavar
-        text += '\n'
-        text += '- **' + option_text + '** ' + option.help.replace('|', '\\|') + '\n'
-      return text
+        group_text += '\n'
+        group_text += '- **' + option_text + '** ' + option.help.replace('|', '\\|') + '\n'
+      return group_text
 
     ungrouped_options = self._get_ungrouped_options()
     if ungrouped_options and ungrouped_options._group_actions:
@@ -1020,28 +1020,19 @@ class Parser(argparse.ArgumentParser):
         text += '\n'
         text += group.title + '\n'
         text += '^'*len(group.title) + '\n'
-        for option in group._group_actions:
-          text = '/'.join(option.option_strings)
-          if option.metavar:
-            text += ' '
-            if isinstance(option.metavar, tuple):
-              text += ' '.join(option.metavar)
-            else:
-              text += option.metavar
-          text += '\n'
-          text += '- **' + text + '** ' + option.help.replace('|', '\\|') + '\n'
+        text += print_group_options(group)
     if self._citation_list:
       text += '\n'
       text += 'References\n'
-      text += '^^^^^^^^^^\n'
+      text += '^^^^^^^^^^\n\n'
       for ref in self._citation_list:
-        text = '* '
+        ref_text = '* '
         if ref[0]:
-          text += ref[0] + ': '
-        text += ref[1]
-        text += '\n'
-        text += text + '\n'
-    text += '\n'
+          ref_text += ref[0] + ': '
+        ref_text += ref[1]
+        text += ref_text + '\n\n'
+    else:
+      text += '\n'
     text += '--------------\n\n\n\n'
     text += '**Author:** ' + self._author + '\n\n'
     text += '**Copyright:** ' + self._copyright + '\n\n'

@@ -9,7 +9,7 @@ Synopsis
 Calculate the mean response function from a set of text files
 
 Usage
---------
+-----
 
 ::
 
