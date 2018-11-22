@@ -9,7 +9,7 @@ Synopsis
 Performs a global DWI intensity normalisation on a group of subjects using the median b=0 white matter value as the reference
 
 Usage
---------
+-----
 
 ::
 

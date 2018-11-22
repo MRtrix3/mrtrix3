@@ -9,7 +9,7 @@ Synopsis
 Check the orientation of the diffusion gradient table
 
 Usage
---------
+-----
 
 ::
 

@@ -9,7 +9,7 @@ Synopsis
 Generate a 5TT image suitable for ACT
 
 Usage
---------
+-----
 
 ::
 
@@ -94,7 +94,7 @@ Synopsis
 Generate the 5TT image based on a FreeSurfer parcellation image
 
 Usage
---------
+-----
 
 ::
 
@@ -178,7 +178,7 @@ Synopsis
 Use FSL commands to generate the 5TT image based on a T1-weighted image
 
 Usage
---------
+-----
 
 ::
 
@@ -274,7 +274,7 @@ Synopsis
 Generate the 5TT image based on a Geodesic Information Flow (GIF) segmentation image
 
 Usage
---------
+-----
 
 ::
 

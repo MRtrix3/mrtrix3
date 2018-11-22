@@ -9,7 +9,7 @@ Synopsis
 In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST
 
 Usage
---------
+-----
 
 ::
 
