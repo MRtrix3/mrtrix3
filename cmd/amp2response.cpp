@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include <Eigen/Dense>
 
@@ -176,6 +177,13 @@ void run ()
         throw Exception ("Values specified for lmax must be even");
       max_lmax = std::max (max_lmax, i);
     }
+    if ((*shells)[0].is_bzero() && lmax.front()) {
+      WARN ("Non-zero lmax requested for " +
+            ((*shells)[0].get_mean() ?
+            "first shell (mean b=" + str((*shells)[0].get_mean()) + "), which MRtrix3 has classified as b=0;" :
+            "b=0 shell;"));
+      WARN ("  unless intended, this is likely to fail, as b=0 contains no orientation contrast");
+    }
   } else {
     // Auto-fill lmax
     // Because the amp->SH transform doesn't need to be applied per voxel,
@@ -299,6 +307,13 @@ void run ()
 
         // Generate the ZSH -> amplitude transform
         Eigen::MatrixXd transform = Math::ZSH::init_amp_transform<default_type> (rotated_dirs_azel.col(1), lmax[shell_index]);
+        if (!transform.allFinite()) {
+          Exception e ("Unable to construct A2SH transformation for shell b=" + str(int(std::round((*shells)[shell_index].get_mean()))) + ";");
+          e.push_back ("  lmax (" + str(lmax[shell_index]) + ") may be too large for this shell");
+          if (!shell_index && (*shells)[0].is_bzero())
+            e.push_back ("  (this appears to be a b=0 shell, and therefore lmax should be set to 0 for this shell)");
+          throw e;
+        }
 
         // Concatenate these data to the ICLS matrices
         cat_transforms.block (voxel_counter * data.size(), 0, transform.rows(), transform.cols()) = transform;
