@@ -55,7 +55,7 @@ def execute(): #pylint: disable=unused-variable
   shells_option = ''
   if app.ARGS.shells:
     try:
-      shells_values = [ int(x) for x in app.ARGS.shells.split(',') ]
+      shells_values = [ int(round(float(x))) for x in app.ARGS.shells.split(',') ]
     except:
       raise MRtrixError('-shells option should provide a comma-separated list of b-values')
     if alg.needs_single_shell() and not len(shells_values) == 1:

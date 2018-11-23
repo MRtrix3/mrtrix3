@@ -16,8 +16,12 @@ class Header(object):
     result = subprocess.call(command, stdout=None, stderr=None)
     if result:
       raise MRtrixError('Could not access header information for image \'' + image_path + '\'')
-    with open(filename, 'r') as json_file:
-      data = json.load(json_file)
+    try:
+      with open(filename, 'r') as json_file:
+        data = json.load(json_file)
+    except UnicodeDecodeError:
+      with open(filename, 'r') as json_file:
+        data = json.loads(json_file.read().decode('utf-8', errors='replace'))
     os.remove(filename)
     try:
       #self.__dict__.update(data)
