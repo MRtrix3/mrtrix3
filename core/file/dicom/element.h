@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __file_dicom_element_h__
 #define __file_dicom_element_h__
@@ -150,6 +151,8 @@ namespace MR {
           double      get_float (size_t idx, double default_value = 0.0)                 const { auto v (get_float());  return check_get (idx, v.size()) ? v[idx] : default_value; }
           std::string get_string (size_t idx, std::string default_value = std::string()) const { auto v (get_string()); return check_get (idx, v.size()) ? v[idx] : default_value; }
 
+          std::string   as_string () const;
+
           size_t level () const { return parents.size(); }
 
           friend std::ostream& operator<< (std::ostream& stream, const Element& item);
@@ -159,8 +162,8 @@ namespace MR {
           }
 
 
-          template <typename VectorType> 
-            FORCE_INLINE void check_size (const VectorType v, size_t min_size = 1) { 
+          template <typename VectorType>
+            FORCE_INLINE void check_size (const VectorType v, size_t min_size = 1) {
               if (v.size() < min_size)
                 error_in_check_size (min_size, v.size());
             }
@@ -190,8 +193,8 @@ namespace MR {
           static void init_dict();
 
           bool check_get (size_t idx, size_t size) const { if (idx >= size) { error_in_get (idx); return false; } return true; }
-          void error_in_get (size_t idx) const; 
-          void error_in_check_size (size_t min_size, size_t actual_size) const; 
+          void error_in_get (size_t idx) const;
+          void error_in_check_size (size_t min_size, size_t actual_size) const;
           void report_unknown_tag_with_implicit_syntax () const;
       };
 

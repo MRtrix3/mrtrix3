@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "axes.h"
 #include "command.h"
@@ -57,11 +58,13 @@ void usage ()
     "-coord 3 0 extracts the first volume from a 4D image; "
     "-coord 1 24 extracts slice number 24 along the y-axis."
 
-  + "The colon operator can be particularly useful in conjunction with the "
-    "-coord option, in order to select multiple coordinates. "
+  + "You can use any valid number sequence in the selection, as well as the "
+    "'end' keyword (see the main documentation for details) This can be "
+    "particularly useful to select multiple coordinates. "
     "For instance: "
-    "-coord 3 1:59 "
-    "would select all but the first volume from an image containing 60 volumes."
+    "-coord 3 1:2:end "
+    "would select every other volume from an image, starting from the second "
+    "volume. "
 
   + "The -vox option is used to change the size of the voxels in the output "
     "image. Note that this does not re-sample the image based on a new "
@@ -115,10 +118,12 @@ void usage ()
   + OptionGroup ("Options for manipulating fundamental image properties")
 
   + Option ("coord",
-            "retain data from the input image only at the coordinates specified")
-  .allow_multiple()
+            "retain data from the input image only at the coordinates "
+            "specified in the selection along the specified axis. The selection "
+            "argument expects a number sequence, which can also include the "
+            "'end' keyword.").allow_multiple()
     + Argument ("axis").type_integer (0)
-    + Argument ("coord").type_sequence_int()
+    + Argument ("selection").type_sequence_int()
 
   + Option ("vox",
             "change the voxel dimensions of the output image")

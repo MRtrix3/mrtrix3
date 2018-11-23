@@ -1,22 +1,23 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __dwi_tractography_tracking_early_exit_h__
 #define __dwi_tractography_tracking_early_exit_h__
 
-#include "dwi/tractography/tracking/shared.h"
+#include <Eigen/Core>
 
 #if EIGEN_VERSION_AT_LEAST(3,3,0)
 #define TCKGEN_EARLY_EXIT_USE_FULL_BINOMIAL
@@ -27,6 +28,7 @@
 #define TCKGEN_EARLY_EXIT_ZVALUE -4.753408 // For a p-value of 1e-6; should be negative
 #endif
 
+#include "dwi/tractography/tracking/shared.h"
 
 
 #define TCKGEN_EARLY_EXIT_STOP_TESTING_PERCENTAGE 0.20
