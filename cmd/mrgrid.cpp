@@ -30,23 +30,25 @@ using namespace MR;
 using namespace App;
 
 const char* interp_choices[] = { "nearest", "linear", "cubic", "sinc", NULL };
-const char* operation_choices[] = { "resize", "crop", "pad", "match", NULL };
+const char* operation_choices[] = { "regrid", "crop", "pad", NULL };
 
 void usage ()
 {
   AUTHOR = "Max Pietsch (maximilian.pietsch@kcl.ac.uk) & David Raffelt (david.raffelt@florey.edu.au) & Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Regrid an image either by resizing (defining the new image resolution, voxel size or a scale factor), "
-             "cropping, padding, or matching the image grid of a reference image.";
+  SYNOPSIS = "Modify the grid of an image either by regridding (defining the new image resolution or match the grid of a reference image), cropping or padding.";
 
   DESCRIPTION
-  + "resize:\nNote that if the image is 4D, then only the first 3 dimensions can be resized."
-  + "Also note that if the image is down-sampled, the appropriate smoothing is automatically applied using Gaussian smoothing.\n\n"
-  + "crop:\nExtent of cropping can be determined using either manual setting of axis dimensions, or a computed mask image corresponding to the brain."
-  + "If using a mask, a gap of 1 voxel will be left at all 6 edges of the image such that trilinear interpolation upon the resulting images is still valid."
-  + "This is useful for axially-acquired brain images, where the image size can be reduced by a factor of 2 by removing the empty space on either side of the brain.\n\n"
-  + "pad:\nZero pad an image to increase the FOV."
-  + "match:\nProvide a reference image to match its image grid (voxel size, image size and orientation).";
+  + "regrid:"
+  + "Operations that change the voxel grid and require interpolation of the image such as changing the resolution or location and orientation of the voxel grid. "
+    "Note that the image content remains in place in real world coordinates. Only the resolution of the first 3 dimensions can be changed. "
+    "If the image is down-sampled, the appropriate smoothing is automatically applied using Gaussian smoothing unless nearest neighbour interpolation is selected or oversample is changed explicitly."
+  + "crop:"
+  + "Extent of cropping can be determined using either manual setting of axis dimensions, or a computed mask image or via a reference image. "
+    "If using a mask, a gap of 1 voxel will be left at all edges of the image such that trilinear interpolation upon the resulting images is still valid. "
+    "This is useful for axially-acquired brain images, where the image size can be reduced by a factor of 2 by removing the empty space on either side of the brain. "
+  + "pad:"
+  + "Pad an image to increase the FOV. Allows mixtures of negative and positive values to pad and crop the image simultaneously.";
 
   ARGUMENTS
   + Argument ("input", "input image to be regridded.").type_image_in ()
@@ -54,9 +56,9 @@ void usage ()
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
-  + OptionGroup ("Resize options")
-    + Option   ("size", "define the new image size for the output image. "
-                "This should be specified as a comma-separated list.")
+  + OptionGroup ("Regridding options (involves image interpolation, applied to spatial axes only)")
+    + Option   ("size", "define the size (number of voxels) in each spatial dimension for the output image. "
+                        "This should be specified as a comma-separated list.")
     + Argument ("dims").type_sequence_int()
 
     + Option   ("voxel", "define the new voxel size for the output image. "
@@ -69,46 +71,9 @@ void usage ()
                 "or as a comma-separated list of scale factors for each dimension.")
     + Argument ("factor").type_sequence_float()
 
-    + Option   ("as", "resize the input image to match the specified template image voxel size.")
-    + Argument ("image").type_image_in ()
+    // + Option   ("rigid", "project the image-to-scanner transformation to a rigid transformation (removes shear component).") // TODO
 
-    + Option   ("interp", "set the interpolation method to use when resizing (choices: nearest, linear, cubic, sinc. Default: cubic).")
-    + Argument ("method").type_choice (interp_choices)
-
-  + OptionGroup ("Crop options")
-    + Option   ("mask",  "crop the input image according to the spatial extent of a mask image")
-    + Argument ("image", "the mask image").type_image_in()
-
-    + Option   ("as", "crop the input image if it exceeds the size of the template image grid.")
-    + Argument ("image").type_image_in ()
-
-    + Option   ("axis",  "crop the input image in the provided axis. Overrides mask and template options.").allow_multiple()
-    + Argument ("index", "the index of the image axis to be cropped").type_integer (0)
-    + Argument ("start", "the first voxel along this axis to be included in the output image").type_integer ()
-    + Argument ("end",   "the last voxel along this axis to be included in the output image").type_integer ()
-
-    + Option   ("nd", "Crop all, not just spatial axes.")
-
-  + OptionGroup ("Pad options")
-    + Option   ("as", "pad the input image to match the specified template image grid.")
-    + Argument ("image").type_image_in ()
-
-    + Option   ("uniform", "pad the input image by a uniform number of voxels on all sides (in 3D)")
-    + Argument ("number").type_integer ()
-
-    + Option   ("axis", "pad the input image along the provided axis (defined by index). Lower and upper define "
-                "the number of voxels to add to the lower and upper bounds of the axis").allow_multiple()
-    + Argument ("index").type_integer (0)
-    + Argument ("lower").type_integer ()
-    + Argument ("upper").type_integer ()
-
-    + Option   ("value", "pad the input image with value instead of zero.")
-    + Argument ("number").type_float (0.0)
-
-    + Option   ("nd", "Pad all, not just spatial axes.")
-
-  + OptionGroup ("Match options")
-    + Option   ("template", "match the input image grid (voxel spacing, image size and header transformation) to that of the template image. mandatory option.")
+    + Option   ("template", "match the input image grid (voxel spacing, image size, orientation and shear (header transformation)) to that of a reference image")
     + Argument ("image").type_image_in ()
 
     + Option ("interp", "set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: cubic).")
@@ -122,7 +87,42 @@ void usage ()
         "for nearest-neighbour interpolation).")
     + Argument ("factor").type_sequence_int()
 
-    + Option ("nan", "Use NaN as the out of bounds value (Default: 0.0)")
+    + Option ("value", "Use number as the out of bounds value (Default: 0.0)")
+    + Argument ("number").type_image_in ()
+
+    + Option ("nan", "Convenience option for -value NAN.")
+
+  + OptionGroup ("Crop options (no image interpolation is performed, header transformation is adjusted)")
+    + Option   ("mask",  "crop the input image according to the spatial extent of a mask image")
+    + Argument ("image", "the mask image").type_image_in()
+
+    + Option   ("as", "crop the input image if it exceeds the size of the template image grid.")
+    + Argument ("image").type_image_in ()
+
+    + Option   ("axis",  "crop the input image in the provided axis. Overrides mask and template options.").allow_multiple()
+    + Argument ("index", "the index of the image axis to be cropped").type_integer (0)
+    + Argument ("start", "the first voxel along this axis to be included in the output image").type_integer ()
+    + Argument ("end",   "the last voxel along this axis to be included in the output image").type_integer ()
+
+    + Option   ("nd", "Crop all, not just spatial axes.")
+
+  + OptionGroup ("Pad options (no image interpolation is performed, header transformation is adjusted)")
+    + Option   ("as", "pad the input image to match the specified template image grid.")
+    + Argument ("image").type_image_in ()
+
+    + Option   ("uniform", "pad the input image by a uniform number of voxels on all sides")
+    + Argument ("number").type_integer ()
+
+    + Option   ("axis", "pad the input image along the provided axis (defined by index). Lower and upper define "
+                "the number of voxels to add to the lower and upper bounds of the axis").allow_multiple()
+    + Argument ("index").type_integer (0)
+    + Argument ("lower").type_integer ()
+    + Argument ("upper").type_integer ()
+
+    + Option   ("value", "pad the input image with value instead of zero.")
+    + Argument ("number").type_float (0.0)
+
+    + Option   ("nd", "Pad all, not just spatial axes.")
 
   + Stride::Options
   + DataType::options();
@@ -134,19 +134,60 @@ void run () {
 
   const int op = argument[1];
 
-  if (op == 0) { // resize
+  if (op == 0) { // regrid
     CONSOLE("operation: " + str(operation_choices[op]));
-    Filter::Resize resize_filter (input_header);
-
+    Filter::Resize regrid_filter (input_header);
+    // Header output_header (input_header);
     size_t resize_option_count = 0;
+    size_t template_option_count = 0;
+
+    int interp = 2;  // cubic
+    auto opt = get_options ("interp");
+    if (opt.size()) {
+      interp = opt[0][0];
+    }
+
+    // over-sampling
+    vector<int> oversample = Adapter::AutoOverSample;
+    opt = get_options ("oversample");
+    if (opt.size()) {
+      oversample = opt[0][0];
+    }
+
+
+    Header template_header;
+    opt = get_options ("template");
+    if (opt.size()) {
+      template_header = Header::open(opt[0][0]);
+      if (template_header.ndim() < 3)
+        throw Exception ("the template image requires at least 3 spatial dimensions");
+      add_line (regrid_filter.keyval()["comments"], std::string ("regridded to template image \"" + template_header.name() + "\""));
+      for (auto i=0; i<3; ++i) {
+        regrid_filter.spacing(i) = template_header.spacing(i);
+        regrid_filter.size(i) = template_header.size(i);
+      }
+      regrid_filter.set_transform(template_header.transform());
+      ++template_option_count;
+    }
+
+    regrid_filter.set_interp_type (interp);
+    regrid_filter.set_oversample (oversample);
 
     vector<default_type> scale;
-    auto opt = get_options ("scale");
+    opt = get_options ("scale");
     if (opt.size()) {
       scale = parse_floats (opt[0][0]);
       if (scale.size() == 1)
         scale.resize (3, scale[0]);
-      resize_filter.set_scale_factor (scale);
+      regrid_filter.set_scale_factor (scale);
+      ++resize_option_count;
+    }
+
+    vector<int> image_size;
+    opt = get_options ("size");
+    if (opt.size()) {
+      image_size = parse_ints(opt[0][0]);
+      regrid_filter.set_size (image_size);
       ++resize_option_count;
     }
 
@@ -156,45 +197,65 @@ void run () {
       voxel_size = parse_floats (opt[0][0]);
       if (voxel_size.size() == 1)
         voxel_size.resize (3, voxel_size[0]);
-      resize_filter.set_voxel_size (voxel_size);
+      regrid_filter.set_voxel_size (voxel_size);
       ++resize_option_count;
     }
 
-    opt = get_options ("as");
+    // Out of bounds value
+    float out_of_bounds_value = 0.0;
+    opt = get_options ("nan");
     if (opt.size()) {
-      Header template_header = Header::open (opt[0][0]);
-      vector<default_type> voxel_spacing = {template_header.spacing(0), template_header.spacing(1), template_header.spacing(2)};
-      resize_filter.set_voxel_size (voxel_spacing);
-      ++resize_option_count;
+      out_of_bounds_value = NAN;
+    }
+    opt = get_options ("value");
+    if (opt.size()) {
+      if (out_of_bounds_value != out_of_bounds_value)
+        throw Exception ("use either -nan or -value");
+      out_of_bounds_value = float(opt[0][0]);
     }
 
-    vector<int> image_size;
-    opt = get_options ("size");
-    if (opt.size()) {
-      image_size = parse_ints(opt[0][0]);
-      resize_filter.set_size (image_size);
-      ++resize_option_count;
-    }
-
-    int interp = 2;
-    opt = get_options ("interp");
-    if (opt.size()) {
-      interp = opt[0][0];
-      resize_filter.set_interp_type (interp);
-    }
-
-    if (!resize_option_count)
-      throw Exception ("please use either the -scale, -voxel, or -resolution option to resize the image");
-    if (resize_option_count != 1)
+    if (!resize_option_count and !template_option_count)
+      throw Exception ("please use either the -scale, -voxel, -resolution or -template option to regrid the image");
+    if (resize_option_count > 1)
       throw Exception ("only a single method can be used to resize the image (image resolution, voxel size or scale factor)");
 
-    Header output_header (resize_filter);
-    output_header.datatype() = DataType::from_command_line (DataType::from<float> ());
+    // if (template_option_count) {
+    //   auto output = Image<float>::create (argument[2], output_header).with_direct_io();
+
+    //   transform_type linear_transform;
+    //   linear_transform.setIdentity();
+
+    //   auto input = input_header.get_image<float>().with_direct_io();
+    //   switch (interp) {
+    //     case 0:
+    //       Filter::reslice<Interp::Nearest> (input, output, linear_transform, oversample, out_of_bounds_value);
+    //       break;
+    //     case 1:
+    //       Filter::reslice<Interp::Linear> (input, output, linear_transform, oversample, out_of_bounds_value);
+    //       break;
+    //     case 2:
+    //       Filter::reslice<Interp::Cubic> (input, output, linear_transform, oversample, out_of_bounds_value);
+    //       break;
+    //     case 3:
+    //       Filter::reslice<Interp::Sinc> (input, output, linear_transform, oversample, out_of_bounds_value);
+    //       break;
+    //     default:
+    //       assert (0);
+    //       break;
+    //   }
+    // }
+
+
+    Header output_header (regrid_filter);
     Stride::set_from_command_line (output_header);
+    if (interp == 0)
+      output_header.datatype() = DataType::from_command_line (input_header.datatype());
+    else
+      output_header.datatype() = DataType::from_command_line (DataType::from<float> ());
     auto output = Image<float>::create (argument[2], output_header);
 
     auto input = input_header.get_image<float>();
-    resize_filter (input, output);
+    regrid_filter (input, output);
 
   } else if (op == 1) { // crop
     CONSOLE("operation: " + str(operation_choices[op]));
@@ -415,80 +476,5 @@ void run () {
         output.value() = pad_value;
     }
 
-  } else if (op == 3) { // match
-    CONSOLE("operation: " + str(operation_choices[op]));
-    Header output_header (input_header);
-
-    auto opt = get_options ("template");
-    if (!opt.size())
-      throw Exception ("you cannot use the match mode without the -template option");
-
-    Header template_header = Header::open(opt[0][0]);
-    for (size_t i = 0; i < 3; ++i) {
-      output_header.size(i) = template_header.size(i);
-      output_header.spacing(i) = template_header.spacing(i);
-    }
-    output_header.transform() = template_header.transform();
-    add_line (output_header.keyval()["comments"], std::string ("regridded to template image \"" + template_header.name() + "\""));
-
-    // Interpolator
-    int interp = 2;  // cubic
-    opt = get_options ("interp");
-    if (opt.size()) {
-      interp = opt[0][0];
-    }
-    if (interp == 0)
-      output_header.datatype() = DataType::from_command_line (input_header.datatype());
-    else
-      output_header.datatype() = DataType::from_command_line (DataType::from<float> ());
-    Stride::set_from_command_line (output_header);
-
-    // over-sampling
-    vector<int> oversample = Adapter::AutoOverSample;
-    opt = get_options ("oversample");
-    if (opt.size()) {
-      oversample = opt[0][0];
-      if (oversample.size() == 1)
-        oversample.resize (3, oversample[0]);
-      else if (oversample.size() != 3)
-        throw Exception ("-oversample option requires either a single integer, or a comma-separated list of 3 integers");
-      for (const auto x : oversample)
-        if (x < 1)
-          throw Exception ("-oversample factors must be positive integers");
-    }
-    else if (interp == 0)
-      // default for nearest-neighbour is no oversampling
-      oversample = { 1, 1, 1 };
-
-    // Out of bounds value
-    float out_of_bounds_value = 0.0;
-    opt = get_options ("nan");
-    if (opt.size()) {
-      out_of_bounds_value = NAN;
-    }
-
-    auto output = Image<float>::create (argument[2], output_header).with_direct_io();
-
-    transform_type linear_transform;
-    linear_transform.setIdentity();
-
-    auto input = input_header.get_image<float>().with_direct_io();
-    switch (interp) {
-      case 0:
-        Filter::reslice<Interp::Nearest> (input, output, linear_transform, oversample, out_of_bounds_value);
-        break;
-      case 1:
-        Filter::reslice<Interp::Linear> (input, output, linear_transform, oversample, out_of_bounds_value);
-        break;
-      case 2:
-        Filter::reslice<Interp::Cubic> (input, output, linear_transform, oversample, out_of_bounds_value);
-        break;
-      case 3:
-        Filter::reslice<Interp::Sinc> (input, output, linear_transform, oversample, out_of_bounds_value);
-        break;
-      default:
-        assert (0);
-        break;
-    }
   }
 }
