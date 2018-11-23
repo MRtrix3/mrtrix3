@@ -1,20 +1,24 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
 
+#include "header.h"
+
+#include <cctype>
 
 #include "axes.h"
-#include "header.h"
 #include "mrtrix.h"
 #include "phase_encoding.h"
 #include "stride.h"
@@ -22,6 +26,7 @@
 #include "image_io/default.h"
 #include "image_io/scratch.h"
 #include "file/name_parser.h"
+#include "file/path.h"
 #include "formats/list.h"
 
 namespace MR
@@ -185,9 +190,29 @@ namespace MR
       INFO ("creating image \"" + image_name + "\"...");
       if (add_to_command_history) {
 
+        auto argv_quoted = [] (const std::string& s) -> std::string {
+          for (size_t i = 0; i != s.size(); ++i) {
+            if (!(isalnum(s[i]) || s[i] == '.' || s[i] == '_' || s[i] == '-' || s[i] == '/')) {
+
+              std::string escaped_string ("\'");
+              for (auto c : s) {
+                switch (c) {
+                  case '\'': escaped_string.append ("\\\'"); break;
+                  case '\\': escaped_string.append ("\\\\"); break;
+                  default: escaped_string.push_back (c); break;
+                }
+              }
+              escaped_string.push_back ('\'');
+              return escaped_string;
+
+            }
+          }
+          return s;
+        };
+
         std::string cmd = App::argv[0];
         for (int n = 1; n < App::argc; ++n)
-          cmd += std::string(" \"") + App::argv[n] + "\"";
+          cmd += std::string(" ") + argv_quoted (App::argv[n]);
         cmd += std::string ("  (version=") + App::mrtrix_version;
         if (App::project_version)
           cmd += std::string (", project=") + App::project_version;

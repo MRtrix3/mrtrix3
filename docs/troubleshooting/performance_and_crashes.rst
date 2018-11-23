@@ -131,13 +131,13 @@ A few pointers for anybody who encounters this issue:
 
    This location can be set manually in two different ways:
 
-   -  In the MRtrix _Configuration_file, key "ScriptTmpDir" can be used to
-      set the location where such temporary directories will be created by
-      default.
+   - In the MRtrix :ref:`mrtrix_config`, the :option:`ScriptTmpDir` entry
+     can be used to set the location where such temporary directories will be
+     created by default.
 
-   -  When executing the script, command-line option ``-tempdir`` can be
-      used to set the location of the temporary directory for that particular
-      script execution.
+   - When executing the script, command-line option ``-tempdir`` can be
+     used to set the location of the temporary directory for that particular
+     script execution.
 
    In the absence of either of these settings, *MRtrix3* will now create this
    temporary directory in the *working directory* (i.e. the location the

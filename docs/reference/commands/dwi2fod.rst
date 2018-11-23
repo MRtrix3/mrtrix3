@@ -63,6 +63,15 @@ Options for the Constrained Spherical Deconvolution algorithm
 
 -  **-niter number** the maximum number of iterations to perform for each voxel (default = 50). Use '-niter 0' for a linear unconstrained spherical deconvolution.
 
+Options for the Multi-Shell, Multi-Tissue Constrained Spherical Deconvolution algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-norm_lambda value** the regularisation parameter lambda that controls the strength of the constraint on the norm of the solution (default = 1e-10).
+
+-  **-neg_lambda value** the regularisation parameter lambda that controls the strength of the non-negativity constraint (default = 1e-10).
+
+-  **-predicted_signal image** the predicted dwi image.
+
 Stride options
 ^^^^^^^^^^^^^^
 
@@ -100,16 +109,19 @@ Tournier, J.-D.; Calamante, F., Gadian, D.G. & Connelly, A. Direct estimation of
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com) and Ben Jeurissen (ben.jeurissen@uantwerpen.be)
 
-**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix3 is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
-For more details, see http://www.mrtrix.org/
+For more details, see http://www.mrtrix.org/.
 
 

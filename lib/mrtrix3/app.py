@@ -52,17 +52,20 @@ colourWarn = ''
 
 
 
-_defaultCopyright = '''Copyright (c) 2008-2018 the MRtrix3 contributors.
+_defaultCopyright = '''Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix3 is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an \"as is\"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
-For more details, see http://www.mrtrix.org/'''
+For more details, see http://www.mrtrix.org/.'''
 
 
 
@@ -213,6 +216,7 @@ def checkOutputPath(path): #pylint: disable=unused-variable
 
 def makeTempDir(): #pylint: disable=unused-variable
   import os, random, string, sys
+  from mrtrix3 import run
   global args, config, continueOption, tempDir, workingDir
   if continueOption:
     debug('Skipping temporary directory creation due to use of -continue option')
@@ -223,7 +227,7 @@ def makeTempDir(): #pylint: disable=unused-variable
     dir_path = os.path.abspath(args.tempdir)
   else:
     # Defaulting to working directory since too many users have encountered storage issues
-    dir_path = dict.get('ScriptTmpDir', workingDir)
+    dir_path = config.get('ScriptTmpDir', workingDir)
   prefix = config.get('ScriptTmpPrefix', os.path.basename(sys.argv[0]) + '-tmp-')
   tempDir = dir_path
   while os.path.isdir(tempDir):
@@ -236,6 +240,8 @@ def makeTempDir(): #pylint: disable=unused-variable
   with open(os.path.join(tempDir, 'command.txt'), 'w') as outfile:
     outfile.write(' '.join(sys.argv) + '\n')
   open(os.path.join(tempDir, 'log.txt'), 'w').close()
+  # Also use this temporary directory for any piped images within run.command() calls
+  run.setTmpDir(tempDir)
 
 
 

@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include <set>
 
@@ -145,13 +146,15 @@ void execute (Image<node_t>& node_image, const node_t max_node_index, const std:
 
 void run ()
 {
-  auto node_image = Image<node_t>::open (argument[1]);
+  auto node_header = Header::open (argument[1]);
+  MR::Connectome::check (node_header);
+  auto node_image = node_header.get_image<node_t>();
 
   // First, find out how many segmented nodes there are, so the matrix can be pre-allocated
   // Also check for node volume for all nodes
   vector<uint32_t> node_volumes (1, 0);
   node_t max_node_index = 0;
-  for (auto i = Loop (node_image) (node_image); i; ++i) {
+  for (auto i = Loop (node_image, 0, 3) (node_image); i; ++i) {
     if (node_image.value() > max_node_index) {
       max_node_index = node_image.value();
       node_volumes.resize (max_node_index + 1, 0);
