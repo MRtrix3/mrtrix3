@@ -57,6 +57,10 @@ void usage ()
 
   OPTIONS
   + OptionGroup ("Regridding options (involves image interpolation, applied to spatial axes only)")
+    + Option   ("template", "match the input image grid (voxel spacing, image size, header transformation) to that of a reference image. "
+                 "The image resolution relative to the template image can be changed with one of -size, -voxel, -scale." )
+    + Argument ("image").type_image_in ()
+
     + Option   ("size", "define the size (number of voxels) in each spatial dimension for the output image. "
                         "This should be specified as a comma-separated list.")
     + Argument ("dims").type_sequence_int()
@@ -72,9 +76,6 @@ void usage ()
     + Argument ("factor").type_sequence_float()
 
     // + Option   ("rigid", "project the image-to-scanner transformation to a rigid transformation (removes shear component).") // TODO
-
-    + Option   ("template", "match the input image grid (voxel spacing, image size, orientation and shear (header transformation)) to that of a reference image")
-    + Argument ("image").type_image_in ()
 
     + Option ("interp", "set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: cubic).")
     + Argument ("method").type_choice (interp_choices)
@@ -137,7 +138,6 @@ void run () {
   if (op == 0) { // regrid
     CONSOLE("operation: " + str(operation_choices[op]));
     Filter::Resize regrid_filter (input_header);
-    // Header output_header (input_header);
     size_t resize_option_count = 0;
     size_t template_option_count = 0;
 
@@ -153,7 +153,6 @@ void run () {
     if (opt.size()) {
       oversample = opt[0][0];
     }
-
 
     Header template_header;
     opt = get_options ("template");
@@ -218,33 +217,6 @@ void run () {
       throw Exception ("please use either the -scale, -voxel, -resolution or -template option to regrid the image");
     if (resize_option_count > 1)
       throw Exception ("only a single method can be used to resize the image (image resolution, voxel size or scale factor)");
-
-    // if (template_option_count) {
-    //   auto output = Image<float>::create (argument[2], output_header).with_direct_io();
-
-    //   transform_type linear_transform;
-    //   linear_transform.setIdentity();
-
-    //   auto input = input_header.get_image<float>().with_direct_io();
-    //   switch (interp) {
-    //     case 0:
-    //       Filter::reslice<Interp::Nearest> (input, output, linear_transform, oversample, out_of_bounds_value);
-    //       break;
-    //     case 1:
-    //       Filter::reslice<Interp::Linear> (input, output, linear_transform, oversample, out_of_bounds_value);
-    //       break;
-    //     case 2:
-    //       Filter::reslice<Interp::Cubic> (input, output, linear_transform, oversample, out_of_bounds_value);
-    //       break;
-    //     case 3:
-    //       Filter::reslice<Interp::Sinc> (input, output, linear_transform, oversample, out_of_bounds_value);
-    //       break;
-    //     default:
-    //       assert (0);
-    //       break;
-    //   }
-    // }
-
 
     Header output_header (regrid_filter);
     Stride::set_from_command_line (output_header);
