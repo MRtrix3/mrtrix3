@@ -40,6 +40,8 @@ namespace MR
      *  Also note that if the image is down-sampled, the appropriate smoothing is automatically applied.
      *  using Gaussian smoothing.
      *
+     *  Automatic oversampling is applied except for nearest-neighbour interpolation, which uses no oversampling.
+     *
      * Typical usage:
      * \code
      * auto input = Image<default_type>::open (argument[0]);
@@ -58,7 +60,9 @@ namespace MR
         template <class HeaderType>
         Resize (const HeaderType& in) :
             Base (in),
-            interp_type (2) { } // Cubic
+            interp_type (2), // Cubic
+            transformation (Adapter::NoTransform),
+            oversampling (Adapter::AutoOverSample) { }
 
 
         void set_voxel_size (default_type size)
@@ -121,11 +125,27 @@ namespace MR
           set_voxel_size (new_voxel_size);
         }
 
+        void set_oversample (vector<int> oversample) {
+          if (oversample.size() == 1)
+            oversample.resize (3, oversample[0]);
+          else if (oversample.size() != 3 and oversample.size() != 0)
+            throw Exception ("FIXME oversample requires either a vector of a 0 (auto), 1 or 3 integers integer, got " + str(oversample.size()));
+          for (auto f : oversample) {
+            if (f < 1)
+              throw Exception ("oversample factors must be positive integers");
+          }
+          oversampling = oversample;
+        }
 
         void set_interp_type (int type) {
           interp_type = type;
+          if (interp_type == 0) // nearest
+            set_oversample (vector<int> (3, 1));
         }
 
+        void set_transform (const transform_type& trafo) {
+          transform_ = trafo;
+        }
 
         template <class InputImageType, class OutputImageType>
           void operator() (InputImageType& input, OutputImageType& output)
@@ -133,16 +153,16 @@ namespace MR
             switch (interp_type) {
             case 0:
               // Prevent use of oversampling when using nearest-neighbour interpolation
-              reslice <Interp::Nearest> (input, output, Adapter::NoTransform, { 1, 1, 1 });
+              reslice <Interp::Nearest> (input, output, transformation, oversampling, out_of_bounds_value);
               break;
             case 1:
-              reslice <Interp::Linear> (input, output);
+              reslice <Interp::Linear> (input, output, transformation, oversampling, out_of_bounds_value);
               break;
             case 2:
-              reslice <Interp::Cubic> (input, output);
+              reslice <Interp::Cubic> (input, output, transformation, oversampling, out_of_bounds_value);
               break;
             case 3:
-              reslice <Interp::Sinc> (input, output);
+              reslice <Interp::Sinc> (input, output, transformation, oversampling, out_of_bounds_value);
               break;
             default:
               assert (0);
@@ -152,6 +172,9 @@ namespace MR
 
       protected:
         int interp_type;
+        transform_type transformation;
+        float out_of_bounds_value;
+        vector<int> oversampling;
     };
     //! @}
   }
