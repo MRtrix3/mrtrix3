@@ -44,7 +44,6 @@ class Shared(object):
   #   (there are no other commands currently running)
   def disable_sigint_handler(self):
     import signal
-    from mrtrix3 import app
     with self.lock:
       if not any(process_list is not None for process_list in self.process_lists):
         try:
@@ -56,7 +55,6 @@ class Shared(object):
   #   (appears to not be any other processes running in parallel)
   def enable_sigint_handler(self, handler):
     import signal
-    from mrtrix3 import app
     with self.lock:
       if all(process_list is None for process_list in self.process_lists):
         try:
@@ -68,7 +66,6 @@ class Shared(object):
   # This ensures that if command() is executed in parallel using different threads, they will
   #   not interfere with one another; but killAll() will also have access to all relevant data
   def get_command_index(self):
-    from mrtrix3 import app
     with self.lock:
       try:
         index = next(i for i, v in enumerate(self.process_lists) if v is None)
@@ -81,7 +78,6 @@ class Shared(object):
     return index
 
   def close_command_index(self, index):
-    from mrtrix3 import app
     with shared.lock:
       assert self.process_lists[index]
       self.process_lists[index] = None
@@ -145,7 +141,6 @@ class Shared(object):
   # Kill any and all running processes
   def kill(self): #pylint: disable=unused-variable
     import os
-    from mrtrix3 import app
     for process_list in self.process_lists:
       if process_list:
         for process in process_list:

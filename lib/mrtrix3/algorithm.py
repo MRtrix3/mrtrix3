@@ -32,7 +32,7 @@ def get_list(): #pylint: disable=unused-variable
 #   options common to all algorithms of a particular script to be applicable once any particular sub-parser
 #   is invoked. Therefore this function must be called _after_ all such options are set up.
 def usage(cmdline): #pylint: disable=unused-variable
-  import importlib, inspect, os, pkgutil, sys
+  import importlib, os, pkgutil, sys
   from mrtrix3 import app, path
   sys.path.insert(0, os.path.realpath(os.path.join(_algorithms_path(), os.pardir)))
   initlist = [ ]
