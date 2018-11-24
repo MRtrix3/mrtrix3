@@ -396,37 +396,43 @@ namespace MR {
       std::string Element::as_string () const
       {
         std::ostringstream out;
-        switch (type()) {
-          case Element::INT:
-            for (const auto& x : get_int())
-              out << x << " ";
-            return out.str();
-          case Element::UINT:
-            for (const auto& x : get_uint())
-              out << x << " ";
-            return out.str();
-          case Element::FLOAT:
-            for (const auto& x : get_float())
-              out << x << " ";
-            return out.str();
-          case Element::DATE:
-            return str(get_date());
-          case Element::TIME:
-            return str(get_time());
-          case Element::STRING:
-            if (group == GROUP_DATA && element == ELEMENT_DATA) {
-              return "(data)";
-            }
-            else {
-              for (const auto& x : get_string())
+        try {
+          switch (type()) {
+            case Element::INT:
+              for (const auto& x : get_int())
                 out << x << " ";
               return out.str();
-            }
-          case Element::SEQ:
-            return "";
-          default:
-            if (group != GROUP_SEQUENCE || element != ELEMENT_SEQUENCE_ITEM)
-              return "unknown data type";
+            case Element::UINT:
+              for (const auto& x : get_uint())
+                out << x << " ";
+              return out.str();
+            case Element::FLOAT:
+              for (const auto& x : get_float())
+                out << x << " ";
+              return out.str();
+            case Element::DATE:
+              return str(get_date());
+            case Element::TIME:
+              return str(get_time());
+            case Element::STRING:
+              if (group == GROUP_DATA && element == ELEMENT_DATA) {
+                return "(data)";
+              }
+              else {
+                for (const auto& x : get_string())
+                  out << x << " ";
+                return out.str();
+              }
+            case Element::SEQ:
+              return "";
+            default:
+              if (group != GROUP_SEQUENCE || element != ELEMENT_SEQUENCE_ITEM)
+                return "unknown data type";
+          }
+        }
+        catch (Exception& e) {
+          e.display();
+          return "invalid entry";
         }
         return "";
       }
