@@ -71,10 +71,10 @@ def eddyBinary(cuda): #pylint: disable=unused-variable
 def exeName(name, required=True): #pylint: disable=unused-variable
   from mrtrix3 import app
   from distutils.spawn import find_executable
-  if find_executable('fsl5.0-' + name):
-    output = 'fsl5.0-' + name
-  elif find_executable(name):
+  if find_executable(name):
     output = name
+  elif find_executable('fsl5.0-' + name):
+    output = 'fsl5.0-' + name
   elif required:
     app.error('Could not find FSL program \"' + name + '\"; please verify FSL install')
   app.debug(output)
