@@ -82,8 +82,8 @@ void run ()
   for (size_t axis = 0; axis < 3; ++axis) {
     output_header.size (axis) = output_header.size(axis) + padding[axis][0] + padding[axis][1];
     output_transform (axis, 3) +=	(output_transform (axis, 0) * (bounds[0][0] - padding[0][0]) * input_header.spacing (0))
-                                + (output_transform (axis, 1) * (bounds[1][0] - padding[0][0]) * input_header.spacing (1))
-                                + (output_transform (axis, 2) * (bounds[2][0] - padding[0][0]) * input_header.spacing (2));
+                                + (output_transform (axis, 1) * (bounds[1][0] - padding[1][0]) * input_header.spacing (1))
+                                + (output_transform (axis, 2) * (bounds[2][0] - padding[2][0]) * input_header.spacing (2));
   }
   output_header.transform() = output_transform;
   auto output = Image<float>::create (argument[1], output_header);
