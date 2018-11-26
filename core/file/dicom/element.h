@@ -39,10 +39,12 @@ namespace MR {
       class Date { NOMEMALIGN
         public:
           Date (const std::string& entry) :
-              year  (to<uint32_t> (entry.substr (0, 4))),
-              month (to<uint32_t> (entry.substr (4, 2))),
-              day   (to<uint32_t> (entry.substr (6, 2)))
-          {
+            year(0), month(0), day(0) {
+            if (entry.size() >= 8) {
+              year = to<uint32_t> (entry.substr (0, 4));
+              month = to<uint32_t> (entry.substr (4, 2));
+              day = to<uint32_t> (entry.substr (6, 2));
+            }
             if (year < 1000 || month > 12 || day > 31)
               throw Exception ("Error converting string \"" + entry + "\" to date");
           }
