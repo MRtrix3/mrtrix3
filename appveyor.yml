@@ -5,6 +5,11 @@ configuration: Release
 clone_folder: c:\msys64\mrtrix3
 shallow_clone: false
 
+branches:
+  only:
+    - master
+    - dev
+
 init:
   - git config --global core.autocrlf input
 
