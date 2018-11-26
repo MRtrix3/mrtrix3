@@ -3,24 +3,6 @@
 LOGFILE=pylint.log
 echo logging to \""$LOGFILE"\"
 
-cat > $LOGFILE <<EOD
--------------------------------------------
-  Version information
--------------------------------------------
-
-EOD
-
-eval ${forcepyversion} pylint --version >> $LOGFILE
-
-cat >> $LOGFILE <<EOD
-
--------------------------------------------
-  Testing MRtrix3 Python scripts
--------------------------------------------
-
-EOD
-
-
 # generate list of tests to run:
 if [ $# == 0 ]; then
   for lib_path in lib/mrtrix3/*; do
@@ -50,6 +32,26 @@ else
   echo "Using pylint for "${PYTHON}" (from PYTHON environment variable)"
   forcepyversion="$PYTHON -m "
 fi
+
+
+
+cat > $LOGFILE <<EOD
+-------------------------------------------
+  Version information
+-------------------------------------------
+
+EOD
+
+eval ${forcepyversion} pylint --version >> $LOGFILE
+
+cat >> $LOGFILE <<EOD
+
+-------------------------------------------
+  Testing MRtrix3 Python scripts
+-------------------------------------------
+
+EOD
+
 
 export PYTHONPATH="$(pwd)/lib:$PYTHONPATH"
 for file in $tests; do
