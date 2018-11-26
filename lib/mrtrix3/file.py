@@ -11,6 +11,24 @@ def delTemporary(path): #pylint: disable=unused-variable
   from mrtrix3 import app
   if not app.cleanup:
     return
+  if isinstance(path, list):
+    if len(path) == 1:
+      delTemporary(path[0])
+      return
+    if app.verbosity > 2:
+      app.console('Deleting ' + str(len(path)) + ' temporary items: ' + str(path))
+    for entry in path:
+      if os.path.isfile(entry):
+        func = os.remove
+      elif os.path.isdir(entry):
+        func = shutil.rmtree
+      else:
+        continue
+      try:
+        func(entry)
+      except OSError:
+        pass
+    return
   if os.path.isfile(path):
     temporary_type = 'file'
     func = os.remove
