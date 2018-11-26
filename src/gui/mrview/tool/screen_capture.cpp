@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include <Eigen/Geometry>
 
@@ -421,7 +422,7 @@ namespace MR
             start_index->setValue (i + 1);
             this->window().updateGL();
             qApp->processEvents();
-          } 
+          }
 
           is_playing = false;
         }
@@ -456,8 +457,8 @@ namespace MR
 
 
 
-        void Capture::add_commandline_options (MR::App::OptionList& options) 
-        { 
+        void Capture::add_commandline_options (MR::App::OptionList& options)
+        {
           using namespace MR::App;
           options
             + OptionGroup ("Screen Capture tool options")
@@ -471,7 +472,7 @@ namespace MR
             + Option ("capture.grab", "Start the screen capture process.").allow_multiple();
         }
 
-        bool Capture::process_commandline_option (const MR::App::ParsedOption& opt) 
+        bool Capture::process_commandline_option (const MR::App::ParsedOption& opt)
         {
           if (opt.opt->is ("capture.folder")) {
             directory->setPath (std::string(opt[0]).c_str());

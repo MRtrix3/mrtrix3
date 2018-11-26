@@ -35,7 +35,7 @@ def getInputs(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import math, os
-  from mrtrix3 import app, fsl, image, run
+  from mrtrix3 import app, fsl, image, path, run
 
   if app.isWindows():
     app.error('\'fsl\' algorithm of 5ttgen script cannot be run on Windows: FSL not available on Windows')
@@ -196,6 +196,8 @@ def execute(): #pylint: disable=unused-variable
 
   # Use mrcrop to reduce file size (improves caching of image data during tracking)
   if app.args.nocrop:
-    run.command('mrconvert combined_precrop.mif result.mif')
+    run.function(os.rename, 'combined_precrop.mif', 'result.mif')
   else:
     run.command('mrmath combined_precrop.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrcrop combined_precrop.mif result.mif -mask -')
+
+  run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + app.mrconvertOutputOption(path.fromUser(app.args.input, True)))

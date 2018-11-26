@@ -25,9 +25,9 @@ If used correctly, this program can be a very useful workhorse. In addition to c
 
 The -coord option is used to select the coordinates within the input image that are to be retained in the output image. This can therefore be used to include or exclude subsets of slices along a particular spatial axis, or volumes / series within higher dimensions. For instance: -coord 3 0 extracts the first volume from a 4D image; -coord 1 24 extracts slice number 24 along the y-axis.
 
-The colon operator can be particularly useful in conjunction with the -coord option, in order to select multiple coordinates. For instance: -coord 3 1:59 would select all but the first volume from an image containing 60 volumes.
+You can use any valid number sequence in the selection, as well as the 'end' keyword (see the main documentation for details) This can be particularly useful to select multiple coordinates. For instance: -coord 3 1:2:end would select every other volume from an image, starting from the second volume. 
 
-The -vox option is used to change the size of the voxels in the output image. Note that this does not re-sample the image based on a new voxel size (that is done using the mrresize command); this only changes the voxel size as reported in the image header. Voxel sizes for individual axes can be set independently, using a comma-separated list of values; e.g. -vox 1,,3.5 will change the voxel size along the x & z axes to 1.0mm and 3.5mm respectively, and leave the y-axis voxel size unchanged.
+The -vox option is used to change the size of the voxels in the output image. Note that this does not re-sample the image based on a new voxel size (that is done using the mrresize command); this only changes the voxel size as reported in the image header. Providing a single value will result in isotropic voxels of that size; alternatively, voxel sizes for individual axes can be set independently, using a comma-separated list of values; e.g. -vox 1,,3.5 will change the voxel size along the x & z axes to 1.0mm and 3.5mm respectively, and leave the y-axis voxel size unchanged.
 
 The -axes option specifies which axes from the input image will be used to form the output image. This allows the permutation, omission, or addition of axes into the output image. The axes should be supplied as a comma-separated list of axis indices, e.g. -axes 0,1,2 would select only the three spatial axes to form the output image. If an axis from the input image is to be omitted from the output image, it must have dimension 1; either in the input image itself, or a single coordinate along that axis must be selected by the user by using the -coord option. An axis of unity dimension can be inserted by supplying -1 at the corresponding position in the list.
 
@@ -43,7 +43,7 @@ Options
 Options for manipulating fundamental image properties
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-coord axis coord** retain data from the input image only at the coordinates specified
+-  **-coord axis selection** retain data from the input image only at the coordinates specified in the selection along the specified axis. The selection argument expects a number sequence, which can also include the 'end' keyword.
 
 -  **-vox sizes** change the voxel dimensions of the output image
 
@@ -66,6 +66,8 @@ Options to modify generic header entries
 -  **-set_property key value** set the value of the specified key in the image header.
 
 -  **-append_property key value** append the given value to the specified key in the image header (this adds the value specified as a new line in the header value).
+
+-  **-copy_properties source** clear all generic properties and replace with the properties from the image / file specified.
 
 Stride options
 ^^^^^^^^^^^^^^
@@ -128,16 +130,19 @@ Standard options
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix3 is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
-For more details, see http://www.mrtrix.org/
+For more details, see http://www.mrtrix.org/.
 
 
