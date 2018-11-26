@@ -5,10 +5,21 @@ echo logging to \""$LOGFILE"\"
 
 cat > $LOGFILE <<EOD
 -------------------------------------------
+  Version information
+-------------------------------------------
+
+EOD
+
+eval ${forcepyversion} pylint --version >> $LOGFILE
+
+cat >> $LOGFILE <<EOD
+
+-------------------------------------------
   Testing MRtrix3 Python scripts
 -------------------------------------------
 
 EOD
+
 
 # generate list of tests to run:
 if [ $# == 0 ]; then
