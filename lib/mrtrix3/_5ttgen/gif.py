@@ -18,14 +18,13 @@ def checkGIFinput(image_path):
 
 
 def getInputs(): #pylint: disable=unused-variable
-  import os, shutil #pylint: disable=unused-variable
   from mrtrix3 import app, path, run
   checkGIFinput(path.fromUser(app.args.input, True))
   run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('input.mif', True))
 
 
 def execute(): #pylint: disable=unused-variable
-  import os, sys #pylint: disable=unused-variable
+  import os
   from mrtrix3 import app, path, run #pylint: disable=unused-variable
 
   # Generate the images related to each tissue
