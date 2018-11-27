@@ -379,10 +379,14 @@ namespace MR
                 break;
               case TranslationType::Camera:
               {
-                const GL::vec4 trans_gl_vec =  GL::inv (GL::mat4 (orientation)) * GL::vec4 (trans_vec[0], trans_vec[1], trans_vec[2], 1.0f);
-                trans_vec[0] = trans_gl_vec[0];
-                trans_vec[1] = trans_gl_vec[1];
-                trans_vec[2] = trans_gl_vec[2];
+                const Mode::Base* mode = window().get_current_mode();
+                if (mode) {
+                  const GL::vec4 trans_gl_vec =  mode->get_current_projection()->modelview_inverse() *
+                    GL::vec4 (trans_vec[0], trans_vec[1], trans_vec[2], 0.0f);
+                  trans_vec[0] = trans_gl_vec[0];
+                  trans_vec[1] = trans_gl_vec[1];
+                  trans_vec[2] = trans_gl_vec[2];
+                }
                 break;
               }
               case TranslationType::Scanner:
@@ -390,7 +394,6 @@ namespace MR
               default:
                 break;
             }
-
 
             Eigen::Vector3f focus_delta (trans_vec);
 
@@ -421,7 +424,7 @@ namespace MR
             start_index->setValue (i + 1);
             this->window().updateGL();
             qApp->processEvents();
-          } 
+          }
 
           is_playing = false;
         }
@@ -456,8 +459,8 @@ namespace MR
 
 
 
-        void Capture::add_commandline_options (MR::App::OptionList& options) 
-        { 
+        void Capture::add_commandline_options (MR::App::OptionList& options)
+        {
           using namespace MR::App;
           options
             + OptionGroup ("Screen Capture tool options")
@@ -471,7 +474,7 @@ namespace MR
             + Option ("capture.grab", "Start the screen capture process.").allow_multiple();
         }
 
-        bool Capture::process_commandline_option (const MR::App::ParsedOption& opt) 
+        bool Capture::process_commandline_option (const MR::App::ParsedOption& opt)
         {
           if (opt.opt->is ("capture.folder")) {
             directory->setPath (std::string(opt[0]).c_str());
