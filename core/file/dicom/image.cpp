@@ -313,8 +313,15 @@ namespace MR {
           Element item;
           item.set (filename);
 
-          while (item.read())
-            parse_item (item);
+          while (item.read()){
+            try {
+              parse_item (item);
+            }
+            catch (Exception& E) {
+              WARN (printf ("error reading tag (%04X,%04X):", item.group, item.element));
+              E.display(1);
+            }
+          }
 
           calc_distance();
 
