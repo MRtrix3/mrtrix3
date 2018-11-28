@@ -6,7 +6,7 @@ tckstats
 Synopsis
 --------
 
-Calculate statistics on streamlines length
+Calculate statistics on streamlines lengths
 
 Usage
 --------
@@ -25,8 +25,6 @@ Options
 -  **-histogram path** output a histogram of streamline lengths
 
 -  **-dump path** dump the streamlines lengths to a text file
-
--  **-explicit** explicitly calculate the length of each streamline, ignoring any step size information present in the header
 
 -  **-ignorezero** do not generate a warning if the track file contains streamlines with zero length
 
