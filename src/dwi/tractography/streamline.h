@@ -80,25 +80,11 @@ namespace MR
             weight = 1.0;
           }
 
-          //ValueType length() const;
-
           size_t index;
           float weight;
       };
 
 
-
-
-      /*template <typename ValueType>
-      ValueType Streamline<ValueType>::length() const
-      {
-        if (vector<point_type>::empty())
-          return NaN;
-        ValueType length = ValueType(0);
-        for (size_t i = 1; i != vector<point_type>::size(); ++i)
-          length += ((*this)[i] - (*this)[i-1]).norm();
-        return length;
-      }*/
 
       template <typename PointType>
       typename PointType::Scalar length (const vector<PointType>& tck)
