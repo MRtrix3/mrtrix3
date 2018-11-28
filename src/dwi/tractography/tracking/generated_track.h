@@ -52,6 +52,25 @@ namespace MR
             void set_seed_index (const size_t i) { seed_index = i; }
             void set_status (const status_t i) { status = i; }
 
+            float length (const float step_size) const
+            {
+              // Only in the context of a track being generated is it safe to
+              //   exploit knowledge of the step size in order to calculate
+              //   streamline length more efficiently; however we must consider
+              //   the possibility of truncation of the final segment at either
+              //   endpoint of the streamline
+              // If this is not a safe assumption, Tractography::length() should
+              //   instead be used
+              switch (size()) {
+                case 0: return NaN;
+                case 1: return ((*this)[1] - (*this)[0]).norm();
+                default:
+                  return ((step_size * (size() - 2)) +
+                          ((*this)[1]-(*this)[0]).norm() +
+                          ((*this)[size()-1] - (*this)[size()-2]).norm());
+              }
+            }
+
           private:
             size_t seed_index;
             status_t status;

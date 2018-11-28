@@ -130,8 +130,18 @@ namespace MR
                 item.clear();
                 item.set_status (GeneratedTrack::status_t::TRACK_REJECTED);
               } else {
-                S.downsampler (item);
-                item.set_status (GeneratedTrack::status_t::ACCEPTED);
+                if (S.downsampler.valid()) {
+                  S.downsampler (item);
+                  if (Tractography::length (item) < S.min_dist) {
+                    S.add_rejection (TRACK_TOO_SHORT);
+                    item.clear();
+                    item.set_status (GeneratedTrack::status_t::TRACK_REJECTED);
+                  } else {
+                    item.set_status (GeneratedTrack::status_t::ACCEPTED);
+                  }
+                } else {
+                  item.set_status (GeneratedTrack::status_t::ACCEPTED);
+                }
               }
               return true;
             }
@@ -381,7 +391,7 @@ namespace MR
 
 
 
-            bool track_rejected (const vector<Eigen::Vector3f>& tck)
+            bool track_rejected (const GeneratedTrack& tck)
             {
 
               if (track_excluded)
@@ -399,6 +409,12 @@ namespace MR
               }
 
               if (S.is_act()) {
+
+                // may be shorter than minimum length due to cropping at GM-WM interface
+                if (S.act().crop_at_gmwmi() && tck.length (S.internal_step_size()) < S.min_dist) {
+                  S.add_rejection (TRACK_TOO_SHORT);
+                  return true;
+                }
 
                 if (!satisfy_wm_requirement (tck)) {
                   S.add_rejection (ACT_FAILED_WM_REQUIREMENT);
