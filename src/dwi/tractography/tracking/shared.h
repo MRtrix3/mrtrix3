@@ -60,6 +60,7 @@ namespace MR
             Properties& properties;
             Eigen::Vector3f init_dir;
             size_t max_num_tracks, max_num_seeds, min_num_points, max_num_points;
+            float min_dist, max_dist;
             float max_angle, max_angle_rk4, cos_max_angle, cos_max_angle_rk4;
             float step_size, threshold, init_threshold;
             size_t max_seed_attempts;

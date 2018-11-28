@@ -34,6 +34,8 @@ namespace MR
             init_dir ({ NaN, NaN, NaN }),
             min_num_points (0),
             max_num_points (0),
+            min_dist (NaN),
+            max_dist (NaN),
             max_angle (NaN),
             max_angle_rk4 (NaN),
             cos_max_angle (NaN),
@@ -183,11 +185,11 @@ namespace MR
           if (downsampler.get_ratio() > 1)
             properties["output_step_size"] = str (step_size * downsampler.get_ratio());
 
-          float max_dist = 100.0 * vox();
+          max_dist = 100.0 * vox();
           properties.set (max_dist, "max_dist");
           max_num_points = std::round (max_dist/step_size) + 1;
 
-          float min_dist = is_act() ? (2.0 * vox()) : (5.0 * vox());
+          min_dist = is_act() ? (2.0 * vox()) : (5.0 * vox());
           properties.set (min_dist, "min_dist");
           min_num_points = std::max (2, int(std::round (min_dist/step_size) + 1));
 
