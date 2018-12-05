@@ -201,7 +201,7 @@ public:
         }
       }
     }
-    
+
     // reset image position
     dwi.index(0) = pos[0];
     dwi.index(1) = pos[1];
@@ -221,9 +221,9 @@ private:
   inline size_t wrapindex(int r, int axis, int max) const {
     int rr = pos[axis] + r;
     if (rr < 0)
-      rr = pos[axis]+extent[axis]-rr;
-    if (rr > max)
-      rr = pos[axis]-extent[axis]-rr+max;
+      rr = extent[axis] - r;
+    if (rr >= max)
+      rr = (max-1) - extent[axis] - r;
     return rr;
   }
 
