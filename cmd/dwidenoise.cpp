@@ -42,7 +42,9 @@ void usage ()
 
     + "Note that this function does not correct for non-Gaussian noise biases.";
 
-  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk) & Jelle Veraart (jelle.veraart@nyumc.org) & J-Donald Tournier (jdtournier@gmail.com)";
+  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk) & "
+           "Jelle Veraart (jelle.veraart@nyumc.org) & "
+           "J-Donald Tournier (jdtournier@gmail.com)";
 
   REFERENCES
     + "Veraart, J.; Novikov, D.S.; Christiaens, D.; Ades-aron, B.; Sijbers, J. & Fieremans, E. " // Internal
@@ -107,14 +109,9 @@ public:
 
   DenoisingFunctor (ImageType& dwi, vector<int> extent, Image<bool>& mask, ImageType& noise)
     : extent {{extent[0]/2, extent[1]/2, extent[2]/2}},
-      m (dwi.size(3)),
-      n (extent[0]*extent[1]*extent[2]),
-      r ((m<n) ? m : n),
-      X (m,n),
-      Xm (r),
-      pos {{0, 0, 0}},
-      mask (mask),
-      noise (noise)
+      m (dwi.size(3)), n (extent[0]*extent[1]*extent[2]),
+      r ((m<n) ? m : n), X (m,n), pos {{0, 0, 0}},
+      mask (mask), noise (noise)
   { }
 
   void operator () (ImageType& dwi, ImageType& out)
@@ -220,10 +217,8 @@ private:
 
   inline size_t wrapindex(int r, int axis, int max) const {
     int rr = pos[axis] + r;
-    if (rr < 0)
-      rr = extent[axis] - r;
-    if (rr >= max)
-      rr = (max-1) - extent[axis] - r;
+    if (rr < 0)    rr = extent[axis] - r;
+    if (rr >= max) rr = (max-1) - extent[axis] - r;
     return rr;
   }
 
