@@ -66,7 +66,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # read inputs
     M = np.loadtxt(args.input)
-    W = np.loadtxt(args.weights)
+    W = np.clip(np.loadtxt(args.weights), 1e-6, None)
     # set up slice order
     nv = W.shape[1]
     ne = M.shape[0]//nv
@@ -74,7 +74,7 @@ if __name__ == '__main__':
     isliceorder = np.argsort(sliceorder)
     # reorder
     M1 = np.reshape(M.reshape((nv,ne,6))[:,sliceorder,:], (-1,6))
-    W1 = np.reshape(np.mean(W.reshape((-1, ne, nv)), axis=0)[sliceorder,:], (-1,1))
+    W1 = np.reshape(np.mean(W.reshape((-1, ne, nv)), axis=0)[sliceorder,:], (-1,1));
     # filter: t'_i = w * t_i + (1-w) * (t'_(i-1) + t'_(i+1)) / 2
     A = np.eye(nv*ne) - 0.5 * (1.-W1) * (np.eye(nv*ne, k=1) + np.eye(nv*ne, k=-1))
     A[0,1] = W1[0] - 1

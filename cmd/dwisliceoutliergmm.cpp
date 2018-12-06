@@ -176,8 +176,8 @@ class GMModel {
     inline void init(const VecType& x) {
       float_t med = median(x);
       float_t mad = median(Eigen::abs(x.array() - med)) * 1.4826;
-      Min = med; Mout = 3*med;
-      Sin = mad; Sout = 3*mad;
+      Min = med; Mout = med + 1.0;  // shift +1 only valid for log-Gaussians,
+      Sin = mad; Sout = mad + 1.0;  // corresp. to approx. x 3 med/mad error.
       Pin = 0.9; Pout = 0.1;
     }
 
@@ -205,10 +205,10 @@ class GMModel {
       Sout = std::sqrt(average((x.array() - Min).square(), w2) + reg);
     }
 
-    inline VecType log_gaussian(const VecType& x, float_t mu = 0., float_t std = 1.) const {
-      VecType resp = x.array() - mu; resp /= std;
+    inline VecType log_gaussian(const VecType& x, float_t mu = 0., float_t sigma = 1.) const {
+      VecType resp = x.array() - mu; resp /= sigma;
       resp = resp.array().square() + std::log(2*M_PI);
-      resp *= -0.5f; resp = resp.array() - std::log(std);
+      resp *= -0.5f; resp = resp.array() - std::log(sigma);
       return resp;
     }
 
@@ -279,11 +279,11 @@ void run ()
     for (size_t v : shells[s].get_volumes())
       res.segment(E.rows() * (k++), E.rows()) = E.col(v);
     // clip at non-zero minimum
-    value_type min = res.redux([](value_type a, value_type b) {
+    value_type nzmin = res.redux([](value_type a, value_type b) {
       if (a > 0) return (b > 0) ? std::min(a,b) : a;
       else return (b > 0) ? b : std::numeric_limits<value_type>::infinity();
     });
-    Eigen::VectorXf logres = res.array().max(min).log();
+    Eigen::VectorXf logres = res.array().max(nzmin).log();
     // Fit GMM
     gmm.fit(logres);
     // Save posterior probabilities
