@@ -343,7 +343,6 @@ void run()
   Stats::CFE::norm_connectivity_matrix_type smoothing_weights;
   Stats::CFE::normalise_matrix (connectivity_matrix,
                                 index_image,
-                                mask,
                                 index_remapper,
                                 connectivity_threshold,
                                 norm_connectivity_matrix,
@@ -357,13 +356,33 @@ void run()
   //   matrix & pre-smoothed data instead of a track file, this process will
   //   still need to be run
   {
-    ProgressBar progress ("Pre-scaling connectivity matrix weights", norm_connectivity_matrix.size());
-    for (auto fixel : norm_connectivity_matrix) {
-      for (auto f : fixel)
-        f.exponentiate (cfe_c);
-      if (cfe_norm)
-        fixel.normalise();
+    ProgressBar progress ("Pre-conditioning connectivity matrix", norm_connectivity_matrix.size());
+    index_type num_unconnected_fixels = 0;
+    for (index_type fixel_index = 0; fixel_index != mask_fixels; ++fixel_index) {
+      if (norm_connectivity_matrix[fixel_index].empty()) {
+        // If no streamlines traversed this fixel, connectivity matrix will be empty;
+        //   let's at least inform it that it is "fully connected" to itself
+        // Note however that we do this here rather than within the matrix generation functions,
+        //   as this is specifically a fix for CFE
+        norm_connectivity_matrix[fixel_index].push_back (Stats::CFE::NormMatrixElement (fixel_index, 1.0));
+        if (do_smoothing)
+          smoothing_weights[fixel_index].push_back (Stats::CFE::NormMatrixElement (fixel_index, 1.0));
+        ++num_unconnected_fixels;
+      } else {
+        for (auto f : norm_connectivity_matrix[fixel_index])
+          f.exponentiate (cfe_c);
+        if (cfe_norm)
+          norm_connectivity_matrix[fixel_index].normalise();
+      }
       ++progress;
+    }
+    if (num_unconnected_fixels && (cfe_norm || do_nonstationarity_adjustment)) {
+      WARN ("A total of " + str(num_unconnected_fixels) + " fixels observed " +
+            (get_options ("mask").size() ? "within provided mask " : "in template ") +
+            "without any streamlines-based connectivity; " +
+            "this may interfere with " +
+            (cfe_norm ? (str("normalised CFE expression") + (do_nonstationarity_adjustment ? " and/or " : "")) : "") +
+            "non-stationarity correction");
     }
   }
 
