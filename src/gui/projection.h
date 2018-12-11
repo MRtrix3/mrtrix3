@@ -189,7 +189,7 @@ namespace MR
         }
 #endif
 
-        void render_crosshairs (const Eigen::Vector3f& focus) const;
+        void render_crosshairs (const Eigen::Vector3f& focus, const Eigen::Vector4f& colour = { 0.5, 0.5, 0.0, 1.0 }) const;
 
         void setup_render_text (float red = 1.0, float green = 1.0, float blue = 0.0) const {
           font.start (width(), height(), red, green, blue);

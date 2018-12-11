@@ -37,7 +37,7 @@ namespace MR
     }
 
 
-    void Projection::render_crosshairs (const Eigen::Vector3f& focus) const
+    void Projection::render_crosshairs (const Eigen::Vector3f& focus, const Eigen::Vector4f& colour) const
     {
       if (!crosshairs_VB || !crosshairs_VAO) {
         crosshairs_VB.gen();
@@ -62,8 +62,9 @@ namespace MR
             "}\n");
         GL::Shader::Fragment fragment_shader (
             "out vec4 color;\n"
+            "uniform vec4 color_in;\n"
             "void main () {\n"
-            "  color = vec4 (0.5, 0.5, 0.0, 1.0);\n"
+            "  color = color_in;\n"
             "}\n");
         crosshairs_program.attach (vertex_shader);
         crosshairs_program.attach (fragment_shader);
@@ -90,6 +91,7 @@ namespace MR
       gl::LineWidth (1.0);
 
       crosshairs_program.start();
+      gl::Uniform4fv (gl::GetUniformLocation (crosshairs_program, "color_in"), 1, colour.data());
       gl::DrawArrays (gl::LINES, 0, 4);
       crosshairs_program.stop();
     }
