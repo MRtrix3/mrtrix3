@@ -94,7 +94,7 @@ install:
   - |
     if [[ "${test}" == "build" || "${test}" == "run" ]]; then
         export EIGEN_CFLAGS=-I`pwd`/../eigen;
-        (cd ..; hg clone https://bitbucket.org/eigen/eigen/; cd eigen; hg update 3.3);
+        ( cd ..; git clone https://github.com/eigenteam/eigen-git-mirror.git eigen; cd eigen; git checkout branches/3.3 )
     fi
 before_script:
   #######################################################################################################################
