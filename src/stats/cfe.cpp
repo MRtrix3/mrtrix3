@@ -356,17 +356,13 @@ namespace MR
             }
           }
 
-          // If no streamlines traversed this fixel, connectivity matrix will be empty;
-          //   let's at least inform it that it is "fully connected" to itself
-          if (initial_matrix[input_index].empty()) {
-            normalised_matrix[output_index].push_back (Stats::CFE::NormMatrixElement (output_index, 1.0));
-            if (do_smoothing)
-              smoothing_matrix[output_index].push_back (Stats::CFE::NormMatrixElement (output_index, 1.0));
-          } else if (do_smoothing) {
+          if (do_smoothing) {
             // Normalise smoothing weights
             const connectivity_value_type norm_factor = connectivity_value_type(1.0) / sum_weights;
-            for (auto i : smoothing_matrix[output_index])
-              i.normalise (norm_factor);
+            if (norm_factor) {
+              for (auto i : smoothing_matrix[output_index])
+                i.normalise (norm_factor);
+            }
           }
 
           // Force deallocation of memory used for this fixel in the initial matrix
