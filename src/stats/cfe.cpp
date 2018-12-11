@@ -115,6 +115,43 @@ namespace MR
 
 
 
+      FixelIndexMapper::FixelIndexMapper (const index_type num_fixels)
+      {
+        external2internal.resize (num_fixels);
+        internal2external.resize (num_fixels);
+        for (index_type f = 0; f != num_fixels; ++f)
+          external2internal[f] = internal2external[f] = f;
+      }
+
+      FixelIndexMapper::FixelIndexMapper (Image<bool> fixel_mask)
+      {
+        external2internal.resize (fixel_mask.size (0));
+        index_type counter = 0;
+        for (fixel_mask.index(0) = 0; fixel_mask.index(0) != fixel_mask.size(0); ++fixel_mask.index(0))
+          external2internal[fixel_mask.index(0)] = fixel_mask.value() ? counter++ : invalid;
+    #ifdef NDEBUG
+        internal2external.resize (counter);
+    #else
+        internal2external.assign (counter, invalid);
+    #endif
+        for (index_type e = 0; e != fixel_mask.size(0); ++e) {
+          if (external2internal[e] >= 0)
+            internal2external[external2internal[e]] = e;
+        }
+    #ifndef NDEBUG
+        for (index_type i = 0; i != counter; ++i)
+          assert (internal2external[i] != invalid);
+    #endif
+      }
+
+
+
+
+
+
+
+
+
 
       Stats::CFE::init_connectivity_matrix_type generate_initial_matrix (
           const std::string& track_filename,
@@ -228,7 +265,7 @@ namespace MR
           init_connectivity_matrix_type& initial_matrix,
           Image<index_type>& index_image,
           Image<bool>& fixel_mask,
-          vector<int32_t>& index_mapping,
+          FixelIndexMapper index_mapper,
           const float connectivity_threshold,
           norm_connectivity_matrix_type& normalised_matrix,
           const float smoothing_fwhm,
@@ -241,21 +278,9 @@ namespace MR
         const float gaussian_const2 = 2.0 * smooth_std_dev * smooth_std_dev;
 
 
-        // We can't allocate the output matrix (/ matrices) based on the input matrix
-        // In some operational situations, all fixels are mapped from an input index
-        //   to an output index, with some fixels absent. In that case (which is
-        //   not necessarily equivalent to the presence or absence of a fixel mask),
-        //   it is necessary to determine the maximal _output_ fixel index in order
-        //   to pre-allocate these matrices.
-        // TODO Replace with call to new class wrapping fixel2column & column2fixel
-        uint32_t max_output_fixel_index = 0;
-        for (const auto& i : index_mapping) {
-          if (i > 0)
-            max_output_fixel_index = std::max (max_output_fixel_index, uint32_t(i));
-        }
-        normalised_matrix.resize (max_output_fixel_index, NormMatrixFixel());
+        normalised_matrix.resize (index_mapper.num_internal(), NormMatrixFixel());
         if (do_smoothing)
-          smoothing_matrix.resize (max_output_fixel_index, NormMatrixFixel());
+          smoothing_matrix.resize (index_mapper.num_internal(), NormMatrixFixel());
 
 
         // For generating the smoothing matrix, we need to be able to quickly
@@ -286,7 +311,7 @@ namespace MR
                 num_fixels (mask.size (0)),
                 counter (0),
                 progress ("normalising and thresholding fixel-fixel connectivity matrix", num_fixels) { }
-            bool operator() (size_t& fixel_index) {
+            bool operator() (index_type& fixel_index) {
               while (counter < num_fixels) {
                 mask.index(0) = counter;
                 ++progress;
@@ -301,16 +326,16 @@ namespace MR
             }
           private:
             Image<bool> mask;
-            const size_t num_fixels;
-            size_t counter;
+            const index_type num_fixels;
+            index_type counter;
             ProgressBar progress;
         };
 
-        auto Sink = [&] (const size_t& input_index)
+        auto Sink = [&] (const index_type& input_index)
         {
           assert (input_index < initial_matrix.size());
-          const int32_t output_index = index_mapping[input_index];
-          assert (output_index >= 0 && output_index < int32_t(normalised_matrix.size()));
+          const index_type output_index = index_mapper.e2i (input_index);
+          assert (output_index != index_mapper.invalid && output_index < index_type(normalised_matrix.size()));
 
           // Here, the connectivity matrix needs to be modified to reflect the
           //   fact that fixel indices in the template fixel image may not
@@ -319,14 +344,14 @@ namespace MR
           for (auto& it : initial_matrix[input_index]) {
             const connectivity_value_type connectivity = it.value() / connectivity_value_type (initial_matrix[input_index].count());
             if (connectivity >= connectivity_threshold) {
-              normalised_matrix[output_index].push_back (Stats::CFE::NormMatrixElement (index_mapping[it.index()], connectivity));
+              normalised_matrix[output_index].push_back (Stats::CFE::NormMatrixElement (index_mapper.e2i (it.index()), connectivity));
               if (do_smoothing) {
                 const value_type distance = std::sqrt (Math::pow2 (fixel_positions[input_index][0] - fixel_positions[it.index()][0]) +
                                                        Math::pow2 (fixel_positions[input_index][1] - fixel_positions[it.index()][1]) +
                                                        Math::pow2 (fixel_positions[input_index][2] - fixel_positions[it.index()][2]));
                 const connectivity_value_type smoothing_weight = connectivity * gaussian_const1 * std::exp (-Math::pow2 (distance) / gaussian_const2);
                 if (smoothing_weight >= connectivity_threshold) {
-                  smoothing_matrix[output_index].push_back (Stats::CFE::NormMatrixElement (index_mapping[it.index()], smoothing_weight));
+                  smoothing_matrix[output_index].push_back (Stats::CFE::NormMatrixElement (index_mapper.e2i (it.index()), smoothing_weight));
                   sum_weights += smoothing_weight;
                 }
               }
@@ -355,7 +380,7 @@ namespace MR
 
         // Now the actual operation of the normalise_matrix() function
         Source source (fixel_mask);
-        Thread::run_queue (source, size_t(), Thread::multi (Sink));
+        Thread::run_queue (source, index_type(), Thread::multi (Sink));
 
         // The initial connectivity matrix should now be empty;
         //   nevertheless, wipe the memory used for the outer vector itself

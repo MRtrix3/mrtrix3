@@ -150,6 +150,33 @@ namespace MR
       //   also be used in fixelcfestats if no mask is provided)
       // Should probably have the reverse mapping functionality wrapped as well
       // It could also store the number of columns for easy access
+      class FixelIndexMapper
+      { NOMEMALIGN
+        public:
+          FixelIndexMapper () { }
+          FixelIndexMapper (const index_type num_fixels);
+          FixelIndexMapper (Image<bool> fixel_mask);
+
+          index_type e2i (const index_type e) const {
+            assert (e < num_external());
+            return external2internal[e];
+          }
+
+          index_type i2e (const index_type i) const {
+            assert (i < num_internal());
+            return internal2external[i];
+          }
+
+          index_type num_external() const { return external2internal.size(); }
+          index_type num_internal() const { return internal2external.size(); }
+
+          static constexpr index_type invalid = std::numeric_limits<index_type>::max();
+
+        private:
+          vector<index_type> external2internal;
+          vector<index_type> internal2external;
+
+      };
 
 
 
@@ -179,7 +206,7 @@ namespace MR
           init_connectivity_matrix_type& init_matrix,
           Image<index_type>& index_image,
           Image<bool>& fixel_mask,
-          vector<int32_t>& index_mapping,
+          FixelIndexMapper index_mapper,
           const float connectivity_threshold,
           norm_connectivity_matrix_type& normalised_matrix,
           const float smoothing_fwhm,
