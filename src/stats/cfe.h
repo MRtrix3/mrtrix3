@@ -22,8 +22,6 @@
 #include "math/math.h"
 #include "math/stats/typedefs.h"
 
-#include "dwi/tractography/streamline.h"
-#include "dwi/tractography/mapping/mapper.h"
 #include "stats/enhance.h"
 
 namespace MR
@@ -41,7 +39,6 @@ namespace MR
       using connectivity_value_type = float;
       using direction_type = Eigen::Matrix<value_type, 3, 1>;
       using connectivity_vector_type = Eigen::Array<connectivity_value_type, Eigen::Dynamic, 1>;
-      using SetVoxelDir = DWI::Tractography::Mapping::SetVoxelDir;
 
 
 
@@ -106,9 +103,10 @@ namespace MR
               connectivity_value (connectivity_value) { }
           FORCE_INLINE index_type index() const { return fixel_index; }
           FORCE_INLINE ValueType value() const { return connectivity_value; }
+          FORCE_INLINE void exponentiate (const ValueType C) { connectivity_value = std::pow (connectivity_value, C); }
           FORCE_INLINE void normalise (const ValueType norm_factor) { connectivity_value *= norm_factor; }
         private:
-          const index_type fixel_index;
+          index_type fixel_index;
           connectivity_value_type connectivity_value;
       };
 
@@ -143,6 +141,50 @@ namespace MR
       //   is in the process of being built, or whether it has been normalised
       using init_connectivity_matrix_type = vector<InitMatrixFixel>;
       using norm_connectivity_matrix_type = vector<NormMatrixFixel>;
+
+
+
+      // TODO Consider wrapping the fixel2column functionality into a class
+      // In particular it should be made easier to define the "default" mapping
+      //   in order to run the normalise_matrix() function (though it would
+      //   also be used in fixelcfestats if no mask is provided)
+      // Should probably have the reverse mapping functionality wrapped as well
+      // It could also store the number of columns for easy access
+
+
+
+      // Generate a fixel-fixel connectivity matrix
+      init_connectivity_matrix_type generate_initial_matrix (
+          const std::string& track_filename,
+          Image<index_type>& index_image,
+          Image<bool>& fixel_mask,
+          const float angular_threshold);
+
+
+
+      // From an initial fixel-fixel connectivity matrix, generate a
+      //   "normalised" connectivity matrix, where the entries are
+      //   floating-point and range from 0.0 to 1.0, and weak
+      //   entries have been culled from the matrix.
+      // Additionally, if required:
+      //   - Convert fixel indices based on a lookup table
+      //   - Generate a second connectivity matrix for the purposes
+      //     of smoothing, which additionally modulates the connection
+      //     weights by a spatial distance factor (and re-applies the
+      //     connectivity threshold after doing so)
+      // Note that this function will erase data from the input
+      //   initiali connectivity matrix as it processes, in order to
+      //   free up RAM for storing the output matrices.
+      void normalise_matrix (
+          init_connectivity_matrix_type& init_matrix,
+          Image<index_type>& index_image,
+          Image<bool>& fixel_mask,
+          vector<int32_t>& index_mapping,
+          const float connectivity_threshold,
+          norm_connectivity_matrix_type& normalised_matrix,
+          const float smoothing_fwhm,
+          norm_connectivity_matrix_type& smoothing_matrix);
+
 
 
 
@@ -184,46 +226,6 @@ namespace MR
 
 
 
-      /**
-       * Process each track by converting each streamline to a set of dixels,
-       * mapping these to fixels, and sorting the list of fixel indices.
-       */
-      class TrackProcessor { MEMALIGN(TrackProcessor)
-
-        public:
-          TrackProcessor (const DWI::Tractography::Mapping::TrackMapperBase& mapper,
-                          Image<index_type>& fixel_indexer,
-                          const vector<direction_type>& fixel_directions,
-                          Image<bool>& fixel_mask,
-                          const value_type angular_threshold);
-
-          bool operator () (const DWI::Tractography::Streamline<>& in,
-                            vector<index_type>& out) const;
-
-        private:
-          const DWI::Tractography::Mapping::TrackMapperBase& mapper;
-          mutable Image<index_type> fixel_indexer;
-          const vector<direction_type>& fixel_directions;
-          mutable Image<bool> fixel_mask;
-          const value_type angular_threshold_dp;
-      };
-
-
-
-      class MappedTrackReceiver
-      { MEMALIGN(MappedTrackReceiver)
-        public:
-          MappedTrackReceiver (init_connectivity_matrix_type& connectivity_matrix) :
-              connectivity_matrix (connectivity_matrix) { }
-          bool operator() (const vector<index_type>&);
-        private:
-          init_connectivity_matrix_type& connectivity_matrix;
-      };
-
-
-
-
-
 
       class Enhancer : public Stats::EnhancerBase { MEMALIGN (Enhancer)
         public:
@@ -240,7 +242,6 @@ namespace MR
 
 
       //! @}
-
     }
   }
 }
