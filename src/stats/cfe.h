@@ -205,7 +205,6 @@ namespace MR
       void normalise_matrix (
           init_connectivity_matrix_type& init_matrix,
           Image<index_type>& index_image,
-          Image<bool>& fixel_mask,
           FixelIndexMapper index_mapper,
           const float connectivity_threshold,
           norm_connectivity_matrix_type& normalised_matrix,

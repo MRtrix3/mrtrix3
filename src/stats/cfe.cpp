@@ -261,15 +261,13 @@ namespace MR
 
 
 
-      void normalise_matrix (
-          init_connectivity_matrix_type& initial_matrix,
-          Image<index_type>& index_image,
-          Image<bool>& fixel_mask,
-          FixelIndexMapper index_mapper,
-          const float connectivity_threshold,
-          norm_connectivity_matrix_type& normalised_matrix,
-          const float smoothing_fwhm,
-          norm_connectivity_matrix_type& smoothing_matrix)
+      void normalise_matrix (init_connectivity_matrix_type& initial_matrix,
+                             Image<index_type>& index_image,
+                             FixelIndexMapper index_mapper,
+                             const float connectivity_threshold,
+                             norm_connectivity_matrix_type& normalised_matrix,
+                             const float smoothing_fwhm,
+                             norm_connectivity_matrix_type& smoothing_matrix)
       {
         // Constants related to derivation of the smoothing matrix
         const bool do_smoothing = (smoothing_fwhm > 0.0);
@@ -306,26 +304,19 @@ namespace MR
         class Source
         { MEMALIGN(Source)
           public:
-            Source (Image<bool>& mask) :
-                mask (mask),
-                num_fixels (mask.size (0)),
+            Source (const index_type num_fixels) :
+                num_fixels (num_fixels),
                 counter (0),
                 progress ("normalising and thresholding fixel-fixel connectivity matrix", num_fixels) { }
             bool operator() (index_type& fixel_index) {
               while (counter < num_fixels) {
-                mask.index(0) = counter;
-                ++progress;
-                if (mask.value()) {
-                  fixel_index = counter++;
-                  return true;
-                }
-                ++counter;
+                fixel_index = counter++;
+                return true;
               }
               fixel_index = num_fixels;
               return false;
             }
           private:
-            Image<bool> mask;
             const index_type num_fixels;
             index_type counter;
             ProgressBar progress;
@@ -335,7 +326,14 @@ namespace MR
         {
           assert (input_index < initial_matrix.size());
           const index_type output_index = index_mapper.e2i (input_index);
-          assert (output_index != index_mapper.invalid && output_index < index_type(normalised_matrix.size()));
+
+          // Is the fixel to be "processed" outside of the provided fixel mask, and thus empty?
+          if (output_index == index_mapper.invalid) {
+            assert (initial_matrix[input_index].empty());
+            return true;
+          }
+
+          assert (output_index < index_type(normalised_matrix.size()));
 
           // Here, the connectivity matrix needs to be modified to reflect the
           //   fact that fixel indices in the template fixel image may not
@@ -379,7 +377,7 @@ namespace MR
 
 
         // Now the actual operation of the normalise_matrix() function
-        Source source (fixel_mask);
+        Source source (index_mapper.num_external());
         Thread::run_queue (source, index_type(), Thread::multi (Sink));
 
         // The initial connectivity matrix should now be empty;
