@@ -46,13 +46,14 @@ using Stats::CFE::connectivity_value_type;
 using Stats::CFE::index_type;
 using Stats::PermTest::count_matrix_type;
 
+#define DEFAULT_ANGLE_THRESHOLD 45.0
+#define DEFAULT_CONNECTIVITY_THRESHOLD 0.01
+#define DEFAULT_SMOOTHING_FWHM 10.0
+
 #define DEFAULT_CFE_DH 0.1
 #define DEFAULT_CFE_E 2.0
 #define DEFAULT_CFE_H 3.0
 #define DEFAULT_CFE_C 0.5
-#define DEFAULT_ANGLE_THRESHOLD 45.0
-#define DEFAULT_CONNECTIVITY_THRESHOLD 0.01
-#define DEFAULT_SMOOTHING_FWHM 10.0
 #define DEFAULT_EMPIRICAL_SKEW 1.0 // TODO Update from experience
 
 void usage ()
@@ -269,9 +270,9 @@ void run()
     mask_fixels = index_remapper.num_internal();
     CONSOLE ("Number of fixels in mask: " + str(mask_fixels));
   } else {
-    Header data_header = Fixel::data_header_from_index (index_header);
-    data_header.datatype() = DataType::Bit;
-    mask = Image<bool>::scratch (data_header, "true-filled scratch fixel mask");
+    Header fixel_mask_header = Fixel::data_header_from_index (index_header);
+    fixel_mask_header.datatype() = DataType::Bit;
+    mask = Image<bool>::scratch (fixel_mask_header, "true-filled scratch fixel mask");
     for (mask.index(0) = 0; mask.index(0) != num_fixels; ++mask.index(0))
       mask.value() = true;
     mask_fixels = num_fixels;
