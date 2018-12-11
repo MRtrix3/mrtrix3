@@ -46,7 +46,8 @@ except ImportError:
 
   def loadtxt(fname, delimiter=" ", dtype=float):
     with open(fname, "rb") as f:
-      return [[dtype(a) for a in l.decode(errors='ignore').rstrip().split(delimiter)] for l in f.readlines()]
+      return [[dtype(a) for a in l.decode(errors='ignore').rstrip().split(delimiter)] for l in f.readlines() 
+              if not l.decode(errors='ignore').startswith('#')]
 
 
   def savetxt(fname, X, delimiter=" ", fmt="%.14e"):
