@@ -16,10 +16,12 @@
 #ifndef __fixel_helpers_h__
 #define __fixel_helpers_h__
 
-#include "formats/mrtrix_utils.h"
-#include "fixel/keys.h"
-#include "algo/loop.h"
+#include "image.h"
 #include "image_diff.h"
+#include "algo/loop.h"
+#include "fixel/keys.h"
+#include "formats/mrtrix_utils.h"
+
 
 namespace MR
 {
