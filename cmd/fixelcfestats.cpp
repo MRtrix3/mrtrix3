@@ -139,13 +139,9 @@ void usage ()
 
 // Global variabes that need to be set via run() but accessed by other functions / classes
 
-// Lookup table that maps from input fixel index to column number
-// Note that if a fixel is masked out, it will have a value of -1
-//   in this array; hence require a signed integer type
-vector<int32_t> fixel2column;
-// We also need the inverse mappping in order to provide ability
-//   to access appropriate datum for any random fixel
-vector<index_type> column2fixel;
+// When a fixel mask is provided, fixel indices are remapped such that the
+//   fixels that are within the mask appear contiguously in data matrices without gaps
+Stats::CFE::FixelIndexMapper index_remapper;
 
 
 
@@ -156,17 +152,17 @@ void write_fixel_output (const std::string& filename,
                          const VectorType& data,
                          const Header& header)
 {
-  assert (size_t(header.size(0)) == fixel2column.size());
+  assert (size_t(header.size(0)) == index_remapper.num_external());
   auto output = Image<float>::create (filename, header);
-  for (size_t i = 0; i != fixel2column.size(); ++i) {
-    output.index(0) = i;
-    output.value() = (fixel2column[i] >= 0) ? data[fixel2column[i]] : NaN;
+  for (size_t f = 0; f != index_remapper.num_external(); ++f) {
+    output.index(0) = f;
+    output.value() = (index_remapper.e2i (f) == index_remapper.invalid) ? NaN : data[index_remapper.e2i (f)];
   }
 }
 
 
 
-// Define data importer class that willl obtain fixel data for a
+// Define data importer class that will obtain fixel data for a
 //   specific subject based on the string path to the image file for
 //   that subject
 class SubjectFixelImport : public SubjectDataImportBase
@@ -186,31 +182,17 @@ class SubjectFixelImport : public SubjectDataImportBase
     void operator() (matrix_type::RowXpr row) const override
     {
       Image<float> temp (data); // For thread-safety
-      // Due to merging 'stats_enhancements' with '3.0_RC2',
-      //   this class now needs to be made aware of the fixel2column contents
       for (temp.index(0) = 0; temp.index(0) != temp.size(0); ++temp.index(0)) {
-        if (fixel2column[temp.index(0)] >= 0)
-          row (fixel2column[temp.index(0)]) = temp.value();
+        if (index_remapper.e2i (temp.index(0)) != index_remapper.invalid)
+          row (index_remapper.e2i (temp.index(0))) = temp.value();
       }
     }
 
-    // Is this going to require a reverse lookup?
-    // I.e. We need to load subject data for a particular row of the
-    //   data / design matrix, but this may be a different fixel index
-    //   in the input data
-    // Would we be better off _not_ reducing the size of the data array,
-    //   and instead providing a mask by which to not process particular elements?
-    // No, this only applies to the fixel stats for now; it's handled
-    //   in other ways in the other stats commands
-    // If statistical inference commands for other natures of data are
-    //   implemented in the future, it may be worth having a class to
-    //   provide forward and reverse index mappings (much like Voxel2Vector
-    //   currently does for 3D images)
     default_type operator[] (const size_t index) const override
     {
-      assert (index < column2fixel.size());
+      assert (index < index_remapper.num_internal());
       Image<float> temp (data); // For thread-safety
-      temp.index(0) = column2fixel[index];
+      temp.index(0) = index_remapper.i2e (index);
       assert (!is_out_of_bounds (temp));
       return default_type(temp.value());
     }
@@ -273,50 +255,30 @@ void run()
   auto index_image = index_header.get_image<index_type>();
 
   const index_type num_fixels = Fixel::get_number_of_fixels (index_header);
-  CONSOLE ("Total number of fixels: " + str(num_fixels));
+  CONSOLE ("Number of fixels in template: " + str(num_fixels));
 
   Image<bool> mask;
-  index_type mask_fixels;
-  fixel2column.resize (num_fixels);
   auto opt = get_options ("mask");
+  index_type mask_fixels = 0;
   if (opt.size()) {
     mask = Image<bool>::open (opt[0][0]);
     Fixel::check_data_file (mask);
     if (!Fixel::fixels_match (index_header, mask))
       throw Exception ("Mask image provided using -mask option does not match fixel template");
-    mask_fixels = 0;
-    for (mask.index(0) = 0; mask.index(0) != num_fixels; ++mask.index(0))
-      fixel2column[mask.index(0)] = mask.value() ? mask_fixels++ : -1;
+    index_remapper = Stats::CFE::FixelIndexMapper (mask);
+    mask_fixels = index_remapper.num_internal();
     CONSOLE ("Number of fixels in mask: " + str(mask_fixels));
-#ifdef NDEBUG
-    column2fixel.resize (mask_fixels);
-#else
-    column2fixel.assign (mask_fixels, std::numeric_limits<index_type>::max());
-#endif
-    for (index_type fixel = 0; fixel != num_fixels; ++fixel) {
-      if (fixel2column[fixel] >= 0)
-        column2fixel[fixel2column[fixel]] = fixel;
-    }
-#ifndef NDEBUG
-    for (index_type column = 0; column != mask_fixels; ++column)
-      assert (column2fixel[column] != std::numeric_limits<index_type>::max());
-#endif
   } else {
-    Header data_header;
-    data_header.ndim() = 3;
-    data_header.size(0) = num_fixels;
-    data_header.size(1) = 1;
-    data_header.size(2) = 1;
-    data_header.spacing(0) = data_header.spacing(1) = data_header.spacing(2) = NaN;
-    data_header.stride(0) = 1; data_header.stride(1) = 2; data_header.stride(2) = 3;
-    mask = Image<bool>::scratch (data_header, "scratch fixel mask");
+    Header data_header = Fixel::data_header_from_index (index_header);
+    data_header.datatype() = DataType::Bit;
+    mask = Image<bool>::scratch (data_header, "true-filled scratch fixel mask");
     for (mask.index(0) = 0; mask.index(0) != num_fixels; ++mask.index(0))
       mask.value() = true;
     mask_fixels = num_fixels;
-    column2fixel.resize (num_fixels);
-    for (index_type f = 0; f != num_fixels; ++f)
-      fixel2column[f] = column2fixel[f] = f;
+    index_remapper = Stats::CFE::FixelIndexMapper (num_fixels);
   }
+
+
 
   const std::string output_fixel_directory = argument[5];
   Fixel::copy_index_and_directions_file (input_fixel_directory, output_fixel_directory);
@@ -381,7 +343,7 @@ void run()
   Stats::CFE::normalise_matrix (connectivity_matrix,
                                 index_image,
                                 mask,
-                                fixel2column,
+                                index_remapper,
                                 connectivity_threshold,
                                 norm_connectivity_matrix,
                                 smoothing_fwhm,
@@ -422,8 +384,6 @@ void run()
     ProgressBar progress (std::string ("Loading input images") + (do_smoothing ? " and smoothing" : ""), importer.size());
     for (size_t subject = 0; subject != importer.size(); subject++) {
 
-      // TODO It might be faster to import into a vector here, rather than
-      //   going straight into the data matrix, since we most likely have to smooth
       (*importer[subject]) (data.row (subject));
 
       // Smooth the data
@@ -467,9 +427,9 @@ void run()
   auto postfix = [&] (const size_t i) { return (num_hypotheses > 1) ? ("_" + hypotheses[i].name()) : ""; };
 
   {
-    matrix_type betas (num_factors, num_fixels);
-    matrix_type abs_effect_size (num_fixels, num_hypotheses), std_effect_size (num_fixels, num_hypotheses);
-    vector_type cond (num_fixels), stdev (num_fixels);
+    matrix_type betas (num_factors, mask_fixels);
+    matrix_type abs_effect_size (mask_fixels, num_hypotheses), std_effect_size (mask_fixels, num_hypotheses);
+    vector_type cond (mask_fixels), stdev (mask_fixels);
 
     Math::Stats::GLM::all_stats (data, design, extra_columns, hypotheses,
                                  cond, betas, abs_effect_size, std_effect_size, stdev);
