@@ -24,6 +24,7 @@
 #include "gui/mrview/tool/screen_capture.h"
 #include "gui/mrview/tool/tractography/tractography.h"
 #include "gui/mrview/tool/connectome/connectome.h"
+#include "gui/mrview/tool/igtlink.h"
 
 #else
 
@@ -40,6 +41,7 @@ TOOL(ODF, ODF display, Display orientation density functions)
 TOOL(Fixel, Fixel plot, Plot fixel images)
 TOOL(Connectome, Connectome, Plot connectome properties)
 TOOL(Capture, Screen capture, Capture the screen as a png file)
+TOOL(IGTLink, IGT Link, Connect to devices via OpenIGTLink)
 
 #endif
 
