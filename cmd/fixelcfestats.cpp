@@ -52,7 +52,7 @@ using Stats::PermTest::count_matrix_type;
 #define DEFAULT_CFE_C 0.5
 #define DEFAULT_ANGLE_THRESHOLD 45.0
 #define DEFAULT_CONNECTIVITY_THRESHOLD 0.01
-#define DEFAULT_SMOOTHING_STD 10.0
+#define DEFAULT_SMOOTHING_FWHM 10.0
 #define DEFAULT_EMPIRICAL_SKEW 1.0 // TODO Update from experience
 
 void usage ()
@@ -119,7 +119,7 @@ void usage ()
 
   + OptionGroup ("Additional options for fixelcfestats")
 
-  + Option ("smooth", "smooth the fixel value along the fibre tracts using a Gaussian kernel with the supplied FWHM (default: " + str(DEFAULT_SMOOTHING_STD, 2) + "mm)")
+  + Option ("smooth", "smooth the fixel value along the fibre tracts using a Gaussian kernel with the supplied FWHM (default: " + str(DEFAULT_SMOOTHING_FWHM, 2) + "mm)")
   + Argument ("FWHM").type_float (0.0, 200.0)
 
   + Option ("connectivity", "a threshold to define the required fraction of shared connections to be included in the neighbourhood (default: " + str(DEFAULT_CONNECTIVITY_THRESHOLD, 2) + ")")
@@ -258,12 +258,14 @@ void run()
   const value_type cfe_e = get_option_value ("cfe_e", DEFAULT_CFE_E);
   const value_type cfe_c = get_option_value ("cfe_c", DEFAULT_CFE_C);
   const bool cfe_norm = get_options ("cfe_norm").size();
-  const value_type smooth_std_dev = get_option_value ("smooth", DEFAULT_SMOOTHING_STD) / 2.3548;
+  const value_type smoothing_fwhm = get_option_value ("smooth", DEFAULT_SMOOTHING_FWHM) / 2.3548;
   const value_type connectivity_threshold = get_option_value ("connectivity", DEFAULT_CONNECTIVITY_THRESHOLD);
   const value_type angular_threshold = get_option_value ("angle", DEFAULT_ANGLE_THRESHOLD);
 
   const bool do_nonstationarity_adjustment = get_options ("nonstationarity").size();
   const default_type empirical_skew = get_option_value ("skew_nonstationarity", DEFAULT_EMPIRICAL_SKEW);
+
+  const bool do_smoothing = smoothing_fwhm > value_type(0);
 
   const std::string input_fixel_directory = argument[0];
   SubjectFixelImport::set_fixel_directory (input_fixel_directory);
@@ -316,28 +318,8 @@ void run()
       fixel2column[f] = column2fixel[f] = f;
   }
 
-  vector<Eigen::Vector3> positions (num_fixels);
-  vector<direction_type> directions (num_fixels);
-
   const std::string output_fixel_directory = argument[5];
   Fixel::copy_index_and_directions_file (input_fixel_directory, output_fixel_directory);
-
-  {
-    auto directions_data = Fixel::find_directions_header (input_fixel_directory).get_image<default_type>().with_direct_io ({+2,+1});
-    // Load template fixel directions
-    Transform image_transform (index_image);
-    for (auto i = Loop ("loading template fixel directions and positions", index_image, 0, 3)(index_image); i; ++i) {
-      Eigen::Vector3 vox ((default_type)index_image.index(0), (default_type)index_image.index(1), (default_type)index_image.index(2));
-      vox = image_transform.voxel2scanner * vox;
-      index_image.index(3) = 1;
-      const index_type offset = index_image.value();
-      size_t fixel_index = 0;
-      for (auto f = Fixel::Loop (index_image) (directions_data); f; ++f, ++fixel_index) {
-        directions[offset + fixel_index] = directions_data.row(1);
-        positions[offset + fixel_index] = vox;
-      }
-    }
-  }
 
   // Read file names and check files exist
   CohortDataImport importer;
@@ -384,131 +366,43 @@ void run()
                      + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")");
 
   // Compute fixel-fixel connectivity
-  Stats::CFE::init_connectivity_matrix_type connectivity_matrix (num_fixels);
-  const std::string track_filename = argument[4];
-  DWI::Tractography::Properties properties;
-  DWI::Tractography::Reader<float> track_file (track_filename, properties);
-  // Read in tracts, and compute whole-brain fixel-fixel connectivity
-  const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t> (properties["count"]);
-  if (!num_tracks)
-    throw Exception ("No tracks found in input file");
-  if (num_tracks < 1000000) {
-    WARN ("More than 1 million tracks is preferable to ensure robust fixel-fixel connectivity; file \"" + track_filename + "\" contains only " + str(num_tracks));
-  }
+  // Here the fixel mask is used only to reduce the length of the list of
+  //   fixels traversed by each streamline that must be processed, and to
+  //   reduce the amount of RAM required by the command.
+  auto connectivity_matrix = Stats::CFE::generate_initial_matrix (argument[4],
+                                                                  index_image,
+                                                                  mask,
+                                                                  angular_threshold);
+
+  // Normalise connectivity matrix and threshold
+  Stats::CFE::norm_connectivity_matrix_type norm_connectivity_matrix;
+  // Also pre-compute fixel-fixel weights for smoothing
+  Stats::CFE::norm_connectivity_matrix_type smoothing_weights;
+  Stats::CFE::normalise_matrix (connectivity_matrix,
+                                index_image,
+                                mask,
+                                fixel2column,
+                                connectivity_threshold,
+                                norm_connectivity_matrix,
+                                smoothing_fwhm,
+                                smoothing_weights);
+
+  // Function normalise_matrix() does not pre-exponentiate the connectivity weights
+  //   by parameter C, nor does it calculate the normalisation factor per fixel
+  //   for use of the normalised CFE equation
+  // TODO Once fixelcfestats is capable of receiving as input a connectivity
+  //   matrix & pre-smoothed data instead of a track file, this process will
+  //   still need to be run
   {
-    DWI::Tractography::Mapping::TrackLoader loader (track_file, num_tracks, "pre-computing fixel-fixel connectivity");
-    DWI::Tractography::Mapping::TrackMapperBase mapper (index_image);
-    mapper.set_upsample_ratio (DWI::Tractography::Mapping::determine_upsample_ratio (index_header, properties, 0.333f));
-    mapper.set_use_precise_mapping (true);
-    Stats::CFE::TrackProcessor tract_processor (mapper, index_image, directions, mask, angular_threshold);
-    Stats::CFE::MappedTrackReceiver receiver (connectivity_matrix);
-    Thread::run_queue (loader,
-                       Thread::batch (DWI::Tractography::Streamline<float>()),
-                       tract_processor,
-                       Thread::batch (vector<index_type>()),
-                       receiver);
-  }
-  track_file.close();
-
-  // Normalise connectivity matrix, threshold, and put in a more efficient format
-  Stats::CFE::norm_connectivity_matrix_type norm_connectivity_matrix (mask_fixels);
-  // Also pre-compute fixel-fixel weights for smoothing.
-  Stats::CFE::norm_connectivity_matrix_type smoothing_weights (mask_fixels);
-
-  const bool do_smoothing = (smooth_std_dev > 0.0);
-  const float gaussian_const1 = do_smoothing ? (1.0 / (smooth_std_dev *  std::sqrt (2.0 * Math::pi))) : 1.0;
-  const float gaussian_const2 = 2.0 * smooth_std_dev * smooth_std_dev;
-
-  {
-    class Source
-    { MEMALIGN(Source)
-      public:
-        Source (Image<bool>& mask) :
-            mask (mask),
-            num_fixels (mask.size (0)),
-            counter (0),
-            progress ("normalising and thresholding fixel-fixel connectivity matrix", num_fixels) { }
-        bool operator() (size_t& fixel_index) {
-          while (counter < num_fixels) {
-            mask.index(0) = counter;
-            ++progress;
-            if (mask.value()) {
-              fixel_index = counter++;
-              return true;
-            }
-            ++counter;
-          }
-          fixel_index = num_fixels;
-          return false;
-        }
-      private:
-        Image<bool> mask;
-        const size_t num_fixels;
-        size_t counter;
-        ProgressBar progress;
-    };
-
-    auto Sink = [&] (const size_t& fixel_index)
-    {
-      assert (fixel_index < connectivity_matrix.size());
-      const int32_t column = fixel2column[fixel_index];
-      assert (column >= 0 && column < int32_t(norm_connectivity_matrix.size()));
-
-      // Here, the connectivity matrix needs to be modified to reflect the
-      //   fact that fixel indices in the template fixel image may not
-      //   correspond to rows in the statistical analysis
-      connectivity_value_type sum_weights = 0.0;
-      for (auto& it : connectivity_matrix[fixel_index]) {
-        const connectivity_value_type connectivity = it.value() / connectivity_value_type (connectivity_matrix[fixel_index].count());
-        if (connectivity >= connectivity_threshold) {
-          if (do_smoothing) {
-            const value_type distance = std::sqrt (Math::pow2 (positions[fixel_index][0] - positions[it.index()][0]) +
-                                                   Math::pow2 (positions[fixel_index][1] - positions[it.index()][1]) +
-                                                   Math::pow2 (positions[fixel_index][2] - positions[it.index()][2]));
-            const connectivity_value_type smoothing_weight = connectivity * gaussian_const1 * std::exp (-Math::pow2 (distance) / gaussian_const2);
-            if (smoothing_weight >= connectivity_threshold) {
-              smoothing_weights[column].push_back (Stats::CFE::NormMatrixElement (fixel2column[it.index()], smoothing_weight));
-              sum_weights += smoothing_weight;
-            }
-          }
-          // Here we pre-exponentiate each connectivity value by C
-          norm_connectivity_matrix[column].push_back (Stats::CFE::NormMatrixElement (fixel2column[it.index()], std::pow (connectivity, cfe_c)));
-        }
-      }
-
-      // If no streamlines traversed this fixel, connectivity matrix will be empty;
-      //   let's at least inform it that it is "fully connected" to itself
-      if (connectivity_matrix[fixel_index].empty()) {
-        norm_connectivity_matrix[column].push_back (Stats::CFE::NormMatrixElement (column, 1.0));
-        if (do_smoothing)
-          smoothing_weights[column].push_back (Stats::CFE::NormMatrixElement (column, 1.0));
-      } else if (do_smoothing) {
-        // Normalise smoothing weights
-        const connectivity_value_type norm_factor = connectivity_value_type(1.0) / sum_weights;
-        for (auto i : smoothing_weights[column])
-          i.normalise (norm_factor);
-      }
-
-      // Calculate multiplicative factor for CFE normalisation
+    ProgressBar progress ("Pre-scaling connectivity matrix weights", norm_connectivity_matrix.size());
+    for (auto fixel : norm_connectivity_matrix) {
+      for (auto f : fixel)
+        f.exponentiate (cfe_c);
       if (cfe_norm)
-        norm_connectivity_matrix[column].normalise();
-
-      // Force deallocation of memory used for this fixel in the original matrix
-      Stats::CFE::InitMatrixFixel().swap (connectivity_matrix[fixel_index]);
-
-      return true;
-    };
-
-    Source source (mask);
-    Thread::run_queue (source, size_t(), Thread::multi (Sink));
+        fixel.normalise();
+      ++progress;
+    }
   }
-
-  // The connectivity matrix is now in vector rather than matrix form;
-  //   throw out the structure holding the original data
-  // (Note however that all entries in the original structure should
-  //   have been deleted during the prior loop)
-  Stats::CFE::init_connectivity_matrix_type().swap (connectivity_matrix);
-
 
   Header output_header (dynamic_cast<SubjectFixelImport*>(importer[0].get())->header());
   //output_header.keyval()["num permutations"] = str(num_perms);
@@ -518,7 +412,7 @@ void run()
   output_header.keyval()["cfe_c"] = str(cfe_c);
   output_header.keyval()["angular threshold"] = str(angular_threshold);
   output_header.keyval()["connectivity threshold"] = str(connectivity_threshold);
-  output_header.keyval()["smoothing FWHM"] = str(smooth_std_dev * 2.3548);
+  output_header.keyval()["smoothing FWHM"] = str(smoothing_fwhm);
 
 
   // Load input data
