@@ -43,6 +43,7 @@ List of MRtrix3 commands
     commands/fixelconvert
     commands/fixelcorrespondence
     commands/fixelcrop
+    commands/fixelfilter
     commands/fixelreorient
     commands/fod2dec
     commands/fod2fixel
@@ -156,6 +157,7 @@ List of MRtrix3 commands
     :ref:`fixelconvert`, "Convert between the old format fixel image (.msf / .msh) and the new fixel directory format"
     :ref:`fixelcorrespondence`, "Obtain fixel-fixel correpondence between a subject fixel image and a template fixel mask"
     :ref:`fixelcrop`, "Crop/remove fixels from sparse fixel image using a binary fixel mask"
+    :ref:`fixelfilter`, "Perform filtering operations on fixel-based data"
     :ref:`fixelreorient`, "Reorient fixel directions"
     :ref:`fod2dec`, "Generate FOD-based DEC maps, with optional panchromatic sharpening and/or luminance/perception correction"
     :ref:`fod2fixel`, "Perform segmentation of continuous Fibre Orientation Distributions (FODs) to produce discrete fixels"
