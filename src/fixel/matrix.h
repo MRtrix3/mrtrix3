@@ -69,6 +69,7 @@ namespace MR
       class InitFixel : public vector<InitElement>
       { MEMALIGN(InitFixel)
         public:
+          using ElementType = InitElement;
           using BaseType = vector<InitElement>;
           InitFixel() :
               track_count (0) { }
@@ -109,6 +110,7 @@ namespace MR
       class NormFixel : public vector<NormElement>
       { MEMALIGN(NormFixel)
         public:
+          using ElementType = NormElement;
           using BaseType = vector<NormElement>;
           NormFixel() :
             norm_multiplier (connectivity_value_type (1)) { }
@@ -201,7 +203,7 @@ namespace MR
               e.push_back ("Entry: \"" + entry + "\"");
               throw e;
             }
-            data[data.size()-1].emplace_back (FixelType (to<index_type>(pair[0]), to<typename FixelType::ValueType>(pair[1])));
+            data[data.size()-1].emplace_back (typename FixelType::ElementType (to<index_type>(pair[0]), to<typename FixelType::ElementType::ValueType>(pair[1])));
           }
         }
       }
