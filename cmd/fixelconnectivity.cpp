@@ -15,8 +15,8 @@
 
 #include "command.h"
 #include "fixel/helpers.h"
-
-#include "stats/cfe.h"
+#include "fixel/index_remapper.h"
+#include "fixel/matrix.h"
 
 
 #define DEFAULT_ANGLE_THRESHOLD 45.0
@@ -73,7 +73,7 @@ void usage ()
 
 
 using value_type = float;
-using Stats::CFE::index_type;
+using Fixel::index_type;
 
 
 void run()
@@ -95,7 +95,7 @@ void run()
 
   // Regardless of whether or not a mask is provided, we do not want the
   //   normalise_matrix() function to alter the indices of fixels
-  const Stats::CFE::FixelIndexMapper index_remapper (num_fixels);
+  const Fixel::IndexRemapper index_remapper (num_fixels);
 
   // When provided with a mask, this only influences which fixels get their connectivity quantified;
   //   these will appear empty in the output matrix
@@ -114,26 +114,26 @@ void run()
       fixel_mask.value() = true;
   }
 
-  auto connectivity_matrix = Stats::CFE::generate_initial_matrix (argument[1],
-                                                                  index_image,
-                                                                  fixel_mask,
-                                                                  angular_threshold);
+  auto connectivity_matrix = Fixel::Matrix::generate (argument[1],
+                                                      index_image,
+                                                      fixel_mask,
+                                                      angular_threshold);
 
-  Stats::CFE::norm_connectivity_matrix_type norm_connectivity_matrix;
-  Stats::CFE::norm_connectivity_matrix_type smoothing_weights;
-  Stats::CFE::normalise_matrix (connectivity_matrix,
-                                index_image,
-                                index_remapper,
-                                connectivity_threshold,
-                                norm_connectivity_matrix,
-                                smoothing_fwhm,
-                                smoothing_weights);
+  Fixel::Matrix::norm_matrix_type norm_connectivity_matrix;
+  Fixel::Matrix::norm_matrix_type smoothing_weights;
+  Fixel::Matrix::normalise (connectivity_matrix,
+                            index_image,
+                            index_remapper,
+                            connectivity_threshold,
+                            norm_connectivity_matrix,
+                            smoothing_fwhm,
+                            smoothing_weights);
 
-  Stats::CFE::save (norm_connectivity_matrix, argument[2]);
+  Fixel::Matrix::save (norm_connectivity_matrix, argument[2]);
   if (smoothing_fwhm) {
     opt = get_options ("smoothing");
     assert (!opt.empty());
-    Stats::CFE::save (smoothing_weights, opt[0][0]);
+    Fixel::Matrix::save (smoothing_weights, opt[0][0]);
   }
 
 }
