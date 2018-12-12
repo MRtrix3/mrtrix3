@@ -24,6 +24,7 @@
 #include "fixel/keys.h"
 #include "fixel/loop.h"
 #include "fixel/types.h"
+#include "fixel/filter/smooth.h"
 #include "math/stats/fwe.h"
 #include "math/stats/glm.h"
 #include "math/stats/import.h"
@@ -177,22 +178,67 @@ class SubjectFixelImport : public Math::Stats::SubjectDataImportBase
       }
     }
 
+    // TODO Consider an alternative function that receives as input both the remapper and the smoothing filter
+    // If either is present / nontrivial, then change data to be scratch pre-converted data
+    // This may even mean that the index remapper doesn't need to be global?
+
+    void smooth (const Fixel::Filter::Smooth filter)
+    {
+      assert (!smoothed_data.valid());
+      // If smoothing is being done inline, then the smoothing matrix takes into account
+      //   fixel index remapping; that is, it's designed to operate on data for which
+      //   the re-mapping has already been applied
+      Image<float> temp (data); // For thread-safety
+      Header H_remapped (H);
+      H_remapped.size (0) = index_remapper.num_internal();
+      auto scratch = Image<float>::scratch (H_remapped, "scratch index-converted data from \"" + data.name() + "\" prior to smoothing");
+      for (temp.index(0) = 0; temp.index(0) != temp.size(0); ++temp.index(0)) {
+        if (index_remapper.e2i (temp.index(0)) != index_remapper.invalid) {
+          scratch.index (0) = index_remapper.e2i (temp.index(0));
+          scratch.value() = temp.value();
+        }
+      }
+      smoothed_data = Image<float>::scratch (H_remapped, "smoothed version of \"" + data.name() + "\"");
+      filter (scratch, smoothed_data);
+    }
+
     void operator() (matrix_type::RowXpr row) const override
     {
-      Image<float> temp (data); // For thread-safety
-      for (temp.index(0) = 0; temp.index(0) != temp.size(0); ++temp.index(0)) {
-        if (index_remapper.e2i (temp.index(0)) != index_remapper.invalid)
-          row (index_remapper.e2i (temp.index(0))) = temp.value();
+      if (smoothed_data.valid()) {
+        Image<float> temp (smoothed_data); // For thread-safety
+        // Smoothed data have already undergone index remapping
+        for (auto l = Loop(0) (temp); l; ++l)
+          row (temp.index (0)) = temp.value();
+      } else {
+        Image<float> temp (data); // For thread-safety
+        // Straight import of data (but accounting for index remapping)
+        for (temp.index(0) = 0; temp.index(0) != temp.size(0); ++temp.index(0)) {
+          if (index_remapper.e2i (temp.index(0)) != index_remapper.invalid)
+            row (index_remapper.e2i (temp.index(0))) = temp.value();
+        }
       }
     }
 
     default_type operator[] (const size_t index) const override
     {
       assert (index < index_remapper.num_internal());
-      Image<float> temp (data); // For thread-safety
-      temp.index(0) = index_remapper.i2e (index);
-      assert (!is_out_of_bounds (temp));
-      return default_type(temp.value());
+      // Note that if data were smoothed in the process of importing,
+      //   this function will now access the smoothed data stored in scratch
+      // However this function is only used for fixel-wise design matrix columns,
+      //   which don't pass through the RowXpr functor
+      // Also note that 'data' has not been index-remapped (it is the raw input
+      //   image on disk), whereas smoothed_data has already been remapped
+      if (smoothed_data.valid()) {
+        Image<float> temp (smoothed_data); // For thread-safety
+        temp.index (0) = index;
+        assert (!is_out_of_bounds (temp));
+        return default_type (temp.value());
+      } else {
+        Image<float> temp (data); // For thread-safety
+        temp.index(0) = index_remapper.i2e (index);
+        assert (!is_out_of_bounds (temp));
+        return default_type(temp.value());
+      }
     }
 
     size_t size() const override { return data.size(0); }
@@ -206,6 +252,7 @@ class SubjectFixelImport : public Math::Stats::SubjectDataImportBase
   private:
     Header H;
     const Image<float> data;
+    Image<float> smoothed_data;
 
     // Enable input image paths to be either absolute, relative to CWD, or
     //   relative to input fixel template directory
@@ -362,8 +409,6 @@ void run()
         // Note however that we do this here rather than within the matrix generation functions,
         //   as this is specifically a fix for CFE
         norm_connectivity_matrix[fixel_index].push_back (Fixel::Matrix::NormElement (fixel_index, 1.0));
-        if (do_smoothing)
-          smoothing_weights[fixel_index].push_back (Fixel::Matrix::NormElement (fixel_index, 1.0));
         ++num_unconnected_fixels;
       } else {
         for (auto f : norm_connectivity_matrix[fixel_index])
@@ -393,43 +438,21 @@ void run()
   output_header.keyval()["connectivity threshold"] = str(connectivity_threshold);
   output_header.keyval()["smoothing FWHM"] = str(smoothing_fwhm);
 
+  // Smoothing the data prior to loading into the data matrix is deferred to the SubjectFixelImport class
+  Fixel::Filter::Smooth smoothing_filter (smoothing_weights);
 
   // Load input data
   matrix_type data = matrix_type::Zero (importer.size(), mask_fixels);
-  bool nans_in_data = false;
   {
     ProgressBar progress (std::string ("Loading input images") + (do_smoothing ? " and smoothing" : ""), importer.size());
     for (size_t subject = 0; subject != importer.size(); subject++) {
-
+      if (do_smoothing)
+        dynamic_cast<SubjectFixelImport*>(importer[subject].get())->smooth (smoothing_filter);
       (*importer[subject]) (data.row (subject));
-
-      // Smooth the data
-      if (do_smoothing) {
-        vector_type smoothed_data (vector_type::Zero (mask_fixels));
-        for (size_t fixel = 0; fixel != mask_fixels; ++fixel) {
-          if (std::isfinite (data (subject, fixel))) {
-            value_type value = 0.0, sum_weights = 0.0;
-            for (const auto& it : smoothing_weights[fixel]) {
-              if (std::isfinite (data (subject, it.index()))) {
-                value += data (subject, it.index()) * it.value();
-                sum_weights += it.value();
-              }
-            }
-            if (sum_weights)
-              smoothed_data[fixel] = value / sum_weights;
-            else
-              smoothed_data[fixel] = NaN;
-          } else {
-            smoothed_data[fixel] = NaN;
-          }
-        }
-        data.row (subject) = smoothed_data;
-      }
-      if (!data.row (subject).allFinite())
-        nans_in_data = true;
+      progress++;
     }
-    progress++;
   }
+  const bool nans_in_data = !data.allFinite();
   if (nans_in_data) {
     INFO ("Non-finite values present in data; rows will be removed from fixel-wise design matrices accordingly");
     if (!extra_columns.size()) {
