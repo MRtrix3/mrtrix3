@@ -58,9 +58,12 @@ def eddyBinary(cuda): #pylint: disable=unused-variable
       return exe_path
     app.debug('No CUDA version of eddy found')
     return ''
-  exe_path = 'eddy_openmp' if find_executable('eddy_openmp') else exeName('eddy')
-  app.debug(exe_path)
-  return exe_path
+  for candidate in [ 'eddy_openmp', 'eddy_cpu', 'eddy', 'fsl5.0-eddy' ]:
+    if find_executable(candidate):
+      app.debug(candidate)
+      return candidate
+  app.debug('No CPU version of eddy found')
+  return ''
 
 
 
