@@ -20,11 +20,13 @@
 #include "adapter/jacobian.h"
 #include "registration/warp/helpers.h"
 
+#include "fixel/helpers.h"
+#include "fixel/keys.h"
+
 using namespace MR;
 using namespace App;
 
-#include "fixel/helpers.h"
-#include "fixel/keys.h"
+using Fixel::index_type;
 
 void usage ()
 {
@@ -53,7 +55,7 @@ void run ()
   std::string input_fixel_directory = argument[0];
   Fixel::check_fixel_directory (input_fixel_directory);
 
-  auto input_index_image = Fixel::find_index_header (input_fixel_directory).get_image <uint32_t>();
+  auto input_index_image = Fixel::find_index_header (input_fixel_directory).get_image <index_type>();
 
   Header warp_header = Header::open (argument[1]);
   Registration::Warp::check_warp (warp_header);
@@ -77,12 +79,12 @@ void run ()
 
   for (auto i = Loop ("reorienting fixel directions", input_index_image, 0, 3)(input_index_image, jacobian); i; ++i) {
     input_index_image.index(3) = 0;
-    uint32_t num_fixels_in_voxel = input_index_image.value();
+    index_type num_fixels_in_voxel = input_index_image.value();
     if (num_fixels_in_voxel) {
       input_index_image.index(3) = 1;
-      uint32_t index = input_index_image.value();
+      index_type index = input_index_image.value();
       Eigen::Matrix<float, 3, 3> transform = jacobian.value().inverse();
-      for (size_t f = 0; f < num_fixels_in_voxel; ++f) {
+      for (index_type f = 0; f < num_fixels_in_voxel; ++f) {
         input_directions_image.index(0) = index + f;
         output_directions_image.index(0) = index + f;
         output_directions_image.row(1) = (transform * Eigen::Vector3f (input_directions_image.row(1))).normalized();
