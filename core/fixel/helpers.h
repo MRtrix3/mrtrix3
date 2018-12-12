@@ -20,6 +20,7 @@
 #include "image_diff.h"
 #include "algo/loop.h"
 #include "fixel/keys.h"
+#include "fixel/types.h"
 #include "formats/mrtrix_utils.h"
 
 
@@ -106,15 +107,15 @@ namespace MR
 
 
     template <class IndexHeaderType>
-    FORCE_INLINE uint32_t get_number_of_fixels (IndexHeaderType& index_header) {
+    FORCE_INLINE index_type get_number_of_fixels (IndexHeaderType& index_header) {
       check_index_image (index_header);
       if (index_header.keyval().count (n_fixels_key)) {
         return std::stoul (index_header.keyval().at(n_fixels_key));
       } else {
-        auto index_image = Image<uint32_t>::open (index_header.name());
+        auto index_image = Image<index_type>::open (index_header.name());
         index_image.index(3) = 1;
-        uint32_t num_fixels = 0;
-        uint32_t max_offset = 0;
+        index_type num_fixels = 0;
+        index_type max_offset = 0;
         for (auto i = MR::Loop (index_image, 0, 3) (index_image); i; ++i) {
           if (index_image.value() > max_offset) {
             max_offset = index_image.value();
@@ -135,12 +136,12 @@ namespace MR
 
       if (is_index_image (index_header)) {
         if (index_header.keyval().count (n_fixels_key)) {
-          fixels_match = std::stoul (index_header.keyval().at(n_fixels_key)) == (uint32_t)data_header.size(0);
+          fixels_match = std::stoul (index_header.keyval().at(n_fixels_key)) == (index_type)data_header.size(0);
         } else {
-          auto index_image = Image<uint32_t>::open (index_header.name());
+          auto index_image = Image<index_type>::open (index_header.name());
           index_image.index(3) = 1;
-          uint32_t num_fixels = 0;
-          uint32_t max_offset = 0;
+          index_type num_fixels = 0;
+          index_type max_offset = 0;
           for (auto i = MR::Loop (index_image, 0, 3) (index_image); i; ++i) {
             if (index_image.value() > max_offset) {
               max_offset = index_image.value();
@@ -149,7 +150,7 @@ namespace MR
               index_image.index(3) = 1;
             }
           }
-          fixels_match = (max_offset + num_fixels) == (uint32_t)data_header.size(0);
+          fixels_match = (max_offset + num_fixels) == (index_type)data_header.size(0);
         }
       }
 
@@ -317,16 +318,16 @@ namespace MR
 
       // If the index file already exists check it is the same as the input index file
       if (Path::exists (output_path) && !App::overwrite_files) {
-        auto input_image = input_header.get_image<uint32_t>();
-        auto output_image = Image<uint32_t>::open (output_path);
+        auto input_image = input_header.get_image<index_type>();
+        auto output_image = Image<index_type>::open (output_path);
 
         if (!images_match_abs (input_image, output_image))
           throw Exception ("output sparse image directory (" + output_directory + ") already contains index file, "
                            "which is not the same as the expected output. Use -force to override if desired");
 
       } else {
-        auto output_image = Image<uint32_t>::create (Path::join (output_directory, Path::basename (input_header.name())), input_header);
-        auto input_image = input_header.get_image<uint32_t>();
+        auto output_image = Image<index_type>::create (Path::join (output_directory, Path::basename (input_header.name())), input_header);
+        auto input_image = input_header.get_image<index_type>();
         threaded_copy (input_image, output_image);
       }
     }
@@ -338,8 +339,8 @@ namespace MR
 
       // If the index file already exists check it is the same as the input index file
       if (Path::exists (output_path) && !App::overwrite_files) {
-        auto input_image = input_header.get_image<uint32_t>();
-        auto output_image = Image<uint32_t>::open (output_path);
+        auto input_image = input_header.get_image<index_type>();
+        auto output_image = Image<index_type>::open (output_path);
 
         if (!images_match_abs (input_image, output_image))
           throw Exception ("output sparse image directory (" + output_directory + ") already contains a directions file, "

@@ -14,14 +14,16 @@
 
 
 #include "command.h"
+#include "image.h"
 #include "progressbar.h"
 #include "thread_queue.h"
-#include "algo/loop.h"
 #include "transform.h"
-#include "image.h"
+#include "algo/loop.h"
 #include "fixel/helpers.h"
+#include "fixel/index_remapper.h"
 #include "fixel/keys.h"
 #include "fixel/loop.h"
+#include "fixel/types.h"
 #include "math/stats/fwe.h"
 #include "math/stats/glm.h"
 #include "math/stats/import.h"
@@ -30,20 +32,15 @@
 #include "stats/cfe.h"
 #include "stats/enhance.h"
 #include "stats/permtest.h"
-#include "dwi/tractography/file.h"
-#include "dwi/tractography/mapping/mapper.h"
-#include "dwi/tractography/mapping/loader.h"
-#include "dwi/tractography/mapping/writer.h"
 
 
 using namespace MR;
 using namespace App;
-using namespace MR::DWI::Tractography::Mapping;
-using namespace MR::Math::Stats;
-using namespace MR::Math::Stats::GLM;
-using Stats::CFE::direction_type;
-using Stats::CFE::connectivity_value_type;
-using Stats::CFE::index_type;
+
+using Fixel::index_type;
+using Math::Stats::matrix_type;
+using Math::Stats::value_type;
+using Math::Stats::vector_type;
 using Stats::PermTest::count_matrix_type;
 
 #define DEFAULT_ANGLE_THRESHOLD 45.0
@@ -142,7 +139,7 @@ void usage ()
 
 // When a fixel mask is provided, fixel indices are remapped such that the
 //   fixels that are within the mask appear contiguously in data matrices without gaps
-Stats::CFE::FixelIndexMapper index_remapper;
+Fixel::IndexRemapper index_remapper;
 
 
 
@@ -166,11 +163,11 @@ void write_fixel_output (const std::string& filename,
 // Define data importer class that will obtain fixel data for a
 //   specific subject based on the string path to the image file for
 //   that subject
-class SubjectFixelImport : public SubjectDataImportBase
+class SubjectFixelImport : public Math::Stats::SubjectDataImportBase
 { MEMALIGN(SubjectFixelImport)
   public:
     SubjectFixelImport (const std::string& path) :
-        SubjectDataImportBase (path),
+        Math::Stats::SubjectDataImportBase (path),
         H (Header::open (find_image (path))),
         data (H.get_image<float>())
     {
@@ -266,7 +263,7 @@ void run()
     Fixel::check_data_file (mask);
     if (!Fixel::fixels_match (index_header, mask))
       throw Exception ("Mask image provided using -mask option does not match fixel template");
-    index_remapper = Stats::CFE::FixelIndexMapper (mask);
+    index_remapper = Fixel::IndexRemapper (mask);
     mask_fixels = index_remapper.num_internal();
     CONSOLE ("Number of fixels in mask: " + str(mask_fixels));
   } else {
@@ -276,7 +273,7 @@ void run()
     for (mask.index(0) = 0; mask.index(0) != num_fixels; ++mask.index(0))
       mask.value() = true;
     mask_fixels = num_fixels;
-    index_remapper = Stats::CFE::FixelIndexMapper (num_fixels);
+    index_remapper = Fixel::IndexRemapper (num_fixels);
   }
 
 
@@ -285,7 +282,7 @@ void run()
   Fixel::copy_index_and_directions_file (input_fixel_directory, output_fixel_directory);
 
   // Read file names and check files exist
-  CohortDataImport importer;
+  Math::Stats::CohortDataImport importer;
   importer.initialise<SubjectFixelImport> (argument[1]);
   for (size_t i = 0; i != importer.size(); ++i) {
     if (!Fixel::fixels_match (index_header, dynamic_cast<SubjectFixelImport*>(importer[i].get())->header()))
@@ -297,20 +294,20 @@ void run()
   const matrix_type design = load_matrix (argument[2]);
   if (design.rows() != (ssize_t)importer.size())
     throw Exception ("Number of input files does not match number of rows in design matrix");
-  check_design (design);
+  Math::Stats::GLM::check_design (design);
 
   // Load hypotheses
-  const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[3]);
+  const vector<Math::Stats::GLM::Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[3]);
   const size_t num_hypotheses = hypotheses.size();
   CONSOLE ("Number of hypotheses: " + str(num_hypotheses));
 
   // Before validating the contrast matrix, we first need to see if there are any
   //   additional design matrix columns coming from fixel-wise subject data
-  vector<CohortDataImport> extra_columns;
+  vector<Math::Stats::CohortDataImport> extra_columns;
   bool nans_in_columns = false;
   opt = get_options ("column");
   for (size_t i = 0; i != opt.size(); ++i) {
-    extra_columns.push_back (CohortDataImport());
+    extra_columns.push_back (Math::Stats::CohortDataImport());
     extra_columns[i].initialise<SubjectFixelImport> (opt[i][0]);
     if (!extra_columns[i].allFinite())
       nans_in_columns = true;
@@ -332,22 +329,22 @@ void run()
   // Here the fixel mask is used only to reduce the length of the list of
   //   fixels traversed by each streamline that must be processed, and to
   //   reduce the amount of RAM required by the command.
-  auto connectivity_matrix = Stats::CFE::generate_initial_matrix (argument[4],
-                                                                  index_image,
-                                                                  mask,
-                                                                  angular_threshold);
+  auto connectivity_matrix = Fixel::Matrix::generate (argument[4],
+                                                      index_image,
+                                                      mask,
+                                                      angular_threshold);
 
   // Normalise connectivity matrix and threshold
-  Stats::CFE::norm_connectivity_matrix_type norm_connectivity_matrix;
+  Fixel::Matrix::norm_matrix_type norm_connectivity_matrix;
   // Also pre-compute fixel-fixel weights for smoothing
-  Stats::CFE::norm_connectivity_matrix_type smoothing_weights;
-  Stats::CFE::normalise_matrix (connectivity_matrix,
-                                index_image,
-                                index_remapper,
-                                connectivity_threshold,
-                                norm_connectivity_matrix,
-                                smoothing_fwhm,
-                                smoothing_weights);
+  Fixel::Matrix::norm_matrix_type smoothing_weights;
+  Fixel::Matrix::normalise (connectivity_matrix,
+                            index_image,
+                            index_remapper,
+                            connectivity_threshold,
+                            norm_connectivity_matrix,
+                            smoothing_fwhm,
+                            smoothing_weights);
 
   // Function normalise_matrix() does not pre-exponentiate the connectivity weights
   //   by parameter C, nor does it calculate the normalisation factor per fixel
@@ -364,9 +361,9 @@ void run()
         //   let's at least inform it that it is "fully connected" to itself
         // Note however that we do this here rather than within the matrix generation functions,
         //   as this is specifically a fix for CFE
-        norm_connectivity_matrix[fixel_index].push_back (Stats::CFE::NormMatrixElement (fixel_index, 1.0));
+        norm_connectivity_matrix[fixel_index].push_back (Fixel::Matrix::NormElement (fixel_index, 1.0));
         if (do_smoothing)
-          smoothing_weights[fixel_index].push_back (Stats::CFE::NormMatrixElement (fixel_index, 1.0));
+          smoothing_weights[fixel_index].push_back (Fixel::Matrix::NormElement (fixel_index, 1.0));
         ++num_unconnected_fixels;
       } else {
         for (auto f : norm_connectivity_matrix[fixel_index])
@@ -441,7 +438,7 @@ void run()
   }
 
   // Free the memory occupied by the data smoothing filter; no longer required
-  Stats::CFE::norm_connectivity_matrix_type().swap (smoothing_weights);
+  Fixel::Matrix::norm_matrix_type().swap (smoothing_weights);
 
   // Only add contrast matrix row number to image outputs if there's more than one hypothesis
   auto postfix = [&] (const size_t i) { return (num_hypotheses > 1) ? ("_" + hypotheses[i].name()) : ""; };
@@ -476,15 +473,15 @@ void run()
   }
 
   // Construct the class for performing the initial statistical tests
-  std::shared_ptr<GLM::TestBase> glm_test;
+  std::shared_ptr<Math::Stats::GLM::TestBase> glm_test;
   if (extra_columns.size() || nans_in_data) {
-    glm_test.reset (new GLM::TestVariable (extra_columns, data, design, hypotheses, nans_in_data, nans_in_columns));
+    glm_test.reset (new Math::Stats::GLM::TestVariable (extra_columns, data, design, hypotheses, nans_in_data, nans_in_columns));
   } else {
-    glm_test.reset (new GLM::TestFixed (data, design, hypotheses));
+    glm_test.reset (new Math::Stats::GLM::TestFixed (data, design, hypotheses));
   }
 
   // Construct the class for performing fixel-based statistical enhancement
-  std::shared_ptr<Stats::EnhancerBase> cfe_integrator (new Stats::CFE::Enhancer (norm_connectivity_matrix, cfe_dh, cfe_e, cfe_h));
+  std::shared_ptr<Stats::EnhancerBase> cfe_integrator (new Stats::CFE (norm_connectivity_matrix, cfe_dh, cfe_e, cfe_h));
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical CFE statistic
   matrix_type empirical_cfe_statistic;
