@@ -22,32 +22,32 @@ namespace MR
 
 
 
-      CFE::CFE (const Fixel::Matrix::norm_matrix_type& connectivity_matrix,
-                const value_type dh,
-                const value_type E,
-                const value_type H) :
-          connectivity_matrix (connectivity_matrix),
-          dh (dh),
-          E (E),
-          H (H) { }
+    CFE::CFE (const Fixel::Matrix::norm_matrix_type& connectivity_matrix,
+              const value_type dh,
+              const value_type E,
+              const value_type H) :
+        connectivity_matrix (connectivity_matrix),
+        dh (dh),
+        E (E),
+        H (H) { }
 
 
 
-      void CFE::operator() (in_column_type stats, out_column_type enhanced_stats) const
-      {
-        enhanced_stats.setZero();
-        vector<Fixel::Matrix::NormElement>::const_iterator connected_fixel;
-        for (size_t fixel = 0; fixel < connectivity_matrix.size(); ++fixel) {
-          for (value_type h = this->dh; h < stats[fixel]; h +=  this->dh) {
-            value_type extent = 0.0;
-            for (connected_fixel = connectivity_matrix[fixel].begin(); connected_fixel != connectivity_matrix[fixel].end(); ++connected_fixel)
-              if (stats[connected_fixel->index()] > h)
-                extent += connected_fixel->value();
-            enhanced_stats[fixel] += std::pow (extent, E) * std::pow (h, H);
-          }
-          enhanced_stats[fixel] *= connectivity_matrix[fixel].norm_multiplier;
+    void CFE::operator() (in_column_type stats, out_column_type enhanced_stats) const
+    {
+      enhanced_stats.setZero();
+      vector<Fixel::Matrix::NormElement>::const_iterator connected_fixel;
+      for (size_t fixel = 0; fixel < connectivity_matrix.size(); ++fixel) {
+        for (value_type h = this->dh; h < stats[fixel]; h +=  this->dh) {
+          value_type extent = 0.0;
+          for (connected_fixel = connectivity_matrix[fixel].begin(); connected_fixel != connectivity_matrix[fixel].end(); ++connected_fixel)
+            if (stats[connected_fixel->index()] > h)
+              extent += connected_fixel->value();
+          enhanced_stats[fixel] += std::pow (extent, E) * std::pow (h, H);
         }
+        enhanced_stats[fixel] *= connectivity_matrix[fixel].norm_multiplier;
       }
+    }
 
 
 
