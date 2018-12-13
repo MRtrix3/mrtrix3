@@ -17,7 +17,10 @@
 #define __command_h__
 
 
-#include <xmmintrin.h>
+#ifdef FLUSH_TO_ZERO
+# include <xmmintrin.h>
+#endif
+
 #include "app.h"
 #include "exec_version.h"
 #ifdef MRTRIX_PROJECT
