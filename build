@@ -329,6 +329,89 @@ while os.path.abspath (os.path.dirname (get_real_name (build_script))) != os.pat
   log ('    ' + project_dir + os.linesep + os.linesep)
 
 
+###########################################################################
+#                           VERSION HANDLING                              #
+###########################################################################
+
+
+def get_git_version (folder):
+  log ('''
+getting git version in folder "''' + folder + '"... ')
+
+  try:
+    process = subprocess.Popen ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=folder, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    ( git_version, stderr ) = process.communicate()
+    if process.returncode == 0:
+      git_version = git_version.decode(errors='ignore').strip()
+      log (git_version + '\n')
+      return git_version
+  except:
+    pass
+
+
+  log ('not found\n')
+  return 'unknown'
+
+
+def update_git_version (folder, git_version_file, contents):
+  git_version = get_git_version (folder)
+  version_file_contents = contents.replace ('%%%', git_version)
+  current_version_file_contents = ''
+  try:
+    with open (git_version_file) as fd:
+      current_version_file_contents = fd.read()
+  except:
+    pass
+
+  if not current_version_file_contents or (version_file_contents != current_version_file_contents and git_version != 'unknown'):
+    log ('version file "' + git_version_file + '" is out of date - updating\n')
+    with open (git_version_file, 'w') as fd:
+      fd.write (version_file_contents)
+
+with open (os.path.join(mrtrix_dir[-1], script_dir, '_version.py'),'w') as vfile:
+  vfile.write('__version__ = "'+get_git_version (mrtrix_dir[-1])+'"\n')
+
+# get git version info:
+update_git_version (mrtrix_dir[-1], os.path.join (lib_dir, 'version.cpp'), '''
+namespace MR {
+  namespace App {
+    const char* mrtrix_version = "%%%";
+    const char* build_date = __DATE__;
+  }
+}
+''')
+
+update_git_version (mrtrix_dir[-1], os.path.join (mrtrix_dir[-1], misc_dir, 'exec_version.cpp'), '''
+namespace MR {
+  namespace App {
+    extern const char* executable_uses_mrtrix_version;
+    void set_executable_uses_mrtrix_version () { executable_uses_mrtrix_version = "%%%"; }
+  }
+}
+''')
+
+if separate_project:
+  if not os.path.exists (misc_dir):
+    os.mkdir (misc_dir)
+  git_version_file = os.path.join (misc_dir, 'project_version.cpp')
+  update_git_version ('.', git_version_file, '''
+namespace MR {
+  namespace App {
+    extern const char* project_version;
+    extern const char* project_build_date;
+    void set_project_version () {
+      project_version = "%%%";
+      project_build_date = __DATE__;
+    }
+  }
+}
+''')
+
+  if not os.path.exists (git_version_file):
+    with open (git_version_file, 'w'):
+      pass
+
+
 
 
 
@@ -991,41 +1074,6 @@ def start_html (fid, title, left, up, home, right):
 
 
 
-def get_git_version (folder):
-  log ('''
-getting git version in folder "''' + folder + '"... ')
-
-  try:
-    process = subprocess.Popen ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=folder, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    ( git_version, stderr ) = process.communicate()
-    if process.returncode == 0:
-      git_version = git_version.decode(errors='ignore').strip()
-      log (git_version + '\n')
-      return git_version
-  except:
-    pass
-
-
-  log ('not found\n')
-  return 'unknown'
-
-
-def update_git_version (folder, git_version_file, contents):
-  git_version = get_git_version (folder)
-  version_file_contents = contents.replace ('%%%', git_version)
-  current_version_file_contents = ''
-  try:
-    with open (git_version_file) as fd:
-      current_version_file_contents = fd.read()
-  except:
-    pass
-
-  if not current_version_file_contents or (version_file_contents != current_version_file_contents and git_version != 'unknown'):
-    log ('version file "' + git_version_file + '" is out of date - updating\n')
-    with open (git_version_file, 'w') as fd:
-      fd.write (version_file_contents)
-
-
 def update_bash_completion ():
   # Only attempt to generate completion file if POSIX compliant
   if os.name != 'posix': return
@@ -1097,13 +1145,6 @@ def update_user_docs ():
     sys.exit (1)
 
 
-###########################################################################
-#                              SCRIPT VERSION                             #
-###########################################################################
-
-with open (os.path.join(mrtrix_dir[-1], script_dir, '_version.py'),'w') as vfile:
-  vfile.write('__version__ = "'+get_git_version (mrtrix_dir[-1])+'"\n')
-
 
 ###########################################################################
 #                              START BUILDING                             #
@@ -1113,47 +1154,6 @@ with open (os.path.join(mrtrix_dir[-1], script_dir, '_version.py'),'w') as vfile
 if len(targets) == 0:
   targets = default_targets()
 
-
-
-# get git version info:
-update_git_version (mrtrix_dir[-1], os.path.join (lib_dir, 'version.cpp'), '''
-namespace MR {
-  namespace App {
-    const char* mrtrix_version = "%%%";
-    const char* build_date = __DATE__;
-  }
-}
-''')
-
-update_git_version (mrtrix_dir[-1], os.path.join (mrtrix_dir[-1], misc_dir, 'exec_version.cpp'), '''
-namespace MR {
-  namespace App {
-    extern const char* executable_uses_mrtrix_version;
-    void set_executable_uses_mrtrix_version () { executable_uses_mrtrix_version = "%%%"; }
-  }
-}
-''')
-
-if separate_project:
-  if not os.path.exists (misc_dir):
-    os.mkdir (misc_dir)
-  git_version_file = os.path.join (misc_dir, 'project_version.cpp')
-  update_git_version ('.', git_version_file, '''
-namespace MR {
-  namespace App {
-    extern const char* project_version;
-    extern const char* project_build_date;
-    void set_project_version () {
-      project_version = "%%%";
-      project_build_date = __DATE__;
-    }
-  }
-}
-''')
-
-  if not os.path.exists (git_version_file):
-    with open (git_version_file, 'w'):
-      pass
 
 
 
