@@ -111,7 +111,7 @@ namespace MR
 
 
 
-        void check_design (const matrix_type&);
+        void check_design (const matrix_type&, const bool);
 
         vector<Hypothesis> load_hypotheses (const std::string& file_path);
 

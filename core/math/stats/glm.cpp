@@ -66,19 +66,27 @@ namespace MR
 
 
 
-        void check_design (const matrix_type& design)
+        void check_design (const matrix_type& design, const bool extra_factors)
         {
           Eigen::ColPivHouseholderQR<matrix_type> decomp;
           decomp.setThreshold (1e-5);
           decomp = decomp.compute (design);
           if (decomp.rank() < design.cols()) {
-            WARN ("Design matrix is rank-deficient; processing may proceed, but manually checking your matrix is advised");
+            if (extra_factors) {
+              CONSOLE ("Design matrix is rank-deficient before addition of element-wise columns");
+            } else {
+              WARN ("Design matrix is rank-deficient; processing may proceed, but manually checking your matrix is advised");
+            }
           } else {
             const default_type cond = Math::condition_number (design);
             if (cond > 100.0) {
-              WARN ("Design matrix conditioning is poor (condition number = " + str(cond, 6) + "); model fitting may be highly influenced by noise");
+              if (extra_factors) {
+                CONSOLE ("Design matrix conditioning is poor (condition number: " + str(cond, 6) + ") before the addition of element-wise columns");
+              } else {
+                WARN ("Design matrix conditioning is poor (condition number: " + str(cond, 6) + "); model fitting may be highly influenced by noise");
+              }
             } else {
-              CONSOLE ("Design matrix condition number is " + str(cond, 6));
+              CONSOLE (std::string ("Design matrix condition number") + (extra_factors ? " (without element-wise columns)" : "") + ": " + str(cond, 6));
             }
           }
         }
