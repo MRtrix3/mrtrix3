@@ -271,7 +271,7 @@ void run()
   auto index_image = index_header.get_image<index_type>();
 
   const index_type num_fixels = Fixel::get_number_of_fixels (index_header);
-  CONSOLE ("Total number of fixels: " + str(num_fixels));
+  CONSOLE ("Number of fixels in template: " + str(num_fixels));
 
   Image<bool> mask;
   index_type mask_fixels;
@@ -352,12 +352,6 @@ void run()
   const matrix_type design = load_matrix (argument[2]);
   if (design.rows() != (ssize_t)importer.size())
     throw Exception ("Number of input files does not match number of rows in design matrix");
-  check_design (design);
-
-  // Load hypotheses
-  const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[3]);
-  const size_t num_hypotheses = hypotheses.size();
-  CONSOLE ("Number of hypotheses: " + str(num_hypotheses));
 
   // Before validating the contrast matrix, we first need to see if there are any
   //   additional design matrix columns coming from fixel-wise subject data
@@ -370,18 +364,23 @@ void run()
     if (!extra_columns[i].allFinite())
       nans_in_columns = true;
   }
+  const ssize_t num_factors = design.cols() + extra_columns.size();
+  CONSOLE ("Number of factors: " + str(num_factors));
   if (extra_columns.size()) {
     CONSOLE ("Number of element-wise design matrix columns: " + str(extra_columns.size()));
     if (nans_in_columns)
       INFO ("Non-finite values detected in element-wise design matrix columns; individual rows will be removed from fixel-wise design matrices accordingly");
   }
+  check_design (design, extra_columns.size());
 
-  const ssize_t num_factors = design.cols() + extra_columns.size();
-  CONSOLE ("Number of factors: " + str(num_factors));
+  // Load hypotheses
+  const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[3]);
+  const size_t num_hypotheses = hypotheses.size();
   if (hypotheses[0].cols() != num_factors)
     throw Exception ("The number of columns in the contrast matrix (" + str(hypotheses[0].cols()) + ")"
                      + (extra_columns.size() ? " (in addition to the " + str(extra_columns.size()) + " uses of -column)" : "")
                      + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")");
+  CONSOLE ("Number of hypotheses: " + str(num_hypotheses));
 
   // Compute fixel-fixel connectivity
   Stats::CFE::init_connectivity_matrix_type connectivity_matrix (num_fixels);

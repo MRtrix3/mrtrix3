@@ -210,12 +210,6 @@ void run()
   const matrix_type design = load_matrix (argument[2]);
   if (size_t(design.rows()) != importer.size())
     throw Exception ("number of subjects (" + str(importer.size()) + ") does not match number of rows in design matrix (" + str(design.rows()) + ")");
-  check_design (design);
-
-  // Load hypotheses
-  const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[3]);
-  const size_t num_hypotheses = hypotheses.size();
-  CONSOLE ("Number of hypotheses: " + str(num_hypotheses));
 
   // Before validating the contrast matrix, we first need to see if there are any
   //   additional design matrix columns coming from edge-wise subject data
@@ -228,20 +222,24 @@ void run()
     if (!extra_columns[i].allFinite())
       nans_in_columns = true;
   }
+  const ssize_t num_factors = design.cols() + extra_columns.size();
+  CONSOLE ("Number of factors: " + str(num_factors));
   if (extra_columns.size()) {
     CONSOLE ("Number of element-wise design matrix columns: " + str(extra_columns.size()));
     if (nans_in_columns)
       INFO ("Non-finite values detected in element-wise design matrix columns; individual rows will be removed from edge-wise design matrices accordingly");
   }
+  check_design (design, extra_columns.size());
 
-  // Now we can check the contrast matrix
-  const ssize_t num_factors = design.cols() + extra_columns.size();
+  // Load hypotheses
+  const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[3]);
+  const size_t num_hypotheses = hypotheses.size();
   if (hypotheses[0].cols() != num_factors)
     // TODO Re-word this error message
     throw Exception ("the number of columns in the contrast matrix (" + str(hypotheses[0].cols()) + ")"
                      + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")"
                      + (extra_columns.size() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
-
+  CONSOLE ("Number of hypotheses: " + str(num_hypotheses));
 
   const std::string output_prefix = argument[4];
 
