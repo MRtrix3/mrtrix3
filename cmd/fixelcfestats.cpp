@@ -429,9 +429,8 @@ void run()
   // Function normalise_matrix() does not pre-exponentiate the connectivity weights
   //   by parameter C, nor does it calculate the normalisation factor per fixel
   //   for use of the normalised CFE equation
-  // TODO Once fixelcfestats is capable of receiving as input a connectivity
-  //   matrix & pre-smoothed data instead of a track file, this process will
-  //   still need to be run
+  // If a pre-calculated connectivity matrix is provided, it also will not have
+  //   already applied the C exponent parameter, so we need to do it here
   {
     ProgressBar progress ("Pre-conditioning connectivity matrix", norm_connectivity_matrix.size());
     index_type num_unconnected_fixels = 0;
