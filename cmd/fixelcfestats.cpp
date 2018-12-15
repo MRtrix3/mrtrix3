@@ -178,67 +178,53 @@ class SubjectFixelImport : public Math::Stats::SubjectDataImportBase
       }
     }
 
-    // TODO Consider an alternative function that receives as input both the remapper and the smoothing filter
-    // If either is present / nontrivial, then change data to be scratch pre-converted data
-    // This may even mean that the index remapper doesn't need to be global?
-
+    // Change member "data" from being a direct open() of the input file to
+    //   a scratch smoothed version
+    // Note that if a mask is being used, and hence the index remapping is non-trivial,
+    //   then the smoothing filter is derived to operate on the assumption that the
+    //   fixel re-indexing has already occurred; as such, it is necessary to perform the
+    //   index remapping, apply the smoothing filter, and then map back to the original
+    //   fixel indices in order for the data load functor to operate correctly.
     void smooth (const Fixel::Filter::Smooth filter)
     {
-      assert (!smoothed_data.valid());
-      // If smoothing is being done inline, then the smoothing matrix takes into account
-      //   fixel index remapping; that is, it's designed to operate on data for which
-      //   the re-mapping has already been applied
-      Image<float> temp (data); // For thread-safety
+      Image<float> orig_data (data);
       Header H_remapped (H);
       H_remapped.size (0) = index_remapper.num_internal();
-      auto scratch = Image<float>::scratch (H_remapped, "scratch index-converted data from \"" + data.name() + "\" prior to smoothing");
-      for (temp.index(0) = 0; temp.index(0) != temp.size(0); ++temp.index(0)) {
-        if (index_remapper.e2i (temp.index(0)) != index_remapper.invalid) {
-          scratch.index (0) = index_remapper.e2i (temp.index(0));
-          scratch.value() = temp.value();
+      auto scratch_presmooth = Image<float>::scratch (H_remapped, "Index-remapped unsmoothed version of \"" + data.name() + "\"");
+      auto scratch_postsmooth = Image<float>::scratch (H_remapped, "Index-remapped smoothed version of \"" + data.name() + "\"");
+      data = Image<float>::scratch (H, "smoothed version of \"" + orig_data.name() + "\"");
+      for (auto l = Loop(0) (scratch_presmooth); l; ++l) {
+        orig_data.index(0) = index_remapper.i2e (scratch_presmooth.index (0));
+        scratch_presmooth.value() = orig_data.value();
+      }
+      filter (scratch_presmooth, scratch_postsmooth);
+      for (auto l = Loop(0) (data); l; ++l) {
+        if (index_remapper.e2i (data.index (0)) == index_remapper.invalid) {
+          data.value() = NaN;
+        } else {
+          scratch_postsmooth.index (0) = index_remapper.e2i (data.index (0));
+          data.value() = scratch_postsmooth.value();
         }
       }
-      smoothed_data = Image<float>::scratch (H_remapped, "smoothed version of \"" + data.name() + "\"");
-      filter (scratch, smoothed_data);
     }
 
     void operator() (matrix_type::RowXpr row) const override
     {
-      if (smoothed_data.valid()) {
-        Image<float> temp (smoothed_data); // For thread-safety
-        // Smoothed data have already undergone index remapping
-        for (auto l = Loop(0) (temp); l; ++l)
-          row (temp.index (0)) = temp.value();
-      } else {
-        Image<float> temp (data); // For thread-safety
-        // Straight import of data (but accounting for index remapping)
-        for (temp.index(0) = 0; temp.index(0) != temp.size(0); ++temp.index(0)) {
-          if (index_remapper.e2i (temp.index(0)) != index_remapper.invalid)
-            row (index_remapper.e2i (temp.index(0))) = temp.value();
-        }
+      Image<float> temp (data); // For thread-safety
+      // Straight import of data (but accounting for index remapping)
+      for (temp.index(0) = 0; temp.index(0) != temp.size(0); ++temp.index(0)) {
+        if (index_remapper.e2i (temp.index(0)) != index_remapper.invalid)
+          row (index_remapper.e2i (temp.index(0))) = temp.value();
       }
     }
 
     default_type operator[] (const size_t index) const override
     {
       assert (index < index_remapper.num_internal());
-      // Note that if data were smoothed in the process of importing,
-      //   this function will now access the smoothed data stored in scratch
-      // However this function is only used for fixel-wise design matrix columns,
-      //   which don't pass through the RowXpr functor
-      // Also note that 'data' has not been index-remapped (it is the raw input
-      //   image on disk), whereas smoothed_data has already been remapped
-      if (smoothed_data.valid()) {
-        Image<float> temp (smoothed_data); // For thread-safety
-        temp.index (0) = index;
-        assert (!is_out_of_bounds (temp));
-        return default_type (temp.value());
-      } else {
-        Image<float> temp (data); // For thread-safety
-        temp.index(0) = index_remapper.i2e (index);
-        assert (!is_out_of_bounds (temp));
-        return default_type(temp.value());
-      }
+      Image<float> temp (data); // For thread-safety
+      temp.index(0) = index_remapper.i2e (index);
+      assert (!is_out_of_bounds (temp));
+      return default_type(temp.value());
     }
 
     size_t size() const override { return data.size(0); }
@@ -251,8 +237,7 @@ class SubjectFixelImport : public Math::Stats::SubjectDataImportBase
 
   private:
     Header H;
-    const Image<float> data;
-    Image<float> smoothed_data;
+    Image<float> data; // May be mapped input file, or scratch smoothed data
 
     // Enable input image paths to be either absolute, relative to CWD, or
     //   relative to input fixel template directory
