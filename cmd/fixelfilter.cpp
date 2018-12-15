@@ -22,6 +22,7 @@
 #include "fixel/helpers.h"
 
 #include "fixel/filter/base.h"
+#include "fixel/filter/connect.h"
 #include "fixel/filter/smooth.h"
 #include "stats/cfe.h"
 
@@ -31,7 +32,7 @@ using namespace MR;
 using namespace App;
 using namespace MR::Fixel;
 
-const char* filters[] = { "smooth", nullptr };
+const char* filters[] = { "connect", "smooth", nullptr };
 
 void usage ()
 {
@@ -70,14 +71,19 @@ void run()
   Header index_header;
   Image<float> single_file;
   vector<Header> multiple_files;
+  Header output_header;
   try {
     index_header = Fixel::find_index_header (Fixel::get_fixel_directory (argument[0]));
     single_file = Image<float>::open (argument[0]);
     Fixel::check_data_file (single_file);
+    output_header = Header (single_file);
   } catch (...) {
     try {
       index_header = Fixel::find_index_header (argument[0]);
       multiple_files = Fixel::find_data_headers (argument[0], index_header);
+      if (multiple_files.empty())
+        throw Exception ("No fixel data files found in directory \"" + argument[0] + "\"");
+      output_header = Header (multiple_files[0]);
     } catch (...) {
       throw Exception ("Could not interpret first argument \"" + argument[0] + "\" as either a fixel data file, or a fixel directory");
     }
@@ -94,6 +100,12 @@ void run()
   std::unique_ptr<Fixel::Filter::Base> filter;
   switch (int(argument[1])) {
     case 0:
+      if (matrix.empty())
+        throw Exception ("For filter \"connect\", fixel-fixel connectivity matrix must be provided via the -matrix option");
+      filter.reset (new Fixel::Filter::Connect (matrix));
+      output_header.datatype() = DataType::UInt32;
+      output_header.datatype().set_byte_order_native();
+    case 1:
       if (matrix.empty())
         throw Exception ("For filter \"smooth\", fixel-fixel connectivity matrix must be provided via the -matrix option");
       filter.reset (new Fixel::Filter::Smooth (matrix));

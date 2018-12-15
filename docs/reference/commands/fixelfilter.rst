@@ -16,7 +16,7 @@ Usage
     fixelfilter [ options ]  input filter output
 
 -  *input*: the input: either a fixel data file, or a fixel directory (see Description)
--  *filter*: the filtering operation to perform; options are: smooth
+-  *filter*: the filtering operation to perform; options are: connect, smooth
 -  *output*: the output: either a fixel data file, or a fixel directory (see Description)
 
 Description
