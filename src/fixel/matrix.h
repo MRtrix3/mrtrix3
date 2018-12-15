@@ -19,14 +19,12 @@
 #include "image.h"
 #include "types.h"
 #include "file/ofstream.h"
+#include "fixel/index_remapper.h"
 
 namespace MR
 {
   namespace Fixel
   {
-
-
-    class IndexRemapper;
 
 
     namespace Matrix
@@ -192,19 +190,65 @@ namespace MR
       {
         data.clear();
         std::ifstream in (filepath);
+        ProgressBar progress ("Loading fixel-fixel connectivity matrix \"" + filepath + "\"");
         for (std::string line; std::getline (in, line); ) {
           data.emplace_back (FixelType());
           auto entries = MR::split (line, ",");
           for (const auto& entry : entries) {
             auto pair = MR::split (entry, ":");
             if (pair.size() != 2) {
-              Exception e ("Malformed sparse matrix in file \"" + filepath + "\":");
+              Exception e ("Malformed sparse matrix in file \"" + filepath + "\": does not consist of comma-separated pair");
               e.push_back ("Line: \"" + line + "\"");
               e.push_back ("Entry: \"" + entry + "\"");
               throw e;
             }
-            data[data.size()-1].emplace_back (typename FixelType::ElementType (to<index_type>(pair[0]), to<typename FixelType::ElementType::ValueType>(pair[1])));
+            try {
+              data[data.size()-1].emplace_back (typename FixelType::ElementType (to<index_type>(pair[0]), to<typename FixelType::ElementType::ValueType>(pair[1])));
+            } catch (Exception& e) {
+              e.push_back ("Malformed sparse matrix in file \"" + filepath + "\": could not convert comma-separated pair to numerical values");
+              e.push_back ("Line: \"" + line + "\"");
+              e.push_back ("Entry: \"" + entry + "\"");
+              throw e;
+            }
           }
+          ++progress;
+        }
+      }
+
+      template <class FixelType>
+      void load (const std::string& filepath, const IndexRemapper& index_remapper, vector<FixelType>& data)
+      {
+        data.clear();
+        std::ifstream in (filepath);
+        index_type counter = 0;
+        ProgressBar progress ("Loading fixel-fixel connectivity matrix \"" + filepath + "\"");
+        for (std::string line; std::getline (in, line); ) {
+          data.emplace_back (FixelType());
+          const index_type internal_index = index_remapper.e2i (counter);
+          if (internal_index != index_remapper.invalid) {
+            auto entries = MR::split (line, ",");
+            for (const auto& entry : entries) {
+              auto pair = MR::split (entry, ":");
+              if (pair.size() != 2) {
+                Exception e ("Malformed sparse matrix in file \"" + filepath + "\": does not consist of comma_separated pair");
+                e.push_back ("Line: \"" + line + "\"");
+                e.push_back ("Entry: \"" + entry + "\"");
+                throw e;
+              }
+              try {
+                const index_type external_index = to<index_type>(pair[0]);
+                const typename FixelType::ElementType::ValueType value = to<typename FixelType::ElementType::ValueType>(pair[1]);
+                data[data.size()-1].emplace_back (typename FixelType::ElementType (index_remapper.e2i (external_index), value));
+              } catch (Exception& e) {
+                e.push_back ("Malformed sparse matrix in file \"" + filepath + "\": could not convert comma-separated pair to numerical values");
+                e.push_back ("Line: \"" + line + "\"");
+                e.push_back ("Entry: \"" + entry + "\"");
+                throw e;
+              }
+            }
+          }
+          ++counter;
+          ++progress;
         }
       }
 

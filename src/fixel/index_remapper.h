@@ -32,7 +32,7 @@ namespace MR
     class IndexRemapper
     { NOMEMALIGN
       public:
-        IndexRemapper () { }
+        IndexRemapper () : mapping_is_default (true) { }
         IndexRemapper (const index_type num_fixels);
         IndexRemapper (Image<bool> fixel_mask);
 
@@ -49,9 +49,12 @@ namespace MR
         index_type num_external() const { return external2internal.size(); }
         index_type num_internal() const { return internal2external.size(); }
 
+        bool is_default() const { return mapping_is_default; }
+
         static constexpr index_type invalid = std::numeric_limits<index_type>::max();
 
       private:
+        bool mapping_is_default;
         vector<index_type> external2internal;
         vector<index_type> internal2external;
 

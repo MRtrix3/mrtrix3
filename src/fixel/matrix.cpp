@@ -22,7 +22,6 @@
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/voxel.h"
 #include "dwi/tractography/streamline.h"
-#include "fixel/index_remapper.h"
 
 namespace MR
 {
