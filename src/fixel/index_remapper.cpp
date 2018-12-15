@@ -28,6 +28,7 @@ namespace MR
       internal2external.resize (num_fixels);
       for (index_type f = 0; f != num_fixels; ++f)
         external2internal[f] = internal2external[f] = f;
+      mapping_is_default = true;
     }
 
     IndexRemapper::IndexRemapper (Image<bool> fixel_mask)
@@ -49,6 +50,7 @@ namespace MR
       for (index_type i = 0; i != counter; ++i)
         assert (internal2external[i] != invalid);
   #endif
+      mapping_is_default = false;
     }
 
 
