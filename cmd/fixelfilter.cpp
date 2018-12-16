@@ -105,6 +105,7 @@ void run()
       filter.reset (new Fixel::Filter::Connect (matrix));
       output_header.datatype() = DataType::UInt32;
       output_header.datatype().set_byte_order_native();
+      break;
     case 1:
       if (matrix.empty())
         throw Exception ("For filter \"smooth\", fixel-fixel connectivity matrix must be provided via the -matrix option");
@@ -120,8 +121,9 @@ void run()
     (*filter) (single_file, output_image);
   } else {
     Fixel::copy_index_and_directions_file (argument[0], argument[2]);
-    ProgressBar progress (std::string ("Applying \"") + filters[argument[1]] + "\" operation to " + str(multiple_files.size()) + " fixel data files");
-    for (auto H : multiple_files) {
+    ProgressBar progress (std::string ("Applying \"") + filters[argument[1]] + "\" operation to " + str(multiple_files.size()) + " fixel data files",
+                          multiple_files.size());
+    for (auto& H : multiple_files) {
       auto input_image = H.get_image<float>();
       auto output_image = Image<float>::create (Path::join (argument[2], Path::basename (H.name())), H);
       (*filter) (input_image, output_image);

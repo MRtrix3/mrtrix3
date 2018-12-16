@@ -47,7 +47,9 @@ namespace MR
         // Need to provide a manual implementation of the connected-component filter here;
         //   don't want to re-format the data to use an existing algorithm as that could result in
         //   duplication of memory requirements
-        output.set_value (0.0f);
+
+        for (auto l = Loop(0); l; ++l)
+          output.value() = 0.0f;
 
         BitSet processed (input.size (0));
         using IndexAndSize = std::pair<size_t, size_t>;
@@ -83,11 +85,13 @@ namespace MR
         // Now we just want to change the values in the output image so that the cluster
         //   indices are in order of cluster size
 
-        // Sort clusters by size
-        std::sort (cluster_sizes.begin(), cluster_sizes.end(), [] (const IndexAndSize& a, const IndexAndSize& b) -> bool
-                                                               {
-                                                                 return (a.second > b.second);
-                                                               });
+        // Sort clusters by size (largest first)
+        std::sort (cluster_sizes.begin(),
+                   cluster_sizes.end(),
+                   [] (const IndexAndSize& a, const IndexAndSize& b) -> bool
+                   {
+                     return (a.second > b.second);
+                   });
         // For a given value in the output image (as determined by the order in which the
         //   clusters were segmented), what should the new value be, such that the clusters
         //   are indexed sequentially according to size, with 1 being the biggest cluster?
@@ -97,7 +101,7 @@ namespace MR
           index_remapper[cluster_sizes[index].first] = index + 1;
 
         for (auto l = Loop(0) (output); l; ++l)
-          output.value() = index_remapper[output.index (0)];
+          output.value() = index_remapper[output.value()];
       }
 
 

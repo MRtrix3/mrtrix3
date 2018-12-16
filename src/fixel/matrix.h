@@ -175,6 +175,7 @@ namespace MR
       void save (vector<FixelType>& data, const std::string& filepath)
       {
         File::OFStream out (filepath);
+        ProgressBar progress ("Saving fixel-fixel connectivity matrix to \"" + filepath + "\"", data.size());
         for (const auto& f : data) {
           for (size_t i = 0; i != f.size(); ++i) {
             if (i)
@@ -182,6 +183,7 @@ namespace MR
             out << f[i].index() << ":" << f[i].value();
           }
           out << "\n";
+          ++progress;
         }
       }
 

@@ -22,6 +22,10 @@ namespace MR
 
 
 
+    constexpr index_type IndexRemapper::invalid;
+
+
+
     IndexRemapper::IndexRemapper (const index_type num_fixels)
     {
       external2internal.resize (num_fixels);
