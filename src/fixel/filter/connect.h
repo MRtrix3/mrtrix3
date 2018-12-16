@@ -16,6 +16,7 @@
 #ifndef __fixel_filter_connect_h__
 #define __fixel_filter_connect_h__
 
+#include "image.h"
 #include "fixel/matrix.h"
 #include "fixel/filter/base.h"
 
