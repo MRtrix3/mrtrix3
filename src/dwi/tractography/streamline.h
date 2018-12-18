@@ -38,8 +38,8 @@ namespace MR
 
           Streamline () : index (-1), weight (1.0f) { }
 
-          Streamline (size_t size) : 
-            vector<point_type> (size), 
+          Streamline (size_t size) :
+            vector<point_type> (size),
             index (-1),
             weight (value_type (1.0)) { }
 
@@ -96,13 +96,12 @@ namespace MR
         switch (Streamline<ValueType>::size()) {
           case 0: return NaN;
           case 1: return 0.0;
-          case 2: return ((*this)[1]-(*this)[0]).norm();
-          case 3: return ((*this)[1]-(*this)[0]).norm() + ((*this)[2]-(*this)[1]).norm();
           default: break;
         }
-        const size_t midpoint = Streamline<ValueType>::size() / 2;
-        const float step_size = ((*this)[midpoint-1]-(*this)[midpoint]).norm();
-        return calc_length (step_size);
+        default_type length = 0.0;
+        for (size_t i = 1; i != Streamline<ValueType>::size(); ++i)
+          length += ((*this)[i]-(*this)[i-1]).norm();
+        return length;
       }
 
       template <typename ValueType>
