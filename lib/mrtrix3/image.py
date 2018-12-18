@@ -197,5 +197,5 @@ def statistic(image_path, stat, options=''): #pylint: disable=unused-variable
   if app.VERBOSITY > 1:
     app.console('Result: ' + result)
   if proc.returncode:
-    raise MRtrixError('Error trying to calculate statistic \'' + statistic + '\' from image \'' + image_path + '\'')
+    raise MRtrixError('Error trying to calculate statistic \'' + stat + '\' from image \'' + image_path + '\'')
   return result

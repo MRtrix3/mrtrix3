@@ -981,6 +981,7 @@ def execute(): #pylint: disable=unused-variable
                    float(bvecs[1][pair[0]]) + float(bvecs[1][pair[1]]),
                    float(bvecs[2][pair[0]]) + float(bvecs[2][pair[1]]) ]
       norm2 = bvec_sum[0]*bvec_sum[0] + bvec_sum[1]*bvec_sum[1] + bvec_sum[2]*bvec_sum[2]
+
       # If one diffusion sensitisation gradient direction is reversed with respect to
       #   the other, still want to enable their recombination; but need to explicitly
       #   account for this when averaging the two directions
@@ -989,6 +990,7 @@ def execute(): #pylint: disable=unused-variable
                      float(bvecs[1][pair[0]]) - float(bvecs[1][pair[1]]),
                      float(bvecs[2][pair[0]]) - float(bvecs[2][pair[1]]) ]
         norm2 = bvec_sum[0]*bvec_sum[0] + bvec_sum[1]*bvec_sum[1] + bvec_sum[2]*bvec_sum[2]
+
       # Occasionally a bzero volume can have a zero vector
       if norm2:
         factor = 1.0 / math.sqrt(norm2)
@@ -1008,17 +1010,26 @@ def execute(): #pylint: disable=unused-variable
     with open('bvals_combined', 'w') as bvals_file:
       bvals_file.write(' '.join( [ str(b) for b in bvals_combined ] ))
 
-
     # Prior to 5.0.8, a bug resulted in the output field map image from topup having an identity transform,
     #   regardless of the transform of the input image
     # Detect this, and manually replace the transform if necessary
     #   (even if this doesn't cause an issue with the subsequent mrcalc command, it may in the future, it's better for
     #   visualising the script intermediate files, and it gives the user a warning about an out-of-date FSL)
     field_map_image = fsl.find_image('field_map')
-    if not image.match('topup_in.nii', field_map_image):
+    field_map_header = image.Header(field_map_image)
+    if not image.match('topup_in.nii', field_map_header, 3):
       app.warn('topup output field image has erroneous header; recommend updating FSL to version 5.0.8 or later')
       new_field_map_image = 'field_map_fix.mif'
       run.command('mrtransform ' + field_map_image + ' -replace topup_in.nii ' + new_field_map_image)
+      app.cleanup(field_map_image)
+      field_map_image = new_field_map_image
+    # In FSL 6.0.0, field map image is erroneously constructed with the same number of volumes as the input image,
+    #   with all but the first volume containing intensity-scaled duplicates of the uncorrected input images
+    # The first volume is however the expected field offset image
+    elif len(field_map_header.size()) == 4:
+      app.console('Correcting erroneous FSL 6.0.0 field map image output')
+      new_field_map_image = 'field_map_fix.mif'
+      run.command('mrconvert ' + field_map_image + ' -coord 3 0 -axes 0,1,2 ' + new_field_map_image)
       app.cleanup(field_map_image)
       field_map_image = new_field_map_image
     app.cleanup('topup_in.nii')
