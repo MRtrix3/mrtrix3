@@ -18,6 +18,7 @@
 #include <stack>
 
 #include "types.h"
+#include "algo/loop.h"
 #include "fixel/helpers.h"
 #include "misc/bitset.h"
 
@@ -48,7 +49,7 @@ namespace MR
         //   don't want to re-format the data to use an existing algorithm as that could result in
         //   duplication of memory requirements
 
-        for (auto l = Loop(0); l; ++l)
+        for (auto l = Loop(0) (output); l; ++l)
           output.value() = 0.0f;
 
         BitSet processed (input.size (0));
