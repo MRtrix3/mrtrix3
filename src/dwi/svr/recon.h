@@ -138,8 +138,8 @@ namespace MR
       {
         INFO("Multiband factor " + str(nz/ne) + " detected.");
         init_Y(grad);
-        init_laplacian(reg*reg);
-        init_zreg(zreg*zreg);
+        init_laplacian(reg);
+        init_zreg(zreg);
         assert (motion.rows() == nv*ne);
 
         // set header for temporary images.
@@ -499,10 +499,10 @@ namespace MR
       void init_laplacian(const float lambda)
       {
         DEBUG("Initialising Laplacian regularizer.");
-        // Regularization convolution filter set as isotropic Laplacian filter.
+        // Regularization convolution filter set as Laplacian filter.
         Eigen::Matrix<Scalar, 2, 1> D;
-        D << 0.90, -0.15;
-        D *= std::sqrt(lambda);
+        D << -6, 1;
+        D *= lambda;
 
         L.resize(nxy*nz, nxy*nz);
         L.reserve(Eigen::VectorXi::Constant(nxy*nz, 7));
@@ -528,8 +528,8 @@ namespace MR
       {
         DEBUG("Initialising slice regularizer.");
         Eigen::Matrix<Scalar, 5, 1> D;
-        D << 0.2734375, -0.21875, 0.109375, -0.03125, 0.00390625;
-        D *= std::sqrt(lambda);
+        D << 70, -56, 28, -8, 1;
+        D *= lambda;
 
         Z.resize(nxy*nz, nxy*nz);
         Z.reserve(Eigen::VectorXi::Constant(nxy*nz, 9));
