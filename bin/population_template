@@ -10,23 +10,23 @@ DEFAULT_AFFINE_SCALES = [0.3,0.4,0.6,0.8,1.0,1.0]
 DEFAULT_AFFINE_LMAX   = [2,2,2,4,4,4]
 
 DEFAULT_NL_SCALES = [0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0]
-DEFAULT_NL_NITER  = [5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5  ,5  ,5  ,5  ,5  ]
-DEFAULT_NL_LMAX   = [2,  2,  2,  2,  2,  2,  2,  2,  4,  4,  4,  4  ,4  ,4  ,4  ,4  ]
+DEFAULT_NL_NITER  = [  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5]
+DEFAULT_NL_LMAX   = [  2,  2,  2,  2,  2,  2,  2,  2,  4,  4,  4,  4,  4,  4,  4,  4]
 
-REGISTRATION_MODES = ["rigid","affine","nonlinear","rigid_affine","rigid_nonlinear","affine_nonlinear","rigid_affine_nonlinear"]
+REGISTRATION_MODES = ['rigid','affine','nonlinear','rigid_affine','rigid_nonlinear','affine_nonlinear','rigid_affine_nonlinear']
 
 
 
 def usage(cmdline): #pylint: disable=unused-variable
   cmdline.set_author('David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk) & Thijs Dhollander (thijs.dhollander@gmail.com)')
   cmdline.set_synopsis('Generates an unbiased group-average template from a series of images')
-  cmdline.add_description('First a template is optimised with linear registration (rigid or affine, affine is default), then non-linear registration is used to optimise the template further.')
+  cmdline.add_description('First a template is optimised with linear registration (rigid and/or affine, both by default), then non-linear registration is used to optimise the template further.')
   cmdline.add_argument('input_dir', help='The input directory containing all images used to build the template')
   cmdline.add_argument('template', help='The output template image')
 
-  cmdline.add_argument('-type', help='Specifiy the types of registration stages to perform. Options are "rigid" (perform rigid registration only which might be useful for intra-subject registration in longitudinal analysis), "affine" (perform affine registration) and "nonlinear" as well as cominations of registration types: %s. Default: rigid_affine_nonlinear' % ', '.join('"'+x+'"' for x in REGISTRATION_MODES if "_" in x), default='rigid_affine_nonlinear')
+  cmdline.add_argument('-type', metavar='registration_stage(s)', help='Specifiy the types of registration stages to perform. Options are "rigid" (perform rigid registration only which might be useful for intra-subject registration in longitudinal analysis), "affine" (perform affine registration), and "nonlinear", as well as combinations of registration types: %s. Default: rigid_affine_nonlinear' % ', '.join('"'+x+'"' for x in REGISTRATION_MODES if "_" in x), default='rigid_affine_nonlinear')
   cmdline.add_argument('-voxel_size', help='Define the template voxel size in mm. Use either a single value for isotropic voxels or 3 comma separated values.')
-  cmdline.add_argument('-initial_alignment', default='mass', help='Method of alignment to form the initial template. Options are "mass" (default), "geometric" and "none".')
+  cmdline.add_argument('-initial_alignment', metavar='mode', default='mass', help='Method of alignment to form the initial template. Options are "mass" (default), "geometric" and "none".')
   cmdline.add_argument('-mask_dir', help='Optionally input a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly')
   cmdline.add_argument('-warp_dir', help='Output a directory containing warps from each input to the template. If the folder does not exist it will be created')
   cmdline.add_argument('-transformed_dir', help='Output a directory containing the input images transformed to the template. If the folder does not exist it will be created')
