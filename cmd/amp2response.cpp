@@ -314,7 +314,7 @@ void run ()
 
     std::string shell_desc = (dirs_azel.size() > 1) ? ("_shell" + str(shell_index)) : "";
 
-    // check the ZSH -> amplitude transform:
+    // check the ZSH -> amplitude transform upfront:
     {
       auto transform = Math::ZSH::init_amp_transform<default_type> (dirs_azel[shell_index].col(1), lmax[shell_index]);
       if (!transform.allFinite()) {
@@ -332,171 +332,39 @@ void run ()
     Accumulator::Shared shared (lmax[shell_index], volumes[shell_index], dirs_cartesian);
     ThreadedLoop(image, 0, 3).run (Accumulator (shared), image, dir_image, mask);
 
-/*
-    // All directions from all SF voxels get concatenated into a single large matrix
-    Eigen::MatrixXd cat_transforms (num_voxels * dirs_azel[shell_index].rows(), Math::ZSH::NforL (lmax[shell_index]));
-    Eigen::VectorXd cat_data (num_voxels * dirs_azel[shell_index].rows());
-
-#ifdef AMP2RESPONSE_DEBUG
-    // To make sure we've got our data rotated correctly, let's generate a scatterplot of
-    //   elevation vs. amplitude
-    Eigen::MatrixXd scatter;
-#endif
-
-    size_t voxel_counter = 0;
-    for (auto l = Loop (mask, 0, 3) (image, mask, dir_image); l; ++l) {
-      if (mask.value()) {
-
-        // Grab the image data
-        Eigen::VectorXd data (dirs_azel[shell_index].rows());
-        for (size_t i = 0; i != volumes[shell_index].size(); ++i) {
-          image.index(3) = volumes[shell_index][i];
-          data[i] = image.value();
-        }
-
-        // Grab the fibre direction
-        Eigen::Vector3 fibre_dir;
-        for (dir_image.index(3) = 0; dir_image.index(3) != 3; ++dir_image.index(3))
-          fibre_dir[dir_image.index(3)] = dir_image.value();
-        fibre_dir.normalize();
-
-        // Rotate the directions into a new reference frame,
-        //   where the Z axis is defined by the specified direction
-        Eigen::Matrix<default_type, 3, 3> R = gen_rotation_matrix (fibre_dir);
-        Eigen::Matrix<default_type, Eigen::Dynamic, 3> rotated_dirs_cartesian (dirs_cartesian.rows(), 3);
-        Eigen::Vector3 vec (3), rot (3);
-        for (ssize_t row = 0; row != dirs_azel[shell_index].rows(); ++row) {
-          vec = dirs_cartesian.row (row);
-          rot = R * vec;
-          rotated_dirs_cartesian.row (row) = rot;
-        }
-
-        // Convert directions from Euclidean space to azimuth/elevation pairs
-        Eigen::MatrixXd rotated_dirs_azel = Math::Sphere::cartesian2spherical (rotated_dirs_cartesian);
-
-        // Constrain elevations to between 0 and pi/2
-        for (ssize_t i = 0; i != rotated_dirs_azel.rows(); ++i) {
-          if (rotated_dirs_azel (i, 1) > Math::pi_2) {
-            if (rotated_dirs_azel (i, 0) > Math::pi)
-              rotated_dirs_azel (i, 0) -= Math::pi;
-            else
-              rotated_dirs_azel (i, 0) += Math::pi;
-            rotated_dirs_azel (i, 1) = Math::pi - rotated_dirs_azel (i, 1);
-          }
-        }
-
-#ifdef AMP2RESPONSE_PERVOXEL_IMAGES
-        // For the sake of generating a figure, output the original and rotated signals to a dixel ODF image
-        Header rotated_header (header);
-        rotated_header.size(0) = rotated_header.size(1) = rotated_header.size(2) = 1;
-        rotated_header.size(3) = volumes[shell_index].size();
-        Header nonrotated_header (rotated_header);
-        nonrotated_header.size(3) = header.size(3);
-        Eigen::MatrixXd rotated_grad (volumes[shell_index].size(), 4);
-        for (size_t i = 0; i != volumes.size(); ++i) {
-          rotated_grad.block<1,3>(i, 0) = rotated_dirs_cartesian.row(i);
-          rotated_grad(i, 3) = 1000.0;
-        }
-        DWI::set_DW_scheme (rotated_header, rotated_grad);
-        Image<float> out_rotated = Image<float>::create ("rotated_amps_" + str(sf_counter) + shell_desc + ".mif", rotated_header);
-        Image<float> out_nonrotated = Image<float>::create ("nonrotated_amps_" + str(sf_counter) + shell_desc + ".mif", nonrotated_header);
-        out_rotated.index(0) = out_rotated.index(1) = out_rotated.index(2) = 0;
-        out_nonrotated.index(0) = out_nonrotated.index(1) = out_nonrotated.index(2) = 0;
-        for (size_t i = 0; i != volumes[shell_index].size(); ++i) {
-          image.index(3) = volumes[shell_index][i];
-          out_rotated.index(3) = i;
-          out_rotated.value() = image.value();
-        }
-        for (ssize_t i = 0; i != header.size(3); ++i) {
-          image.index(3) = out_nonrotated.index(3) = i;
-          out_nonrotated.value() = image.value();
-        }
-#endif
-
-        // Generate the ZSH -> amplitude transform
-        Eigen::MatrixXd transform = Math::ZSH::init_amp_transform<default_type> (rotated_dirs_azel.col(1), lmax[shell_index]);
-        if (!transform.allFinite()) {
-          Exception e ("Unable to construct A2SH transformation for shell b=" + str(int(std::round((*shells)[shell_index].get_mean()))) + ";");
-          e.push_back ("  lmax (" + str(lmax[shell_index]) + ") may be too large for this shell");
-          if (!shell_index && (*shells)[0].is_bzero())
-            e.push_back ("  (this appears to be a b=0 shell, and therefore lmax should be set to 0 for this shell)");
-          throw e;
-        }
-
-        // Concatenate these data to the ICLS matrices
-        cat_transforms.block (voxel_counter * data.size(), 0, transform.rows(), transform.cols()) = transform;
-        cat_data.segment (voxel_counter * data.size(), data.size()) = data;
-
-#ifdef AMP2RESPONSE_DEBUG
-        scatter.conservativeResize (cat_data.size(), 2);
-        scatter.block (old_rows, 0, data.size(), 1) = rotated_dirs_azel.col(1);
-        scatter.block (old_rows, 1, data.size(), 1) = data;
-#endif
-
-        ++voxel_counter;
-
-      }
-    }
-
-#ifdef AMP2RESPONSE_DEBUG
-    save_matrix (scatter, "scatter" + shell_desc + ".csv");
-#endif
-*/
-
     Eigen::VectorXd rf;
     shell_desc = (shells && shells->count() > 1) ? ("Shell b=" + str(int(std::round((*shells)[shell_index].get_mean()))) + ": ") : "";
     // Is this anything other than an isotropic response?
-    if (lmax[shell_index]) {
 
-      if (get_options("noconstraint").size()) {
+    if (!lmax[shell_index] || get_options("noconstraint").size()) {
 
-        rf = shared.M.llt().solve (shared.b);
+      rf = shared.M.llt().solve (shared.b);
 
-        CONSOLE (shell_desc + "Response function [" + str(rf.transpose().cast<float>()) + "] solved via ordinary least-squares from " + str(shared.count) + " voxels");
+      CONSOLE (shell_desc + "Response function [" + str(rf.transpose().cast<float>()) + "] solved via ordinary least-squares from " + str(shared.count) + " voxels");
 
-/*
-        // Get an ordinary least squares solution
-        Eigen::HouseholderQR<Eigen::MatrixXd> solver (cat_transforms);
-        rf = solver.solve (cat_data);
-
-        CONSOLE (shell_desc + "Response function [" + str(rf.transpose().cast<float>()) + "] solved via ordinary least-squares from " + str(voxel_counter) + " voxels");
-        */
-
-      } else {
-/*
-        // Generate the constraint matrix
-        // We are going to both constrain the amplitudes to be non-negative, and constrain the derivatives to be non-negative
-        const size_t num_angles_constraint = 90;
-        Eigen::VectorXd els;
-        els.resize (num_angles_constraint+1);
-        for (size_t i = 0; i <= num_angles_constraint; ++i)
-          els[i] = default_type(i) * Math::pi / 180.0;
-        Eigen::MatrixXd amp_transform   = Math::ZSH::init_amp_transform  <default_type> (els, lmax[shell_index]);
-        Eigen::MatrixXd deriv_transform = Math::ZSH::init_deriv_transform<default_type> (els, lmax[shell_index]);
-
-        Eigen::MatrixXd constraints (amp_transform.rows() + deriv_transform.rows(), amp_transform.cols());
-        constraints.block (0, 0, amp_transform.rows(), amp_transform.cols()) = amp_transform;
-        constraints.block (amp_transform.rows(), 0, deriv_transform.rows(), deriv_transform.cols()) = deriv_transform;
-
-        // Initialise the problem solver
-        auto problem = Math::ICLS::Problem<default_type> (cat_transforms, constraints, 1e-10, 1e-10);
-        auto solver  = Math::ICLS::Solver <default_type> (problem);
-
-        // Estimate the solution
-        const size_t niter = solver (rf, cat_data);
-
-        CONSOLE (shell_desc + "Response function [" + str(rf.transpose().cast<float>()) + " ] solved after " + str(niter) + " constraint iterations from " + str(voxel_counter) + " voxels");
-*/
-
-      }
     } else {
 
-      // lmax is zero - perform a straight average of the image data
-      rf.resize(1);
-      rf[0] = shared.b(0) / shared.M(0,0);
+      // Generate the constraint matrix
+      // We are going to both constrain the amplitudes to be non-negative, and constrain the derivatives to be non-negative
+      const size_t num_angles_constraint = 90;
+      Eigen::VectorXd els (num_angles_constraint+1);
+      for (size_t i = 0; i <= num_angles_constraint; ++i)
+        els[i] = default_type(i) * Math::pi / 180.0;
+      auto amp_transform   = Math::ZSH::init_amp_transform  <default_type> (els, lmax[shell_index]);
+      auto deriv_transform = Math::ZSH::init_deriv_transform<default_type> (els, lmax[shell_index]);
 
-      //CONSOLE (shell_desc + "Response function [ " + str(float(rf[0])) + " ] from average of " + str(voxel_counter) + " voxels");
-      CONSOLE (shell_desc + "Response function [ " + str(float(rf[0])) + " ] from average of " + str(shared.count) + " voxels");
+      Eigen::MatrixXd constraints (amp_transform.rows() + deriv_transform.rows(), amp_transform.cols());
+      constraints.block (0, 0, amp_transform.rows(), amp_transform.cols()) = amp_transform;
+      constraints.block (amp_transform.rows(), 0, deriv_transform.rows(), deriv_transform.cols()) = deriv_transform;
+
+      // Initialise the problem solver
+      auto problem = Math::ICLS::Problem<default_type> (shared.M, constraints, 1e-10, 1e-10, 0, 0.0, true);
+      auto solver  = Math::ICLS::Solver <default_type> (problem);
+
+      // Estimate the solution
+      const size_t niter = solver (rf, shared.b);
+
+      CONSOLE (shell_desc + "Response function [" + str(rf.transpose().cast<float>()) + " ] solved after " + str(niter) + " constraint iterations from " + str(shared.count) + " voxels");
 
     }
 
