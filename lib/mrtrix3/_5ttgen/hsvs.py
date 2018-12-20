@@ -1,4 +1,4 @@
-def initialise(base_parser, subparsers):
+def initialise(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('hsvs', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Generate a 5TT image based on Hybrid Surface and Volume Segmentation (HSVS), using FreeSurfer and FSL tools', parents=[base_parser])
   # TODO Permit either FreeSurfer directory or T1 image as input
   parser.add_argument('input',  help='The input FreeSurfer subject directory')
@@ -13,12 +13,12 @@ def initialise(base_parser, subparsers):
 
 
 
-def checkOutputPaths():
+def checkOutputPaths(): #pylint: disable=unused-variable
   pass
 
 
 
-def getInputs():
+def getInputs(): #pylint: disable=unused-variable
   from mrtrix3 import app, path, run
   # FreeSurfer files will be accessed in-place; no need to pre-convert them into the temporary directory
   # TODO Pre-convert aparc image so that it doesn't have to be repeatedly uncompressed
@@ -27,9 +27,9 @@ def getInputs():
 
 
 
-def execute():
-  import glob, os, sys
-  from mrtrix3 import app, file, fsl, path, run
+def execute(): #pylint: disable=unused-variable
+  import glob, os, re
+  from mrtrix3 import app, file, fsl, path, run #pylint: disable=dredefined-builtin
 
   def checkFile(filepath):
     import os
@@ -100,11 +100,13 @@ def execute():
     have_first = have_fast = False
     app.warn('Environment variable FSLDIR is not set; script will run without FSL components')
 
-
-  hipp_subfield_image_map = { os.path.join(mri_dir, 'lh.hippoSfLabels-T1.v10.mgz'): 'Left-Hippocampus',
-                              os.path.join(mri_dir, 'rh.hippoSfLabels-T1.v10.mgz'): 'Right-Hippocampus' }
-
-  if all(os.path.isfile(entry) for entry in hipp_subfield_image_map.keys()):
+  # Need to perform a better search for hippocampal subfield output: names & version numbers may change
+  hipp_subfield_regex = re.compile('[lr]h\.hippo[a-zA-Z]*Labels-T1\.v[0-9]+\.mg[hz]')
+  hipp_subfield_images = sorted(list(filter(hipp_subfield_regex.match, os.listdir(mri_dir))))
+  app.var(hipp_subfield_images)
+  if len(hipp_subfield_images) == 2 and hipp_subfield_images[0][0] == 'l' and hipp_subfield_images[1][0] == 'r':
+    hipp_subfield_image_map = { os.path.join(mri_dir, hipp_subfield_images[0]): 'Left-Hippocampus',
+                                os.path.join(mri_dir, hipp_subfield_images[1]): 'Right-Hippocampus' }
     progress = app.progressBar('Using detected FreeSurfer hippocampal subfields module output', 6)
     for filename, outputname in hipp_subfield_image_map.items():
       init_mesh_path = os.path.basename(filename)[0:2] + '_hipp_init.vtk'
@@ -123,7 +125,10 @@ def execute():
     if have_first:
       sgm_first_map = { key:value for key, value in sgm_first_map.items() if value not in hipp_subfield_image_map.values() }
   else:
-    app.console('No FreeSurfer hippocampal subfields module output detected; ' + ('FIRST segmentation' if have_first else 'standard FreeSurfer segmentation') + ' will instead be used')
+    app.console(('Unrecognised ' if hipp_subfield_images else 'No ') + \
+                'FreeSurfer hippocampal subfields module output detected; ' + \
+                ('FIRST segmentation ' if have_first else 'standard FreeSurfer segmentation ') + \
+                'will instead be used')
     hipp_subfield_image_map = { }
 
 
