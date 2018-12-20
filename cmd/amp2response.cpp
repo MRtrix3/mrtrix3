@@ -110,12 +110,103 @@ Eigen::Matrix<default_type, 3, 3> gen_rotation_matrix (const Eigen::Vector3& dir
 
 vector<size_t> all_volumes (const size_t num)
 {
-  vector<size_t> result;
-  result.reserve (num);
+  vector<size_t> result (num);
   for (size_t i = 0; i != num; ++i)
-    result.push_back (i);
+    result[i] = i;
   return result;
 }
+
+
+
+
+class Accumulator {
+  public:
+    class Shared {
+      public:
+        Shared (int lmax, const vector<size_t>& volumes, const Eigen::MatrixXd& dirs) :
+          lmax (lmax),
+          dirs (dirs),
+          volumes (volumes),
+          M (Eigen::MatrixXd::Zero (Math::ZSH::NforL (lmax), Math::ZSH::NforL (lmax))),
+          b (Eigen::VectorXd::Zero (M.rows())),
+          count (0) { }
+
+        const int lmax;
+        const Eigen::MatrixXd& dirs;
+        const vector<size_t>& volumes;
+        Eigen::MatrixXd M;
+        Eigen::VectorXd b;
+        size_t count;
+    };
+
+    Accumulator (Shared& shared) :
+      S (shared),
+      signals (S.volumes.size()),
+      b (S.b),
+      M (S.M),
+      count (0),
+      rotated_dirs_cartesian (S.dirs.rows(), 3) { }
+
+    ~Accumulator ()
+    {
+      // accumulate results from all threads:
+      S.M += M;
+      S.b += b;
+      S.count += count;
+    }
+
+    void operator() (Image<float>& signal_image, Image<float>& dir_image, Image<bool>& mask)
+    {
+      if (mask.value()) {
+        ++count;
+
+        // Grab the fibre direction
+        Eigen::Vector3 fibre_dir;
+        for (dir_image.index(3) = 0; dir_image.index(3) != 3; ++dir_image.index(3))
+          fibre_dir[dir_image.index(3)] = dir_image.value();
+        fibre_dir.normalize();
+
+        // Rotate the directions into a new reference frame,
+        //   where the Z axis is defined by the specified direction
+        auto R = gen_rotation_matrix (fibre_dir);
+        rotated_dirs_cartesian.transpose() = R * S.dirs.transpose();
+
+        // Convert directions from Euclidean space to azimuth/elevation pairs
+        Eigen::MatrixXd rotated_dirs_azel = Math::Sphere::cartesian2spherical (rotated_dirs_cartesian);
+
+        // Constrain elevations to between 0 and pi/2
+        for (ssize_t i = 0; i != rotated_dirs_azel.rows(); ++i) {
+          if (rotated_dirs_azel (i, 1) > Math::pi_2) {
+            if (rotated_dirs_azel (i, 0) > Math::pi)
+              rotated_dirs_azel (i, 0) -= Math::pi;
+            else
+              rotated_dirs_azel (i, 0) += Math::pi;
+            rotated_dirs_azel (i, 1) = Math::pi - rotated_dirs_azel (i, 1);
+          }
+        }
+
+        // Generate the ZSH -> amplitude transform
+        transform = Math::ZSH::init_amp_transform<default_type> (rotated_dirs_azel.col(1), S.lmax);
+
+        // Grab the image data
+        for (size_t i = 0; i != S.volumes.size(); ++i) {
+          signal_image.index(3) = S.volumes[i];
+          signals[i] = signal_image.value();
+        }
+
+        // accumulate results:
+        b += transform.transpose() * signals;
+        M.selfadjointView<Eigen::Lower>().rankUpdate (transform.transpose());
+      }
+    }
+
+  protected:
+    Shared& S;
+    Eigen::VectorXd signals, b;
+    Eigen::MatrixXd M, transform;
+    size_t count;
+    Eigen::Matrix<default_type, Eigen::Dynamic, 3> rotated_dirs_cartesian;
+};
 
 
 void run ()
@@ -223,8 +314,25 @@ void run ()
 
     std::string shell_desc = (dirs_azel.size() > 1) ? ("_shell" + str(shell_index)) : "";
 
-    Eigen::MatrixXd dirs_cartesian = Math::Sphere::spherical2cartesian (dirs_azel[shell_index]);
+    // check the ZSH -> amplitude transform:
+    {
+      auto transform = Math::ZSH::init_amp_transform<default_type> (dirs_azel[shell_index].col(1), lmax[shell_index]);
+      if (!transform.allFinite()) {
+        Exception e ("Unable to construct A2SH transformation for shell b=" + str(int(std::round((*shells)[shell_index].get_mean()))) + ";");
+        e.push_back ("  lmax (" + str(lmax[shell_index]) + ") may be too large for this shell");
+        if (!shell_index && (*shells)[0].is_bzero())
+          e.push_back ("  (this appears to be a b=0 shell, and therefore lmax should be set to 0 for this shell)");
+        throw e;
+      }
+    }
 
+
+    auto dirs_cartesian = Math::Sphere::spherical2cartesian (dirs_azel[shell_index]);
+
+    Accumulator::Shared shared (lmax[shell_index], volumes[shell_index], dirs_cartesian);
+    ThreadedLoop(image, 0, 3).run (Accumulator (shared), image, dir_image, mask);
+
+/*
     // All directions from all SF voxels get concatenated into a single large matrix
     Eigen::MatrixXd cat_transforms (num_voxels * dirs_azel[shell_index].rows(), Math::ZSH::NforL (lmax[shell_index]));
     Eigen::VectorXd cat_data (num_voxels * dirs_azel[shell_index].rows());
@@ -333,6 +441,7 @@ void run ()
 #ifdef AMP2RESPONSE_DEBUG
     save_matrix (scatter, "scatter" + shell_desc + ".csv");
 #endif
+*/
 
     Eigen::VectorXd rf;
     shell_desc = (shells && shells->count() > 1) ? ("Shell b=" + str(int(std::round((*shells)[shell_index].get_mean()))) + ": ") : "";
@@ -341,14 +450,20 @@ void run ()
 
       if (get_options("noconstraint").size()) {
 
+        rf = shared.M.llt().solve (shared.b);
+
+        CONSOLE (shell_desc + "Response function [" + str(rf.transpose().cast<float>()) + "] solved via ordinary least-squares from " + str(shared.count) + " voxels");
+
+/*
         // Get an ordinary least squares solution
         Eigen::HouseholderQR<Eigen::MatrixXd> solver (cat_transforms);
         rf = solver.solve (cat_data);
 
         CONSOLE (shell_desc + "Response function [" + str(rf.transpose().cast<float>()) + "] solved via ordinary least-squares from " + str(voxel_counter) + " voxels");
+        */
 
       } else {
-
+/*
         // Generate the constraint matrix
         // We are going to both constrain the amplitudes to be non-negative, and constrain the derivatives to be non-negative
         const size_t num_angles_constraint = 90;
@@ -371,16 +486,17 @@ void run ()
         const size_t niter = solver (rf, cat_data);
 
         CONSOLE (shell_desc + "Response function [" + str(rf.transpose().cast<float>()) + " ] solved after " + str(niter) + " constraint iterations from " + str(voxel_counter) + " voxels");
+*/
 
       }
-
     } else {
 
       // lmax is zero - perform a straight average of the image data
       rf.resize(1);
-      rf[0] = cat_data.mean() * std::sqrt(4*Math::pi);
+      rf[0] = shared.b(0) / shared.M(0,0);
 
-      CONSOLE (shell_desc + "Response function [ " + str(float(rf[0])) + " ] from average of " + str(voxel_counter) + " voxels");
+      //CONSOLE (shell_desc + "Response function [ " + str(float(rf[0])) + " ] from average of " + str(voxel_counter) + " voxels");
+      CONSOLE (shell_desc + "Response function [ " + str(float(rf[0])) + " ] from average of " + str(shared.count) + " voxels");
 
     }
 
