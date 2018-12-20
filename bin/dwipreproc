@@ -545,26 +545,15 @@ def execute(): #pylint: disable=unused-variable
 
     if app.ARGS.align_seepi:
 
-      dwi_te = dwi_header.keyval().get('EchoTime')
-      se_epi_te = se_epi_header.keyval().get('EchoTime')
-      if dwi_te and se_epi_te and dwi_te != se_epi_te:
-        app.warn('It appears that the spin-echo EPI images used for inhomogeneity field estimation have a different echo time to the DWIs being corrected. '
-                 'This may cause issues in estimation of the field, as the first DWI b=0 volume will be added to the input series to topup '
-                 'due to use of the -align_seepi option.')
-
-      dwi_tr = dwi_header.keyval().get('RepetitionTime')
-      se_epi_tr = se_epi_header.keyval().get('RepetitionTime')
-      if dwi_tr and se_epi_tr and dwi_tr != se_epi_tr:
-        app.warn('It appears that the spin-echo EPI images used for inhomogeneity field estimation have a different repetition time to the DWIs being corrected. '
-                 'This may cause issues in estimation of the field, as the first DWI b=0 volume will be added to the input series to topup '
-                 'due to use of the -align_seepi option.')
-
-      dwi_flip = dwi_header.keyval().get('FlipAngle')
-      se_epi_flip = se_epi_header.keyval().get('FlipAngle')
-      if dwi_flip and se_epi_flip and dwi_flip != se_epi_flip:
-        app.warn('It appears that the spin-echo EPI images used for inhomogeneity field estimation have a different flip angle to the DWIs being corrected. '
-                 'This may cause issues in estimation of the field, as the first DWI b=0 volume will be added to the input series to topup '
-                 'due to use of the -align_seepi option.')
+      for field_name, description in { 'EchoTime': 'echo time',
+                                       'RepetitionTime': 'repetition time',
+                                       'FlipAngle': 'flip angle' }.items():
+        dwi_value = dwi_header.keyval().get(field_name)
+        se_epi_value = se_epi_header.keyval().get(field_name)
+        if dwi_value and se_epi_value and dwi_value != se_epi_value:
+          app.warn('It appears that the spin-echo EPI images used for inhomogeneity field estimation have a different ' + description + ' to the DWIs being corrected. '
+                   'This may cause issues in estimation of the field, as the first DWI b=0 volume will be added to the input series to topup '
+                   'due to use of the -align_seepi option.')
 
       # If we are using the -se_epi option, and hence the input images to topup have not come from the DWIs themselves,
       #   we need to insert the first b=0 DWI volume to the start of the topup input image. Otherwise, the field estimated
