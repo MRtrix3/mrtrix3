@@ -977,10 +977,20 @@ else:
   #   (even if this doesn't cause an issue with the subsequent mrcalc command, it may in the future, it's better for
   #   visualising the script temporary files, and it gives the user a warning about an out-of-date FSL)
   field_map_image = fsl.findImage('field_map')
-  if not image.match('topup_in.nii', field_map_image):
+  field_map_header = image.Header(field_map_image)
+  if not image.match('topup_in.nii', field_map_header, 3):
     app.warn('topup output field image has erroneous header; recommend updating FSL to version 5.0.8 or later')
     new_field_map_image = 'field_map_fix.mif'
     run.command('mrtransform ' + field_map_image + ' -replace topup_in.nii ' + new_field_map_image)
+    file.delTemporary(field_map_image)
+    field_map_image = new_field_map_image
+  # In FSL 6.0.0, field map image is erroneously constructed with the same number of volumes as the input image,
+  #   with all but the first volume containing intensity-scaled duplicates of the uncorrected input images
+  # The first volume is however the expected field offset image
+  elif len(field_map_header.size()) == 4:
+    app.console('Correcting erroneous FSL 6.0.0 field map image output')
+    new_field_map_image = 'field_map_fix.mif'
+    run.command('mrconvert ' + field_map_image + ' -coord 3 0 -axes 0,1,2 ' + new_field_map_image)
     file.delTemporary(field_map_image)
     field_map_image = new_field_map_image
   file.delTemporary('topup_in.nii')
