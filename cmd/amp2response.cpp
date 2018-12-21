@@ -15,6 +15,7 @@
  */
 
 #include <Eigen/Dense>
+#include <mutex>
 
 #include "command.h"
 #include "header.h"
@@ -46,7 +47,7 @@ using namespace App;
 void usage ()
 {
 
-  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Estimate response function coefficients based on the DWI signal in single-fibre voxels";
 
@@ -119,9 +120,9 @@ vector<size_t> all_volumes (const size_t num)
 
 
 
-class Accumulator {
+class Accumulator { MEMALIGN(Accumulator)
   public:
-    class Shared {
+    class Shared { MEMALIGN(Shared)
       public:
         Shared (int lmax, const vector<size_t>& volumes, const Eigen::MatrixXd& dirs) :
           lmax (lmax),
@@ -137,11 +138,12 @@ class Accumulator {
         Eigen::MatrixXd M;
         Eigen::VectorXd b;
         size_t count;
+        std::mutex mutex;
     };
 
     Accumulator (Shared& shared) :
       S (shared),
-      signals (S.volumes.size()),
+      amplitudes (S.volumes.size()),
       b (S.b),
       M (S.M),
       count (0),
@@ -150,12 +152,13 @@ class Accumulator {
     ~Accumulator ()
     {
       // accumulate results from all threads:
+      std::lock_guard<std::mutex> lock (S.mutex);
       S.M += M;
       S.b += b;
       S.count += count;
     }
 
-    void operator() (Image<float>& signal_image, Image<float>& dir_image, Image<bool>& mask)
+    void operator() (Image<float>& amp_image, Image<float>& dir_image, Image<bool>& mask)
     {
       if (mask.value()) {
         ++count;
@@ -190,19 +193,19 @@ class Accumulator {
 
         // Grab the image data
         for (size_t i = 0; i != S.volumes.size(); ++i) {
-          signal_image.index(3) = S.volumes[i];
-          signals[i] = signal_image.value();
+          amp_image.index(3) = S.volumes[i];
+          amplitudes[i] = amp_image.value();
         }
 
         // accumulate results:
-        b += transform.transpose() * signals;
+        b += transform.transpose() * amplitudes;
         M.selfadjointView<Eigen::Lower>().rankUpdate (transform.transpose());
       }
     }
 
   protected:
     Shared& S;
-    Eigen::VectorXd signals, b;
+    Eigen::VectorXd amplitudes, b;
     Eigen::MatrixXd M, transform;
     size_t count;
     Eigen::Matrix<default_type, Eigen::Dynamic, 3> rotated_dirs_cartesian;
