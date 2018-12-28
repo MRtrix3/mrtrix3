@@ -298,11 +298,9 @@ def command(cmd, shell=False): #pylint: disable=unused-variable
         line[0] = version_match(line[0])
         if shared.get_num_threads() is not None:
           line.extend( [ '-nthreads', str(shared.get_num_threads()) ] )
-        # Get MRtrix3 binaries to output additional INFO-level information if running in debug mode
-        if shared.verbosity == 3:
+        # Get MRtrix3 binaries to output additional INFO-level information if script running in debug mode
+        if shared.verbosity == 3 and not any(entry in line for entry in ['-info', '-debug']):
           line.append('-info')
-        elif not shared.verbosity:
-          line.append('-quiet')
       else:
         line[0] = exe_name(line[0])
       shebang = _shebang(line[0])
