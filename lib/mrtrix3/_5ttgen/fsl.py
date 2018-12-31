@@ -38,6 +38,7 @@ def get_inputs(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import math, os
+  from distutils import find_executable
   from mrtrix3 import app, fsl, image, is_windows, MRtrixError, path, run
 
   if is_windows():
@@ -129,7 +130,8 @@ def execute(): #pylint: disable=unused-variable
     try:
       pre_bet_image = fsl.find_image('T1_preBET')
     except MRtrixError:
-      app.warn('FSL script \'standard_space_roi\' did not complete successfully; '
+      app.warn('FSL script \'standard_space_roi\' did not complete successfully' + \
+               ('' if find_executable('dc') else ' (possibly due to program \'dc\' not being installed') + '; ' + \
                'attempting to continue by providing un-cropped image to BET')
       pre_bet_image = 'T1.nii'
 
@@ -183,7 +185,8 @@ def execute(): #pylint: disable=unused-variable
     pve_image_list.append(pve_image_path)
     progress.increment()
   progress.done()
-  run.command('mrmath ' + ' '.join(pve_image_list) + ' sum - | mrcalc - 1.0 -min all_sgms.mif')
+  run.command(['mrmath', pve_image_list, 'sum', '-', '|', \
+               'mrcalc', '-', '1.0', '-min', 'all_sgms.mif'])
 
   # Combine the tissue images into the 5TT format within the script itself
   fast_output_prefix = fast_t1_input.split('.')[0]
