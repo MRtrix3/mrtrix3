@@ -1092,7 +1092,12 @@ def execute(): #pylint: disable=unused-variable
       app.cleanup('weight' + str(index+1) + '.mif')
 
     # Finally the recombined volumes must be concatenated to produce the resulting image series
-    run.command('mrcat ' + ' '.join(combined_image_list) + ' - -axis 3 | mrconvert - result.mif' + dwi_post_eddy_crop_option + ' -fslgrad bvecs_combined bvals_combined' + stride_option)
+    combine_command = ['mrcat', combined_image_list, '-', '-axis', '3', '|', \
+                       'mrconvert', '-', 'result.mif', '-fslgrad', 'bvecs_combined', 'bvals_combined']
+    if dwi_post_eddy_crop_option:
+      combine_command.extend(dwi_post_eddy_crop_option.split(' '))
+    combine_command.extend(stride_option.split(' '))
+    run.command(combine_command)
     app.cleanup(combined_image_list)
 
 
