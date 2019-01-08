@@ -21,9 +21,13 @@
 
 #include "fixel/helpers.h"
 #include "fixel/keys.h"
+#include "fixel/types.h"
+#include "fixel/types.h"
 
 using namespace MR;
 using namespace App;
+
+using Fixel::index_type;
 
 
 void usage ()
@@ -50,7 +54,7 @@ void run ()
   const auto in_directory = argument[0];
   Fixel::check_fixel_directory (in_directory);
   Header in_index_header = Fixel::find_index_header (in_directory);
-  auto in_index_image = in_index_header.get_image <uint32_t>();
+  auto in_index_image = in_index_header.get_image <index_type>();
 
   auto mask_image = Image<bool>::open (argument[1]);
   Fixel::check_fixel_size (in_index_image, mask_image);
@@ -59,7 +63,7 @@ void run ()
   Fixel::check_fixel_directory (out_fixel_directory, true);
 
   Header out_header = Header (in_index_image);
-  size_t total_nfixels = Fixel::get_number_of_fixels (in_index_header);
+  index_type total_nfixels = Fixel::get_number_of_fixels (in_index_header);
 
   // We need to do a first pass of the mask image to determine the number of cropped fixels
   for (auto l = Loop (0) (mask_image); l; ++l) {
@@ -68,7 +72,7 @@ void run ()
   }
 
   out_header.keyval ()[Fixel::n_fixels_key] = str (total_nfixels);
-  auto out_index_image = Image<uint32_t>::create (Path::join (out_fixel_directory, Path::basename (in_index_image.name())), out_header);
+  auto out_index_image = Image<index_type>::create (Path::join (out_fixel_directory, Path::basename (in_index_image.name())), out_header);
 
 
   // Open all data images and create output date images with size equal to expected number of fixels
@@ -86,16 +90,16 @@ void run ()
   }
 
   mask_image.index (1) = 0;
-  uint32_t out_offset = 0;
+  index_type out_offset = 0;
   for (auto l = Loop ("cropping fixel image", 0, 3) (in_index_image, out_index_image); l; ++l) {
 
     in_index_image.index(3) = 0;
-    size_t in_nfixels = in_index_image.value();
+    index_type in_nfixels = in_index_image.value();
     in_index_image.index(3) = 1;
-    uint32_t in_offset = in_index_image.value();
+    index_type in_offset = in_index_image.value();
 
-    size_t out_nfixels = 0;
-    for (size_t i = 0; i < in_nfixels; ++i) {
+    index_type out_nfixels = 0;
+    for (index_type i = 0; i < in_nfixels; ++i) {
       mask_image.index(0) = in_offset + i;
       if (mask_image.value()) {
         for (size_t d = 0; d < in_data_images.size(); ++d) {
