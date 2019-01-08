@@ -82,6 +82,7 @@ namespace MR
           // Create some memory to work with:
           // Stores a flag for each voxel as encoded in enum vox_mesh_t
           Header H (image);
+          H.datatype() = DataType::UInt8;
           auto init_seg = Image<uint8_t>::scratch (H);
           for (auto l = Loop(init_seg) (init_seg); l; ++l)
             init_seg.value() = vox_mesh_t::UNDEFINED;
@@ -216,7 +217,7 @@ namespace MR
           //   by the normal at the vertex.
           // Each voxel not directly on the mesh should then be assigned as prelim_inside or prelim_outside
           //   depending on whether the summed value is positive or negative
-          auto sum_distances = Image<float>::scratch (H, "Sum of distances from polygon planes");
+          auto sum_distances = Image<float>::scratch (image, "Sum of distances from polygon planes");
           Vox adj_voxel;
           for (size_t i = 0; i != mesh.num_vertices(); ++i) {
             const Vox centre_voxel (mesh.vert(i));
@@ -283,7 +284,35 @@ namespace MR
               } while (to_expand.size());
               if (prelim_inside_count == prelim_outside_count)
                 throw Exception ("Mapping mesh to image failed: Unable to label connected voxel region as inside or outside mesh");
-              const vox_mesh_t fill_value = (prelim_inside_count > prelim_outside_count ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE);
+              vox_mesh_t fill_value = vox_mesh_t::UNDEFINED;
+              if (prelim_inside_count > 10 * prelim_outside_count) {
+                fill_value = vox_mesh_t::INSIDE;
+              } else if (prelim_outside_count > 10 * prelim_inside_count) {
+                fill_value = vox_mesh_t::OUTSIDE;
+              } else {
+                // Residual ambiguity about whether the connected region is inside or outside the surface
+                // What other tests can we perform to make this decision?
+                // If all eight corners of the FoV are included in to_fill, we can be
+                //   reasonably confident that this connected region lies outside the structure
+                size_t corner_count = 0;
+                for (const auto voxel : to_fill) {
+                  if ((voxel[0] == 0 || voxel[0] == H.size(0) - 1) &&
+                      (voxel[1] == 0 || voxel[1] == H.size(1) - 1) &&
+                      (voxel[2] == 0 || voxel[2] == H.size(2) - 1))
+                    ++corner_count;
+                }
+                if (corner_count == 8) {
+                  fill_value = vox_mesh_t::OUTSIDE;
+                } else if (!corner_count) {
+                  fill_value = vox_mesh_t::INSIDE;
+                } else {
+                  Exception e ("Internal error: fundamental ambiguity in voxel-based segmentation of surface");
+                  e.push_back ("Fill region size: " + str(to_fill.size()));
+                  e.push_back ("Preliminary classifications: " + str(prelim_inside_count) + " inside, " + str(prelim_outside_count) + " outside");
+                  e.push_back ("FoV corners: " + str(corner_count));
+                  throw e;
+                }
+              }
               for (auto voxel : to_fill) {
                 assign_pos_of (voxel).to (init_seg);
                 init_seg.value() = fill_value;
