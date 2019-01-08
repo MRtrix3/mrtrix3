@@ -32,11 +32,15 @@ def all_in_dir(directory, dir_path=True, ignore_hidden_files=True): #pylint: dis
 #   If the filesystem path provided by the script is to be interpreted in isolation, rather than as one part
 #     of a command string, then parameter 'escape' should be set to False in order to not add quotation marks
 def from_user(filename, escape=True): #pylint: disable=unused-variable
-  import os, shlex
+  import os
+  try:
+    from shlex import quote as cmd_quote
+  except ImportError:
+    from pipes import quote as cmd_quote
   from mrtrix3 import app
   fullpath = os.path.abspath(os.path.join(app.WORKING_DIR, filename))
   if escape:
-    fullpath = shlex.quote(fullpath)
+    fullpath = cmd_quote(fullpath)
   app.debug(filename + ' -> ' + fullpath)
   return fullpath
 
@@ -136,11 +140,15 @@ def shared_data_path(): #pylint: disable=unused-variable
 #   as long as parameter 'escape' is true (if the path yielded by this function is to be interpreted in
 #   isolation rather than as one part of a command string, parameter 'escape' should be set to False)
 def to_scratch(filename, escape=True): #pylint: disable=unused-variable
-  import os, shlex
+  import os
+  try:
+    from shlex import quote as cmd_quote
+  except ImportError:
+    from pipes import quote as cmd_quote
   from mrtrix3 import app
   fullpath = os.path.abspath(os.path.join(app.SCRATCH_DIR, filename))
   if escape:
-    fullpath = shlex.quote(fullpath)
+    fullpath = cmd_quote(fullpath)
   app.debug(filename + ' -> ' + fullpath)
   return fullpath
 
