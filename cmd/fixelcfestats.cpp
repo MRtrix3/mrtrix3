@@ -98,7 +98,8 @@ void usage ()
 
   + Argument ("contrast", "the contrast matrix, specified as rows of weights").type_file_in ()
 
-  + Argument ("tracks", "the tracks used to determine fixel-fixel connectivity").type_tracks_in ()
+  + Argument ("connectivity", "the data used to determine fixel-fixel connectivity; "
+                              "either a pre-computed fixel-fixel connectivity matrix, or a whole-brain tractogram (see Description)").type_various ()
 
   + Argument ("out_fixel_directory", "the output directory where results will be saved. Will be created if it does not exist").type_text();
 
