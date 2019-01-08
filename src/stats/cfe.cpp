@@ -19,194 +19,37 @@ namespace MR
 {
   namespace Stats
   {
-    namespace CFE
+
+
+
+    CFE::CFE (const Fixel::Matrix::norm_matrix_type& connectivity_matrix,
+              const value_type dh,
+              const value_type E,
+              const value_type H) :
+        connectivity_matrix (connectivity_matrix),
+        dh (dh),
+        E (E),
+        H (H) { }
+
+
+
+    void CFE::operator() (in_column_type stats, out_column_type enhanced_stats) const
     {
-
-
-
-      void InitMatrixFixel::add (const vector<index_type>& indices)
-      {
-        if ((*this).empty()) {
-          (*this).reserve (indices.size());
-          for (auto i : indices)
-            (*this).emplace_back (InitMatrixElement (i));
-          track_count = 1;
-          return;
+      enhanced_stats.setZero();
+      vector<Fixel::Matrix::NormElement>::const_iterator connected_fixel;
+      for (size_t fixel = 0; fixel < connectivity_matrix.size(); ++fixel) {
+        for (value_type h = this->dh; h < stats[fixel]; h +=  this->dh) {
+          value_type extent = 0.0;
+          for (connected_fixel = connectivity_matrix[fixel].begin(); connected_fixel != connectivity_matrix[fixel].end(); ++connected_fixel)
+            if (stats[connected_fixel->index()] > h)
+              extent += connected_fixel->value();
+          enhanced_stats[fixel] += std::pow (extent, E) * std::pow (h, H);
         }
-
-        ssize_t self_index = 0, in_index = 0;
-
-        // For anything in indices that doesn't yet appear in *this,
-        //   add to this list; once completed, extend *this by the appropriate
-        //   amount, and insert these into the appropriate locations
-        // Need to continue making use of the existing allocated memory
-        // Break into two passes:
-        // - On first pass, increment those elements that already exist, and count the number of
-        //   fixels that are not yet part of the set (but don't store them)
-        // - Extend the length of the vector by as much as is required to fit the new elements
-        // - On second pass, from back to front, move elements from previous back of vector to new back,
-        //   inserting new elements at appropriate locations to retain sortedness of list
-        const ssize_t old_size = (*this).size();
-        const ssize_t in_count = indices.size();
-        size_t intersection = 0;
-        while (self_index < old_size && in_index < in_count) {
-          if ((*this)[self_index].index() == indices[in_index]) {
-            ++(*this)[self_index];
-            ++self_index;
-            ++in_index;
-            ++intersection;
-          } else if ((*this)[self_index].index() > indices[in_index]) {
-            ++in_index;
-          } else {
-            ++self_index;
-          }
-        }
-
-        self_index = old_size - 1;
-        in_index = indices.size() - 1;
-
-        // It's possible that a resize() call may always result in requesting
-        //   a re-assignment of memory that exactly matches the size, which may in turn
-        //   lead to memory bloat due to inability to return the old memory
-        // If this occurs, iteratively calling push_back() may instead engage the
-        //   memory-reservation-doubling behaviour
-        while ((*this).size() < old_size + indices.size() - intersection)
-          (*this).push_back (InitMatrixElement());
-        ssize_t out_index = (*this).size() - 1;
-
-        // For each output vector location, need to determine whether it should come from copying an existing entry,
-        //   or creating a new one
-        while (out_index > self_index && self_index >= 0 && in_index >= 0) {
-          if ((*this)[self_index].index() == indices[in_index]) {
-            (*this)[out_index] = (*this)[self_index];
-            --self_index;
-            --in_index;
-          } else if ((*this)[self_index].index() > indices[in_index]) {
-            (*this)[out_index] = (*this)[self_index];
-            --self_index;
-          } else {
-            (*this)[out_index] = InitMatrixElement (indices[in_index]);
-            --in_index;
-          }
-          --out_index;
-        }
-        if (self_index < 0) {
-          while (in_index >= 0 && out_index >= 0)
-            (*this)[out_index--] = InitMatrixElement (indices[in_index--]);
-        }
-
-        // Track total number of streamlines intersecting this fixel,
-        //   independently of the extent of fixel-fixel connectivity
-        ++track_count;
+        enhanced_stats[fixel] *= connectivity_matrix[fixel].norm_multiplier;
       }
-
-
-
-
-
-      TrackProcessor::TrackProcessor (const DWI::Tractography::Mapping::TrackMapperBase& mapper,
-                                      Image<index_type>& fixel_indexer,
-                                      const vector<direction_type>& fixel_directions,
-                                      Image<bool>& fixel_mask,
-                                      const value_type angular_threshold) :
-                                        mapper               (mapper),
-                                        fixel_indexer        (fixel_indexer) ,
-                                        fixel_directions     (fixel_directions),
-                                        fixel_mask           (fixel_mask),
-                                        angular_threshold_dp (std::cos (angular_threshold * (Math::pi/180.0))) { }
-
-
-
-
-      bool TrackProcessor::operator() (const DWI::Tractography::Streamline<>& tck,
-                                       vector<index_type>& out) const
-      {
-        DWI::Tractography::Mapping::SetVoxelDir in;
-        mapper (tck, in);
-
-        // For each voxel tract tangent, assign to a fixel
-        out.clear();
-        out.reserve (in.size());
-        for (SetVoxelDir::const_iterator i = in.begin(); i != in.end(); ++i) {
-          assign_pos_of (*i).to (fixel_indexer);
-          fixel_indexer.index(3) = 0;
-          const index_type num_fixels = fixel_indexer.value();
-          if (num_fixels > 0) {
-            fixel_indexer.index(3) = 1;
-            const index_type first_index = fixel_indexer.value();
-            const index_type last_index = first_index + num_fixels;
-            // Note: Streamlines can still be assigned to a fixel that is outside the mask;
-            //   however this will not be permitted to contribute to the matrix
-            index_type closest_fixel_index = num_fixels;
-            value_type largest_dp = 0.0;
-            const direction_type dir (i->get_dir().normalized());
-            for (index_type j = first_index; j < last_index; ++j) {
-              const value_type dp = abs (dir.dot (fixel_directions[j]));
-              if (dp > largest_dp) {
-                largest_dp = dp;
-                fixel_mask.index(0) = j;
-                if (fixel_mask.value())
-                  closest_fixel_index = j;
-              }
-            }
-            if (closest_fixel_index != num_fixels && largest_dp > angular_threshold_dp)
-              out.push_back (closest_fixel_index);
-          }
-        }
-
-        std::sort (out.begin(), out.end());
-        return true;
-      }
-
-
-
-
-      bool MappedTrackReceiver::operator() (const vector<index_type>& fixels)
-      {
-        try {
-          for (auto f : fixels)
-            connectivity_matrix[f].add (fixels);
-          return true;
-        } catch (...) {
-          throw Exception ("Error assigning memory for CFE connectivity matrix");
-          return false;
-        }
-      }
-
-
-
-
-
-
-      Enhancer::Enhancer (const norm_connectivity_matrix_type& connectivity_matrix,
-                          const value_type dh,
-                          const value_type E,
-                          const value_type H) :
-          connectivity_matrix (connectivity_matrix),
-          dh (dh),
-          E (E),
-          H (H) { }
-
-
-
-      void Enhancer::operator() (in_column_type stats, out_column_type enhanced_stats) const
-      {
-        enhanced_stats.setZero();
-        vector<NormMatrixElement>::const_iterator connected_fixel;
-        for (size_t fixel = 0; fixel < connectivity_matrix.size(); ++fixel) {
-          for (value_type h = this->dh; h < stats[fixel]; h +=  this->dh) {
-            value_type extent = 0.0;
-            for (connected_fixel = connectivity_matrix[fixel].begin(); connected_fixel != connectivity_matrix[fixel].end(); ++connected_fixel)
-              if (stats[connected_fixel->index()] > h)
-                extent += connected_fixel->value();
-            enhanced_stats[fixel] += std::pow (extent, E) * std::pow (h, H);
-          }
-          enhanced_stats[fixel] *= connectivity_matrix[fixel].norm_multiplier;
-        }
-      }
-
-
-
     }
+
+
+
   }
 }
