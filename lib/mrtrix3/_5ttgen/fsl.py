@@ -38,7 +38,7 @@ def get_inputs(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import math, os
-  from distutils import find_executable
+  from distutils.spawn import find_executable
   from mrtrix3 import app, fsl, image, is_windows, MRtrixError, path, run
 
   if is_windows():
