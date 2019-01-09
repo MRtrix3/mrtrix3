@@ -155,7 +155,7 @@ def execute(): #pylint: disable=unused-variable
       if not my_job:
         return
       try:
-        result = run.command(' '.join(my_job.cmd), True) # Run in shell mode
+        result = run.command(' '.join(my_job.cmd), shell=True)
         my_job.outputtext = result.stdout + result.stderr
         my_job.returncode = 0
       except run.MRtrixCmdError as exception:
@@ -180,7 +180,7 @@ def execute(): #pylint: disable=unused-variable
   else:
     for job in jobs:
       try:
-        result = run.command(' '.join(job.cmd), True) # Run in shell mode
+        result = run.command(' '.join(job.cmd), shell=True)
         job.outputtext = result.stdout + result.stderr
         job.returncode = 0
       except run.MRtrixCmdError as exception:

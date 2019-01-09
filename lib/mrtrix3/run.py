@@ -191,13 +191,18 @@ CommandReturn = collections.namedtuple('CommandReturn', 'stdout stderr')
 
 
 
-def command(cmd, shell=False, show=True): #pylint: disable=unused-variable
+def command(cmd, **kwargs): #pylint: disable=unused-variable
 
   import inspect, itertools, os, shlex, signal, string, subprocess, sys
   from distutils.spawn import find_executable
   from mrtrix3 import ANSI, app, EXE_LIST
 
   global shared #pylint: disable=invalid-name
+
+  shell = kwargs.pop('shell', False)
+  show = kwargs.pop('show', True)
+  if kwargs:
+    raise TypeError('Unsupported keyword arguments passed to run.command(): ' + str(kwargs))
 
   if isinstance(cmd, list):
     if shell:
