@@ -191,7 +191,7 @@ CommandReturn = collections.namedtuple('CommandReturn', 'stdout stderr')
 
 
 
-def command(cmd, shell=False, show_command_line=True): #pylint: disable=unused-variable
+def command(cmd, shell=False, show=True): #pylint: disable=unused-variable
 
   import inspect, itertools, os, shlex, signal, string, subprocess, sys
   from distutils.spawn import find_executable
@@ -247,7 +247,7 @@ def command(cmd, shell=False, show_command_line=True): #pylint: disable=unused-v
     cmdstack = [ cmdsplit ]
     with shared.lock:
       app.debug('To execute: ' + str(cmdstring))
-      if (shared.verbosity and show_command_line) or shared.verbosity > 1:
+      if (shared.verbosity and show) or shared.verbosity > 1:
         sys.stderr.write(ANSI.execute + 'Command:' + ANSI.clear + '  ' + cmdstring + '\n')
         sys.stderr.flush()
     this_command_index = shared.get_command_index()
@@ -315,7 +315,7 @@ def command(cmd, shell=False, show_command_line=True): #pylint: disable=unused-v
 
     with shared.lock:
       app.debug('To execute: ' + str(cmdstack))
-      if (shared.verbosity and show_command_line) or shared.verbosity > 1:
+      if (shared.verbosity and show) or shared.verbosity > 1:
         # Hide use of these options in mrconvert to alter header key-values and command history at the end of scripts
         if all(key in cmdsplit for key in [ '-copy_properties', '-append_property', 'command_history' ]):
           index = cmdsplit.index('-append_property')
@@ -463,7 +463,7 @@ def function(fn_to_execute, *args, **kwargs): #pylint: disable=unused-variable
   import os, sys
   from mrtrix3 import ANSI, app
 
-  show_function_line = kwargs.pop('show_function_line', True)
+  show = kwargs.pop('show', True)
 
   fnstring = fn_to_execute.__module__ + '.' + fn_to_execute.__name__ + \
              '(' + ', '.join(['\'' + str(a) + '\'' if isinstance(a, str) else str(a) for a in args]) + \
@@ -478,7 +478,7 @@ def function(fn_to_execute, *args, **kwargs): #pylint: disable=unused-variable
       sys.stderr.flush()
     return None
 
-  if (shared.verbosity and show_function_line) or shared.verbosity > 1:
+  if (shared.verbosity and show) or shared.verbosity > 1:
     sys.stderr.write(ANSI.execute + 'Function:' + ANSI.clear + ' ' + fnstring + '\n')
     sys.stderr.flush()
 
