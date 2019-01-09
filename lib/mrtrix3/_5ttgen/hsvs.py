@@ -64,56 +64,38 @@ def execute(): #pylint: disable=unused-variable
   have_first = True
   have_fast = True
   fsl_path = os.environ.get('FSLDIR', '')
-  fsl_T1_path = ''
   if fsl_path:
     # Use brain-extracted, bias-corrected image for FSL tools
     norm_image = os.path.join(mri_dir, 'norm.mgz')
     checkFile(norm_image)
-
-    # FreeSurfer may have manually permuted axes at time of subject import;
-    #   need to manually permute them back in order to provide FIRST with an
-    #   approximately LAS image
-    swapdim_cmd = fsl.exeName('fslswapdim', False)
-    if swapdim_cmd:
-      # Verify FAST availability
-      fast_cmd = fsl.exeName('fast', False)
-      if fast_cmd:
-        if fast_cmd == 'fast':
-          fast_suffix = fsl.suffix()
-        else:
-          fast_suffix = '.nii.gz'
+    run.command('mrconvert ' + norm_image + ' T1.nii -stride -1,+2,+3')
+    # Verify FAST availability
+    fast_cmd = fsl.exeName('fast', False)
+    if fast_cmd:
+      if fast_cmd == 'fast':
+        fast_suffix = fsl.suffix()
       else:
-        have_fast = False
-        app.warn('Could not find FSL program fast; script will not use fast for cerebellar tissue segmentation')
-      # Verify FIRST availability
-      first_cmd = fsl.exeName('run_first_all', False)
-      if first_cmd:
-        first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
-        if os.path.isdir(first_atlas_path):
-          sgm_first_map = { 'L_Accu':'Left-Accumbens-area',  'R_Accu':'Right-Accumbens-area', \
-                            'L_Amyg':'Left-Amygdala',        'R_Amyg':'Right-Amygdala', \
-                            'L_Caud':'Left-Caudate',         'R_Caud':'Right-Caudate', \
-                            'L_Hipp':'Left-Hippocampus',     'R_Hipp':'Right-Hippocampus', \
-                            'L_Pall':'Left-Pallidum',        'R_Pall':'Right-Pallidum', \
-                            'L_Puta':'Left-Putamen',         'R_Puta':'Right-Putamen', \
-                            'L_Thal':'Left-Thalamus-Proper', 'R_Thal':'Right-Thalamus-Proper' }
-        else:
-          app.warn('Atlases required for FSL\'s FIRST program not installed; script will proceed without using FIRST for sub-cortical grey matter segmentation')
-      else:
-        have_first = False
-        app.warn('Could not find FSL program run_first_all; script will proceed without using FIRST for sub-cortical grey matter segmentation')
-      if have_first or have_fast:
-        app.console('Converting T1-weighted image for use with FSL tools')
-        run.command('mrconvert ' + norm_image + ' T1_prereorient.nii')
-        # TODO fslswapdim forbids switching between neurological and radiological;
-        #   for general solution, would need to detect determinant of transformation of
-        #   input image, and make sure the convention is preserved in the output
-        run.command(swapdim_cmd + ' T1_prereorient.nii RL PA IS T1_LAS.nii')
-        file.delTemporary('T1_prereorient.nii')
-        fsl_T1_path = fsl.findImage('T1_LAS.nii')
+        fast_suffix = '.nii.gz'
     else:
-      have_first = have_fast = False
-      app.warn('Could not find FSL program fslswapdim; script will run without FSL components')
+      have_fast = False
+      app.warn('Could not find FSL program fast; script will not use fast for cerebellar tissue segmentation')
+    # Verify FIRST availability
+    first_cmd = fsl.exeName('run_first_all', False)
+    if first_cmd:
+      first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
+      if os.path.isdir(first_atlas_path):
+        sgm_first_map = { 'L_Accu':'Left-Accumbens-area',  'R_Accu':'Right-Accumbens-area', \
+                          'L_Amyg':'Left-Amygdala',        'R_Amyg':'Right-Amygdala', \
+                          'L_Caud':'Left-Caudate',         'R_Caud':'Right-Caudate', \
+                          'L_Hipp':'Left-Hippocampus',     'R_Hipp':'Right-Hippocampus', \
+                          'L_Pall':'Left-Pallidum',        'R_Pall':'Right-Pallidum', \
+                          'L_Puta':'Left-Putamen',         'R_Puta':'Right-Putamen', \
+                          'L_Thal':'Left-Thalamus-Proper', 'R_Thal':'Right-Thalamus-Proper' }
+      else:
+        app.warn('Atlases required for FSL\'s FIRST program not installed; script will proceed without using FIRST for sub-cortical grey matter segmentation')
+    else:
+      have_first = False
+      app.warn('Could not find FSL program run_first_all; script will proceed without using FIRST for sub-cortical grey matter segmentation')
   else:
     have_first = have_fast = False
     app.warn('Environment variable FSLDIR is not set; script will run without FSL components')
@@ -153,21 +135,21 @@ def execute(): #pylint: disable=unused-variable
 
   if have_first:
     app.console('Running FSL FIRST to segment sub-cortical grey matter structures')
-    run.command(first_cmd + ' -s ' + ','.join(sgm_first_map.keys()) + ' -i ' + fsl_T1_path + ' -b -o first')
+    run.command(first_cmd + ' -s ' + ','.join(sgm_first_map.keys()) + ' -i T1.nii -b -o first')
     fsl.checkFirst('first', sgm_first_map.keys())
     file.delTemporary(glob.glob('T1_to_std_sub.*'))
     progress = app.progressBar('Mapping sub-cortical structures segmented by FIRST from surface to voxel representation', 2*len(sgm_first_map))
     for key, value in sgm_first_map.items():
       vtk_in_path = 'first-' + key + '_first.vtk'
       vtk_converted_path = 'first-' + key + '_transformed.vtk'
-      run.command('meshconvert ' + vtk_in_path + ' ' + vtk_converted_path + ' -transform first2real ' + fsl_T1_path)
+      run.command('meshconvert ' + vtk_in_path + ' ' + vtk_converted_path + ' -transform first2real T1.nii')
       file.delTemporary(vtk_in_path)
       progress.increment()
       run.command('mesh2voxel ' + vtk_converted_path + ' ' + template_image + ' ' + value + '.mif')
       file.delTemporary(vtk_converted_path)
       progress.increment()
     if not have_fast:
-      file.delTemporary(fsl_T1_path)
+      file.delTemporary('T1.nii')
     file.delTemporary(glob.glob('first*'))
     progress.done()
 
@@ -414,10 +396,10 @@ def execute(): #pylint: disable=unused-variable
       progress.increment()
       # FAST image input needs to be pre-masked
       T1_cerebellum_mask_image = cerebellum_volume_image
-      run.command('mrcalc ' + fsl_T1_path + ' ' + T1_cerebellum_mask_image + ' -mult - | mrconvert - T1_cerebellum_precrop.mif')
+      run.command('mrcalc T1.nii ' + T1_cerebellum_mask_image + ' -mult - | mrconvert - T1_cerebellum_precrop.mif')
       progress.done()
 
-    file.delTemporary(fsl_T1_path)
+    file.delTemporary('T1.nii')
 
     # Any code below here should be compatible with cerebellum_volume_image.mif containing partial volume fractions
     #   (in the case of no explicit template image, it's a mask, but the logic still applies)
