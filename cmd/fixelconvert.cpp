@@ -44,8 +44,8 @@ void usage ()
   SYNOPSIS = "Convert between the old format fixel image (.msf / .msh) and the new fixel directory format";
 
   ARGUMENTS
-  + Argument ("fixel_in",  "the input fixel file / directory.").type_text()
-  + Argument ("fixel_out", "the output fixel file / directory.").type_text();
+  + Argument ("fixel_in",  "the input fixel file / directory.").type_various()
+  + Argument ("fixel_out", "the output fixel file / directory.").type_various();
 
   OPTIONS
   + OptionGroup ("Options for converting from old to new format")
@@ -54,7 +54,7 @@ void usage ()
     + Option ("nii", "output the index, directions and data file in NIfTI format instead of .mif")
     + Option ("out_size", "also output the 'size' field from the old format")
     + Option ("template", "specify an existing fixel directory (in the new format) to which the new output should conform")
-      + Argument ("path").type_text()
+      + Argument ("path").type_directory_in()
 
   + OptionGroup ("Options for converting from new to old format")
     + Option ("value", "nominate the data file to import to the 'value' field in the old format")

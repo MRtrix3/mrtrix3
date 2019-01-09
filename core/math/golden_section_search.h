@@ -58,7 +58,7 @@ namespace MR
         const ValueType g1 = 0.61803399, g2 = 1 - g1;
         ValueType x0 = min_bound, x1, x2, x3 = max_bound;
 
-        if (std::abs(max_bound - init_estimate) > std::abs(init_estimate - min_bound)) {
+        if (abs(max_bound - init_estimate) > abs(init_estimate - min_bound)) {
           x1 = init_estimate;
           x2 = init_estimate + g2 * (max_bound - init_estimate);
         } else {
@@ -69,7 +69,7 @@ namespace MR
         ValueType f1 = function(x1);
         ValueType f2 = function(x2);
 
-        while (tolerance * (std::abs(x1) + std::abs(x2)) < std::abs(x3 - x0)) {
+        while (tolerance * (abs(x1) + abs(x2)) < abs(x3 - x0)) {
           if (f2 < f1) {
             x0 = x1;
             x1 = x2;

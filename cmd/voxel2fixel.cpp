@@ -39,7 +39,7 @@ void usage ()
   + Argument ("image_in", "the input image.").type_image_in()
   + Argument ("fixel_directory_in",  "the input fixel directory. Used to define the fixels and their directions").type_directory_in()
   + Argument ("fixel_directory_out", "the fixel directory where the output will be written. This can be the same as the input directory if desired").type_text()
-  + Argument ("fixel_data_out", "the name of the fixel data image.").type_image_out();
+  + Argument ("fixel_data_out", "the name of the fixel data image.").type_text();
 }
 
 

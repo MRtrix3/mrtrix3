@@ -51,7 +51,7 @@ namespace MR {
         min = std::min (min, i);
         max = std::max (max, i);
         mean += i;
-        mean_abs += std::abs (i);
+        mean_abs += abs (i);
         var += Math::pow2 (i);
         ++count;
         if (i)

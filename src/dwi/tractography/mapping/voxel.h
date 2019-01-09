@@ -48,7 +48,7 @@ namespace MR {
 
         inline Eigen::Vector3 vec2DEC (const Eigen::Vector3& d)
         {
-          return { std::abs(d[0]), std::abs(d[1]), std::abs(d[2]) };
+          return { abs(d[0]), abs(d[1]), abs(d[2]) };
         }
 
 

@@ -77,7 +77,7 @@ namespace MR
            Header header (destination);
            header.ndim() = 4;
            header.size(3) = 3;
-           Stride::set (header, Stride::contiguous_along_axis (3));
+           Stride::set (header, Stride::contiguous_along_axis (3, header));
            auto warp_resliced = Image<typename WarpType::value_type>::scratch (header);
            reslice<Interp::Cubic> (warp, warp_resliced, Adapter::NoTransform, oversample);
 

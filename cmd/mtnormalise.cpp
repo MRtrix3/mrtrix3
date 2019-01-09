@@ -331,8 +331,8 @@ void run_primitive () {
   auto outlier_rejection = [&](float outlier_range) {
 
     auto summed_log = ImageType::scratch (header_3D, "Log of summed tissue volumes");
-    for (size_t j = 0; j < n_tissue_types; ++j) {
-      for (auto i = Loop (0, 3) (summed_log, combined_tissue, norm_field_image); i; ++i) {
+    for (auto i = Loop (0, 3) (summed_log, combined_tissue, norm_field_image); i; ++i) {
+      for (size_t j = 0; j < n_tissue_types; ++j) {
         combined_tissue.index(3) = j;
         summed_log.value() += balance_factors(j) * combined_tissue.value() / norm_field_image.value();
       }

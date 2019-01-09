@@ -64,7 +64,7 @@ namespace MR
             __WriterBase__(const std::string& name) :
               count (0),
               total_count (0),
-              name (name), 
+              name (name),
               dtype (DataType::from<ValueType>()),
               count_offset (0),
               open_success (false)
@@ -93,7 +93,7 @@ namespace MR
                   out << i.first << ": " << i.second << "\n";
               }
 
-              for (const auto& i : properties.comments) 
+              for (const auto& i : properties.comments)
                 out << "comment: " << i << "\n";
 
               for (size_t n = 0; n < properties.seeds.num_seeds(); ++n)
@@ -119,6 +119,9 @@ namespace MR
               out << "mrtrix " + type + "    ";
               out.seekp (data_offset);
             }
+
+
+            void skip() { ++total_count; }
 
 
             uint64_t count, total_count;

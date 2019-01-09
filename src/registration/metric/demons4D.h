@@ -108,7 +108,7 @@ namespace MR
               im2_image.index(3) = vol;
               im1_image.index(3) = vol;
               default_type speed = im2_image.value() - im1_image.value();
-              if (std::abs (speed) < robustness_parameter)
+              if (abs (speed) < robustness_parameter)
                 speed = 0.0;
 
               default_type speed_squared = speed * speed;
@@ -119,7 +119,7 @@ namespace MR
 
               Eigen::Matrix<typename Im1ImageType::value_type, 3, 1> grad = (im2_gradient.value() + im1_gradient.value()).array() / 2.0;
               default_type denominator = speed_squared / normaliser + grad.squaredNorm();
-              if (!(std::abs (speed) < intensity_difference_threshold || denominator < denominator_threshold)) {
+              if (!(abs (speed) < intensity_difference_threshold || denominator < denominator_threshold)) {
                 auto tmp = (speed * grad) / denominator;
                 total_update[0] += tmp[0];
                 total_update[1] += tmp[1];

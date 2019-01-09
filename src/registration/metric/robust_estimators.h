@@ -33,7 +33,7 @@ namespace MR
           void operator() (const default_type& x,
                            default_type& residual,
                            default_type& slope) {
-            residual = std::abs(x);
+            residual = abs(x);
             slope = Math::sgn(x);
           }
 
@@ -75,8 +75,8 @@ namespace MR
           void operator() (const default_type& x,
                            default_type& residual,
                            default_type& slope) {
-            residual = std::pow(std::abs(x), power);
-            slope = Math::sgn(x) * std::pow(std::abs(x), power - 1.0);
+            residual = std::pow(abs(x), power);
+            slope = Math::sgn(x) * std::pow(abs(x), power - 1.0);
           }
 
           void operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,

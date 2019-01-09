@@ -36,6 +36,15 @@ Options for the dwibiascorrect script
 
 - **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
+Options for ANTS N4BiasFieldCorrection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-ants.b [100,3]** N4BiasFieldCorrection option -b. [initial mesh resolution in mm, spline order] This value is optimised for human adult data and needs to be adjusted for rodent data.
+
+- **-ants.c [1000,0.0]** N4BiasFieldCorrection option -c. [numberOfIterations,convergenceThreshold]
+
+- **-ants.s 4** N4BiasFieldCorrection option -s. shrink-factor applied to spatial dimensions
+
 Standard options
 ^^^^^^^^^^^^^^^^
 

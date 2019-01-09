@@ -44,7 +44,7 @@ namespace MR {
       { MEMALIGN (PassThrough)
         public:
           PassThrough() { }
-          ~PassThrough() { }
+          virtual ~PassThrough() { }
 
         private:
           value_type operator() (const vector_type&, vector_type&) const override;

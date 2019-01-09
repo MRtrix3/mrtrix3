@@ -75,8 +75,8 @@ namespace MR
         // while preserving original strides as much as possible
         ssize_t max_spatial_stride = 0;
         for (size_t n = 0; n < 3; ++n)
-          if (std::abs(H.stride(n)) > max_spatial_stride)
-            max_spatial_stride = std::abs(H.stride(n));
+          if (abs(H.stride(n)) > max_spatial_stride)
+            max_spatial_stride = abs(H.stride(n));
         for (size_t n = 3; n < H.ndim(); ++n)
           H.stride(n) += H.stride(n) > 0 ? max_spatial_stride : -max_spatial_stride;
         Stride::symbolise (H);

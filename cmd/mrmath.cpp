@@ -82,16 +82,16 @@ using value_type = float;
 class Mean { NOMEMALIGN
   public:
     Mean () : sum (0.0), count (0) { }
-    void operator() (value_type val) { 
+    void operator() (value_type val) {
       if (std::isfinite (val)) {
         sum += val;
         ++count;
       }
     }
-    value_type result () const { 
+    value_type result () const {
       if (!count)
         return NAN;
-      return sum / count; 
+      return sum / count;
     }
     double sum;
     size_t count;
@@ -100,25 +100,25 @@ class Mean { NOMEMALIGN
 class Median { NOMEMALIGN
   public:
     Median () { }
-    void operator() (value_type val) { 
+    void operator() (value_type val) {
       if (!std::isnan (val))
         values.push_back(val);
     }
-    value_type result () { 
+    value_type result () {
       return Math::median(values);
     }
-    vector<value_type> values; 
+    vector<value_type> values;
 };
 
 class Sum { NOMEMALIGN
   public:
     Sum () : sum (0.0) { }
-    void operator() (value_type val) { 
-      if (std::isfinite (val)) 
+    void operator() (value_type val) {
+      if (std::isfinite (val))
         sum += val;
     }
-    value_type result () const { 
-      return sum; 
+    value_type result () const {
+      return sum;
     }
     double sum;
 };
@@ -178,15 +178,15 @@ class NORM2 { NOMEMALIGN
 class Var { NOMEMALIGN
   public:
     Var () : sum (0.0), sum_sqr (0.0), count (0) { }
-    void operator() (value_type val) { 
+    void operator() (value_type val) {
       if (std::isfinite (val)) {
         sum += val;
         sum_sqr += Math::pow2 (val);
         ++count;
       }
     }
-    value_type result () const { 
-      if (count < 2) 
+    value_type result () const {
+      if (count < 2)
         return NAN;
       return  (sum_sqr - Math::pow2 (sum) / static_cast<double> (count)) / (static_cast<double> (count) - 1.0);
     }
@@ -205,8 +205,8 @@ class Std : public Var { NOMEMALIGN
 class Min { NOMEMALIGN
   public:
     Min () : min (std::numeric_limits<value_type>::infinity()) { }
-    void operator() (value_type val) { 
-      if (std::isfinite (val) && val < min) 
+    void operator() (value_type val) {
+      if (std::isfinite (val) && val < min)
         min = val;
     }
     value_type result () const { return std::isfinite (min) ? min : NAN; }
@@ -217,8 +217,8 @@ class Min { NOMEMALIGN
 class Max { NOMEMALIGN
   public:
     Max () : max (-std::numeric_limits<value_type>::infinity()) { }
-    void operator() (value_type val) { 
-      if (std::isfinite (val) && val > max) 
+    void operator() (value_type val) {
+      if (std::isfinite (val) && val > max)
         max = val;
     }
     value_type result () const { return std::isfinite (max) ? max : NAN; }
@@ -229,9 +229,9 @@ class Max { NOMEMALIGN
 class AbsMax { NOMEMALIGN
   public:
     AbsMax () : max (-std::numeric_limits<value_type>::infinity()) { }
-    void operator() (value_type val) { 
-      if (std::isfinite (val) && std::abs(val) > max) 
-        max = std::abs(val);
+    void operator() (value_type val) {
+      if (std::isfinite (val) && abs(val) > max)
+        max = abs(val);
     }
     value_type result () const { return std::isfinite (max) ? max : NAN; }
     value_type max;
@@ -241,8 +241,8 @@ class MagMax { NOMEMALIGN
   public:
     MagMax () : max (-std::numeric_limits<value_type>::infinity()) { }
     MagMax (const int i) : max (-std::numeric_limits<value_type>::infinity()) { }
-    void operator() (value_type val) { 
-      if (std::isfinite (val) && (!std::isfinite (max) || std::abs(val) > std::abs (max)))
+    void operator() (value_type val) {
+      if (std::isfinite (val) && (!std::isfinite (max) || abs(val) > abs (max)))
         max = val;
     }
     value_type result () const { return std::isfinite (max) ? max : NAN; }
@@ -275,6 +275,7 @@ class AxisKernel { NOMEMALIGN
 
 class ImageKernelBase { NOMEMALIGN
   public:
+    virtual ~ImageKernelBase () { }
     virtual void process (Header& image_in) = 0;
     virtual void write_back (Image<value_type>& out) = 0;
 };
@@ -285,26 +286,26 @@ template <class Operation>
 class ImageKernel : public ImageKernelBase { NOMEMALIGN
   protected:
     class InitFunctor { NOMEMALIGN
-      public: 
-        template <class ImageType> 
-          void operator() (ImageType& out) const { out.value() = Operation(); } 
+      public:
+        template <class ImageType>
+          void operator() (ImageType& out) const { out.value() = Operation(); }
     };
     class ProcessFunctor { NOMEMALIGN
-      public: 
-        template <class ImageType1, class ImageType2>
-          void operator() (ImageType1& out, ImageType2& in) const { 
-            Operation op = out.value(); 
-            op (in.value()); 
-            out.value() = op;
-          } 
-    };
-    class ResultFunctor { NOMEMALIGN
-      public: 
+      public:
         template <class ImageType1, class ImageType2>
           void operator() (ImageType1& out, ImageType2& in) const {
-            Operation op = in.value(); 
-            out.value() = op.result(); 
-          } 
+            Operation op = out.value();
+            op (in.value());
+            out.value() = op;
+          }
+    };
+    class ResultFunctor { NOMEMALIGN
+      public:
+        template <class ImageType1, class ImageType2>
+          void operator() (ImageType1& out, ImageType2& in) const {
+            Operation op = in.value();
+            out.value() = op.result();
+          }
     };
 
   public:
@@ -445,7 +446,7 @@ void run ()
 
     // Feed the input images to the kernel one at a time
     {
-      ProgressBar progress (std::string("computing ") + operations[op] + " across " 
+      ProgressBar progress (std::string("computing ") + operations[op] + " across "
           + str(headers_in.size()) + " images", num_inputs);
       for (size_t i = 0; i != headers_in.size(); ++i) {
         assert (headers_in[i].valid());
@@ -456,7 +457,7 @@ void run ()
     }
 
     auto out = Header::create (output_path, header).get_image<value_type>();
-    kernel->write_back (out); 
+    kernel->write_back (out);
   }
 
 }

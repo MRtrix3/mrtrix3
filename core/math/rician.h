@@ -147,7 +147,7 @@ namespace MR
         for (size_t i = 0; i < measured.size(); i++) {
           assert (measured[i] > 0.0);
 
-          T actual_pos = std::abs (actual[i]);
+          T actual_pos = abs (actual[i]);
           T nm = one_over_noise_squared * measured[i];
           T nms = nm * actual_pos;
           T F0 = Bessel::I0_scaled (nms);

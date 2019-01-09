@@ -32,8 +32,8 @@ void usage ()
   SYNOPSIS = "Compare two fixel images for differences, within specified tolerance";
 
   ARGUMENTS
-  + Argument ("fixel1", "fixel directory.").type_text ()
-  + Argument ("fixel2", "another fixel directory.").type_text ();
+  + Argument ("fixel1", "fixel directory.").type_directory_in()
+  + Argument ("fixel2", "another fixel directory.").type_directory_in();
 
   OPTIONS
   + Testing::Diff_Image_Options;

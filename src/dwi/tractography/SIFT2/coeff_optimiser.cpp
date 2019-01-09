@@ -365,7 +365,7 @@ namespace MR {
             dFs += change;
           }
 
-        } while ((++iter < 100) && (std::abs (change) > 0.001));
+        } while ((++iter < 100) && (abs (change) > 0.001));
 
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
         iter_count += iter;

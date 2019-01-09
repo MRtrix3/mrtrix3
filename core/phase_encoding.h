@@ -169,7 +169,7 @@ namespace MR
       for (ssize_t PE_row = 0; PE_row != PE.rows(); ++PE_row) {
         for (ssize_t config_row = 0; config_row != config.rows(); ++config_row) {
           bool dir_match = PE.template block<1,3>(PE_row, 0).isApprox (config.block<1,3>(config_row, 0));
-          bool time_match = std::abs (PE(PE_row, 3) - config(config_row, 3)) < 1e-3;
+          bool time_match = abs (PE(PE_row, 3) - config(config_row, 3)) < 1e-3;
           if (dir_match && time_match) {
             // FSL-style index file indexes from 1
             indices[PE_row] = config_row + 1;

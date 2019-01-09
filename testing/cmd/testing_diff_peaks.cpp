@@ -54,7 +54,7 @@ void run ()
   }
   for (size_t i  = 0; i < 3; ++i) {
     for (size_t j  = 0; j < 4; ++j) {
-      if (std::abs (in1.transform().matrix()(i,j) - in2.transform().matrix()(i,j)) > 0.0001)
+      if (abs (in1.transform().matrix()(i,j) - in2.transform().matrix()(i,j)) > 0.0001)
         throw Exception ("images \"" + in1.name() + "\" and \"" + in2.name() + "\" do not have matching header transforms "
                            + "\n" + str(in1.transform().matrix()) + "vs \n " + str(in2.transform().matrix()) + ")");
     }
@@ -75,8 +75,8 @@ void run ()
       }
       const double norma = veca.norm(), normb = vecb.norm();
       veca.normalize(); vecb.normalize();
-      const double dp = std::abs (veca.dot (vecb));
-      if (1.0 - dp > tol || std::abs (norma - normb) > tol)
+      const double dp = abs (veca.dot (vecb));
+      if (1.0 - dp > tol || abs (norma - normb) > tol)
         throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within specified precision of " + str(tol) + " ( [" + str(veca.transpose().cast<float>()) + "] vs [" + str(vecb.transpose().cast<float>()) + "], norms [" + str(norma) + " " + str(normb) + "], dot product = " + str(dp) + ")");
     }
   }, in1, in2);

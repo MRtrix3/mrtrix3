@@ -36,6 +36,8 @@ namespace MR
             dir = { NaN, NaN, NaN };
             return;
           }
+          if (tck.size() + revert_step == length_to_revert_from)
+            return;
           const size_t new_size = length_to_revert_from - revert_step;
           if (tck.size() == 2 || new_size == 1)
             dir = (tck[1] - tck[0]).normalized();

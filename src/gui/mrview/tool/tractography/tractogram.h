@@ -160,11 +160,11 @@ namespace MR
                                        vector<GLint>& starts,
                                        vector<GLint>& sizes,
                                        size_t& tck_count);
-                            
+
             void load_end_colours_onto_GPU (vector<Eigen::Vector3f>&);
 
-            void load_intensity_scalars_onto_GPU (vector<float>& buffer);
-            void load_threshold_scalars_onto_GPU (vector<float>& buffer);
+            void load_intensity_scalars_onto_GPU (vector<float>& buffer, size_t& tck_count);
+            void load_threshold_scalars_onto_GPU (vector<float>& buffer, size_t& tck_count);
 
             void render_streamlines ();
 

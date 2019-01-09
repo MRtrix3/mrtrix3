@@ -48,7 +48,7 @@ void run ()
 
   for (ssize_t i = 0; i < dir1.cols(); ++i) {
     for (ssize_t j = 0; j < dir1.rows(); ++j) {
-      if (std::abs (dir1(i,j) - dir2(i,j)) > tol)
+      if (abs (dir1(i,j) - dir2(i,j)) > tol)
         throw Exception ("direction files \"" + str(argument[0]) + "\" and \"" + str(argument[1]) + "\" do not match within specified precision of " + str(tol)
             + " (" + str(dir1(i,j)) + " vs " + str(dir2(i,j)) + ")");
     }

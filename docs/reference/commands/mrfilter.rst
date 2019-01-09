@@ -73,7 +73,7 @@ Options for smooth filter
 Stride options
 ^^^^^^^^^^^^^^
 
--  **-strides spec** specify the strides of the output data in memory, as a comma-separated list. The actual strides produced will depend on whether the output image format can support it.
+-  **-strides spec** specify the strides of the output data in memory; either as a comma-separated list of (signed) integers, or as a template image from which the strides shall be extracted and used. The actual strides produced will depend on whether the output image format can support it.
 
 Standard options
 ^^^^^^^^^^^^^^^^

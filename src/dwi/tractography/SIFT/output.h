@@ -224,7 +224,7 @@ namespace MR
             default_type max_abs_diff = 0.0, diff = 0.0, cost = 0.0;
             for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
               const default_type this_diff = i().get_diff (current_mu);
-              max_abs_diff = std::max (max_abs_diff, std::abs (this_diff));
+              max_abs_diff = std::max (max_abs_diff, abs (this_diff));
               diff += this_diff;
               cost += i().get_cost (current_mu) * i().get_weight();
             }

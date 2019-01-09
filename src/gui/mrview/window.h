@@ -130,13 +130,7 @@ namespace MR
               static_cast<Image*> (list[n])->set_windowing (min, max);
           }
 
-          void set_image_volume (size_t axis, ssize_t index)
-          {
-            assert (image());
-            image()->image.index (axis) = index;
-            set_image_navigation_menu();
-            updateGL();
-          }
+          void set_image_volume (size_t axis, ssize_t index);
 
           bool get_image_visibility () const { return ! image_hide_action->isChecked(); }
           void set_image_visibility (bool flag);

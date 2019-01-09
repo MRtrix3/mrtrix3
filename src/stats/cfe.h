@@ -110,6 +110,7 @@ namespace MR
         public:
           Enhancer (const norm_connectivity_matrix_type& connectivity_matrix,
                     const value_type dh, const value_type E, const value_type H);
+          virtual ~Enhancer() { }
 
 
           value_type operator() (const vector_type& stats, vector_type& enhanced_stats) const override;

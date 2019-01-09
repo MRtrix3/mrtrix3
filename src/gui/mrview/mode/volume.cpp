@@ -29,25 +29,25 @@ namespace MR
       namespace Mode
       {
 
-        std::string Volume::Shader::vertex_shader_source (const Displayable&) 
+        std::string Volume::Shader::vertex_shader_source (const Displayable&)
         {
-          std::string source = 
+          std::string source =
             "layout(location=0) in vec3 vertpos;\n"
             "uniform mat4 M;\n"
             "out vec3 texcoord;\n";
 
-          for (int n = 0; n < mode.overlays_for_3D.size(); ++n) 
-            source += 
+          for (int n = 0; n < mode.overlays_for_3D.size(); ++n)
+            source +=
               "uniform mat4 overlay_M" + str(n) + ";\n"
               "out vec3 overlay_texcoord" + str(n) + ";\n";
 
-          source += 
+          source +=
             "void main () {\n"
             "  texcoord = vertpos;\n"
             "  gl_Position =  M * vec4 (vertpos,1);\n";
 
-          for (int n = 0; n < mode.overlays_for_3D.size(); ++n) 
-            source += 
+          for (int n = 0; n < mode.overlays_for_3D.size(); ++n)
+            source +=
               "  overlay_texcoord"+str(n) + " = (overlay_M"+str(n) + " * vec4 (vertpos,1)).xyz;\n";
 
           source +=
@@ -79,7 +79,7 @@ namespace MR
             "in vec3 texcoord;\n";
 
           for (size_t n = 0; n < clip.size(); ++n)
-            source += 
+            source +=
               "uniform vec4 clip" + str(n) + ";\n"
               "uniform int clip" + str(n) + "_selected;\n";
 
@@ -102,13 +102,13 @@ namespace MR
             "  vec4 color;\n";
 
 
-          source += 
+          source +=
             "  final_color = vec4 (0.0);\n"
             "  float dither = fract(sin(gl_FragCoord.x * 12.9898 + gl_FragCoord.y * 78.233) * 43758.5453);\n"
             "  vec3 coord = texcoord + ray * dither;\n";
 
-          for (int n = 0; n < mode.overlays_for_3D.size(); ++n) 
-            source += 
+          for (int n = 0; n < mode.overlays_for_3D.size(); ++n)
+            source +=
               "  vec3 overlay_coord"+str(n) +" = overlay_texcoord"+str(n) + " + overlay_ray"+str(n) + " * dither;\n";
 
               source +=
@@ -130,13 +130,13 @@ namespace MR
             source += std::string("    bool show = ") + ( AND ? "false" : "true" ) + ";\n";
             for (size_t n = 0; n < clip.size(); ++n)
               source += std::string("    if (dot (coord, clip") + str(n) + ".xyz) " + ( AND ? "<" : ">" ) + " clip" + str(n) + ".w)\n";
-            source += 
+            source +=
               std::string("          show = ") + ( AND ? "true" : "false" ) + ";\n"
               "    if (show) {\n";
           }
 
 
-          source += 
+          source +=
             "      color = texture (image_sampler, coord);\n"
             "      amplitude = " + std::string (ColourMap::maps[object.colourmap].amplitude) + ";\n"
             "      if (!isnan(amplitude) && !isinf(amplitude)";
@@ -151,17 +151,17 @@ namespace MR
             "        color.a = clamp ((amplitude - alpha_offset) * alpha_scale, 0, alpha);\n";
 
           if (!ColourMap::maps[object.colourmap].special) {
-            source += 
+            source +=
               "        amplitude = clamp (";
-            if (object.scale_inverted()) 
+            if (object.scale_inverted())
               source += "1.0 -";
-            source += 
+            source +=
               " scale * (amplitude - offset), 0.0, 1.0);\n";
           }
 
-          source += 
+          source +=
             std::string ("        ") + ColourMap::maps[object.colourmap].glsl_mapping;
-          
+
           source +=
             "        final_color.rgb += (1.0 - final_color.a) * color.rgb * color.a;\n"
             "        final_color.a += color.a;\n"
@@ -177,7 +177,7 @@ namespace MR
           // OVERLAYS:
           for (size_t n = 0, N = mode.overlays_for_3D.size(); n < N; ++n) {
             const ImageBase* image = mode.overlays_for_3D[n];
-            source += 
+            source +=
               "    overlay_coord"+str(n) + " += overlay_ray"+str(n) + ";\n"
               "    if (overlay_coord"+str(n) + ".s >= 0.0 && overlay_coord"+str(n) + ".s <= 1.0 &&\n"
               "        overlay_coord"+str(n) + ".t >= 0.0 && overlay_coord"+str(n) + ".t <= 1.0 &&\n"
@@ -195,11 +195,11 @@ namespace MR
             source += " && amplitude >= overlay"+str(n)+"_alpha_offset) {\n";
 
             if (!ColourMap::maps[image->colourmap].special) {
-              source += 
+              source +=
                 "        amplitude = clamp (";
               if (image->scale_inverted())
                 source += "1.0 -";
-              source += 
+              source +=
                 " overlay"+str(n)+"_scale * (amplitude - overlay"+str(n)+"_offset), 0.0, 1.0);\n";
             }
 
@@ -209,7 +209,7 @@ namespace MR
             replace (mapping, "colourmap_colour", "overlay"+str(n)+"_colourmap_colour");
             source += std::string ("        ") + mapping;
 
-            source += 
+            source +=
               "        color.a = amplitude * overlay"+str(n) + "_alpha;\n"
               "        final_color.rgb += (1.0 - final_color.a) * color.rgb * color.a;\n"
               "        final_color.a += color.a;\n"
@@ -221,18 +221,18 @@ namespace MR
 
           if (clip.size() && mode.get_cliphighlightstate()) {
             source += "    float highlight = 0.0;\n";
-            for (size_t n = 0; n < clip.size(); ++n) 
+            for (size_t n = 0; n < clip.size(); ++n)
               source +=
                 "    if (clip"+str(n)+"_selected != 0)\n"
                 "      highlight += clamp (selection_thickness - abs (dot (coord, clip" + str(n) + ".xyz) - clip" + str(n) + ".w), 0.0, selection_thickness);\n";
-            source += 
+            source +=
               "    highlight *= " + str(clip_color[3]) + ";\n"
-              "    final_color.rgb += (1.0 - final_color.a) * vec3(" 
+              "    final_color.rgb += (1.0 - final_color.a) * vec3("
               + str(clip_color[0]) + "," + str(clip_color[1]) + "," + str(clip_color[2]) + ") * highlight;\n"
               "    final_color.a += highlight;\n";
           }
 
-          source += 
+          source +=
             "    if (final_color.a > 0.95) break;\n"
             "  }\n"
             "}\n";
@@ -243,11 +243,11 @@ namespace MR
 
 
 
-        bool Volume::Shader::need_update (const Displayable& object) const 
+        bool Volume::Shader::need_update (const Displayable& object) const
         {
-          if (mode.update_overlays) 
+          if (mode.update_overlays)
             return true;
-          if (mode.get_active_clip_planes().size() != active_clip_planes) 
+          if (mode.get_active_clip_planes().size() != active_clip_planes)
             return true;
           if (mode.get_cliphighlightstate() != cliphighlight)
             return true;
@@ -258,7 +258,7 @@ namespace MR
 
 
 
-        void Volume::Shader::update (const Displayable& object) 
+        void Volume::Shader::update (const Displayable& object)
         {
           active_clip_planes = mode.get_active_clip_planes().size();
           cliphighlight = mode.get_cliphighlightstate();
@@ -277,7 +277,7 @@ namespace MR
             GL::vec4 normal = T2S * GL::vec4 (plane[0], plane[1], plane[2], 0.0);
             GL::vec4 on_plane = S2T * GL::vec4 (plane[3]*plane[0], plane[3]*plane[1], plane[3]*plane[2], 1.0);
             normal[3] = on_plane[0]*normal[0] + on_plane[1]*normal[1] + on_plane[2]*normal[2];
-            float off_axis_thickness = std::abs (ray[0]*plane[0] + ray[1]*plane[1] + ray[2]*plane[2]);
+            float off_axis_thickness = abs (ray[0]*plane[0] + ray[1]*plane[1] + ray[2]*plane[2]);
             normal[0] /= off_axis_thickness;
             normal[1] /= off_axis_thickness;
             normal[2] /= off_axis_thickness;
@@ -309,7 +309,7 @@ namespace MR
             T2S(1,3) = pos[1];
             T2S(2,3) = pos[2];
 
-            T2S(3,0) = T2S(3,1) = T2S(3,2) = 0.0f; 
+            T2S(3,0) = T2S(3,1) = T2S(3,2) = 0.0f;
             T2S(3,3) = 1.0f;
 
             return T2S;
@@ -373,7 +373,7 @@ namespace MR
             volume_VI.bind (gl::ELEMENT_ARRAY_BUFFER);
 
             gl::EnableVertexAttribArray (0);
-            gl::VertexAttribPointer (0, 3, gl::BYTE, gl::FALSE_, 4*sizeof(GLbyte), GL::offset<GLbyte>(0));
+            gl::VertexAttribPointer (0, 3, gl::BYTE, gl::FALSE_, 4*sizeof(GLbyte), (void*)0);
 
             GLbyte vertices[] = {
               0, 0, 0, 0,
@@ -396,39 +396,39 @@ namespace MR
           GLubyte indices[12];
 
           if (ray[0] < 0) {
-            indices[0] = 4; 
+            indices[0] = 4;
             indices[1] = 5;
             indices[2] = 7;
             indices[3] = 6;
           }
           else {
-            indices[0] = 0; 
+            indices[0] = 0;
             indices[1] = 1;
             indices[2] = 3;
             indices[3] = 2;
           }
 
           if (ray[1] < 0) {
-            indices[4] = 2; 
+            indices[4] = 2;
             indices[5] = 3;
             indices[6] = 7;
             indices[7] = 6;
           }
           else {
-            indices[4] = 0; 
+            indices[4] = 0;
             indices[5] = 1;
             indices[6] = 5;
             indices[7] = 4;
           }
 
           if (ray[2] < 0) {
-            indices[8] = 1; 
+            indices[8] = 1;
             indices[9] = 3;
             indices[10] = 7;
             indices[11] = 5;
           }
           else {
-            indices[8] = 0; 
+            indices[8] = 0;
             indices[9] = 2;
             indices[10] = 6;
             indices[11] = 4;
@@ -458,7 +458,7 @@ namespace MR
             depth_texture.bind();
             depth_texture.set_interp (gl::NEAREST);
           }
-          else 
+          else
             depth_texture.bind();
 
           GL_CHECK_ERROR;
@@ -508,7 +508,9 @@ namespace MR
           gl::ActiveTexture (gl::TEXTURE0);
 
           const GLsizei counts[] = { 4, 4, 4 };
-          const GLvoid* starts[] = { GL::offset<GLubyte>(0), GL::offset<GLubyte>(4), GL::offset<GLubyte>(8) };
+          const GLvoid* starts[] = { reinterpret_cast<void*>(0),
+                                     reinterpret_cast<void*>(4),
+                                     reinterpret_cast<void*>(8) };
 
           GL_CHECK_ERROR;
           gl::MultiDrawElements (gl::TRIANGLE_FAN, counts, gl::UNSIGNED_BYTE, starts, 3);
@@ -526,12 +528,12 @@ namespace MR
         inline Tool::View* Volume::get_view_tool () const
         {
           Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(window().tools()->actions()[0])->dock;
-          if (!dock) 
+          if (!dock)
             return NULL;
           return dynamic_cast<Tool::View*> (dock->tool);
         }
 
-        inline vector< std::pair<GL::vec4,bool> > Volume::get_active_clip_planes () const 
+        inline vector< std::pair<GL::vec4,bool> > Volume::get_active_clip_planes () const
         {
           Tool::View* view = get_view_tool();
           return view ? view->get_active_clip_planes() : vector< std::pair<GL::vec4,bool> >();
@@ -542,7 +544,7 @@ namespace MR
           Tool::View* view = get_view_tool();
           return view ? view->get_clip_planes_to_be_edited() : vector<GL::vec4*>();
         }
-        
+
         inline bool Volume::get_cliphighlightstate () const
         {
           Tool::View* view = get_view_tool();
@@ -585,9 +587,9 @@ namespace MR
 
 
 
-        void Volume::slice_move_event (float x) 
+        void Volume::slice_move_event (float x)
         {
-         
+
           vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) {
             const auto &header = image()->header();
@@ -601,7 +603,7 @@ namespace MR
 
 
 
-        void Volume::pan_event () 
+        void Volume::pan_event ()
         {
           vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) {
@@ -612,15 +614,15 @@ namespace MR
             }
             updateGL();
           }
-          else 
+          else
             Base::pan_event();
         }
 
 
-        void Volume::panthrough_event () 
+        void Volume::panthrough_event ()
         {
           vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
-          if (clip.size()) 
+          if (clip.size())
             move_clip_planes_in_out (clip, MOVE_IN_OUT_FOV_MULTIPLIER * window().mouse_displacement().y() * FOV());
           else
             Base::panthrough_event();
@@ -628,31 +630,35 @@ namespace MR
 
 
 
-        void Volume::tilt_event () 
+        void Volume::tilt_event ()
         {
           vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) {
-            const Math::Versorf rot = get_tilt_rotation();
+            const ModelViewProjection* proj = get_current_projection();
+            if (!proj) return;
+            const Math::Versorf rot = get_tilt_rotation (*proj);
             if (!rot)
               return;
             rotate_clip_planes (clip, rot);
           }
-          else 
+          else
             Base::tilt_event();
         }
 
 
 
-        void Volume::rotate_event () 
+        void Volume::rotate_event ()
         {
           vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) {
-            const Math::Versorf rot = get_rotate_rotation();
+            const ModelViewProjection* proj = get_current_projection();
+            if (!proj) return;
+            const Math::Versorf rot = get_rotate_rotation (*proj);
             if (!rot)
               return;
             rotate_clip_planes (clip, rot);
           }
-          else 
+          else
             Base::rotate_event();
         }
 

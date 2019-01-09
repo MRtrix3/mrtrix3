@@ -38,7 +38,7 @@ namespace MR
       enum class node_size_t       { FIXED, NODE_VOLUME, CONNECTOME, VECTOR_FILE, MATRIX_FILE };
       enum class node_alpha_t      { FIXED, CONNECTOME, FROM_LUT, VECTOR_FILE, MATRIX_FILE };
 
-      enum class edge_visibility_t { ALL, NONE, VISIBLE_NODES, CONNECTOME, MATRIX_FILE };
+      enum class edge_visibility_t { ALL, NONE, CONNECTOME, MATRIX_FILE };
       enum class edge_geometry_t   { LINE, CYLINDER, STREAMLINE, STREAMTUBE };
       enum class edge_colour_t     { FIXED, DIRECTION, CONNECTOME, MATRIX_FILE };
       enum class edge_size_t       { FIXED, CONNECTOME, MATRIX_FILE };

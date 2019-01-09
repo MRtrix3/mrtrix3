@@ -24,10 +24,12 @@ In previous versions of MRtrix, the convention used for storing spherical harmon
 
 This command provides a mechanism for testing the basis used in storage of image data representing a spherical harmonic series per voxel, and allows the user to forcibly modify the raw image data to conform to the desired basis.
 
+Note that the "force_*" conversion choices should only be used in cases where this command has previously been unable to automatically determine the SH basis from the image data, but the user themselves are confident of the SH basis of the data.
+
 Options
 -------
 
--  **-convert mode** convert the image data in-place to the desired basis (if necessary). Options are: old, new, native (whichever basis MRtrix is compiled for; most likely the new orthonormal basis), force_oldtonew, force_newtoold. Note that for the "force_*" choices should ideally only be used in cases where the command is unable to automatically determine the SH basis using the existing image data.
+-  **-convert mode** convert the image data in-place to the desired basis; options are: old,new,force_oldtonew,force_newtoold.
 
 Standard options
 ^^^^^^^^^^^^^^^^
