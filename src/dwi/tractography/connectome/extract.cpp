@@ -152,6 +152,8 @@ void WriterExemplars::write (const node_t one, const node_t two, const std::stri
   for (size_t i = 0; i != exemplars.size(); ++i) {
     if (selectors[i] (one, two))
       writer (exemplars[i].get());
+    else
+      writer.skip();
   }
   if (weights_path.size()) {
     File::OFStream output (weights_path);
@@ -170,6 +172,8 @@ void WriterExemplars::write (const node_t node, const std::string& path, const s
   for (size_t i = 0; i != exemplars.size(); ++i) {
     if (selectors[i] (node))
       writer (exemplars[i].get());
+    else
+      writer.skip();
   }
   if (weights_path.size()) {
     File::OFStream output (weights_path);
@@ -252,19 +256,23 @@ bool WriterExtraction::operator() (const Connectome::Streamline_nodepair& in) co
 {
   if (exclusive) {
     // Make sure that both nodes are within the list of nodes of interest;
-    //   if not, don't pass to any of the selectors
+    //   if not, don't bother passing to any of the selectors
     bool first_in_list = false, second_in_list = false;
     for (vector<node_t>::const_iterator i = node_list.begin(); i != node_list.end(); ++i) {
       if (*i == in.get_nodes().first)  first_in_list = true;
       if (*i == in.get_nodes().second) second_in_list = true;
     }
-    if (!first_in_list || !second_in_list) return true;
+    if (!first_in_list || !second_in_list) {
+      for (size_t i = 0; i != file_count(); ++i)
+        writers[i]->skip();
+      return true;
+    }
   }
   for (size_t i = 0; i != file_count(); ++i) {
     if (selectors[i] (in.get_nodes()))
       (*writers[i]) (in);
     else
-      (*writers[i]) (empty_tck);
+      writers[i]->skip();
   }
   return true;
 }
@@ -279,13 +287,17 @@ bool WriterExtraction::operator() (const Connectome::Streamline_nodelist& in) co
       for (size_t n = 0; n != in.get_nodes().size(); ++n)
         if (*i == in.get_nodes()[n]) in_list[n] = true;
     }
-    if (!in_list.full()) return true;
+    if (!in_list.full()) {
+      for (size_t i = 0; i != file_count(); ++i)
+        writers[i]->skip();
+      return true;
+    }
   }
   for (size_t i = 0; i != file_count(); ++i) {
     if (selectors[i] (in.get_nodes()))
       (*writers[i]) (in);
     else
-      (*writers[i]) (empty_tck);
+      writers[i]->skip();
   }
   return true;
 }

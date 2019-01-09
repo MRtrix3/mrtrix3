@@ -34,13 +34,11 @@ namespace MR
               const auto& p = tck[tck.get_seed_index()];
               (*output_seeds) << str(writer.count) << "," << str(tck.get_seed_index()) << "," << str(p[0]) << "," << str(p[1]) << "," << str(p[2]) << ",\n";
             }
-            writer (tck);
             switch (tck.get_status()) {
               case GeneratedTrack::status_t::INVALID: assert (0); break;
-              // Note intentiional lack of break usage
-              case GeneratedTrack::status_t::ACCEPTED: ++selected;
-              case GeneratedTrack::status_t::TRACK_REJECTED: ++streamlines;
-              case GeneratedTrack::status_t::SEED_REJECTED: ++seeds;
+              case GeneratedTrack::status_t::ACCEPTED: ++selected; ++streamlines; ++seeds; writer (tck); break;
+              case GeneratedTrack::status_t::TRACK_REJECTED: ++streamlines; ++seeds; writer.skip(); break;
+              case GeneratedTrack::status_t::SEED_REJECTED: ++seeds; break;
             }
             progress.update ([&](){ return printf ("%8" PRIu64 " seeds, %8" PRIu64 " streamlines, %8" PRIu64 " selected", seeds, streamlines, selected); }, always_increment ? true : tck.size());
             if (early_exit (seeds, selected)) {

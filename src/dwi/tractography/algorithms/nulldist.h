@@ -42,7 +42,8 @@ namespace MR
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           SharedBase (diff_path, property_set)
         {
-          set_step_size (0.1);
+          set_step_size (0.1f);
+          set_cutoff (0.0f);
           sin_max_angle = std::sin (max_angle);
           properties["method"] = "Nulldist1";
         }
@@ -90,6 +91,7 @@ namespace MR
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           iFOD2::Shared (diff_path, property_set)
         {
+          set_cutoff (0.0f);
           properties["method"] = "Nulldist2";
         }
       };

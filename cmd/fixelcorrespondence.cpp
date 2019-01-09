@@ -39,7 +39,7 @@ void usage ()
   + Argument ("subject_data", "the input subject fixel data file. This should be a file inside the fixel directory").type_image_in ()
   + Argument ("template_directory", "the input template fixel directory.").type_directory_in()
   + Argument ("output_directory", "the fixel directory where the output file will be written.").type_text()
-  + Argument ("output_data", "the name of the output fixel data file. This will be placed in the output fixel directory").type_image_out ();
+  + Argument ("output_data", "the name of the output fixel data file. This will be placed in the output fixel directory").type_text();
 
   OPTIONS
   + Option ("angle", "the max angle threshold for computing inter-subject fixel correspondence (Default: " + str(DEFAULT_ANGLE_THRESHOLD, 2) + " degrees)")
@@ -100,7 +100,7 @@ void run ()
         templatedir.normalize();
         Eigen::Vector3f subjectdir = subject_directions.row(1);
         subjectdir.normalize();
-        float dp = std::abs (templatedir.dot (subjectdir));
+        float dp = abs (templatedir.dot (subjectdir));
         if (dp > largest_dp) {
           largest_dp = dp;
           index_of_closest_fixel = s;

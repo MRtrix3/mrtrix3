@@ -6,15 +6,16 @@ mrhistmatch
 Synopsis
 --------
 
-Modify the intensities of one image to match the histogram of another via a non-linear transform
+Modify the intensities of one image to match the histogram of another
 
 Usage
 --------
 
 ::
 
-    mrhistmatch [ options ]  input target output
+    mrhistmatch [ options ]  type input target output
 
+-  *type*: type of histogram matching to perform; options are: scale,linear,nonlinear
 -  *input*: the input image to be modified
 -  *target*: the input image from which to derive the target histogram
 -  *output*: the output image
@@ -22,11 +23,15 @@ Usage
 Options
 -------
 
+Image masking options
+^^^^^^^^^^^^^^^^^^^^^
+
 -  **-mask_input image** only generate input histogram based on a specified binary mask image
 
 -  **-mask_target image** only generate target histogram based on a specified binary mask image
 
--  **-cdfs path** output the histogram CDFs to a text file (for debugging).
+Non-linear histogram matching options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-bins num** the number of bins to use to generate the histograms
 
@@ -56,7 +61,7 @@ References
 
 
 
-**Author:** Robert E. Smith (robert.smith@florey.edu.au
+**Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
 

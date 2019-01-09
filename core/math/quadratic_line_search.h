@@ -121,7 +121,7 @@ namespace MR
             //   return successfully
             // Difficult to do this without knowledge of the cost function
             if (fm > (fl + ((fu-fl)*(m-l)/(u-l)))) {
-              if ((std::min(m-l, u-m) < value_tolerance) || (std::abs((fu-fl)/(0.5*(fu+fl))) < function_tolerance)) {
+              if ((std::min(m-l, u-m) < value_tolerance) || (abs((fu-fl)/(0.5*(fu+fl))) < function_tolerance)) {
                 status = SUCCESS;
                 return m;
               }

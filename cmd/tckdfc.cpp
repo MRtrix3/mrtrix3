@@ -265,7 +265,7 @@ void run ()
 
       case 1: // triangle
         for (ssize_t i = 0; i != window_width; ++i)
-          window[i] = 1.0 - (std::abs (i - centre) / default_type(halfwidth));
+          window[i] = 1.0 - (abs (i - centre) / default_type(halfwidth));
         break;
 
       case 2: // cosine
@@ -285,7 +285,7 @@ void run ()
 
       case 5: // lanczos
         for (ssize_t i = 0; i != window_width; ++i) {
-          const default_type v = 2.0 * Math::pi * std::abs (i - centre) / default_type(window_width - 1);
+          const default_type v = 2.0 * Math::pi * abs (i - centre) / default_type(window_width - 1);
           window[i] = v ? std::max (0.0, (std::sin (v) / v)) : 1.0;
         }
         break;

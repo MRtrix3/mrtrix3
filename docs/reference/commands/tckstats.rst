@@ -26,6 +26,8 @@ Options
 
 -  **-dump path** dump the streamlines lengths to a text file
 
+-  **-explicit** explicitly calculate the length of each streamline, ignoring any step size information present in the header
+
 -  **-ignorezero** do not generate a warning if the track file contains streamlines with zero length
 
 -  **-tck_weights_in path** specify a text scalar file containing the streamline weights

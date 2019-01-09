@@ -133,7 +133,7 @@ namespace MR {
 
 
 
-      Segmenter::Segmenter (const DWI::Directions::Set& directions, const size_t l) :
+      Segmenter::Segmenter (const DWI::Directions::FastLookupSet& directions, const size_t l) :
           dirs                         (directions),
           lmax                         (l),
           precomputer                  (new Math::SH::PrecomputedAL<default_type> (lmax, 2 * dirs.size())),
@@ -159,7 +159,7 @@ namespace MR {
 
       class Max_abs { NOMEMALIGN
         public:
-          bool operator() (const default_type& a, const default_type& b) const { return (std::abs (a) > std::abs (b)); }
+          bool operator() (const default_type& a, const default_type& b) const { return (abs (a) > abs (b)); }
       };
 
       bool Segmenter::operator() (const SH_coefs& in, FOD_lobes& out) const {
@@ -212,7 +212,7 @@ namespace MR {
             // Changed handling of lobe merges
             // Merge lobes as they appear to be merged, but update the
             //   contents of retrospective_assignments accordingly
-            if (std::abs (i.first) / out[adj_lobes.back()].get_max_peak_value() > ratio_of_peak_value_to_merge) {
+            if (abs (i.first) / out[adj_lobes.back()].get_max_peak_value() > ratio_of_peak_value_to_merge) {
 
               std::sort (adj_lobes.begin(), adj_lobes.end());
               for (size_t j = 1; j != adj_lobes.size(); ++j)
@@ -257,22 +257,48 @@ namespace MR {
 
         for (auto i = out.begin(); i != out.end();) { // Empty increment
 
-          if (i->is_negative() || i->get_max_peak_value() < peak_value_threshold || i->get_integral() < integral_threshold) {
+          if (i->is_negative() || i->get_integral() < integral_threshold) {
             i = out.erase (i);
           } else {
 
             // Revise multiple peaks if present
             for (size_t peak_index = 0; peak_index != i->num_peaks(); ++peak_index) {
               Eigen::Vector3 newton_peak = i->get_peak_dir (peak_index);
-              const default_type new_peak_value = Math::SH::get_peak (in, lmax, newton_peak, &(*precomputer));
-              if (std::isfinite (new_peak_value) && newton_peak.allFinite())
-                i->revise_peak (peak_index, newton_peak, new_peak_value);
-              i->finalise();
+              const default_type newton_peak_value = Math::SH::get_peak (in, lmax, newton_peak, &(*precomputer));
+              if (std::isfinite (newton_peak_value) && newton_peak.allFinite()) {
+
+                // Ensure that the new peak direction found via Newton optimisation
+                //   is still approximately the same peak as that found via FMLS:
+
+                // - Needs to be closer to this peak than any other peaks within the lobe
+                default_type max_dp = 0.0;
+                size_t nearest_original_peak = i->num_peaks();
+                for (size_t j = 0; j != i->num_peaks(); ++j) {
+                  const default_type this_dp = abs (newton_peak.dot (i->get_peak_dir (j)));
+                  if (this_dp > max_dp) {
+                    max_dp = this_dp;
+                    nearest_original_peak = j;
+                  }
+                }
+                if (nearest_original_peak == peak_index) {
+
+                  // - Needs to still lie within the lobe: Determined via mask
+                  const index_type newton_peak_closest_dir_index = dirs.select_direction (newton_peak);
+                  if (i->get_mask()[newton_peak_closest_dir_index])
+                    i->revise_peak (peak_index, newton_peak, newton_peak_value);
+
+                }
+              }
             }
+            if (i->get_max_peak_value() < peak_value_threshold) {
+              i = out.erase (i);
+            } else {
+              i->finalise();
 #ifdef FMLS_OPTIMISE_MEAN_DIR
-            optimise_mean_dir (*i);
+              optimise_mean_dir (*i);
 #endif
-            ++i;
+              ++i;
+            }
           }
         }
 
@@ -386,14 +412,14 @@ namespace MR {
 
               // Transform unit direction onto tangent plane defined by the current mean direction estimate
               Point<float> p (dir[0]*Tx[0] + dir[1]*Tx[1] + dir[2]*Tx[2],
-                  dir[0]*Ty[0] + dir[1]*Ty[1] + dir[2]*Ty[2],
-                  dir[0]*Tz[0] + dir[1]*Tz[1] + dir[2]*Tz[2]);
+                              dir[0]*Ty[0] + dir[1]*Ty[1] + dir[2]*Ty[2],
+                              dir[0]*Tz[0] + dir[1]*Tz[1] + dir[2]*Tz[2]);
 
               if (p[2] < 0.0)
                 p = -p;
               p[2] = 0.0; // Force projection onto the tangent plane
 
-              const float dp = std::abs (mean_dir.dot (dir));
+              const float dp = abs (mean_dir.dot (dir));
               const float theta = (dp < 1.0) ? std::acos (dp) : 0.0;
               const float log_transform = theta ? (theta / std::sin (theta)) : 1.0;
               p *= log_transform;
@@ -412,8 +438,8 @@ namespace MR {
 
           // Transform the offset from the tangent plane origin to euclidean space
           u.set (u[0]*Tx[0] + u[1]*Ty[0] + u[2]*Tz[0],
-              u[0]*Tx[1] + u[1]*Ty[1] + u[2]*Tz[1],
-              u[0]*Tx[2] + u[1]*Ty[2] + u[2]*Tz[2]);
+                 u[0]*Tx[1] + u[1]*Ty[1] + u[2]*Tz[1],
+                 u[0]*Tx[2] + u[1]*Ty[2] + u[2]*Tz[2]);
 
           mean_dir += u;
           mean_dir.normalise();

@@ -77,7 +77,7 @@ namespace MR
           else if (event->type() == QEvent::MouseMove) {
             QMouseEvent* mevent = static_cast<QMouseEvent*> (event);
             if (mevent->buttons() != Qt::NoButton) {
-              if (std::abs (mevent->y() - deadzone_y) < ADJUST_BUTTON_DEADZONE_SIZE) {
+              if (abs (mevent->y() - deadzone_y) < ADJUST_BUTTON_DEADZONE_SIZE) {
                 if (value() != deadzone_value) {
                   setValue (deadzone_value);
                   emit valueChanged();

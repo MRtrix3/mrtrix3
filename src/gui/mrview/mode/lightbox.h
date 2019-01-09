@@ -33,12 +33,15 @@ namespace MR
           public:
             LightBox();
 
-            void paint(Projection& with_projection) override;
-            void mouse_press_event() override;
+            void paint (Projection& with_projection) override;
             void set_focus_event() override;
+            void slice_move_event (float x) override;
+            void pan_event () override;
+            void panthrough_event () override;
+            void tilt_event () override;
+            void rotate_event () override;
             void image_changed_event() override;
-            const Projection* get_current_projection() const override {
-              return &slices_proj_focusdelta[current_slice_index].first; }
+            void reset_windowing () override;
 
             void request_update_mode_gui(ModeGuiVisitor& visitor) const override {
               visitor.update_lightbox_mode_gui(*this); }
@@ -65,36 +68,25 @@ namespace MR
             void volume_inc_slot(int value) { set_volume_increment(value); }
             void show_grid_slot (bool value) { set_show_grid(value); }
             void show_volumes_slot (bool value) { set_show_volumes(value); }
-            void image_volume_changed_slot() { update_volume_indices(); }
+            void image_volume_changed_slot() { updateGL(); }
 
           protected:
             void draw_plane_primitive(int axis, Displayable::Shader& shader_program,
                                       Projection& with_projection) override;
 
           private:
-            static size_t slice_index(size_t row, size_t col) {
-              assert(row < n_rows && col < n_cols);
-              return (row * n_cols) + col;
-            }
-
-            void update_layout();
-            void update_volume_indices();
-            void update_slices_focusdelta();
-            void set_current_slice_index(ssize_t slice_index);
             void draw_grid();
             bool render_volumes();
 
             // Want layout state to persist even after instance is destroyed
             static bool show_grid_lines, show_volumes;
             static std::string prev_image_name;
-            static size_t n_rows, n_cols, volume_increment;
+            static ssize_t n_rows, n_cols, volume_increment;
             static float slice_focus_increment;
             static float slice_focus_inc_adjust_rate;
-
-            bool layout_is_dirty;
             static ssize_t current_slice_index;
-            vector<ssize_t> volume_indices;
-            vector<proj_focusdelta> slices_proj_focusdelta;
+
+            ModelViewProjection get_projection_at (int row, int col) const;
 
             GL::VertexBuffer frame_VB;
             GL::VertexArrayObject frame_VAO;

@@ -30,6 +30,7 @@ namespace MR
     class EnhancerBase
     { NOMEMALIGN
       public:
+        virtual ~EnhancerBase() { }
 
         // Return value is the maximal enhanced statistic
         virtual Math::Stats::value_type operator() (const Math::Stats::vector_type& /*input_statistics*/, Math::Stats::vector_type& /*enhanced_statistics*/) const = 0;

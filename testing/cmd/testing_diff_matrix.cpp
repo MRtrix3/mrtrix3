@@ -59,7 +59,7 @@ void run ()
     const double tol = opt[0][0];
     
     for (size_t i = 0; i != numel; ++i) {
-      if (std::abs ((*(in1.data()+i) - *(in2.data()+i)) / (0.5 * (*(in1.data()+i) + *(in2.data()+i)))) > tol)
+      if (abs ((*(in1.data()+i) - *(in2.data()+i)) / (0.5 * (*(in1.data()+i) + *(in2.data()+i)))) > tol)
         throw Exception ("matrices \"" + Path::basename (argument[0]) + "\" and \"" + Path::basename (argument[1]) + " do not match within fractional precision of " + str(tol)
                          + " (" + str(*(in1.data()+i)) + " vs " + str(*(in2.data()+i)) + ")");
     }
@@ -72,7 +72,7 @@ void run ()
       tol = opt[0][0];
 
     for (size_t i = 0; i != numel; ++i) {
-      if (std::abs (*(in1.data()+i) - *(in2.data()+i)) > tol)
+      if (abs (*(in1.data()+i) - *(in2.data()+i)) > tol)
         throw Exception ("matrices \"" + Path::basename (argument[0]) + "\" and \"" + Path::basename (argument[1]) + " do not match within absolute precision of " + str(tol)
                          + " (" + str(*(in1.data()+i)) + " vs " + str(*(in2.data()+i)) + ")");
     }

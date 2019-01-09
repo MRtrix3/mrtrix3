@@ -46,6 +46,7 @@ namespace MR {
         { NOMEMALIGN
           public:
             Base() { }
+            virtual ~Base() { }
 
             virtual Base* clone() const = 0;
             virtual bool operator() (const Streamline<>&, Streamline<>&) const = 0;

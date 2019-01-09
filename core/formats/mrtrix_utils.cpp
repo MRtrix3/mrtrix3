@@ -66,12 +66,12 @@ namespace MR
       if (parsed.size() != ndim)
         throw Exception ("incorrect number of dimensions for axes specifier");
       for (size_t n = 0; n < parsed.size(); n++) {
-        if (!parsed[n] || size_t (std::abs (parsed[n])) > ndim)
+        if (!parsed[n] || size_t (abs (parsed[n])) > ndim)
           throw Exception ("axis ordering " + str (parsed[n]) + " out of range");
 
         for (size_t i = 0; i < n; i++)
-          if (std::abs (parsed[i]) == std::abs (parsed[n]))
-            throw Exception ("duplicate axis ordering (" + str (std::abs (parsed[n])) + ")");
+          if (abs (parsed[i]) == abs (parsed[n]))
+            throw Exception ("duplicate axis ordering (" + str (abs (parsed[n])) + ")");
       }
 
       return parsed;

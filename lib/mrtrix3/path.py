@@ -120,7 +120,7 @@ def toTemp(filename, is_command): #pylint: disable=unused-variable
   import os
   from mrtrix3 import app
   wrapper=''
-  if is_command and filename.count(' '):
+  if is_command and (filename.count(' ') or app.tempDir.count(' ')):
     wrapper='\"'
   path = wrapper + os.path.abspath(os.path.join(app.tempDir, filename)) + wrapper
   app.debug(filename + ' -> ' + path)

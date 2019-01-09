@@ -111,7 +111,7 @@ namespace MR
       std::sort (labels.begin(), labels.end());
       for (size_t i = 2; i < labels.size(); ++i) {
         float pos[] = { labels[i].dir[0], labels[i].dir[1] };
-        float dist = std::min (width()/std::abs (pos[0]), height()/std::abs (pos[1])) / 2.0;
+        float dist = std::min (width()/abs (pos[0]), height()/abs (pos[1])) / 2.0;
         int x = std::round (width() /2.0 + pos[0]*dist);
         int y = std::round (height() /2.0 + pos[1]*dist);
         render_text_inset (x, y, std::string (labels[i].label));

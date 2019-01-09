@@ -28,7 +28,7 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = 
+  AUTHOR =
     "J-Donald Tournier (jdtournier@gmail.com), "
     "Dave Raffelt (david.raffelt@florey.edu.au), "
     "Robert E. Smith (robert.smith@florey.edu.au), "
@@ -43,21 +43,21 @@ void usage ()
     "image menu, with the first listed displayed initially. Any subsequent "
     "command-line options will be processed as if the corresponding action had "
     "been performed through the GUI."
-    
+
   + "Note that because images loaded as arguments (i.e. simply listed on the "
     "command-line) are opened before the GUI is shown, subsequent actions to be "
     "performed via the various command-line options must appear after the last "
     "argument. This is to avoid confusion about which option will apply to which "
     "image. If you need fine control over this, please use the -load or -select_image "
     "options. For example:"
-    
+
   + "$ mrview -load image1.mif -interpolation 0 -load image2.mif -interpolation 0"
-  
+
   + "or"
-  
+
   + "$ mrview image1.mif image2.mif -interpolation 0 -select_image 2 -interpolation 0";
 
-  REFERENCES 
+  REFERENCES
     + "Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
     "MRtrix: Diffusion tractography in crossing fiber regions. "
     "Int. J. Imaging Syst. Technol., 2012, 22, 53-66";

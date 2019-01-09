@@ -57,17 +57,17 @@ namespace MR
 
           Entry ("Jet", 
               "color.rgb = 1.5 - 4.0 * abs (1.0 - amplitude - vec3(0.25, 0.5, 0.75));\n",
-              [] (float amplitude) { return Eigen::Array3f (clamp (1.5f - 4.0f * std::abs (1.0f - amplitude - 0.25f)),
-                                                            clamp (1.5f - 4.0f * std::abs (1.0f - amplitude - 0.5f)),
-                                                            clamp (1.5f - 4.0f * std::abs (1.0f - amplitude - 0.75f))); }),
+              [] (float amplitude) { return Eigen::Array3f (clamp (1.5f - 4.0f * abs (1.0f - amplitude - 0.25f)),
+                                                            clamp (1.5f - 4.0f * abs (1.0f - amplitude - 0.5f)),
+                                                            clamp (1.5f - 4.0f * abs (1.0f - amplitude - 0.75f))); }),
 
           Entry ("PET",
               "color.r = 2.0*amplitude - 0.5;\n"
               "color.g = clamp (2.0 * (0.25 - abs (amplitude - 0.25)), 0.0, 1.0) + clamp (2.0*amplitude - 1.0, 0.0, 1.0);\n"
               "color.b = 1.0 - (clamp (1.0 - 2.0 * amplitude, 0.0, 1.0) + clamp (1.0 - 4.0 * abs (amplitude - 0.75), 0.0, 1.0));\n",
               [] (float amplitude) { return Eigen::Array3f (clamp (2.0f * amplitude - 0.5f),
-                                                            clamp (0.25f - std::abs (amplitude - 0.25f)) + clamp (2.0f * (amplitude - 0.5)),
-                                                            clamp (1.0f - 2.0f * amplitude) + clamp (1.0 - 4.0 * std::abs (amplitude - 0.75))); }),
+                                                            clamp (0.25f - abs (amplitude - 0.25f)) + clamp (2.0f * (amplitude - 0.5)),
+                                                            clamp (1.0f - 2.0f * amplitude) + clamp (1.0 - 4.0 * abs (amplitude - 0.75))); }),
 
           Entry ("Colour", 
               "color.rgb = amplitude * colourmap_colour;\n",

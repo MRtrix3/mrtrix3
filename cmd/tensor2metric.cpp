@@ -183,7 +183,7 @@ class Processor { MEMALIGN(Processor)
         eigval = es.eigenvalues();
         ith_eig[0] = 0; ith_eig[1] = 1; ith_eig[2] = 2;
         std::sort (std::begin (ith_eig), std::end (ith_eig), 
-            [&eigval](size_t a, size_t b) { return std::abs(eigval[a]) > std::abs(eigval[b]); });
+            [&eigval](size_t a, size_t b) { return abs(eigval[a]) > abs(eigval[b]); });
       }
         
       /* output value */

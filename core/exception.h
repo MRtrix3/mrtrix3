@@ -31,6 +31,7 @@ namespace MR
   namespace App
   {
     extern int log_level;
+    extern int exit_error_code;
   }
 
   //! print primary output to stdout as-is.
@@ -117,20 +118,23 @@ namespace MR
 
 
 
-    class LogLevelLatch { NOMEMALIGN
-      public:
-        LogLevelLatch (const int new_level) :
-          prev_level (App::log_level) {
-            App::log_level = new_level;
-          }
+  class LogLevelLatch { NOMEMALIGN
+    public:
+      LogLevelLatch (const int new_level) :
+          prev_level (App::log_level)
+      {
+        App::log_level = new_level;
+      }
+      ~LogLevelLatch () {
+        App::log_level = prev_level;
+      }
+    private:
+      const int prev_level;
+  };
 
-        ~LogLevelLatch () {
-          App::log_level = prev_level;
-        }
 
-      private:
-        const int prev_level;
-    };
+  void check_app_exit_code();
+
 
 }
 

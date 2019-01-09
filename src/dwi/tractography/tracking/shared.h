@@ -34,6 +34,7 @@
 //#define DEBUG_TERMINATIONS
 
 
+
 namespace MR
 {
   namespace DWI
@@ -75,6 +76,7 @@ namespace MR
             }
 
             void set_step_size (float stepsize);
+            void set_cutoff (float cutoff);
 
             // This gets overloaded for iFOD2, as each sample is output rather than just each step, and there are
             //   multiple samples per step

@@ -54,12 +54,14 @@ namespace MR
           if (is_act() && act().backtrack())
             throw Exception ("Backtracking not valid for deterministic algorithms");
 
-          set_step_size (0.1);
+          set_step_size (0.1f);
           if (rk4) {
             INFO ("minimum radius of curvature = " + str(step_size / (max_angle_rk4 / (0.5 * Math::pi))) + " mm");
           } else {
             INFO ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
           }
+
+          set_cutoff (TCKGEN_DEFAULT_CUTOFF_FA);
 
           properties["method"] = "TensorDet";
 
@@ -165,7 +167,7 @@ namespace MR
         get_EV();
 
         float dot = prev_dir.dot (dir);
-        if (std::abs (dot) < S.cos_max_angle)
+        if (abs (dot) < S.cos_max_angle)
           return HIGH_CURVATURE;
 
         if (dot < 0.0)

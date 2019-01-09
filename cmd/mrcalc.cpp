@@ -75,7 +75,7 @@ DESCRIPTION
 ARGUMENTS
   + Argument ("operand", "an input image, intensity value, or the special keywords "
       "'rand' (random number between 0 and 1) or 'randn' (random number from unit "
-      "std.dev. normal distribution).").type_text().allow_multiple();
+      "std.dev. normal distribution).").type_various().allow_multiple();
 
 OPTIONS
   + OptionGroup ("Unary operators")
@@ -216,11 +216,15 @@ class StackEntry { NOMEMALIGN
   public:
 
     StackEntry (const char* entry) :
-      arg (entry) { }
+        arg (entry),
+        rng_gaussian (false),
+        image_is_complex (false) { }
 
     StackEntry (Evaluator* evaluator_p) :
-      arg (nullptr),
-      evaluator (evaluator_p) { }
+        arg (nullptr),
+        evaluator (evaluator_p),
+        rng_gaussian (false),
+        image_is_complex (false) { }
 
     void load () {
       if (!arg)
@@ -245,8 +249,8 @@ class StackEntry { NOMEMALIGN
             else if (a == "-nan")  { value = -std::numeric_limits<real_type>::quiet_NaN(); }
             else if (a ==  "inf")  { value =  std::numeric_limits<real_type>::infinity(); }
             else if (a == "-inf")  { value = -std::numeric_limits<real_type>::infinity(); }
-            else if (a == "rand")  { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = false; }
-            else if (a == "randn") { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = true; }
+            else if (a == "rand")  { value = 0.0; rng.reset (new Math::RNG()); rng_gaussian = false; }
+            else if (a == "randn") { value = 0.0; rng.reset (new Math::RNG()); rng_gaussian = true; }
             else                   { value =  to<complex_type> (arg); }
           } catch (Exception&) {
             throw Exception (std::string ("Could not interpret string \"") + arg + "\" as either an image path or a numerical value");
@@ -261,7 +265,7 @@ class StackEntry { NOMEMALIGN
     std::shared_ptr<Image<complex_type>> image;
     copy_ptr<Math::RNG> rng;
     complex_type value;
-    bool rng_gausssian;
+    bool rng_gaussian;
     bool image_is_complex;
 
     bool is_complex () const;
@@ -325,7 +329,7 @@ inline Chunk& StackEntry::evaluate (ThreadLocalStorage& storage) const
   if (evaluator) return evaluator->evaluate (storage);
   if (rng) {
     Chunk& chunk = storage.next();
-    if (rng_gausssian) {
+    if (rng_gaussian) {
       std::normal_distribution<real_type> dis (0.0, 1.0);
       for (size_t n = 0; n < chunk.size(); ++n)
         chunk[n] = dis (*rng);
@@ -371,7 +375,7 @@ std::string operation_string (const StackEntry& entry)
   if (entry.image)
     return entry.image->name();
   else if (entry.rng)
-    return entry.rng_gausssian ? "randn()" : "rand()";
+    return entry.rng_gaussian ? "randn()" : "rand()";
   else if (entry.evaluator) {
     std::string s = entry.evaluator->format;
     for (size_t n = 0; n < entry.evaluator->operands.size(); ++n)
@@ -784,8 +788,8 @@ class OpTernary : public OpBase { NOMEMALIGN
 class OpAbs : public OpUnary { NOMEMALIGN
   public:
     OpAbs () : OpUnary ("|%1|", true) { }
-    complex_type R (real_type v) const { return std::abs (v); }
-    complex_type Z (complex_type v) const { return std::abs (v); }
+    complex_type R (real_type v) const { return abs (v); }
+    complex_type Z (complex_type v) const { return abs (v); }
 };
 
 class OpNeg : public OpUnary { NOMEMALIGN

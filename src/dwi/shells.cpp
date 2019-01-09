@@ -156,7 +156,7 @@ namespace MR
               size_t best_shell = 0;
               bool ambiguous = false;
               for (size_t s = 0; s != count(); ++s) {
-                if (std::abs (*b - shells[s].get_mean()) <= 1.0) {
+                if (abs (*b - shells[s].get_mean()) <= 1.0) {
                   if (shell_selected) {
                     ambiguous = true;
                   } else {
@@ -190,7 +190,7 @@ namespace MR
                 bool ambiguous = false;
                 for (size_t s = 0; s != count(); ++s) {
                   const default_type stdev = (shells[s].is_bzero() ? 0.5 * bzero_threshold() : (zero_stdev ? std::sqrt (shells[s].get_mean()) : shells[s].get_stdev()));
-                  const default_type num_stdev = std::abs ((*b - shells[s].get_mean()) / stdev);
+                  const default_type num_stdev = abs ((*b - shells[s].get_mean()) / stdev);
                   if (num_stdev < best_num_stdevs) {
                     ambiguous = (num_stdev >= 0.1 * best_num_stdevs);
                     best_shell = s;
@@ -383,7 +383,7 @@ namespace MR
     void Shells::regionQuery (const BValueList& bvals, const default_type b, vector<size_t>& idx) const
     {
       for (ssize_t i = 0; i < bvals.size(); i++) {
-        if (std::abs (b - bvals[i]) < DWI_SHELLS_EPSILON)
+        if (abs (b - bvals[i]) < DWI_SHELLS_EPSILON)
           idx.push_back (i);
       }
     }

@@ -55,15 +55,7 @@ namespace MR
       Q_OBJECT
 
       public:
-        App (int& cmdline_argc, char** cmdline_argv) {
-          application = this;
-          ::MR::File::Config::init ();
-          ::MR::GUI::GL::set_default_context ();
-          QLocale::setDefault(QLocale::c());
-
-          new QApplication (cmdline_argc, cmdline_argv);
-          qApp->setAttribute (Qt::AA_DontCreateNativeWidgetSiblings);
-        }
+        App (int& cmdline_argc, char** cmdline_argv);
 
         ~App () {
           delete qApp;
@@ -81,7 +73,7 @@ namespace MR
   auto __expected_context = ::MR::GUI::Context::get (window); \
   assert (__current_context == __expected_context); \
 }
-#else 
+#else
 # define ASSERT_GL_CONTEXT_IS_CURRENT(window)
 #endif
 

@@ -68,7 +68,6 @@ List of MRtrix3 commands
     commands/mrhistogram
     commands/mrinfo
     commands/mrmath
-    commands/mrmesh
     commands/mrmetric
     commands/mrpad
     commands/mrregister
@@ -110,8 +109,10 @@ List of MRtrix3 commands
     commands/tsfmult
     commands/tsfsmooth
     commands/tsfthreshold
+    commands/tsfvalidate
     commands/vectorstats
     commands/voxel2fixel
+    commands/voxel2mesh
     commands/warp2metric
     commands/warpconvert
     commands/warpcorrect
@@ -175,11 +176,10 @@ List of MRtrix3 commands
     :ref:`mrdump`, "Print out the values within an image"
     :ref:`mredit`, "Directly edit the intensities within an image from the command-line"
     :ref:`mrfilter`, "Perform filtering operations on 3D / 4D MR images"
-    :ref:`mrhistmatch`, "Modify the intensities of one image to match the histogram of another via a non-linear transform"
+    :ref:`mrhistmatch`, "Modify the intensities of one image to match the histogram of another"
     :ref:`mrhistogram`, "Generate a histogram of image intensities"
     :ref:`mrinfo`, "Display image header information, or extract specific information from the header"
     :ref:`mrmath`, "Compute summary statistic on image intensities either across images, or along a specified axis of a single image"
-    :ref:`mrmesh`, "Generate a mesh file from an image"
     :ref:`mrmetric`, "Computes a dissimilarity metric between two images"
     :ref:`mrpad`, "Pad an image to increase the FOV"
     :ref:`mrregister`, "Register two images together using a symmetric rigid, affine or non-linear transformation model"
@@ -221,8 +221,10 @@ List of MRtrix3 commands
     :ref:`tsfmult`, "Multiply corresponding values in track scalar files"
     :ref:`tsfsmooth`, "Gaussian filter a track scalar file"
     :ref:`tsfthreshold`, "Threshold and invert track scalar files"
+    :ref:`tsfvalidate`, "Validate a track scalar file against the corresponding track data"
     :ref:`vectorstats`, "Statistical testing of vector data using non-parametric permutation testing"
     :ref:`voxel2fixel`, "Map the scalar value in each voxel to all fixels within that voxel"
+    :ref:`voxel2mesh`, "Generate a surface mesh representation from a voxel image"
     :ref:`warp2metric`, "Compute fixel-wise or voxel-wise metrics from a 4D deformation field"
     :ref:`warpconvert`, "Convert between different representations of a non-linear warp"
     :ref:`warpcorrect`, "Replaces voxels in a deformation field that point to 0,0,0 with nan,nan,nan"

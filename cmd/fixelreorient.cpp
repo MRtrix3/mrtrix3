@@ -44,7 +44,7 @@ void usage ()
                       "then re-normalising the vector representing the fixel direction").type_image_in ()
   + Argument ("fixel_out", "the output fixel directory. If the the input and output directories are the same, the existing directions file will "
                            "be replaced (providing the -force option is supplied). If a new directory is supplied then the fixel directions and all "
-                           "other fixel data will be copied to the new directory.").type_text();
+                           "other fixel data will be copied to the new directory.").type_directory_out();
 }
 
 

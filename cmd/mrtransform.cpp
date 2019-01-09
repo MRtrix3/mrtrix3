@@ -61,7 +61,12 @@ void usage ()
 
   + "If a DW scheme is contained in the header (or specified separately), and "
     "the number of directions matches the number of volumes in the images, any "
-    "transformation applied using the -linear option will be also be applied to the directions.";
+    "transformation applied using the -linear option will be also be applied to the directions."
+
+  + "When the -template option is used to specify the target image grid, the "
+    "image provided via this option will not influence the axis data strides "
+    "of the output image; these are determined based on the input image, or the "
+    "input to the -strides option.";
 
   REFERENCES
     + "* If FOD reorientation is being performed:\n"
@@ -175,6 +180,10 @@ void usage ()
 
     + DataType::options ()
 
+    + Stride::Options
+
+    + OptionGroup ("Additional generic options for mrtransform")
+
     + Option ("nan",
       "Use NaN as the out of bounds value (Default: 0.0)");
 }
@@ -207,6 +216,7 @@ void run ()
   auto input_header = Header::open (argument[0]);
   Header output_header (input_header);
   output_header.datatype() = DataType::from_command_line (DataType::from<float> ());
+  Stride::set_from_command_line (output_header);
 
   // Linear
   transform_type linear_transform;

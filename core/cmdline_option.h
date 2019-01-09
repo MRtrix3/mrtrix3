@@ -56,7 +56,8 @@ namespace MR
       IntSeq,
       FloatSeq,
       TracksIn,
-      TracksOut
+      TracksOut,
+      Various
     };
 
     using ArgFlags = int;
@@ -160,7 +161,7 @@ namespace MR
           return *this;
         }
 
-        //! specifies that the argument should be a text string */
+        //! specifies that the argument should be a text string
         Argument& type_text () {
           assert (type == Undefined);
           type = Text;
@@ -281,6 +282,13 @@ namespace MR
         Argument& type_tracks_out () {
           assert (type == Undefined);
           type = TracksOut;
+          return *this;
+        }
+
+        //! specifies that the argument could be one of various types
+        Argument& type_various () {
+          assert (type == Undefined);
+          type = Various;
           return *this;
         }
 

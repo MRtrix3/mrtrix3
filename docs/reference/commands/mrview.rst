@@ -46,6 +46,8 @@ View options
 
 -  **-focus x,y,z or boolean** Either set the position of the crosshairs in scanner coordinates, with the new position supplied as a comma-separated list of floating-point values or show or hide the focus cross hair using a boolean value as argument.
 
+-  **-target x,y,z** Set the target location for the viewing window (the scanner coordinate that will appear at the centre of the viewing window
+
 -  **-voxel x,y,z** Set the position of the crosshairs in voxel coordinates, relative the image currently displayed. The new position should be supplied as a comma-separated list of floating-point values.
 
 -  **-volume idx** Set the volume index for the image displayed, as a comma-separated list of integers.
@@ -104,11 +106,21 @@ Overlay tool options
 
 -  **-overlay.opacity value** Sets the overlay opacity to floating value [0-1].
 
--  **-overlay.interpolation_on** Enables overlay image interpolation.
-
--  **-overlay.interpolation_off** Disables overlay image interpolation.
-
 -  **-overlay.colourmap index** Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.
+
+-  **-overlay.colour R,G,B** Specify a manual colour for the overlay, as three comma-separated values
+
+-  **-overlay.intensity Min,Max** Set the intensity windowing of the overlay
+
+-  **-overlay.threshold_min value** Set the lower threshold value of the overlay
+
+-  **-overlay.threshold_max value** Set the upper threshold value of the overlay
+
+-  **-overlay.no_threshold_min** Disable the lower threshold for the overlay
+
+-  **-overlay.no_threshold_max** Disable the upper threshold for the overlay
+
+-  **-overlay.interpolation value** Enable or disable overlay image interpolation.
 
 ROI editor tool options
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -116,6 +128,8 @@ ROI editor tool options
 -  **-roi.load image** Loads the specified image on the ROI editor tool.
 
 -  **-roi.opacity value** Sets the overlay opacity to floating value [0-1].
+
+-  **-roi.colour R,G,B** Sets the colour of the ROI overlay
 
 Tractography tool options
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -130,11 +144,13 @@ Tractography tool options
 
 -  **-tractography.slab value** Slab thickness of tractography display, in mm. -1 to turn off crop to slab.
 
+-  **-tractography.lighting value** Toggle the use of lighting of tractogram geometry
+
 -  **-tractography.tsf_load tsf** Load the specified tractography scalar file.
 
--  **-tractography.tsf_range range** Set range for the tractography scalar file. Requires tractography.tsf_load already provided. RangeMin,RangeMax
+-  **-tractography.tsf_range RangeMin,RangeMax** Set range for the tractography scalar file. Requires -tractography.tsf_load already provided.
 
--  **-tractography.tsf_thresh thresh** Set thresholds for the tractography scalar file. Requires tractography.tsf_load already provided. ThresholdMin,ThesholdMax
+-  **-tractography.tsf_thresh ThresholdMin,ThesholdMax** Set thresholds for the tractography scalar file. Requires -tractography.tsf_load already provided.
 
 ODF tool options
 ^^^^^^^^^^^^^^^^

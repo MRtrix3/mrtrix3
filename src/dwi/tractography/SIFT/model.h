@@ -298,14 +298,14 @@ namespace MR
         Tractography::Properties p;
         Tractography::Reader<float> reader (tck_file_path, p);
         Tractography::Writer<float> writer (output_path, p);
-        Tractography::Streamline<> tck, null_tck;
+        Tractography::Streamline<> tck;
         ProgressBar progress ("Writing non-contributing streamlines output file", contributions.size());
         track_t tck_counter = 0;
         while (reader (tck) && tck_counter < contributions.size()) {
           if (contributions[tck_counter] && !contributions[tck_counter++]->get_total_contribution())
             writer (tck);
           else
-            writer (null_tck);
+            writer.skip();
           ++progress;
         }
         reader.close();

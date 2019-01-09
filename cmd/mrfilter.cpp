@@ -155,7 +155,7 @@ void run () {
         filter.datatype() = DataType::Float32;
         auto output = Image<float>::create (argument[2], filter);
         for (auto l = Loop (output) (temp, output); l; ++l)
-          output.value() = std::abs (cdouble(temp.value()));
+          output.value() = abs (cdouble(temp.value()));
       } else {
         auto output = Image<cdouble>::create (argument[2], filter);
         filter (input, output);

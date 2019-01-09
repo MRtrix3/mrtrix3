@@ -57,7 +57,7 @@ namespace MR
             value_type largest_dp = 0.0;
             const direction_type dir (i->get_dir().normalized());
             for (index_type j = first_index; j < last_index; ++j) {
-              const value_type dp = std::abs (dir.dot (fixel_directions[j]));
+              const value_type dp = abs (dir.dot (fixel_directions[j]));
               if (dp > largest_dp) {
                 largest_dp = dp;
                 fixel_mask.index(0) = j;
