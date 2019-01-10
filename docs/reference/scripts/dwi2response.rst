@@ -15,7 +15,7 @@ Usage
 
     dwi2response algorithm [ options ] ...
 
--  *algorithm*: Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: dhollander_new, dhollander_old, fa, manual, msmt_5tt, tax, tournier
+-  *algorithm*: Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: dhollander, fa, manual, msmt_5tt, tax, tournier
 
 Description
 -----------
@@ -84,22 +84,22 @@ See the Mozilla Public License v. 2.0 for more details.
 
 For more details, see http://www.mrtrix.org/.
 
-.. _dwi2response_dhollander_new:
+.. _dwi2response_dhollander:
 
-dwi2response dhollander_new
-===========================
+dwi2response dhollander
+=======================
 
 Synopsis
 --------
 
-Use the Dhollander et al. (2016) algorithm for unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof). This is an improved version of the Dhollander et al. (2016) algorithm.
+Use an improved version of the Dhollander et al. (2016) algorithm for unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof). This version of the Dhollander et al. (2016) algorithm was improved by Thijs Dhollander.
 
 Usage
 --------
 
 ::
 
-    dwi2response dhollander_new input out_sfwm out_gm out_csf [ options ]
+    dwi2response dhollander input out_sfwm out_gm out_csf [ options ]
 
 -  *input*: The input DWI
 -  *out_sfwm*: Output single-fibre WM response text file
@@ -109,110 +109,8 @@ Usage
 Options
 -------
 
-Options specific to the 'dhollander_new' algorithm
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-erode** Number of erosion passes to apply to initial (whole brain) mask. (default: 3)
-
-- **-fa** FA threshold for crude WM versus GM-CSF separation. (default: 0.2)
-
-- **-sfwm** Number of single-fibre WM voxels to select, as a percentage of refined WM. (default: 0.5 per cent)
-
-- **-gm** Number of GM voxels to select, as a percentage of refined GM. (default: 2 per cent)
-
-- **-csf** Number of CSF voxels to select, as a percentage of refined CSF. (default: 10 per cent)
-
-Options common to all dwi2response algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-shells** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
-
-- **-lmax** The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
-
-- **-mask** Provide an initial mask for response voxel selection
-
-- **-voxels** Output an image showing the final voxel selection(s)
-
-- **-grad** Pass the diffusion gradient table in MRtrix format
-
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
-
-Standard options
-^^^^^^^^^^^^^^^^
-
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
-
-- **-force** Force overwrite of output files if pre-existing
-
-- **-help** Display help information for the script
-
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
-
-- **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
-
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
-
-- **-quiet** Suppress all console output during script execution
-
-- **-info** Display additional information and progress for every command invoked
-
-- **-debug** Display additional debugging information over and above the output of -info
-
-References
-^^^^^^^^^^
-
-* Dhollander, T.; Raffelt, D. & Connelly, A. Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5
-
-* Dhollander, T.; Raffelt, D. & Connelly, A. Accuracy of response function estimation algorithms for 3-tissue spherical deconvolution of diverse quality diffusion MRI data. Proc Intl Soc Mag Reson Med, 2018, 26, 1569
-
---------------
-
-
-
-**Author:** Thijs Dhollander (thijs.dhollander@gmail.com)
-
-**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
-
-This Source Code Form is subject to the terms of the Mozilla Public
-License, v. 2.0. If a copy of the MPL was not distributed with this
-file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
-Covered Software is provided under this License on an "as is"
-basis, without warranty of any kind, either expressed, implied, or
-statutory, including, without limitation, warranties that the
-Covered Software is free of defects, merchantable, fit for a
-particular purpose or non-infringing.
-See the Mozilla Public License v. 2.0 for more details.
-
-For more details, see http://www.mrtrix.org/.
-
-.. _dwi2response_dhollander_old:
-
-dwi2response dhollander_old
-===========================
-
-Synopsis
---------
-
-Use the Dhollander et al. (2016) algorithm for unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof). This is the original version of the Dhollander et al. (2016) algorithm.
-
-Usage
---------
-
-::
-
-    dwi2response dhollander_old input out_sfwm out_gm out_csf [ options ]
-
--  *input*: The input DWI
--  *out_sfwm*: Output single-fibre WM response text file
--  *out_gm*: Output GM response text file
--  *out_csf*: Output CSF response text file
-
-Options
--------
-
-Options specific to the 'dhollander_old' algorithm
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options specific to the 'dhollander' algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-erode** Number of erosion passes to apply to initial (whole brain) mask. (default: 3)
 
