@@ -37,11 +37,9 @@ def needs_single_shell(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import shutil
-  from mrtrix3 import app, image, MRtrixError, path, run
+  from mrtrix3 import CONFIG, app, image, MRtrixError, path, run
 
-  bzero_threshold = 10.0
-  if 'BZeroThreshold' in app.config:
-    bzero_threshold = float(app.config['BZeroThreshold'])
+  bzero_threshold = float(CONFIG['BZeroThreshold']) if 'BZeroThreshold' in CONFIG else 10.0
 
 
   # CHECK INPUTS AND OPTIONS
