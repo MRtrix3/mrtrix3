@@ -111,7 +111,7 @@ def execute(): #pylint: disable=unused-variable
     for filename, outputname in hipp_subfield_image_map.items():
       init_mesh_path = os.path.basename(filename)[0:2] + '_hipp_init.vtk'
       smooth_mesh_path = os.path.basename(filename)[0:2] + '_hipp_smooth.vtk'
-      run.command('mrthreshold ' + filename + ' - -abs 0.5 | mrmesh - ' + init_mesh_path)
+      run.command('mrthreshold ' + filename + ' - -abs 0.5 | voxel2mesh - ' + init_mesh_path)
       progress.increment()
       # Since the hippocampal subfields segmentation can include some fine structures, reduce the extent of smoothing
       run.command('meshfilter ' + init_mesh_path + ' smooth ' + smooth_mesh_path + ' -smooth_spatial 5 -smooth_influence 5')
@@ -138,7 +138,7 @@ def execute(): #pylint: disable=unused-variable
     run.command(first_cmd + ' -s ' + ','.join(sgm_first_map.keys()) + ' -i T1.nii -b -o first')
     fsl.checkFirst('first', sgm_first_map.keys())
     file.delTemporary(glob.glob('T1_to_std_sub.*'))
-    progress = app.progressBar('Mapping sub-cortical structures segmented by FIRST from surface to voxel representation', 2*len(sgm_first_map))
+    progress = app.progressBar('Mapping FIRST segmentations to image', 2*len(sgm_first_map))
     for key, value in sgm_first_map.items():
       vtk_in_path = 'first-' + key + '_first.vtk'
       vtk_converted_path = 'first-' + key + '_transformed.vtk'
@@ -251,7 +251,7 @@ def execute(): #pylint: disable=unused-variable
       else:
         init_mesh_path = name + '_init.vtk'
         smoothed_mesh_path = name + '.vtk'
-        run.command('mrcalc ' + aparc_image + ' ' + str(index) + ' -eq - | mrmesh - -threshold 0.5 ' + init_mesh_path)
+        run.command('mrcalc ' + aparc_image + ' ' + str(index) + ' -eq - | voxel2mesh - -threshold 0.5 ' + init_mesh_path)
         run.command('meshfilter ' + init_mesh_path + ' smooth ' + smoothed_mesh_path)
         file.delTemporary(init_mesh_path)
         run.command('mesh2voxel ' + smoothed_mesh_path + ' ' + template_image + ' ' + name + '.mif')
@@ -263,7 +263,7 @@ def execute(): #pylint: disable=unused-variable
     run.command('mrcalc ' + aparc_image + ' ' + str(index) + ' -eq ' + name + '.mif -datatype bit')
   cc_init_mesh_path = 'combined_corpus_callosum_init.vtk'
   cc_smoothed_mesh_path = 'combined_corpus_callosum.vtk'
-  run.command('mrmath ' + ' '.join([ name + '.mif' for (index, name) in corpus_callosum ]) + ' sum - | mrmesh - -threshold 0.5 ' + cc_init_mesh_path)
+  run.command('mrmath ' + ' '.join([ name + '.mif' for (index, name) in corpus_callosum ]) + ' sum - | voxel2mesh - -threshold 0.5 ' + cc_init_mesh_path)
   run.command('meshfilter ' + cc_init_mesh_path + ' smooth ' + cc_smoothed_mesh_path)
   file.delTemporary(cc_init_mesh_path)
   run.command('mesh2voxel ' + cc_smoothed_mesh_path + ' ' + template_image + ' combined_corpus_callosum.mif')
@@ -291,7 +291,7 @@ def execute(): #pylint: disable=unused-variable
   #   fill in any gaps (i.e. select the inverse, select the largest connected component, invert again)
   # Make sure that floating-point values are handled appropriately
   # TODO Idea: Dilate voxelised brain stem 2 steps, add only intersection with voxelised WM,
-  #   then run through mrmesh
+  #   then run through voxel2mesh
 
   # Combine these images together using the appropriate logic in order to form the 5TT image
   progress = app.progressBar('Modulating segmentation images based on other tissues', 9)
@@ -358,7 +358,7 @@ def execute(): #pylint: disable=unused-variable
         for entry in cerebellar_images:
           file.delTemporary(entry)
         progress.increment()
-        run.command('mrmesh ' + sum_image + ' ' + init_mesh_path)
+        run.command('voxel2mesh ' + sum_image + ' ' + init_mesh_path)
         file.delTemporary(sum_image)
         progress.increment()
         run.command('meshfilter ' + init_mesh_path + ' smooth ' + smooth_mesh_path)
