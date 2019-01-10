@@ -43,7 +43,7 @@ def execute(): #pylint: disable=unused-variable
   alg.execute()
 
   stderr = run.command('5ttcheck result.mif').stderr
-  if stderr:
+  if '[WARNING]' in stderr:
     app.warn('Generated image does not perfectly conform to 5TT format:')
     for line in stderr.splitlines():
       app.warn(line)
