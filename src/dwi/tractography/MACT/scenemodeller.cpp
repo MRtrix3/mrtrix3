@@ -133,6 +133,7 @@ bool SceneModeller::nearestTissue( const Eigen::Vector3d& point,
 
     // unless specified, increase the layer until the nearest tissue is found
     // (min numner of voxels: 3x3x3=27)
+    std::map< Tissue_ptr, TriangleSet > checked_tissue_polygons;
     int32_t l = 1;
     do
     {
@@ -153,27 +154,35 @@ bool SceneModeller::nearestTissue( const Eigen::Vector3d& point,
         auto t = tissues.begin(), te = tissues.end();
         while ( t != te )
         {
+          if ( !checked_tissue_polygons.count( *t ) )
+          {
+            checked_tissue_polygons[ *t ] = TriangleSet();
+          }
+          auto mesh = ( *t )->mesh();
           auto polygons = ( *t )->polygonLut().getTriangles( voxels );
           if ( !polygons.empty() )
           {
             auto p = polygons.begin(), pe = polygons.end();
             while ( p != pe )
             {
-              auto mesh = ( *t )->mesh();
-              Eigen::Vector3d projectionPoint;
-              double dist = MACT::pointToTriangleDistance( 
+              if ( !checked_tissue_polygons[ *t ].count( *p ) )
+              {
+                Eigen::Vector3d projectionPoint;
+                double dist = MACT::pointToTriangleDistance( 
                                                        point,
                                                        mesh.vert( ( *p )[ 0 ] ),
                                                        mesh.vert( ( *p )[ 1 ] ),
                                                        mesh.vert( ( *p )[ 2 ] ),
                                                        projectionPoint );
-              if ( dist < intersection._arcLength )
-              {
-                intersection._arcLength = dist;
-                intersection._point = projectionPoint;
-                intersection._tissue = *t;
-                intersection._triangle = *p;
-              }    
+                if ( dist < intersection._arcLength )
+                {
+                  intersection._arcLength = dist;
+                  intersection._point = projectionPoint;
+                  intersection._tissue = *t;
+                  intersection._triangle = *p;
+                }
+                checked_tissue_polygons[ *t ].insert( *p );
+              }
               ++ p;
             }
           }
@@ -182,6 +191,55 @@ bool SceneModeller::nearestTissue( const Eigen::Vector3d& point,
       }
       ++ l;
     } while ( l < layer && !intersection._tissue );
+
+    // check an additional layer
+    if ( intersection._tissue )
+    {
+      std::set< Eigen::Vector3i, Vector3iCompare > voxels;
+      _bresenhamLine.layerVoxels( voxel, l, voxels );
+
+      auto tissues = _tissueLut.getTissues( voxels );
+      if ( !tissues.empty() )
+      {
+        auto t = tissues.begin(), te = tissues.end();
+        while ( t != te )
+        {
+          if ( !checked_tissue_polygons.count( *t ) )
+          {
+            checked_tissue_polygons[ *t ] = TriangleSet();
+          }
+          auto mesh = ( *t )->mesh();
+          auto polygons = ( *t )->polygonLut().getTriangles( voxels );
+          if ( !polygons.empty() )
+          {
+            auto p = polygons.begin(), pe = polygons.end();
+            while ( p != pe )
+            {
+              if ( !checked_tissue_polygons[ *t ].count( *p ) )
+              {
+                Eigen::Vector3d projectionPoint;
+                double dist = MACT::pointToTriangleDistance( 
+                                                       point,
+                                                       mesh.vert( ( *p )[ 0 ] ),
+                                                       mesh.vert( ( *p )[ 1 ] ),
+                                                       mesh.vert( ( *p )[ 2 ] ),
+                                                       projectionPoint );
+                if ( dist < intersection._arcLength )
+                {
+                  intersection._arcLength = dist;
+                  intersection._point = projectionPoint;
+                  intersection._tissue = *t;
+                  intersection._triangle = *p;
+                }
+                checked_tissue_polygons[ *t ].insert( *p );
+              }
+              ++ p;
+            }
+          }
+          ++ t;
+        }
+      }
+    }
 
     return intersection._tissue ? true : false;
   }
@@ -203,7 +261,8 @@ bool SceneModeller::nearestVertex( const Eigen::Vector3d& point,
 
     // unless specified, increase the layer until the nearest tissue is found
     // (min numner of voxels: 3x3x3=27)
-    vertex = -1;
+    std::map< Tissue_ptr, std::set< int32_t > > tissue_vertices;
+    double min_dist = std::numeric_limits< double >::infinity();
     int32_t l = 1;
     do
     {
@@ -217,40 +276,103 @@ bool SceneModeller::nearestVertex( const Eigen::Vector3d& point,
         _bresenhamLine.layerVoxels( voxel, l, voxels );
       }
 
-      // loop over all unique polygons
-      double min_dist = std::numeric_limits< double >::infinity();
       auto tissues = _tissueLut.getTissues( voxels );
       if ( !tissues.empty() )
       {
         auto t = tissues.begin(), te = tissues.end();
         while ( t != te )
         {
+          if ( !tissue_vertices.count( *t ) )
+          {
+            tissue_vertices[ *t ] = std::set< int32_t >();
+          }
+          // collect the vertices of the current tissue within the voxels
           auto polygons = ( *t )->polygonLut().getTriangles( voxels );
           if ( !polygons.empty() )
           {
             auto p = polygons.begin(), pe = polygons.end();
             while ( p != pe )
             {
-              auto mesh = ( *t )->mesh();
               for ( size_t v = 0; v < 3; v++ )
               {
-                double dist = ( point - mesh.vert( ( *p )[ v ] ) ).norm();
-                if ( dist < min_dist )
-                {
-                  min_dist = dist;
-                  vertex = ( *p )[ v ];
-                }
+                tissue_vertices[ *t ].insert( ( *p )[ v ] );
               }
               ++ p;
             }
+          }
+          // get the closest vertex from the list
+          auto mesh = ( *t )->mesh();
+          auto v = tissue_vertices[ *t ].begin(),
+               ve = tissue_vertices[ *t ].end();
+          while ( v != ve )
+          {
+            double dist = ( point - mesh.vert( *v ) ).norm();
+            if ( dist < min_dist )
+            {
+              min_dist = dist;
+              vertex = *v;
+            }
+            ++ v;
           }
           ++ t;
         }
       }
       ++ l;
-    } while ( l < layer && vertex < 0 );
+    } while ( l < layer && tissue_vertices.empty() );
 
-    return ( vertex >= 0 );
+    // check an additional layer
+    if ( tissue_vertices.size() )
+    {
+      std::set< Eigen::Vector3i, Vector3iCompare > voxels;
+      _bresenhamLine.layerVoxels( voxel, l, voxels );
+
+      auto tissues = _tissueLut.getTissues( voxels );
+      if ( !tissues.empty() )
+      {
+        auto t = tissues.begin(), te = tissues.end();
+        while ( t != te )
+        {
+          if ( !tissue_vertices.count( *t ) )
+          {
+            tissue_vertices[ *t ] = std::set< int32_t >();
+          }
+          else
+          {
+            tissue_vertices[ *t ].clear();
+          }
+          auto polygons = ( *t )->polygonLut().getTriangles( voxels );
+          if ( !polygons.empty() )
+          {
+            auto p = polygons.begin(), pe = polygons.end();
+            while ( p != pe )
+            {
+              for ( size_t v = 0; v < 3; v++ )
+              {
+                tissue_vertices[ *t ].insert( ( *p )[ v ] );
+              }
+              ++ p;
+            }
+          }
+          // get the closest vertex from the list
+          auto mesh = ( *t )->mesh();
+          auto v = tissue_vertices[ *t ].begin(),
+               ve = tissue_vertices[ *t ].end();
+          while ( v != ve )
+          {
+            double dist = ( point - mesh.vert( *v ) ).norm();
+            if ( dist < min_dist )
+            {
+              min_dist = dist;
+              vertex = *v;
+            }
+            ++ v;
+          }
+          ++ t;
+        }
+      }
+    }
+
+    return ( tissue_vertices.size() > 0 );
   }
 }
 
