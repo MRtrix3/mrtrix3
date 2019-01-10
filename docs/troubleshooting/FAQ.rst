@@ -171,8 +171,8 @@ In addition to the principal binary commands, *MRtrix3* also includes a number
 of Pyton scripts for performing common image processing tasks.  These make use
 of a relatively simple set of library functions that provide a certain leven of
 convenience and consistency for building such scripts (e.g. common format help
-page; command-line parsing; creation, use and deletion of temporary working
-directory; control over command-line verbosity).
+page; command-line parsing; creation, use and deletion of scratch directory;
+control over command-line verbosity).
 
 It is hoped that in addition to growing in complexity and capability over time,
 this library may also be of assistance to users when building their own
@@ -346,7 +346,7 @@ The following error messages have frequently been observed from the
      (note however that FIRST may fail silently, and hence this script may hang indefinitely)
 
 Error messages that may be found in the log files within the script's
-temporary directory include:
+scratch directory include:
 
 .. code-block:: console
 
@@ -408,8 +408,8 @@ template image, which in some cases may make the process more robust.
 
 For any further issues, the only remaining recommendations are:
 
--  Investigate the temporary files that are generated within the script's
-   temporary directory, particularly the FIRST log files, and search for
+-  Investigate the intermediate files that are generated within the script's
+   scratch directory, particularly the FIRST log files, and search for
    any indication of the cause of failure.
 
 -  Try running the FSL ``run_first_all`` script directly on your original

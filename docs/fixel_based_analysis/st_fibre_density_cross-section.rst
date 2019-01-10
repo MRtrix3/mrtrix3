@@ -52,9 +52,9 @@ To enable robust quantitative comparisons of AFD across subjects three additiona
 4. Bias field correction
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-Because we recommend a :ref:`global intensity normalisation <global-intensity-normalisation>`, bias field correction is required as a pre-processing step to eliminate low frequency intensity inhomogeneities across the image. DWI bias field correction is perfomed by first estimating the bias field from the DWI b=0 data, then applying the field to correct all DW volumes. This can be done in a single step using the :ref:`dwibiascorrect` script with the :code:`-ants` option in MRtrix. The script uses a bias field correction algorithm available in `ANTS <http://stnava.github.io/ANTs/>`_ (the N4 algorithm). *Don't* use the :code:`-fsl` option with this script in this fixel-based analysis pipeline. To perform bias field correction on DW images, run::
+Because we recommend a :ref:`global intensity normalisation <global-intensity-normalisation>`, bias field correction is required as a pre-processing step to eliminate low frequency intensity inhomogeneities across the image. DWI bias field correction is perfomed by first estimating the bias field from the DWI b=0 data, then applying the field to correct all DW volumes. This can be done in a single step using the :code:`ants` algorithm within the :ref:`dwibiascorrect` script in *MRtrix3*. The script uses a bias field correction algorithm available in `ANTS <http://stnava.github.io/ANTs/>`_ (the N4 algorithm). *Don't* use the :code:`fsl` algorithm with this script in this fixel-based analysis pipeline. To perform bias field correction on DW images, run::
 
-    foreach * : dwibiascorrect -ants IN/IN/dwi_denoised_unringed_preproc.mif IN/IN/dwi_denoised_unringed_preproc_unbiased.mif
+    foreach * : dwibiascorrect ants IN/IN/dwi_denoised_unringed_preproc.mif IN/IN/dwi_denoised_unringed_preproc_unbiased.mif
 
 
 5. Global intensity normalisation across subjects
@@ -99,7 +99,7 @@ A robust and fully automated (unsupervised) method to obtain single-shell respon
 
 It is crucial for fixel-based analysis to only use a single *unique* response function to perform spherical deconvolution of all subjects: as all resulting fibre orientation distributions will be expressed in function of it, it can (in an abstract way) be seen as the unit of the final apparent fibre density metric. A possible way to obtain a unique response function, is to average the response functions obtained from all subjects::
 
-    average_response */response.txt ../group_average_response.txt
+    responsemean */response.txt ../group_average_response.txt
 
 There is however no strict requirement for the (one) final response function to be the average of *all* subject response functions. In certain very specific cases, it may even be wise to leave out subjects (for this step) where a response function could not reliably be obtained, or where pathology affected the brain globally.
 
