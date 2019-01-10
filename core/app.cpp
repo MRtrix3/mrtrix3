@@ -255,7 +255,7 @@ namespace MR
     {
       if (!format)
         return SYNOPSIS;
-      return bold("SYNOPSIS") + "\n" + paragraph ("", SYNOPSIS, HELP_PURPOSE_INDENT) + "\n";
+      return bold("SYNOPSIS") + "\n\n" + paragraph ("", SYNOPSIS, HELP_PURPOSE_INDENT) + "\n";
     }
 
 
