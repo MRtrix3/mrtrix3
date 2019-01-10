@@ -380,10 +380,14 @@ namespace MR
                 break;
               case TranslationType::Camera:
               {
-                const GL::vec4 trans_gl_vec =  GL::inv (GL::mat4 (orientation)) * GL::vec4 (trans_vec[0], trans_vec[1], trans_vec[2], 1.0f);
-                trans_vec[0] = trans_gl_vec[0];
-                trans_vec[1] = trans_gl_vec[1];
-                trans_vec[2] = trans_gl_vec[2];
+                const Mode::Base* mode = window().get_current_mode();
+                if (mode) {
+                  const GL::vec4 trans_gl_vec =  mode->get_current_projection()->modelview_inverse() *
+                    GL::vec4 (trans_vec[0], trans_vec[1], trans_vec[2], 0.0f);
+                  trans_vec[0] = trans_gl_vec[0];
+                  trans_vec[1] = trans_gl_vec[1];
+                  trans_vec[2] = trans_gl_vec[2];
+                }
                 break;
               }
               case TranslationType::Scanner:
@@ -391,7 +395,6 @@ namespace MR
               default:
                 break;
             }
-
 
             Eigen::Vector3f focus_delta (trans_vec);
 
