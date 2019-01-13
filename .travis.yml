@@ -64,8 +64,8 @@ install:
   ##################################################
   - |
     if [[ "${TRAVIS_OS_NAME}" == "osx" ]]; then
-        brew install qt5
-        brew link --force qt5
+        brew install qt@5.5
+        brew link --force qt
     fi
   #########################################
   # Installation requirements for MRtrix3 #
