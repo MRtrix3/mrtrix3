@@ -1,0 +1,3 @@
+labelsgmfix BIDS/sub-01/anat/aparc+aseg.mgz BIDS/sub-01/anat/sub-01_T1w.nii.gz parc-desikan_lookup.txt tmp.mif -force && testing_diff_image tmp.mif labelsgmfix/default.mif.gz
+mrcalc BIDS/sub-01/anat/sub-01_T1w.nii.gz BIDS/sub-01/anat/sub-01_brainmask.nii.gz -mult tmp1.mif -force && labelsgmfix BIDS/sub-01/anat/aparc+aseg.mgz tmp1.mif parc-desikan_lookup.txt tmp2.mif -premasked -force && testing_diff_image tmp2.mif labelsgmfix/premasked.mif.gz
+labelsgmfix BIDS/sub-01/anat/aparc+aseg.mgz BIDS/sub-01/anat/sub-01_T1w.nii.gz parc-desikan_lookup.txt tmp.mif -sgm_amyg_hipp -force && testing_diff_image tmp.mif labelsgmfix/sgm_amyg_hipp.mif.gz
