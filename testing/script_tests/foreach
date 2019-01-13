@@ -1,0 +1,2 @@
+rm -f tmp.txt && foreach 1 2 3 4 : echo IN >> tmp.txt && testing_diff_matrix tmp.txt foreach/out.txt
+foreach -4 1 2 3 4 : echo IN

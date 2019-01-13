@@ -1,5 +1,22 @@
 #!/bin/bash
 
+datadir="data"
+testdir="tests"
+commandlist=""
+while test $# -gt 0
+do
+    case "$1" in
+        -scripts)
+            datadir="script_data"
+            testdir="script_tests"
+            ;;
+        *)
+            commandlist="$commandlist $1"
+            ;;
+    esac
+    shift
+done
+
 LOGFILE=testing.log
 echo logging to \""$LOGFILE"\"
 
@@ -11,7 +28,7 @@ cat > $LOGFILE <<EOD
 EOD
 
 echo -n "fetching test data... "
-git submodule update --init >> $LOGFILE 2>&1
+git submodule update $datadir --init >> $LOGFILE 2>&1
 
 if [ $? != 0 ]; then
   echo ERROR!
@@ -46,16 +63,14 @@ else
 fi
 
 
-# generate list of tests to run:
-if [ $# == 0 ]; then
-  for n in testing/tests/*; do
-    tests="$tests $(basename $n)"
+# generate list of tests to run if none have been requested explicitly
+if [ -z "$commandlist" ]; then
+  for n in testing/$testdir/*; do
+    commandlist="$commandlist $(basename $n)"
   done
-else
-  tests="$@"
 fi
 
-a_script_has_failed=false
+a_test_has_failed=false
 
 cat >> $LOGFILE <<EOD
 
@@ -63,17 +78,17 @@ PATH is set to $PATH
 EOD
 
 
-for script in $tests; do
+for command in $commandlist; do
 
   cat >> $LOGFILE <<EOD
 -------------------------------------------
 
-## running "${script}"...
+## running "${command}"...
 
 EOD
 
-  echo -n 'running "'${script}'"... '
-  rm -rf testing/data/tmp*
+  echo -n 'running "'${command}'"... '
+  rm -rf testing/$datadir/tmp* testing/$datadir/*-tmp-*
   ((ntests=0))
   ((success=0))
   while IFS='' read -r cmd || [[ -n "$cmd" ]]; do
@@ -82,7 +97,7 @@ EOD
     echo -n '# command: '$cmd >> $LOGFILE
     (
       export PATH="$(pwd)/testing/bin:$(pwd)/bin:$PATH";
-      cd testing/data/
+      cd testing/$datadir/
       eval $cmd
     ) > .__tmp.log 2>&1
 
@@ -95,28 +110,28 @@ EOD
     cat .__tmp.log >> $LOGFILE
     echo "" >> $LOGFILE
     ((ntests++))
-  done < testing/tests/$script
+  done < testing/$testdir/$command
 
   echo -n $success of $ntests passed
   if [[ $success -lt $ntests ]]; then
     echo "    <-------- ERROR"
-    a_script_has_failed=true
+    a_test_has_failed=true
     cat >> $LOGFILE <<EOD
 
-## ERROR: $(($ntests-$success)) tests failed for "${script}"
+## ERROR: $(($ntests-$success)) tests failed for "${command}"
 
 EOD
   else
     echo ""
     cat >> $LOGFILE <<EOD
-## $ntests tests completed OK for "${script}"
+## $ntests tests completed OK for "${command}"
 
 EOD
   fi
 
 done
 
-if [ ${a_script_has_failed} = true ];
+if [ ${a_test_has_failed} = true ];
 then
   exit 1
 fi
