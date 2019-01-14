@@ -34,11 +34,28 @@ By default, this produces all relevant metrics for the direction set provided. I
 
 Metrics are produced assuming a unipolar or bipolar electrostatic repulsion model, producing the potential energy (total, mean, min & max), and the nearest-neighbour angles (mean, min & max). The condition number is also produced for the spherical harmonic fits up to the highest harmonic order supported by the number of volumes. Finally, the norm of the mean direction vector is provided as a measure of the overall symmetry of the direction set (important with respect to eddy-current resilience).
 
-Specific metrics can also be queried independently via the "-output" option, using these shorthands: U/B for unipolar/bipolar model, E/N for energy and nearest-neighbour respectively, t/-/+ for total/min/max respectively (mean implied otherwise); SHn for condition number of SH fit at order n (with n an even integer); ASYM for asymmetry index (norm of mean direction vector); and N for the number of directions. For example:
+Specific metrics can also be queried independently via the "-output" option, using these shorthands: U/B for unipolar/bipolar model, E/N for energy and nearest-neighbour respectively, t/-/+ for total/min/max respectively (mean implied otherwise); SHn for condition number of SH fit at order n (with n an even integer); ASYM for asymmetry index (norm of mean direction vector); N for the number of directions.
 
--output BN,BN-,BN+   requests the mean, min and max nearest-neighour angles assuming a bipolar model.
+Example usages
+--------------
 
--output UE,SH8,SYM   requests the mean unipolar electrostatic energy, condition number of SH fit at order 8, and the asymmetry index.
+-   *Default usage*::
+
+        $ dirstat directions.txt
+
+    This provides a pretty-printed list of all metrics available.
+
+-   *Write a single metric of interest to standard output*::
+
+        $ dirstat grad.b -shell 3000 -output SH8
+
+    requests the condition number of SH fit of b=3000 shell directions at SH order 8
+
+-   *Write multiple metrics of interest to standard output*::
+
+        $ dirstat dwi.mif -output BN,BN-,BN+
+
+    requests the mean, min and max nearest-neighour angles assuming a bipolar model.
 
 Options
 -------
