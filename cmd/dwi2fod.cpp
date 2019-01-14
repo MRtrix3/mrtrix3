@@ -65,6 +65,22 @@ void usage ()
   DESCRIPTION
     + Math::SH::encoding_description;
 
+  EXAMPLES
+    + Example ("Perform single-shell single-tissue CSD",
+               "dwi2fod csd dwi.mif response_wm.txt wmfod.mif",
+               "This algorithm is designed for single-shell data and only uses a single "
+               "b-value. The response function text file provided should only contain a "
+               "a single row, corresponding to the b-value used for CSD.")
+
+    + Example ("Perform multi-shell multi-tissue CSD",
+               "dwi2fod msmt_csd dwi.mif response_wm.txt wmfod.mif response_gm.txt gm.mif response_csf.txt csf.mif",
+               "This example is the most common use case of multi-tissue CSD, estimating "
+               "a white matter FOD, and grey matter and CSF compartments. This algorithm "
+               "requires at least three unique b-values to estimate three tissue compartments. "
+               "Each response function text file should have a number of rows equal to the "
+               "number of b-values used. If only two unique b-values are available, it's also "
+               "possible to estimate only two tissue compartments, e.g., white matter and CSF.");
+
   REFERENCES
     + "* If using csd algorithm:\n"
     "Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
