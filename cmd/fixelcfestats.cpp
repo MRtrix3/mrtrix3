@@ -454,7 +454,7 @@ void run()
             "without any streamlines-based connectivity; " +
             "this may interfere with " +
             (cfe_norm ? (str("normalised CFE expression") + (do_nonstationarity_adjustment ? " and/or " : "")) : "") +
-            "non-stationarity correction");
+            (do_nonstationarity_adjustment ? "non-stationarity correction" : ""));
     }
   }
 
