@@ -47,7 +47,7 @@ namespace MR
       internal2external.assign (counter, invalid);
   #endif
       for (index_type e = 0; e != fixel_mask.size(0); ++e) {
-        if (external2internal[e] >= 0)
+        if (external2internal[e] != invalid)
           internal2external[external2internal[e]] = e;
       }
   #ifndef NDEBUG
