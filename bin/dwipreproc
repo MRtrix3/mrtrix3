@@ -158,7 +158,8 @@ def execute(): #pylint: disable=unused-variable
   json_import_option = ''
   if app.ARGS.json_import:
     json_import_option = ' -json_import ' + path.from_user(app.ARGS.json_import)
-  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('dwi.mif') + grad_option + json_import_option)
+  json_export_option = ' -json_export ' + path.to_scratch('dwi.json', True)
+  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('dwi.mif') + grad_option + json_import_option + json_export_option)
   if app.ARGS.se_epi:
     image.check_3d_nonunity(path.from_user(app.ARGS.se_epi, False))
     run.command('mrconvert ' + path.from_user(app.ARGS.se_epi) + ' ' + path.to_scratch('se_epi.mif'))
@@ -838,7 +839,6 @@ def execute(): #pylint: disable=unused-variable
   eddy_all_options = '--imain=eddy_in.nii --mask=eddy_mask.nii --acqp=eddy_config.txt --index=eddy_indices.txt --bvecs=bvecs --bvals=bvals' + eddy_in_topup_option + eddy_manual_options + ' --out=dwi_post_eddy'
   eddy_cuda_cmd = fsl.eddy_binary(True)
   eddy_openmp_cmd = fsl.eddy_binary(False)
-  # TESTME Make sure two versions of eddy are run & checked appropriately with new exceptions
   if eddy_cuda_cmd:
     # If running CUDA version, but OpenMP version is also available, don't stop the script if the CUDA version fails
     try:
