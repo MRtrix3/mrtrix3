@@ -13,6 +13,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def check_output_paths(): #pylint: disable=unused-variable
+  from mrtrix3 import app
   app.check_output_path(app.ARGS.output_dir)
   app.check_output_path(app.ARGS.fa_template)
   app.check_output_path(app.ARGS.wm_mask)
@@ -20,8 +21,14 @@ def check_output_paths(): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  import os, shlex
+  import os
   from mrtrix3 import app, image, MRtrixError, path, run
+
+
+  try:
+    from shlex import quote as cmd_quote
+  except ImportError:
+    from pipes import quote as cmd_quote
 
 
   def abspath(*arg):
@@ -70,7 +77,7 @@ def execute(): #pylint: disable=unused-variable
   path.make_dir('fa')
   progress = app.ProgressBar('Computing FA images', len(input_list))
   for i in input_list:
-    run.command('dwi2tensor ' + shlex.quote(os.path.join(input_dir, i.filename)) + ' -mask ' + shlex.quote(os.path.join(mask_dir, i.mask_filename)) + ' - | tensor2metric - -fa ' + os.path.join('fa', i.prefix + '.mif'))
+    run.command('dwi2tensor ' + cmd_quote(os.path.join(input_dir, i.filename)) + ' -mask ' + cmd_quote(os.path.join(mask_dir, i.mask_filename)) + ' - | tensor2metric - -fa ' + os.path.join('fa', i.prefix + '.mif'))
     progress.increment()
   progress.done()
 
@@ -85,11 +92,10 @@ def execute(): #pylint: disable=unused-variable
   path.make_dir('wm_mask_warped')
   for i in input_list:
     run.command('mrtransform template_wm_mask.mif -interp nearest -warp_full ' + os.path.join('population_template', 'warps', i.prefix + '.mif') + ' ' + os.path.join('wm_mask_warped', i.prefix + '.mif') + ' -from 2 -template ' + os.path.join('fa', i.prefix + '.mif'))
-    run.command('dwinormalise individual ' + shlex.quote(os.path.join(input_dir, i.filename)) + ' ' + os.path.join('wm_mask_warped', i.prefix + '.mif') + ' ' + path.from_user(os.path.join(app.ARGS.output_dir, i.filename)) + app.mrconvert_output_option(path.from_user(os.path.join(input_dir, i.filename))))
+    run.command('dwinormalise individual ' + cmd_quote(os.path.join(input_dir, i.filename)) + ' ' + os.path.join('wm_mask_warped', i.prefix + '.mif') + ' ' + path.from_user(os.path.join(app.ARGS.output_dir, i.filename)) + app.mrconvert_output_option(path.from_user(os.path.join(input_dir, i.filename))))
     progress.increment()
   progress.done()
 
   app.console('Exporting template images to user locations')
   run.command('mrconvert template_wm_mask.mif ' + path.from_user(app.ARGS.wm_mask) + app.mrconvert_output_option('NULL'))
   run.command('mrconvert fa_template.mif ' + path.from_user(app.ARGS.fa_template) + app.mrconvert_output_option('NULL'))
-

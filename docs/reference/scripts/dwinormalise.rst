@@ -6,7 +6,7 @@ dwinormalise
 Synopsis
 --------
 
-Perform intensity normalisation of DWIs
+Perform various forms of intensity normalisation of DWIs
 
 Usage
 -----
@@ -16,6 +16,11 @@ Usage
     dwinormalise algorithm [ options ] ...
 
 -  *algorithm*: Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: group, individual
+
+Description
+-----------
+
+This script provides access to different techniques for globally scaling the intensity of diffusion-weighted images. The different algorithms have different purposes, and different requirements with respect to the data with which they must be provided & will produce as output. Further information on the individual algorithms available can be accessed via their individual help pages; eg. "dwinormalise group -help".
 
 Options
 -------

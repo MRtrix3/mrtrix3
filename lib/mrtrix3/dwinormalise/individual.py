@@ -16,6 +16,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def check_output_paths(): #pylint: disable=unused-variable
+  from mrtrix3 import app
   app.check_output_path(app.ARGS.output_dwi)
 
 
@@ -45,4 +46,3 @@ def execute(): #pylint: disable=unused-variable
 
   run.command('mrcalc ' + path.from_user(app.ARGS.input_dwi) + ' ' + str(multiplier) + ' -mult - | ' + \
               'mrconvert - ' + path.from_user(app.ARGS.output_dwi) + grad_option + app.mrconvert_output_option(path.from_user(app.ARGS.input_dwi)))
-
