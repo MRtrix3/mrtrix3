@@ -331,7 +331,7 @@ namespace MR
               // For a matrix intended for smoothing, want to give a fixel that is within the mask
               //   full self-connectivity even if it's not visited by any streamlines
               // Note however that this does not apply to the principal matrix output
-              smoothing_matrix[output_index].push_back (NormElement (index_mapper.e2i (output_index), connectivity_value_type (1)));
+              smoothing_matrix[output_index].push_back (NormElement (output_index, connectivity_value_type (1)));
             }
           }
 
