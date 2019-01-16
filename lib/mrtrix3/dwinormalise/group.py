@@ -31,9 +31,6 @@ def execute(): #pylint: disable=unused-variable
     from pipes import quote as cmd_quote
 
 
-  def abspath(*arg):
-    return os.path.abspath(os.path.join(*arg))
-
   class Input(object):
     def __init__(self, filename, prefix, mask_filename = ''):
       self.filename = filename
