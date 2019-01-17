@@ -28,7 +28,7 @@ cat > $LOGFILE <<EOD
 EOD
 
 echo -n "fetching test data... "
-git submodule update $datadir --init >> $LOGFILE 2>&1
+git submodule update --init testing/$datadir >> $LOGFILE 2>&1
 
 if [ $? != 0 ]; then
   echo ERROR!
