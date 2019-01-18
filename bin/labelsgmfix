@@ -138,10 +138,13 @@ run.command('labelconvert sgm_masked.mif ' + sgm_lut_file_path + ' ' + path.from
 progress = app.progressBar('Replacing SGM parcellations', len(structure_map))
 for struct in structure_map:
   image_path = struct + '_mask.mif'
-  index = image.statistic('sgm_new_labels.mif', 'median', '-mask ' + image_path)
-  run.command('mrcalc parc.mif ' + index + ' -eq 0 parc.mif -if parc_removed.mif')
-  run.function(os.remove, 'parc.mif')
-  run.function(os.rename, 'parc_removed.mif', 'parc.mif')
+  if float(image.statistic(image_path, 'mean')):
+    index = image.statistic('sgm_new_labels.mif', 'median', '-mask ' + image_path)
+    run.command('mrcalc parc.mif ' + index + ' -eq 0 parc.mif -if parc_removed.mif')
+    run.function(os.remove, 'parc.mif')
+    run.function(os.rename, 'parc_removed.mif', 'parc.mif')
+  else:
+    app.warn('No labelled voxels for structure "' + struct + '"')
   progress.increment()
 progress.done()
 
