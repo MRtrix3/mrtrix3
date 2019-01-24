@@ -1,0 +1,43 @@
+#!/usr/bin/env python
+
+# Script that performs intensity normalisation of DWIs in various ways
+
+
+def usage(cmdline): #pylint: disable=unused-variable
+  from mrtrix3 import algorithm
+  cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
+  cmdline.set_synopsis('Perform various forms of intensity normalisation of DWIs')
+  cmdline.add_description('This script provides access to different techniques for globally scaling the intensity of diffusion-weighted images. '
+                          'The different algorithms have different purposes, and different requirements with respect to the data with which they must be provided & will produce as output. '
+                          'Further information on the individual algorithms available can be accessed via their individual help pages; eg. "dwinormalise group -help".')
+
+  # Import the command-line settings for all algorithms found in the relevant directory
+  algorithm.usage(cmdline)
+
+
+
+def execute(): #pylint: disable=unused-variable
+  from mrtrix3 import algorithm
+
+  # Find out which algorithm the user has requested
+  alg = algorithm.get_module(app.ARGS.algorithm)
+  alg.check_output_paths()
+
+  # From here, the script splits depending on what algorithm is being used
+  alg.execute()
+
+
+
+
+
+
+# Make the corresponding MRtrix3 Python libraries available
+import inspect, os, sys
+LIB_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
+if not os.path.isdir(LIB_FOLDER):
+  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
+  sys.exit(1)
+sys.path.insert(0, LIB_FOLDER)
+# Execute the script
+from mrtrix3 import app
+app.execute()

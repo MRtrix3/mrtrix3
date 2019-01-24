@@ -39,7 +39,7 @@ achieve. While the white matter b=0 intensity may be influenced by pathology-ind
 changes in T2, the assumption then becomes that such changes would be (spatially) quite
 local and therefore have little influence on the median white matter b=0 value.
 
-The :ref:`dwiintensitynorm` script is included in MRtrix to perform an automatic global
+The :ref:`dwinormalise group` script is included in MRtrix to perform an automatic global
 normalisation using the *median white matter b=0 intensity*. The script input requires
 two folders: a folder containing all DW images in the study (in .mif format) and a
 folder containing the corresponding whole brain mask images (with the same filename
@@ -49,9 +49,9 @@ to obtain an *approximate* white matter mask. The mask is then transformed back 
 space of each subject image and used in the :ref:`dwinormalise` command to normalise the
 input DW images to have the same b=0 white matter median value. All intensity normalised
 data will be output in a single folder. As previously mentioned, all DWI data must be
-bias field corrected *before* applying :ref:`dwiintensitynorm`, for example using
-:code:`dwibiascorrect`.  Users are well advised to (manually) check the results
-of :ref:`dwiintensitynorm` closely though, as occasional instabilities have been
+bias field corrected *before* applying :ref:`dwinormalise group`, for example using
+:code:`dwibiascorrect`. Users are well advised to (manually) check the results
+of :ref:`dwinormalise group` closely though, as occasional instabilities have been
 observed in the outcomes of particular subjects.
 
 In case of pipelines that include a multi-tissue spherical deconvolution algorithm
