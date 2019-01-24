@@ -41,7 +41,7 @@ Pre-processsing steps
 Compute a brain mask::
 
     foreach * : dwi2mask IN/dwi_denoised_preproc.mif IN/dwi_temp_mask.mif
-    
+
 
 AFD-specific pre-processsing steps
 ----------------------------------
@@ -60,33 +60,33 @@ Because we recommend a :ref:`global intensity normalisation <global-intensity-no
 5. Global intensity normalisation across subjects
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-As outlined :ref:`here <global-intensity-normalisation>`, a global intensity normalisation is required for AFD analysis. For a single-tissue pipeline, a possible approach is to use the :ref:`dwiintensitynorm` script. The script performs normalisation on all subjects within a study (using a group-wise registration), and therefore the input and output arguments are directories containing all study images. First create directories to store all the input and output images. From the subjects directory::
+As outlined :ref:`here <global-intensity-normalisation>`, a global intensity normalisation is required for AFD analysis. For a single-tissue pipeline, a possible approach is to use the :ref:`dwinormalise group` script. The script performs normalisation on all subjects within a study (using a group-wise registration), and therefore the input and output arguments are directories containing all study images. First create directories to store all the input and output images. From the subjects directory::
 
-    mkdir -p ../dwiintensitynorm/dwi_input
-    mkdir ../dwiintensitynorm/mask_input
+    mkdir -p ../dwinormalise/dwi_input
+    mkdir ../dwinormalise/mask_input
 
 You could copy all files into this directory, however symbolic linking them will save space::
 
-    foreach * : ln -sr IN/dwi_denoised_unringed_preproc_unbiased.mif ../dwiintensitynorm/dwi_input/IN.mif
-    foreach * : ln -sr IN/dwi_temp_mask.mif ../dwiintensitynorm/mask_input/IN.mif
+    foreach * : ln -sr IN/dwi_denoised_unringed_preproc_unbiased.mif ../dwinormalise/dwi_input/IN.mif
+    foreach * : ln -sr IN/dwi_temp_mask.mif ../dwinormalise/mask_input/IN.mif
 
-Perform intensity normalisation::
+Perform group DWI intensity normalisation::
 
-    dwiintensitynorm ../dwiintensitynorm/dwi_input/ ../dwiintensitynorm/mask_input/ ../dwiintensitynorm/dwi_output/ ../dwiintensitynorm/fa_template.mif ../dwiintensitynorm/fa_template_wm_mask.mif
+    dwinormalise group ../dwinormalise/dwi_input/ ../dwinormalise/mask_input/ ../dwinormalise/dwi_output/ ../dwinormalise/fa_template.mif ../dwinormalise/fa_template_wm_mask.mif
 
 Link the output files back to the subject directories::
 
-    foreach ../dwiintensitynorm/dwi_output/* : ln -sr IN PRE/dwi_denoised_unringed_preproc_unbiased_normalised.mif
+    foreach ../dwinormalise/dwi_output/* : ln -sr IN PRE/dwi_denoised_unringed_preproc_unbiased_normalised.mif
 
-The dwiintensitynorm script also outputs the study-specific FA template and white matter mask. **It is recommended that you check that the white matter mask is appropriate** (i.e. does not contain CSF or voxels external to the brain. It needs to be a rough WM mask). If you feel the white matter mask needs to be larger or smaller you can re-run :code:`dwiintensitynorm` with a different :code:`-fa_threshold` option. Note that if your input brain masks include CSF then this can cause spurious high FA values outside the brain which are then included in the template white matter mask.
+The :code:`dwinormalise group` script also outputs the study-specific FA template and white matter mask. **It is recommended that you check that the white matter mask is appropriate** (i.e. does not contain CSF or voxels external to the brain. It needs to be a rough WM mask). If you feel the white matter mask needs to be larger or smaller you can re-run :code:`dwinormalise group` with a different :code:`-fa_threshold` option. Note that if your input brain masks include CSF then this can cause spurious high FA values outside the brain which are then included in the template white matter mask.
 
 Keeping the FA template image and white matter mask is also handy if additional subjects are added to the study at a later date. New subjects can be intensity normalised in a single step by :ref:`piping <unix_pipelines>` the following commands together. Run from the subjects directory::
 
-    dwi2tensor new_subject/dwi_denoised_unringed_preproc_unbiased.mif -mask new_subject/dwi_temp_mask.mif - | tensor2metric - -fa - | mrregister -force ../dwiintensitynorm/fa_template.mif - -mask2 new_subject/dwi_temp_mask.mif -nl_scale 0.5,0.75,1.0 -nl_niter 5,5,15 -nl_warp - /tmp/dummy_file.mif | mrtransform ../dwiintensitynorm/fa_template_wm_mask.mif -template new_subject/dwi_denoised_unringed_preproc_unbiased.mif -warp - - | dwinormalise new_subject/dwi_denoised_unringed_preproc_unbiased.mif - ../dwiintensitynorm/dwi_output/new_subject.mif
+    dwi2tensor new_subject/dwi_denoised_unringed_preproc_unbiased.mif -mask new_subject/dwi_temp_mask.mif - | tensor2metric - -fa - | mrregister -force ../dwinormalise/fa_template.mif - -mask2 new_subject/dwi_temp_mask.mif -nl_scale 0.5,0.75,1.0 -nl_niter 5,5,15 -nl_warp - /tmp/dummy_file.mif | mrtransform ../dwinormalise/fa_template_wm_mask.mif -template new_subject/dwi_denoised_unringed_preproc_unbiased.mif -warp - - | dwinormalise new_subject/dwi_denoised_unringed_preproc_unbiased.mif - ../dwinormalise/dwi_output/new_subject.mif
 
 .. NOTE:: The above command may also be useful if you wish to alter the mask and re-apply the intensity normalisation to all subjects in the study. For example, you may wish to edit the mask using the ROI tool in :code:`mrview` to *remove* white matter regions that you hypothesise are affected by the disease (e.g. removing the corticospinal tract in a study of motor neurone disease due to T2 hyperintensity). You also may wish to redefine the mask entirely, for example in an elderly population (with enlarged ventricles) it may be possible, or even preferable, to normalise using the median b=0 *CSF*. This could be performed by manually masking partial-volume-free CSF voxels, then running the above command with the CSF mask instead of the :code:`fa_template_wm_mask.mif`.
 
-.. WARNING:: We strongly recommend you that you check the scale factors applied during intensity normalisation are not influenced by the variable of interest in your study. For example if one group contains global changes in white matter T2 then this may directly influence the intensity normalisation and therefore bias downstream AFD analysis. To check this, you can perform an equivalence test to ensure mean scale factors are the same between groups. To output the scale factor applied for all subjects use :code:`mrinfo ../dwiintensitynorm/dwi_output/* -property dwi_norm_scale_factor`.
+.. WARNING:: We strongly recommend you that you check the scale factors applied during intensity normalisation are not influenced by the variable of interest in your study. For example if one group contains global changes in white matter T2 then this may directly influence the intensity normalisation and therefore bias downstream AFD analysis. To check this, you can perform an equivalence test to ensure mean scale factors are the same between groups. To output the scale factor applied for all subjects use :code:`mrinfo ../dwinormalise/dwi_output/* -property dwi_norm_scale_factor`.
 
 Fixel-based analysis steps
 --------------------------
@@ -108,7 +108,7 @@ There is however no strict requirement for the (one) final response function to 
 Upsampling DWI data *before* computing FODs can increase anatomical contrast and improve downstream template building, registration, tractography and statistics. We recommend upsampling to an isotropic voxel size of 1.3 mm for human brains (if your original resolution is already higher, you can skip this step)::
 
     foreach * : mrresize IN/dwi_denoised_unringed_preproc_unbiased_normalised.mif -vox 1.3 IN/dwi_denoised_unringed_preproc_unbiased_normalised_upsampled.mif
-    
+
 8. Compute upsampled brain mask images
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Compute a whole brain mask from the upsampled DW images::
@@ -153,8 +153,8 @@ Register the FOD image from each subject to the FOD template::
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/template_mask.rst
-    
-    
+
+
 13. Compute a white matter template analysis fixel mask
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -179,12 +179,12 @@ Note that here we warp FOD images into template space *without* FOD reorientatio
 
 .. include:: common_fba_steps/compute_AFD.rst
 
-    
+
 16. Reorient fixels
 ^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/reorient_fixels.rst
-    
+
 17. Assign subject fixels to template fixels
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -199,7 +199,7 @@ Note that here we warp FOD images into template space *without* FOD reorientatio
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/compute_FDC.rst
-    
+
 20. Perform whole-brain fibre tractography on the FOD template
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -209,12 +209,12 @@ Statistical analysis using connectivity-based fixel enhancement (CFE) [Raffelt20
     tckgen -angle 22.5 -maxlen 250 -minlen 10 -power 1.0 wmfod_template.mif -seed_image template_mask.mif -mask template_mask.mif -select 20000000 -cutoff 0.10 tracks_20_million.tck
 
 .. WARNING:: *The command line above assumes you're working with MRtrix3 RC3 or above*. An important bug in the tractography code was fixed in that version of the software. If you are not able to update your installation, and are still working with an older version of MRtrix3, you should remove the `-cutoff 0.10` option in the command line above, in line with the instructions for older versions of MRtrix3.
-    
+
 21. Reduce biases in tractogram densities
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/sift.rst
-    
+
 22. Perform statistical analysis of FD, FC, and FDC
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
