@@ -217,7 +217,7 @@ namespace MR
             Header header2 (H);
             header2.transform() = M_qform;
             if (!voxel_grids_match_in_scanner_space (H, header2, 0.1)) {
-              const bool use_sform = File::Config::get_bool ("NIfTIUseSform", false);
+              const bool use_sform = File::Config::get_bool ("NIfTIUseSform", true);
               WARN ("qform and sform are inconsistent in NIfTI image \"" + H.name() + "\" - using " + (use_sform ? "sform" : "qform"));
               if (!use_sform)
                 H.transform() = M_qform;

@@ -224,13 +224,13 @@ namespace MR
               header2.transform() = M_qform;
               if (!voxel_grids_match_in_scanner_space (H, header2, 0.1)) {
                 //CONF option: NIfTIUseSform
-                //CONF default: 0 (false)
+                //CONF default: 1 (true)
                 //CONF A boolean value to control whether, in cases where both
                 //CONF the sform and qform transformations are defined in an
                 //CONF input NIfTI image, but those transformations differ, the
                 //CONF sform transformation should be used in preference to the
-                //CONF qform matrix (the default behaviour).
-                const bool use_sform = File::Config::get_bool ("NIfTIUseSform", false);
+                //CONF qform matrix.
+                const bool use_sform = File::Config::get_bool ("NIfTIUseSform", true);
                 WARN ("qform and sform are inconsistent in NIfTI image \"" + H.name() + "\" - using " + (use_sform ? "sform" : "qform"));
                 if (!use_sform)
                   H.transform() = M_qform;
