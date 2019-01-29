@@ -37,7 +37,7 @@ void usage ()
     "Max Pietsch (maximilian.pietsch@kcl.ac.uk), "
     "Thijs Dhollander (thijs.dhollander@gmail.com)";
 
-  SYNOPSIS = "The MRtrix image viewer.";
+  SYNOPSIS = "The MRtrix image viewer";
 
   DESCRIPTION
   + "Any images listed as arguments will be loaded and available through the "
