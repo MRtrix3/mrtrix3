@@ -18,6 +18,8 @@
 #define __dwi_tractography_streamline_h__
 
 
+#include <limits>
+
 #include "types.h"
 
 
@@ -90,7 +92,7 @@ namespace MR
       typename PointType::Scalar length (const vector<PointType>& tck)
       {
         if (tck.empty())
-          return NaN;
+          return std::numeric_limits<typename PointType::Scalar>::quiet_NaN();
         typename PointType::Scalar value = typename PointType::Scalar(0);
         for (size_t i = 1; i != tck.size(); ++i)
           value += (tck[i] - tck[i-1]).norm();
