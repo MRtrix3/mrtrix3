@@ -82,6 +82,34 @@ namespace MR
 
 
 
+    //! object for storing a single example command usage
+    class Example { NOMEMALIGN
+      public:
+        Example (const std::string& title,
+                 const std::string& code,
+                 const std::string& description) :
+            title (title),
+            code (code),
+            description (description) { }
+        const std::string title, code, description;
+
+        operator std::string () const;
+        std::string syntax (int format) const;
+    };
+
+    //! a class to hold the list of Example's
+    class ExampleList : public vector<Example> { NOMEMALIGN
+      public:
+        ExampleList& operator+ (const Example& example) {
+          push_back (example);
+          return *this;
+        }
+
+        std::string syntax (int format) const;
+    };
+
+
+
 
     //! a class to hold the list of Argument's
     class ArgumentList : public vector<Argument> { NOMEMALIGN
@@ -294,6 +322,24 @@ namespace MR
      */
     extern Description DESCRIPTION;
 
+    //! example usages of the command
+    /*! This is designed to be used within each command's usage() function. Add
+     * various examples in order to demonstrate the different syntaxes and/or
+     * capabilities of the command, e.g.:
+     * \code
+     * void usage() {
+     *   ...
+     *
+     *   EXAMPLES
+     *   + Example ("Perform the command's default functionality",
+     *              "input2output input.mif output.mif",
+     *              "The default usage of this command is as trivial as "
+     *              "providing the name of the command, then the input image, "
+     *              "then the output image.");
+     * }
+     * \endcode
+     */
+    extern ExampleList EXAMPLES;
 
     //! the arguments expected by the command
     /*! This is designed to be used within each command's usage() function. Add
@@ -330,6 +376,7 @@ namespace MR
      * \endcode
      */
     extern OptionList OPTIONS;
+
 
     //! set to false if command can operate with no arguments
     /*! By default, the help page is shown command is invoked without

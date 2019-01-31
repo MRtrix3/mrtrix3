@@ -579,6 +579,7 @@ class Parser(argparse.ArgumentParser):
     self._citation_list = [ ]
     self._copyright = _DEFAULT_COPYRIGHT
     self._description = [ ]
+    self._examples = [ ]
     self._external_citations = False
     self._mutually_exclusive_option_groups = [ ]
     self._synopsis = None
@@ -624,6 +625,9 @@ class Parser(argparse.ArgumentParser):
 
   def add_description(self, text): #pylint: disable=unused-variable
     self._description.append(text)
+
+  def add_example_usage(self, title, code, description = ''): #pylint: disable=unused-variable
+    self._examples.append( (title, code, description) )
 
   def set_copyright(self, text): #pylint: disable=unused-variable
     self._copyright = text
@@ -790,6 +794,15 @@ class Parser(argparse.ArgumentParser):
       for line in self._description:
         text += wrapper_other.fill(line) + '\n'
         text += '\n'
+    if self._examples:
+      text += bold('EXAMPLE USAGES') + '\n'
+      text += '\n'
+      for example in self._examples:
+        text += wrapper_other.fill(underline(example[0] + ':')) + '\n'
+        text += ' '*7 + '$ ' + example[1] + '\n'
+        if example[2]:
+          text += wrapper_other.fill(example[2]) + '\n'
+        text += '\n'
 
     # Define a function for printing all text for a given option
     # This will be used in two separate locations:
@@ -870,6 +883,11 @@ class Parser(argparse.ArgumentParser):
           sys.stdout.write(line + '\n')
       else:
         sys.stdout.write(self._description + '\n')
+    for example in self._examples:
+      sys.stdout.write(example[0] + ': $ ' + example[1])
+      if example[2]:
+        sys.stdout.write('; ' + example[2])
+      sys.stdout.write('\n')
     if self._subparsers and len(sys.argv) == 3:
       for alg in self._subparsers._group_actions[0].choices:
         if alg == sys.argv[1]:
@@ -924,6 +942,14 @@ class Parser(argparse.ArgumentParser):
       text += '## Description\n\n'
       for line in self._description:
         text += line + '\n\n'
+    if self._examples:
+      text += '## Example usages\n\n'
+      for example in self._examples:
+        text += '__' + example[0] + ':__\n'
+        text += '`$ ' + example[1] + '`\n'
+        if example[2]:
+          text += example[2] + '\n'
+        text += '\n'
     text += '## Options\n\n'
 
     def print_group_options(group):
@@ -996,6 +1022,14 @@ class Parser(argparse.ArgumentParser):
       text += '-----------\n\n'
       for line in self._description:
         text += line + '\n\n'
+    if self._examples:
+      text += 'Example usages\n'
+      text += '--------------\n\n'
+      for example in self._examples:
+        text += '-   *' + example[0] + '*::\n\n'
+        text += '        $ ' + example[1] + '\n\n'
+        if example[2]:
+          text += '    ' + example[2] + '\n\n'
     text += 'Options\n'
     text += '-------\n'
 

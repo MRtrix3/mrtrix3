@@ -18,6 +18,15 @@ Usage
 -  *input*: the input DW image.
 -  *output*: the output image (diffusion-weighted volumes by default).
 
+Example usages
+--------------
+
+-   *Calculate the mean b=0 image from a 4D DWI series*::
+
+        $ dwiextract dwi.mif - -bzero | mrmath - mean mean_bzero.mif -axis 3
+
+    The dwiextract command extracts all volumes for which the b-value is (approximately) zero; the resulting 4D image can then be provided to the mrmath command to calculate the mean intensity across volumes for each voxel.
+
 Options
 -------
 
