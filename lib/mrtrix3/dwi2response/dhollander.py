@@ -137,7 +137,7 @@ def execute(): #pylint: disable=unused-variable
   cleanopt = ''
   if not app.DO_CLEANUP:
     cleanopt = ' -nocleanup'
-  run.command('dwi2response tournier dwi.mif _respsfwmss.txt -sf_voxels ' + str(voxsfwmcount) + ' -iter_voxels ' + str(voxsfwmcount * 10) + ' -mask refined_wm.mif -voxels voxels_sfwm.mif -scratch ' + app.SCRATCH_DIR + cleanopt)
+  run.command('dwi2response tournier dwi.mif _respsfwmss.txt -sf_voxels ' + str(voxsfwmcount) + ' -iter_voxels ' + str(voxsfwmcount * 10) + ' -mask refined_wm.mif -voxels voxels_sfwm.mif -scratch ' + path.quote(app.SCRATCH_DIR) + cleanopt)
 
   # Get final voxels for GM response function estimation from GM.
   refgmmedian = image.statistic('safe_sdm.mif', 'median', '-mask refined_gm.mif')
