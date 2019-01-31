@@ -117,15 +117,15 @@ Options
 Options specific to the 'dhollander' algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-erode** Number of erosion passes to apply to initial (whole brain) mask. (default: 3)
+- **-erode** Number of erosion passes to apply to initial (whole brain) mask. Set to 0 to not erode the brain mask. (default: 3)
 
 - **-fa** FA threshold for crude WM versus GM-CSF separation. (default: 0.2)
 
-- **-sfwm** Number of single-fibre WM voxels to select, as a percentage of refined WM. (default: 0.5 per cent)
+- **-sfwm** Final number of single-fibre WM voxels to select, as a percentage of refined WM. (default: 0.5 per cent)
 
-- **-gm** Number of GM voxels to select, as a percentage of refined GM. (default: 2 per cent)
+- **-gm** Final number of GM voxels to select, as a percentage of refined GM. (default: 2 per cent)
 
-- **-csf** Number of CSF voxels to select, as a percentage of refined CSF. (default: 10 per cent)
+- **-csf** Final number of CSF voxels to select, as a percentage of refined CSF. (default: 10 per cent)
 
 Options common to all dwi2response algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
