@@ -106,10 +106,10 @@ Usage
 
     dwi2response dhollander input out_sfwm out_gm out_csf [ options ]
 
--  *input*: The input DWI
--  *out_sfwm*: Output single-fibre WM response text file
--  *out_gm*: Output GM response text file
--  *out_csf*: Output CSF response text file
+-  *input*: Input DWI dataset
+-  *out_sfwm*: Output single-fibre WM response function text file
+-  *out_gm*: Output GM response function text file
+-  *out_csf*: Output CSF response function text file
 
 Options
 -------

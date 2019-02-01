@@ -4,10 +4,10 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.set_synopsis('Use an improved version of the Dhollander et al. (2016) algorithm for unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof). This version of the Dhollander et al. (2016) algorithm was improved by Thijs Dhollander.')
   parser.add_citation('', 'Dhollander, T.; Raffelt, D. & Connelly, A. Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5', False)
   parser.add_citation('', 'Dhollander, T.; Raffelt, D. & Connelly, A. Accuracy of response function estimation algorithms for 3-tissue spherical deconvolution of diverse quality diffusion MRI data. Proc Intl Soc Mag Reson Med, 2018, 26, 1569', False)
-  parser.add_argument('input', help='The input DWI')
-  parser.add_argument('out_sfwm', help='Output single-fibre WM response text file')
-  parser.add_argument('out_gm', help='Output GM response text file')
-  parser.add_argument('out_csf', help='Output CSF response text file')
+  parser.add_argument('input', help='Input DWI dataset')
+  parser.add_argument('out_sfwm', help='Output single-fibre WM response function text file')
+  parser.add_argument('out_gm', help='Output GM response function text file')
+  parser.add_argument('out_csf', help='Output CSF response function text file')
   options = parser.add_argument_group('Options specific to the \'dhollander\' algorithm')
   options.add_argument('-erode', type=int, default=3, help='Number of erosion passes to apply to initial (whole brain) mask. Set to 0 to not erode the brain mask. (default: 3)')
   options.add_argument('-fa', type=float, default=0.2, help='FA threshold for crude WM versus GM-CSF separation. (default: 0.2)')
@@ -115,6 +115,7 @@ def execute(): #pylint: disable=unused-variable
   statsmaskcount = float(image.statistic('safe_mask.mif', 'count', '-mask safe_mask.mif'))
   app.console('  [ mask: ' + str(int(statemaskcount)) + ' -> ' + str(int(statsmaskcount)) + ' ]')
 
+
   # CRUDE SEGMENTATION
   app.console('-------')
   app.console('Crude segmentation:')
@@ -136,6 +137,7 @@ def execute(): #pylint: disable=unused-variable
   statcrudegmcount = float(image.statistic('crude_gm.mif', 'count', '-mask crude_gm.mif'))
   statcrudecsfcount = float(image.statistic('crude_csf.mif', 'count', '-mask crude_csf.mif'))
   app.console('  [ ' + str(int(statcrudenonwmcount)) + ' -> ' + str(int(statcrudegmcount)) + ' (GM) & ' + str(int(statcrudecsfcount)) + ' (CSF) ]')
+
 
   # REFINED SEGMENTATION
   app.console('-------')
@@ -170,6 +172,7 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrcalc _crudecsfextra.mif safe_sdm.mif ' + str(crudecsfmin) + ' -subtract 0 -if - | mrthreshold - - -mask _crudecsfextra.mif | mrcalc _crudecsfextra.mif - 0 -if refined_csf.mif -datatype bit', show=False)
   statrefcsfcount = float(image.statistic('refined_csf.mif', 'count', '-mask refined_csf.mif'))
   app.console('  [ CSF: ' + str(int(statcrudecsfcount)) + ' -> ' + str(int(statrefcsfcount)) + ' ]')
+
 
   # FINAL VOXEL SELECTION AND RESPONSE FUNCTION ESTIMATION
   app.console('-------')
