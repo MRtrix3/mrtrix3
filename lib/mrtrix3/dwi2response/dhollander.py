@@ -43,6 +43,7 @@ def execute(): #pylint: disable=unused-variable
 
 
   # CHECK INPUTS AND OPTIONS
+  app.console('-------')
 
   # Get b-values and number of volumes per b-value.
   bvalues = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shell_bvalues').split() ]
@@ -74,14 +75,14 @@ def execute(): #pylint: disable=unused-variable
 
   # Erode (brain) mask.
   if app.ARGS.erode > 0:
-    app.console('Eroding brain mask by ' + str(app.ARGS.erode) + ' pass(es)...')
+    app.console('* Eroding brain mask by ' + str(app.ARGS.erode) + ' pass(es)...')
     run.command('maskfilter mask.mif erode eroded_mask.mif -npass ' + str(app.ARGS.erode), show=False)
   else:
     app.console('Not eroding brain mask.')
     run.command('mrconvert mask.mif eroded_mask.mif -datatype bit', show=False)
 
   # Get volumes, compute mean signal and SDM per b-value; compute overall SDM; get rid of erroneous values.
-  app.console('Computing signal decay metric (SDM)...')
+  app.console('* Computing signal decay metric (SDM)...')
   totvolumes = 0
   fullsdmcmd = 'mrcalc'
   errcmd = 'mrcalc'
@@ -102,7 +103,7 @@ def execute(): #pylint: disable=unused-variable
         fullsdmcmd += ' -add'
   fullsdmcmd += ' ' + str(totvolumes) + ' -divide full_sdm.mif'
   run.command(fullsdmcmd, show=False)
-  app.console('Removing erroneous voxels from mask and correcting SDM...')
+  app.console('* Removing erroneous voxels from mask and correcting SDM...')
   run.command('mrcalc full_sdm.mif -finite full_sdm.mif 0 -if 0 -le err_sdm.mif -datatype bit', show=False)
   errcmd += ' err_sdm.mif -add 0 eroded_mask.mif -if safe_mask.mif -datatype bit'
   run.command(errcmd, show=False)
@@ -114,13 +115,13 @@ def execute(): #pylint: disable=unused-variable
   app.console('Crude segmentation:')
 
   # Compute FA and principal eigenvectors; crude WM versus GM-CSF separation based on FA.
-  app.console('Crude WM versus GM-CSF separation (at FA=' + str(app.ARGS.fa) + ')...')
+  app.console('* Crude WM versus GM-CSF separation (at FA=' + str(app.ARGS.fa) + ')...')
   run.command('dwi2tensor dwi.mif - -mask safe_mask.mif | tensor2metric - -fa safe_fa.mif -vector safe_vecs.mif -modulate none -mask safe_mask.mif', show=False)
   run.command('mrcalc safe_mask.mif safe_fa.mif 0 -if ' + str(app.ARGS.fa) + ' -gt crude_wm.mif -datatype bit', show=False)
   run.command('mrcalc crude_wm.mif 0 safe_mask.mif -if _crudenonwm.mif -datatype bit', show=False)
 
   # Crude GM versus CSF separation based on SDM.
-  app.console('Crude GM versus CSF separation...')
+  app.console('* Crude GM versus CSF separation...')
   crudenonwmmedian = image.statistic('safe_sdm.mif', 'median', '-mask _crudenonwm.mif')
   run.command('mrcalc _crudenonwm.mif safe_sdm.mif ' + str(crudenonwmmedian) + ' -subtract 0 -if - | mrthreshold - - -mask _crudenonwm.mif | mrcalc _crudenonwm.mif - 0 -if crude_csf.mif -datatype bit', show=False)
   run.command('mrcalc crude_csf.mif 0 _crudenonwm.mif -if crude_gm.mif -datatype bit', show=False)
@@ -131,7 +132,7 @@ def execute(): #pylint: disable=unused-variable
   app.console('Refined segmentation:')
 
   # Refine WM: remove high SDM outliers.
-  app.console('Refining WM...')
+  app.console('* Refining WM...')
   crudewmmedian = float(image.statistic('safe_sdm.mif', 'median', '-mask crude_wm.mif'))
   run.command('mrcalc crude_wm.mif safe_sdm.mif ' + str(crudewmmedian) + ' -subtract -abs 0 -if _crudewm_sdmad.mif', show=False)
   crudewmmad = float(image.statistic('_crudewm_sdmad.mif', 'median', '-mask crude_wm.mif'))
@@ -140,7 +141,7 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrcalc _crudewmoutliers.mif 0 crude_wm.mif -if refined_wm.mif -datatype bit', show=False)
 
   # Refine GM: separate safer GM from partial volumed voxels.
-  app.console('Refining GM...')
+  app.console('* Refining GM...')
   crudegmmedian = image.statistic('safe_sdm.mif', 'median', '-mask crude_gm.mif')
   run.command('mrcalc crude_gm.mif safe_sdm.mif 0 -if ' + str(crudegmmedian) + ' -gt _crudegmhigh.mif -datatype bit', show=False)
   run.command('mrcalc _crudegmhigh.mif 0 crude_gm.mif -if _crudegmlow.mif -datatype bit', show=False)
@@ -149,7 +150,7 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrcalc _crudegmhighselect.mif 1 _crudegmlowselect.mif -if refined_gm.mif -datatype bit', show=False)
 
   # Refine CSF: recover lost CSF from crude WM SDM outliers, separate safer CSF from partial volumed voxels.
-  app.console('Refining CSF...')
+  app.console('* Refining CSF...')
   crudecsfmin = image.statistic('safe_sdm.mif', 'min', '-mask crude_csf.mif')
   run.command('mrcalc _crudewmoutliers.mif safe_sdm.mif 0 -if ' + str(crudecsfmin) + ' -gt 1 crude_csf.mif -if _crudecsfextra.mif -datatype bit', show=False)
   run.command('mrcalc _crudecsfextra.mif safe_sdm.mif ' + str(crudecsfmin) + ' -subtract 0 -if - | mrthreshold - - -mask _crudecsfextra.mif | mrcalc _crudecsfextra.mif - 0 -if refined_csf.mif -datatype bit', show=False)
@@ -160,26 +161,29 @@ def execute(): #pylint: disable=unused-variable
   app.console('Final voxel selection and response function estimation:')
 
   # Get final voxels for CSF response function estimation from refined CSF.
-  app.console('Selecting final CSF voxels (' + str(app.ARGS.csf) + '% of refined CSF)...')
+  app.console('* CSF:')
+  app.console(' * Selecting final voxels (' + str(app.ARGS.csf) + '% of refined CSF)...')
   refcsfcount = float(image.statistic('refined_csf.mif', 'count', '-mask refined_csf.mif'))
   voxcsfcount = int(round(refcsfcount * app.ARGS.csf / 100.0))
   run.command('mrcalc refined_csf.mif safe_sdm.mif 0 -if - | mrthreshold - - -top ' + str(voxcsfcount) + ' -ignorezero | mrcalc refined_csf.mif - 0 -if - -datatype bit | mrconvert - voxels_csf.mif -axes 0,1,2', show=False)
   # Estimate CSF response function
-  app.console('Estimating CSF response function...')
+  app.console(' * Estimating response function...')
   run.command('amp2response dwi.mif voxels_csf.mif safe_vecs.mif response_csf.txt' + bvalues_option + ' -isotropic', show=False)
 
   # Get final voxels for GM response function estimation from refined GM.
-  app.console('Selecting final GM voxels (' + str(app.ARGS.gm) + '% of refined GM)...')
+  app.console('* GM:')
+  app.console(' * Selecting final voxels (' + str(app.ARGS.gm) + '% of refined GM)...')
   refgmcount = float(image.statistic('refined_gm.mif', 'count', '-mask refined_gm.mif'))
   voxgmcount = int(round(refgmcount * app.ARGS.gm / 100.0))
   refgmmedian = image.statistic('safe_sdm.mif', 'median', '-mask refined_gm.mif')
   run.command('mrcalc refined_gm.mif safe_sdm.mif ' + str(refgmmedian) + ' -subtract -abs 1 -add 0 -if - | mrthreshold - - -bottom ' + str(voxgmcount) + ' -ignorezero | mrcalc refined_gm.mif - 0 -if - -datatype bit | mrconvert - voxels_gm.mif -axes 0,1,2', show=False)
   # Estimate GM response function
-  app.console('Estimating GM response function...')
+  app.console(' * Estimating response function...')
   run.command('amp2response dwi.mif voxels_gm.mif safe_vecs.mif response_gm.txt' + bvalues_option + ' -isotropic', show=False)
 
   # Get final voxels for single-fibre WM response function estimation from refined WM.
-  app.console('Selecting final single-fibre WM voxels (' + str(app.ARGS.sfwm) + '% of refined WM)...')
+  app.console('* single-fibre WM:')
+  app.console(' * Selecting final voxels (' + str(app.ARGS.sfwm) + '% of refined WM)...')
   refwmcount = float(image.statistic('refined_wm.mif', 'count', '-mask refined_wm.mif'))
   voxsfwmcount = int(round(refwmcount * app.ARGS.sfwm / 100.0))
   run.command('mrmath dwi.mif mean mean_sig.mif -axis 3', show=False)
@@ -203,7 +207,7 @@ def execute(): #pylint: disable=unused-variable
   run.command('sh2peaks abs_ewm6.mif - -num 1 -mask refined_sfwm.mif | peaks2amp - - | mrcalc - abs_sum6.mif -divide - | mrconvert - metric_sfwm6.mif -coord 3 0 -axes 0,1,2', show=False)
   run.command('mrcalc refined_sfwm.mif metric_sfwm6.mif 0 -if - | mrthreshold - - -top ' + str(voxsfwmcount) + ' -ignorezero | mrcalc refined_sfwm.mif - 0 -if - -datatype bit | mrconvert - voxels_sfwm.mif -axes 0,1,2', show=False)
   # Estimate SF WM response function
-  app.console('Estimating single-fibre WM response function...')
+  app.console(' * Estimating response function...')
   run.command('amp2response dwi.mif voxels_sfwm.mif safe_vecs.mif response_sfwm.txt' + bvalues_option + sfwm_lmax_option, show=False)
 
 
