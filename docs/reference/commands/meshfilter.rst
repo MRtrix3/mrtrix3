@@ -19,6 +19,20 @@ Usage
 -  *filter*: the filter to apply.Options are: smooth
 -  *output*: the output mesh file
 
+Description
+-----------
+
+While this command has only one filter operation currently available, it nevertheless presents with a comparable interface to the MRtrix3 commands maskfilter and mrfilter commands.
+
+Example usages
+--------------
+
+-   *Apply a mesh smoothing filter (currently the only filter available*::
+
+        $ meshfilter input.vtk smooth output.vtk
+
+    The usage of this command may cause confusion due to the generic interface despite only one filtering operation being currently available. This simple example usage is therefore provided for clarity.
+
 Options
 -------
 
