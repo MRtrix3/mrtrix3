@@ -44,7 +44,6 @@ def execute(): #pylint: disable=unused-variable
   app.var(mean_lzero_terms)
 
   weighted_sum_coeffs = [[0.0] * len(data[0][0]) for _ in range(len(data[0]))] #pylint: disable=unused-variable
-  sum_weights = 0.0
   for subject in data:
     if app.ARGS.legacy:
       multiplier = 1.0
@@ -57,9 +56,7 @@ def execute(): #pylint: disable=unused-variable
       multiplier = math.exp(log_multiplier)
       app.var(subj_lzero_terms, multiplier)
     weighted_sum_coeffs = [ [ a + multiplier*b for a, b in zip(linea, lineb) ] for linea, lineb in zip(weighted_sum_coeffs, subject) ]
-    sum_weights += multiplier
-  app.var(sum_weights)
-  mean_coeffs = [ [ f/sum_weights for f in line ] for line in weighted_sum_coeffs ]
+  mean_coeffs = [ [ f/len(data) for f in line ] for line in weighted_sum_coeffs ]
 
   with open(app.ARGS.output, 'w') as file_out:
     for line in mean_coeffs:
