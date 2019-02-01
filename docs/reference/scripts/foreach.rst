@@ -22,21 +22,37 @@ Usage
 Description
 -----------
 
-EXAMPLE USAGE: 
-  $ foreach folder/*.mif : mrinfo IN   
-  will run mrinfo for each .mif file in "folder"
+This script greatly simplifies various forms of batch processing by enabling the execution of a command (or set of commands) independently for each of a set of inputs. Part of the way that this is achieved is by providing basic text substitutions, which simplify the formation of valid command strings based on the unique components of the input strings on which the script is instructed to execute. The available substitutions are listed below (note that the -test command-line option can be used to ensure correct command string formation prior to actually executing the commands):
 
-AVAILABLE SUBSTITUTIONS: 
-  IN:   The full matching pattern, including leading folders. For example, if the target list contains a file "folder/image.mif", any occurrence of "IN" will be substituted with "folder/image.mif".  NAME: The basename of the matching pattern. For example, if the target list contains a file "folder/image.mif", any occurrence of "NAME" will be substituted with "image.mif".  PRE:  The prefix of the basename. For example, if the target list contains a file "folder/image.mif", any occurrence of "PRE" will be substituted with "image".  UNI:  The unique part of the input after removing any common prefix and common suffix. For example, if the target list contains files: "folder/001dwi.mif", "folder/002dwi.mif", "folder/003dwi.mif", any occurrence of "UNI" will be substituted with "001", "002", "003".
+   - IN:   The full matching pattern, including leading folders. For example, if the target list contains a file "folder/image.mif", any occurrence of "IN" will be substituted with "folder/image.mif".
 
-Note that due to a limitation of the Python argparse module, any command-line options provided to the foreach script must appear before any inputs are specified.
+   - NAME: The basename of the matching pattern. For example, if the target list contains a file "folder/image.mif", any occurrence of "NAME" will be substituted with "image.mif".
 
-Such command-line options provided before the list of inputs and colon separator will be interpreted by the foreach script; any command-line options provided after this colon will form part of the input to the executed command.
+   - PRE:  The prefix of the basename. For example, if the target list contains a file "folder/image.mif", any occurrence of "PRE" will be substituted with "image".
+
+   - UNI:  The unique part of the input after removing any common prefix and common suffix. For example, if the target list contains files: "folder/001dwi.mif", "folder/002dwi.mif", "folder/003dwi.mif", any occurrence of "UNI" will be substituted with "001", "002", "003".
+
+Note that due to a limitation of the Python "argparse" module, any command-line OPTIONS that the user intends to provide specifically to the foreach script must appear BEFORE providing the list of inputs on which foreach is intended to operate. While command-line options provided as such will be interpreted specifically by the foreach script, any command-line options that are provided AFTER the COLON separator will form part of the executed COMMAND, and will therefore be interpreted as command-line options having been provided to that underlying command.
+
+Example usages
+--------------
+
+-   *Demonstration of basic usage syntax*::
+
+        $ foreach folder/*.mif : mrinfo IN
+
+    This will run the "mrinfo" command for every .mif file present in "folder/". Note that the compulsory colon symbol is used to separate the list of items on which foreach is being instructed to operate, from the command that is intended to be run for each input.
+
+-   *Multi-threaded use of foreach*::
+
+        $ foreach -nthreads 4 freesurfer/subjects/* : recon-all -subjid NAME -all
+
+    In this example, foreach is instructed to run the FreeSurfer command 'recon-all' for all subjects within the 'subjects' directory, with four subjects being processed in parallel at any one time. Whenever processing of one subject is completed, processing for a new unprocessed subject will commence. This technique is useful for improving the efficiency of running single-threaded commands on multi-core systems, as long as the system possesses enough memory to support such parallel processing. Note that in the case of multi-threaded commands (which includes many MRtrix3 comamnds), it is generally preferable to permit multi-threaded execution of the command on a single input at a time, rather than processing multiple inputs in parallel.
 
 Options
 -------
 
-- **-test** Test the operation of the foreach script by printing the command strings post-substitution but not executing them
+- **-test** Test the operation of the foreach script, by printing the command strings following string substitution but not actually executing them
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

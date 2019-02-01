@@ -39,22 +39,24 @@ void usage ()
   SYNOPSIS = "Convert linear transformation matrices";
 
   DESCRIPTION
-  + "This command allows to convert the transformation matrix provided by FSL's flirt command "
-    "and ITK's linear transformation format to a format usable in MRtrix.";
+  + "This command allows to convert transformation matrices provided by other registration "
+    "softwares to a format usable in MRtrix3. Example usages are provided below.";
+
+  EXAMPLES
+  + Example ("Convert a transformation matrix produced by FSL's flirt command into a format usable by MRtrix3",
+             "transformconvert transform_flirt.mat flirt_in.nii flirt_ref.nii flirt_import transform_mrtrix.txt",
+             "The two images provided as inputs for this operation must be in the correct order: first the image "
+             "that was provided to flirt via the -in option, second the image that was provided to flirt via the "
+             "-ref option.")
+
+  + Example ("Convert a plain text transformation matrix file produced by ITK's affine registration "
+             "(e.g. ANTS, Slicer) into a format usable by MRtrix3",
+             "transformconvert transform_itk.txt itk_import transform_mrtrix.txt",
+             "");
 
   ARGUMENTS
-  + Argument ("input", "the input for the specified operation").allow_multiple()
-  + Argument ("operation", "the operation to perform, one of:\n" + join(operations, ", ") + "."
-    + "\n\nflirt_import: "
-    + "Convert a transformation matrix produced by FSL's flirt command into a format usable by MRtrix. "
-        "You'll need to provide as additional arguments the NIfTI images that were passed to flirt "
-        "with the -in and -ref options:\nmatrix_in in ref flirt_import output"
-
-    + "\n\nitk_import: "
-    + "Convert a plain text transformation matrix file produced by ITK's (ANTS, Slicer) affine registration "
-    + "into a format usable by MRtrix."
-    ).type_choice (operations)
-
+  + Argument ("input", "the input(s) for the specified operation").allow_multiple()
+  + Argument ("operation", "the operation to perform, one of:\n" + join(operations, ", ")).type_choice (operations)
   + Argument ("output", "the output transformation matrix.").type_file_out ();
 }
 

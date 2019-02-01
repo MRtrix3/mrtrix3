@@ -2,6 +2,15 @@
 
 
 
+# Function can be used in isolation if potentially needing to place quotation marks around a
+#   filesystem path that is to be included as part of a command string
+try:
+  from shlex import quote
+except ImportError:
+  from pipes import quote
+
+
+
 # List the content of a directory
 def all_in_dir(directory, dir_path=True, ignore_hidden_files=True): #pylint: disable=unused-variable
   import ctypes, os
@@ -33,14 +42,10 @@ def all_in_dir(directory, dir_path=True, ignore_hidden_files=True): #pylint: dis
 #     of a command string, then parameter 'escape' should be set to False in order to not add quotation marks
 def from_user(filename, escape=True): #pylint: disable=unused-variable
   import os
-  try:
-    from shlex import quote as cmd_quote
-  except ImportError:
-    from pipes import quote as cmd_quote
   from mrtrix3 import app
   fullpath = os.path.abspath(os.path.join(app.WORKING_DIR, filename))
   if escape:
-    fullpath = cmd_quote(fullpath)
+    fullpath = quote(fullpath)
   app.debug(filename + ' -> ' + fullpath)
   return fullpath
 
@@ -141,14 +146,10 @@ def shared_data_path(): #pylint: disable=unused-variable
 #   isolation rather than as one part of a command string, parameter 'escape' should be set to False)
 def to_scratch(filename, escape=True): #pylint: disable=unused-variable
   import os
-  try:
-    from shlex import quote as cmd_quote
-  except ImportError:
-    from pipes import quote as cmd_quote
   from mrtrix3 import app
   fullpath = os.path.abspath(os.path.join(app.SCRATCH_DIR, filename))
   if escape:
-    fullpath = cmd_quote(fullpath)
+    fullpath = quote(fullpath)
   app.debug(filename + ' -> ' + fullpath)
   return fullpath
 
