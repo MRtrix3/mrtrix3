@@ -39,7 +39,7 @@ achieve. While the white matter b=0 intensity may be influenced by pathology-ind
 changes in T2, the assumption then becomes that such changes would be (spatially) quite
 local and therefore have little influence on the median white matter b=0 value.
 
-The :ref:`dwinormalise group` script is included in MRtrix to perform an automatic global
+The :ref:`dwinormalise_group` script is included in MRtrix to perform an automatic global
 normalisation using the *median white matter b=0 intensity*. The script input requires
 two folders: a folder containing all DW images in the study (in .mif format) and a
 folder containing the corresponding whole brain mask images (with the same filename
