@@ -60,6 +60,7 @@ namespace MR
             }
           }
         }
+        input.index(1) = output.index(1) = 0;
       }
 
 
