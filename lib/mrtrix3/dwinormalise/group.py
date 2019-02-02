@@ -84,8 +84,9 @@ def execute(): #pylint: disable=unused-variable
   path.make_dir('wm_mask_warped')
   for i in input_list:
     run.command('mrtransform template_wm_mask.mif -interp nearest -warp_full ' + os.path.join('population_template', 'warps', i.prefix + '.mif') + ' ' + os.path.join('wm_mask_warped', i.prefix + '.mif') + ' -from 2 -template ' + os.path.join('fa', i.prefix + '.mif'))
-    run.command('dwinormalise individual ' + path.quote(os.path.join(input_dir, i.filename)) + ' ' + os.path.join('wm_mask_warped', i.prefix + '.mif') + ' - | ' + \
-                'mrconvert - ' + path.from_user(os.path.join(app.ARGS.output_dir, i.filename)) + app.mrconvert_output_option(path.from_user(os.path.join(input_dir, i.filename))))
+    run.command('dwinormalise individual ' + path.quote(os.path.join(input_dir, i.filename)) + ' ' + os.path.join('wm_mask_warped', i.prefix + '.mif') + ' temp.mif')
+    run.command('mrconvert temp.mif ' + path.from_user(os.path.join(app.ARGS.output_dir, i.filename)) + app.mrconvert_output_option(path.from_user(os.path.join(input_dir, i.filename))))
+    os.remove('temp.mif')
     progress.increment()
   progress.done()
 

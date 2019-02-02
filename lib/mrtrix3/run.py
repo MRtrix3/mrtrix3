@@ -448,7 +448,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
   shared.close_command_index(this_command_index)
 
   if error:
-    raise MRtrixCmdError(cmdstring, return_code, stdout_text, stderr_text)
+    raise MRtrixCmdError(cmdstring, return_code, return_stdout, return_stderr)
 
   # Only now do we append to the script log, since the command has completed successfully
   # Note: Writing the command as it was formed as the input to run.command():
