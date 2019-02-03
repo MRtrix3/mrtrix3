@@ -468,6 +468,9 @@ def function(fn_to_execute, *args, **kwargs): #pylint: disable=unused-variable
   import os, sys
   from mrtrix3 import ANSI, app
 
+  if not fn_to_execute:
+    raise TypeError('Invalid input to run.function()')
+
   show = kwargs.pop('show', True)
 
   fnstring = fn_to_execute.__module__ + '.' + fn_to_execute.__name__ + \
