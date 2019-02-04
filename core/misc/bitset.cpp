@@ -22,8 +22,6 @@ namespace MR {
 
   const uint8_t BitSet::masks[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
 
-  const char BitSet::dbyte_to_hex[16] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
-
 
 
   BitSet::BitSet (const size_t b, const bool allocator) :
@@ -63,9 +61,10 @@ namespace MR {
       if (new_bytes > bytes) {
         memcpy (new_data, data, bytes);
         memset (new_data + bytes, (allocator ? 0xFF : 0x00), new_bytes - bytes);
-        data[bytes - 1] = allocator ?
-                          (data[bytes - 1] | excess_bit_mask()) :
-                          (data[bytes - 1] & ~excess_bit_mask());
+        if (have_excess_bits())
+          new_data[bytes - 1] = allocator ?
+                                (data[bytes - 1] | excess_bit_mask()) :
+                                (data[bytes - 1] & ~excess_bit_mask());
       } else {
         memcpy (new_data, data, new_bytes);
       }
@@ -122,9 +121,28 @@ namespace MR {
 
   size_t BitSet::count () const
   {
+    static const uint8_t byte_to_count[256] = /*0x00-0x0F*/ { 0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
+                                              /*0x10-0x1F*/   1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+                                              /*0x20-0x2F*/   1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+                                              /*0x30-0x3F*/   2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+                                              /*0x40-0x3F*/   1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+                                              /*0x50-0x5F*/   2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+                                              /*0x60-0x6F*/   2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+                                              /*0x70-0x7F*/   3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+                                              /*0x80-0x8F*/   1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
+                                              /*0x90-0x9F*/   2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+                                              /*0xA0-0xAF*/   2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+                                              /*0xB0-0xBF*/   3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+                                              /*0xC0-0xCF*/   2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6,
+                                              /*0xD0-0xDF*/   3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+                                              /*0xE0-0xEF*/   3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7,
+                                              /*0xF0-0xFF*/   4, 5, 5, 6, 5, 6, 6, 7, 5, 6, 6, 7, 6, 7, 7, 8 };
     size_t count = 0;
-    for (size_t i = 0; i != bits; ++i) {
-      if (test (i))
+    const size_t bytes_to_test = have_excess_bits() ? bytes - 1 : bytes;
+    for (size_t i = 0; i != bytes_to_test; ++i)
+      count += byte_to_count[data[i]];
+    for (size_t i = 8 * bytes_to_test; i != bits; ++i) {
+      if ((*this)[i])
         ++count;
     }
     return count;
@@ -135,18 +153,31 @@ namespace MR {
 
 
 
-  std::ostream& operator<< (std::ostream& stream, BitSet& d)
+  std::ostream& operator<< (std::ostream& stream, const BitSet& d)
   {
     if (!d.bytes)
       return stream;
+
+    static const char dbyte_to_hex[16] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+
+    auto byte_to_hex = [] (const uint8_t d)
+    {
+      std::string out;
+      for (size_t i = 0; i != 2; ++i) {
+        const uint8_t dm = i ? (d & 0x0F) : ((d & 0xF0) >> 4);
+        out.push_back (dbyte_to_hex[dm]);
+      }
+      return out;
+    };
+
     stream << "0x";
     if (d.have_excess_bits()) {
-      stream << d.byte_to_hex (d.data[d.bytes - 1] & (0xFF >> d.excess_bits()));
+      stream << byte_to_hex (d.data[d.bytes - 1] & (0xFF >> d.excess_bits()));
       for (ssize_t i = d.bytes - 2; i >= 0; --i)
-        stream << d.byte_to_hex (d.data[i]);
+        stream << byte_to_hex (d.data[i]);
     } else {
       for (ssize_t i = d.bytes - 1; i >= 0; --i)
-        stream << d.byte_to_hex (d.data[i]);
+        stream << byte_to_hex (d.data[i]);
     }
     return stream;
   }
