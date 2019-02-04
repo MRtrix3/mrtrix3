@@ -14,7 +14,6 @@
 
 
 #include "command.h"
-#include "debug.h"
 #include "exception.h"
 #include "math/rng.h"
 #include "misc/bitset.h"
