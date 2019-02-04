@@ -18,7 +18,6 @@ List of MRtrix3 scripts
     scripts/dwiintensitynorm
     scripts/dwipreproc
     scripts/labelsgmfix
-    scripts/MRtrix3_connectome
     scripts/population_template
 
 
@@ -32,5 +31,4 @@ List of MRtrix3 scripts
     :ref:`dwiintensitynorm`, "Performs a global DWI intensity normalisation on a group of subjects using the median b=0 white matter value as the reference"
     :ref:`dwipreproc`, "Perform diffusion image pre-processing using FSL's eddy tool; including inhomogeneity distortion correction using FSL's topup tool if possible"
     :ref:`labelsgmfix`, "In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST"
-    :ref:`MRtrix3_connectome`, ""
     :ref:`population_template`, "Generates an unbiased group-average template from a series of images"
