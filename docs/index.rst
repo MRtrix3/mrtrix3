@@ -27,7 +27,7 @@ These applications have been written from scratch in C++, using the functionalit
    :caption: Getting started
 
    getting_started/key_features
-   getting_started/commands_and_scripts
+   getting_started/commands
    getting_started/beginner_dwi_tutorial
    getting_started/image_data
    getting_started/command_line
@@ -111,7 +111,6 @@ These applications have been written from scratch in C++, using the functionalit
    :caption: Reference
 
    reference/commands_list
-   reference/scripts_list
    reference/config_file_options
    reference/environment_variables
    reference/mrtrix2_equivalent_commands
