@@ -6,7 +6,7 @@ dirmerge
 Synopsis
 --------
 
-Splice or merge sets of directions over multiple shells into a single set, in such a way as to maintain near-optimality upon truncation
+Splice / merge multiple sets of directions in such a way as to maintain near-optimality upon truncation
 
 Usage
 --------
@@ -15,7 +15,7 @@ Usage
 
     dirmerge [ options ]  subsets bvalue files [ bvalue files ... ] out
 
--  *subsets*: the number of subsets (phase-encode directions) per b-value
+-  *subsets*: the number of subsets (eg. phase encoding directions) per b-value
 -  *bvalue files*: the b-value and sets of corresponding files, in order
 -  *out*: the output directions file, with each row listing the X Y Z gradient directions, the b-value, and an index representing the phase encode direction
 

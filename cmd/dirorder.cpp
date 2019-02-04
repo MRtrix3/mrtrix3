@@ -30,9 +30,12 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  SYNOPSIS = "Reorder a set of directions to ensure near-uniformity upon truncation - "
-             "i.e. if the scan is terminated early, the acquired directions are still "
-             "close to optimal";
+  SYNOPSIS = "Reorder a set of directions to ensure near-uniformity upon truncation";
+
+  DESCRIPTION
+  + "The intent of this command is to reorder a set of gradient directions such that "
+    "if a scan is terminated prematurely, at any point, the acquired directions will "
+    "still be close to optimally distributed on the half-sphere.";
 
   ARGUMENTS
     + Argument ("input", "the input directions file").type_file_in()
@@ -47,7 +50,7 @@ using value_type = double;
 
 
   template <typename value_type>
-inline std::function<value_type()> get_rng_uniform (value_type from, value_type to) 
+inline std::function<value_type()> get_rng_uniform (value_type from, value_type to)
 {
   std::random_device rd;
   std::mt19937 gen (rd());
@@ -56,7 +59,7 @@ inline std::function<value_type()> get_rng_uniform (value_type from, value_type 
 }
 
 
-void run () 
+void run ()
 {
   auto directions = DWI::Directions::load_cartesian (argument[0]);
   auto rng = get_rng_uniform<size_t> (0, directions.rows()-1);

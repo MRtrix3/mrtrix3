@@ -6,7 +6,7 @@ dwipreproc
 Synopsis
 --------
 
-Perform diffusion image pre-processing using FSL's eddy tool; including inhomogeneity distortion correction using FSL's topup tool if possible
+Perform diffusion image pre-processing using FSL's eddy / topup / applytopup tools
 
 Usage
 --------
