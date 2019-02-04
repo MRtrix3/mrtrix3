@@ -195,7 +195,7 @@ namespace MR {
       size_t bits;
       size_t bytes;
 
-      bool have_excess_bits() const { return (bits & size_t(0x03)); }
+      bool have_excess_bits() const { return (bits & size_t(0x07)); }
       size_t excess_bits() const { return (8*bytes - bits); }
       uint8_t excess_bit_mask() const { assert (have_excess_bits()); return 0xFF << excess_bits(); }
 

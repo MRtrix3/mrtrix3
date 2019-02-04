@@ -175,7 +175,7 @@ namespace MR {
     if (have_excess_bits()) {
       if (memcmp (data, that.data, bytes - 1))
         return false;
-      if ((data[bytes - 1] & ~excess_bit_mask()) != (that.data[bytes - 1] & ~excess_bit_mask()))
+      if ((data[bytes - 1] & excess_bit_mask()) != (that.data[bytes - 1] & excess_bit_mask()))
         return false;
       return true;
     } else {
