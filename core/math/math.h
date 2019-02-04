@@ -19,11 +19,13 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <locale>
 
 #include "types.h"
 #include "mrtrix.h"
 #include "exception.h"
 #include "file/ofstream.h"
+#include "file/path.h"
 
 namespace MR
 {
@@ -127,6 +129,23 @@ namespace MR
       using type = typename Cont::Scalar;
   };
 
+  namespace
+  {
+    std::string delimiter (const std::ofstream& stream, const std::string& filename)
+    {
+      if (Path::has_suffix (filename, ".tsv")) {
+        return "\t";
+      } else if (Path::has_suffix (filename, ".csv")) {
+        if (std::use_facet< std::numpunct<char> >(stream.getloc()).decimal_point() == ',')
+          return ";";
+        else
+          return ",";
+      } else {
+        return " ";
+      }
+    }
+  }
+
 
   //! write the matrix \a M to file
   template <class MatrixType>
@@ -134,8 +153,8 @@ namespace MR
     {
       DEBUG ("saving " + str(M.rows()) + "x" + str(M.cols()) + " matrix to file \"" + filename + "\"...");
       File::OFStream out (filename);
-      Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
-      out << M.format(fmt);
+      Eigen::IOFormat fmt (Eigen::FullPrecision, Eigen::DontAlignCols, delimiter (out, filename), "\n", "", "", "", "");
+      out << M.format (fmt);
       out << "\n";
     }
 
@@ -155,6 +174,7 @@ namespace MR
         V.push_back (vector<ValueType>());
 
         const auto elements = MR::split (sbuf, " ,;\t", true);
+
         try {
           for (const auto& entry : elements)
             V.back().push_back (to<ValueType> (entry));
@@ -187,8 +207,8 @@ namespace MR
         throw e;
       }
 
-      Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> M (V.size(), V[0].size());
 
+      Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> M (V.size(), V[0].size());
       for (ssize_t i = 0; i < M.rows(); i++)
         for (ssize_t j = 0; j < M.cols(); j++)
           M(i,j) = V[i][j];
@@ -250,9 +270,10 @@ namespace MR
   {
     DEBUG ("saving transform to file \"" + filename + "\"...");
     File::OFStream out (filename);
-    Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
-    out << M.matrix().format(fmt);
-    out << "\n0 0 0 1\n";
+    const std::string d = delimiter (out, filename);
+    Eigen::IOFormat fmt (Eigen::FullPrecision, Eigen::DontAlignCols, d, "\n", "", "", "", "");
+    out << M.matrix().format (fmt);
+    out << "\n0" << d << "0" << d << "0" << d << "1\n";
   }
 
   //! write the vector \a V to file
@@ -261,8 +282,9 @@ namespace MR
     {
       DEBUG ("saving vector of size " + str(V.size()) + " to file \"" + filename + "\"...");
       File::OFStream out (filename);
+      const std::string d = delimiter (out, filename);
       for (decltype(V.size()) i = 0; i < V.size() - 1; i++)
-        out << str(V[i], 10) << " ";
+        out << str(V[i], 10) << d;
       out << str(V[V.size() - 1], 10) << "\n";
     }
 
