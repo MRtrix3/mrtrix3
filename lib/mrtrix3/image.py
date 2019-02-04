@@ -192,8 +192,7 @@ def statistic(image_path, stat, options=''): #pylint: disable=unused-variable
   if app.VERBOSITY > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
-  result, dummy_err = proc.communicate()
-  result = result.rstrip().decode('utf-8')
+  result = proc.communicate()[0].strip()
   if app.VERBOSITY > 1:
     app.console('Result: ' + result)
   if proc.returncode:

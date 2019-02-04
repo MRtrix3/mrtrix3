@@ -172,7 +172,7 @@ Usage
     dwinormalise individual input_dwi input_mask output_dwi [ options ]
 
 -  *input_dwi*: The input DWI series
--  *input_mask*: The mask within which 
+-  *input_mask*: The mask within which a reference b=0 intensity will be sampled
 -  *output_dwi*: The output intensity-normalised DWI series
 
 Options

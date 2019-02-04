@@ -4,7 +4,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)')
   parser.set_synopsis('Intensity normalise a DWI series based on the b=0 signal within a supplied mask')
   parser.add_argument('input_dwi', help='The input DWI series')
-  parser.add_argument('input_mask', help='The mask within which ')
+  parser.add_argument('input_mask', help='The mask within which a reference b=0 intensity will be sampled')
   parser.add_argument('output_dwi', help='The output intensity-normalised DWI series')
   parser.add_argument('-intensity', type=float, default=DEFAULT_TARGET_INTENSITY, help='Normalise the b=0 signal to a specified value (Default: ' + str(DEFAULT_TARGET_INTENSITY) + ')')
   parser.add_argument('-percentile', type=int, help='Define the percentile of the b=0 image intensties within the mask used for normalisation; if this option is not supplied then the median value (50th percentile) will be normalised to the desired intensity value')
@@ -38,7 +38,7 @@ def execute(): #pylint: disable=unused-variable
   else:
     reference_value = float(run.command('dwiextract ' + path.from_user(app.ARGS.input_dwi) + grad_option + ' -bzero - | ' + \
                                         'mrmath - mean - -axis 3 | ' + \
-                                        'mrstats - -mask ' + path.from_user(app.ARGS.input_mask) + ' -allvolumes').stdout)
+                                        'mrstats - -mask ' + path.from_user(app.ARGS.input_mask) + ' -output median -allvolumes').stdout)
   app.var(reference_value)
 
   multiplier = app.ARGS.intensity / reference_value
