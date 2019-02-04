@@ -110,13 +110,7 @@ namespace MR {
        * \returns a Value or ConstValue class used to manipulate the bit data at
        * the specified index */
       ConstValue operator[] (const size_t i) const { assert (i < bits); return ConstValue (*this, i); }
-      Value      operator[] (const size_t i)
-      {
-        if (i >= bits)
-          std::cerr << "GDB break here";
-        assert (i < bits);
-        return Value      (*this, i);
-      }
+      Value      operator[] (const size_t i)       { assert (i < bits); return Value      (*this, i); }
 
       //! the number of boolean elements in the set
       /*! The size of the BitSet. Note that this is the number of boolean values
@@ -203,14 +197,7 @@ namespace MR {
 
       bool have_excess_bits() const { return (bits & size_t(7)); }
       size_t excess_bits() const { return (8*bytes - bits); }
-      uint8_t excess_bit_mask() const
-      {
-        if (!have_excess_bits()) {
-          assert (have_excess_bits());
-        }
-        assert (have_excess_bits());
-        return 0xFF << (8-excess_bits());
-      }
+      uint8_t excess_bit_mask() const { assert (have_excess_bits()); return 0xFF << (8-excess_bits()); }
 
       bool test  (const size_t index) const
       {
