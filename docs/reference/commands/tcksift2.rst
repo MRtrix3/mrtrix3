@@ -6,7 +6,7 @@ tcksift2
 Synopsis
 --------
 
-Successor to the SIFT method; instead of removing streamlines, use an EM framework to find an appropriate cross-section multiplier for each streamline
+Optimise per-streamline cross-section multipliers to match a whole-brain tractogram to fixel-wise fibre densities
 
 Usage
 --------

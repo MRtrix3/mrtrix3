@@ -6,7 +6,7 @@ dirorder
 Synopsis
 --------
 
-Reorder a set of directions to ensure near-uniformity upon truncation - i.e. if the scan is terminated early, the acquired directions are still close to optimal
+Reorder a set of directions to ensure near-uniformity upon truncation
 
 Usage
 --------
@@ -17,6 +17,11 @@ Usage
 
 -  *input*: the input directions file
 -  *output*: the output directions file
+
+Description
+-----------
+
+The intent of this command is to reorder a set of gradient directions such that if a scan is terminated prematurely, at any point, the acquired directions will still be close to optimally distributed on the half-sphere.
 
 Options
 -------
