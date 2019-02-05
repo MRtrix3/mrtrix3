@@ -20,23 +20,23 @@ Usage
 Description
 -----------
 
-dwi2response acts as a 'master' script for performing various types of response function estimation; a range of different algorithms are available for completing this task. When using this script, the name of the algorithm to be used must appear as the first argument on the command-line after 'dwi2response'. The subsequent compulsory arguments and options available depend on the particular algorithm being invoked.
+dwi2response offers different algorithms for performing various types of response function estimation. The name of the algorithm must appear as the first argument on the command-line after 'dwi2response'. The subsequent arguments and options depend on the particular algorithm being invoked.
 
-Each algorithm available also has its own help page, including necessary references; e.g. to see the help page of the 'fa' algorithm, type 'dwi2response fa'.
+Each algorithm available has its own help page, including necessary references; e.g. to see the help page of the 'fa' algorithm, type 'dwi2response fa'.
 
 Options
 -------
 
-Options common to all dwi2response algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-shells** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
-
-- **-lmax** The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+General dwi2response options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-mask** Provide an initial mask for response voxel selection
 
 - **-voxels** Output an image showing the final voxel selection(s)
+
+- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
+
+- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
 
 - **-grad** Pass the diffusion gradient table in MRtrix format
 
@@ -97,7 +97,7 @@ dwi2response dhollander
 Synopsis
 --------
 
-Use an improved version of the Dhollander et al. (2016) algorithm for unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof). This version of the Dhollander et al. (2016) algorithm was improved by Thijs Dhollander.
+An improved version of the Dhollander et al. (2016) algorithm for unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof). This version of the Dhollander et al. (2016) algorithm was improved by Thijs Dhollander.
 
 Usage
 -----
@@ -114,8 +114,8 @@ Usage
 Options
 -------
 
-Options specific to the 'dhollander' algorithm
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options for the 'dhollander' algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-erode** Number of erosion passes to apply to initial (whole brain) mask. Set to 0 to not erode the brain mask. (default: 3)
 
@@ -127,16 +127,16 @@ Options specific to the 'dhollander' algorithm
 
 - **-csf** Final number of CSF voxels to select, as a percentage of refined CSF. (default: 10 per cent)
 
-Options common to all dwi2response algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-shells** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
-
-- **-lmax** The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+General dwi2response options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-mask** Provide an initial mask for response voxel selection
 
 - **-voxels** Output an image showing the final voxel selection(s)
+
+- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
+
+- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
 
 - **-grad** Pass the diffusion gradient table in MRtrix format
 
@@ -228,16 +228,16 @@ Options specific to the 'fa' algorithm
 
 - **-threshold** Apply a hard FA threshold, rather than selecting the top voxels
 
-Options common to all dwi2response algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-shells** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
-
-- **-lmax** The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+General dwi2response options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-mask** Provide an initial mask for response voxel selection
 
 - **-voxels** Output an image showing the final voxel selection(s)
+
+- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
+
+- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
 
 - **-grad** Pass the diffusion gradient table in MRtrix format
 
@@ -324,16 +324,16 @@ Options specific to the 'manual' algorithm
 
 - **-dirs** Manually provide the fibre direction in each voxel (a tensor fit will be used otherwise)
 
-Options common to all dwi2response algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-shells** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
-
-- **-lmax** The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+General dwi2response options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-mask** Provide an initial mask for response voxel selection
 
 - **-voxels** Output an image showing the final voxel selection(s)
+
+- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
+
+- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
 
 - **-grad** Pass the diffusion gradient table in MRtrix format
 
@@ -425,16 +425,16 @@ Options specific to the 'msmt_5tt' algorithm
 
 - **-sfwm_fa_threshold** Sets -wm_algo to fa and allows to specify a hard FA threshold for single-fibre WM voxels, which is passed to the -threshold option of the fa algorithm (warning: overrides -wm_algo option)
 
-Options common to all dwi2response algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-shells** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
-
-- **-lmax** The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+General dwi2response options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-mask** Provide an initial mask for response voxel selection
 
 - **-voxels** Output an image showing the final voxel selection(s)
+
+- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
+
+- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
 
 - **-grad** Pass the diffusion gradient table in MRtrix format
 
@@ -524,16 +524,16 @@ Options specific to the 'tax' algorithm
 
 - **-convergence** Percentile change in any RF coefficient required to continue iterating
 
-Options common to all dwi2response algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-shells** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
-
-- **-lmax** The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+General dwi2response options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-mask** Provide an initial mask for response voxel selection
 
 - **-voxels** Output an image showing the final voxel selection(s)
+
+- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
+
+- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
 
 - **-grad** Pass the diffusion gradient table in MRtrix format
 
@@ -625,16 +625,16 @@ Options specific to the 'tournier' algorithm
 
 - **-max_iters** Maximum number of iterations
 
-Options common to all dwi2response algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-shells** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
-
-- **-lmax** The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+General dwi2response options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-mask** Provide an initial mask for response voxel selection
 
 - **-voxels** Output an image showing the final voxel selection(s)
+
+- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
+
+- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
 
 - **-grad** Pass the diffusion gradient table in MRtrix format
 

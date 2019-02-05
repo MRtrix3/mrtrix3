@@ -10,15 +10,15 @@ def usage(cmdline): #pylint: disable=unused-variable
 
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)')
   cmdline.set_synopsis('Estimate response function(s) for spherical deconvolution')
-  cmdline.add_description('dwi2response acts as a \'master\' script for performing various types of response function estimation; a range of different algorithms are available for completing this task. When using this script, the name of the algorithm to be used must appear as the first argument on the command-line after \'dwi2response\'. The subsequent compulsory arguments and options available depend on the particular algorithm being invoked.')
-  cmdline.add_description('Each algorithm available also has its own help page, including necessary references; e.g. to see the help page of the \'fa\' algorithm, type \'dwi2response fa\'.')
+  cmdline.add_description('dwi2response offers different algorithms for performing various types of response function estimation. The name of the algorithm must appear as the first argument on the command-line after \'dwi2response\'. The subsequent arguments and options depend on the particular algorithm being invoked.')
+  cmdline.add_description('Each algorithm available has its own help page, including necessary references; e.g. to see the help page of the \'fa\' algorithm, type \'dwi2response fa\'.')
 
   # General options
-  common_options = cmdline.add_argument_group('Options common to all dwi2response algorithms')
-  common_options.add_argument('-shells', help='The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)')
-  common_options.add_argument('-lmax', help='The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)')
+  common_options = cmdline.add_argument_group('General dwi2response options')
   common_options.add_argument('-mask', help='Provide an initial mask for response voxel selection')
   common_options.add_argument('-voxels', help='Output an image showing the final voxel selection(s)')
+  common_options.add_argument('-shells', help='The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)')
+  common_options.add_argument('-lmax', help='The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)')
   common_options.add_argument('-grad', help='Pass the diffusion gradient table in MRtrix format')
   common_options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
   cmdline.flag_mutually_exclusive_options( [ 'grad', 'fslgrad' ] )
