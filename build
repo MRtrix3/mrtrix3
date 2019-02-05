@@ -268,18 +268,18 @@ def is_binary_file(filename, nbytes=1024, check_encoding=True):
   heavily inspired by https://github.com/audreyr/binaryornot
   """
 
+  chunk = b''
   try:
     with open(filename, 'rb') as f:
       chunk = f.read(nbytes)
   except IOError as e:
     log('could not read file ' + filename + '\n' + str(e))
-    return False
 
   if not chunk:
     return False
 
   _control_chars = b'\n\r\t\f\b'
-  ints2byte = (lambda x: bytes(x)) if sys.version_info[0] == 3 else (lambda x: b''.join(map(chr, x)))
+  ints2byte = bytes if sys.version_info[0] == 3 else (lambda x: b''.join(map(chr, x)))
 
   printable_ascii = _control_chars + ints2byte(range(32, 127))
   printable_high_ascii = ints2byte(range(127, 256))
@@ -291,41 +291,37 @@ def is_binary_file(filename, nbytes=1024, check_encoding=True):
                     or (lo_ratio > 0.5 and hi_ratio > 0.5)  # changed both from 0.8 to 0.5 due to false negatives
   if not binary_encoding:
     log('is_binary_file: ' + filename + ' ' + str(binary_encoding) + ' lo:%.3f hi:%.3f' % (lo_ratio, hi_ratio) + '\n')
-    return False
+    binary_encoding = False
 
   # check if file has detectable encoding
-  if check_encoding:
+  if binary_encoding and check_encoding:
     import chardet
     encoding = chardet.detect(chunk)
     if encoding['confidence'] > 0.95 and encoding['encoding'] != 'ascii':
       log('is_binary_file: ' + filename + ' False. encoding: ' +
           encoding['encoding'] + ' confidence ' + str(encoding['confidence']) + '\n')
-      return False
+      binary_encoding = False
 
-    # check if file is possibly UTF encoded
-    if b'\x00' in chunk:
+    # check if file is UTF encoded
+    if binary_encoding and b'\x00' in chunk:
       with open(filename, 'rb') as f:
         try:
           fcontent = f.read()
         except IOError as e:
           log('could not read file ' + filename + '\n' + str(e))
-          return False
-      try:
-        fcontent.decode('utf-8')
-        log('is_binary_file: ' + filename + ' False. utf-8\n')
-        return False
-      except UnicodeDecodeError:
-        pass
-      try:
-        fcontent.decode('utf-16')
-        log('is_binary_file: ' + filename + ' False. utf-16\n')
-        return False
-      except UnicodeDecodeError:
-        pass
+          binary_encoding = False
 
-  return True
+      for enc in ['utf-8', 'utf-16']:
+        if binary_encoding:
+          try:
+            fcontent.decode(enc)
+            log('is_binary_file: ' + filename + ' False. '+enc+'\n')
+            binary_encoding = False
+            break
+          except UnicodeDecodeError:
+            pass
 
-
+  return binary_encoding
 
 
 def modify_path (name, tmp=False, strip=None, add=None):
@@ -652,16 +648,17 @@ for entry in glob.glob (os.path.normpath (os.path.join (target_lib_dir, '*' + li
     os.remove (entry)
 
 # in the target bin directory:
-binary_apps = set()
-for entry in os.listdir (cmd_dir):
-  if entry.endswith(cpp_suffix):
-    binary_apps.add (os.path.normpath (os.path.join (target_bin_dir, entry[:-len(cpp_suffix)] + exe_suffix)))
-for filename in sorted(os.listdir(target_bin_dir)):
-  possible_binary = os.path.normpath(os.path.join(target_bin_dir, filename))
-  if possible_binary not in binary_apps:
-    if is_binary_file(possible_binary):
-      disp ('WARNING: removing orphaned binary lacking a corresponding ' + cpp_suffix + ' file: ' + possible_binary + '\n')
-      os.remove(possible_binary)
+if os.path.isdir(target_bin_dir):
+  binary_apps = set()
+  for entry in os.listdir (cmd_dir):
+    if entry.endswith(cpp_suffix):
+      binary_apps.add (os.path.normpath (os.path.join (target_bin_dir, entry[:-len(cpp_suffix)] + exe_suffix)))
+  for filename in sorted(os.listdir(target_bin_dir)):
+    possible_binary = os.path.normpath(os.path.join(target_bin_dir, filename))
+    if possible_binary not in binary_apps:
+      if is_binary_file(possible_binary):
+        disp ('WARNING: removing orphaned binary lacking a corresponding ' + cpp_suffix + ' file: ' + possible_binary + '\n')
+        os.remove(possible_binary)
 
 
 ###########################################################################
