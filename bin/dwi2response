@@ -77,11 +77,14 @@ def execute(): #pylint: disable=unused-variable
 
   # Get standard input data into the scratch directory
   if alg.needs_single_shell() or shells_option:
-    run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' - -strides 0,0,0,1' + grad_import_option + ' | dwiextract - ' + path.to_scratch('dwi.mif') + shells_option + singleshell_option)
+    app.console('Importing DWI data (' + path.from_user(app.ARGS.input) + ') and selecting b-values...')
+    run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' - -strides 0,0,0,1' + grad_import_option + ' | dwiextract - ' + path.to_scratch('dwi.mif') + shells_option + singleshell_option, show=False)
   else: # Don't discard b=0 in multi-shell algorithms
-    run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('dwi.mif') + ' -strides 0,0,0,1' + grad_import_option)
+    app.console('Importing DWI data (' + path.from_user(app.ARGS.input) + ')...')
+    run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('dwi.mif') + ' -strides 0,0,0,1' + grad_import_option, show=False)
   if app.ARGS.mask:
-    run.command('mrconvert ' + path.from_user(app.ARGS.mask) + ' ' + path.to_scratch('mask.mif') + ' -datatype bit')
+    app.console('Importing mask (' + path.from_user(app.ARGS.mask) + ')...')
+    run.command('mrconvert ' + path.from_user(app.ARGS.mask) + ' ' + path.to_scratch('mask.mif') + ' -datatype bit', show=False)
 
   alg.get_inputs()
 
@@ -92,7 +95,8 @@ def execute(): #pylint: disable=unused-variable
     if image.Header('mask.mif').size()[:3] != image.Header('dwi.mif').size()[:3]:
       raise MRtrixError('Dimensions of provided mask image do not match DWI')
   else:
-    run.command('dwi2mask dwi.mif mask.mif')
+    app.console('Computing brain mask (dwi2mask)...')
+    run.command('dwi2mask dwi.mif mask.mif', show=False)
 
   if int(image.statistic('mask.mif', 'count', '-mask mask.mif')) == 0:
     raise MRtrixError(('Provided' if app.ARGS.mask else 'Generated') + ' mask image does not contain any voxels')
