@@ -257,6 +257,75 @@ def list_untracked_bin_files (directory = '.'):
   return []
 
 
+def is_binary_file(filename, nbytes=1024, check_encoding=True):
+  """try to detect if file is binary
+  :arg filename
+  :arg nbytes sample size to analyse
+  :arg check_encoding if file seems binary, check if non-ascii encoding seems likely. Might yield false negatives.
+  A file is deemed binary if it starts with a high ratio of ASCII control characters and low ratio of high ASCII
+  characters, or alternatively if it consists of high proportions of high and low characters.
+  The default is non-binary if the file is empty or not readable.
+  heavily inspired by https://github.com/audreyr/binaryornot
+  """
+
+  try:
+    with open(filename, 'rb') as f:
+      chunk = f.read(nbytes)
+  except IOError as e:
+    log('could not read file ' + filename + '\n' + str(e))
+    return False
+
+  if not chunk:
+    return False
+
+  _control_chars = b'\n\r\t\f\b'
+  ints2byte = (lambda x: bytes(x)) if sys.version_info[0] == 3 else (lambda x: b''.join(map(chr, x)))
+
+  printable_ascii = _control_chars + ints2byte(range(32, 127))
+  printable_high_ascii = ints2byte(range(127, 256))
+
+  lo_ratio = float(len(chunk.translate(None, printable_ascii))) / float(len(chunk))
+  hi_ratio = float(len(chunk.translate(None, printable_high_ascii))) / float(len(chunk))
+
+  binary_encoding = (lo_ratio > 0.3 and hi_ratio < 0.05) \
+                    or (lo_ratio > 0.5 and hi_ratio > 0.5)  # changed both from 0.8 to 0.5 due to false negatives
+  if not binary_encoding:
+    log('is_binary_file: ' + filename + ' ' + str(binary_encoding) + ' lo:%.3f hi:%.3f' % (lo_ratio, hi_ratio) + '\n')
+    return False
+
+  # check if file has detectable encoding
+  if check_encoding:
+    import chardet
+    encoding = chardet.detect(chunk)
+    if encoding['confidence'] > 0.95 and encoding['encoding'] != 'ascii':
+      log('is_binary_file: ' + filename + ' False. encoding: ' +
+          encoding['encoding'] + ' confidence ' + str(encoding['confidence']) + '\n')
+      return False
+
+    # check if file is possibly UTF encoded
+    if b'\x00' in chunk:
+      with open(filename, 'rb') as f:
+        try:
+          fcontent = f.read()
+        except IOError as e:
+          log('could not read file ' + filename + '\n' + str(e))
+          return False
+      try:
+        fcontent.decode('utf-8')
+        log('is_binary_file: ' + filename + ' False. utf-8\n')
+        return False
+      except UnicodeDecodeError:
+        pass
+      try:
+        fcontent.decode('utf-16')
+        log('is_binary_file: ' + filename + ' False. utf-16\n')
+        return False
+      except UnicodeDecodeError:
+        pass
+
+  return True
+
+
 
 
 def modify_path (name, tmp=False, strip=None, add=None):
@@ -274,6 +343,7 @@ def modify_path (name, tmp=False, strip=None, add=None):
       relname = os.sep.join (split_path (relname)[1:])
     name = os.path.normpath (os.path.join (project_dir, relname))
     return name
+
 
 
 
@@ -507,7 +577,6 @@ if 'clean' in targets:
 
 
 
-
 ############################################################################
 #                          LOAD CONFIGURATION FILE                         #
 ############################################################################
@@ -581,6 +650,18 @@ for entry in glob.glob (os.path.normpath (os.path.join (target_lib_dir, '*' + li
   if os.path.basename (entry) != libname:
     disp ('WARNING: removing "' + entry + '" - most likely left over from a previous installation\n')
     os.remove (entry)
+
+# in the target bin directory:
+binary_apps = set()
+for entry in os.listdir (cmd_dir):
+  if entry.endswith(cpp_suffix):
+    binary_apps.add (os.path.normpath (os.path.join (target_bin_dir, entry[:-len(cpp_suffix)] + exe_suffix)))
+for filename in sorted(os.listdir(target_bin_dir)):
+  possible_binary = os.path.normpath(os.path.join(target_bin_dir, filename))
+  if possible_binary not in binary_apps:
+    if is_binary_file(possible_binary):
+      disp ('WARNING: removing orphaned binary lacking a corresponding ' + cpp_suffix + ' file: ' + possible_binary + '\n')
+      os.remove(possible_binary)
 
 
 ###########################################################################
