@@ -59,7 +59,7 @@ def execute(): #pylint: disable=unused-variable
       iter_lmax_option = lmax_option
 
     # Run CSD
-    run.command('dwi2fod csd dwi.mif ' + rf_in_path + ' ' + prefix + 'FOD.mif -mask ' + mask_in_path + iter_lmax_option)
+    run.command('dwi2fod csd dwi.mif ' + rf_in_path + ' ' + prefix + 'FOD.mif -mask ' + mask_in_path)
     # Get amplitudes of two largest peaks, and direction of largest
     run.command('fod2fixel ' + prefix + 'FOD.mif ' + prefix + 'fixel -peak peaks.mif -mask ' + mask_in_path + ' -fmls_no_thresholds')
     app.cleanup(prefix + 'FOD.mif')

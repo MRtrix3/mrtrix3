@@ -97,7 +97,7 @@ dwi2response dhollander
 Synopsis
 --------
 
-Use the Dhollander et al. (2016) algorithm for unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof)
+Use an improved version of the Dhollander et al. (2016) algorithm for unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof). This version of the Dhollander et al. (2016) algorithm was improved by Thijs Dhollander.
 
 Usage
 -----
@@ -106,10 +106,10 @@ Usage
 
     dwi2response dhollander input out_sfwm out_gm out_csf [ options ]
 
--  *input*: The input DWI
--  *out_sfwm*: Output single-fibre WM response text file
--  *out_gm*: Output GM response text file
--  *out_csf*: Output CSF response text file
+-  *input*: Input DWI dataset
+-  *out_sfwm*: Output single-fibre WM response function text file
+-  *out_gm*: Output GM response function text file
+-  *out_csf*: Output CSF response function text file
 
 Options
 -------
@@ -117,15 +117,15 @@ Options
 Options specific to the 'dhollander' algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-erode** Number of erosion passes to apply to initial (whole brain) mask. (default: 3)
+- **-erode** Number of erosion passes to apply to initial (whole brain) mask. Set to 0 to not erode the brain mask. (default: 3)
 
 - **-fa** FA threshold for crude WM versus GM-CSF separation. (default: 0.2)
 
-- **-sfwm** Number of single-fibre WM voxels to select, as a percentage of refined WM. (default: 0.5 per cent)
+- **-sfwm** Final number of single-fibre WM voxels to select, as a percentage of refined WM. (default: 0.5 per cent)
 
-- **-gm** Number of GM voxels to select, as a percentage of refined GM. (default: 2 per cent)
+- **-gm** Final number of GM voxels to select, as a percentage of refined GM. (default: 2 per cent)
 
-- **-csf** Number of CSF voxels to select, as a percentage of refined CSF. (default: 10 per cent)
+- **-csf** Final number of CSF voxels to select, as a percentage of refined CSF. (default: 10 per cent)
 
 Options common to all dwi2response algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
