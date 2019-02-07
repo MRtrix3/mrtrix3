@@ -151,7 +151,7 @@ void run ()
     input_file_list.push_back (argument[file_index]);
 
     Properties p;
-    Reader<float> reader (argument[file_index], p);
+    Reader<float> (argument[file_index], p);
 
     for (vector<std::string>::const_iterator i = p.comments.begin(); i != p.comments.end(); ++i) {
       bool present = false;
@@ -161,8 +161,14 @@ void run ()
         properties.comments.push_back (*i);
     }
 
-    // ROI paths are ignored - otherwise tckedit will try to find the ROIs used
-    //   during streamlines generation!
+    for (std::multimap<std::string, std::string>::const_iterator i = p.prior_rois.begin(); i != p.prior_rois.end(); ++i) {
+      auto potential_matches = properties.prior_rois.equal_range (i->first);
+      bool present = false;
+      for (std::multimap<std::string, std::string>::const_iterator j = potential_matches.first; !present && j != potential_matches.second; ++j)
+        present = (i->second == j->second);
+      if (!present)
+        properties.prior_rois.insert (*i);
+    }
 
     size_t this_count = 0, this_total_count = 0;
 
