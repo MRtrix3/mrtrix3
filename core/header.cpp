@@ -208,6 +208,9 @@ namespace MR
         H.io->merge (*io_handler);
       }
 
+      if (H.keyval()["command_history"] == "variable")
+        H.keyval().erase ("command_history");
+
       if (num.size()) {
         int a = 0, n = 0;
         for (size_t i = 0; i < H.ndim(); i++)
