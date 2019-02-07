@@ -17,6 +17,7 @@
 #include "header.h"
 
 #include <cctype>
+#include <set>
 
 #include "axes.h"
 #include "mrtrix.h"
@@ -28,6 +29,8 @@
 #include "file/name_parser.h"
 #include "file/path.h"
 #include "formats/list.h"
+
+#include "dwi/gradient.h"
 
 namespace MR
 {
@@ -43,7 +46,7 @@ namespace MR
 
 
 
-  void Header::merge (const Header& H)
+  void Header::concatenate (const Header& H)
   {
     if (ndim() != H.ndim())
       throw Exception ("dimension mismatch between image files for \"" + name() + "\"");
@@ -68,10 +71,82 @@ namespace MR
     if (intensity_offset() != H.intensity_offset() || intensity_scale() != H.intensity_scale())
       throw Exception ("scaling coefficients differ between image files for \"" + name() + "\"");
 
-    for (const auto& item : H.keyval())
-      if (keyval().find (item.first) == keyval().end())
-        keyval().insert (item);
+    Eigen::MatrixXd dw_scheme, pe_scheme;
+    try {
+      auto this_dw_scheme = DWI::parse_DW_scheme (*this);
+      DWI::validate_DW_scheme (this_dw_scheme, *this, true);
+      auto that_dw_scheme = DWI::parse_DW_scheme (H);
+      DWI::validate_DW_scheme (that_dw_scheme, H, true);
+      if (this_dw_scheme.cols() != that_dw_scheme.cols())
+        throw Exception ("Number of columns in DW schemes of headers \"" + name() + "\" and \"" + H.name() + "\" do not match");
+      dw_scheme.resize (this_dw_scheme.rows() + that_dw_scheme.rows(), that_dw_scheme.cols());
+      if (this_dw_scheme.rows())
+        dw_scheme.topRows (this_dw_scheme.rows()) = this_dw_scheme;
+      dw_scheme.bottomRows (that_dw_scheme.rows()) = that_dw_scheme;
+    } catch (Exception&) { }
+    try {
+      auto this_pe_scheme = PhaseEncoding::parse_scheme (*this);
+      auto that_pe_scheme = PhaseEncoding::parse_scheme (H);
+      if (!this_pe_scheme.rows() || !that_pe_scheme.rows())
+        throw Exception ("PE scheme needs to be present in both headers");
+      if (this_pe_scheme.cols() != that_pe_scheme.cols())
+        throw Exception ("Number of columns in PE schemes of headers \"" + name() + "\" and \"" + H.name() + "\" do not match");
+      pe_scheme.resize (this_pe_scheme.rows() + that_pe_scheme.rows(), that_pe_scheme.cols());
+      pe_scheme.topRows (this_pe_scheme.rows()) = this_pe_scheme;
+      pe_scheme.bottomRows (that_pe_scheme.rows()) = that_pe_scheme;
+    } catch (Exception&) { }
+
+
+    auto reserved = [] (const std::string& key) {
+      static const char* reserved_keywords[] = { "comments", "dw_scheme", "pe_scheme", "PhaseEncodingDirection", "TotalReadoutTime", nullptr };
+      for (const char** s = reserved_keywords; *s; ++s) {
+        if (!strcmp (*s, key.c_str()))
+          return true;
+      }
+      return false;
+    };
+
+    std::map<std::string, std::string> new_keyval;
+    std::set<std::string> unique_comments;
+    for (const auto& item : keyval()) {
+      if (reserved (item.first)) {
+        if (item.first == "comments") {
+          new_keyval.insert (item);
+          const auto comments = split_lines (item.second);
+          for (const auto& c : comments)
+            unique_comments.insert (c);
+        }
+      } else {
+        new_keyval.insert (item);
+      }
+    }
+    for (const auto& item : H.keyval()) {
+      if (reserved (item.first)) {
+        if (item.first == "comments") {
+          const auto comments = split_lines (item.second);
+          for (const auto& c : comments) {
+            if (unique_comments.find (c) == unique_comments.end()) {
+              add_line (new_keyval["comments"], c);
+              unique_comments.insert (c);
+            }
+          }
+        }
+      } else {
+        auto it = keyval().find (item.first);
+        if (it == keyval().end() || it->second == item.second)
+          new_keyval.insert (item);
+        else
+          new_keyval[item.first] = "variable";
+      }
+    }
+    std::swap (keyval_, new_keyval);
+    DWI::set_DW_scheme (*this, dw_scheme);
+    PhaseEncoding::set_scheme (*this, pe_scheme);
   }
+
+
+
+
 
 
   namespace {
@@ -125,10 +200,11 @@ namespace MR
         Header header (H);
         std::unique_ptr<ImageIO::Base> io_handler;
         header.name() = list[item].name();
+        header.keyval().clear();
         if (!(io_handler = (*format_handler)->read (header)))
           throw Exception ("image specifier contains mixed format files");
         assert (io_handler);
-        H.merge (header);
+        H.concatenate (header);
         H.io->merge (*io_handler);
       }
 
@@ -267,6 +343,29 @@ namespace MR
       }
       parser.calculate_padding (Pdim);
 
+
+      const bool split_4d_schemes = (parser.ndim() == 1 && template_header.ndim() == 4);
+      auto dw_scheme = DWI::get_DW_scheme (template_header);
+      auto pe_scheme = PhaseEncoding::get_scheme (template_header);
+      if (split_4d_schemes) {
+        try {
+          DWI::check_DW_scheme (template_header, dw_scheme);
+          DWI::stash_DW_scheme (H, dw_scheme);
+          DWI::set_DW_scheme (H, dw_scheme.row (0));
+        } catch (Exception&) {
+          dw_scheme.resize (0, 0);
+          DWI::clear_DW_scheme (H);
+        }
+        try {
+          PhaseEncoding::check (template_header, pe_scheme);
+          PhaseEncoding::set_scheme (H, pe_scheme.row (0));
+        } catch (Exception&) {
+          pe_scheme.resize (0, 0);
+          PhaseEncoding::clear_scheme (H);
+        }
+      }
+
+
       Header header (H);
       vector<int> num (Pdim.size());
 
@@ -290,11 +389,20 @@ namespace MR
         return false;
       };
 
+
+      size_t counter = 0;
       while (get_next (num, Pdim)) {
         header.name() = parser.name (num);
+        ++counter;
+        if (split_4d_schemes) {
+          if (dw_scheme.rows())
+            DWI::set_DW_scheme (header, dw_scheme.row (counter));
+          if (pe_scheme.rows())
+            PhaseEncoding::set_scheme (header, pe_scheme.row (counter));
+        }
         std::shared_ptr<ImageIO::Base> io_handler ((*format_handler)->create (header));
         assert (io_handler);
-        H.merge (header);
+        H.concatenate (header);
         H.io->merge (*io_handler);
       }
 

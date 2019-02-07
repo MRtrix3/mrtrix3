@@ -357,7 +357,7 @@ namespace MR
 
 
       void acquire_io (Header& H) { io = std::move (H.io); }
-      void merge (const Header& H);
+      void concatenate (const Header& H);
 
       //! realign transform to match RAS coordinate system as closely as possible
       void realign_transform ();
