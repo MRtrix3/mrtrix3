@@ -257,71 +257,30 @@ def list_untracked_bin_files (directory = '.'):
   return []
 
 
-def is_binary_file(filename, nbytes=1024, check_encoding=True):
-  """try to detect if file is binary
+def has_shebang(filename, nbytes=1024):
+  """try to detect if file has a shebang
   :arg filename
   :arg nbytes sample size to analyse
-  :arg check_encoding if file seems binary, check if non-ascii encoding seems likely. Might yield false negatives.
-  A file is deemed binary if it starts with a high ratio of ASCII control characters and low ratio of high ASCII
-  characters, or alternatively if it consists of high proportions of high and low characters.
-  The default is non-binary if the file is empty or not readable.
-  heavily inspired by https://github.com/audreyr/binaryornot
   """
-
   chunk = b''
   try:
     with open(filename, 'rb') as f:
       chunk = f.read(nbytes)
   except IOError as e:
-    log('could not read file ' + filename + '\n' + str(e))
+    log('could not read file ' + filename + '\n' + str(e) + '\n')
 
-  if not chunk:
-    return False
+  if chunk:
+    line = chunk.split(b'\n', 1)[0]
+    try:
+      line = str(line.decode('utf-8'))
+    except UnicodeDecodeError:
+      return False
+    line = line.strip()
+    if len(line) > 2 and line[0:2] == '#!':
+      log('has_shebang: ' + filename + ' line: ' + line + '\n')
+      return True
+  return False
 
-  _control_chars = b'\n\r\t\f\b'
-  ints2byte = bytes if sys.version_info[0] == 3 else (lambda x: b''.join(map(chr, x)))
-
-  printable_ascii = _control_chars + ints2byte(range(32, 127))
-  printable_high_ascii = ints2byte(range(127, 256))
-
-  lo_ratio = float(len(chunk.translate(None, printable_ascii))) / float(len(chunk))
-  hi_ratio = float(len(chunk.translate(None, printable_high_ascii))) / float(len(chunk))
-
-  binary_encoding = (lo_ratio > 0.3 and hi_ratio < 0.05) \
-                    or (lo_ratio > 0.5 and hi_ratio > 0.5)  # changed both from 0.8 to 0.5 due to false negatives
-  if not binary_encoding:
-    log('is_binary_file: ' + filename + ' ' + str(binary_encoding) + ' lo:%.3f hi:%.3f' % (lo_ratio, hi_ratio) + '\n')
-    binary_encoding = False
-
-  # check if file has detectable encoding
-  if binary_encoding and check_encoding:
-    import chardet
-    encoding = chardet.detect(chunk)
-    if encoding['confidence'] > 0.95 and encoding['encoding'] != 'ascii':
-      log('is_binary_file: ' + filename + ' False. encoding: ' +
-          encoding['encoding'] + ' confidence ' + str(encoding['confidence']) + '\n')
-      binary_encoding = False
-
-    # check if file is UTF encoded
-    if binary_encoding and b'\x00' in chunk:
-      with open(filename, 'rb') as f:
-        try:
-          fcontent = f.read()
-        except IOError as e:
-          log('could not read file ' + filename + '\n' + str(e))
-          binary_encoding = False
-
-      for enc in ['utf-8', 'utf-16']:
-        if binary_encoding:
-          try:
-            fcontent.decode(enc)
-            log('is_binary_file: ' + filename + ' False. '+enc+'\n')
-            binary_encoding = False
-            break
-          except UnicodeDecodeError:
-            pass
-
-  return binary_encoding
 
 
 def modify_path (name, tmp=False, strip=None, add=None):
@@ -656,8 +615,8 @@ if os.path.isdir(target_bin_dir):
   for filename in sorted(os.listdir(target_bin_dir)):
     possible_binary = os.path.normpath(os.path.join(target_bin_dir, filename))
     if possible_binary not in binary_apps:
-      if is_binary_file(possible_binary):
-        disp ('WARNING: removing orphaned binary lacking a corresponding ' + cpp_suffix + ' file: ' + possible_binary + '\n')
+      if not has_shebang(possible_binary):
+        disp ('WARNING: removing orphaned non-script lacking a corresponding ' + cpp_suffix + ' file: ' + possible_binary + '\n')
         os.remove(possible_binary)
 
 
