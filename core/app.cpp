@@ -1,25 +1,31 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
 
-
 #include <unistd.h>
 #include <fcntl.h>
+#include <locale>
+#include <clocale>
+
 
 #include "app.h"
 #include "debug.h"
 #include "progressbar.h"
 #include "file/path.h"
 #include "file/config.h"
+#include "signal_handler.h"
 
 #define MRTRIX_HELP_COMMAND "less -X"
 
@@ -28,6 +34,7 @@
 #define HELP_PURPOSE_INDENT 0, 4
 #define HELP_ARG_INDENT 8, 20
 #define HELP_OPTION_INDENT 2, 20
+#define HELP_EXAMPLE_INDENT 7
 
 
 namespace MR
@@ -37,6 +44,7 @@ namespace MR
   {
 
     Description DESCRIPTION;
+    ExampleList EXAMPLES;
     ArgumentList ARGUMENTS;
     OptionList OPTIONS;
     Description REFERENCES;
@@ -44,27 +52,29 @@ namespace MR
 
     OptionGroup __standard_options = OptionGroup ("Standard options")
       + Option ("info", "display information messages.")
-      + Option ("quiet", "do not display information messages or progress status.")
+      + Option ("quiet", "do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.")
       + Option ("debug", "display debugging messages.")
       + Option ("force", "force overwrite of output files. "
           "Caution: Using the same file as input and output might cause unexpected behaviour.")
-      + Option ("nthreads", "use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)")
+      + Option ("nthreads", "use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).")
         + Argument ("number").type_integer (0)
-      + Option ("failonwarn", "terminate program if a warning is produced")
       + Option ("help", "display this information page and exit.")
       + Option ("version", "display version information and exit.");
 
     const char* AUTHOR = nullptr;
     const char* COPYRIGHT =
-       "Copyright (c) 2008-2017 the MRtrix3 contributors."
-       "\n\n"
+       "Copyright (c) 2008-2019 the MRtrix3 contributors.\n"
+       "\n"
        "This Source Code Form is subject to the terms of the Mozilla Public\n"
        "License, v. 2.0. If a copy of the MPL was not distributed with this\n"
-       "file, you can obtain one at http://mozilla.org/MPL/2.0/.\n"
+       "file, You can obtain one at http://mozilla.org/MPL/2.0/.\n"
        "\n"
-       "MRtrix is distributed in the hope that it will be useful,\n"
-       "but WITHOUT ANY WARRANTY; without even the implied warranty\n"
-       "of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
+       "Covered Software is provided under this License on an \"as is\"\n"
+       "basis, without warranty of any kind, either expressed, implied, or\n"
+       "statutory, including, without limitation, warranties that the\n"
+       "Covered Software is free of defects, merchantable, fit for a\n"
+       "particular purpose or non-infringing.\n"
+       "See the Mozilla Public License v. 2.0 for more details.\n"
        "\n"
        "For more details, see http://www.mrtrix.org/.\n";
     const char* SYNOPSIS = nullptr;
@@ -73,14 +83,17 @@ namespace MR
     std::string NAME;
     vector<ParsedArgument> argument;
     vector<ParsedOption> option;
-    int log_level = 1;
+    //ENVVAR name: MRTRIX_QUIET
+    //ENVVAR Do not display information messages or progress status. This has
+    //ENVVAR the same effect as the ``-quiet`` command-line option.
+    int log_level = getenv("MRTRIX_QUIET") ? 0 : 1;
+    int exit_error_code = 0;
     bool fail_on_warn = false;
     bool terminal_use_colour = true;
 
     const char* project_version = nullptr;
-    const char* build_date = __DATE__;
-
-    SignalHandler signal_handler;
+    const char* project_build_date = nullptr;
+    const char* executable_uses_mrtrix_version = nullptr;
 
     int argc = 0;
     const char* const* argv = nullptr;
@@ -184,6 +197,10 @@ namespace MR
           return ("file in");
         case ArgFileOut:
           return ("file out");
+        case ArgDirectoryIn:
+          return ("directory in");
+        case ArgDirectoryOut:
+          return ("directory out");
         case ImageIn:
           return ("image in");
         case ImageOut:
@@ -198,6 +215,8 @@ namespace MR
           return ("tracks in");
         case TracksOut:
           return ("tracks out");
+        case Various:
+          return ("various");
         default:
           return ("undefined");
       }
@@ -207,22 +226,28 @@ namespace MR
 
     std::string help_head (int format)
     {
-      std::string cmd_version = project_version ?
-        std::string ("external module, version ") + project_version + "\n\n" :
-        std::string ("part of the MRtrix package\n\n");
+      if (!format) {
+        return std::string (NAME) + ": " + (project_version ?
+        std::string ("external MRtrix3 project, version ") + project_version + "\nbuilt against MRtrix3 version " + mrtrix_version :
+        std::string ("part of the MRtrix3 package, version ") + mrtrix_version) + "\n\n";
+      }
 
-      if (!format)
-        return std::string (NAME) + ": " + cmd_version;
+      std::string version_string = project_version ?
+        std::string ("Version ") + project_version :
+        std::string ("MRtrix ") + mrtrix_version;
 
-      std::string mrtrix_version_string = std::string("MRtrix ") + mrtrix_version;
-      std::string date (build_date);
+      std::string date (project_version ? project_build_date : build_date);
 
-      std::string topline = mrtrix_version_string +
-        std::string (std::max (1, 40-size(mrtrix_version_string)-size(App::NAME)/2), ' ')
-        + bold (App::NAME);
+      std::string topline = version_string +
+          std::string (std::max (1, 40-size(version_string)-size(App::NAME)/2), ' ') +
+          bold (App::NAME);
       topline += std::string (80-size(topline)-size(date), ' ') + date;
 
-      return topline + "\n\n     " + bold (NAME) + ": " + cmd_version;
+      if (project_version)
+        topline += std::string("\nusing MRtrix3 ") + mrtrix_version;
+
+      return topline + "\n\n     " + bold (NAME) + ": " +
+        (project_version ? "external MRtrix3 project" : "part of the MRtrix3 package") + "\n\n";
     }
 
 
@@ -259,24 +284,6 @@ namespace MR
 
 
 
-
-
-
-    std::string Description::syntax (int format) const
-    {
-      if (!size())
-        return std::string();
-      std::string s;
-      if (format)
-        s += bold ("DESCRIPTION") + "\n\n";
-      for (size_t i = 0; i < size(); ++i)
-        s += paragraph ("", (*this)[i], HELP_PURPOSE_INDENT) + "\n";
-      return s;
-    }
-
-
-
-
     std::string usage_syntax (int format)
     {
       std::string s = "USAGE";
@@ -301,6 +308,60 @@ namespace MR
           s += " ]";
       }
       return s + "\n\n";
+    }
+
+
+
+
+
+
+    std::string Description::syntax (int format) const
+    {
+      if (!size())
+        return std::string();
+      std::string s;
+      if (format)
+        s += bold ("DESCRIPTION") + "\n\n";
+      for (size_t i = 0; i < size(); ++i)
+        s += paragraph ("", (*this)[i], HELP_PURPOSE_INDENT) + "\n";
+      return s;
+    }
+
+
+
+
+    Example::operator std::string () const
+    {
+      return title + ": $ " + code + "  " + description;
+    }
+
+
+
+
+    std::string Example::syntax (int format) const
+    {
+      std::string s = paragraph ("", format ? underline (title + ":") + "\n" : title + ": ", HELP_PURPOSE_INDENT);
+      s += std::string (HELP_EXAMPLE_INDENT, ' ') + "$ " + code + "\n";
+      if (description.size())
+        s += paragraph ("", description, HELP_PURPOSE_INDENT);
+      if (format)
+        s += "\n";
+      return s;
+    }
+
+
+
+
+    std::string ExampleList::syntax (int format) const
+    {
+      if (!size())
+        return std::string();
+      std::string s;
+      if (format)
+        s += bold ("EXAMPLE USAGES") + "\n\n";
+      for (size_t i = 0; i < size(); ++i)
+        s += (*this)[i].syntax (format);
+      return s;
     }
 
 
@@ -431,6 +492,12 @@ namespace MR
         case ArgFileOut:
           stream << "FILEOUT";
           break;
+        case ArgDirectoryIn:
+          stream << "DIRIN";
+          break;
+        case ArgDirectoryOut:
+          stream << "DIROUT";
+          break;
         case Choice:
           stream << "CHOICE";
           for (const char* const* p = limits.choices; *p; ++p)
@@ -453,6 +520,9 @@ namespace MR
           break;
         case TracksOut:
           stream << "TRACKSOUT";
+          break;
+        case Various:
+          stream << "VARIOUS";
           break;
         default:
           assert (0);
@@ -493,6 +563,7 @@ namespace MR
         + usage_syntax (format)
         + ARGUMENTS.syntax (format)
         + DESCRIPTION.syntax (format)
+        + EXAMPLES.syntax (format)
         + OPTIONS.syntax (format)
         + __standard_options.header (format)
         + __standard_options.contents (format)
@@ -538,18 +609,15 @@ namespace MR
 
 
 
+#ifndef MRTRIX_BUILD_TYPE
+#error "MRtrix build type is not defined; you need to re-run configure script"
+#endif
 
     std::string version_string ()
     {
       std::string version =
         "== " + App::NAME + " " + ( project_version ? project_version : mrtrix_version ) + " ==\n" +
-        str(8*sizeof (size_t)) + " bit "
-#ifdef NDEBUG
-        "release"
-#else
-        "debug"
-#endif
-        " version, built " __DATE__
+        str(8*sizeof (size_t)) + " bit " + MRTRIX_BUILD_TYPE + ", built " + build_date
         + ( project_version ? std::string(" against MRtrix ") + mrtrix_version : std::string("") )
         + ", using Eigen " + str(EIGEN_WORLD_VERSION) + "." + str(EIGEN_MAJOR_VERSION) + "." + str(EIGEN_MINOR_VERSION) + "\n"
         "Author(s): " + AUTHOR + "\n" +
@@ -570,6 +638,9 @@ namespace MR
       for (size_t i = 0; i < DESCRIPTION.size(); ++i)
         s += DESCRIPTION[i] + std::string("\n");
 
+      for (size_t i = 0; i < EXAMPLES.size(); ++i)
+        s += std::string (EXAMPLES[i]) + std::string("\n");
+
       for (size_t i = 0; i < ARGUMENTS.size(); ++i)
         s += ARGUMENTS[i].usage();
 
@@ -587,7 +658,6 @@ namespace MR
 
 
 
-
     std::string markdown_usage ()
     {
       /*
@@ -596,6 +666,7 @@ namespace MR
          + usage_syntax (format)
          + ARGUMENTS.syntax (format)
          + DESCRIPTION.syntax (format)
+         + EXAMPLES.syntax (format)
          + OPTIONS.syntax (format)
          + __standard_options.header (format)
          + __standard_options.contents (format)
@@ -639,6 +710,17 @@ namespace MR
         s += "\n## Description\n\n";
         for (size_t i = 0; i < DESCRIPTION.size(); ++i)
           s += indent_newlines (DESCRIPTION[i]) + "\n\n";
+      }
+
+      if (EXAMPLES.size()) {
+        s += "\n## Example usages\n\n";
+        for (size_t i = 0; i < EXAMPLES.size(); ++i) {
+          s += std::string ("__") + EXAMPLES[i].title + ":__\n";
+          s += std::string ("`$ ") + EXAMPLES[i].code + "`\n";
+          if (EXAMPLES[i].description.size())
+            s += EXAMPLES[i].description + "\n";
+          s += "\n";
+        }
       }
 
 
@@ -699,6 +781,7 @@ namespace MR
          + usage_syntax (format)
          + ARGUMENTS.syntax (format)
          + DESCRIPTION.syntax (format)
+         + EXAMPLES.syntax (format)
          + OPTIONS.syntax (format)
          + __standard_options.header (format)
          + __standard_options.contents (format)
@@ -756,6 +839,16 @@ namespace MR
         s += "Description\n-----------\n\n";
         for (size_t i = 0; i < DESCRIPTION.size(); ++i)
           s += indent_newlines (DESCRIPTION[i]) + "\n\n";
+      }
+
+      if (EXAMPLES.size()) {
+        s += "Example usages\n--------------\n\n";
+        for (size_t i = 0; i < EXAMPLES.size(); ++i) {
+          s += std::string ("-   *") + EXAMPLES[i].title + "*::\n\n";
+          s += std::string ("        $ ") + EXAMPLES[i].code + "\n\n";
+          if (EXAMPLES[i].description.size())
+            s += std::string ("    ") + EXAMPLES[i].description + "\n\n";
+        }
       }
 
 
@@ -882,8 +975,6 @@ namespace MR
         WARN ("existing output files will be overwritten");
         overwrite_files = true;
       }
-      if (get_options ("failonwarn").size())
-        fail_on_warn = true;
     }
 
 
@@ -1034,8 +1125,7 @@ namespace MR
       //CONF default: 0 (false)
       //CONF A boolean value specifying whether MRtrix applications should
       //CONF abort as soon as any (otherwise non-fatal) warning is issued.
-      if (File::Config::get_bool ("FailOnWarn", false))
-        fail_on_warn = true;
+      fail_on_warn = File::Config::get_bool ("FailOnWarn", false);
 
       //CONF option: TerminalColor
       //CONF default: 1 (true)
@@ -1046,30 +1136,62 @@ namespace MR
       // if necessary, also check for pre-existence of any output files with known paths
       //   (if the output is e.g. given as a prefix, the argument should be flagged as type_text())
       for (const auto& i : argument) {
-        if ((i.arg->type == ArgFileIn || i.arg->type == TracksIn) && !Path::exists (std::string(i)))
-          throw Exception ("required input file \"" + str(i) + "\" not found");
-        if (i.arg->type == ArgFileOut || i.arg->type == TracksOut)
-          check_overwrite (std::string(i));
-        if (i.arg->type == TracksIn && !Path::has_suffix (str(i), ".tck"))
-          throw Exception ("input file " + str(i) + " is not a valid track file");
-        if (i.arg->type == TracksOut && !Path::has_suffix (str(i), ".tck"))
-          throw Exception ("output track file (" + str(i) + ") must use the .tck suffix");
+        const std::string text = std::string (i);
+        if (i.arg->type == ArgFileIn || i.arg->type == TracksIn) {
+          if (!Path::exists (text))
+            throw Exception ("required input file \"" + text + "\" not found");
+          if (!Path::is_file (text))
+            throw Exception ("required input \"" + text + "\" is not a file");
+        }
+        if (i.arg->type == ArgDirectoryIn) {
+          if (!Path::exists (text))
+            throw Exception ("required input directory \"" + text + "\" not found");
+          if (!Path::is_dir (text))
+            throw Exception ("required input \"" + text + "\" is not a directory");
+        }
+        if (i.arg->type == ArgFileOut || i.arg->type == TracksOut) {
+          if (text.find_last_of (PATH_SEPARATORS) == text.size() - 1)
+            throw Exception ("output path \"" + std::string(i) + "\" is not a valid file path (ends with directory path separator)");
+          check_overwrite (text);
+        }
+        if (i.arg->type == ArgDirectoryOut)
+          check_overwrite (text);
+        if (i.arg->type == TracksIn && !Path::has_suffix (text, ".tck"))
+          throw Exception ("input file \"" + text + "\" is not a valid track file");
+        if (i.arg->type == TracksOut && !Path::has_suffix (text, ".tck"))
+          throw Exception ("output track file \"" + text + "\" must use the .tck suffix");
       }
       for (const auto& i : option) {
         for (size_t j = 0; j != i.opt->size(); ++j) {
           const Argument& arg = i.opt->operator [](j);
-          const char* const name = i.args[j];
-          if ((arg.type == ArgFileIn || arg.type == TracksIn) && !Path::exists (name))
-            throw Exception ("input file \"" + str(name) + "\" not found (required for option \"-" + std::string(i.opt->id) + "\")");
-          if (arg.type == ArgFileOut || arg.type == TracksOut)
-            check_overwrite (name);
-          if (arg.type == TracksIn && !Path::has_suffix (str(name), ".tck"))
-            throw Exception ("input file " + str(name) + " is not a valid track file");
-          if (arg.type == TracksOut && !Path::has_suffix (str(name), ".tck"))
-            throw Exception ("output track file (" + str(name) + ") must use the .tck suffix");
+          const std::string text = std::string (i.args[j]);
+          if (arg.type == ArgFileIn || arg.type == TracksIn) {
+            if (!Path::exists (text))
+              throw Exception ("input file \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" not found");
+            if (!Path::is_file (text))
+              throw Exception ("input \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a file");
+          }
+          if (arg.type == ArgDirectoryIn) {
+            if (!Path::exists (text))
+              throw Exception ("input directory \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" not found");
+            if (!Path::is_dir (text))
+              throw Exception ("input \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a directory");
+          }
+          if (arg.type == ArgFileOut || arg.type == TracksOut) {
+            if (text.find_last_of (PATH_SEPARATORS) == text.size() - 1)
+              throw Exception ("output path \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a valid file path (ends with directory path separator)");
+            check_overwrite (text);
+          }
+          if (arg.type == ArgDirectoryOut)
+            check_overwrite (text);
+          if (arg.type == TracksIn && !Path::has_suffix (text, ".tck"))
+            throw Exception ("input file \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a valid track file");
+          if (arg.type == TracksOut && !Path::has_suffix (text, ".tck"))
+            throw Exception ("output track file \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" must use the .tck suffix");
         }
       }
 
+      SignalHandler::init();
     }
 
 
@@ -1093,6 +1215,17 @@ namespace MR
       if (Path::has_suffix (NAME, ".exe"))
         NAME.erase (NAME.size()-4);
 #endif
+
+      if (strcmp (mrtrix_version, executable_uses_mrtrix_version) != 0) {
+        Exception E ("executable was compiled for a different version of the MRtrix3 library!");
+        E.push_back (std::string("  ") + NAME + " version: " + executable_uses_mrtrix_version);
+        E.push_back (std::string("  library version: ") + mrtrix_version);
+        E.push_back ("Running ./build again may correct error");
+        throw E;
+      }
+
+      std::locale::global (std::locale::classic());
+      std::setlocale (LC_ALL, "C");
 
       srand (time (nullptr));
     }

@@ -35,7 +35,7 @@ comes with a number of benefits:
   phase encoding acquisition performed.
 
 .. NOTE::
-  
+
   Although the ``dwipreproc`` script is provided as part of *MRtrix3* in the
   hope that users will find it useful, the major image processing steps
   undertaken by this script are still performed using tools developed at FMRIB
@@ -57,9 +57,9 @@ your particular data.
   will perform motion and eddy current correction only.
 
   *Example DICOM image data*:
-  
+
   .. code-block:: console
-    
+
        002_-_DWI_phaseAP/
 
   *Old usage* (i.e. prior to *MRtrix* 0.3.16):
@@ -107,7 +107,7 @@ your particular data.
   *New usage*:
 
   .. code-block:: console
-    
+
         $ mrcat 002_-_ep2dse_phaseAP/ 003_-_ep2dse_phasePA/ b0s.mif -axis 3
         $ dwipreproc 004_-_DWI_phaseAP/ dwi_preprocessed.mif -pe_dir AP -rpe_pair -se_epi b0s.mif [ -readout_time 0.1 ]
 
@@ -130,16 +130,16 @@ your particular data.
   *Old usage* (i.e. prior to *MRtrix* 0.3.16):
 
   .. code-block:: console
-    
+
         $ dwipreproc LR 002_-_DWI_64dir_phaseLR/ dwi_preprocessed.mif -rpe_all 003_-_DWI_64dir_phaseRL/
 
   *New usage*:
 
   .. code-block:: console
-    
+
         $ mrcat 002_-_DWI_64dir_phaseLR/ 003_-_DWI_64dir_phaseRL/ all_DWIs.mif -axis 3
         $ dwipreproc all_DWIs.mif dwi_preprocessed.mif -pe_dir LR -rpe_all [ -readout_time 0.1 ]
-    
+
   Note that in this particular example, the dwipreproc script will in fact
   extract the *b*\=0 volumes from the input DWIs and use those to estimate the
   inhomogeneity field with topup. If additional *b*\=0 images are also acquired,
@@ -193,3 +193,50 @@ warning if it detects a mismatch (since either the phase encoding design is not
 what you think it is, or the import of phase encoding information from DICOM is
 awry; either warrants further investigation).
 
+
+Using ``eddy``'s slice-to-volume correction capability
+------------------------------------------------------
+
+As of September 2017, FSL's ``eddy`` tool has the capability of not only
+estimating and correcting motion *between* DWI volumes, but also motion
+*within* volumes. Details of this method can be found within the relevant
+`publication <https://www.sciencedirect.com/science/article/pii/S1053811917301945>`__.
+*MRtrix3* is capable of supporting this underlying ``eddy`` functionality
+within the wrapping ``dwipreproc`` script. Below are a few relevant details
+to assist users in getting this working:
+
+-  At time of writing, only the CUDA version of the ``eddy`` executable
+   provides the slice-to-volume correction capability. Therefore, this
+   version must be installed on your system, and CUDA itself must be appropriately
+   set up. Note that with *MRtrix3* version ``3.0_RC3``, presence of the
+   CUDA version of ``eddy`` will be automatically detected within your
+   ``PATH`` by ``dwipreproc``, and this version will be executed in preference
+   to the OpenMP version.
+
+-  ``eddy``'s slice-to-volume correction is triggered by the presence of the
+   ``--mporder=#`` command-line option. Therefore, to activate this behaviour,
+   the contents of the ``-eddy_options`` command-line option passed to
+   ``dwipreproc`` must contain this entry.
+
+-  The timing of acquisition of each slice must be known in order to perform
+   slice-to-volume correction. This is provided to ``eddy`` via the
+   command-line `option <https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/eddy/UsersGuide#A--slspec>`__
+   ``--slspec=``, where a text file is provided that defines the order
+   in which the slices are acquired within each volume. In ``dwipreproc``,
+   there are two ways in which this information can be provided:
+
+   -  If you include the string ``--slspec=path/to/file.txt`` within the
+      contents of the ``-eddy_options`` command-line option, then ``dwipreproc``
+      will copy the file to which you have provided the path into the
+      temporary directory created by the script, such that ``eddy``
+      appropriately locates that file.
+
+   -  If DICOM conversion & all subsequent processing is performed solely
+      using *MRtrix3* commands, and :ref:`header_keyvalue_pairs` are preserved,
+      then where possible, *MRtrix3* will store fields
+      "``SliceEncodingDirection``" and "``SliceTiming``" based on DICOM
+      information (note that the naming of these fields is consistent with the
+      `BIDS specification <http://bids.neuroimaging.io/>`__). ``dwipreproc``
+      will then use these fields to *internally* generate the "``slspec``"
+      file required by ``eddy`` without user intervention; as long as the
+      user does *not* provide the ``--slspec=`` option within ``-eddy_options``. 

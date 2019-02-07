@@ -22,6 +22,7 @@ build.*
 /configure.log
 /build.log
 /core/version.cpp
+/src/exec_version.cpp
 /src/project_version.h
 /lib/mrtrix3/_version.py
 /test/src/project_version.h
@@ -47,5 +48,6 @@ build.*
 testing.log
 testing/build.log
 testing/bin/
+testing/src/project_version.cpp
 testing/src/project_version.h
 .__tmp.log

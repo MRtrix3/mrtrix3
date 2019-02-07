@@ -27,6 +27,8 @@ resulting information. The instructions for doing so are below.
        ./configure -debug -assert
        ./build bin/command
 
+   (replace "``command``" with the name of the command you wish to compile).
+
    Note that this process will move your existing *MRtrix3*
    compilation into a temporary directory. This means that your
    compiled binaries will no longer be in your PATH; but it also
@@ -38,13 +40,15 @@ resulting information. The instructions for doing so are below.
 4. Execute the problematic command within ``gdb``:
 
    ::
-   
+
        gdb --args bin/command (arguments) (-options) -debug
-   
+
    or ``lldb`` on macOS:
    ::
-   
+
        lldb -- bin/command (arguments) (-options) -debug
+
+   (replace "``command``" with the name of the command you wish to run).
 
    The preceding ``gdb --args`` or ``lldb --`` at the beginning of the
    line is simply the easiest way to execute the command within ``gdb`` or ``lldb``.
@@ -84,16 +88,18 @@ resulting information. The instructions for doing so are below.
    using `Valgrind <http://valgrind.org/>`_, which will perform a more
    exhaustive check for memory faults (and correspondingly, the command will
    run exceptionally slowly):
-   
+
    ::
 
        valgrind bin/command (arguments) (-options)
-      
+
+   (replace "``command``" with the name of the command you wish to run).
+
 10. When you have finished debugging, restore your default *MRtrix3*
     compilation:
 
     ::
-    
+
        ./build select default
 
     Binaries compiled in debug mode run considerably slower than those

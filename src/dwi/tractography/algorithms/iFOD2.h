@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __dwi_tractography_algorithms_iFOD2_h__
 #define __dwi_tractography_algorithms_iFOD2_h__
@@ -71,8 +73,10 @@ namespace MR
                 if (rk4)
                   throw Exception ("4th-order Runge-Kutta integration not valid for iFOD2 algorithm");
 
-                set_step_size (0.5);
+                set_step_size (0.5f);
                 INFO ("minimum radius of curvature = " + str(step_size / (max_angle / Math::pi_2)) + " mm");
+
+                set_cutoff (TCKGEN_DEFAULT_CUTOFF_FOD);
 
                 properties["method"] = "iFOD2";
                 properties.set (lmax, "lmax");
@@ -194,7 +198,7 @@ namespace MR
 
 
 
-            bool init()
+            bool init() override
             {
               if (!get_data (source))
                 return false;
@@ -229,7 +233,7 @@ end_init:
 
 
 
-            term_t next ()
+            term_t next () override
             {
 
               if (++sample_idx < S.num_samples) {
@@ -281,7 +285,7 @@ end_init:
             }
 
 
-            FORCE_INLINE float get_metric()
+            float get_metric() override
             {
               return FOD (dir);
             }
@@ -296,7 +300,7 @@ end_init:
             }
 
 
-            void truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step)
+            void truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step) override
             {
               // OK, if we know length_to_revert_from, we can reconstruct what sample_idx was at that point
               size_t sample_idx_at_full_length = (length_to_revert_from - tck.get_seed_index()) % S.num_samples;
@@ -327,7 +331,8 @@ end_init:
               sample_idx = S.num_samples;
 
               // Need to update sgm_depth appropriately, remembering that it is tracked by exec
-              act().sgm_depth = (act().sgm_depth > points_to_remove) ? act().sgm_depth - points_to_remove : 0;
+              if (S.is_act())
+                act().sgm_depth = (act().sgm_depth > points_to_remove) ? act().sgm_depth - points_to_remove : 0;
             }
 
 

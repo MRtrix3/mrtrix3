@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __dwi_tractography_mapping_buffer_scratch_dump_h__
 #define __dwi_tractography_mapping_buffer_scratch_dump_h__
@@ -88,9 +90,9 @@ namespace MR {
             Image::Stride::List stride = Image::Stride::get (H);
             Image::Stride::symbolise (stride);
 
-            out_header << "\nlayout: " << (stride[0] >0 ? "+" : "-") << std::abs (stride[0])-1;
+            out_header << "\nlayout: " << (stride[0] >0 ? "+" : "-") << abs (stride[0])-1;
             for (size_t n = 1; n < H.ndim(); ++n)
-              out_header << "," << (stride[n] >0 ? "+" : "-") << std::abs (stride[n])-1;
+              out_header << "," << (stride[n] >0 ? "+" : "-") << abs (stride[n])-1;
 
             out_header << "\ndatatype: " << H.datatype().specifier();
 

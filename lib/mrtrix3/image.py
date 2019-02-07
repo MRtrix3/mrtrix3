@@ -16,8 +16,12 @@ class Header(object):
     result = subprocess.call(command, stdout=None, stderr=None)
     if result:
       app.error('Could not access header information for image \'' + image_path + '\'')
-    with open(filename, 'r') as f:
-      data = json.load(f)
+    try:
+      with open(filename, 'r') as f:
+        data = json.load(f)
+    except UnicodeDecodeError:
+      with open(filename, 'r') as f:
+        data = json.loads(f.read().decode('utf-8', errors='replace'))
     os.remove(filename)
     try:
       #self.__dict__.update(data)
@@ -27,7 +31,7 @@ class Header(object):
       self._name = data['name']
       self._size = data['size']
       self._spacing = data['spacing']
-      self._stride = data['stride']
+      self._strides = data['strides']
       self._format = data['format']
       self._datatype = data['datatype']
       self._intensity_offset = data['intensity_offset']
@@ -47,8 +51,8 @@ class Header(object):
     return self._size
   def spacing(self):
     return self._spacing
-  def stride(self):
-    return self._stride
+  def strides(self):
+    return self._strides
   def format(self):
     return self._format
   def datatype(self):
@@ -61,6 +65,32 @@ class Header(object):
     return self._transform
   def keyval(self):
     return self._keyval
+
+
+
+# From a string corresponding to a NIfTI axis & direction code,
+#   yield a 3-vector corresponding to that axis and direction
+# Note that unlike phaseEncoding.direction(), this does not accept
+#   an axis index, nor a phase-encoding indication string (e.g. AP);
+#   it only accepts NIfTI codes, i.e. i, i-, j, j-, k, k-
+def axis2dir(string): #pylint: disable=unused-variable
+  from mrtrix3 import app
+  if string == 'i':
+    direction = [1,0,0]
+  elif string == 'i-':
+    direction = [-1,0,0]
+  elif string == 'j':
+    direction = [0,1,0]
+  elif string == 'j-':
+    direction = [0,-1,0]
+  elif string == 'k':
+    direction = [0,0,1]
+  elif string == 'k-':
+    direction = [0,0,-1]
+  else:
+    app.error('Unrecognized NIfTI axis & direction specifier: ' + string)
+  app.debug(string + ' -> ' + str(direction))
+  return direction
 
 
 
@@ -167,5 +197,5 @@ def statistic(image_path, stat, options=''): #pylint: disable=unused-variable
   if app.verbosity > 1:
     app.console('Result: ' + result)
   if proc.returncode:
-    app.error('Error trying to calculate statistic \'' + statistic + '\' from image \'' + image_path + '\'')
+    app.error('Error trying to calculate statistic \'' + stat + '\' from image \'' + image_path + '\'')
   return result

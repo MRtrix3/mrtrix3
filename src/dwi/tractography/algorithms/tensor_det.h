@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __dwi_tractography_algorithms_tensor_det_h__
 #define __dwi_tractography_algorithms_tensor_det_h__
@@ -18,7 +20,7 @@
 // These lines are to silence deprecation warnings with Eigen & GCC v5
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#include <Eigen/Eigenvalues> 
+#include <Eigen/Eigenvalues>
 #pragma GCC diagnostic pop
 
 #include "math/least_squares.h"
@@ -53,12 +55,14 @@ namespace MR
           if (is_act() && act().backtrack())
             throw Exception ("Backtracking not valid for deterministic algorithms");
 
-          set_step_size (0.1);
+          set_step_size (0.1f);
           if (rk4) {
             INFO ("minimum radius of curvature = " + str(step_size / (max_angle_rk4 / (0.5 * Math::pi))) + " mm");
           } else {
             INFO ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
           }
+
+          set_cutoff (TCKGEN_DEFAULT_CUTOFF_FA);
 
           properties["method"] = "TensorDet";
 
@@ -88,12 +92,12 @@ namespace MR
         eig (3),
         M (3,3),
         dt (6) { }
-        
 
 
 
 
-      bool init()
+
+      bool init() override
       {
         if (!get_data (source))
           return false;
@@ -102,7 +106,7 @@ namespace MR
 
 
 
-      term_t next ()
+      term_t next () override
       {
         if (!get_data (source))
           return Tracking::EXIT_IMAGE;
@@ -110,7 +114,7 @@ namespace MR
       }
 
 
-      float get_metric()
+      float get_metric() override
       {
         dwi2tensor (dt, S.binv, values);
         return tensor2FA (dt);
@@ -164,7 +168,7 @@ namespace MR
         get_EV();
 
         float dot = prev_dir.dot (dir);
-        if (std::abs (dot) < S.cos_max_angle)
+        if (abs (dot) < S.cos_max_angle)
           return HIGH_CURVATURE;
 
         if (dot < 0.0)

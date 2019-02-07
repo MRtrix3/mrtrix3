@@ -31,7 +31,6 @@ List of MRtrix3 commands
     commands/dwi2adc
     commands/dwi2fod
     commands/dwi2mask
-    commands/dwi2noise
     commands/dwi2tensor
     commands/dwidenoise
     commands/dwiextract
@@ -51,7 +50,7 @@ List of MRtrix3 commands
     commands/labelconvert
     commands/maskdump
     commands/maskfilter
-    commands/mesh2pve
+    commands/mesh2voxel
     commands/meshconvert
     commands/meshfilter
     commands/mraverageheader
@@ -69,7 +68,6 @@ List of MRtrix3 commands
     commands/mrhistogram
     commands/mrinfo
     commands/mrmath
-    commands/mrmesh
     commands/mrmetric
     commands/mrpad
     commands/mrregister
@@ -78,7 +76,6 @@ List of MRtrix3 commands
     commands/mrthreshold
     commands/mrtransform
     commands/mrview
-    commands/mtbin
     commands/mtnormalise
     commands/peaks2amp
     commands/sh2amp
@@ -97,12 +94,12 @@ List of MRtrix3 commands
     commands/tckglobal
     commands/tckinfo
     commands/tckmap
-    commands/tcknormalise
     commands/tckresample
     commands/tcksample
     commands/tcksift2
     commands/tcksift
     commands/tckstats
+    commands/tcktransform
     commands/tensor2metric
     commands/transformcalc
     commands/transformcompose
@@ -112,8 +109,10 @@ List of MRtrix3 commands
     commands/tsfmult
     commands/tsfsmooth
     commands/tsfthreshold
+    commands/tsfvalidate
     commands/vectorstats
     commands/voxel2fixel
+    commands/voxel2mesh
     commands/warp2metric
     commands/warpconvert
     commands/warpcorrect
@@ -144,7 +143,6 @@ List of MRtrix3 commands
     :ref:`dwi2adc`, "Convert mean dwi (trace-weighted) images to mean ADC maps"
     :ref:`dwi2fod`, "Estimate fibre orientation distributions from diffusion data using spherical deconvolution"
     :ref:`dwi2mask`, "Generates a whole brain mask from a DWI image"
-    :ref:`dwi2noise`, "Estimate noise level voxel-wise using residuals from a truncated SH fit"
     :ref:`dwi2tensor`, "Diffusion (kurtosis) tensor estimation using iteratively reweighted linear least squares estimator"
     :ref:`dwidenoise`, "Denoise DWI data and estimate the noise level based on the optimal threshold for PCA"
     :ref:`dwiextract`, "Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset"
@@ -164,7 +162,7 @@ List of MRtrix3 commands
     :ref:`labelconvert`, "Convert a connectome node image from one lookup table to another"
     :ref:`maskdump`, "Print out the locations of all non-zero voxels in a mask image"
     :ref:`maskfilter`, "Perform filtering operations on 3D / 4D mask images"
-    :ref:`mesh2pve`, "Convert a mesh surface to a partial volume estimation image"
+    :ref:`mesh2voxel`, "Convert a mesh surface to a partial volume estimation image"
     :ref:`meshconvert`, "Convert meshes between different formats, and apply transformations"
     :ref:`meshfilter`, "Apply filter operations to meshes"
     :ref:`mraverageheader`, "Calculate the average (unbiased) coordinate space of all input images"
@@ -178,11 +176,10 @@ List of MRtrix3 commands
     :ref:`mrdump`, "Print out the values within an image"
     :ref:`mredit`, "Directly edit the intensities within an image from the command-line"
     :ref:`mrfilter`, "Perform filtering operations on 3D / 4D MR images"
-    :ref:`mrhistmatch`, "Modify the intensities of one image to match the histogram of another via a non-linear transform"
+    :ref:`mrhistmatch`, "Modify the intensities of one image to match the histogram of another"
     :ref:`mrhistogram`, "Generate a histogram of image intensities"
     :ref:`mrinfo`, "Display image header information, or extract specific information from the header"
     :ref:`mrmath`, "Compute summary statistic on image intensities either across images, or along a specified axis of a single image"
-    :ref:`mrmesh`, "Generate a mesh file from an image"
     :ref:`mrmetric`, "Computes a dissimilarity metric between two images"
     :ref:`mrpad`, "Pad an image to increase the FOV"
     :ref:`mrregister`, "Register two images together using a symmetric rigid, affine or non-linear transformation model"
@@ -190,10 +187,9 @@ List of MRtrix3 commands
     :ref:`mrstats`, "Compute images statistics"
     :ref:`mrthreshold`, "Create bitwise image by thresholding image intensity"
     :ref:`mrtransform`, "Apply spatial transformations to an image"
-    :ref:`mrview`, "The MRtrix image viewer."
-    :ref:`mtbin`, "Multi-Tissue Bias field correction and Intensity Normalisation (WARNING: deprecated)."
+    :ref:`mrview`, "The MRtrix image viewer"
     :ref:`mtnormalise`, "Multi-tissue informed log-domain intensity normalisation"
-    :ref:`peaks2amp`, "Convert peak directions image to amplitudes"
+    :ref:`peaks2amp`, "Extract amplitudes from a peak directions image"
     :ref:`sh2amp`, "Evaluate the amplitude of an image of spherical harmonic functions along specified directions"
     :ref:`sh2peaks`, "Extract the peaks of a spherical harmonic function at each voxel, by commencing a Newton search along a set of specified directions"
     :ref:`sh2power`, "Compute the total power of a spherical harmonics image"
@@ -210,12 +206,12 @@ List of MRtrix3 commands
     :ref:`tckglobal`, "Multi-Shell Multi-Tissue Global Tractography"
     :ref:`tckinfo`, "Print out information about a track file"
     :ref:`tckmap`, "Use track data as a form of contrast for producing a high-resolution image"
-    :ref:`tcknormalise`, "Apply a normalisation map to a tracks file"
     :ref:`tckresample`, "Resample each streamline in a track file to a new set of vertices"
     :ref:`tcksample`, "Sample values of an associated image along tracks"
     :ref:`tcksift2`, "Successor to the SIFT method; instead of removing streamlines, use an EM framework to find an appropriate cross-section multiplier for each streamline"
     :ref:`tcksift`, "Filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals"
     :ref:`tckstats`, "Calculate statistics on streamlines length"
+    :ref:`tcktransform`, "Apply a spatial transformation to a tracks file"
     :ref:`tensor2metric`, "Generate maps of tensor-derived parameters"
     :ref:`transformcalc`, "Perform calculations on linear transformation matrices"
     :ref:`transformcompose`, "Compose any number of linear transformations and/or warps into a single transformation"
@@ -225,8 +221,10 @@ List of MRtrix3 commands
     :ref:`tsfmult`, "Multiply corresponding values in track scalar files"
     :ref:`tsfsmooth`, "Gaussian filter a track scalar file"
     :ref:`tsfthreshold`, "Threshold and invert track scalar files"
+    :ref:`tsfvalidate`, "Validate a track scalar file against the corresponding track data"
     :ref:`vectorstats`, "Statistical testing of vector data using non-parametric permutation testing"
     :ref:`voxel2fixel`, "Map the scalar value in each voxel to all fixels within that voxel"
+    :ref:`voxel2mesh`, "Generate a surface mesh representation from a voxel image"
     :ref:`warp2metric`, "Compute fixel-wise or voxel-wise metrics from a 4D deformation field"
     :ref:`warpconvert`, "Convert between different representations of a non-linear warp"
     :ref:`warpcorrect`, "Replaces voxels in a deformation field that point to 0,0,0 with nan,nan,nan"

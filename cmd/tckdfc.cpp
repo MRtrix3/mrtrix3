@@ -1,12 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
@@ -263,7 +266,7 @@ void run ()
 
       case 1: // triangle
         for (ssize_t i = 0; i != window_width; ++i)
-          window[i] = 1.0 - (std::abs (i - centre) / default_type(halfwidth));
+          window[i] = 1.0 - (abs (i - centre) / default_type(halfwidth));
         break;
 
       case 2: // cosine
@@ -283,7 +286,7 @@ void run ()
 
       case 5: // lanczos
         for (ssize_t i = 0; i != window_width; ++i) {
-          const default_type v = 2.0 * Math::pi * std::abs (i - centre) / default_type(window_width - 1);
+          const default_type v = 2.0 * Math::pi * abs (i - centre) / default_type(window_width - 1);
           window[i] = v ? std::max (0.0, (std::sin (v) / v)) : 1.0;
         }
         break;
@@ -373,6 +376,7 @@ void run ()
     mapper.add_twdfc_static_image (fmri_image);
     Mapping::MapWriter<float> writer (header, argument[2], stat_vox);
     Thread::run_queue (loader, Thread::batch (Tractography::Streamline<>()), Thread::multi (mapper), Thread::batch (Mapping::SetVoxel()), writer);
+    writer.finalise();
 
   } else {
 

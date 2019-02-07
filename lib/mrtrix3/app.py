@@ -52,15 +52,18 @@ colourWarn = ''
 
 
 
-_defaultCopyright = '''Copyright (c) 2008-2017 the MRtrix3 contributors.
+_defaultCopyright = '''Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/.
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an \"as is\"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
 For more details, see http://www.mrtrix.org/.'''
 
@@ -181,6 +184,12 @@ def parse(): #pylint: disable=unused-variable
   if hasattr(args, 'cont') and args.cont:
     continueOption = True
     tempDir = os.path.abspath(args.cont[0])
+    # Prevent error from re-appearing at end of terminal output if script continuation results in success
+    #   and -nocleanup is used
+    try:
+      os.remove(os.path.join(tempDir, 'error.txt'))
+    except OSError:
+      pass
     run.setContinue(args.cont[1])
 
 
@@ -207,6 +216,7 @@ def checkOutputPath(path): #pylint: disable=unused-variable
 
 def makeTempDir(): #pylint: disable=unused-variable
   import os, random, string, sys
+  from mrtrix3 import run
   global args, config, continueOption, tempDir, workingDir
   if continueOption:
     debug('Skipping temporary directory creation due to use of -continue option')
@@ -216,15 +226,9 @@ def makeTempDir(): #pylint: disable=unused-variable
   if hasattr(args, 'tempdir') and args.tempdir:
     dir_path = os.path.abspath(args.tempdir)
   else:
-    if 'ScriptTmpDir' in config:
-      dir_path = config['ScriptTmpDir']
-    else:
-      # Defaulting to working directory since too many users have encountered storage issues
-      dir_path = workingDir
-  if 'ScriptTmpPrefix' in config:
-    prefix = config['ScriptTmpPrefix']
-  else:
-    prefix = os.path.basename(sys.argv[0]) + '-tmp-'
+    # Defaulting to working directory since too many users have encountered storage issues
+    dir_path = config.get('ScriptTmpDir', workingDir)
+  prefix = config.get('ScriptTmpPrefix', os.path.basename(sys.argv[0]) + '-tmp-')
   tempDir = dir_path
   while os.path.isdir(tempDir):
     random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
@@ -236,6 +240,8 @@ def makeTempDir(): #pylint: disable=unused-variable
   with open(os.path.join(tempDir, 'command.txt'), 'w') as outfile:
     outfile.write(' '.join(sys.argv) + '\n')
   open(os.path.join(tempDir, 'log.txt'), 'w').close()
+  # Also use this temporary directory for any piped images within run.command() calls
+  run.setTmpDir(tempDir)
 
 
 
@@ -264,11 +270,35 @@ def complete(): #pylint: disable=unused-variable
     # This needs to be printed even if the -quiet option is used
     if os.path.isfile(os.path.join(tempDir, 'error.txt')):
       with open(os.path.join(tempDir, 'error.txt'), 'r') as errortext:
-        sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'Script failed while executing the command: ' + errortext.readline().rstrip() + colourClear + '\n')
+        sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'Following command failed during execution of the script:' + colourClear + '\n')
+        sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + errortext.readline().rstrip() + colourClear + '\n')
       sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourWarn + 'For debugging, inspect contents of temporary directory: ' + tempDir + colourClear + '\n')
     else:
       sys.stderr.write(os.path.basename(sys.argv[0]) + ': ' + colourConsole + 'Contents of temporary directory kept, location: ' + tempDir + colourClear + '\n')
     sys.stderr.flush()
+
+
+
+
+
+
+# This function should be used to insert text into any mrconvert call writing an output image
+#   to the user's requested destination
+# It will ensure that the header contents of any output images reflect the execution of the script itself,
+#   rather than its internal processes
+def mrconvertOutputOption(input_image): #pylint: disable=unused-variable
+  import sys
+  from ._version import __version__
+  global forceOverwrite
+  s = ' -copy_properties ' + input_image + ' -append_property command_history "' + sys.argv[0]
+  for arg in sys.argv[1:]:
+    s += ' \\"' + arg + '\\"'
+  s += '  (version=' + __version__ + ')"'
+  if forceOverwrite:
+    s += ' -force'
+  return s
+
+
 
 
 
@@ -291,7 +321,10 @@ def debug(text): #pylint: disable=unused-variable
   nearest = outer_frames[1]
   try:
     if len(outer_frames) == 2: # debug() called directly from script being executed
-      origin = '(' + os.path.basename(nearest.filename) + ':' + str(nearest.lineno) + ')'
+      try:
+        origin = '(' + os.path.basename(nearest.filename) + ':' + str(nearest.lineno) + ')'
+      except AttributeError: # Prior to Python 3.5
+        origin = '(' + os.path.basename(nearest[1]) + ':' + str(nearest[2]) + ')'
     else: # Some function has called debug(): Get location of both that function, and where that function was invoked
       try:
         filename = nearest.filename
@@ -306,7 +339,7 @@ def debug(text): #pylint: disable=unused-variable
       caller = outer_frames[2]
       try:
         origin += ' (from ' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')'
-      except: # Prior to Python 3.5
+      except AttributeError:
         origin += ' (from ' + os.path.basename(caller[1]) + ':' + str(caller[2]) + ')'
       finally:
         del caller
@@ -335,7 +368,7 @@ def var(*variables): #pylint: disable=unused-variable
       calling_code = calling_frame.code_context[0]
       filename = calling_frame.filename
       lineno = calling_frame.lineno
-    except: # Prior to Python 3.5
+    except AttributeError: # Prior to Python 3.5
       calling_code = calling_frame[4][0]
       filename = calling_frame[1]
       lineno = calling_frame[2]
@@ -381,6 +414,7 @@ class Parser(argparse.ArgumentParser):
     else:
       self._copyright = _defaultCopyright
     self._description = [ ]
+    self._examples = [ ]
     self.externalCitations = False
     if 'synopsis' in kwargs_in:
       self.synopsis = kwargs_in['synopsis']
@@ -417,6 +451,9 @@ class Parser(argparse.ArgumentParser):
 
   def setCopyright(self, text): #pylint: disable=unused-variable
     self._copyright = text
+
+  def addExampleUsage(self, title, code, description = ''): #pylint: disable=unused-variable
+    self._examples.append( (title, code, description) )
 
   # Mutually exclusive options need to be added before the command-line input is parsed
   def flagMutuallyExclusiveOptions(self, options, required=False): #pylint: disable=unused-variable
@@ -577,6 +614,15 @@ class Parser(argparse.ArgumentParser):
       for line in self._description:
         s += w.fill(line) + '\n'
         s += '\n'
+    if self._examples:
+      s += bold('EXAMPLE USAGES') + '\n'
+      s += '\n'
+      for example in self._examples:
+        s += w.fill(underline(example[0] + ':')) + '\n'
+        s += ' '*7 + '$ ' + example[1] + '\n'
+        if example[2]:
+          s += w.fill(example[2]) + '\n'
+        s += '\n'
     # Option groups
     for group in reversed(self._action_groups):
       # * Don't display empty groups
@@ -623,10 +669,7 @@ class Parser(argparse.ArgumentParser):
           s += w.fill('* ' + entry[0] + ':') + '\n'
         s += w.fill(entry[1]) + '\n'
         s += '\n'
-    if 'HelpCommand' in config:
-      command = config['HelpCommand']
-    else:
-      command = 'less -X'
+    command = config.get('HelpCommand', 'less -X')
     if command:
       try:
         process = subprocess.Popen(command.split(' '), stdin=subprocess.PIPE)
@@ -647,6 +690,11 @@ class Parser(argparse.ArgumentParser):
           sys.stdout.write(line + '\n')
       else:
         sys.stdout.write(self._description + '\n')
+    for example in self._examples:
+      sys.stdout.write(example[0] + ': $ ' + example[1])
+      if example[2]:
+        sys.stdout.write('; ' + example[2])
+      sys.stdout.write('\n')
     if self._subparsers and len(sys.argv) == 3:
       for alg in self._subparsers._group_actions[0].choices:
         if alg == sys.argv[1]:
@@ -694,6 +742,14 @@ class Parser(argparse.ArgumentParser):
       s += '## Description\n\n'
       for line in self._description:
         s += line + '\n\n'
+    if self._examples:
+      s += '## Example usages\n\n'
+      for example in self._examples:
+        s += '__' + example[0] + ':__\n'
+        s += '`$ ' + example[1] + '`\n'
+        if example[2]:
+          s += example[2] + '\n'
+        s += '\n'
     s += '## Options\n\n'
     for group in reversed(self._action_groups):
       if group._group_actions and not (len(group._group_actions) == 1 and isinstance(group._group_actions[0], argparse._SubParsersAction)) and not group == self._positionals:
@@ -757,6 +813,14 @@ class Parser(argparse.ArgumentParser):
       s += '-----------\n\n'
       for line in self._description:
         s += line + '\n\n'
+    if self._examples:
+      s += 'Example usages\n'
+      s += '--------------\n\n'
+      for example in self._examples:
+        s += '-   *' + example[0] + '*::\n\n'
+        s += '        $ ' + example[1] + '\n\n'
+        if example[2]:
+          s += '    ' + example[2] + '\n\n'
     s += 'Options\n'
     s += '-------\n'
     for group in reversed(self._action_groups):

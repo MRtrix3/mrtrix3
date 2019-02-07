@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "image.h"
@@ -29,9 +31,17 @@ using value_type = float;
 void usage ()
 {
 
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset";
+
+  EXAMPLES
+    + Example ("Calculate the mean b=0 image from a 4D DWI series",
+               "dwiextract dwi.mif - -bzero | mrmath - mean mean_bzero.mif -axis 3",
+               "The dwiextract command extracts all volumes for which the b-value is "
+               "(approximately) zero; the resulting 4D image can then be provided to "
+               "the mrmath command to calculate the mean intensity across volumes "
+               "for each voxel.");
 
   ARGUMENTS
     + Argument ("input", "the input DW image.").type_image_in ()
@@ -43,6 +53,7 @@ void usage ()
     + Option ("singleshell", "Force a single-shell (single non b=0 shell) output. This will include b=0 volumes, if present. Use with -bzero to enforce presence of b=0 volumes (error if not present) or with -no_bzero to exclude them.")
     + DWI::GradImportOptions()
     + DWI::ShellsOption
+    + DWI::GradExportOptions()
     + PhaseEncoding::ImportOptions
     + PhaseEncoding::SelectOptions
     + Stride::Options;
@@ -104,10 +115,8 @@ void run()
         }
       }
       if (filter.size() == 4) {
-        if (std::abs (pe_scheme(i, 3) - filter[3]) > 5e-3) {
+        if (abs (pe_scheme(i, 3) - filter[3]) > 5e-3)
           keep = false;
-          break;
-        }
       }
       if (keep)
         new_volumes.push_back (i);
@@ -139,6 +148,7 @@ void run()
   }
 
   auto output_image = Image<float>::create (argument[1], header);
+  DWI::export_grad_commandline (header);
 
   auto input_volumes = Adapter::make<Adapter::Extract1D> (input_image, 3, volumes);
   threaded_copy_with_progress_message ("extracting volumes", input_volumes, output_image);

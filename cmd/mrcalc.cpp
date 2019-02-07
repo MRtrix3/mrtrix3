@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "image.h"
@@ -42,21 +44,7 @@ DESCRIPTION
   "images) are pushed onto the stack in the order they appear "
   "(as arguments) on the command-line, and operators (specified "
   "as options) operate on and consume the top-most entries in "
-  "the stack, and push their output as a new entry on the stack. "
-  "For example:"
-
-  + "    $ mrcalc a.mif 2 -mult r.mif"
-
-  + "performs the operation r = 2*a for every voxel a,r in "
-  "images a.mif and r.mif respectively. Similarly:"
-
-  + "    $ mrcalc a.mif -neg b.mif -div -exp 9.3 -mult r.mif"
-
-  + "performs the operation r = 9.3*exp(-a/b), and:"
-
-  + "    $ mrcalc a.mif b.mif -add c.mif d.mif -mult 4.2 -add -div r.mif"
-
-  + "performs r = (a+b)/(c*d+4.2)."
+  "the stack, and push their output as a new entry on the stack."
 
   + "As an additional feature, this command will allow images with different "
   "dimensions to be processed, provided they satisfy the following "
@@ -71,10 +59,31 @@ DESCRIPTION
   "volume consists of the 3D image scaled by the corresponding value for "
   "that volume in the single-voxel image.";
 
+EXAMPLES
+  + Example ("Double the value stored in every voxel",
+             "mrcalc a.mif 2 -mult r.mif",
+             "This performs the operation: r = 2*a  for every voxel a,r in "
+             "images a.mif and r.mif respectively.")
+
+  + Example ("A more complex example",
+             "mrcalc a.mif -neg b.mif -div -exp 9.3 -mult r.mif",
+             "This performs the operation: r = 9.3*exp(-a/b)")
+
+  + Example ("Another complex example",
+             "mrcalc a.mif b.mif -add c.mif d.mif -mult 4.2 -add -div r.mif",
+             "This performs: r = (a+b)/(c*d+4.2).")
+
+  + Example ("Rescale the densities in a SH l=0 image",
+             "mrcalc ODF_CSF.mif 4 pi -mult -sqrt -div ODF_CSF_scaled.mif",
+             "This applies the spherical harmonic basis scaling factor: "
+             "1.0/sqrt(4*pi), such that a single-tissue voxel containing the "
+             "same intensities as the response function of that tissue "
+             "should contain the value 1.0.");
+
 ARGUMENTS
   + Argument ("operand", "an input image, intensity value, or the special keywords "
       "'rand' (random number between 0 and 1) or 'randn' (random number from unit "
-      "std.dev. normal distribution).").type_text().allow_multiple();
+      "std.dev. normal distribution) or the mathematical constants 'e' and 'pi'.").type_various().allow_multiple();
 
 OPTIONS
   + OptionGroup ("Unary operators")
@@ -215,11 +224,15 @@ class StackEntry { NOMEMALIGN
   public:
 
     StackEntry (const char* entry) :
-      arg (entry) { }
+        arg (entry),
+        rng_gaussian (false),
+        image_is_complex (false) { }
 
     StackEntry (Evaluator* evaluator_p) :
-      arg (nullptr),
-      evaluator (evaluator_p) { }
+        arg (nullptr),
+        evaluator (evaluator_p),
+        rng_gaussian (false),
+        image_is_complex (false) { }
 
     void load () {
       if (!arg)
@@ -237,15 +250,21 @@ class StackEntry { NOMEMALIGN
           image.reset (new Image<complex_type> (header.get_image<complex_type>()));
           image_list.insert (std::make_pair (arg, LoadedImage (image, image_is_complex)));
         }
-        catch (Exception) {
-          std::string a = lowercase (arg);
-          if      (a ==  "nan")  { value =  std::numeric_limits<real_type>::quiet_NaN(); }
-          else if (a == "-nan")  { value = -std::numeric_limits<real_type>::quiet_NaN(); }
-          else if (a ==  "inf")  { value =  std::numeric_limits<real_type>::infinity(); }
-          else if (a == "-inf")  { value = -std::numeric_limits<real_type>::infinity(); }
-          else if (a == "rand")  { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = false; }
-          else if (a == "randn") { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = true; }
-          else                   { value =  to<complex_type> (arg); }
+        catch (Exception&) {
+          try {
+            std::string a = lowercase (arg);
+            if      (a == "pi")    { value = Math::pi; }
+            else if (a == "e")     { value = Math::e; }
+            else if (a ==  "nan")  { value =  std::numeric_limits<real_type>::quiet_NaN(); }
+            else if (a == "-nan")  { value = -std::numeric_limits<real_type>::quiet_NaN(); }
+            else if (a ==  "inf")  { value =  std::numeric_limits<real_type>::infinity(); }
+            else if (a == "-inf")  { value = -std::numeric_limits<real_type>::infinity(); }
+            else if (a == "rand")  { value = 0.0; rng.reset (new Math::RNG()); rng_gaussian = false; }
+            else if (a == "randn") { value = 0.0; rng.reset (new Math::RNG()); rng_gaussian = true; }
+            else                   { value =  to<complex_type> (arg); }
+          } catch (Exception&) {
+            throw Exception (std::string ("Could not interpret string \"") + arg + "\" as either an image path or a numerical value");
+          }
         }
       }
       arg = nullptr;
@@ -256,7 +275,7 @@ class StackEntry { NOMEMALIGN
     std::shared_ptr<Image<complex_type>> image;
     copy_ptr<Math::RNG> rng;
     complex_type value;
-    bool rng_gausssian;
+    bool rng_gaussian;
     bool image_is_complex;
 
     bool is_complex () const;
@@ -320,7 +339,7 @@ inline Chunk& StackEntry::evaluate (ThreadLocalStorage& storage) const
   if (evaluator) return evaluator->evaluate (storage);
   if (rng) {
     Chunk& chunk = storage.next();
-    if (rng_gausssian) {
+    if (rng_gaussian) {
       std::normal_distribution<real_type> dis (0.0, 1.0);
       for (size_t n = 0; n < chunk.size(); ++n)
         chunk[n] = dis (*rng);
@@ -366,7 +385,7 @@ std::string operation_string (const StackEntry& entry)
   if (entry.image)
     return entry.image->name();
   else if (entry.rng)
-    return entry.rng_gausssian ? "randn()" : "rand()";
+    return entry.rng_gaussian ? "randn()" : "rand()";
   else if (entry.evaluator) {
     std::string s = entry.evaluator->format;
     for (size_t n = 0; n < entry.evaluator->operands.size(); ++n)
@@ -585,7 +604,7 @@ void get_header (const StackEntry& entry, Header& header)
   for (size_t n = 0; n < std::min<size_t> (header.ndim(), entry.image->ndim()); ++n) {
     if (header.size(n) > 1 && entry.image->size(n) > 1 && header.size(n) != entry.image->size(n))
       throw Exception ("dimensions of input images do not match - aborting");
-    if (!transforms_match (header, *(entry.image)) && !transform_mis_match_reported) {
+    if (!voxel_grids_match_in_scanner_space (header, *(entry.image), 1.0e-4) && !transform_mis_match_reported) {
       WARN ("header transformations of input images do not match");
       transform_mis_match_reported = true;
     }
@@ -610,6 +629,12 @@ void get_header (const StackEntry& entry, Header& header)
       if (!entry_pe.isApprox (header_pe))
         PhaseEncoding::clear_scheme (header);
     }
+  }
+
+  auto slice_encoding_it = entry.image->keyval().find ("SliceEncodingDirection");
+  if (slice_encoding_it != entry.image->keyval().end()) {
+    if (header.keyval()["SliceEncodingDirection"] != slice_encoding_it->second)
+      header.keyval().erase (header.keyval().find ("SliceEncodingDirection"));
   }
 }
 
@@ -773,8 +798,8 @@ class OpTernary : public OpBase { NOMEMALIGN
 class OpAbs : public OpUnary { NOMEMALIGN
   public:
     OpAbs () : OpUnary ("|%1|", true) { }
-    complex_type R (real_type v) const { return std::abs (v); }
-    complex_type Z (complex_type v) const { return std::abs (v); }
+    complex_type R (real_type v) const { return abs (v); }
+    complex_type Z (complex_type v) const { return abs (v); }
 };
 
 class OpNeg : public OpUnary { NOMEMALIGN

@@ -1,21 +1,26 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <algorithm>
 
 #include "header.h"
 #include "phase_encoding.h"
 #include "image_io/default.h"
 #include "image_io/mosaic.h"
+#include "image_io/variable_scaling.h"
 #include "file/dicom/mapper.h"
 #include "file/dicom/image.h"
 #include "file/dicom/series.h"
@@ -122,7 +127,7 @@ namespace MR {
         if (std::isfinite (image.repetition_time))
           H.keyval()["RepetitionTime"] = str (0.001 * image.repetition_time, 6);
 
-        size_t nchannels = image.frames.size() ? 1 : image.data_size / (image.dim[0] * image.dim[1] * (image.bits_alloc/8));
+        size_t nchannels = image.frames.size() ? 1 : image.data_size / (frame.dim[0] * frame.dim[1] * (frame.bits_alloc/8));
         if (nchannels > 1)
           INFO ("data segment is larger than expected from image dimensions - interpreting as multi-channel data");
 
@@ -155,7 +160,7 @@ namespace MR {
         }
 
 
-        if (image.bits_alloc == 8)
+        if (frame.bits_alloc == 8)
           H.datatype() = DataType::UInt8;
         else if (frame.bits_alloc == 16) {
           H.datatype() = DataType::UInt16;
@@ -164,7 +169,7 @@ namespace MR {
           else
             H.datatype() = DataType::UInt16 | DataType::LittleEndian;
         }
-        else throw Exception ("unexpected number of allocated bits per pixel (" + str (image.bits_alloc)
+        else throw Exception ("unexpected number of allocated bits per pixel (" + str (frame.bits_alloc)
             + ") in file \"" + H.name() + "\"");
 
         H.set_intensity_scaling (frame.scale_slope, frame.scale_intercept);
@@ -199,13 +204,61 @@ namespace MR {
 
         PhaseEncoding::set_scheme (H, Frame::get_PE_scheme (frames, dim[1]));
 
-        for (size_t n = 1; n < frames.size(); ++n) // check consistency of data scaling:
+        bool inconsistent_scaling = false;
+        for (size_t n = 1; n < frames.size(); ++n) { // check consistency of data scaling:
           if (frames[n]->scale_intercept != frames[n-1]->scale_intercept ||
-              frames[n]->scale_slope != frames[n-1]->scale_slope)
-            throw Exception ("unable to load series due to inconsistent data scaling between DICOM images");
+              frames[n]->scale_slope != frames[n-1]->scale_slope) {
+            if (image.images_in_mosaic)
+              throw Exception ("unable to load series due to inconsistent data scaling between DICOM mosaic frames");
+            inconsistent_scaling = true;
+            INFO ("DICOM images contain inconsistency scaling - data will be rescaled and stored in 32-bit floating-point format");
+            break;
+          }
+        }
+
+        // Slice timing may come from a few different potential sources
+        vector<float> slices_timing;
+        if (image.images_in_mosaic) {
+          if (image.mosaic_slices_timing.size() < image.images_in_mosaic) {
+            WARN ("Number of entries in mosaic slice timing (" + str(image.mosaic_slices_timing.size()) + ") is smaller than number of images in mosaic (" + str(image.images_in_mosaic) + "); omitting");
+          } else {
+            DEBUG ("Taking slice timing information from CSA mosaic info");
+            // CSA mosaic defines these in ms; we want them in s
+            for (size_t n = 0; n < image.images_in_mosaic; ++n)
+              slices_timing.push_back (0.001 * image.mosaic_slices_timing[n]);
+          }
+        } else if (std::isfinite (frame.time_after_start)) {
+          DEBUG ("Taking slice timing information from CSA TimeAfterStart field");
+          default_type min_time_after_start = std::numeric_limits<default_type>::infinity();
+          for (size_t n = 0; n != dim[1]; ++n)
+            min_time_after_start = std::min (min_time_after_start, frames[n]->time_after_start);
+          for (size_t n = 0; n != dim[1]; ++n)
+            slices_timing.push_back (frames[n]->time_after_start - min_time_after_start);
+          H.keyval()["SliceTiming"] = join (slices_timing, ",");
+        } else if (std::isfinite (static_cast<default_type>(frame.acquisition_time))) {
+          DEBUG ("Estimating slice timing from DICOM AcquisitionTime field");
+          default_type min_acquisition_time = std::numeric_limits<default_type>::infinity();
+          for (size_t n = 0; n != dim[1]; ++n)
+            min_acquisition_time = std::min (min_acquisition_time, default_type(frames[n]->acquisition_time));
+          for (size_t n = 0; n != dim[1]; ++n)
+            slices_timing.push_back (default_type(frames[n]->acquisition_time) - min_acquisition_time);
+        }
+        if (slices_timing.size()) {
+          const size_t slices_acquired_at_zero = std::count (slices_timing.begin(), slices_timing.end(), 0.0f);
+          if (slices_acquired_at_zero < (image.images_in_mosaic ? image.images_in_mosaic : dim[1])) {
+            H.keyval()["SliceTiming"] = join (slices_timing, ",");
+            H.keyval()["MultibandAccelerationFactor"] = str (slices_acquired_at_zero);
+            H.keyval()["SliceEncodingDirection"] = "k";
+          } else {
+            DEBUG ("All slices acquired at same time; not writing slice encoding information");
+          }
+        } else {
+          DEBUG ("No slice timing information obtained");
+        }
 
 
         if (image.images_in_mosaic) {
+
           INFO ("DICOM image \"" + H.name() + "\" is in mosaic format");
           if (H.size (2) != 1)
             throw Exception ("DICOM mosaic contains multiple slices in image \"" + H.name() + "\"");
@@ -215,7 +268,7 @@ namespace MR {
           H.size(1) = std::floor (frame.dim[1] / mosaic_size);
           H.size(2) = image.images_in_mosaic;
 
-          if (frame.acq_dim[0] > H.size(0) || frame.acq_dim[1] > H.size(1)) {
+          if (frame.acq_dim[0] > size_t(H.size(0)) || frame.acq_dim[1] > size_t(H.size(1))) {
             WARN ("acquisition matrix [ " + str (frame.acq_dim[0]) + " " + str (frame.acq_dim[1])
                 + " ] is smaller than expected [ " + str(H.size(0)) + " " + str(H.size(1)) + " ] in DICOM mosaic");
             WARN ("  image may be incorrectly reformatted");
@@ -228,7 +281,7 @@ namespace MR {
             WARN ("  image may be incorrectly reformatted");
           }
 
-          if (frame.acq_dim[0] != H.size(0)|| frame.acq_dim[1] != H.size(1))
+          if (frame.acq_dim[0] != size_t(H.size(0)) || frame.acq_dim[1] != size_t(H.size(1)))
             INFO ("note: acquisition matrix [ " + str (frame.acq_dim[0]) + " " + str (frame.acq_dim[1])
                 + " ] differs from reconstructed matrix [ " + str(H.size(0)) + " " + str(H.size(1)) + " ]");
 
@@ -238,9 +291,26 @@ namespace MR {
             H.transform()(i,3) += xinc * H.transform()(i,0) + yinc * H.transform()(i,1);
 
           io_handler.reset (new MR::ImageIO::Mosaic (H, frame.dim[0], frame.dim[1], H.size (0), H.size (1), H.size (2)));
+
         }
-        else
+        else if (inconsistent_scaling) {
+
+          H.reset_intensity_scaling();
+          H.datatype() = DataType::Float32;
+          H.datatype().set_byte_order_native();
+
+          MR::ImageIO::VariableScaling* handler = new MR::ImageIO::VariableScaling (H);
+
+          for (size_t n = 0; n < frames.size(); ++n)
+            handler->scale_factors.push_back ({ frames[n]->scale_intercept, frames[n]->scale_slope });
+
+          io_handler.reset (handler);
+        }
+        else {
+
           io_handler.reset (new MR::ImageIO::Default (H));
+
+        }
 
         for (size_t n = 0; n < frames.size(); ++n)
           io_handler->files.push_back (File::Entry (frames[n]->filename, frames[n]->data));

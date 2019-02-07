@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __dwi_tractography_properties_h__
 #define __dwi_tractography_properties_h__
@@ -35,7 +37,7 @@ namespace MR
       class Properties : public std::map<std::string, std::string> { MEMALIGN(Properties)
         public:
 
-          Properties () { 
+          Properties () {
             set_timestamp();
           }
 
@@ -55,13 +57,13 @@ namespace MR
           std::multimap<std::string, std::string> roi;
 
 
-          void  clear () { 
-            std::map<std::string, std::string>::clear(); 
+          void  clear () {
+            std::map<std::string, std::string>::clear();
             seeds.clear();
             include.clear();
             exclude.clear();
             mask.clear();
-            comments.clear(); 
+            comments.clear();
             roi.clear();
           }
 
@@ -74,7 +76,7 @@ namespace MR
       };
 
 
-      inline void check_timestamps (const Properties& a, const Properties& b, const std::string& type) 
+      inline void check_timestamps (const Properties& a, const Properties& b, const std::string& type)
       {
         Properties::const_iterator stamp_a = a.find ("timestamp");
         Properties::const_iterator stamp_b = b.find ("timestamp");
@@ -87,7 +89,7 @@ namespace MR
 
 
 
-      inline void check_counts (const Properties& a, const Properties& b, const std::string& type, bool abort_on_fail) 
+      inline void check_counts (const Properties& a, const Properties& b, const std::string& type, bool abort_on_fail)
       {
         Properties::const_iterator count_a = a.find ("count");
         Properties::const_iterator count_b = b.find ("count");

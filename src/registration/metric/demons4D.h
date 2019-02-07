@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __registration_metric_demons4D_h__
 #define __registration_metric_demons4D_h__
@@ -107,7 +109,7 @@ namespace MR
               im2_image.index(3) = vol;
               im1_image.index(3) = vol;
               default_type speed = im2_image.value() - im1_image.value();
-              if (std::abs (speed) < robustness_parameter)
+              if (abs (speed) < robustness_parameter)
                 speed = 0.0;
 
               default_type speed_squared = speed * speed;
@@ -118,7 +120,7 @@ namespace MR
 
               Eigen::Matrix<typename Im1ImageType::value_type, 3, 1> grad = (im2_gradient.value() + im1_gradient.value()).array() / 2.0;
               default_type denominator = speed_squared / normaliser + grad.squaredNorm();
-              if (!(std::abs (speed) < intensity_difference_threshold || denominator < denominator_threshold)) {
+              if (!(abs (speed) < intensity_difference_threshold || denominator < denominator_threshold)) {
                 auto tmp = (speed * grad) / denominator;
                 total_update[0] += tmp[0];
                 total_update[1] += tmp[1];

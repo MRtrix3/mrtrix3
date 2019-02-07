@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "debug.h"
 
@@ -26,11 +28,15 @@ namespace MR
 
     const App::OptionGroup ShellsOption = App::OptionGroup ("DW shell selection options")
       + App::Option ("shells",
-          "specify one or more diffusion-weighted gradient shells to use during "
-          "processing, as a comma-separated list of the desired approximate b-values. "
-          "Note that some commands are incompatible with multiple shells, and "
-          "will throw an error if more than one b-value is provided.")
-        + App::Argument ("list").type_sequence_float();
+          "specify one or more b-values to use during processing, as a comma-separated list "
+          "of the desired approximate b-values (b-values are clustered to allow for small "
+          "deviations). Note that some commands are incompatible with multiple b-values, "
+          "and will report an error if more than one b-value is provided. \n"
+          "WARNING: note that, even though the b=0 volumes are never referred to as shells "
+          "in the literature, they still have to be explicitly included in the list of "
+          "b-values as provided to the -shell option! Several algorithms which include the "
+          "b=0 volumes in their computations may otherwise return an undesired result.")
+        + App::Argument ("b-values").type_sequence_float();
 
 
 
@@ -151,7 +157,7 @@ namespace MR
               size_t best_shell = 0;
               bool ambiguous = false;
               for (size_t s = 0; s != count(); ++s) {
-                if (std::abs (*b - shells[s].get_mean()) <= 1.0) {
+                if (abs (*b - shells[s].get_mean()) <= 1.0) {
                   if (shell_selected) {
                     ambiguous = true;
                   } else {
@@ -185,7 +191,7 @@ namespace MR
                 bool ambiguous = false;
                 for (size_t s = 0; s != count(); ++s) {
                   const default_type stdev = (shells[s].is_bzero() ? 0.5 * bzero_threshold() : (zero_stdev ? std::sqrt (shells[s].get_mean()) : shells[s].get_stdev()));
-                  const default_type num_stdev = std::abs ((*b - shells[s].get_mean()) / stdev);
+                  const default_type num_stdev = abs ((*b - shells[s].get_mean()) / stdev);
                   if (num_stdev < best_num_stdevs) {
                     ambiguous = (num_stdev >= 0.1 * best_num_stdevs);
                     best_shell = s;
@@ -378,7 +384,7 @@ namespace MR
     void Shells::regionQuery (const BValueList& bvals, const default_type b, vector<size_t>& idx) const
     {
       for (ssize_t i = 0; i < bvals.size(); i++) {
-        if (std::abs (b - bvals[i]) < DWI_SHELLS_EPSILON)
+        if (abs (b - bvals[i]) < DWI_SHELLS_EPSILON)
           idx.push_back (i);
       }
     }
