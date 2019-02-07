@@ -22,7 +22,7 @@
 #include "file/name_parser.h"
 #include "file/path.h"
 #include "file/png.h"
-#include "image_io/default.h"
+#include "image_io/base.h"
 #include "image_io/png.h"
 
 namespace MR
@@ -182,7 +182,7 @@ namespace MR
           }
           if (axis < 0)
             throw Exception ("Cannot export 4D image to PNG format if all three spatial axes have size greater than 1 and square-bracket notation is not used");
-          if (!axis_to_zero) {
+          if (!axis_to_zero)
             width_axis = 1;
           break;
         default:
