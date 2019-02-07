@@ -1016,7 +1016,7 @@ namespace MR
           Sink&& sink,
           size_t capacity = MRTRIX_QUEUE_DEFAULT_CAPACITY)
       {
-        if (number_of_threads() == 0) {
+        if (threads_to_execute() == 0) {
           typename __item<Type>::type item;
           while (__job<Source>::functor (source) (item))
             if (!__job<Sink>::functor (sink) (item))
@@ -1092,7 +1092,7 @@ namespace MR
           Sink&& sink,
           size_t capacity = MRTRIX_QUEUE_DEFAULT_CAPACITY)
       {
-        if (number_of_threads() == 0) {
+        if (threads_to_execute() == 0) {
           typename __item<Type1>::type item1;
           typename __item<Type2>::type item2;
           while (__job<Source>::functor (source) (item1)) {
@@ -1138,7 +1138,7 @@ namespace MR
           Sink&& sink,
           size_t capacity = MRTRIX_QUEUE_DEFAULT_CAPACITY)
       {
-        if (number_of_threads() == 0) {
+        if (threads_to_execute() == 0) {
           typename __item<Type1>::type item1;
           typename __item<Type2>::type item2;
           typename __item<Type3>::type item3;
