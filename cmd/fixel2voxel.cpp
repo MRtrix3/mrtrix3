@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "apply.h"
 #include "command.h"
@@ -66,9 +68,17 @@ void usage ()
   + "- Some measure of crossing-fibre organisation: complexity, sf ('single-fibre')"
   + "- A 4D directionally-encoded colour image: dec_unit, dec_scaled"
   + "- A 4D scalar image of fixel values with one 3D volume per fixel: split_data"
-  + "- A 4D image of fixel directions, stored as three 3D volumes per fixel direction: split_dir";
+  + "- A 4D image of fixel directions, stored as three 3D volumes per fixel direction: split_dir"
 
-  REFERENCES 
+  + "The -weighted option deals with the case where there is some per-fixel metric of interest "
+    "that you wish to collapse into a single scalar measure per voxel, but each fixel possesses "
+    "a different volume, and you wish for those fixels with greater volume to have a greater "
+    "influence on the calculation than fixels with lesser volume. For instance, when estimating "
+    "a voxel-based measure of mean axon diameter from per-fixel mean axon diameters, a fixel's "
+    "mean axon diameter should be weigthed by its relative volume within the voxel in the "
+    "calculation of that voxel mean.";
+
+  REFERENCES
     + "* Reference for 'complexity' operation:\n"
     "Riffert, T. W.; Schreiber, J.; Anwander, A. & Knosche, T. R. "
     "Beyond Fractional Anisotropy: Extraction of bundle-specific structural metrics from crossing fibre models. "
@@ -85,9 +95,7 @@ void usage ()
                       "fixels, padding where necessary.")
       + Argument ("N").type_integer(1)
 
-  + Option ("weighted", "weight the contribution of each fixel to the per-voxel result according to its volume. "
-                        "E.g. when estimating a voxel-based measure of mean axon diameter, a fixel's mean axon diameter "
-                        "should be weigthed by its relative volume within the voxel. Note that AFD can be used as a psuedomeasure of fixel volume.")
+  + Option ("weighted", "weight the contribution of each fixel to the per-voxel result according to its volume.")
       + Argument ("fixel_in").type_image_in ();
 
 }
@@ -303,8 +311,8 @@ class AbsMax : protected Base
     {
       default_type absmax = -std::numeric_limits<default_type>::infinity();
       for (auto f = Base::Loop (index) (data); f; ++f) {
-        if (!f.padding() && std::abs (data.value()) > absmax)
-          absmax = std::abs (data.value());
+        if (!f.padding() && abs (float(data.value())) > absmax)
+          absmax = abs (float(data.value()));
       }
       out.value() = std::isfinite (absmax) ? absmax : 0.0;
     }
@@ -321,7 +329,7 @@ class MagMax : protected Base
     {
       default_type magmax = 0.0;
       for (auto f = Base::Loop (index) (data); f; ++f) {
-        if (!f.padding() && std::abs (data.value()) > std::abs (magmax))
+        if (!f.padding() && abs (float(data.value())) > abs (magmax))
           magmax = data.value();
       }
       out.value() = std::isfinite (magmax) ? magmax : 0.0;
@@ -391,12 +399,12 @@ class DEC_unit : protected Base
       if (vol.valid()) {
         for (auto f = Base::Loop (index) (data, vol, dir); f; ++f) {
           if (!f.padding())
-            sum_dec += Eigen::Vector3 (std::abs (dir.row(1)[0]), std::abs (dir.row(1)[1]), std::abs (dir.row(1)[2])) * data.value() * vol.value();
+            sum_dec += Eigen::Vector3 (abs (dir.row(1)[0]), abs (dir.row(1)[1]), abs (dir.row(1)[2])) * data.value() * vol.value();
         }
       } else {
         for (auto f = Base::Loop (index) (data, dir); f; ++f) {
           if (!f.padding())
-            sum_dec += Eigen::Vector3 (std::abs (dir.row(1)[0]), std::abs (dir.row(1)[1]), std::abs (dir.row(1)[2])) * data.value();
+            sum_dec += Eigen::Vector3 (abs (dir.row(1)[0]), abs (dir.row(1)[1]), abs (dir.row(1)[2])) * data.value();
         }
       }
       if ((sum_dec.array() != 0.0).any())
@@ -425,7 +433,7 @@ class DEC_scaled : protected Base
         default_type sum_volume = 0.0;
         for (auto f = Base::Loop (index) (data, vol, dir); f; ++f) {
           if (!f.padding()) {
-            sum_dec += Eigen::Vector3 (std::abs (dir.row(1)[0]), std::abs (dir.row(1)[1]), std::abs (dir.row(1)[2])) * data.value() * vol.value();
+            sum_dec += Eigen::Vector3 (abs (dir.row(1)[0]), abs (dir.row(1)[1]), abs (dir.row(1)[2])) * data.value() * vol.value();
             sum_volume += vol.value();
             sum_value += vol.value() * data.value();
           }
@@ -436,7 +444,7 @@ class DEC_scaled : protected Base
       } else {
         for (auto f = Base::Loop (index) (data, dir); f; ++f) {
           if (!f.padding()) {
-            sum_dec += Eigen::Vector3 (std::abs (dir.row(1)[0]), std::abs (dir.row(1)[1]), std::abs (dir.row(1)[2])) * data.value();
+            sum_dec += Eigen::Vector3 (abs (dir.row(1)[0]), abs (dir.row(1)[1]), abs (dir.row(1)[2])) * data.value();
             sum_value += data.value();
           }
         }
@@ -523,6 +531,7 @@ void run ()
   H_out.datatype().set_byte_order_native();
   H_out.keyval().erase (Fixel::n_fixels_key);
   if (op == 7) { // count
+    H_out.ndim() = 3;
     H_out.datatype() = DataType::UInt8;
   } else if (op == 10 || op == 11) { // dec
     H_out.ndim() = 4;
@@ -541,6 +550,8 @@ void run ()
       // 3 volumes per fixel if performing split_dir
       H_out.size(3) = (op == 13) ? (3 * max_count) : max_count;
     }
+  } else {
+    H_out.ndim() = 3;
   }
 
   if (op == 10 || op == 11 || op == 13)  // dec or split_dir

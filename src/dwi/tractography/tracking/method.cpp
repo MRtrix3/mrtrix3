@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "dwi/tractography/tracking/method.h"
 
@@ -27,6 +29,29 @@ namespace MR
 
 
 
+        void MethodBase::truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step)
+        {
+          if (tck.get_seed_index() + revert_step >= length_to_revert_from) {
+            tck.clear();
+            pos = { NaN, NaN, NaN };
+            dir = { NaN, NaN, NaN };
+            return;
+          }
+          if (tck.size() + revert_step == length_to_revert_from)
+            return;
+          const size_t new_size = length_to_revert_from - revert_step;
+          if (tck.size() == 2 || new_size == 1)
+            dir = (tck[1] - tck[0]).normalized();
+          else
+            dir = (tck[new_size] - tck[new_size - 2]).normalized();
+          tck.resize (length_to_revert_from - revert_step);
+          pos = tck.back();
+          if (act_method_additions)
+            act().sgm_depth = (act().sgm_depth > revert_step) ? act().sgm_depth - revert_step : 0;
+        }
+
+
+
         bool MethodBase::check_seed()
         {
           if (!pos.allFinite())
@@ -40,27 +65,6 @@ namespace MR
           }
 
           return true;
-        }
-
-
-
-        void MethodBase::truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step)
-        {
-          if (tck.get_seed_index() + revert_step >= length_to_revert_from) {
-            tck.clear();
-            pos = { NaN, NaN, NaN };
-            dir = { NaN, NaN, NaN };
-            return;
-          }
-          const size_t new_size = length_to_revert_from - revert_step;
-          if (tck.size() == 2 || new_size == 1)
-            dir = (tck[1] - tck[0]).normalized();
-          else
-            dir = (tck[new_size] - tck[new_size - 2]).normalized();
-          tck.resize (length_to_revert_from - revert_step);
-          pos = tck.back();
-          if (S.is_act())
-            act().sgm_depth = (act().sgm_depth > revert_step) ? act().sgm_depth - revert_step : 0;
         }
 
 

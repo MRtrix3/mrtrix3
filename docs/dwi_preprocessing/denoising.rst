@@ -1,9 +1,9 @@
 DWI denoising
 =============
 
-MRtrix now includes a new command ``dwidenoise`` which implements DWI data
+MRtrix includes a command ``dwidenoise``, which implements DWI data
 denoising and noise map estimation by exploiting data redundancy in the PCA 
-domain (`Veraart et al., 2016a, 2016b <#references>`__). The method uses the 
+domain ([Veraart2016a]_ and [Veraart2016b]_). The method uses the 
 prior knowledge that the eigenspectrum of random covariance matrices is 
 described by the universal Marchenko Pastur distribution.
 
@@ -42,17 +42,6 @@ might be beneficial to select smaller sliding kernels, e.g. N~M, to balance
 between precision, accuracy, and resolution of the noise map.
 
 Note that this function does not correct for non-Gaussian noise biases yet.
-
-References
-----------
-
-1. J. Veraart, E. Fieremans, and D.S. Novikov *Diffusion MRI noise mapping 
-   using random matrix theory.* Magn. Res. Med. 76(5), pp. 1582-1593 (2016), 
-   `doi: 10.1002/mrm.26059 <http://dx.doi.org/10.1002/mrm.26059>`__
-
-2. J. Veraart, D.S. Novikov, D. Christiaens, B. Ades-aron, J. Sijbers, and E. Fieremans 
-   *Denoising of diffusion MRI using random matrix theory.* NeuroImage 142, pp. 394-406 (2016), 
-   `doi: 10.1016/j.neuroimage.2016.08.016 <http://dx.doi.org/10.1016/j.neuroimage.2016.08.016>`__
 
 
 

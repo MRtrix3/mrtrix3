@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __dwi_fmls_h__
 #define __dwi_fmls_h__
@@ -65,10 +67,10 @@ namespace MR
           FOD_lobe (const DWI::Directions::Set& dirs, const index_type seed, const default_type value, const default_type weight) :
               mask (dirs),
               values (Eigen::Array<default_type, Eigen::Dynamic, 1>::Zero (dirs.size())),
-              max_peak_value (std::abs (value)),
+              max_peak_value (abs (value)),
               peak_dirs (1, dirs.get_dir (seed)),
-              mean_dir (peak_dirs.front() * std::abs(value) * weight),
-              integral (std::abs (value * weight)),
+              mean_dir (peak_dirs.front() * abs(value) * weight),
+              integral (abs (value * weight)),
               neg (value <= 0.0)
           {
             mask[seed] = true;
@@ -92,8 +94,8 @@ namespace MR
             values[bin] = value;
             const Eigen::Vector3& dir = mask.get_dirs()[bin];
             const default_type multiplier = (mean_dir.dot (dir)) > 0.0 ? 1.0 : -1.0;
-            mean_dir += dir * multiplier * std::abs(value) * weight;
-            integral += std::abs (value * weight);
+            mean_dir += dir * multiplier * abs(value) * weight;
+            integral += abs (value * weight);
           }
 
           void revise_peak (const size_t index, const Eigen::Vector3& real_peak, const default_type value)
@@ -176,7 +178,7 @@ namespace MR
           Eigen::Array3i vox;
       };
 
-      class FODQueueWriter 
+      class FODQueueWriter
       { MEMALIGN (FODQueueWriter)
 
           using FODImageType = Image<float>;
@@ -218,7 +220,7 @@ namespace MR
       // Store a vector of weights to be applied when computing integrals, to account for non-uniformities in direction distribution
       // These weights are applied to the amplitude along each direction as the integral for each lobe is summed,
       //   in order to take into account the relative spacing between adjacent directions
-      class IntegrationWeights 
+      class IntegrationWeights
       { MEMALIGN (IntegrationWeights)
         public:
           IntegrationWeights (const DWI::Directions::Set& dirs);
@@ -233,7 +235,7 @@ namespace MR
       class Segmenter { MEMALIGN(Segmenter)
 
         public:
-          Segmenter (const DWI::Directions::Set&, const size_t);
+          Segmenter (const DWI::Directions::FastLookupSet&, const size_t);
 
           bool operator() (const SH_coefs&, FOD_lobes&) const;
 
@@ -254,7 +256,10 @@ namespace MR
 
         private:
 
-          const DWI::Directions::Set& dirs;
+          // FastLookupSet is required for ensuring that when a peak direction is
+          //   revised using Newton optimisation, that direction is still reflective
+          //   of the original peak; i.e. it hasn't 'leaped' across to a different peak
+          const DWI::Directions::FastLookupSet& dirs;
 
           const size_t lmax;
 

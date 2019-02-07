@@ -3,6 +3,14 @@ _mrtrix_bin_path = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(
 # Remember to remove the '.exe' from Windows binary executables
 _mrtrix_exe_list = [ os.path.splitext(name)[0] for name in os.listdir(_mrtrix_bin_path) ]
 
+# If the main script has been executed in an SGE environment, don't allow
+#   sub-processes to themselves fork SGE jobs; but if the main script is
+#   itself not an SGE job ('JOB_ID' environment variable absent), then
+#   whatever run.command() executes can send out SGE jobs without a problem.
+_env = os.environ.copy()
+if _env.get('SGE_ROOT') and _env.get('JOB_ID'):
+  del _env['SGE_ROOT']
+
 _processes = [ ]
 
 _lastFile = ''
@@ -10,8 +18,14 @@ _lastFile = ''
 
 
 def setContinue(filename): #pylint: disable=unused-variable
+  global _lastFile
   _lastFile = filename
 
+
+
+def setTmpDir(path): #pylint: disable=unused-variable
+  global _env
+  _env['MRTRIX_TMPFILE_DIR'] = path
 
 
 
@@ -21,10 +35,14 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
   from distutils.spawn import find_executable
   from mrtrix3 import app
 
-  global _mrtrix_exe_list, _processes
+  # This is the only global variable that is _modified_ within this function
+  global _processes
 
   # Vectorise the command string, preserving anything encased within quotation marks
-  cmdsplit = shlex.split(cmd)
+  if os.sep == '/': # Cheap POSIX compliance check
+    cmdsplit = shlex.split(cmd)
+  else: # Native Windows Python
+    cmdsplit = [ entry.strip('\"') for entry in shlex.split(cmd, posix=False) ]
 
   if _lastFile:
     if _triggerContinue(cmdsplit):
@@ -32,7 +50,7 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
     if app.verbosity:
       sys.stderr.write(app.colourExec + 'Skipping command:' + app.colourClear + ' ' + cmd + '\n')
       sys.stderr.flush()
-    return
+    return ('', '')
 
   # This splits the command string based on the piping character '|', such that each
   #   individual executable (along with its arguments) appears as its own list
@@ -64,7 +82,13 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
   app.debug('To execute: ' + str(cmdstack))
 
   if app.verbosity:
-    sys.stderr.write(app.colourExec + 'Command:' + app.colourClear + '  ' + cmd + '\n')
+    # Hide use of these options in mrconvert to alter header key-values and command history at the end of scripts
+    if all(key in cmdsplit for key in [ '-copy_properties', '-append_property', 'command_history' ]):
+      index = cmdsplit.index('-append_property')
+      del cmdsplit[index:index+3]
+      index = cmdsplit.index('-copy_properties')
+      del cmdsplit[index:index+2]
+    sys.stderr.write(app.colourExec + 'Command:' + app.colourClear + '  ' + ' '.join(cmdsplit) + '\n')
     sys.stderr.flush()
 
   # Disable interrupt signal handler while threads are running
@@ -106,7 +130,10 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
       handle_err = file_err.fileno()
     # Set off the processes
     try:
-      process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, preexec_fn=os.setpgrp)
+      try:
+        process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=_env, preexec_fn=os.setpgrp) # pylint: disable=bad-option-value,subprocess-popen-preexec-fn
+      except AttributeError:
+        process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=_env)
       _processes.append(process)
       tempfiles.append( ( file_out, file_err ) )
     # FileNotFoundError not defined in Python 2.7
@@ -131,21 +158,23 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
   try:
     if app.verbosity > 1:
       for process in _processes:
-        stderrdata = ''
+        stderrdata = b''
         do_indent = True
         while True:
           # Have to read one character at a time: Waiting for a newline character using e.g. readline() will prevent MRtrix progressbars from appearing
-          char = process.stderr.read(1).decode('utf-8')
+          byte = process.stderr.read(1)
+          stderrdata += byte
+          char = byte.decode('cp1252', errors='ignore')
           if not char and process.poll() is not None:
             break
-          if do_indent and char in string.printable:
+          if do_indent and char in string.printable and char != '\r' and char != '\n':
             sys.stderr.write('          ')
             do_indent = False
-          elif char == '\r' or char == '\n':
+          elif char in [ '\r', '\n' ]:
             do_indent = True
           sys.stderr.write(char)
           sys.stderr.flush()
-          stderrdata += char
+        stderrdata = stderrdata.decode('utf-8', errors='replace')
         return_stderr += stderrdata
         if process.returncode:
           error = True
@@ -168,7 +197,7 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
     if tempfiles[index][0] is not None:
       tempfiles[index][0].flush()
       tempfiles[index][0].seek(0)
-      stdout_text = tempfiles[index][0].read().decode('utf-8')
+      stdout_text = tempfiles[index][0].read().decode('utf-8', errors='replace')
       return_stdout += stdout_text
       if _processes[index].returncode:
         error = True
@@ -176,7 +205,7 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
     if tempfiles[index][1] is not None:
       tempfiles[index][1].flush()
       tempfiles[index][1].seek(0)
-      stderr_text = tempfiles[index][1].read().decode('utf-8')
+      stderr_text = tempfiles[index][1].read().decode('utf-8', errors='replace')
       return_stderr += stderr_text
       if _processes[index].returncode:
         error = True
@@ -185,17 +214,26 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
   _processes = [ ]
 
   if error:
-    app.cleanup = False
     if exitOnError:
+      app.cleanup = False
       caller = inspect.getframeinfo(inspect.stack()[1][0])
       script_name = os.path.basename(sys.argv[0])
       app.console('')
-      sys.stderr.write(script_name + ': ' + app.colourError + '[ERROR] Command failed: ' + cmd + app.colourClear + app.colourDebug + ' (' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')' + app.colourClear + '\n')
-      sys.stderr.write(script_name + ': ' + app.colourConsole + 'Output of failed command:' + app.colourClear + '\n')
-      for line in error_text.splitlines():
-        sys.stderr.write(' ' * (len(script_name)+2) + line + '\n')
-      app.console('')
+      try:
+        filename = caller.filename
+        lineno = caller.lineno
+      except AttributeError:
+        filename = caller[1]
+        lineno = caller[2]
+      sys.stderr.write(script_name + ': ' + app.colourError + '[ERROR] Command failed: ' + cmd + app.colourClear + app.colourDebug + ' (' + os.path.basename(filename) + ':' + str(lineno) + ')' + app.colourClear + '\n')
+      if error_text:
+        sys.stderr.write(script_name + ': ' + app.colourConsole + 'Output of failed command:' + app.colourClear + '\n')
+        for line in error_text.splitlines():
+          sys.stderr.write(' ' * (len(script_name)+2) + line + '\n')
+      else:
+        sys.stderr.write(script_name + ': ' + app.colourConsole + 'Failed command did not provide any diagnostic information' + app.colourClear + '\n')
       sys.stderr.flush()
+      app.console('')
       if app.tempDir:
         with open(os.path.join(app.tempDir, 'error.txt'), 'w') as outfile:
           outfile.write(cmd + '\n\n' + error_text + '\n')
@@ -217,20 +255,23 @@ def command(cmd, exitOnError=True): #pylint: disable=unused-variable
 
 
 
-def function(fn, *args): #pylint: disable=unused-variable
+def function(fn, *args, **kwargs): #pylint: disable=unused-variable
 
   import inspect, sys
   from mrtrix3 import app
 
-  fnstring = fn.__module__ + '.' + fn.__name__ + '(' + ', '.join(['\'' + str(a) + '\'' if isinstance(a, str) else str(a) for a in args]) + ')'
+  fnstring = fn.__module__ + '.' + fn.__name__ + \
+             '(' + ', '.join(['\'' + str(a) + '\'' if isinstance(a, str) else str(a) for a in args]) + \
+             (', ' if (args and kwargs) else '') + \
+             ', '.join([key+'='+str(value) for key, value in kwargs.items()]) + ')'
 
   if _lastFile:
-    if _triggerContinue(args):
+    if _triggerContinue(args) or _triggerContinue(kwargs.values()):
       app.debug('Detected last file in function \'' + fnstring + '\'; this is the last run.command() / run.function() call that will be skipped')
     if app.verbosity:
       sys.stderr.write(app.colourExec + 'Skipping function:' + app.colourClear + ' ' + fnstring + '\n')
       sys.stderr.flush()
-    return
+    return None
 
   if app.verbosity:
     sys.stderr.write(app.colourExec + 'Function:' + app.colourClear + ' ' + fnstring + '\n')
@@ -238,16 +279,23 @@ def function(fn, *args): #pylint: disable=unused-variable
 
   # Now we need to actually execute the requested function
   try:
-    result = fn(*args)
-  except (KeyboardInterrupt, SystemExit):
-    raise
+    if kwargs:
+      result = fn(*args, **kwargs)
+    else:
+      result = fn(*args)
   except Exception as e: # pylint: disable=broad-except
     app.cleanup = False
     caller = inspect.getframeinfo(inspect.stack()[1][0])
     error_text = str(type(e).__name__) + ': ' + str(e)
     script_name = os.path.basename(sys.argv[0])
     app.console('')
-    sys.stderr.write(script_name + ': ' + app.colourError + '[ERROR] Function failed: ' + fnstring + app.colourClear + app.colourDebug + ' (' + os.path.basename(caller.filename) + ':' + str(caller.lineno) + ')' + app.colourClear + '\n')
+    try:
+      filename = caller.filename
+      lineno = caller.lineno
+    except AttributeError:
+      filename = caller[1]
+      lineno = caller[2]
+    sys.stderr.write(script_name + ': ' + app.colourError + '[ERROR] Function failed: ' + fnstring + app.colourClear + app.colourDebug + ' (' + os.path.basename(filename) + ':' + str(lineno) + ')' + app.colourClear + '\n')
     sys.stderr.write(script_name + ': ' + app.colourConsole + 'Information from failed function:' + app.colourClear + '\n')
     for line in error_text.splitlines():
       sys.stderr.write(' ' * (len(script_name)+2) + line + '\n')
@@ -323,6 +371,7 @@ def versionMatch(item):
     return exe_path_sys
 
   app.error('Unable to find executable for MRtrix3 command ' + item)
+  return ''
 
 
 
@@ -391,7 +440,7 @@ def _triggerContinue(entries):
       totest = entry.split('=')[1]
     else:
       totest = entry
-    if totest == _lastFile or totest == os.path.splitext(_lastFile)[0]:
+    if totest in [ _lastFile, os.path.splitext(_lastFile)[0] ]:
       _lastFile = ''
       return True
   return False

@@ -114,10 +114,9 @@ with open (sys.argv[2], 'w') as f:
   f.write ('\nfile: ' + sys.argv[1] + '\n')
 
   try:
-    #pylint: disable=pointless-statement
-    bvec
-    bval
-    for n in range (0, len (bval)):
-      f.write ('dw_scheme: ' + bvec[3*n] + ',' + bvec[3*n+1] + ',' + str(-float(bvec[3*n+2])) + ',' + bval[n] + '\n')
+    assert len(bvec) == 3*len(bval)
+    bvec = [ bvec[n:n+3] for n in range(0,len(bval),3) ]
+    for direction, value in zip(bvec, bval):
+      f.write ('dw_scheme: ' + direction[0] + ',' + direction[1] + ',' + str(-float(direction[2])) + ',' + value + '\n')
   except:
     pass

@@ -15,28 +15,43 @@ Usage
 
     mrcalc [ options ]  operand [ operand ... ]
 
--  *operand*: an input image, intensity value, or the special keywords 'rand' (random number between 0 and 1) or 'randn' (random number from unit std.dev. normal distribution).
+-  *operand*: an input image, intensity value, or the special keywords 'rand' (random number between 0 and 1) or 'randn' (random number from unit std.dev. normal distribution) or the mathematical constants 'e' and 'pi'.
 
 Description
 -----------
 
 This command will only compute per-voxel operations. Use 'mrmath' to compute summary statistics across images or along image axes.
 
-This command uses a stack-based syntax, with operators (specified using options) operating on the top-most entries (i.e. images or values) in the stack. Operands (values or images) are pushed onto the stack in the order they appear (as arguments) on the command-line, and operators (specified as options) operate on and consume the top-most entries in the stack, and push their output as a new entry on the stack. For example:
-
-    $ mrcalc a.mif 2 -mult r.mif
-
-performs the operation r = 2*a for every voxel a,r in images a.mif and r.mif respectively. Similarly:
-
-    $ mrcalc a.mif -neg b.mif -div -exp 9.3 -mult r.mif
-
-performs the operation r = 9.3*exp(-a/b), and:
-
-    $ mrcalc a.mif b.mif -add c.mif d.mif -mult 4.2 -add -div r.mif
-
-performs r = (a+b)/(c*d+4.2).
+This command uses a stack-based syntax, with operators (specified using options) operating on the top-most entries (i.e. images or values) in the stack. Operands (values or images) are pushed onto the stack in the order they appear (as arguments) on the command-line, and operators (specified as options) operate on and consume the top-most entries in the stack, and push their output as a new entry on the stack.
 
 As an additional feature, this command will allow images with different dimensions to be processed, provided they satisfy the following conditions: for each axis, the dimensions match if they are the same size, or one of them has size one. In the latter case, the entire image will be replicated along that axis. This allows for example a 4D image of size [ X Y Z N ] to be added to a 3D image of size [ X Y Z ], as if it consisted of N copies of the 3D image along the 4th axis (the missing dimension is assumed to have size 1). Another example would a single-voxel 4D image of size [ 1 1 1 N ], multiplied by a 3D image of size [ X Y Z ], which would allow the creation of a 4D image where each volume consists of the 3D image scaled by the corresponding value for that volume in the single-voxel image.
+
+Example usages
+--------------
+
+-   *Double the value stored in every voxel*::
+
+        $ mrcalc a.mif 2 -mult r.mif
+
+    This performs the operation: r = 2*a  for every voxel a,r in images a.mif and r.mif respectively.
+
+-   *A more complex example*::
+
+        $ mrcalc a.mif -neg b.mif -div -exp 9.3 -mult r.mif
+
+    This performs the operation: r = 9.3*exp(-a/b)
+
+-   *Another complex example*::
+
+        $ mrcalc a.mif b.mif -add c.mif d.mif -mult 4.2 -add -div r.mif
+
+    This performs: r = (a+b)/(c*d+4.2).
+
+-   *Rescale the densities in a SH l=0 image*::
+
+        $ mrcalc ODF_CSF.mif 4 pi -mult -sqrt -div ODF_CSF_scaled.mif
+
+    This applies the spherical harmonic basis scaling factor: 1.0/sqrt(4*pi), such that a single-tissue voxel containing the same intensities as the response function of that tissue should contain the value 1.0.
 
 Options
 -------
@@ -148,15 +163,13 @@ Standard options
 
 -  **-info** display information messages.
 
--  **-quiet** do not display information messages or progress status.
+-  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages.
 
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
-
--  **-failonwarn** terminate program if a warning is produced
+-  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
 -  **-help** display this information page and exit.
 
@@ -168,15 +181,18 @@ Standard options
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/.
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
 For more details, see http://www.mrtrix.org/.
 

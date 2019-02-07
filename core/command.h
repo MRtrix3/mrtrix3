@@ -1,24 +1,33 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __command_h__
 #define __command_h__
 
 
 #include <xmmintrin.h>
-#include "project_version.h"
 #include "app.h"
+#include "exec_version.h"
+#ifdef MRTRIX_PROJECT
+namespace MR {
+  namespace App {
+    void set_project_version ();
+  }
+}
+#endif
 
 #define MRTRIX_UPDATED_API
 
@@ -26,11 +35,10 @@
 
 extern "C" void R_main (int* cmdline_argc, char** cmdline_argv)
 {
-  ::MR::App::build_date = __DATE__;
-#ifdef MRTRIX_PROJECT_VERSION
-  ::MR::App::project_version = MRTRIX_PROJECT_VERSION;
+  ::MR::App::set_executable_uses_mrtrix_version();
+#ifdef MRTRIX_PROJECT
+  ::MR::App::set_project_version();
 #endif
-  SET_MRTRIX_PROJECT_VERSION
   ::MR::App::DESCRIPTION.clear();
   ::MR::App::ARGUMENTS.clear();
   ::MR::App::OPTIONS.clear();
@@ -74,9 +82,9 @@ int main (int cmdline_argc, char** cmdline_argv)
   mxcsr |= (1<<6); // denormals-are-zero
   _mm_setcsr (mxcsr);
 #endif
-  ::MR::App::build_date = __DATE__;
-#ifdef MRTRIX_PROJECT_VERSION
-  ::MR::App::project_version = MRTRIX_PROJECT_VERSION;
+  ::MR::App::set_executable_uses_mrtrix_version();
+#ifdef MRTRIX_PROJECT
+  ::MR::App::set_project_version();
 #endif
   try {
     ::MR::App::init (cmdline_argc, cmdline_argv);
@@ -96,7 +104,7 @@ int main (int cmdline_argc, char** cmdline_argv)
   catch (int retval) {
     return retval;
   }
-  return 0;
+  return ::MR::App::exit_error_code;
 }
 
 #endif

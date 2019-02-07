@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "app.h"
 #include "progressbar.h"
@@ -41,7 +43,7 @@ namespace MR
     {
       __need_newline = true;
       if (p.multiplier)
-        __print_stderr (printf ("\r%s: [%3zu%%] %s%s" CLEAR_LINE_CODE,
+        __print_stderr (printf ("\r%s: [%3" PRI_SIZET "%%] %s%s" CLEAR_LINE_CODE,
               App::NAME.c_str(), p.value, p.text.c_str(), p.ellipsis.c_str()));
       else
         __print_stderr (printf ("\r%s: [%s] %s%s" CLEAR_LINE_CODE,
@@ -77,7 +79,7 @@ namespace MR
           count = next_update_at = 0;
         if (count++ == next_update_at) {
           if (p.multiplier) {
-            __print_stderr (printf ("%s: [%3zu%%] %s%s\n",
+            __print_stderr (printf ("%s: [%3" PRI_SIZET "%%] %s%s\n",
                   App::NAME.c_str(), p.value, p.text.c_str(), p.ellipsis.c_str()));;
           }
           else {

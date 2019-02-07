@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "dwi/tractography/tracking/shared.h"
 
@@ -37,7 +39,7 @@ namespace MR
             cos_max_angle (NaN),
             cos_max_angle_rk4 (NaN),
             step_size (NaN),
-            threshold (0.1),
+            threshold (NaN),
             unidirectional (false),
             rk4 (false),
             stop_on_all_include (false),
@@ -52,15 +54,11 @@ namespace MR
             max_num_tracks = (properties.find ("max_num_seeds") == properties.end()) ? TCKGEN_DEFAULT_NUM_SELECTED_TRACKS : 0;
           properties.set (max_num_tracks, "max_num_tracks");
 
-          properties.set (threshold, "threshold");
           properties.set (unidirectional, "unidirectional");
           properties.set (rk4, "rk4");
           properties.set (stop_on_all_include, "stop_on_all_include");
 
           properties["source"] = source.name();
-
-          init_threshold = threshold;
-          properties.set (init_threshold, "init_threshold");
 
           max_num_seeds = TCKGEN_DEFAULT_SEED_TO_SELECT_RATIO * max_num_tracks;
           properties.set (max_num_seeds, "max_num_seeds");
@@ -205,6 +203,16 @@ namespace MR
             max_angle = Math::pi;
             cos_max_angle = 0.0;
           }
+        }
+
+
+
+        void SharedBase::set_cutoff (float cutoff)
+        {
+          threshold = cutoff;
+          properties.set (threshold, "threshold");
+          init_threshold = threshold;
+          properties.set (init_threshold, "init_threshold");
         }
 
 

@@ -1,6 +1,7 @@
 def initialise(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('dhollander', author='Thijs Dhollander (thijs.dhollander@gmail.com)', synopsis='Unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof)', parents=[base_parser])
+  parser = subparsers.add_parser('dhollander', author='Thijs Dhollander (thijs.dhollander@gmail.com)', synopsis='Use the Dhollander et al. (2016) algorithm for unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof)', parents=[base_parser])
   parser.addCitation('', 'Dhollander, T.; Raffelt, D. & Connelly, A. Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5', False)
+  parser.addCitation('', 'Dhollander, T.; Raffelt, D. & Connelly, A. Accuracy of response function estimation algorithms for 3-tissue spherical deconvolution of diverse quality diffusion MRI data. Proc Intl Soc Mag Reson Med, 2018, 26, 1569', False)
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('out_sfwm', help='Output single-fibre WM response text file')
   parser.add_argument('out_gm', help='Output GM response text file')
@@ -38,8 +39,8 @@ def execute(): #pylint: disable=unused-variable
 
 
   # Get b-values and number of volumes per b-value.
-  bvalues = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shellvalues').split() ]
-  bvolumes = [ int(x) for x in image.mrinfo('dwi.mif', 'shellcounts').split() ]
+  bvalues = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shell_bvalues').split() ]
+  bvolumes = [ int(x) for x in image.mrinfo('dwi.mif', 'shell_sizes').split() ]
   app.console(str(len(bvalues)) + ' unique b-value(s) detected: ' + ','.join(map(str,bvalues)) + ' with ' + ','.join(map(str,bvolumes)) + ' volumes.')
   if len(bvalues) < 2:
     app.error('Need at least 2 unique b-values (including b=0).')
@@ -72,7 +73,7 @@ def execute(): #pylint: disable=unused-variable
   zeropath = 'mean_b' + str(bvalues[0]) + '.mif'
   for i, b in enumerate(bvalues):
     meanpath = 'mean_b' + str(b) + '.mif'
-    run.command('dwiextract dwi.mif -shell ' + str(b) + ' - | mrmath - mean ' + meanpath + ' -axis 3')
+    run.command('dwiextract dwi.mif -shells ' + str(b) + ' - | mrmath - mean ' + meanpath + ' -axis 3')
     errpath = 'err_b' + str(b) + '.mif'
     run.command('mrcalc ' + meanpath + ' -finite ' + meanpath + ' 0 -if 0 -le ' + errpath + ' -datatype bit')
     errcmd += ' ' + errpath
@@ -180,3 +181,5 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrcat crude_csf.mif crude_gm.mif crude_wm.mif crude.mif -axis 3')
   run.command('mrcat refined_csf.mif refined_gm.mif refined_wm.mif refined.mif -axis 3')
   run.command('mrcat voxels_csf.mif voxels_gm.mif voxels_sfwm.mif voxels.mif -axis 3')
+  if app.args.voxels:
+    run.command('mrconvert voxels.mif ' + path.fromUser(app.args.voxels, True) + app.mrconvertOutputOption(path.fromUser(app.args.input, True)))

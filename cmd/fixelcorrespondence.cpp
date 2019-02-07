@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "progressbar.h"
@@ -36,9 +38,9 @@ void usage ()
 
   ARGUMENTS
   + Argument ("subject_data", "the input subject fixel data file. This should be a file inside the fixel directory").type_image_in ()
-  + Argument ("template_directory", "the input template fixel directory.").type_image_in ()
-  + Argument ("output_directory", "the output fixel directory.").type_text()
-  + Argument ("output_data", "the name of the output fixel data file. This will be placed in the output fixel directory").type_image_out ();
+  + Argument ("template_directory", "the input template fixel directory.").type_directory_in()
+  + Argument ("output_directory", "the fixel directory where the output file will be written.").type_text()
+  + Argument ("output_data", "the name of the output fixel data file. This will be placed in the output fixel directory").type_text();
 
   OPTIONS
   + Option ("angle", "the max angle threshold for computing inter-subject fixel correspondence (Default: " + str(DEFAULT_ANGLE_THRESHOLD, 2) + " degrees)")
@@ -99,7 +101,7 @@ void run ()
         templatedir.normalize();
         Eigen::Vector3f subjectdir = subject_directions.row(1);
         subjectdir.normalize();
-        float dp = std::abs (templatedir.dot (subjectdir));
+        float dp = abs (templatedir.dot (subjectdir));
         if (dp > largest_dp) {
           largest_dp = dp;
           index_of_closest_fixel = s;

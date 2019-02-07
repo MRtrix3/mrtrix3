@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __phaseencoding_h__
 #define __phaseencoding_h__
@@ -19,8 +21,10 @@
 #include <Eigen/Dense>
 
 #include "app.h"
+#include "axes.h"
 #include "header.h"
 #include "file/ofstream.h"
+
 
 
 namespace MR
@@ -68,13 +72,7 @@ namespace MR
 
 
 
-    //! convert phase encoding direction between formats
-    /*! these helper functions convert the definition of
-       *  phase-encoding direction between a 3-vector (e.g.
-       *  [0 1 0] ) and a NIfTI axis identifier (e.g. 'i-')
-       */
-    std::string    dir2id (const Eigen::Vector3&);
-    Eigen::Vector3 id2dir (const std::string&);
+
 
 
 
@@ -118,7 +116,7 @@ namespace MR
       } else {
         erase ("pe_scheme");
         const Eigen::Vector3 dir { PE(0, 0), PE(0, 1), PE(0, 2) };
-        header.keyval()["PhaseEncodingDirection"] = dir2id (dir);
+        header.keyval()["PhaseEncodingDirection"] = Axes::dir2id (dir);
         if (PE.cols() >= 4)
           header.keyval()["TotalReadoutTime"] = str(PE(0, 3), 3);
         else
@@ -172,7 +170,7 @@ namespace MR
       for (ssize_t PE_row = 0; PE_row != PE.rows(); ++PE_row) {
         for (ssize_t config_row = 0; config_row != config.rows(); ++config_row) {
           bool dir_match = PE.template block<1,3>(PE_row, 0).isApprox (config.block<1,3>(config_row, 0));
-          bool time_match = std::abs (PE(PE_row, 3) - config(config_row, 3)) < 1e-3;
+          bool time_match = abs (PE(PE_row, 3) - config(config_row, 3)) < 1e-3;
           if (dir_match && time_match) {
             // FSL-style index file indexes from 1
             indices[PE_row] = config_row + 1;

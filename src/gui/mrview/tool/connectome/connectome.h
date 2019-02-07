@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __gui_mrview_tool_connectome_connectome_h__
 #define __gui_mrview_tool_connectome_connectome_h__
@@ -191,6 +193,7 @@ namespace MR
             QLabel *edge_visibility_threshold_label;
             AdjustButton *edge_visibility_threshold_button;
             QCheckBox *edge_visibility_threshold_invert_checkbox;
+            QCheckBox *edge_visibility_by_nodes_checkbox;
 
             QComboBox *edge_geometry_combobox;
             QLabel *edge_geometry_cylinder_lod_label;
@@ -393,6 +396,13 @@ namespace MR
             void update_controls_edge_colour     (const float, const float, const float);
             void update_controls_edge_size       (const float, const float, const float);
             void update_controls_edge_alpha      (const float, const float, const float);
+
+            // Uses the value of the maximum control to set the maximal limit of the
+            //   minimum control, and vice-versa
+            void limit_min_max_controls (AdjustButton* const, AdjustButton* const) const;
+            // Update the values & limits of controls based on statistics of input data
+            void update_control (AdjustButton* const, const float, const float, const float);
+            void update_controls (AdjustButton* const, AdjustButton* const, const float, const float, const float);
 
             void get_meshes();
             void get_exemplars();
