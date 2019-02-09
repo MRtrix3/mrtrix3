@@ -34,9 +34,7 @@ namespace MR
 
     }
 
-    //CONF option: NumberOfThreads
-    //CONF default: number of threads provided by hardware
-    //CONF Set the default number of CPU threads to use for multi-threading.
+
 
     size_t number_of_threads ()
     {
@@ -62,6 +60,9 @@ namespace MR
         return __number_of_threads;
       }
 
+      //CONF option: NumberOfThreads
+      //CONF default: number of threads provided by hardware
+      //CONF Set the default number of CPU threads to use for multi-threading.
       if (File::Config::get ("NumberOfThreads").size()) {
         const int i = File::Config::get_int ("NumberOfThreads", -1);
         if (i >= 0) {
@@ -79,6 +80,12 @@ namespace MR
     nthreads_t type_nthreads()
     {
       return __nthreads_type;
+    }
+
+
+    size_t threads_to_execute()
+    {
+      return (__Backend::valid() ? 0 : number_of_threads());
     }
 
 
