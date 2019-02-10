@@ -99,7 +99,7 @@ void run ()
 
   for (int i = 1; i < num_images; i++) {
     in[i] = Header::open (argument[i]);
-    for (last_dim = in[i].ndim()-1; in[i].size (last_dim) <= 1 && last_dim >= 0; last_dim--);
+    for (last_dim = in[i].ndim()-1; last_dim >= 0 && in[i].size (last_dim) <= 1; last_dim--);
     if (last_dim > ndims)
       ndims = last_dim;
     DEBUG ("Datatype of image " + in[i].name() + ": " + in[i].datatype().specifier());
