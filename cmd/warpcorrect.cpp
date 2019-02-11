@@ -13,7 +13,6 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 #include "command.h"
 #include "image.h"
 #include "algo/threaded_loop.h"
@@ -24,11 +23,13 @@ using namespace MR;
 using namespace App;
 
 
+const float PRECISION = Eigen::NumTraits<float>::dummy_precision();
+
 void usage ()
 {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (mail@maxpietsch.com)";
 
-  SYNOPSIS = "Replaces voxels in a deformation field that point to 0,0,0 with nan,nan,nan";
+  SYNOPSIS = "Replaces voxels in a deformation field that point to a specific out of bounds location with nan,nan,nan";
 
   DESCRIPTION
   + "This can be used in conjunction with the warpinit command to compute a MRtrix "
@@ -37,6 +38,13 @@ void usage ()
   ARGUMENTS
   + Argument ("in", "the input warp image.").type_image_in ()
   + Argument ("out", "the output warp image.").type_image_out ();
+
+  OPTIONS
+  + Option ("marker", "single value or a comma separated list of values that define out of bounds voxels in the input warp image."
+    " Default: (0,0,0).")
+    + Argument ("coordinates").type_sequence_float()
+  + Option ("tolerance", "numerical precision used for L2 matrix norm comparison. Default: " + str(PRECISION) + ".")
+    + Argument ("value").type_float(PRECISION);
 }
 
 
@@ -50,8 +58,27 @@ void run ()
 
   auto output = Image<value_type>::create (argument[1], input);
 
+  Eigen::Matrix<value_type,3,1> oob_vector = Eigen::Matrix<value_type,3,1>::Zero();
+  auto opt = get_options ("marker");
+  if (opt.size() == 1) {
+    const auto loc = parse_floats (opt[0][0]);
+    if (loc.size() == 1) {
+      oob_vector.fill(loc[0]);
+    } else if (loc.size() == 3) {
+      for (auto i=0; i<3; i++)
+        oob_vector[i] = loc[i];
+    } else throw Exception("location option requires either single value or list of 3 values");
+  }
+
+  opt = get_options ("tolerance");
+  value_type precision = PRECISION;
+  if (opt.size())
+    precision = opt[0][0];
+  size_t count (0);
+
   auto func = [&](Image<value_type>& in, Image<value_type>& out) {
-    if (Eigen::Matrix<value_type, 3, 1>(in.row(3)).norm() == 0.0) {
+    if ((oob_vector - Eigen::Matrix<value_type, 3, 1>(in.row(3))).isMuchSmallerThan(precision)) {
+      count += 1;
       for (auto l = Loop (3) (out); l; ++l)
         out.value() = NaN;
     } else {
@@ -62,4 +89,9 @@ void run ()
 
   ThreadedLoop ("correcting warp", input, 0, 3)
     .run (func, input, output);
+
+  if (count == 0)
+    WARN("no out of bounds voxels found with value (" +
+      str(oob_vector[0]) + "," + str(oob_vector[1]) + "," + str(oob_vector[2]) + ")");
+  INFO("converted " + str(count) + " out of bounds values");
 }
