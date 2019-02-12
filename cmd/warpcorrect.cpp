@@ -50,6 +50,35 @@ void usage ()
 
 using value_type = float;
 
+class BoundsCheck {
+  public:
+    BoundsCheck (value_type tolerance, const Eigen::Matrix<value_type, 3, 1>& marker, size_t& total_count):
+     precision (tolerance),
+     vec (marker),
+     counter (total_count),
+     count (0) { }
+    template <class ImageTypeIn, class ImageTypeOut>
+      void operator() (ImageTypeIn& in, ImageTypeOut& out)
+      {
+        if ((vec - Eigen::Matrix<value_type, 3, 1>(in.row(3))).isMuchSmallerThan(precision)) {
+          count++;
+          for (auto l = Loop (3) (out); l; ++l)
+            out.value() = NaN;
+        } else {
+          for (auto l = Loop (3) (in, out); l; ++l)
+            out.value() = in.value();
+        }
+      }
+    virtual ~BoundsCheck () {
+      counter += count;
+    }
+  protected:
+    const value_type precision;
+    const Eigen::Matrix<value_type, 3, 1> vec;
+    size_t& counter;
+    size_t count;
+};
+
 
 void run ()
 {
@@ -74,18 +103,9 @@ void run ()
   value_type precision = PRECISION;
   if (opt.size())
     precision = opt[0][0];
-  size_t count (0);
 
-  auto func = [&](Image<value_type>& in, Image<value_type>& out) {
-    if ((oob_vector - Eigen::Matrix<value_type, 3, 1>(in.row(3))).isMuchSmallerThan(precision)) {
-      count += 1;
-      for (auto l = Loop (3) (out); l; ++l)
-        out.value() = NaN;
-    } else {
-      for (auto l = Loop (3) (in, out); l; ++l)
-        out.value() = in.value();
-    }
-  };
+  size_t count (0);
+  auto func = BoundsCheck (precision, oob_vector, count);
 
   ThreadedLoop ("correcting warp", input, 0, 3)
     .run (func, input, output);
