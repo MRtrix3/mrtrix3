@@ -227,6 +227,6 @@ List of MRtrix3 commands
     :ref:`voxel2mesh`, "Generate a surface mesh representation from a voxel image"
     :ref:`warp2metric`, "Compute fixel-wise or voxel-wise metrics from a 4D deformation field"
     :ref:`warpconvert`, "Convert between different representations of a non-linear warp"
-    :ref:`warpcorrect`, "Replaces voxels in a deformation field that point to 0,0,0 with nan,nan,nan"
+    :ref:`warpcorrect`, "Replaces voxels in a deformation field that point to a specific out of bounds location with nan,nan,nan"
     :ref:`warpinit`, "Create an initial warp image, representing an identity transformation"
     :ref:`warpinvert`, "Invert a non-linear warp field"
