@@ -17,7 +17,7 @@
 #define __dwi_tractography_file_base_h__
 
 #include <iomanip>
-#include <map>
+#include <unordered_set>
 
 #include "types.h"
 #include "datatype.h"
@@ -36,24 +36,70 @@ namespace MR
     namespace Tractography
     {
 
+
+      // JH: information about .tck or .tsf file
+      struct TrackFileInfo
+      {
+        std::string   path, type;
+        uint64_t      offset;
+        DataType      dtype;
+
+        TrackFileInfo() 
+          { clear(); }
+
+        TrackFileInfo( const std::string& file, const std::string& type, Properties& prop )
+          { clear(); parse(file,type,prop); }
+
+
+        void clear() {
+          dtype = DataType::Undefined;
+          offset = 0;
+          path = "";
+          type = "";
+        }
+
+
+        inline bool empty() 
+          { return type.empty() || path.empty(); }
+
+
+        void check_dtype();
+
+
+        void parse( const std::string& file, const std::string& type, Properties& prop );
+
+
+      };
+
+
+
+      // combine properties across several .tck files
+      void properties_consensus( const std::vector<std::string>& files, const std::string& type, Properties& prop );
+
+
+
       //! \cond skip
       class __ReaderBase__
       { NOMEMALIGN
         public:
-          ~__ReaderBase__ () {
-            if (in.is_open())
-              in.close();
-          }
 
-          void open (const std::string& file, const std::string& firstline, Properties& properties);
+          ~__ReaderBase__ () 
+            { close(); }
 
-          void close () { in.close(); }
+          
+          void close () 
+            { if (in.is_open()) in.close(); }
+
+
+          void open (const std::string& file, const std::string& type, Properties& prop);
+          
 
         protected:
 
           std::ifstream  in;
           DataType  dtype;
       };
+
 
 
       template <typename ValueType = float>
