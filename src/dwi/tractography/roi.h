@@ -18,7 +18,6 @@
 
 #include "app.h"
 #include "image.h"
-#include "image.h"
 #include "interp/linear.h"
 #include "math/rng.h"
 

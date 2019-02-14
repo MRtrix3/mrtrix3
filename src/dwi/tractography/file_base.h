@@ -20,6 +20,7 @@
 #include <map>
 
 #include "types.h"
+#include "datatype.h"
 #include "file/key_value.h"
 #include "file/ofstream.h"
 #include "file/path.h"
