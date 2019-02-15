@@ -150,74 +150,12 @@ void run ()
     }
   }
 
-
   size_t axis_dim = 0;
-  for (int n = 0; n < num_images; n++)
+  for (int n = 0; n < num_images; n++) {
+    header_out.merge (in[n], axis > 2);
     axis_dim += in[n].ndim() > size_t (axis) ? (in[n].size (axis) > 1 ? in[n].size (axis) : 1) : 1;
-  header_out.size (axis) = axis_dim;
-
-
-  if (axis > 2) {
-    // concatenate DW schemes
-    ssize_t nrows = 0, ncols = 0;
-    vector<Eigen::MatrixXd> input_grads;
-    for (int n = 0; n < num_images; ++n) {
-      auto grad = DWI::get_DW_scheme (in[n]);
-      if (grad.rows() == 0 || grad.cols() < 4) {
-        nrows = 0;
-        break;
-      }
-      if (!ncols) {
-        ncols = grad.cols();
-      } else if (grad.cols() != ncols) {
-        nrows = 0;
-        break;
-      }
-      nrows += grad.rows();
-      input_grads.push_back (std::move (grad));
-    }
-    if (nrows) {
-      Eigen::MatrixXd grad_out (nrows, 4);
-      int row = 0;
-      for (int n = 0; n < num_images; ++n) {
-        for (ssize_t i = 0; i < input_grads[n].rows(); ++i, ++row)
-          grad_out.row(row) = input_grads[n].row(i);
-      }
-      DWI::set_DW_scheme (header_out, grad_out);
-    } else {
-      header_out.keyval().erase ("dw_scheme");
-    }
-
-    // concatenate PE schemes
-    nrows = 0; ncols = 0;
-    vector<Eigen::MatrixXd> input_schemes;
-    for (int n = 0; n != num_images; ++n) {
-      auto scheme = PhaseEncoding::parse_scheme (in[n]);
-      if (!scheme.rows()) {
-        nrows = 0;
-        break;
-      }
-      if (!ncols) {
-        ncols = scheme.cols();
-      } else if (scheme.cols() != ncols) {
-        nrows = 0;
-        break;
-      }
-      nrows += scheme.rows();
-      input_schemes.push_back (std::move (scheme));
-    }
-    Eigen::MatrixXd scheme_out;
-    if (nrows) {
-      scheme_out.resize (nrows, ncols);
-      size_t row = 0;
-      for (int n = 0; n != num_images; ++n)  {
-        for (ssize_t i = 0; i != input_schemes[n].rows(); ++i, ++row)
-          scheme_out.row(row) = input_schemes[n].row(i);
-      }
-    }
-    PhaseEncoding::set_scheme (header_out, scheme_out);
   }
-
+  header_out.size (axis) = axis_dim;
 
   const std::string out_path = argument[num_images];
 

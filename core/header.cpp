@@ -74,10 +74,10 @@ namespace MR
 
 
 
-  void Header::merge (const Header& H, const bool volumes)
+  void Header::merge (const Header& H, const bool concat_volumes)
   {
     Eigen::MatrixXd dw_scheme, pe_scheme;
-    if (volumes) {
+    if (concat_volumes) {
       try {
         auto this_dw_scheme = DWI::parse_DW_scheme (*this);
         DWI::validate_DW_scheme (this_dw_scheme, *this, true);
@@ -134,7 +134,7 @@ namespace MR
     }
     std::swap (keyval_, new_keyval);
 
-    if (volumes) {
+    if (concat_volumes) {
       DWI::set_DW_scheme (*this, dw_scheme);
       PhaseEncoding::set_scheme (*this, pe_scheme);
     } else {
