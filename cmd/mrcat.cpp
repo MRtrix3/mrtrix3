@@ -151,11 +151,12 @@ void run ()
   }
 
   size_t axis_dim = 0;
-  for (int n = 0; n < num_images; n++) {
-    header_out.merge (in[n], axis > 2);
+  for (int n = 0; n < num_images; n++)
     axis_dim += in[n].ndim() > size_t (axis) ? (in[n].size (axis) > 1 ? in[n].size (axis) : 1) : 1;
-  }
   header_out.size (axis) = axis_dim;
+
+  for (int n = 1; n != num_images; ++n)
+    header_out.merge (in[n], axis > 2);
 
   const std::string out_path = argument[num_images];
 
