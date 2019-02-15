@@ -137,13 +137,6 @@ namespace MR
     if (concat_volumes) {
       DWI::set_DW_scheme (*this, dw_scheme);
       PhaseEncoding::set_scheme (*this, pe_scheme);
-    } else {
-      const vector<std::string> reserved = { "dw_scheme", "pe_scheme", "PhaseEncodingDirection", "TotalReadoutTime" };
-      for (const auto& key : reserved) {
-        auto it = keyval_.find (key);
-        if (it != keyval_.end() && it->second == "variable")
-          keyval_.erase (it);
-      }
     }
   }
 
@@ -351,8 +344,17 @@ namespace MR
 
 
       const bool split_4d_schemes = (parser.ndim() == 1 && template_header.ndim() == 4);
-      auto dw_scheme = DWI::get_DW_scheme (template_header);
-      auto pe_scheme = PhaseEncoding::get_scheme (template_header);
+      Eigen::MatrixXd dw_scheme, pe_scheme;
+      try {
+        dw_scheme = DWI::get_DW_scheme (template_header);
+      } catch (Exception&) {
+        DWI::clear_DW_scheme (H);
+      }
+      try {
+        pe_scheme = PhaseEncoding::get_scheme (template_header);
+      } catch (Exception&) {
+        PhaseEncoding::clear_scheme (H);
+      }
       if (split_4d_schemes) {
         try {
           DWI::check_DW_scheme (template_header, dw_scheme);
