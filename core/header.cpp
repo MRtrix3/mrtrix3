@@ -46,7 +46,7 @@ namespace MR
 
 
 
-  void Header::concatenate (const Header& H)
+  void Header::check (const Header& H) const
   {
     if (ndim() != H.ndim())
       throw Exception ("dimension mismatch between image files for \"" + name() + "\"");
@@ -70,68 +70,61 @@ namespace MR
 
     if (intensity_offset() != H.intensity_offset() || intensity_scale() != H.intensity_scale())
       throw Exception ("scaling coefficients differ between image files for \"" + name() + "\"");
+  }
 
+
+
+  void Header::merge (const Header& H, const bool volumes)
+  {
     Eigen::MatrixXd dw_scheme, pe_scheme;
-    try {
-      auto this_dw_scheme = DWI::parse_DW_scheme (*this);
-      DWI::validate_DW_scheme (this_dw_scheme, *this, true);
-      auto that_dw_scheme = DWI::parse_DW_scheme (H);
-      DWI::validate_DW_scheme (that_dw_scheme, H, true);
-      if (this_dw_scheme.cols() != that_dw_scheme.cols())
-        throw Exception ("Number of columns in DW schemes of headers \"" + name() + "\" and \"" + H.name() + "\" do not match");
-      dw_scheme.resize (this_dw_scheme.rows() + that_dw_scheme.rows(), that_dw_scheme.cols());
-      if (this_dw_scheme.rows())
-        dw_scheme.topRows (this_dw_scheme.rows()) = this_dw_scheme;
-      dw_scheme.bottomRows (that_dw_scheme.rows()) = that_dw_scheme;
-    } catch (Exception&) { }
-    try {
-      auto this_pe_scheme = PhaseEncoding::parse_scheme (*this);
-      auto that_pe_scheme = PhaseEncoding::parse_scheme (H);
-      if (!this_pe_scheme.rows() || !that_pe_scheme.rows())
-        throw Exception ("PE scheme needs to be present in both headers");
-      if (this_pe_scheme.cols() != that_pe_scheme.cols())
-        throw Exception ("Number of columns in PE schemes of headers \"" + name() + "\" and \"" + H.name() + "\" do not match");
-      pe_scheme.resize (this_pe_scheme.rows() + that_pe_scheme.rows(), that_pe_scheme.cols());
-      pe_scheme.topRows (this_pe_scheme.rows()) = this_pe_scheme;
-      pe_scheme.bottomRows (that_pe_scheme.rows()) = that_pe_scheme;
-    } catch (Exception&) { }
-
-
-    auto reserved = [] (const std::string& key) {
-      static const char* reserved_keywords[] = { "comments", "dw_scheme", "pe_scheme", "PhaseEncodingDirection", "TotalReadoutTime", nullptr };
-      for (const char** s = reserved_keywords; *s; ++s) {
-        if (!strcmp (*s, key.c_str()))
-          return true;
-      }
-      return false;
-    };
+    if (volumes) {
+      try {
+        auto this_dw_scheme = DWI::parse_DW_scheme (*this);
+        DWI::validate_DW_scheme (this_dw_scheme, *this, true);
+        auto that_dw_scheme = DWI::parse_DW_scheme (H);
+        DWI::validate_DW_scheme (that_dw_scheme, H, true);
+        if (this_dw_scheme.cols() != that_dw_scheme.cols())
+          throw Exception ("Number of columns in DW schemes of headers \"" + name() + "\" and \"" + H.name() + "\" do not match");
+        dw_scheme.resize (this_dw_scheme.rows() + that_dw_scheme.rows(), that_dw_scheme.cols());
+        if (this_dw_scheme.rows())
+          dw_scheme.topRows (this_dw_scheme.rows()) = this_dw_scheme;
+        dw_scheme.bottomRows (that_dw_scheme.rows()) = that_dw_scheme;
+      } catch (Exception&) { }
+      try {
+        auto this_pe_scheme = PhaseEncoding::parse_scheme (*this);
+        auto that_pe_scheme = PhaseEncoding::parse_scheme (H);
+        if (!this_pe_scheme.rows() || !that_pe_scheme.rows())
+          throw Exception ("PE scheme needs to be present in both headers");
+        if (this_pe_scheme.cols() != that_pe_scheme.cols())
+          throw Exception ("Number of columns in PE schemes of headers \"" + name() + "\" and \"" + H.name() + "\" do not match");
+        pe_scheme.resize (this_pe_scheme.rows() + that_pe_scheme.rows(), that_pe_scheme.cols());
+        pe_scheme.topRows (this_pe_scheme.rows()) = this_pe_scheme;
+        pe_scheme.bottomRows (that_pe_scheme.rows()) = that_pe_scheme;
+      } catch (Exception&) { }
+    }
 
     std::map<std::string, std::string> new_keyval;
     std::set<std::string> unique_comments;
     for (const auto& item : keyval()) {
-      if (reserved (item.first)) {
-        if (item.first == "comments") {
-          new_keyval.insert (item);
-          const auto comments = split_lines (item.second);
-          for (const auto& c : comments)
-            unique_comments.insert (c);
-        }
-      } else {
+      if (item.first == "comments") {
+        new_keyval.insert (item);
+        const auto comments = split_lines (item.second);
+        for (const auto& c : comments)
+          unique_comments.insert (c);
+      } else if (item.first != "command_history") {
         new_keyval.insert (item);
       }
     }
     for (const auto& item : H.keyval()) {
-      if (reserved (item.first)) {
-        if (item.first == "comments") {
-          const auto comments = split_lines (item.second);
-          for (const auto& c : comments) {
-            if (unique_comments.find (c) == unique_comments.end()) {
-              add_line (new_keyval["comments"], c);
-              unique_comments.insert (c);
-            }
+      if (item.first == "comments") {
+        const auto comments = split_lines (item.second);
+        for (const auto& c : comments) {
+          if (unique_comments.find (c) == unique_comments.end()) {
+            add_line (new_keyval["comments"], c);
+            unique_comments.insert (c);
           }
         }
-      } else {
+      } else if (item.first != "command_history") {
         auto it = keyval().find (item.first);
         if (it == keyval().end() || it->second == item.second)
           new_keyval.insert (item);
@@ -140,8 +133,18 @@ namespace MR
       }
     }
     std::swap (keyval_, new_keyval);
-    DWI::set_DW_scheme (*this, dw_scheme);
-    PhaseEncoding::set_scheme (*this, pe_scheme);
+
+    if (volumes) {
+      DWI::set_DW_scheme (*this, dw_scheme);
+      PhaseEncoding::set_scheme (*this, pe_scheme);
+    } else {
+      const vector<std::string> reserved = { "dw_scheme", "pe_scheme", "PhaseEncodingDirection", "TotalReadoutTime" };
+      for (const auto& key : reserved) {
+        auto it = keyval_.find (key);
+        if (it != keyval_.end() && it->second == "variable")
+          keyval_.erase (it);
+      }
+    }
   }
 
 
@@ -196,6 +199,8 @@ namespace MR
 
       H.format_ = (*format_handler)->description;
 
+      const bool merge_4d_schemes = (H.ndim() == 3 && num.size() == 1);
+
       while (++item < list.size()) {
         Header header (H);
         std::unique_ptr<ImageIO::Base> io_handler;
@@ -204,12 +209,10 @@ namespace MR
         if (!(io_handler = (*format_handler)->read (header)))
           throw Exception ("image specifier contains mixed format files");
         assert (io_handler);
-        H.concatenate (header);
+        H.check (header);
+        H.merge (header, merge_4d_schemes);
         H.io->merge (*io_handler);
       }
-
-      if (H.keyval()["command_history"] == "variable")
-        H.keyval().erase ("command_history");
 
       if (num.size()) {
         int a = 0, n = 0;
@@ -405,7 +408,7 @@ namespace MR
         }
         std::shared_ptr<ImageIO::Base> io_handler ((*format_handler)->create (header));
         assert (io_handler);
-        H.concatenate (header);
+        H.merge (header, split_4d_schemes);
         H.io->merge (*io_handler);
       }
 
@@ -544,22 +547,26 @@ namespace MR
       if (key.size() < 21)
         key.resize (21, ' ');
       const auto entries = split_lines (p.second);
-      bool shorten = (!print_all && entries.size() > 5);
-      desc += key + entries[0] + "\n";
-      if (entries.size() > 5) {
-        key = "  [" + str(entries.size()) + " entries] ";
-        if (key.size() < 21)
-          key.resize (21, ' ');
-      }
-      else key = "                     ";
-      for (size_t n = 1; n < (shorten ? size_t(2) : entries.size()); ++n) {
-        desc += key + entries[n] + "\n";
-        key = "                     ";
-      }
-      if (!print_all && entries.size() > 5) {
-        desc += key + "...\n";
-        for (size_t n = entries.size()-2; n < entries.size(); ++n )
+      if (entries.size()) {
+        bool shorten = (!print_all && entries.size() > 5);
+        desc += key + entries[0] + "\n";
+        if (entries.size() > 5) {
+          key = "  [" + str(entries.size()) + " entries] ";
+          if (key.size() < 21)
+            key.resize (21, ' ');
+        }
+        else key = "                     ";
+        for (size_t n = 1; n < (shorten ? size_t(2) : entries.size()); ++n) {
           desc += key + entries[n] + "\n";
+          key = "                     ";
+        }
+        if (!print_all && entries.size() > 5) {
+          desc += key + "...\n";
+          for (size_t n = entries.size()-2; n < entries.size(); ++n )
+            desc += key + entries[n] + "\n";
+        }
+      } else {
+        desc += key + "(empty)\n";
       }
     }
 
