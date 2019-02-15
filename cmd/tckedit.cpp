@@ -86,15 +86,6 @@ void usage ()
 }
 
 
-void erase_if_present (Tractography::Properties& p, const std::string s)
-{
-  auto i = p.find (s);
-  if (i != p.end())
-    p.erase (i);
-}
-
-
-
 void run ()
 {
 
@@ -156,10 +147,10 @@ void run ()
   // Due to the potential use of masking, we have no choice but to clear the
   //   properties class of any fields that would otherwise propagate through
   //   and be applied as part of this editing
-  erase_if_present (properties, "min_dist");
-  erase_if_present (properties, "max_dist");
-  erase_if_present (properties, "min_weight");
-  erase_if_present (properties, "max_weight");
+  properties.erase_if_present("min_dist");
+  properties.erase_if_present("max_dist");
+  properties.erase_if_present("min_weight");
+  properties.erase_if_present("max_weight");
   Editing::load_properties (properties);
 
   // Parameters that the worker threads need to be aware of, but do not appear in Properties

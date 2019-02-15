@@ -266,7 +266,7 @@ void run () {
   Tractography::Properties properties;
   Tractography::Reader<float> file (argument[0], properties);
 
-  const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t> (properties["count"]);
+  const size_t num_tracks = properties.value_or_default<size_t>("count",0);
 
   vector<default_type> voxel_size = get_option_value ("vox", vector<default_type>());
 

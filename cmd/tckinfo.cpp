@@ -51,20 +51,19 @@ void run ()
     std::cout << "***********************************\n";
     std::cout << "  Tracks file: \"" << argument[i] << "\"\n";
 
-    for (Tractography::Properties::iterator i = properties.begin(); i != properties.end(); ++i) {
-      std::string S (i->first + ':');
+    for (auto& p: properties) {
+      std::string S (p.first + ':');
       S.resize (22, ' ');
-      std::cout << "    " << S << i->second << "\n";
+      std::cout << "    " << S << p.second << "\n";
     }
 
-    if (properties.comments.size()) {
+    if (! properties.comments.empty()) {
       std::cout << "    Comments:             ";
-      for (vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
-        std::cout << (i == properties.comments.begin() ? "" : "                       ") << *i << "\n";
+      std::cout << join( properties.comments, "\n " ) << "\n";
     }
 
-    for (std::multimap<std::string,std::string>::const_iterator i = properties.roi.begin(); i != properties.roi.end(); ++i)
-      std::cout << "    ROI:                  " << i->first << " " << i->second << "\n";
+    for (auto& r: properties.roi)
+      std::cout << "    ROI:                  " << r.first << " " << r.second << "\n";
 
 
 
