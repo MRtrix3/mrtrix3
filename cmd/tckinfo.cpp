@@ -59,7 +59,7 @@ void run ()
 
     if (! properties.comments.empty()) {
       std::cout << "    Comments:             ";
-      std::cout << join( properties.comments, "\n " ) << "\n";
+      std::cout << join( properties.comments, "\n                          " ) << "\n";
     }
 
     for (auto& r: properties.roi)
