@@ -1,9 +1,9 @@
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('dhollander', parents=[base_parser])
   parser.set_author('Thijs Dhollander (thijs.dhollander@gmail.com)')
-  parser.set_synopsis('An improved version of the Dhollander et al. (2016) algorithm for unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof). This version of the Dhollander et al. (2016) algorithm was improved by Thijs Dhollander.')
+  parser.set_synopsis('An improved version of the Dhollander et al. (2016) algorithm for unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof). This implementation includes the Dhollander et al. (2019) improvements for single-fibre WM response function estimation.')
   parser.add_citation('', 'Dhollander, T.; Raffelt, D. & Connelly, A. Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5', False)
-  parser.add_citation('', 'Dhollander, T.; Raffelt, D. & Connelly, A. Accuracy of response function estimation algorithms for 3-tissue spherical deconvolution of diverse quality diffusion MRI data. Proc Intl Soc Mag Reson Med, 2018, 26, 1569', False)
+  parser.add_citation('', 'Dhollander, T.; Mito, R.; Raffelt, D. & Connelly, A. Improved white matter response function estimation for 3-tissue constrained spherical deconvolution. Proc Intl Soc Mag Reson Med, 2019', False)
   parser.add_argument('input', help='Input DWI dataset')
   parser.add_argument('out_sfwm', help='Output single-fibre WM response function text file')
   parser.add_argument('out_gm', help='Output GM response function text file')

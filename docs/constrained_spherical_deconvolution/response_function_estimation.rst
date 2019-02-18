@@ -124,7 +124,8 @@ The following sections provide more details on each algorithm specifically.
 dhollander
 ^^^^^^^^^^
 
-This algorithm is an implementation of the strategy proposed in [Dhollander2016b]_
+This algorithm is the official implementation of the strategy proposed
+in [Dhollander2016b]_ (including improvements proposed in [Dhollander2019]_)
 to estimate multi b-value (single-shell + b=0, or multi-shell) response functions
 for single-fibre white matter (*anisotropic*), grey matter and CSF (both
 *isotropic*), which can subsequently be used for multi-tissue (constrained)
@@ -141,22 +142,21 @@ successfully in a wide range of conditions (overall data quality, pathology,
 developmental state of the subjects, animal data and ex-vivo data). Additional
 insights into its performance are presented in [Dhollander2018a]_. Due to its
 ability to deal with the presence of extensive white matter (hyperintense)
-lesions, it was for example also successfully used in [Mito2018a]_. Finally,
-the response functions as obtained in this particular way also form the basis
-of the 3-tissue framework to study the microstructure of lesions and other
+lesions, it was for example also successfully used in [Mito2018a]_. The response
+functions as obtained in this particular way also form the basis of the 3-tissue
+framework to study the microstructure of lesions and other
 pathology [Dhollander2017]_ [Mito2018b]_.
 
-This implementation of the algorithm has been improved compared to the original
-[Dhollander2016b]_.  While the original version obtained the voxels to estimate
-the single-fibre white matter response function using the tournier_ algorithm,
-this implementation relies on a new strategy that optimes these voxels using
-properties of the signal across all b-values (and the full angular domain).
-It's also faster than the original approach.
+The algorithm has been further improved in [Dhollander2019]_. While the 2016 version
+identified the voxels to estimate the single-fibre white matter response function
+using the tournier_ algorithm, the new 2019 version relies on a novel strategy
+that optimises these voxels using properties of the signal across all b-values (and
+the full angular domain). It's also faster than the original approach.
 
-In almost all cases, it runs and performs well out of the box.  In *exceptional*
-cases where the anisotropy in the data is particularly *low* (*very* early
-development, ex-vivo data, (with) low b-value, ...), it is sometimes advisable
-to set the ``-fa`` parameter *lower* than its default value of 0.2.
+In almost all cases, the algorithm runs and performs well out of the box.
+In *exceptional* cases where the anisotropy in the data is particularly *low*
+(*very* early development, ex-vivo data, (with) low b-value, ...), it is *sometimes*
+advisable to set the ``-fa`` parameter *lower* than its default value of 0.2.
 See [Dhollander2018b]_ for a good example of a dataset where changing this
 parameter was required to obtain good results.  This FA threshold should be set
 so as to roughly separate the bulk of WM from the rest (GM and CSF).  Further
