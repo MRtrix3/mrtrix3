@@ -281,7 +281,7 @@ end_init:
                 }
               }
 
-              return BAD_SIGNAL;
+              return MODEL;
             }
 
 

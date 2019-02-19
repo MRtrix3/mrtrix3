@@ -156,7 +156,7 @@ namespace MR
         dwi2tensor (dt, S.binv, values);
 
         if (tensor2FA (dt) < S.threshold)
-          return BAD_SIGNAL;
+          return MODEL;
 
         Eigen::Vector3f prev_dir = dir;
 
