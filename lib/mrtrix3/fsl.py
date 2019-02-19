@@ -16,7 +16,7 @@ def check_first(prefix, structures): #pylint: disable=unused-variable
       app.console('(note however that FIRST may fail silently, and hence this script may hang indefinitely)')
       path.wait_for(vtk_files)
     else:
-      raise MRtrixError('FSL FIRST has failed; only ' + str(existing_file_count) + ' of ' + str(len(vtk_files)) + ' structures were segmented successfully (check ' + path.to_scratch('first.logs', False) + ')')
+      raise MRtrixError('FSL FIRST has failed; ' + ('only ' if existing_file_count else '') + str(existing_file_count) + ' of ' + str(len(vtk_files)) + ' structures were segmented successfully (check ' + path.to_scratch('first.logs', False) + ')')
 
 
 
