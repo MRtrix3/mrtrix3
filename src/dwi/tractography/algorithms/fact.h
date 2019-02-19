@@ -115,7 +115,7 @@ namespace MR
         const float max_norm = do_next (dir);
 
         if (max_norm < S.threshold)
-          return BAD_SIGNAL;
+          return MODEL;
 
         pos += S.step_size * dir;
         return CONTINUE;

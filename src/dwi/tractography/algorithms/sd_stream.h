@@ -121,7 +121,7 @@ class SDStream : public MethodBase { MEMALIGN(SDStream)
       const Eigen::Vector3f prev_dir (dir);
 
       if (!find_peak())
-        return BAD_SIGNAL;
+        return MODEL;
 
       if (prev_dir.dot (dir) < S.dot_threshold)
         return HIGH_CURVATURE;

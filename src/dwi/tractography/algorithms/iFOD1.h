@@ -211,7 +211,7 @@ namespace MR
           }
         }
 
-        return BAD_SIGNAL;
+        return MODEL;
       }
 
 

@@ -138,7 +138,7 @@ namespace MR
               case CALIBRATOR:           term_type = "Calibrator sub-threshold";      to_print = true;     break;
               case EXIT_IMAGE:           term_type = "Exited image";                  to_print = true;     break;
               case ENTER_CSF:            term_type = "Entered CSF";                   to_print = is_act(); break;
-              case BAD_SIGNAL:           term_type = "Bad diffusion signal";          to_print = true;     break;
+              case MODEL:                term_type = "Diffusion model sub-threshold"; to_print = true;     break;
               case HIGH_CURVATURE:       term_type = "Excessive curvature";           to_print = true;     break;
               case LENGTH_EXCEED:        term_type = "Max length exceeded";           to_print = true;     break;
               case TERM_IN_SGM:          term_type = "Terminated in subcortex";       to_print = is_act(); break;
