@@ -48,7 +48,7 @@ namespace MR
             void clear() { BaseType::clear(); seed_index = 0; status = status_t::INVALID; }
             size_t get_seed_index() const { return seed_index; }
             status_t get_status() const { return status; }
-            void reverse() { std::reverse (begin(), end()); seed_index = size()-1; }
+            void reverse() { std::reverse (begin(), end()); seed_index = (size()-1) - seed_index; }
             void set_seed_index (const size_t i) { seed_index = i; }
             void set_status (const status_t i) { status = i; }
 
@@ -69,6 +69,18 @@ namespace MR
                           ((*this)[1]-(*this)[0]).norm() +
                           ((*this)[size()-1] - (*this)[size()-2]).norm());
               }
+            }
+
+            friend inline std::ostream& operator<< (std::ostream& stream, GeneratedTrack& tck)
+            {
+              stream << str(tck.size()) << " vertices, seed index " << str(tck.seed_index) << ", status ";
+              switch (tck.status) {
+                case status_t::INVALID:        stream << "INVALID"; break;
+                case status_t::SEED_REJECTED:  stream << "SEED_REJECTED"; break;
+                case status_t::TRACK_REJECTED: stream << "TRACK_REJECTED"; break;
+                case status_t::ACCEPTED:       stream << "ACCEPTED"; break;
+              }
+              return stream;
             }
 
           private:
