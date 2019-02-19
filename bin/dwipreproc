@@ -649,7 +649,10 @@ def execute(): #pylint: disable=unused-variable
   #   first input volume to topup and the first input volume to eddy are one and the same.
   # Note: If at a later date, the statistical outputs from eddy are considered (e.g. motion, outliers),
   #   then this volume permutation will need to be taken into account
-  if dwi_first_bzero_index:
+  if dwi_first_bzero_index == len(grad):
+    app.warn("No image volumes were classified as b=0 by MRtrix3; no permutation of order of DWI volumes can occur " + \
+             "(do you need to adjust config file entry BZeroThreshold?)")
+  elif dwi_first_bzero_index:
     app.console('First b=0 volume in input DWIs is volume index ' + str(dwi_first_bzero_index) + '; '
                 'this will be permuted to be the first volume (index 0) when eddy is run')
     dwi_permvols_preeddy_option = ' -coord 3 ' + \
