@@ -13,11 +13,6 @@
 
 
 #include "command.h"
-#include "progressbar.h"
-#include "datatype.h"
-#include "math/rng.h"
-
-#include "image.h"
 #include "unit_tests/tractography/roi_unit_tests.h"
 
 using namespace MR;

@@ -67,7 +67,7 @@ namespace MR {
 
         opt = get_options("include_ordered");
         for (size_t i = 0; i < opt.size(); ++i)
-           properties.include.add_ordered(ROI(opt[i][0]));
+           properties.ordered_include.add (ROI (opt[i][0]));
 
         opt = get_options ("exclude");
         for (size_t i = 0; i < opt.size(); ++i)

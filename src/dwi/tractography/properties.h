@@ -50,18 +50,20 @@ namespace MR
               (*this)["project_version"] = App::project_version;
           }
 
-          ROISet include, exclude, mask;
+          ROIUnorderedSet include, exclude, mask;
+          ROIOrderedSet ordered_include;
           Seeding::List seeds;
           vector<std::string> comments;
           std::multimap<std::string, std::string> roi;
 
 
-          void  clear () {
+          void clear () {
             std::map<std::string, std::string>::clear();
             seeds.clear();
             include.clear();
             exclude.clear();
             mask.clear();
+            ordered_include.clear();
             comments.clear();
             roi.clear();
           }
@@ -73,6 +75,7 @@ namespace MR
 
           void load_ROIs ();
       };
+
 
 
       inline void check_timestamps (const Properties& a, const Properties& b, const std::string& type)
@@ -128,7 +131,7 @@ namespace MR
       inline std::ostream& operator<< (std::ostream& stream, const Properties& P)
       {
         stream << "seeds: " << P.seeds;
-        stream << "include: " << P.include << ", exclude: " << P.exclude << ", mask: " << P.mask << ", dict: ";
+        stream << "include: " << P.include << ", ordered_include: " << P.ordered_include << ", exclude: " << P.exclude << ", mask: " << P.mask << ", dict: ";
         for (std::map<std::string, std::string>::const_iterator i = P.begin(); i != P.end(); ++i)
           stream << "[ " << i->first << ": " << i->second << " ], ";
         stream << "comments: ";
