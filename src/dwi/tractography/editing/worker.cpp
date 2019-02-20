@@ -39,14 +39,14 @@ namespace MR {
           }
 
           // Assign to ROIs
-          if (properties.include.size() || properties.exclude.size()) {
+          if (include_visitation.size() || properties.exclude.size()) {
 
-            include_visited.reset();
-            
+            include_visitation.reset();
+
             if (ends_only) {
               for (size_t i = 0; i != 2; ++i) {
                 const Eigen::Vector3f& p (i ? in.back() : in.front());
-                properties.include.contains (p, include_visited);
+                include_visitation (p);
                 if (properties.exclude.contains (p)) {
                   if (inverse)
                     in.swap (out);
@@ -55,7 +55,7 @@ namespace MR {
               }
             } else {
               for (const auto& p : in) {
-                properties.include.contains (p, include_visited);
+                include_visitation (p);
                 if (properties.exclude.contains (p)) {
                   if (inverse)
                     in.swap (out);
@@ -63,9 +63,9 @@ namespace MR {
                 }
               }
             }
-            
+
             // Make sure all of the include regions were visited
-            if (!include_visited.all_entered()) {   
+            if (!include_visitation) {
                if (inverse)
                   in.swap(out);
                return true;

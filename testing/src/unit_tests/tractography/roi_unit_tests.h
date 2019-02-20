@@ -40,9 +40,8 @@ namespace MR
 
            public:
               ROIUnitTests():
-                 state(0, 0),
                  MR::Testing::UnitTests::UnitTest("ROIUnitTests")
-                 
+
               {}
 
               /**
@@ -70,8 +69,8 @@ namespace MR
               */
               void run_ROISet()
               {
-                 std::cout << "ROISet...\n";
-                 run_ROISet_contains_all();
+                 std::cout << "IncludeROIVisitation...\n";
+                 run_IncludeROIVisitation();
                  //Add additional tests here
 
                  std::cout << "passed\n";
@@ -80,11 +79,12 @@ namespace MR
               /**
               Unit testing for external looping with contains(pos,state) --> state.contains_all()
               */
-              void run_ROISet_contains_all()
+              void run_IncludeROIVisitation()
               {
                  //NO ROIS
                  {
                     ROISet_Initialise(0);
+                    IncludeROIVisitation visitation (unordered, ordered);
                     std::array<Vector3f, 8> tck = {
                        Vector3f(0,0,0),
                        Vector3f(3,0,0),
@@ -96,15 +96,15 @@ namespace MR
                        Vector3f(0,13,7),
                     };
 
-                    //All entered should be true when there are no ROIs - there are non NOT entered.
-                    check(state.all_entered());
+                    //All entered should be true when there are no ROIs - there are none NOT entered.
+                    check (visitation, "No ROIs - precheck");
 
 
                     for (size_t i = 0; i < tck.size(); i++)
                     {
-                       rs.contains(tck[i], state);
+                       visitation (tck[i]);
                        //All entered should still say true
-                       check(state.all_entered(), "No ROI");
+                       check (visitation, "No ROI");
                     }
                  }
 
@@ -112,40 +112,41 @@ namespace MR
 
                  //---ONE ROI
                  {
-                    ROISet_Initialise(1);
-                    std::array<Vector3f, 8> tck = {
+                    ROISet_Initialise(1, 0);
+                    IncludeROIVisitation visitation (unordered, ordered);
+                    std::array<Vector3f, 7> tck = {
                        Vector3f(3,0,0),
                        Vector3f(0,5,0),
                        Vector3f(0,0,7),
                        Vector3f(11,0,7),
                        Vector3f(11,13,7),
                        Vector3f(11,13,0),
-                       Vector3f(0,13,7),
+                       Vector3f(0,13,7)
                     };
 
                     //All entered should be false before anything is tested
-                    check(!state.all_entered(), "One ROI - pretest");
-
+                    check (!visitation, "One ROI - pretest");
 
                     for (size_t i = 0; i < tck.size(); i++)
                     {
-                       rs.contains(tck[i], state);
+                       visitation (tck[i]);
                        //All entered should still say false
-                       check(!state.all_entered(), "One ROI");
+                       check (!visitation, "One ROI: " + str(i));
                     }
 
                     //Test one inside
-                    rs.contains(Vector3f(0.1, 0.2, 0.3), state);
-                    check(state.all_entered(), "One ROI final A");
+                    visitation (Vector3f(0.1, 0.2, 0.3));
+                    check (visitation, "One ROI final A");
 
                     //Test another that is outside and ensure that the state still says true
-                    rs.contains(Vector3f(11, 17, 310), state);
-                    check(state.all_entered(), "One ROI final B");
+                    visitation (Vector3f(11, 17, 310));
+                    check (visitation, "One ROI final B");
                  }
 
                  //---THREE ROIS
                  {
-                    ROISet_Initialise(3);
+                    ROISet_Initialise(3, 0);
+                    IncludeROIVisitation visitation (unordered, ordered);
                     std::array<Vector3f, 11> tck = {
                        Vector3f(3,0,0),
                        Vector3f(0,5,0),
@@ -157,18 +158,17 @@ namespace MR
                        Vector3f(0,10,0),//inside roi[2]
                        Vector3f(0,13,7),
                        Vector3f(0,0,0),//inside roi[0]
-                       Vector3f(1000,100,70),
+                       Vector3f(1000,100,70)
                     };
 
                     //All entered should be false before anything is tested
-                    check(!state.all_entered(), "three ROIs - pretest");
-
+                    check (!visitation, "three ROIs - pretest");
 
                     for (size_t i = 0; i < tck.size(); i++)
                     {
-                       rs.contains(tck[i], state);
-                       bool resultShouldBe = i >= 9;//we enter all of them on the [9]th 
-                       check(state.all_entered() == resultShouldBe, "Three ROIs: " + str(i));
+                       visitation (tck[i]);
+                       //we enter all of them on the [9]th
+                       check (bool(visitation) == bool(i >= 9), "Three ROIs: " + str(i));
                     }
 
                  }
@@ -181,19 +181,19 @@ namespace MR
                     /*The rois are at
                     0,0,-100
                     */
-                    ROISet_Initialise(1, true);
+                    ROISet_Initialise (0, 1);
+                    IncludeROIVisitation visitation (unordered, ordered);
                     std::array<Vector3f, 1> tck = {
                        Vector3f(0,0,-100),//inside [0]
                     };
 
                     //All entered should be false before anything is tested
-                    check(!state.all_entered(), "one ROI ordered - pretest");
+                    check (!visitation, "one ROI ordered - pretest");
 
                     for (size_t i = 0; i < tck.size(); i++)
                     {
-                       rs.contains(tck[i], state);
-                       bool resultShouldBe = i >= 0;
-                       check(state.all_entered() == resultShouldBe, "One ROI ordered: " + str(i));
+                       visitation (tck[i]);
+                       check (bool(visitation) == bool(i >= 0), "One ROI ordered: " + str(i));
                     }
 
                  }
@@ -204,25 +204,25 @@ namespace MR
                     10,0,-100
                     0,10,-100
                     */
-                    ROISet_Initialise(3, true);
+                    ROISet_Initialise (0, 3);
+                    IncludeROIVisitation visitation (unordered, ordered);
                     std::array<Vector3f, 4> tck = {
                        //outside
 
                        Vector3f(0,0,-100),//inside [0]
                        Vector3f(10,0,-100),//inside [1]
                        Vector3f(0,10,-100),//inside [2]
-                       Vector3f(0,10,100),//outside 
+                       Vector3f(0,10,100),//outside
                     };
 
                     //All entered should be false before anything is tested
-                    check(!state.all_entered(), "three ROIs ordered - pretest");
-
+                    check (!visitation, "three ROIs ordered - pretest");
 
                     for (size_t i = 0; i < tck.size(); i++)
                     {
-                       rs.contains(tck[i], state);
-                       bool resultShouldBe = i >= 2;//we enter all of them on the [12]th 
-                       check(state.all_entered() == resultShouldBe, "Three ROIs ordered (simple): " + str(i));
+                       visitation (tck[i]);
+                       //we enter all of them on the [12]th
+                       check (bool(visitation) == bool(i >= 2), "Three ROIs ordered (simple): " + str(i));
                     }
 
                  }
@@ -233,7 +233,8 @@ namespace MR
                     10,0,-100
                     0,10,-100
                     */
-                    ROISet_Initialise(3, true);
+                    ROISet_Initialise (0, 3);
+                    IncludeROIVisitation visitation (unordered, ordered);
                     std::array<Vector3f, 15> tck = {
                        //outside
                        Vector3f(3,0,0),
@@ -254,25 +255,26 @@ namespace MR
                     };
 
                     //All entered should be false before anything is tested
-                    check(!state.all_entered(), "three ROIs ordered - pretest");
+                    check (!visitation, "three ROIs ordered - pretest");
 
 
                     for (size_t i = 0; i < tck.size(); i++)
                     {
-                       rs.contains(tck[i], state);
-                       bool resultShouldBe = i >= 12;//we enter all of them on the [12]th 
-                       check(state.all_entered() == resultShouldBe, "Three ROIs ordered: " + str(i));
+                       visitation (tck[i]);
+                       //we enter all of them on the [12]th
+                       check (bool(visitation) == bool(i >= 12), "Three ROIs ordered: " + str(i));
                     }
 
                  }
-                 //---THREE ROIS INCORRECT ORDER A->B->A 
+                 //---THREE ROIS INCORRECT ORDER A->B->A
                  {
                     /*The rois are at
                     0,0,-100
                     10,0,-100
                     0,10,-100
                     */
-                    ROISet_Initialise(3, true);
+                    ROISet_Initialise (0, 3);
+                    IncludeROIVisitation visitation (unordered, ordered);
                     std::array<Vector3f, 16> tck = {
                        //outside
                        Vector3f(3,0,0),
@@ -287,21 +289,20 @@ namespace MR
                        Vector3f(10,0,-100),//inside; [0],[1] done
                        Vector3f(0,0,-100),//re-enter first  <--------- this is NOT legal as we have entered region [1]
                        Vector3f(-110,0,7),//outside, [0],[1] done
-                       Vector3f(10,0,-100),//re-enter second 
+                       Vector3f(10,0,-100),//re-enter second
                        Vector3f(0,10,-100),//inside roi[2]; [0],[1],[2] done
                        Vector3f(11,13,7),//outside, [0],[1],[2] done
                        Vector3f(11,13,0),//outside, [0],[1],[2] done
                     };
 
                     //All entered should be false before anything is tested
-                    check(!state.all_entered(), "three ROIs ordered - pretest");
+                    check (!visitation, "three ROIs ordered - pretest");
 
 
                     for (size_t i = 0; i < tck.size(); i++)
                     {
-                       rs.contains(tck[i], state);
-                       bool resultShouldBe = false;
-                       check(state.all_entered() == resultShouldBe, "Three ROIs ordered illegal ABA");
+                       visitation (tck[i]);
+                       check (!visitation, "Three ROIs ordered illegal ABA");
                     }
 
                  }
@@ -313,7 +314,8 @@ namespace MR
                     0,10,-100
                     10,10,-100
                     */
-                    ROISet_Initialise(4, true);
+                    ROISet_Initialise (0, 4);
+                    IncludeROIVisitation visitation (unordered, ordered);
                     std::array<Vector3f, 17> tck = {
                        //outside
                        Vector3f(3,0,0),
@@ -336,14 +338,12 @@ namespace MR
                     };
 
                     //All entered should be false before anything is tested
-                    check(!state.all_entered(), "three ROIs ordered - pretest");
-
+                    check (!visitation, "three ROIs ordered - pretest");
 
                     for (size_t i = 0; i < tck.size(); i++)
                     {
-                       rs.contains(tck[i], state);
-                       bool resultShouldBe = false;//we enter all of them on the [12]th 
-                       check(state.all_entered() == resultShouldBe, "Three ROIs ordered - illegal ABCA");
+                       visitation (tck[i]);
+                       check (!visitation, "Three ROIs ordered - illegal ABCA");
                     }
 
                  }
@@ -362,8 +362,9 @@ namespace MR
                     Vector3f J = Vector3f(0, 0, 0);
                     Vector3f K = Vector3f(10, 0, 0);
 
-                    ROISet_Initialise(2, 4, true);
-                    std::array<Vector3f, 17> tck = {
+                    ROISet_Initialise(2, 4);
+                    IncludeROIVisitation visitation (unordered, ordered);
+                    std::array<Vector3f, 16> tck = {
                        //outside
                        Vector3f(3,0,0),
                        Vector3f(0,5,0),
@@ -380,14 +381,12 @@ namespace MR
                     };
 
                     //All entered should be false before anything is tested
-                    check(!state.all_entered(), "three ROIs ordered - pretest");
-
+                    check (!visitation, "three ROIs ordered - pretest");
 
                     for (size_t i = 0; i < tck.size(); i++)
                     {
-                       rs.contains(tck[i], state);
-                       bool resultShouldBe = i >= 10 && i < 14;
-                       check(state.all_entered() == resultShouldBe, "FOUR ORDERED ROIS (A-D), and Two unordered ROIs (J,K): " + str(i));
+                       visitation (tck[i]);
+                       check (bool(visitation) == bool(i >= 10 && i < 14), "FOUR ORDERED ROIS (A-D), and Two unordered ROIs (J,K): " + str(i));
                     }
                  }
 
@@ -396,39 +395,27 @@ namespace MR
               /**
               Sets up the ROI set ready for tests to be run
               */
-              void ROISet_Initialise(size_t no_rois_unordered, size_t no_rois_ordered, bool ordered = false)
+              void ROISet_Initialise (size_t no_rois_unordered, size_t no_rois_ordered)
               {
-                 rs = ROISet();
-                 for (size_t i = 0; i < no_rois_unordered; i++){
-                       rs.add(ROISet_GetROI(i));
-                 }
-                 for (size_t i = 0; i < no_rois_ordered; i++){
-                       rs.add_ordered(ROISet_GetROI(i, -100));
-                 }
-                 state.reset(rs.size_unordered(), rs.size_ordered());
+                 unordered = ROIUnorderedSet();
+                 ordered = ROIOrderedSet();
+                 for (size_t i = 0; i < no_rois_unordered; i++)
+                    unordered.add (ROISet_GetROI (i));
+                 for (size_t i = 0; i < no_rois_ordered; i++)
+                    ordered.add (ROISet_GetROI (i, -100));
               }
               /**
               Sets up the ROI set ready for tests to be run
               */
-              void ROISet_Initialise(size_t no_rois, bool ordered=false)
+              void ROISet_Initialise (size_t no_rois)
               {
-                 rs = ROISet();
+                 unordered = ROIUnorderedSet();
+                 ordered = ROIOrderedSet();
                  for (size_t i = 0; i < no_rois; i++)
                  {
-                    
-                    if (ordered)
-                    {
-                       rs.add_ordered(ROISet_GetROI(i,-100));
-                    }
-                    else
-                    {
-                       rs.add(ROISet_GetROI(i));
-                    }
-
-                    
+                    unordered.add (ROISet_GetROI (i));
+                    ordered.add (ROISet_GetROI (i, -100));
                  }
-
-                 state = ROISet_ContainsLoopState(rs.size_unordered(), rs.size_ordered());
               }
 
               /**
@@ -438,11 +425,11 @@ namespace MR
               {
                  Vector3f position;
                  //Method could be made much nicer with a modulo operator but time is of the essence
-                 
+
                  if (i == 0)
                  {
                     position = Vector3f(0, 0, offset_z);
-                    
+
                  }
                  else if (i == 1)
                  {
@@ -458,7 +445,7 @@ namespace MR
                  }
                  else if (i == 4)
                  {
-                    position = Vector3f(0, 0, 10+ offset_z);
+                    position = Vector3f(0, 0, 10 + offset_z);
                  }
                  else if (i == 5)
                  {
@@ -480,22 +467,12 @@ namespace MR
                  return ROI(position, 1);
               }
 
-              /**
-              For debugging
-              */
-              void print_position(Vector3f p)
-              {
-                 std::cout << str(p[0]) << " " << str(p[1]) << " " << str(p[2]) << "\n";
-              }
-
               //Parameters:
-              ROISet rs;
-              ROISet_ContainsLoopState state;
-              
+              ROIUnorderedSet unordered;
+              ROIOrderedSet ordered;
 
-           
-           
-           
+
+
            };
         }
      }
