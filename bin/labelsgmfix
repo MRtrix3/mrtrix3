@@ -123,7 +123,8 @@ def execute(): #pylint: disable=unused-variable
   progress.done()
 
   # Detect any overlapping voxels between the SGM masks, and set to zero
-  run.command('mrmath ' + ' '.join(mask_list) + ' sum - | mrcalc - 1 -gt sgm_overlap_mask.mif')
+  run.command(['mrmath', mask_list, 'sum', '-', '|', \
+               'mrcalc', '-', '1', '-gt', 'sgm_overlap_mask.mif')
   run.command('mrcalc sgm_overlap_mask.mif 0 sgm.mif -if sgm_masked.mif')
 
   # Convert the SGM label image to the indices that are required based on the user-provided LUT file
