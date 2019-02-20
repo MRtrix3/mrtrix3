@@ -29,8 +29,7 @@ void usage ()
 
   SYNOPSIS = "Runs units tests for tractography-related classes";
 
-  ARGUMENTS
-     + Argument("run", "run the tests (else just show this message)");
+  REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 }
 
 
@@ -38,10 +37,10 @@ void run ()
 {
 
      bool allPassed = Testing::UnitTests::Tractography::ROIUnitTests::ROIUnitTests::run();
-     //Add further tests here like so: 
+     //Add further tests here like so:
      //allPassed &= <test>
      //OR
-     //allPassed = allPassed && <test> 
+     //allPassed = allPassed && <test>
 
 
      if (allPassed)
@@ -51,6 +50,6 @@ void run ()
      else
      {
         std::cout << "Failed";
-        throw 1;//Register an error - command.h doesn't let us return a variable - it only listens for something being thrown 
-     }   
+        throw 1;//Register an error - command.h doesn't let us return a variable - it only listens for something being thrown
+     }
 }
