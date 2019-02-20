@@ -172,7 +172,7 @@ namespace MR
 
 
 
-    inline size_t readlines(const std::string& name, std::vector<std::string>& lines)
+    inline size_t readlines(const std::string& name, vector<std::string>& lines)
     {
       std::string line;
       std::ifstream in(name.c_str());

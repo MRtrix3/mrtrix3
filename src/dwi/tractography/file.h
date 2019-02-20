@@ -73,7 +73,7 @@ namespace MR
           //! open the \c file for reading and load header into \c properties
           Reader (const std::string& file, Properties& prop) 
           {
-            std::vector<std::string> files;
+            vector<std::string> files;
             if (Path::has_suffix(file, ".lst")){
               File::readlines( file, files );
               INFO("opening list of " + str(files.size()) + " .tck file(s)");
@@ -84,7 +84,7 @@ namespace MR
             construct( files, prop );
           }
 
-          Reader(const std::vector<std::string>& files, Properties& prop) 
+          Reader(const vector<std::string>& files, Properties& prop) 
             { construct(files, prop); }
 
           ~Reader()
@@ -126,13 +126,13 @@ namespace MR
           uint64_t track_index, sub_count;
           std::ifstream inw;
 
-          std::vector<std::string> tck_files, weights_files;
+          vector<std::string> tck_files, weights_files;
 
 
 
 
           //! initialise current reader instance
-          void construct( const std::vector<std::string>& files, Properties& prop ) 
+          void construct( const vector<std::string>& files, Properties& prop ) 
           {
             clear();
 

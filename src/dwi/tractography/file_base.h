@@ -39,7 +39,8 @@ namespace MR
 
       // JH: information about .tck or .tsf file
       struct TrackFileInfo
-      {
+      { NOMEMALIGN
+      
         std::string   path, type;
         uint64_t      offset;
         DataType      dtype;
@@ -74,7 +75,7 @@ namespace MR
 
 
       // combine properties across several .tck files
-      void properties_consensus( const std::vector<std::string>& files, const std::string& type, Properties& prop );
+      void properties_consensus( const vector<std::string>& files, const std::string& type, Properties& prop );
 
 
 
