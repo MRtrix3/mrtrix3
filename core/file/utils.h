@@ -205,6 +205,25 @@ namespace MR
 
 
 
+    inline size_t readlines(const std::string& name, std::vector<std::string>& lines)
+    {
+      std::string line;
+      std::ifstream in(name.c_str());
+      size_t count = 0;
+
+      if (!in)
+        throw Exception("cannot open file \"" + name + "\": " + strerror(errno));
+
+      while (getline(in,line)) {
+        lines.push_back(line);
+        ++count;
+      }
+
+      in.close();
+      return count;
+    }
+
+
 
     inline std::string create_tempfile (int64_t size = 0, const char* suffix = NULL)
     {

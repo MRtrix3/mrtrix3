@@ -1156,7 +1156,7 @@ namespace MR
         }
         if (i.arg->type == ArgDirectoryOut)
           check_overwrite (text);
-        if (i.arg->type == TracksIn && !Path::has_suffix (text, ".tck"))
+        if (i.arg->type == TracksIn && !Path::has_suffix (text, ".tck") && !Path::has_suffix (text, ".lst"))
           throw Exception ("input file \"" + text + "\" is not a valid track file");
         if (i.arg->type == TracksOut && !Path::has_suffix (text, ".tck"))
           throw Exception ("output track file \"" + text + "\" must use the .tck suffix");
@@ -1184,7 +1184,7 @@ namespace MR
           }
           if (arg.type == ArgDirectoryOut)
             check_overwrite (text);
-          if (arg.type == TracksIn && !Path::has_suffix (text, ".tck"))
+          if (arg.type == TracksIn && !Path::has_suffix (text, ".tck") && !Path::has_suffix (text, ".lst"))
             throw Exception ("input file \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a valid track file");
           if (arg.type == TracksOut && !Path::has_suffix (text, ".tck"))
             throw Exception ("output track file \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" must use the .tck suffix");

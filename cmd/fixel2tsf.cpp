@@ -86,7 +86,7 @@ void run ()
   float angular_threshold = get_option_value ("angle", DEFAULT_ANGULAR_THRESHOLD);
   const float angular_threshold_dp = cos (angular_threshold * (Math::pi / 180.0));
 
-  const size_t num_tracks = properties["count"].empty() ? 0 : to<int> (properties["count"]);
+  const size_t num_tracks = properties.value_or_default<size_t>("count",0);
 
   DWI::Tractography::Mapping::TrackMapperBase mapper (in_index_image);
   mapper.set_use_precise_mapping (true);

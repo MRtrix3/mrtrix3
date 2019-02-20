@@ -306,7 +306,7 @@ void run ()
     // TODO Constructor for properties using the file path?
     Tractography::Reader<float> tck_file (tck_path, properties);
   }
-  const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t> (properties["count"]);
+  const size_t num_tracks = properties.value_or_default<size_t>("count",0);
 
   Image<float> fmri_image (Image<float>::open (argument[1]).with_direct_io(3));
 
