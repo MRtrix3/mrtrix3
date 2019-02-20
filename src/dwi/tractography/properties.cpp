@@ -24,14 +24,14 @@ namespace MR {
       {
         using iter = std::multimap<std::string,std::string>::const_iterator;
 
-        std::pair<iter,iter> range = roi.equal_range ("include");
+        std::pair<iter,iter> range = prior_rois.equal_range ("include");
         for (iter it = range.first; it != range.second; ++it) include.add (it->second);
-        range = roi.equal_range ("exclude");
+        range = prior_rois.equal_range ("exclude");
         for (iter it = range.first; it != range.second; ++it) exclude.add (it->second);
-        range = roi.equal_range ("mask");
+        range = prior_rois.equal_range ("mask");
         for (iter it = range.first; it != range.second; ++it) mask.add (it->second);
 
-        roi.clear();
+        prior_rois.clear();
       }
 
 
