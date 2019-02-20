@@ -95,7 +95,7 @@ def execute(): #pylint: disable=unused-variable
       app.cleanup('iter' + str(iteration-1) + '_SF.mif')
       max_diff = image.statistic(prefix + 'SF_diff.mif', 'max')
       app.cleanup(prefix + 'SF_diff.mif')
-      if int(max_diff) == 0:
+      if not max_diff:
         app.cleanup(prefix + 'CF.mif')
         run.function(shutil.copyfile, prefix + 'RF.txt', 'response.txt')
         run.function(shutil.move, prefix + 'SF.mif', 'voxels.mif')

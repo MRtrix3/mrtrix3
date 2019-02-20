@@ -183,6 +183,11 @@ def match(image_one, image_two, up_to_dim=0): #pylint: disable=unused-variable, 
 
 
 # Computes image statistics using mrstats.
+# Return values will be:
+# - A list if there is more than one volume and -allvolumes is not provided as an option;
+#     a single scalar value otherwise
+# - Integer(s) if statistic is 'count';
+#     floating-point otherwise
 def statistic(image_path, stat, options=''): #pylint: disable=unused-variable
   import shlex, subprocess
   from mrtrix3 import app, MRtrixError, run
@@ -192,9 +197,15 @@ def statistic(image_path, stat, options=''): #pylint: disable=unused-variable
   if app.VERBOSITY > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
-  result = proc.communicate()[0].strip()
+  result = [ line.strip() for line in proc.communicate()[0].decode('cp437').splitlines() ]
+  if stat == 'count':
+    result = [ int(i) for i in result ]
+  else:
+    result = [ float(f) for f in result ]
+  if len(result) == 1:
+    result = result[0]
   if app.VERBOSITY > 1:
-    app.console('Result: ' + result)
+    app.console('Result: ' + str(result))
   if proc.returncode:
     raise MRtrixError('Error trying to calculate statistic \'' + stat + '\' from image \'' + image_path + '\'')
   return result

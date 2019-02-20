@@ -56,8 +56,8 @@ def execute(): #pylint: disable=unused-variable
 
       # Grab the mean and standard deviation across all volumes in a single mrstats call
       # Also scale them to reflect the fact that we're moving to the SH basis
-      mean = float(image.statistic('dwi.mif', 'mean', '-mask mask.mif -allvolumes')) * math.sqrt(4.0 * math.pi)
-      std = float(image.statistic('dwi.mif', 'std', '-mask mask.mif -allvolumes')) * math.sqrt(4.0 * math.pi)
+      mean = image.statistic('dwi.mif', 'mean', '-mask mask.mif -allvolumes') * math.sqrt(4.0 * math.pi)
+      std = image.statistic('dwi.mif', 'std', '-mask mask.mif -allvolumes') * math.sqrt(4.0 * math.pi)
 
       # Now produce the initial response function
       # Let's only do it to lmax 4
@@ -88,7 +88,7 @@ def execute(): #pylint: disable=unused-variable
     run.command('mrcalc ' + prefix + 'peak_ratio.mif ' + str(app.ARGS.peak_ratio) + ' -lt ' + mask_in_path + ' -mult ' + prefix + 'SF.mif -datatype bit')
     app.cleanup(prefix + 'peak_ratio.mif')
     # Make sure image isn't empty
-    sf_voxel_count = int(image.statistic(prefix + 'SF.mif', 'count', '-mask ' + prefix + 'SF.mif'))
+    sf_voxel_count = image.statistic(prefix + 'SF.mif', 'count', '-mask ' + prefix + 'SF.mif')
     if not sf_voxel_count:
       raise MRtrixError('Aborting: All voxels have been excluded from single-fibre selection')
     # Generate a new response function

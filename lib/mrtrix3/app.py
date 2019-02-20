@@ -171,7 +171,6 @@ def execute(): #pylint: disable=unused-variable
       filename = exception_frame[1]
       lineno = exception_frame[2]
     sys.stderr.write('\n')
-    sys.stderr.write(EXEC_NAME + ': ' + ANSI.error + '[ERROR] ' + str(exception) + ':' + ANSI.clear + '\n')
     sys.stderr.write(EXEC_NAME + ': ' + ANSI.error + '[ERROR] ' + (exception.command if is_cmd else exception.function) + ANSI.clear + ANSI.debug + ' (' + os.path.basename(filename) + ':' + str(lineno) + ')' + ANSI.clear + '\n')
     if str(exception):
       sys.stderr.write(EXEC_NAME + ': ' + ANSI.error + '[ERROR] Information from failed ' + ('command' if is_cmd else 'function') + ':' + ANSI.clear + '\n')
@@ -525,14 +524,15 @@ class ProgressBar(object): #pylint: disable=unused-variable
 
 
 
-# A simple wrapper class for executing a set of commands of some known length,
+# A simple wrapper class for executing a set of commands or functions of some known length,
 #   generating and managing a progress bar as it does so
 # Can use in one of two ways:
-# - Construct using a progress bar message, and the number of commands that are to be executed;
-#   each command is then executed using the run() member function
+# - Construct using a progress bar message, and the number of commands / functions that are to be executed;
+#     each is then executed by calling member functions command() and function(), which
+#     use the corresponding functions in the mrtrix3.run module
 # - Construct using a progress bar message, and a list of command strings to run;
-#   all commands within the list will be executed sequentially without any further member function invocations
-class RunCommandList(object): #pylint: disable=unused-variable
+#     all commands within the list will be executed sequentially within the constructor
+class RunList(object): #pylint: disable=unused-variable
   def __init__(self, message, value):
     from mrtrix3 import run
     if isinstance(value, int):
@@ -549,11 +549,20 @@ class RunCommandList(object): #pylint: disable=unused-variable
       self.progress.done()
       self.valid = False
     else:
-      raise TypeError
-  def execute(self, command):
+      raise TypeError('Construction of RunList class expects either an '
+                      'integer (number of commands/functions to run), or a '
+                      'list of command strings to execute')
+  def command(self, cmd):
     from mrtrix3 import run
     assert self.valid
-    run.command(command)
+    run.command(cmd)
+    self._increment()
+  def function(self, func, *args, **kwargs):
+    from mrtrix3 import run
+    assert self.valid
+    run.function(func, *args, **kwargs)
+    self._increment()
+  def _increment(self):
     self.counter += 1
     if self.counter == self.target_count:
       self.progress.done()
