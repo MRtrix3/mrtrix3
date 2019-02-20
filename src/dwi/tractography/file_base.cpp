@@ -106,7 +106,7 @@ namespace MR {
 
 
 
-      void properties_consensus( const std::vector<std::string>& files, const std::string& type, Properties& prop )
+      void properties_consensus( const vector<std::string>& files, const std::string& type, Properties& prop )
       {
         // ensure there is at least one file
         size_t n_files = files.size();
