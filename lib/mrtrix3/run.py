@@ -215,12 +215,15 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
         cmdsplit.append(entry)
       elif isinstance(entry, list):
         assert all([ isinstance(item, str) for item in entry ])
-        if len(entry) > 3:
+        if len(entry) > 1:
           common_prefix = os.path.commonprefix(entry)
           common_suffix = os.path.commonprefix([i[::-1] for i in entry])[::-1]
-          cmdstring += (' ' if cmdstring else '') + '[ ' + common_prefix + '*' + common_suffix + ' (' + str(len(entry)) + ' entries) ]'
+          if common_prefix == entry[0] and common_prefix == common_suffix:
+            cmdstring += (' ' if cmdstring else '') + '[' + entry[0] + ' (x' + str(len(entry)) + ')]'
+          else:
+            cmdstring += (' ' if cmdstring else '') + '[' + common_prefix + '*' + common_suffix + ' (' + str(len(entry)) + ' items)]'
         else:
-          cmdstring += (' ' if cmdstring else '') + ' '.join(entry)
+          cmdstring += (' ' if cmdstring else '') + entry[0]
         cmdsplit.extend(entry)
       else:
         raise TypeError('When run.command() is provided with a list as input, entries in the list must be either strings or lists of strings')
@@ -251,7 +254,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
 
     cmdstack = [ cmdsplit ]
     with shared.lock:
-      app.debug('To execute: ' + str(cmdstring))
+      app.debug('To execute: ' + str(cmdsplit))
       if (shared.verbosity and show) or shared.verbosity > 1:
         sys.stderr.write(ANSI.execute + 'Command:' + ANSI.clear + '  ' + cmdstring + '\n')
         sys.stderr.flush()
@@ -323,11 +326,13 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
       if (shared.verbosity and show) or shared.verbosity > 1:
         # Hide use of these options in mrconvert to alter header key-values and command history at the end of scripts
         if all(key in cmdsplit for key in [ '-copy_properties', '-append_property', 'command_history' ]):
-          index = cmdsplit.index('-append_property')
-          del cmdsplit[index:index+3]
-          index = cmdsplit.index('-copy_properties')
-          del cmdsplit[index:index+2]
-        sys.stderr.write(ANSI.execute + 'Command:' + ANSI.clear + '  ' + ' '.join(cmdsplit) + '\n')
+          cmdstring = shlex.split(cmdstring)
+          index = cmdstring.index('-append_property')
+          del cmdstring[index:index+3]
+          index = cmdstring.index('-copy_properties')
+          del cmdstring[index:index+2]
+          cmdstring = ' '.join(cmdstring)
+        sys.stderr.write(ANSI.execute + 'Command:' + ANSI.clear + '  ' + cmdstring + '\n')
         sys.stderr.flush()
 
     this_command_index = shared.get_command_index()
