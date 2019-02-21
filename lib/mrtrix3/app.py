@@ -75,7 +75,7 @@ _SIGNALS = { 'SIGALRM': 'Timer expiration',
 def execute(): #pylint: disable=unused-variable
   import inspect, shutil, signal
   from mrtrix3 import ANSI, MRtrixError, run
-  global ARGS, CMDLINE, CONTINUE_OPTION, DO_CLEANUP, EXEC_NAME, NUM_THREADS, SCRATCH_DIR, VERBOSITY, WORKING_DIR
+  global ARGS, CMDLINE, CONTINUE_OPTION, DO_CLEANUP, EXEC_NAME, FORCE_OVERWRITE, NUM_THREADS, SCRATCH_DIR, VERBOSITY, WORKING_DIR
 
   # Set up signal handlers
   for sig in _SIGNALS:
@@ -126,6 +126,8 @@ def execute(): #pylint: disable=unused-variable
   #if hasattr(ARGS, 'version') and ARGS.version:
   #  CMDLINE.print_version()
   #  sys.exit(0)
+  if hasattr(ARGS, 'force') and ARGS.force:
+    FORCE_OVERWRITE = True
   if hasattr(ARGS, 'nocleanup') and ARGS.nocleanup:
     DO_CLEANUP = False
   if hasattr(ARGS, 'nthreads') and ARGS.nthreads:
@@ -220,6 +222,8 @@ def execute(): #pylint: disable=unused-variable
       except OSError:
         pass
       SCRATCH_DIR = ''
+    else:
+      console('Scratch directory retained; location: ' + SCRATCH_DIR)
   sys.exit(return_code)
 
 
@@ -236,9 +240,8 @@ def check_output_path(path): #pylint: disable=unused-variable
       output_type = ' file'
     elif os.path.isdir(abspath):
       output_type = ' directory'
-    if hasattr(ARGS, 'force') and ARGS.force:
+    if FORCE_OVERWRITE:
       warn('Output' + output_type + ' \'' + path + '\' already exists; will be overwritten at script completion')
-      FORCE_OVERWRITE = True #pylint: disable=unused-variable
     else:
       raise MRtrixError('Output' + output_type + ' \'' + path + '\' already exists (use -force to override)')
 
