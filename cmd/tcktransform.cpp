@@ -44,23 +44,6 @@ void usage ()
 using value_type = float;
 using TrackType = Tractography::Streamline<value_type>;
 
-
-
-class Loader { MEMALIGN(Loader)
-  public:
-    Loader (const std::string& file) : reader (file, properties) {}
-
-    bool operator() (TrackType& item) {
-      return reader (item);
-    }
-
-    Tractography::Properties properties;
-  protected:
-    Tractography::Reader<value_type> reader;
-};
-
-
-
 class Warper { MEMALIGN(Warper)
   public:
     Warper (const Image<value_type>& warp) :
@@ -120,15 +103,16 @@ class Writer { MEMALIGN(Writer)
 
 void run ()
 {
-  Loader loader (argument[0]);
+  Tractography::Properties properties;
+  Tractography::Reader<value_type> reader ( argument[0], properties );
 
   auto data = Image<value_type>::open (argument[1]).with_direct_io (3);
   Warper warper (data);
 
-  Writer writer (argument[2], loader.properties);
+  Writer writer (argument[2], properties);
 
   Thread::run_queue (
-      loader,
+      reader,
       Thread::batch (TrackType(), 1024),
       Thread::multi (warper),
       Thread::batch (TrackType(), 1024),

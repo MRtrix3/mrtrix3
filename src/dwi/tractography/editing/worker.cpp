@@ -41,7 +41,6 @@ namespace MR {
 
           // Assign to ROIs
           if (properties.include.size() || properties.exclude.size()) {
-
             include_visited.assign (properties.include.size(), false);
 
             if (ends_only) {
@@ -130,40 +129,36 @@ namespace MR {
 
 
 
-        Worker::Thresholds::Thresholds (Tractography::Properties& properties) :
-          max_length (std::numeric_limits<float>::infinity()),
-          min_length (0.0f),
-          max_weight (std::numeric_limits<float>::infinity()),
-          min_weight (0.0f),
-          step_size (get_step_size (properties))
+        Worker::Thresholds::Thresholds (Tractography::Properties& properties)
         {
-          if (properties.find ("max_dist") != properties.end()) {
-            try {
-              max_length = to<float>(properties["max_dist"]);
-            } catch (...) { }
+          static const float Inf = std::numeric_limits<float>::infinity();
+
+          step_size = properties.get_step_size();
+
+          try {
+            max_length = to<float>(properties.at("max_dist"));
+          } catch (...) {
+            max_length = Inf;
           }
-          if (properties.find ("min_dist") != properties.end()) {
-            try {
-              min_length = to<float>(properties["min_dist"]);
-            } catch (...) { }
+
+          try {
+            min_length = to<float>(properties.at("min_dist"));
+          } catch (...) {
+            min_length = 0.0f;
           }
 
           if (std::isfinite (step_size)) {
             // User may set these values to a precise value, which may then fail due to floating-point
             //   calculation of streamline length
             // Therefore throw a bit of error margin in here
-            float error_margin = 0.1;
-            if (properties.find ("downsample_factor") != properties.end())
-              error_margin = 0.5 / to<float>(properties["downsample_factor"]);
+            float error_margin = 0.5f / properties.value_or_default<float>( "downsample_factor", 5.0f );
+
             max_length += error_margin * step_size;
             min_length -= error_margin * step_size;
           }
 
-          if (properties.find ("max_weight") != properties.end())
-            max_weight = to<float>(properties["max_weight"]);
-
-          if (properties.find ("min_weight") != properties.end())
-            min_weight = to<float>(properties["min_weight"]);
+          max_weight = properties.value_or_default<float>( "max_weight", Inf );
+          min_weight = properties.value_or_default<float>( "min_weight", 0.0f );
         }
 
 
@@ -181,11 +176,11 @@ namespace MR {
 
         bool Worker::Thresholds::operator() (const Streamline<>& in) const
         {
-          const float length = (std::isfinite (step_size) ? in.calc_length (step_size) : in.calc_length());
-          return ((length <= max_length) &&
+          const float length = std::isfinite (step_size) ? in.calc_length (step_size) : in.calc_length();
+          return (length <= max_length) &&
               (length >= min_length) &&
               (in.weight <= max_weight) &&
-              (in.weight >= min_weight));
+              (in.weight >= min_weight);
         }
 
 
