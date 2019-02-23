@@ -140,6 +140,11 @@ namespace MR
             if (files.empty())
               return;
 
+            // check that there are no .lst files
+            for (auto& file: files)
+              if (Path::has_suffix(file,".lst"))
+                throw Exception("Nested .lst files, or lists of files mixing .tck and .lst extensions, are not supported.");
+
             // assign properties (also checks that input files are valid .tck files)
             properties_consensus(files, "tracks", prop);
             tck_files = files;

@@ -128,16 +128,26 @@ void run ()
   const std::string output_path = argument[num_inputs];
 
   // Make sure configuration is sensible
+  if (num_inputs == 0)
+    throw Exception("Insufficient number of inputs");
   if (get_options("tck_weights_in").size() && num_inputs > 1)
     throw Exception ("Cannot use per-streamline weighting with multiple input files");
 
-  // Get the consensus streamline properties from among the multiple input files
-  vector<std::string> input_file_list;
-  for (size_t file_index = 0; file_index != num_inputs; ++file_index) 
-    input_file_list.push_back (argument[file_index]);
-
+  // Either one file: .lst or .tck
+  // OR multiple .tck files 
   Tractography::Properties properties;
-  Tractography::Reader<float> reader( input_file_list, properties );
+  Tractography::Reader<float> *reader = nullptr;
+
+  if ( num_inputs == 1 ) {
+    reader = new Tractography::Reader<float>(argument[0], properties);
+  } else {
+    vector<std::string> input_file_list;
+    for (size_t file_index = 0; file_index < num_inputs; ++file_index)
+      input_file_list.push_back (argument[file_index]);
+
+    reader = new Tractography::Reader<float>(input_file_list, properties);
+  }
+
   properties.load_ROIs();
 
   size_t count = properties.value_or_default<size_t>("count",0);
@@ -168,7 +178,7 @@ void run ()
   Receiver receiver (output_path, properties, number, skip);
 
   Thread::run_queue (
-      reader,
+      *reader,
       Thread::batch (Streamline<>()),
       Thread::multi (worker),
       Thread::batch (Streamline<>()),
