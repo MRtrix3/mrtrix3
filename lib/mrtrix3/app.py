@@ -260,8 +260,8 @@ def make_scratch_dir(): #pylint: disable=unused-variable
     dir_path = os.path.abspath(ARGS.scratch)
   else:
     # Defaulting to working directory since too many users have encountered storage issues
-    dir_path = CONFIG.get('ScriptTmpDir', WORKING_DIR)
-  prefix = CONFIG.get('ScriptTmpPrefix', EXEC_NAME + '-tmp-')
+    dir_path = CONFIG.get('ScriptScratchDir', WORKING_DIR)
+  prefix = CONFIG.get('ScriptScratchPrefix', EXEC_NAME + '-tmp-')
   SCRATCH_DIR = dir_path
   while os.path.isdir(SCRATCH_DIR):
     random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
