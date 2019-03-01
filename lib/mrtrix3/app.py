@@ -173,7 +173,7 @@ def execute(): #pylint: disable=unused-variable
       filename = exception_frame[1]
       lineno = exception_frame[2]
     sys.stderr.write('\n')
-    sys.stderr.write(EXEC_NAME + ': ' + ANSI.error + '[ERROR] ' + (exception.command if is_cmd else exception.function) + ANSI.clear + ANSI.debug + ' (' + os.path.basename(filename) + ':' + str(lineno) + ')' + ANSI.clear + '\n')
+    sys.stderr.write(EXEC_NAME + ': ' + ANSI.error + '[ERROR] ' + (exception.command if is_cmd else exception.function) + ANSI.clear + ' ' + ANSI.debug + '(' + os.path.basename(filename) + ':' + str(lineno) + ')' + ANSI.clear + '\n')
     if str(exception):
       sys.stderr.write(EXEC_NAME + ': ' + ANSI.error + '[ERROR] Information from failed ' + ('command' if is_cmd else 'function') + ':' + ANSI.clear + '\n')
       sys.stderr.write(EXEC_NAME + ':\n')
@@ -214,16 +214,17 @@ def execute(): #pylint: disable=unused-variable
       if not return_code:
         console('Changing back to original directory (' + WORKING_DIR + ')')
       os.chdir(WORKING_DIR)
-    if DO_CLEANUP and SCRATCH_DIR:
-      if not return_code:
-        console('Deleting scratch directory (' + SCRATCH_DIR + ')')
-      try:
-        shutil.rmtree(SCRATCH_DIR)
-      except OSError:
-        pass
-      SCRATCH_DIR = ''
-    else:
-      console('Scratch directory retained; location: ' + SCRATCH_DIR)
+    if SCRATCH_DIR:
+      if DO_CLEANUP:
+        if not return_code:
+          console('Deleting scratch directory (' + SCRATCH_DIR + ')')
+        try:
+          shutil.rmtree(SCRATCH_DIR)
+        except OSError:
+          pass
+        SCRATCH_DIR = ''
+      else:
+        console('Scratch directory retained; location: ' + SCRATCH_DIR)
   sys.exit(return_code)
 
 
