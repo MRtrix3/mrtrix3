@@ -91,10 +91,12 @@ namespace MR
 
         Tractography::Tractography (Dock* parent) :
           Base (parent),
+          line_opacity (1.0),
           do_crop_to_slab (true),
           use_lighting (false),
           not_3D (true),
-          line_opacity (1.0),
+          show_spherical_rois (true),
+          spherical_roi_opacity (1.0),
           scalar_file_options (nullptr),
           lighting_dock (nullptr) {
 
@@ -220,7 +222,6 @@ namespace MR
             GridLayout* general_opt_grid = new GridLayout;
             general_opt_grid->setContentsMargins (0, 0, 0, 0);
             general_opt_grid->setSpacing (0);
-
             general_groupbox->setLayout (general_opt_grid);
 
             opacity_slider = new QSlider (Qt::Horizontal);
@@ -230,34 +231,50 @@ namespace MR
             general_opt_grid->addWidget (new QLabel ("opacity"), 0, 0);
             general_opt_grid->addWidget (opacity_slider, 0, 1);
 
-            slab_group_box = new QGroupBox (tr("crop to slab"));
-            slab_group_box->setCheckable (true);
-            slab_group_box->setChecked (true);
-            general_opt_grid->addWidget (slab_group_box, 4, 0, 1, 2);
-
-            connect (slab_group_box, SIGNAL (clicked (bool)), this, SLOT (on_crop_to_slab_slot (bool)));
-
-            GridLayout* slab_layout = new GridLayout;
-            slab_group_box->setLayout(slab_layout);
+            slab_groupbox = new QGroupBox (tr("crop to slab"));
+            HBoxLayout* slab_layout = new HBoxLayout;
+            slab_groupbox->setLayout (slab_layout);
+            slab_checkbox = new QCheckBox;
+            slab_checkbox->setCheckable (true);
+            slab_checkbox->setChecked (true);
+            connect (slab_checkbox, SIGNAL (clicked (bool)), this, SLOT (on_crop_to_slab_slot (bool)));
+            slab_layout->addWidget (slab_checkbox);
             slab_layout->addWidget (new QLabel ("thickness (mm)"), 0, 0);
             slab_entry = new AdjustButton (this, 0.1);
             slab_entry->setValue (slab_thickness);
             slab_entry->setMin (0.0);
             connect (slab_entry, SIGNAL (valueChanged()), this, SLOT (on_slab_thickness_slot()));
-            slab_layout->addWidget (slab_entry, 0, 1);
+            slab_layout->addWidget (slab_entry);
+            general_opt_grid->addWidget (slab_groupbox, 1, 0, 1, 2);
 
-            lighting_group_box = new QGroupBox (tr("use lighting"));
-            lighting_group_box->setCheckable (true);
-            lighting_group_box->setChecked (false);
-            general_opt_grid->addWidget (lighting_group_box, 5, 0, 1, 2);
+            spherical_roi_groupbox = new QGroupBox ("spherical ROIs");
+            HBoxLayout* spherical_roi_layout = new HBoxLayout;
+            spherical_roi_groupbox->setLayout (spherical_roi_layout);
+            spherical_roi_checkbox = new QCheckBox (tr("show"));
+            spherical_roi_checkbox->setCheckable (true);
+            spherical_roi_checkbox->setChecked (true);
+            spherical_roi_layout->addWidget (spherical_roi_checkbox);
+            connect (spherical_roi_checkbox, SIGNAL (clicked (bool)), this, SLOT (on_show_spherical_rois_slot (bool)));
+            spherical_roi_slider = new QSlider (Qt::Horizontal);
+            spherical_roi_slider->setRange (1, 1000);
+            spherical_roi_slider->setSliderPosition (1000);
+            connect (spherical_roi_slider, SIGNAL (valueChanged (int)), this, SLOT (spherical_rois_opacity_slot (int)));
+            spherical_roi_layout->addWidget (spherical_roi_slider);
+            general_opt_grid->addWidget (spherical_roi_groupbox, 2, 0, 1, 2);
 
-            connect (lighting_group_box, SIGNAL (clicked (bool)), this, SLOT (on_use_lighting_slot (bool)));
-
-            VBoxLayout* lighting_layout = new VBoxLayout (lighting_group_box);
-            lighting_button = new QPushButton ("Track lighting...");
+            lighting_groupbox = new QGroupBox (tr("lighting"));
+            HBoxLayout* lighting_layout = new HBoxLayout;
+            lighting_groupbox->setLayout (lighting_layout);
+            lighting_checkbox = new QCheckBox;
+            lighting_checkbox->setCheckable (true);
+            lighting_checkbox->setChecked (false);
+            connect (lighting_checkbox, SIGNAL (clicked (bool)), this, SLOT (on_use_lighting_slot (bool)));
+            lighting_layout->addWidget (lighting_checkbox);
+            lighting_button = new QPushButton ("Settings...");
             lighting_button->setIcon (QIcon (":/light.svg"));
             connect (lighting_button, SIGNAL (clicked()), this, SLOT (on_lighting_settings()));
             lighting_layout->addWidget (lighting_button);
+            general_opt_grid->addWidget (lighting_groupbox, 3, 0, 1, 2);
 
             main_box->addWidget (general_groupbox, 0);
 
@@ -301,7 +318,7 @@ namespace MR
             // In the instance where pseudotubes are _not_ the default, enable lighting by default
             if (Tractogram::default_tract_geom != TrackGeometryType::Pseudotubes) {
               use_lighting = true;
-              lighting_group_box->setChecked (true);
+              lighting_checkbox->setChecked (true);
             }
 
             update_geometry_type_gui();
@@ -314,10 +331,20 @@ namespace MR
         void Tractography::draw (const Projection& transform, bool is_3D, int, int)
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          if (hide_all_button->isChecked())
+            return;
           not_3D = !is_3D;
+          // Render ROIs from all currently active tractograms before drawing streamlines
+          if (show_spherical_rois) {
+            for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
+              Tractogram* tractogram = dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get());
+              if (tractogram->show)
+                tractogram->render_rois (transform);
+            }
+          }
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
             Tractogram* tractogram = dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get());
-            if (tractogram->show && !hide_all_button->isChecked())
+            if (tractogram->show)
               tractogram->render (transform);
           }
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
@@ -444,12 +471,22 @@ namespace MR
         void Tractography::on_crop_to_slab_slot (bool is_checked)
         {
           do_crop_to_slab = is_checked;
-
           for (size_t i = 0, N = tractogram_list_model->rowCount(); i < N; ++i) {
             Tractogram* tractogram = dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get());
             tractogram->should_update_stride = true;
           }
+          window().updateGL();
+        }
 
+        void Tractography::on_show_spherical_rois_slot (bool is_checked)
+        {
+          show_spherical_rois = is_checked;
+          window().updateGL();
+        }
+
+        void Tractography::spherical_rois_opacity_slot (int opacity)
+        {
+          spherical_roi_opacity = Math::pow2(static_cast<float>(opacity)) / 1.0e6f;
           window().updateGL();
         }
 
@@ -795,8 +832,8 @@ namespace MR
         {
           thickness_slider->setHidden (true);
           thickness_label->setHidden (true);
+          lighting_checkbox->setEnabled (false);
           lighting_button->setEnabled (false);
-          lighting_group_box->setEnabled (false);
           geom_type_combobox->setEnabled (false);
 
           QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
@@ -811,8 +848,8 @@ namespace MR
           if (geom_type == TrackGeometryType::Pseudotubes || geom_type == TrackGeometryType::Points) {
             thickness_slider->setHidden (false);
             thickness_label->setHidden (false);
+            lighting_checkbox->setEnabled (true);
             lighting_button->setEnabled (true);
-            lighting_group_box->setEnabled (true);
           }
 
         }
@@ -979,7 +1016,7 @@ namespace MR
             float thickness = opt[0];
             try {
               bool crop = thickness > 0;
-              slab_group_box->setChecked(crop);
+              slab_checkbox->setChecked(crop);
               on_crop_to_slab_slot(crop);//Needs to be manually bumped
               if(crop)
               {
@@ -993,8 +1030,8 @@ namespace MR
 
           if (opt.opt->is ("tractography.lighting")) {
             const bool value = bool(opt[0]);
-            lighting_group_box->setChecked (value);
-            use_lighting = bool(value);
+            lighting_checkbox->setChecked (value);
+            use_lighting = value;
             return true;
           }
 

@@ -20,6 +20,7 @@
 //#include "gui/mrview/tool/tractography/tractogram_enums.h"
 #include "gui/mrview/displayable.h"
 #include "dwi/tractography/properties.h"
+#include "gui/mrview/tool/tractography/spherical_rois.h"
 #include "gui/mrview/tool/tractography/tractography.h"
 #include "gui/mrview/colourmap.h"
 
@@ -48,6 +49,7 @@ namespace MR
 
             Window& window () const { return *Window::main; }
 
+            void render_rois (const Projection& transform);
             void render (const Projection& transform);
 
             void request_render_colourbar (DisplayableVisitor& visitor) override {
@@ -155,6 +157,8 @@ namespace MR
             // Extra members now required since different scalar files
             //   may be used for streamline colouring and thresholding
             float threshold_min, threshold_max;
+
+            SphericalROIs spherical_rois;
 
 
             void load_tracks_onto_GPU (vector<Eigen::Vector3f>& buffer,

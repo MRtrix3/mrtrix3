@@ -62,12 +62,14 @@ namespace MR
             virtual bool process_commandline_option (const MR::App::ParsedOption& opt) override;
 
             QPushButton* hide_all_button;
+            float line_opacity;
             bool do_crop_to_slab;
             bool use_lighting;
             bool use_threshold_scalarfile;
             bool not_3D;
             float slab_thickness;
-            float line_opacity;
+            bool show_spherical_rois;
+            float spherical_roi_opacity;
             Model* tractogram_list_model;
             QListView* tractogram_list_view;
 
@@ -80,6 +82,8 @@ namespace MR
             void hide_all_slot ();
             void on_slab_thickness_slot ();
             void on_crop_to_slab_slot (bool is_checked);
+            void on_show_spherical_rois_slot (bool is_checked);
+            void spherical_rois_opacity_slot (int opacity);
             void on_use_lighting_slot (bool is_checked);
             void on_lighting_settings ();
             void opacity_slot (int opacity);
@@ -96,7 +100,6 @@ namespace MR
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
 
           protected:
-            AdjustButton* slab_entry;
             QMenu* track_option_menu;
 
             ComboBoxWithErrorMsg *colour_combobox;
@@ -104,17 +107,25 @@ namespace MR
 
             ComboBoxWithErrorMsg *geom_type_combobox;
 
+            TrackScalarFileOptions *scalar_file_options;
+
+            QSlider* opacity_slider;
+
             QLabel* thickness_label;
             QSlider* thickness_slider;
 
-            TrackScalarFileOptions *scalar_file_options;
-            LightingDock *lighting_dock;
+            QGroupBox* slab_groupbox;
+            QCheckBox* slab_checkbox;
+            AdjustButton* slab_entry;
 
-            QGroupBox* slab_group_box;
-            QGroupBox* lighting_group_box;
+            QGroupBox* spherical_roi_groupbox;
+            QCheckBox* spherical_roi_checkbox;
+            QSlider* spherical_roi_slider;
+
+            QGroupBox* lighting_groupbox;
+            QCheckBox* lighting_checkbox;
             QPushButton* lighting_button;
-
-            QSlider* opacity_slider;
+            LightingDock *lighting_dock;
 
             void dropEvent (QDropEvent* event) override;
             void update_scalar_options();

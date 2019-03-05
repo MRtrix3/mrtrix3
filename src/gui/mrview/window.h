@@ -345,10 +345,10 @@ namespace MR
       };
 
 
-#ifndef NDEBUG
-# define ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT ASSERT_GL_CONTEXT_IS_CURRENT (::MR::GUI::MRView::Window::main->glwidget())
-#else
+#ifdef NDEBUG
 # define ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT
+#else
+# define ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT ASSERT_GL_CONTEXT_IS_CURRENT (::MR::GUI::MRView::Window::main->glwidget())
 #endif
 
 

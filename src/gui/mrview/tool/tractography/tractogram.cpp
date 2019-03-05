@@ -71,7 +71,6 @@ namespace MR
           "out vec3 v_tangent;\n"
           "out vec2 v_end;\n";
 
-
           if (do_crop_to_slab)
             source += "out float v_include;\n";
 
@@ -88,8 +87,7 @@ namespace MR
             "  v_tangent = next_vertex - prev_vertex;\n"
             "  vec2 dir = mat3x2(MVP) * v_tangent;\n"
             "  v_end = line_thickness * normalize (vec2 (dir.y/scale_x, -dir.x/scale_y));\n"
-            "  v_end.x *= scale_y; v_end.y *= scale_x;\n"
-            ;
+            "  v_end.x *= scale_y; v_end.y *= scale_x;\n";
 
           if (do_crop_to_slab)
             source += "  v_include = (dot(vertex, screen_normal) - crop_var) / slab_width;\n";
@@ -104,8 +102,9 @@ namespace MR
           else if (color_type == TrackColourType::ScalarFile) { // TODO: move to frag shader:
             if (!ColourMap::maps[colourmap].special) {
               source += "  float amplitude = clamp (";
-              if (tractogram.scale_inverted()) source += "1.0 -";
-              source += " scale * (amp - offset), 0.0, 1.0);\n";
+              if (tractogram.scale_inverted())
+                source += "1.0 - ";
+              source += "scale * (amp - offset), 0.0, 1.0);\n";
             }
             source +=
                 std::string("  vec3 color;\n  ") +
@@ -129,7 +128,6 @@ namespace MR
           "layout(triangle_strip, max_vertices = 4) out;\n"
           "uniform float line_thickness;\n"
           "uniform float downscale_factor;\n"
-          "uniform mat4 MV;\n"
 
           "in vec3 v_tangent[];\n"
           "in vec2 v_end[];\n";
@@ -249,10 +247,10 @@ namespace MR
 
           if (using_points)
             source +=
-            "vec2 pos = gl_PointCoord-0.5;\n"
-            "float d_pos = dot(pos, pos);\n"
-            "if(d_pos >0.25)\n"
-            "  discard;\n";
+            "  vec2 pos = gl_PointCoord-0.5;\n"
+            "  float d_pos = dot(pos, pos);\n"
+            "  if(d_pos >0.25)\n"
+            "    discard;\n";
 
           if (do_crop_to_slab)
             source += using_geom ?
@@ -373,7 +371,8 @@ namespace MR
             sample_stride (0),
             vao_dirty (true),
             threshold_min (NaN),
-            threshold_max (NaN)
+            threshold_max (NaN),
+            spherical_rois (filename, tractography_tool)
         {
           set_allowed_features (true, true, true);
           colourmap = 1;
@@ -399,6 +398,14 @@ namespace MR
           if (threshold_scalar_buffers.size())
             gl::DeleteBuffers (threshold_scalar_buffers.size(), &threshold_scalar_buffers[0]);
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        }
+
+
+
+
+        void Tractogram::render_rois (const Projection& transform)
+        {
+          spherical_rois.render (transform);
         }
 
 
@@ -484,18 +491,12 @@ namespace MR
             gl::DepthMask (gl::TRUE_);
             gl::BlendColor (1.0, 1.0, 1.0, tractography_tool.line_opacity / 0.5);
             render_streamlines();
-
+            gl::Disable (gl::BLEND);
           } else {
             gl::Disable (gl::BLEND);
             gl::Enable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
             render_streamlines();
-          }
-
-          if (tractography_tool.line_opacity < 1.0) {
-            gl::Disable (gl::BLEND);
-            gl::Enable (gl::DEPTH_TEST);
-            gl::DepthMask (gl::TRUE_);
           }
 
           stop (track_shader);
@@ -608,6 +609,7 @@ namespace MR
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
           DWI::Tractography::Reader<float> file (filename, properties);
+          spherical_rois.load (properties);
           DWI::Tractography::Streamline<float> tck;
           vector<Eigen::Vector3f> buffer;
           vector<GLint> starts;

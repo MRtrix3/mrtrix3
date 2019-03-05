@@ -131,11 +131,11 @@ namespace MR
 
       inline std::ostream& operator<< (std::ostream& stream, const Properties& P)
       {
-        stream << "seeds: " << P.seeds;
-        stream << "include: " << P.include << ", exclude: " << P.exclude << ", mask: " << P.mask << ", dict: ";
+        stream << "seeds: " << P.seeds << "; ";
+        stream << "include: " << P.include << "; exclude: " << P.exclude << "; mask: " << P.mask << "; dict: ";
         for (std::map<std::string, std::string>::const_iterator i = P.begin(); i != P.end(); ++i)
           stream << "[ " << i->first << ": " << i->second << " ], ";
-        stream << "comments: ";
+        stream << "; comments: ";
         for (vector<std::string>::const_iterator i = P.comments.begin(); i != P.comments.end(); ++i)
           stream << "\"" << *i << "\", ";
         return (stream);
