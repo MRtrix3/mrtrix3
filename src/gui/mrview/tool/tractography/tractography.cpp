@@ -94,7 +94,7 @@ namespace MR
           line_opacity (1.0),
           do_crop_to_slab (true),
           use_lighting (false),
-          not_3D (true),
+          is_3D (false),
           show_spherical_rois (true),
           spherical_roi_opacity (1.0),
           scalar_file_options (nullptr),
@@ -328,12 +328,12 @@ namespace MR
         Tractography::~Tractography () {}
 
 
-        void Tractography::draw (const Projection& transform, bool is_3D, int, int)
+        void Tractography::draw (const Projection& transform, bool is3D, int, int)
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (hide_all_button->isChecked())
             return;
-          not_3D = !is_3D;
+          is_3D = is3D;
           // Render ROIs from all currently active tractograms before drawing streamlines
           if (show_spherical_rois) {
             for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
@@ -486,7 +486,7 @@ namespace MR
 
         void Tractography::spherical_rois_opacity_slot (int opacity)
         {
-          spherical_roi_opacity = Math::pow2(static_cast<float>(opacity)) / 1.0e6f;
+          spherical_roi_opacity = static_cast<float>(opacity) / 1000.0f;
           window().updateGL();
         }
 

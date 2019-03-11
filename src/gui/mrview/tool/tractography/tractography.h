@@ -53,10 +53,10 @@ namespace MR
 
             virtual ~Tractography ();
 
-            void draw (const Projection& transform, bool is_3D, int axis, int slice) override;
+            void draw (const Projection& transform, bool is3D, int axis, int slice) override;
             void draw_colourbars () override;
             size_t visible_number_colourbars () override;
-            bool crop_to_slab () const { return (do_crop_to_slab && not_3D); }
+            bool crop_to_slab () const { return (do_crop_to_slab && !is_3D); }
 
             static void add_commandline_options (MR::App::OptionList& options);
             virtual bool process_commandline_option (const MR::App::ParsedOption& opt) override;
@@ -66,7 +66,7 @@ namespace MR
             bool do_crop_to_slab;
             bool use_lighting;
             bool use_threshold_scalarfile;
-            bool not_3D;
+            bool is_3D;
             float slab_thickness;
             bool show_spherical_rois;
             float spherical_roi_opacity;

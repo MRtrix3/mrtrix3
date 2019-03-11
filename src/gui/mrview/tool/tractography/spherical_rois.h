@@ -17,11 +17,12 @@
 #ifndef __gui_mrview_tool_sphericalrois_h__
 #define __gui_mrview_tool_sphericalrois_h__
 
-
+#include <map>
 
 #include "dwi/tractography/properties.h"
 #include "gui/mrview/tool/tractography/tractography.h"
 #include "gui/opengl/gl.h"
+#include "gui/shapes/sphere.h"
 
 
 namespace MR
@@ -42,6 +43,9 @@ namespace MR
           Q_OBJECT
 
           public:
+
+            enum class type_t { UNDEFINED, SEED, INCLUDE, EXCLUDE, MASK };
+
             SphericalROIs (const std::string&, const GUI::MRView::Tool::Tractography&);
             ~SphericalROIs ();
 
@@ -52,15 +56,16 @@ namespace MR
             class Shader : public Displayable::Shader { MEMALIGN(Shader)
               public:
                 Shader () :
-                    do_crop_to_slab (false),
-                    use_lighting (false) { }
+                    is_3D (false),
+                    use_lighting (false),
+                    use_transparency (false) { }
                 std::string vertex_shader_source   (const Displayable&) override;
                 std::string geometry_shader_source (const Displayable&) override;
                 std::string fragment_shader_source (const Displayable&) override;
                 virtual bool need_update (const Displayable&) const override;
                 virtual void update (const Displayable&) override;
               protected:
-                bool do_crop_to_slab, use_lighting;
+                bool is_3D, use_lighting, use_transparency;
             } shader;
 
           signals:
@@ -68,11 +73,21 @@ namespace MR
 
           private:
 
-            class SphereSpec {
+            class SphereSpec { MEMALIGN(SphereSpec)
               public:
-                SphereSpec (const Eigen::Vector3f& c, const float r) : centre (c), radius (r) { }
+                SphereSpec (const type_t t, const Eigen::Vector3f& c, const float r) : type (t), centre (c), radius (r) { }
+                type_t type;
                 Eigen::Vector3f centre;
                 float radius;
+            };
+
+            class Shared { MEMALIGN(Shared)
+              public:
+                Shared() { }
+                void initialise();
+                Shapes::Sphere sphere;
+                GL::VertexArrayObject vao;
+                std::map<type_t, Eigen::Vector3f> type2colour;
             };
 
             const GUI::MRView::Tool::Tractography& tractography_tool;
@@ -81,7 +96,12 @@ namespace MR
             GL::VertexArrayObject vertex_array_object;
             bool vao_dirty;
 
+            static Shared shared;
+
         };
+
+
+
       }
     }
   }
