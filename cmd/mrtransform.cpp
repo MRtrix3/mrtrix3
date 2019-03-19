@@ -219,7 +219,7 @@ void run ()
   Stride::set_from_command_line (output_header);
 
   // Linear
-  transform_type linear_transform;
+  transform_type linear_transform = input_header.transform();
   bool linear = false;
   auto opt = get_options ("linear");
   if (opt.size()) {
