@@ -347,7 +347,8 @@ namespace MR
               }
             } loop_thread = { shared, functor };
 
-            Thread::run (Thread::multi (loop_thread), "loop threads").wait();
+            auto threads = Thread::run (Thread::multi (loop_thread), "loop threads");
+            threads.wait();
           }
 
 
@@ -377,74 +378,80 @@ namespace MR
   //! Multi-threaded loop object
   //* \sa image_thread_looping for details */
   template <class HeaderType>
-    inline ThreadedLoopRunOuter<decltype(Loop(vector<size_t>()))> ThreadedLoop (
+    inline ThreadedLoopRunOuter<decltype(Loop(vector<size_t>()))>
+    ThreadedLoop (
         const HeaderType& source,
         const vector<size_t>& outer_axes,
-        const vector<size_t>& inner_axes) {
-      return { source, Loop (outer_axes), inner_axes };
-    }
+        const vector<size_t>& inner_axes)
+    { return { source, Loop (outer_axes), inner_axes }; }
 
 
   //! Multi-threaded loop object
   //* \sa image_thread_looping for details */
   template <class HeaderType>
-    inline ThreadedLoopRunOuter<decltype(Loop(vector<size_t>()))> ThreadedLoop (
+    inline ThreadedLoopRunOuter<decltype(Loop(vector<size_t>()))>
+    ThreadedLoop (
         const HeaderType& source,
         const vector<size_t>& axes,
-        size_t num_inner_axes = 1) {
-      return { source, Loop (get_outer_axes (axes, num_inner_axes)), get_inner_axes (axes, num_inner_axes) };
-    }
+        size_t num_inner_axes = 1)
+    { return { source, Loop (get_outer_axes (axes, num_inner_axes)), get_inner_axes (axes, num_inner_axes) }; }
 
   //! Multi-threaded loop object
   //* \sa image_thread_looping for details */
   template <class HeaderType>
-    inline ThreadedLoopRunOuter<decltype(Loop(vector<size_t>()))> ThreadedLoop (
+    inline ThreadedLoopRunOuter<decltype(Loop(vector<size_t>()))>
+    ThreadedLoop (
         const HeaderType& source,
         size_t from_axis = 0,
         size_t to_axis = std::numeric_limits<size_t>::max(),
-        size_t num_inner_axes = 1) {
+        size_t num_inner_axes = 1)
+    {
       return { source,
         Loop (get_outer_axes (source, num_inner_axes, from_axis, to_axis)),
         get_inner_axes (source, num_inner_axes, from_axis, to_axis) };
-      }
-
-  //! Multi-threaded loop object
-  //* \sa image_thread_looping for details */
-  template <class HeaderType>
-    inline ThreadedLoopRunOuter<decltype(Loop("", vector<size_t>()))> ThreadedLoop (
-        const std::string& progress_message,
-        const HeaderType& source,
-        const vector<size_t>& outer_axes,
-        const vector<size_t>& inner_axes) {
-      return { source, Loop (progress_message, outer_axes), inner_axes };
     }
 
   //! Multi-threaded loop object
   //* \sa image_thread_looping for details */
   template <class HeaderType>
-    inline ThreadedLoopRunOuter<decltype(Loop("", vector<size_t>()))> ThreadedLoop (
+    inline ThreadedLoopRunOuter<decltype(Loop("", vector<size_t>()))>
+    ThreadedLoop (
         const std::string& progress_message,
         const HeaderType& source,
-        const vector<size_t>& axes,
-        size_t num_inner_axes = 1) {
-      return { source,
-        Loop (progress_message, get_outer_axes (axes, num_inner_axes)),
-        get_inner_axes (axes, num_inner_axes) };
-      }
+        const vector<size_t>& outer_axes,
+        const vector<size_t>& inner_axes)
+    { return { source, Loop (progress_message, outer_axes), inner_axes }; }
 
   //! Multi-threaded loop object
   //* \sa image_thread_looping for details */
   template <class HeaderType>
-    inline ThreadedLoopRunOuter<decltype(Loop("", vector<size_t>()))> ThreadedLoop (
+    inline ThreadedLoopRunOuter<decltype(Loop("", vector<size_t>()))>
+    ThreadedLoop (
+        const std::string& progress_message,
+        const HeaderType& source,
+        const vector<size_t>& axes,
+        size_t num_inner_axes = 1)
+    {
+      return { source,
+        Loop (progress_message, get_outer_axes (axes, num_inner_axes)),
+        get_inner_axes (axes, num_inner_axes) };
+    }
+
+  //! Multi-threaded loop object
+  //* \sa image_thread_looping for details */
+  template <class HeaderType>
+    inline ThreadedLoopRunOuter<decltype(Loop("", vector<size_t>()))>
+    ThreadedLoop (
         const std::string& progress_message,
         const HeaderType& source,
         size_t from_axis = 0,
         size_t to_axis = std::numeric_limits<size_t>::max(),
-        size_t num_inner_axes = 1) {
+        size_t num_inner_axes = 1)
+    {
       return { source,
         Loop (progress_message, get_outer_axes (source, num_inner_axes, from_axis, to_axis)),
         get_inner_axes (source, num_inner_axes, from_axis, to_axis) };
-      }
+    }
 
 
 
