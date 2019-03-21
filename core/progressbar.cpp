@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+
 #include "app.h"
 #include "progressbar.h"
 
@@ -37,6 +38,12 @@ namespace MR
       " .  "
     };
 
+
+
+    void display_func_multithreaded (ProgressInfo& p)
+    {
+      p.notifier.notify_all();
+    }
 
 
     void display_func_terminal (ProgressInfo& p)
@@ -141,9 +148,24 @@ namespace MR
 
   void (*ProgressInfo::display_func) (ProgressInfo& p) = display_func_terminal;
   void (*ProgressInfo::done_func) (ProgressInfo& p) = done_func_terminal;
+  void (*ProgressInfo::previous_display_func) (ProgressInfo& p) = nullptr;
+
+
+  ProgressBar::SwitchToMultiThreaded::SwitchToMultiThreaded () {
+    ProgressInfo::previous_display_func = ProgressInfo::display_func;
+    ProgressInfo::display_func = display_func_multithreaded;
+  }
+
+
+  ProgressBar::SwitchToMultiThreaded::~SwitchToMultiThreaded () {
+    ProgressInfo::display_func = ProgressInfo::previous_display_func;
+    ProgressInfo::previous_display_func = nullptr;
+  }
 
 
 
+
+  void (*previous_display_func) (ProgressInfo& p);
 
 
 

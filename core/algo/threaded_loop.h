@@ -304,6 +304,15 @@ namespace MR
       };
 
 
+      inline void __manage_progress (...) { }
+      template <class LoopType, class ThreadType>
+        inline auto __manage_progress (const LoopType* loop, const ThreadType* threads)
+        -> decltype((void) (&loop->progress), void())
+      {
+        loop->progress.run_update_thread (*threads);
+      }
+
+
     template <class OuterLoopType>
       struct ThreadedLoopRunOuter { MEMALIGN(ThreadedLoopRunOuter<OuterLoopType>)
         Iterator iterator;
@@ -321,6 +330,7 @@ namespace MR
             }
 
             std::mutex mutex;
+            ProgressBar::SwitchToMultiThreaded progress_functions;
 
             struct Shared { MEMALIGN(Shared)
               Iterator& iterator;
@@ -348,6 +358,8 @@ namespace MR
             } loop_thread = { shared, functor };
 
             auto threads = Thread::run (Thread::multi (loop_thread), "loop threads");
+
+            __manage_progress (&shared.loop, &threads);
             threads.wait();
           }
 

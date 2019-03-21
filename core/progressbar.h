@@ -19,6 +19,8 @@
 
 #include <string>
 #include <memory>
+#include <mutex>
+#include <condition_variable>
 
 
 #include "mrtrix.h"
@@ -37,11 +39,11 @@ namespace MR
     public:
       ProgressInfo () = delete;
       ProgressInfo (const ProgressInfo& p) = delete;
-      ProgressInfo (ProgressInfo&& p) = delete; 
+      ProgressInfo (ProgressInfo&& p) = delete;
 
       FORCE_INLINE ProgressInfo (const std::string& text, size_t target, bool display_immediately = true) :
-        value (0), text (text), ellipsis ("... "), 
-        current_val (0), next_percent (0), next_time (0.0), multiplier (0.0), 
+        value (0), text (text), ellipsis ("... "),
+        current_val (0), next_percent (0), next_time (0.0), multiplier (0.0),
         text_has_been_modified (false), data (nullptr) {
           set_max (target, display_immediately);
         }
@@ -64,13 +66,13 @@ namespace MR
        * is shown. */
       std::string ellipsis;
 
-      //! the current absolute value 
+      //! the current absolute value
       /*! only used when progress is shown as a percentage */
       size_t current_val;
 
-      //! the value of \c current_val that will trigger the next update. 
+      //! the value of \c current_val that will trigger the next update.
       size_t next_percent;
-       //! the time (from the start of the progressbar) that will trigger the next update. 
+       //! the time (from the start of the progressbar) that will trigger the next update.
       double next_time;
 
       //! the factor to convert from absolute value to percentage
@@ -84,9 +86,12 @@ namespace MR
       /*! this is important to determine the most appropriate mode of operation
        * when redirecting output to file. */
       bool text_has_been_modified;
-     
+
       //! a pointer to additional data required by alternative implementations
       void* data;
+
+      std::condition_variable notifier;
+      std::mutex mutex;;
 
       void set_max (size_t target, bool display_immediately = true) {
         if (target) {
@@ -119,7 +124,7 @@ namespace MR
       }
 
       //! update text displayed and optionally increment counter
-      template <class TextFunc> 
+      template <class TextFunc>
         FORCE_INLINE void update (TextFunc&& text_func, const bool increment = true) {
           double time = timer.elapsed();
           if (increment && multiplier) {
@@ -175,8 +180,21 @@ namespace MR
         ++ (*this);
       }
 
+
+      template <class ThreadType>
+        void run_update_thread (const ThreadType& threads)
+        {
+          std::unique_lock<std::mutex> lock (mutex);
+          while (!threads.finished()) {
+            notifier.wait (lock, []{ return true; });
+            previous_display_func (*this);
+          }
+        }
+
+
       static void (*display_func) (ProgressInfo& p);
       static void (*done_func) (ProgressInfo& p);
+      static void (*previous_display_func) (ProgressInfo& p);
 
   };
 
@@ -207,7 +225,7 @@ namespace MR
       //! Create an unusable ProgressBar.
       ProgressBar () : show (false) { }
 
-      ProgressBar (const ProgressBar& p) : 
+      ProgressBar (const ProgressBar& p) :
         show (p.show), text (p.text), target (p.target) {
           assert (!p.prog);
         }
@@ -219,7 +237,9 @@ namespace MR
        * computed from the number of times the ProgressBar::operator++()
        * function was called relative to the value specified with \a target. */
       ProgressBar (const std::string& text, size_t target = 0, int log_level = 1) :
-        show (App::log_level >= log_level), text (text), target (target) { }
+        show (App::log_level >= log_level), text (text), target (target) {
+          assert (!prog);
+        }
 
       //! returns whether the progress will be shown
       /*! The progress may not be shown if the -quiet option has been supplied
@@ -262,7 +282,7 @@ namespace MR
        * functor rather than the text itself is to minimise the overhead of
        * forming the string in cases where this is sufficiently expensive to
        * impact performance if invoked every iteration. By passing a function,
-       * this operation is only performed when strictly necessary. 
+       * this operation is only performed when strictly necessary.
        *
        * The simplest way to use this method is using C++11 lambda functions,
        * for example:
@@ -278,7 +298,7 @@ namespace MR
       template <class TextFunc>
         FORCE_INLINE void update (TextFunc&& text_func, bool increment = true) {
           if (show) {
-            if (!prog) 
+            if (!prog)
               prog = std::unique_ptr<ProgressInfo> (new ProgressInfo (text, target, false));
             prog->update (std::forward<TextFunc> (text_func), increment);
           }
@@ -287,7 +307,7 @@ namespace MR
       //! increment the current value by one.
       FORCE_INLINE void operator++ () {
         if (show) {
-          if (!prog) 
+          if (!prog)
             prog = std::unique_ptr<ProgressInfo> (new ProgressInfo (text, target));
           (*prog)++;
         }
@@ -301,6 +321,16 @@ namespace MR
         prog.reset();
       }
 
+      template <class ThreadType>
+        void run_update_thread (const ThreadType& threads) const {
+          assert (prog);
+          prog->run_update_thread (threads);
+        }
+
+      struct SwitchToMultiThreaded { NOMEMALIGN
+        SwitchToMultiThreaded ();
+        ~SwitchToMultiThreaded ();
+      };
 
       static bool set_update_method ();
 
