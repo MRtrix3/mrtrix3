@@ -71,14 +71,14 @@ namespace MR
               dtype (DataType::from<ValueType>()),
               count_offset (0),
               open_success (false)
-          {
-            dtype.set_byte_order_native();
-            if (dtype != DataType::Float32LE && dtype != DataType::Float32BE &&
-                dtype != DataType::Float64LE && dtype != DataType::Float64BE)
-              throw Exception ("only supported datatype for tracks file are "
-                  "Float32LE, Float32BE, Float64LE & Float64BE");
-            App::check_overwrite (name);
-          }
+            {
+              dtype.set_byte_order_native();
+              if (dtype != DataType::Float32LE && dtype != DataType::Float32BE &&
+                  dtype != DataType::Float64LE && dtype != DataType::Float64BE)
+                throw Exception ("only supported datatype for tracks file are "
+                                 "Float32LE, Float32BE, Float64LE & Float64BE");
+              App::check_overwrite (name);
+            }
 
             ~__WriterBase__()
             {
@@ -148,31 +148,6 @@ namespace MR
               verify_stream (out);
             }
         };
-
-
-
-      // TODO A class for writing track / scalar data to file in the correct
-      //   order even if the data are provided out of order (e.g. due to
-      //   multi-threading)
-      template <class ClassType>
-      class WriterReorder
-      { NOMEMALIGN
-        public:
-          bool operator() (ClassType&&) const;
-
-        private:
-          mutable std::set<ClassType> buffer;
-          virtual void commit (const ClassType&) = 0;
-      };
-
-      template <class ClassType>
-      bool WriterReorder<ClassType>::operator() (ClassType&& in) const
-      {
-        return true;
-      }
-
-
-
       //! \endcond
 
 

@@ -317,14 +317,16 @@ namespace MR
         Tractography::Reader<float> reader (input_path, p);
         p["SIFT_mu"] = str (mu());
         Tractography::Writer<float> writer (output_path, p);
-        track_t tck_counter = 0;
+        track_t in_counter = 0, out_counter = 0;
         Tractography::Streamline<> tck;
         ProgressBar progress ("Writing filtered tracks output file", contributions.size());
-        while (reader (tck) && tck_counter < contributions.size()) {
-          if (contributions[tck_counter++])
+        while (reader (tck) && in_counter < contributions.size()) {
+          if (contributions[in_counter++]) {
+            tck.set_index (out_counter++);
             writer (tck);
-          else
+          } else {
             writer.skip();
+          }
           ++progress;
         }
         reader.close();

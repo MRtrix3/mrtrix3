@@ -18,6 +18,7 @@
 #define __dwi_tractography_file_h__
 
 #include <map>
+#include <set>
 
 #include "app.h"
 #include "types.h"
@@ -28,6 +29,7 @@
 #include "dwi/tractography/file_base.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
+#include "dwi/tractography/tracking/generated_track.h"
 
 
 namespace MR
@@ -135,7 +137,7 @@ namespace MR
         protected:
           using __ReaderBase__::in;
           using __ReaderBase__::dtype;
-            using __ReaderBase__::current_index;
+          using __ReaderBase__::current_index;
 
           std::unique_ptr<std::ifstream> weights_file;
 
@@ -345,7 +347,7 @@ namespace MR
       //! class to handle writing tracks to file, with RAM buffer
       /*! writes track header as specified in \a properties and individual
        * tracks to the file specified in \a file. Writing individual tracks is
-       * done using the append() method.
+       * done using the operator() method.
        *
        * This class implements a large write-back RAM buffer to hold the track
        * data in RAM, and only commits to file when the buffer capacity is
@@ -361,6 +363,7 @@ namespace MR
       { NOMEMALIGN
         public:
           using __WriterBase__<ValueType>::count;
+          using __WriterBase__<ValueType>::name;
           using __WriterBase__<ValueType>::total_count;
           using WriterUnbuffered<ValueType>::delimiter;
           using WriterUnbuffered<ValueType>::format_point;
@@ -389,25 +392,37 @@ namespace MR
 
           //! commits any remaining data to file
           ~Writer() {
+            add_reorder_cache();
+            if (reorder.size()) {
+              WARN ("The last " + str(reorder.size()) + " streamlines in file " + name + " were not identified as being in correct order");
+              add_reorder_cache (true); // Flush all remaining data
+            }
             commit();
           }
 
-          //! append track to file
+          //! add track to the output
           bool operator() (const Streamline<ValueType>& tck) {
-            if (buffer_size + tck.size() + 2 > buffer_capacity)
-              commit ();
-
-            for (const auto& i : tck) {
-              assert (i.allFinite());
-              add_point (i);
+            assert (tck.get_index() != tck.invalid);
+            if (tck.get_index() == count) {
+              add_streamline (tck);
+              add_weight (tck.weight);
+              add_reorder_cache();
+            } else {
+#ifndef NDEBUG
+              for (auto i : reorder) {
+                assert (i.get_index() != tck.get_index());
+              }
+#endif
+              reorder.insert (tck);
             }
-            add_point (delimiter());
+            return true;
+          }
 
-            if (weights_name.size())
-              weights_buffer += str (tck.weight) + ' ';
-
-            ++count;
-            ++total_count;
+          //! For generated tracks, no need to check order
+          bool operator() (const Tracking::GeneratedTrack& tck)
+          {
+            assert (weights_name.empty());
+            add_streamline (tck);
             return true;
           }
 
@@ -418,11 +433,50 @@ namespace MR
           size_t buffer_size;
           std::string weights_buffer;
 
+          std::set<Streamline<ValueType>> reorder;
+
           //! add point to buffer and increment buffer_size accordingly
           void add_point (const vector_type& p) {
             format_point (p, buffer[buffer_size++]);
           }
 
+          //! append track to buffer
+          void add_streamline (const vector<vector_type>& tck) {
+            if (buffer_size + tck.size() + 2 > buffer_capacity)
+              commit ();
+
+            for (const auto& i : tck) {
+              assert (i.allFinite());
+              add_point (i);
+            }
+            add_point (delimiter());
+
+            ++count;
+            ++total_count;
+          }
+
+          //! append streamline weight to the buffer
+          void add_weight (const float weight)
+          {
+            if (weights_name.size())
+              weights_buffer += str (weight) + ' ';
+          }
+
+          //! check whether there are any streamlines within the reordering
+          //! cache that can now be added to the buffer
+          void add_reorder_cache (bool force = false)
+          {
+            while (reorder.size()) {
+              auto i = reorder.begin();
+              if (force || i->get_index() == count) {
+                add_streamline (*i);
+                add_weight (i->weight);
+                reorder.erase (i);
+              }
+            }
+          }
+
+          //! commit buffer to file
           void commit () {
             WriterUnbuffered<ValueType>::commit (buffer.get(), buffer_size);
             buffer_size = 0;

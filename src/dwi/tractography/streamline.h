@@ -33,7 +33,6 @@ namespace MR
 
 
       // Base class for storing an index alongside either streamline vertex or track scalar data
-      //
       class DataIndex
       { NOMEMALIGN
         public:
@@ -62,6 +61,11 @@ namespace MR
         public:
           using value_type = ValueType;
           using vector<ValueType>::vector;
+          TrackScalar (const TrackScalar&) = default;
+          TrackScalar (TrackScalar&& that) :
+            vector<value_type> (std::move (that)),
+            DataIndex (std::move (that)) { }
+          TrackScalar& operator= (const TrackScalar& that) = default;
           void clear() { vector<ValueType>::clear(); DataIndex::clear(); }
       };
 

@@ -18,6 +18,7 @@
 #define __dwi_tractography_scalar_file_h__
 
 #include <map>
+#include <set>
 
 #include "types.h"
 #include "file/config.h"
@@ -205,16 +206,18 @@ namespace MR
 
           bool operator() (const TrackScalar<T>& tck_scalar)
           {
-            if (buffer_size + tck_scalar.size() > buffer_capacity)
-              commit();
-
-            for (typename vector<value_type>::const_iterator i = tck_scalar.begin(); i != tck_scalar.end(); ++i) {
-              assert (std::isfinite (*i));
-              add_scalar (*i);
+            assert (tck_scalar.get_index() != tck_scalar.invalid);
+            if (tck_scalar.get_index() == count) {
+              add_streamline (tck_scalar);
+              add_reorder_cache();
+            } else {
+#ifndef NDEBUG
+              for (auto i : reorder) {
+                assert (i.get_index() != tck_scalar.get_index());
+              }
+#endif
+              reorder.insert (tck_scalar);
             }
-            add_scalar (delimiter());
-            ++count;
-            ++total_count;
             return true;
           }
 
@@ -225,6 +228,8 @@ namespace MR
           std::unique_ptr<value_type[]> buffer;
           size_t buffer_size;
           int64_t current_offset;
+
+          std::set<TrackScalar<T>> reorder;
 
           void add_scalar (const value_type& s) {
             format_scalar (s, buffer[buffer_size++]);
@@ -239,6 +244,31 @@ namespace MR
               destination = LE(s);
             else
               destination = BE(s);
+          }
+
+          void add_streamline (const TrackScalar<T>& tck_scalar)
+          {
+            if (buffer_size + tck_scalar.size() > buffer_capacity)
+              commit();
+
+            for (typename vector<value_type>::const_iterator i = tck_scalar.begin(); i != tck_scalar.end(); ++i) {
+              assert (std::isfinite (*i));
+              add_scalar (*i);
+            }
+            add_scalar (delimiter());
+            ++count;
+            ++total_count;
+          }
+
+          void add_reorder_cache (bool force = false)
+          {
+            while (reorder.size()) {
+              auto i = reorder.begin();
+              if (force || i->get_index() == count) {
+                add_streamline (*i);
+                reorder.erase (i);
+              }
+            }
           }
 
           void commit ()

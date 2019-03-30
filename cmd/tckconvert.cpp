@@ -175,6 +175,7 @@ class VTKReader: public ReaderInterface<float> { MEMALIGN(VTKReader)
       int number_of_points = 0;
       number_of_lines = 0;
       number_of_line_indices = 0;
+      tck_counter = 0;
       while ( std::getline(input,line) ) {
         if ( line.find ( "ASCII" ) == 0 ) {
           throw Exception("VTK Reader only supports BINARY input");
@@ -217,6 +218,7 @@ class VTKReader: public ReaderInterface<float> { MEMALIGN(VTKReader)
           tck.push_back(f);
           lineIdx++;
         }
+        tck.set_index (tck_counter++);
         return true;
       }
       return false;
@@ -233,6 +235,7 @@ class VTKReader: public ReaderInterface<float> { MEMALIGN(VTKReader)
     int lineIdx;
     int number_of_lines;
     int number_of_line_indices;
+    size_t tck_counter;
 
 };
 
@@ -253,7 +256,7 @@ class ASCIIReader: public ReaderInterface<float> { MEMALIGN(ASCIIReader)
         auto t = load_matrix<float>(list[item].name());
         for (size_t i = 0; i < size_t(t.rows()); i++)
           tck.push_back(Eigen::Vector3f(t.row(i)));
-        item++;
+        tck.set_index (item++);
         return true;
       }
       return false;
