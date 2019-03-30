@@ -49,7 +49,7 @@ namespace MR {
         bool Downsampler::operator() (const Streamline<>& in, Streamline<>& out) const
         {
           out.clear();
-          out.index = in.index;
+          out.set_index (in.get_index());
           out.weight = in.weight;
           if (ratio <= 1 || in.empty())
             return false;

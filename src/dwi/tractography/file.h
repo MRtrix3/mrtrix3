@@ -104,7 +104,7 @@ namespace MR
                 }
 
                 if (std::isnan (p[0])) {
-                  tck.index = current_index++;
+                  tck.set_index (current_index++);
 
                   if (weights_file) {
 

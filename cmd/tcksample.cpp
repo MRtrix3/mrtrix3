@@ -79,7 +79,7 @@ void usage ()
             "processing a whole-brain tractogram, and images for which the "
             "quantiative parameter is additive)");
 
-  
+
   // TODO add support for SH amplitude along tangent
   // TODO add support for reading from fixel image
   //   (this would supersede fixel2tsf when used without -precise or -stat_tck options)
@@ -127,7 +127,7 @@ class TDI : public Image<value_type> { MEMALIGN(TDI)
 
 
 template <class Interp>
-class SamplerNonPrecise 
+class SamplerNonPrecise
 { MEMALIGN (SamplerNonPrecise<Interp>)
   public:
     SamplerNonPrecise (Image<value_type>& image, const stat_tck statistic, MR::copy_ptr<TDI>& precalc_tdi) :
@@ -143,7 +143,7 @@ class SamplerNonPrecise
     bool operator() (DWI::Tractography::Streamline<>& tck, std::pair<size_t, value_type>& out)
     {
       assert (statistic != stat_tck::NONE);
-      out.first = tck.index;
+      out.first = tck.get_index();
 
       std::pair<size_t, vector_type> values;
       (*this) (tck, values);
@@ -190,7 +190,7 @@ class SamplerNonPrecise
 
     bool operator() (const DWI::Tractography::Streamline<>& tck, std::pair<size_t, vector_type>& out)
     {
-      out.first = tck.index;
+      out.first = tck.get_index();
       out.second.resize (tck.size());
       for (size_t i = 0; i != tck.size(); ++i) {
         if (interp.scanner (tck[i]))
@@ -220,7 +220,7 @@ class SamplerNonPrecise
 
 
 
-class SamplerPrecise 
+class SamplerPrecise
 { MEMALIGN (SamplerPrecise)
   public:
     SamplerPrecise (Image<value_type>& image, const stat_tck statistic, MR::copy_ptr<TDI>& precalc_tdi) :
@@ -235,7 +235,7 @@ class SamplerPrecise
 
     bool operator() (DWI::Tractography::Streamline<>& tck, std::pair<size_t, value_type>& out)
     {
-      out.first = tck.index;
+      out.first = tck.get_index();
       value_type sum_lengths = value_type(0);
 
       DWI::Tractography::Mapping::SetVoxel voxels;
