@@ -3810,8 +3810,8 @@ namespace MR
           ProgressBar progress ("Importing connection exemplars", num_edges());
           MR::DWI::Tractography::Streamline<float> tck;
           while (reader (tck)) {
-            edges[tck.index].load_exemplar (tck);
-            edges[tck.index].create_streamline();
+            edges[tck.get_index()].load_exemplar (tck);
+            edges[tck.get_index()].create_streamline();
             ++progress;
           }
           have_exemplars = true;

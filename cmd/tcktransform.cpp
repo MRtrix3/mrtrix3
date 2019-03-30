@@ -68,7 +68,7 @@ class Warper { MEMALIGN(Warper)
 
     bool operator () (const TrackType& in, TrackType& out) {
       out.clear();
-      out.index = in.index;
+      out.set_index (in.get_index());
       out.weight = in.weight;
       for (size_t n = 0; n < in.size(); ++n) {
         auto vertex = pos(in[n]);

@@ -29,7 +29,7 @@ namespace MR {
         bool FixedStepSize::operator() (const Streamline<>& in, Streamline<>& out) const
         {
           out.clear();
-          out.index = in.index;
+          out.set_index (in.get_index());
           out.weight = in.weight;
           Math::Hermite<value_type> interp (hermite_tension);
           // Extensions required to enable Hermite interpolation in last streamline segment at either end

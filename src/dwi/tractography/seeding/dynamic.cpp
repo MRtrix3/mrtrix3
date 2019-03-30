@@ -168,7 +168,7 @@ namespace MR
 
       bool Dynamic::get_seed (Eigen::Vector3f&) const { return false; }
 
-      bool Dynamic::get_seed (Eigen::Vector3f& p, Eigen::Vector3f& d) 
+      bool Dynamic::get_seed (Eigen::Vector3f& p, Eigen::Vector3f& d)
       {
 
         uint64_t this_attempts = 0;
@@ -367,12 +367,12 @@ namespace MR
 
         bool WriteKernelDynamic::operator() (const Tracking::GeneratedTrack& in, Tractography::Streamline<>& out)
         {
-          out.index = writer.count;
-          out.weight = 1.0;
+          out.set_index (writer.count);
+          out.weight = 1.0f;
           if (!WriteKernel::operator() (in)) {
             out.clear();
             // Flag to indicate that tracking has completed, and threads should therefore terminate
-            out.weight = 0.0;
+            out.weight = 0.0f;
             // Actually need to pass this down the queue so that the seeder thread receives it and knows to terminate
             return true;
           }

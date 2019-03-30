@@ -31,7 +31,7 @@ namespace MR {
           assert (in.size());
           assert (planes.size());
           out.clear();
-          out.index = in.index;
+          out.set_index (in.get_index());
           out.weight = in.weight;
 
           // Determine which points on the streamline correspond to the endpoints of the arc

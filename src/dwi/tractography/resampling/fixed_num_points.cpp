@@ -32,7 +32,7 @@ namespace MR {
           // From this, derive the spline position of each sample
           assert (in.size() > 1);
           out.clear();
-          out.index = in.index;
+          out.set_index (in.get_index());
           out.weight = in.weight;
           value_type length = 0.0;
           vector<value_type> steps;
