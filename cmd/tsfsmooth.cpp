@@ -52,7 +52,7 @@ void run ()
   DWI::Tractography::ScalarWriter<value_type> writer (argument[1], properties);
 
   float stdev = get_option_value ("stdev", DEFAULT_SMOOTHING);
-  
+
   vector<float> kernel (2 * ceil(2.5 * stdev) + 1, 0);
   float norm_factor = 0.0;
   float radius = (kernel.size() - 1.0) / 2.0;
@@ -63,9 +63,10 @@ void run ()
   for (size_t c = 0; c < kernel.size(); c++)
     kernel[c] /= norm_factor;
 
-  vector<value_type> tck_scalar;
+  DWI::Tractography::TrackScalar<value_type> tck_scalar;
   while (reader (tck_scalar)) {
-    vector<value_type> tck_scalars_smoothed (tck_scalar.size());
+    DWI::Tractography::TrackScalar<value_type> tck_scalars_smoothed (tck_scalar.size());
+    tck_scalars_smoothed.set_index (tck_scalar.get_index());
 
     for (int i = 0; i < (int)tck_scalar.size(); ++i) {
       float norm_factor = 0.0;
