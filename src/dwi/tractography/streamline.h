@@ -55,6 +55,19 @@ namespace MR
 
 
 
+      // A class for track scalars
+      template <typename ValueType = float>
+      class TrackScalar : public vector<ValueType>, public DataIndex
+      { MEMALIGN(TrackScalar)
+        public:
+          using value_type = ValueType;
+          using vector<ValueType>::vector;
+          void clear() { vector<ValueType>::clear(); DataIndex::clear(); }
+      };
+
+
+
+
       template <typename ValueType = float>
         class Streamline : public vector<Eigen::Matrix<ValueType,3,1>>, public DataIndex
       { MEMALIGN(Streamline<ValueType>)

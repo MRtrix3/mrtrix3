@@ -71,16 +71,16 @@ namespace MR
         public:
 
           //! open the \c file for reading and load header into \c properties
-          Reader (const std::string& file, Properties& properties) :
-            current_index (0) {
-              open (file, "tracks", properties);
-              auto opt = App::get_options ("tck_weights_in");
-              if (opt.size()) {
-                weights_file.reset (new std::ifstream (str(opt[0][0]).c_str(), std::ios_base::in));
-                if (!weights_file->good())
-                  throw Exception ("Unable to open streamlines weights file " + str(opt[0][0]));
-              }
+          Reader (const std::string& file, Properties& properties)
+          {
+            open (file, "tracks", properties);
+            auto opt = App::get_options ("tck_weights_in");
+            if (opt.size()) {
+              weights_file.reset (new std::ifstream (str(opt[0][0]).c_str(), std::ios_base::in));
+              if (!weights_file->good())
+                throw Exception ("Unable to open streamlines weights file " + str(opt[0][0]));
             }
+          }
 
 
             //! fetch next track from file
@@ -135,8 +135,8 @@ namespace MR
         protected:
           using __ReaderBase__::in;
           using __ReaderBase__::dtype;
+            using __ReaderBase__::current_index;
 
-          uint64_t current_index;
           std::unique_ptr<std::ifstream> weights_file;
 
           //! takes care of byte ordering issues

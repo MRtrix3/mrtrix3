@@ -41,6 +41,7 @@ namespace MR
       class __ReaderBase__
       { NOMEMALIGN
         public:
+            __ReaderBase__() : current_index (0) { }
           ~__ReaderBase__ () {
             if (in.is_open())
               in.close();
@@ -51,9 +52,9 @@ namespace MR
           void close () { in.close(); }
 
         protected:
-
           std::ifstream  in;
           DataType  dtype;
+          uint64_t current_index;
       };
 
 
