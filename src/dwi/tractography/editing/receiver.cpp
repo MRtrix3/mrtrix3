@@ -26,7 +26,7 @@ namespace MR {
 
 
 
-        bool Receiver::operator() (const Streamline<>& in)
+        bool Receiver::operator() (Streamline<>& in)
         {
           auto display_func = [&]() {
             return (printf ("%8" PRIu64 " read, %8" PRIu64 " written", total_count, count)
@@ -38,46 +38,40 @@ namespace MR {
 
           ++total_count;
 
-          if (in.empty()) {
-            writer.skip();
+          if (skip && std::isfinite (in.weight)) {
+            --skip;
             progress.update (display_func);
             return true;
           }
 
-          if (in[0].allFinite()) {
+          ++count;
 
-            if (skip) {
-              --skip;
-              progress.update (display_func);
-              return true;
-            }
-            writer (in);
-            ++segments;
+          // Explicitly handle case where the streamline has been cropped into multiple components
+          // Worker class separates track segments using invalid points as delimiters
+          if (in.size() && std::isfinite (in.weight) && !in[0].allFinite()) {
 
-          } else {
-
-            // Explicitly handle case where the streamline has been cropped into multiple components
-            // Worker class separates track segments using invalid points as delimiters
             Streamline<> temp;
             for (const auto& p : in) {
               if (p.allFinite()) {
                 temp.push_back (p);
               } else if (temp.size()) {
-                temp.set_index (in.get_index());
+                temp.set_index (segments++);
                 temp.weight = in.weight;
                 writer (temp);
-                ++segments;
                 temp.clear();
               }
             }
             assert (temp.empty());
 
+          } else { // Just a plain old streamline, valid or no
+
+            in.set_index (segments++);
+            writer (in);
+
           }
 
-          ++count;
           progress.update (display_func);
           return (!(number && (count == number)));
-
         }
 
 

@@ -200,6 +200,7 @@ namespace MR
           }
 
           ~ScalarWriter() {
+            add_reorder_cache (true);
             commit();
           }
 
@@ -264,10 +265,10 @@ namespace MR
           {
             while (reorder.size()) {
               auto i = reorder.begin();
-              if (force || i->get_index() == count) {
-                add_streamline (*i);
-                reorder.erase (i);
-              }
+              if (!force && i->get_index() != total_count)
+                return;
+              add_streamline (*i);
+              reorder.erase (i);
             }
           }
 

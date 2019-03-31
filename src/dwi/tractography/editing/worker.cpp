@@ -27,21 +27,22 @@ namespace MR {
 
         bool Worker::operator() (Streamline<>& in, Streamline<>& out) const
         {
-
           out.clear();
           out.set_index (in.get_index());
-          out.weight = in.weight;
+          // Output track starts with invalid weight that will result in not being written to file
+          out.weight = NaN;
+
+          // Need to track exclusion separately, since we may still need to apply
+          //   masks (or, more accurately, their inverse) afterwards if -inverse is specified
+          bool exclude = false;
 
           if (!thresholds (in)) {
-            // Want to test thresholds before wasting time on resampling
-            if (inverse)
-              in.swap (out);
-            return true;
-          }
 
-          // Assign to ROIs
-          if (properties.include.size() || properties.exclude.size()) {
+            exclude = true;
 
+          } else if (properties.include.size() || properties.exclude.size()) {
+
+            // Assign to ROIs
             include_visited.assign (properties.include.size(), false);
 
             if (ends_only) {
@@ -49,18 +50,16 @@ namespace MR {
                 const Eigen::Vector3f& p (i ? in.back() : in.front());
                 properties.include.contains (p, include_visited);
                 if (properties.exclude.contains (p)) {
-                  if (inverse)
-                    in.swap (out);
-                  return true;
+                  exclude = true;
+                  break;
                 }
               }
             } else {
               for (const auto& p : in) {
                 properties.include.contains (p, include_visited);
                 if (properties.exclude.contains (p)) {
-                  if (inverse)
-                    in.swap (out);
-                  return true;
+                  exclude = true;
+                  break;
                 }
               }
             }
@@ -68,58 +67,68 @@ namespace MR {
             // Make sure all of the include regions were visited
             for (const auto& i : include_visited) {
               if (!i) {
-                if (inverse)
-                  in.swap (out);
-                return true;
+                exclude = true;
+                break;
               }
             }
+
+          } else if (inverse) {
+
+            // If no thresholds are specified, and no include / exclude ROIs are defined, then
+            //   it's still possible that one or more masks have been provided;
+            //   if this is the case, then we want to continue processing this streamline,
+            //   regardless of whether or not -inverse has been specified
+            exclude = true;
 
           }
 
-          if (properties.mask.size()) {
+          // In default usage, pass the empty track with NaN weight down the queue if track is excluded
+          // If inverse selection is sought, pass this invalid track if the track did not fail any criteria
+          if (exclude != inverse)
+            return true;
 
-            // Split tck into separate tracks based on the mask
-            vector<vector<Eigen::Vector3f>> cropped_tracks;
-            vector<Eigen::Vector3f> temp;
+          if (!properties.mask.size()) {
+            std::swap (in, out);
+            return true;
+          }
 
-            for (const auto& p : in) {
-              const bool contains = properties.mask.contains (p);
-              if (contains == inverse) {
-                if (temp.size() >= 2)
-                  cropped_tracks.push_back (temp);
-                temp.clear();
-              } else {
-                temp.push_back (p);
-              }
+          // Split tck into separate tracks based on the mask
+          vector<vector<Eigen::Vector3f>> cropped_tracks;
+          vector<Eigen::Vector3f> temp;
+
+          for (const auto& p : in) {
+            const bool contains = properties.mask.contains (p);
+            // "Inverse" applies to masks in addition to selection criteria
+            if (contains == inverse) {
+              if (temp.size() >= 2)
+                cropped_tracks.push_back (temp);
+              temp.clear();
+            } else {
+              temp.push_back (p);
             }
-            if (temp.size() >= 2)
-              cropped_tracks.push_back (temp);
+          }
+          if (temp.size() >= 2)
+            cropped_tracks.push_back (temp);
 
-            if (cropped_tracks.empty())
-              return true;
+          if (cropped_tracks.empty())
+            return true;
 
-            if (cropped_tracks.size() == 1) {
-              cropped_tracks[0].swap (out);
-              return true;
-            }
+          // Remove invalid weight so that track is actually written by the Writer class within the Receiver
+          out.weight = in.weight;
 
-            // Stitch back together in preparation for sending down queue as a single track
+          if (cropped_tracks.size() == 1) {
+            cropped_tracks[0].swap (out);
+            return true;
+          }
+
+          // Stitch back together in preparation for sending down queue as a single track
+          out.push_back ({ NaN, NaN, NaN });
+          for (const auto& i : cropped_tracks) {
+            for (const auto& p : i)
+              out.push_back (p);
             out.push_back ({ NaN, NaN, NaN });
-            for (const auto& i : cropped_tracks) {
-              for (const auto& p : i)
-                out.push_back (p);
-              out.push_back ({ NaN, NaN, NaN });
-            }
-            return true;
-
-          } else {
-
-            if (!inverse)
-              in.swap (out);
-            return true;
-
           }
-
+          return true;
         }
 
 

@@ -43,6 +43,7 @@ namespace MR
           DataIndex (DataIndex&& i) : index (i.index) { i.index = invalid; }
           DataIndex& operator= (const DataIndex& i) { index = i.index; return *this; }
           DataIndex& operator= (DataIndex&& i) { index = i.index; i.index = invalid; return *this; }
+          void swap (DataIndex& i) { const size_t temp = index; index = i.index; i.index = temp; }
           void set_index (const size_t i) { index = i; }
           size_t get_index() const { return index; }
           void clear() { index = invalid; }
@@ -66,6 +67,7 @@ namespace MR
             vector<value_type> (std::move (that)),
             DataIndex (std::move (that)) { }
           TrackScalar& operator= (const TrackScalar& that) = default;
+          void swap (TrackScalar& that) { (*this).vector<ValueType>::swap (that); (*this).DataIndex::swap (that); }
           void clear() { vector<ValueType>::clear(); DataIndex::clear(); }
       };
 
@@ -112,6 +114,11 @@ namespace MR
             return *this;
           }
 
+          void swap (Streamline& that) {
+            (*this).vector<Eigen::Matrix<ValueType,3,1>>::swap (that);
+            (*this).DataIndex::swap (that);
+            std::swap (weight, that.weight);
+          }
 
           void clear()
           {

@@ -61,7 +61,7 @@ namespace MR {
             }
 
 
-            bool operator() (const Streamline<>&);
+            bool operator() (Streamline<>&);
 
 
           private:

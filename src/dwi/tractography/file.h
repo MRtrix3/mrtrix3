@@ -386,18 +386,14 @@ namespace MR
 
           //! commits any remaining data to file
           ~Writer() {
-            add_reorder_cache();
-            if (reorder.size()) {
-              WARN ("The last " + str(reorder.size()) + " streamlines in file " + name + " were not identified as being in correct order");
-              add_reorder_cache (true); // Flush all remaining data
-            }
+            add_reorder_cache (true);
             commit();
           }
 
           //! add track to the output
           bool operator() (const Streamline<ValueType>& tck) {
             assert (tck.get_index() != tck.invalid);
-            if (tck.get_index() == count) {
+            if (tck.get_index() == total_count) {
               add_streamline (tck, tck.weight);
               add_weight (tck.weight);
               add_reorder_cache();
@@ -465,11 +461,11 @@ namespace MR
           {
             while (reorder.size()) {
               auto i = reorder.begin();
-              if (force || i->get_index() == count) {
-                add_streamline (*i, i->weight);
-                add_weight (i->weight);
-                reorder.erase (i);
-              }
+              if (!force && i->get_index() != total_count)
+                return;
+              add_streamline (*i, i->weight);
+              add_weight (i->weight);
+              reorder.erase (i);
             }
           }
 
