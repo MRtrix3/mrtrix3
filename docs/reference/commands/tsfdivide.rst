@@ -13,10 +13,10 @@ Usage
 
 ::
 
-    tsfdivide [ options ]  input input output
+    tsfdivide [ options ]  input1 input2 output
 
--  *input*: the input track scalar file.
--  *input*: the input track scalar file.
+-  *input1*: the first input track scalar file.
+-  *input2*: the second input track scalar file.
 -  *output*: the output track scalar file
 
 Options

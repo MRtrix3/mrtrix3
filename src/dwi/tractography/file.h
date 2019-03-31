@@ -40,12 +40,6 @@ namespace MR
     {
 
 
-      constexpr const char* preserve_track_order_desc
-          = "Note that if multi-threading is used in this command, the ordering of tracks in the "
-            "output file is unlikely to match the order of the incoming data. If your application "
-            "explicitly requires that the order of tracks not change, you should run this command "
-            "with the option -nthreads 0.";
-
 
       template <class ValueType>
       class ReaderInterface
@@ -404,7 +398,7 @@ namespace MR
           bool operator() (const Streamline<ValueType>& tck) {
             assert (tck.get_index() != tck.invalid);
             if (tck.get_index() == count) {
-              add_streamline (tck);
+              add_streamline (tck, tck.weight);
               add_weight (tck.weight);
               add_reorder_cache();
             } else {
@@ -422,7 +416,7 @@ namespace MR
           bool operator() (const Tracking::GeneratedTrack& tck)
           {
             assert (weights_name.empty());
-            add_streamline (tck);
+            add_streamline (tck, 1.0f);
             return true;
           }
 
@@ -441,24 +435,27 @@ namespace MR
           }
 
           //! append track to buffer
-          void add_streamline (const vector<vector_type>& tck) {
-            if (buffer_size + tck.size() + 2 > buffer_capacity)
-              commit ();
+          void add_streamline (const vector<vector_type>& tck, const float weight)
+          {
+            if (std::isfinite (weight)) {
+              if (buffer_size + tck.size() + 2 > buffer_capacity)
+                commit ();
 
-            for (const auto& i : tck) {
-              assert (i.allFinite());
-              add_point (i);
+              for (const auto& i : tck) {
+                assert (i.allFinite());
+                add_point (i);
+              }
+              add_point (delimiter());
+
+              ++count;
             }
-            add_point (delimiter());
-
-            ++count;
             ++total_count;
           }
 
           //! append streamline weight to the buffer
           void add_weight (const float weight)
           {
-            if (weights_name.size())
+            if (weights_name.size() && std::isfinite (weight))
               weights_buffer += str (weight) + ' ';
           }
 
@@ -469,7 +466,7 @@ namespace MR
             while (reorder.size()) {
               auto i = reorder.begin();
               if (force || i->get_index() == count) {
-                add_streamline (*i);
+                add_streamline (*i, i->weight);
                 add_weight (i->weight);
                 reorder.erase (i);
               }

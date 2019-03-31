@@ -47,9 +47,7 @@ void usage ()
   DESCRIPTION
   + "This may be either increasing or decreasing the number of samples along "
     "each streamline, or changing the positions of the samples according to "
-    "some specified trajectory."
-
-  + DWI::Tractography::preserve_track_order_desc;
+    "some specified trajectory.";
 
   ARGUMENTS
   + Argument ("in_tracks",  "the input track file").type_tracks_in()

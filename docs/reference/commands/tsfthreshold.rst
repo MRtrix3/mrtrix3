@@ -13,10 +13,10 @@ Usage
 
 ::
 
-    tsfthreshold [ options ]  input N output
+    tsfthreshold [ options ]  input T output
 
 -  *input*: the input track scalar file.
--  *N*: the desired threshold
+-  *T*: the desired threshold
 -  *output*: the binary output track scalar file
 
 Options

@@ -53,9 +53,7 @@ void usage ()
   DESCRIPTION
   + "This command can be used to perform various types of manipulations "
     "on track data. A range of such manipulations are demonstrated in the "
-    "examples provided below."
-
-  + DWI::Tractography::preserve_track_order_desc;
+    "examples provided below.";
 
   EXAMPLES
   + Example ("Concatenate data from multiple track files into one",
