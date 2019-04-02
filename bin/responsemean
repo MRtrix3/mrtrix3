@@ -41,7 +41,7 @@ def execute(): #pylint: disable=unused-variable
   #   scaling factor required to bring the subject toward the group mean l=0 terms (across shells)
 
   mean_lzero_terms = [ sum([ subject[row][0] for subject in data ])/len(data) for row in range(len(data[0])) ]
-  app.var(mean_lzero_terms)
+  app.debug('Mean l=0 terms: ' + str(mean_lzero_terms))
 
   weighted_sum_coeffs = [[0.0] * len(data[0][0]) for _ in range(len(data[0]))] #pylint: disable=unused-variable
   for subject in data:
@@ -54,7 +54,8 @@ def execute(): #pylint: disable=unused-variable
         log_multiplier += math.log(mean_lzero / subj_lzero)
       log_multiplier /= len(data[0])
       multiplier = math.exp(log_multiplier)
-      app.var(subj_lzero_terms, multiplier)
+      app.debug('Subject l=0 terms: ' + str(subj_lzero_terms))
+      app.debug('Resulting multipler: ' + str(multiplier))
     weighted_sum_coeffs = [ [ a + multiplier*b for a, b in zip(linea, lineb) ] for linea, lineb in zip(weighted_sum_coeffs, subject) ]
   mean_coeffs = [ [ f/len(data) for f in line ] for line in weighted_sum_coeffs ]
 

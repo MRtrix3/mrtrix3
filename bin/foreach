@@ -85,13 +85,14 @@ def execute(): #pylint: disable=unused-variable
   from mrtrix3 import ANSI, MRtrixError, run
   global CMDSPLIT
 
-  app.var(str(app.ARGS.inputs))
-  app.var(app.ARGS.command)
-  app.var(CMDSPLIT)
+  app.debug('Inputs: ' + str(app.ARGS.inputs))
+  app.debug('Command: ' + str(app.ARGS.command))
+  app.debug('CMDSPLIT: ' + str(CMDSPLIT))
 
   common_prefix = os.path.commonprefix(app.ARGS.inputs)
   common_suffix = os.path.commonprefix([i[::-1] for i in app.ARGS.inputs])[::-1]
-  app.var(common_prefix, common_suffix)
+  app.debug('Common prefix: ' + common_prefix)
+  app.debug('Common suffix: ' + common_suffix)
 
   for entry in CMDSPLIT:
     if os.path.exists(entry):
@@ -113,7 +114,8 @@ def execute(): #pylint: disable=unused-variable
       self.sub_uni = input_text[len(common_prefix):-len(common_suffix)]
 
       self.substitutions = { 'IN': self.sub_in, 'NAME': self.sub_name, 'PRE': self.sub_pre, 'UNI': self.sub_uni }
-      app.var(input_text, self.substitutions)
+      app.debug('Input text: ' + input_text)
+      app.debug('Substitutions: ' + str(self.substitutions))
 
       self.cmd = [ ]
       for entry in CMDSPLIT:
@@ -122,7 +124,7 @@ def execute(): #pylint: disable=unused-variable
         if ' ' in entry:
           entry = '"' + entry + '"'
         self.cmd.append(entry)
-      app.var(self.cmd)
+      app.debug('Resulting command: ' + str(self.cmd))
 
       self.outputtext = None
       self.returncode = None
@@ -200,7 +202,6 @@ def execute(): #pylint: disable=unused-variable
 
   assert all([ job.returncode is not None for job in jobs ])
   fail_count = sum([ 1 if job.returncode else 0 for job in jobs ])
-  app.var(fail_count)
   if fail_count:
     app.warn(str(fail_count) + ' of ' + str(len(jobs)) + ' jobs did not complete successfully')
     if fail_count > 1:

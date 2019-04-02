@@ -39,10 +39,8 @@ def execute(): #pylint: disable=unused-variable
     reference_value = float(run.command('dwiextract ' + path.from_user(app.ARGS.input_dwi) + grad_option + ' -bzero - | ' + \
                                         'mrmath - mean - -axis 3 | ' + \
                                         'mrstats - -mask ' + path.from_user(app.ARGS.input_mask) + ' -output median -allvolumes').stdout)
-  app.var(reference_value)
 
   multiplier = app.ARGS.intensity / reference_value
-  app.var(multiplier)
 
   run.command('mrcalc ' + path.from_user(app.ARGS.input_dwi) + ' ' + str(multiplier) + ' -mult - | ' + \
               'mrconvert - ' + path.from_user(app.ARGS.output_dwi) + grad_option + app.mrconvert_output_option(path.from_user(app.ARGS.input_dwi)))
