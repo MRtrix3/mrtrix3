@@ -55,8 +55,9 @@ def execute(): #pylint: disable=unused-variable
   # Estimate this scaling based on the total integral of the pre- and post-correction images within the brain mask
   input_integral  = float(run.command('mrcalc mean_bzero.mif mask.mif -mult - | mrmath - sum - -axis 0 | mrmath - sum - -axis 1 | mrmath - sum - -axis 2 | mrdump -').stdout)
   output_integral = float(run.command('mrcalc ' + corrected_path + ' mask.mif -mult - | mrmath - sum - -axis 0 | mrmath - sum - -axis 1 | mrmath - sum - -axis 2 | mrdump -').stdout)
-  app.var(input_integral, output_integral)
-  run.command('mrcalc ' + init_bias_path + ' ' + str(output_integral / input_integral) + ' -mult bias.mif')
+  multiplier = output_integral / input_integral
+  app.debug('Integrals: Input = ' + str(input_integral) + '; Output = ' + str(output_integral) + '; resulting multiplier = ' + str(multiplier))
+  run.command('mrcalc ' + init_bias_path + ' ' + str(multiplier) + ' -mult bias.mif')
 
   # Common final steps for all algorithms
   run.command('mrcalc in.mif bias.mif -div result.mif')

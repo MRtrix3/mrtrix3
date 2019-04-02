@@ -212,8 +212,8 @@ def execute(): #pylint: disable=unused-variable
   in_files = sorted(path.all_in_dir(input_dir, dir_path=False))
   if len(in_files) <= 1:
     raise MRtrixError('Not enough images found in input directory. More than one image is needed to generate a population template')
-  else:
-    app.console('Generating a population-average template from ' + str(len(in_files)) + ' input images')
+
+  app.console('Generating a population-average template from ' + str(len(in_files)) + ' input images')
 
   voxel_size = None
   if app.ARGS.voxel_size:

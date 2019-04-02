@@ -171,9 +171,9 @@ def execute(): #pylint: disable=unused-variable
   if not len(dwi_header.size()) == 4:
     raise MRtrixError('Input DWI must be a 4D image')
   dwi_num_volumes = dwi_header.size()[3]
-  app.var(dwi_num_volumes)
+  app.debug('Number of DWI volumes: ' + str(dwi_num_volumes))
   dwi_num_slices = dwi_header.size()[2]
-  app.var(dwi_num_slices)
+  app.debug('Number of DWI slices: ' + str(dwi_num_slices))
   dwi_pe_scheme = phaseencoding.get_scheme(dwi_header)
   if app.ARGS.se_epi:
     se_epi_header = image.Header('se_epi.mif')
@@ -192,7 +192,7 @@ def execute(): #pylint: disable=unused-variable
   if eddy_mporder:
     if 'SliceEncodingDirection' in dwi_header.keyval():
       slice_encoding_direction = dwi_header.keyval()['SliceEncodingDirection']
-      app.var(slice_encoding_direction)
+      app.debug('Slice encoding direction: ' + slice_encoding_direction)
       if not slice_encoding_direction.startswith('k'):
         raise MRtrixError('DWI header indicates that 3rd spatial axis is not the slice axis; this is not yet compatible with --mporder option in eddy, nor supported in dwipreproc')
       slice_encoding_direction = image.axis2dir(slice_encoding_direction)
@@ -207,7 +207,7 @@ def execute(): #pylint: disable=unused-variable
     slice_timing = [ ]
     if len(slspec_option) > 1:
       raise MRtrixError('--slspec option appears more than once in -eddy_options input; cannot import slice timing')
-    elif len(slspec_option) == 1:
+    if slspec_option:
       slspec_file_path = path.from_user(slspec_option[0][9:], False)
       if os.path.isfile(slspec_file_path):
         # Since there's a chance that we may need to pad this info, we can't just copy this file
@@ -218,7 +218,7 @@ def execute(): #pylint: disable=unused-variable
               line = line.strip()
               if line:
                 slice_groups.append([int(value) for value in line.split()])
-          app.var(slice_groups)
+          app.debug('Slice groups: ' + str(slice_groups))
         except ValueError:
           try:
             with open(slspec_file_path, 'r') as slspec_file:
@@ -227,7 +227,7 @@ def execute(): #pylint: disable=unused-variable
                 if line:
                   slice_timing.append(float(line))
             app.warn('\"slspec\" file provided to FSL eddy should contain slice indices for slice groups, not slice timing; nevertheless, slice timing has been imported from file \"' + slspec_file_path + '\"')
-            app.var(slice_timing)
+            app.debug('Slice timing: ' + str(slice_timing))
             if len(slice_timing) != dwi_num_slices:
               raise MRtrixError('Cannot use slice timing information from file \"' + slspec_file_path + '\" for slice-to-volume correction: Number of entries (' + len(slice_timing) + ') does not match number of slices (' + dwi_header.size()[2] + ')')
           except ValueError:
@@ -241,7 +241,7 @@ def execute(): #pylint: disable=unused-variable
       if 'SliceTiming' not in dwi_header.keyval():
         raise MRtrixError('Cannot perform slice-to-volume correction in eddy: No slspec file provided, and no slice timing information present in header')
       slice_timing = dwi_header.keyval()['SliceTiming'][0]
-      app.var(slice_timing)
+      app.debug('Slice timing from header: ' + str(slice_timing))
       if len(slice_timing) != dwi_num_slices:
         raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: Number of entries (' + len(slice_timing) + ') does not match number of slices (' + dwi_header.size()[2] + ')')
 
@@ -269,11 +269,11 @@ def execute(): #pylint: disable=unused-variable
   manual_pe_dir = None
   if app.ARGS.pe_dir:
     manual_pe_dir = [ float(i) for i in phaseencoding.direction(app.ARGS.pe_dir) ]
-  app.var(manual_pe_dir)
+  app.debug('Manual PE direction: ' + str(manual_pe_dir))
   manual_trt = None
   if app.ARGS.readout_time:
     manual_trt = float(app.ARGS.readout_time)
-  app.var(manual_trt)
+  app.debug('Manual readout time: ' + str(manual_trt))
 
 
   do_topup = (not pe_design == 'None')
@@ -318,14 +318,14 @@ def execute(): #pylint: disable=unused-variable
       line = list(manual_pe_dir)
       line.append(trt)
       dwi_manual_pe_scheme = [ line ] * dwi_num_volumes
-      app.var(dwi_manual_pe_scheme)
+      app.debug('Manual DWI PE scheme for \'None\' PE design: ' + str(dwi_manual_pe_scheme))
 
     # With 'Pair', also need to construct the manual scheme for SE EPIs
     elif pe_design == 'Pair':
       line = list(manual_pe_dir)
       line.append(trt)
       dwi_manual_pe_scheme = [ line ] * dwi_num_volumes
-      app.var(dwi_manual_pe_scheme)
+      app.debug('Manual DWI PE scheme for \'Pair\' PE design: ' + str(dwi_manual_pe_scheme))
       se_epi_num_volumes = se_epi_header.size()[3]
       if se_epi_num_volumes%2:
         raise MRtrixError('If using -rpe_pair option, image provided using -se_epi must contain an even number of volumes')
@@ -335,7 +335,7 @@ def execute(): #pylint: disable=unused-variable
       line = [ (-i if i else 0.0) for i in manual_pe_dir ]
       line.append(trt)
       se_epi_manual_pe_scheme.extend( [ line ] * int(se_epi_num_volumes/2) )
-      app.var(se_epi_manual_pe_scheme)
+      app.debug('Manual SEEPI PE scheme for \'Pair\' PE design: ' + str(se_epi_manual_pe_scheme))
 
     # If -rpe_all, need to scan through grad and figure out the pairings
     # This will be required if relying on user-specified phase encode direction
@@ -376,7 +376,7 @@ def execute(): #pylint: disable=unused-variable
           line = [ (-i if i else 0.0) for i in line ]
         line.append(trt)
         dwi_manual_pe_scheme.append(line)
-      app.var(dwi_manual_pe_scheme)
+      app.debug('Manual DWI PE scheme for \'All\' PE design: ' + str(dwi_manual_pe_scheme))
 
   else: # No manual phase encode direction defined
 
@@ -450,7 +450,7 @@ def execute(): #pylint: disable=unused-variable
     if line[3] <= bzero_threshold:
       break
     dwi_first_bzero_index += 1
-  app.var(dwi_first_bzero_index)
+  app.debug('Index of first b=0 image in DWIs is ' + str(dwi_first_bzero_index))
 
 
   # Deal with the phase-encoding of the images to be fed to topup (if applicable)
@@ -636,12 +636,11 @@ def execute(): #pylint: disable=unused-variable
     if 'pe_scheme' not in se_epi_header.keyval():
       if pe_design == 'All':
         raise MRtrixError('DWI header indicates no phase encoding contrast between b=0 images; cannot proceed with volume recombination-based pre-processing')
-      else:
-        app.warn('DWI header indicates no phase encoding contrast between b=0 images; proceeding without inhomogeneity field estimation')
-        do_topup = False
-        run.function(os.remove, se_epi_path)
-        se_epi_path = None
-        se_epi_header = None
+      app.warn('DWI header indicates no phase encoding contrast between b=0 images; proceeding without inhomogeneity field estimation')
+      do_topup = False
+      run.function(os.remove, se_epi_path)
+      se_epi_path = None
+      se_epi_header = None
 
 
   # If the first b=0 volume in the DWIs is in fact not the first volume (i.e. index zero), we're going to
@@ -666,7 +665,9 @@ def execute(): #pylint: disable=unused-variable
                                            ',0' + \
                                            (',' + str(dwi_first_bzero_index+1) if dwi_first_bzero_index < dwi_num_volumes-1 else '') + \
                                            (':' + str(dwi_num_volumes-1) if dwi_first_bzero_index < dwi_num_volumes-2 else '')
-    app.var(dwi_permvols_preeddy_option, dwi_permvols_posteddy_option)
+    app.debug('mrconvert options for axis permutation:')
+    app.debug('Pre: ' + str(dwi_permvols_preeddy_option))
+    app.debug('Post: ' + str(dwi_permvols_posteddy_option))
 
 
 
@@ -809,7 +810,8 @@ def execute(): #pylint: disable=unused-variable
       if sum(slice_encoding_direction) < 0:
         slice_timing = reversed(slice_timing)
       slice_groups = [ [ x[0] for x in g ] for _, g in itertools.groupby(sorted(enumerate(slice_timing), key=lambda x:x[1]), key=lambda x:x[1]) ] #pylint: disable=unused-variable
-      app.var(slice_timing, slice_groups)
+      app.debug('Slice timing: ' + str(slice_timing))
+      app.debug('Resulting slice groups: ' + str(slice_groups))
     # Variable slice_groups may have already been defined in the correct format.
     #   In that instance, there's nothing to do other than write it to file;
     #   UNLESS the slice encoding direction is known to be reversed, in which case
@@ -820,7 +822,9 @@ def execute(): #pylint: disable=unused-variable
       new_slice_groups = [ ]
       for group in new_slice_groups:
         new_slice_groups.append([ dwi_num_slices-index for index in group ])
-      app.var(slice_groups, new_slice_groups)
+      app.debug('Slice groups reversed due to negative slice encoding direction')
+      app.debug('Original: ' + str(slice_groups))
+      app.debug('New: ' + str(new_slice_groups))
       slice_groups = new_slice_groups
 
     with open('slspec.txt', 'w') as slspec_file:
@@ -1040,7 +1044,8 @@ def execute(): #pylint: disable=unused-variable
 
     eddy_config  = [ [ float(f) for f in line.split() ] for line in open('eddy_config.txt', 'r').read().split('\n')[:-1] ]
     eddy_indices = [ int(i) for i in open('eddy_indices.txt', 'r').read().split() ]
-    app.var(eddy_config, eddy_indices)
+    app.debug('EDDY config: ' + str(eddy_config))
+    app.debug('EDDY indices: ' + str(eddy_indices))
 
     # This section derives, for each phase encoding configuration present, the 'weight' to be applied
     #   to the image during volume recombination, which is based on the Jacobian of the field in the

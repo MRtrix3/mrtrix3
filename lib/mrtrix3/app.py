@@ -402,10 +402,6 @@ def debug(text): #pylint: disable=unused-variable
 
 def trace(): #pylint: disable=unused-variable
   import inspect
-  from mrtrix3 import ANSI
-  global VERBOSITY
-  if VERBOSITY <= 2:
-    return
   calling_frame = inspect.getouterframes(inspect.currentframe())[1]
   try:
     try:
@@ -414,16 +410,12 @@ def trace(): #pylint: disable=unused-variable
     except AttributeError: # Prior to Python 3.5
       filename = calling_frame[1]
       lineno = calling_frame[2]
-    sys.stderr.write(EXEC_NAME + ': ' + ANSI.debug + '[DEBUG] At ' + os.path.basename(filename) + ':' + str(lineno) + ANSI.clear + '\n')
+    sys.stderr.write(EXEC_NAME + ': at ' + os.path.basename(filename) + ': ' + str(lineno) + '\n')
   finally:
     del calling_frame
 
 def var(*variables): #pylint: disable=unused-variable
   import inspect
-  from mrtrix3 import ANSI
-  global VERBOSITY
-  if VERBOSITY <= 2:
-    return
   calling_frame = inspect.getouterframes(inspect.currentframe())[1]
   try:
     try:
@@ -437,7 +429,7 @@ def var(*variables): #pylint: disable=unused-variable
     var_string = calling_code[calling_code.find('var(')+4:].rstrip('\n').rstrip(' ')[:-1].replace(',', ' ')
     var_names, var_values = var_string.split(), variables
     for name, value in zip(var_names, var_values):
-      sys.stderr.write(EXEC_NAME + ': ' + ANSI.debug + '[DEBUG] (from ' + os.path.basename(filename) + ':' + str(lineno) + ') \'' + name + '\' = ' + str(value) + ANSI.clear + '\n')
+      sys.stderr.write(EXEC_NAME + ': [' + os.path.basename(filename) + ': ' + str(lineno) + ']: ' + name + ' = ' + str(value) + '\n')
   finally:
     del calling_frame
 
