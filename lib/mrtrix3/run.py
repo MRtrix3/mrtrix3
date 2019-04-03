@@ -33,38 +33,16 @@ class Shared(object):
     self._scratch_dir = None
 
     # Construct temporary text files for holding stdout / stderr contents when appropriate
-    # Same as _processes: Index according to unique identifier for command() call
+    # Same as _process_lists: Index according to unique identifier for command() call
     #   Each item is then a list with one entry per process; each of these is then a tuple containing two entries,
     #   each of which is either a file-like object or None)
     self.temp_files = [ ]
 
     self.verbosity = 0
 
-  # Disable handler for SIGINT signal if appropriate
-  #   (there are no other commands currently running)
-  def disable_sigint_handler(self):
-    import signal
-    with self.lock:
-      if not any(process_list is not None for process_list in self.process_lists):
-        try:
-          signal.signal(signal.SIGINT, signal.default_int_handler)
-        except:
-          pass
-
-  # Re-enable the handler for SIGINT signal if appropriate
-  #   (appears to not be any other processes running in parallel)
-  def enable_sigint_handler(self, handler):
-    import signal
-    with self.lock:
-      if all(process_list is None for process_list in self.process_lists):
-        try:
-          signal.signal(signal.SIGINT, handler)
-        except:
-          pass
-
   # Acquire a unique index
   # This ensures that if command() is executed in parallel using different threads, they will
-  #   not interfere with one another; but killAll() will also have access to all relevant data
+  #   not interfere with one another; but terminate() will also have access to all relevant data
   def get_command_index(self):
     with self.lock:
       try:
@@ -78,7 +56,7 @@ class Shared(object):
     return index
 
   def close_command_index(self, index):
-    with shared.lock:
+    with self.lock:
       assert self.process_lists[index]
       self.process_lists[index] = None
       self.temp_files[index] = None
@@ -138,30 +116,47 @@ class Shared(object):
     self.env['MRTRIX_TMPFILE_DIR'] = path
     self._scratch_dir = path
 
-  # Kill any and all running processes
-  def kill(self): #pylint: disable=unused-variable
-    import os
-    for process_list in self.process_lists:
-      if process_list:
-        for process in process_list:
-          if process:
-            process.terminate()
-            process.communicate() # Flushes the I/O buffers
-        process_list = None
-    self.process_lists = [ ]
-    # Also destroy any remaining temporary files
-    for tempfile_list in self.temp_files:
-      if tempfile_list:
-        for tempfile_pair in tempfile_list:
-          for tempfile in tempfile_pair:
-            if tempfile:
-              try:
-                os.remove(tempfile)
-              except OSError:
-                pass
-          tempfile_pair = [ None, None ]
-        tempfile_list = None
-    self.temp_files = [ ]
+  # Terminate any and all running processes
+  def terminate(self, signum): #pylint: disable=unused-variable
+    import os, signal, sys
+    from mrtrix3 import is_windows
+    sys.stderr.write('\n' + str(sys.argv) + ': Inside run.shared.terminate()\n')
+    with self.lock:
+      sys.stderr.write('\n' + str(sys.argv) + ': run.shared.terminate() lock acquired\n')
+      if not is_windows() and signum == signal.SIGINT:
+        sys.stderr.write('No need to send terminate to child processes\n')
+      else:
+        for process_list in self.process_lists:
+          sys.stderr.write(str(process_list) + '\n')
+          if process_list:
+            for process in process_list:
+              sys.stderr.write(str(process) + '\n')
+              if process:
+                if is_windows():
+                  sys.stderr.write('Sending Windows terminate signal to ' + str(process.args) + '\n')
+                  process.send_signal(signal.CTRL_BREAK_EVENT)
+                else:
+                  sys.stderr.write('Sending POSIX terminate signal to ' + str(process.args) + '\n')
+                  process.terminate()
+                sys.stderr.write('Waiting for ' + str(process.args) + ' to terminate\n')
+                process.communicate(timeout=5) # Flushes the I/O buffers, unlike wait()
+                sys.stderr.write(str(process.args) + ' successfully terminated\n')
+            process_list = None
+      self.process_lists = [ ]
+      # Also destroy any remaining temporary files
+      for tempfile_list in self.temp_files:
+        if tempfile_list:
+          for tempfile_pair in tempfile_list:
+            for tempfile in tempfile_pair:
+              if tempfile:
+                try:
+                  os.remove(tempfile)
+                except OSError:
+                  pass
+            tempfile_pair = [ None, None ]
+          tempfile_list = None
+      self.temp_files = [ ]
+      sys.stderr.write('\n' + str(sys.argv) + ': Completed run.shared.terminate()\n')
 
 shared = Shared() #pylint: disable=invalid-name
 
@@ -193,9 +188,9 @@ CommandReturn = collections.namedtuple('CommandReturn', 'stdout stderr')
 
 def command(cmd, **kwargs): #pylint: disable=unused-variable
 
-  import inspect, itertools, os, shlex, signal, string, subprocess, sys
+  import itertools, os, shlex, string, subprocess, sys
   from distutils.spawn import find_executable
-  from mrtrix3 import ANSI, app, EXE_LIST
+  from mrtrix3 import ANSI, app, EXE_LIST, is_windows
 
   global shared #pylint: disable=invalid-name
 
@@ -203,6 +198,10 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
   show = kwargs.pop('show', True)
   if kwargs:
     raise TypeError('Unsupported keyword arguments passed to run.command(): ' + str(kwargs))
+
+  subprocess_kwargs = {}
+  if is_windows():
+    subprocess_kwargs['creationflags'] = subprocess.CREATE_NEW_PROCESS_GROUP
 
   if isinstance(cmd, list):
     if shell:
@@ -259,7 +258,6 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
         sys.stderr.write(ANSI.execute + 'Command:' + ANSI.clear + '  ' + cmdstring + '\n')
         sys.stderr.flush()
     this_command_index = shared.get_command_index()
-    shared.disable_sigint_handler()
     # No locking required for actual creation of new process
     this_process_list = [ ]
     this_temp_files = [ ]
@@ -269,10 +267,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
       file_err = None
     else:
       handle_err, file_err = shared.make_temporary_file()
-    try:
-      process = subprocess.Popen (cmdstring, shell=True, stdin=None, stdout=handle_out, stderr=handle_err, env=shared.env, preexec_fn=os.setpgrp) # pylint: disable=bad-option-value,subprocess-popen-preexec-fn
-    except AttributeError:
-      process = subprocess.Popen (cmdstring, shell=True, stdin=None, stdout=handle_out, stderr=handle_err, env=shared.env)
+    process = subprocess.Popen (cmdstring, shell=True, stdin=None, stdout=handle_out, stderr=handle_err, env=shared.env, **subprocess_kwargs)
     this_process_list.append(process)
     this_temp_files.append( [ file_out, file_err ])
 
@@ -336,7 +331,6 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
         sys.stderr.flush()
 
     this_command_index = shared.get_command_index()
-    shared.disable_sigint_handler()
 
     # Execute all processes for this command
     this_process_list = [ ]
@@ -365,10 +359,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
         handle_err, file_err = shared.make_temporary_file()
       # Set off the processes
       try:
-        try:
-          process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=shared.env, preexec_fn=os.setpgrp) # pylint: disable=bad-option-value,subprocess-popen-preexec-fn
-        except AttributeError:
-          process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=shared.env)
+        process = subprocess.Popen (to_execute, stdin=handle_in, stdout=handle_out, stderr=handle_err, env=shared.env, **subprocess_kwargs)
         this_process_list.append(process)
         this_temp_files.append( [ file_out, file_err ])
       # FileNotFoundError not defined in Python 2.7
@@ -391,42 +382,36 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
   # Wait for all commands to complete
   # Switch how we monitor running processes / wait for them to complete
   #   depending on whether or not the user has specified -info or -debug option
-  try:
-    if shared.verbosity > 1:
-      for process in shared.process_lists[this_command_index]:
-        stderrdata = b''
-        do_indent = True
-        while True:
-          # Have to read one character at a time: Waiting for a newline character using e.g. readline() will prevent MRtrix progressbars from appearing
-          byte = process.stderr.read(1)
-          stderrdata += byte
-          char = byte.decode('cp1252', errors='ignore')
-          if not char and process.poll() is not None:
-            break
-          if do_indent and char in string.printable and char != '\r' and char != '\n':
-            sys.stderr.write('          ')
-            do_indent = False
-          elif char in [ '\r', '\n' ]:
-            do_indent = True
-          sys.stderr.write(char)
-          sys.stderr.flush()
-        stderrdata = stderrdata.decode('utf-8', errors='replace')
-        return_stderr += stderrdata
-        if not return_code: # Catch return code of first failed command
-          return_code = process.returncode
-        if process.returncode:
-          error = True
-          error_text += stderrdata
-    else:
-      for process in shared.process_lists[this_command_index]:
-        process.wait()
-        if not return_code:
-          return_code = process.returncode
-  except (KeyboardInterrupt, SystemExit):
-    app.handler(signal.SIGINT, inspect.currentframe())
-
-  # Re-enable interrupt signal handler
-  shared.enable_sigint_handler(app.handler)
+  if shared.verbosity > 1:
+    for process in shared.process_lists[this_command_index]:
+      stderrdata = b''
+      do_indent = True
+      while True:
+        # Have to read one character at a time: Waiting for a newline character using e.g. readline() will prevent MRtrix progressbars from appearing
+        byte = process.stderr.read(1)
+        stderrdata += byte
+        char = byte.decode('cp1252', errors='ignore')
+        if not char and process.poll() is not None:
+          break
+        if do_indent and char in string.printable and char != '\r' and char != '\n':
+          sys.stderr.write('          ')
+          do_indent = False
+        elif char in [ '\r', '\n' ]:
+          do_indent = True
+        sys.stderr.write(char)
+        sys.stderr.flush()
+      stderrdata = stderrdata.decode('utf-8', errors='replace')
+      return_stderr += stderrdata
+      if not return_code: # Catch return code of first failed command
+        return_code = process.returncode
+      if process.returncode:
+        error = True
+        error_text += stderrdata
+  else:
+    for process in shared.process_lists[this_command_index]:
+      process.wait()
+      if not return_code:
+        return_code = process.returncode
 
   # For any command stdout / stderr data that wasn't either passed to another command or
   #   printed to the terminal during execution, read it here.
