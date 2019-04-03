@@ -119,27 +119,19 @@ class Shared(object):
   # Terminate any and all running processes
   def terminate(self, signum): #pylint: disable=unused-variable
     import os, signal, sys
-    sys.stderr.write('\n' + str(sys.argv) + ': Inside run.shared.terminate()\n')
     with self.lock:
-      sys.stderr.write('\n' + str(sys.argv) + ': run.shared.terminate() lock acquired\n')
-      if sys.platform != 'win32' and signum == signal.SIGINT:
-        sys.stderr.write('No need to send terminate to child processes\n')
-      else:
+      # No need to propagate signals if we're in a POSIX-compliant environment
+      #   and SIGINT has been received; that will propagate to children automatically
+      if sys.platform == 'win32' or signum != signal.SIGINT:
         for process_list in self.process_lists:
-          sys.stderr.write(str(process_list) + '\n')
           if process_list:
             for process in process_list:
-              sys.stderr.write(str(process) + '\n')
               if process:
                 if sys.platform == 'win32':
-                  sys.stderr.write('Sending Windows terminate signal to ' + str(process.args) + '\n')
                   process.send_signal(getattr(signal, 'CTRL_BREAK_EVENT'))
                 else:
-                  sys.stderr.write('Sending POSIX terminate signal to ' + str(process.args) + '\n')
                   process.terminate()
-                sys.stderr.write('Waiting for ' + str(process.args) + ' to terminate\n')
-                process.communicate(timeout=5) # Flushes the I/O buffers, unlike wait()
-                sys.stderr.write(str(process.args) + ' successfully terminated\n')
+                process.communicate(timeout=1) # Flushes the I/O buffers, unlike wait()
             process_list = None
       self.process_lists = [ ]
       # Also destroy any remaining temporary files
@@ -155,7 +147,6 @@ class Shared(object):
             tempfile_pair = [ None, None ]
           tempfile_list = None
       self.temp_files = [ ]
-      sys.stderr.write('\n' + str(sys.argv) + ': Completed run.shared.terminate()\n')
 
 shared = Shared() #pylint: disable=invalid-name
 
