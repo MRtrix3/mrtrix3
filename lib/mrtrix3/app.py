@@ -1120,7 +1120,6 @@ def handler(signum, _frame):
   # Terminate any child processes in the run module
   try:
     from mrtrix3.run import shared
-    sys.stderr.write('\n' + str(sys.argv) + ': Commencing run.shared.terminate() from handler\n')
     shared.terminate(signum)
   except ImportError:
     pass
