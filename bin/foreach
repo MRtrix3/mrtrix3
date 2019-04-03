@@ -59,9 +59,9 @@ def usage(cmdline): #pylint: disable=unused-variable
 # These need to be globals in order to be accessible from execute_parallel()
 class Shared(object):
   def __init__(self):
-    import threading
+    import multiprocessing
     self._job_index = 0
-    self.lock = threading.Lock()
+    self.lock = multiprocessing.Lock()
     self.stop = False
   def next(self, jobs):
     job = None
@@ -81,7 +81,7 @@ KEYLIST = [ 'IN', 'NAME', 'PRE', 'UNI' ]
 
 
 def execute(): #pylint: disable=unused-variable
-  import threading
+  import multiprocessing
   from mrtrix3 import ANSI, MRtrixError, run
   global CMDSPLIT
 
@@ -175,14 +175,20 @@ def execute(): #pylint: disable=unused-variable
         progress.increment(progress_string())
 
   if parallel:
-    threads = [ ]
-    for i in range (1, app.NUM_THREADS):
-      thread = threading.Thread(target=execute_parallel)
-      thread.start()
-      threads.append(thread)
-    execute_parallel()
-    for thread in threads:
-      thread.join()
+
+    processes = [ ]
+    try:
+      for i in range (1, app.NUM_THREADS):
+        process = multiprocessing.Process(target=execute_parallel)
+        process.start()
+        processes.append(process)
+      execute_parallel()
+      for process in processes:
+        process.join()
+    except KeyboardInterrupt:
+      for process in processes:
+        process.terminate()
+        process.wait()
 
   else:
     for job in jobs:
