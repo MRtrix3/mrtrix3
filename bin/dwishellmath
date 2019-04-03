@@ -1,32 +1,59 @@
-#!/bin/bash
+#!/usr/bin/env python
 
-if [ $# -eq 0 ]; then
-  cat <<HELP_PAGE
-This script applies mrmath to each shell in the input image. The output is 
-concatenated in a 4-D image, where the 4th axis contains e.g. the per-shell 
-mean in order of increasing b-value.
-
-USAGE: 
-  $ dwishellmath <in.mif> <operation> <out.mif>
-
-  For example: 
-    $ dwishellmath dwi.mif mean dc.mif
-  will output the mean diffusion-weighted volume per shell.
-
-AVAILABLE OPERATIONS: 
-  mean, median, sum, product, rms, norm, var, std, min, max, absmax, magmax.
-
-HELP_PAGE
-
-  exit 1
-fi
-
-tmpfiles=""
-for b in $(mrinfo "$1" -shell_bvalues);
-do
-  echo "Extracting $2 of the b=$b shell."
-  tmpfiles="$tmpfiles "$(dwiextract -shells $b "$1" - -quiet | mrmath -axis 3 - $2 - -quiet)
-done
-mrcat -axis 3 $tmpfiles "$3" -quiet
+supported_ops = ['mean', 'median', 'sum', 'product', 'rms', 'norm', 'var', 'std', 'min', 'max', 'absmax', 'magmax']
 
 
+def usage(cmdline): #pylint: disable=unused-variable
+  cmdline.set_author('Daan Christiaens (daan.christiaens@kcl.ac.uk)')
+  cmdline.set_synopsis('Apply mrmath to each shell in the input image. The output is concatenated in a 4-D image, where the 4th axis contains, e.g., the per-shell mean in order of increasing b-value.')
+  cmdline.add_argument('input', help='The input dMRI series')
+  cmdline.add_argument('operation', help='The operation to be applied to each shell. This must one of the following: ' + ', '.join(supported_ops))
+  cmdline.add_argument('output', help='The output image containing, e.g., the mean per shell.')
+  grad_import = cmdline.add_argument_group('Options for importing the gradient table')
+  grad_import.add_argument('-grad', help='Provide a gradient table in MRtrix format')
+  grad_import.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Provide a gradient table in FSL bvecs/bvals format')
+  cmdline.flag_mutually_exclusive_options( ['grad', 'fslgrad' ])
+
+
+def execute(): #pylint: disable=unused-variable
+  #import copy, numbers, shutil
+  from mrtrix3 import image, MRtrixError, path, run
+  # check inputs and outputs
+  image_dimensions = image.Header(path.from_user(app.ARGS.input, False)).size()
+  if len(image_dimensions) != 4:
+    raise MRtrixError('Input image must be a 4D image')
+  operation = app.ARGS.operation
+  if operation not in supported_ops:
+    raise MRtrixError('Shell operation not supported.')
+  app.check_output_path(app.ARGS.output)
+  app.make_scratch_dir()
+  # import data and gradient table
+  gradimport = ''
+  if app.ARGS.grad:
+    gradimport = ' -grad ' + path.from_user(app.ARGS.grad)
+  elif app.ARGS.fslgrad:
+    gradimport = ' -fslgrad ' + path.from_user(app.ARGS.fslgrad[0]) + ' ' + path.from_user(app.ARGS.fslgrad[1])
+  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('in.mif') + gradimport)
+  app.goto_scratch_dir()
+  # run per-shell operations
+  files = []
+  for k, b in enumerate(image.mrinfo('in.mif', 'shell_bvalues').split()):
+    file = 'shell-{:02d}.mif'.format(k)
+    run.command('dwiextract -shells ' + b + ' in.mif - | mrmath -axis 3 - ' + operation + ' ' + file)
+    files.append(file)
+  # concatenate to output file
+  run.command('mrcat -axis 3 ' + ' '.join(files) + ' out.mif')
+  run.command('mrconvert out.mif ' + path.from_user(app.ARGS.output))
+
+
+
+# Make the corresponding MRtrix3 Python libraries available
+import inspect, os, sys
+LIB_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
+if not os.path.isdir(LIB_FOLDER):
+  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
+  sys.exit(1)
+sys.path.insert(0, LIB_FOLDER)
+# Execute the script
+from mrtrix3 import app
+app.execute()
