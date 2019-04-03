@@ -119,11 +119,10 @@ class Shared(object):
   # Terminate any and all running processes
   def terminate(self, signum): #pylint: disable=unused-variable
     import os, signal, sys
-    from mrtrix3 import is_windows
     sys.stderr.write('\n' + str(sys.argv) + ': Inside run.shared.terminate()\n')
     with self.lock:
       sys.stderr.write('\n' + str(sys.argv) + ': run.shared.terminate() lock acquired\n')
-      if not is_windows() and signum == signal.SIGINT:
+      if sys.platform != 'win32' and signum == signal.SIGINT:
         sys.stderr.write('No need to send terminate to child processes\n')
       else:
         for process_list in self.process_lists:
@@ -132,9 +131,9 @@ class Shared(object):
             for process in process_list:
               sys.stderr.write(str(process) + '\n')
               if process:
-                if is_windows():
+                if sys.platform == 'win32':
                   sys.stderr.write('Sending Windows terminate signal to ' + str(process.args) + '\n')
-                  process.send_signal(signal.CTRL_BREAK_EVENT)
+                  process.send_signal(getattr(signal, 'CTRL_BREAK_EVENT'))
                 else:
                   sys.stderr.write('Sending POSIX terminate signal to ' + str(process.args) + '\n')
                   process.terminate()
@@ -190,7 +189,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
 
   import itertools, os, shlex, string, subprocess, sys
   from distutils.spawn import find_executable
-  from mrtrix3 import ANSI, app, EXE_LIST, is_windows
+  from mrtrix3 import ANSI, app, EXE_LIST
 
   global shared #pylint: disable=invalid-name
 
@@ -200,7 +199,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
     raise TypeError('Unsupported keyword arguments passed to run.command(): ' + str(kwargs))
 
   subprocess_kwargs = {}
-  if is_windows():
+  if sys.platform == 'win32':
     subprocess_kwargs['creationflags'] = subprocess.CREATE_NEW_PROCESS_GROUP
 
   if isinstance(cmd, list):
