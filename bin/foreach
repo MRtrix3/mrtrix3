@@ -175,7 +175,6 @@ def execute(): #pylint: disable=unused-variable
         progress.increment(progress_string())
 
   if parallel:
-
     processes = [ ]
     for i in range (1, app.NUM_THREADS):
       process = multiprocessing.Process(target=execute_parallel)
@@ -184,7 +183,6 @@ def execute(): #pylint: disable=unused-variable
     execute_parallel()
     for process in processes:
       process.join()
-
   else:
     for job in jobs:
       try:

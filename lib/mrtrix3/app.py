@@ -162,8 +162,8 @@ def execute(): #pylint: disable=unused-variable
   try:
     module.execute()
   except (run.MRtrixCmdError, run.MRtrixFnError) as exception:
-    return_code = 1
     is_cmd = isinstance(exception, run.MRtrixCmdError)
+    return_code = exception.returncode if is_cmd else 1
     DO_CLEANUP = False
     if SCRATCH_DIR:
       with open(os.path.join(SCRATCH_DIR, 'error.txt'), 'w') as outfile:
