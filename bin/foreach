@@ -177,18 +177,13 @@ def execute(): #pylint: disable=unused-variable
   if parallel:
 
     processes = [ ]
-    try:
-      for i in range (1, app.NUM_THREADS):
-        process = multiprocessing.Process(target=execute_parallel)
-        process.start()
-        processes.append(process)
-      execute_parallel()
-      for process in processes:
-        process.join()
-    except KeyboardInterrupt:
-      for process in processes:
-        process.terminate()
-        process.wait()
+    for i in range (1, app.NUM_THREADS):
+      process = multiprocessing.Process(target=execute_parallel)
+      process.start()
+      processes.append(process)
+    execute_parallel()
+    for process in processes:
+      process.join()
 
   else:
     for job in jobs:
