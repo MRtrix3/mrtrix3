@@ -16,7 +16,7 @@ Usage
     dwishellmath input operation output [ options ]
 
 -  *input*: The input diffusion MRI series
--  *operation*: The operation to be applied to each shell; this must one of the following: mean, median, sum, product, rms, norm, var, std, min, max, absmax, magmax
+-  *operation*: The operation to be applied to each shell; this must be one of the following: mean, median, sum, product, rms, norm, var, std, min, max, absmax, magmax
 -  *output*: The output image series
 
 Description
