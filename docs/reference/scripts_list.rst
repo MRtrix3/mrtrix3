@@ -17,6 +17,7 @@ List of MRtrix3 scripts
     scripts/dwigradcheck
     scripts/dwinormalise
     scripts/dwipreproc
+    scripts/dwishellmath
     scripts/foreach
     scripts/labelsgmfix
     scripts/population_template
@@ -32,6 +33,7 @@ List of MRtrix3 scripts
     :ref:`dwigradcheck`, "Check the orientation of the diffusion gradient table"
     :ref:`dwinormalise`, "Perform various forms of intensity normalisation of DWIs"
     :ref:`dwipreproc`, "Perform diffusion image pre-processing using FSL's eddy tool; including inhomogeneity distortion correction using FSL's topup tool if possible"
+    :ref:`dwishellmath`, "Apply an mrmath operation to each b-value shell in a DWI series"
     :ref:`foreach`, "Perform some arbitrary processing step for each of a set of inputs"
     :ref:`labelsgmfix`, "In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST"
     :ref:`population_template`, "Generates an unbiased group-average template from a series of images"
