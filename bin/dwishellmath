@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-supported_ops = ['mean', 'median', 'sum', 'product', 'rms', 'norm', 'var', 'std', 'min', 'max', 'absmax', 'magmax']
+SUPPORTED_OPS = ['mean', 'median', 'sum', 'product', 'rms', 'norm', 'var', 'std', 'min', 'max', 'absmax', 'magmax']
 
 
 def usage(cmdline): #pylint: disable=unused-variable
@@ -10,7 +10,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                           'each volume corresponds to a b-value shell (in order of increasing b-value), and '
                           'the intensities within each volume correspond to the chosen statistic having been computed from across the DWI volumes belonging to that b-value shell.')
   cmdline.add_argument('input', help='The input diffusion MRI series')
-  cmdline.add_argument('operation', choices=supported_ops, help='The operation to be applied to each shell; this must one of the following: ' + ', '.join(supported_ops))
+  cmdline.add_argument('operation', choices=SUPPORTED_OPS, help='The operation to be applied to each shell; this must one of the following: ' + ', '.join(SUPPORTED_OPS))
   cmdline.add_argument('output', help='The output image series')
   cmdline.add_example_usage('To compute the mean diffusion-weighted signal in each b-value shell',
                             'dwishellmath dwi.mif mean shellmeans.mif')
@@ -40,10 +40,10 @@ def execute(): #pylint: disable=unused-variable
   app.goto_scratch_dir()
   # run per-shell operations
   files = []
-  for k, b in enumerate(image.mrinfo('in.mif', 'shell_bvalues').split()):
-    file = 'shell-{:02d}.mif'.format(k)
-    run.command('dwiextract -shells ' + b + ' in.mif - | mrmath -axis 3 - ' + app.ARGS.operation + ' ' + file)
-    files.append(file)
+  for index, bvalue in enumerate(image.mrinfo('in.mif', 'shell_bvalues').split()):
+    filename = 'shell-{:02d}.mif'.format(index)
+    run.command('dwiextract -shells ' + bvalue + ' in.mif - | mrmath -axis 3 - ' + app.ARGS.operation + ' ' + filename)
+    files.append(filename)
   # concatenate to output file
   run.command('mrcat -axis 3 ' + ' '.join(files) + ' out.mif')
   run.command('mrconvert out.mif ' + path.from_user(app.ARGS.output) + app.mrconvert_output_option(path.from_user(app.ARGS.input)))
