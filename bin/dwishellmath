@@ -12,7 +12,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_argument('input', help='The input diffusion MRI series')
   cmdline.add_argument('operation', choices=supported_ops, help='The operation to be applied to each shell; this must one of the following: ' + ', '.join(supported_ops))
   cmdline.add_argument('output', help='The output image series')
-  cmdline.add_example_usage('To compute the mean diffusion-weghted signal in each b-value shell',
+  cmdline.add_example_usage('To compute the mean diffusion-weighted signal in each b-value shell',
                             'dwishellmath dwi.mif mean shellmeans.mif')
   grad_import = cmdline.add_argument_group('Options for importing the gradient table')
   grad_import.add_argument('-grad', help='Provide a gradient table in MRtrix format')

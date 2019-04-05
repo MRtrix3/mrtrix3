@@ -27,7 +27,7 @@ The output of this command is a 4D image, where each volume corresponds to a b-v
 Example usages
 --------------
 
--   *To compute the mean diffusion-weghted signal in each b-value shell*::
+-   *To compute the mean diffusion-weighted signal in each b-value shell*::
 
         $ dwishellmath dwi.mif mean shellmeans.mif
 
