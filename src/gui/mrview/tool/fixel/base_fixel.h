@@ -48,14 +48,14 @@ namespace MR
 
               class Shader : public Displayable::Shader { MEMALIGN (Shader)
                 public:
-                  Shader () : do_crop_to_slice (false), color_type (Direction), scale_type (Value) { }
+                  Shader () : do_crop_to_slice (false), bidirectional (false), color_type (Direction), scale_type (Value) { }
                   std::string vertex_shader_source   (const Displayable&) override;
                   std::string geometry_shader_source (const Displayable&) override;
                   std::string fragment_shader_source (const Displayable&) override;
                   virtual bool need_update (const Displayable&) const override;
                   virtual void update (const Displayable&) override;
                 protected:
-                  bool do_crop_to_slice;
+                  bool do_crop_to_slice, bidirectional;
                   FixelColourType color_type;
                   FixelScaleType scale_type;
               } fixel_shader;
@@ -226,7 +226,7 @@ namespace MR
                 }
               };
 
-              void update_image_buffers ();
+              virtual void update_image_buffers ();
               virtual void load_image_buffer() = 0;
               virtual void request_update_interp_image_buffer (const Projection&) = 0;
               void update_interp_image_buffer (const Projection&, const MR::Header&, const MR::Transform&);
@@ -281,6 +281,7 @@ namespace MR
               bool value_buffer_dirty;
               bool threshold_buffer_dirty;
               bool dir_buffer_dirty;
+
             private:
               Fixel& fixel_tool;
               GL::VertexBuffer vertex_buffer;

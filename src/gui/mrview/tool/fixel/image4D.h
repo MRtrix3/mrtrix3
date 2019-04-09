@@ -30,7 +30,7 @@ namespace MR
         { MEMALIGN (Image4D)
           public:
             Image4D (const std::string& filename, Fixel& fixel_tool) :
-              FixelType (filename, fixel_tool)
+              FixelType (filename, fixel_tool), tracking (false)
             {
               value_types = {"Unity", "Length"};
               colour_types = {"Direction", "Length"};
@@ -42,6 +42,18 @@ namespace MR
             }
 
             void load_image_buffer () override;
+            void reload_image_buffer ();
+
+            void update_image_buffers () override;
+
+            bool trackable () const {
+              if (fixel_data->ndim() < 5)
+                return false;
+              if (fixel_data->size(4) <= 1)
+                return false;
+              return true;
+            }
+            bool tracking;
         };
     }
     }

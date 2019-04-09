@@ -2633,6 +2633,7 @@ namespace MR
                   gl::Uniform1f (edge_alpha_ID, edge_alpha_given_selection (edge) * edge_fixed_alpha);
                 switch (edge_geometry) {
                   case edge_geometry_t::LINE:
+                    // TODO: in OpenGL >3, this has no effect:
                     gl::LineWidth (calc_line_width (edge_size_given_selection (edge) * edge_size_scale_factor, edge_geometry_line_smooth_checkbox->isChecked()));
                     edge.render_line();
                     break;
