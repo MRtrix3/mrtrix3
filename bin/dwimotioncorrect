@@ -39,11 +39,11 @@ options.add_argument('-rlmax', help='Reduced basis order per component for regis
 options.add_argument('-reg', help='Regularization for dwirecon (default = 0.001)')
 options.add_argument('-zreg', help='Regularization for dwirecon (default = 0.01)')
 options.add_argument('-lbreg', help='Laplace-Beltrami regularization for SHARD (default = 0)')
+options.add_argument('-v2v', action='store_true', help='Constrain to volume-level motion correction only')
 options.add_argument('-mb', help='Multiband factor (default = 1)')
 options.add_argument('-sorder', help='Slice order (default = 2,1, for odd-even)')
 options.add_argument('-sspwidth', help='Slice thickness for Gaussian SSP (default = 1)')
 options.add_argument('-sspfile', help='Slice sensitivity profile as vector')
-options.add_argument('-or_loss', help='Outlier rejection loss function (default = softl1)')
 options.add_argument('-fieldmap', help='B0 field map for distortion correction')
 options.add_argument('-fieldidx', help='Index of volume to which field map is aligned (default = 0)')
 options.add_argument('-pe_table', help='Phase encoding table in MRtrix format')
@@ -165,6 +165,9 @@ nthr = ''
 if app.args.nthreads:
     nthr = ' -nthreads ' + app.args.nthreads
 
+# Slice-level motion?
+slm = not app.args.v2v
+
 # Set multiband factor
 mb = 1
 if app.args.mb:
@@ -193,10 +196,10 @@ class Config:
 
 iters = [Config(False, 3, 10, 3.0),
          Config(False, 3, 10, 2.4),
-         Config(True,  3, 10, 1.9),
-         Config(True,  3, 10, 1.5),
-         Config(True,  3, 10, 1.2),
-         Config(True, 10, -1, 1.0)]
+         Config(slm,   3, 10, 1.9),
+         Config(slm,   3, 10, 1.5),
+         Config(slm,   3, 10, 1.2),
+         Config(slm,  10, -1, 1.0)]
 
 
 
