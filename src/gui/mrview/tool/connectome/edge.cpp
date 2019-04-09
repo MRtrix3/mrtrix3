@@ -143,12 +143,15 @@ namespace MR
         void Edge::Line::render() const
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL_CHECK_ERROR;
           if (!vertex_buffer || !tangent_buffer || !vertex_array_object)
             return;
           vertex_buffer.bind (gl::ARRAY_BUFFER);
           tangent_buffer.bind (gl::ARRAY_BUFFER);
           vertex_array_object.bind();
+          GL_CHECK_ERROR;
           gl::DrawArrays (gl::LINES, 0, 2);
+          GL_CHECK_ERROR;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
