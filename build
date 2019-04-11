@@ -1044,21 +1044,47 @@ def build_next ():
 
 
 def get_git_version (folder):
-  log ('''
-getting git version in folder "''' + folder + '"... ')
-
   try:
-    process = subprocess.Popen ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=folder, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return get_git_version.version
+  except AttributeError:
+    pass
+
+  log ('''
+getting git version in folder "''' + folder + '"...\n')
+
+  log ('  reading from core/version.h: ')
+  try:
+    with open (os.path.join (lib_dir, 'version.h')) as fd:
+      for line in fd:
+        line = line.split ("//")[0]
+        if 'MRTRIX_BASE_VERSION' in line:
+          hard_coded_version = line.split('MRTRIX_BASE_VERSION')[1].strip().strip('"')
+          log (hard_coded_version + '\n')
+    if not len (hard_coded_version):
+      raise NameError
+  except ( OSError, NameError ):
+    fail ("ERROR: failed to read version information\n")
+
+  log ('  fetching from git: ')
+  try:
+    process = subprocess.Popen ([ 'git', 'describe', '--abbrev=0' ], cwd=folder, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     git_version = process.communicate()[0]
     if process.returncode == 0:
       git_version = git_version.decode(errors='ignore').strip()
       log (git_version + '\n')
-      return git_version
-  except OSError:
-    pass
+      if git_version != hard_coded_version:
+        fail ("ERROR: git version stored in core/version.h does not match tag name\n")
 
-  log ('not found\n')
-  return 'unknown'
+    log ('  fetching full version from git: ')
+    process = subprocess.Popen ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=folder, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    git_version = process.communicate()[0]
+    if process.returncode == 0:
+      get_git_version.version = git_version.decode(errors='ignore').strip()
+      log (get_git_version.version + '\n')
+  except OSError:
+    get_git_version.version = hard_coded_version
+
+  return get_git_version.version
 
 
 def update_git_version (folder, git_version_file, contents):
