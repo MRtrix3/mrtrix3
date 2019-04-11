@@ -62,7 +62,7 @@ namespace MR
 
           pos_buffer_store.clear();
           dir_buffer_store.clear();
-          fixel_val_store = FixelValue();
+          fixel_val_store.clear();
 
           for (size_t axis = 0; axis < 3; ++axis) {
             std::fill (slice_fixel_indices[axis].begin(), slice_fixel_indices[axis].end(), vector<GLint>());
