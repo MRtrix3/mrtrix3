@@ -51,20 +51,24 @@ namespace MR
               (*this)["project_version"] = App::project_version;
           }
 
+          // In use at time of execution
           ROISet include, exclude, mask;
           Seeding::List seeds;
+
+          // As stored within the header of an existing .tck file
+          std::multimap<std::string, std::string> prior_rois;
+
           vector<std::string> comments;
-          std::multimap<std::string, std::string> roi;
 
 
-          void  clear () {
+          void clear () {
             std::map<std::string, std::string>::clear();
             seeds.clear();
             include.clear();
             exclude.clear();
             mask.clear();
+            prior_rois.clear();
             comments.clear();
-            roi.clear();
           }
 
           template <typename T> void set (T& variable, const std::string& name) {
@@ -72,7 +76,6 @@ namespace MR
             else variable = to<T> ((*this)[name]);
           }
 
-          void load_ROIs ();
       };
 
 
