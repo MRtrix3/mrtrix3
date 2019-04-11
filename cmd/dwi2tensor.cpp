@@ -71,7 +71,7 @@ void usage ()
     +   Argument ("image").type_image_out()
 
     + Option ("iter","number of iterative reweightings for IWLS algorithm (default: "
-        + str(DEFAULT_NITER) + ". Set to zero to perform standard OLS or WLS.")
+        + str(DEFAULT_NITER) + "). Set to zero to perform standard OLS or WLS.")
     +   Argument ("integer").type_integer (0, 10)
 
     + Option ("predicted_signal", "the predicted dwi image.")
