@@ -77,9 +77,9 @@ install:
     if [[ "${test}" == "sphinx" ]]; then
         if [[ "${py}" == "python2" ]]; then
             pip install urllib3[secure];
-            pip install --user recommonmark sphinx sphinx-rtd-theme;
+            pip install --user recommonmark sphinx sphinx-rtd-theme typing;
         else
-            pip3 install --user recommonmark sphinx sphinx-rtd-theme;
+            pip3 install --user recommonmark sphinx sphinx-rtd-theme typing;
         fi
     fi
   - |
