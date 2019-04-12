@@ -1066,11 +1066,12 @@ def version_from_file (version_file, version_macro):
           tag = line.split(version_macro)[1].strip().strip('"')
           log (tag + '\n')
           return tag
-    if not len (tag):
+    if not tag:
       raise NameError
   except (OSError, NameError):
     log ('not found\n')
     raise LookupError
+  return None
 
 
 
@@ -1092,7 +1093,7 @@ getting MRtrix version from folder "''' + mrtrix_dir[-1] + '"...\n  ')
     log ('  ')
     version = version_from_git (mrtrix_dir[-1])
     if version[0] != tag:
-        fail ('ERROR: version stored in "' + os.path.join (lib_dir, 'version.h') + '" does not match git tag name\n')
+      fail ('ERROR: version stored in "' + os.path.join (lib_dir, 'version.h') + '" does not match git tag name\n')
     mrtrix_version.version = version[1]
   except LookupError:
     mrtrix_version.version = tag
@@ -1122,7 +1123,7 @@ getting MRtrix project version from current folder...\n  ''')
     log ('  ')
     version = version_from_git ('.')
     if tag and version[0] != tag:
-        fail ('ERROR: project version stored in "' + os.path.join (misc_dir, 'project_version.h') + '" does not match tag name\n')
+      fail ('ERROR: project version stored in "' + os.path.join (misc_dir, 'project_version.h') + '" does not match tag name\n')
     project_version.version = version[1]
   except LookupError:
     project_version.version = tag
