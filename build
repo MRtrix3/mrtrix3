@@ -1050,7 +1050,7 @@ def version_from_git (folder):
       commit = subprocess.check_output ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=folder, stderr=devnull).decode(errors='ignore').strip()
     log (tag + ', ' + commit + '\n')
     return [ tag, commit ]
-  except (OSError, subprocess.CalledProcessError):
+  except Exception:
     log ('not found\n')
     raise LookupError
 
@@ -1068,7 +1068,7 @@ def version_from_file (version_file, version_macro):
           return tag
     if not tag:
       raise NameError
-  except (OSError, NameError):
+  except Exception:
     log ('not found\n')
     raise LookupError
   return None
