@@ -47,7 +47,13 @@ Example usages
 
         $ foreach -nthreads 4 freesurfer/subjects/* : recon-all -subjid NAME -all
 
-    In this example, foreach is instructed to run the FreeSurfer command 'recon-all' for all subjects within the 'subjects' directory, with four subjects being processed in parallel at any one time. Whenever processing of one subject is completed, processing for a new unprocessed subject will commence. This technique is useful for improving the efficiency of running single-threaded commands on multi-core systems, as long as the system possesses enough memory to support such parallel processing. Note that in the case of multi-threaded commands (which includes many MRtrix3 comamnds), it is generally preferable to permit multi-threaded execution of the command on a single input at a time, rather than processing multiple inputs in parallel.
+    In this example, foreach is instructed to run the FreeSurfer command 'recon-all' for all subjects within the 'subjects' directory, with four subjects being processed in parallel at any one time. Whenever processing of one subject is completed, processing for a new unprocessed subject will commence. This technique is useful for improving the efficiency of running single-threaded commands on multi-core systems, as long as the system possesses enough memory to support such parallel processing. Note that in the case of multi-threaded commands (which includes many MRtrix3 commands), it is generally preferable to permit multi-threaded execution of the command on a single input at a time, rather than processing multiple inputs in parallel.
+
+-   *Excluding specific inputs from execution*::
+
+        $ foreach *.nii -exclude 001.nii : mrconvert IN PRE.mif
+
+    Particularly when a wildcard is used to define the list of inputs for foreach, it is possible in some instances that this list will include one or more strings for which execution should in fact not be performed; for instance, if a command has already been executed for one or more files, and then foreach is being used to execute the same command for all other files. In this case, the -exclude option can be used to effectively remove an item from the list of inputs that would otherwise be included due to the use of a wildcard (and can be used more than once to exclude more than one string). In this particular example, mrconvert is instructed to perform conversions from NIfTI to MRtrix image formats, for all except the first image in the directory. Note that any usages of this option must appear AFTER the list of inputs. Note also that the argument following the -exclude option can alternatively be a regular expression, in which case any inputs for which a match to the expression is found will be excluded from processing.
 
 -   *Testing the command string substitution*::
 
@@ -57,6 +63,8 @@ Example usages
 
 Options
 -------
+
+- **-exclude** Exclude one specific input string from being processed (see Example Usage)
 
 - **-test** Test the operation of the foreach script, by printing the command strings following string substitution but not actually executing them
 
