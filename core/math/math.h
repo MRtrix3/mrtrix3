@@ -152,19 +152,21 @@ namespace MR
         if (sbuf.empty())
           continue;
 
-        V.push_back (vector<ValueType>());
-
         const auto elements = MR::split (sbuf, " ,;\t", true);
+        V.push_back (vector<ValueType>());
         try {
           for (const auto& entry : elements)
             V.back().push_back (to<ValueType> (entry));
-        } catch (...) {
-          throw Exception ("File \"" + filename + "\" contains non-numerical data");
+        } catch (Exception& e) {
+          e.push_back ("Cannot load row " + str(V.size()) + " of file \"" + filename + "\" as delimited numerical matrix data:");
+          e.push_back (sbuf);
+          throw e;
         }
 
         if (V.size() > 1)
           if (V.back().size() != V[0].size())
-            throw Exception ("uneven rows in matrix file \"" + filename + "\"");
+            throw Exception ("uneven rows in matrix file \"" + filename + "\" " +
+                             "(first row: " + str(V[0].size()) + " columns; row " + str(V.size()) + ": " + str(V.back().size()) + " columns)");
       }
       if (stream.bad())
         throw Exception (strerror (errno));
@@ -180,15 +182,9 @@ namespace MR
     Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix (const std::string& filename)
     {
       DEBUG ("loading matrix file \"" + filename + "\"...");
-      vector<vector<ValueType>> V;
-      try {
-        V = load_matrix_2D_vector<ValueType> (filename);
-      } catch (Exception& e) {
-        throw e;
-      }
+      const vector<vector<ValueType>> V = load_matrix_2D_vector<ValueType> (filename);
 
       Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> M (V.size(), V[0].size());
-
       for (ssize_t i = 0; i < M.rows(); i++)
         for (ssize_t j = 0; j < M.cols(); j++)
           M(i,j) = V[i][j];
@@ -220,12 +216,7 @@ namespace MR
   {
     DEBUG ("loading transform file \"" + filename + "\"...");
 
-    vector<vector<default_type>> V;
-    try {
-      V = load_matrix_2D_vector<> (filename);
-    } catch (Exception& e) {
-      throw e;
-    }
+    const vector<vector<default_type>> V = load_matrix_2D_vector<> (filename);
 
     if (V.empty())
       throw Exception ("transform in file " + filename + " is empty");

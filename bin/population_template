@@ -56,7 +56,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 # Make the corresponding MRtrix3 Python libraries available
-import inspect, math, os, sys
+import inspect, os, sys, math, shutil, errno
 LIB_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
 if not os.path.isdir(LIB_FOLDER):
   sys.stderr.write('Unable to locate MRtrix3 Python libraries')
@@ -65,6 +65,19 @@ sys.path.insert(0, LIB_FOLDER)
 from mrtrix3 import app
 
 
+from mrtrix3 import app, file, image, path, run #pylint: disable=redefined-builtin
+move      = shutil.move
+copy      = shutil.copy
+copytree  = shutil.copytree
+rmtree    = shutil.rmtree
+def remove(f):
+  try:
+    os.remove(f)
+  except OSError as e:
+    if e.errno == errno.ENOENT:
+      app.console("not deleting non-existent file: " + str(f))
+    else:
+      app.error("could not delete file: " + str(f) + " " + str(e))
 
 # Binds raw_input() to input() in Python2, so that input() can be used
 #   and the code will work on both Python 2 and 3
@@ -72,6 +85,9 @@ try:
   input = raw_input #pylint: disable=redefined-builtin, invalid-name
 except NameError:
   pass
+
+
+from mrtrix3.path import allindir
 
 def abspath(*arg):
   return os.path.abspath(os.path.join(*arg))

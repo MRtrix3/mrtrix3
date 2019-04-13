@@ -343,13 +343,19 @@ namespace MR
 
             Image* image = dynamic_cast<Image*>(image_list_model->items[i].get());
             if (image && image->show) {
-              std::string value_str = Path::basename(image->get_filename()) + " overlay value: ";
-              cfloat value = image->interpolate() ?
-                image->trilinear_value(window().focus()) :
-                image->nearest_neighbour_value(window().focus());
-              if(std::isnan(abs(value)))
+              std::string value_str = Path::basename(image->get_filename()) + " ";
+              cfloat value;
+              if (image->interpolate()) {
+                value_str += "interp value: ";
+                value = image->trilinear_value (window().focus());
+              } else {
+                value_str += "voxel value: ";
+                value = image->nearest_neighbour_value (window().focus());
+              }
+              if (std::isnan(abs(value)))
                 value_str += "?";
-              else value_str += str(value);
+              else
+                value_str += str(value);
               transform.render_text (value_str, position, start_line_num + num_of_new_lines);
               num_of_new_lines += 1;
             }
