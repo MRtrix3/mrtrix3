@@ -65,7 +65,7 @@ sys.path.insert(0, LIB_FOLDER)
 from mrtrix3 import app
 
 
-from mrtrix3 import app, file, image, path, run #pylint: disable=redefined-builtin
+from mrtrix3 import app, image, path, run
 move      = shutil.move
 copy      = shutil.copy
 copytree  = shutil.copytree
@@ -87,7 +87,6 @@ except NameError:
   pass
 
 
-from mrtrix3.path import allindir
 
 def abspath(*arg):
   return os.path.abspath(os.path.join(*arg))
