@@ -60,7 +60,8 @@ void usage ()
   SYNOPSIS = "Connectome group-wise statistics at the edge level using non-parametric permutation testing";
 
   DESCRIPTION
-      + Math::Stats::GLM::column_ones_description;
+      + Math::Stats::GLM::column_ones_description
+      + Math::Stats::GLM::sqrt_f_description;
 
 
   ARGUMENTS
@@ -235,7 +236,6 @@ void run()
   const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[3]);
   const size_t num_hypotheses = hypotheses.size();
   if (hypotheses[0].cols() != num_factors)
-    // TODO Re-word this error message
     throw Exception ("the number of columns in the contrast matrix (" + str(hypotheses[0].cols()) + ")"
                      + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")"
                      + (extra_columns.size() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
@@ -303,10 +303,13 @@ void run()
   }
 
   // Precompute default statistic and enhanced statistic
-  matrix_type tvalue_output, enhanced_output;
-  Stats::PermTest::precompute_default_permutation (glm_test, enhancer, empirical_statistic, enhanced_output, tvalue_output);
+  matrix_type default_output, enhanced_output;
+  Stats::PermTest::precompute_default_permutation (glm_test, enhancer, empirical_statistic, enhanced_output, default_output);
   for (size_t i = 0; i != num_hypotheses; ++i) {
-    save_matrix (mat2vec.V2M (tvalue_output.col(i)),   output_prefix + (hypotheses[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".csv");
+    if (hypotheses[i].is_F())
+      save_matrix (mat2vec.V2M (default_output.col(i).array().square()), output_prefix + "Fvalue" + postfix(i) + ".csv");
+    else
+      save_matrix (mat2vec.V2M (default_output.col(i)), output_prefix + "tvalue" + postfix(i) + ".csv");
     save_matrix (mat2vec.V2M (enhanced_output.col(i)), output_prefix + "enhanced" + postfix(i) + ".csv");
   }
 

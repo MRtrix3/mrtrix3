@@ -38,6 +38,7 @@ namespace MR
 
 
         extern const char* const column_ones_description;
+        extern const char* const sqrt_f_description;
 
         App::OptionGroup glm_options (const std::string& element_name);
 
@@ -253,7 +254,7 @@ namespace MR
 
             /*! Compute the statistics
              * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
-             * @param output the vector containing the output t-statistics (one column per hypothesis)
+             * @param output the vector containing the output statistics (one column per hypothesis)
              */
             void operator() (const matrix_type& shuffling_matrix, matrix_type& output) const override;
 
