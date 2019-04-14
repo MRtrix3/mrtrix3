@@ -42,6 +42,17 @@ namespace MR
             "The contrast matrix must also reflect the presence of this additional column.";
 
 
+        const char* const sqrt_f_description =
+            "In MRtrix3 statistical inference commands, when F-tests are performed, "
+            "it is the square root of the F-statistic that is internally calculated and "
+            "tracked. This is to ensure that statistical enhancement algorithms operate "
+            "comparably for both t-test and F-test hypotheses. Any export of F-statistics "
+            "to file will take the square of this internal value such that it is the actual "
+            "F-statistic that is written to file. This approach may however have consequences "
+            "in the control of statistical enhancement algorithms; for instance, if manually "
+            "setting a cluster-forming threshold, this should be determined based on the "
+            "value of sqrt(F).";
+
 
         App::OptionGroup glm_options (const std::string& element_name)
         {
@@ -461,7 +472,7 @@ namespace MR
 
 
 
-
+//#define GLM_TEST_DEBUG
 
 
 
@@ -494,41 +505,57 @@ namespace MR
             // First, we perform permutation of the input data
             // In Freedman-Lane, the initial 'effective' regression against the nuisance
             //   variables, and permutation of the data, are done in a single step
-            //VAR (shuffling_matrix.rows());
-            //VAR (shuffling_matrix.cols());
-            //VAR (partitions[ih].Rz.rows());
-            //VAR (partitions[ih].Rz.cols());
-            //VAR (y.rows());
-            //VAR (y.cols());
+#ifdef GLM_TEST_DEBUG
+            VAR (shuffling_matrix.rows());
+            VAR (shuffling_matrix.cols());
+            VAR (partitions[ih].Rz.rows());
+            VAR (partitions[ih].Rz.cols());
+            VAR (y.rows());
+            VAR (y.cols());
+#endif
             Sy.noalias() = shuffling_matrix * partitions[ih].Rz * y;
-            //VAR (Sy.rows());
-            //VAR (Sy.cols());
+#ifdef GLM_TEST_DEBUG
+            VAR (Sy.rows());
+            VAR (Sy.cols());
+            VAR (pinvM.rows());
+            VAR (pinvM.cols());
+#endif
             // Now, we regress this shuffled data against the full model
-            //VAR (pinvM.rows());
-            //VAR (pinvM.cols());
             lambdas.noalias() = pinvM * Sy;
-            //VAR (lambda.rows());
-            //VAR (lambda.cols());
+#ifdef GLM_TEST_DEBUG
+            VAR (lambdas.rows());
+            VAR (lambdas.cols());
             //VAR (matrix_type(c[ih]).rows());
             //VAR (matrix_type(c[ih]).cols());
-            //VAR (Rm.rows());
-            //VAR (Rm.cols());
+            VAR (Rm.rows());
+            VAR (Rm.cols());
+#endif
             XtX.noalias() = partitions[ih].X.transpose()*partitions[ih].X;
-            //VAR (XtX.rows());
-            //VAR (XtX.cols());
+#ifdef GLM_TEST_DEBUG
+            VAR (XtX.rows());
+            VAR (XtX.cols());
+#endif
             const default_type one_over_dof = 1.0 / (num_subjects() - partitions[ih].rank_x - partitions[ih].rank_z);
             sse = (Rm*Sy).colwise().squaredNorm();
-            //VAR (sse.size());
+#ifdef GLM_TEST_DEBUG
+            VAR (one_over_dof);
+            VAR (sse.size());
+#endif
             for (size_t ie = 0; ie != num_elements(); ++ie) {
               beta.noalias() = c[ih].matrix() * lambdas.col (ie);
-              //VAR (beta.rows());
-              //VAR (beta.cols());
+#ifdef GLM_TEST_DEBUG
+              VAR (beta.rows());
+              VAR (beta.cols());
+#endif
               const value_type F = ((beta.transpose() * XtX * beta) (0,0) / c[ih].rank()) /
                                    (one_over_dof * sse[ie]);
               if (!std::isfinite (F)) {
                 output (ie, ih) = value_type(0);
               } else if (c[ih].is_F()) {
-                output (ie, ih) = F;
+                // Note: sqrt(F) stored in output so that statistical enhancement of F-tests
+                //   behaves comparably to that of t-tests; individual commands will be
+                //   responsible for squaring these values when exporting actual F-statistics
+                output (ie, ih) = std::sqrt (F);
               } else {
                 assert (beta.rows() == 1);
                 output (ie, ih) = std::sqrt (F) * (beta.sum() > 0.0 ? 1.0 : -1.0);
@@ -709,12 +736,6 @@ namespace MR
                     // Now that we have the individual hypothesis model partition for these data,
                     //   the rest of this function should proceed similarly to the fixed
                     //   design matrix case
-                    //VAR (shuffling_matrix_masked.rows());
-                    //VAR (shuffling_matrix_masked.cols());
-                    //VAR (partition.Rz.rows());
-                    //VAR (partition.Rz.cols());
-                    //VAR (y_masked.rows());
-                    //VAR (y_masked.cols());
                     Sy = shuffling_matrix_masked * partition.Rz * y_masked.matrix();
                     lambda = pinvMfull_masked * Sy.matrix();
                     beta.noalias() = c[ih].matrix() * lambda.matrix();
@@ -726,7 +747,7 @@ namespace MR
                     if (!std::isfinite (F)) {
                       output (ie, ih) = value_type(0);
                     } else if (c[ih].is_F()) {
-                      output (ie, ih) = F;
+                      output (ie, ih) = std::sqrt (F);
                     } else {
                       assert (beta.rows() == 1);
                       output (ie, ih) = std::sqrt (F) * (beta.sum() > 0 ? 1.0 : -1.0);

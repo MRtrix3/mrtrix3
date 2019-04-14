@@ -70,13 +70,14 @@ void usage ()
     "the MRtrix3 command fixelconnectivity), and used directly; furthermore, it will be assumed that the data provided "
     "as input to the command have already had any desired smoothing applied (e.g. using the MRtrix3 command fixelfilter)."
 
-  + Math::Stats::GLM::column_ones_description
-
   + "Note that if the -mask option is used, the output fixel directory will still contain the same set of fixels as that "
     "present in the input fixel template, in order to retain fixel correspondence. However a consequence of this is that "
     "all fixels in the template will be initialy visible when the output fixel directory is loaded in mrview. Those fixels "
     "outside the processing mask will immediately disappear from view as soon as any data-file-based fixel colouring or "
-    "thresholding is applied.";
+    "thresholding is applied."
+
+  + Math::Stats::GLM::column_ones_description
+  + Math::Stats::GLM::sqrt_f_description;
 
   REFERENCES
   + "Raffelt, D.; Smith, RE.; Ridgway, GR.; Tournier, JD.; Vaughan, DN.; Rose, S.; Henderson, R.; Connelly, A." // Internal
@@ -553,11 +554,14 @@ void run()
   }
 
   // Precompute default statistic and CFE statistic
-  matrix_type cfe_output, tvalue_output;
-  Stats::PermTest::precompute_default_permutation (glm_test, cfe_integrator, empirical_cfe_statistic, cfe_output, tvalue_output);
+  matrix_type default_output, cfe_output;
+  Stats::PermTest::precompute_default_permutation (glm_test, cfe_integrator, empirical_cfe_statistic, cfe_output, default_output);
   for (size_t i = 0; i != num_hypotheses; ++i) {
+    if (hypotheses[i].is_F())
+      write_fixel_output (Path::join (output_fixel_directory, "Fvalue" + postfix(i) + ".mif"), default_output.col(i).array().square(), output_header);
+    else
+      write_fixel_output (Path::join (output_fixel_directory, "tvalue" + postfix(i) + ".mif"), default_output.col(i), output_header);
     write_fixel_output (Path::join (output_fixel_directory, "cfe" + postfix(i) + ".mif"), cfe_output.col(i), output_header);
-    write_fixel_output (Path::join (output_fixel_directory, std::string(hypotheses[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".mif"), tvalue_output.col(i), output_header);
   }
 
   // Perform permutation testing

@@ -47,7 +47,8 @@ void usage ()
     "statistical enhancement that occurs between the data; however family-wise error control "
     "will be used."
 
-  + Math::Stats::GLM::column_ones_description;
+  + Math::Stats::GLM::column_ones_description
+  + Math::Stats::GLM::sqrt_f_description;
 
 
   ARGUMENTS
@@ -215,10 +216,14 @@ void run()
   // Manually construct default shuffling matrix
   // TODO Change to use convenience function; we make an empty enhancer later anyway
   const matrix_type default_shuffle (matrix_type::Identity (num_subjects, num_subjects));
-  matrix_type default_tvalues;
-  (*glm_test) (default_shuffle, default_tvalues);
-  for (size_t i = 0; i != num_hypotheses; ++i)
-    save_matrix (default_tvalues.col(i), output_prefix + (hypotheses[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".csv");
+  matrix_type default_output;
+  (*glm_test) (default_shuffle, default_output);
+  for (size_t i = 0; i != num_hypotheses; ++i) {
+    if (hypotheses[i].is_F())
+      save_matrix (default_output.col(i).array().square(), output_prefix + "Fvalue" + postfix(i) + ".csv");
+    else
+      save_matrix (default_output.col(i), output_prefix + "tvalue" + postfix(i) + ".csv");
+  }
 
   // Perform permutation testing
   if (!get_options ("notest").size()) {
@@ -228,9 +233,9 @@ void run()
     count_matrix_type null_contributions;
     matrix_type empirical_distribution; // unused
     Stats::PermTest::run_permutations (glm_test, enhancer, empirical_distribution,
-                                       default_tvalues, null_distribution, null_contributions, uncorrected_pvalues);
+                                       default_output, null_distribution, null_contributions, uncorrected_pvalues);
 
-    const matrix_type fwe_pvalues = MR::Math::Stats::fwe_pvalue (null_distribution, default_tvalues);
+    const matrix_type fwe_pvalues = MR::Math::Stats::fwe_pvalue (null_distribution, default_output);
     for (size_t i = 0; i != num_hypotheses; ++i) {
       save_vector (fwe_pvalues.col(i), output_prefix + "fwe_pvalue" + postfix(i) + ".csv");
       save_vector (uncorrected_pvalues.col(i), output_prefix + "uncorrected_pvalue" + postfix(i) + ".csv");
