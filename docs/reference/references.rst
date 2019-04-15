@@ -50,7 +50,7 @@ References
 
 .. [Dhollander2019] T. Dhollander, R. Mito, D. Raffelt, and A. Connelly.
    *Improved white matter response function estimation for 3-tissue constrained spherical deconvolution.*
-   Proceedings of the 27th annual meeting of the International Society of Magnetic Resonance in Medicine (2019).
+   Proceedings of the 27th annual meeting of the International Society of Magnetic Resonance in Medicine (2019), pp. 555.
    [`full text link <https://www.researchgate.net/publication/331165168_Improved_white_matter_response_function_estimation_for_3-tissue_constrained_spherical_deconvolution>`__\ ]
 
 .. [Jeurissen2014] B. Jeurissen, J.-D. Tournier, T. Dhollander, A. Connelly, and J.  Sijbers.

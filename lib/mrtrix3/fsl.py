@@ -11,8 +11,8 @@ def check_first(prefix, structures): #pylint: disable=unused-variable
   vtk_files = [ prefix + '-' + struct + '_first.vtk' for struct in structures ]
   existing_file_count = sum([ os.path.exists(filename) for filename in vtk_files ])
   if existing_file_count != len(vtk_files):
-    if 'SGE_ROOT' in os.environ:
-      app.console('FSL FIRST job has been submitted to SGE; awaiting completion')
+    if 'SGE_ROOT' in os.environ and os.environ['SGE_ROOT']:
+      app.console('FSL FIRST job may have been run via SGE; awaiting completion')
       app.console('(note however that FIRST may fail silently, and hence this script may hang indefinitely)')
       path.wait_for(vtk_files)
     else:

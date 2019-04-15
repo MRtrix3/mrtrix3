@@ -1131,13 +1131,23 @@ def execute(): #pylint: disable=unused-variable
       app.cleanup('eddy_mask.nii')
 
 
-  keys_to_remove = [ 'EchoTime', 'FlipAngle', 'MultibandAccelerationFactor', 'PhaseEncodingDirection', 'RepetitionTime', 'SliceEncodingDirection', 'SliceTiming', 'TotalReadoutTime', 'pe_scheme' ]
+
+
+  keys_to_remove = [ 'MultibandAccelerationFactor', 'SliceEncodingDirection', 'SliceTiming' ]
+  # These keys are still relevant for the output data if no EPI distortion correction was performed
+  if do_topup:
+    keys_to_remove.extend([ 'PhaseEncodingDirection', 'TotalReadoutTime', 'pe_scheme' ])
   # Get the header key-value entries from the input DWI, remove those we don't wish to keep, and
   #   export the result to a new JSON file so that they can be inserted into the output header
   with open('dwi.json', 'r') as input_json_file:
     keyval = json.load(input_json_file)
   for key in keys_to_remove:
     keyval.pop(key, None)
+  # 'Stash' the phase encoding scheme of the original uncorrected DWIs, since it still
+  #   may be useful information at some point in the future but is no longer relevant
+  #   for e.g. tracking for different volumes, or performing any geometric corrections
+  if do_topup:
+    keyval['prior_pe_scheme'] = dwi_manual_pe_scheme if dwi_manual_pe_scheme else dwi_pe_scheme
   with open('output.json', 'w') as output_json_file:
     json.dump(keyval, output_json_file)
 

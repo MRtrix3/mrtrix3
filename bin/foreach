@@ -21,14 +21,18 @@ def usage(cmdline): #pylint: disable=unused-variable
                             'This will run the "mrinfo" command for every .mif file present in "folder/". Note that the compulsory colon symbol is used to separate the list of items on which foreach is being instructed to operate, from the command that is intended to be run for each input.')
   cmdline.add_example_usage('Multi-threaded use of foreach',
                             'foreach -nthreads 4 freesurfer/subjects/* : recon-all -subjid NAME -all',
-                            'In this example, foreach is instructed to run the FreeSurfer command \'recon-all\' for all subjects within the \'subjects\' directory, with four subjects being processed in parallel at any one time. Whenever processing of one subject is completed, processing for a new unprocessed subject will commence. This technique is useful for improving the efficiency of running single-threaded commands on multi-core systems, as long as the system possesses enough memory to support such parallel processing. Note that in the case of multi-threaded commands (which includes many MRtrix3 comamnds), it is generally preferable to permit multi-threaded execution of the command on a single input at a time, rather than processing multiple inputs in parallel.')
+                            'In this example, foreach is instructed to run the FreeSurfer command \'recon-all\' for all subjects within the \'subjects\' directory, with four subjects being processed in parallel at any one time. Whenever processing of one subject is completed, processing for a new unprocessed subject will commence. This technique is useful for improving the efficiency of running single-threaded commands on multi-core systems, as long as the system possesses enough memory to support such parallel processing. Note that in the case of multi-threaded commands (which includes many MRtrix3 commands), it is generally preferable to permit multi-threaded execution of the command on a single input at a time, rather than processing multiple inputs in parallel.')
+  cmdline.add_example_usage('Excluding specific inputs from execution',
+                            'foreach *.nii -exclude 001.nii : mrconvert IN PRE.mif',
+                            'Particularly when a wildcard is used to define the list of inputs for foreach, it is possible in some instances that this list will include one or more strings for which execution should in fact not be performed; for instance, if a command has already been executed for one or more files, and then foreach is being used to execute the same command for all other files. In this case, the -exclude option can be used to effectively remove an item from the list of inputs that would otherwise be included due to the use of a wildcard (and can be used more than once to exclude more than one string). In this particular example, mrconvert is instructed to perform conversions from NIfTI to MRtrix image formats, for all except the first image in the directory. Note that any usages of this option must appear AFTER the list of inputs. Note also that the argument following the -exclude option can alternatively be a regular expression, in which case any inputs for which a match to the expression is found will be excluded from processing.')
   cmdline.add_example_usage('Testing the command string substitution',
                             'foreach -test * : mrconvert IN PRE.mif',
                             'By specifying the -test option, the script will print to the terminal the results of text substitutions for all of the specified inputs, but will not actually execute those commands. It can therefore be used to verify that the script is receiving the intended set of inputs, and that the text substitutions on those inputs lead to the intended command strings.')
-  cmdline.add_argument('inputs',  help='Each of the inputs for which processing should be run', nargs='+')
-  cmdline.add_argument('colon',   help='Colon symbol (":") delimiting the foreach inputs & command-line options from the actual command to be executed', type=str, choices=[':'])
-  cmdline.add_argument('command', help='The command string to run for each input, containing any number of substitutions listed in the Description section', type=str)
-  cmdline.add_argument('-test',   help='Test the operation of the foreach script, by printing the command strings following string substitution but not actually executing them', action='store_true', default=False)
+  cmdline.add_argument('inputs',   help='Each of the inputs for which processing should be run', nargs='+')
+  cmdline.add_argument('colon',    help='Colon symbol (":") delimiting the foreach inputs & command-line options from the actual command to be executed', type=str, choices=[':'])
+  cmdline.add_argument('command',  help='The command string to run for each input, containing any number of substitutions listed in the Description section', type=str)
+  cmdline.add_argument('-exclude', help='Exclude one specific input string from being processed (see Example Usage)', action='append', nargs=1)
+  cmdline.add_argument('-test',    help='Test the operation of the foreach script, by printing the command strings following string substitution but not actually executing them', action='store_true', default=False)
 
   # Usage of foreach needs to be handled slightly differently here:
   # We want argparse to parse only the contents of the command-line before the colon symbol,
@@ -81,16 +85,45 @@ KEYLIST = [ 'IN', 'NAME', 'PRE', 'UNI' ]
 
 
 def execute(): #pylint: disable=unused-variable
-  import multiprocessing
+  import re, multiprocessing
   from mrtrix3 import ANSI, MRtrixError, run
   global CMDSPLIT
 
-  app.debug('Inputs: ' + str(app.ARGS.inputs))
+  inputs = app.ARGS.inputs
+  app.debug('All inputs: ' + str(inputs))
   app.debug('Command: ' + str(app.ARGS.command))
   app.debug('CMDSPLIT: ' + str(CMDSPLIT))
 
-  common_prefix = os.path.commonprefix(app.ARGS.inputs)
-  common_suffix = os.path.commonprefix([i[::-1] for i in app.ARGS.inputs])[::-1]
+  if app.ARGS.exclude:
+    app.ARGS.exclude = [ exclude[0] for exclude in app.ARGS.exclude ] # To deal with argparse's action=append. Always guaranteed to be only one argument since nargs=1
+    app.debug('To exclude: ' + str(app.ARGS.exclude))
+    exclude_unmatched = [ ]
+    to_exclude = [ ]
+    for exclude in app.ARGS.exclude:
+      if exclude in inputs:
+        to_exclude.append(exclude)
+      else:
+        try:
+          re_object = re.compile(exclude)
+          regex_hits = [ ]
+          for input in inputs:
+            if re_object.search(input).group():
+              regex_hits.append(input)
+          if regex_hits:
+            to_exclude.extend(regex_hits)
+          else:
+            exclude_unmatched.append(exclude)
+        except Exception as e:
+          exclude_unmatched.append(exclude)
+    if exclude_unmatched:
+      app.warn('Item' + ('s' if len(exclude_unmatched) > 1 else '') + ' specified via -exclude did not appear in input list: ' + str('\'' + exclude_unmatched[0] + '\'' if len(exclude_unmatched) == 1 else exclude_unmatched))
+    inputs = [ input for input in inputs if input not in to_exclude ]
+    if not inputs:
+      raise MRtrixError('No inputs remaining after application of exclusion criteri' + ('on' if len(app.ARGS.exclude) == 1 else 'a'))
+    app.debug('Inputs after exclusion: ' + str(inputs))
+
+  common_prefix = os.path.commonprefix(inputs)
+  common_suffix = os.path.commonprefix([i[::-1] for i in inputs])[::-1]
   app.debug('Common prefix: ' + common_prefix)
   app.debug('Common suffix: ' + common_suffix)
 
@@ -130,7 +163,7 @@ def execute(): #pylint: disable=unused-variable
       self.returncode = None
 
   jobs = [ ]
-  for i in app.ARGS.inputs:
+  for i in inputs:
     jobs.append(Entry(i))
 
   if app.ARGS.test:
