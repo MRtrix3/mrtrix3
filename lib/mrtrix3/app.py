@@ -63,12 +63,15 @@ _SIGNALS = { 'SIGALRM': 'Timer expiration',
              'SIGQUIT': 'Received terminal quit signal',
              'SIGSEGV': 'Segmentation fault: Invalid memory reference',
              'SIGSYS' : 'Bad system call',
-             'SIGTERM': 'Terminated by kill command',
              'SIGXCPU': 'CPU time limit exceeded',
              'SIGXFSZ': 'File size limit exceeded' }
            # Can't be handled; see https://bugs.python.org/issue9524
            # 'CTRL_C_EVENT': 'Terminated by user Ctrl-C input',
-           # 'CTRL_BREAK_EVENT': Terminated by user Ctrl-Break input'
+           # 'CTRL_BREAK_EVENT': 'Terminated by user Ctrl-Break input'
+if mrtrix3.is_windows():
+  _SIGNALS['SIGBREAK'] = 'Received Windows \'break\' signal'
+else:
+  _SIGNALS['SIGTERM'] = 'Received termination signal'
 
 
 
@@ -159,8 +162,8 @@ def execute(): #pylint: disable=unused-variable
   try:
     module.execute()
   except (run.MRtrixCmdError, run.MRtrixFnError) as exception:
-    return_code = 1
     is_cmd = isinstance(exception, run.MRtrixCmdError)
+    return_code = exception.returncode if is_cmd else 1
     DO_CLEANUP = False
     if SCRATCH_DIR:
       with open(os.path.join(SCRATCH_DIR, 'error.txt'), 'w') as outfile:
@@ -185,10 +188,12 @@ def execute(): #pylint: disable=unused-variable
     sys.stderr.write(EXEC_NAME + ': ' + ANSI.error + '[ERROR] For debugging, inspect contents of scratch directory: ' + SCRATCH_DIR + ANSI.clear + '\n')
     sys.stderr.flush()
   except MRtrixError as exception:
+    return_code = 1
     sys.stderr.write('\n')
     sys.stderr.write(EXEC_NAME + ': ' + ANSI.error + '[ERROR] ' + str(exception) + ANSI.clear + '\n')
     sys.stderr.flush()
   except Exception as exception: # pylint: disable=broad-except
+    return_code = 1
     sys.stderr.write('\n')
     sys.stderr.write(EXEC_NAME + ': ' + ANSI.error + '[ERROR] Unhandled Python exception:' + ANSI.clear + '\n')
     sys.stderr.write(EXEC_NAME + ': ' + ANSI.error + '[ERROR]' + ANSI.clear + '   ' + ANSI.console + type(exception).__name__ + ': ' + str(exception) + ANSI.clear + '\n')
@@ -209,7 +214,6 @@ def execute(): #pylint: disable=unused-variable
       for line in calling_code:
         sys.stderr.write(EXEC_NAME + ': ' + ANSI.error + '[ERROR]' + ANSI.clear + '     ' + ANSI.debug + line.strip() + ANSI.clear + '\n')
   finally:
-    run.shared.kill()
     if os.getcwd() != WORKING_DIR:
       if not return_code:
         console('Changing back to original directory (' + WORKING_DIR + ')')
@@ -1113,16 +1117,10 @@ def handler(signum, _frame):
   import shutil, signal
   from mrtrix3 import ANSI
   global _SIGNALS, EXEC_NAME, SCRATCH_DIR, WORKING_DIR
-  # Ignore any other incoming signals
-  for sig in _SIGNALS:
-    try:
-      signal.signal(getattr(signal, sig), signal.SIG_IGN)
-    except:
-      pass
-  # Kill any child processes in the run module
+  # Terminate any child processes in the run module
   try:
     from mrtrix3.run import shared
-    shared.kill()
+    shared.terminate(signum)
   except ImportError:
     pass
   # Generate the error message
