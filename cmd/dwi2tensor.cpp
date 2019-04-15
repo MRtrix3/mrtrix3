@@ -29,7 +29,7 @@ using value_type = float;
 
 #define DEFAULT_NITER 2
 
-const char* encoding_description =
+const char* const encoding_description =
   "The tensor coefficients are stored in the output image as follows: \n"
   "volumes 0-5: D11, D22, D33, D12, D13, D23 ; \n\n"
   "If diffusion kurtosis is estimated using the -dkt option, these are stored as follows: \n"
@@ -43,13 +43,24 @@ void usage ()
 {
   AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be)";
 
-  SYNOPSIS = "Diffusion (kurtosis) tensor estimation.";
+  SYNOPSIS = "Diffusion (kurtosis) tensor estimation";
 
   DESCRIPTION
-    + "Estimate diffusion tensor (and optionally its kurtosis) by fitting to "
-    "the log-signal using either ordinary least-squares (OLS) or weighted least-squares (WLS), "
-    "followed by further re-weighted iterations using the previous signals predictions (IWLS)."
-    "By default, the initial fit is performed using WLS, followed by 2 IWLS iterations."
+  + "By default, the diffusion tensor (and optionally its kurtosis) is fitted to "
+    "the log-signal in two steps: firstly, using weighted least-squares (WLS) with "
+    "weights based on the empirical signal intensities; secondly, by further iterated weighted "
+    "least-squares (IWLS) with weights determined by the signal predictions from the "
+    "previous iteration (by default, 2 iterations will be performed). This behaviour can "
+    "be altered in two ways:"
+
+  + "* The -ols option will cause the first fitting step to be performed using ordinary "
+    "least-squares (OLS); that is, all measurements contribute equally to the fit, instead of "
+    "the default behaviour of weighting based on the empirical signal intensities."
+
+  + "* The -iter option controls the number of iterations of the IWLS prodedure. If this is "
+    "set to zero, then the output model parameters will be those resulting from the first "
+    "fitting step only: either WLS by default, or OLS if the -ols option is used in conjunction "
+    "with -iter 0."
 
     + encoding_description;
 
@@ -58,8 +69,7 @@ void usage ()
     + Argument ("dt", "the output dt image.").type_image_out ();
 
   OPTIONS
-    + Option ("ols", "perform initial fit using an ordinary least-squares (OLS) fit, "
-        "instead of the default weighted least-squares (WLS) strategy.")
+    + Option ("ols", "perform initial fit using an ordinary least-squares (OLS) fit (see Description).")
 
     + Option ("mask", "only perform computation within the specified binary brain mask image.")
     +   Argument ("image").type_image_in()
@@ -71,7 +81,7 @@ void usage ()
     +   Argument ("image").type_image_out()
 
     + Option ("iter","number of iterative reweightings for IWLS algorithm (default: "
-        + str(DEFAULT_NITER) + "). Set to zero to perform standard OLS or WLS.")
+              + str(DEFAULT_NITER) + ") (see Description).")
     +   Argument ("integer").type_integer (0, 10)
 
     + Option ("predicted_signal", "the predicted dwi image.")
