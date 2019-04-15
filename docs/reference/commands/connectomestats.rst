@@ -34,6 +34,8 @@ Options
 Options relating to shuffling of data for nonparametric statistical inference
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+-  **-notest** don't perform statistical inference; only output population statistics (effect size, stdev etc)
+
 -  **-errors spec** specify nature of errors for shuffling; options are: ee,ise,both (default: ee)
 
 -  **-nshuffles number** the number of shuffles (default: 5000)
