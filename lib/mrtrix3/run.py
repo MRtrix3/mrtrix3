@@ -421,7 +421,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
       stdout_text = finalise_temp_file(process.iostreams[0])
       return_stdout += stdout_text
     if process.iostreams[1].filename is not None:
-      stdout_text = finalise_temp_file(process.iostreams[1])
+      stderr_text = finalise_temp_file(process.iostreams[1])
       return_stderr += stderr_text
     if process.returncode:
       error = True
