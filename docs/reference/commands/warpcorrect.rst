@@ -6,7 +6,7 @@ warpcorrect
 Synopsis
 --------
 
-Replaces voxels in a deformation field that point to 0,0,0 with nan,nan,nan
+Replaces voxels in a deformation field that point to a specific out of bounds location with nan,nan,nan
 
 Usage
 --------
@@ -25,6 +25,10 @@ This can be used in conjunction with the warpinit command to compute a MRtrix co
 
 Options
 -------
+
+-  **-marker coordinates** single value or a comma separated list of values that define out of bounds voxels in the input warp image. Default: (0,0,0).
+
+-  **-tolerance value** numerical precision used for L2 matrix norm comparison. Default: 9.99999975e-06.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -47,7 +51,7 @@ Standard options
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au)
+**Author:** David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (mail@maxpietsch.com)
 
 **Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 

@@ -198,6 +198,8 @@ namespace MR {
           void error_in_get (size_t idx) const;
           void error_in_check_size (size_t min_size, size_t actual_size) const;
           void report_unknown_tag_with_implicit_syntax () const;
+
+          static const char* type_as_str[];
       };
 
 
