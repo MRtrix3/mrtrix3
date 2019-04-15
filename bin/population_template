@@ -56,28 +56,15 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 # Make the corresponding MRtrix3 Python libraries available
-import inspect, os, sys, math, shutil, errno
+import inspect, os, sys, math, shutil
+
 LIB_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
 if not os.path.isdir(LIB_FOLDER):
   sys.stderr.write('Unable to locate MRtrix3 Python libraries')
   sys.exit(1)
 sys.path.insert(0, LIB_FOLDER)
-from mrtrix3 import app
-
 
 from mrtrix3 import app, image, path, run
-move      = shutil.move
-copy      = shutil.copy
-copytree  = shutil.copytree
-rmtree    = shutil.rmtree
-def remove(f):
-  try:
-    os.remove(f)
-  except OSError as e:
-    if e.errno == errno.ENOENT:
-      app.console("not deleting non-existent file: " + str(f))
-    else:
-      app.error("could not delete file: " + str(f) + " " + str(e))
 
 # Binds raw_input() to input() in Python2, so that input() can be used
 #   and the code will work on both Python 2 and 3
@@ -122,8 +109,6 @@ except ImportError:
     return [[sum(x*y for x,y in zip(a_row,b_col)) for b_col in zip(*matrix_b)] for a_row in matrix_a]
 
 def check_linear_transformation (transformation, cmd, max_scaling = 0.5, max_shear = 0.2, max_rot = 2 * math.pi, pause_on_warn = True):
-
-  from mrtrix3 import run
 
   def load_key_value(file_path):
     res = {}
@@ -209,8 +194,7 @@ class Input(object):
 
 
 def execute(): #pylint: disable=unused-variable
-  import shutil
-  from mrtrix3 import image, MRtrixError, path, run
+  from mrtrix3 import MRtrixError
 
   if not app.ARGS.type in REGISTRATION_MODES:
     raise MRtrixError("registration type must be one of %s. provided: %s" % (str(["rigid", "affine", "rigid_affine"]), app.ARGS.type))
