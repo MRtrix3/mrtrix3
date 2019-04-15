@@ -425,7 +425,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
       return_stderr += stderr_text
     if process.returncode:
       error = True
-      errortext += stdout_text + stderr_text
+      error_text += stdout_text + stderr_text
 
   # Get rid of any reference to the executed processes
   shared.close_command_index(this_command_index)
