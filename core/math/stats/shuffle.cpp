@@ -36,11 +36,10 @@ namespace MR
 
         OptionGroup result = OptionGroup ("Options relating to shuffling of data for nonparametric statistical inference")
 
+        + Option ("notest", "don't perform statistical inference; only output population statistics (effect size, stdev etc)")
+
         + Option ("errors", "specify nature of errors for shuffling; options are: " + join(error_types, ",") + " (default: ee)")
           + Argument ("spec").type_choice (error_types)
-
-        // TODO Find a better place for this
-        //+ Option ("notest", "don't perform statistical inference; only output population statistics (effect size, stdev etc)")
 
         + Option ("nshuffles", "the number of shuffles (default: " + str(DEFAULT_NUMBER_SHUFFLES) + ")")
           + Argument ("number").type_integer (1)
