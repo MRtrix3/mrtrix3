@@ -106,18 +106,18 @@ def execute(): #pylint: disable=unused-variable
         try:
           re_object = re.compile(exclude)
           regex_hits = [ ]
-          for input in inputs:
-            if re_object.search(input).group():
-              regex_hits.append(input)
+          for arg in inputs:
+            if re_object.search(arg).group():
+              regex_hits.append(arg)
           if regex_hits:
             to_exclude.extend(regex_hits)
           else:
             exclude_unmatched.append(exclude)
-        except Exception as e:
+        except Exception:
           exclude_unmatched.append(exclude)
     if exclude_unmatched:
       app.warn('Item' + ('s' if len(exclude_unmatched) > 1 else '') + ' specified via -exclude did not appear in input list: ' + str('\'' + exclude_unmatched[0] + '\'' if len(exclude_unmatched) == 1 else exclude_unmatched))
-    inputs = [ input for input in inputs if input not in to_exclude ]
+    inputs = [ arg for arg in inputs if arg not in to_exclude ]
     if not inputs:
       raise MRtrixError('No inputs remaining after application of exclusion criteri' + ('on' if len(app.ARGS.exclude) == 1 else 'a'))
     app.debug('Inputs after exclusion: ' + str(inputs))
