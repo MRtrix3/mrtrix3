@@ -35,8 +35,8 @@ namespace MR
 
       Transform (const Transform&) = default;
       Transform (Transform&&) = default;
-      Transform& operator= (const Transform&) = default;
-      Transform& operator= (Transform&&) = default;
+      Transform& operator= (const Transform&) = delete;
+      Transform& operator= (Transform&&) = delete;
 
       const Eigen::DiagonalMatrix<default_type, 3> voxelsize;
       const transform_type voxel2scanner, scanner2voxel, image2scanner, scanner2image;
