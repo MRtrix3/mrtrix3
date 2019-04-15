@@ -87,21 +87,25 @@ namespace MR
           bool is_duplicate (const PermuteLabels&, const PermuteLabels&) const;
           bool is_duplicate (const PermuteLabels&) const;
 
-          // Note that this function does not take into account grouping of subjects and therefore generated
+          // Note that this function does not take into account identical rows and therefore generated
           // permutations are not guaranteed to be unique wrt the computed test statistic.
-          // Providing the number of subjects is large then the likelihood of generating duplicates is low.
-          void generate_permutations (const size_t num_perms,
-                                      const size_t num_subjects,
-                                      const bool include_default);
+          // Providing the number of rows is large then the likelihood of generating duplicates is low.
+          void generate_random_permutations (const size_t num_perms,
+                                             const size_t num_rows,
+                                             const bool include_default,
+                                             const bool permit_duplicates);
+
+          void generate_all_permutations (const size_t num_rows);
 
           void load_permutations (const std::string& filename);
 
           // Similar functions required for sign-flipping
           bool is_duplicate (const BitSet&) const;
-          void generate_signflips (const size_t num_signflips,
-                                   const size_t num_subjects,
-                                   const bool include_default);
-          void load_signflips (const std::string& filename);
+          void generate_random_signflips (const size_t num_signflips,
+                                          const size_t num_rows,
+                                          const bool include_default,
+                                          const bool permit_duplicates);
+          void generate_all_signflips (const size_t num_rows);
 
       };
 

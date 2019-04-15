@@ -14,6 +14,7 @@
 
 #include "math/stats/shuffle.h"
 
+#include <algorithm>
 #include <random>
 
 #include "math/math.h"
@@ -48,10 +49,6 @@ namespace MR
                                   "where each relabelling is defined as a column vector of size m, and the number of columns, n, defines "
                                   "the number of permutations. Can be generated with the palm_quickperms function in PALM (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM). "
                                   "Overrides the -nshuffles option.")
-          + Argument ("file").type_file_in()
-
-        // TODO See what is available in PALM
-        + Option ("signflips", "manually define the signflips")
           + Argument ("file").type_file_in();
 
         if (include_nonstationarity) {
@@ -70,9 +67,6 @@ namespace MR
                                                     "and the number of columns, n, defines the number of permutations. Can be generated with the palm_quickperms function in PALM "
                                                     "(http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM) "
                                                     "Overrides the -nshuffles_nonstationarity option.")
-            + Argument ("file").type_file_in()
-
-          + Option ("signflips_nonstationarity", "manually define the signflips for computing the empirical statistics for non-stationarity correction")
             + Argument ("file").type_file_in();
 
         }
@@ -82,8 +76,27 @@ namespace MR
 
 
 
-      Shuffler::Shuffler (const size_t num_subjects, const bool is_nonstationarity, const std::string msg) :
-          rows (num_subjects),
+      namespace {
+        std::function<size_t(size_t)> factorial = [] (const size_t i) {
+          if (i < 2) {
+            return size_t(1);
+          } else if (i == std::numeric_limits<size_t>::max()) {
+            return i;
+          } else {
+            const size_t multiplier = factorial(i-1);
+            const size_t result = i * multiplier;
+            if (result / multiplier == i)
+              return result;
+            else
+              return std::numeric_limits<size_t>::max();
+          }
+        };
+      }
+
+
+
+      Shuffler::Shuffler (const size_t num_rows, const bool is_nonstationarity, const std::string msg) :
+          rows (num_rows),
           nshuffles (is_nonstationarity ? DEFAULT_NUMBER_SHUFFLES_NONSTATIONARITY : DEFAULT_NUMBER_SHUFFLES),
           counter (0)
       {
@@ -105,6 +118,49 @@ namespace MR
           nshuffles_explicit = true;
         }
 
+        const size_t max_num_permutations = factorial (rows);
+        const size_t max_num_signflips = (nshuffles >= 8*sizeof(size_t)) ?
+                                         (std::numeric_limits<size_t>::max()) :
+                                         ((size_t(1) << num_rows));
+
+        size_t max_shuffles;
+        if (ee) {
+          if (ise) {
+            max_shuffles = max_num_permutations * max_num_signflips;
+            if (max_shuffles / max_num_signflips != max_num_permutations)
+              max_shuffles = std::numeric_limits<size_t>::max();
+          } else {
+            max_shuffles = max_num_permutations;
+          }
+        } else {
+          max_shuffles = max_num_signflips;
+        }
+
+        if (max_shuffles > nshuffles) {
+          if (nshuffles_explicit) {
+            WARN ("User requested " + str(nshuffles) + " shuffles for " +
+                  (is_nonstationarity ? "non-stationarity correction" : "null distribution generation") +
+                  ", but only " + str(max_shuffles) + " unique shuffles can be generated; "
+                  "this will restrict the minimum achievable p-value to " + str(1.0/max_shuffles));
+          } else {
+            WARN ("Only " + str(max_shuffles) + " unique shuffles can be generated, which is less than the default number of " +
+                  str(nshuffles) + " for " + (is_nonstationarity ? "non-stationarity correction" : "null distribution generation"));
+          }
+          nshuffles = max_shuffles;
+        }
+
+        // Need special handling of cases where both ee and ise are used
+        // - If forced to use all shuffles, need to:
+        //   - Generate all permutations, but duplicate each according to the number of signflips
+        //   - Generate all signflips, but duplicate each according to the number of permutations
+        //   - Interleave one of the two of them, so that every combination of paired permutation-signflip is unique
+        // - If using a fixed number of shuffles:
+        //   - If fixed number is less than the maximum number of permutations, generate that number randomly
+        //   - If fixed number is equal to the maximum number of permutations, generate the full set
+        //   - If fixed number is greater than the maximum number of permutations, generate that number randomly,
+        //     while disabling detection of duplicates
+        //   - Repeat the three steps above for signflips
+
         opt = get_options (is_nonstationarity ? "permutations_nonstationarity" : "permutations");
         if (opt.size()) {
           if (ee) {
@@ -118,28 +174,59 @@ namespace MR
             throw Exception ("Cannot manually provide permutations if errors are not exchangeable");
           }
         } else if (ee) {
-          // Only include the default shuffling if this is the actual permutation testing;
-          //   if we're doing nonstationarity correction, don't include the default
-          generate_permutations (nshuffles, rows, !is_nonstationarity);
+          if (ise) {
+            if (nshuffles == max_shuffles) {
+              generate_all_permutations (rows);
+              assert (permutations.size() == max_num_permutations);
+              vector<PermuteLabels> duplicated_permutations;
+              for (const auto& p : permutations) {
+                for (size_t i = 0; i != max_num_signflips; ++i)
+                  duplicated_permutations.push_back (p);
+              }
+              std::swap (permutations, duplicated_permutations);
+              assert (permutations.size() == max_shuffles);
+            } else if (nshuffles == max_num_permutations) {
+              generate_all_permutations (rows);
+              assert (permutations.size() == max_num_permutations);
+            } else {
+              // - Only include the default shuffling if this is the actual permutation testing;
+              //   if we're doing nonstationarity correction, don't include the default
+              // - Permit duplicates (specifically of permutations only) if an adequate number cannot be generated
+              generate_random_permutations (nshuffles, rows, !is_nonstationarity, nshuffles > max_num_permutations);
+            }
+          } else if (nshuffles < max_shuffles) {
+            generate_random_permutations (nshuffles, rows, !is_nonstationarity, false);
+          } else {
+            generate_all_permutations (rows);
+            assert (permutations.size() == max_shuffles);
+          }
         }
 
-        opt = get_options (is_nonstationarity ? "signflips_nonstationarity" : "signflips");
-        if (opt.size()) {
-          if (ise) {
-            load_signflips (opt[0][0]);
-            if (signflips[0].size() != rows)
-              throw Exception ("Number of entries per shuffle in file \"" + std::string (opt[0][0]) + "\" does not match number of rows in design matrix (" + str(rows) + ")");
-            if (nshuffles_explicit && nshuffles != signflips.size())
-              throw Exception ("Number of shuffles explicitly requested (" + str(nshuffles) + ") does not match number of shuffles in file \"" + std::string (opt[0][0]) + "\" (" + str(signflips.size()) + ")");
-            if (permutations.size() && signflips.size() != permutations.size())
-              throw Exception ("Number of permutations (" + str(permutations.size()) + ") does not match number of signflips (" + str(signflips.size()) + ")");
-            nshuffles = signflips.size();
+        if (ise) {
+          if (ee) {
+            if (nshuffles == max_shuffles) {
+              generate_all_signflips (rows);
+              assert (signflips.size() == max_num_signflips);
+              vector<BitSet> duplicated_signflips;
+              for (size_t i = 0; i != max_num_permutations; ++i)
+                duplicated_signflips.insert (duplicated_signflips.end(), signflips.begin(), signflips.end());
+              std::swap (signflips, duplicated_signflips);
+              assert (signflips.size() == max_shuffles);
+            } else if (nshuffles == max_num_signflips) {
+              generate_all_signflips (rows);
+              assert (signflips.size() == max_num_signflips);
+            } else {
+              generate_random_signflips (nshuffles, rows, !is_nonstationarity, nshuffles > max_num_signflips);
+            }
+          } else if (nshuffles < max_shuffles) {
+            generate_random_signflips (nshuffles, rows, !is_nonstationarity, false);
           } else {
-            throw Exception ("Cannot manually provide signflips if errors are not independent and symmetric");
+            generate_all_signflips (rows);
+            assert (signflips.size() == max_shuffles);
           }
-        } else if (ise) {
-          generate_signflips (nshuffles, rows, !is_nonstationarity);
         }
+
+        nshuffles = std::min (nshuffles, max_shuffles);
 
         if (msg.size())
           progress.reset (new ProgressBar (msg, nshuffles));
@@ -167,7 +254,6 @@ namespace MR
         if (signflips.size()) {
           for (size_t r = 0; r != rows; ++r) {
             if (signflips[counter][r]) {
-              //output.data.row (r) *= -1.0;
               for (size_t c = 0; c != rows; ++c) {
                 if (output.data (r, c))
                   output.data (r, c) *= -1.0;
@@ -206,15 +292,18 @@ namespace MR
 
 
 
-        void Shuffler::generate_permutations (const size_t num_perms,
-                                              const size_t num_subjects,
-                                              const bool include_default)
+        void Shuffler::generate_random_permutations (const size_t num_perms,
+                                                     const size_t num_rows,
+                                                     const bool include_default,
+                                                     const bool permit_duplicates)
         {
           permutations.clear();
           permutations.reserve (num_perms);
-          PermuteLabels default_labelling (num_subjects);
-          for (size_t i = 0; i < num_subjects; ++i)
+
+          PermuteLabels default_labelling (num_rows);
+          for (size_t i = 0; i < num_rows; ++i)
             default_labelling[i] = i;
+
           size_t p = 0;
           if (include_default) {
             permutations.push_back (default_labelling);
@@ -224,11 +313,24 @@ namespace MR
             PermuteLabels permuted_labelling (default_labelling);
             do {
               std::random_shuffle (permuted_labelling.begin(), permuted_labelling.end());
-            } while (is_duplicate (permuted_labelling));
+            } while (!permit_duplicates && is_duplicate (permuted_labelling));
             permutations.push_back (permuted_labelling);
           }
         }
 
+
+
+        void Shuffler::generate_all_permutations (const size_t num_rows)
+        {
+          permutations.clear();
+          permutations.reserve (factorial (num_rows));
+          PermuteLabels temp (num_rows);
+          for (size_t i = 0; i < num_rows; ++i)
+            temp[i] = i;
+          permutations.push_back (temp);
+          while (std::next_permutation (temp.begin(), temp.end()))
+            permutations.push_back (temp);
+        }
 
 
 
@@ -264,15 +366,16 @@ namespace MR
 
 
 
-        void Shuffler::generate_signflips (const size_t num_signflips,
-                                           const size_t num_subjects,
-                                           const bool include_default)
+        void Shuffler::generate_random_signflips (const size_t num_signflips,
+                                                  const size_t num_rows,
+                                                  const bool include_default,
+                                                  const bool permit_duplicates)
         {
           signflips.clear();
           signflips.reserve (num_signflips);
           size_t s = 0;
           if (include_default) {
-            BitSet default_labelling (num_subjects, false);
+            BitSet default_labelling (num_rows, false);
             signflips.push_back (default_labelling);
             ++s;
           }
@@ -280,24 +383,34 @@ namespace MR
           std::mt19937 generator (rd());
           std::uniform_int_distribution<> distribution (0, 1);
           for (; s != num_signflips; ++s) {
-            BitSet rows_to_flip (num_subjects);
+            BitSet rows_to_flip (num_rows);
             do {
               // TODO Should be a faster mechanism for generating / storing random bits
-              for (size_t index = 0; index != num_subjects; ++index)
+              for (size_t index = 0; index != num_rows; ++index)
                 rows_to_flip[index] = distribution (generator);
-            } while (is_duplicate (rows_to_flip));
+            } while (!permit_duplicates && is_duplicate (rows_to_flip));
             signflips.push_back (rows_to_flip);
           }
         }
 
 
 
-        void Shuffler::load_signflips (const std::string&)
+        void Shuffler::generate_all_signflips (const size_t num_rows)
         {
-          // TODO
-          assert (0);
+          signflips.clear();
+          assert (nshuffles >= 8*sizeof(size_t));
+          signflips.reserve (size_t(1) << num_rows);
+          BitSet temp (num_rows, false);
+          signflips.push_back (temp);
+          while (!temp.full()) {
+            size_t last_zero_index;
+            for (last_zero_index = num_rows - 1; temp[last_zero_index]; --last_zero_index);
+            temp[last_zero_index] = true;
+            for (size_t indices_zeroed = last_zero_index + 1; indices_zeroed != num_rows; ++indices_zeroed)
+              temp[indices_zeroed] = false;
+            signflips.push_back (temp);
+          }
         }
-
 
 
 
