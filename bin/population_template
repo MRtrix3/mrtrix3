@@ -3,7 +3,7 @@
 # Generates an unbiased group-average template via image registration of images to a midway space.
 
 # Make the corresponding MRtrix3 Python libraries available
-import inspect, os, sys
+import inspect, os, sys, math, shutil, errno
 lib_folder = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
 if not os.path.isdir(lib_folder):
   sys.stderr.write('Unable to locate MRtrix3 Python libraries')
@@ -11,12 +11,19 @@ if not os.path.isdir(lib_folder):
 sys.path.insert(0, lib_folder)
 
 
-import shutil
+from mrtrix3 import app, file, image, path, run #pylint: disable=redefined-builtin
 move      = shutil.move
 copy      = shutil.copy
 copytree  = shutil.copytree
 rmtree    = shutil.rmtree
-remove    = os.remove
+def remove(f):
+  try:
+    os.remove(f)
+  except OSError as e:
+    if e.errno == errno.ENOENT:
+      app.console("not deleting non-existent file: " + str(f))
+    else:
+      app.error("could not delete file: " + str(f) + " " + str(e))
 
 # Binds raw_input() to input() in Python2, so that input() can be used
 #   and the code will work on both Python 2 and 3
@@ -24,11 +31,6 @@ try:
   input = raw_input #pylint: disable=redefined-builtin
 except NameError:
   pass
-
-
-import math
-from mrtrix3 import app, file, image, path, run #pylint: disable=redefined-builtin
-
 
 from mrtrix3.path import allindir
 
