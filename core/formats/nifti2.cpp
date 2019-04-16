@@ -19,7 +19,6 @@
 #include "file/utils.h"
 #include "file/nifti1.h"
 #include "file/nifti_utils.h"
-#include "file/nifti2_utils.h"
 #include "header.h"
 #include "image_io/default.h"
 #include "formats/list.h"
@@ -41,7 +40,7 @@ namespace MR
       File::MMap fmap (header_path);
 
       try {
-        const size_t data_offset = File::NIfTI2::read (H, * ( (const nifti_2_header*) fmap.address()));
+        const size_t data_offset = File::NIfTI::read (H, * ( (const nifti_2_header*) fmap.address()));
         std::unique_ptr<ImageIO::Default> handler (new ImageIO::Default (H));
         handler->files.push_back (File::Entry (H.name(), data_offset));
         return std::move (handler);
@@ -83,7 +82,7 @@ namespace MR
       const std::string header_path = single_file ? H.name() : H.name().substr (0, H.name().size()-4) + ".hdr";
 
       nifti_2_header NH;
-      File::NIfTI2::write (NH, H, true);
+      File::NIfTI::write (NH, H, true);
       File::OFStream out (header_path, std::ios::out | std::ios::binary);
       out.write ( (char*) &NH, sizeof (nifti_2_header));
       nifti1_extender extender;
@@ -91,7 +90,7 @@ namespace MR
       out.write (extender.extension, sizeof (nifti1_extender));
       out.close();
 
-      const size_t data_offset = single_file ? File::NIfTI2::header_with_ext_size : 0;
+      const size_t data_offset = single_file ? File::NIfTI::header_size(NH)+4 : 0;
 
       if (single_file)
         File::resize (H.name(), data_offset + footprint(H));
