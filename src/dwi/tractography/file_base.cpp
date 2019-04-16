@@ -33,10 +33,10 @@ namespace MR {
 
         while (kv.next()) {
           const std::string key = lowercase (kv.key());
-          if (key == "roi") {
+          if (key == "roi" || key == "prior_roi") {
             try {
               vector<std::string> V (split (kv.value(), " \t", true, 2));
-              properties.roi.insert (std::pair<std::string,std::string> (V[0], V[1]));
+              properties.prior_rois.insert (std::pair<std::string,std::string> (V[0], V[1]));
             }
             catch (...) {
               WARN ("invalid ROI specification in " + type  + " file \"" + file + "\" - ignored");
