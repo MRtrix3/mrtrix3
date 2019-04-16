@@ -35,6 +35,14 @@ void usage ()
 
   SYNOPSIS = "Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset";
 
+  EXAMPLES
+    + Example ("Calculate the mean b=0 image from a 4D DWI series",
+               "dwiextract dwi.mif - -bzero | mrmath - mean mean_bzero.mif -axis 3",
+               "The dwiextract command extracts all volumes for which the b-value is "
+               "(approximately) zero; the resulting 4D image can then be provided to "
+               "the mrmath command to calculate the mean intensity across volumes "
+               "for each voxel.");
+
   ARGUMENTS
     + Argument ("input", "the input DW image.").type_image_in ()
     + Argument ("output", "the output image (diffusion-weighted volumes by default).").type_image_out ();

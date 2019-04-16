@@ -23,7 +23,7 @@ matrix:
     # Run a single OSX job to test compilation only #
     #################################################
     - os: osx
-      env: CFLAGS="-Werror" TRAVIS_CXX=clang++ py=python test=build
+      env: CFLAGS="-Werror" TRAVIS_CXX=clang++ HOMEBREW_LOGS=$HOME/homebrew-logs HOMEBREW_TEMP=$HOME/homebrew-temp py=python test=build
     ###############################################
     # All subsequent tests are performed on Linux #
     ###############################################
@@ -64,6 +64,7 @@ install:
   ##################################################
   - |
     if [[ "${TRAVIS_OS_NAME}" == "osx" ]]; then
+        brew update
         brew install qt5
         brew link --force qt5
     fi
@@ -77,9 +78,9 @@ install:
     if [[ "${test}" == "sphinx" ]]; then
         if [[ "${py}" == "python2" ]]; then
             pip install urllib3[secure];
-            pip install --user recommonmark sphinx sphinx-rtd-theme;
+            pip install --user recommonmark sphinx sphinx-rtd-theme typing;
         else
-            pip3 install --user recommonmark sphinx sphinx-rtd-theme;
+            pip3 install --user recommonmark sphinx sphinx-rtd-theme typing;
         fi
     fi
   - |

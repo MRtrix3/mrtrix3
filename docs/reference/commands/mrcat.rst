@@ -19,6 +19,15 @@ Usage
 -  *image2*: additional input image(s).
 -  *output*: the output image.
 
+Example usages
+--------------
+
+-   *Concatenate individual 3D volumes into a single 4D image series*::
+
+        $ mrcat volume*.mif series.mif
+
+    The wildcard characters will find all images in the current working directory with names that begin with "volume" and end with ".mif"; the mrcat command will receive these as a list of input file names, from which it will produce a 4D image where the input volumes have been concatenated along axis 3 (the fourth axis; the spatial axes are 0, 1 & 2).
+
 Options
 -------
 
