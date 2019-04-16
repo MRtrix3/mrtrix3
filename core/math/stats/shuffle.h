@@ -37,11 +37,10 @@ namespace MR
 
 
 
-      // TODO Generic command-line options:
+      // Generic command-line options:
       // - Set nature of errors
       // - Set number of shuffles (actual & nonstationarity correction)
       // - Import permutations (actual & nonstationarity correction)
-      // - Import sign-flips (actual & nonstationarity correction)
       // - (future) Set exchangeability blocks
 
       extern const char* error_types[];
@@ -62,11 +61,12 @@ namespace MR
       { NOMEMALIGN
         public:
           typedef vector<size_t> PermuteLabels;
+          enum class error_t { EE, ISE, BOTH };
 
-          // TODO Consider alternative interface allowing class to be initialised without
-          //   ever accessing command-line options
-
-          Shuffler (const size_t num_subjects, bool is_nonstationarity, const std::string msg = "");
+          // First version reads command-line options in order to determine parameters prior to running initialise();
+          //   second version more-or-less calls initialise() directly
+          Shuffler (const size_t num_rows, const bool is_nonstationarity, const std::string msg = "");
+          Shuffler (const size_t num_rows, const size_t num_shuffles, const error_t error_types, const bool is_nonstationarity, const std::string msg = "");
 
           // Don't store the full set of shuffling matrices;
           //   generate each as it is required, based on the more compressed representations
@@ -81,6 +81,11 @@ namespace MR
           vector<BitSet> signflips;
           size_t nshuffles, counter;
           std::unique_ptr<ProgressBar> progress;
+
+
+          void initialise (const error_t error_types,
+                           const bool nshuffles_explicit,
+                           const bool is_nonstationarity);
 
 
           // For generating unique permutations
