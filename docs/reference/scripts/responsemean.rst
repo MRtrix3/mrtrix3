@@ -1,31 +1,36 @@
-.. _labelsgmfix:
+.. _responsemean:
 
-labelsgmfix
-===========
+responsemean
+============
 
 Synopsis
 --------
 
-In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST
+Calculate the mean response function from a set of text files
 
 Usage
 -----
 
 ::
 
-    labelsgmfix parc t1 lut output [ options ]
+    responsemean inputs output [ options ]
 
--  *parc*: The input FreeSurfer parcellation image
--  *t1*: The T1 image to be provided to FIRST
--  *lut*: The lookup table file that the parcellated image is based on
--  *output*: The output parcellation image
+-  *inputs*: The input response functions
+-  *output*: The output mean response function
+
+Description
+-----------
+
+Example usage: responsemean input_response1.txt input_response2.txt input_response3.txt ... output_average_response.txt
+
+All response function files provided must contain the same number of unique b-values (lines), as well as the same number of coefficients per line.
+
+As long as the number of unique b-values is identical across all input files, the coefficients will be averaged. This is performed on the assumption that the actual acquired b-values are identical. This is however impossible for the responsemean command to determine based on the data provided; it is therefore up to the user to ensure that this requirement is satisfied.
 
 Options
 -------
 
-- **-premasked** Indicate that brain masking has been applied to the T1 input image
-
-- **-sgm_amyg_hipp** Consider the amygdalae and hippocampi as sub-cortical grey matter structures, and also replace their estimates with those from FIRST
+- **-legacy** Use the legacy behaviour of former command 'average_response': average response function coefficients directly, without compensating for global magnitude differences between input files
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -53,20 +58,11 @@ Standard options
 
 - **-version** display version information and exit.
 
-References
-^^^^^^^^^^
-
-* Patenaude, B.; Smith, S. M.; Kennedy, D. N. & Jenkinson, M. A Bayesian model of shape and appearance for subcortical brain segmentation. NeuroImage, 2011, 56, 907-922
-
-* Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219
-
-* Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. The effects of SIFT on the reproducibility and biological accuracy of the structural connectome. NeuroImage, 2015, 104, 253-265
-
 --------------
 
 
 
-**Author:** Robert E. Smith (robert.smith@florey.edu.au)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
