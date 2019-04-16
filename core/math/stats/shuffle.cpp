@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <random>
 
+#include "math/factorial.h"
 #include "math/math.h"
 
 namespace MR
@@ -76,24 +77,6 @@ namespace MR
 
 
 
-      namespace {
-        std::function<size_t(size_t)> factorial = [] (const size_t i) {
-          if (i < 2) {
-            return size_t(1);
-          } else if (i == std::numeric_limits<size_t>::max()) {
-            return i;
-          } else {
-            const size_t multiplier = factorial(i-1);
-            const size_t result = i * multiplier;
-            if (result / multiplier == i)
-              return result;
-            else
-              return std::numeric_limits<size_t>::max();
-          }
-        };
-      }
-
-
 
       Shuffler::Shuffler (const size_t num_rows, const bool is_nonstationarity, const std::string msg) :
           rows (num_rows),
@@ -149,7 +132,7 @@ namespace MR
           rows (num_rows),
           nshuffles (num_shuffles)
       {
-        initialise (error_types, false, is_nonstationarity);
+        initialise (error_types, true, is_nonstationarity);
         if (msg.size())
           progress.reset (new ProgressBar (msg, nshuffles));
       }
@@ -203,7 +186,7 @@ namespace MR
         const bool ise = (error_types == error_t::ISE || error_types == error_t::BOTH);
 
         const size_t max_num_permutations = factorial (rows);
-        const size_t max_num_signflips = (nshuffles >= 8*sizeof(size_t)) ?
+        const size_t max_num_signflips = (rows >= 8*sizeof(size_t)) ?
                                          (std::numeric_limits<size_t>::max()) :
                                          ((size_t(1) << rows));
         size_t max_shuffles;
@@ -219,7 +202,7 @@ namespace MR
           max_shuffles = max_num_signflips;
         }
 
-        if (max_shuffles > nshuffles) {
+        if (max_shuffles < nshuffles) {
           if (nshuffles_explicit) {
             WARN ("User requested " + str(nshuffles) + " shuffles for " +
                   (is_nonstationarity ? "non-stationarity correction" : "null distribution generation") +
@@ -392,7 +375,7 @@ namespace MR
 
       bool Shuffler::is_duplicate (const BitSet& sign) const
       {
-        for (const auto s : signflips) {
+        for (const auto& s : signflips) {
           if (sign == s)
             return true;
         }
@@ -433,7 +416,6 @@ namespace MR
       void Shuffler::generate_all_signflips (const size_t num_rows)
       {
         signflips.clear();
-        assert (nshuffles >= 8*sizeof(size_t));
         signflips.reserve (size_t(1) << num_rows);
         BitSet temp (num_rows, false);
         signflips.push_back (temp);
