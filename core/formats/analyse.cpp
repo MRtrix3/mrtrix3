@@ -18,7 +18,6 @@
 #include "file/utils.h"
 #include "file/entry.h"
 #include "file/nifti_utils.h"
-#include "file/nifti1_utils.h"
 #include "header.h"
 #include "formats/list.h"
 #include "image_io/default.h"
@@ -36,7 +35,7 @@ namespace MR
       File::MMap fmap (header_path);
 
       try {
-        File::NIfTI1::read (H, * ( (const nifti_1_header*) fmap.address()));
+        File::NIfTI::read (H, * ( (const nifti_1_header*) fmap.address()));
         std::unique_ptr<ImageIO::Base> io_handler (new ImageIO::Default (H));
         io_handler->files.push_back (File::Entry (H.name()));
         return io_handler;
@@ -75,7 +74,7 @@ namespace MR
       const std::string hdr_name (H.name().substr (0, H.name().size()-4) + ".hdr");
       File::OFStream out (hdr_name);
       nifti_1_header NH;
-      File::NIfTI1::write (NH, H, false);
+      File::NIfTI::write (NH, H, false);
       out.write ( (char*) &NH, sizeof (nifti_1_header));
       out.close();
 

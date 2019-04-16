@@ -18,6 +18,11 @@
 #define __file_nifti_utils_h__
 
 #include "types.h"
+#include "raw.h"
+#include "header.h"
+#include "file/config.h"
+#include "file/nifti1.h"
+#include "file/nifti2.h"
 
 namespace MR
 {
@@ -27,6 +32,15 @@ namespace MR
   {
     namespace NIfTI
     {
+
+      template <class NiftiHeaderType>
+        size_t read (Header& H, const NiftiHeaderType& NH);
+
+      template <class NiftiHeaderType>
+        void write (NiftiHeaderType& NH, const Header& H, const bool single_file);
+
+      template <class NiftiHeaderType> inline int header_size (const NiftiHeaderType&) { return 348; }
+      template <> inline int header_size<nifti_2_header> (const nifti_2_header&) { return 540; }
 
       extern bool right_left_warning_issued;
 

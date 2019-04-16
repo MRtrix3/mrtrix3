@@ -18,7 +18,6 @@
 #include "file/path.h"
 #include "file/utils.h"
 #include "file/nifti_utils.h"
-#include "file/nifti1_utils.h"
 #include "header.h"
 #include "image_io/default.h"
 #include "formats/list.h"
@@ -30,12 +29,12 @@ namespace MR
 
     std::unique_ptr<ImageIO::Base> NIfTI1::read (Header& H) const
     {
-      if (!Path::has_suffix (H.name(), ".nii")) 
+      if (!Path::has_suffix (H.name(), ".nii"))
         return std::unique_ptr<ImageIO::Base>();
 
       try {
         File::MMap fmap (H.name());
-        const size_t data_offset = File::NIfTI1::read (H, * ( (const nifti_1_header*) fmap.address()));
+        const size_t data_offset = File::NIfTI::read (H, * ( (const nifti_1_header*) fmap.address()));
         std::unique_ptr<ImageIO::Default> handler (new ImageIO::Default (H));
         handler->files.push_back (File::Entry (H.name(), data_offset));
         return std::move (handler);
@@ -72,7 +71,7 @@ namespace MR
         throw Exception ("NIfTI-1.1 format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
 
       nifti_1_header NH;
-      File::NIfTI1::write (NH, H, true);
+      File::NIfTI::write (NH, H, true);
       File::OFStream out (H.name(), std::ios::out | std::ios::binary);
       out.write ( (char*) &NH, sizeof (nifti_1_header));
       nifti1_extender extender;
@@ -80,10 +79,10 @@ namespace MR
       out.write (extender.extension, sizeof (nifti1_extender));
       out.close();
 
-      File::resize (H.name(), File::NIfTI1::header_with_ext_size + footprint(H));
+      File::resize (H.name(), File::NIfTI::header_size(NH)+4 + footprint(H));
 
       std::unique_ptr<ImageIO::Default> handler (new ImageIO::Default (H));
-      handler->files.push_back (File::Entry (H.name(), File::NIfTI1::header_with_ext_size));
+      handler->files.push_back (File::Entry (H.name(), File::NIfTI::header_size(NH)+4));
 
       return std::move (handler);
     }
