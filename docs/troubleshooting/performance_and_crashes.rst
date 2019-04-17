@@ -103,17 +103,17 @@ template image.
 Scripts crashing due to storage requirements
 --------------------------------------------
 
-The Python scripts provided with *MRtrix* generate their own temporary
+The Python scripts provided with *MRtrix3* generate their own scratch
 directory in which to store various data files and image manipulations
 generated during their operation. In some cases - typically due to use of a
 temporary RAM-based file system with limited size, and/or a failure to clean
-up old temporary files - the location where this temporary directory is
+up old temporary files - the location where this scratch directory is
 created may run out of storage space, resulting in the script crashing out.
 
 A few pointers for anybody who encounters this issue:
 
 -  When these scripts fail to complete due to an error, they will typically
-   *not* erase the temporary directory, instead allowing the user to
+   *not* erase the scratch directory, instead allowing the user to
    investigate the contents of that directory to see what went wrong,
    potentially fixing any issues and continuing the script from that point.
    While this behaviour may be useful in this context by retaining the
@@ -122,32 +122,32 @@ A few pointers for anybody who encounters this issue:
    further issues! We recommend that users manually delete such directories
    as soon as they are no longer required.
 
--  The location where the temporary directory is created for the script will
+-  The location where the scratch directory is created for the script will
    influence the amount of storage space available. For instance, the
    location ``/tmp/`` is frequently created as a temporary RAM-based file
-   system, such that the script's temporary files are never actually written
+   system, such that the script's intermediate files are never actually written
    to disk and are therefore read & written very quickly; it is however also
    likely to have a smaller capacity than a physical hard drive.
 
    This location can be set manually in two different ways:
 
-   - In the MRtrix :ref:`mrtrix_config`, the :option:`ScriptTmpDir` entry
-     can be used to set the location where such temporary directories will be
+   - In the MRtrix :ref:`mrtrix_config`, the :option:`ScriptScratchDir` entry
+     can be used to set the location where such scratch directories will be
      created by default.
 
-   - When executing the script, command-line option ``-tempdir`` can be
-     used to set the location of the temporary directory for that particular
+   - When executing the script, command-line option ``-scratch`` can be
+     used to set the location of the scratch directory for that particular
      script execution.
 
    In the absence of either of these settings, *MRtrix3* will now create this
-   temporary directory in the *working directory* (i.e. the location the
+   scratch directory in the *working directory* (i.e. the location the
    terminal was navigated to when the script was called), in the hope that it
    will reduce the prevalence of users encountering this issue. This may
    however cause issues if working across a network, or using a job scheduler.
 
 -  The storage requirements can vary considerably between different scripts.
    For instance, ``dwibiascorrect`` only needs to generate a couple of
-   temporary images per execution; whereas ``population_template`` must
+   intermediate images per execution; whereas ``population_template`` must
    store non-linear warp fields across many subjects. This may explain why
    one script crashed when other scripts have completed successfully.
 

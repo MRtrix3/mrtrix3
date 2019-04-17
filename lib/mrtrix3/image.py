@@ -7,21 +7,21 @@
 class Header(object):
   def __init__(self, image_path):
     import json, os, subprocess
-    from mrtrix3 import app, path, run
-    filename = path.newTemporary('json')
-    command = [ run.exeName(run.versionMatch('mrinfo')), image_path, '-json_all', filename ]
-    if app.verbosity > 1:
+    from mrtrix3 import app, MRtrixError, path, run
+    filename = path.name_temporary('json')
+    command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-json_all', filename ]
+    if app.VERBOSITY > 1:
       app.console('Loading header for image file \'' + image_path + '\'')
     app.debug(str(command))
     result = subprocess.call(command, stdout=None, stderr=None)
     if result:
-      app.error('Could not access header information for image \'' + image_path + '\'')
+      raise MRtrixError('Could not access header information for image \'' + image_path + '\'')
     try:
-      with open(filename, 'r') as f:
-        data = json.load(f)
+      with open(filename, 'r') as json_file:
+        data = json.load(json_file)
     except UnicodeDecodeError:
-      with open(filename, 'r') as f:
-        data = json.loads(f.read().decode('utf-8', errors='replace'))
+      with open(filename, 'r') as json_file:
+        data = json.loads(json_file.read().decode('utf-8', errors='replace'))
     os.remove(filename)
     try:
       #self.__dict__.update(data)
@@ -42,7 +42,7 @@ class Header(object):
       else:
         self._keyval = data['keyval']
     except:
-      app.error('Error in reading header information from file \'' + image_path + '\'')
+      raise MRtrixError('Error in reading header information from file \'' + image_path + '\'')
     app.debug(str(vars(self)))
 
   def name(self):
@@ -74,7 +74,7 @@ class Header(object):
 #   an axis index, nor a phase-encoding indication string (e.g. AP);
 #   it only accepts NIfTI codes, i.e. i, i-, j, j-, k, k-
 def axis2dir(string): #pylint: disable=unused-variable
-  from mrtrix3 import app
+  from mrtrix3 import app, MRtrixError
   if string == 'i':
     direction = [1,0,0]
   elif string == 'i-':
@@ -88,7 +88,7 @@ def axis2dir(string): #pylint: disable=unused-variable
   elif string == 'k-':
     direction = [0,0,-1]
   else:
-    app.error('Unrecognized NIfTI axis & direction specifier: ' + string)
+    raise MRtrixError('Unrecognized NIfTI axis & direction specifier: ' + string)
   app.debug(string + ' -> ' + str(direction))
   return direction
 
@@ -97,16 +97,16 @@ def axis2dir(string): #pylint: disable=unused-variable
 # Determine whether or not an image contains at least three axes, the first three of which
 #   have dimension greater than one: This means that the data can plausibly represent
 #   spatial information, and 3D interpolation can be performed
-def check3DNonunity(image_in): #pylint: disable=unused-variable
-  from mrtrix3 import app
+def check_3d_nonunity(image_in): #pylint: disable=unused-variable
+  from mrtrix3 import app, MRtrixError
   if not isinstance(image_in, Header):
     if not isinstance(image_in, str):
-      app.error('Error trying to test \'' + str(image_in) + '\': Not an image header or file path')
+      raise MRtrixError('Error trying to test \'' + str(image_in) + '\': Not an image header or file path')
     image_in = Header(image_in)
   if len(image_in.size()) < 3:
-    app.error('Image \'' + image_in.name() + '\' does not contain 3 spatial dimensions')
+    raise MRtrixError('Image \'' + image_in.name() + '\' does not contain 3 spatial dimensions')
   if min(image_in.size()[:3]) == 1:
-    app.error('Image \'' + image_in.name() + '\' does not contain 3D spatial information (has axis with size 1)')
+    raise MRtrixError('Image \'' + image_in.name() + '\' does not contain 3D spatial information (has axis with size 1)')
   app.debug('Image \'' + image_in.name() + '\' is >= 3D, and does not contain a unity spatial dimension')
 
 
@@ -119,13 +119,13 @@ def check3DNonunity(image_in): #pylint: disable=unused-variable
 def mrinfo(image_path, field): #pylint: disable=unused-variable
   import subprocess
   from mrtrix3 import app, run
-  command = [ run.exeName(run.versionMatch('mrinfo')), image_path, '-' + field ]
-  if app.verbosity > 1:
+  command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-' + field ]
+  if app.VERBOSITY > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
   result, dummy_err = proc.communicate()
   result = result.rstrip().decode('utf-8')
-  if app.verbosity > 1:
+  if app.VERBOSITY > 1:
     app.console('Result: ' + result)
   # Don't exit on error; let the calling function determine whether or not
   #   the absence of the key is an issue
@@ -135,34 +135,34 @@ def mrinfo(image_path, field): #pylint: disable=unused-variable
 
 # Check to see whether the fundamental header properties of two images match
 # Inputs can be either _Header class instances, or file paths
-def match(image_one, image_two, max_dim=0): #pylint: disable=unused-variable, too-many-return-statements
+def match(image_one, image_two, up_to_dim=0): #pylint: disable=unused-variable, too-many-return-statements
   import math
-  from mrtrix3 import app
+  from mrtrix3 import app, MRtrixError
   if not isinstance(image_one, Header):
     if not isinstance(image_one, str):
-      app.error('Error trying to test \'' + str(image_one) + '\': Not an image header or file path')
+      raise MRtrixError('Error trying to test \'' + str(image_one) + '\': Not an image header or file path')
     image_one = Header(image_one)
   if not isinstance(image_two, Header):
     if not isinstance(image_two, str):
-      app.error('Error trying to test \'' + str(image_two) + '\': Not an image header or file path')
+      raise MRtrixError('Error trying to test \'' + str(image_two) + '\': Not an image header or file path')
     image_two = Header(image_two)
   debug_prefix = '\'' + image_one.name() + '\' \'' + image_two.name() + '\''
   # Handle possibility of only checking up to a certain axis
-  if max_dim:
-    if max_dim > min(len(image_one.size()), len(image_two.size())):
-      app.debug(debug_prefix + ' dimensionality less than specified maximum (' + str(max_dim) + ')')
+  if up_to_dim:
+    if up_to_dim > min(len(image_one.size()), len(image_two.size())):
+      app.debug(debug_prefix + ' dimensionality less than specified maximum (' + str(up_to_dim) + ')')
       return False
   else:
     if len(image_one.size()) != len(image_two.size()):
       app.debug(debug_prefix + ' dimensionality mismatch (' + str(len(image_one.size())) + ' vs. ' + str(len(image_two.size())) + ')')
       return False
-    max_dim = len(image_one.size())
+    up_to_dim = len(image_one.size())
   # Image dimensions
-  if not image_one.size()[:max_dim] == image_two.size()[:max_dim]:
+  if not image_one.size()[:up_to_dim] == image_two.size()[:up_to_dim]:
     app.debug(debug_prefix + ' axis size mismatch (' + str(image_one.size()) + ' ' + str(image_two.size()) + ')')
     return False
   # Voxel size
-  for one, two in zip(image_one.spacing()[:max_dim], image_two.spacing()[:max_dim]):
+  for one, two in zip(image_one.spacing()[:up_to_dim], image_two.spacing()[:up_to_dim]):
     if one and two and not math.isnan(one) and not math.isnan(two):
       if (abs(two-one) / (0.5*(one+two))) > 1e-04:
         app.debug(debug_prefix + ' voxel size mismatch (' + str(image_one.spacing()) + ' ' + str(image_two.spacing()) + ')')
@@ -183,19 +183,29 @@ def match(image_one, image_two, max_dim=0): #pylint: disable=unused-variable, to
 
 
 # Computes image statistics using mrstats.
+# Return values will be:
+# - A list if there is more than one volume and -allvolumes is not provided as an option;
+#     a single scalar value otherwise
+# - Integer(s) if statistic is 'count';
+#     floating-point otherwise
 def statistic(image_path, stat, options=''): #pylint: disable=unused-variable
   import shlex, subprocess
-  from mrtrix3 import app, run
-  command = [ run.exeName(run.versionMatch('mrstats')), image_path, '-output', stat ]
+  from mrtrix3 import app, MRtrixError, run
+  command = [ run.exe_name(run.version_match('mrstats')), image_path, '-output', stat ]
   if options:
     command.extend(shlex.split(options))
-  if app.verbosity > 1:
+  if app.VERBOSITY > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
-  result, dummy_err = proc.communicate()
-  result = result.rstrip().decode('utf-8')
-  if app.verbosity > 1:
-    app.console('Result: ' + result)
+  result = [ line.strip() for line in proc.communicate()[0].decode('cp437').splitlines() ]
+  if stat == 'count':
+    result = [ int(i) for i in result ]
+  else:
+    result = [ float(f) for f in result ]
+  if len(result) == 1:
+    result = result[0]
+  if app.VERBOSITY > 1:
+    app.console('Result: ' + str(result))
   if proc.returncode:
-    app.error('Error trying to calculate statistic \'' + stat + '\' from image \'' + image_path + '\'')
+    raise MRtrixError('Error trying to calculate statistic \'' + stat + '\' from image \'' + image_path + '\'')
   return result
