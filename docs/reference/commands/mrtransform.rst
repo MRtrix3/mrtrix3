@@ -23,9 +23,11 @@ Description
 
 If a linear transform is applied without a template image the command will modify the image header transform matrix
 
-FOD reorientation (with apodised point spread functions) will be performed by default if the number of volumes in the 4th dimension equals the number of coefficients in an antipodally symmetric spherical harmonic series (e.g. 6, 15, 28 etc). The -no_reorientation option can be used to force reorientation off if required.
+FOD reorientation (with apodised point spread functions) can be performed if the number of volumes in the 4th dimension equals the number of coefficients in an antipodally symmetric spherical harmonic series (e.g. 6, 15, 28 etc). For such data, the -reorient_fod yes/no option must be used to specify if reorientation is required.
 
-If a DW scheme is contained in the header (or specified separately), and the number of directions matches the number of volumes in the images, any transformation applied using the -linear option will be also be applied to the directions.
+The output image intensity can be modulated using the (local or global) volume change if a linear or nonlinear transformation is applied. 'FOD' modulation preserves the apparent fibre density across the fibre bundle width and can only be applied if FOD reorientation is used. Alternatively, non-directional scaling by the Jacobian determinant can be applied to any image type. 
+
+If a DW scheme is contained in the header (or specified separately), and the number of directions matches the number of volumes in the images, any transformation applied using the -linear option will also be applied to the directions.
 
 When the -template option is used to specify the target image grid, the image provided via this option will not influence the axis data strides of the output image; these are determined based on the input image, or the input to the -strides option.
 
@@ -70,11 +72,11 @@ Non-linear transformation options
 Fibre orientation distribution handling options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-modulate** modulate FODs during reorientation to preserve the apparent fibre density across fibre bundle widths before and after the transformation
+-  **-modulate intensity modulation method** Valid choices are: fod and jac. fod: modulate FODs during reorientation to preserve the apparent fibre density across fibre bundle widths before and after the transformation. jac: modulate the image intensity with the determinant of the Jacobian of the warp of linear transformation to preserve the total intensity before and after the transformation.
 
 -  **-directions file** directions defining the number and orientation of the apodised point spread functions used in FOD reorientation (Default: 300 directions)
 
--  **-noreorientation** turn off FOD reorientation. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc
+-  **-reorient_fod boolean** specify whether to perform FOD reorientation. This is required if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series with lmax >= 2 (i.e. 6, 15, 28, 45, 66 volumes.
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -99,6 +101,8 @@ Additional generic options for mrtransform
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-nan** Use NaN as the out of bounds value (Default: 0.0)
+
+-  **-no_reorientation** deprecated, use -reorient_fod instead
 
 Standard options
 ^^^^^^^^^^^^^^^^
