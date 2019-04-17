@@ -1,31 +1,45 @@
-.. _labelsgmfix:
+.. _dwishellmath:
 
-labelsgmfix
-===========
+dwishellmath
+============
 
 Synopsis
 --------
 
-In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST
+Apply an mrmath operation to each b-value shell in a DWI series
 
 Usage
 -----
 
 ::
 
-    labelsgmfix parc t1 lut output [ options ]
+    dwishellmath input operation output [ options ]
 
--  *parc*: The input FreeSurfer parcellation image
--  *t1*: The T1 image to be provided to FIRST
--  *lut*: The lookup table file that the parcellated image is based on
--  *output*: The output parcellation image
+-  *input*: The input diffusion MRI series
+-  *operation*: The operation to be applied to each shell; this must be one of the following: mean, median, sum, product, rms, norm, var, std, min, max, absmax, magmax
+-  *output*: The output image series
+
+Description
+-----------
+
+The output of this command is a 4D image, where each volume corresponds to a b-value shell (in order of increasing b-value), and the intensities within each volume correspond to the chosen statistic having been computed from across the DWI volumes belonging to that b-value shell.
+
+Example usages
+--------------
+
+-   *To compute the mean diffusion-weighted signal in each b-value shell*::
+
+        $ dwishellmath dwi.mif mean shellmeans.mif
 
 Options
 -------
 
-- **-premasked** Indicate that brain masking has been applied to the T1 input image
+Options for importing the gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-sgm_amyg_hipp** Consider the amygdalae and hippocampi as sub-cortical grey matter structures, and also replace their estimates with those from FIRST
+- **-grad** Provide a gradient table in MRtrix format
+
+- **-fslgrad bvecs bvals** Provide a gradient table in FSL bvecs/bvals format
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -53,20 +67,11 @@ Standard options
 
 - **-version** display version information and exit.
 
-References
-^^^^^^^^^^
-
-* Patenaude, B.; Smith, S. M.; Kennedy, D. N. & Jenkinson, M. A Bayesian model of shape and appearance for subcortical brain segmentation. NeuroImage, 2011, 56, 907-922
-
-* Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219
-
-* Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. The effects of SIFT on the reproducibility and biological accuracy of the structural connectome. NeuroImage, 2015, 104, 253-265
-
 --------------
 
 
 
-**Author:** Robert E. Smith (robert.smith@florey.edu.au)
+**Author:** Daan Christiaens (daan.christiaens@kcl.ac.uk)
 
 **Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 

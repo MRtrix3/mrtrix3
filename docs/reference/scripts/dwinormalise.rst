@@ -1,38 +1,29 @@
-.. _dwibiascorrect:
+.. _dwinormalise:
 
-dwibiascorrect
-==============
+dwinormalise
+============
 
 Synopsis
 --------
 
-Perform B1 field inhomogeneity correction for a DWI volume series
+Perform various forms of intensity normalisation of DWIs
 
 Usage
 -----
 
 ::
 
-    dwibiascorrect algorithm [ options ] ...
+    dwinormalise algorithm [ options ] ...
 
--  *algorithm*: Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: ants, fsl
+-  *algorithm*: Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: group, individual
+
+Description
+-----------
+
+This script provides access to different techniques for globally scaling the intensity of diffusion-weighted images. The different algorithms have different purposes, and different requirements with respect to the data with which they must be provided & will produce as output. Further information on the individual algorithms available can be accessed via their individual help pages; eg. "dwinormalise group -help".
 
 Options
 -------
-
-Options for providing the DWI gradient table
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-grad** Pass the diffusion gradient table in MRtrix format
-
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
-
-Options common to all dwibiascorrect algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-mask image** Manually provide a mask image for bias field estimation
-
-- **-bias image** Output the estimated bias field
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -81,145 +72,40 @@ See the Mozilla Public License v. 2.0 for more details.
 
 For more details, see http://www.mrtrix.org/.
 
-.. _dwibiascorrect_ants:
+.. _dwinormalise_group:
 
-dwibiascorrect ants
-===================
-
-Synopsis
---------
-
-Perform DWI bias field correction using the N4 algorithm as provided in ANTs
-
-Usage
------
-
-::
-
-    dwibiascorrect ants input output [ options ]
-
--  *input*: The input image series to be corrected
--  *output*: The output corrected image series
-
-Options
--------
-
-Options for ANTs N4BiasFieldCorrection command
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-ants.b [100,3]** N4BiasFieldCorrection option -b. [initial mesh resolution in mm, spline order] This value is optimised for human adult data and needs to be adjusted for rodent data.
-
-- **-ants.c [1000,0.0]** N4BiasFieldCorrection option -c. [numberOfIterations,convergenceThreshold]
-
-- **-ants.s 4** N4BiasFieldCorrection option -s. shrink-factor applied to spatial dimensions
-
-Options for providing the DWI gradient table
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-grad** Pass the diffusion gradient table in MRtrix format
-
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
-
-Options common to all dwibiascorrect algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-mask image** Manually provide a mask image for bias field estimation
-
-- **-bias image** Output the estimated bias field
-
-Additional standard options for Python scripts
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
-
-- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
-
-- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
-
-Standard options
-^^^^^^^^^^^^^^^^
-
-- **-info** display information messages.
-
-- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-
-- **-debug** display debugging messages.
-
-- **-force** force overwrite of output files.
-
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
-
-- **-help** display this information page and exit.
-
-- **-version** display version information and exit.
-
-References
-^^^^^^^^^^
-
-* Tustison, N.; Avants, B.; Cook, P.; Zheng, Y.; Egan, A.; Yushkevich, P. & Gee, J. N4ITK: Improved N3 Bias Correction. IEEE Transactions on Medical Imaging, 2010, 29, 1310-1320
-
---------------
-
-
-
-**Author:** Robert E. Smith (robert.smith@florey.edu.au)
-
-**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
-
-This Source Code Form is subject to the terms of the Mozilla Public
-License, v. 2.0. If a copy of the MPL was not distributed with this
-file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
-Covered Software is provided under this License on an "as is"
-basis, without warranty of any kind, either expressed, implied, or
-statutory, including, without limitation, warranties that the
-Covered Software is free of defects, merchantable, fit for a
-particular purpose or non-infringing.
-See the Mozilla Public License v. 2.0 for more details.
-
-For more details, see http://www.mrtrix.org/.
-
-.. _dwibiascorrect_fsl:
-
-dwibiascorrect fsl
+dwinormalise group
 ==================
 
 Synopsis
 --------
 
-Perform DWI bias field correction using the 'fast' command as provided in FSL
+Performs a global DWI intensity normalisation on a group of subjects using the median b=0 white matter value as the reference
 
 Usage
 -----
 
 ::
 
-    dwibiascorrect fsl input output [ options ]
+    dwinormalise group input_dir mask_dir output_dir fa_template wm_mask [ options ]
 
--  *input*: The input image series to be corrected
--  *output*: The output corrected image series
+-  *input_dir*: The input directory containing all DWI images
+-  *mask_dir*: Input directory containing brain masks, corresponding to one per input image (with the same file name prefix)
+-  *output_dir*: The output directory containing all of the intensity normalised DWI images
+-  *fa_template*: The output population specific FA template, which is threshold to estimate a white matter mask
+-  *wm_mask*: The output white matter mask (in template space), used to estimate the median b=0 white matter value for normalisation
 
 Description
 -----------
 
-The FSL 'fast' command only estimates the bias field within a brain mask, and cannot extrapolate this smoothly-varying field beyond the defined mask. As such, this algorithm by necessity introduces a hard masking of the input DWI. Since this attribute may interfere with the purpose of using the command (e.g. correction of a bias field is commonly used to improve brain mask estimation), use of this particular algorithm is generally not recommended.
+The white matter mask is estimated from a population average FA template then warped back to each subject to perform the intensity normalisation. Note that bias field correction should be performed prior to this step.
+
+All input DWI files must contain an embedded diffusion gradient table; for this reason, these images must all be in either .mif or .mif.gz format.
 
 Options
 -------
 
-Options for providing the DWI gradient table
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-grad** Pass the diffusion gradient table in MRtrix format
-
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
-
-Options common to all dwibiascorrect algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-mask image** Manually provide a mask image for bias field estimation
-
-- **-bias image** Output the estimated bias field
+- **-fa_threshold** The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask (default: 0.4)
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -247,18 +133,93 @@ Standard options
 
 - **-version** display version information and exit.
 
-References
-^^^^^^^^^^
+--------------
 
-* Zhang, Y.; Brady, M. & Smith, S. Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. IEEE Transactions on Medical Imaging, 2001, 20, 45-57
 
-* Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219
+
+**Author:** David Raffelt (david.raffelt@florey.edu.au)
+
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
+
+For more details, see http://www.mrtrix.org/.
+
+.. _dwinormalise_individual:
+
+dwinormalise individual
+=======================
+
+Synopsis
+--------
+
+Intensity normalise a DWI series based on the b=0 signal within a supplied mask
+
+Usage
+-----
+
+::
+
+    dwinormalise individual input_dwi input_mask output_dwi [ options ]
+
+-  *input_dwi*: The input DWI series
+-  *input_mask*: The mask within which a reference b=0 intensity will be sampled
+-  *output_dwi*: The output intensity-normalised DWI series
+
+Options
+-------
+
+- **-intensity** Normalise the b=0 signal to a specified value (Default: 1000)
+
+- **-percentile** Define the percentile of the b=0 image intensties within the mask used for normalisation; if this option is not supplied then the median value (50th percentile) will be normalised to the desired intensity value
+
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-grad** Provide a gradient table in MRtrix format
+
+- **-fslgrad bvecs bvals** Provide a gradient table in FSL bvecs/bvals format
+
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+
+- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+
+Standard options
+^^^^^^^^^^^^^^^^
+
+- **-info** display information messages.
+
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+
+- **-debug** display debugging messages.
+
+- **-force** force overwrite of output files.
+
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
+
+- **-help** display this information page and exit.
+
+- **-version** display version information and exit.
 
 --------------
 
 
 
-**Author:** Robert E. Smith (robert.smith@florey.edu.au)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 

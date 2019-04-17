@@ -34,7 +34,6 @@ List of MRtrix3 commands
     commands/dwi2tensor
     commands/dwidenoise
     commands/dwiextract
-    commands/dwinormalise
     commands/fixel2sh
     commands/fixel2tsf
     commands/fixel2voxel
@@ -146,7 +145,6 @@ List of MRtrix3 commands
     :ref:`dwi2tensor`, "Diffusion (kurtosis) tensor estimation using iteratively reweighted linear least squares estimator"
     :ref:`dwidenoise`, "Denoise DWI data and estimate the noise level based on the optimal threshold for PCA"
     :ref:`dwiextract`, "Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset"
-    :ref:`dwinormalise`, "Intensity normalise the b=0 signal within a supplied white matter mask"
     :ref:`fixel2sh`, "Convert a fixel-based sparse-data image into an spherical harmonic image"
     :ref:`fixel2tsf`, "Map fixel values to a track scalar file based on an input tractogram"
     :ref:`fixel2voxel`, "Convert a fixel-based sparse-data image into some form of scalar image"

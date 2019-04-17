@@ -9,7 +9,7 @@ Synopsis
 Check the orientation of the diffusion gradient table
 
 Usage
---------
+-----
 
 ::
 
@@ -20,10 +20,7 @@ Usage
 Options
 -------
 
-Options for the dwigradcheck script
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-mask** Provide a brain mask image
+- **-mask image** Provide a brain mask image
 
 - **-number** Set the number of tracks to generate for each test
 
@@ -41,26 +38,31 @@ Options for exporting the estimated best gradient table
 
 - **-export_grad_fsl bvecs bvals** Export the final gradient table in FSL bvecs/bvals format
 
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+
+- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-info** display information messages.
 
-- **-force** Force overwrite of output files if pre-existing
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-help** Display help information for the script
+- **-debug** display debugging messages.
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-force** force overwrite of output files.
 
-- **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-help** display this information page and exit.
 
-- **-quiet** Suppress all console output during script execution
-
-- **-info** Display additional information and progress for every command invoked
-
-- **-debug** Display additional debugging information over and above the output of -info
+- **-version** display version information and exit.
 
 References
 ^^^^^^^^^^
