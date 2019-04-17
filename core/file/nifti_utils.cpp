@@ -583,7 +583,7 @@ namespace MR
 
 
 
-      bool check (Header& H, const size_t num_axes, const bool is_analyse, const char** suffix, const int nifti_version, const std::string& format)
+      bool check (Header& H, const size_t num_axes, const bool is_analyse, const char** suffix, const size_t nifti_version, const std::string& format)
       {
         for (const char** p = suffix; *p; p++) {
           if (!Path::has_suffix (H.name(), *p))
