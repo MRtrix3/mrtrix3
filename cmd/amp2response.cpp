@@ -15,7 +15,6 @@
  */
 
 #include <Eigen/Dense>
-#include <mutex>
 
 #include "command.h"
 #include "header.h"
@@ -138,7 +137,6 @@ class Accumulator { MEMALIGN(Accumulator)
         Eigen::MatrixXd M;
         Eigen::VectorXd b;
         size_t count;
-        std::mutex mutex;
     };
 
     Accumulator (Shared& shared) :
@@ -152,7 +150,6 @@ class Accumulator { MEMALIGN(Accumulator)
     ~Accumulator ()
     {
       // accumulate results from all threads:
-      std::lock_guard<std::mutex> lock (S.mutex);
       S.M += M;
       S.b += b;
       S.count += count;
