@@ -16,9 +16,14 @@
 
 #include "header.h"
 #include "raw.h"
+#include "file/path.h"
+#include "file/utils.h"
 #include "file/config.h"
 #include "file/nifti_utils.h"
 #include "file/json_utils.h"
+#include "file/gz.h"
+#include "image_io/default.h"
+#include "image_io/gz.h"
 
 namespace MR
 {
@@ -28,7 +33,7 @@ namespace MR
     {
 
       namespace {
-        template <class NiftiHeaderType> struct Type {
+        template <class NiftiHeader> struct Type {
           using code_type = int16_t;
           using float_type = float32;
           using dim_type = int16_t;
@@ -38,10 +43,10 @@ namespace MR
           static const char* magic1() { return "n+1\0"; }
           static const char* magic2() { return "ni1\0"; }
           static const std::string version() { return  "NIFTI-1.1"; }
-          static const char* db_name (const NiftiHeaderType& NH) { return NH.db_name; }
-          static char* db_name (NiftiHeaderType& NH) { return NH.db_name; }
-          static int* extents (NiftiHeaderType& NH) { return &NH.extents; }
-          static char* regular (NiftiHeaderType& NH) { return &NH.regular; }
+          static const char* db_name (const NiftiHeader& NH) { return NH.db_name; }
+          static char* db_name (NiftiHeader& NH) { return NH.db_name; }
+          static int* extents (NiftiHeader& NH) { return &NH.extents; }
+          static char* regular (NiftiHeader& NH) { return &NH.regular; }
         };
 
         template <> struct Type<nifti_2_header> {
@@ -68,43 +73,43 @@ namespace MR
 
 
 
-      template <class H>
-        size_t read (Header& MH, const H& NH)
+      template <class NiftiHeader>
+        size_t fetch (Header& H, const NiftiHeader& NH)
         {
-          const std::string& version = Type<H>::version();
-          using dim_type = typename Type<H>::dim_type;
-          using code_type = typename Type<H>::code_type;
-          using float_type = typename Type<H>::float_type;
+          const std::string& version = Type<NiftiHeader>::version();
+          using dim_type = typename Type<NiftiHeader>::dim_type;
+          using code_type = typename Type<NiftiHeader>::code_type;
+          using float_type = typename Type<NiftiHeader>::float_type;
 
           bool is_BE = false;
-          if (Raw::fetch_<int32_t> (&NH.sizeof_hdr, is_BE) != header_size(NH)) {
+          if (Raw::fetch_<int32_t> (&NH.sizeof_hdr, is_BE) != sizeof(NH)) {
             is_BE = true;
-            if (Raw::fetch_<int32_t> (&NH.sizeof_hdr, is_BE) != header_size(NH))
-              throw Exception ("image \"" + MH.name() + "\" is not in " + version +
-                  " format (sizeof_hdr != " + str(header_size(NH)) + ")");
+            if (Raw::fetch_<int32_t> (&NH.sizeof_hdr, is_BE) != sizeof(NH))
+              throw Exception ("image \"" + H.name() + "\" is not in " + version +
+                  " format (sizeof_hdr != " + str(sizeof(NH)) + ")");
           }
 
           bool is_nifti = true;
-          if (memcmp (NH.magic, Type<H>::magic1(), 4) && memcmp (NH.magic, Type<H>::magic2(), 4)) {
-            if (Type<H>::is_version2) {
-              throw Exception ("image \"" + MH.name() + "\" is not in " + version + " format (invalid magic signature)");
+          if (memcmp (NH.magic, Type<NiftiHeader>::magic1(), 4) && memcmp (NH.magic, Type<NiftiHeader>::magic2(), 4)) {
+            if (Type<NiftiHeader>::is_version2) {
+              throw Exception ("image \"" + H.name() + "\" is not in " + version + " format (invalid magic signature)");
             }
             else {
               is_nifti = false;
-              DEBUG ("assuming image \"" + MH.name() + "\" is in AnalyseAVW format.");
+              DEBUG ("assuming image \"" + H.name() + "\" is in AnalyseAVW format.");
             }
           }
 
-          if (Type<H>::is_version2) {
-            if (memcmp (NH.magic+4, Type<H>::signature_extra(), 4))
-              WARN ("possible file transfer corruption of file \"" + MH.name() + "\" (invalid magic signature)");
+          if (Type<NiftiHeader>::is_version2) {
+            if (memcmp (NH.magic+4, Type<NiftiHeader>::signature_extra(), 4))
+              WARN ("possible file transfer corruption of file \"" + H.name() + "\" (invalid magic signature)");
           }
           else{
             char db_name[19];
-            strncpy (db_name, Type<H>::db_name (NH), 18);
+            strncpy (db_name, Type<NiftiHeader>::db_name (NH), 18);
             if (db_name[0]) {
               db_name[18] = '\0';
-              add_line (MH.keyval()["comments"], db_name);
+              add_line (H.keyval()["comments"], db_name);
             }
           }
 
@@ -152,7 +157,7 @@ namespace MR
               dtype = DataType::CFloat64;
               break;
             default:
-              throw Exception ("unknown data type for " + version + " image \"" + MH.name() + "\"");
+              throw Exception ("unknown data type for " + version + " image \"" + H.name() + "\"");
           }
 
           if (! (dtype.is (DataType::Bit) || dtype.is (DataType::UInt8) || dtype.is (DataType::Int8))) {
@@ -163,48 +168,48 @@ namespace MR
           }
 
           if (Raw::fetch_<int16_t> (&NH.bitpix, is_BE) != (int16_t) dtype.bits())
-            WARN ("bitpix field does not match data type in " + version + " image \"" + MH.name() + "\" - ignored");
+            WARN ("bitpix field does not match data type in " + version + " image \"" + H.name() + "\" - ignored");
 
-          MH.datatype() = dtype;
+          H.datatype() = dtype;
 
 
 
 
           const int ndim = Raw::fetch_<dim_type> (&NH.dim, is_BE);
           if (ndim < 1)
-            throw Exception ("too few dimensions specified in NIfTI image \"" + MH.name() + "\"");
+            throw Exception ("too few dimensions specified in NIfTI image \"" + H.name() + "\"");
           if (ndim > 7)
-            throw Exception ("too many dimensions specified in NIfTI image \"" + MH.name() + "\"");
-          MH.ndim() = ndim;
+            throw Exception ("too many dimensions specified in NIfTI image \"" + H.name() + "\"");
+          H.ndim() = ndim;
           for (int i = 0; i != ndim; i++) {
-            MH.size(i) = Raw::fetch_<dim_type> (&NH.dim[i+1], is_BE);
-            if (MH.size (i) < 0) {
-              INFO ("dimension along axis " + str (i) + " specified as negative in NIfTI image \"" + MH.name() + "\" - taking absolute value");
-              MH.size(i) = abs (MH.size (i));
+            H.size(i) = Raw::fetch_<dim_type> (&NH.dim[i+1], is_BE);
+            if (H.size (i) < 0) {
+              INFO ("dimension along axis " + str (i) + " specified as negative in NIfTI image \"" + H.name() + "\" - taking absolute value");
+              H.size(i) = abs (H.size (i));
             }
-            if (!MH.size (i))
-              MH.size(i) = 1;
-            MH.stride(i) = i+1;
+            if (!H.size (i))
+              H.size(i) = 1;
+            H.stride(i) = i+1;
           }
 
           // voxel sizes:
           for (int i = 0; i < ndim; i++) {
-            MH.spacing(i) = Raw::fetch_<float_type> (&NH.pixdim[i+1], is_BE);
-            if (MH.spacing (i) < 0.0) {
-              INFO ("voxel size along axis " + str (i) + " specified as negative in NIfTI image \"" + MH.name() + "\" - taking absolute value");
-              MH.spacing(i) = abs (MH.spacing (i));
+            H.spacing(i) = Raw::fetch_<float_type> (&NH.pixdim[i+1], is_BE);
+            if (H.spacing (i) < 0.0) {
+              INFO ("voxel size along axis " + str (i) + " specified as negative in NIfTI image \"" + H.name() + "\" - taking absolute value");
+              H.spacing(i) = abs (H.spacing (i));
             }
           }
 
 
           // offset and scale:
-          MH.intensity_scale() = Raw::fetch_<float_type> (&NH.scl_slope, is_BE);
-          if (std::isfinite (MH.intensity_scale()) && MH.intensity_scale() != 0.0) {
-            MH.intensity_offset() = Raw::fetch_<float_type> (&NH.scl_inter, is_BE);
-            if (!std::isfinite (MH.intensity_offset()))
-              MH.intensity_offset() = 0.0;
+          H.intensity_scale() = Raw::fetch_<float_type> (&NH.scl_slope, is_BE);
+          if (std::isfinite (H.intensity_scale()) && H.intensity_scale() != 0.0) {
+            H.intensity_offset() = Raw::fetch_<float_type> (&NH.scl_inter, is_BE);
+            if (!std::isfinite (H.intensity_offset()))
+              H.intensity_offset() = 0.0;
           } else {
-            MH.reset_intensity_scaling();
+            H.reset_intensity_scaling();
           }
 
 
@@ -218,15 +223,15 @@ namespace MR
           if (descrip[0]) {
             descrip[80] = '\0';
             if (strncmp (descrip, "MRtrix version: ", 16) == 0)
-              MH.keyval()["mrtrix_version"] = descrip+16;
+              H.keyval()["mrtrix_version"] = descrip+16;
             else
-              add_line (MH.keyval()["comments"], descrip);
+              add_line (H.keyval()["comments"], descrip);
           }
 
           if (is_nifti) {
             bool sform_code = Raw::fetch_<code_type> (&NH.sform_code, is_BE);
             if (sform_code) {
-              auto& M (MH.transform().matrix());
+              auto& M (H.transform().matrix());
 
               M(0,0) = Raw::fetch_<float_type> (&NH.srow_x[0], is_BE);
               M(0,1) = Raw::fetch_<float_type> (&NH.srow_x[1], is_BE);
@@ -245,8 +250,8 @@ namespace MR
 
               // check voxel sizes:
               for (size_t axis = 0; axis != 3; ++axis) {
-                if (size_t(MH.ndim()) > axis)
-                  if (abs(MH.spacing(axis) - M.col(axis).head<3>().norm()) > 1e-4) {
+                if (size_t(H.ndim()) > axis)
+                  if (abs(H.spacing(axis) - M.col(axis).head<3>().norm()) > 1e-4) {
                     WARN ("voxel spacings inconsistent between NIFTI s-form and header field pixdim");
                     break;
                   }
@@ -254,7 +259,7 @@ namespace MR
 
               // normalize each transform axis:
               for (size_t axis = 0; axis != 3; ++axis) {
-                if (size_t(MH.ndim()) > axis)
+                if (size_t(H.ndim()) > axis)
                   M.col(axis).normalize();
               }
 
@@ -284,9 +289,9 @@ namespace MR
                 M_qform.matrix().col(2) *= qfac;
 
               if (sform_code) {
-                Header header2 (MH);
+                Header header2 (H);
                 header2.transform() = M_qform;
-                if (!voxel_grids_match_in_scanner_space (MH, header2, 0.1)) {
+                if (!voxel_grids_match_in_scanner_space (H, header2, 0.1)) {
                   //CONF option: NIfTIUseSform
                   //CONF default: 1 (true)
                   //CONF A boolean value to control whether, in cases where both
@@ -295,13 +300,13 @@ namespace MR
                   //CONF sform transformation should be used in preference to the
                   //CONF qform matrix.
                   const bool use_sform = File::Config::get_bool ("NIfTIUseSform", true);
-                  WARN ("qform and sform are inconsistent in NIfTI image \"" + MH.name() + "\" - using " + (use_sform ? "sform" : "qform"));
+                  WARN ("qform and sform are inconsistent in NIfTI image \"" + H.name() + "\" - using " + (use_sform ? "sform" : "qform"));
                   if (!use_sform)
-                    MH.transform() = M_qform;
+                    H.transform() = M_qform;
                 }
               }
               else
-                MH.transform() = M_qform;
+                H.transform() = M_qform;
             }
 
 
@@ -311,7 +316,7 @@ namespace MR
             //CONF A boolean value to indicate whether, when opening NIfTI images,
             //CONF any corresponding JSON file should be automatically loaded.
             if (File::Config::get_bool ("NIfTIAutoLoadJSON", false)) {
-              std::string json_path = MH.name();
+              std::string json_path = H.name();
               if (Path::has_suffix (json_path, ".nii.gz"))
                 json_path = json_path.substr (0, json_path.size()-7);
               else if (Path::has_suffix (json_path, ".nii"))
@@ -320,20 +325,20 @@ namespace MR
                 assert (0);
               json_path += ".json";
               if (Path::exists (json_path))
-                File::JSON::load (MH, json_path);
+                File::JSON::load (H, json_path);
             }
           }
           else {
-            MH.transform()(0,0) = std::numeric_limits<default_type>::quiet_NaN();
+            H.transform()(0,0) = std::numeric_limits<default_type>::quiet_NaN();
             //CONF option: AnalyseLeftToRight
             //CONF default: 0 (false)
             //CONF A boolean value to indicate whether images in Analyse format
             //CONF should be assumed to be in LAS orientation (default) or RAS
             //CONF (when this is option is turned on).
             if (!File::Config::get_bool ("AnalyseLeftToRight", false))
-              MH.stride(0) = -MH.stride (0);
+              H.stride(0) = -H.stride (0);
             if (!File::NIfTI::right_left_warning_issued) {
-              INFO ("assuming Analyse images are encoded " + std::string (MH.stride (0) > 0 ? "left to right" : "right to left"));
+              INFO ("assuming Analyse images are encoded " + std::string (H.stride (0) > 0 ? "left to right" : "right to left"));
               File::NIfTI::right_left_warning_issued = true;
             }
           }
@@ -346,45 +351,45 @@ namespace MR
 
 
 
-      template <class H>
-        void write (H& NH, const Header& MH, const bool single_file)
+      template <class NiftiHeader>
+        void store (NiftiHeader& NH, const Header& H, const bool single_file)
         {
-          const std::string& version = Type<H>::version();
-          using dim_type = typename Type<H>::dim_type;
-          using vox_offset_type = typename Type<H>::vox_offset_type;
-          using code_type = typename Type<H>::code_type;
-          using float_type = typename Type<H>::float_type;
+          const std::string& version = Type<NiftiHeader>::version();
+          using dim_type = typename Type<NiftiHeader>::dim_type;
+          using vox_offset_type = typename Type<NiftiHeader>::vox_offset_type;
+          using code_type = typename Type<NiftiHeader>::code_type;
+          using float_type = typename Type<NiftiHeader>::float_type;
 
-          if (MH.ndim() > 7)
-            throw Exception (version + " format cannot support more than 7 dimensions for image \"" + MH.name() + "\"");
+          if (H.ndim() > 7)
+            throw Exception (version + " format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
 
-          bool is_BE = MH.datatype().is_big_endian();
+          bool is_BE = H.datatype().is_big_endian();
 
           vector<size_t> axes;
-          auto M = File::NIfTI::adjust_transform (MH, axes);
+          auto M = File::NIfTI::adjust_transform (H, axes);
 
 
           memset (&NH, 0, sizeof (NH));
 
           // magic number:
-          Raw::store<int32_t> (header_size(NH), &NH.sizeof_hdr, is_BE);
+          Raw::store<int32_t> (sizeof(NH), &NH.sizeof_hdr, is_BE);
 
-          strncpy ( (char*) &NH.magic, single_file ? Type<H>::magic1() : Type<H>::magic2(), 4);
-          if (Type<H>::is_version2)
-            strncpy ( (char*) &NH.magic+4, Type<H>::signature_extra(), 4);
+          strncpy ( (char*) &NH.magic, single_file ? Type<NiftiHeader>::magic1() : Type<NiftiHeader>::magic2(), 4);
+          if (Type<NiftiHeader>::is_version2)
+            strncpy ( (char*) &NH.magic+4, Type<NiftiHeader>::signature_extra(), 4);
 
-          if (!Type<H>::is_version2) {
-            const auto hit = MH.keyval().find("comments");
-            auto comments = split_lines (hit == MH.keyval().end() ? std::string() : hit->second);
-            strncpy ( Type<H>::db_name (NH), comments.size() ? comments[0].c_str() : "untitled\0\0\0\0\0\0\0\0\0\0\0", 18);
-            Raw::store<int32_t> (16384, Type<H>::extents (NH), is_BE);
-            *Type<H>::regular(NH) = 'r';
+          if (!Type<NiftiHeader>::is_version2) {
+            const auto hit = H.keyval().find("comments");
+            auto comments = split_lines (hit == H.keyval().end() ? std::string() : hit->second);
+            strncpy ( Type<NiftiHeader>::db_name (NH), comments.size() ? comments[0].c_str() : "untitled\0\0\0\0\0\0\0\0\0\0\0", 18);
+            Raw::store<int32_t> (16384, Type<NiftiHeader>::extents (NH), is_BE);
+            *Type<NiftiHeader>::regular(NH) = 'r';
           }
           NH.dim_info = 0;
 
           // data type:
           int16_t dt = 0;
-          switch (MH.datatype()()) {
+          switch (H.datatype()()) {
             case DataType::Bit:
               dt = DT_BINARY;
               break;
@@ -435,20 +440,20 @@ namespace MR
               dt = DT_COMPLEX128;
               break;
             default:
-              throw Exception ("unknown data type for " + version + " image \"" + MH.name() + "\"");
+              throw Exception ("unknown data type for " + version + " image \"" + H.name() + "\"");
           }
           Raw::store<int16_t> (dt, &NH.datatype, is_BE);
 
-          Raw::store<int16_t> (MH.datatype().bits(), &NH.bitpix, is_BE);
+          Raw::store<int16_t> (H.datatype().bits(), &NH.bitpix, is_BE);
 
           // data set dimensions:
-          Raw::store<dim_type> (MH.ndim(), &NH.dim[0], is_BE);
+          Raw::store<dim_type> (H.ndim(), &NH.dim[0], is_BE);
           {
             size_t i = 0;
             for (; i < 3; i++)
-              Raw::store<dim_type> (MH.size (axes[i]), &NH.dim[i+1], is_BE);
-            for (; i < MH.ndim(); i++)
-              Raw::store<dim_type> (MH.size (i), &NH.dim[i+1], is_BE);
+              Raw::store<dim_type> (H.size (axes[i]), &NH.dim[i+1], is_BE);
+            for (; i < H.ndim(); i++)
+              Raw::store<dim_type> (H.size (i), &NH.dim[i+1], is_BE);
 
             // pad out the other dimensions with 1, fix for fslview
             ++i;
@@ -459,15 +464,15 @@ namespace MR
           Raw::store<float_type> (1.0, &NH.pixdim[0], is_BE);
           // voxel sizes:
           for (size_t i = 0; i < 3; ++i)
-            Raw::store<float_type> (MH.spacing (axes[i]), &NH.pixdim[i+1], is_BE);
-          for (size_t i = 3; i < MH.ndim(); ++i)
-            Raw::store<float_type> (MH.spacing (i), &NH.pixdim[i+1], is_BE);
+            Raw::store<float_type> (H.spacing (axes[i]), &NH.pixdim[i+1], is_BE);
+          for (size_t i = 3; i < H.ndim(); ++i)
+            Raw::store<float_type> (H.spacing (i), &NH.pixdim[i+1], is_BE);
 
-          Raw::store<vox_offset_type> (header_size(NH)+4, &NH.vox_offset, is_BE);
+          Raw::store<vox_offset_type> (sizeof(NH)+4, &NH.vox_offset, is_BE);
 
           // offset and scale:
-          Raw::store<float_type> (MH.intensity_scale(), &NH.scl_slope, is_BE);
-          Raw::store<float_type> (MH.intensity_offset(), &NH.scl_inter, is_BE);
+          Raw::store<float_type> (H.intensity_scale(), &NH.scl_slope, is_BE);
+          Raw::store<float_type> (H.intensity_offset(), &NH.scl_inter, is_BE);
 
           std::string version_string = std::string("MRtrix version: ") + App::mrtrix_version;
           if (App::project_version)
@@ -497,22 +502,22 @@ namespace MR
           Raw::store<float_type> (M(2,3), &NH.qoffset_z, is_BE);
 
           // sform:
-          Raw::store<float_type> (MH.spacing (axes[0]) * M(0,0), &NH.srow_x[0], is_BE);
-          Raw::store<float_type> (MH.spacing (axes[1]) * M(0,1), &NH.srow_x[1], is_BE);
-          Raw::store<float_type> (MH.spacing (axes[2]) * M(0,2), &NH.srow_x[2], is_BE);
+          Raw::store<float_type> (H.spacing (axes[0]) * M(0,0), &NH.srow_x[0], is_BE);
+          Raw::store<float_type> (H.spacing (axes[1]) * M(0,1), &NH.srow_x[1], is_BE);
+          Raw::store<float_type> (H.spacing (axes[2]) * M(0,2), &NH.srow_x[2], is_BE);
           Raw::store<float_type> (M (0,3), &NH.srow_x[3], is_BE);
 
-          Raw::store<float_type> (MH.spacing (axes[0]) * M(1,0), &NH.srow_y[0], is_BE);
-          Raw::store<float_type> (MH.spacing (axes[1]) * M(1,1), &NH.srow_y[1], is_BE);
-          Raw::store<float_type> (MH.spacing (axes[2]) * M(1,2), &NH.srow_y[2], is_BE);
+          Raw::store<float_type> (H.spacing (axes[0]) * M(1,0), &NH.srow_y[0], is_BE);
+          Raw::store<float_type> (H.spacing (axes[1]) * M(1,1), &NH.srow_y[1], is_BE);
+          Raw::store<float_type> (H.spacing (axes[2]) * M(1,2), &NH.srow_y[2], is_BE);
           Raw::store<float_type> (M (1,3), &NH.srow_y[3], is_BE);
 
-          Raw::store<float_type> (MH.spacing (axes[0]) * M(2,0), &NH.srow_z[0], is_BE);
-          Raw::store<float_type> (MH.spacing (axes[1]) * M(2,1), &NH.srow_z[1], is_BE);
-          Raw::store<float_type> (MH.spacing (axes[2]) * M(2,2), &NH.srow_z[2], is_BE);
+          Raw::store<float_type> (H.spacing (axes[0]) * M(2,0), &NH.srow_z[0], is_BE);
+          Raw::store<float_type> (H.spacing (axes[1]) * M(2,1), &NH.srow_z[1], is_BE);
+          Raw::store<float_type> (H.spacing (axes[2]) * M(2,2), &NH.srow_z[2], is_BE);
           Raw::store<float_type> (M (2,3), &NH.srow_z[3], is_BE);
 
-          if (Type<H>::is_version2) {
+          if (Type<NiftiHeader>::is_version2) {
             const char xyzt_units[4] { NIFTI_UNITS_MM, NIFTI_UNITS_MM, NIFTI_UNITS_MM, NIFTI_UNITS_SEC };
             const int32_t* const xyzt_units_as_int_ptr = reinterpret_cast<const int32_t*>(xyzt_units);
             Raw::store<int32_t> (*xyzt_units_as_int_ptr, &NH.xyzt_units, is_BE);
@@ -521,7 +526,7 @@ namespace MR
             NH.xyzt_units = SPACE_TIME_TO_XYZT (NIFTI_UNITS_MM, NIFTI_UNITS_SEC);
 
           if (single_file && File::Config::get_bool ("NIfTI.AutoSaveJSON", false)) {
-            std::string json_path = MH.name();
+            std::string json_path = H.name();
             if (Path::has_suffix (json_path, ".nii.gz"))
               json_path = json_path.substr (0, json_path.size()-7);
             else if (Path::has_suffix (json_path, ".nii"))
@@ -529,19 +534,11 @@ namespace MR
             else
               assert (0);
             json_path += ".json";
-            File::JSON::save (MH, json_path);
+            File::JSON::save (H, json_path);
           }
         }
 
 
-
-
-
-      // force explicit instantiation:
-      template size_t read<nifti_1_header> (Header& MH, const nifti_1_header& NH);
-      template size_t read<nifti_2_header> (Header& MH, const nifti_2_header& NH);
-      template void write<nifti_1_header> (nifti_1_header& NH, const Header& H, const bool single_file);
-      template void write<nifti_2_header> (nifti_2_header& NH, const Header& H, const bool single_file);
 
 
 
@@ -586,8 +583,23 @@ namespace MR
 
 
 
-      void check (Header& H, const bool is_analyse)
+      bool check (Header& H, const size_t num_axes, const bool is_analyse, const char** suffix, const int nifti_version, const std::string& format)
       {
+        for (const char** p = suffix; *p; p++) {
+          if (!Path::has_suffix (H.name(), *p))
+            return false;
+        }
+
+        if (version (H) != nifti_version)
+          return false;
+
+        if (num_axes < 3)
+          throw Exception ("cannot create " + format + " image with less than 3 dimensions");
+        if (num_axes > 7)
+          throw Exception ("cannot create " + format + " image with more than 7 dimensions");
+
+        H.ndim() = num_axes;
+
         for (size_t i = 0; i < H.ndim(); ++i)
           if (H.size (i) < 1)
             H.size(i) = 1;
@@ -629,10 +641,142 @@ namespace MR
         if (H.datatype() == DataType::Bit)
           if (!File::Config::get_bool ("NIfTIAllowBitwise", false))
             H.datatype() = DataType::UInt8;
+
+        return true;
       }
 
 
 
+      namespace {
+        template <int VERSION> struct Get { using type = nifti_1_header; };
+        template <> struct Get<2> { using type = nifti_2_header; };
+      }
+
+
+
+
+      template <int VERSION>
+        std::unique_ptr<ImageIO::Base> read (Header& H)
+        {
+          using nifti_header = typename Get<VERSION>::type;
+
+          if (!Path::has_suffix (H.name(), ".nii") && !Path::has_suffix (H.name(), ".img"))
+            return std::unique_ptr<ImageIO::Base>();
+
+          const bool single_file = Path::has_suffix (H.name(), ".nii");
+          const std::string header_path = single_file ?  H.name() : H.name().substr (0, H.name().size()-4) + ".hdr";
+
+          try {
+            File::MMap fmap (header_path);
+            const size_t data_offset = fetch (H, * ( (const nifti_header*) fmap.address()));
+            std::unique_ptr<ImageIO::Default> handler (new ImageIO::Default (H));
+            handler->files.push_back (File::Entry (H.name(), ( single_file ? data_offset : 0 )));
+            return std::move (handler);
+          } catch (...) {
+            return std::unique_ptr<ImageIO::Base>();
+          }
+        }
+
+
+
+      template <int VERSION>
+        std::unique_ptr<ImageIO::Base> read_gz (Header& H)
+        {
+          using nifti_header = typename Get<VERSION>::type;
+
+          if (!Path::has_suffix (H.name(), ".nii.gz"))
+            return std::unique_ptr<ImageIO::Base>();
+
+          nifti_header NH;
+          File::GZ zf (H.name(), "rb");
+          zf.read (reinterpret_cast<char*> (&NH), sizeof(NH));
+          zf.close();
+
+          try {
+            const size_t data_offset = fetch (H, NH);
+            std::unique_ptr<ImageIO::GZ> io_handler (new ImageIO::GZ (H, data_offset));
+            memcpy (io_handler.get()->header(), &NH, sizeof(NH));
+            memset (io_handler.get()->header() + sizeof(NH), 0, sizeof(nifti1_extender));
+            io_handler->files.push_back (File::Entry (H.name(), data_offset));
+            return std::move (io_handler);
+          } catch (...) {
+            return std::unique_ptr<ImageIO::Base>();
+          }
+        }
+
+
+
+
+      template <int VERSION>
+        std::unique_ptr<ImageIO::Base> create (Header& H)
+        {
+          using nifti_header = typename Get<VERSION>::type;
+          const std::string& version = Type<nifti_header>::version();
+
+          if (H.ndim() > 7)
+            throw Exception (version + " format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
+
+          const bool single_file = Path::has_suffix (H.name(), ".nii");
+          const std::string header_path = single_file ? H.name() : H.name().substr (0, H.name().size()-4) + ".hdr";
+
+          nifti_header NH;
+          store (NH, H, single_file);
+          File::OFStream out (header_path, std::ios::out | std::ios::binary);
+          out.write ( (char*) &NH, sizeof (nifti_header));
+          nifti1_extender extender;
+          memset (extender.extension, 0x00, sizeof (nifti1_extender));
+          out.write (extender.extension, sizeof (nifti1_extender));
+          out.close();
+
+          const size_t data_offset = single_file ? sizeof(NH)+4 : 0;
+
+          if (single_file)
+            File::resize (H.name(), data_offset + footprint(H));
+          else
+            File::create (H.name(), footprint(H));
+
+          std::unique_ptr<ImageIO::Default> handler (new ImageIO::Default (H));
+          handler->files.push_back (File::Entry (H.name(), data_offset));
+
+          return std::move (handler);
+        }
+
+
+
+
+
+      template <int VERSION>
+        std::unique_ptr<ImageIO::Base> create_gz (Header& H)
+        {
+          using nifti_header = typename Get<VERSION>::type;
+          const std::string& version = Type<nifti_header>::version();
+
+          if (H.ndim() > 7)
+            throw Exception (version + " format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
+
+          std::unique_ptr<ImageIO::GZ> io_handler (new ImageIO::GZ (H, sizeof(nifti_header)+4));
+          nifti_header& NH = *reinterpret_cast<nifti_header*> (io_handler->header());
+
+          store (NH, H, true);
+          memset (io_handler->header()+sizeof(nifti_header), 0, sizeof(nifti1_extender));
+
+          File::create (H.name());
+          io_handler->files.push_back (File::Entry (H.name(), sizeof(nifti_header)+4));
+
+          return std::move (io_handler);
+        }
+
+
+
+      // force explicit instantiation:
+      template std::unique_ptr<ImageIO::Base> read<1> (Header& H);
+      template std::unique_ptr<ImageIO::Base> read<2> (Header& H);
+      template std::unique_ptr<ImageIO::Base> read_gz<1> (Header& H);
+      template std::unique_ptr<ImageIO::Base> read_gz<2> (Header& H);
+      template std::unique_ptr<ImageIO::Base> create<1> (Header& H);
+      template std::unique_ptr<ImageIO::Base> create<2> (Header& H);
+      template std::unique_ptr<ImageIO::Base> create_gz<1> (Header& H);
+      template std::unique_ptr<ImageIO::Base> create_gz<2> (Header& H);
 
 
 
