@@ -31,7 +31,7 @@ namespace MR
 
     bool NIfTI1::check (Header& H, size_t num_axes) const
     {
-      const char *suffix[] = { ".nii", nullptr };
+      const char *suffix[] = { ".nii", ".img", nullptr };
       return File::NIfTI::check (H, num_axes, false, suffix, 1, "NIfTI-1.1");
     }
 
