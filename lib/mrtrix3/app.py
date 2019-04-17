@@ -807,7 +807,8 @@ class Parser(argparse.ArgumentParser):
       text += bold('EXAMPLE USAGES') + '\n'
       text += '\n'
       for example in self._examples:
-        text += wrapper_other.fill(underline(example[0] + ':')) + '\n'
+        for line in wrapper_other.fill(example[0] + ':').splitlines():
+          text += ' '*(len(line) - len(line.lstrip())) + underline(line.lstrip()) + '\n'
         text += ' '*7 + '$ ' + example[1] + '\n'
         if example[2]:
           text += wrapper_other.fill(example[2]) + '\n'
