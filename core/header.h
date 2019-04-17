@@ -327,6 +327,8 @@ namespace MR
       const std::map<std::string, std::string>& keyval () const { return keyval_; }
       //! get/set generic key/value text attributes
       std::map<std::string, std::string>& keyval () { return keyval_; }
+      //! merge key/value entries from another header
+      void merge (const Header& H, const bool concat_volumes);
 
       static Header open (const std::string& image_name);
       static Header create (const std::string& image_name, const Header& template_header, bool add_to_command_history = true);
@@ -357,7 +359,7 @@ namespace MR
 
 
       void acquire_io (Header& H) { io = std::move (H.io); }
-      void merge (const Header& H);
+      void check (const Header& H) const;
 
       //! realign transform to match RAS coordinate system as closely as possible
       void realign_transform ();
