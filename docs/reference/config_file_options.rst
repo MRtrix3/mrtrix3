@@ -443,24 +443,15 @@ List of MRtrix3 configuration file options
      A boolean value to indicate whether, when opening NIfTI images,
      any corresponding JSON file should be automatically loaded.
 
-.. option:: NIfTIAutoSaveJSON
-
-    *default: 0 (false)*
-
-     A boolean value to indicate whether, when writing NIfTI images,
-     a corresponding JSON file should be automatically created in order
-     to save any header entries that cannot be stored in the NIfTI
-     header.
-
 .. option:: NIfTIUseSform
 
-    *default: 0 (false)*
+    *default: 1 (true)*
 
      A boolean value to control whether, in cases where both
      the sform and qform transformations are defined in an
      input NIfTI image, but those transformations differ, the
      sform transformation should be used in preference to the
-     qform matrix (the default behaviour).
+     qform matrix.
 
 .. option:: NeedOpenGLCoreProfile
 
