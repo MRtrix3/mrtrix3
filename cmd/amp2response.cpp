@@ -38,11 +38,6 @@ using namespace App;
 
 
 
-//#define AMP2RESPONSE_DEBUG
-//#define AMP2RESPONSE_PERVOXEL_IMAGES
-
-
-
 void usage ()
 {
 
@@ -308,11 +303,18 @@ void run ()
   if (!num_voxels)
     throw Exception ("input mask does not contain any voxels");
 
+  const bool use_ols = get_options ("noconstraint").size();
+
+  CONSOLE (std::string("estimating response function using ") +
+      ( use_ols ? "ordinary" : "constrained" ) +
+      " least-squares from " + str(num_voxels) + " voxels");
+
+
+
+
   Eigen::MatrixXd responses (dirs_azel.size(), Math::ZSH::NforL (max_lmax));
 
   for (size_t shell_index = 0; shell_index != dirs_azel.size(); ++shell_index) {
-
-    std::string shell_desc = (dirs_azel.size() > 1) ? ("_shell" + str(shell_index)) : "";
 
     // check the ZSH -> amplitude transform upfront:
     {
@@ -333,14 +335,11 @@ void run ()
     ThreadedLoop(image, 0, 3).run (Accumulator (shared), image, dir_image, mask);
 
     Eigen::VectorXd rf;
-    shell_desc = (shells && shells->count() > 1) ? ("Shell b=" + str(int(std::round((*shells)[shell_index].get_mean()))) + ": ") : "";
     // Is this anything other than an isotropic response?
 
-    if (!lmax[shell_index] || get_options("noconstraint").size()) {
+    if (!lmax[shell_index] || use_ols) {
 
       rf = shared.M.llt().solve (shared.b);
-
-      CONSOLE (shell_desc + "Response function [" + str(rf.transpose().cast<float>()) + "] solved via ordinary least-squares from " + str(shared.count) + " voxels");
 
     } else {
 
@@ -363,10 +362,11 @@ void run ()
 
       // Estimate the solution
       const size_t niter = solver (rf, shared.b);
-
-      CONSOLE (shell_desc + "Response function [" + str(rf.transpose().cast<float>()) + " ] solved after " + str(niter) + " constraint iterations from " + str(shared.count) + " voxels");
+      INFO ("constrained least-squares solver completed in " + str(niter) + " iterations");
 
     }
+
+    CONSOLE ("  b=" + str((*shells)[shell_index].get_mean(), 4) + ": [" + str(rf.transpose().cast<float>()) + "]");
 
     rf.conservativeResizeLike (Eigen::VectorXd::Zero (Math::ZSH::NforL (max_lmax)));
     responses.row(shell_index) = rf;
