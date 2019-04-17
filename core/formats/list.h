@@ -97,7 +97,6 @@ namespace MR
     DECLARE_IMAGEFORMAT (NIfTI2, "NIfTI-2");
     DECLARE_IMAGEFORMAT (NIfTI1_GZ, "NIfTI-1.1 (GZip compressed)");
     DECLARE_IMAGEFORMAT (NIfTI2_GZ, "NIfTI-2 (GZip compressed)");
-    DECLARE_IMAGEFORMAT (Analyse, "AnalyseAVW / NIfTI");
     DECLARE_IMAGEFORMAT (MRI, "MRTools (legacy format)");
     DECLARE_IMAGEFORMAT (XDS, "XDS");
     DECLARE_IMAGEFORMAT (MGH, "MGH");

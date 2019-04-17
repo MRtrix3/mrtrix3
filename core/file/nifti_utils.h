@@ -32,21 +32,18 @@ namespace MR
   {
     namespace NIfTI
     {
-
-      template <class NiftiHeaderType>
-        size_t read (Header& H, const NiftiHeaderType& NH);
-
-      template <class NiftiHeaderType>
-        void write (NiftiHeaderType& NH, const Header& H, const bool single_file);
-
-      template <class NiftiHeaderType> inline int header_size (const NiftiHeaderType&) { return 348; }
-      template <> inline int header_size<nifti_2_header> (const nifti_2_header&) { return 540; }
-
       extern bool right_left_warning_issued;
 
       transform_type adjust_transform (const Header& H, vector<size_t>& order);
 
-      void check (Header& H, const bool is_analyse);
+      bool check (Header& H, const size_t num_axes, const bool is_analyse, const char** suffix, const int nifti_version, const std::string& format);
+
+      template <int VERSION> std::unique_ptr<ImageIO::Base> read (Header& H);
+      template <int VERSION> std::unique_ptr<ImageIO::Base> read_gz (Header& H);
+
+      template <int VERSION> std::unique_ptr<ImageIO::Base> create (Header& H);
+      template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz (Header& H);
+
       size_t version (Header& H);
 
     }
