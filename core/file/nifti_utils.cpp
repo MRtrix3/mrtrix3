@@ -479,29 +479,39 @@ namespace MR
             version_string += std::string(", project version: ") + App::project_version;
           strncpy ( (char*) &NH.descrip, version_string.c_str(), 79);
 
-          Raw::store<code_type> (NIFTI_XFORM_SCANNER_ANAT, &NH.qform_code, is_BE);
-          Raw::store<code_type> (NIFTI_XFORM_SCANNER_ANAT, &NH.sform_code, is_BE);
 
           // qform:
           Eigen::Matrix3d R = M.matrix().topLeftCorner<3,3>();
+          float qfac = 1.0;
           if (R.determinant() < 0.0) {
             R.col(2) = -R.col(2);
-            Raw::store<float_type> (-1.0, &NH.pixdim[0], is_BE);
+            qfac = -1.0;
           }
           Eigen::Quaterniond Q (R);
 
           if (Q.w() < 0.0)
             Q.vec() = -Q.vec();
 
-          Raw::store<float_type> (Q.x(), &NH.quatern_b, is_BE);
-          Raw::store<float_type> (Q.y(), &NH.quatern_c, is_BE);
-          Raw::store<float_type> (Q.z(), &NH.quatern_d, is_BE);
+          if (R.isApprox (Q.matrix(), 1e-6)) {
+            Raw::store<code_type> (NIFTI_XFORM_SCANNER_ANAT, &NH.qform_code, is_BE);
+            Raw::store<float_type> (qfac, &NH.pixdim[0], is_BE);
 
-          Raw::store<float_type> (M(0,3), &NH.qoffset_x, is_BE);
-          Raw::store<float_type> (M(1,3), &NH.qoffset_y, is_BE);
-          Raw::store<float_type> (M(2,3), &NH.qoffset_z, is_BE);
+            Raw::store<float_type> (Q.x(), &NH.quatern_b, is_BE);
+            Raw::store<float_type> (Q.y(), &NH.quatern_c, is_BE);
+            Raw::store<float_type> (Q.z(), &NH.quatern_d, is_BE);
+
+            Raw::store<float_type> (M(0,3), &NH.qoffset_x, is_BE);
+            Raw::store<float_type> (M(1,3), &NH.qoffset_y, is_BE);
+            Raw::store<float_type> (M(2,3), &NH.qoffset_z, is_BE);
+          }
+          else {
+            WARN ("image \"" + H.name() + "\" contains non-rigid transform - qform will not be stored.");
+            Raw::store<code_type> (NIFTI_XFORM_UNKNOWN, &NH.qform_code, is_BE);
+          }
 
           // sform:
+          Raw::store<code_type> (NIFTI_XFORM_SCANNER_ANAT, &NH.sform_code, is_BE);
+
           Raw::store<float_type> (H.spacing (axes[0]) * M(0,0), &NH.srow_x[0], is_BE);
           Raw::store<float_type> (H.spacing (axes[1]) * M(0,1), &NH.srow_x[1], is_BE);
           Raw::store<float_type> (H.spacing (axes[2]) * M(0,2), &NH.srow_x[2], is_BE);
@@ -581,14 +591,19 @@ namespace MR
 
 
 
+      inline bool check_suffix (const std::string& name, const char** suffix)
+      {
+        for (const char** p = suffix; *p; p++)
+          if (Path::has_suffix (name, *p))
+            return true;
+        return false;
+      }
 
 
       bool check (Header& H, const size_t num_axes, const bool is_analyse, const char** suffix, const size_t nifti_version, const std::string& format)
       {
-        for (const char** p = suffix; *p; p++) {
-          if (!Path::has_suffix (H.name(), *p))
-            return false;
-        }
+        if (!check_suffix (H.name(), suffix))
+          return false;
 
         if (version (H) != nifti_version)
           return false;
