@@ -70,13 +70,19 @@ namespace MR
              *  problem.
              *  - \a max_iterations: the maximum number of iterations to run.
              *  If zero (default), this number is set to 10x the size of \e x.
+             *  - \a problem_in_standard_form: if true, the matrix provided as
+             *  \a problem_matrix is assumed to contain \e H<sup>T</sup>H (only
+             *  its lower triangular part is taken into account), while the
+             *  vectors provided to the solver will be assumed to contain
+             *  \e H<sup>T</sup>b.
              */
             Problem (const matrix_type& problem_matrix,
                 const matrix_type& constraint_matrix,
                 value_type solution_min_norm_regularisation = 0.0,
                 value_type constraint_min_norm_regularisation = 0.0,
                 size_t max_iterations = 0,
-                value_type tolerance = 0.0) :
+                value_type tolerance = 0.0,
+                bool problem_in_standard_form = false) :
               H (problem_matrix),
               chol_HtH (H.cols(), H.cols()),
               lambda_min_norm (constraint_min_norm_regularisation),
@@ -95,9 +101,14 @@ namespace MR
                 if (tolerance < 0.0)
                   throw Exception ("FIXME: tolerance is negative (ICLS)");
 
-                // form quadratic problem matrix H'*H:
-                chol_HtH.setZero();
-                chol_HtH.template triangularView<Eigen::Lower>() = H.transpose() * H;
+                if (problem_in_standard_form) {
+                  chol_HtH = H;
+                }
+                else {
+                  // form quadratic problem matrix H'*H:
+                  chol_HtH.setZero();
+                  chol_HtH.template triangularView<Eigen::Lower>() = H.transpose() * H;
+                }
                 // add minimum norm constraint:
                 chol_HtH.diagonal().array() += solution_min_norm_regularisation * chol_HtH.diagonal().maxCoeff();
                 // get Cholesky decomposition:
@@ -105,7 +116,10 @@ namespace MR
 
                 // form (transpose of) matrix projecting b onto preconditioned
                 // quadratic problem chol_HtH\H:
-                b2d.noalias() = chol_HtH.template triangularView<Eigen::Lower>().transpose().template solve<Eigen::OnTheRight> (H);
+                if (problem_in_standard_form)
+                  b2d.noalias() = chol_HtH.template triangularView<Eigen::Lower>().transpose().template solve<Eigen::OnTheRight> (Eigen::MatrixXd::Identity (H.rows(),H.cols()));
+                else
+                  b2d.noalias() = chol_HtH.template triangularView<Eigen::Lower>().transpose().template solve<Eigen::OnTheRight> (H);
 
                 // project constraint onto preconditioned quadratic domain,
                 // and normalise each row to help preconditioning (the norm of
