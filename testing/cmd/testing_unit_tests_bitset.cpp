@@ -86,6 +86,18 @@ void run ()
       }
       // Duplicate
       BitSet duplicate (data);
+      test (identical (data, duplicate, bits), "Duplicated sets pre-resize of size " + str(bits) + " did not lead to identical data: " + str(data) + " " + str(duplicate));
+      // Change one bit within the final byte; make sure duplicate is no longer equivalent according to operator==()
+      if (bits) {
+        size_t index_to_toggle;
+        do {
+          index_to_toggle = rng();
+        } while (index_to_toggle < 8*((bits-1)/8));
+        duplicate[index_to_toggle] = fill_value;
+        test (data != duplicate, "Change of one bit in size " + str(bits) + " not reported as inequal: " + str(data) + " " + str(duplicate));
+        duplicate[index_to_toggle] = set_value;
+        test (data == duplicate, "Reversion of one changed bit in size " + str(bits) + " not reported as equal: " + str(data) + " " + str(duplicate));
+      }
       // Resize, make sure data are preserved and new items are set appropriately
       data.resize (bits+8, false);
       duplicate.resize (bits+8, true);
