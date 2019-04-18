@@ -228,13 +228,23 @@ void run()
   // Perform permutation testing
   if (!get_options ("notest").size()) {
 
+    const bool fwe_strong = get_option_value ("strong", false);
+    if (fwe_strong && num_hypotheses == 1) {
+      WARN("Option -strong has no effect when testing a single hypothesis only");
+    }
+
     std::shared_ptr<Stats::EnhancerBase> enhancer;
     matrix_type null_distribution, uncorrected_pvalues;
     count_matrix_type null_contributions;
     matrix_type empirical_distribution; // unused
-    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_distribution,
-                                       default_output, null_distribution, null_contributions, uncorrected_pvalues);
-
+    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_distribution, default_output, fwe_strong,
+                                       null_distribution, null_contributions, uncorrected_pvalues);
+    if (fwe_strong) {
+      save_vector (null_distribution.col(0), output_prefix + "null_dist.csv");
+    } else {
+      for (size_t i = 0; i != num_hypotheses; ++i)
+        save_vector (null_distribution.col(i), output_prefix + "null_dist" + postfix(i) + ".csv");
+    }
     const matrix_type fwe_pvalues = MR::Math::Stats::fwe_pvalue (null_distribution, default_output);
     for (size_t i = 0; i != num_hypotheses; ++i) {
       save_vector (fwe_pvalues.col(i), output_prefix + "fwe_pvalue" + postfix(i) + ".csv");

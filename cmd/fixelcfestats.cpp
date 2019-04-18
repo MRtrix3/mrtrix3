@@ -567,16 +567,26 @@ void run()
   // Perform permutation testing
   if (!get_options ("notest").size()) {
 
+    const bool fwe_strong = get_option_value ("strong", false);
+    if (fwe_strong && num_hypotheses == 1) {
+      WARN("Option -strong has no effect when testing a single hypothesis only");
+    }
+
     matrix_type null_distribution, uncorrected_pvalues;
     count_matrix_type null_contributions;
-    Stats::PermTest::run_permutations (glm_test, cfe_integrator, empirical_cfe_statistic,
-                                       cfe_output, null_distribution, null_contributions, uncorrected_pvalues);
+    Stats::PermTest::run_permutations (glm_test, cfe_integrator, empirical_cfe_statistic, cfe_output, fwe_strong,
+                                       null_distribution, null_contributions, uncorrected_pvalues);
 
-    ProgressBar progress ("Outputting final results", 4*num_hypotheses + 1);
+    ProgressBar progress ("Outputting final results", (fwe_strong ? 1 : num_hypotheses) + 1 + 3*num_hypotheses);
 
-    for (size_t i = 0; i != num_hypotheses; ++i) {
-      save_vector (null_distribution.col(i), Path::join (output_fixel_directory, "perm_dist" + postfix(i) + ".txt"));
+    if (fwe_strong) {
+      save_vector (null_distribution.col(0), Path::join (output_fixel_directory, "null_dist.txt"));
       ++progress;
+    } else {
+      for (size_t i = 0; i != num_hypotheses; ++i) {
+        save_vector (null_distribution.col(i), Path::join (output_fixel_directory, "null_dist" + postfix(i) + ".txt"));
+        ++progress;
+      }
     }
 
     const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, cfe_output);

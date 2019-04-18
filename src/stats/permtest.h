@@ -88,8 +88,8 @@ namespace MR
                      const std::shared_ptr<EnhancerBase> enhancer,
                      const matrix_type& empirical_enhanced_statistics,
                      const matrix_type& default_enhanced_statistics,
-                     matrix_type& perm_dist,
-                     count_matrix_type& global_perm_dist_contributions,
+                     matrix_type& null_dist,
+                     count_matrix_type& global_null_dist_contributions,
                      count_matrix_type& global_uncorrected_pvalue_counter);
 
           ~Processor();
@@ -103,9 +103,9 @@ namespace MR
           const matrix_type& default_enhanced_statistics;
           matrix_type statistics;
           matrix_type enhanced_statistics;
-          matrix_type& perm_dist;
-          count_matrix_type& global_perm_dist_contributions;
-          count_matrix_type perm_dist_contribution_counter;
+          matrix_type& null_dist;
+          count_matrix_type& global_null_dist_contributions;
+          count_matrix_type null_dist_contribution_counter;
           count_matrix_type& global_uncorrected_pvalue_counter;
           count_matrix_type uncorrected_pvalue_counter;
           std::shared_ptr<std::mutex> mutex;
@@ -137,6 +137,7 @@ namespace MR
                              const std::shared_ptr<EnhancerBase> enhancer,
                              const matrix_type& empirical_enhanced_statistic,
                              const matrix_type& default_enhanced_statistics,
+                             const bool fwe_strong,
                              matrix_type& perm_dist,
                              count_matrix_type& perm_dist_contributions,
                              matrix_type& uncorrected_pvalues);

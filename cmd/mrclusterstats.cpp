@@ -345,16 +345,29 @@ void run() {
 
   if (!get_options ("notest").size()) {
 
+    const bool fwe_strong = get_option_value ("strong", false);
+    if (fwe_strong && num_hypotheses == 1) {
+      WARN("Option -strong has no effect when testing a single hypothesis only");
+    }
+
     matrix_type null_distribution, uncorrected_pvalue;
     count_matrix_type null_contributions;
 
-    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_enhanced_statistic,
-                                       enhanced_output, null_distribution, null_contributions, uncorrected_pvalue);
+    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_enhanced_statistic, enhanced_output, fwe_strong,
+                                       null_distribution, null_contributions, uncorrected_pvalue);
 
-    for (size_t i = 0; i != num_hypotheses; ++i)
-      save_vector (null_distribution.col(i), prefix + "perm_dist" + postfix(i) + ".txt");
+    ProgressBar progress ("Outputting final results", (fwe_strong ? 1 : num_hypotheses) + 1 + 3*num_hypotheses);
 
-    ProgressBar progress ("Generating output images", 1 + (3 * num_hypotheses));
+    if (fwe_strong) {
+      save_vector (null_distribution.col(0), prefix + "null_dist.txt");
+      ++progress;
+    } else {
+      for (size_t i = 0; i != num_hypotheses; ++i) {
+        save_vector (null_distribution.col(i), prefix + "null_dist" + postfix(i) + ".txt");
+        ++progress;
+      }
+    }
+
     const matrix_type fwe_pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, enhanced_output);
     ++progress;
     for (size_t i = 0; i != num_hypotheses; ++i) {
