@@ -142,7 +142,7 @@ List of MRtrix3 commands
     :ref:`dwi2adc`, "Convert mean dwi (trace-weighted) images to mean ADC maps"
     :ref:`dwi2fod`, "Estimate fibre orientation distributions from diffusion data using spherical deconvolution"
     :ref:`dwi2mask`, "Generates a whole brain mask from a DWI image"
-    :ref:`dwi2tensor`, "Diffusion (kurtosis) tensor estimation using iteratively reweighted linear least squares estimator"
+    :ref:`dwi2tensor`, "Diffusion (kurtosis) tensor estimation"
     :ref:`dwidenoise`, "Denoise DWI data and estimate the noise level based on the optimal threshold for PCA"
     :ref:`dwiextract`, "Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset"
     :ref:`fixel2sh`, "Convert a fixel-based sparse-data image into an spherical harmonic image"
