@@ -43,6 +43,8 @@ namespace MR
         + Option ("errors", "specify nature of errors for shuffling; options are: " + join(error_types, ",") + " (default: ee)")
           + Argument ("spec").type_choice (error_types)
 
+        + Option ("strong", "use strong familywise error control across multiple hypotheses")
+
         + Option ("nshuffles", "the number of shuffles (default: " + str(DEFAULT_NUMBER_SHUFFLES) + ")")
           + Argument ("number").type_integer (1)
 

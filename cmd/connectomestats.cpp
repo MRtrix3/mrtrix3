@@ -316,12 +316,21 @@ void run()
   // Perform permutation testing
   if (!get_options ("notest").size()) {
 
+    const bool fwe_strong = get_option_value ("strong", false);
+    if (fwe_strong && num_hypotheses == 1) {
+      WARN("Option -strong has no effect when testing a single hypothesis only");
+    }
+
     matrix_type null_distribution, uncorrected_pvalues;
     count_matrix_type null_contributions;
-    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_statistic,
-                                       enhanced_output, null_distribution, null_contributions, uncorrected_pvalues);
-    for (size_t i = 0; i != num_hypotheses; ++i)
-      save_vector (null_distribution.col(i), output_prefix + "null_dist" + postfix(i) + ".txt");
+    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_statistic, enhanced_output, fwe_strong,
+                                       null_distribution, null_contributions, uncorrected_pvalues);
+    if (fwe_strong) {
+      save_vector (null_distribution.col(0), output_prefix + "null_dist.txt");
+    } else {
+      for (size_t i = 0; i != num_hypotheses; ++i)
+        save_vector (null_distribution.col(i), output_prefix + "null_dist" + postfix(i) + ".txt");
+    }
 
     const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, enhanced_output);
     for (size_t i = 0; i != num_hypotheses; ++i) {

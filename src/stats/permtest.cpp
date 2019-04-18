@@ -91,9 +91,9 @@ namespace MR
           default_enhanced_statistics (default_enhanced_statistics),
           statistics (stats_calculator->num_elements(), stats_calculator->num_outputs()),
           enhanced_statistics (stats_calculator->num_elements(), stats_calculator->num_outputs()),
-          perm_dist (perm_dist),
-          global_perm_dist_contributions (perm_dist_contributions),
-          perm_dist_contribution_counter (count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_outputs())),
+          null_dist (perm_dist),
+          global_null_dist_contributions (perm_dist_contributions),
+          null_dist_contribution_counter (count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_outputs())),
           global_uncorrected_pvalue_counter (global_uncorrected_pvalue_counter),
           uncorrected_pvalue_counter (count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_outputs())),
           mutex (new std::mutex())
@@ -107,7 +107,7 @@ namespace MR
       {
         std::lock_guard<std::mutex> lock (*mutex);
         global_uncorrected_pvalue_counter += uncorrected_pvalue_counter;
-        global_perm_dist_contributions += perm_dist_contribution_counter;
+        global_null_dist_contributions += null_dist_contribution_counter;
       }
 
 
@@ -123,13 +123,22 @@ namespace MR
         if (empirical_enhanced_statistics.size())
           enhanced_statistics.array() /= empirical_enhanced_statistics.array();
 
-        ssize_t max_index;
-        for (ssize_t contrast = 0; contrast != enhanced_statistics.cols(); ++contrast) {
-          perm_dist(shuffle.index, contrast) = enhanced_statistics.col (contrast).maxCoeff (&max_index);
-          perm_dist_contribution_counter(max_index, contrast)++;
+        if (null_dist.cols() == 1) { // strong fwe control
+          ssize_t max_element, max_hypothesis;
+          null_dist(shuffle.index, 0) = enhanced_statistics.maxCoeff (&max_element, &max_hypothesis);
+          null_dist_contribution_counter(max_element, max_hypothesis)++;
+        } else { // weak fwe control
+          ssize_t max_index;
+          for (ssize_t hypothesis = 0; hypothesis != enhanced_statistics.cols(); ++hypothesis) {
+            null_dist(shuffle.index, hypothesis) = enhanced_statistics.col (hypothesis).maxCoeff (&max_index);
+            null_dist_contribution_counter(max_index, hypothesis)++;
+          }
+        }
+
+        for (ssize_t hypothesis = 0; hypothesis != enhanced_statistics.cols(); ++hypothesis) {
           for (ssize_t element = 0; element != enhanced_statistics.rows(); ++element) {
-            if (default_enhanced_statistics(element, contrast) > enhanced_statistics(element, contrast))
-              uncorrected_pvalue_counter(element, contrast)++;
+            if (default_enhanced_statistics(element, hypothesis) > enhanced_statistics(element, hypothesis))
+              uncorrected_pvalue_counter(element, hypothesis)++;
           }
         }
 
@@ -197,22 +206,23 @@ namespace MR
                              const std::shared_ptr<EnhancerBase> enhancer,
                              const matrix_type& empirical_enhanced_statistic,
                              const matrix_type& default_enhanced_statistics,
-                             matrix_type& perm_dist,
-                             count_matrix_type& perm_dist_contributions,
+                             const bool fwe_strong,
+                             matrix_type& null_dist,
+                             count_matrix_type& null_dist_contributions,
                              matrix_type& uncorrected_pvalues)
       {
         assert (stats_calculator);
         Math::Stats::Shuffler shuffler (stats_calculator->num_subjects(), false, "Running permutations");
-        perm_dist.resize (shuffler.size(), stats_calculator->num_outputs());
-        perm_dist_contributions = count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_outputs());
+        null_dist.resize (shuffler.size(), fwe_strong ? 1 : stats_calculator->num_outputs());
+        null_dist_contributions = count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_outputs());
 
         count_matrix_type global_uncorrected_pvalue_count (count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_outputs()));
         {
           Processor processor (stats_calculator, enhancer,
                                empirical_enhanced_statistic,
                                default_enhanced_statistics,
-                               perm_dist,
-                               perm_dist_contributions,
+                               null_dist,
+                               null_dist_contributions,
                                global_uncorrected_pvalue_count);
           Thread::run_queue (shuffler, Math::Stats::Shuffle(), Thread::multi (processor));
         }
