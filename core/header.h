@@ -203,7 +203,7 @@ namespace MR
           NDimProxy (vector<Axis>& axes) : axes (axes) { }
           NDimProxy (NDimProxy&&) = default;
           NDimProxy (const NDimProxy&) = delete;
-          NDimProxy& operator=(NDimProxy&&) = default;
+          NDimProxy& operator=(NDimProxy&&) = delete;
           NDimProxy& operator=(const NDimProxy&) = delete;
 
           operator size_t () const { return axes.size(); }
@@ -241,7 +241,7 @@ namespace MR
           DataTypeProxy (Header& H) : DataType (H.datatype_), H (H) { }
           DataTypeProxy (DataTypeProxy&&) = default;
           DataTypeProxy (const DataTypeProxy&) = delete;
-          DataTypeProxy& operator=(DataTypeProxy&&) = default;
+          DataTypeProxy& operator=(DataTypeProxy&&) = delete;
           DataTypeProxy& operator=(const DataTypeProxy&) = delete;
 
           uint8_t operator()() const { return DataType::operator()(); }
