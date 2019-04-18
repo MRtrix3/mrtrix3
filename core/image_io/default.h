@@ -33,7 +33,6 @@ namespace MR
           Base (header),
           bytes_per_segment (0) { }
         Default (Default&&) noexcept = default;
-        Default& operator=(Default&&) = default;
 
       protected:
         vector<std::shared_ptr<File::MMap> > mmaps;
