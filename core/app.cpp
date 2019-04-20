@@ -59,6 +59,9 @@ namespace MR
                          "(caution: using the same file as input and output might cause unexpected behaviour).")
       + Option ("nthreads", "use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).")
         + Argument ("number").type_integer (0)
+      + Option ("config", "temporarily set the value of an MRtrix config file entry.").allow_multiple()
+        + Argument ("key").type_text()
+        + Argument ("value").type_text()
       + Option ("help", "display this information page and exit.")
       + Option ("version", "display version information and exit.");
 
@@ -407,8 +410,10 @@ namespace MR
         opt += "  (multiple uses permitted)";
 
       if (format)
-        return "  " + opt + "\n" + paragraph ("", desc, HELP_PURPOSE_INDENT) + "\n";
-      return paragraph (opt, desc, HELP_OPTION_INDENT);
+        opt = "  " + opt + "\n" + paragraph ("", desc, HELP_PURPOSE_INDENT) + "\n";
+      else
+        opt = paragraph (opt, desc, HELP_OPTION_INDENT);
+      return opt;
     }
 
 

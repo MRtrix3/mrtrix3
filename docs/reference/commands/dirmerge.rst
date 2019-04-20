@@ -37,6 +37,8 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+
 -  **-help** display this information page and exit.
 
 -  **-version** display version information and exit.
