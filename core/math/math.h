@@ -20,9 +20,10 @@
 #include <cmath>
 #include <cstdlib>
 
-#include "types.h"
-#include "mrtrix.h"
+#include "app.h"
 #include "exception.h"
+#include "mrtrix.h"
+#include "types.h"
 #include "file/ofstream.h"
 
 namespace MR
@@ -130,10 +131,12 @@ namespace MR
 
   //! write the matrix \a M to file
   template <class MatrixType>
-    void save_matrix (const MatrixType& M, const std::string& filename)
+    void save_matrix (const MatrixType& M, const std::string& filename, const bool write_cmdstring = true)
     {
       DEBUG ("saving " + str(M.rows()) + "x" + str(M.cols()) + " matrix to file \"" + filename + "\"...");
       File::OFStream out (filename);
+      if (write_cmdstring)
+        out << "# " << App::command_string << "\n";
       Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
       out << M.format(fmt);
       out << "\n";
@@ -237,10 +240,12 @@ namespace MR
   }
 
   //! write the transform \a M to file
-  inline void save_transform (const transform_type& M, const std::string& filename)
+  inline void save_transform (const transform_type& M, const std::string& filename, const bool write_cmdstring = true)
   {
     DEBUG ("saving transform to file \"" + filename + "\"...");
     File::OFStream out (filename);
+    if (write_cmdstring)
+      out << "# " << App::command_string << "\n";
     Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
     out << M.matrix().format(fmt);
     out << "\n0 0 0 1\n";
@@ -248,10 +253,12 @@ namespace MR
 
   //! write the vector \a V to file
   template <class VectorType>
-    void save_vector (const VectorType& V, const std::string& filename)
+    void save_vector (const VectorType& V, const std::string& filename, const bool write_cmdstring = true)
     {
       DEBUG ("saving vector of size " + str(V.size()) + " to file \"" + filename + "\"...");
       File::OFStream out (filename);
+      if (write_cmdstring)
+        out << "# " << App::command_string << "\n";
       for (decltype(V.size()) i = 0; i < V.size() - 1; i++)
         out << str(V[i], 10) << " ";
       out << str(V[V.size() - 1], 10) << "\n";

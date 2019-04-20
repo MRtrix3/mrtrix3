@@ -67,7 +67,7 @@ using value_type = double;
 
 
 
-void run () 
+void run ()
 {
   auto SH = Image<value_type>::open(argument[0]);
   Math::SH::check (SH);
@@ -89,8 +89,10 @@ void run ()
 
   File::OFStream dump_stream;
   auto opt = get_options ("dump");
-  if (opt.size())
+  if (opt.size()) {
     dump_stream.open (opt[0][0]);
+    dump_stream << "# " << App::command_string << "\n";
+  }
 
   Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> AL (lmax+1);
   Math::Legendre::Plm_sph (AL, lmax, 0, value_type (1.0));
@@ -98,7 +100,7 @@ void run ()
   auto loop = Loop ("estimating response function", SH, 0, 3);
   for (auto l = loop(mask, SH, dir); l; ++l) {
 
-    if (!mask.value()) 
+    if (!mask.value())
       continue;
 
     Eigen::Vector3d d = dir.row(3);
@@ -129,10 +131,10 @@ void run ()
       value_type val = AL[l] * d_dot_s / d_dot_d;
       response[Math::ZSH::index(l)] += val;
 
-      if (dump_stream.is_open()) 
+      if (dump_stream.is_open())
         dump_stream << val << " ";
     }
-    if (dump_stream.is_open()) 
+    if (dump_stream.is_open())
       dump_stream << "\n";
 
     ++count;

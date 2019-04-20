@@ -18,6 +18,7 @@
 #define __dwi_tractography_properties_h__
 
 #include <map>
+#include "app.h"
 #include "timer.h"
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/seeding/list.h"
@@ -49,6 +50,13 @@ namespace MR
             (*this)["mrtrix_version"] = App::mrtrix_version;
             if (App::project_version)
               (*this)["project_version"] = App::project_version;
+          }
+
+          void update_command_history () {
+            // Make sure the current command is not concatenated more than once
+            const auto command_history = split_lines ((*this)["command_history"]);
+            if (!(command_history.size() && command_history.back() == App::command_string))
+              add_line ((*this)["command_history"], App::command_string);
           }
 
           // In use at time of execution

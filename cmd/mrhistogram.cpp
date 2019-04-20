@@ -116,6 +116,7 @@ void run ()
   }
 
   File::OFStream output (argument[1]);
+  output << "# " << App::command_string << "\n";
 
   Algo::Histogram::Calibrator calibrator (nbins, get_options ("ignorezero").size());
   opt = get_options ("template");
