@@ -45,7 +45,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
 - **-help** display this information page and exit.
 
@@ -127,7 +127,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
 - **-help** display this information page and exit.
 
@@ -209,7 +209,7 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
 - **-help** display this information page and exit.
 
