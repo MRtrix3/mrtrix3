@@ -605,7 +605,7 @@ class Parser(argparse.ArgumentParser):
       standard_options.add_argument('-debug', action='store_true', help='display debugging messages.')
       self.flag_mutually_exclusive_options( [ 'info', 'quiet', 'debug' ] )
       standard_options.add_argument('-force', action='store_true', help='force overwrite of output files.')
-      standard_options.add_argument('-nthreads', metavar='number', type=int, help='use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)')
+      standard_options.add_argument('-nthreads', metavar='number', type=int, help='use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).')
       standard_options.add_argument('-help', action='store_true', help='display this information page and exit.')
       standard_options.add_argument('-version', action='store_true', help='display version information and exit.')
       script_options = self.add_argument_group('Additional standard options for Python scripts')
