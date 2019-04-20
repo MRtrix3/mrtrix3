@@ -135,8 +135,10 @@ void run ()
 
     std::unique_ptr<File::OFStream> dump;
     auto opt = get_options ("dump");
-    if (opt.size())
+    if (opt.size()) {
       dump.reset (new File::OFStream (std::string(opt[0][0]), std::ios_base::out | std::ios_base::trunc));
+      (*dump) << "# " << App::command_string << "\n";
+    }
 
     ProgressBar progress ("Reading track file", header_count);
     Streamline<> tck;
@@ -232,6 +234,7 @@ void run ()
   opt = get_options ("histogram");
   if (opt.size()) {
     File::OFStream out (opt[0][0], std::ios_base::out | std::ios_base::trunc);
+    out << "# " << App::command_string << "\n";
     if (!std::isfinite (step_size))
       step_size = 1.0f;
     if (weights_provided) {

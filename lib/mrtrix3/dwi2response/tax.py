@@ -28,6 +28,17 @@ def needs_single_shell(): #pylint: disable=unused-variable
 
 
 
+def read_rf_file(filepath):
+  from mrtrix3 import MRtrixError
+  with open(filepath, 'r') as rf_file:
+    for line in rf_file.readlines():
+      line = line.lstrip()
+      if line and line[0] != '#':
+        return [ float(value) for value in line.split() ]
+  raise MRtrixError('Unable to read intermediate response function file "' + filepath + '"')
+
+
+
 def execute(): #pylint: disable=unused-variable
   import math, os, shutil
   from mrtrix3 import app, image, MRtrixError, path, run
@@ -95,15 +106,13 @@ def execute(): #pylint: disable=unused-variable
     run.command('amp2response dwi.mif ' + prefix + 'SF.mif ' + prefix + 'first_dir.mif ' + prefix + 'RF.txt' + lmax_option)
     app.cleanup(prefix + 'first_dir.mif')
 
-    with open(prefix + 'RF.txt', 'r') as new_rf_file:
-      new_rf = [ float(x) for x in new_rf_file.read().split() ]
+    new_rf = read_rf_file(prefix + 'RF.txt')
     progress.increment('Optimising (' + str(iteration+1) + ' iterations, ' + str(sf_voxel_count) + ' voxels, RF: [ ' + ', '.join('{:.3f}'.format(n) for n in new_rf) + '] )')
 
     # Detect convergence
     # Look for a change > some percentage - don't bother looking at the masks
     if iteration > 0:
-      with open(rf_in_path, 'r') as old_rf_file:
-        old_rf = [ float(x) for x in old_rf_file.read().split() ]
+      old_rf = read_rf_file(rf_in_path)
       reiterate = False
       for old_value, new_value in zip(old_rf, new_rf):
         mean = 0.5 * (old_value + new_value)

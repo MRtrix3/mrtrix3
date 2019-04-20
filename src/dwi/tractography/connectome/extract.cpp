@@ -158,6 +158,7 @@ void WriterExemplars::write (const node_t one, const node_t two, const std::stri
   }
   if (weights_path.size()) {
     File::OFStream output (weights_path);
+    output << "# " << App::command_string << "\n";
     for (size_t i = 0; i != exemplars.size(); ++i) {
       if (selectors[i] (one, two))
         output << str(exemplars[i].get_weight()) << "\n";
@@ -178,6 +179,7 @@ void WriterExemplars::write (const node_t node, const std::string& path, const s
   }
   if (weights_path.size()) {
     File::OFStream output (weights_path);
+    output << "# " << App::command_string << "\n";
     for (size_t i = 0; i != exemplars.size(); ++i) {
       if (selectors[i] (node))
         output << str(exemplars[i].get_weight()) << "\n";
@@ -194,6 +196,7 @@ void WriterExemplars::write (const std::string& path, const std::string& weights
     writer (i->get());
   if (weights_path.size()) {
     File::OFStream output (weights_path);
+    output << "# " << App::command_string << "\n";
     for (vector<Exemplar>::const_iterator i = exemplars.begin(); i != exemplars.end(); ++i)
       output << str(i->get_weight()) << "\n";
   }

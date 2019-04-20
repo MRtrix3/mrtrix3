@@ -16,8 +16,9 @@ import mrtrix3
 #   # 0 = quiet; 1 = default; 2 = info; 3 = debug
 # - 'WORKING_DIR' will simply contain the current working directory when the executable script is run
 ARGS = None
-DO_CLEANUP = True
+COMMAND_STRING = ''
 CONTINUE_OPTION = False
+DO_CLEANUP = True
 EXEC_NAME = os.path.basename(sys.argv[0])
 FORCE_OVERWRITE = False #pylint: disable=unused-variable
 NUM_THREADS = None #pylint: disable=unused-variable
@@ -77,7 +78,7 @@ else:
 
 def execute(): #pylint: disable=unused-variable
   import inspect, shutil, signal
-  from mrtrix3 import ANSI, MRtrixError, run
+  from mrtrix3 import ANSI, MRtrixError, path, run, __version__
   global ARGS, CMDLINE, CONTINUE_OPTION, DO_CLEANUP, EXEC_NAME, FORCE_OVERWRITE, NUM_THREADS, SCRATCH_DIR, VERBOSITY, WORKING_DIR
 
   # Set up signal handlers
@@ -98,6 +99,11 @@ def execute(): #pylint: disable=unused-variable
   ########################################################################################################################
   # Note that everything after this point will only be executed if the script is designed to operate against the library #
   ########################################################################################################################
+
+  COMMAND_STRING = sys.argv[0]
+  for arg in sys.argv[1:]:
+    COMMAND_STRING += ' ' + path.quote(arg) # Use quotation marks only if required
+  COMMAND_STRING += '  (version=' + __version__ + ')"'
 
   # Deal with special command-line uses
   if len(sys.argv) == 1:
@@ -347,14 +353,8 @@ def cleanup(path): #pylint: disable=unused-variable
 #   rather than its internal processes
 def mrconvert_output_option(input_image): #pylint: disable=unused-variable
   from ._version import __version__
-  global FORCE_OVERWRITE
-  text = ' -copy_properties ' + input_image + ' -append_property command_history "' + sys.argv[0]
-  for arg in sys.argv[1:]:
-    text += ' \\"' + arg + '\\"'
-  text += '  (version=' + __version__ + ')"'
-  if FORCE_OVERWRITE:
-    text += ' -force'
-  return text
+  global COMMAND_STRING, FORCE_OVERWRITE
+  return ' -copy_properties ' + input_image + ' -append_property command_history "' + COMMAND_STRING + '"' + (' -force' if FORCE_OVERWRITE else '')
 
 
 

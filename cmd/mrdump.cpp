@@ -111,6 +111,7 @@ void run ()
 
   if (argument.size() == 2) {
     File::OFStream out (argument[1]);
+    out << "# " << App::command_string << "\n";
     write (H, mask, out);
   } else {
     write (H, mask, std::cout);
