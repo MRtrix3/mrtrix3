@@ -64,7 +64,7 @@ Example usages
 Options
 -------
 
-- **-exclude** Exclude one specific input string from being processed (see Example Usage)
+- **-exclude "regex"** Exclude one specific input string / all strings matching a regular expression from being processed (see Example Usage)
 
 - **-test** Test the operation of the foreach script, by printing the command strings following string substitution but not actually executing them
 
