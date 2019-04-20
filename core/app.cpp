@@ -403,13 +403,12 @@ namespace MR
       for (size_t i = 0; i < size(); ++i)
         opt += std::string (" ") + (*this)[i].id;
 
+      if (format && (flags & AllowMultiple))
+        opt += "  (multiple uses permitted)";
+
       if (format)
-        opt = "  " + opt + "\n" + paragraph ("", desc, HELP_PURPOSE_INDENT);
-      else
-        opt = paragraph (opt, desc, HELP_OPTION_INDENT);
-      if (format)
-        opt += "\n";
-      return opt;
+        return "  " + opt + "\n" + paragraph ("", desc, HELP_PURPOSE_INDENT) + "\n";
+      return paragraph (opt, desc, HELP_OPTION_INDENT);
     }
 
 
@@ -735,7 +734,10 @@ namespace MR
         std::string f = std::string ("+ **-") + opt.id;
         for (size_t a = 0; a < opt.size(); ++a)
           f += std::string (" ") + opt[a].id;
-        f += std::string("**<br>") + indent_newlines (opt.desc) + "\n\n";
+        f += "**";
+        if (opt.flags & AllowMultiple)
+          f+= "  *(multiple uses permitted)*";
+        f += std::string("<br>") + indent_newlines (opt.desc) + "\n\n";
         return f;
       };
 
@@ -863,7 +865,10 @@ namespace MR
         std::string f = std::string ("-  **-") + opt.id;
         for (size_t a = 0; a < opt.size(); ++a)
           f += std::string (" ") + opt[a].id;
-        f += std::string("** ") + escape_special (indent_newlines (opt.desc)) + "\n\n";
+        f += "**";
+        if (opt.flags & AllowMultiple)
+          f += "  *(multiple uses permitted)*";
+        f += std::string(" ") + escape_special (indent_newlines (opt.desc)) + "\n\n";
         return f;
       };
 

@@ -145,8 +145,6 @@ def execute(): #pylint: disable=unused-variable
   if hasattr(ARGS, 'cont') and ARGS.cont:
     CONTINUE_OPTION = True
     SCRATCH_DIR = os.path.abspath(ARGS.cont[0])
-    # Prevent error from re-appearing at end of terminal output if script continuation results in success
-    #   and -nocleanup is used
     try:
       os.remove(os.path.join(SCRATCH_DIR, 'error.txt'))
     except OSError:
@@ -841,6 +839,8 @@ class Parser(argparse.ArgumentParser):
           group_text += ' ' + option.dest.upper()
         # Any options that haven't tripped one of the conditions above should be a store_true or store_false, and
         #   therefore there's nothing to be appended to the option instruction
+        if isinstance(option, argparse._AppendAction):
+          group_text += '  (multiple uses permitted)'
         group_text += '\n'
         group_text += wrapper_other.fill(option.help) + '\n'
         group_text += '\n'
@@ -911,7 +911,9 @@ class Parser(argparse.ArgumentParser):
 
     def print_group_options(group):
       for option in group._group_actions:
-        sys.stdout.write('OPTION ' + '/'.join(option.option_strings) + ' 1 0\n')
+        optional = '0' if option.required else '1'
+        allow_multiple = '1' if isinstance(option, argparse._AppendAction) else '0'
+        sys.stdout.write('OPTION ' + '/'.join(option.option_strings) + ' ' + optional + ' ' + allow_multiple + '\n')
         sys.stdout.write(option.help + '\n')
         if option.metavar:
           if isinstance(option.metavar, tuple):
@@ -972,7 +974,10 @@ class Parser(argparse.ArgumentParser):
             option_text += ' '.join(option.metavar)
           else:
             option_text += option.metavar
-        group_text += '+ **-' + option_text + '**<br>' + option.help + '\n\n'
+        group_text += '+ **-' + option_text + '**'
+        if isinstance(option, argparse._AppendAction):
+          group_text += '  *(multiple uses permitted)*'
+        group_text += '<br>' + option.help + '\n\n'
       return group_text
 
     ungrouped_options = self._get_ungrouped_options()
@@ -1054,7 +1059,10 @@ class Parser(argparse.ArgumentParser):
           else:
             option_text += option.metavar
         group_text += '\n'
-        group_text += '- **' + option_text + '** ' + option.help.replace('|', '\\|') + '\n'
+        group_text += '- **' + option_text + '**'
+        if isinstance(option, argparse._AppendAction):
+          group_text += '  *(multiple uses permitted)*'
+        group_text += ' ' + option.help.replace('|', '\\|') + '\n'
       return group_text
 
     ungrouped_options = self._get_ungrouped_options()
