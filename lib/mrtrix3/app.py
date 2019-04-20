@@ -453,6 +453,9 @@ class ProgressBar(object): #pylint: disable=unused-variable
            '  . ',
            ' .  ' ]
 
+  WRAPON = '\033[?7h'
+  WRAPOFF = '\033[?7l'
+
   def __init__(self, msg, target=0):
     from mrtrix3 import ANSI, run
     global EXEC_NAME, VERBOSITY
@@ -465,9 +468,12 @@ class ProgressBar(object): #pylint: disable=unused-variable
     self.old_value = 0
     self.orig_verbosity = VERBOSITY
     self.value = 0
+    # Only disable wrapping if the progress bar is the only thing being printed
+    self.wrapoff = '' if self.newline else ProgressBar.WRAPOFF
+    self.wrapon = '' if self.newline else ProgressBar.WRAPON
     VERBOSITY = run.shared.verbosity = VERBOSITY - 1 if VERBOSITY else 0
     if self.isatty:
-      sys.stderr.write(EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[0]) + ']' + ANSI.clear + ' ' + ANSI.console + self.message + '... ' + ANSI.clear + ANSI.lineclear + self.newline)
+      sys.stderr.write(self.wrapoff + EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[0]) + ']' + ANSI.clear + ' ' + ANSI.console + self.message + '... ' + ANSI.clear + ANSI.lineclear + self.wrapoff + self.newline)
     else:
       sys.stderr.write(EXEC_NAME + ': ' + self.message + '... [' + self.newline)
     sys.stderr.flush()
@@ -512,7 +518,7 @@ class ProgressBar(object): #pylint: disable=unused-variable
     global EXEC_NAME
     assert not self.iscomplete
     if self.isatty:
-      sys.stderr.write('\r' + EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[self.counter%6]) + ']' + ANSI.clear + ' ' + ANSI.console + self.message + '... ' + ANSI.clear + ANSI.lineclear + self.newline)
+      sys.stderr.write(self.wrapoff + '\r' + EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[self.counter%6]) + ']' + ANSI.clear + ' ' + ANSI.console + self.message + '... ' + ANSI.clear + ANSI.lineclear + self.wrapon + self.newline)
     else:
       if self.newline:
         sys.stderr.write(EXEC_NAME + ': ' + self.message + '... [' + ('=' * int(self.value/2)) + self.newline)
