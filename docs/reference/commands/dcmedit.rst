@@ -31,7 +31,7 @@ Options
 
 -  **-id text** replace all ID tags with string supplied. This consists of tags (0010, 0020) PatientID and (0010, 1000) OtherPatientIDs
 
--  **-tag group element newvalue** replace specific tag.
+-  **-tag group element newvalue**  *(multiple uses permitted)* replace specific tag.
 
 Standard options
 ^^^^^^^^^^^^^^^^

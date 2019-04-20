@@ -23,7 +23,7 @@ Options
 Statistics options
 ^^^^^^^^^^^^^^^^^^
 
--  **-output field** output only the field specified. Multiple such options can be supplied if required. Choices are: mean, median, std, min, max, count. Useful for use in scripts.
+-  **-output field**  *(multiple uses permitted)* output only the field specified. Multiple such options can be supplied if required. Choices are: mean, median, std, min, max, count. Useful for use in scripts.
 
 -  **-mask image** only perform computation within the specified binary mask image.
 
