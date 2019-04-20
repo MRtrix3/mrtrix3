@@ -77,7 +77,7 @@ else:
 
 def execute(): #pylint: disable=unused-variable
   import inspect, shutil, signal
-  from mrtrix3 import ANSI, MRtrixError, run
+  from mrtrix3 import ANSI, CONFIG, MRtrixError, run, setup_ansi
   global ARGS, CMDLINE, CONTINUE_OPTION, DO_CLEANUP, EXEC_NAME, FORCE_OVERWRITE, NUM_THREADS, SCRATCH_DIR, VERBOSITY, WORKING_DIR
 
   # Set up signal handlers
@@ -141,6 +141,12 @@ def execute(): #pylint: disable=unused-variable
     VERBOSITY = 2
   elif hasattr(ARGS, 'debug') and ARGS.debug:
     VERBOSITY = 3
+
+  if hasattr(ARGS, 'config') and ARGS.config:
+    for keyval in ARGS.config:
+      CONFIG[keyval[0]] = keyval[1]
+  # ANSI settings may have been altered at the command-line
+  setup_ansi()
 
   if hasattr(ARGS, 'cont') and ARGS.cont:
     CONTINUE_OPTION = True
@@ -610,6 +616,7 @@ class Parser(argparse.ArgumentParser):
       self.flag_mutually_exclusive_options( [ 'info', 'quiet', 'debug' ] )
       standard_options.add_argument('-force', action='store_true', help='force overwrite of output files.')
       standard_options.add_argument('-nthreads', metavar='number', type=int, help='use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).')
+      standard_options.add_argument('-config', action='append', metavar='key value', nargs=2, help='temporarily set the value of an MRtrix config file entry.')
       standard_options.add_argument('-help', action='store_true', help='display this information page and exit.')
       standard_options.add_argument('-version', action='store_true', help='display version information and exit.')
       script_options = self.add_argument_group('Additional standard options for Python scripts')
