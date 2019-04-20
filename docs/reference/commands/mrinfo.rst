@@ -54,7 +54,7 @@ Options
 Options for exporting image header fields
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-property key** any text properties embedded in the image header under the specified key (use 'all' to list all keys found)
+-  **-property key**  *(multiple uses permitted)* any text properties embedded in the image header under the specified key (use 'all' to list all keys found)
 
 -  **-json_keyval file** export header key/value entries to a JSON file
 

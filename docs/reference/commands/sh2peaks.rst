@@ -23,7 +23,7 @@ Options
 
 -  **-num peaks** the number of peaks to extract (default: 3).
 
--  **-direction phi theta** the direction of a peak to estimate. The algorithm will attempt to find the same number of peaks as have been specified using this option.
+-  **-direction phi theta**  *(multiple uses permitted)* the direction of a peak to estimate. The algorithm will attempt to find the same number of peaks as have been specified using this option.
 
 -  **-peaks image** the program will try to find the peaks that most closely match those in the image provided.
 

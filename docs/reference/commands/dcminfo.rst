@@ -24,7 +24,7 @@ Options
 
 -  **-csa** print all Siemens CSA fields
 
--  **-tag group element** print field specified by the group & element tags supplied. Tags should be supplied as Hexadecimal (i.e. as they appear in the -all listing).
+-  **-tag group element**  *(multiple uses permitted)* print field specified by the group & element tags supplied. Tags should be supplied as Hexadecimal (i.e. as they appear in the -all listing).
 
 Standard options
 ^^^^^^^^^^^^^^^^

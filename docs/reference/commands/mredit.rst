@@ -26,11 +26,11 @@ A range of options are provided to enable direct editing of voxel intensities ba
 Options
 -------
 
--  **-plane axis coord value** fill one or more planes on a particular image axis
+-  **-plane axis coord value**  *(multiple uses permitted)* fill one or more planes on a particular image axis
 
--  **-sphere position radius value** draw a sphere with radius in mm
+-  **-sphere position radius value**  *(multiple uses permitted)* draw a sphere with radius in mm
 
--  **-voxel position value** change the image value within a single voxel
+-  **-voxel position value**  *(multiple uses permitted)* change the image value within a single voxel
 
 -  **-scanner** indicate that coordinates are specified in scanner space, rather than as voxel coordinates
 

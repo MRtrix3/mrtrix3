@@ -32,7 +32,7 @@ Options
 
 -  **-mask image** crop the input image according to the spatial extent of a mask image
 
--  **-axis index start end** crop the input image in the provided axis
+-  **-axis index start end**  *(multiple uses permitted)* crop the input image in the provided axis
 
 Standard options
 ^^^^^^^^^^^^^^^^

@@ -40,7 +40,7 @@ Input options
 
 -  **-mask image** only reconstruct the tractogram within the specified brain mask image.
 
--  **-riso response** set one or more isotropic response functions. (multiple allowed)
+-  **-riso response**  *(multiple uses permitted)* set one or more isotropic response functions. (multiple allowed)
 
 Parameters
 ^^^^^^^^^^

@@ -59,99 +59,99 @@ Options
 Unary operators
 ^^^^^^^^^^^^^^^
 
--  **-abs** absolute value
+-  **-abs**  *(multiple uses permitted)* absolute value
 
--  **-neg** negative value
+-  **-neg**  *(multiple uses permitted)* negative value
 
--  **-sqrt** square root
+-  **-sqrt**  *(multiple uses permitted)* square root
 
--  **-exp** exponential function
+-  **-exp**  *(multiple uses permitted)* exponential function
 
--  **-log** natural logarithm
+-  **-log**  *(multiple uses permitted)* natural logarithm
 
--  **-log10** common logarithm
+-  **-log10**  *(multiple uses permitted)* common logarithm
 
--  **-cos** cosine
+-  **-cos**  *(multiple uses permitted)* cosine
 
--  **-sin** sine
+-  **-sin**  *(multiple uses permitted)* sine
 
--  **-tan** tangent
+-  **-tan**  *(multiple uses permitted)* tangent
 
--  **-cosh** hyperbolic cosine
+-  **-cosh**  *(multiple uses permitted)* hyperbolic cosine
 
--  **-sinh** hyperbolic sine
+-  **-sinh**  *(multiple uses permitted)* hyperbolic sine
 
--  **-tanh** hyperbolic tangent
+-  **-tanh**  *(multiple uses permitted)* hyperbolic tangent
 
--  **-acos** inverse cosine
+-  **-acos**  *(multiple uses permitted)* inverse cosine
 
--  **-asin** inverse sine
+-  **-asin**  *(multiple uses permitted)* inverse sine
 
--  **-atan** inverse tangent
+-  **-atan**  *(multiple uses permitted)* inverse tangent
 
--  **-acosh** inverse hyperbolic cosine
+-  **-acosh**  *(multiple uses permitted)* inverse hyperbolic cosine
 
--  **-asinh** inverse hyperbolic sine
+-  **-asinh**  *(multiple uses permitted)* inverse hyperbolic sine
 
--  **-atanh** inverse hyperbolic tangent
+-  **-atanh**  *(multiple uses permitted)* inverse hyperbolic tangent
 
--  **-round** round to nearest integer
+-  **-round**  *(multiple uses permitted)* round to nearest integer
 
--  **-ceil** round up to nearest integer
+-  **-ceil**  *(multiple uses permitted)* round up to nearest integer
 
--  **-floor** round down to nearest integer
+-  **-floor**  *(multiple uses permitted)* round down to nearest integer
 
--  **-isnan** true (1) is operand is not-a-number (NaN)
+-  **-isnan**  *(multiple uses permitted)* true (1) is operand is not-a-number (NaN)
 
--  **-isinf** true (1) is operand is infinite (Inf)
+-  **-isinf**  *(multiple uses permitted)* true (1) is operand is infinite (Inf)
 
--  **-finite** true (1) is operand is finite (i.e. not NaN or Inf)
+-  **-finite**  *(multiple uses permitted)* true (1) is operand is finite (i.e. not NaN or Inf)
 
--  **-real** real part of complex number
+-  **-real**  *(multiple uses permitted)* real part of complex number
 
--  **-imag** imaginary part of complex number
+-  **-imag**  *(multiple uses permitted)* imaginary part of complex number
 
--  **-phase** phase of complex number
+-  **-phase**  *(multiple uses permitted)* phase of complex number
 
--  **-conj** complex conjugate
+-  **-conj**  *(multiple uses permitted)* complex conjugate
 
 Binary operators
 ^^^^^^^^^^^^^^^^
 
--  **-add** add values
+-  **-add**  *(multiple uses permitted)* add values
 
--  **-subtract** subtract nth operand from (n-1)th
+-  **-subtract**  *(multiple uses permitted)* subtract nth operand from (n-1)th
 
--  **-multiply** multiply values
+-  **-multiply**  *(multiple uses permitted)* multiply values
 
--  **-divide** divide (n-1)th operand by nth
+-  **-divide**  *(multiple uses permitted)* divide (n-1)th operand by nth
 
--  **-pow** raise (n-1)th operand to nth power
+-  **-pow**  *(multiple uses permitted)* raise (n-1)th operand to nth power
 
--  **-min** smallest of last two operands
+-  **-min**  *(multiple uses permitted)* smallest of last two operands
 
--  **-max** greatest of last two operands
+-  **-max**  *(multiple uses permitted)* greatest of last two operands
 
--  **-lt** less-than operator (true=1, false=0)
+-  **-lt**  *(multiple uses permitted)* less-than operator (true=1, false=0)
 
--  **-gt** greater-than operator (true=1, false=0)
+-  **-gt**  *(multiple uses permitted)* greater-than operator (true=1, false=0)
 
--  **-le** less-than-or-equal-to operator (true=1, false=0)
+-  **-le**  *(multiple uses permitted)* less-than-or-equal-to operator (true=1, false=0)
 
--  **-ge** greater-than-or-equal-to operator (true=1, false=0)
+-  **-ge**  *(multiple uses permitted)* greater-than-or-equal-to operator (true=1, false=0)
 
--  **-eq** equal-to operator (true=1, false=0)
+-  **-eq**  *(multiple uses permitted)* equal-to operator (true=1, false=0)
 
--  **-neq** not-equal-to operator (true=1, false=0)
+-  **-neq**  *(multiple uses permitted)* not-equal-to operator (true=1, false=0)
 
--  **-complex** create complex number using the last two operands as real,imaginary components
+-  **-complex**  *(multiple uses permitted)* create complex number using the last two operands as real,imaginary components
 
 Ternary operators
 ^^^^^^^^^^^^^^^^^
 
--  **-if** if first operand is true (non-zero), return second operand, otherwise return third operand
+-  **-if**  *(multiple uses permitted)* if first operand is true (non-zero), return second operand, otherwise return third operand
 
--  **-replace** Wherever first operand is equal to the second operand, replace with third operand
+-  **-replace**  *(multiple uses permitted)* Wherever first operand is equal to the second operand, replace with third operand
 
 Data type options
 ^^^^^^^^^^^^^^^^^

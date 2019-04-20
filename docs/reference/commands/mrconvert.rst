@@ -90,7 +90,7 @@ Options
 Options for manipulating fundamental image properties
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-coord axis selection** retain data from the input image only at the coordinates specified in the selection along the specified axis. The selection argument expects a number sequence, which can also include the 'end' keyword.
+-  **-coord axis selection**  *(multiple uses permitted)* retain data from the input image only at the coordinates specified in the selection along the specified axis. The selection argument expects a number sequence, which can also include the 'end' keyword.
 
 -  **-vox sizes** change the voxel dimensions reported in the output image header
 
@@ -108,11 +108,11 @@ Options for handling JSON (JavaScript Object Notation) files
 Options to modify generic header entries
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-clear_property key** remove the specified key from the image header altogether.
+-  **-clear_property key**  *(multiple uses permitted)* remove the specified key from the image header altogether.
 
--  **-set_property key value** set the value of the specified key in the image header.
+-  **-set_property key value**  *(multiple uses permitted)* set the value of the specified key in the image header.
 
--  **-append_property key value** append the given value to the specified key in the image header (this adds the value specified as a new line in the header value).
+-  **-append_property key value**  *(multiple uses permitted)* append the given value to the specified key in the image header (this adds the value specified as a new line in the header value).
 
 -  **-copy_properties source** clear all generic properties and replace with the properties from the image / file specified.
 

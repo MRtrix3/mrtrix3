@@ -23,7 +23,7 @@ Options
 
 -  **-uniform number** pad the input image by a uniform number of voxels on all sides (in 3D)
 
--  **-axis index lower upper** pad the input image along the provided axis (defined by index). Lower and upper define the number of voxels to add to the lower and upper bounds of the axis
+-  **-axis index lower upper**  *(multiple uses permitted)* pad the input image along the provided axis (defined by index). Lower and upper define the number of voxels to add to the lower and upper bounds of the axis
 
 Standard options
 ^^^^^^^^^^^^^^^^
