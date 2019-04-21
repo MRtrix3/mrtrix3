@@ -89,10 +89,8 @@ void run ()
 
   File::OFStream dump_stream;
   auto opt = get_options ("dump");
-  if (opt.size()) {
+  if (opt.size())
     dump_stream.open (opt[0][0]);
-    dump_stream << "# " << App::command_string << "\n";
-  }
 
   Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> AL (lmax+1);
   Math::Legendre::Plm_sph (AL, lmax, 0, value_type (1.0));

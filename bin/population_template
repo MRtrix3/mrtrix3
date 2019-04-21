@@ -86,8 +86,13 @@ try:
 except ImportError:
   app.console("numpy not found; using replacement functions")
   def loadtxt(fname, delimiter=" ", dtype=float):
+    data = [ ]
     with open(fname, "rb") as file_in:
-      return [[dtype(a) for a in l.decode(errors='ignore').rstrip().split(delimiter)] for l in file_in.readlines()]
+      for line in file_in.readlines():
+        line = line.decode(errors='ignore').strip()
+        if line and line[0] != '#':
+          data.append([dtype(a) for a in line.split(delimiter)])
+    return data
 
   def savetxt(fname, matrix, delimiter=" ", fmt="%.14e"):
     try:

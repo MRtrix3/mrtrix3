@@ -135,10 +135,8 @@ void run ()
 
     std::unique_ptr<File::OFStream> dump;
     auto opt = get_options ("dump");
-    if (opt.size()) {
+    if (opt.size())
       dump.reset (new File::OFStream (std::string(opt[0][0]), std::ios_base::out | std::ios_base::trunc));
-      (*dump) << "# " << App::command_string << "\n";
-    }
 
     ProgressBar progress ("Reading track file", header_count);
     Streamline<> tck;

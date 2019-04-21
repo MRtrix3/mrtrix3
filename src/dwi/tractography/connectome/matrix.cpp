@@ -197,7 +197,6 @@ void Matrix<T>::write_assignments (const std::string& path) const
   if (!track_assignments)
     throw Exception ("Cannot write streamline assignments to file as they were not stored during processing");
   File::OFStream stream (path);
-  stream << "# " << App::command_string << "\n";
   for (auto i = assignments_single.begin(); i != assignments_single.end(); ++i)
     stream << str(*i) << "\n";
   for (auto i = assignments_pairs.begin(); i != assignments_pairs.end(); ++i)
@@ -237,7 +236,6 @@ void Matrix<T>::save (const std::string& path,
   assert (mat2vec);
 
   File::OFStream out (path);
-  out << "# " << App::command_string << "\n";
   Eigen::IOFormat fmt (Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
   for (node_t row = 0; row != mat2vec->mat_size(); ++row) {
     if (!row && !keep_unassigned)
