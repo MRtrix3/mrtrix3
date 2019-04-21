@@ -98,7 +98,7 @@ def name_temporary(suffix): #pylint: disable=unused-variable
   full_path = dir_path
   suffix = suffix.lstrip('.')
   while os.path.exists(full_path):
-    random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
+    random_string = ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for x in range(6))
     full_path = os.path.join(dir_path, prefix + random_string + '.' + suffix)
   app.debug(full_path)
   return full_path

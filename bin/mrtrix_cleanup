@@ -1,0 +1,106 @@
+#!/usr/bin/env python
+
+def usage(cmdline): #pylint: disable=unused-variable
+  cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
+  cmdline.set_synopsis('Clean up residual temporary files & scratch directories from MRtrix3 commands')
+  cmdline.add_description('This script will search the file system for any temporary files or directories that have been left behind by failed or terminated MRtrix3 commands, and attempt to delete them.')
+  cmdline.add_argument('path', help='Path from which to commence filesystem search')
+  cmdline.add_argument('-test', action='store_true', help='Run script in test mode: will list identified files / directories, but not attempt to delete them')
+  cmdline.add_argument('-fail', metavar='file', nargs=1, help='Write list of items that could not be deleted to a text file')
+  cmdline.flag_mutually_exclusive_options([ 'test', 'fail' ])
+
+def execute(): #pylint: disable=unused-variable
+  import math, re, shutil
+  
+  file_regex = re.compile('^mrtrix-tmp-[a-zA-Z0-9]{6}\..*$')
+  dir_regex = re.compile('^\w+-tmp-[a-zA-Z0-9]{6}$')
+  
+  files_to_delete = [ ]
+  dirs_to_delete = [ ]
+  root_dir = os.path.abspath(app.ARGS.path)
+  print_search_dir = ('' if os.path.abspath(os.getcwd()) == root_dir else ' from ' + root_dir)
+  def print_msg():
+    return 'Searching' + print_search_dir + ' (found ' + str(len(files_to_delete)) + ' files, ' + str(len(dirs_to_delete)) + ' directories)'
+  progress = app.ProgressBar(print_msg)
+  for dirname, subdirlist, filelist in os.walk(root_dir):
+    files_to_delete.extend([ os.path.join(dirname, filename) for filename in filter(file_regex.search, filelist) ])
+    temp = filter(dir_regex.search, subdirlist)
+    dirs_to_delete.extend([os.path.join(dirname, subdirname) for subdirname in temp])
+    subdirlist[:] = [ subdirname for subdirname in set(subdirlist)^set(temp) ]
+    progress.increment()
+  progress.done()
+
+  if app.ARGS.test:
+    if files_to_delete:
+      app.console('Files identified (' + str(len(files_to_delete)) + '):')
+      for filepath in files_to_delete:
+        app.console('  ' + filepath)
+    else:
+      app.console('No files' + ('' if dirs_to_delete else ' or directories') + ' found')
+    if dirs_to_delete:
+      app.console('Directories identified (' + str(len(dirs_to_delete)) + '):')
+      for dirpath in dirs_to_delete:
+        app.console('  ' + dirpath)
+    elif files_to_delete:
+      app.console('No directories identified')
+  elif files_to_delete or dirs_to_delete:
+    progress = app.ProgressBar('Deleting temporaries (' + str(len(files_to_delete)) + ' files, ' + str(len(dirs_to_delete)) + ' directories)', len(files_to_delete) + len(dirs_to_delete))
+    except_list = [ ]
+    size_deleted = 0
+    for filepath in files_to_delete:
+      filesize = 0
+      try:
+        filesize = os.path.getsize(filepath)
+        os.remove(filepath)
+        size_deleted += filesize
+      except OSError:
+        except_list.append(filepath)
+      progress.increment()
+    for dirpath in dirs_to_delete:
+      dirsize = 0
+      try:
+        for dirname, subdirlist, filelist in os.walk(dirpath):
+          dirsize += sum(os.path.getsize(filename) for filename in filelist)
+      except OSError:
+        pass
+      try:
+        shutil.rmtree(dirpath)
+        size_deleted += dirsize
+      except OSError:
+        except_list.append(dirpath)
+      progress.increment()
+    progress.done()
+    POSTFIXES = [ 'B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB' ]
+    postfix_index = int(math.floor(math.log(size_deleted, 1024))) if size_deleted else 0
+    if postfix_index:
+      size_deleted = round(size_deleted / math.pow(1024, postfix_index), 2)
+    def print_freed():
+      return ' (' + str(size_deleted) + POSTFIXES[postfix_index] + ' freed)' if size_deleted else ''
+    if except_list:
+      app.console(str(len(files_to_delete) + len(dirs_to_delete) - len(except_list)) + ' of ' + str(len(files_to_delete) + len(dirs_to_delete)) + ' items erased' + print_freed())
+      if app.ARGS.fail:
+        with open(app.ARGS.fail, 'w') as f:
+          for item in except_list:
+            f.write(item + '\n')
+        app.console('List of items not successfully erased written to file "' + app.ARGS.fail + '"')
+      else:
+        app.console('Items that could not be erased:')
+        for item in except_list:
+          app.console('  ' + item)
+    else:
+      app.console('All items deleted successfully' + print_freed())
+  else:
+    app.console('No files or directories found')
+  
+  
+
+# Make the corresponding MRtrix3 Python libraries available
+import inspect, os, sys
+LIB_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
+if not os.path.isdir(LIB_FOLDER):
+  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
+  sys.exit(1)
+sys.path.insert(0, LIB_FOLDER)
+# Execute the script
+from mrtrix3 import app
+app.execute()
