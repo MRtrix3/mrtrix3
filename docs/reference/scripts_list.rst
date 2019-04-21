@@ -20,6 +20,7 @@ List of MRtrix3 scripts
     scripts/dwishellmath
     scripts/foreach
     scripts/labelsgmfix
+    scripts/mrtrix_cleanup
     scripts/population_template
     scripts/responsemean
 
@@ -36,5 +37,6 @@ List of MRtrix3 scripts
     :ref:`dwishellmath`, "Apply an mrmath operation to each b-value shell in a DWI series"
     :ref:`foreach`, "Perform some arbitrary processing step for each of a set of inputs"
     :ref:`labelsgmfix`, "In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST"
+    :ref:`mrtrix_cleanup`, "Clean up residual temporary files & scratch directories from MRtrix3 commands"
     :ref:`population_template`, "Generates an unbiased group-average template from a series of images"
     :ref:`responsemean`, "Calculate the mean response function from a set of text files"
