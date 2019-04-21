@@ -92,7 +92,7 @@ namespace MR
         if (!csv_path.empty()) {
           File::OFStream csv_out (csv_path, std::ios_base::out | std::ios_base::trunc);
           csv_out << "# " << App::command_string << "\n";
-          csv_out << "Iteration,Removed this iteration,Total removed,Remaining,Cost,TD,Mu,Recalculation,\n";
+          csv_out << "#Iteration,Removed this iteration,Total removed,Remaining,Cost,TD,Mu,Recalculation,\n";
           csv_out << "0,0,0," << str (tracks_remaining) << "," << str (init_cf) << "," << str (TD_sum) << "," << str (mu()) << ",Start,\n";
         }
 
@@ -338,7 +338,6 @@ namespace MR
       void SIFTer::output_selection (const std::string& path) const
       {
         File::OFStream out (path, std::ios_base::out | std::ios_base::trunc);
-        out << "# " << App::command_string << "\n";
         for (track_t i = 0; i != contributions.size(); ++i) {
           if (contributions[i])
             out << "1\n";

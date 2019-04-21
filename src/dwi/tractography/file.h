@@ -285,7 +285,6 @@ namespace MR
             weights_name = path;
             App::check_overwrite (weights_name);
             File::OFStream out (weights_name, std::ios::out | std::ios::binary | std::ios::trunc);
-            out << "# " << App::command_string << "\n";
           }
 
         protected:

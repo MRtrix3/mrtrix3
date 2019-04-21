@@ -131,7 +131,7 @@ namespace MR
 
   //! write the matrix \a M to file
   template <class MatrixType>
-    void save_matrix (const MatrixType& M, const std::string& filename, const bool write_cmdstring = true)
+    void save_matrix (const MatrixType& M, const std::string& filename, const bool write_cmdstring = false)
     {
       DEBUG ("saving " + str(M.rows()) + "x" + str(M.cols()) + " matrix to file \"" + filename + "\"...");
       File::OFStream out (filename);
@@ -240,7 +240,7 @@ namespace MR
   }
 
   //! write the transform \a M to file
-  inline void save_transform (const transform_type& M, const std::string& filename, const bool write_cmdstring = true)
+  inline void save_transform (const transform_type& M, const std::string& filename, const bool write_cmdstring = false)
   {
     DEBUG ("saving transform to file \"" + filename + "\"...");
     File::OFStream out (filename);
@@ -253,7 +253,7 @@ namespace MR
 
   //! write the vector \a V to file
   template <class VectorType>
-    void save_vector (const VectorType& V, const std::string& filename, const bool write_cmdstring = true)
+    void save_vector (const VectorType& V, const std::string& filename, const bool write_cmdstring = false)
     {
       DEBUG ("saving vector of size " + str(V.size()) + " to file \"" + filename + "\"...");
       File::OFStream out (filename);

@@ -208,7 +208,6 @@ void run ()
   // write-out:
 
   File::OFStream out (argument[argument.size()-1]);
-  out << "# " << App::command_string << "\n";
   for (auto& d : merged)
     out << MR::printf ("%#10f %#10f %#10f %5d %3d\n",
         float (d.d[0]), float (d.d[1]), float (d.d[2]),
