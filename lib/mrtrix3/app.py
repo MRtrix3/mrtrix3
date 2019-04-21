@@ -455,27 +455,33 @@ class ProgressBar(object): #pylint: disable=unused-variable
            '  . ',
            ' .  ' ]
 
+  INTERVAL = 0.1
+
   def __init__(self, msg, target=0):
+    import time
     from mrtrix3 import ANSI, run
     global EXEC_NAME, VERBOSITY
+    if not (isinstance(msg, str) or callable(msg)):
+      raise TypeError('app.ProgressBar must be constructed using either a string or a function')
     self.counter = 0
     self.isatty = sys.stderr.isatty()
     self.iscomplete = False
     self.message = msg
     self.multiplier = 100.0/target if target else 0
     self.newline = '\n' if VERBOSITY > 1 else '' # If any more than default verbosity, may still get details printed in between progress updates
+    self.next_time = time.time() + ProgressBar.INTERVAL
     self.old_value = 0
     self.orig_verbosity = VERBOSITY
     self.value = 0
     VERBOSITY = run.shared.verbosity = VERBOSITY - 1 if VERBOSITY else 0
     if self.isatty:
-      sys.stderr.write(EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[0]) + ']' + ANSI.clear + ' ' + ANSI.console + self.message + '... ' + ANSI.clear + ANSI.lineclear + self.newline)
+      sys.stderr.write(EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[0]) + ']' + ANSI.clear + ' ' + ANSI.console + self._get_message() + '... ' + ANSI.clear + ANSI.lineclear + self.newline)
     else:
-      sys.stderr.write(EXEC_NAME + ': ' + self.message + '... [' + self.newline)
+      sys.stderr.write(EXEC_NAME + ': ' + self._get_message() + '... [' + self.newline)
     sys.stderr.flush()
 
   def increment(self, msg=''):
-    import math
+    import math, time
     assert not self.iscomplete
     self.counter += 1
     force_update = False
@@ -484,6 +490,8 @@ class ProgressBar(object): #pylint: disable=unused-variable
       force_update = True
     if self.multiplier:
       new_value = int(round(self.counter * self.multiplier))
+    elif self.isatty:
+      new_value = self.counter
     else:
       new_value = int(round(math.log(self.counter, 2))) + 1
     if new_value != self.value:
@@ -491,7 +499,10 @@ class ProgressBar(object): #pylint: disable=unused-variable
       self.value = new_value
       force_update = True
     if force_update:
-      self._update()
+      current_time = time.time()
+      if current_time >= self.next_time:
+        self.next_time = current_time + ProgressBar.INTERVAL
+        self._update()
 
   def done(self):
     from mrtrix3 import ANSI, run
@@ -500,10 +511,10 @@ class ProgressBar(object): #pylint: disable=unused-variable
     if self.multiplier:
       self.value = 100
     if self.isatty:
-      sys.stderr.write('\r' + EXEC_NAME + ': ' + ANSI.execute + '[' + ('100%' if self.multiplier else 'done') + ']' + ANSI.clear + ' ' + ANSI.console + self.message + ANSI.clear + ANSI.lineclear + '\n')
+      sys.stderr.write('\r' + EXEC_NAME + ': ' + ANSI.execute + '[' + ('100%' if self.multiplier else 'done') + ']' + ANSI.clear + ' ' + ANSI.console + self._get_message() + ANSI.clear + ANSI.lineclear + '\n')
     else:
       if self.newline:
-        sys.stderr.write(EXEC_NAME + ': ' + self.message + ' [' + ('=' * int(self.value/2)) + ']\n')
+        sys.stderr.write(EXEC_NAME + ': ' + self._get_message() + ' [' + ('=' * int(self.value/2)) + ']\n')
       else:
         sys.stderr.write('=' * (int(self.value/2) - int(self.old_value/2)) + ']\n')
     sys.stderr.flush()
@@ -514,13 +525,16 @@ class ProgressBar(object): #pylint: disable=unused-variable
     global EXEC_NAME
     assert not self.iscomplete
     if self.isatty:
-      sys.stderr.write('\r' + EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[self.counter%6]) + ']' + ANSI.clear + ' ' + ANSI.console + self.message + '... ' + ANSI.clear + ANSI.lineclear + self.newline)
+      sys.stderr.write('\r' + EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[self.counter%6]) + ']' + ANSI.clear + ' ' + ANSI.console + self._get_message() + '... ' + ANSI.clear + ANSI.lineclear + self.newline)
     else:
       if self.newline:
-        sys.stderr.write(EXEC_NAME + ': ' + self.message + '... [' + ('=' * int(self.value/2)) + self.newline)
+        sys.stderr.write(EXEC_NAME + ': ' + self._get_message() + '... [' + ('=' * int(self.value/2)) + self.newline)
       else:
         sys.stderr.write('=' * (int(self.value/2) - int(self.old_value/2)))
     sys.stderr.flush()
+
+  def _get_message(self):
+    return self.message() if callable(self.message) else self.message
 
 
 
