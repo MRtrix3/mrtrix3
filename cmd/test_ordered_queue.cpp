@@ -14,12 +14,51 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <malloc.h>
+
 #include "command.h"
+#include "timer.h"
 #include "ordered_thread_queue.h"
 
 
 using namespace MR;
 using namespace App;
+
+
+#define START(msg) { Timer timer; CONSOLE(std::string("testing ") + msg + " queue..."); memory_usage = peak_memory_usage = num_items = 0
+#define END CONSOLE("done in " + str(timer.elapsed(), 4) + " seconds"); \
+  if (sample_size_received != sample_size) FAIL("sample size mismatch"); \
+  if (out_of_order) WARN ("order mismatch"); } \
+  CONSOLE ("peak memory usage = " + str(peak_memory_usage/1024) + " kb (leaked: " + str(memory_usage/1024 ) + " kb)");\
+  CONSOLE ("allocated a total of " + str(num_items) + " items"); \
+  std::cerr << "\n"
+
+
+
+
+// to track memory usage:
+
+size_t memory_usage = 0;
+size_t peak_memory_usage = 0;
+size_t num_items;
+std::mutex malloc_mutex;
+
+void * operator new(decltype(sizeof(0)) n)
+{
+  std::lock_guard<std::mutex> lock (malloc_mutex);
+  void * p = malloc (n);
+  memory_usage += malloc_usable_size (p);
+  peak_memory_usage = std::max (memory_usage, peak_memory_usage);
+  return p;
+}
+void operator delete(void * p)
+{
+  std::lock_guard<std::mutex> lock (malloc_mutex);
+  memory_usage -= malloc_usable_size(p);
+  free (p);
+}
+
+
 
 
 void usage ()
@@ -30,20 +69,27 @@ void usage ()
 }
 
 
-using Item = size_t;
+
+struct Item {
+  Item() { num_items++; }
+  size_t value;
+};
+
+const size_t sample_size = 1e6;
+size_t sample_size_received, out_of_order;
 
 
 struct SourceFunctor { NOMEMALIGN
   SourceFunctor () : count (0), value (0) { }
   ~SourceFunctor () { std::cerr << "source sent " << count << " items\n"; }
   bool operator() (Item& item) {
-    if (++value > 1e4) return false;
+    if (++value > sample_size) return false;
     ++count;
-    item = value;
+    item.value = value;
     return true;
   };
   size_t count;
-  Item value;
+  size_t value;
 };
 
 struct PipeFunctor { NOMEMALIGN
@@ -51,21 +97,19 @@ struct PipeFunctor { NOMEMALIGN
     out = in;
     return true;
   }
-  double previous;
 };
 
 struct SinkFunctor { NOMEMALIGN
-  SinkFunctor () : value (0), failure (0), count (0) { }
-  ~SinkFunctor () { std::cerr << "received " << count << " items with " << failure << " items out of order\n"; }
+  SinkFunctor () : value (0) { sample_size_received = 0; out_of_order = 0; }
+  ~SinkFunctor () { std::cerr << "received " << sample_size_received << " items with " << out_of_order << " items out of order\n"; }
   bool operator() (const Item& item) {
-    ++count;
-    if (item <= value)
-      ++failure;
-    value = item;
+    ++sample_size_received;
+    if (item.value <= value)
+      ++out_of_order;
+    value = item.value;
     return true;
   }
-  Item value;
-  size_t failure, count;
+  size_t value;
 };
 
 
@@ -73,81 +117,81 @@ void run ()
 {
   using namespace Thread;
 
-  CONSOLE ("starting regular 2-stage queue...");
+  START ("regular 2-stage");
   run_queue (
       SourceFunctor(),
       Item(),
       SinkFunctor());
-  CONSOLE ("done...");
+  END;
 
-  CONSOLE ("starting batched 2-stage queue...");
-  run_queue (
-      SourceFunctor(),
-      batch (Item()),
-      SinkFunctor());
-  CONSOLE ("done...");
-
-
-  CONSOLE ("starting regular 3-stage queue...");
-  run_queue (
-      SourceFunctor(),
-      Item(),
-      multi (PipeFunctor()),
-      Item(),
-      SinkFunctor());
-  CONSOLE ("done...");
-
-  CONSOLE ("starting batched-unbatched 3-stage queue...");
+  START ("batched 2-stage");
   run_queue (
       SourceFunctor(),
       batch (Item()),
-      multi (PipeFunctor()),
-      Item(),
       SinkFunctor());
-  CONSOLE ("done...");
-
-  CONSOLE ("starting unbatched-batched 3-stage queue...");
-  run_queue (
-      SourceFunctor(),
-      Item(),
-      multi (PipeFunctor()),
-      batch (Item()),
-      SinkFunctor());
-  CONSOLE ("done...");
-
-  CONSOLE ("starting batched-batched regular 3-stage queue...");
-  run_queue (
-      SourceFunctor(),
-      batch (Item()),
-      multi (PipeFunctor()),
-      batch (Item()),
-      SinkFunctor());
-  CONSOLE ("done...");
+  END;
 
 
-  CONSOLE ("starting regular 4-stage queue...");
+  START ("regular 3-stage");
   run_queue (
       SourceFunctor(),
       Item(),
       multi (PipeFunctor()),
       Item(),
-      multi (PipeFunctor()),
-      Item(),
       SinkFunctor());
-  CONSOLE ("done...");
+  END;
 
-  CONSOLE ("starting batched-unbatched-unbatched 4-stage queue...");
+  START ("batched-unbatched 3-stage");
   run_queue (
       SourceFunctor(),
       batch (Item()),
       multi (PipeFunctor()),
       Item(),
+      SinkFunctor());
+  END;
+
+  START ("unbatched-batched 3-stage");
+  run_queue (
+      SourceFunctor(),
+      Item(),
+      multi (PipeFunctor()),
+      batch (Item()),
+      SinkFunctor());
+  END;
+
+  START ("batched-batched regular 3-stage");
+  run_queue (
+      SourceFunctor(),
+      batch (Item()),
+      multi (PipeFunctor()),
+      batch (Item()),
+      SinkFunctor());
+  END;
+
+
+  START ("regular 4-stage");
+  run_queue (
+      SourceFunctor(),
+      Item(),
+      multi (PipeFunctor()),
+      Item(),
       multi (PipeFunctor()),
       Item(),
       SinkFunctor());
-  CONSOLE ("done...");
+  END;
 
-  CONSOLE ("starting unbatched-batched-unbatched 4-stage queue...");
+  START ("batched-unbatched-unbatched 4-stage");
+  run_queue (
+      SourceFunctor(),
+      batch (Item()),
+      multi (PipeFunctor()),
+      Item(),
+      multi (PipeFunctor()),
+      Item(),
+      SinkFunctor());
+  END;
+
+  START ("unbatched-batched-unbatched 4-stage");
   run_queue (
       SourceFunctor(),
       Item(),
@@ -156,9 +200,9 @@ void run ()
       multi (PipeFunctor()),
       Item(),
       SinkFunctor());
-  CONSOLE ("done...");
+  END;
 
-  CONSOLE ("starting unbatched-unbatched-batched regular 4-stage queue...");
+  START ("unbatched-unbatched-batched regular 4-stage");
   run_queue (
       SourceFunctor(),
       Item(),
@@ -167,7 +211,49 @@ void run ()
       multi (PipeFunctor()),
       batch (Item()),
       SinkFunctor());
-  CONSOLE ("done...");
+  END;
 
+
+
+  START ("ordered unbatched 3-stage");
+  run_ordered_queue (
+      SourceFunctor(),
+      Item(),
+      multi (PipeFunctor()),
+      Item(),
+      SinkFunctor());
+  END;
+
+  START ("ordered batched-batched 3-stage");
+  run_ordered_queue (
+      SourceFunctor(),
+      batch (Item()),
+      multi (PipeFunctor()),
+      batch (Item()),
+      SinkFunctor());
+  END;
+
+  START ("unbatched 4-stage");
+  run_ordered_queue (
+      SourceFunctor(),
+      Item(),
+      multi (PipeFunctor()),
+      Item(),
+      multi (PipeFunctor()),
+      Item(),
+      SinkFunctor());
+  END;
+
+
+  START ("ordered batched-batched-batched 4-stage");
+  run_ordered_queue (
+      SourceFunctor(),
+      batch (Item()),
+      multi (PipeFunctor()),
+      batch (Item()),
+      multi (PipeFunctor()),
+      batch (Item()),
+      SinkFunctor());
+  END;
 
 }
