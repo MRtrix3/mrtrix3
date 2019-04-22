@@ -62,7 +62,8 @@ namespace MR
             Base (in),
             interp_type (2), // Cubic
             transformation (Adapter::NoTransform),
-            oversampling (Adapter::AutoOverSample) { }
+            oversampling (Adapter::AutoOverSample),
+            out_of_bounds_value (nullptr) { }
 
 
         void set_voxel_size (default_type size)
@@ -147,22 +148,28 @@ namespace MR
           transform_ = trafo;
         }
 
+        void set_out_of_bounds_value (default_type value)
+        {
+          *out_of_bounds_value = value;
+        }
+
         template <class InputImageType, class OutputImageType>
           void operator() (InputImageType& input, OutputImageType& output)
           {
+            const typename InputImageType::value_type oob = out_of_bounds_value ? *out_of_bounds_value : Interp::Base<InputImageType>::default_out_of_bounds_value();
             switch (interp_type) {
             case 0:
               // Prevent use of oversampling when using nearest-neighbour interpolation
-              reslice <Interp::Nearest> (input, output, transformation, oversampling, out_of_bounds_value);
+              reslice <Interp::Nearest> (input, output, transformation, oversampling, oob);
               break;
             case 1:
-              reslice <Interp::Linear> (input, output, transformation, oversampling, out_of_bounds_value);
+              reslice <Interp::Linear> (input, output, transformation, oversampling, oob);
               break;
             case 2:
-              reslice <Interp::Cubic> (input, output, transformation, oversampling, out_of_bounds_value);
+              reslice <Interp::Cubic> (input, output, transformation, oversampling, oob);
               break;
             case 3:
-              reslice <Interp::Sinc> (input, output, transformation, oversampling, out_of_bounds_value);
+              reslice <Interp::Sinc> (input, output, transformation, oversampling, oob);
               break;
             default:
               assert (0);
@@ -173,8 +180,8 @@ namespace MR
       protected:
         int interp_type;
         transform_type transformation;
-        float out_of_bounds_value;
         vector<int> oversampling;
+        default_type* out_of_bounds_value;
     };
     //! @}
   }
