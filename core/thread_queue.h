@@ -484,6 +484,14 @@ namespace MR
                  FORCE_INLINE bool read () {
                    return Q.pop (p);
                  }
+                 FORCE_INLINE T* stash () throw () {
+                   T* item = p;
+                   p = nullptr;
+                   return item;
+                 }
+                 FORCE_INLINE void recycle (T* item) const throw () {
+                   Q.recycle (item);
+                 }
                  FORCE_INLINE T& operator*() const throw ()   {
                    return *p;
                  }
@@ -601,6 +609,12 @@ namespace MR
            return true;
          }
 
+         FORCE_INLINE void recycle (T*& item) {
+           std::unique_lock<std::mutex> lock (mutex);
+           if (item)
+             item_stack.push (item);
+         }
+
          FORCE_INLINE T** inc (T** p) const {
            ++p;
            if (p >= buffer + capacity) p = buffer;
@@ -660,24 +674,19 @@ namespace MR
          using write_item = typename writer::Item;
        };
 
-       template <class Item>
-         inline auto make_queue (const Item& item, const std::string& name, size_t capacity)
-         -> typename Type<Item>::queue&&
-         { return std::move (typename Type<Item>::queue (name, capacity)); }
-
 
 
        template <class Item>
-         struct Reader { NOMEMALIGN
-           Reader (typename Type<Item>::reader& item) : in (item.placeholder()) { }
+         struct FetchItem { NOMEMALIGN
+           FetchItem (typename Type<Item>::reader& item) : in (item.placeholder()) { }
            bool read () { return in.read(); }
            Item& value () { return (*in); }
            typename Type<Item>::read_item in;
          };
 
        template <class Item>
-         struct Reader<__Batch<Item>> { NOMEMALIGN
-           Reader (typename Type<__Batch<Item>>::reader& in) : in (in.placeholder()), n (0) { }
+         struct FetchItem<__Batch<Item>> { NOMEMALIGN
+           FetchItem (typename Type<__Batch<Item>>::reader& in) : in (in.placeholder()), n (0) { }
            bool read () {
              if (!in)
                return in.read();
@@ -699,8 +708,8 @@ namespace MR
 
 
        template <class Item>
-         struct Writer { NOMEMALIGN
-           Writer (size_t, typename Type<Item>::writer& item) : out (item.placeholder()) { }
+         struct StoreItem { NOMEMALIGN
+           StoreItem (size_t, typename Type<Item>::writer& item) : out (item.placeholder()) { }
            bool write () { return out.write(); }
            Item& value () { return (*out); }
            bool flush () { return true; }
@@ -708,8 +717,8 @@ namespace MR
          };
 
        template <class Item>
-         struct Writer<__Batch<Item>> { NOMEMALIGN
-           Writer (size_t batch_size, typename Type<__Batch<Item>>::writer& item) :
+         struct StoreItem<__Batch<Item>> { NOMEMALIGN
+           StoreItem (size_t batch_size, typename Type<__Batch<Item>>::writer& item) :
              out (item.placeholder()), batch_size (batch_size), n(0) { out->resize (batch_size); }
            bool write () {
              ++n;
@@ -733,105 +742,99 @@ namespace MR
 
        template <class Item, class Functor>
          struct __Source { MEMALIGN(__Source<Item,Functor>)
-           __Source (typename Type<Item>::queue& queue, size_t batch_size, Functor& functor) :
+           using item_t = typename Type<Item>::item;
+           using queue_t = typename Type<Item>::queue;
+           using writer_t = typename Type<Item>::writer;
+           using functor_t = typename __job<Functor>::member_type;
+
+           writer_t writer;
+           functor_t func;
+           size_t batch_size;
+
+           __Source (queue_t& queue, Functor& functor, const Item& item) :
              writer (queue),
              func (__job<Functor>::functor (functor)),
-             batch_size (batch_size) { }
+             batch_size (__batch_size<Item> (item)) { }
 
            void execute () {
-             size_t count = 0;
-             auto out = Writer<Item> (batch_size, writer);
+             auto out = StoreItem<Item> (batch_size, writer);
              do {
                if (!func (out.value()))
                  break;
-               ++count;
              } while (out.write());
              out.flush();
            }
+         };
 
-           typename Type<Item>::writer writer;
-           typename __job<Functor>::member_type func;
+
+
+
+
+
+
+       template <class Item1, class Functor, class Item2>
+         struct __Pipe { MEMALIGN(__Pipe<Item1,Functor,Item2>)
+           using item1_t = typename Type<Item1>::item;
+           using item2_t = typename Type<Item2>::item;
+           using queue1_t = typename Type<Item1>::queue;
+           using queue2_t = typename Type<Item2>::queue;
+           using reader_t = typename Type<Item1>::reader;
+           using writer_t = typename Type<Item2>::writer;
+           using functor_t = typename __job<Functor>::member_type;
+
+           reader_t reader;
+           writer_t writer;
+           functor_t func;
            const size_t batch_size;
-         };
 
+           __Pipe (queue1_t& queue_in, Functor& functor, queue2_t& queue_out, const Item2& item2) :
+             reader (queue_in),
+             writer (queue_out),
+             func (__job<Functor>::functor (functor)),
+             batch_size (__batch_size<Item2> (item2)) { }
 
-       template <class Item, class Functor>
-         inline __Source<Item, Functor> make_source (
-             typename Type<Item>::queue& queue,
-             const Item& item,
-             Functor& functor)
-         { return { queue, __batch_size<Item>(item), functor }; }
-
-
-
-
-
-
-       template <class Item1, class Functor, class Item2>
-         class __Pipe { MEMALIGN(__Pipe<Item1,Functor,Item2>)
-           public:
-             __Pipe (typename Type<Item1>::queue& queue_in, size_t,
-                 Functor& functor, typename Type<Item2>::queue& queue_out, size_t batch_size2) :
-               reader (queue_in), writer (queue_out), func (__job<Functor>::functor (functor)), batch_size2 (batch_size2) { }
-
-             void execute () {
-               auto in = Reader<Item1> (reader);
-               auto out = Writer<Item2> (batch_size2, writer);
-               while (in.read()) {
-                 if (!func (in.value(), out.value()))
+           void execute () {
+             auto in = FetchItem<Item1> (reader);
+             auto out = StoreItem<Item2> (batch_size, writer);
+             while (in.read()) {
+               if (func (in.value(), out.value())) {
+                 if (!out.write())
                    break;
-                 out.write();
                }
-               out.flush();
              }
+             out.flush();
+           }
 
-           private:
-             typename Type<Item1>::reader reader;
-             typename Type<Item2>::writer writer;
-             typename __job<Functor>::member_type func;
-             const size_t batch_size2;
          };
 
-
-       template <class Item1, class Functor, class Item2>
-         inline __Pipe<Item1, Functor, Item2> make_pipe (
-             typename Type<Item1>::queue& queue1,
-             const Item1& item1,
-             Functor& functor,
-             typename Type<Item2>::queue& queue2,
-             const Item2& item2)
-         { return { queue1, __batch_size<Item1>(item1), functor,  queue2, __batch_size<Item2>(item2) }; }
 
 
 
 
 
        template <class Item, class Functor>
-         class __Sink { MEMALIGN(__Sink<Item,Functor>)
-           public:
-             __Sink (typename Type<Item>::queue& queue, size_t, Functor& functor) :
-               reader (queue), func (__job<Functor>::functor (functor)) { }
+         struct __Sink { MEMALIGN(__Sink<Item,Functor>)
+           using item_t = typename Type<Item>::item;
+           using queue_t = typename Type<Item>::queue;
+           using reader_t = typename Type<Item>::reader;
+           using functor_t = typename __job<Functor>::member_type;
 
-             void execute () {
-               auto in = Reader<Item> (reader);
-               while (in.read()) {
-                 if (!func (in.value()))
-                   return;
-               }
+           reader_t reader;
+           functor_t func;
+
+           __Sink (queue_t& queue, Functor& functor) :
+             reader (queue),
+             func (__job<Functor>::functor (functor)) { }
+
+           void execute () {
+             auto in = FetchItem<Item> (reader);
+             while (in.read()) {
+               if (!func (in.value()))
+                 return;
              }
-
-           private:
-             typename Type<Item>::reader reader;
-             typename __job<Functor>::member_type func;
+           }
          };
 
-
-       template <class Item, class Functor>
-         inline __Sink<Item, Functor> make_sink (
-             typename Type<Item>::queue& queue,
-             const Item& item,
-             Functor& functor)
-         { return { queue, __batch_size<Item>(item), functor }; }
 
 
 
@@ -1046,7 +1049,7 @@ namespace MR
        template <class Source, class Item, class Sink>
        inline void run_queue (
            Source&& source,
-           const Item& item_type,
+           const Item& item,
            Sink&& sink,
            size_t capacity = MRTRIX_QUEUE_DEFAULT_CAPACITY)
        {
@@ -1059,8 +1062,8 @@ namespace MR
          }
 
          typename Type<Item>::queue queue ("source->sink", capacity);
-         auto source_functor = make_source (queue, item_type, source);
-         auto sink_functor = make_sink (queue, item_type, sink);
+         __Source<Item,Source> source_functor (queue, source, item);
+         __Sink<Item,Sink> sink_functor (queue, sink);
 
          auto t1 = run (__job<Source>::get (source, source_functor), "source");
          auto t2 = run (__job<Sink>::get (sink, sink_functor), "sink");
@@ -1141,9 +1144,9 @@ namespace MR
            typename Type<Item1>::queue queue1 ("source->pipe", capacity);
            typename Type<Item2>::queue queue2 ("pipe->sink", capacity);
 
-           auto source_functor = make_source (queue1, item1, source);
-           auto pipe_functor = make_pipe (queue1, item1, pipe, queue2, item2);
-           auto sink_functor = make_sink (queue2, item2, sink);
+           __Source<Item1,Source> source_functor (queue1, source, item1);
+           __Pipe<Item1,Pipe,Item2> pipe_functor (queue1, pipe, queue2, item2);
+           __Sink<Item2,Sink> sink_functor (queue2, sink);
 
            auto t1 = run (__job<Source>::get (source, source_functor), "source");
            auto t2 = run (__job<Pipe>::get (pipe, pipe_functor), "pipe");
@@ -1190,10 +1193,10 @@ namespace MR
            typename Type<Item2>::queue queue2 ("pipe->pipe", capacity);
            typename Type<Item3>::queue queue3 ("pipe->sink", capacity);
 
-           auto source_functor = make_source (queue1, item1, source);
-           auto pipe1_functor = make_pipe (queue1, item1, pipe1, queue2, item2);
-           auto pipe2_functor = make_pipe (queue2, item2, pipe2, queue3, item3);
-           auto sink_functor = make_sink (queue3, item3, sink);
+           __Source<Item1,Source> source_functor (queue1, source, item1);
+           __Pipe<Item1,Pipe1,Item2> pipe1_functor (queue1, pipe1, queue2, item2);
+           __Pipe<Item2,Pipe2,Item3> pipe2_functor (queue2, pipe2, queue3, item3);
+           __Sink<Item3,Sink> sink_functor (queue3, sink);
 
            auto t1 = run (__job<Source>::get (source, source_functor), "source");
            auto t2 = run (__job<Pipe1>::get (pipe1, pipe1_functor), "pipe1");
