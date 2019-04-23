@@ -1,0 +1,43 @@
+#!/usr/bin/env python
+
+# this function sets up the command-line interface for the command
+def usage(cmdline):
+  cmdline.set_author('The MRtrix3 Developers')
+  cmdline.set_synopsis('Calculate the geometric mean along the 4th image axis.')
+  cmdline.add_description('The output of this command is a 3D image that contains '
+                          'the voxel-wise geometric mean of the 4-D input image. '
+                          'Note that the input data is assumed to be > 0.')
+  # command arguments and options
+  cmdline.add_argument('input', help='The input image')
+  cmdline.add_argument('output', help='The output image')
+  # optional citation and non-default copyright statement
+  cmdline.add_citation('Tournier, J.-D. et al. MRtrix3: A fast, flexible and open source framework '
+                       'for medical image processing and visualisation. NeuroImage, 2019, n.d.')
+  cmdline.set_copyright('Copyright (c) 2019 The MRtrix3 manuscript authors.')
+
+
+# this function contains the primary operation of the command
+def execute():
+  from mrtrix3 import image, MRtrixError, path, run
+  # import data in temporary directory
+  app.make_scratch_dir()
+  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('in.mif') + ' -strides 0,0,0,1')
+  app.goto_scratch_dir()
+  # primary command processing
+  run.command('mrcalc in.mif -log log.mif')
+  run.command('mrmath -axis 3 log.mif mean meanlog.mif')
+  run.command('mrcalc meanlog.mif -exp out.mif')
+  # copy to output
+  run.command('mrconvert out.mif ' + path.from_user(app.ARGS.output) + app.mrconvert_output_option(path.from_user(app.ARGS.input)))
+
+
+# Make the corresponding MRtrix3 Python libraries available
+import inspect, os, sys
+LIB_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
+if not os.path.isdir(LIB_FOLDER):
+  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
+  sys.exit(1)
+sys.path.insert(0, LIB_FOLDER)
+# Execute the script
+from mrtrix3 import app
+app.execute()
