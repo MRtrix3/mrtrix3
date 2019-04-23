@@ -27,6 +27,13 @@ Each algorithm available has its own help page, including necessary references; 
 Options
 -------
 
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-grad** Provide the diffusion gradient table in MRtrix format
+
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
 General dwi2response options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -37,10 +44,6 @@ General dwi2response options
 - **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
 
 - **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
-
-- **-grad** Pass the diffusion gradient table in MRtrix format
-
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -127,6 +130,13 @@ Options for the 'dhollander' algorithm
 
 - **-csf** Final number of CSF voxels to select, as a percentage of refined CSF. (default: 10 per cent)
 
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-grad** Provide the diffusion gradient table in MRtrix format
+
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
 General dwi2response options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -137,10 +147,6 @@ General dwi2response options
 - **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
 
 - **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
-
-- **-grad** Pass the diffusion gradient table in MRtrix format
-
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -228,6 +234,13 @@ Options specific to the 'fa' algorithm
 
 - **-threshold** Apply a hard FA threshold, rather than selecting the top voxels
 
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-grad** Provide the diffusion gradient table in MRtrix format
+
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
 General dwi2response options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -238,10 +251,6 @@ General dwi2response options
 - **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
 
 - **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
-
-- **-grad** Pass the diffusion gradient table in MRtrix format
-
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -324,6 +333,13 @@ Options specific to the 'manual' algorithm
 
 - **-dirs** Manually provide the fibre direction in each voxel (a tensor fit will be used otherwise)
 
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-grad** Provide the diffusion gradient table in MRtrix format
+
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
 General dwi2response options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -334,10 +350,6 @@ General dwi2response options
 - **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
 
 - **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
-
-- **-grad** Pass the diffusion gradient table in MRtrix format
-
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -425,6 +437,13 @@ Options specific to the 'msmt_5tt' algorithm
 
 - **-sfwm_fa_threshold** Sets -wm_algo to fa and allows to specify a hard FA threshold for single-fibre WM voxels, which is passed to the -threshold option of the fa algorithm (warning: overrides -wm_algo option)
 
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-grad** Provide the diffusion gradient table in MRtrix format
+
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
 General dwi2response options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -435,10 +454,6 @@ General dwi2response options
 - **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
 
 - **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
-
-- **-grad** Pass the diffusion gradient table in MRtrix format
-
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -524,6 +539,13 @@ Options specific to the 'tax' algorithm
 
 - **-convergence** Percentile change in any RF coefficient required to continue iterating
 
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-grad** Provide the diffusion gradient table in MRtrix format
+
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
 General dwi2response options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -534,10 +556,6 @@ General dwi2response options
 - **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
 
 - **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
-
-- **-grad** Pass the diffusion gradient table in MRtrix format
-
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -625,6 +643,13 @@ Options specific to the 'tournier' algorithm
 
 - **-max_iters** Maximum number of iterations
 
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-grad** Provide the diffusion gradient table in MRtrix format
+
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
 General dwi2response options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -635,10 +660,6 @@ General dwi2response options
 - **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
 
 - **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
-
-- **-grad** Pass the diffusion gradient table in MRtrix format
-
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
