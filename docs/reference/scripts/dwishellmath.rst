@@ -34,12 +34,12 @@ Example usages
 Options
 -------
 
-Options for importing the gradient table
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide a gradient table in MRtrix format
+- **-grad** Provide the diffusion gradient table in MRtrix format
 
-- **-fslgrad bvecs bvals** Provide a gradient table in FSL bvecs/bvals format
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
