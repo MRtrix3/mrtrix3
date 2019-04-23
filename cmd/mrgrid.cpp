@@ -32,27 +32,43 @@ using namespace App;
 const char* interp_choices[] = { "nearest", "linear", "cubic", "sinc", NULL };
 const char* operation_choices[] = { "regrid", "crop", "pad", NULL };
 
+
 void usage ()
 {
   AUTHOR = "Max Pietsch (maximilian.pietsch@kcl.ac.uk) & David Raffelt (david.raffelt@florey.edu.au) & Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Modify the grid of an image wihtout interpolation (cropping or padding) or by regridding to a new image resolution or to a reference image grid.";
+  SYNOPSIS = "Modify the grid of an image without interpolation (cropping or padding) or by regridding to an image grid with modified orientation, location and or resolution. The image content remains in place in real world coordinates.";
 
   DESCRIPTION
-  + "regrid:"
-  + "Operations that change the voxel grid and require interpolation of the image such as changing the resolution or location and orientation of the voxel grid. "
-    "Note that the image content remains in place in real world coordinates. Only the resolution of the first 3 dimensions can be changed. "
-    "If the image is down-sampled, the appropriate smoothing is automatically applied using Gaussian smoothing unless nearest neighbour interpolation is selected or oversample is changed explicitly."
-  + "crop:"
-  + "Extent of cropping can be determined using either manual setting of axis dimensions, or a computed mask image or via a reference image. "
+  + "The 'regrid' operation performs changes of the voxel grid that require interpolation of the image such as changing the resolution or location and orientation of the voxel grid. "
+    "If the image is down-sampled, the appropriate smoothing is automatically applied using Gaussian smoothing unless nearest neighbour interpolation is selected or oversample is changed explicitly. The resolution can only be changed for spatial dimensions. "
+  + "The image extent after cropping, can be specified either manually for each axis dimensions, or via a mask or reference image. "
     "If using a mask, a gap of 1 voxel will be left at all edges of the image such that trilinear interpolation upon the resulting images is still valid. "
     "This is useful for axially-acquired brain images, where the image size can be reduced by a factor of 2 by removing the empty space on either side of the brain. "
-  + "pad:"
-  + "Pad an image to increase the FOV";
+  + "Analogously, 'pad' increases the FOV of an image. Pad and crop can be performed simultaneously by specifying signed specifier argument values to the -axis option."
+  + "This command encapsulates and extends the functionality of the superseded commands 'mrpad', 'mrcrop' and 'mrresize'. Note the difference in -axis convention used for 'mrcrop' and 'mrpad' (see -axis option description).";
+
+  EXAMPLES
+  + Example ("Crop and pad the first axis",
+             "mrgrid in.mif crop -axis 0 10,-5 out.mif",
+             "This removes 10 voxels on the lower and pads with 5 on the upper bound, which is equivalent to "
+             "padding with the negated specifier (mrgrid in.mif pad -axis 0 -10,5 out.mif)")
+
+  + Example ("Right-pad the image to the number of voxels of a reference image",
+             "mrgrid in.mif pad -as ref.mif -nd -axis 3 0,0 out.mif -fill nan",
+             "This pads the image on the upper bound of all axes except for the volume dimension. "
+             "The headers of in.mif and ref.mif are ignored and the output image uses NAN values to fill in voxels outside the original range of in.mif.")
+
+  + Example ("Regrid and interpolate to match the voxel grid of a reference image",
+             "mrgrid in.mif regrid -template ref.mif -scale 1,1,0.5 out.mif -fill nan",
+             "The -template instructs to regrid in.mif to match the voxel grid of ref.mif (voxel size, grid orientation and voxel centres) "
+             "The -scale option overwrites the voxel scaling factor yielding voxel sizes in the third dimension that are "
+             "twice as coarse as those of the template image.");
+
 
   ARGUMENTS
   + Argument ("input", "input image to be regridded.").type_image_in ()
-  + Argument ("operation", "the oparation to be performed, one of: " + join(operation_choices, ", ") + ".").type_choice (operation_choices)
+  + Argument ("operation", "the operation to be performed, one of: " + join(operation_choices, ", ") + ".").type_choice (operation_choices)
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
@@ -66,7 +82,7 @@ void usage ()
     + Argument ("dims").type_sequence_int()
 
     + Option   ("voxel", "define the new voxel size for the output image. "
-                "This can be specified either as a single value to be used for all dimensions, "
+                "This can be specified either as a single value to be used for all spatial dimensions, "
                 "or as a comma-separated list of the size for each voxel dimension.")
     + Argument ("size").type_sequence_float()
 
@@ -74,8 +90,6 @@ void usage ()
                 "This can be specified either as a single value to be used for all dimensions, "
                 "or as a comma-separated list of scale factors for each dimension.")
     + Argument ("factor").type_sequence_float()
-
-    // + Option   ("orthogonalise", "project the image-to-scanner transformation to a rigid transformation (removes shear component).") // TODO
 
     + Option ("interp", "set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: cubic).")
     + Argument ("method").type_choice (interp_choices)
@@ -89,7 +103,7 @@ void usage ()
     + Argument ("factor").type_sequence_int()
 
   + OptionGroup ("Pad and crop options (no image interpolation is performed, header transformation is adjusted)")
-    + Option   ("as", "right-pad or right-crop the input image to match the specified referece image grid. "
+    + Option   ("as", "right-pad or right-crop the input image to match the specified reference image grid. "
                 "This operation ignores differences in image transformation between input and reference image.")
     + Argument ("reference image").type_image_in ()
 
@@ -101,9 +115,11 @@ void usage ()
                 "checking the extent for all dimensions.")
     + Argument ("image", "the mask image. ").type_image_in()
 
-    + Option   ("axis", "pad or crop the input image along the provided axis (defined by index). The specification argument "
-                "sets the number of voxels added or removed on the lower or upper end of the axis (-axis index lower,upper) "
-                "or the selected voxel range (-axis index start:stop). For both spec modes, values are relative to the input image (overriding all other extent-specifying options) and negative values are allowed.").allow_multiple()
+    + Option   ("axis", "pad or crop the input image along the provided axis (defined by index). The specifier argument "
+                "defines the number of voxels added or removed on the lower or upper end of the axis (-axis index lower,upper) "
+                "or acts as a voxel selection range (-axis index start:stop). In both modes, values are relative to the input image (overriding all other extent-specifying options) and negative values trigger the inverse operation. "
+                "Note that the deprecated commands 'mrcrop' and 'mrpad' used range-based and delta-based -axis indices, respectively."
+                ).allow_multiple()
     + Argument ("index").type_integer (0)
     + Argument ("spec")
 
@@ -113,7 +129,7 @@ void usage ()
     + Option ("fill", "Use number as the out of bounds value (Default: 0.0)")
     + Argument ("number").type_float ()
 
-    + Option ("nan", "Convenience option for -fill NAN.")
+    + Option ("nan", "Fill with not-a-number as out of bounds value. Convenience option for -fill NAN.")
 
   + Stride::Options
   + DataType::options();
@@ -316,13 +332,13 @@ void run () {
       const ssize_t axis  = opt[i][0];
       if (axis  >= input_header.ndim())
         throw Exception ("-axis " + str(axis) + " larger than image dimensions (" + str(input_header.ndim()) + ")");
-      vector<int> delta; // 0: not changed, > 0: pad, < 0: crop
       std::string spec = str(opt[i][1]);
       std::string::size_type start = 0, end;
       end = spec.find_first_of(":", start);
       if (end == std::string::npos) { // spec = delta_lower,delta_upper
+        vector<int> delta; // 0: not changed, > 0: pad, < 0: crop
         try { delta = parse_ints (opt[i][1]); }
-        catch (Exception& e) { Exception ("-axis " + str(axis) + ": can't parse delta specifier \"" + spec + "\""); }
+        catch (Exception& E) { Exception (E, "-axis " + str(axis) + ": can't parse delta specifier \"" + spec + "\""); }
         if (delta.size() != 2)
           throw Exception ("-axis " + str(axis) + ": can't parse delta specifier \"" + spec + "\"");
         bounds[axis][0] = do_crop ? delta[0] : -delta[0];
@@ -332,7 +348,7 @@ void run () {
         try { bounds[axis][0] = std::stoi(token); }
         catch (Exception& E) { throw Exception (E, "-axis " + str(axis) + ": can't parse integer sequence specifier \"" + spec + "\""); }
         token = strip (spec.substr (end+1));
-        if (lowercase (token) == "end")
+        if (lowercase (token) == "end" || token.size() == 0)
           bounds[axis][1] = input_header.size(axis) - 1;
         else {
           try { bounds[axis][1]  = std::stoi(token); }
@@ -357,8 +373,8 @@ void run () {
     for (size_t axis = 0; axis < nd; axis++) {
       if (bounds[axis][0] != 0 || input_header.size (axis) != size[axis]) {
         changed_axes++;
-        INFO("changing axis " + str(axis) + " extent from 0:" + str(input_header.size (axis) - 1) + 
-             " (n="+str(input_header.size (axis))+") to " + str(bounds[axis][0]) + ":" + str(bounds[axis][1]) + 
+        INFO("changing axis " + str(axis) + " extent from 0:" + str(input_header.size (axis) - 1) +
+             " (n="+str(input_header.size (axis))+") to " + str(bounds[axis][0]) + ":" + str(bounds[axis][1]) +
              " (n=" + str(size[axis]) + ")");
       }
     }

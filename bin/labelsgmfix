@@ -75,7 +75,7 @@ def execute(): #pylint: disable=unused-variable
   # Get the parcellation and T1 images into the scratch directory, with conversion of the T1 into the correct format for FSL
   run.command('mrconvert ' + path.from_user(app.ARGS.parc) + ' ' + path.to_scratch('parc.mif'))
   if upsample_for_first:
-    run.command('mrresize ' + path.from_user(app.ARGS.t1) + ' - -voxel 1.0 -interp sinc | mrcalc - 0.0 -max - | mrconvert - ' + path.to_scratch('T1.nii') + ' -strides -1,+2,+3')
+    run.command('mrgrid ' + path.from_user(app.ARGS.t1) + ' regrid - -voxel 1.0 -interp sinc | mrcalc - 0.0 -max - | mrconvert - ' + path.to_scratch('T1.nii') + ' -strides -1,+2,+3')
   else:
     run.command('mrconvert ' + path.from_user(app.ARGS.t1) + ' ' + path.to_scratch('T1.nii') + ' -strides -1,+2,+3')
 
