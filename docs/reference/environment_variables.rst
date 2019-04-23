@@ -12,14 +12,6 @@ List of MRtrix3 environment variables
      ``/etc`` folder is problematic, or to allow different versions of
      the software to have different configurations, etc.
 
-.. envvar:: MRTRIX_CONFIGFILE
-
-     This can be used to set the location of the system-wide
-     configuration file. By default, this is ``/etc/mrtrix.conf``.
-     This can be useful for deployments where access to the system's
-     ``/etc`` folder is problematic, or to allow different versions of
-     the software to have different configurations, etc.
-
 .. envvar:: MRTRIX_NOSIGNALS
 
      If this variable is set to any value, disable MRtrix3's custom
@@ -34,11 +26,6 @@ List of MRtrix3 environment variables
      This overrides the automatically determined number, or the
      :option:`NumberOfThreads` setting in the configuration file, but
      will be overridden by the ENVVAR ``-nthreads`` command-line option.
-
-.. envvar:: MRTRIX_QUIET
-
-     Do not display information messages or progress status. This has
-     the same effect as the ``-quiet`` command-line option.
 
 .. envvar:: MRTRIX_QUIET
 
