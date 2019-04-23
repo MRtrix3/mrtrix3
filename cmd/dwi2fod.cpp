@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "header.h"
@@ -63,6 +64,22 @@ void usage ()
 
   DESCRIPTION
     + Math::SH::encoding_description;
+
+  EXAMPLES
+    + Example ("Perform single-shell single-tissue CSD",
+               "dwi2fod csd dwi.mif response_wm.txt wmfod.mif",
+               "This algorithm is designed for single-shell data and only uses a single "
+               "b-value. The response function text file provided should only contain a "
+               "a single row, corresponding to the b-value used for CSD.")
+
+    + Example ("Perform multi-shell multi-tissue CSD",
+               "dwi2fod msmt_csd dwi.mif response_wm.txt wmfod.mif response_gm.txt gm.mif response_csf.txt csf.mif",
+               "This example is the most common use case of multi-tissue CSD, estimating "
+               "a white matter FOD, and grey matter and CSF compartments. This algorithm "
+               "requires at least three unique b-values to estimate three tissue compartments. "
+               "Each response function text file should have a number of rows equal to the "
+               "number of b-values used. If only two unique b-values are available, it's also "
+               "possible to estimate only two tissue compartments, e.g., white matter and CSF.");
 
   REFERENCES
     + "* If using csd algorithm:\n"

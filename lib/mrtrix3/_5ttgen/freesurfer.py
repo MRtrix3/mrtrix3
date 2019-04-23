@@ -1,5 +1,7 @@
-def initialise(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('freesurfer', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Generate the 5TT image based on a FreeSurfer parcellation image', parents=[base_parser])
+def usage(base_parser, subparsers): #pylint: disable=unused-variable
+  parser = subparsers.add_parser('freesurfer', parents=[base_parser])
+  parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
+  parser.set_synopsis('Generate the 5TT image based on a FreeSurfer parcellation image')
   parser.add_argument('input',  help='The input FreeSurfer parcellation image (any image containing \'aseg\' in its name)')
   parser.add_argument('output', help='The output 5TT image')
   options = parser.add_argument_group('Options specific to the \'freesurfer\' algorithm')
@@ -7,46 +9,47 @@ def initialise(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 
-def checkOutputPaths(): #pylint: disable=unused-variable
-  pass
+def check_output_paths(): #pylint: disable=unused-variable
+  from mrtrix3 import app
+  app.check_output_path(app.ARGS.output)
 
 
 
-def getInputs(): #pylint: disable=unused-variable
+def get_inputs(): #pylint: disable=unused-variable
   import shutil
   from mrtrix3 import app, path, run
-  run.command('mrconvert ' + path.fromUser(app.args.input, True) + ' ' + path.toTemp('input.mif', True))
-  if app.args.lut:
-    run.function(shutil.copyfile, path.fromUser(app.args.lut, False), path.toTemp('LUT.txt', False))
+  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('input.mif'))
+  if app.ARGS.lut:
+    run.function(shutil.copyfile, path.from_user(app.ARGS.lut, False), path.to_scratch('LUT.txt', False))
 
 
 
 def execute(): #pylint: disable=unused-variable
-  import os.path #pylint: disable=unused-variable
-  from mrtrix3 import app, path, run
+  import os.path
+  from mrtrix3 import app, MRtrixError, path, run
 
   lut_input_path = 'LUT.txt'
   if not os.path.exists('LUT.txt'):
     freesurfer_home = os.environ.get('FREESURFER_HOME', '')
     if not freesurfer_home:
-      app.error('Environment variable FREESURFER_HOME is not set; please run appropriate FreeSurfer configuration script, set this variable manually, or provide script with path to file FreeSurferColorLUT.txt using -lut option')
+      raise MRtrixError('Environment variable FREESURFER_HOME is not set; please run appropriate FreeSurfer configuration script, set this variable manually, or provide script with path to file FreeSurferColorLUT.txt using -lut option')
     lut_input_path = os.path.join(freesurfer_home, 'FreeSurferColorLUT.txt')
     if not os.path.isfile(lut_input_path):
-      app.error('Could not find FreeSurfer lookup table file (expected location: ' + lut_input_path + '), and none provided using -lut')
+      raise MRtrixError('Could not find FreeSurfer lookup table file (expected location: ' + lut_input_path + '), and none provided using -lut')
 
-  if app.args.sgm_amyg_hipp:
+  if app.ARGS.sgm_amyg_hipp:
     lut_output_file_name = 'FreeSurfer2ACT_sgm_amyg_hipp.txt'
   else:
     lut_output_file_name = 'FreeSurfer2ACT.txt'
-  lut_output_path = os.path.join(path.sharedDataPath(), path.scriptSubDirName(), lut_output_file_name)
+  lut_output_path = os.path.join(path.shared_data_path(), path.script_subdir_name(), lut_output_file_name)
   if not os.path.isfile(lut_output_path):
-    app.error('Could not find lookup table file for converting FreeSurfer parcellation output to tissues (expected location: ' + lut_output_path + ')')
+    raise MRtrixError('Could not find lookup table file for converting FreeSurfer parcellation output to tissues (expected location: ' + lut_output_path + ')')
 
   # Initial conversion from FreeSurfer parcellation to five principal tissue types
   run.command('labelconvert input.mif ' + lut_input_path + ' ' + lut_output_path + ' indices.mif')
 
   # Use mrcrop to reduce file size
-  if app.args.nocrop:
+  if app.ARGS.nocrop:
     image = 'indices.mif'
   else:
     image = 'indices_cropped.mif'
@@ -61,4 +64,4 @@ def execute(): #pylint: disable=unused-variable
 
   run.command('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | mrconvert - result.mif -datatype float32')
 
-  run.command('mrconvert result.mif ' + path.fromUser(app.args.output, True) + app.mrconvertOutputOption(path.fromUser(app.args.input, True)))
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output) + app.mrconvert_output_option(path.from_user(app.ARGS.input)))

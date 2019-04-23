@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __math_constrained_least_squares_h__
 #define __math_constrained_least_squares_h__
@@ -69,13 +70,19 @@ namespace MR
              *  problem.
              *  - \a max_iterations: the maximum number of iterations to run.
              *  If zero (default), this number is set to 10x the size of \e x.
+             *  - \a problem_in_standard_form: if true, the matrix provided as
+             *  \a problem_matrix is assumed to contain \e H<sup>T</sup>H (only
+             *  its lower triangular part is taken into account), while the
+             *  vectors provided to the solver will be assumed to contain
+             *  \e H<sup>T</sup>b.
              */
             Problem (const matrix_type& problem_matrix,
                 const matrix_type& constraint_matrix,
                 value_type solution_min_norm_regularisation = 0.0,
                 value_type constraint_min_norm_regularisation = 0.0,
                 size_t max_iterations = 0,
-                value_type tolerance = 0.0) :
+                value_type tolerance = 0.0,
+                bool problem_in_standard_form = false) :
               H (problem_matrix),
               chol_HtH (H.cols(), H.cols()),
               lambda_min_norm (constraint_min_norm_regularisation),
@@ -94,9 +101,14 @@ namespace MR
                 if (tolerance < 0.0)
                   throw Exception ("FIXME: tolerance is negative (ICLS)");
 
-                // form quadratic problem matrix H'*H:
-                chol_HtH.setZero();
-                chol_HtH.template triangularView<Eigen::Lower>() = H.transpose() * H;
+                if (problem_in_standard_form) {
+                  chol_HtH = H;
+                }
+                else {
+                  // form quadratic problem matrix H'*H:
+                  chol_HtH.setZero();
+                  chol_HtH.template triangularView<Eigen::Lower>() = H.transpose() * H;
+                }
                 // add minimum norm constraint:
                 chol_HtH.diagonal().array() += solution_min_norm_regularisation * chol_HtH.diagonal().maxCoeff();
                 // get Cholesky decomposition:
@@ -104,7 +116,10 @@ namespace MR
 
                 // form (transpose of) matrix projecting b onto preconditioned
                 // quadratic problem chol_HtH\H:
-                b2d.noalias() = chol_HtH.template triangularView<Eigen::Lower>().transpose().template solve<Eigen::OnTheRight> (H);
+                if (problem_in_standard_form)
+                  b2d.noalias() = chol_HtH.template triangularView<Eigen::Lower>().transpose().template solve<Eigen::OnTheRight> (Eigen::MatrixXd::Identity (H.rows(),H.cols()));
+                else
+                  b2d.noalias() = chol_HtH.template triangularView<Eigen::Lower>().transpose().template solve<Eigen::OnTheRight> (H);
 
                 // project constraint onto preconditioned quadratic domain,
                 // and normalise each row to help preconditioning (the norm of

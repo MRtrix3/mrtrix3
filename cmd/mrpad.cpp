@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "image.h"
@@ -80,9 +81,10 @@ void run ()
   auto output_transform = input_header.transform();
   for (size_t axis = 0; axis < 3; ++axis) {
     output_header.size (axis) = output_header.size(axis) + padding[axis][0] + padding[axis][1];
-    output_transform (axis, 3) +=	(output_transform (axis, 0) * (bounds[0][0] - padding[0][0]) * input_header.spacing (0))
-                                + (output_transform (axis, 1) * (bounds[1][0] - padding[1][0]) * input_header.spacing (1))
-                                + (output_transform (axis, 2) * (bounds[2][0] - padding[2][0]) * input_header.spacing (2));
+    output_transform (axis, 3) +=
+      (output_transform (axis, 0) * (bounds[0][0] - padding[0][0]) * input_header.spacing (0)) +
+      (output_transform (axis, 1) * (bounds[1][0] - padding[1][0]) * input_header.spacing (1)) +
+      (output_transform (axis, 2) * (bounds[2][0] - padding[2][0]) * input_header.spacing (2));
   }
   output_header.transform() = output_transform;
   auto output = Image<float>::create (argument[1], output_header);

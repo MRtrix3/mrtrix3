@@ -21,9 +21,36 @@ Usage
 Description
 -----------
 
-This command can be used to perform various manipulations on track data. This includes: merging data from multiple track files into one; extracting only a finite number of tracks; selecting a subset of tracks based on various criteria, for instance regions of interest.
+This command can be used to perform various types of manipulations on track data. A range of such manipulations are demonstrated in the examples provided below.
 
 Note that if multi-threading is used in this command, the ordering of tracks in the output file is unlikely to match the order of the incoming data. If your application explicitly requires that the order of tracks not change, you should run this command with the option -nthreads 0.
+
+Example usages
+--------------
+
+-   *Concatenate data from multiple track files into one*::
+
+        $ tckedit *.tck all_tracks.tck
+
+    Here the wildcard operator is used to select all files in the current working directory that have the .tck filetype suffix; but input files can equivalently be specified one at a time explicitly.
+
+-   *Extract a reduced number of streamlines*::
+
+        $ tckedit in_many.tck out_few.tck -number 1k -skip 500
+
+    The number of streamlines requested would typically be less than the number of streamlines in the input track file(s); if it is instead greater, then the command will issue a warning upon completion. By default the streamlines for the output file are extracted from the start of the input file(s); in this example the command is instead instructed to skip the first 500 streamlines, and write to the output file streamlines 501-1500.
+
+-   *Extract streamlines based on selection criteria*::
+
+        $ tckedit in.tck out.tck -include ROI1.mif -include ROI2.mif -minlength 25
+
+    Multiple criteria can be added in a single invocation of tckedit, and a streamline must satisfy all criteria imposed in order to be written to the output file. Note that both -include and -exclude options can be specified multiple times to provide multiple waypoints / exclusion masks.
+
+-   *Select only those streamline vertices within a mask*::
+
+        $ tckedit in.tck cropped.tck -mask mask.mif
+
+    The -mask option is applied to each streamline vertex independently, rather than to each streamline, retaining only those streamline vertices within the mask. As such, use of this option may result in a greater number of output streamlines than input streamlines, as a single input streamline may have the vertices at either endpoint retained but some vertices at its midpoint removed, effectively cutting one long streamline into multiple shorter streamlines.
 
 Options
 -------
@@ -95,16 +122,19 @@ Standard options
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix3 is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
-For more details, see http://www.mrtrix.org/
+For more details, see http://www.mrtrix.org/.
 
 

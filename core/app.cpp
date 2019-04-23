@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -33,6 +34,7 @@
 #define HELP_PURPOSE_INDENT 0, 4
 #define HELP_ARG_INDENT 8, 20
 #define HELP_OPTION_INDENT 2, 20
+#define HELP_EXAMPLE_INDENT 7
 
 
 namespace MR
@@ -42,6 +44,7 @@ namespace MR
   {
 
     Description DESCRIPTION;
+    ExampleList EXAMPLES;
     ArgumentList ARGUMENTS;
     OptionList OPTIONS;
     Description REFERENCES;
@@ -60,17 +63,20 @@ namespace MR
 
     const char* AUTHOR = nullptr;
     const char* COPYRIGHT =
-       "Copyright (c) 2008-2018 the MRtrix3 contributors."
-       "\n\n"
+       "Copyright (c) 2008-2019 the MRtrix3 contributors.\n"
+       "\n"
        "This Source Code Form is subject to the terms of the Mozilla Public\n"
        "License, v. 2.0. If a copy of the MPL was not distributed with this\n"
-       "file, you can obtain one at http://mozilla.org/MPL/2.0/\n"
+       "file, You can obtain one at http://mozilla.org/MPL/2.0/.\n"
        "\n"
-       "MRtrix3 is distributed in the hope that it will be useful,\n"
-       "but WITHOUT ANY WARRANTY; without even the implied warranty\n"
-       "of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
+       "Covered Software is provided under this License on an \"as is\"\n"
+       "basis, without warranty of any kind, either expressed, implied, or\n"
+       "statutory, including, without limitation, warranties that the\n"
+       "Covered Software is free of defects, merchantable, fit for a\n"
+       "particular purpose or non-infringing.\n"
+       "See the Mozilla Public License v. 2.0 for more details.\n"
        "\n"
-       "For more details, see http://www.mrtrix.org/\n";
+       "For more details, see http://www.mrtrix.org/.\n";
     const char* SYNOPSIS = nullptr;
 
 
@@ -251,7 +257,7 @@ namespace MR
     {
       if (!format)
         return SYNOPSIS;
-      return bold("SYNOPSIS") + "\n" + paragraph ("", SYNOPSIS, HELP_PURPOSE_INDENT) + "\n";
+      return bold("SYNOPSIS") + "\n\n" + paragraph ("", SYNOPSIS, HELP_PURPOSE_INDENT) + "\n";
     }
 
 
@@ -275,24 +281,6 @@ namespace MR
           return s;
         }();
     }
-
-
-
-
-
-
-    std::string Description::syntax (int format) const
-    {
-      if (!size())
-        return std::string();
-      std::string s;
-      if (format)
-        s += bold ("DESCRIPTION") + "\n\n";
-      for (size_t i = 0; i < size(); ++i)
-        s += paragraph ("", (*this)[i], HELP_PURPOSE_INDENT) + "\n";
-      return s;
-    }
-
 
 
 
@@ -320,6 +308,60 @@ namespace MR
           s += " ]";
       }
       return s + "\n\n";
+    }
+
+
+
+
+
+
+    std::string Description::syntax (int format) const
+    {
+      if (!size())
+        return std::string();
+      std::string s;
+      if (format)
+        s += bold ("DESCRIPTION") + "\n\n";
+      for (size_t i = 0; i < size(); ++i)
+        s += paragraph ("", (*this)[i], HELP_PURPOSE_INDENT) + "\n";
+      return s;
+    }
+
+
+
+
+    Example::operator std::string () const
+    {
+      return title + ": $ " + code + "  " + description;
+    }
+
+
+
+
+    std::string Example::syntax (int format) const
+    {
+      std::string s = paragraph ("", format ? underline (title + ":") + "\n" : title + ": ", HELP_PURPOSE_INDENT);
+      s += std::string (HELP_EXAMPLE_INDENT, ' ') + "$ " + code + "\n";
+      if (description.size())
+        s += paragraph ("", description, HELP_PURPOSE_INDENT);
+      if (format)
+        s += "\n";
+      return s;
+    }
+
+
+
+
+    std::string ExampleList::syntax (int format) const
+    {
+      if (!size())
+        return std::string();
+      std::string s;
+      if (format)
+        s += bold ("EXAMPLE USAGES") + "\n\n";
+      for (size_t i = 0; i < size(); ++i)
+        s += (*this)[i].syntax (format);
+      return s;
     }
 
 
@@ -521,6 +563,7 @@ namespace MR
         + usage_syntax (format)
         + ARGUMENTS.syntax (format)
         + DESCRIPTION.syntax (format)
+        + EXAMPLES.syntax (format)
         + OPTIONS.syntax (format)
         + __standard_options.header (format)
         + __standard_options.contents (format)
@@ -595,6 +638,9 @@ namespace MR
       for (size_t i = 0; i < DESCRIPTION.size(); ++i)
         s += DESCRIPTION[i] + std::string("\n");
 
+      for (size_t i = 0; i < EXAMPLES.size(); ++i)
+        s += std::string (EXAMPLES[i]) + std::string("\n");
+
       for (size_t i = 0; i < ARGUMENTS.size(); ++i)
         s += ARGUMENTS[i].usage();
 
@@ -612,7 +658,6 @@ namespace MR
 
 
 
-
     std::string markdown_usage ()
     {
       /*
@@ -621,6 +666,7 @@ namespace MR
          + usage_syntax (format)
          + ARGUMENTS.syntax (format)
          + DESCRIPTION.syntax (format)
+         + EXAMPLES.syntax (format)
          + OPTIONS.syntax (format)
          + __standard_options.header (format)
          + __standard_options.contents (format)
@@ -664,6 +710,17 @@ namespace MR
         s += "\n## Description\n\n";
         for (size_t i = 0; i < DESCRIPTION.size(); ++i)
           s += indent_newlines (DESCRIPTION[i]) + "\n\n";
+      }
+
+      if (EXAMPLES.size()) {
+        s += "\n## Example usages\n\n";
+        for (size_t i = 0; i < EXAMPLES.size(); ++i) {
+          s += std::string ("__") + EXAMPLES[i].title + ":__\n";
+          s += std::string ("`$ ") + EXAMPLES[i].code + "`\n";
+          if (EXAMPLES[i].description.size())
+            s += EXAMPLES[i].description + "\n";
+          s += "\n";
+        }
       }
 
 
@@ -724,6 +781,7 @@ namespace MR
          + usage_syntax (format)
          + ARGUMENTS.syntax (format)
          + DESCRIPTION.syntax (format)
+         + EXAMPLES.syntax (format)
          + OPTIONS.syntax (format)
          + __standard_options.header (format)
          + __standard_options.contents (format)
@@ -781,6 +839,16 @@ namespace MR
         s += "Description\n-----------\n\n";
         for (size_t i = 0; i < DESCRIPTION.size(); ++i)
           s += indent_newlines (DESCRIPTION[i]) + "\n\n";
+      }
+
+      if (EXAMPLES.size()) {
+        s += "Example usages\n--------------\n\n";
+        for (size_t i = 0; i < EXAMPLES.size(); ++i) {
+          s += std::string ("-   *") + EXAMPLES[i].title + "*::\n\n";
+          s += std::string ("        $ ") + EXAMPLES[i].code + "\n\n";
+          if (EXAMPLES[i].description.size())
+            s += std::string ("    ") + EXAMPLES[i].description + "\n\n";
+        }
       }
 
 
