@@ -34,7 +34,6 @@ List of MRtrix3 commands
     commands/dwi2tensor
     commands/dwidenoise
     commands/dwiextract
-    commands/dwinormalise
     commands/fixel2sh
     commands/fixel2tsf
     commands/fixel2voxel
@@ -143,10 +142,9 @@ List of MRtrix3 commands
     :ref:`dwi2adc`, "Convert mean dwi (trace-weighted) images to mean ADC maps"
     :ref:`dwi2fod`, "Estimate fibre orientation distributions from diffusion data using spherical deconvolution"
     :ref:`dwi2mask`, "Generates a whole brain mask from a DWI image"
-    :ref:`dwi2tensor`, "Diffusion (kurtosis) tensor estimation using iteratively reweighted linear least squares estimator"
+    :ref:`dwi2tensor`, "Diffusion (kurtosis) tensor estimation"
     :ref:`dwidenoise`, "Denoise DWI data and estimate the noise level based on the optimal threshold for PCA"
     :ref:`dwiextract`, "Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset"
-    :ref:`dwinormalise`, "Intensity normalise the b=0 signal within a supplied white matter mask"
     :ref:`fixel2sh`, "Convert a fixel-based sparse-data image into an spherical harmonic image"
     :ref:`fixel2tsf`, "Map fixel values to a track scalar file based on an input tractogram"
     :ref:`fixel2voxel`, "Convert a fixel-based sparse-data image into some form of scalar image"
@@ -187,9 +185,9 @@ List of MRtrix3 commands
     :ref:`mrstats`, "Compute images statistics"
     :ref:`mrthreshold`, "Create bitwise image by thresholding image intensity"
     :ref:`mrtransform`, "Apply spatial transformations to an image"
-    :ref:`mrview`, "The MRtrix image viewer."
+    :ref:`mrview`, "The MRtrix image viewer"
     :ref:`mtnormalise`, "Multi-tissue informed log-domain intensity normalisation"
-    :ref:`peaks2amp`, "Convert peak directions image to amplitudes"
+    :ref:`peaks2amp`, "Extract amplitudes from a peak directions image"
     :ref:`sh2amp`, "Evaluate the amplitude of an image of spherical harmonic functions along specified directions"
     :ref:`sh2peaks`, "Extract the peaks of a spherical harmonic function at each voxel, by commencing a Newton search along a set of specified directions"
     :ref:`sh2power`, "Compute the total power of a spherical harmonics image"
@@ -227,6 +225,6 @@ List of MRtrix3 commands
     :ref:`voxel2mesh`, "Generate a surface mesh representation from a voxel image"
     :ref:`warp2metric`, "Compute fixel-wise or voxel-wise metrics from a 4D deformation field"
     :ref:`warpconvert`, "Convert between different representations of a non-linear warp"
-    :ref:`warpcorrect`, "Replaces voxels in a deformation field that point to 0,0,0 with nan,nan,nan"
+    :ref:`warpcorrect`, "Replaces voxels in a deformation field that point to a specific out of bounds location with nan,nan,nan"
     :ref:`warpinit`, "Create an initial warp image, representing an identity transformation"
     :ref:`warpinvert`, "Invert a non-linear warp field"

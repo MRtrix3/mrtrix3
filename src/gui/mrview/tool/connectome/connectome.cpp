@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "gui/mrview/tool/connectome/connectome.h"
 
@@ -370,10 +371,10 @@ namespace MR
           node_size_range_controls->setVisible (false);
           gridlayout->addWidget (node_size_range_controls, 6, 1, 1, 4);
 
-          label = new QLabel ("Transparency: ");
+          label = new QLabel ("Opacity: ");
           gridlayout->addWidget (label, 7, 0, 1, 2);
           node_alpha_combobox = new QComboBox (this);
-          node_alpha_combobox->setToolTip (tr ("Set how node transparency is determined"));
+          node_alpha_combobox->setToolTip (tr ("Set how node opacity is determined"));
           node_alpha_combobox->addItem ("Fixed");
           node_alpha_combobox->addItem ("Connectome");
           node_alpha_combobox->addItem ("LUT");
@@ -385,10 +386,10 @@ namespace MR
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
           node_alpha_matrix_operator_combobox = new QComboBox (this);
-          node_alpha_matrix_operator_combobox->setToolTip (tr ("If node transparency is determined from a matrix file, and multiple\n"
-                                                                "nodes are selected, this operator defines how the entries from\n"
-                                                                "the corresponding rows of the matrix are combined to produce an\n"
-                                                                "alpha value for each node."));
+          node_alpha_matrix_operator_combobox->setToolTip (tr ("If node opacity is determined from a matrix file, and multiple\n"
+                                                               "nodes are selected, this operator defines how the entries from\n"
+                                                               "the corresponding rows of the matrix are combined to produce an\n"
+                                                               "alpha value for each node."));
           node_alpha_matrix_operator_combobox->addItem ("Min");
           node_alpha_matrix_operator_combobox->addItem ("Mean");
           node_alpha_matrix_operator_combobox->addItem ("Sum");
@@ -475,7 +476,7 @@ namespace MR
           gridlayout->addWidget (edge_visibility_threshold_controls, 1, 1, 1, 4);
 
           edge_visibility_by_nodes_checkbox = new QCheckBox("Hide edges to invisible nodes");
-          edge_visibility_by_nodes_checkbox->setToolTip (tr ("Toggle whether or not an edge that connects to an invisible node (whether hidden through \"visibility\" or \"transparency\" features) should also be made invisible"));
+          edge_visibility_by_nodes_checkbox->setToolTip (tr ("Toggle whether or not an edge that connects to an invisible node (whether hidden through \"visibility\" or \"opacity\" features) should also be made invisible"));
           edge_visibility_by_nodes_checkbox->setTristate (false);
           edge_visibility_by_nodes_checkbox->setChecked (true);
           connect (edge_visibility_by_nodes_checkbox, SIGNAL (stateChanged(int)), this, SLOT (edge_visibility_parameter_slot()));
@@ -603,10 +604,10 @@ namespace MR
           edge_size_range_controls->setVisible (false);
           gridlayout->addWidget (edge_size_range_controls, 7, 1, 1, 4);
 
-          label = new QLabel ("Transparency: ");
+          label = new QLabel ("Opacity: ");
           gridlayout->addWidget (label, 8, 0, 1, 2);
           edge_alpha_combobox = new QComboBox (this);
-          edge_alpha_combobox->setToolTip (tr ("Set how edge transparency is determined"));
+          edge_alpha_combobox->setToolTip (tr ("Set how edge opacity is determined"));
           edge_alpha_combobox->addItem ("Fixed");
           edge_alpha_combobox->addItem ("Connectome");
           edge_alpha_combobox->addItem ("Matrix file");
@@ -1474,7 +1475,7 @@ namespace MR
               node_alpha_range_controls->setVisible (false);
               break;
             case 3:
-              if (!import_vector_file (node_values_from_file_alpha, "node transparency")) {
+              if (!import_vector_file (node_values_from_file_alpha, "node opacity")) {
                 switch (node_alpha) {
                   case node_alpha_t::FIXED:       node_alpha_combobox->setCurrentIndex (0); return;
                   case node_alpha_t::CONNECTOME:  node_alpha_combobox->setCurrentIndex (1); return;
@@ -1495,7 +1496,7 @@ namespace MR
               node_alpha_invert_checkbox->setChecked (false);
               break;
             case 4:
-              if (!import_matrix_file (node_values_from_file_alpha, "node transparency")) {
+              if (!import_matrix_file (node_values_from_file_alpha, "node opacity")) {
                 switch (node_alpha) {
                   case node_alpha_t::FIXED:       node_alpha_combobox->setCurrentIndex (0); return;
                   case node_alpha_t::CONNECTOME:  node_alpha_combobox->setCurrentIndex (1); return;
@@ -1929,7 +1930,7 @@ namespace MR
               }
               break;
             case 2:
-              if (!import_matrix_file (edge_values_from_file_alpha, "edge transparency")) {
+              if (!import_matrix_file (edge_values_from_file_alpha, "edge opacity")) {
                 switch (edge_alpha) {
                   case edge_alpha_t::FIXED:       edge_alpha_combobox->setCurrentIndex (0); return;
                   case edge_alpha_t::CONNECTOME:  edge_alpha_combobox->setCurrentIndex (1); return;
