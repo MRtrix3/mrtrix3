@@ -11,10 +11,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   common_options = cmdline.add_argument_group('Options common to all dwibiascorrect algorithms')
   common_options.add_argument('-mask', metavar='image', help='Manually provide a mask image for bias field estimation')
   common_options.add_argument('-bias', metavar='image', help='Output the estimated bias field')
-  grad_options = cmdline.add_argument_group('Options for providing the DWI gradient table')
-  grad_options.add_argument('-grad', help='Pass the diffusion gradient table in MRtrix format')
-  grad_options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
-  cmdline.flag_mutually_exclusive_options( [ 'grad', 'fslgrad' ] )
+  app.add_dwgrad_import_options()
 
   # Import the command-line settings for all algorithms found in the relevant directory
   algorithm.usage(cmdline)
@@ -33,11 +30,7 @@ def execute(): #pylint: disable=unused-variable
 
   app.make_scratch_dir()
 
-  grad_import_option = ''
-  if app.ARGS.grad:
-    grad_import_option = ' -grad ' + path.from_user(app.ARGS.grad)
-  elif app.ARGS.fslgrad:
-    grad_import_option = ' -fslgrad ' + path.from_user(app.ARGS.fslgrad[0]) + ' ' + path.from_user(app.ARGS.fslgrad[1])
+  grad_import_option = app.read_dwgrad_import_options()
   run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('in.mif') + grad_import_option)
   if app.ARGS.mask:
     run.command('mrconvert ' + path.from_user(app.ARGS.mask) + ' ' + path.to_scratch('mask.mif') + ' -datatype bit')
