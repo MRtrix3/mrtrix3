@@ -66,16 +66,15 @@ namespace MR
             oversampling (Adapter::AutoOverSample),
             out_of_bounds_value (nullptr) { }
 
+        ~Resize () { delete out_of_bounds_value; }
 
-        void set_voxel_size (default_type size)
-        {
+        void set_voxel_size (default_type size) {
           vector <default_type> voxel_size (3, size);
           set_voxel_size (voxel_size);
         }
 
 
-        void set_voxel_size (const vector<default_type>& voxel_size)
-        {
+        void set_voxel_size (const vector<default_type>& voxel_size) {
           if (voxel_size.size() != 3)
             throw Exception ("the voxel size must be defined using a value for all three dimensions.");
 
@@ -94,8 +93,7 @@ namespace MR
         }
 
 
-        void set_size (const vector<int>& image_res)
-        {
+        void set_size (const vector<int>& image_res) {
           if (image_res.size() != 3)
             throw Exception ("the image resolution must be defined for 3 spatial dimensions");
           vector<default_type> new_voxel_size (3);
@@ -108,14 +106,12 @@ namespace MR
         }
 
 
-        void set_scale_factor (default_type scale)
-        {
+        void set_scale_factor (default_type scale) {
           set_scale_factor (vector<default_type> (3, scale));
         }
 
 
-        void set_scale_factor (const vector<default_type> & scale)
-        {
+        void set_scale_factor (const vector<default_type> & scale) {
           if (scale.size() != 3)
             throw Exception ("a scale factor for each spatial dimension is required");
           vector<default_type> new_voxel_size (3);
@@ -149,15 +145,15 @@ namespace MR
           transform_ = trafo;
         }
 
-        void set_out_of_bounds_value (default_type value)
-        {
+        void set_out_of_bounds_value (default_type value) {
+          out_of_bounds_value = new default_type;
           *out_of_bounds_value = value;
         }
 
         template <class InputImageType, class OutputImageType>
-          void operator() (InputImageType& input, OutputImageType& output)
-          {
-            const typename InputImageType::value_type oob = out_of_bounds_value ? *out_of_bounds_value : Interp::Base<InputImageType>::default_out_of_bounds_value();
+          void operator() (InputImageType& input, OutputImageType& output) {
+            const typename InputImageType::value_type oob = out_of_bounds_value ?
+             *out_of_bounds_value : Interp::Base<InputImageType>::default_out_of_bounds_value();
             switch (interp_type) {
             case 0:
               // Prevent use of oversampling when using nearest-neighbour interpolation
@@ -182,7 +178,7 @@ namespace MR
         int interp_type;
         transform_type transformation;
         vector<int> oversampling;
-        default_type* out_of_bounds_value;
+        default_type *out_of_bounds_value;
     };
     //! @}
   }

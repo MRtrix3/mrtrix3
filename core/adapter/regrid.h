@@ -17,7 +17,6 @@
 #define __adapter_regrid_h__
 
 #include "image.h"
-#include "debug.h"
 #include "adapter/base.h"
 
 namespace MR
