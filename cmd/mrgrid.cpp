@@ -40,22 +40,22 @@ void usage ()
   SYNOPSIS = "Modify the grid of an image without interpolation (cropping or padding) or by regridding to an image grid with modified orientation, location and or resolution. The image content remains in place in real world coordinates.";
 
   DESCRIPTION
-  + "The 'regrid' operation performs changes of the voxel grid that require interpolation of the image such as changing the resolution or location and orientation of the voxel grid. "
+  + "- regrid: This operation performs changes of the voxel grid that require interpolation of the image such as changing the resolution or location and orientation of the voxel grid. "
     "If the image is down-sampled, the appropriate smoothing is automatically applied using Gaussian smoothing unless nearest neighbour interpolation is selected or oversample is changed explicitly. The resolution can only be changed for spatial dimensions. "
-  + "The image extent after cropping, can be specified either manually for each axis dimensions, or via a mask or reference image. "
-    "If using a mask, a gap of 1 voxel will be left at all edges of the image such that trilinear interpolation upon the resulting images is still valid. "
+  + "- crop: The image extent after cropping, can be specified either manually for each axis dimensions, or via a mask or reference image. "
+    "The image can be cropped to the extent of a mask. "
     "This is useful for axially-acquired brain images, where the image size can be reduced by a factor of 2 by removing the empty space on either side of the brain. "
-  + "Analogously, 'pad' increases the FOV of an image. Pad and crop can be performed simultaneously by specifying signed specifier argument values to the -axis option."
-  + "This command encapsulates and extends the functionality of the superseded commands 'mrpad', 'mrcrop' and 'mrresize'. Note the difference in -axis convention used for 'mrcrop' and 'mrpad' (see -axis option description).";
+  + "- pad: Analogously, to cropping, padding increases the FOV of an image without image interpolation. Pad and crop can be performed simultaneously by specifying signed specifier argument values to the -axis option."
+  + "This command encapsulates and extends the functionality of the superseded commands 'mrpad', 'mrcrop' and 'mrresize'. Note the difference in -axis convention used for 'mrcrop' and 'mrpad' (see -axis option description) and the 1 voxel difference when cropping to a mask image.";
 
   EXAMPLES
   + Example ("Crop and pad the first axis",
              "mrgrid in.mif crop -axis 0 10,-5 out.mif",
              "This removes 10 voxels on the lower and pads with 5 on the upper bound, which is equivalent to "
-             "padding with the negated specifier (mrgrid in.mif pad -axis 0 -10,5 out.mif)")
+             "padding with the negated specifier (mrgrid in.mif pad -axis 0 -10,5 out.mif).")
 
   + Example ("Right-pad the image to the number of voxels of a reference image",
-             "mrgrid in.mif pad -as ref.mif -nd -axis 3 0,0 out.mif -fill nan",
+             "mrgrid in.mif pad -as ref.mif -all_axes -axis 3 0,0 out.mif -fill nan",
              "This pads the image on the upper bound of all axes except for the volume dimension. "
              "The headers of in.mif and ref.mif are ignored and the output image uses NAN values to fill in voxels outside the original range of in.mif.")
 
@@ -103,7 +103,7 @@ void usage ()
     + Argument ("factor").type_sequence_int()
 
   + OptionGroup ("Pad and crop options (no image interpolation is performed, header transformation is adjusted)")
-    + Option   ("as", "right-pad or right-crop the input image to match the specified reference image grid. "
+    + Option   ("as", "pad or crop the input image on the upper bound to match the specified reference image grid. "
                 "This operation ignores differences in image transformation between input and reference image.")
     + Argument ("reference image").type_image_in ()
 
@@ -112,24 +112,23 @@ void usage ()
 
     + Option   ("mask",  "crop the input image according to the spatial extent of a mask image. "
                 "The mask must share a common voxel grid with the input image but differences in image transformations are " "ignored. Note that even though only 3 dimensions are cropped when using a mask, the bounds are computed by "
-                "checking the extent for all dimensions.")
+                "checking the extent for all dimensions. "
+                "Note that if a gap of 1 voxel should be left at all edges of the image, for instance for valid trilinear interpolation, the mask needs to be dilated prior to cropping (see mrfilter). Note that this differs from the deprecated mrcrop command that left a 1 voxel gap around the mask.")
     + Argument ("image", "the mask image. ").type_image_in()
 
     + Option   ("axis", "pad or crop the input image along the provided axis (defined by index). The specifier argument "
-                "defines the number of voxels added or removed on the lower or upper end of the axis (-axis index lower,upper) "
-                "or acts as a voxel selection range (-axis index start:stop). In both modes, values are relative to the input image (overriding all other extent-specifying options) and negative values trigger the inverse operation. "
+                "defines the number of voxels added or removed on the lower or upper end of the axis (-axis index delta_lower,delta_upper) "
+                "or acts as a voxel selection range (-axis index start:stop). In both modes, values are relative to the input image (overriding all other extent-specifying options). Negative delta specifier values trigger the inverse operation (pad instead of crop and vice versa) and negative range specifier trigger padding. "
                 "Note that the deprecated commands 'mrcrop' and 'mrpad' used range-based and delta-based -axis indices, respectively."
                 ).allow_multiple()
     + Argument ("index").type_integer (0)
     + Argument ("spec")
 
-    + Option   ("nd", "Crop or pad all, not just spatial axes.")
+    + Option   ("all_axes", "Crop or pad all, not just spatial axes.")
 
   + OptionGroup ("General options")
-    + Option ("fill", "Use number as the out of bounds value (Default: 0.0)")
+    + Option ("fill", "Use number as the out of bounds value. nan, inf and -inf are valid arguments. (Default: 0.0)")
     + Argument ("number").type_float ()
-
-    + Option ("nan", "Fill with not-a-number as out of bounds value. Convenience option for -fill NAN.")
 
   + Stride::Options
   + DataType::options();
@@ -143,16 +142,9 @@ void run () {
 
   // Out of bounds value
   default_type out_of_bounds_value = 0.0;
-  auto opt = get_options ("nan");
-  if (opt.size()) {
-    out_of_bounds_value = NAN;
-  }
-  opt = get_options ("fill");
-  if (opt.size()) {
-    if (out_of_bounds_value != out_of_bounds_value)
-      throw Exception ("use either -nan or -value");
+  auto opt = get_options ("fill");
+  if (opt.size())
     out_of_bounds_value = opt[0][0];
-  }
 
   if (op == 0) { // regrid
     INFO("operation: " + str(operation_choices[op]));
@@ -253,7 +245,7 @@ void run () {
 
     opt = get_options ("mask");
     if (opt.size()) {
-      if (!do_crop) throw Exception("padding and -mask options is not supported");
+      if (!do_crop) throw Exception("padding with -mask option is not supported");
       ++crop_pad_option_count;
       auto mask = Image<bool>::open (opt[0][0]);
       check_dimensions (input_header, mask, 0, 3);
@@ -285,14 +277,9 @@ void run () {
 
       ThreadedLoop (mask).run (BoundsCheck (bounds), mask);
 
-      for (size_t axis = 0; axis != 3; ++axis) {
+      for (size_t axis = 0; axis != 3; ++axis)
         if (bounds[axis][0] > bounds[axis][1])
           throw Exception ("mask image is empty; can't use to crop image");
-        if (bounds[axis][0])
-          --bounds[axis][0];
-        if (bounds[axis][1] < mask.size (axis) - 1)
-          ++bounds[axis][1];
-      }
     }
 
     opt = get_options ("as");
