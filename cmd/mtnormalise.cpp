@@ -38,6 +38,11 @@ void usage ()
 
   SYNOPSIS = "Multi-tissue informed log-domain intensity normalisation";
 
+  REFERENCES
+    + "Raffelt, D.; Dhollander, T.; Tournier, J.-D.; Tabbara, R.; Smith, R. E.; Pierre, E. & Connelly, A. " // Internal
+    "Bias Field Correction and Intensity Normalisation for Quantitative Analysis of Apparent Fibre Density. "
+    "In Proc. ISMRM, 2017, 26, 3541";
+
   DESCRIPTION
    + "This command inputs any number of tissue components (e.g. from multi-tissue CSD) "
      "and outputs corresponding normalised tissue components. Intensity normalisation is "
