@@ -2,23 +2,20 @@
 
 # this function sets up the command-line interface for the command
 def usage(cmdline):
-  cmdline.set_author('The MRtrix3 Developers')
-  cmdline.set_synopsis('Calculate the geometric mean along the 4th image axis.')
-  cmdline.add_description('The output of this command is a 3D image that contains '
-                          'the voxel-wise geometric mean of the 4-D input image. '
-                          'Note that the input data is assumed to be > 0.')
+  cmdline.set_author('W. Heath Robinson (h.robinson@implausible.com)')
+  cmdline.set_synopsis('Compute voxel-wise geometric mean across volumes')
   # command arguments and options
-  cmdline.add_argument('input', help='The input image')
-  cmdline.add_argument('output', help='The output image')
+  cmdline.add_argument('input', help='an input image')
+  cmdline.add_argument('output', help='the output image')
+  cmdline.add_argument('-invalid', help='value if any intensity is non-positive (default = NaN)')
   # optional citation and non-default copyright statement
-  cmdline.add_citation('Tournier, J.-D. et al. MRtrix3: A fast, flexible and open source framework '
-                       'for medical image processing and visualisation. NeuroImage, 2019, n.d.')
-  cmdline.set_copyright('Copyright (c) 2019 The MRtrix3 manuscript authors.')
+  cmdline.add_citation('Robinson, W.H. A treatise on geometric averaging. Contrived Science Weekly, 2019.')
+  cmdline.set_copyright('Copyright (c) 2019 Heath Robinson Labs.')
 
 
 # this function contains the primary operation of the command
 def execute():
-  from mrtrix3 import image, MRtrixError, path, run
+  from mrtrix3 import path, run
   # import data in temporary directory
   app.make_scratch_dir()
   run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('in.mif') + ' -strides 0,0,0,1')
@@ -26,7 +23,10 @@ def execute():
   # primary command processing
   run.command('mrcalc in.mif -log log.mif')
   run.command('mrmath -axis 3 log.mif mean meanlog.mif')
-  run.command('mrcalc meanlog.mif -exp out.mif')
+  if app.ARGS.invalid:
+    run.command('mrcalc meanlog.mif -exp NaN {} -replace out.mif'.format(app.ARGS.invalid))
+  else:
+    run.command('mrcalc meanlog.mif -exp out.mif')
   # copy to output
   run.command('mrconvert out.mif ' + path.from_user(app.ARGS.output) + app.mrconvert_output_option(path.from_user(app.ARGS.input)))
 
@@ -41,3 +41,4 @@ sys.path.insert(0, LIB_FOLDER)
 # Execute the script
 from mrtrix3 import app
 app.execute()
+
