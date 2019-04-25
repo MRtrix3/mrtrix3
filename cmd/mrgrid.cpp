@@ -316,7 +316,7 @@ void run () {
     opt = get_options ("axis"); // overrides image bounds set by other options
     for (size_t i = 0; i != opt.size(); ++i) {
       ++crop_pad_option_count;
-      const ssize_t axis  = opt[i][0];
+      const size_t axis  = opt[i][0];
       if (axis  >= input_header.ndim())
         throw Exception ("-axis " + str(axis) + " larger than image dimensions (" + str(input_header.ndim()) + ")");
       std::string spec = str(opt[i][1]);

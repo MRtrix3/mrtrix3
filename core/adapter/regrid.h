@@ -40,10 +40,10 @@ namespace MR
             base_type (original),
             from_ (container_cast<decltype(from_)>(from)),
             size_ (container_cast<decltype(size_)>(size)),
-            index_invalid_lower_upper ([&]{ vector<vector<ssize_t>> v; for (int d = 0; d < from_.size(); ++d)
-              v.push_back (vector<ssize_t> {from_[d] < 0 ? -(ssize_t) from_[d] - 1 : -1, original.size(d) - from_[d]}); return v; }()),
-            index_requires_bound_check ([&]{ vector<bool> v; for (int d = 0; d < from_.size(); ++d)
-              v.push_back (from_[d] < 0 || size_[d] > original.size(d) - from_[d]); return v; }()),
+            index_invalid_lower_upper ([&]{ vector<vector<ssize_t>> v; for (size_t d = 0; d < from_.size(); ++d) {
+              v.push_back (vector<ssize_t> {from_[d] < 0 ? -(ssize_t) from_[d] - 1 : -1, original.size(d) - from_[d]}); } return v; }()),
+            index_requires_bound_check ([&]{ vector<bool> v; for (size_t d = 0; d < from_.size(); ++d) {
+              v.push_back (from_[d] < 0 || size_[d] > original.size(d) - from_[d]); } return v; }()),
             fill_ (fill),
             transform_ (original.transform()),
             index_ (ndim(), 0) {
