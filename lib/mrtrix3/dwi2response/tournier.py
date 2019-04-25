@@ -29,20 +29,9 @@ def needs_single_shell(): #pylint: disable=unused-variable
 
 
 
-def read_rf_file(filepath):
-  from mrtrix3 import MRtrixError
-  with open(filepath, 'r') as rf_file:
-    for line in rf_file.readlines():
-      line = line.lstrip()
-      if line and line[0] != '#':
-        return [ float(value) for value in line.split() ]
-  raise MRtrixError('Unable to read intermediate response function file "' + filepath + '"')
-
-
-
 def execute(): #pylint: disable=unused-variable
   import os, shutil
-  from mrtrix3 import app, image, MRtrixError, path, run
+  from mrtrix3 import app, image, matrix, MRtrixError, path, run
 
   lmax_option = ''
   if app.ARGS.lmax:
@@ -96,7 +85,7 @@ def execute(): #pylint: disable=unused-variable
     run.command('amp2response dwi.mif ' + prefix + 'SF.mif ' + prefix + 'first_dir.mif ' + prefix + 'RF.txt' + iter_lmax_option)
     app.cleanup(prefix + 'first_dir.mif')
 
-    new_rf = read_rf_file(prefix + 'RF.txt')
+    new_rf = matrix.load_vector(prefix + 'RF.txt')
     progress.increment('Optimising (' + str(iteration+1) + ' iterations, RF: [ ' + ', '.join('{:.3f}'.format(n) for n in new_rf) + '] )')
 
     # Should we terminate?
