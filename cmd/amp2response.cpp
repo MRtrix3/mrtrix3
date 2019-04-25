@@ -372,5 +372,12 @@ void run ()
     responses.row(shell_index) = rf;
   }
 
-  save_matrix (responses, argument[3]);
+  vector<std::string> output_header (1, std::string("command_history: ") + App::command_string);
+  if (shells) {
+    std::string line = "Shells: " + str<int>((*shells)[0].get_mean());
+    for (size_t i = 1; i != (*shells).count(); ++i)
+      line += "," + str<int>((*shells)[i].get_mean());
+    output_header.emplace_back (line);
+  }
+  save_matrix (responses, argument[3], output_header);
 }

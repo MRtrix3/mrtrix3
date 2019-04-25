@@ -133,7 +133,7 @@ void run ()
   }
   nbins = calibrator.get_num_bins();
   if (!nbins)
-    throw Exception ("No histogram bins constructed" +
+    throw Exception (std::string("No histogram bins constructed") +
                      ((get_options ("ignorezero").size() || get_options ("bins").size()) ?
                      "." :
                      "; you might want to use the -ignorezero or -bins option."));
