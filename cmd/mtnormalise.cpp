@@ -44,10 +44,14 @@ void usage ()
     "In Proc. ISMRM, 2017, 26, 3541";
 
   DESCRIPTION
-   + "This command inputs any number of tissue components (e.g. from multi-tissue CSD) "
-     "and outputs corresponding normalised tissue components. Intensity normalisation is "
-     "performed in the log-domain, and can smoothly vary spatially to accomodate the "
-     "effects of (residual) intensity inhomogeneities."
+   + "This command takes as input any number of tissue components (e.g. from "
+     "multi-tissue CSD) and outputs corresponding normalised tissue components "
+     "corrected for the effects of (residual) intensity inhomogeneities. "
+     "Intensity normalisation is performed by optimising the voxel-wise sum of "
+     "all tissue compartments towards a constant value, under constraints of "
+     "spatial smoothness (polynomial basis of a given order). This is now "
+     "performed in the log-domain with gradual outlier rejection, with "
+     "improved handling of the balancing factors between tissues."
 
    + "The -mask option is mandatory and is optimally provided with a brain mask "
      "(such as the one obtained from dwi2mask earlier in the processing pipeline). "
