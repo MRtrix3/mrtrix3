@@ -131,15 +131,21 @@ namespace MR
 
   //! write the matrix \a M to file
   template <class MatrixType>
-    void save_matrix (const MatrixType& M, const std::string& filename, const bool write_cmdstring = false)
+    void save_matrix (const MatrixType& M, const std::string& filename, const vector<std::string> header_lines)
     {
       DEBUG ("saving " + str(M.rows()) + "x" + str(M.cols()) + " matrix to file \"" + filename + "\"...");
       File::OFStream out (filename);
-      if (write_cmdstring)
-        out << "# " << App::command_string << "\n";
+      for (const auto& line : header_lines)
+        out << "# " << line << "\n";
       Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
       out << M.format(fmt);
       out << "\n";
+    }
+  template <class MatrixType>
+    void save_matrix (const MatrixType& M, const std::string& filename, const std::string& header = App::command_string)
+    {
+      const auto header_lines = split_lines (header);
+      save_matrix (M, filename, header_lines);
     }
 
   //! read matrix data into a 2D vector \a filename
@@ -240,28 +246,39 @@ namespace MR
   }
 
   //! write the transform \a M to file
-  inline void save_transform (const transform_type& M, const std::string& filename, const bool write_cmdstring = false)
+  inline void save_transform (const transform_type& M, const std::string& filename, const vector<std::string>& header_lines)
   {
     DEBUG ("saving transform to file \"" + filename + "\"...");
     File::OFStream out (filename);
-    if (write_cmdstring)
-      out << "# " << App::command_string << "\n";
+    for (const auto& line : header_lines)
+      out << "# " << line << "\n";
     Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
     out << M.matrix().format(fmt);
     out << "\n0 0 0 1\n";
   }
+  inline void save_transform (const transform_type& M, const std::string& filename, const std::string& header = App::command_string)
+  {
+    const auto header_lines = split_lines (header);
+    save_transform (M, filename, header_lines);
+  }
 
   //! write the vector \a V to file
   template <class VectorType>
-    void save_vector (const VectorType& V, const std::string& filename, const bool write_cmdstring = false)
+    void save_vector (const VectorType& V, const std::string& filename, const vector<std::string>& header_lines)
     {
       DEBUG ("saving vector of size " + str(V.size()) + " to file \"" + filename + "\"...");
       File::OFStream out (filename);
-      if (write_cmdstring)
-        out << "# " << App::command_string << "\n";
+      for (const auto& line : header_lines)
+        out << "# " << line << "\n";
       for (decltype(V.size()) i = 0; i < V.size() - 1; i++)
         out << str(V[i], 10) << " ";
       out << str(V[V.size() - 1], 10) << "\n";
+    }
+  template <class VectorType>
+    void save_vector (const VectorType& V, const std::string& filename, const std::string& header = App::command_string)
+    {
+      const auto header_lines = split_lines (header);
+      save_vector (V, filename, header_lines);
     }
 
   //! read the vector data from \a filename
