@@ -1,11 +1,14 @@
 import argparse, os, sys
 import mrtrix3
+from mrtrix3 import utils
 
 # These global constants can / should be accessed directly by scripts:
 # - 'ARGS' will contain the user's command-line inputs upon parsing of the command-line
+# - 'CONTINUE_OPTION' will be set to True if the user provides the -continue option;
+#   this is principally for use in the run module, and would not typically be accessed within a custom script
 # - 'DO_CLEANUP' will indicate whether or not the scratch directory will be deleted on script completion,
 #   and whether intermediary files will be deleted when function cleanup() is called on them
-# - 'exeName' will be the basename of the executed script
+# - 'EXEC_NAME' will be the basename of the executed script
 # - 'FORCE_OVERWRITE' will be True if the user has requested for existing output files to be
 #   re-written, and at least one output target already exists
 # - 'NUM_THREADS' will be updated based on the user specifying -nthreads at the command-line,
@@ -16,7 +19,6 @@ import mrtrix3
 #   # 0 = quiet; 1 = default; 2 = info; 3 = debug
 # - 'WORKING_DIR' will simply contain the current working directory when the executable script is run
 ARGS = None
-COMMAND_STRING = ''
 CONTINUE_OPTION = False
 DO_CLEANUP = True
 EXEC_NAME = os.path.basename(sys.argv[0])
@@ -69,7 +71,7 @@ _SIGNALS = { 'SIGALRM': 'Timer expiration',
            # Can't be handled; see https://bugs.python.org/issue9524
            # 'CTRL_C_EVENT': 'Terminated by user Ctrl-C input',
            # 'CTRL_BREAK_EVENT': 'Terminated by user Ctrl-Break input'
-if mrtrix3.is_windows():
+if utils.is_windows():
   _SIGNALS['SIGBREAK'] = 'Received Windows \'break\' signal'
 else:
   _SIGNALS['SIGTERM'] = 'Received termination signal'
@@ -78,7 +80,7 @@ else:
 
 def execute(): #pylint: disable=unused-variable
   import inspect, shutil, signal
-  from mrtrix3 import ANSI, MRtrixError, path, run, __version__
+  from mrtrix3 import ANSI, MRtrixError, run
   global ARGS, CMDLINE, CONTINUE_OPTION, DO_CLEANUP, EXEC_NAME, FORCE_OVERWRITE, NUM_THREADS, SCRATCH_DIR, VERBOSITY, WORKING_DIR
 
   # Set up signal handlers
@@ -99,11 +101,6 @@ def execute(): #pylint: disable=unused-variable
   ########################################################################################################################
   # Note that everything after this point will only be executed if the script is designed to operate against the library #
   ########################################################################################################################
-
-  COMMAND_STRING = sys.argv[0]
-  for arg in sys.argv[1:]:
-    COMMAND_STRING += ' ' + path.quote(arg) # Use quotation marks only if required
-  COMMAND_STRING += '  (version=' + __version__ + ')"'
 
   # Deal with special command-line uses
   if len(sys.argv) == 1:
@@ -352,8 +349,8 @@ def cleanup(path): #pylint: disable=unused-variable
 # It will ensure that the header contents of any output images reflect the execution of the script itself,
 #   rather than its internal processes
 def mrconvert_output_option(input_image): #pylint: disable=unused-variable
-  from ._version import __version__
-  global COMMAND_STRING, FORCE_OVERWRITE
+  from mrtrix3 import COMMAND_STRING
+  global FORCE_OVERWRITE
   return ' -copy_properties ' + input_image + ' -append_property command_history "' + COMMAND_STRING + '"' + (' -force' if FORCE_OVERWRITE else '')
 
 

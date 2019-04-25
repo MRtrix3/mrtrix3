@@ -1,6 +1,6 @@
 import os, sys
 from collections import namedtuple
-from mrtrix3._version import __version__  #pylint: disable=unused-variable
+from mrtrix3._version import __version__
 
 
 
@@ -10,6 +10,17 @@ class MRtrixBaseError(Exception):
 class MRtrixError(MRtrixBaseError): #pylint: disable=unused-variable
   pass
 
+
+
+# Contains the command currently being executed, appended with the version of the MRtrix3 Python library
+COMMAND_STRING = sys.argv[0]
+try:
+  from shlex import quote
+except ImportError:
+  from pipes import quote
+for arg in sys.argv[1:]:
+  COMMAND_STRING += ' ' + quote(arg) # Use quotation marks only if required
+COMMAND_STRING += '  (version=' + __version__ + ')"'
 
 
 # Location of binaries that belong to the same MRtrix3 installation as the Python library being invoked
@@ -47,11 +58,3 @@ for config_path in [ os.environ.get ('MRTRIX_CONFIGFILE', os.path.join(os.path.s
 # Set up terminal special characters now, since they may be dependent on the config file
 if sys.stderr.isatty() and not ('TerminalColor' in CONFIG and CONFIG['TerminalColor'].lower() in ['no', 'false', '0']):
   ANSI = ANSICodes('\033[0K', '\033[0m', '\033[03;32m', '\033[03;34m', '\033[01;31m', '\033[03;36m', '\033[00;31m') #pylint: disable=unused-variable
-
-
-
-# Return a boolean flag to indicate whether or not script is being run on a Windows machine
-def is_windows(): #pylint: disable=unused-variable
-  import platform
-  system = platform.system().lower()
-  return any(system.startswith(s) for s in [ 'mingw', 'msys', 'nt', 'windows' ])

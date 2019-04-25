@@ -26,7 +26,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import copy, numbers, shutil
-  from mrtrix3 import image, MRtrixError, path, run
+  from mrtrix3 import image, matrix, MRtrixError, path, run
 
   image_dimensions = image.Header(path.from_user(app.ARGS.input, False)).size()
   if len(image_dimensions) != 4:
@@ -64,18 +64,8 @@ def execute(): #pylint: disable=unused-variable
       run.command('mrinfo data.mif -export_grad_fsl bvecs bvals')
 
   # Import both of these into local memory
-  with open('grad.b', 'r') as grad_file:
-    grad_mrtrix = grad_file.read().split('\n')
-  with open('bvecs', 'r') as bvecs_file:
-    grad_fsl = bvecs_file.read().split('\n')
-  # Erase the empty last line if necessary
-  if len(grad_mrtrix[-1]) <= 1:
-    grad_mrtrix.pop()
-  if len(grad_fsl[-1]) <= 1:
-    grad_fsl.pop()
-  # Turn into float matrices
-  grad_mrtrix = [ [ float(f) for f in line.split(' ') ] for line in grad_mrtrix ]
-  grad_fsl = [ [ float(f) for f in line.split() ] for line in grad_fsl ]
+  grad_mrtrix = matrix.load_matrix('grad.b')
+  grad_fsl = matrix.load_matrix('bvecs')
   # Is our gradient table of the correct length?
   if not len(grad_mrtrix) == num_volumes:
     raise MRtrixError('Number of entries in gradient table does not match number of DWI volumes')
