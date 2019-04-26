@@ -14,10 +14,10 @@ def dot(input_a, input_b): #pylint: disable=unused-variable
   if is_2d_matrix(input_a):
     if not is_2d_matrix(input_b):
       raise MRtrixError('Both inputs must be either 1D vectors or 2D matrices')
-    if len(input_a[0]) != len(input_b):
-      raise MRtrixError('Invalid dimensions for matrix dot product(' + \
-                            str(len(input_a)) + 'x' + str(len(input_a[0])) + ' vs. ' + \
-                            str(len(input_b)) + 'x' + str(len(input_b[0])) + ')')
+    #if len(input_a[0]) != len(input_b):
+    #  raise MRtrixError('Invalid dimensions for matrix dot product(' + \
+    #                        str(len(input_a)) + 'x' + str(len(input_a[0])) + ' vs. ' + \
+    #                        str(len(input_b)) + 'x' + str(len(input_b[0])) + ')')
     return [[sum(x*y for x,y in zip(a_row,b_col)) for b_col in zip(*input_b)] for a_row in input_a]
   if is_2d_matrix(input_b):
     raise MRtrixError('Both inputs must be either 1D vectors or 2D matrices')
@@ -79,18 +79,15 @@ def load_numeric(filename, **kwargs):
   if comments:
     regex_comments = re.compile('|'.join(comments))
 
-  def split_line(line):
-    line = decode(line)
-    if comments:
-      line = regex_comments.split(line, maxsplit=1)[0]
-    return line.rstrip().split(delimiter)
-
   data = [ ]
   with open(filename, 'rb') as infile:
     for line in infile.readlines():
-      line = split_line(line)
+      line = decode(line)
+      if comments:
+        line = regex_comments.split(line, maxsplit=1)[0]
+      line = line.strip()
       if line:
-        data.append([dtype(a) for a in line])
+        data.append([dtype(a) for a in line.split(delimiter)])
 
   if not data:
     return None
@@ -142,12 +139,13 @@ def load_vector(filename, **kwargs): #pylint: disable=unused-variable
 
 # Save numeric data to a text file
 def save_numeric(filename, data, **kwargs):
-  from mrtrix3 import COMMAND_STRING
+  from mrtrix3 import COMMAND_HISTORY_STRING
 
   fmt = kwargs.pop('fmt', '%.14e')
   delimiter = kwargs.pop('delimiter', ' ')
   newline = kwargs.pop('newline', '\n')
-  header = kwargs.pop('header', COMMAND_STRING)
+  add_to_command_history = bool(kwargs.pop('add_to_command_history', True))
+  header = kwargs.pop('header', { })
   footer = kwargs.pop('footer', '')
   comments = kwargs.pop('comments', '# ')
   encoding = kwargs.pop('encoding', None)
@@ -159,23 +157,32 @@ def save_numeric(filename, data, **kwargs):
     encode_args['encoding'] = encoding
 
   if isinstance(header, str):
-    header = header.splitlines()
+    header = { 'comments' : header }
+  elif isinstance(header, list):
+    header = { 'comments' : '\n'.join(str(entry) for entry in header) }
+  elif isinstance(header, dict):
+    header = dict((key, str(value)) for key, value in header.items())
+  else:
+    raise TypeError('Unrecognised input to matrix.save_numeric() using "header=" option')
+
+  if add_to_command_history:
+    if 'command_history' in header:
+      header['command_history'] += '\n' + COMMAND_HISTORY_STRING
+    else:
+      header['command_history'] = COMMAND_HISTORY_STRING
+
   if isinstance(footer, str):
-    footer = footer.splitlines()
-
-  def check_text_list(field, name):
-    if not isinstance(field, list):
-      raise TypeError('"' + name + '=" input to matrix.save_numeric() must be either a string or a list of strings')
-    for line in field:
-      if not isinstance(line, str):
-        raise TypeError('"' + name + '=" input to matrix.save_numeric() must be either a string or a list of strings')
-
-  check_text_list(header, 'header')
-  check_text_list(footer, 'footer')
+    footer = { 'comments' : footer }
+  elif isinstance(footer, list):
+    footer = { 'comments' : '\n'.join(str(entry) for entry in footer) }
+  elif isinstance(footer, dict):
+    footer = dict((key, str(value)) for key, value in footer.items())
+  else:
+    raise TypeError('Unrecognised input to matrix.save_numeric() using "footer=" option')
 
   with open(filename, 'wb') as outfile:
-    for line in header:
-      outfile.write(comments + line + newline)
+    for key, value in header.items():
+      outfile.write((comments + key + ': ' + value + newline).encode(**encode_args))
 
     if data:
       if isinstance(data[0], list):
@@ -189,8 +196,8 @@ def save_numeric(filename, data, **kwargs):
         fmt = delimiter.join([fmt, ] * len(data))
         outfile.write(((row_fmt % tuple(data) + newline).encode(**encode_args)))
 
-    for line in footer:
-      outfile.write(comments + line + newline)
+    for key, value in footer.items():
+      outfile.write((comments + key + ': ' + value + newline).encode(**encode_args))
 
 
 

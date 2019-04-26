@@ -50,4 +50,4 @@ def execute(): #pylint: disable=unused-variable
   else:
     run.command('mrmath 5tt.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrcrop 5tt.mif result.mif -mask -')
 
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output) + app.mrconvert_output_option(path.from_user(app.ARGS.input)))
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE)
