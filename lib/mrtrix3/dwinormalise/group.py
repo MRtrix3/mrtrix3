@@ -85,11 +85,11 @@ def execute(): #pylint: disable=unused-variable
   for i in input_list:
     run.command('mrtransform template_wm_mask.mif -interp nearest -warp_full ' + os.path.join('population_template', 'warps', i.prefix + '.mif') + ' ' + os.path.join('wm_mask_warped', i.prefix + '.mif') + ' -from 2 -template ' + os.path.join('fa', i.prefix + '.mif'))
     run.command('dwinormalise individual ' + path.quote(os.path.join(input_dir, i.filename)) + ' ' + os.path.join('wm_mask_warped', i.prefix + '.mif') + ' temp.mif')
-    run.command('mrconvert temp.mif ' + path.from_user(os.path.join(app.ARGS.output_dir, i.filename)) + app.mrconvert_output_option(path.from_user(os.path.join(input_dir, i.filename))))
+    run.command('mrconvert temp.mif ' + path.from_user(os.path.join(app.ARGS.output_dir, i.filename)), mrconvert_keyval=path.from_user(os.path.join(input_dir, i.filename)), force=app.FORCE_OVERWRITE)
     os.remove('temp.mif')
     progress.increment()
   progress.done()
 
   app.console('Exporting template images to user locations')
-  run.command('mrconvert template_wm_mask.mif ' + path.from_user(app.ARGS.wm_mask) + app.mrconvert_output_option('NULL'))
-  run.command('mrconvert fa_template.mif ' + path.from_user(app.ARGS.fa_template) + app.mrconvert_output_option('NULL'))
+  run.command('mrconvert template_wm_mask.mif ' + path.from_user(app.ARGS.wm_mask), mrconvert_keyval='NULL', force=app.FORCE_OVERWRITE)
+  run.command('mrconvert fa_template.mif ' + path.from_user(app.ARGS.fa_template), mrconvert_keyval='NULL', force=app.FORCE_OVERWRITE)

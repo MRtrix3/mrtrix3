@@ -344,19 +344,6 @@ def cleanup(path): #pylint: disable=unused-variable
 
 
 
-# This function should be used to insert text into any mrconvert call writing an output image
-#   to the user's requested destination
-# It will ensure that the header contents of any output images reflect the execution of the script itself,
-#   rather than its internal processes
-def mrconvert_output_option(input_image): #pylint: disable=unused-variable
-  from mrtrix3 import COMMAND_STRING
-  global FORCE_OVERWRITE
-  return ' -copy_properties ' + input_image + ' -append_property command_history "' + COMMAND_STRING + '"' + (' -force' if FORCE_OVERWRITE else '')
-
-
-
-
-
 
 # A set of functions and variables for printing various information at the command-line.
 def console(text): #pylint: disable=unused-variable

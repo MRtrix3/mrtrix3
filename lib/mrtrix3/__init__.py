@@ -13,14 +13,14 @@ class MRtrixError(MRtrixBaseError): #pylint: disable=unused-variable
 
 
 # Contains the command currently being executed, appended with the version of the MRtrix3 Python library
-COMMAND_STRING = sys.argv[0]
+COMMAND_HISTORY_STRING = sys.argv[0]
 try:
   from shlex import quote
 except ImportError:
   from pipes import quote
 for arg in sys.argv[1:]:
-  COMMAND_STRING += ' ' + quote(arg) # Use quotation marks only if required
-COMMAND_STRING += '  (version=' + __version__ + ')"'
+  COMMAND_HISTORY_STRING += ' ' + quote(arg) # Use quotation marks only if required
+COMMAND_HISTORY_STRING += '  (version=' + __version__ + ')"'
 
 
 # Location of binaries that belong to the same MRtrix3 installation as the Python library being invoked

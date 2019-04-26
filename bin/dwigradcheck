@@ -192,7 +192,7 @@ def execute(): #pylint: disable=unused-variable
       grad_import_option = ' -grad grad' + suffix + '.b'
     elif best[3] == 'image':
       grad_import_option = ' -fslgrad bvecs' + suffix + ' bvals'
-    run.command('mrinfo data.mif' + grad_import_option + grad_export_option)
+    run.command('mrinfo data.mif' + grad_import_option + grad_export_option, force=app.FORCE_OVERWRITE)
 
 
 # Make the corresponding MRtrix3 Python libraries available
