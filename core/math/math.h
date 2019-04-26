@@ -129,23 +129,36 @@ namespace MR
   };
 
 
+  namespace
+  {
+    void write_header (File::OFStream& out, const KeyValues& keyvals, const bool add_to_command_history)
+    {
+      bool command_history_appended = false;
+      for (const auto& keyval : keyvals) {
+        const auto lines = split_lines(keyval.second);
+        for (const auto& line : lines)
+          out << "# " << keyval.first << ": " << line << "\n";
+        if (add_to_command_history && keyval.first == "command_history") {
+          out << "# " << "command_history: " << App::command_history_string << "\n";
+          command_history_appended = true;
+        }
+      }
+      if (add_to_command_history && !command_history_appended)
+        out << "# " << "command_history: " << App::command_history_string << "\n";
+    }
+  }
+
+
   //! write the matrix \a M to file
   template <class MatrixType>
-    void save_matrix (const MatrixType& M, const std::string& filename, const vector<std::string> header_lines)
+    void save_matrix (const MatrixType& M, const std::string& filename, const KeyValues& keyvals = KeyValues(), const bool add_to_command_history = true)
     {
       DEBUG ("saving " + str(M.rows()) + "x" + str(M.cols()) + " matrix to file \"" + filename + "\"...");
       File::OFStream out (filename);
-      for (const auto& line : header_lines)
-        out << "# " << line << "\n";
+      write_header (out, keyvals, add_to_command_history);
       Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
       out << M.format(fmt);
       out << "\n";
-    }
-  template <class MatrixType>
-    void save_matrix (const MatrixType& M, const std::string& filename, const std::string& header = App::command_string)
-    {
-      const auto header_lines = split_lines (header);
-      save_matrix (M, filename, header_lines);
     }
 
   //! read matrix data into a 2D vector \a filename
@@ -246,39 +259,26 @@ namespace MR
   }
 
   //! write the transform \a M to file
-  inline void save_transform (const transform_type& M, const std::string& filename, const vector<std::string>& header_lines)
+  inline void save_transform (const transform_type& M, const std::string& filename, const KeyValues& keyvals = KeyValues(), const bool add_to_command_history = true)
   {
     DEBUG ("saving transform to file \"" + filename + "\"...");
     File::OFStream out (filename);
-    for (const auto& line : header_lines)
-      out << "# " << line << "\n";
+    write_header (out, keyvals, add_to_command_history);
     Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
     out << M.matrix().format(fmt);
     out << "\n0 0 0 1\n";
   }
-  inline void save_transform (const transform_type& M, const std::string& filename, const std::string& header = App::command_string)
-  {
-    const auto header_lines = split_lines (header);
-    save_transform (M, filename, header_lines);
-  }
 
   //! write the vector \a V to file
   template <class VectorType>
-    void save_vector (const VectorType& V, const std::string& filename, const vector<std::string>& header_lines)
+    void save_vector (const VectorType& V, const std::string& filename, const KeyValues& keyvals = KeyValues(), const bool add_to_command_history = true)
     {
       DEBUG ("saving vector of size " + str(V.size()) + " to file \"" + filename + "\"...");
       File::OFStream out (filename);
-      for (const auto& line : header_lines)
-        out << "# " << line << "\n";
+      write_header (out, keyvals, add_to_command_history);
       for (decltype(V.size()) i = 0; i < V.size() - 1; i++)
         out << str(V[i], 10) << " ";
       out << str(V[V.size() - 1], 10) << "\n";
-    }
-  template <class VectorType>
-    void save_vector (const VectorType& V, const std::string& filename, const std::string& header = App::command_string)
-    {
-      const auto header_lines = split_lines (header);
-      save_vector (V, filename, header_lines);
     }
 
   //! read the vector data from \a filename

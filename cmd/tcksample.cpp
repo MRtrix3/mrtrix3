@@ -386,7 +386,7 @@ class Receiver_NoStatistic : private ReceiverBase { MEMALIGN(Receiver_NoStatisti
         tsf.reset (new DWI::Tractography::ScalarWriter<value_type> (path, properties));
       } else {
         ascii.reset (new File::OFStream (path));
-        (*ascii) << "# " << App::command_string << "\n";
+        (*ascii) << "# " << App::command_history_string << "\n";
       }
     }
     Receiver_NoStatistic (const Receiver_NoStatistic&) = delete;

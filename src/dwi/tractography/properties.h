@@ -20,6 +20,7 @@
 #include <map>
 #include "app.h"
 #include "timer.h"
+#include "types.h"
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/seeding/list.h"
 
@@ -35,7 +36,7 @@ namespace MR
     {
 
 
-      class Properties : public std::map<std::string, std::string> { MEMALIGN(Properties)
+      class Properties : public KeyValues { MEMALIGN(Properties)
         public:
 
           Properties () {
@@ -55,8 +56,8 @@ namespace MR
           void update_command_history () {
             // Make sure the current command is not concatenated more than once
             const auto command_history = split_lines ((*this)["command_history"]);
-            if (!(command_history.size() && command_history.back() == App::command_string))
-              add_line ((*this)["command_history"], App::command_string);
+            if (!(command_history.size() && command_history.back() == App::command_history_string))
+              add_line ((*this)["command_history"], App::command_history_string);
           }
 
           // In use at time of execution
@@ -70,7 +71,7 @@ namespace MR
 
 
           void clear () {
-            std::map<std::string, std::string>::clear();
+            KeyValues::clear();
             seeds.clear();
             include.clear();
             exclude.clear();
@@ -141,7 +142,7 @@ namespace MR
       {
         stream << "seeds: " << P.seeds;
         stream << "include: " << P.include << ", exclude: " << P.exclude << ", mask: " << P.mask << ", dict: ";
-        for (std::map<std::string, std::string>::const_iterator i = P.begin(); i != P.end(); ++i)
+        for (KeyValues::const_iterator i = P.begin(); i != P.end(); ++i)
           stream << "[ " << i->first << ": " << i->second << " ], ";
         stream << "comments: ";
         for (vector<std::string>::const_iterator i = P.comments.begin(); i != P.comments.end(); ++i)

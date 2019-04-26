@@ -104,7 +104,7 @@ namespace MR
       } catch (Exception&) { }
     }
 
-    std::map<std::string, std::string> new_keyval;
+    KeyValues new_keyval;
     std::set<std::string> unique_comments;
     for (const auto& item : keyval()) {
       if (item.first == "comments") {
@@ -267,8 +267,8 @@ namespace MR
       if (add_to_command_history) {
         // Make sure the current command is not concatenated more than once
         const auto command_history = split_lines (H.keyval()["command_history"]);
-        if (!(command_history.size() && command_history.back() == App::command_string))
-          add_line (H.keyval()["command_history"], App::command_string);
+        if (!(command_history.size() && command_history.back() == App::command_history_string))
+          add_line (H.keyval()["command_history"], App::command_history_string);
       }
 
       H.keyval()["mrtrix_version"] = App::mrtrix_version;
