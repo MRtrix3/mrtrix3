@@ -38,28 +38,8 @@ namespace MR {
       public:
         Mat2Vec (const node_t i) : dim (i) { }
 
-        uint64_t operator() (const node_t i, const node_t j) const
-        {
-          assert (i < dim);
-          assert (j < dim);
-          const uint64_t i64 (i);
-          const uint64_t j64 (j);
-          if (i < j)
-            return j64 + (uint64_t(dim) * i64) - ((i64 * (i64+1)) / 2);
-          else
-            return i64 + (uint64_t(dim) * j64) - ((j64 * (j64+1)) / 2);
-        }
-
-        std::pair<node_t, node_t> operator() (const uint64_t i) const
-        {
-          static const uint64_t temp = 2*dim+1;
-          static const uint64_t temp_sq = temp * temp;
-          const uint64_t row = std::floor ((temp - std::sqrt(temp_sq - (8*i))) / 2);
-          const uint64_t col = i - (uint64_t(dim)*row) + ((row * (row+1))/2);
-          assert (row < dim);
-          assert (col < dim);
-          return std::make_pair (node_t(row), node_t(col));
-        }
+        uint64_t operator() (const node_t i, const node_t j) const;
+        std::pair<node_t, node_t> operator() (const uint64_t i) const;
 
         node_t mat_size() const { return dim; }
         uint64_t vec_size() const { return (uint64_t(dim) * (uint64_t(dim)+1) / 2); }
@@ -81,6 +61,31 @@ namespace MR {
         const node_t dim;
 
     };
+
+
+
+    uint64_t Mat2Vec::operator() (const node_t i, const node_t j) const
+    {
+      assert (i < dim);
+      assert (j < dim);
+      const uint64_t i64 (i);
+      const uint64_t j64 (j);
+      if (i < j)
+        return j64 + (uint64_t(dim) * i64) - ((i64 * (i64+1)) / 2);
+      else
+        return i64 + (uint64_t(dim) * j64) - ((j64 * (j64+1)) / 2);
+    }
+
+    std::pair<node_t, node_t> Mat2Vec::operator() (const uint64_t i) const
+    {
+      static const uint64_t temp = 2*dim+1;
+      static const uint64_t temp_sq = temp * temp;
+      const uint64_t row = std::floor ((temp - std::sqrt(temp_sq - (8*i))) / 2);
+      const uint64_t col = i - (uint64_t(dim)*row) + ((row * (row+1))/2);
+      assert (row < dim);
+      assert (col < dim);
+      return std::make_pair (node_t(row), node_t(col));
+    }
 
 
 

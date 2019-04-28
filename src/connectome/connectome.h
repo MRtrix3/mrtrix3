@@ -120,6 +120,27 @@ namespace MR {
 
 
 
+    template <class MatrixType>
+    void to_lower (MatrixType& in)
+    {
+      if (is_directed (in))
+        throw Exception ("Cannot convert a non-symmetric directed matrix to lower triangular");
+
+      for (node_t row = 0; row != in.rows(); ++row) {
+        for (node_t col = 0; col != row; ++col) {
+
+          const typename MatrixType::Scalar lower_value = in (col, row);
+          const typename MatrixType::Scalar upper_value = in (row, col);
+
+          if (upper_value && !lower_value)
+            in (col, row) = lower_value;
+          in (row, col) = typename MatrixType::Scalar(0);
+
+      } }
+    }
+
+
+
     void check (const Header&);
 
 

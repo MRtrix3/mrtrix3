@@ -86,6 +86,8 @@ class Matrix
 
     bool is_vector() const { return (vector_output); }
 
+    // TODO Make symmetry of output matrix editable using the config file
+    // Also have the command-line option be one of three choices (upper, lower, symmetric)
     void save (const std::string&, const bool, const bool, const bool) const;
 
 
