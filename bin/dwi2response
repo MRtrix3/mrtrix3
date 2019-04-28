@@ -94,8 +94,11 @@ app.gotoTempDir()
 
 if app.args.mask:
   # Check that the brain mask is appropriate
-  if image.Header('mask.mif').size()[:3] != image.Header('dwi.mif').size()[:3]:
+  mask_header = image.Header('mask.mif')
+  if mask_header.size()[:3] != image.Header('dwi.mif').size()[:3]:
     app.error('Dimensions of provided mask image do not match DWI')
+  if not (len(mask_header.size()) == 3 or (len(mask_header.size()) == 4 and mask_header.size()[3] == 1)):
+    app.error('Provided mask image need to be a 3D image')
 else:
   run.command('dwi2mask dwi.mif mask.mif')
 
