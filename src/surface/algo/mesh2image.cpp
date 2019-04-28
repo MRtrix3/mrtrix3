@@ -210,31 +210,44 @@ namespace MR
 
 
           }
-          ++progress;
+        }
+        ++progress;
 
+        // Get better partial volume estimates for all necessary voxels
+        // TODO This could be multi-threaded, but hard to justify the dev time
+        static const size_t pve_os_ratio = 10;
 
-          // For *any* voxel not on the mesh but neighbouring a voxel in which a vertex lies,
-          //   track a floating-point value corresponding to its distance from the plane defined
-          //   by the normal at the vertex.
-          // Each voxel not directly on the mesh should then be assigned as prelim_inside or prelim_outside
-          //   depending on whether the summed value is positive or negative
-          auto sum_distances = Image<float>::scratch (H, "Sum of distances from polygon planes");
-          Vox adj_voxel;
-          for (size_t i = 0; i != mesh.num_vertices(); ++i) {
-            const Vox centre_voxel (mesh.vert(i));
-            for (adj_voxel[2] = centre_voxel[2]-1; adj_voxel[2] <= centre_voxel[2]+1; ++adj_voxel[2]) {
-              for (adj_voxel[1] = centre_voxel[1]-1; adj_voxel[1] <= centre_voxel[1]+1; ++adj_voxel[1]) {
-                for (adj_voxel[0] = centre_voxel[0]-1; adj_voxel[0] <= centre_voxel[0]+1; ++adj_voxel[0]) {
-                  if (!is_out_of_bounds (H, adj_voxel) && (adj_voxel - centre_voxel).any()) {
-                    const Eigen::Vector3 offset (adj_voxel.cast<default_type>().matrix() - mesh.vert(i));
-                    const default_type dp_normal = offset.dot (mesh.norm(i));
-                    const default_type offset_on_plane = (offset - (mesh.norm(i) * dp_normal)).norm();
-                    assign_pos_of (adj_voxel).to (sum_distances);
-                    // If offset_on_plane is close to zero, this vertex should contribute strongly toward
-                    //   the sum of distances from the surface within this voxel
-                    sum_distances.value() += (1.0 / (1.0 + offset_on_plane)) * dp_normal;
-                  }
-                }
+        for (Vox2Poly::const_iterator i = voxel2poly.begin(); i != voxel2poly.end(); ++i) {
+
+          const Vox& voxel (i->first);
+                // Is the logic sound?
+                // * Project point onto plane of polygon
+                // * Determine whether polygon labels point as inside or outside structure based on dot product of offset with normal
+                // * Quantify the distance from each edge to the point projected onto the plane
+                //   (based on cross product between edge and normal)
+                //   - If all distances are negative, projected point lies inside polygon
+                //     - If this occurs for at least one polygon, polygon for which magnitude of distance
+                //       from plane is smallest is responsible for classifying the point
+                //   - If at least one is positive, projected point lies outside polygon
+                //     Whichever polygon for which the maximum edge->projection distance is smallest
+                //     is responsible for classifying the point
+                //
+                // Note: Edge vectors currently reversed
+/*
+                default_type best_min_edge_distance_on_plane = -std::numeric_limits<default_type>::infinity();
+                //default_type best_interior_distance_from_plane = std::numeric_limits<default_type>::infinity();
+                bool best_result_inside = false;
+*/
+          // Generate a set of points within this voxel that need to be tested individually
+          vector<Vertex> to_test;
+          to_test.reserve (Math::pow3 (pve_os_ratio));
+          for (size_t x_idx = 0; x_idx != pve_os_ratio; ++x_idx) {
+            const default_type x = voxel[0] - 0.5 + ((default_type(x_idx) + 0.5) / default_type(pve_os_ratio));
+            for (size_t y_idx = 0; y_idx != pve_os_ratio; ++y_idx) {
+              const default_type y = voxel[1] - 0.5 + ((default_type(y_idx) + 0.5) / default_type(pve_os_ratio));
+              for (size_t z_idx = 0; z_idx != pve_os_ratio; ++z_idx) {
+                const default_type z = voxel[2] - 0.5 + ((default_type(z_idx) + 0.5) / default_type(pve_os_ratio));
+                to_test.push_back (Vertex (x, y, z));
               }
             }
           }
