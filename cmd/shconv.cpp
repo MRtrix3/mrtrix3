@@ -51,7 +51,7 @@ using value_type = float;
 
 class SConvFunctor { MEMALIGN(SConvFunctor)
   public:
-  SConvFunctor (const size_t n, Image<bool>& mask, 
+  SConvFunctor (const size_t n, Image<bool>& mask,
                 const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& response) :
                     image_mask (mask),
                     response (response),
@@ -84,6 +84,7 @@ void run() {
   Math::SH::check (image_in);
 
   auto responseZSH = load_vector<value_type>(argument[1]);
+  responseZSH.conservativeResizeLike (decltype(responseZSH)::Zero (Math::ZSH::NforL (Math::SH::LforN (image_in.size (3)))));
   Eigen::Matrix<value_type, Eigen::Dynamic, 1> responseRH;
   Math::ZSH::ZSH2RH (responseRH, responseZSH);
 
@@ -97,7 +98,7 @@ void run() {
   auto header = Header(image_in);
   Stride::set_from_command_line (header);
   auto image_out = Image<value_type>::create (argument[2], header);
-  
+
   SConvFunctor sconv (image_in.size(3), mask, responseRH);
   ThreadedLoop ("performing convolution", image_in, 0, 3, 2).run (sconv, image_in, image_out);
 }

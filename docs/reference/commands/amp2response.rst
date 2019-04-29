@@ -69,7 +69,7 @@ Smith, R. E.; Dhollander, T. & Connelly, A. Constrained linear least squares est
 
 
 
-**Author:** Robert E. Smith (robert.smith@florey.edu.au)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)
 
 **Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
