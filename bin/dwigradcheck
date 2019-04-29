@@ -25,7 +25,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  import copy, numbers, shutil
+  import copy, numbers, shutil, os, sys
   from mrtrix3 import image, MRtrixError, path, run
 
   image_dimensions = image.Header(path.from_user(app.ARGS.input, False)).size()

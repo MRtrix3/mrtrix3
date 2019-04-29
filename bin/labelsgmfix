@@ -32,7 +32,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  import math
+  import math, os
   from mrtrix3 import fsl, image, is_windows, MRtrixError, path, run
   app.check_output_path(path.from_user(app.ARGS.output, False))
   image.check_3d_nonunity(path.from_user(app.ARGS.t1, False))
