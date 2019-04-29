@@ -1,2 +1,3 @@
-rm -f tmp.txt && foreach 1 2 3 4 : echo IN >> tmp.txt && testing_diff_matrix tmp.txt foreach/out.txt
-foreach -4 1 2 3 4 : echo IN
+foreach -test 1 2 3 4 : echo IN
+rm -f tmp.txt && foreach 1 2 3 4 : echo IN ">>" tmp.txt && testing_diff_matrix tmp.txt foreach/out.txt
+foreach -nthreads 4 1 2 3 4 : echo IN
