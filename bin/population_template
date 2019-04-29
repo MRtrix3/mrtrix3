@@ -54,8 +54,12 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 
-import math, shutil
-import __locate_mrtrix3
+import math, os, shutil
+# Execute the script
+try:
+  import __locate_mrtrix3 #pylint: disable=unused-variable,unused-import
+except ImportError:
+  pass
 from mrtrix3 import app, image, path, run
 
 # Binds raw_input() to input() in Python2, so that input() can be used
