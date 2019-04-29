@@ -1,1 +1,0 @@
-rm -f tmp.txt && average_response BIDS/sub-02/dwi/sub-02_tissue-WM_response.txt BIDS/sub-03/dwi/sub-03_tissue-WM_response.txt tmp.txt && testing_diff_matrix tmp.txt average_response/out.txt
