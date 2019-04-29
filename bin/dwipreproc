@@ -62,7 +62,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  import itertools, json, math, shutil
+  import itertools, json, math, os, shutil, sys
   from distutils.spawn import find_executable
   from mrtrix3 import CONFIG, fsl, image, is_windows, MRtrixError, path, phaseencoding, run
 
@@ -1161,6 +1161,9 @@ def execute(): #pylint: disable=unused-variable
 
 
 # Execute the script
-import __locate_mrtrix3
+try:
+  import __locate_mrtrix3 #pylint: disable=unused-variable,unused-import
+except ImportError:
+  pass
 from mrtrix3 import app
 app.execute()

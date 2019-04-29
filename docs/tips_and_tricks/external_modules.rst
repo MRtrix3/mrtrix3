@@ -108,6 +108,39 @@ within your module directory, containing the executable file for the command
 provided to you.
 
 
+Python scripts
+--------------
+
+In addition to the principal binary commands, *MRtrix3* also includes a number
+of Python scripts for performing common image processing tasks.  These make use
+of a relatively simple set of library functions that provide a certain leven of
+convenience and consistency for building such scripts (e.g. common format help
+page; command-line parsing; creation, use and deletion of scratch directory;
+control over command-line verbosity).
+
+It is hoped that in addition to growing in complexity and capability over time,
+this library may also be of assistance to users when building their own
+processing scripts, rather than the use of e.g. Bash. The same syntax as that
+used in the provided scripts can be used. If however the user wishes to run a
+script that is based on this library, but is *not* located within the *MRtrix3*
+``bin/`` directory, there must be some way for Python to locate the *MRtrix3*
+modules in order to be able to execute the script. This can be achieved in one
+of two ways:
+
+1. Explicitly provide Python with the location of the *MRtrix3* Python modules:
+
+    .. code-block:: console
+
+        $ export PYTHONPATH=/home/user/mrtrix3/lib:$PYTHONPATH
+        $ ./my_script [arguments] (options)
+
+    (Replace the path to the *MRtrix3* "lib" directory with the location of your
+own installation)
+
+2. Make a copy of the file ``bin/__locate_mrtrix.py``, and place it in the
+   same directory as your external script. Upon executing your script, Python
+   will use this script to attempt to locate the *MRtrix3* Python modules.
+
 
 Note for Windows users
 ----------------------

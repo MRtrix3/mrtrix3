@@ -7,6 +7,7 @@
 CMDSPLIT = [ ]
 
 def usage(cmdline): #pylint: disable=unused-variable
+  import sys
   global CMDSPLIT
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)')
   cmdline.set_synopsis('Perform some arbitrary processing step for each of a set of inputs')
@@ -85,7 +86,7 @@ KEYLIST = [ 'IN', 'NAME', 'PRE', 'UNI' ]
 
 
 def execute(): #pylint: disable=unused-variable
-  import re, multiprocessing
+  import multiprocessing, os, re, sys
   from mrtrix3 import ANSI, MRtrixError, run
   global CMDSPLIT
 
@@ -275,6 +276,9 @@ def execute(): #pylint: disable=unused-variable
 
 
 # Execute the script
-import __locate_mrtrix3
+try:
+  import __locate_mrtrix3 #pylint: disable=unused-variable,unused-import
+except ImportError:
+  pass
 from mrtrix3 import app
 app.execute()

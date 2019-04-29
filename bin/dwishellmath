@@ -50,6 +50,9 @@ def execute(): #pylint: disable=unused-variable
 
 
 # Execute the script
-import __locate_mrtrix3
+try:
+  import __locate_mrtrix3 #pylint: disable=unused-variable,unused-import
+except ImportError:
+  pass
 from mrtrix3 import app
 app.execute()
