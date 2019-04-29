@@ -54,7 +54,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 
-import math, shutil
+import math, shutil, os
 import __locate_mrtrix3
 from mrtrix3 import app, image, path, run
 
