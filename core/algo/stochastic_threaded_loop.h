@@ -107,7 +107,7 @@ namespace MR
         template <class Functor>
           void run_outer (Functor&& functor, const double voxel_density)
           {
-            if (Thread::number_of_threads() == 0) {
+            if (Thread::threads_to_execute() == 0) {
               for (auto i = outer_loop (iterator); i; ++i){
                 // std::cerr << "outer: " << str(iterator) << " " << voxel_density << std::endl;
                 functor (iterator);
