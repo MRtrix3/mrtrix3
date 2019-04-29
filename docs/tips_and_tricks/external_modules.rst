@@ -135,7 +135,7 @@ of two ways:
         $ ./my_script [arguments] (options)
 
     (Replace the path to the *MRtrix3* "lib" directory with the location of your
-own installation)
+    own installation)
 
 2. Make a copy of the file ``bin/__locate_mrtrix.py``, and place it in the
    same directory as your external script. Upon executing your script, Python
