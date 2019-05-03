@@ -823,8 +823,13 @@ namespace MR
 
       if (DESCRIPTION.size()) {
         s += "Description\n-----------\n\n";
-        for (size_t i = 0; i < DESCRIPTION.size(); ++i)
-          s += std::string(DESCRIPTION[i]) + "\n\n";
+        for (size_t i = 0; i < DESCRIPTION.size(); ++i) {
+          auto desc = split_lines (DESCRIPTION[i], false);
+          s += desc[0];
+          for (size_t n = 1; n < desc.size(); ++n)
+            s += " |br|\n" + desc[n];
+          s += "\n\n";
+        }
       }
 
       if (EXAMPLES.size()) {

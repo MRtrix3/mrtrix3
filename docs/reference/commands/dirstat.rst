@@ -34,12 +34,12 @@ By default, this produces all relevant metrics for the direction set provided. I
 
 Metrics are produced assuming a unipolar or bipolar electrostatic repulsion model, producing the potential energy (total, mean, min & max), and the nearest-neighbour angles (mean, min & max). The condition number is also produced for the spherical harmonic fits up to the highest harmonic order supported by the number of volumes. Finally, the norm of the mean direction vector is provided as a measure of the overall symmetry of the direction set (important with respect to eddy-current resilience).
 
-Specific metrics can also be queried independently via the "-output" option, using these shorthands: 
-U/B for unipolar/bipolar model, 
-E/N for energy and nearest-neighbour respectively, 
-t/-/+ for total/min/max respectively (mean implied otherwise); 
-SHn for condition number of SH fit at order n (with n an even integer); 
-ASYM for asymmetry index (norm of mean direction vector); 
+Specific metrics can also be queried independently via the "-output" option, using these shorthands:  |br|
+U/B for unipolar/bipolar model,  |br|
+E/N for energy and nearest-neighbour respectively,  |br|
+t/-/+ for total/min/max respectively (mean implied otherwise);  |br|
+SHn for condition number of SH fit at order n (with n an even integer);  |br|
+ASYM for asymmetry index (norm of mean direction vector);  |br|
 N for the number of directions.
 
 Example usages

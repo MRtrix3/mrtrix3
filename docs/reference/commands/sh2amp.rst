@@ -24,10 +24,10 @@ Description
 
 The input image should consist of a 4D or 5D image, with SH coefficients along the 4th dimension according to the convention below. If 4D (or size 1 along the 5th dimension), the program expects to be provided with a single shell of directions. If 5D, each set of coefficients along the 5th dimension is understood to correspond to a different shell.
 
-The directions can be provided as:
-- a 2-column ASCII text file contained azimuth / elevation pairs (as produced by dirgen)
-- a 3-column ASCII text file containing x, y, z Cartesian direction vectors (as produced by dirgen -cart)
-- a 4-column ASCII text file containing the x, y, z, b components of a full DW encoding scheme (in MRtrix format, see main documentation for details).
+The directions can be provided as: |br|
+- a 2-column ASCII text file contained azimuth / elevation pairs (as produced by dirgen) |br|
+- a 3-column ASCII text file containing x, y, z Cartesian direction vectors (as produced by dirgen -cart) |br|
+- a 4-column ASCII text file containing the x, y, z, b components of a full DW encoding scheme (in MRtrix format, see main documentation for details). |br|
 - an image file whose header contains a valid DW encoding scheme
 
 If a full DW encoding is provided, the number of shells needs to match those found in the input image of coefficients (i.e. its size along the 5th dimension). If needed, the -shell option can be used to pick out the specific shell(s) of interest.
@@ -40,13 +40,13 @@ Note that the spherical harmonics equations used here differ slightly from those
 
 Each volume in the output image corresponds to a different spherical harmonic component. Each volume will correspond to the following:
 
-volume 0: l = 0, m = 0
-volume 1: l = 2, m = -2 (imaginary part of m=2 SH)
-volume 2: l = 2, m = -1 (imaginary part of m=1 SH)
-volume 3: l = 2, m = 0
-volume 4: l = 2, m = 1 (real part of m=1 SH)
-volume 5: l = 2, m = 2 (real part of m=2 SH)
-etc...
+volume 0: l = 0, m = 0 |br|
+volume 1: l = 2, m = -2 (imaginary part of m=2 SH) |br|
+volume 2: l = 2, m = -1 (imaginary part of m=1 SH) |br|
+volume 3: l = 2, m = 0 |br|
+volume 4: l = 2, m = 1 (real part of m=1 SH) |br|
+volume 5: l = 2, m = 2 (real part of m=2 SH) |br|
+etc... |br|
 
 
 Options
