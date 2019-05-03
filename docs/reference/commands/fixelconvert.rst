@@ -46,37 +46,37 @@ Options for converting from old to new format
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-name string** assign a different name to the value field output (Default: value). Do not include the file extension.
-
+   
 -  **-nii** output the index, directions and data file in NIfTI format instead of .mif
-
+   
 -  **-out_size** also output the 'size' field from the old format
-
+   
 -  **-template path** specify an existing fixel directory (in the new format) to which the new output should conform
-
+   
 Options for converting from new to old format
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-value path** nominate the data file to import to the 'value' field in the old format
-
+   
 -  **-in_size path** import data for the 'size' field in the old format
-
+   
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-info** display information messages.
-
+   
 -  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-
+   
 -  **-debug** display debugging messages.
-
+   
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
-
+   
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
-
+   
 -  **-help** display this information page and exit.
-
+   
 -  **-version** display version information and exit.
-
+   
 --------------
 
 

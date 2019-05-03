@@ -91,86 +91,86 @@ Options for manipulating fundamental image properties
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-coord axis selection** retain data from the input image only at the coordinates specified in the selection along the specified axis. The selection argument expects a number sequence, which can also include the 'end' keyword.
-
+   
 -  **-vox sizes** change the voxel dimensions reported in the output image header
-
+   
 -  **-axes axes** specify the axes from the input image that will be used to form the output image
-
+   
 -  **-scaling values** specify the data scaling parameters used to rescale the intensity values
-
+   
 Options for handling JSON (JavaScript Object Notation) files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-json_import file** import data from a JSON file into header key-value pairs
-
+   
 -  **-json_export file** export data from an image header key-value pairs into a JSON file
-
+   
 Options to modify generic header entries
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-clear_property key** remove the specified key from the image header altogether.
-
+   
 -  **-set_property key value** set the value of the specified key in the image header.
-
+   
 -  **-append_property key value** append the given value to the specified key in the image header (this adds the value specified as a new line in the header value).
-
+   
 -  **-copy_properties source** clear all generic properties and replace with the properties from the image / file specified.
-
+   
 Stride options
 ^^^^^^^^^^^^^^
 
 -  **-strides spec** specify the strides of the output data in memory; either as a comma-separated list of (signed) integers, or as a template image from which the strides shall be extracted and used. The actual strides produced will depend on whether the output image format can support it.
-
+   
 Data type options
 ^^^^^^^^^^^^^^^^^
 
 -  **-datatype spec** specify output image data type. Valid choices are: float32, float32le, float32be, float64, float64le, float64be, int64, uint64, int64le, uint64le, int64be, uint64be, int32, uint32, int32le, uint32le, int32be, uint32be, int16, uint16, int16le, uint16le, int16be, uint16be, cfloat32, cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8, bit.
-
+   
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-grad file** Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
-
+   
 -  **-fslgrad bvecs bvals** Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
-
+   
 DW gradient table export options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-export_grad_mrtrix path** export the diffusion-weighted gradient table to file in MRtrix format
-
+   
 -  **-export_grad_fsl bvecs_path bvals_path** export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format
-
+   
 Options for importing phase-encode tables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-import_pe_table file** import a phase-encoding table from file
-
+   
 -  **-import_pe_eddy config indices** import phase-encoding information from an EDDY-style config / index file pair
-
+   
 Options for exporting phase-encode tables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-export_pe_table file** export phase-encoding table to file
-
+   
 -  **-export_pe_eddy config indices** export phase-encoding information to an EDDY-style config / index file pair
-
+   
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-info** display information messages.
-
+   
 -  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-
+   
 -  **-debug** display debugging messages.
-
+   
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
-
+   
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
-
+   
 -  **-help** display this information page and exit.
-
+   
 -  **-version** display version information and exit.
-
+   
 --------------
 
 

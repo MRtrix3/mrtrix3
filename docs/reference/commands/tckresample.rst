@@ -32,36 +32,36 @@ Streamline resampling options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-upsample ratio** increase the density of points along the length of each streamline by some factor (may improve mapping streamlines to ROIs, and/or visualisation)
-
+   
 -  **-downsample ratio** increase the density of points along the length of each streamline by some factor (decreases required storage space)
-
+   
 -  **-step_size value** re-sample the streamlines to a desired step size (in mm)
-
+   
 -  **-num_points count** re-sample each streamline to a fixed number of points
-
+   
 -  **-endpoints** only output the two endpoints of each streamline
-
+   
 -  **-line num start end** resample tracks at 'num' equidistant locations along a line between 'start' and 'end' (specified as comma-separated 3-vectors in scanner coordinates)
-
+   
 -  **-arc num start mid end** resample tracks at 'num' equidistant locations along a circular arc specified by points 'start', 'mid' and 'end' (specified as comma-separated 3-vectors in scanner coordinates)
-
+   
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-info** display information messages.
-
+   
 -  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-
+   
 -  **-debug** display debugging messages.
-
+   
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
-
+   
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
-
+   
 -  **-help** display this information page and exit.
-
+   
 -  **-version** display version information and exit.
-
+   
 --------------
 
 

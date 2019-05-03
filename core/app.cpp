@@ -695,21 +695,14 @@ namespace MR
       }
       s += "\n\n";
 
-      auto indent_newlines = [](std::string text) {
-        size_t index = 0;
-        while ((index = text.find("\n", index)) != std::string::npos )
-          text.replace (index, 1, "<br>");
-        return text;
-      };
-
       // Argument description:
       for (size_t i = 0; i < ARGUMENTS.size(); ++i)
-        s += std::string("- *") + ARGUMENTS[i].id + "*: " + indent_newlines (ARGUMENTS[i].desc) + "\n";
+        s += std::string("- *") + ARGUMENTS[i].id + "*: " + ARGUMENTS[i].desc + "\n";
 
       if (DESCRIPTION.size()) {
         s += "\n## Description\n\n";
         for (size_t i = 0; i < DESCRIPTION.size(); ++i)
-          s += indent_newlines (DESCRIPTION[i]) + "\n\n";
+          s += std::string (DESCRIPTION[i]) + "\n\n";
       }
 
       if (EXAMPLES.size()) {
@@ -734,7 +727,7 @@ namespace MR
         std::string f = std::string ("+ **-") + opt.id;
         for (size_t a = 0; a < opt.size(); ++a)
           f += std::string (" ") + opt[a].id;
-        f += std::string("**<br>") + indent_newlines (opt.desc) + "\n\n";
+        f += std::string("**<br>") + opt.desc + "\n\n";
         return f;
       };
 
@@ -761,7 +754,7 @@ namespace MR
       if (REFERENCES.size()) {
         s += std::string ("## References\n\n");
         for (size_t i = 0; i < REFERENCES.size(); ++i)
-          s += indent_newlines (REFERENCES[i]) + "\n\n";
+          s += std::string (REFERENCES[i]) + "\n\n";
       }
       s += std::string("---\n\nMRtrix ") + mrtrix_version + ", built " + build_date + "\n\n"
         "\n\n**Author:** " + AUTHOR
@@ -811,13 +804,6 @@ namespace MR
       }
       s += "\n\n";
 
-      auto indent_newlines = [](std::string text) {
-        size_t index = 0;
-        while ((index = text.find("\n", index)) != std::string::npos )
-          text.replace (index, 1, "");
-        return text;
-      };
-
       // Will need more sophisticated escaping of special characters
       //   if they start popping up in argument / option descriptions
       auto escape_special = [] (std::string text) {
@@ -831,14 +817,14 @@ namespace MR
 
       // Argument description:
       for (size_t i = 0; i < ARGUMENTS.size(); ++i)
-        s += std::string("-  *") + ARGUMENTS[i].id + "*: " + escape_special (indent_newlines (ARGUMENTS[i].desc)) + "\n";
+        s += std::string("-  *") + ARGUMENTS[i].id + "*: " + escape_special (ARGUMENTS[i].desc) + "\n";
       s += "\n";
 
 
       if (DESCRIPTION.size()) {
         s += "Description\n-----------\n\n";
         for (size_t i = 0; i < DESCRIPTION.size(); ++i)
-          s += indent_newlines (DESCRIPTION[i]) + "\n\n";
+          s += std::string(DESCRIPTION[i]) + "\n\n";
       }
 
       if (EXAMPLES.size()) {
@@ -862,7 +848,10 @@ namespace MR
         std::string f = std::string ("-  **-") + opt.id;
         for (size_t a = 0; a < opt.size(); ++a)
           f += std::string (" ") + opt[a].id;
-        f += std::string("** ") + escape_special (indent_newlines (opt.desc)) + "\n\n";
+        f += std::string("** ");
+        for (const auto& desc : split_lines (opt.desc))
+          f += escape_special (desc) + "\n   ";
+        f += "\n";
         return f;
       };
 
@@ -888,8 +877,13 @@ namespace MR
 
       if (REFERENCES.size()) {
         s += std::string ("References\n^^^^^^^^^^\n\n");
-        for (size_t i = 0; i < REFERENCES.size(); ++i)
-          s += indent_newlines (REFERENCES[i]) + "\n\n";
+        for (size_t i = 0; i < REFERENCES.size(); ++i) {
+          auto refs = split_lines (REFERENCES[i]);
+          s += refs[0] + "\n";
+          for (size_t n = 1; n < refs.size(); ++n)
+            s += "  " + refs[n] + "\n";
+          s += "\n";
+        }
       }
       s += std::string("--------------\n\n") +
         "\n\n**Author:** " + (char*)AUTHOR

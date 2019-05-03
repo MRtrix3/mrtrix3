@@ -27,32 +27,32 @@ Options
 -------
 
 -  **-power exp** specify exponent to use for repulsion power law (default: 1). This must be a power of 2 (i.e. 1, 2, 4, 8, 16, ...).
-
+   
 -  **-niter num** specify the maximum number of iterations to perform (default: 10000).
-
+   
 -  **-restarts num** specify the number of restarts to perform (default: 10).
-
+   
 -  **-unipolar** optimise assuming a unipolar electrostatic repulsion model rather than the bipolar model normally assumed in DWI
-
+   
 -  **-cartesian** Output the directions in Cartesian coordinates [x y z] instead of [az el].
-
+   
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-info** display information messages.
-
+   
 -  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-
+   
 -  **-debug** display debugging messages.
-
+   
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
-
+   
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
-
+   
 -  **-help** display this information page and exit.
-
+   
 -  **-version** display version information and exit.
-
+   
 References
 ^^^^^^^^^^
 

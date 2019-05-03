@@ -16,7 +16,8 @@ Usage
     transformconvert [ options ]  input [ input ... ] operation output
 
 -  *input*: the input(s) for the specified operation
--  *operation*: the operation to perform, one of:flirt_import, itk_import
+-  *operation*: the operation to perform, one of:
+flirt_import, itk_import
 -  *output*: the output transformation matrix.
 
 Description
@@ -44,19 +45,19 @@ Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-info** display information messages.
-
+   
 -  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-
+   
 -  **-debug** display debugging messages.
-
+   
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
-
+   
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
-
+   
 -  **-help** display this information page and exit.
-
+   
 -  **-version** display version information and exit.
-
+   
 --------------
 
 

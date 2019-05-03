@@ -40,7 +40,7 @@ namespace MR
       //! a string containing a description of the SH storage convention
       /*! This can used directly in the DESCRIPTION field of a command's
        * usage() function. */
-      extern const char* encoding_description;
+      extern const char * const encoding_description[];
 
       //! the number of (even-degree) coefficients for the given value of \a lmax
       inline size_t NforL (int lmax)
