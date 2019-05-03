@@ -46,7 +46,7 @@ void usage ()
   OPTIONS
   + Option ("anonymise", "remove any identifiable information, by replacing the following tags:\n"
       "- any tag with Value Representation PN will be replaced with 'anonymous'\n"
-      "- tag (0010,0030) PatientBirthDate will be replaced with an empty string\n\n"
+      "- tag (0010,0030) PatientBirthDate will be replaced with an empty string\n"
       "WARNING: there is no guarantee that this command will remove all identiable "
       "information, since such information may be contained in any number "
       "of private vendor-specific tags. You will need to double-check the "
