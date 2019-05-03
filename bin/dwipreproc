@@ -850,11 +850,11 @@ def execute(): #pylint: disable=unused-variable
     # If running CUDA version, but OpenMP version is also available, don't stop the script if the CUDA version fails
     try:
       eddy_output = run.command(eddy_cuda_cmd + ' ' + eddy_all_options)
-    except run.MRtrixCmdError:
+    except run.MRtrixCmdError as exception:
       if not eddy_openmp_cmd:
         raise
       with open('eddy_cuda_filure_output.txt', 'w') as eddy_output_file:
-        eddy_output_file.write(eddy_output.stdout + '\n' + eddy_output.stderr + '\n')
+        eddy_output_file.write(exception.stdout + '\n' + exception.stderr + '\n')
       app.console('CUDA version of \'eddy\' was not successful; attempting OpenMP version')
       eddy_output = run.command(eddy_openmp_cmd + ' ' + eddy_all_options)
   else:
