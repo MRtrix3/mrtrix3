@@ -35,7 +35,6 @@ if not imported(os.path.normpath(os.path.join(os.path.dirname(__file__), os.pard
       #   find the directory within sys.path
       from_pythonpath = False
       for candidate in sys.path:
-        print (candidate)
         if os.path.normpath(candidate) != os.path.dirname(__file__) and imported(candidate):
           from_pythonpath = True
           break
