@@ -30,7 +30,6 @@ Options
 -  **-anonymise** remove any identifiable information, by replacing the following tags: |br|
    - any tag with Value Representation PN will be replaced with 'anonymous' |br|
    - tag (0010,0030) PatientBirthDate will be replaced with an empty string |br|
-    |br|
    WARNING: there is no guarantee that this command will remove all identiable information, since such information may be contained in any number of private vendor-specific tags. You will need to double-check the results independently if you need to ensure anonymity.
 
 -  **-id text** replace all ID tags with string supplied. This consists of tags (0010, 0020) PatientID and (0010, 1000) OtherPatientIDs
