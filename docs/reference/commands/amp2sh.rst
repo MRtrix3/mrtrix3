@@ -31,13 +31,13 @@ Note that the spherical harmonics equations used here differ slightly from those
 
 Each volume in the output image corresponds to a different spherical harmonic component. Each volume will correspond to the following:
 
-volume 0: l = 0, m = 0
-volume 1: l = 2, m = -2 (imaginary part of m=2 SH)
-volume 2: l = 2, m = -1 (imaginary part of m=1 SH)
-volume 3: l = 2, m = 0
-volume 4: l = 2, m = 1 (real part of m=1 SH)
-volume 5: l = 2, m = 2 (real part of m=2 SH)
-etc...
+volume 0: l = 0, m = 0 |br|
+volume 1: l = 2, m = -2 (imaginary part of m=2 SH) |br|
+volume 2: l = 2, m = -1 (imaginary part of m=1 SH) |br|
+volume 3: l = 2, m = 0 |br|
+volume 4: l = 2, m = 1 (real part of m=1 SH) |br|
+volume 5: l = 2, m = 2 (real part of m=2 SH) |br|
+etc... |br|
 
 
 Options

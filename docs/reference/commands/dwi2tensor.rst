@@ -27,13 +27,13 @@ By default, the diffusion tensor (and optionally its kurtosis) is fitted to the 
 
 * The -iter option controls the number of iterations of the IWLS prodedure. If this is set to zero, then the output model parameters will be those resulting from the first fitting step only: either WLS by default, or OLS if the -ols option is used in conjunction with -iter 0.
 
-The tensor coefficients are stored in the output image as follows: 
-volumes 0-5: D11, D22, D33, D12, D13, D23 ; 
-
-If diffusion kurtosis is estimated using the -dkt option, these are stored as follows: 
-volumes 0-2: W1111, W2222, W3333 ; 
-volumes 3-8: W1112, W1113, W1222, W1333, W2223, W2333 ; 
-volumes 9-11: W1122, W1133, W2233 ; 
+The tensor coefficients are stored in the output image as follows:  |br|
+volumes 0-5: D11, D22, D33, D12, D13, D23 ;  |br|
+ |br|
+If diffusion kurtosis is estimated using the -dkt option, these are stored as follows:  |br|
+volumes 0-2: W1111, W2222, W3333 ;  |br|
+volumes 3-8: W1112, W1113, W1222, W1333, W2223, W2333 ;  |br|
+volumes 9-11: W1122, W1133, W2233 ;  |br|
 volumes 12-14: W1123, W1223, W1233 ;
 
 Options
