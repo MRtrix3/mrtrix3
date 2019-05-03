@@ -108,6 +108,12 @@ pygments_style = 'sphinx'
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
 
+rst_prolog = """
+.. |br| raw:: html
+
+  <br/>
+"""
+
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -284,13 +290,13 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
     html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
     html_style = 'css/custom.css'
 else:
-    html_context = { 
+    html_context = {
     'css_files': [
         'https://media.readthedocs.org/css/sphinx_rtd_theme.css',
         'https://media.readthedocs.org/css/readthedocs-doc-embed.css',
         '_static/css/custom.css',
-        ],  
-    }   
+        ],
+    }
 # Documents to append as an appendix to all manuals.
 #texinfo_appendices = []
 

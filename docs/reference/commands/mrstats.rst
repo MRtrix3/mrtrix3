@@ -24,33 +24,33 @@ Statistics options
 ^^^^^^^^^^^^^^^^^^
 
 -  **-output field** output only the field specified. Multiple such options can be supplied if required. Choices are: mean, median, std, min, max, count. Useful for use in scripts.
-   
+
 -  **-mask image** only perform computation within the specified binary mask image.
-   
+
 -  **-ignorezero** ignore zero values during statistics calculation
-   
+
 Additional options for mrstats
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-allvolumes** generate statistics across all image volumes, rather than one set of statistics per image volume
-   
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-info** display information messages.
-   
+
 -  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-   
+
 -  **-debug** display debugging messages.
-   
+
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
-   
+
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
-   
+
 -  **-help** display this information page and exit.
-   
+
 -  **-version** display version information and exit.
-   
+
 --------------
 
 

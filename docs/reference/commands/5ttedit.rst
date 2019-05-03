@@ -22,34 +22,34 @@ Options
 -------
 
 -  **-cgm image** provide a mask of voxels that should be set to cortical grey matter
-   
+
 -  **-sgm image** provide a mask of voxels that should be set to sub-cortical grey matter
-   
+
 -  **-wm image** provide a mask of voxels that should be set to white matter
-   
+
 -  **-csf image** provide a mask of voxels that should be set to CSF
-   
+
 -  **-path image** provide a mask of voxels that should be set to pathological tissue
-   
+
 -  **-none image** provide a mask of voxels that should be cleared (i.e. are non-brain); note that this will supersede all other provided masks
-   
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-info** display information messages.
-   
+
 -  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-   
+
 -  **-debug** display debugging messages.
-   
+
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
-   
+
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
-   
+
 -  **-help** display this information page and exit.
-   
+
 -  **-version** display version information and exit.
-   
+
 --------------
 
 
