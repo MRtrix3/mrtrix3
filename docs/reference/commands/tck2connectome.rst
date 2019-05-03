@@ -53,63 +53,63 @@ Structural connectome streamline assignment option
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-assignment_end_voxels** use a simple voxel lookup value at each streamline endpoint
-   
+
 -  **-assignment_radial_search radius** perform a radial search from each streamline endpoint to locate the nearest node. Argument is the maximum radius in mm; if no node is found within this radius, the streamline endpoint is not assigned to any node. Default search distance is 2mm.
-   
+
 -  **-assignment_reverse_search max_dist** traverse from each streamline endpoint inwards along the streamline, in search of the last node traversed by the streamline. Argument is the maximum traversal length in mm (set to 0 to allow search to continue to the streamline midpoint).
-   
+
 -  **-assignment_forward_search max_dist** project the streamline forwards from the endpoint in search of a parcellation node voxel. Argument is the maximum traversal length in mm.
-   
+
 -  **-assignment_all_voxels** assign the streamline to all nodes it intersects along its length (note that this means a streamline may be assigned to more than two nodes, or indeed none at all)
-   
+
 Structural connectome metric options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-scale_length** scale each contribution to the connectome edge by the length of the streamline
-   
+
 -  **-scale_invlength** scale each contribution to the connectome edge by the inverse of the streamline length
-   
+
 -  **-scale_invnodevol** scale each contribution to the connectome edge by the inverse of the two node volumes
-   
+
 -  **-scale_file path** scale each contribution to the connectome edge according to the values in a vector file
-   
+
 Options for outputting connectome matrices
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-symmetric** Make matrices symmetric on output
-   
+
 -  **-zero_diagonal** Set matrix diagonal to zero on output
-   
+
 Other options for tck2connectome
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-stat_edge statistic** statistic for combining the values from all streamlines in an edge into a single scale value for that edge (options are: sum,mean,min,max; default=sum)
-   
+
 -  **-tck_weights_in path** specify a text scalar file containing the streamline weights
-   
+
 -  **-keep_unassigned** By default, the program discards the information regarding those streamlines that are not successfully assigned to a node pair. Set this option to keep these values (will be the first row/column in the output matrix)
-   
+
 -  **-out_assignments path** output the node assignments of each streamline to a file; this can be used subsequently e.g. by the command connectome2tck
-   
+
 -  **-vector** output a vector representing connectivities from a given seed point to target nodes, rather than a matrix of node-node connectivities
-   
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-info** display information messages.
-   
+
 -  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-   
+
 -  **-debug** display debugging messages.
-   
+
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
-   
+
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
-   
+
 -  **-help** display this information page and exit.
-   
+
 -  **-version** display version information and exit.
-   
+
 References
 ^^^^^^^^^^
 

@@ -21,33 +21,32 @@ Options
 -------
 
 -  **-fc template_fixel_directory output_fixel_directory output_fixel_data** use an input template fixel image to define fibre orientations and output a fixel image describing the change in fibre cross-section (FC) in the perpendicular plane to the fixel orientation. e.g. warp2metric warp.mif -fc fixel_template_directory output_fixel_directory fc.mif
-   
+
 -  **-jmat output** output a Jacobian matrix image stored in column-major order along the 4th dimension.Note the output jacobian describes the warp gradient w.r.t the scanner space coordinate system
-   
+
 -  **-jdet output** output the Jacobian determinant instead of the full matrix
-   
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-info** display information messages.
-   
+
 -  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-   
+
 -  **-debug** display debugging messages.
-   
+
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
-   
+
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
-   
+
 -  **-help** display this information page and exit.
-   
+
 -  **-version** display version information and exit.
-   
+
 References
 ^^^^^^^^^^
 
-Raffelt, D.; Tournier, JD/; Smith, RE.; Vaughan, DN.; Jackson, G.; Ridgway, GR. Connelly, A.Investigating White Matter Fibre Density and Morphology using Fixel-Based Analysis. 
-  Neuroimage, 2016, 10.1016/j.neuroimage.2016.09.029
+Raffelt, D.; Tournier, JD/; Smith, RE.; Vaughan, DN.; Jackson, G.; Ridgway, GR. Connelly, A.Investigating White Matter Fibre Density and Morphology using Fixel-Based Analysis. Neuroimage, 2016, 10.1016/j.neuroimage.2016.09.029
 
 --------------
 

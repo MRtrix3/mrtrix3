@@ -849,9 +849,11 @@ namespace MR
         for (size_t a = 0; a < opt.size(); ++a)
           f += std::string (" ") + opt[a].id;
         f += std::string("** ");
-        for (const auto& desc : split_lines (opt.desc))
-          f += escape_special (desc) + "\n   ";
-        f += "\n";
+        auto desc = split_lines (opt.desc, false);
+        f += escape_special (desc[0]);
+        for (size_t n = 1; n < desc.size(); ++n)
+          f += " |br|\n   " + escape_special (desc[n]);
+        f += "\n\n";
         return f;
       };
 
@@ -878,11 +880,11 @@ namespace MR
       if (REFERENCES.size()) {
         s += std::string ("References\n^^^^^^^^^^\n\n");
         for (size_t i = 0; i < REFERENCES.size(); ++i) {
-          auto refs = split_lines (REFERENCES[i]);
-          s += refs[0] + "\n";
+          auto refs = split_lines (REFERENCES[i], false);
+          s += refs[0];
           for (size_t n = 1; n < refs.size(); ++n)
-            s += "  " + refs[n] + "\n";
-          s += "\n";
+            s += " |br|\n  " + refs[n];
+          s += "\n\n";
         }
       }
       s += std::string("--------------\n\n") +

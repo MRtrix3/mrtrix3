@@ -33,47 +33,47 @@ Options
 -------
 
 -  **-scanner2voxel reference** if specified, the properties of this image will be used to convert track point positions from real (scanner) coordinates into voxel coordinates.
-   
+
 -  **-scanner2image reference** if specified, the properties of this image will be used to convert track point positions from real (scanner) coordinates into image coordinates (in mm).
-   
+
 -  **-voxel2scanner reference** if specified, the properties of this image will be used to convert track point positions from voxel coordinates into real (scanner) coordinates.
-   
+
 -  **-image2scanner reference** if specified, the properties of this image will be used to convert track point positions from image coordinates (in mm) into real (scanner) coordinates.
-   
+
 Options specific to PLY writer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-sides sides** number of sides for streamlines
-   
+
 -  **-increment increment** generate streamline points at every (increment) points
-   
+
 Options specific to RIB writer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-dec** add DEC as a primvar
-   
+
 Options for both PLY and RIB writer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-radius radius** radius of the streamlines
-   
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-info** display information messages.
-   
+
 -  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-   
+
 -  **-debug** display debugging messages.
-   
+
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
-   
+
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
-   
+
 -  **-help** display this information page and exit.
-   
+
 -  **-version** display version information and exit.
-   
+
 --------------
 
 

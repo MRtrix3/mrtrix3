@@ -70,41 +70,41 @@ Options for determining the content / format of output files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-nodes list** only select tracks that involve a set of nodes of interest (provide as a comma-separated list of integers)
-   
+
 -  **-exclusive** only select tracks that exclusively connect nodes from within the list of nodes of interest
-   
+
 -  **-files option** select how the resulting streamlines will be grouped in output files. Options are: per_edge, per_node, single (default: per_edge)
-   
+
 -  **-exemplars image** generate a mean connection exemplar per edge, rather than keeping all streamlines (the parcellation node image must be provided in order to constrain the exemplar endpoints)
-   
+
 -  **-keep_unassigned** by default, the program discards those streamlines that are not successfully assigned to a node. Set this option to generate corresponding outputs containing these streamlines (labelled as node index 0)
-   
+
 -  **-keep_self** by default, the program will not output streamlines that connect to the same node at both ends. Set this option to instead keep these self-connections.
-   
+
 Options for importing / exporting streamline weights
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-tck_weights_in path** specify a text scalar file containing the streamline weights
-   
+
 -  **-prefix_tck_weights_out prefix** provide a prefix for outputting a text file corresponding to each output file, each containing only the streamline weights relevant for that track file
-   
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-info** display information messages.
-   
+
 -  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-   
+
 -  **-debug** display debugging messages.
-   
+
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
-   
+
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
-   
+
 -  **-help** display this information page and exit.
-   
+
 -  **-version** display version information and exit.
-   
+
 --------------
 
 

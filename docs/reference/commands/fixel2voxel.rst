@@ -42,30 +42,30 @@ Options
 -------
 
 -  **-number N** use only the largest N fixels in calculation of the voxel-wise statistic; in the case of "split_data" and "split_dir", output only the largest N fixels, padding where necessary.
-   
+
 -  **-weighted fixel_in** weight the contribution of each fixel to the per-voxel result according to its volume.
-   
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-info** display information messages.
-   
+
 -  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-   
+
 -  **-debug** display debugging messages.
-   
+
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
-   
+
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
-   
+
 -  **-help** display this information page and exit.
-   
+
 -  **-version** display version information and exit.
-   
+
 References
 ^^^^^^^^^^
 
-* Reference for 'complexity' operation:
+* Reference for 'complexity' operation: |br|
   Riffert, T. W.; Schreiber, J.; Anwander, A. & Knosche, T. R. Beyond Fractional Anisotropy: Extraction of bundle-specific structural metrics from crossing fibre models. NeuroImage, 2014, 100, 176-191
 
 --------------

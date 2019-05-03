@@ -40,52 +40,52 @@ Options
 -------
 
 -  **-ols** perform initial fit using an ordinary least-squares (OLS) fit (see Description).
-   
+
 -  **-mask image** only perform computation within the specified binary brain mask image.
-   
+
 -  **-b0 image** the output b0 image.
-   
+
 -  **-dkt image** the output dkt image.
-   
+
 -  **-iter integer** number of iterative reweightings for IWLS algorithm (default: 2) (see Description).
-   
+
 -  **-predicted_signal image** the predicted dwi image.
-   
+
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-grad file** Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
-   
+
 -  **-fslgrad bvecs bvals** Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
-   
+
 -  **-bvalue_scaling mode** specifies whether the b-values should be scaled by the square of the corresponding DW gradient norm, as often required for multi-shell or DSI DW acquisition schemes. The default action can also be set in the MRtrix config file, under the BValueScaling entry. Valid choices are yes/no, true/false, 0/1 (default: true).
-   
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-info** display information messages.
-   
+
 -  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-   
+
 -  **-debug** display debugging messages.
-   
+
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
-   
+
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
-   
+
 -  **-help** display this information page and exit.
-   
+
 -  **-version** display version information and exit.
-   
+
 References
 ^^^^^^^^^^
 
 References based on fitting algorithm used:
 
-* OLS, WLS:
+* OLS, WLS: |br|
   Basser, P.J.; Mattiello, J.; LeBihan, D.Estimation of the effective self-diffusion tensor from the NMR spin echo.J Magn Reson B., 1994, 103, 247–254.
 
-* IWLS:
+* IWLS: |br|
   Veraart, J.; Sijbers, J.; Sunaert, S.; Leemans, A. & Jeurissen, B. Weighted linear least squares estimation of diffusion MRI parameters: strengths, limitations, and pitfalls. NeuroImage, 2013, 81, 335-346
 
 --------------
