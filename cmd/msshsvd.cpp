@@ -1,16 +1,10 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2017-2019 Daan Christiaens
  *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
- *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- * For more details, see http://www.mrtrix.org/.
+ * MRtrix and this add-on module is distributed in the hope
+ * that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.
  */
-
 
 #include "command.h"
 #include "image.h"

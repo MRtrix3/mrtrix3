@@ -10,7 +10,7 @@ The code is built like any other [MRtrix3](https://github.com/MRtrix3/mrtrix3)
 module, i.e., by setting up a symbolic link to the core build script:
 
 ```
-$ git clone https://gitlab.com/ChD/shard-recon
+$ git clone https://gitlab.com/ChD/shard-recon.git
 $ cd shard-recon
 $ ln -s /path/to/mrtrix3/build
 $ ./build
@@ -26,3 +26,7 @@ Note: For this to work, the code needs to compiled against the current MRtrix3
 ## Help & support
 
 Contact daan.christiaens@kcl.ac.uk
+
+*License:* The source code is protected under exclusive copyright by the authors.
+At this stage, the code may *NOT* be modified or distributed without written permission.
+
