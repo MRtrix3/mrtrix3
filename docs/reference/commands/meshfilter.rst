@@ -40,26 +40,26 @@ Options for mesh smoothing filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-smooth_spatial value** spatial extent of smoothing (default: 10mm)
-
+   
 -  **-smooth_influence value** influence factor for smoothing (default: 10)
-
+   
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-info** display information messages.
-
+   
 -  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-
+   
 -  **-debug** display debugging messages.
-
+   
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
-
+   
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
-
+   
 -  **-help** display this information page and exit.
-
+   
 -  **-version** display version information and exit.
-
+   
 --------------
 
 

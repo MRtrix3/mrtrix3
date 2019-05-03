@@ -34,64 +34,65 @@ Options for permutation testing
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-notest** don't perform permutation testing and only output population statistics (effect size, stdev etc)
-
+   
 -  **-nperms num** the number of permutations (Default: 5000)
-
+   
 -  **-permutations file** manually define the permutations (relabelling). The input should be a text file defining a m x n matrix, where each relabelling is defined as a column vector of size    m, and the number of columns, n, defines the number of permutations. Can be generated with the palm_quickperms function in PALM (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM). Overrides the nperms option.
-
+   
 -  **-nonstationary** perform non-stationarity correction
-
+   
 -  **-nperms_nonstationary num** the number of permutations used when precomputing the empirical statistic image for nonstationary correction (Default: 5000)
-
+   
 -  **-permutations_nonstationary file** manually define the permutations (relabelling) for computing the emprical statistic image for nonstationary correction. The input should be a text file defining a m x n matrix, where each relabelling is defined as a column vector of size m, and the number of columns, n, defines the number of permutations. Can be generated with the palm_quickperms function in PALM (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM) Overrides the nperms_nonstationary option.
-
+   
 Parameters for the Connectivity-based Fixel Enhancement algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-cfe_dh value** the height increment used in the cfe integration (default: 0.1)
-
+   
 -  **-cfe_e value** cfe extent exponent (default: 2)
-
+   
 -  **-cfe_h value** cfe height exponent (default: 3)
-
+   
 -  **-cfe_c value** cfe connectivity exponent (default: 0.5)
-
+   
 Additional options for fixelcfestats
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-negative** automatically test the negative (opposite) contrast. By computing the opposite contrast simultaneously the computation time is reduced.
-
+   
 -  **-smooth FWHM** smooth the fixel value along the fibre tracts using a Gaussian kernel with the supplied FWHM (default: 10mm)
-
+   
 -  **-connectivity threshold** a threshold to define the required fraction of shared connections to be included in the neighbourhood (default: 0.01)
-
+   
 -  **-angle value** the max angle threshold for assigning streamline tangents to fixels (Default: 45 degrees)
-
+   
 -  **-mask file** provide a fixel data file containing a mask of those fixels to be used during processing
-
+   
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-info** display information messages.
-
+   
 -  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
-
+   
 -  **-debug** display debugging messages.
-
+   
 -  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
-
+   
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
-
+   
 -  **-help** display this information page and exit.
-
+   
 -  **-version** display version information and exit.
-
+   
 References
 ^^^^^^^^^^
 
-Raffelt, D.; Smith, RE.; Ridgway, GR.; Tournier, JD.; Vaughan, DN.; Rose, S.; Henderson, R.; Connelly, A.Connectivity-based fixel enhancement: Whole-brain statistical analysis of diffusion MRI measures in the presence of crossing fibres. Neuroimage, 2015, 15(117):40-55
+Raffelt, D.; Smith, RE.; Ridgway, GR.; Tournier, JD.; Vaughan, DN.; Rose, S.; Henderson, R.; Connelly, A.Connectivity-based fixel enhancement: Whole-brain statistical analysis of diffusion MRI measures in the presence of crossing fibres.Neuroimage, 2015, 15(117):40-55
 
-* If using the -nonstationary option: Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. Adjusting the effect of nonstationarity in cluster-based and TFCE inference. NeuroImage, 2011, 54(3), 2006-19
+* If using the -nonstationary option: 
+  Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. Adjusting the effect of nonstationarity in cluster-based and TFCE inference. NeuroImage, 2011, 54(3), 2006-19
 
 --------------
 

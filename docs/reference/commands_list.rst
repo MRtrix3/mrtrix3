@@ -193,7 +193,7 @@ List of MRtrix3 commands
     :ref:`sh2power`, "Compute the total power of a spherical harmonics image"
     :ref:`sh2response`, "Generate an appropriate response function from the image data for spherical deconvolution"
     :ref:`shbasis`, "Examine the values in spherical harmonic images to estimate (and optionally change) the SH basis used"
-    :ref:`shconv`, "Perform a spherical convolution"
+    :ref:`shconv`, "Perform spherical convolution"
     :ref:`shview`, "View spherical harmonics surface plots"
     :ref:`tck2connectome`, "Generate a connectome matrix from a streamlines file and a node parcellation image"
     :ref:`tck2fixel`, "Compute a fixel TDI map from a tractogram"
