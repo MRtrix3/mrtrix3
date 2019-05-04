@@ -31,7 +31,7 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Evaluate the amplitude of an image of spherical harmonic functions along specified directions";
 
