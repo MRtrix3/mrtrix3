@@ -1,4 +1,4 @@
-import imp, os, sys
+import imp, inspect, os, sys
 from distutils.spawn import find_executable
 
 def imported(lib_path):
@@ -48,3 +48,13 @@ if not imported(os.path.normpath(os.path.join(os.path.dirname(__file__), os.pard
           sys.stderr.write('https://mrtrix.readthedocs.io/en/latest/tips_and_tricks/external_modules.html\n')
           sys.stderr.flush()
           sys.exit(1)
+
+# See if the origin importing this file has the requisite member functions to be executed using the API
+MODULE = inspect.getmodule(inspect.stack()[-1][0])
+try:
+  getattr(MODULE, 'usage')
+  getattr(MODULE, 'execute')
+  from mrtrix3 import app
+  app.execute(MODULE)
+except AttributeError:
+  pass

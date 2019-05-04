@@ -87,7 +87,7 @@ KEYLIST = [ 'IN', 'NAME', 'PRE', 'UNI' ]
 
 def execute(): #pylint: disable=unused-variable
   import multiprocessing, os, re, sys
-  from mrtrix3 import ANSI, MRtrixError, run
+  from mrtrix3 import ANSI, app, MRtrixError, run #pylint: disable=no-name-in-module
   global CMDSPLIT
 
   inputs = app.ARGS.inputs
@@ -276,5 +276,4 @@ def execute(): #pylint: disable=unused-variable
 
 
 # Execute the script
-from mrtrix3 import app
-app.execute()
+import mrtrix3
