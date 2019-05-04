@@ -21,7 +21,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import image, MRtrixError, path, run
+  from mrtrix3 import app, image, MRtrixError, path, run #pylint: disable=no-name-in-module
   # check inputs and outputs
   dwi_header = image.Header(path.from_user(app.ARGS.input, False))
   if len(dwi_header.size()) != 4:
@@ -50,5 +50,4 @@ def execute(): #pylint: disable=unused-variable
 
 
 # Execute the script
-from mrtrix3 import app
-app.execute()
+import mrtrix3

@@ -185,7 +185,7 @@ class Input(object):
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError
+  from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module
 
   if not app.ARGS.type in REGISTRATION_MODES:
     raise MRtrixError("registration type must be one of %s. provided: %s" % (str(["rigid", "affine", "rigid_affine"]), app.ARGS.type))
@@ -779,4 +779,4 @@ def execute(): #pylint: disable=unused-variable
 
 
 # Execute the script
-app.execute()
+import mrtrix3

@@ -75,7 +75,7 @@ else:
 
 
 
-def execute(): #pylint: disable=unused-variable
+def execute(module): #pylint: disable=unused-variable
   import inspect, shutil, signal
   from mrtrix3 import ANSI, MRtrixError, run
   global ARGS, CMDLINE, CONTINUE_OPTION, DO_CLEANUP, EXEC_NAME, FORCE_OVERWRITE, NUM_THREADS, SCRATCH_DIR, VERBOSITY, WORKING_DIR
@@ -87,7 +87,6 @@ def execute(): #pylint: disable=unused-variable
     except:
       pass
 
-  module = inspect.getmodule(inspect.stack()[-1][0])
   CMDLINE = Parser()
   try:
     module.usage(CMDLINE)

@@ -4,7 +4,7 @@
 
 
 def usage(cmdline): #pylint: disable=unused-variable
-  from mrtrix3 import algorithm
+  from mrtrix3 import algorithm #pylint: disable=no-name-in-module
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Perform various forms of intensity normalisation of DWIs')
   cmdline.add_description('This script provides access to different techniques for globally scaling the intensity of diffusion-weighted images. '
@@ -17,7 +17,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import algorithm
+  from mrtrix3 import algorithm, app #pylint: disable=no-name-in-module
 
   # Find out which algorithm the user has requested
   alg = algorithm.get_module(app.ARGS.algorithm)
@@ -31,5 +31,4 @@ def execute(): #pylint: disable=unused-variable
 
 
 # Execute the script
-from mrtrix3 import app
-app.execute()
+import mrtrix3
