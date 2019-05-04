@@ -84,7 +84,7 @@ echo "
     :header: \"Command\", \"Synopsis\"
 " > $table_file
 
-for n in `find "${mrtrix_root}"/bin/ -type f -print0 | xargs -0 grep -l "app.execute()" | sort`; do
+for n in `find "${mrtrix_root}"/bin/ -type f -print0 | xargs -0 grep -l "import mrtrix3" | sort`; do
   filepath=${mrtrix_root}'/docs/reference/scripts'
   filename=`basename $n`
   $n __print_usage_rst__ > $filepath/$filename.rst
