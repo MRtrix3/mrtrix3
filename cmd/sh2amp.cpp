@@ -129,7 +129,7 @@ class SH2AmpMultiShell { MEMALIGN(SH2AmpMultiShell)
         if (nonnegative)
           amp = amp.cwiseMax(value_type(0.0));
 
-        for (size_t k = 0; k < amp.size(); ++k) {
+        for (ssize_t k = 0; k < amp.size(); ++k) {
           out.index(3) = shells[n].get_volumes()[k];
           out.value() = amp[k];
         }
@@ -212,7 +212,7 @@ void run ()
     if (shells.count() > 1) {
       if (sh_data.ndim() < 5)
         throw Exception ("multiple shells detected in gradient scheme, but only one shell in input data");
-      if (sh_data.size(4) != shells.count())
+      if (sh_data.size(4) != ssize_t (shells.count()))
         throw Exception ("number of shells differs between gradient scheme and input data");
     }
     else if (! (sh_data.ndim() == 4 || ( sh_data.ndim() > 4 && ( sh_data.size(4) != 1 ))) )
