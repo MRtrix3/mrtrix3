@@ -54,8 +54,6 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 
-import math, os, shutil
-from mrtrix3 import app, image, path, run
 
 # Binds raw_input() to input() in Python2, so that input() can be used
 #   and the code will work on both Python 2 and 3
@@ -67,15 +65,19 @@ except NameError:
 
 
 def abspath(*arg):
+  import os
   return os.path.abspath(os.path.join(*arg))
 
 def relpath(*arg):
+  import os
+  from mrtrix3 import app
   return os.path.relpath(os.path.join(*arg), app.WORKING_DIR)
 
 try:
   from numpy import loadtxt, savetxt, dot
 except ImportError:
-  app.console("numpy not found; using replacement functions")
+  import sys
+  sys.stderr.write('numpy not found; using replacement functions\n')
   def loadtxt(fname, delimiter=" ", dtype=float):
     with open(fname, "rb") as file_in:
       return [[dtype(a) for a in l.decode(errors='ignore').rstrip().split(delimiter)] for l in file_in.readlines()]
@@ -99,7 +101,12 @@ except ImportError:
     # does not check input dimensions
     return [[sum(x*y for x,y in zip(a_row,b_col)) for b_col in zip(*matrix_b)] for a_row in matrix_a]
 
-def check_linear_transformation (transformation, cmd, max_scaling = 0.5, max_shear = 0.2, max_rot = 2 * math.pi, pause_on_warn = True):
+def check_linear_transformation (transformation, cmd, max_scaling = 0.5, max_shear = 0.2, max_rot = None, pause_on_warn = True):
+  import math, os
+  from mrtrix3 import app, run #pylint: disable=no-name-in-module
+
+  if max_rot is None:
+    max_rot = 2 * math.pi
 
   def load_key_value(file_path):
     res = {}
@@ -185,7 +192,8 @@ class Input(object):
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module
+  import math, os, shutil
+  from mrtrix3 import app, image, MRtrixError, path, run #pylint: disable=no-name-in-module
 
   if not app.ARGS.type in REGISTRATION_MODES:
     raise MRtrixError("registration type must be one of %s. provided: %s" % (str(["rigid", "affine", "rigid_affine"]), app.ARGS.type))
@@ -779,4 +787,4 @@ def execute(): #pylint: disable=unused-variable
 
 
 # Execute the script
-import mrtrix3
+import mrtrix3 #pylint: disable=unused-variable, unused-import
