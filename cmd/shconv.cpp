@@ -69,11 +69,11 @@ class SConvFunctor { MEMALIGN(SConvFunctor)
       for (size_t n = 0; n < inputs.size(); ++n) {
         assign_pos_of (output, 0, 3).to (inputs[n]);
         in = inputs[n].row (3);
-        for (size_t s = 0; s < responses[n].rows(); ++s) {
+        for (ssize_t s = 0; s < responses[n].rows(); ++s) {
           Math::SH::sconv (out, responses[n].row(s), in);
           if (output.ndim() > 4)
             output.index(4) = s;
-          for (size_t k = 0; k < out.size(); ++k) {
+          for (ssize_t k = 0; k < out.size(); ++k) {
             output.index(3) = k;
             output.value() += out[k];
           }
@@ -112,7 +112,7 @@ void run()
     responses[n].conservativeResizeLike (Eigen::MatrixXd::Zero (responses[n].rows(), Math::ZSH::NforL (Math::SH::LforN (inputs[n].size (3)))));
     lmax = std::max (Math::ZSH::LforN (responses[n].cols()), lmax);
 
-    for (size_t k = 0; k < responses[n].rows(); ++k)
+    for (ssize_t k = 0; k < responses[n].rows(); ++k)
       responses[n].row(k) = Math::ZSH::ZSH2RH (responses[n].row(k));
 
     if (n) {
