@@ -146,7 +146,7 @@ Adding code to the module
 New code can be added to this new module as follows:
 
 - **Stand-alone .cpp file**: a single C++ code file destined to be compiled
-  into a binary executable should have the "``.cpp``" file extension, and be
+  into a binary executable should have the ``.cpp`` file extension, and be
   placed into the ``cmd/`` directory of the module. Execution of the ``build``
   symbolic link in the module root directory should then detect the presence of
   this file, and generate an executable file in the corresponding ``bin/``
@@ -194,8 +194,8 @@ the C++ executable::
     |-- tmp/
     |   |-- (directories)
 
-Both example command executables - ``example_binary`` and ``example_script`` -
-now reside in directory ``~/src/module/bin/``. The ``example_binary``
+Both example command executables -- ``example_binary`` and ``example_script``
+-- now reside in directory ``~/src/module/bin/``. The ``example_binary``
 executable will be linked against the core *MRtrix3* library (in the
 ``~/src/mrtrix3/lib`` folder), and the ``example_script`` Python script will
 import modules from the core *MRtrix3* Python module (in the
@@ -216,9 +216,9 @@ ways:
 
          $ example_binary argument1 argument2 ...
 
-      , you would use::
+      you would use::
 
-         $ ~/src/mrtrix/module/bin/example_binary argument1 argument2 ...
+         $ ~/src/module/bin/example_binary argument1 argument2 ...
 
       While this may be inconvenient in some circumstances, in others it can
       be beneficial, as it is entirely explicit and clear as to exactly which
@@ -234,7 +234,7 @@ ways:
       ``~/.bashrc`` or ``~/.bash_profile``; the appropriate file will depend
       on your particular system)::
 
-         $ export PATH=/home/username/src/mrtrix/module/bin:$PATH
+         $ export PATH=/home/username/src/module/bin:$PATH
 
       Obviously you will need to modify this line according to both your user
       name, and the location on your file system where you have installed the
@@ -242,8 +242,9 @@ ways:
 
    3. Use the ``set_path`` script provided with *MRtrix3* to automatically add
       the location of the module's ``bin/`` directory to ``PATH`` whenever a
-      terminal session is created. To do this, execute the ``set_path`` script
-      while residing in the top-level directory of the module::
+      terminal session is created. To do this, execute your core *MRtrix3*
+      installation's ``set_path`` script while residing in the top-level
+      directory of the module::
 
          $ cd ~/src/module
          $ ../mrtrix3/set_path
