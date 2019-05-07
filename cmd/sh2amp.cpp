@@ -74,7 +74,7 @@ void usage ()
   OPTIONS
     + Option ("nonnegative",
               "cap all negative amplitudes to zero")
-    + DWI::ShellsOption
+    + DWI::GradImportOptions()
     + Stride::Options
     + DataType::options();
 }
@@ -204,6 +204,7 @@ void run ()
   }
   else { // full gradient scheme:
 
+    DWI::set_DW_scheme (amp_header, directions);
     auto shells = DWI::Shells (directions).select_shells (false, false, false);
 
     if (shells.count() == 0)
