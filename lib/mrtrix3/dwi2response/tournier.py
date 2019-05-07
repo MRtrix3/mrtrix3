@@ -2,7 +2,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('tournier', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Use the Tournier et al. (2013) iterative algorithm for single-fibre voxel selection and response function estimation')
-  parser.add_citation('', 'Tournier, J.-D.; Calamante, F. & Connelly, A. Determination of the appropriate b-value and number of gradient directions for high-angular-resolution diffusion-weighted imaging. NMR Biomedicine, 2013, 26, 1775-1786', False)
+  parser.add_citation('Tournier, J.-D.; Calamante, F. & Connelly, A. Determination of the appropriate b-value and number of gradient directions for high-angular-resolution diffusion-weighted imaging. NMR Biomedicine, 2013, 26, 1775-1786')
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('output', help='The output response function text file')
   options = parser.add_argument_group('Options specific to the \'tournier\' algorithm')

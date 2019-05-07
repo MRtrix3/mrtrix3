@@ -638,8 +638,13 @@ class Parser(argparse.ArgumentParser):
   def set_synopsis(self, text):
     self._synopsis = text
 
-  def add_citation(self, condition, reference, is_external): #pylint: disable=unused-variable
-    self._citation_list.append( (condition, reference) )
+  def add_citation(self, citation, **kwargs): #pylint: disable=unused-variable
+    # condition, is_external
+    condition = kwargs.pop('condition', None)
+    is_external = kwargs.pop('is_external', False)
+    if kwargs:
+      raise TypeError('Unsupported keyword arguments passed to app.Parser.add_citation(): ' + str(kwargs))
+    self._citation_list.append( (condition, citation) )
     if is_external:
       self._external_citations = True
 
