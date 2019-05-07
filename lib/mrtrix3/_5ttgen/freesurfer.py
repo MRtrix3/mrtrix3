@@ -48,12 +48,12 @@ def execute(): #pylint: disable=unused-variable
   # Initial conversion from FreeSurfer parcellation to five principal tissue types
   run.command('labelconvert input.mif ' + lut_input_path + ' ' + lut_output_path + ' indices.mif')
 
-  # Use mrcrop to reduce file size
+  # Crop to reduce file size
   if app.ARGS.nocrop:
     image = 'indices.mif'
   else:
     image = 'indices_cropped.mif'
-    run.command('mrthreshold indices.mif - -abs 0.5 | mrcrop indices.mif ' + image + ' -mask -')
+    run.command('mrthreshold indices.mif - -abs 0.5 | maskfilter - dilate - | mrgrid indices.mif crop ' + image + ' -mask -')
 
   # Convert into the 5TT format for ACT
   run.command('mrcalc ' + image + ' 1 -eq cgm.mif')
