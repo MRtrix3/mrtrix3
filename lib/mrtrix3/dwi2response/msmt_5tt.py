@@ -2,7 +2,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('msmt_5tt', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Derive MSMT-CSD tissue response functions based on a co-registered five-tissue-type (5TT) image')
-  parser.add_citation('', 'Jeurissen, B.; Tournier, J.-D.; Dhollander, T.; Connelly, A. & Sijbers, J. Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data. NeuroImage, 2014, 103, 411-426', False)
+  parser.add_citation('Jeurissen, B.; Tournier, J.-D.; Dhollander, T.; Connelly, A. & Sijbers, J. Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data. NeuroImage, 2014, 103, 411-426')
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('in_5tt', help='Input co-registered 5TT image')
   parser.add_argument('out_wm', help='Output WM response text file')

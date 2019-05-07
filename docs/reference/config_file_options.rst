@@ -224,25 +224,11 @@ List of MRtrix3 configuration file options
      A boolean value specifying whether MRtrix applications should
      abort as soon as any (otherwise non-fatal) warning is issued.
 
-.. option:: FailOnWarn
-
-    *default: 0 (false)*
-
-     A boolean value specifying whether MRtrix applications should
-     abort as soon as any (otherwise non-fatal) warning is issued.
-
 .. option:: FontSize
 
     *default: 10*
 
      The size (in points) of the font to be used in OpenGL viewports (mrview and shview).
-
-.. option:: HelpCommand
-
-    *default: less*
-
-     The command to use to display each command's help page (leave
-     empty to send directly to the terminal).
 
 .. option:: HelpCommand
 
@@ -607,12 +593,6 @@ List of MRtrix3 configuration file options
      Specifies whether tckgen should be terminated prematurely
      in cases where it appears as though the target number of
      accepted streamlines is not going to be met.
-
-.. option:: TerminalColor
-
-    *default: 1 (true)*
-
-     A boolean value to indicate whether colours should be used in the terminal.
 
 .. option:: TerminalColor
 
