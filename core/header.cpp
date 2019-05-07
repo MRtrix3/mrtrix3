@@ -235,7 +235,7 @@ namespace MR
       for (size_t n = 0; n < Pdim.size(); ++n) {
         while (a < int(H.ndim()) && H.stride(a))
           a++;
-        Pdim[n] = Hdim[a];
+        Pdim[n] = Hdim[a++];
       }
       parser.calculate_padding (Pdim);
 

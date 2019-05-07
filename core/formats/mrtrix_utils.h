@@ -92,7 +92,7 @@ namespace MR
 
         if (vox.empty())
           throw Exception ("missing \"vox\" specification for MRtrix image \"" + H.name() + "\"");
-        if (vox.size() < 3)
+        if (vox.size() < std::min (size_t(3), dim.size()))
           throw Exception ("too few entries in \"vox\" specification for MRtrix image \"" + H.name() + "\"");
         for (size_t n = 0; n < std::min<size_t> (vox.size(), H.ndim()); n++) {
           if (vox[n] < 0.0)
