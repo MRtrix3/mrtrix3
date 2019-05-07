@@ -816,8 +816,13 @@ namespace MR
       };
 
       // Argument description:
-      for (size_t i = 0; i < ARGUMENTS.size(); ++i)
-        s += std::string("-  *") + ARGUMENTS[i].id + "*: " + escape_special (ARGUMENTS[i].desc) + "\n";
+      for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
+        auto desc = split_lines (escape_special (ARGUMENTS[i].desc), false);
+        s += std::string("-  *") + ARGUMENTS[i].id + "*: " + desc[0];
+        for (size_t n = 1; n < desc.size(); ++n)
+          s += " |br|\n   " + desc[n];
+        s+= "\n";
+      }
       s += "\n";
 
 
