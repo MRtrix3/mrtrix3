@@ -167,7 +167,7 @@ New code can be added to this new module as follows:
   cannot reasonably be fully encapsulated within a single file, additional
   files will need to be added to the module. For C++ code, these will need to
   be added to the ``src/`` directory. For further details, refer to the 
-  relevant `developper documentation <http://www.mrtrix.org/developer-documentation/module_howto.html>`__.
+  relevant `developer documentation <http://www.mrtrix.org/developer-documentation/module_howto.html>`__.
 
 For example, the following steps take the ``example_script`` Python script and
 ``example_binary.cpp`` C++ files, previously downloaded by the user into the
