@@ -64,7 +64,7 @@ Example usages
 Options
 -------
 
-- **-exclude** Exclude one specific input string from being processed (see Example Usage)
+- **-exclude "regex"**  *(multiple uses permitted)* Exclude one specific input string / all strings matching a regular expression from being processed (see Example Usage)
 
 - **-test** Test the operation of the foreach script, by printing the command strings following string substitution but not actually executing them
 
@@ -88,7 +88,9 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 - **-help** display this information page and exit.
 
