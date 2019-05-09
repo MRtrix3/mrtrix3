@@ -87,9 +87,9 @@ Options for specifying the acquisition phase-encoding design; note that one of t
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide a gradient table in MRtrix format
+- **-grad** Provide the diffusion gradient table in MRtrix format
 
-- **-fslgrad bvecs bvals** Provide a gradient table in FSL bvecs/bvals format
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
 Options for exporting the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

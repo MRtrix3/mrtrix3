@@ -20,12 +20,12 @@ Usage
 Options
 -------
 
-Options for providing the DWI gradient table
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Pass the diffusion gradient table in MRtrix format
+- **-grad** Provide the diffusion gradient table in MRtrix format
 
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
 Options common to all dwibiascorrect algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -115,12 +115,12 @@ Options for ANTs N4BiasFieldCorrection command
 
 - **-ants.s 4** N4BiasFieldCorrection option -s. shrink-factor applied to spatial dimensions
 
-Options for providing the DWI gradient table
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Pass the diffusion gradient table in MRtrix format
+- **-grad** Provide the diffusion gradient table in MRtrix format
 
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
 Options common to all dwibiascorrect algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -211,12 +211,12 @@ The FSL 'fast' command only estimates the bias field within a brain mask, and ca
 Options
 -------
 
-Options for providing the DWI gradient table
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Pass the diffusion gradient table in MRtrix format
+- **-grad** Provide the diffusion gradient table in MRtrix format
 
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
 Options common to all dwibiascorrect algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
