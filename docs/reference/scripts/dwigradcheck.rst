@@ -24,15 +24,15 @@ Options
 
 - **-number** Set the number of tracks to generate for each test
 
-Options for importing the gradient table
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-grad** Provide a gradient table in MRtrix format
+- **-grad** Provide the diffusion gradient table in MRtrix format
 
-- **-fslgrad bvecs bvals** Provide a gradient table in FSL bvecs/bvals format
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
-Options for exporting the estimated best gradient table
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options for exporting the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-export_grad_mrtrix grad** Export the final gradient table in MRtrix format
 

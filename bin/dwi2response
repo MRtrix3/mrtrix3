@@ -19,9 +19,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   common_options.add_argument('-voxels', help='Output an image showing the final voxel selection(s)')
   common_options.add_argument('-shells', help='The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)')
   common_options.add_argument('-lmax', help='The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)')
-  common_options.add_argument('-grad', help='Pass the diffusion gradient table in MRtrix format')
-  common_options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
-  cmdline.flag_mutually_exclusive_options( [ 'grad', 'fslgrad' ] )
+  app.add_dwgrad_import_options()
 
   # Import the command-line settings for all algorithms found in the relevant directory
   algorithm.usage(cmdline)
@@ -65,12 +63,8 @@ def execute(): #pylint: disable=unused-variable
   if alg.needs_single_shell():
     singleshell_option = ' -singleshell -no_bzero'
 
-  grad_import_option = ''
-  if app.ARGS.grad:
-    grad_import_option = ' -grad ' + path.from_user(app.ARGS.grad)
-  elif app.ARGS.fslgrad:
-    grad_import_option = ' -fslgrad ' + path.from_user(app.ARGS.fslgrad[0]) + ' ' + path.from_user(app.ARGS.fslgrad[1])
-  elif 'dw_scheme' not in image.Header(path.from_user(app.ARGS.input, False)).keyval():
+  grad_import_option = app.read_dwgrad_import_options()
+  if not grad_import_option and 'dw_scheme' not in image.Header(path.from_user(app.ARGS.input, False)).keyval():
     raise MRtrixError('Script requires diffusion gradient table: either in image header, or using -grad / -fslgrad option')
 
   app.make_scratch_dir()

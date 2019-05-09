@@ -1139,6 +1139,50 @@ class Parser(argparse.ArgumentParser):
 
 
 
+
+# Define functions for incorporating commonly-used command-line options / option groups
+def add_dwgrad_import_options(): #pylint: disable=unused-variable
+  global CMDLINE
+  assert CMDLINE
+  options = CMDLINE.add_argument_group('Options for importing the diffusion gradient table')
+  options.add_argument('-grad', help='Provide the diffusion gradient table in MRtrix format')
+  options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Provide the diffusion gradient table in FSL bvecs/bvals format')
+  CMDLINE.flag_mutually_exclusive_options( [ 'grad', 'fslgrad' ] )
+def read_dwgrad_import_options(): #pylint: disable=unused-variable
+  from mrtrix3 import path
+  global ARGS
+  assert ARGS
+  if ARGS.grad:
+    return ' -grad ' + path.from_user(ARGS.grad)
+  if ARGS.fslgrad:
+    return ' -fslgrad ' + path.from_user(ARGS.fslgrad[0]) + ' ' + path.from_user(ARGS.fslgrad[1])
+  return ''
+
+def add_dwgrad_export_options(): #pylint: disable=unused-variable
+  global CMDLINE
+  assert CMDLINE
+  options = CMDLINE.add_argument_group('Options for exporting the diffusion gradient table')
+  options.add_argument('-export_grad_mrtrix', metavar='grad', help='Export the final gradient table in MRtrix format')
+  options.add_argument('-export_grad_fsl', nargs=2, metavar=('bvecs', 'bvals'), help='Export the final gradient table in FSL bvecs/bvals format')
+  CMDLINE.flag_mutually_exclusive_options( [ 'export_grad_mrtrix', 'export_grad_fsl' ] )
+def read_dwgrad_export_options(): #pylint: disable=unused-variable
+  from mrtrix3 import path
+  global ARGS
+  assert ARGS
+  if ARGS.export_grad_mrtrix:
+    check_output_path(path.from_user(ARGS.export_grad_mrtrix, False))
+    return ' -export_grad_mrtrix ' + path.from_user(ARGS.export_grad_mrtrix)
+  if ARGS.export_grad_fsl:
+    check_output_path(path.from_user(ARGS.export_grad_fsl[0], False))
+    check_output_path(path.from_user(ARGS.export_grad_fsl[1], False))
+    return ' -export_grad_fsl ' + path.from_user(ARGS.export_grad_fsl[0]) + ' ' + path.from_user(ARGS.export_grad_fsl[1])
+  return ''
+
+
+
+
+
+
 # Handler function for dealing with system signals
 def handler(signum, _frame):
   import shutil, signal

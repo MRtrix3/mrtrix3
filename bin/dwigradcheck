@@ -8,15 +8,8 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_argument('-mask', metavar='image', help='Provide a brain mask image')
   cmdline.add_argument('-number', type=int, default=10000, help='Set the number of tracks to generate for each test')
 
-  grad_export = cmdline.add_argument_group('Options for exporting the estimated best gradient table')
-  grad_export.add_argument('-export_grad_mrtrix', metavar='grad', help='Export the final gradient table in MRtrix format')
-  grad_export.add_argument('-export_grad_fsl', nargs=2, metavar=('bvecs', 'bvals'), help='Export the final gradient table in FSL bvecs/bvals format')
-  cmdline.flag_mutually_exclusive_options( ['export_grad_mrtrix', 'export_grad_fsl' ])
-
-  grad_import = cmdline.add_argument_group('Options for importing the gradient table')
-  grad_import.add_argument('-grad', help='Provide a gradient table in MRtrix format')
-  grad_import.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Provide a gradient table in FSL bvecs/bvals format')
-  cmdline.flag_mutually_exclusive_options( ['grad', 'fslgrad' ])
+  app.add_dwgrad_export_options()
+  app.add_dwgrad_import_options()
 
 
 
@@ -190,11 +183,7 @@ def execute(): #pylint: disable=unused-variable
 
   # If requested, extract what has been detected as the best gradient table, and
   #   export it in the format requested by the user
-  grad_export_option = ''
-  if app.ARGS.export_grad_mrtrix:
-    grad_export_option = ' -export_grad_mrtrix ' + path.from_user(app.ARGS.export_grad_mrtrix)
-  elif app.ARGS.export_grad_fsl:
-    grad_export_option = ' -export_grad_fsl ' + path.from_user(app.ARGS.export_grad_fsl[0]) + ' ' + path.from_user(app.ARGS.export_grad_fsl[1])
+  grad_export_option = app.read_dwgrad_export_options()
   if grad_export_option:
     best = lengths[0]
     suffix = '_flip' + str(best[1]) + '_perm' + ''.join(str(item) for item in best[2]) + '_' + best[3]
