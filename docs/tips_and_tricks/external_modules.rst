@@ -102,6 +102,21 @@ This satisfies a number of requirements:
   is not strictly necessary.
 
 .. note::
+
+   It is in fact possible to execute Python commands external to the core
+   *MRtrix3* installation without creation of this symbolic link. If the
+   environment variable "``PYTHONPATH``" includes the location of the ``lib/``
+   directory within an *MRtrix3* installation, then Python will immediately
+   locate and import the corresponding modules. Note however that if you have
+   multiple versions of *MRtrix3* installed on one system, and use this approach,
+   then the Python modules within whichever of those *MRtrix3* versions is added
+   to ``PYTHONPATH`` will *always* be imported, regardless of the version of
+   *MRtrix3* against which any particular external module is *intended* to run.
+   Creation of a softlink to file ``bin/mrtrix3.py`` is therefore preferable,
+   as it allows different external modules to run against different *MRtrix3*
+   installations.
+
+.. note::
    **For Windows users**:
    In ``msys2``, the ``ln -s`` command actually creates a *copy* of the
    target, *not* a symbolic link. If this is done, the build script will be unable
