@@ -180,7 +180,7 @@ namespace MR
             vector<std::unique_ptr<ImageIO::Base>> ios;
             if (this_data.size())
               ios.push_back (std::move (this_data[0].io));
-            for (size_t i = this_data.size(); i != num[loop_index]; ++i) {
+            for (size_t i = this_data.size(); i != size_t(num[loop_index]); ++i) {
               Header header (template_header);
               std::unique_ptr<ImageIO::Base> io_handler;
               header.name() = list[++item_index].name();
@@ -208,7 +208,7 @@ namespace MR
             nested_data.push_back (std::move (this_data[0]));
             this_data.clear();
           }
-          for (size_t i = 0; i != num[loop_index]; ++i) {
+          for (size_t i = 0; i != size_t(num[loop_index]); ++i) {
             Header temp;
             import (temp, nested_data, loop_index+1);
             this_data.push_back (std::move (temp));
@@ -216,7 +216,7 @@ namespace MR
           }
           result = concatenate (this_data, loopindex2axis[loop_index], false);
           result.io = std::move (this_data[0].io);
-          for (size_t i = 1; i != num[loop_index]; ++i)
+          for (size_t i = 1; i != size_t(num[loop_index]); ++i)
             result.io->merge (*this_data[i].io);
         };
 
@@ -739,7 +739,7 @@ namespace MR
     if (headers.empty())
       return Header();
 
-    ssize_t global_max_nonunity_dim = 0;
+    size_t global_max_nonunity_dim = 0;
     for (const auto& H : headers) {
       if (axis_to_concat > H.ndim() + 1) {
         e.push_back ("Image \"" + H.name() + "\" is only " + str(H.ndim()) + "D");
@@ -747,7 +747,7 @@ namespace MR
       }
       ssize_t this_max_nonunity_dim;
       for (this_max_nonunity_dim = H.ndim()-1; this_max_nonunity_dim >= 0 && H.size (this_max_nonunity_dim) <= 1; --this_max_nonunity_dim);
-      global_max_nonunity_dim = std::max (global_max_nonunity_dim, this_max_nonunity_dim);
+      global_max_nonunity_dim = std::max (global_max_nonunity_dim, size_t(std::max (ssize_t(0), this_max_nonunity_dim)));
     }
 
     Header result (headers[0]);
