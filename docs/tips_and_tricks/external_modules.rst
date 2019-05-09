@@ -18,9 +18,9 @@ to the *MRtrix3* core installation, but with some symbolic links providing
 reference to that *MRtrix3* core installation. To demonstrate this, first
 consider the contents of an *MRtrix3* installation directory::
 
-    $ cd ~/src/mrtrix3
+    $ cd ~/src/mrtrix3/
 
-    core/
+    mrtrix3/
     |-- bin/
     |   |-- (executable files)
     |-- build
@@ -123,13 +123,13 @@ This satisfies a number of requirements:
       the link. Additionally, make sure that you provide the *full filesystem paths*
       to both the link location and the target. So this might look something like::
 
-         $ mklink C:\msys64\home\username\src\mrtrix\module\build C:\msys64\home\username\src\mrtrix\core\build
-         $ mklink C:\msys64\home\username\src\mrtrix\module\bin\mrtrix3.py C:\msys64\home\username\src\mrtrix\core\bin\mrtrix3.py
+         $ mklink C:\msys64\home\username\src\module\build C:\msys64\home\username\src\mrtrix\build
+         $ mklink C:\msys64\home\username\src\module\bin\mrtrix3.py C:\msys64\home\username\src\mrtrix\bin\mrtrix3.py
 
    3. In the standard terminal used for running *MRtrix3* commands (i.e. *not* the
       Windows command prompt, but e.g. MSYS2), run the command::
 
-         $ cd ~/src/mrtrix/module
+         $ cd ~/src/module
          $ ls -la
          $ ls -la bin/
 
@@ -166,7 +166,7 @@ New code can be added to this new module as follows:
 - **More complex modules**: If the requisite code for a particular functionality
   cannot reasonably be fully encapsulated within a single file, additional
   files will need to be added to the module. For C++ code, these will need to
-  be added to the ``src/`` directory. For further details, refer to the 
+  be added to the ``src/`` directory. For further details, refer to the
   relevant `developer documentation <http://www.mrtrix.org/developer-documentation/module_howto.html>`__.
 
 For example, the following steps take the ``example_script`` Python script and
@@ -187,8 +187,8 @@ the C++ executable::
     |-- bin/
     |   |-- example_binary
     |   |-- example_script
-    |   |-- mrtrix3.py -> ../../core/bin/mrtrix3.py
-    |-- build -> ../core/build
+    |   |-- mrtrix3.py -> ../../mrtrix3/bin/mrtrix3.py
+    |-- build -> ../mrtrix3/build
     |-- cmd/
     |   |-- example_binary.cpp
     |-- tmp/
