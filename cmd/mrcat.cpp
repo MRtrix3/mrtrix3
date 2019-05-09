@@ -96,17 +96,15 @@ void run ()
 {
   size_t num_images = argument.size()-1;
   vector<Header> headers;
-  size_t max_axis_nonunity = 0;
+  ssize_t max_axis_nonunity = 0;
   for (size_t i = 0; i != num_images; ++i) {
     Header H = Header::open (argument[i]);
     ssize_t a;
     for (a = ssize_t(H.ndim())-1; a >= 0 && H.size (a) <= 1; a--);
-    max_axis_nonunity = std::max (max_axis_nonunity, size_t(a));
+    max_axis_nonunity = std::max (max_axis_nonunity, a);
     headers.push_back (std::move (H));
   }
-  // TODO Should the default axis not be one greater than the highest axis
-  //   index with a non-unity size?
-  const size_t axis = get_option_value ("axis", std::max (size_t(3), max_axis_nonunity));
+  const size_t axis = get_option_value ("axis", std::max (size_t(3), size_t(std::max (ssize_t(0), max_axis_nonunity))));
 
   Header header_out = concatenate (headers, axis, true);
   header_out.name() = std::string (argument[num_images]);

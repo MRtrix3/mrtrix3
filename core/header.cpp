@@ -146,8 +146,8 @@ namespace MR
       const vector<int> num = list.parse_scan_check (image_name);
 
       const Formats::Base** format_handler = Formats::handlers;
-      size_t item = 0;
-      H.name() = list[item].name();
+      size_t item_index = 0;
+      H.name() = list[item_index].name();
 
       for (; *format_handler; format_handler++) {
         if ( (H.io = (*format_handler)->read (H)) )
@@ -164,27 +164,23 @@ namespace MR
 
         const Header template_header (H);
 
-        // Need to know a priori which loop index corresponds to which image axis
+        // Convenient to know a priori which loop index corresponds to which image axis
         vector<size_t> loopindex2axis;
-        size_t axis = 0;
-        for (size_t i = 0; i < num.size(); ++i) {
-          while (axis < H.ndim() && H.stride(axis))
-            ++axis;
-          loopindex2axis.push_back (axis);
-        }
+        for (size_t i = 0; i != num.size(); ++i)
+          loopindex2axis.push_back (H.ndim() + num.size() - i - 1);
 
         // Reimplemented support for [] notation using recursive function calls
         // Note that the very first image header has already been opened before this function is
         //   invoked for the first time; "vector<Header>& this_data" is used to propagate this
         //   data to deeper layers when necessary
-        std::function<Header(vector<Header>&, const size_t, size_t&)>
-        import = [&] (vector<Header>& this_data, const size_t loop_index, size_t& item_index) -> Header
+        std::function<void(Header&, vector<Header>&, const size_t)>
+        import = [&] (Header& result, vector<Header>& this_data, const size_t loop_index) -> void
         {
-          if (!loop_index) {
+          if (loop_index == num.size()-1) {
             vector<std::unique_ptr<ImageIO::Base>> ios;
             if (this_data.size())
               ios.push_back (std::move (this_data[0].io));
-            for (size_t i = this_data.size(); i != num[0]; ++i) {
+            for (size_t i = this_data.size(); i != num[loop_index]; ++i) {
               Header header (template_header);
               std::unique_ptr<ImageIO::Base> io_handler;
               header.name() = list[++item_index].name();
@@ -196,12 +192,12 @@ namespace MR
               this_data.push_back (std::move (header));
               ios.push_back (std::move (io_handler));
             }
-            auto result = concatenate (this_data, loopindex2axis[0], false);
+            result = concatenate (this_data, loopindex2axis[loop_index], false);
             result.io = std::move (ios[0]);
             for (size_t i = 1; i != ios.size(); ++i)
               result.io->merge (*ios[i]);
-            return result;
-          }
+            return;
+          } // End branch for when loop_index is the maximum, ie. innermost loop
           // For each coordinate along this axis, need to concatenate headers from the
           //   next lower axis
           vector<Header> nested_data;
@@ -212,20 +208,22 @@ namespace MR
             nested_data.push_back (std::move (this_data[0]));
             this_data.clear();
           }
-          for (size_t i = 0; i != num[loop_index]; ++i)
-            this_data.push_back (import (nested_data, loop_index - 1, item_index));
-          auto result = concatenate (this_data, loopindex2axis[loop_index], false);
+          for (size_t i = 0; i != num[loop_index]; ++i) {
+            Header temp;
+            import (temp, nested_data, loop_index+1);
+            this_data.push_back (std::move (temp));
+            nested_data.clear();
+          }
+          result = concatenate (this_data, loopindex2axis[loop_index], false);
           result.io = std::move (this_data[0].io);
           for (size_t i = 1; i != num[loop_index]; ++i)
             result.io->merge (*this_data[i].io);
-          return result;
         };
 
         vector<Header> headers;
         headers.push_back (std::move (H));
-        H = import (headers, num.size()-1, item);
+        import (H, headers, 0);
         H.name() = image_name;
-
       } // End branching for [] notation
 
       H.sanitise();
@@ -756,7 +754,7 @@ namespace MR
 
     if (axis_to_concat >= result.ndim()) {
       result.ndim() = axis_to_concat + 1;
-      result.stride(axis_to_concat) = axis_to_concat;
+      result.stride(axis_to_concat) = axis_to_concat+1;
       result.size(axis_to_concat) = 1;
     }
 
