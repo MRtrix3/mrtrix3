@@ -16,38 +16,25 @@ def imported(lib_path):
   return success
 
 # Approach 1:
-# If this file is within the core MRtrix3 installation, it should be easy to navigate to the lib/ directory
-if not imported(os.path.normpath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib'))):
+# Can the MRtrix3 Python modules be found based on their relative location to this file?
+# Note that this includes the case where this file is a softlink within an external module,
+#   which provides a direct link to the core installation
+if not imported(os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), \
+                                              os.pardir, \
+                                              'lib'))):
 
   # Approach 2:
-  # If this file is itself a softlink, that should point us to the file in the bin/ directory of the relevant MRtrix3 install
-  if not (os.path.islink(__file__) and \
-          imported(os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, 'lib')))):
+  # If this file is a duplicate, which has been stored in an external module, we may be able to use
+  #   a softlink to the build script if such has been created
+  if not imported(os.path.join(os.path.dirname(os.path.realpath(os.path.join(os.path.dirname(__file__), \
+                                                                             os.pardir, \
+                                                                             'build'))), \
+                               'lib'))):
 
-    # Approach 3:
-    # Find a softlink to build script within an external module
-    BUILD_PATH = os.path.normpath(os.path.join(os.path.dirname(__file__), os.pardir, 'build'))
-    if not (os.path.islink(BUILD_PATH) and \
-            imported(os.path.join(os.path.dirname(os.path.realpath(BUILD_PATH)), 'lib'))):
-
-      # Approach 4:
-      # See whether PYTHONPATH has been explicitly set, in which case it should be possible to
-      #   find the directory within sys.path
-      from_pythonpath = False
-      for candidate in sys.path:
-        if os.path.normpath(candidate) != os.path.dirname(__file__) and imported(candidate):
-          from_pythonpath = True
-          break
-      if not from_pythonpath:
-
-        # Approach 5:
-        # Search for mrconvert in PATH; if it can be found, use that to find the libraries
-        MRCONVERT_PATH = find_executable('mrconvert')
-        if not MRCONVERT_PATH or not imported(os.path.normpath(os.path.join(os.path.dirname(MRCONVERT_PATH), os.pardir, 'lib'))):
-          sys.stderr.write('Unable to locate MRtrix3 Python modules\n')
-          sys.stderr.write('https://mrtrix.readthedocs.io/en/latest/tips_and_tricks/external_modules.html\n')
-          sys.stderr.flush()
-          sys.exit(1)
+    sys.stderr.write('Unable to locate MRtrix3 Python modules\n')
+    sys.stderr.write('https://mrtrix.readthedocs.io/en/latest/tips_and_tricks/external_modules.html\n')
+    sys.stderr.flush()
+    sys.exit(1)
 
 # See if the origin importing this file has the requisite member functions to be executed using the API
 MODULE = inspect.getmodule(inspect.stack()[-1][0])
