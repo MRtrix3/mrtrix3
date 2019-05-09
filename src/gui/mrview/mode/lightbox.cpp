@@ -40,7 +40,8 @@ namespace MR
 
 
 
-        LightBox::LightBox ()
+        LightBox::LightBox () :
+            frames_dirty (true)
         {
           Image* img = image();
 
@@ -58,8 +59,7 @@ namespace MR
         void LightBox::set_rows (size_t rows)
         {
           n_rows = rows;
-          frame_VB.clear();
-          frame_VAO.clear();
+          frames_dirty = true;
           updateGL();
         }
 
@@ -69,8 +69,7 @@ namespace MR
         void LightBox::set_cols (size_t cols)
         {
           n_cols = cols;
-          frame_VB.clear();
-          frame_VAO.clear();
+          frames_dirty = true;
           updateGL();
         }
 
@@ -251,7 +250,7 @@ namespace MR
           GL::mat4 P = GL::ortho (0, width(), 0, height(), -1.0, 1.0);
           projection.set (MV, P);
 
-          if (!frame_VB || !frame_VAO) {
+          if (frames_dirty) {
             frame_VB.gen();
             frame_VAO.gen();
 
@@ -287,6 +286,8 @@ namespace MR
             }
 
             gl::BufferData (gl::ARRAY_BUFFER, sizeof(data), data, gl::STATIC_DRAW);
+
+            frames_dirty = false;
           }
           else
             frame_VAO.bind();
