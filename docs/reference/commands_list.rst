@@ -58,19 +58,17 @@ List of MRtrix3 commands
     commands/mrcheckerboardmask
     commands/mrclusterstats
     commands/mrconvert
-    commands/mrcrop
     commands/mrdegibbs
     commands/mrdump
     commands/mredit
     commands/mrfilter
+    commands/mrgrid
     commands/mrhistmatch
     commands/mrhistogram
     commands/mrinfo
     commands/mrmath
     commands/mrmetric
-    commands/mrpad
     commands/mrregister
-    commands/mrresize
     commands/mrstats
     commands/mrthreshold
     commands/mrtransform
@@ -169,19 +167,17 @@ List of MRtrix3 commands
     :ref:`mrcheckerboardmask`, "Create bitwise checkerboard image"
     :ref:`mrclusterstats`, "Voxel-based analysis using permutation testing and threshold-free cluster enhancement"
     :ref:`mrconvert`, "Perform conversion between different file types and optionally extract a subset of the input image"
-    :ref:`mrcrop`, "Crop an image to a reduced field of view"
     :ref:`mrdegibbs`, "Remove Gibbs Ringing Artifacts"
     :ref:`mrdump`, "Print out the values within an image"
     :ref:`mredit`, "Directly edit the intensities within an image from the command-line"
     :ref:`mrfilter`, "Perform filtering operations on 3D / 4D MR images"
+    :ref:`mrgrid`, "Modify the grid of an image without interpolation (cropping or padding) or by regridding to an image grid with modified orientation, location and or resolution. The image content remains in place in real world coordinates."
     :ref:`mrhistmatch`, "Modify the intensities of one image to match the histogram of another"
     :ref:`mrhistogram`, "Generate a histogram of image intensities"
     :ref:`mrinfo`, "Display image header information, or extract specific information from the header"
     :ref:`mrmath`, "Compute summary statistic on image intensities either across images, or along a specified axis of a single image"
     :ref:`mrmetric`, "Computes a dissimilarity metric between two images"
-    :ref:`mrpad`, "Pad an image to increase the FOV"
     :ref:`mrregister`, "Register two images together using a symmetric rigid, affine or non-linear transformation model"
-    :ref:`mrresize`, "Resize an image by defining the new image resolution, voxel size or a scale factor"
     :ref:`mrstats`, "Compute images statistics"
     :ref:`mrthreshold`, "Create bitwise image by thresholding image intensity"
     :ref:`mrtransform`, "Apply spatial transformations to an image"
