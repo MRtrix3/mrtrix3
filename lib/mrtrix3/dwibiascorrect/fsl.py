@@ -22,9 +22,9 @@ def get_inputs(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import os
-  from mrtrix3 import app, fsl, is_windows, MRtrixError, path, run
+  from mrtrix3 import app, fsl, MRtrixError, path, run, utils
 
-  if is_windows():
+  if utils.is_windows():
     raise MRtrixError('Script cannot run using FSL on Windows due to FSL dependency')
 
   if not os.environ.get('FSLDIR', ''):

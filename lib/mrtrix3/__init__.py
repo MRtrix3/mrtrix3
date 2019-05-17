@@ -55,12 +55,3 @@ def execute(): #pylint: disable=unused-variable
   import inspect
   from . import app
   app._execute(inspect.getmodule(inspect.stack()[-1][0])) # pylint: disable=protected-access
-
-
-
-
-# Return a boolean flag to indicate whether or not script is being run on a Windows machine
-def is_windows(): #pylint: disable=unused-variable
-  import platform
-  system = platform.system().lower()
-  return any(system.startswith(s) for s in [ 'mingw', 'msys', 'nt', 'windows' ])
