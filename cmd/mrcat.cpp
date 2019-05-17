@@ -65,10 +65,9 @@ OPTIONS
 template <typename value_type>
 void write (vector<Header>& in,
             const size_t axis,
-            Header& header_out,
-            const std::string& out_path)
+            Header& header_out)
 {
-  auto image_out = Image<value_type>::create (out_path, header_out);
+  auto image_out = Image<value_type>::create (header_out.name(), header_out);
   size_t axis_offset = 0;
 
   for (size_t i = 0; i != in.size(); i++) {
@@ -95,94 +94,45 @@ void write (vector<Header>& in,
 
 void run ()
 {
-  int axis = get_option_value ("axis", -1);
-
-  int num_images = argument.size()-1;
-  vector<Header> in (num_images);
-  in[0] = Header::open (argument[0]);
-
-  int ndims = 0;
-  int last_dim;
-  DataType datatype = in[0].datatype();
-  DEBUG ("Datatype of first image (" + in[0].name() + "): " + datatype.specifier());
-
-  for (int i = 1; i < num_images; i++) {
-    in[i] = Header::open (argument[i]);
-    for (last_dim = in[i].ndim()-1; in[i].size (last_dim) <= 1 && last_dim >= 0; last_dim--);
-    if (last_dim > ndims)
-      ndims = last_dim;
-    DEBUG ("Datatype of image " + in[i].name() + ": " + in[i].datatype().specifier());
-    if (in[i].datatype().is_complex())
-      datatype.set_flag (DataType::Complex);
-    if (datatype.is_integer() && in[i].datatype().is_signed())
-      datatype.set_flag (DataType::Signed);
-    if (in[i].datatype().is_floating_point() && datatype.is_integer())
-      datatype = in[i].datatype();
-    if (in[i].datatype().bytes() > datatype.bytes())
-      datatype = (datatype() & DataType::Attributes) + (in[i].datatype()() & DataType::Type);
+  size_t num_images = argument.size()-1;
+  vector<Header> headers;
+  ssize_t max_axis_nonunity = 0;
+  for (size_t i = 0; i != num_images; ++i) {
+    Header H = Header::open (argument[i]);
+    ssize_t a;
+    for (a = ssize_t(H.ndim())-1; a >= 0 && H.size (a) <= 1; a--);
+    max_axis_nonunity = std::max (max_axis_nonunity, a);
+    headers.push_back (std::move (H));
   }
-  DEBUG (str("Output image datatype: ") + datatype.specifier());
+  const size_t axis = get_option_value ("axis", std::max (size_t(3), size_t(std::max (ssize_t(0), max_axis_nonunity))));
 
-  if (axis < 0) axis = std::max (3, ndims);
-  ++ndims;
+  Header header_out = concatenate (headers, axis, true);
+  header_out.name() = std::string (argument[num_images]);
+  header_out.datatype() = DataType::from_command_line (header_out.datatype());
 
-  for (int i = 0; i < ndims; i++)
-    if (i != axis)
-      for (int n = 0; n < num_images; n++)
-        if (in[0].size (i) != in[n].size (i))
-          throw Exception ("dimensions of input images do not match");
-
-  if (axis >= ndims) ndims = axis+1;
-
-  Header header_out (in[0]);
-  header_out.datatype() = DataType::from_command_line (datatype);
-  header_out.ndim() = ndims;
-
-  for (size_t i = 0; i < header_out.ndim(); i++) {
-    if (header_out.size (i) <= 1) {
-      for (int n = 0; n < num_images; n++) {
-        if (in[n].ndim() > i) {
-          header_out.size(i) = in[n].size (i);
-          header_out.spacing(i) = in[n].spacing (i);
-          break;
-        }
-      }
-    }
-  }
-
-  size_t axis_dim = 0;
-  for (int n = 0; n < num_images; n++)
-    axis_dim += in[n].ndim() > size_t (axis) ? (in[n].size (axis) > 1 ? in[n].size (axis) : 1) : 1;
-  header_out.size (axis) = axis_dim;
-
-  for (int n = 1; n != num_images; ++n)
-    header_out.merge (in[n], axis > 2);
-
-  const std::string out_path = argument[num_images];
-
-  if (header_out.intensity_offset() == 0.0 && header_out.intensity_scale() == 1.0 && !datatype.is_floating_point()) {
-    switch (datatype() & DataType::Type) {
+  if (header_out.intensity_offset() == 0.0 && header_out.intensity_scale() == 1.0 && !header_out.datatype().is_floating_point()) {
+    switch (header_out.datatype()() & DataType::Type) {
       case DataType::Bit:
       case DataType::UInt8:
       case DataType::UInt16:
       case DataType::UInt32:
-        if (datatype.is_signed())
-          write<int32_t> (in, axis, header_out, out_path);
+        if (header_out.datatype().is_signed())
+          write<int32_t> (headers, axis, header_out);
         else
-          write<uint32_t> (in, axis, header_out, out_path);
+          write<uint32_t> (headers, axis, header_out);
         break;
       case DataType::UInt64:
-        if (datatype.is_signed())
-          write<int64_t> (in, axis, header_out, out_path);
+        if (header_out.datatype().is_signed())
+          write<int64_t> (headers, axis, header_out);
         else
-          write<uint64_t> (in, axis, header_out, out_path);
+          write<uint64_t> (headers, axis, header_out);
         break;
     }
   } else {
-    if (datatype.is_complex())
-      write<cdouble> (in, axis, header_out, out_path);
+    if (header_out.datatype().is_complex())
+      write<cdouble> (headers, axis, header_out);
     else
-      write<double> (in, axis, header_out, out_path);
+      write<double> (headers, axis, header_out);
   }
 
 }

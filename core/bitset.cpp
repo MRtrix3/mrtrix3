@@ -64,8 +64,10 @@ namespace MR {
       if (new_bytes > bytes) {
         memcpy (new_data, data, bytes);
         memset (new_data + bytes, (allocator ? 0xFF : 0x00), new_bytes - bytes);
-        const uint8_t mask = 0xFF << excess_bits();
-        data[bytes - 1] = allocator ? (data[bytes - 1] | mask) : (data[bytes - 1] & ~mask);
+        if (excess_bits()) {
+          const uint8_t mask = 0xFF << excess_bits();
+          new_data[bytes - 1] = allocator ? (data[bytes - 1] | mask) : (data[bytes - 1] & ~mask);
+        }
       } else {
         memcpy (new_data, data, new_bytes);
       }

@@ -23,12 +23,14 @@ using namespace App;
 void usage ()
 {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
-
-  SYNOPSIS = "Compare two images for differences in the content of their headers";
+  SYNOPSIS = "Compare two images for differences in the basic contents of their headers";
 
   ARGUMENTS
   + Argument ("header1", "an image.").type_image_in()
   + Argument ("header2", "another image.").type_image_in();
+
+  OPTIONS
+  + Option ("keyval", "also test the contents of the key-value entries in the header");
 
 }
 
@@ -39,6 +41,8 @@ void run ()
   auto in2 = Header::open (argument[1]);
 
   check_headers (in1, in2);
+  if (get_options ("keyval").size())
+    check_keyvals (in1, in2);
 
   CONSOLE ("headers checked OK");
 }

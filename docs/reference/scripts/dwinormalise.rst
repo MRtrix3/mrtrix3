@@ -25,6 +25,13 @@ This script provides access to different techniques for globally scaling the int
 Options
 -------
 
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-grad** Provide the diffusion gradient table in MRtrix format
+
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -45,7 +52,9 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 - **-help** display this information page and exit.
 
@@ -127,7 +136,9 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 - **-help** display this information page and exit.
 
@@ -182,13 +193,6 @@ Options
 
 - **-percentile** Define the percentile of the b=0 image intensties within the mask used for normalisation; if this option is not supplied then the median value (50th percentile) will be normalised to the desired intensity value
 
-Options for importing the diffusion gradient table
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-grad** Provide a gradient table in MRtrix format
-
-- **-fslgrad bvecs bvals** Provide a gradient table in FSL bvecs/bvals format
-
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -209,7 +213,9 @@ Standard options
 
 - **-force** force overwrite of output files.
 
-- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 - **-help** display this information page and exit.
 
