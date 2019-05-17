@@ -206,4 +206,5 @@ def execute(): #pylint: disable=unused-variable
 
 
 # Execute the script
-import mrtrix3 #pylint: disable=unused-variable, unused-import
+import mrtrix3
+mrtrix3.execute() #pylint: disable=no-member
