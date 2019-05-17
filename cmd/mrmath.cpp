@@ -435,7 +435,7 @@ void run ()
         if (temp.size(axis) != 1)
           throw Exception ("Image " + path + " has axis with non-unary dimension beyond first input image " + header.name());
       }
-      header.merge (temp, false);
+      header.merge_keyval (temp);
     }
 
     // Instantiate a kernel depending on the operation requested

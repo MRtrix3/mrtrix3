@@ -93,16 +93,14 @@ namespace MR
         erase ("TotalReadoutTime");
         return;
       }
-      PhaseEncoding::check (header, PE);
+      check (header, PE);
       std::string pe_scheme;
       std::string first_line;
       bool variation = false;
       for (ssize_t row = 0; row < PE.rows(); ++row) {
-        std::string line;
-        for (ssize_t col = 0; col < PE.cols(); ++col) {
-          line += str(PE(row,col), 3);
-          if (col < PE.cols() - 1) line += ",";
-        }
+        std::string line = str(PE(row,0));
+        for (ssize_t col = 1; col < PE.cols(); ++col)
+          line += "," + str(PE(row,col), 3);
         add_line (pe_scheme, line);
         if (first_line.empty())
           first_line = line;
@@ -136,12 +134,12 @@ namespace MR
 
     //! parse the phase encoding matrix from a header
     /*! extract the phase encoding matrix stored in the \a header if one
-       *  is present. This is expected to be stored in the Header::keyval()
-       *  structure, under the key 'pe_scheme'. Alternatively, if the phase
-       *  encoding direction and bandwidth is fixed for all volumes in the
-       *  series, this information may be stored using the keys
-       *  'PhaseEncodingDirection' and 'TotalReadoutTime'.
-       */
+     *  is present. This is expected to be stored in the Header::keyval()
+     *  structure, under the key 'pe_scheme'. Alternatively, if the phase
+     *  encoding direction and bandwidth is fixed for all volumes in the
+     *  series, this information may be stored using the keys
+     *  'PhaseEncodingDirection' and 'TotalReadoutTime'.
+     */
     Eigen::MatrixXd parse_scheme (const Header&);
 
 

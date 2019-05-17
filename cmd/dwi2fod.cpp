@@ -267,9 +267,10 @@ void run ()
 
     shared.init();
 
-    header_out.size(3) = shared.nSH();
     DWI::stash_DW_scheme (header_out, shared.grad);
     PhaseEncoding::clear_scheme (header_out);
+
+    header_out.size(3) = shared.nSH();
     auto fod = Image<float>::create (argument[3], header_out);
 
     CSD_Processor processor (shared, mask);
