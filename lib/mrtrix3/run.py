@@ -243,15 +243,13 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
         cmdsplit.extend(entry)
       else:
         raise TypeError('When run.command() is provided with a list as input, entries in the list must be either strings or lists of strings')
-  elif isinstance(cmd, str):
+  else:
     cmdstring = cmd
     # Split the command string by spaces, preserving anything encased within quotation marks
     if os.sep == '/': # Cheap POSIX compliance check
       cmdsplit = shlex.split(cmd)
     else: # Native Windows Python
       cmdsplit = [ entry.strip('\"') for entry in shlex.split(cmd, posix=False) ]
-  else:
-    raise TypeError('run.command() function only operates on strings, or lists of strings')
 
   if shared.get_continue():
     if shared.trigger_continue(cmdsplit):

@@ -37,17 +37,17 @@ def usage(cmdline): #pylint: disable=unused-variable
   linoptions = cmdline.add_argument_group('Options for the linear registration')
   linoptions.add_argument('-linear_no_pause', action='store_true', help='Do not pause the script if a linear registration seems implausible')
   linoptions.add_argument('-linear_estimator', help='Choose estimator for intensity difference metric. Valid choices are: l1 (least absolute: |x|), l2 (ordinary least squares), lp (least powers: |x|^1.2), Default: l2')
-  linoptions.add_argument('-rigid_scale', help='Specifiy the multi-resolution pyramid used to build the rigid template, in the form of a list of scale factors (default: %s). This and affine_scale implicitly define the number of template levels' % ','.join([str(x) for x in DEFAULT_RIGID_SCALES]))
-  linoptions.add_argument('-rigid_lmax', help='Specifiy the lmax used for rigid registration for each scale factor, in the form of a list of integers (default: %s). The list must be the same length as the linear_scale factor list' % ','.join([str(x) for x in DEFAULT_RIGID_LMAX]))
-  linoptions.add_argument('-rigid_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:50 for each scale). This must be a single number or a list of same length as the linear_scale factor list')
-  linoptions.add_argument('-affine_scale', help='Specifiy the multi-resolution pyramid used to build the affine template, in the form of a list of scale factors (default: %s). This and rigid_scale implicitly define the number of template levels' % ','.join([str(x) for x in DEFAULT_AFFINE_SCALES]))
-  linoptions.add_argument('-affine_lmax', help='Specifiy the lmax used for affine registration for each scale factor, in the form of a list of integers (default: %s). The list must be the same length as the linear_scale factor list' % ','.join([str(x) for x in DEFAULT_AFFINE_LMAX]))
-  linoptions.add_argument('-affine_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:500 for each scale). This must be a single number or a list of same length as the linear_scale factor list')
+  linoptions.add_argument('-rigid_scale', help='Specify the multi-resolution pyramid used to build the rigid template, in the form of a list of scale factors (default: %s). This and affine_scale implicitly define the number of template levels' % ','.join([str(x) for x in DEFAULT_RIGID_SCALES]))
+  linoptions.add_argument('-rigid_lmax', help='Specify the lmax used for rigid registration for each scale factor, in the form of a list of integers (default: %s). The list must be the same length as the linear_scale factor list' % ','.join([str(x) for x in DEFAULT_RIGID_LMAX]))
+  linoptions.add_argument('-rigid_niter', help='Specify the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:50 for each scale). This must be a single number or a list of same length as the linear_scale factor list')
+  linoptions.add_argument('-affine_scale', help='Specify the multi-resolution pyramid used to build the affine template, in the form of a list of scale factors (default: %s). This and rigid_scale implicitly define the number of template levels' % ','.join([str(x) for x in DEFAULT_AFFINE_SCALES]))
+  linoptions.add_argument('-affine_lmax', help='Specify the lmax used for affine registration for each scale factor, in the form of a list of integers (default: %s). The list must be the same length as the linear_scale factor list' % ','.join([str(x) for x in DEFAULT_AFFINE_LMAX]))
+  linoptions.add_argument('-affine_niter', help='Specify the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:500 for each scale). This must be a single number or a list of same length as the linear_scale factor list')
 
   nloptions = cmdline.add_argument_group('Options for the non-linear registration')
-  nloptions.add_argument('-nl_scale', help='Specifiy the multi-resolution pyramid used to build the non-linear template, in the form of a list of scale factors (default: %s). This implicitly defines the number of template levels' % ','.join([str(x) for x in DEFAULT_NL_SCALES]))
-  nloptions.add_argument('-nl_lmax', help='Specifiy the lmax used for non-linear registration for each scale factor, in the form of a list of integers (default: %s). The list must be the same length as the nl_scale factor list' % ','.join([str(x) for x in DEFAULT_NL_LMAX]))
-  nloptions.add_argument('-nl_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default: %s). The list must be the same length as the nl_scale factor list' % ','.join([str(x) for x in DEFAULT_NL_NITER]))
+  nloptions.add_argument('-nl_scale', help='Specify the multi-resolution pyramid used to build the non-linear template, in the form of a list of scale factors (default: %s). This implicitly defines the number of template levels' % ','.join([str(x) for x in DEFAULT_NL_SCALES]))
+  nloptions.add_argument('-nl_lmax', help='Specify the lmax used for non-linear registration for each scale factor, in the form of a list of integers (default: %s). The list must be the same length as the nl_scale factor list' % ','.join([str(x) for x in DEFAULT_NL_LMAX]))
+  nloptions.add_argument('-nl_niter', help='Specify the number of registration iterations used within each level before updating the template, in the form of a list of integers (default: %s). The list must be the same length as the nl_scale factor list' % ','.join([str(x) for x in DEFAULT_NL_NITER]))
   nloptions.add_argument('-nl_update_smooth', default='2.0', help='Regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0 x voxel_size)')
   nloptions.add_argument('-nl_disp_smooth', default='1.0', help='Regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)')
   nloptions.add_argument('-nl_grad_step', default='0.5', help='The gradient step size for non-linear registration (Default: 0.5)')
@@ -418,7 +418,7 @@ def execute(): #pylint: disable=unused-variable
     run.command(['mraverageheader', input_filenames, 'average_header.mif', '-fill'])
   else:
     run.command(['mraverageheader', '-fill', input_filenames, '-', '|', \
-                 'mrresize', '-', '-voxel', ','.join(voxel_size), 'average_header.mif'])
+                 'mrgrid', '-', 'regrid', '-voxel', ','.join(voxel_size), 'average_header.mif'])
 
   # crop average space to extent defined by original masks
   if use_masks:
@@ -431,7 +431,7 @@ def execute(): #pylint: disable=unused-variable
       progress.increment()
     progress.done()
     run.command(['mrmath', mask_filenames, 'max', 'mask_initial.mif'])
-    run.command('mrcrop average_header.mif -mask mask_initial.mif average_header_cropped.mif')
+    run.command('mrgrid average_header.mif crop -mask mask_initial.mif average_header_cropped.mif')
     run.function(os.remove,'mask_initial.mif')
     run.function(os.remove, 'average_header.mif')
     run.function(shutil.move, 'average_header_cropped.mif', 'average_header.mif')
@@ -484,10 +484,10 @@ def execute(): #pylint: disable=unused-variable
     # update average space to new extent
     run.command(['mraverageheader', [os.path.join('inputs_transformed', i.prefix + '_translated.mif') for i in inputs], 'average_header_tight.mif'])
     if voxel_size is None:
-      run.command('mrpad -uniform 10 average_header_tight.mif average_header.mif', force=True)
+      run.command('mrgrid average_header_tight.mif pad -uniform 10 average_header.mif', force=True)
     else:
-      run.command('mrpad -uniform 10 average_header_tight.mif - | ' \
-                  'mrresize - -voxel '+','.join(voxel_size)+' average_header.mif', force=True)
+      run.command('mrgrid average_header_tight.mif pad -uniform 10 - | ' \
+                  'mrgrid - regrid -voxel '+','.join(voxel_size)+' average_header.mif', force=True)
     run.function(os.remove, 'average_header_tight.mif')
     if use_masks:
       # reslice masks
@@ -505,9 +505,9 @@ def execute(): #pylint: disable=unused-variable
       for i in inputs:
         mask_filenames.append(os.path.join('masks_transformed', i.prefix + '.mif'))
       run.command(['mrmath', mask_filenames, 'max', 'mask_translated.mif'])
-      run.command('mrcrop average_header.mif -mask mask_translated.mif average_header_cropped.mif')
+      run.command('mrgrdi average_header.mif crop -mask mask_translated.mif average_header_cropped.mif')
       # pad average space to allow for deviation from initial alignment
-      run.command('mrpad -uniform 10 average_header_cropped.mif average_header.mif', force=True)
+      run.command('mrgrid average_header_cropped.mif pad -uniform 10 average_header.mif', force=True)
       run.function(os.remove, 'average_header_cropped.mif')
       progress = app.ProgressBar('Reslicing mask images to new padded average header', len(inputs))
       for i in inputs:
@@ -713,7 +713,7 @@ def execute(): #pylint: disable=unused-variable
         if scale < nl_scales[level + 1]:
           upsample_factor = nl_scales[level + 1] / scale
           for i in inputs:
-            run.command('mrresize ' + os.path.join('warps_%i' % level, '%s.mif' % i.prefix) + ' -scale %f tmp.mif' % upsample_factor)
+            run.command('mrgrid ' + os.path.join('warps_%i' % level, '%s.mif' % i.prefix) + ' regrid -scale %f tmp.mif' % upsample_factor)
             run.function(shutil.move, 'tmp.mif', os.path.join('warps_' + str(level), '%s.mif' % i.prefix))
       else:
         for i in inputs:

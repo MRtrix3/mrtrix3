@@ -14,10 +14,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_argument('output', help='The output image series')
   cmdline.add_example_usage('To compute the mean diffusion-weighted signal in each b-value shell',
                             'dwishellmath dwi.mif mean shellmeans.mif')
-  grad_import = cmdline.add_argument_group('Options for importing the gradient table')
-  grad_import.add_argument('-grad', help='Provide a gradient table in MRtrix format')
-  grad_import.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Provide a gradient table in FSL bvecs/bvals format')
-  cmdline.flag_mutually_exclusive_options( ['grad', 'fslgrad' ])
+  app.add_dwgrad_import_options()
 
 
 def execute(): #pylint: disable=unused-variable
@@ -26,12 +23,8 @@ def execute(): #pylint: disable=unused-variable
   dwi_header = image.Header(path.from_user(app.ARGS.input, False))
   if len(dwi_header.size()) != 4:
     raise MRtrixError('Input image must be a 4D image')
-  gradimport = ''
-  if app.ARGS.grad:
-    gradimport = ' -grad ' + path.from_user(app.ARGS.grad)
-  elif app.ARGS.fslgrad:
-    gradimport = ' -fslgrad ' + path.from_user(app.ARGS.fslgrad[0]) + ' ' + path.from_user(app.ARGS.fslgrad[1])
-  elif 'dw_scheme' not in dwi_header.keyval():
+  gradimport = app.read_dwgrad_import_options()
+  if not gradimport and 'dw_scheme' not in dwi_header.keyval():
     raise MRtrixError('No diffusion gradient table provided, and none present in image header')
   app.check_output_path(app.ARGS.output)
   # import data and gradient table

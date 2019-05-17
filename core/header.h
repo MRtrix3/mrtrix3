@@ -328,7 +328,7 @@ namespace MR
       //! get/set generic key/value text attributes
       KeyValues& keyval () { return keyval_; }
       //! merge key/value entries from another header
-      void merge (const Header& H, const bool concat_volumes);
+      void merge_keyval (const Header& H);
 
       static Header open (const std::string& image_name);
       static Header create (const std::string& image_name, const Header& template_header, bool add_to_command_history = true);
@@ -377,8 +377,8 @@ namespace MR
 
 
 
-
-
+  // Can't be a static member function due to memory alignment requirements of vector<>
+  Header concatenate (const vector<Header>& headers, const size_t axis, const bool permit_datatype_mismatch);
 
 
 
