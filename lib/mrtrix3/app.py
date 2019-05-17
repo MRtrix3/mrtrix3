@@ -1141,13 +1141,11 @@ class Parser(argparse.ArgumentParser):
 
 
 # Define functions for incorporating commonly-used command-line options / option groups
-def add_dwgrad_import_options(): #pylint: disable=unused-variable
-  global CMDLINE
-  assert CMDLINE
-  options = CMDLINE.add_argument_group('Options for importing the diffusion gradient table')
+def add_dwgrad_import_options(cmdline): #pylint: disable=unused-variable
+  options = cmdline.add_argument_group('Options for importing the diffusion gradient table')
   options.add_argument('-grad', help='Provide the diffusion gradient table in MRtrix format')
   options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Provide the diffusion gradient table in FSL bvecs/bvals format')
-  CMDLINE.flag_mutually_exclusive_options( [ 'grad', 'fslgrad' ] )
+  cmdline.flag_mutually_exclusive_options( [ 'grad', 'fslgrad' ] )
 def read_dwgrad_import_options(): #pylint: disable=unused-variable
   from mrtrix3 import path
   global ARGS
@@ -1158,13 +1156,11 @@ def read_dwgrad_import_options(): #pylint: disable=unused-variable
     return ' -fslgrad ' + path.from_user(ARGS.fslgrad[0]) + ' ' + path.from_user(ARGS.fslgrad[1])
   return ''
 
-def add_dwgrad_export_options(): #pylint: disable=unused-variable
-  global CMDLINE
-  assert CMDLINE
-  options = CMDLINE.add_argument_group('Options for exporting the diffusion gradient table')
+def add_dwgrad_export_options(cmdline): #pylint: disable=unused-variable
+  options = cmdline.add_argument_group('Options for exporting the diffusion gradient table')
   options.add_argument('-export_grad_mrtrix', metavar='grad', help='Export the final gradient table in MRtrix format')
   options.add_argument('-export_grad_fsl', nargs=2, metavar=('bvecs', 'bvals'), help='Export the final gradient table in FSL bvecs/bvals format')
-  CMDLINE.flag_mutually_exclusive_options( [ 'export_grad_mrtrix', 'export_grad_fsl' ] )
+  cmdline.flag_mutually_exclusive_options( [ 'export_grad_mrtrix', 'export_grad_fsl' ] )
 def read_dwgrad_export_options(): #pylint: disable=unused-variable
   from mrtrix3 import path
   global ARGS

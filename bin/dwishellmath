@@ -14,7 +14,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_argument('output', help='The output image series')
   cmdline.add_example_usage('To compute the mean diffusion-weighted signal in each b-value shell',
                             'dwishellmath dwi.mif mean shellmeans.mif')
-  app.add_dwgrad_import_options()
+  app.add_dwgrad_import_options(cmdline)
 
 
 def execute(): #pylint: disable=unused-variable
