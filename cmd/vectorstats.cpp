@@ -117,8 +117,8 @@ void run()
 
   CohortDataImport importer;
   importer.initialise<SubjectVectorImport> (argument[0]);
-  const size_t num_subjects = importer.size();
-  CONSOLE ("Number of subjects: " + str(num_subjects));
+  const size_t num_inputs = importer.size();
+  CONSOLE ("Number of subjects: " + str(num_inputs));
   const size_t num_elements = importer[0]->size();
   CONSOLE ("Number of elements: " + str(num_elements));
   for (size_t i = 0; i != importer.size(); ++i) {
@@ -128,8 +128,8 @@ void run()
 
   // Load design matrix
   const matrix_type design = load_matrix (argument[1]);
-  if (size_t(design.rows()) != num_subjects)
-    throw Exception ("Number of subjects (" + str(num_subjects) + ") does not match number of rows in design matrix (" + str(design.rows()) + ")");
+  if (size_t(design.rows()) != num_inputs)
+    throw Exception ("Number of subjects (" + str(num_inputs) + ") does not match number of rows in design matrix (" + str(design.rows()) + ")");
 
   // Before validating the contrast matrix, we first need to see if there are any
   //   additional design matrix columns coming from element-wise subject data
@@ -151,6 +151,9 @@ void run()
   }
   check_design (design, extra_columns.size());
 
+  // Load variance groups
+  auto variance_groups = GLM::load_variance_groups (num_inputs);
+
   // Load hypotheses
   const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[2]);
   const size_t num_hypotheses = hypotheses.size();
@@ -163,8 +166,8 @@ void run()
   const std::string output_prefix = argument[3];
 
   // Load input data
-  matrix_type data (num_subjects, num_elements);
-  for (size_t subject = 0; subject != num_subjects; subject++)
+  matrix_type data (num_inputs, num_elements);
+  for (size_t subject = 0; subject != num_inputs; subject++)
     (*importer[subject]) (data.row(subject));
 
   const bool nans_in_data = !data.allFinite();
@@ -206,16 +209,22 @@ void run()
   // Construct the class for performing the initial statistical tests
   std::shared_ptr<GLM::TestBase> glm_test;
   if (extra_columns.size() || nans_in_data) {
-    glm_test.reset (new GLM::TestVariable (extra_columns, data, design, hypotheses, nans_in_data, nans_in_columns));
+    if (variance_groups.size())
+      glm_test.reset (new GLM::TestVariableHeteroscedastic (extra_columns, data, design, hypotheses, variance_groups, nans_in_data, nans_in_columns));
+    else
+      glm_test.reset (new GLM::TestVariableHomoscedastic (extra_columns, data, design, hypotheses, nans_in_data, nans_in_columns));
   } else {
-    glm_test.reset (new GLM::TestFixed (data, design, hypotheses));
+    if (variance_groups.size())
+      glm_test.reset (new GLM::TestFixedHeteroscedastic (data, design, hypotheses, variance_groups));
+    else
+      glm_test.reset (new GLM::TestFixedHomoscedastic (data, design, hypotheses));
   }
 
   // Precompute default statistic
   // Don't use convenience function: No enhancer!
   // Manually construct default shuffling matrix
   // TODO Change to use convenience function; we make an empty enhancer later anyway
-  const matrix_type default_shuffle (matrix_type::Identity (num_subjects, num_subjects));
+  const matrix_type default_shuffle (matrix_type::Identity (num_inputs, num_inputs));
   matrix_type default_output;
   (*glm_test) (default_shuffle, default_output);
   for (size_t i = 0; i != num_hypotheses; ++i) {

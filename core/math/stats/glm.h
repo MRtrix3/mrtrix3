@@ -114,6 +114,8 @@ namespace MR
 
         void check_design (const matrix_type&, const bool);
 
+        index_array_type load_variance_groups (const size_t num_inputs);
+
         vector<Hypothesis> load_hypotheses (const std::string& file_path);
 
 
@@ -219,9 +221,10 @@ namespace MR
              */
             virtual void operator() (const matrix_type& shuffling_matrix, matrix_type& output) const = 0;
 
+            size_t num_inputs () const { return M.rows(); }
             size_t num_elements () const { return y.cols(); }
-            size_t num_outputs  () const { return c.size(); }
-            size_t num_subjects () const { return M.rows(); }
+            size_t num_hypotheses () const { return c.size(); }
+
             virtual size_t num_factors() const { return M.cols(); }
 
           protected:
@@ -235,22 +238,26 @@ namespace MR
 
         /** \addtogroup Statistics
         @{ */
-        /*! A class to compute statistics using a fixed General Linear Model.
+        /*! A class to compute statistics from homoscedastic using a fixed General Linear Model.
          * This class produces a statistic per effect of interest: t-statistic for
-         * t-tests, F-statistic for F-tests. It should be used in
-         * cases where the same design matrix is to be applied for all image elements being
-         * tested; able to pre-compute a number of matrices before testing, improving
-         * execution speed.
+         * t-tests, sqrt(F-statistic) for F-tests. It should be used in cases where:
+         *   - the same design matrix is to be applied for all image elements being
+         *     tested (it is thus able to pre-compute a number of matrices before testing,
+         *     improving execution speed);
+         *   - When the data are considered to be homoscedastic; that is, the variance is
+         *     equivalent across all inputs.
          */
-        class TestFixed : public TestBase
-        { MEMALIGN(TestFixed)
+        class TestFixedHomoscedastic : public TestBase
+        { MEMALIGN(TestFixedHomoscedastic)
           public:
             /*!
              * @param measurements a matrix storing the measured data across subjects in each column
              * @param design the design matrix
-             * @param contrasts a vector of Contrast instances
+             * @param hypotheses a vector of Hypothesis instances
              */
-            TestFixed (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses);
+            TestFixedHomoscedastic (const matrix_type& measurements,
+                                    const matrix_type& design,
+                                    const vector<Hypothesis>& hypotheses);
 
             /*! Compute the statistics
              * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
@@ -268,34 +275,89 @@ namespace MR
         //! @}
 
 
+        /** \addtogroup Statistics
+        @{ */
+        /*! A class to compute statistics from heteroscedastic data using a fixed General Linear Model.
+         * This class produces a statistic per effect of interest: Aspin-Welsh v for
+         * contrast vectors (i.e. Rank(C) == 1), sqrt(Welsh's v^2) for Rank(C) > 1. It should be used in
+         * cases where:
+         *   - The same design matrix is to be applied for all image elements being tested;
+         *   - The input data are considered to be heteroscedastic; that is, the variance is not equivalent
+         *     between all observations, but these can be placed into "variance groups", within which
+         *     all observations can be considered to have the same variance.
+         */
+        class TestFixedHeteroscedastic : public TestFixedHomoscedastic
+        { MEMALIGN(TestFixedHeteroscedastic)
+          public:
+            /*!
+             * @param measurements a matrix storing the measured data across subjects in each column
+             * @param design the design matrix
+             * @param hypotheses a vector of Hypothesis instances
+             * @param variance_groups a vector of integers corresponding to variance group assignments (should be indexed from zero)
+             */
+            TestFixedHeteroscedastic (const matrix_type& measurements,
+                                      const matrix_type& design,
+                                      const vector<Hypothesis>& hypotheses,
+                                      const index_array_type& variance_groups);
+
+            size_t num_variance_groups() const { return num_vgs; }
+
+            /*! Compute the statistics
+             * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
+             * @param output the vector containing the output statistics (one column per hypothesis)
+             */
+            void operator() (const matrix_type& shuffling_matrix, matrix_type& output) const override;
+
+          protected:
+            // Variance group assignments
+            const index_array_type& VG;
+            // Total number of variance groups
+            const size_t num_vgs;
+            // Number of inputs that are part of each variance group
+            vector<size_t> inputs_per_vg;
+            // Might as well construct this in the functor rather than here,
+            //   given 1 value for each VG is computed
+            vector_type Rnn_sums;
+            // Also store the reciprocal of these, so as to avoid repeated division
+            vector_type inv_Rnn_sums;
+            // Multiplication weights for calculation of gamma;
+            //   varies depending on the rank of the contrast matrix of each hypothesis
+            vector_type gamma_weights;
+
+        };
+        //! @}
+
+
 
         /** \addtogroup Statistics
         @{ */
-        /*! A class to compute statistics using a 'variable' General Linear Model.
+        /*! A class to compute statistics from homoscedastic data using a variable General Linear Model.
          * This class produces a statistic per effect of interest. It should be used in
-         * cases where additional subject data must be imported into the design matrix before
-         * computing t-values; the design matrix therefore does not remain fixed for all
-         * elements being tested, but varies depending on the particular element being tested.
-         *
-         * How additional data is imported into the design matrix will depend on the
-         * particular type of data being tested. Therefore an Importer class must be
-         * defined that is responsible for acquiring and vectorising these data.
+         * cases where:
+         *   - Additional subject data must be imported into the design matrix before
+         *     computing t- / F-values; the design matrix therefore does not remain fixed for all
+         *     elements being tested, but varies depending on the particular element being tested.
+         *     How additional data is imported into the design matrix will depend on the
+         *     particular type of data being tested. Therefore an Importer class must be
+         *     defined that is responsible for acquiring and vectorising these data.
+         *   - Input data are considered to be homoscedastic; that is, the variance is
+         *     equivalent across all inputs.
          */
-        class TestVariable : public TestBase
-        { MEMALIGN(TestVariable)
+        class TestVariableHomoscedastic : public TestBase
+        { MEMALIGN(TestVariableHomoscedastic)
           public:
-            TestVariable (const vector<CohortDataImport>& importers,
-                          const matrix_type& measurements,
-                          const matrix_type& design,
-                          const vector<Hypothesis>& hypotheses,
-                          const bool nans_in_data,
-                          const bool nans_in_columns);
+            TestVariableHomoscedastic (const vector<CohortDataImport>& importers,
+                                       const matrix_type& measurements,
+                                       const matrix_type& design,
+                                       const vector<Hypothesis>& hypotheses,
+                                       const bool nans_in_data,
+                                       const bool nans_in_columns);
 
             /*! Compute the statistics
              * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
              * @param output the vector containing the output statistics
              *
-             * In TestVariable, this function additionally needs to import the
+             * In TestVariable* classes, this function additionally needs to import the
              * extra external data individually for each element tested.
              */
             void operator() (const matrix_type& shuffling_matrix, matrix_type& output) const override;
@@ -306,7 +368,71 @@ namespace MR
             const vector<CohortDataImport>& importers;
             const bool nans_in_data, nans_in_columns;
 
+            void get_mask (const size_t ie, BitSet&, const matrix_type& extra_columns) const;
+            void apply_mask (const BitSet& mask,
+                             matrix_type::ConstColXpr data,
+                             const matrix_type& shuffling_matrix,
+                             const matrix_type& extra_column_data,
+                             matrix_type& Mfull_masked,
+                             matrix_type& shuffling_matrix_masked,
+                             vector_type& y_masked) const;
+
         };
+
+
+
+        /** \addtogroup Statistics
+        @{ */
+        /*! A class to compute statistics from heteroscedastic data using a variable General Linear Model.
+         * This class produces a statistic per effect of interest. It should be used in
+         * cases where:
+         *   - Additional subject data must be imported into the design matrix before
+         *     computing t- / F-values; the design matrix therefore does not remain fixed for all
+         *     elements being tested, but varies depending on the particular element being tested.
+         *     How additional data is imported into the design matrix will depend on the
+         *     particular type of data being tested. Therefore an Importer class must be
+         *     defined that is responsible for acquiring and vectorising these data.
+         *   - The input data are considered to be heteroscedastic; that is, the variance is not equivalent
+         *     between all observations, but these can be placed into "variance groups", within which
+         *     all observations can be considered to have the same variance.
+         */
+        class TestVariableHeteroscedastic : public TestVariableHomoscedastic
+        { MEMALIGN(TestVariableHeteroscedastic)
+          public:
+            TestVariableHeteroscedastic (const vector<CohortDataImport>& importers,
+                                         const matrix_type& measurements,
+                                         const matrix_type& design,
+                                         const vector<Hypothesis>& hypotheses,
+                                         const index_array_type& variance_groups,
+                                         const bool nans_in_data,
+                                         const bool nans_in_columns);
+
+            /*! Compute the statistics
+             * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
+             * @param output the vector containing the output statistics
+             *
+             * In TestVariable* classes, this function additionally needs to import the
+             * extra external data individually for each element tested.
+             */
+            void operator() (const matrix_type& shuffling_matrix, matrix_type& output) const override;
+
+            size_t num_factors() const override { return M.cols() + importers.size(); }
+            size_t num_variance_groups() const { return num_vgs; }
+
+          protected:
+            // Only a limited amount can be pre-calculated from the variance group information;
+            //   other data may vary as rows of the design matrix & data are excluded
+            const index_array_type& VG;
+            const size_t num_vgs;
+            vector_type gamma_weights;
+
+            // Need to apply the row selection mask to the variance groups in addition to other data
+            void apply_mask_VG (const BitSet& mask,
+                                index_array_type& VG_masked,
+                                index_array_type& VG_counts) const;
+
+        };
+
 
 
 
