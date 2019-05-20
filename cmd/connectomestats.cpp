@@ -163,7 +163,7 @@ void run()
   // Read file names and check files exist
   CohortDataImport importer;
   importer.initialise<SubjectConnectomeImport> (argument[0]);
-  CONSOLE ("Number of subjects: " + str(importer.size()));
+  CONSOLE ("Number of inputs: " + str(importer.size()));
   const size_t num_edges = importer[0]->size();
 
   for (size_t i = 1; i < importer.size(); ++i) {
@@ -232,6 +232,9 @@ void run()
   }
   check_design (design, extra_columns.size());
 
+  // Load variance groups
+  auto variance_groups = GLM::load_variance_groups (design.rows());
+
   // Load hypotheses
   const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[3]);
   const size_t num_hypotheses = hypotheses.size();
@@ -289,9 +292,15 @@ void run()
   // Construct the class for performing the initial statistical tests
   std::shared_ptr<GLM::TestBase> glm_test;
   if (extra_columns.size() || nans_in_data) {
-    glm_test.reset (new GLM::TestVariable (extra_columns, data, design, hypotheses, nans_in_data, nans_in_columns));
+    if (variance_groups.size())
+      glm_test.reset (new GLM::TestVariableHeteroscedastic (extra_columns, data, design, hypotheses, variance_groups, nans_in_data, nans_in_columns));
+    else
+      glm_test.reset (new GLM::TestVariableHomoscedastic (extra_columns, data, design, hypotheses, nans_in_data, nans_in_columns));
   } else {
-    glm_test.reset (new GLM::TestFixed (data, design, hypotheses));
+    if (variance_groups.size())
+      glm_test.reset (new GLM::TestFixedHeteroscedastic (data, design, hypotheses, variance_groups));
+    else
+      glm_test.reset (new GLM::TestFixedHomoscedastic (data, design, hypotheses));
   }
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical statistic

@@ -329,7 +329,7 @@ void run()
     if (!Fixel::fixels_match (index_header, dynamic_cast<SubjectFixelImport*>(importer[i].get())->header()))
       throw Exception ("Fixel data file \"" + importer[i]->name() + "\" does not match template fixel image");
   }
-  CONSOLE ("Number of subjects: " + str(importer.size()));
+  CONSOLE ("Number of inputs: " + str(importer.size()));
 
   // Load design matrix:
   const matrix_type design = load_matrix (argument[2]);
@@ -355,6 +355,9 @@ void run()
       CONSOLE ("Non-finite values detected in element-wise design matrix columns; individual rows will be removed from fixel-wise design matrices accordingly");
   }
   Math::Stats::GLM::check_design (design, extra_columns.size());
+
+  // Load variance groups
+  auto variance_groups = Math::Stats::GLM::load_variance_groups (design.rows());
 
   // Load hypotheses
   const vector<Math::Stats::GLM::Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[3]);
@@ -534,9 +537,15 @@ void run()
   // Construct the class for performing the initial statistical tests
   std::shared_ptr<Math::Stats::GLM::TestBase> glm_test;
   if (extra_columns.size() || nans_in_data) {
-    glm_test.reset (new Math::Stats::GLM::TestVariable (extra_columns, data, design, hypotheses, nans_in_data, nans_in_columns));
+    if (variance_groups.size())
+      glm_test.reset (new Math::Stats::GLM::TestVariableHeteroscedastic (extra_columns, data, design, hypotheses, variance_groups, nans_in_data, nans_in_columns));
+    else
+      glm_test.reset (new Math::Stats::GLM::TestVariableHomoscedastic (extra_columns, data, design, hypotheses, nans_in_data, nans_in_columns));
   } else {
-    glm_test.reset (new Math::Stats::GLM::TestFixed (data, design, hypotheses));
+    if (variance_groups.size())
+      glm_test.reset (new Math::Stats::GLM::TestFixedHeteroscedastic (data, design, hypotheses, variance_groups));
+    else
+      glm_test.reset (new Math::Stats::GLM::TestFixedHomoscedastic (data, design, hypotheses));
   }
 
   // Construct the class for performing fixel-based statistical enhancement

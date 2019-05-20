@@ -207,7 +207,7 @@ void run() {
     if (!dimensions_match (dynamic_cast<SubjectVoxelImport*>(importer[i].get())->header(), mask_header))
       throw Exception ("Image file \"" + importer[i]->name() + "\" does not match analysis mask");
   }
-  CONSOLE ("Number of subjects: " + str(importer.size()));
+  CONSOLE ("Number of inputs: " + str(importer.size()));
 
   // Load design matrix
   const matrix_type design = load_matrix<value_type> (argument[1]);
@@ -234,6 +234,9 @@ void run() {
       CONSOLE ("Non-finite values detected in element-wise design matrix columns; individual rows will be removed from voxel-wise design matrices accordingly");
   }
   check_design (design, extra_columns.size());
+
+  // Load variance groups
+  auto variance_groups = GLM::load_variance_groups (design.rows());
 
   // Load hypotheses
   const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[2]);
@@ -310,9 +313,15 @@ void run() {
   // Construct the class for performing the initial statistical tests
   std::shared_ptr<GLM::TestBase> glm_test;
   if (extra_columns.size() || nans_in_data) {
-    glm_test.reset (new GLM::TestVariable (extra_columns, data, design, hypotheses, nans_in_data, nans_in_columns));
+    if (variance_groups.size())
+      glm_test.reset (new GLM::TestVariableHeteroscedastic (extra_columns, data, design, hypotheses, variance_groups, nans_in_data, nans_in_columns));
+    else
+      glm_test.reset (new GLM::TestVariableHomoscedastic (extra_columns, data, design, hypotheses, nans_in_data, nans_in_columns));
   } else {
-    glm_test.reset (new GLM::TestFixed (data, design, hypotheses));
+    if (variance_groups.size())
+      glm_test.reset (new GLM::TestFixedHeteroscedastic (data, design, hypotheses, variance_groups));
+    else
+      glm_test.reset (new GLM::TestFixedHomoscedastic (data, design, hypotheses));
   }
 
   std::shared_ptr<Stats::EnhancerBase> enhancer;

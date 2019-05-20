@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ * Copyright (ih) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,8 +34,8 @@ namespace MR
           skew (skew),
           global_enhanced_sum (global_enhanced_sum),
           global_enhanced_count (global_enhanced_count),
-          enhanced_sum (matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_outputs())),
-          enhanced_count (count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_outputs())),
+          enhanced_sum (matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_hypotheses())),
+          enhanced_count (count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_hypotheses())),
           stats (global_enhanced_sum.rows(), global_enhanced_sum.cols()),
           enhanced_stats (global_enhanced_sum.rows(), global_enhanced_sum.cols()),
           mutex (new std::mutex())
@@ -61,11 +61,11 @@ namespace MR
           return false;
         (*stats_calculator) (shuffle.data, stats);
         (*enhancer) (stats, enhanced_stats);
-        for (size_t c = 0; c != stats_calculator->num_outputs(); ++c) {
-          for (size_t i = 0; i != stats_calculator->num_elements(); ++i) {
-            if (enhanced_stats(i, c) > 0.0) {
-              enhanced_sum(i, c) += std::pow (enhanced_stats(i, c), skew);
-              enhanced_count(i, c)++;
+        for (size_t ih = 0; ih != stats_calculator->num_hypotheses(); ++ih) {
+          for (size_t ie = 0; ie != stats_calculator->num_elements(); ++ie) {
+            if (enhanced_stats(ie, ih) > 0.0) {
+              enhanced_sum(ie, ih) += std::pow (enhanced_stats(ie, ih), skew);
+              enhanced_count(ie, ih)++;
             }
           }
         }
@@ -89,13 +89,13 @@ namespace MR
           enhancer (enhancer),
           empirical_enhanced_statistics (empirical_enhanced_statistics),
           default_enhanced_statistics (default_enhanced_statistics),
-          statistics (stats_calculator->num_elements(), stats_calculator->num_outputs()),
-          enhanced_statistics (stats_calculator->num_elements(), stats_calculator->num_outputs()),
+          statistics (stats_calculator->num_elements(), stats_calculator->num_hypotheses()),
+          enhanced_statistics (stats_calculator->num_elements(), stats_calculator->num_hypotheses()),
           null_dist (perm_dist),
           global_null_dist_contributions (perm_dist_contributions),
-          null_dist_contribution_counter (count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_outputs())),
+          null_dist_contribution_counter (count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_hypotheses())),
           global_uncorrected_pvalue_counter (global_uncorrected_pvalue_counter),
-          uncorrected_pvalue_counter (count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_outputs())),
+          uncorrected_pvalue_counter (count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_hypotheses())),
           mutex (new std::mutex())
       {
         assert (stats_calculator);
@@ -129,16 +129,16 @@ namespace MR
           null_dist_contribution_counter(max_element, max_hypothesis)++;
         } else { // weak fwe control
           ssize_t max_index;
-          for (ssize_t hypothesis = 0; hypothesis != enhanced_statistics.cols(); ++hypothesis) {
-            null_dist(shuffle.index, hypothesis) = enhanced_statistics.col (hypothesis).maxCoeff (&max_index);
-            null_dist_contribution_counter(max_index, hypothesis)++;
+          for (ssize_t ih = 0; ih != enhanced_statistics.cols(); ++ih) {
+            null_dist(shuffle.index, ih) = enhanced_statistics.col (ih).maxCoeff (&max_index);
+            null_dist_contribution_counter(max_index, ih)++;
           }
         }
 
-        for (ssize_t hypothesis = 0; hypothesis != enhanced_statistics.cols(); ++hypothesis) {
-          for (ssize_t element = 0; element != enhanced_statistics.rows(); ++element) {
-            if (default_enhanced_statistics(element, hypothesis) > enhanced_statistics(element, hypothesis))
-              uncorrected_pvalue_counter(element, hypothesis)++;
+        for (ssize_t ih = 0; ih != enhanced_statistics.cols(); ++ih) {
+          for (ssize_t ie = 0; ie != enhanced_statistics.rows(); ++ie) {
+            if (default_enhanced_statistics(ie, ih) > enhanced_statistics(ie, ih))
+              uncorrected_pvalue_counter(ie, ih)++;
           }
         }
 
@@ -157,19 +157,19 @@ namespace MR
                                       matrix_type& empirical_statistic)
       {
         assert (stats_calculator);
-        empirical_statistic = matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_outputs());
-        count_matrix_type global_enhanced_count (count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_outputs()));
+        empirical_statistic = matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_hypotheses());
+        count_matrix_type global_enhanced_count (count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_hypotheses()));
         {
-          Math::Stats::Shuffler shuffler (stats_calculator->num_subjects(), true, "Pre-computing empirical statistic for non-stationarity correction");
+          Math::Stats::Shuffler shuffler (stats_calculator->num_inputs(), true, "Pre-computing empirical statistic for non-stationarity correction");
           PreProcessor preprocessor (stats_calculator, enhancer, skew, empirical_statistic, global_enhanced_count);
           Thread::run_queue (shuffler, Math::Stats::Shuffle(), Thread::multi (preprocessor));
         }
-        for (size_t contrast = 0; contrast != stats_calculator->num_outputs(); ++contrast) {
-          for (size_t element = 0; element != stats_calculator->num_elements(); ++element) {
-            if (global_enhanced_count(element, contrast) > 0)
-              empirical_statistic(element, contrast) = std::pow (empirical_statistic(element, contrast) / static_cast<default_type> (global_enhanced_count(element, contrast)), 1.0/skew);
+        for (size_t contrast = 0; contrast != stats_calculator->num_hypotheses(); ++contrast) {
+          for (size_t ie = 0; ie != stats_calculator->num_elements(); ++ie) {
+            if (global_enhanced_count(ie, contrast) > 0)
+              empirical_statistic(ie, contrast) = std::pow (empirical_statistic(ie, contrast) / static_cast<default_type> (global_enhanced_count(ie, contrast)), 1.0/skew);
             else
-              empirical_statistic(element, contrast) = std::numeric_limits<default_type>::infinity();
+              empirical_statistic(ie, contrast) = std::numeric_limits<default_type>::infinity();
           }
         }
       }
@@ -184,10 +184,10 @@ namespace MR
                                            matrix_type& default_statistics)
       {
         assert (stats_calculator);
-        default_statistics.resize (stats_calculator->num_elements(), stats_calculator->num_outputs());
-        default_enhanced_statistics.resize (stats_calculator->num_elements(), stats_calculator->num_outputs());
+        default_statistics.resize (stats_calculator->num_elements(), stats_calculator->num_hypotheses());
+        default_enhanced_statistics.resize (stats_calculator->num_elements(), stats_calculator->num_hypotheses());
 
-        const matrix_type default_shuffle (matrix_type::Identity (stats_calculator->num_subjects(), stats_calculator->num_subjects()));
+        const matrix_type default_shuffle (matrix_type::Identity (stats_calculator->num_inputs(), stats_calculator->num_inputs()));
         (*stats_calculator) (default_shuffle, default_statistics);
 
         if (enhancer)
@@ -212,11 +212,11 @@ namespace MR
                              matrix_type& uncorrected_pvalues)
       {
         assert (stats_calculator);
-        Math::Stats::Shuffler shuffler (stats_calculator->num_subjects(), false, "Running permutations");
-        null_dist.resize (shuffler.size(), fwe_strong ? 1 : stats_calculator->num_outputs());
-        null_dist_contributions = count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_outputs());
+        Math::Stats::Shuffler shuffler (stats_calculator->num_inputs(), false, "Running permutations");
+        null_dist.resize (shuffler.size(), fwe_strong ? 1 : stats_calculator->num_hypotheses());
+        null_dist_contributions = count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_hypotheses());
 
-        count_matrix_type global_uncorrected_pvalue_count (count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_outputs()));
+        count_matrix_type global_uncorrected_pvalue_count (count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_hypotheses()));
         {
           Processor processor (stats_calculator, enhancer,
                                empirical_enhanced_statistic,
