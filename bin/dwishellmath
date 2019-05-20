@@ -4,6 +4,7 @@ SUPPORTED_OPS = ['mean', 'median', 'sum', 'product', 'rms', 'norm', 'var', 'std'
 
 
 def usage(cmdline): #pylint: disable=unused-variable
+  from mrtrix3 import app #pylint: disable=no-name-in-module
   cmdline.set_author('Daan Christiaens (daan.christiaens@kcl.ac.uk)')
   cmdline.set_synopsis('Apply an mrmath operation to each b-value shell in a DWI series')
   cmdline.add_description('The output of this command is a 4D image, where '
