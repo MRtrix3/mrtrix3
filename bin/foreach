@@ -32,7 +32,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_argument('inputs',   help='Each of the inputs for which processing should be run', nargs='+')
   cmdline.add_argument('colon',    help='Colon symbol (":") delimiting the foreach inputs & command-line options from the actual command to be executed', type=str, choices=[':'])
   cmdline.add_argument('command',  help='The command string to run for each input, containing any number of substitutions listed in the Description section', type=str)
-  cmdline.add_argument('-exclude', help='Exclude one specific input string from being processed (see Example Usage)', action='append', nargs=1)
+  cmdline.add_argument('-exclude', help='Exclude one specific input string / all strings matching a regular expression from being processed (see Example Usage)', action='append', metavar='"regex"', nargs=1)
   cmdline.add_argument('-test',    help='Test the operation of the foreach script, by printing the command strings following string substitution but not actually executing them', action='store_true', default=False)
 
   # Usage of foreach needs to be handled slightly differently here:
