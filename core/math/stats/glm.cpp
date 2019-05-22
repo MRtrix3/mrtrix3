@@ -114,12 +114,12 @@ namespace MR
           if (!opt.size())
             return index_array_type();
           try {
-            auto data = load_vector<int> (opt[0][0]);
+            auto data = load_vector<size_t> (opt[0][0]);
             if (size_t(data.size()) != num_inputs)
               throw Exception ("Number of entries in variance group file \"" + std::string(opt[0][0]) + "\" (" + str(data.size()) + ") does not match number of inputs (" + str(num_inputs) + ")");
-            const int min_coeff = data.minCoeff();
-            const int max_coeff = data.maxCoeff();
-            if (min_coeff < 0 || min_coeff > 1)
+            const size_t min_coeff = data.minCoeff();
+            const size_t max_coeff = data.maxCoeff();
+            if (min_coeff > 1)
               throw Exception ("Minimum coefficient needs to be either zero or one");
             if (max_coeff == min_coeff) {
               WARN ("Only a single variance group is defined in file \"" + opt[0][0] + "\"; variance groups will not be used");
