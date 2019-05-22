@@ -222,6 +222,16 @@ namespace MR
 
 
 
+      void Shuffler::reset()
+      {
+        counter = 0;
+        progress.reset();
+      }
+
+
+
+
+
 
       void Shuffler::initialise (const error_t error_types,
                                  const bool nshuffles_explicit,
