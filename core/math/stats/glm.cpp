@@ -115,7 +115,7 @@ namespace MR
             return index_array_type();
           try {
             auto data = load_vector<int> (opt[0][0]);
-            if (data.size() != num_inputs)
+            if (size_t(data.size()) != num_inputs)
               throw Exception ("Number of entries in variance group file \"" + std::string(opt[0][0]) + "\" (" + str(data.size()) + ") does not match number of inputs (" + str(num_inputs) + ")");
             const int min_coeff = data.minCoeff();
             const int max_coeff = data.maxCoeff();
@@ -126,9 +126,9 @@ namespace MR
               return index_array_type();
             }
             vector<size_t> count_per_group (max_coeff + 1, 0);
-            for (size_t i = 0; i != data.size(); ++i)
+            for (size_t i = 0; i != size_t(data.size()); ++i)
               count_per_group[data[i]]++;
-            for (size_t vg_index = min_coeff; vg_index <= max_coeff; ++vg_index) {
+            for (size_t vg_index = min_coeff; vg_index <= size_t(max_coeff); ++vg_index) {
               if (!count_per_group[vg_index])
                 throw Exception ("No entries found for variance group " + str(vg_index));
             }
@@ -682,7 +682,7 @@ namespace MR
                 W[input] = Wterms(VG[input], ie);
                 W_trace += W[input];
               }
-              const default_type numerator = lambdas.col (ie).transpose() * Math::pinv (c[ih].matrix().transpose() * Math::pinv (M.transpose() * W.asDiagonal() * M) * c[ih].matrix()) * lambdas.col (ie);
+              const default_type numerator = lambdas.col (ie).transpose() * c[ih].matrix().transpose() * Math::pinv ((c[ih].matrix().transpose() * Math::pinv ((M.transpose() * W.asDiagonal() * M).eval()) * c[ih].matrix()).eval()) * c[ih].matrix() * lambdas.col (ie);
               default_type gamma (0.0);
               for (size_t vg_index = 0; vg_index != num_vgs; ++vg_index)
                 // Since Wnn is the same for every n in the variance group, can compute that summation as the product of:
@@ -1028,11 +1028,11 @@ namespace MR
                       W_trace += W[input];
                     }
 
-                    const default_type numerator = lambda.matrix().transpose() * Math::pinv (c[ih].matrix().transpose() * Math::pinv (Mfull_masked.transpose() * W.asDiagonal() * Mfull_masked) * c[ih].matrix()) * lambda.matrix();
+                    const default_type numerator = (lambda.matrix().transpose() * c[ih].matrix().transpose() * Math::pinv ((c[ih].matrix() * Math::pinv ((Mfull_masked.transpose() * W.asDiagonal() * Mfull_masked).eval()) * c[ih].matrix().transpose()).eval()) * c[ih].matrix() * lambda.matrix());
 
                     default_type gamma (0.0);
                     for (size_t vg_index = 0; vg_index != num_vgs; ++vg_index)
-                      gamma += Math::pow2 (1.0 - ((Wterms(vg_index, ie) * VG_counts[vg_index]) / W_trace)) / Rnn_sums[vg_index];
+                      gamma += Math::pow2 (1.0 - ((Wterms[vg_index] * VG_counts[vg_index]) / W_trace)) / Rnn_sums[vg_index];
                     gamma = 1.0 + (gamma_weights[ih] * gamma);
                     const default_type denominator = gamma * c[ih].rank();
 
@@ -1073,7 +1073,7 @@ namespace MR
               VG_counts[VG[in_index]]++;
             }
           }
-          assert (out_index == VG_masked.size());
+          assert (out_index == size_t(VG_masked.size()));
         }
 
 
