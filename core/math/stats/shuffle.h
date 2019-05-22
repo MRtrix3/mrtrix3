@@ -89,6 +89,9 @@ namespace MR
 
           size_t size() const { return nshuffles; }
 
+          // Go back to the first permutation
+          void reset();
+
 
         private:
           const size_t rows;
