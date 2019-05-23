@@ -270,6 +270,8 @@ namespace MR
             vector<Hypothesis::Partition> partitions;
             const matrix_type pinvM;
             const matrix_type Rm;
+            vector<matrix_type> XtX;
+            vector<default_type> one_over_dof;
 
         };
         //! @}
