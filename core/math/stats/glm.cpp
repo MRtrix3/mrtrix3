@@ -679,7 +679,7 @@ namespace MR
                 W[input] = Wterms(VG[input], ie);
                 W_trace += W[input];
               }
-              const default_type numerator = lambdas.col (ie).transpose() * c[ih].matrix().transpose() * Math::pinv ((c[ih].matrix().transpose() * Math::pinv ((M.transpose() * W.asDiagonal() * M).eval()) * c[ih].matrix()).eval()) * c[ih].matrix() * lambdas.col (ie);
+              const default_type numerator = lambdas.col (ie).transpose() * c[ih].matrix().transpose() * Math::pinv ((c[ih].matrix() * Math::pinv ((M.transpose() * W.asDiagonal() * M).eval()) * c[ih].matrix().transpose()).eval()) * c[ih].matrix() * lambdas.col (ie);
               default_type gamma (0.0);
               for (size_t vg_index = 0; vg_index != num_vgs; ++vg_index)
                 // Since Wnn is the same for every n in the variance group, can compute that summation as the product of:
