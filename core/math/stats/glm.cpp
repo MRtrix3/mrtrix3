@@ -521,8 +521,11 @@ namespace MR
         {
           assert (hypotheses[0].cols() == design.cols());
           // When the design matrix is fixed, we can pre-calculate the model partitioning for each hypothesis
-          for (const auto& h : hypotheses)
+          for (const auto& h : hypotheses) {
             partitions.emplace_back (h.partition (design));
+            XtX.emplace_back (partitions.back().X.transpose()*partitions.back().X);
+            one_over_dof.push_back (1.0 / (num_inputs() - partitions.back().rank_x - partitions.back().rank_z));
+          }
         }
 
 
@@ -533,7 +536,7 @@ namespace MR
           if (!(size_t(output.rows()) == num_elements() && size_t(output.cols()) == num_hypotheses()))
             output.resize (num_elements(), num_hypotheses());
 
-          matrix_type Sy, lambdas, XtX, residuals, beta;
+          matrix_type Sy, lambdas, residuals, beta;
           vector_type sse;
 
           // Freedman-Lane for fixed design matrix case
@@ -567,14 +570,8 @@ namespace MR
             //VAR (matrix_type(c[ih]).cols());
             VAR (Rm.rows());
             VAR (Rm.cols());
-#endif
-            XtX.noalias() = partitions[ih].X.transpose()*partitions[ih].X;
-#ifdef GLM_TEST_DEBUG
             VAR (XtX.rows());
             VAR (XtX.cols());
-#endif
-            const default_type one_over_dof = 1.0 / (num_inputs() - partitions[ih].rank_x - partitions[ih].rank_z);
-#ifdef GLM_TEST_DEBUG
             VAR (one_over_dof);
 #endif
             sse = (Rm*Sy).colwise().squaredNorm();
@@ -587,8 +584,8 @@ namespace MR
               VAR (beta.rows());
               VAR (beta.cols());
 #endif
-              const default_type F = ((beta.transpose() * XtX * beta) (0,0) / c[ih].rank()) /
-                                     (one_over_dof * sse[ie]);
+              const default_type F = ((beta.transpose() * XtX[ih] * beta) (0,0) / c[ih].rank()) /
+                                     (one_over_dof[ih] * sse[ie]);
               if (!std::isfinite (F)) {
                 output (ie, ih) = value_type(0);
               } else if (c[ih].is_F()) {
