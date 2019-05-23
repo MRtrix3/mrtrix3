@@ -381,7 +381,7 @@ namespace MR
       index_array_type Shuffler::load_blocks (const std::string& filename, const bool equal_sizes)
       {
         index_array_type data = load_vector<size_t> (filename).array();
-        if (data.size() != rows)
+        if (size_t(data.size()) != rows)
           throw Exception ("Number of entries in file \"" + filename + "\" (" + str(data.size()) + ") does not match number of inputs (" + str(rows) + ")");
         const size_t min_coeff = data.minCoeff();
         size_t max_coeff = data.maxCoeff();
@@ -702,7 +702,7 @@ namespace MR
           do {
             ssize_t ib = 0;
             while (temp[ib]) {
-              if (++ib == blocks.size())
+              if (size_t(++ib) == blocks.size())
                 return;
             }
             temp[ib] = true;
