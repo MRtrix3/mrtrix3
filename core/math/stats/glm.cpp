@@ -236,7 +236,10 @@ namespace MR
 
 
 
-//#define GLM_ALL_STATS_DEBUG
+
+// TODO all_stats() needs to be updated to reflect heteroscedasticity
+
+#define GLM_ALL_STATS_DEBUG
 
         void all_stats (const matrix_type& measurements,
                         const matrix_type& design,
@@ -294,7 +297,7 @@ namespace MR
 #endif
           const ssize_t dof = design.rows()-Math::rank (design);
 #ifdef GLM_ALL_STATS_DEBUG
-          std::cerr << "Degrees of freedom: " << design.rows() << " - " << Math:rank (design) << " = " << dof << "\n";
+          std::cerr << "Degrees of freedom: " << design.rows() << " - " << Math::rank (design) << " = " << dof << "\n";
 #endif
           stdev = (sse / value_type(dof)).sqrt();
 #ifdef GLM_ALL_STATS_DEBUG
@@ -570,8 +573,8 @@ namespace MR
             //VAR (matrix_type(c[ih]).cols());
             VAR (Rm.rows());
             VAR (Rm.cols());
-            VAR (XtX.rows());
-            VAR (XtX.cols());
+            VAR (XtX[ih].rows());
+            VAR (XtX[ih].cols());
             VAR (one_over_dof);
 #endif
             sse = (Rm*Sy).colwise().squaredNorm();
@@ -580,10 +583,6 @@ namespace MR
 #endif
             for (size_t ie = 0; ie != num_elements(); ++ie) {
               beta.noalias() = c[ih].matrix() * lambdas.col (ie);
-#ifdef GLM_TEST_DEBUG
-              VAR (beta.rows());
-              VAR (beta.cols());
-#endif
               const default_type F = ((beta.transpose() * XtX[ih] * beta) (0,0) / c[ih].rank()) /
                                      (one_over_dof[ih] * sse[ie]);
               if (!std::isfinite (F)) {
@@ -625,13 +624,23 @@ namespace MR
             // Sum of diagonal entries of residual-forming matrix corresponding to each VG
             Rnn_sums[VG[input]] += Rm.diagonal()[input];
           }
+#ifdef GLM_TEST_DEBUG
+          VAR (inputs_per_vg);
+          VAR (Rnn_sums);
+#endif
           // Reciprocals of the sums of diagonal entries of residual-forming matrix corresponding to each VG
           inv_Rnn_sums = Rnn_sums.inverse();
+#ifdef GLM_TEST_DEBUG
+          VAR (inv_Rnn_sums);
+#endif
           // Multiplication term for calculation of gamma; unique for each hypothesis
           for (size_t ih = 0; ih != c.size(); ++ih) {
             const size_t s = c[ih].rank();
             gamma_weights[ih] = 2.0*(s-1) / default_type(s*(s+2));
           }
+#ifdef GLM_TEST_DEBUG
+          VAR (gamma_weights);
+#endif
         }
 
 
@@ -645,30 +654,48 @@ namespace MR
           matrix_type Sy, lambdas;
           Eigen::Array<default_type, Eigen::Dynamic, Eigen::Dynamic> sq_residuals, sse, Wterms;
           Eigen::Matrix<default_type, Eigen::Dynamic, 1> W (num_inputs());
+#ifdef GLM_TEST_DEBUG
+          VAR (shuffling_matrix);
+#endif
 
           for (size_t ih = 0; ih != c.size(); ++ih) {
             // First two steps are identical to the homoscedastic case
             Sy.noalias() = shuffling_matrix * partitions[ih].Rz * y;
+#ifdef GLM_TEST_DEBUG
+            VAR (Sy);
+#endif
             lambdas.noalias() = pinvM * Sy;
+#ifdef GLM_TEST_DEBUG
+            VAR (lambdas);
+#endif
             // Compute sum of residuals per VG immediately
             // Variance groups appear across rows, and one column per element tested
             // Immediately calculate squared residuals; simplifies summation over variance groups
             sq_residuals = (Rm*Sy).array().square();
 #ifdef GLM_TEST_DEBUG
-            VAR (residuals.rows());
-            VAR (residuals.cols());
+            VAR (sq_residuals);
+            VAR (sq_residuals.rows());
+            VAR (sq_residuals.cols());
 #endif
             sse = matrix_type::Zero (num_variance_groups(), num_elements());
             for (size_t input = 0; input != num_inputs(); ++input)
               sse.row(VG[input]) += sq_residuals.row(input);
 #ifdef GLM_TEST_DEBUG
+            VAR (sse);
             VAR (sse.rows());
             VAR (sse.cols());
 #endif
             // These terms are what appears in the weighting matrix based on the VG to which each input belongs;
             //   one row per variance group, one column per element to be tested
             Wterms = sse.array().inverse().colwise() * Rnn_sums;
+            for (ssize_t col = 0; col != num_elements(); ++col) {
+              for (ssize_t row = 0; row != num_vgs; ++row) {
+                if (!std::isfinite (Wterms (row, col)))
+                  Wterms (row, col) = 0.0;
+              }
+            }
 #ifdef GLM_TEST_DEBUG
+            VAR (Wterms);
             VAR (Wterms.rows());
             VAR (Wterms.cols());
 #endif
@@ -679,7 +706,13 @@ namespace MR
                 W[input] = Wterms(VG[input], ie);
                 W_trace += W[input];
               }
-              const default_type numerator = lambdas.col (ie).transpose() * c[ih].matrix().transpose() * Math::pinv ((c[ih].matrix() * Math::pinv ((M.transpose() * W.asDiagonal() * M).eval()) * c[ih].matrix().transpose()).eval()) * c[ih].matrix() * lambdas.col (ie);
+#ifdef GLM_TEST_DEBUG
+              VAR (W_trace);
+#endif
+              const default_type numerator = lambdas.col (ie).transpose() * c[ih].matrix().transpose() * (c[ih].matrix() * (M.transpose() * W.asDiagonal() * M).inverse() * c[ih].matrix().transpose()).inverse() * c[ih].matrix() * lambdas.col (ie);
+#ifdef GLM_TEST_DEBUG
+              VAR (numerator);
+#endif
               default_type gamma (0.0);
               for (size_t vg_index = 0; vg_index != num_vgs; ++vg_index)
                 // Since Wnn is the same for every n in the variance group, can compute that summation as the product of:
@@ -687,6 +720,9 @@ namespace MR
                 //   - the number of inputs that are a part of that VG
                 gamma += inv_Rnn_sums[vg_index] * Math::pow2 (1.0 - ((Wterms(vg_index, ie) * inputs_per_vg[vg_index]) / W_trace));
               gamma = 1.0 + (gamma_weights[ih] * gamma);
+#ifdef GLM_TEST_DEBUG
+              VAR (gamma);
+#endif
               const default_type denominator = gamma * c[ih].rank();
               const default_type G = numerator / denominator;
               if (!std::isfinite (G)) {
@@ -1018,6 +1054,10 @@ namespace MR
                       Rnn_sums[VG_masked[input]] += Rm.diagonal()[input];
                     }
                     Wterms = sse.inverse() * Rnn_sums;
+                    for (ssize_t vg = 0; vg != num_vgs; ++vg) {
+                      if (!std::isfinite (Wterms[vg]))
+                        Wterms[vg] = 0.0;
+                    }
                     default_type W_trace (0.0);
                     W.resize (finite_count);
                     for (size_t input = 0; input != finite_count; ++input) {
@@ -1025,7 +1065,7 @@ namespace MR
                       W_trace += W[input];
                     }
 
-                    const default_type numerator = (lambda.matrix().transpose() * c[ih].matrix().transpose() * Math::pinv ((c[ih].matrix() * Math::pinv ((Mfull_masked.transpose() * W.asDiagonal() * Mfull_masked).eval()) * c[ih].matrix().transpose()).eval()) * c[ih].matrix() * lambda.matrix());
+                    const default_type numerator = lambda.matrix().transpose() * c[ih].matrix().transpose() * (c[ih].matrix() * (Mfull_masked.transpose() * W.asDiagonal() * Mfull_masked).inverse() * c[ih].matrix().transpose()).inverse() * c[ih].matrix() * lambda.matrix();
 
                     default_type gamma (0.0);
                     for (size_t vg_index = 0; vg_index != num_vgs; ++vg_index)
