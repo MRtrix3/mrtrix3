@@ -371,7 +371,7 @@ void run() {
     const matrix_type fwe_pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, enhanced_output);
     ++progress;
     for (size_t i = 0; i != num_hypotheses; ++i) {
-      write_output (fwe_pvalue_output.col(i), *v2v, prefix + "fwe_pvalue" + postfix(i) + ".mif", output_header);
+      write_output (fwe_pvalue_output.col(i), *v2v, prefix + "fwe_1mpvalue" + postfix(i) + ".mif", output_header);
       ++progress;
       write_output (uncorrected_pvalue.col(i), *v2v, prefix + "uncorrected_pvalue" + postfix(i) + ".mif", output_header);
       ++progress;
