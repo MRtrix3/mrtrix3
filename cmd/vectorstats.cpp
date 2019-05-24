@@ -247,7 +247,7 @@ void run()
     }
     const matrix_type fwe_pvalues = MR::Math::Stats::fwe_pvalue (null_distribution, default_output);
     for (size_t i = 0; i != num_hypotheses; ++i) {
-      save_vector (fwe_pvalues.col(i), output_prefix + "fwe_pvalue" + postfix(i) + ".csv");
+      save_vector (fwe_pvalues.col(i), output_prefix + "fwe_1mpvalue" + postfix(i) + ".csv");
       save_vector (uncorrected_pvalues.col(i), output_prefix + "uncorrected_pvalue" + postfix(i) + ".csv");
       save_vector (null_contributions.col(i), output_prefix + "null_contributions" + postfix(i) + ".csv");
     }
