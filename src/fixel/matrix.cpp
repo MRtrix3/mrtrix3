@@ -256,15 +256,17 @@ namespace MR
         index_header.stride(1) = 3;
         index_header.stride(2) = 4;
         index_header.stride(3) = 1;
-        index_header.keyval()["nfixels"] = matrix.size();
+        index_header.spacing(0) = index_header.spacing(1) = index_header.spacing(2) = 1.0;
+        index_header.transform() = transform_type::Identity();
+        index_header.keyval()["nfixels"] = str(matrix.size());
         index_header.datatype() = DataType::from<uint64_t>();
         Image<uint64_t> index_image = Image<uint64_t>::create (Path::join (path, "index.mif"), index_header);
 
         // Can't use function write_mrtrix_header() as the file offset of the
         //   first entry of the "dim" field needs to be known
         //   (and enough space needs to be left to fill in a large number upon completion)
-        File::OFStream fixel_stream (Path::join (path, "fixels.mif"));
-        File::OFStream value_stream (Path::join (path, "fixels.mif"));
+        File::OFStream fixel_stream (Path::join (path, "fixels.mif"), std::ios_base::out | std::ios_base::in);
+        File::OFStream value_stream (Path::join (path, "values.mif"), std::ios_base::out | std::ios_base::in);
 
         const std::string leadin = "mrtrix image\ndim: ";
         // Need enough space for the largest possible 64-bit unsigned integer,
@@ -278,14 +280,14 @@ namespace MR
           stream << leadin;
           for (size_t i = 0; i != dim_padding; ++i)
             stream << " ";
-          stream << "\nvox: 1,1,1\nlayout: +1,+2,+3\ndatatype: ";
+          stream << "\nvox: 1,1,1\nlayout: 0,1,2\ndatatype: ";
           if (stream_index)
-            stream << DataType::from<index_type>().specifier();
-          else
             stream << DataType::from<connectivity_value_type>().specifier();
-          stream << "\ntransform: ";
+          else
+            stream << DataType::from<index_type>().specifier();
           stream << transform_type::Identity().matrix().topLeftCorner(3,4).format(fmt);
-          stream << "\nscaling:0,1\nnfixels: " + str(matrix.size()) + "\nfile: ";
+          // TODO Insert command_history string
+          stream << "\nscaling: 0,1\nnfixels: " + str(matrix.size()) + "\nfile: ";
           int64_t offset = stream.tellp() + int64_t(18);
           offset += ((4 - (offset % 4)) % 4);
           stream << ". " << offset << "\nEND\n";
@@ -313,8 +315,8 @@ namespace MR
             }
           }
 
-          index_image.index (3) = 0; index_image.value() = num_fixels;
-          index_image.index (3) = 1; index_image.value() = data_count;
+          index_image.index (3) = 0; index_image.value() = uint64_t(num_fixels);
+          index_image.index (3) = 1; index_image.value() = num_fixels ? data_count : uint64_t(0);
           data_count += num_fixels;
 
           // Force deallocation of memory used for this fixel in the generated matrix
@@ -323,9 +325,8 @@ namespace MR
 
         // Update headers to reflect the number of fixel-fixel connections
         std::string dim_string = str(data_count) + ",1,1";
-        while (dim_string.size() < dim_padding - 1)
+        while (dim_string.size() < dim_padding)
           dim_string += " ";
-        dim_string += "\n";
         for (size_t stream_index = 0; stream_index != 2; ++stream_index) {
           File::OFStream& stream (stream_index ? value_stream : fixel_stream);
           stream.seekp (leadin.size());
