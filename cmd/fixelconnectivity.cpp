@@ -21,7 +21,6 @@
 
 #define DEFAULT_ANGLE_THRESHOLD 45.0
 #define DEFAULT_CONNECTIVITY_THRESHOLD 0.01
-#define DEFAULT_SMOOTHING_FWHM 10.0
 
 
 using namespace MR;
@@ -31,33 +30,22 @@ void usage ()
 {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Generate one or more fixel-fixel connectivity matrices";
+  SYNOPSIS = "Generate a fixel-fixel connectivity matrix";
 
   DESCRIPTION
-  + "If this command is used within a typical Fixel-Based Analysis (FBA) pipeline, one would be expected to "
-    "utilise the -smoothing command-line option, as this will provide the matrix by which fixel data should be "
-    "smoothed in template space, as opposed to statistical testing which would typically use the full output "
-    "connectivity matrix";
+  + "This command will generate a directory containing three images, which encodes the "
+    "fixel-fixel connectivity matrix. Documentation regarding this format and how to "
+    "use it will come in the future.";
 
   ARGUMENTS
   + Argument ("fixel_directory", "the directory containing the fixels between which connectivity will be quantified").type_directory_in()
 
   + Argument ("tracks", "the tracks used to determine fixel-fixel connectivity").type_tracks_in()
 
-  + Argument ("matrix", "the output fixel-fixel connectivity matrix").type_file_out();
+  + Argument ("matrix", "the output fixel-fixel connectivity matrix directory path").type_directory_out();
 
 
   OPTIONS
-
-  + OptionGroup ("Options for generating an additional connectivity matrix")
-
-  + Option ("smoothing", "generate a second fixel-fixel connectivity matrix that incorporates both streamlines-based connectivity and spatial distance, "
-                         "which is typically used for smoothing fixel-based data")
-    + Argument ("path").type_file_out()
-
-  + Option ("fwhm", "manually specify the full-width half-maximum of the fixel data smoothing matrix (default: " + str(DEFAULT_SMOOTHING_FWHM, 2) + "mm)")
-    + Argument ("value").type_float (0.0, 200.0)
-
   + OptionGroup ("Options that influence generation of the connectivity matrix / matrices")
 
   + Option ("threshold", "a threshold to define the required fraction of shared connections to be included in the neighbourhood (default: " + str(DEFAULT_CONNECTIVITY_THRESHOLD, 2) + ")")
@@ -78,13 +66,6 @@ using Fixel::index_type;
 
 void run()
 {
-  const bool do_smoothing = get_options ("smoothing").size();
-  value_type smoothing_fwhm = value_type (0);
-  if (do_smoothing) {
-    smoothing_fwhm = get_option_value ("fwhm", DEFAULT_SMOOTHING_FWHM) / 2.3548;
-  } else if (get_options ("fwhm").size()) {
-    WARN ("Usage of -fwhm ignored, since no output smoothing matrix path has been specified");
-  }
   const value_type connectivity_threshold = get_option_value ("connectivity", DEFAULT_CONNECTIVITY_THRESHOLD);
   const value_type angular_threshold = get_option_value ("angle", DEFAULT_ANGLE_THRESHOLD);
 
@@ -92,10 +73,6 @@ void run()
   Header index_header = Fixel::find_index_header (input_fixel_directory);
   auto index_image = index_header.get_image<index_type>();
   const index_type num_fixels = Fixel::get_number_of_fixels (index_image);
-
-  // Regardless of whether or not a mask is provided, we do not want the
-  //   normalise_matrix() function to alter the indices of fixels
-  const Fixel::IndexRemapper index_remapper (num_fixels);
 
   // When provided with a mask, this only influences which fixels get their connectivity quantified;
   //   these will appear empty in the output matrix
@@ -119,22 +96,9 @@ void run()
                                                       fixel_mask,
                                                       angular_threshold);
 
-  Fixel::Matrix::norm_matrix_type norm_connectivity_matrix;
-  Fixel::Matrix::norm_matrix_type smoothing_weights;
-  Fixel::Matrix::normalise (connectivity_matrix,
-                            index_image,
-                            index_remapper,
-                            connectivity_threshold,
-                            norm_connectivity_matrix,
-                            smoothing_fwhm,
-                            smoothing_weights);
-
-  Fixel::Matrix::save (norm_connectivity_matrix, argument[2]);
-  if (smoothing_fwhm) {
-    opt = get_options ("smoothing");
-    assert (!opt.empty());
-    Fixel::Matrix::save (smoothing_weights, opt[0][0]);
-  }
+  Fixel::Matrix::normalise_and_write (connectivity_matrix,
+                                      connectivity_threshold,
+                                      argument[2]);
 
 }
 
