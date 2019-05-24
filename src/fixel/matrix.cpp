@@ -16,7 +16,9 @@
 #include "fixel/matrix.h"
 
 #include "thread_queue.h"
+#include "file/ofstream.h"
 #include "file/path.h"
+#include "file/utils.h"
 #include "fixel/helpers.h"
 
 #include "dwi/tractography/mapping/loader.h"
@@ -226,130 +228,112 @@ namespace MR
 
 
 
-      void normalise (init_matrix_type& initial_matrix,
-                      Image<index_type>& index_image,
-                      IndexRemapper index_mapper,
-                      const float connectivity_threshold,
-                      norm_matrix_type& normalised_matrix,
-                      const float smoothing_fwhm,
-                      norm_matrix_type& smoothing_matrix)
+      // TODO Could receive a map<string, string>
+      void normalise_and_write (init_matrix_type& matrix,
+                                const connectivity_value_type threshold,
+                                const std::string& path)
       {
-        // Constants related to derivation of the smoothing matrix
-        const bool do_smoothing = (smoothing_fwhm > 0.0);
-        const float smooth_std_dev = smoothing_fwhm / 2.3548;
-        const float gaussian_const1 = do_smoothing ? (1.0 / (smooth_std_dev *  std::sqrt (2.0 * Math::pi))) : 1.0;
-        const float gaussian_const2 = 2.0 * smooth_std_dev * smooth_std_dev;
 
-
-        normalised_matrix.resize (index_mapper.num_internal(), NormFixel());
-        if (do_smoothing)
-          smoothing_matrix.resize (index_mapper.num_internal(), NormFixel());
-
-
-        // For generating the smoothing matrix, we need to be able to quickly
-        //   calculate the distance between any pair of fixels
-        vector<Eigen::Vector3> fixel_positions;
-        if (do_smoothing) {
-          fixel_positions.resize (initial_matrix.size());
-          Transform image_transform (index_image);
-          for (auto i = Loop (index_image, 0, 3) (index_image); i; ++i) {
-            Eigen::Vector3 vox ((default_type)index_image.index(0), (default_type)index_image.index(1), (default_type)index_image.index(2));
-            vox = image_transform.voxel2scanner * vox;
-            index_image.index(3) = 0;
-            const index_type count = index_image.value();
-            index_image.index(3) = 1;
-            const index_type offset = index_image.value();
-            for (size_t fixel_index = 0; fixel_index != count; ++fixel_index)
-              fixel_positions[offset + fixel_index] = vox;
+        if (Path::exists (path)) {
+          if (!Path::is_dir (path)) {
+            if (App::overwrite_files) {
+              File::unlink (path);
+            } else {
+              throw Exception ("Cannot create fixel-fixel connectivity matrix \"" + path + "\": Already exists as file");
+            }
           }
+        } else {
+          File::mkdir (path);
         }
 
+        Header index_header;
+        index_header.ndim() = 4;
+        index_header.size(0) = matrix.size();
+        index_header.size(1) = 1;
+        index_header.size(2) = 1;
+        index_header.size(3) = 2;
+        index_header.stride(0) = 2;
+        index_header.stride(1) = 3;
+        index_header.stride(2) = 4;
+        index_header.stride(3) = 1;
+        index_header.keyval()["nfixels"] = matrix.size();
+        index_header.datatype() = DataType::from<uint64_t>();
+        Image<uint64_t> index_image = Image<uint64_t>::create (Path::join (path, "index.mif"), index_header);
 
-        // Define classes / functions that are going to be used for multi-threaded operation
-        class Source
-        { MEMALIGN(Source)
-          public:
-            Source (const index_type num_fixels) :
-                num_fixels (num_fixels),
-                counter (0),
-                progress ("normalising and thresholding fixel-fixel connectivity matrix", num_fixels) { }
-            bool operator() (index_type& fixel_index) {
-              while (counter < num_fixels) {
-                fixel_index = counter++;
-                return true;
-              }
-              fixel_index = num_fixels;
-              return false;
-            }
-          private:
-            const index_type num_fixels;
-            index_type counter;
-            ProgressBar progress;
-        };
+        // Can't use function write_mrtrix_header() as the file offset of the
+        //   first entry of the "dim" field needs to be known
+        //   (and enough space needs to be left to fill in a large number upon completion)
+        File::OFStream fixel_stream (Path::join (path, "fixels.mif"));
+        File::OFStream value_stream (Path::join (path, "fixels.mif"));
 
-        auto Sink = [&] (const index_type& input_index)
-        {
-          assert (input_index < initial_matrix.size());
-          const index_type output_index = index_mapper.e2i (input_index);
+        const std::string leadin = "mrtrix image\ndim: ";
+        // Need enough space for the largest possible 64-bit unsigned integer,
+        //   plus ",1,1" for the two dummy axes
+        const size_t dim_padding = std::log10 (std::numeric_limits<size_t>::max()) + 4;
 
-          // Is the fixel to be "processed" outside of the provided fixel mask, and thus empty?
-          if (output_index == index_mapper.invalid) {
-            assert (initial_matrix[input_index].empty());
-            return true;
-          }
+        Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\ntransform: ", "", "", "\ntransform: ", "");
 
-          assert (output_index < index_type(normalised_matrix.size()));
+        for (size_t stream_index = 0; stream_index != 2; ++stream_index) {
+          File::OFStream& stream (stream_index ? value_stream : fixel_stream);
+          stream << leadin;
+          for (size_t i = 0; i != dim_padding; ++i)
+            stream << " ";
+          stream << "\nvox: 1,1,1\nlayout: +1,+2,+3\ndatatype: ";
+          if (stream_index)
+            stream << DataType::from<index_type>().specifier();
+          else
+            stream << DataType::from<connectivity_value_type>().specifier();
+          stream << "\ntransform: ";
+          stream << transform_type::Identity().matrix().topLeftCorner(3,4).format(fmt);
+          stream << "\nscaling:0,1\nnfixels: " + str(matrix.size()) + "\nfile: ";
+          int64_t offset = stream.tellp() + int64_t(18);
+          offset += ((4 - (offset % 4)) % 4);
+          stream << ". " << offset << "\nEND\n";
+          while (stream.tellp() < offset)
+            stream << "\0";
+        }
+
+        size_t data_count = 0;
+
+        for (size_t fixel_index = 0; fixel_index != matrix.size(); ++fixel_index) {
+          index_image.index (0) = fixel_index;
 
           // Here, the connectivity matrix needs to be modified to reflect the
           //   fact that fixel indices in the template fixel image may not
           //   correspond to columns in the statistical analysis
-          connectivity_value_type sum_weights = 0.0;
-          for (auto& it : initial_matrix[input_index]) {
-            const connectivity_value_type connectivity = it.value() / connectivity_value_type (initial_matrix[input_index].count());
-            if (connectivity >= connectivity_threshold) {
-              normalised_matrix[output_index].push_back (NormElement (index_mapper.e2i (it.index()), connectivity));
-              if (do_smoothing) {
-                const default_type distance = std::sqrt (Math::pow2 (fixel_positions[input_index][0] - fixel_positions[it.index()][0]) +
-                                                         Math::pow2 (fixel_positions[input_index][1] - fixel_positions[it.index()][1]) +
-                                                         Math::pow2 (fixel_positions[input_index][2] - fixel_positions[it.index()][2]));
-                const connectivity_value_type smoothing_weight = connectivity * gaussian_const1 * std::exp (-Math::pow2 (distance) / gaussian_const2);
-                if (smoothing_weight >= connectivity_threshold) {
-                  smoothing_matrix[output_index].push_back (NormElement (index_mapper.e2i (it.index()), smoothing_weight));
-                  sum_weights += smoothing_weight;
-                }
-              }
+          index_type num_fixels = 0;
+          const connectivity_value_type normalisation_factor = 1.0 / connectivity_value_type (matrix[fixel_index].count());
+          for (auto& it : matrix[fixel_index]) {
+            const connectivity_value_type connectivity = normalisation_factor * it.value();
+            if (connectivity >= threshold) {
+              const index_type i = it.index();
+              fixel_stream.write (reinterpret_cast<const char*>(&i), sizeof (index_type));
+              value_stream.write (reinterpret_cast<const char*>(&connectivity), sizeof (connectivity_value_type));
+              ++num_fixels;
             }
           }
 
-          if (do_smoothing) {
-            if (sum_weights) {
-              // Normalise smoothing weights
-              const connectivity_value_type norm_factor = connectivity_value_type(1) / sum_weights;
-              for (auto i : smoothing_matrix[output_index])
-                i.normalise (norm_factor);
-            } else {
-              // For a matrix intended for smoothing, want to give a fixel that is within the mask
-              //   full self-connectivity even if it's not visited by any streamlines
-              // Note however that this does not apply to the principal matrix output
-              smoothing_matrix[output_index].push_back (NormElement (output_index, connectivity_value_type (1)));
-            }
-          }
+          index_image.index (3) = 0; index_image.value() = num_fixels;
+          index_image.index (3) = 1; index_image.value() = data_count;
+          data_count += num_fixels;
 
-          // Force deallocation of memory used for this fixel in the initial matrix
-          InitFixel().swap (initial_matrix[input_index]);
+          // Force deallocation of memory used for this fixel in the generated matrix
+          InitFixel().swap (matrix[fixel_index]);
+        }
 
-          return true;
-        };
+        // Update headers to reflect the number of fixel-fixel connections
+        std::string dim_string = str(data_count) + ",1,1";
+        while (dim_string.size() < dim_padding - 1)
+          dim_string += " ";
+        dim_string += "\n";
+        for (size_t stream_index = 0; stream_index != 2; ++stream_index) {
+          File::OFStream& stream (stream_index ? value_stream : fixel_stream);
+          stream.seekp (leadin.size());
+          stream << dim_string;
+        }
 
-
-        // Now the actual operation of the normalise_matrix() function
-        Source source (index_mapper.num_external());
-        Thread::run_queue (source, index_type(), Thread::multi (Sink));
-
-        // The initial connectivity matrix should now be empty;
-        //   nevertheless, wipe the memory used for the outer vector itself
-        init_matrix_type().swap (initial_matrix);
       }
+
 
 
 
