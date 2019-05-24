@@ -265,8 +265,8 @@ namespace MR
         // Can't use function write_mrtrix_header() as the file offset of the
         //   first entry of the "dim" field needs to be known
         //   (and enough space needs to be left to fill in a large number upon completion)
-        File::OFStream fixel_stream (Path::join (path, "fixels.mif"), std::ios_base::out | std::ios_base::in);
-        File::OFStream value_stream (Path::join (path, "values.mif"), std::ios_base::out | std::ios_base::in);
+        File::OFStream fixel_stream (Path::join (path, "fixels.mif"), std::ios_base::out | std::ios_base::binary);
+        File::OFStream value_stream (Path::join (path, "values.mif"), std::ios_base::out | std::ios_base::binary);
 
         const std::string leadin = "mrtrix image\ndim: ";
         // Need enough space for the largest possible 64-bit unsigned integer,
@@ -291,8 +291,9 @@ namespace MR
           int64_t offset = stream.tellp() + int64_t(18);
           offset += ((4 - (offset % 4)) % 4);
           stream << ". " << offset << "\nEND\n";
+          const char null = 0;
           while (stream.tellp() < offset)
-            stream << "\0";
+            stream.write (&null, sizeof (char));
         }
 
         size_t data_count = 0;
