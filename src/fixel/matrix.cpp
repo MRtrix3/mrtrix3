@@ -277,10 +277,7 @@ namespace MR
 
         for (size_t stream_index = 0; stream_index != 2; ++stream_index) {
           File::OFStream& stream (stream_index ? value_stream : fixel_stream);
-          stream << leadin;
-          for (size_t i = 0; i != dim_padding; ++i)
-            stream << " ";
-          stream << "\nvox: 1,1,1\nlayout: 0,1,2\ndatatype: ";
+          stream << leadin << std::string (dim_padding, ' ') << "\nvox: 1,1,1\nlayout: 0,1,2\ndatatype: ";
           if (stream_index)
             stream << DataType::from<connectivity_value_type>().specifier();
           else
@@ -291,19 +288,13 @@ namespace MR
           int64_t offset = stream.tellp() + int64_t(18);
           offset += ((4 - (offset % 4)) % 4);
           stream << ". " << offset << "\nEND\n";
-          const char null = 0;
-          while (stream.tellp() < offset)
-            stream.write (&null, sizeof (char));
+          stream << std::string (offset - stream.tellp(), '\0');
         }
 
         size_t data_count = 0;
 
         for (size_t fixel_index = 0; fixel_index != matrix.size(); ++fixel_index) {
-          index_image.index (0) = fixel_index;
 
-          // Here, the connectivity matrix needs to be modified to reflect the
-          //   fact that fixel indices in the template fixel image may not
-          //   correspond to columns in the statistical analysis
           index_type num_fixels = 0;
           const connectivity_value_type normalisation_factor = 1.0 / connectivity_value_type (matrix[fixel_index].count());
           for (auto& it : matrix[fixel_index]) {
@@ -316,6 +307,7 @@ namespace MR
             }
           }
 
+          index_image.index (0) = fixel_index;
           index_image.index (3) = 0; index_image.value() = uint64_t(num_fixels);
           index_image.index (3) = 1; index_image.value() = num_fixels ? data_count : uint64_t(0);
           data_count += num_fixels;
@@ -326,8 +318,7 @@ namespace MR
 
         // Update headers to reflect the number of fixel-fixel connections
         std::string dim_string = str(data_count) + ",1,1";
-        while (dim_string.size() < dim_padding)
-          dim_string += " ";
+        dim_string += std::string (dim_string.size() - dim_padding, ' ');
         for (size_t stream_index = 0; stream_index != 2; ++stream_index) {
           File::OFStream& stream (stream_index ? value_stream : fixel_stream);
           stream.seekp (leadin.size());
