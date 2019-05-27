@@ -1,14 +1,9 @@
-#!/bin/bash
-
-# Set default MacOS path
 export PATH=/bin:/sbin:/usr/bin:/usr/sbin
-
-# create and save the directory where all the components will be built
 mkdir mrtrix3-installer
 cd mrtrix3-installer
 root=$(pwd)
 
-# EIGEN
+# EIGEN3
 SECONDS=0
 curl -O -L http://bitbucket.org/eigen/eigen/get/3.3.7.tar.bz2
 tar xvf 3.3.7.tar.bz2
@@ -28,18 +23,18 @@ make install
 cd ..
 TIFF_SECONDS=$SECONDS
 
-# FFTW
+# FFTW3
 SECONDS=0
 curl -O http://www.fftw.org/fftw-3.3.8.tar.gz
 tar xvf fftw-3.3.8.tar.gz
 cd fftw-3.3.8
-./configure -prefix ${root}/mrtrix3 -disable-doc -disable-fortran
+./configure -prefix ${root}/mrtrix3 --disable-doc --disable-fortran --disable-debug --enable-threads --disable-dependency-tracking --enable-sse2 --enable-avx
 make
 make install
 cd ..
 FFTW_SECONDS=$SECONDS
 
-# QTBASE
+# QT5 BASE
 SECONDS=0
 curl -O http://ftp1.nluug.nl/languages/qt/archive/qt/5.12/5.12.3/submodules/qtbase-everywhere-src-5.12.3.tar.xz
 tar xfv qtbase-everywhere-src-5.12.3.tar.xz
@@ -50,7 +45,7 @@ make install
 cd ..
 QTBASE_SECONDS=$SECONDS
 
-# QTSVG
+# QT5 SVG
 SECONDS=0
 curl -O http://ftp1.nluug.nl/languages/qt/archive/qt/5.12/5.12.3/submodules/qtsvg-everywhere-src-5.12.3.tar.xz
 tar xfv qtsvg-everywhere-src-5.12.3.tar.xz
@@ -61,7 +56,7 @@ make install
 cd ..
 QTSVG_SECONDS=$SECONDS
 
-# MRTRIX
+# MRTRIX3
 SECONDS=0
 git clone https://github.com/MRtrix3/mrtrix3.git mrtrix3-src
 cd mrtrix3-src
@@ -76,7 +71,6 @@ cp -r lib/* ${root}/mrtrix3/lib/
 cd ..
 MRTRIX_SECONDS=$SECONDS
 
-# Report build times
 TOTAL_SECONDS=$((EIGEN_SECONDS + TIFF_SECONDS + FFTW_SECONDS + QTBASE_SECONDS + QTSVG_SECONDS + MRTRIX_SECONDS))
 echo eigen : $EIGEN_SECONDS s
 echo tiff  : $TIFF_SECONDS s
