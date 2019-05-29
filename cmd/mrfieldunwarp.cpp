@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2019 Daan Christiaens
  *
- * MRtrix and this add-on module is distributed in the hope
+ * MRtrix and this add-on module are distributed in the hope
  * that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.
