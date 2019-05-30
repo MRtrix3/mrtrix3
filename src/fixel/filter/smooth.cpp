@@ -16,6 +16,8 @@
 #include "fixel/filter/smooth.h"
 
 #include "image_helpers.h"
+#include "thread_queue.h"
+#include "transform.h"
 #include "fixel/helpers.h"
 
 namespace MR
@@ -27,6 +29,62 @@ namespace MR
 
 
 
+      Smooth::Smooth (Image<index_type> index_image,
+                      const Matrix::Reader& matrix,
+                      const Image<bool>& mask_image,
+                      const float smoothing_fwhm) :
+          mask_image (mask_image),
+          matrix (matrix)
+      {
+        set_fwhm (smoothing_fwhm);
+        // For smoothing, we need to be able to quickly
+        //   calculate the distance between any pair of fixels
+        fixel_positions.resize (matrix.size());
+        const Transform transform (index_image);
+        for (auto i = Loop (index_image, 0, 3) (index_image); i; ++i) {
+          const Eigen::Vector3 vox ((default_type)index_image.index(0), (default_type)index_image.index(1), (default_type)index_image.index(2));
+          const Eigen::Vector3f scanner = (transform.voxel2scanner * vox).cast<float>();
+          index_image.index(3) = 0;
+          const index_type count = index_image.value();
+          index_image.index(3) = 1;
+          const index_type offset = index_image.value();
+          for (size_t fixel_index = 0; fixel_index != count; ++fixel_index)
+            fixel_positions[offset + fixel_index] = scanner;
+        }
+      }
+
+      Smooth::Smooth (Image<index_type> index_image,
+                      const Matrix::Reader& matrix,
+                      const Image<bool>& mask_image) :
+          Smooth (index_image, matrix, mask_image, DEFAULT_FIXEL_SMOOTHING_FWHM) { }
+
+      Smooth::Smooth (Image<index_type> index_image,
+                      const Matrix::Reader& matrix,
+                      const float smoothing_fwhm) :
+          Smooth (index_image, matrix, Image<bool>(), smoothing_fwhm)
+      {
+        mask_image = Image<bool>::scratch (Fixel::data_header_from_index (index_image), "full scratch fixel mask");
+        for (auto l = Loop(mask_image) (mask_image); l; ++l)
+          mask_image.value() = true;
+      }
+
+      Smooth::Smooth (Image<index_type> index_image,
+                      const Matrix::Reader& matrix) :
+          Smooth (index_image, matrix, DEFAULT_FIXEL_SMOOTHING_FWHM) { }
+
+
+
+      void Smooth::set_fwhm (const float fwhm)
+      {
+        stdev = fwhm / 2.3548f;
+        gaussian_const1 = 1.0 / (stdev * std::sqrt (2.0 * Math::pi));
+        gaussian_const2 = -1.0 / (2.0 * stdev * stdev);
+      }
+
+
+
+      // TODO Provide an alternative functor for when the input & output images contain more than one column
+      //   (more efficient to construct the smoothing kernel once per fixel, then loop over image channels)
       void Smooth::operator() (Image<float>& input, Image<float>& output) const
       {
         Fixel::check_data_file (input);
@@ -38,29 +96,72 @@ namespace MR
           throw Exception ("Size of fixel data file \"" + input.name() + "\" (" + str(input.size(0)) +
                            ") does not match fixel connectivity matrix (" + str(matrix.size()) + ")");
 
-        // Technically need to loop over axis 1; could be more than 1 parameter in the file
-        for (auto l = Loop(1) (input, output); l; ++l) {
-          for (size_t fixel = 0; fixel != matrix.size(); ++fixel) {
-            input.index(0) = output.index(0) = fixel;
-            if (std::isfinite (input.value())) {
-              default_type value = 0.0, sum_weights = 0.0;
-              for (const auto& it : matrix[fixel]) {
-                input.index(0) = it.index();
-                if (std::isfinite (input.value())) {
-                  value += input.value() * it.value();
-                  sum_weights += it.value();
-                }
-              }
-              if (sum_weights)
-                output.value() = value / sum_weights;
-              else
-                output.value() = NaN;
-            } else {
-              output.value() = NaN;
+        class Source
+        { NOMEMALIGN
+          public:
+            Source (const size_t N) :
+                number (N),
+                counter (0) { }
+            bool operator() (size_t& fixel)
+            {
+              if ((fixel = counter) == number)
+                return false;
+              ++counter;
+              return true;
             }
-          }
-        }
-        input.index(1) = output.index(1) = 0;
+          private:
+            const size_t number;
+            size_t counter;
+        };
+
+        class Worker
+        { MEMALIGN(Worker)
+          public:
+            Worker (const Smooth& master, const Image<float>& input, const Image<float>& output) :
+                master (master),
+                input (input),
+                output (output),
+                mask (master.mask_image) { }
+
+            bool operator() (const size_t fixel)
+            {
+              mask.index(0) = output.index(0) = fixel;
+              if (mask.value()) {
+                const Eigen::Vector3f& pos (master.fixel_positions[fixel]);
+                const auto connectivity = master.matrix[fixel];
+                default_type sum_weights (0.0);
+                output.value() = 0.0;
+                for (const auto& c : connectivity) {
+                  mask.index (0) = input.index(0) = c.index();
+                  if (mask.value() && std::isfinite (input.value())) {
+                    const Matrix::connectivity_value_type weight = c.value() * master.gaussian_const1 * std::exp (master.gaussian_const2 * (master.fixel_positions[c.index()] - pos).squaredNorm());
+                    output.value() += weight * input.value();
+                    sum_weights += weight;
+                  }
+                }
+                if (sum_weights) {
+                  output.value() /= sum_weights;
+                } else {
+                  output.value() = std::numeric_limits<float>::quiet_NaN();
+                }
+              } else {
+                output.value() = std::numeric_limits<float>::quiet_NaN();
+              }
+              return true;
+            }
+
+          private:
+            const Smooth& master;
+            // Need a local copy of each image
+            Image<float> input;
+            Image<float> output;
+            Image<bool> mask;
+        };
+
+        Thread::run_queue (Source (input.size (0)),
+                           Thread::batch (size_t()),
+                           Thread::multi (Worker (*this, input, output)));
+
       }
 
 

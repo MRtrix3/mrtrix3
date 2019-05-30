@@ -31,7 +31,9 @@ namespace MR
     {
 
 
-      using index_type = uint32_t;
+      using index_image_type = uint64_t;
+      using fixel_index_type = uint32_t;
+      using count_type = uint32_t;
       using connectivity_value_type = float;
 
 
@@ -41,24 +43,24 @@ namespace MR
       class InitElement
       { NOMEMALIGN
         public:
-          using ValueType = index_type;
+          using ValueType = fixel_index_type;
           InitElement() :
-              fixel_index (std::numeric_limits<index_type>::max()),
+              fixel_index (std::numeric_limits<fixel_index_type>::max()),
               track_count (0) { }
-          InitElement (const index_type fixel_index) :
+          InitElement (const fixel_index_type fixel_index) :
               fixel_index (fixel_index),
               track_count (1) { }
-          InitElement (const index_type fixel_index, const ValueType track_count) :
+          InitElement (const fixel_index_type fixel_index, const ValueType track_count) :
               fixel_index (fixel_index),
               track_count (track_count) { }
           InitElement (const InitElement&) = default;
           FORCE_INLINE InitElement& operator++() { track_count++; return *this; }
           FORCE_INLINE InitElement& operator= (const InitElement& that) { fixel_index = that.fixel_index; track_count = that.track_count; return *this; }
-          FORCE_INLINE index_type index() const { return fixel_index; }
+          FORCE_INLINE fixel_index_type index() const { return fixel_index; }
           FORCE_INLINE ValueType value() const { return track_count; }
           FORCE_INLINE bool operator< (const InitElement& that) const { return fixel_index < that.fixel_index; }
         private:
-          index_type fixel_index;
+          fixel_index_type fixel_index;
           ValueType track_count;
       };
 
@@ -71,10 +73,62 @@ namespace MR
           using BaseType = vector<InitElement>;
           InitFixel() :
               track_count (0) { }
-          void add (const vector<index_type>& indices);
-          index_type count() const { return track_count; }
+          void add (const vector<fixel_index_type>& indices);
+          count_type count() const { return track_count; }
         private:
-          index_type track_count;
+          count_type track_count;
+      };
+
+
+
+
+      // A class to store fixel index / connectivity value pairs
+      //   only after the connectivity matrix has been thresholded / normalised
+      class NormElement
+      { NOMEMALIGN
+        public:
+          using ValueType = connectivity_value_type;
+          NormElement (const index_type fixel_index,
+                       const ValueType connectivity_value) :
+              fixel_index (fixel_index),
+              connectivity_value (connectivity_value) { }
+          FORCE_INLINE index_type index() const { return fixel_index; }
+          FORCE_INLINE ValueType value() const { return connectivity_value; }
+          FORCE_INLINE void exponentiate (const ValueType C) { connectivity_value = std::pow (connectivity_value, C); }
+          FORCE_INLINE void normalise (const ValueType norm_factor) { connectivity_value *= norm_factor; }
+        private:
+          index_type fixel_index;
+          connectivity_value_type connectivity_value;
+      };
+
+
+
+
+      // With the internally normalised CFE expression, want to store a
+      //   multiplicative factor per fixel
+      class NormFixel : public vector<NormElement>
+      { MEMALIGN(NormFixel)
+        public:
+          using ElementType = NormElement;
+          using BaseType = vector<NormElement>;
+          NormFixel() :
+            norm_multiplier (connectivity_value_type (1)) { }
+          NormFixel (const BaseType& i) :
+              BaseType (i),
+              norm_multiplier (connectivity_value_type (1)) { }
+          NormFixel (BaseType&& i) :
+              BaseType (std::move (i)),
+              norm_multiplier (connectivity_value_type (1)) { }
+          void normalise() {
+            norm_multiplier = connectivity_value_type (0);
+            for (const auto& c : *this)
+              norm_multiplier += c.value();
+            norm_multiplier = norm_multiplier ? (connectivity_value_type (1) / norm_multiplier) : connectivity_value_type(0);
+          }
+          void normalise (const connectivity_value_type sum) {
+            norm_multiplier = sum ? (connectivity_value_type(1) / sum) : connectivity_value_type(0);
+          }
+          connectivity_value_type norm_multiplier;
       };
 
 
@@ -95,7 +149,7 @@ namespace MR
       // Generate a fixel-fixel connectivity matrix
       init_matrix_type generate (
           const std::string& track_filename,
-          Image<index_type>& index_image,
+          Image<fixel_index_type>& index_image,
           Image<bool>& fixel_mask,
           const float angular_threshold);
 
@@ -132,7 +186,44 @@ namespace MR
 
 
 
-      // TODO Wrapper class for reading the connectivity matrix
+      // Wrapper class for reading the connectivity matrix from the filesystem
+      class Reader
+      { MEMALIGN(Reader)
+
+        public:
+          Reader (const std::string& path, const Image<bool>& mask);
+          Reader (const std::string& path);
+
+          // TODO Entirely feasible to construct this thing using scratch storage;
+          //   would need two passes over the pre-normalised data in order to calculate
+          //   the number of fixel-fixel connections, but it could be done
+          //
+          // It would require restoration of the old Matrix::normalise() function,
+          //   but modification to write out to scratch index / fixel / value images
+          //   rather than "norm_matrix_type"
+          //
+          // This would permit usage of fixelcfestats with tractogram as input
+          //
+          // TODO Could pre-exponentiation of connectivity values be done beforehand using an mrcalc call?
+          // Expect fixelcfestats to be provided with a data file, from which it will find the
+          //   index & fixel images
+
+          NormFixel operator[] (const size_t index) const;
+
+          // TODO Define iteration constructs?
+
+          size_t size() const { return fixel_image.size (0); }
+          size_t size (const size_t) const;
+
+        protected:
+          const std::string directory;
+          mutable Image<index_image_type> index_image;
+          mutable Image<fixel_index_type> fixel_image;
+          mutable Image<connectivity_value_type> value_image;
+          mutable Image<bool> mask_image;
+
+
+      };
 
 
 

@@ -155,14 +155,14 @@ namespace MR
               for (const auto& i : in) {
                 assign_pos_of (i).to (fixel_indexer);
                 fixel_indexer.index(3) = 0;
-                const index_type num_fixels = fixel_indexer.value();
-                if (num_fixels > 0) {
+                const index_type num_connections = fixel_indexer.value();
+                if (num_connections > 0) {
                   fixel_indexer.index(3) = 1;
                   const index_type first_index = fixel_indexer.value();
-                  const index_type last_index = first_index + num_fixels;
+                  const index_type last_index = first_index + num_connections;
                   // Note: Streamlines can still be assigned to a fixel that is outside the mask;
                   //   however this will not be permitted to contribute to the matrix
-                  index_type closest_fixel_index = num_fixels;
+                  index_type closest_fixel_index = num_connections;
                   default_type largest_dp = 0.0;
                   const direction_type dir (i.get_dir().normalized());
                   for (index_type j = first_index; j < last_index; ++j) {
@@ -175,7 +175,7 @@ namespace MR
                         closest_fixel_index = j;
                     }
                   }
-                  if (closest_fixel_index != num_fixels && largest_dp > angular_threshold_dp)
+                  if (closest_fixel_index != num_connections && largest_dp > angular_threshold_dp)
                     out.push_back (closest_fixel_index);
                 }
               }
@@ -259,8 +259,8 @@ namespace MR
         index_header.spacing(0) = index_header.spacing(1) = index_header.spacing(2) = 1.0;
         index_header.transform() = transform_type::Identity();
         index_header.keyval()["nfixels"] = str(matrix.size());
-        index_header.datatype() = DataType::from<uint64_t>();
-        Image<uint64_t> index_image = Image<uint64_t>::create (Path::join (path, "index.mif"), index_header);
+        index_header.datatype() = DataType::from<index_image_type>();
+        Image<index_image_type> index_image = Image<index_image_type>::create (Path::join (path, "index.mif"), index_header);
 
         // Can't use function write_mrtrix_header() as the file offset of the
         //   first entry of the "dim" field needs to be known
@@ -295,7 +295,7 @@ namespace MR
 
         for (size_t fixel_index = 0; fixel_index != matrix.size(); ++fixel_index) {
 
-          index_type num_fixels = 0;
+          index_type num_connections = 0;
           const connectivity_value_type normalisation_factor = 1.0 / connectivity_value_type (matrix[fixel_index].count());
           for (auto& it : matrix[fixel_index]) {
             const connectivity_value_type connectivity = normalisation_factor * it.value();
@@ -303,14 +303,14 @@ namespace MR
               const index_type i = it.index();
               fixel_stream.write (reinterpret_cast<const char*>(&i), sizeof (index_type));
               value_stream.write (reinterpret_cast<const char*>(&connectivity), sizeof (connectivity_value_type));
-              ++num_fixels;
+              ++num_connections;
             }
           }
 
           index_image.index (0) = fixel_index;
-          index_image.index (3) = 0; index_image.value() = uint64_t(num_fixels);
-          index_image.index (3) = 1; index_image.value() = num_fixels ? data_count : uint64_t(0);
-          data_count += num_fixels;
+          index_image.index (3) = 0; index_image.value() = uint64_t(num_connections);
+          index_image.index (3) = 1; index_image.value() = num_connections ? data_count : uint64_t(0);
+          data_count += num_connections;
 
           // Force deallocation of memory used for this fixel in the generated matrix
           InitFixel().swap (matrix[fixel_index]);
@@ -326,6 +326,102 @@ namespace MR
         }
 
       }
+
+
+
+
+
+
+
+
+
+
+
+
+
+      Reader::Reader (const std::string& path, const Image<bool>& mask) :
+          directory (path),
+          mask_image (mask)
+      {
+        try {
+          index_image = Image<index_image_type>::open (Path::join (directory, "index.mif"));
+          if (index_image.ndim() != 4)
+            throw Exception ("Fixel-fixel connectivity matrix index image must be 4D");
+          if (index_image.size (1) != 1 || index_image.size (2) != 1 || index_image.size (3) != 2)
+            throw Exception ("Fixel-fixel connectivity matrix index image must have size Nx1x1x2");
+          fixel_image = Image<fixel_index_type>::open (Path::join (directory, "fixels.mif"));
+          auto nfixels_field = index_image.keyval().find ("nfixels");
+          if (nfixels_field != index_image.keyval().end() &&
+              to<size_t> (nfixels_field->second) != fixel_image.size (0))
+            throw Exception ("Number of fixels indicated in index image header (" + nfixels_field->second + ") does not match dimensions of fixel image (" + str(fixel_image.size (0)) + ")");
+          value_image = Image<connectivity_value_type>::open (Path::join (directory, "values.mif"));
+          if (value_image.size (0) != fixel_image.size (0))
+            throw Exception ("Number of fixels in value image (" + str(value_image.size (0)) + ") does not match number of fixels in fixel image (" + str(fixel_image.size (0)) + ")");
+          if (mask_image.valid() && mask_image.size (0) != size())
+            throw Exception ("Fixel image \"" + mask_image.name() + "\" has different number of fixels (" + str(mask_image.size (0)) + ") to fixel-fixel connectivity matrix (" + str(size()) + ")");
+        } catch (Exception& e) {
+          throw Exception (e, "Unable to load path \"" + directory + "\" as fixel-fixel connectivity data");
+        }
+      }
+
+
+
+      Reader::Reader (const std::string& path) :
+          Reader (path, Image<bool>()) { }
+
+
+
+
+
+
+      NormFixel Reader::operator[] (const size_t index) const
+      {
+        NormFixel result;
+        index_image.index (0) = index;
+        index_image.index (3) = 0;
+        const index_image_type num_connections = index_image.value();
+        if (!num_connections)
+          return result;
+        index_image.index (3) = 1;
+        const index_image_type offset = index_image.value();
+        connectivity_value_type sum (connectivity_value_type (0));
+        fixel_image.index (0) = value_image.index (0) = offset;
+        if (mask_image.valid()) {
+          mask_image.index (0) = offset;
+          for (size_t i = 0; i != num_connections; ++i) {
+            if (mask_image.value()) {
+              const connectivity_value_type value = value_image.value();
+              result.emplace_back (NormElement (fixel_image.value(), value));
+              sum += value;
+            }
+            fixel_image.index (0)++; value_image.index (0)++; mask_image.index (0)++;
+          }
+        } else {
+          for (size_t i = 0; i != num_connections; ++i) {
+            const connectivity_value_type value = value_image.value();
+            result.emplace_back (NormElement (fixel_image.value(), value));
+            sum += value;
+            fixel_image.index (0)++; value_image.index (0)++;
+          }
+        }
+        result.normalise (sum);
+        return result;
+      }
+
+
+
+
+
+      size_t Reader::size (const size_t fixel) const
+      {
+        index_image.index (0) = fixel;
+        index_image.index (3) = 0;
+        return index_image.value();
+      }
+
+
+
+
 
 
 
