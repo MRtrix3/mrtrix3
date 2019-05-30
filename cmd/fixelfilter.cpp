@@ -24,6 +24,7 @@
 #include "fixel/filter/base.h"
 #include "fixel/filter/connect.h"
 #include "fixel/filter/smooth.h"
+#include "fixel/matrix.h"
 #include "stats/cfe.h"
 
 
@@ -56,8 +57,15 @@ void usage ()
   + Argument ("output", "the output: either a fixel data file, or a fixel directory (see Description)").type_various();
 
   OPTIONS
-  + Option ("matrix", "provide a fixel-fixel connectivity matrix for filtering operations that require it")
-    + Argument ("file").type_file_in();
+  + Option ("matrix", "provide a fixel-fixel connectivity matrix for filtering operations that require it").required()
+    + Argument ("file").type_file_in()
+
+  + OptionGroup ("Options specific to the \"smooth\" filter")
+  + Option ("fwhm", "the full-width half-maximum (FWHM) of the spatial component of the smoothing filter (default = " + str(DEFAULT_FIXEL_SMOOTHING_FWHM) + "mm)")
+    + Argument ("value").type_float (0.0)
+  + Option ("mask", "only perform smoothing within a specified binary fixel mask")
+    + Argument ("image").type_image_in();
+
 
 }
 
@@ -92,24 +100,29 @@ void run()
   if (single_file.valid() && !Fixel::fixels_match (index_header, single_file))
     throw Exception ("File \"" + argument[0] + "\" is not a valid fixel data file (does not match corresponding index image)");
 
-  Fixel::Matrix::norm_matrix_type matrix;
   auto opt = get_options ("matrix");
-  if (opt.size())
-    Fixel::Matrix::load (opt[0][0], matrix);
+  Fixel::Matrix::Reader matrix (opt[0][0]);
+
+  Image<index_type> index_image = index_header.get_image<index_type>();
 
   std::unique_ptr<Fixel::Filter::Base> filter;
   switch (int(argument[1])) {
     case 0:
-      if (matrix.empty())
-        throw Exception ("For filter \"connect\", fixel-fixel connectivity matrix must be provided via the -matrix option");
       filter.reset (new Fixel::Filter::Connect (matrix));
       output_header.datatype() = DataType::UInt32;
       output_header.datatype().set_byte_order_native();
       break;
     case 1:
-      if (matrix.empty())
-        throw Exception ("For filter \"smooth\", fixel-fixel connectivity matrix must be provided via the -matrix option");
-      filter.reset (new Fixel::Filter::Smooth (matrix));
+    {
+      const float fwhm = get_option_value ("fwhm", DEFAULT_FIXEL_SMOOTHING_FWHM);
+      opt = get_options ("mask");
+      if (opt.size()) {
+        Image<bool> mask_image = Image<bool>::open (opt[0][0]);
+        filter.reset (new Fixel::Filter::Smooth (index_image, matrix, mask_image, fwhm));
+      } else {
+        filter.reset (new Fixel::Filter::Smooth (index_image, matrix, fwhm));
+      }
+    }
       break;
     default:
       assert (0);

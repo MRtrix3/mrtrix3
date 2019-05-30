@@ -39,12 +39,11 @@ namespace MR
        *
        * Typical usage:
        * \code
-       * auto input = Image<float>::open (argument[0]);
-       * Fixel::Matrix::norm_matrix_type matrix;
-       * Fixel::Matrix::load (argument[1], matrix);
+       * auto input = Image<bool>::open (fixel_data_in_path);
+       * Fixel::Matrix::Reader matrix (fixel_matrix_path);
        * Fixel::Filter::Connect connect_filter (matrix);
-       * auto output = Image::create<float> (argument[2], input);
-       * smooth_filter (input, output);
+       * auto output = Image::create<float> (fixel_data_out_path, input);
+       * connect_filter (input, output);
        *
        * \endcode
        */
@@ -53,19 +52,19 @@ namespace MR
       { MEMALIGN (Connect)
 
         public:
-          Connect (const Fixel::Matrix::norm_matrix_type& matrix,
+          Connect (const Fixel::Matrix::Reader& matrix,
                    const float value_threshold = DEFAULT_FIXEL_VALUE_THRESHOLD,
                    const float connectivity_threshold = DEFAULT_FIXEL_CONNECTIVITY_THRESHOLD) :
               matrix (matrix),
               value_threshold (value_threshold),
               connectivity_threshold (connectivity_threshold) { }
 
-          void operator() (Image<float>& input, Image<float>& output) const;
+          void operator() (Image<float>& input, Image<float>& output) const override;
           void set_value_threshold (const float value) { value_threshold = value; }
           void set_connectivity_threshold (const float value) { connectivity_threshold = value; }
 
         protected:
-          const Fixel::Matrix::norm_matrix_type& matrix;
+          Fixel::Matrix::Reader matrix;
           float value_threshold, connectivity_threshold;
       };
     //! @}

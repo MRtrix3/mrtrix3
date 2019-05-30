@@ -69,12 +69,13 @@ namespace MR
                 to_expand.pop();
                 output.index(0) = index;
                 output.value() = cluster_index;
-                for (const auto& connection : matrix[index]) {
-                  input.index (0) = connection.index();
-                  if (!processed[connection.index()] && connection.value() >= connectivity_threshold && input.value() >= value_threshold) {
+                const auto connections = matrix[index];
+                for (const auto& c : connections) {
+                  input.index (0) = c.index();
+                  if (!processed[c.index()] && c.value() >= connectivity_threshold && input.value() >= value_threshold) {
                     ++cluster_size;
-                    processed[connection.index()] = true;
-                    to_expand.push (connection.index());
+                    processed[c.index()] = true;
+                    to_expand.push (c.index());
                   } // Finish adding the other fixel in this connection to the list of fixels to expand the cluster
                 } // Finish looping over fixels connected to "index"
               } // Finish waiting for the list of fixels to expand the cluster to has been exhausted

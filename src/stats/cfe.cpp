@@ -22,30 +22,50 @@ namespace MR
 
 
 
-    CFE::CFE (const Fixel::Matrix::norm_matrix_type& connectivity_matrix,
+    CFE::CFE (const Fixel::Matrix::Reader& connectivity_matrix,
               const value_type dh,
               const value_type E,
-              const value_type H) :
-        connectivity_matrix (connectivity_matrix),
+              const value_type H,
+              const value_type C,
+              const bool norm) :
+        matrix (connectivity_matrix),
         dh (dh),
         E (E),
-        H (H) { }
+        H (H),
+        C (C),
+        normalise (norm) { }
 
 
 
     void CFE::operator() (in_column_type stats, out_column_type enhanced_stats) const
     {
       enhanced_stats.setZero();
-      vector<Fixel::Matrix::NormElement>::const_iterator connected_fixel;
-      for (size_t fixel = 0; fixel < connectivity_matrix.size(); ++fixel) {
-        for (value_type h = this->dh; h < stats[fixel]; h +=  this->dh) {
+      vector<default_type> connected_stats;
+      for (size_t fixel = 0; fixel < matrix.size(); ++fixel) {
+        if (stats[fixel] <= 0.0)
+          continue;
+        auto connections = matrix[fixel];
+        // Need to re-normalise based on the value of the power C
+        if (C != 1.0) {
+          default_type sum = 0.0;
+          for (auto& c : connections) {
+            c.exponentiate (C);
+            sum += c.value();
+          }
+          connections.normalise (Fixel::Matrix::connectivity_value_type (sum));
+        }
+        connected_stats.resize (connections.size());
+        for (size_t ic = 0; ic != connections.size(); ++ic)
+          connected_stats[ic] = stats[connections[ic].index()];
+        for (value_type h = this->dh; h < stats[fixel]; h += this->dh) {
           value_type extent = 0.0;
-          for (connected_fixel = connectivity_matrix[fixel].begin(); connected_fixel != connectivity_matrix[fixel].end(); ++connected_fixel)
-            if (stats[connected_fixel->index()] > h)
-              extent += connected_fixel->value();
+          for (size_t ic = 0; ic != connections.size(); ++ic)
+            if (connected_stats[ic] > h)
+              extent += connections[ic].value();
           enhanced_stats[fixel] += std::pow (extent, E) * std::pow (h, H);
         }
-        enhanced_stats[fixel] *= connectivity_matrix[fixel].norm_multiplier;
+        if (normalise)
+          enhanced_stats[fixel] *= connections.norm_multiplier;
       }
     }
 
