@@ -349,11 +349,7 @@ namespace MR
             throw Exception ("Fixel-fixel connectivity matrix index image must be 4D");
           if (index_image.size (1) != 1 || index_image.size (2) != 1 || index_image.size (3) != 2)
             throw Exception ("Fixel-fixel connectivity matrix index image must have size Nx1x1x2");
-          // fixel_image = Image<fixel_index_type>::open (Path::join (directory, "fixels.mif"));
-          // auto nfixels_field = index_image.keyval().find ("nfixels");
-          // if (nfixels_field != index_image.keyval().end() &&
-          //     to<ssize_t> (nfixels_field->second) != fixel_image.size (0))
-          //   throw Exception ("Number of fixels indicated in index image header (" + nfixels_field->second + ") does not match dimensions of fixel image (" + str(fixel_image.size (0)) + ")");
+          fixel_image = Image<fixel_index_type>::open (Path::join (directory, "fixels.mif"));
           value_image = Image<connectivity_value_type>::open (Path::join (directory, "values.mif"));
           if (value_image.size (0) != fixel_image.size (0))
             throw Exception ("Number of fixels in value image (" + str(value_image.size (0)) + ") does not match number of fixels in fixel image (" + str(fixel_image.size (0)) + ")");
