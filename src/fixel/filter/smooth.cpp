@@ -63,7 +63,10 @@ namespace MR
                       const float smoothing_fwhm) :
           Smooth (index_image, matrix, Image<bool>(), smoothing_fwhm)
       {
-        mask_image = Image<bool>::scratch (Fixel::data_header_from_index (index_image), "full scratch fixel mask");
+        Header mask_header = Fixel::data_header_from_index (index_image);
+        mask_header.datatype() = DataType::Bit;
+        assert (mask_header.size(0) == matrix.size());
+        mask_image = Image<bool>::scratch (mask_image, "full scratch fixel mask");
         for (auto l = Loop(mask_image) (mask_image); l; ++l)
           mask_image.value() = true;
       }
@@ -119,6 +122,7 @@ namespace MR
           public:
             Worker (const Smooth& master, const Image<float>& input, const Image<float>& output) :
                 master (master),
+                matrix (master.matrix),
                 input (input),
                 output (output),
                 mask (master.mask_image) { }
@@ -128,7 +132,7 @@ namespace MR
               mask.index(0) = output.index(0) = fixel;
               if (mask.value()) {
                 const Eigen::Vector3f& pos (master.fixel_positions[fixel]);
-                const auto connectivity = master.matrix[fixel];
+                const auto connectivity = matrix[fixel];
                 default_type sum_weights (0.0);
                 output.value() = 0.0;
                 for (const auto& c : connectivity) {
@@ -152,7 +156,8 @@ namespace MR
 
           private:
             const Smooth& master;
-            // Need a local copy of each image
+            // Need a local copy of each of these
+            Matrix::Reader matrix;
             Image<float> input;
             Image<float> output;
             Image<bool> mask;

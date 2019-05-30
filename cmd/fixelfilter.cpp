@@ -58,7 +58,7 @@ void usage ()
 
   OPTIONS
   + Option ("matrix", "provide a fixel-fixel connectivity matrix for filtering operations that require it").required()
-    + Argument ("file").type_file_in()
+    + Argument ("file").type_directory_in()
 
   + OptionGroup ("Options specific to the \"smooth\" filter")
   + Option ("fwhm", "the full-width half-maximum (FWHM) of the spatial component of the smoothing filter (default = " + str(DEFAULT_FIXEL_SMOOTHING_FWHM) + "mm)")
@@ -104,6 +104,9 @@ void run()
   Fixel::Matrix::Reader matrix (opt[0][0]);
 
   Image<index_type> index_image = index_header.get_image<index_type>();
+  const size_t nfixels = Fixel::get_number_of_fixels (index_image);
+  if (nfixels != matrix.size())
+    throw Exception ("Number of fixels in input (" + str(nfixels) + ") does not match number of fixels in connectivity matrix (" + str(matrix.size()) + ")");
 
   std::unique_ptr<Fixel::Filter::Base> filter;
   switch (int(argument[1])) {

@@ -349,15 +349,15 @@ namespace MR
             throw Exception ("Fixel-fixel connectivity matrix index image must be 4D");
           if (index_image.size (1) != 1 || index_image.size (2) != 1 || index_image.size (3) != 2)
             throw Exception ("Fixel-fixel connectivity matrix index image must have size Nx1x1x2");
-          fixel_image = Image<fixel_index_type>::open (Path::join (directory, "fixels.mif"));
-          auto nfixels_field = index_image.keyval().find ("nfixels");
-          if (nfixels_field != index_image.keyval().end() &&
-              to<size_t> (nfixels_field->second) != fixel_image.size (0))
-            throw Exception ("Number of fixels indicated in index image header (" + nfixels_field->second + ") does not match dimensions of fixel image (" + str(fixel_image.size (0)) + ")");
+          // fixel_image = Image<fixel_index_type>::open (Path::join (directory, "fixels.mif"));
+          // auto nfixels_field = index_image.keyval().find ("nfixels");
+          // if (nfixels_field != index_image.keyval().end() &&
+          //     to<ssize_t> (nfixels_field->second) != fixel_image.size (0))
+          //   throw Exception ("Number of fixels indicated in index image header (" + nfixels_field->second + ") does not match dimensions of fixel image (" + str(fixel_image.size (0)) + ")");
           value_image = Image<connectivity_value_type>::open (Path::join (directory, "values.mif"));
           if (value_image.size (0) != fixel_image.size (0))
             throw Exception ("Number of fixels in value image (" + str(value_image.size (0)) + ") does not match number of fixels in fixel image (" + str(fixel_image.size (0)) + ")");
-          if (mask_image.valid() && mask_image.size (0) != size())
+          if (mask_image.valid() && size_t(mask_image.size (0)) != size())
             throw Exception ("Fixel image \"" + mask_image.name() + "\" has different number of fixels (" + str(mask_image.size (0)) + ") to fixel-fixel connectivity matrix (" + str(size()) + ")");
         } catch (Exception& e) {
           throw Exception (e, "Unable to load path \"" + directory + "\" as fixel-fixel connectivity data");
@@ -374,34 +374,37 @@ namespace MR
 
 
 
-      NormFixel Reader::operator[] (const size_t index) const
+      NormFixel Reader::operator[] (const size_t i) const
       {
+        // For thread-safety
+        Image<index_image_type> index (index_image);
+        Image<fixel_index_type> fixel (fixel_image);
+        Image<connectivity_value_type> value (value_image);
         NormFixel result;
-        index_image.index (0) = index;
-        index_image.index (3) = 0;
-        const index_image_type num_connections = index_image.value();
+        index.index (0) = i;
+        index.index (3) = 0;
+        const index_image_type num_connections = index.value();
         if (!num_connections)
           return result;
-        index_image.index (3) = 1;
-        const index_image_type offset = index_image.value();
+        index.index (3) = 1;
+        const index_image_type offset = index.value();
         connectivity_value_type sum (connectivity_value_type (0));
-        fixel_image.index (0) = value_image.index (0) = offset;
+        fixel.index (0) = value.index (0) = offset;
         if (mask_image.valid()) {
-          mask_image.index (0) = offset;
+          Image<bool> mask (mask_image);
+          mask.index (0) = offset;
           for (size_t i = 0; i != num_connections; ++i) {
-            if (mask_image.value()) {
-              const connectivity_value_type value = value_image.value();
-              result.emplace_back (NormElement (fixel_image.value(), value));
-              sum += value;
+            if (mask.value()) {
+              result.emplace_back (NormElement (fixel.value(), value.value()));
+              sum += value.value();
             }
-            fixel_image.index (0)++; value_image.index (0)++; mask_image.index (0)++;
+            fixel.index (0)++; value.index (0)++; mask.index (0)++;
           }
         } else {
           for (size_t i = 0; i != num_connections; ++i) {
-            const connectivity_value_type value = value_image.value();
-            result.emplace_back (NormElement (fixel_image.value(), value));
-            sum += value;
-            fixel_image.index (0)++; value_image.index (0)++;
+            result.emplace_back (NormElement (fixel.value(), value.value()));
+            sum += value.value();
+            fixel.index (0)++; value.index (0)++;
           }
         }
         result.normalise (sum);
@@ -414,9 +417,11 @@ namespace MR
 
       size_t Reader::size (const size_t fixel) const
       {
-        index_image.index (0) = fixel;
-        index_image.index (3) = 0;
-        return index_image.value();
+        // For thread-safety
+        Image<index_image_type> index (index_image);
+        index.index (0) = fixel;
+        index.index (3) = 0;
+        return index.value();
       }
 
 
