@@ -212,15 +212,16 @@ namespace MR
 
           // TODO Define iteration constructs?
 
-          size_t size() const { return fixel_image.size (0); }
+          size_t size() const { return index_image.size (0); }
           size_t size (const size_t) const;
 
         protected:
           const std::string directory;
-          mutable Image<index_image_type> index_image;
-          mutable Image<fixel_index_type> fixel_image;
-          mutable Image<connectivity_value_type> value_image;
-          mutable Image<bool> mask_image;
+          // Not to be manipulated directly; need to copy in order to ensure thread-safety
+          Image<index_image_type> index_image;
+          Image<fixel_index_type> fixel_image;
+          Image<connectivity_value_type> value_image;
+          Image<bool> mask_image;
 
 
       };
