@@ -66,7 +66,7 @@ namespace MR
         Header mask_header = Fixel::data_header_from_index (index_image);
         mask_header.datatype() = DataType::Bit;
         assert (mask_header.size(0) == matrix.size());
-        mask_image = Image<bool>::scratch (mask_image, "full scratch fixel mask");
+        mask_image = Image<bool>::scratch (mask_header, "full scratch fixel mask");
         for (auto l = Loop(mask_image) (mask_image); l; ++l)
           mask_image.value() = true;
       }
@@ -145,6 +145,10 @@ namespace MR
                 }
                 if (sum_weights) {
                   output.value() /= sum_weights;
+                } else if (connectivity.empty()) {
+                  // Provide unsmoothed value if disconnected
+                  input.index(0) = fixel;
+                  output.value() = input.value();
                 } else {
                   output.value() = std::numeric_limits<float>::quiet_NaN();
                 }
