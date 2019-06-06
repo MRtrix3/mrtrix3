@@ -53,12 +53,9 @@ make install
 cd ..
 FFTW_SECONDS=${SECONDS}
 
-
-QT_VERSION_=${QT_VERSION%.*}
-
 # QT5 BASE
 SECONDS=0
-curl -O http://ftp1.nluug.nl/languages/qt/archive/qt/${QT_VERSION_}/${QT_VERSION}/submodules/qtbase-everywhere-src-${QT_VERSION}.tar.xz
+curl -O http://ftp1.nluug.nl/languages/qt/archive/qt/${QT_VERSION%.*}/${QT_VERSION}/submodules/qtbase-everywhere-src-${QT_VERSION}.tar.xz
 tar xfv qtbase-everywhere-src-${QT_VERSION}.tar.xz
 cd qtbase-everywhere-src-${QT_VERSION}
 ./configure -opensource -confirm-license -release  -no-dbus -no-openssl -no-harfbuzz -no-freetype  -no-cups -no-sqlite -no-framework -nomake examples -prefix ${PREFIX}
