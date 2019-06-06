@@ -22,8 +22,9 @@
 #include "app.h"
 #include "debug.h"
 #include "progressbar.h"
-#include "file/path.h"
 #include "file/config.h"
+#include "file/json.h"
+#include "file/path.h"
 #include "signal_handler.h"
 
 #define MRTRIX_HELP_COMMAND "less -X"
@@ -831,6 +832,67 @@ namespace MR
 
 
 
+    std::string porcupine_usage()
+    {
+      nlohmann::json json;
+      json["toolbox"] = "MRtrix3";
+      json["name"] = "mrtrix3_" + App::NAME;
+      json["web_url"] = "https://mrtrix.readthedocs.io/en/latest/reference/commands/" + App::NAME + ".html";
+      json["code"]["argument"] = App::NAME;
+      nlohmann::json port_list;
+      for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
+        nlohmann::json port;
+        bool is_input = false, is_output = false;
+        switch (ARGUMENTS[i].type) {
+          case Undefined: assert (0);
+          case Text:
+          case Boolean:
+          case Integer:
+          case Float:
+          case Choice:
+          case IntSeq:
+          case FloatSeq:
+            break;
+          case ImageIn:
+          case TracksIn:
+          case ArgFileIn:
+          case ArgDirectoryIn:
+            is_input = true;
+            break;
+          case ImageOut:
+          case TracksOut:
+          case ArgFileOut:
+          case ArgDirectoryOut:
+            is_output = true;
+            break;
+          case Various:
+            is_input = is_output = true;
+            break;
+        }
+        port["input"] = is_input;
+        port["output"] = is_output;
+        port["visible"] = true;
+        port["editable"] = true;
+        std::string name;
+        if (is_input && !is_output)
+          name += "i_";
+        else if (is_output && !is_input)
+          name += "o_";
+        name += ARGUMENTS[i].id;
+        port["name"] = name;
+        port["code"]["argument"]["name"] = name;
+        port_list.push_back (std::move (port));
+      }
+      json["ports"] = std::move (port_list);
+      std::stringstream stream;
+      stream << json.dump(4) << "\n";
+      return stream.str();
+    }
+
+
+
+
+
 
     const Option* match_option (const char* arg)
     {
@@ -931,6 +993,10 @@ namespace MR
       }
       if (strcmp (argv[1], "__print_usage_rst__") == 0) {
         print (restructured_text_usage ());
+        throw 0;
+      }
+      if (strcmp (argv[1], "__print_usage_porcupine__") == 0) {
+        print (porcupine_usage ());
         throw 0;
       }
       if (strcmp (argv[1], "__print_synopsis__") == 0) {
