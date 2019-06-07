@@ -904,11 +904,8 @@ namespace MR
       for (size_t i = 0; i < ARGUMENTS.size(); ++i)
         port_list.push_back (make_arg_port (ARGUMENTS[i], true));
       size_t skipped_option_count = 0;
-      VAR (OPTIONS.size());
       for (size_t i = 0; i != OPTIONS.size(); ++i) {
-        VAR (OPTIONS[i].size());
         for (size_t j = 0; j != OPTIONS[i].size(); ++j) {
-          VAR (OPTIONS[i][j].id);
           auto port = make_opt_port (OPTIONS[i][j]);
           if (port.size())
             port_list.push_back (port);
