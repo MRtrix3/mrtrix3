@@ -839,49 +839,85 @@ namespace MR
       json["name"] = "mrtrix3_" + App::NAME;
       json["web_url"] = "https://mrtrix.readthedocs.io/en/latest/reference/commands/" + App::NAME + ".html";
       json["code"]["argument"] = App::NAME;
-      nlohmann::json port_list;
-      for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
-        nlohmann::json port;
-        bool is_input = false, is_output = false;
-        switch (ARGUMENTS[i].type) {
-          case Undefined: assert (0);
-          case Text:
-          case Boolean:
-          case Integer:
-          case Float:
-          case Choice:
-          case IntSeq:
-          case FloatSeq:
-            break;
+
+      auto is_input = [] (const Argument& arg) {
+        switch (arg.type) {
           case ImageIn:
           case TracksIn:
           case ArgFileIn:
           case ArgDirectoryIn:
-            is_input = true;
-            break;
+          case Various:
+            return true;
+          default:
+            return false;
+        }
+      };
+      auto is_output = [] (const Argument& arg) {
+        switch (arg.type) {
           case ImageOut:
           case TracksOut:
           case ArgFileOut:
           case ArgDirectoryOut:
-            is_output = true;
-            break;
           case Various:
-            is_input = is_output = true;
-            break;
+            return true;
+          default:
+            return false;
         }
-        port["input"] = is_input;
-        port["output"] = is_output;
-        port["visible"] = true;
+      };
+
+      auto make_arg_port = [&] (const Argument& arg, const bool visible)
+      {
+        nlohmann::json port;
+        const bool input = is_input (arg);
+        const bool output = is_output (arg);
+        port["input"] = input;
+        port["output"] = output;
+        port["visible"] = visible;
         port["editable"] = true;
         std::string name;
-        if (is_input && !is_output)
+        if (input && !output)
           name += "i_";
-        else if (is_output && !is_input)
+        else if (output && !input)
           name += "o_";
-        name += ARGUMENTS[i].id;
+        name += arg.id;
         port["name"] = name;
         port["code"]["argument"]["name"] = name;
-        port_list.push_back (std::move (port));
+        return port;
+      };
+
+      auto make_opt_port = [&] (const Option& opt)
+      {
+        nlohmann::json opt_port;
+        if (opt.size() > 1)
+          return opt_port;
+        opt_port["input"] = false;
+        opt_port["output"] = false;
+        opt_port["visible"] = false;
+        opt_port["editable"] = false;
+        opt_port["name"] = opt.id;
+        if (opt.size())
+          opt_port["code"]["argument"] = make_arg_port (opt[0], false);
+        return opt_port;
+      };
+
+      nlohmann::json port_list;
+      for (size_t i = 0; i < ARGUMENTS.size(); ++i)
+        port_list.push_back (make_arg_port (ARGUMENTS[i], true));
+      size_t skipped_option_count = 0;
+      VAR (OPTIONS.size());
+      for (size_t i = 0; i != OPTIONS.size(); ++i) {
+        VAR (OPTIONS[i].size());
+        for (size_t j = 0; j != OPTIONS[i].size(); ++j) {
+          VAR (OPTIONS[i][j].id);
+          auto port = make_opt_port (OPTIONS[i][j]);
+          if (port.size())
+            port_list.push_back (port);
+          else
+            ++skipped_option_count;
+        }
+      }
+      if (skipped_option_count) {
+        WARN (str(skipped_option_count) + " command-line options for " + App::NAME + " not exported");
       }
       json["ports"] = std::move (port_list);
       std::stringstream stream;
