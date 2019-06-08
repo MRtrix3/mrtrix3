@@ -52,7 +52,7 @@ void usage ()
    + "Example usage: mtnormalise wmfod.mif wmfod_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif.";
 
   ARGUMENTS
-    + Argument ("input output", "list of all input and output tissue compartment files. See example usage in the description.").type_image_in().allow_multiple();
+    + Argument ("input output", "list of all input and output tissue compartment files. See example usage in the description.").type_various().allow_multiple();
 
   OPTIONS
     + Option ("mask", "the mask defines the data used to compute the intensity normalisation. This option is mandatory.").required ()
