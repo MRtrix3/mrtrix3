@@ -63,13 +63,9 @@ def execute(): #pylint: disable=unused-variable
     run.command('mrconvert ' + path.from_user(app.ARGS.mask) + ' ' + path.to_scratch('mask.mif') + ' -datatype bit')
   app.goto_scratch_dir()
 
-  # extract mean b=0 volume for each image series
+  # extract b=0 volumes within each input series
   for index in range(0, num_inputs):
-    run.command('dwiextract ' + str(index) + 'in.mif - -bzero | ' + \
-                'mrmath - mean ' + str(index) + 'b0.mif -axis 3')
-  # # extract b=0 volumes within each input series
-  # for index in range(0, num_inputs):
-  #   run.command('dwiextract ' + str(index) + 'in.mif ' + str(index) + 'b0.mif -bzero')
+    run.command('dwiextract ' + str(index) + 'in.mif ' + str(index) + 'b0.mif -bzero')
 
   mask_option = ' -mask_input mask.mif -mask_target mask.mif' if app.ARGS.mask else ''
 
