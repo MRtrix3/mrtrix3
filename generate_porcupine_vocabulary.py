@@ -19,6 +19,8 @@ for cmdname in sorted(os.listdir(mrtrix_bin_dir)):
         except json.decoder.JSONDecodeError as e:
           sys.stderr.write('Error parsing output from command "' + cmdname + '":\n')
           sys.stderr.write(str(e) + '\n')
+      else:
+        sys.stderr.write('Command "' + cmdname + '" did not provide usage information\n')
     except OSError as e:
       sys.stderr.write('Error attempting to print usage for command "' + cmdname + '":\n')
       sys.stderr.write(str(e) + '\n')
