@@ -69,7 +69,7 @@ void usage ()
         "suitable for use in scripts. This will produce one line of values per "
         "selected shell. Valid metrics are as specified in the description "
         "above.")
-    +   Argument ("list")
+    +   Argument ("list").type_text()
     + DWI::ShellsOption
     + DWI::GradImportOptions();
 }

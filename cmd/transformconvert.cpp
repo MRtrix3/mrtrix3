@@ -42,7 +42,7 @@ void usage ()
     "and ITK's linear transformation format to a format usable in MRtrix.";
 
   ARGUMENTS
-  + Argument ("input", "the input for the specified operation").allow_multiple()
+  + Argument ("input", "the input for the specified operation").type_various().allow_multiple()
   + Argument ("operation", "the operation to perform, one of:\n" + join(operations, ", ") + "."
     + "\n\nflirt_import: "
     + "Convert a transformation matrix produced by FSL's flirt command into a format usable by MRtrix. "

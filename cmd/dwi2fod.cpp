@@ -88,7 +88,7 @@ void usage ()
     + Argument ("algorithm", "the algorithm to use for FOD estimation. "
                              "(options are: " + join(algorithms, ",") + ")").type_choice (algorithms)
     + Argument ("dwi", "the input diffusion-weighted image").type_image_in()
-    + Argument ("response odf", "pairs of input tissue response and output ODF images").allow_multiple();
+    + Argument ("response odf", "pairs of input tissue response and output ODF images").type_various().allow_multiple();
 
   OPTIONS
     + DWI::GradImportOptions()

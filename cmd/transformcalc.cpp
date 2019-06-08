@@ -47,7 +47,7 @@ void usage ()
   SYNOPSIS = "Perform calculations on linear transformation matrices";
 
   ARGUMENTS
-  + Argument ("inputs", "the inputs for the specified operation").allow_multiple()
+  + Argument ("inputs", "the inputs for the specified operation").type_various().allow_multiple()
   + Argument ("operation", "the operation to perform, one of: " + join(operations, ", ") + " (see description section for details).").type_choice (operations)
   + Argument ("output", "the output transformation matrix.").type_file_out ();
 

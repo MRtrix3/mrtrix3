@@ -2071,7 +2071,7 @@ namespace MR
           + Option ("focus", "Either set the position of the crosshairs in scanner coordinates, "
               "with the new position supplied as a comma-separated list of floating-point values or "
               "show or hide the focus cross hair using a boolean value as argument.").allow_multiple()
-          +   Argument ("x,y,z or boolean")
+          +   Argument ("x,y,z or boolean").type_various()
 
           + Option ("target", "Set the target location for the viewing window (the scanner coordinate "
               "that will appear at the centre of the viewing window")
