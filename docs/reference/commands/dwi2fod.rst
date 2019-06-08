@@ -13,11 +13,13 @@ Usage
 
 ::
 
-    dwi2fod [ options ]  algorithm dwi response odf [ response odf ... ]
+    dwi2fod [ options ]  algorithm dwi response1 odf1 [ response# odf# ... ]
 
 -  *algorithm*: the algorithm to use for FOD estimation. (options are: csd,msmt_csd)
 -  *dwi*: the input diffusion-weighted image
--  *response odf*: pairs of input tissue response and output ODF images
+-  *response1*: input file containing response function coefficients
+-  *odf1*: output image containing the tissue ODFs
+-  *response# odf#*: further pairs of input tissue response and output ODF images (applicable only for msmt_csd algorithm)
 
 Description
 -----------

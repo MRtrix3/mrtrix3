@@ -88,7 +88,9 @@ void usage ()
     + Argument ("algorithm", "the algorithm to use for FOD estimation. "
                              "(options are: " + join(algorithms, ",") + ")").type_choice (algorithms)
     + Argument ("dwi", "the input diffusion-weighted image").type_image_in()
-    + Argument ("response odf", "pairs of input tissue response and output ODF images").type_various().allow_multiple();
+    + Argument ("response1", "input file containing response function coefficients").type_file_in()
+    + Argument ("odf1", "output image containing the tissue ODFs").type_image_out()
+    + Argument ("response# odf#", "further pairs of input tissue response and output ODF images (applicable only for msmt_csd algorithm)").type_various().allow_multiple().optional();
 
   OPTIONS
     + DWI::GradImportOptions()

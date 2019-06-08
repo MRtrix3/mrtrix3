@@ -13,7 +13,7 @@ Usage
 
 ::
 
-    mrdump [ options ]  input[ output ]
+    mrdump [ options ]  input [ output ]
 
 -  *input*: the input image.
 -  *output*: the (optional) output text file.

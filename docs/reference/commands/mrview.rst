@@ -13,7 +13,7 @@ Usage
 
 ::
 
-    mrview [ options ] [ image ... ]
+    mrview [ options ]  [ image ... ]
 
 -  *image*: An image to be loaded.
 

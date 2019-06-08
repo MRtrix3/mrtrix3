@@ -13,7 +13,7 @@ Usage
 
 ::
 
-    mredit [ options ]  input[ output ]
+    mredit [ options ]  input [ output ]
 
 -  *input*: the input image
 -  *output*: the (optional) output image

@@ -292,7 +292,7 @@ namespace MR
       for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
 
         if (ARGUMENTS[i].flags & Optional)
-          s += "[";
+          s += " [";
         s += std::string(" ") + ARGUMENTS[i].id;
 
         if (ARGUMENTS[i].flags & AllowMultiple) {
@@ -620,7 +620,7 @@ namespace MR
       for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
 
         if (ARGUMENTS[i].flags & Optional)
-          s += "[";
+          s += " [";
         s += std::string(" ") + ARGUMENTS[i].id;
 
         if (ARGUMENTS[i].flags & AllowMultiple) {
@@ -724,7 +724,7 @@ namespace MR
       for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
 
         if (ARGUMENTS[i].flags & Optional)
-          s += "[";
+          s += " [";
         s += std::string(" ") + ARGUMENTS[i].id;
 
         if (ARGUMENTS[i].flags & AllowMultiple) {
