@@ -850,6 +850,14 @@ namespace MR
             return false;
         }
       };
+      auto argchoices2string = [] (const Argument& arg)
+      {
+        std::string choices (arg.limits.choices[0]);
+        const char* const* c (arg.limits.choices);
+        for (++c; *c; ++c)
+          choices += std::string(",") + *c;
+        return choices;
+      };
 
       auto make_arg_port = [&] (const Argument& arg)
       {
@@ -865,13 +873,15 @@ namespace MR
         port["type"] = argtype_description (arg.type);
         port["name"] = arg.id;
         port["code"]["argument"]["name"] = arg.id;
+        if (arg.type == ArgType::Choice)
+          port["choices"] = argchoices2string (arg);
         return port;
       };
 
       auto make_opt_port = [&] (const Option& opt)
       {
         nlohmann::json port;
-        const bool required = bool(opt.flags & ~Optional);
+        const bool required = !(opt.flags & Optional);
         port["input"] = (opt.size() == 1 && is_input (opt[0]));
         port["output"] = (opt.size() == 1 && is_output (opt[0]));
         port["visible"] = required;
@@ -890,6 +900,8 @@ namespace MR
           case 1:  port["type"] = argtype_description (opt[0].type); break;
           default: port["type"] = "multiple"; break;
         }
+        if (opt.size() == 1 && opt[0].type == ArgType::Choice)
+          port["choices"] = argchoices2string (opt[0]);
         return port;
       };
 
