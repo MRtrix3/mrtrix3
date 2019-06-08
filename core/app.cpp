@@ -179,38 +179,24 @@ namespace MR
     const char* argtype_description (ArgType type)
     {
       switch (type) {
-        case Integer:
-          return ("integer");
-        case Float:
-          return ("float");
-        case Text:
-          return ("string");
-        case ArgFileIn:
-          return ("file in");
-        case ArgFileOut:
-          return ("file out");
-        case ArgDirectoryIn:
-          return ("directory in");
-        case ArgDirectoryOut:
-          return ("directory out");
-        case ImageIn:
-          return ("image in");
-        case ImageOut:
-          return ("image out");
-        case Choice:
-          return ("choice");
-        case IntSeq:
-          return ("int seq");
-        case FloatSeq:
-          return ("float seq");
-        case TracksIn:
-          return ("tracks in");
-        case TracksOut:
-          return ("tracks out");
-        case Various:
-          return ("various");
-        default:
-          return ("undefined");
+        case Undefined:       return ("undefined");
+        case Text:            return ("string");
+        case Boolean:         return ("boolean");
+        case Integer:         return ("integer");
+        case Float:           return ("float");
+        case ArgFileIn:       return ("file in");
+        case ArgFileOut:      return ("file out");
+        case ArgDirectoryIn:  return ("directory in");
+        case ArgDirectoryOut: return ("directory out");
+        case Choice:          return ("choice");
+        case ImageIn:         return ("image in");
+        case ImageOut:        return ("image out");
+        case IntSeq:          return ("integer sequence");
+        case FloatSeq:        return ("float sequence");
+        case TracksIn:        return ("tracks in");
+        case TracksOut:       return ("tracks out");
+        case Various:         return ("various");
+        default:              return ("undefined");
       }
     }
 
@@ -865,56 +851,54 @@ namespace MR
         }
       };
 
-      auto make_arg_port = [&] (const Argument& arg, const bool visible)
+      auto make_arg_port = [&] (const Argument& arg)
       {
         nlohmann::json port;
         const bool input = is_input (arg);
         const bool output = is_output (arg);
         port["input"] = input;
         port["output"] = output;
-        port["visible"] = visible;
+        port["visible"] = true;
         port["editable"] = true;
-        std::string name;
-        if (input && !output)
-          name += "i_";
-        else if (output && !input)
-          name += "o_";
-        name += arg.id;
-        port["name"] = name;
-        port["code"]["argument"]["name"] = name;
+        port["required"] = true;
+        port["allow_multiple"] = bool(arg.flags & AllowMultiple);
+        port["type"] = argtype_description (arg.type);
+        port["name"] = arg.id;
+        port["code"]["argument"]["name"] = arg.id;
         return port;
       };
 
       auto make_opt_port = [&] (const Option& opt)
       {
-        nlohmann::json opt_port;
-        if (opt.size() > 1)
-          return opt_port;
-        opt_port["input"] = false;
-        opt_port["output"] = false;
-        opt_port["visible"] = false;
-        opt_port["editable"] = false;
-        opt_port["name"] = opt.id;
-        if (opt.size())
-          opt_port["code"]["argument"] = make_arg_port (opt[0], false);
-        return opt_port;
+        nlohmann::json port;
+        const bool required = bool(opt.flags & ~Optional);
+        port["input"] = (opt.size() == 1 && is_input (opt[0]));
+        port["output"] = (opt.size() == 1 && is_output (opt[0]));
+        port["visible"] = required;
+        port["editable"] = bool(opt.size());
+        port["required"] = required;
+        port["allow_multiple"] = bool(opt.flags & AllowMultiple);
+        port["name"] = opt.id;
+        if (opt.size()) {
+          std::string argument_string = opt[0].id;
+          for (size_t i = 1; i != opt.size(); ++i)
+            argument_string += std::string(" ") + opt[i].id;
+          port["code"]["argument"]["name"] = argument_string;
+        }
+        switch (opt.size()) {
+          case 0:  port["type"] = "flag"; break;
+          case 1:  port["type"] = argtype_description (opt[0].type); break;
+          default: port["type"] = "multiple"; break;
+        }
+        return port;
       };
 
       nlohmann::json port_list;
       for (size_t i = 0; i < ARGUMENTS.size(); ++i)
-        port_list.push_back (make_arg_port (ARGUMENTS[i], true));
-      size_t skipped_option_count = 0;
+        port_list.push_back (make_arg_port (ARGUMENTS[i]));
       for (size_t i = 0; i != OPTIONS.size(); ++i) {
-        for (size_t j = 0; j != OPTIONS[i].size(); ++j) {
-          auto port = make_opt_port (OPTIONS[i][j]);
-          if (port.size())
-            port_list.push_back (port);
-          else
-            ++skipped_option_count;
-        }
-      }
-      if (skipped_option_count) {
-        WARN (str(skipped_option_count) + " command-line options for " + App::NAME + " not exported");
+        for (size_t j = 0; j != OPTIONS[i].size(); ++j)
+          port_list.push_back (make_opt_port (OPTIONS[i][j]));
       }
       json["ports"] = std::move (port_list);
       std::stringstream stream;
