@@ -166,7 +166,7 @@ namespace MR
                 axis[i] = 1.0;
                 if (separating_axis (axis))
                   return false;
-                for (size_t j = 0; j != num_vertices; ++j) {
+                for (size_t j = 0; j != num_vertices-1; ++j) {
                   if (separating_axis (axis.cross (vertices[j+1] - vertices[j])))
                     return false;
                 }
