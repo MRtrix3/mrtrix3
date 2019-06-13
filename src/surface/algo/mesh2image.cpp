@@ -256,6 +256,7 @@ namespace MR
           for (auto l = Loop(seed) (seed); l; ++l) {
             if (seed.value() == vox_mesh_t::PRELIM_INSIDE || seed.value() == vox_mesh_t::PRELIM_OUTSIDE) {
               size_t prelim_inside_count = 0, prelim_outside_count = 0;
+              float sum_sum_distances = 0.0f;
               if (seed.value() == vox_mesh_t::PRELIM_INSIDE)
                 prelim_inside_count = 1;
               else
@@ -275,6 +276,8 @@ namespace MR
                         ++prelim_inside_count;
                       else if (adj_value == vox_mesh_t::PRELIM_OUTSIDE)
                         ++prelim_outside_count;
+                      assign_pos_of (init_seg).to (sum_distances);
+                      sum_sum_distances += sum_distances.value();
                       to_expand.push (adj_voxel);
                       to_fill.push_back (adj_voxel);
                       init_seg.value() = vox_mesh_t::FILL_TEMP;
@@ -282,10 +285,10 @@ namespace MR
                   }
                 }
               } while (to_expand.size());
-              if (prelim_inside_count == prelim_outside_count)
-                throw Exception ("Mapping mesh to image failed: Unable to label connected voxel region as inside or outside mesh");
               vox_mesh_t fill_value = vox_mesh_t::UNDEFINED;
-              if (prelim_inside_count > 10 * prelim_outside_count) {
+              if (prelim_inside_count == prelim_outside_count && sum_sum_distances) {
+                fill_value = sum_sum_distances < 0.0f ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;
+              } else if (prelim_inside_count > 10 * prelim_outside_count) {
                 fill_value = vox_mesh_t::INSIDE;
               } else if (prelim_outside_count > 10 * prelim_inside_count) {
                 fill_value = vox_mesh_t::OUTSIDE;
@@ -305,6 +308,8 @@ namespace MR
                   fill_value = vox_mesh_t::OUTSIDE;
                 } else if (!corner_count) {
                   fill_value = vox_mesh_t::INSIDE;
+                } else if (sum_sum_distances) {
+                  fill_value = sum_sum_distances < 0.0f ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;
                 } else {
                   Exception e ("Internal error: fundamental ambiguity in voxel-based segmentation of surface");
                   e.push_back ("Fill region size: " + str(to_fill.size()));
