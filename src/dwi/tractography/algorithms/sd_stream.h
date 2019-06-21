@@ -48,7 +48,7 @@ class SDStream : public MethodBase { MEMALIGN(SDStream)
           if (is_act() && act().backtrack())
             throw Exception ("Backtracking not valid for deterministic algorithms");
 
-          set_step_size (0.1f);
+          set_step_size (0.1f, true);
           dot_threshold = std::cos (max_angle);
 
           set_cutoff (TCKGEN_DEFAULT_CUTOFF_FOD);

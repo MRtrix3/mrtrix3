@@ -174,7 +174,7 @@ namespace MR
 
 
 
-        void SharedBase::set_step_size (float stepsize)
+        void SharedBase::set_step_size (float stepsize, bool is_deterministic)
         {
           step_size = stepsize * vox();
           properties.set (step_size, "step_size");
@@ -191,7 +191,7 @@ namespace MR
           properties.set (min_dist, "min_dist");
           min_num_points = std::max (2, int(std::round (min_dist/step_size) + 1));
 
-          max_angle = 90.0 * step_size / vox();
+          max_angle = is_deterministic ? 60.0 : ( 90.0 * step_size / vox() );
           properties.set (max_angle, "max_angle");
           INFO ("maximum deviation angle = " + str (max_angle) + " deg");
           max_angle *= Math::pi / 180.0;

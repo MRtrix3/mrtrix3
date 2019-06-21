@@ -57,7 +57,7 @@ namespace MR
             throw Exception ("Algorithm iFOD1 expects as input a spherical harmonic (SH) image");
           }
 
-          set_step_size (0.1f);
+          set_step_size (0.1f, false);
           if (rk4) {
             max_angle = 0.5 * max_angle_rk4;
             INFO ("minimum radius of curvature = " + str(step_size / (max_angle_rk4 / (0.5 * Math::pi))) + " mm");

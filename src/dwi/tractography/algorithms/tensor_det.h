@@ -49,13 +49,13 @@ namespace MR
       public:
       class Shared : public SharedBase { MEMALIGN(Shared)
         public:
-        Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
+        Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set, bool is_deterministic = true) :
           SharedBase (diff_path, property_set) {
 
           if (is_act() && act().backtrack())
             throw Exception ("Backtracking not valid for deterministic algorithms");
 
-          set_step_size (0.1f);
+          set_step_size (0.1f, is_deterministic);
           if (rk4) {
             INFO ("minimum radius of curvature = " + str(step_size / (max_angle_rk4 / (0.5 * Math::pi))) + " mm");
           } else {
