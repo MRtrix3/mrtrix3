@@ -29,7 +29,7 @@ def getInputs(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import glob, os, re
-  from mrtrix3 import app, file, fsl, path, run #pylint: disable=dredefined-builtin
+  from mrtrix3 import app, file, fsl, path, run #pylint: disable=redefined-builtin
 
   def checkFile(filepath):
     import os
@@ -158,9 +158,6 @@ def execute(): #pylint: disable=unused-variable
   # TODO If releasing, this should ideally read from FreeSurferColorLUT.txt to get the indices
   # TODO Currently mesh2voxel assumes a single closed surface;
   #   may need to run a connected component analysis first for some structures e.g. lesions
-  # TODO Need to figure out a solution for identifying the vertices at the bottom of the
-  #   brain stem, and labeling those as outside the brain, so that streamlines are permitted
-  #   to terminate there.
 
   # Honour -sgm_amyg_hipp option
   ah = 1 if app.args.sgm_amyg_hipp else 0
@@ -177,7 +174,8 @@ def execute(): #pylint: disable=unused-variable
                  (13,  1, 'Left-Pallidum'),
                  (14,  3, '3rd-Ventricle'),
                  (15,  3, '4th-Ventricle'),
-                 (16,  2, 'Brain-Stem'),
+# Brain stem handled separately
+#                (16,  2, 'Brain-Stem'),
                  (17, ah, 'Left-Hippocampus'),
                  (18, ah, 'Left-Amygdala'),
                  (24,  3, 'CSF'),
@@ -236,7 +234,7 @@ def execute(): #pylint: disable=unused-variable
   progress.done()
 
   # Get other structures that need to be converted from the voxel image
-  progress = app.progressBar('Smoothing non-cortical structures segmented by FreeSurfer', len(structures) + 1)
+  progress = app.progressBar('Smoothing non-cortical structures segmented by FreeSurfer', len(structures) + 2)
   for (index, tissue, name) in structures:
     # Don't segment anything for which we have instead obtained estimates using FIRST
     # Also don't segment the hippocampi from the aparc+aseg image if we're using the hippocampal subfields module
@@ -264,10 +262,46 @@ def execute(): #pylint: disable=unused-variable
   cc_init_mesh_path = 'combined_corpus_callosum_init.vtk'
   cc_smoothed_mesh_path = 'combined_corpus_callosum.vtk'
   run.command('mrmath ' + ' '.join([ name + '.mif' for (index, name) in corpus_callosum ]) + ' sum - | voxel2mesh - -threshold 0.5 ' + cc_init_mesh_path)
+  for name in [ n for i, n in corpus_callosum ]:
+    file.delTemporary(name)
   run.command('meshfilter ' + cc_init_mesh_path + ' smooth ' + cc_smoothed_mesh_path)
   file.delTemporary(cc_init_mesh_path)
   run.command('mesh2voxel ' + cc_smoothed_mesh_path + ' ' + template_image + ' combined_corpus_callosum.mif')
   file.delTemporary(cc_smoothed_mesh_path)
+  progress.increment()
+
+  # Deal with brain stem, including determining those voxels that should
+  #   be erased from the 5TT image in order for streamlines traversing down
+  #   the spinal column to be terminated & accepted
+  bs_fullmask_path = 'Brain_stem_init.mif'
+  bs_cropmask_path = ''
+  run.command('mrcalc ' + aparc_image + ' 16 -eq ' + bs_fullmask_path + ' -datatype bit')
+  fourthventricle_zmin = min([ int(line.split()[2]) for line in run.command('maskdump 4th-Ventricle.mif')[0].splitlines() ])
+  bs_voxel2mesh_input = bs_fullmask_path
+  if fourthventricle_zmin:
+    bs_wmmask_path = 'Brain_stem_wm.mif'
+    bs_cropmask_path = 'Brain_stem_crop.mif'
+    run.command('mredit ' + bs_fullmask_path + ' ' + bs_wmmask_path + ' ' + ' '.join([ '-plane 2 ' + str(index) + ' 0' for index in range(0, fourthventricle_zmin) ]))
+    run.command('mrcalc ' + bs_fullmask_path + ' ' + bs_wmmask_path + ' -sub -1 -mult ' + bs_cropmask_path + ' -datatype bit')
+    if app.args.template:
+      bs_cropmesh_path = 'Brain_stem_crop.vtk'
+      bs_new_cropmask_path = 'Brain_stem_crop_template.mif'
+      run.command('voxel2mesh ' + bs_cropmask_path + ' ' + bs_cropmesh_path + ' -blocky')
+      run.command('mesh2voxel ' + bs_cropmesh_path + ' ' + template_image + ' - | ' + \
+                  'mrthreshold - -abs 1e-6 ' + bs_new_cropmask_path)
+      file.delTemporary(bs_cropmesh_path)
+      file.delTemporary(bs_cropmask_path)
+      bs_cropmask_path = bs_new_cropmask_path
+    bs_voxel2mesh_input = bs_wmmask_path
+
+  bs_init_mesh_path = 'brain_stem_init.vtk'
+  bs_smoothed_mesh_path = 'brain_stem.vtk'
+  run.command('voxel2mesh ' + bs_voxel2mesh_input + ' ' + bs_init_mesh_path)
+  file.delTemporary(bs_voxel2mesh_input)
+  run.command('meshfilter ' + bs_init_mesh_path + ' smooth ' + bs_smoothed_mesh_path)
+  file.delTemporary(bs_init_mesh_path)
+  run.command('mesh2voxel ' + bs_smoothed_mesh_path + ' ' + template_image + ' brain_stem.mif')
+  file.delTemporary(bs_smoothed_mesh_path)
   progress.done()
 
   # Construct images with the partial volume of each tissue
@@ -278,7 +312,7 @@ def execute(): #pylint: disable=unused-variable
     if tissue == 0:
       image_list.extend([ 'lh.pial.mif', 'rh.pial.mif' ])
     elif tissue == 2:
-      image_list.extend([ 'lh.white.mif', 'rh.white.mif', 'combined_corpus_callosum.mif' ])
+      image_list.extend([ 'lh.white.mif', 'rh.white.mif', 'combined_corpus_callosum.mif', 'brain_stem.mif' ])
     run.command('mrmath ' + ' '.join(image_list) + ' sum - | mrcalc - 1.0 -min tissue' + str(tissue) + '_init.mif')
     # TODO Update file.delTemporary() to support list input
     for entry in image_list:
@@ -515,31 +549,14 @@ def execute(): #pylint: disable=unused-variable
   tissue_images = new_tissue_images
 
 
-
-  # TODO Make attempt at setting non-brain voxels at bottom of brain stem
-  # Note that this needs to be compatible with -template option
-  # - Generate gradient image of norm.mgz - should be bright at CSF edges, less so at arbitrary cuts through the WM
-  #   Note: Hopefully keeping directionality information
-  # - Generate gradient image of brain stem partial volume image
-  #   Note: If using -template option, this will likely need to be re-generated in native space
-  #   (Actually, may have been erased by file.delTemporary() earlier...)
-  # - Get (absolute) inner product of two gradient images - should be bright where brain stem segmentation and
-  #   gradients in T1 intensity colocalise, dark where either is absent
-  #   Actually this needs to be more carefully considered: Ideally want something that appears bright at the
-  #   bottom edge of the brain stem. E.g. min(abs(Gradient of brain stem PVF +- gradient of T1 image))
-  #   Will need some kind of appropriate scaling of T1 gradient image in order to enable an addition / subtraction
-  #   Does norm.mgz get a standardised intensity range?
-  # - Perform automatic threshold & connected-component analysis
-  #   Perhaps prior to this point, could set the image FoV based on the brain stem segmentation, then
-  #   retain only the lower half of the FoV, such that the largest connected component is the bottom part
-  # - Maybe dilate this a little bit
-  # - Multiply all tissues by 0 in these voxels (may require conversion back to template image)
-
-
-
   # Finally, concatenate the volumes to produce the 5TT image
   precrop_result_image = '5TT.mif'
-  run.command('mrcat ' + ' '.join(tissue_images) + ' ' + precrop_result_image + ' -axis 3')
+  if bs_cropmask_path:
+    run.command('mrcat ' + ' '.join(tissue_images) + ' - -axis 3 | ' + \
+                '5ttedit - ' + precrop_result_image + ' -none ' + bs_cropmask_path)
+    file.delTemporary(bs_cropmask_path)
+  else:
+    run.command('mrcat ' + ' '.join(tissue_images) + ' ' + precrop_result_image + ' -axis 3')
   # TODO Use new file.delTemporary()
   for entry in tissue_images:
     file.delTemporary(entry)
@@ -556,12 +573,3 @@ def execute(): #pylint: disable=unused-variable
     run.command('mrcrop ' + precrop_result_image + ' result.mif -mask ' + crop_mask_image)
     file.delTemporary(crop_mask_image)
     file.delTemporary(precrop_result_image)
-
-
-
-
-
-  app.warn('Script algorithm is not yet capable of performing requisite image modifications in order to '
-           'permit streamlines travelling from the brain stem down the spinal column. Recommend using '
-           '5ttedit -none, in conjunction with a manually-drawn ROI labelling the bottom part of the '
-           'brain stem, such that streamlines in this region are characterised by ACT as exiting the image.')
