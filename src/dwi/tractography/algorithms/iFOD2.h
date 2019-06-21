@@ -73,7 +73,7 @@ namespace MR
                 if (rk4)
                   throw Exception ("4th-order Runge-Kutta integration not valid for iFOD2 algorithm");
 
-                set_step_size (0.5f);
+                set_step_size (0.5f, false);
                 INFO ("minimum radius of curvature = " + str(step_size / (max_angle / Math::pi_2)) + " mm");
 
                 set_cutoff (TCKGEN_DEFAULT_CUTOFF_FOD);

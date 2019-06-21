@@ -76,7 +76,7 @@ namespace MR
               return std::pow (source.spacing(0)*source.spacing(1)*source.spacing(2), float (1.0/3.0));
             }
 
-            void set_step_size (float stepsize);
+            void set_step_size (float stepsize, bool is_deterministic);
             void set_cutoff (float cutoff);
 
             // This gets overloaded for iFOD2, as each sample is output rather than just each step, and there are
