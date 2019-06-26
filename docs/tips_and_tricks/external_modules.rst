@@ -21,16 +21,15 @@ differences.
 To demonstrate this, we construct a module residing
 alongside the core installation::
 
-    $ cd ~/src/
-    $ mkdir mymodule
-    $ cd mymodule/
-    $ mkdir cmd bin
+    $ mkdir ~/mymodule
+    $ cd ~/mymodule/
+    $ mkdir cmd 
 
-This results in the following folder structure (assuming the module contains a
-single command named ``mycommand``)::
+Assuming our module consists of a single ``mycommand.cpp`` C++ file, it should
+be placed in the ``cmd/`` folder (see below for details). This results in the
+following folder structure::
 
     mymodule/
-    |-- bin/
     |-- cmd/
     |   |-- mycommand.cpp
 
@@ -94,7 +93,7 @@ a reference to the core *MRtrix3* installation. This can be done in two ways:
       $ echo ../mrtrix3/build > build
       $ chmod +x build
 
-  The last command ensures the file is executable. This results in the
+  The last command ensures that the file is executable. This results in the
   following folder structure::
 
       mymodule/
@@ -120,7 +119,7 @@ several ways to do this, depending on your circumstances. In all cases, the aim
 is to ensure that the correct ``mrtrix3.py`` module can be located and imported
 (i.e. that the ``import mrtrix3`` line succeeds).
 
-- **Symbolic link to the *MRtrix3* core ``mrtrix3.py`` (recommended):** the
+- **Symbolic link to the MRtrix3 core mrtrix3.py (recommended):** the
   core installation contains a ``bin/mrtrix3.py`` file that will be imported
   preferentially for any script co-located within the same ``bin/`` folder. It
   will in turn locate and import the actual ``mrtrix3`` module, which is
@@ -132,6 +131,7 @@ is to ensure that the correct ``mrtrix3.py`` module can be located and imported
       $ ln -sr ../mrtrix3/bin/mrtrix3.py bin/
 
   This results in the following folder structure::
+
       mymodule/
       |-- bin/
       |   |-- mrtrix3.py -> ../../mrtrix3/bin/mrtrix3.py
@@ -139,7 +139,7 @@ is to ensure that the correct ``mrtrix3.py`` module can be located and imported
       |-- cmd/
       |   |-- mycommand.cpp
 
-- **Copy of the *MRtrix3* core ``mrtrix3.py`` file:** in some cases, it may not
+- **Copy of the MRtrix3 core mrtrix3.py file:** in some cases, it may not
   be possible or convenient to use a symbolic link as described above. This is
   the case particularly on Windows / MSYS2 installations, or when distributing
   an independent module. In this case, a *copy* of the core *MRtrix3*
@@ -167,7 +167,7 @@ is to ensure that the correct ``mrtrix3.py`` module can be located and imported
   Python libraries, since they should reside in a known location relative to
   that script.
 
-- **Use the ``PYTHONPATH`` environment variable:** some users may prefer to
+- **Use the PYTHONPATH environment variable:** some users may prefer to
   set the ``PYTHONPATH`` environment variable to point to the core *MRtrix3*
   ``lib/`` folder. This is the more usual way of locating modules in Python,
   and will work here also::
