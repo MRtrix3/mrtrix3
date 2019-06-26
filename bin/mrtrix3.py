@@ -15,23 +15,37 @@ def imported(lib_path):
       fp.close()
   return success
 
-# Approach 1:
 # Can the MRtrix3 Python modules be found based on their relative location to this file?
 # Note that this includes the case where this file is a softlink within an external module,
-#   which provides a direct link to the core installation
-if not imported(os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), \
-                                              os.pardir, \
-                                              'lib'))):
+# which provides a direct link to the core installation
+if not imported (os.path.normpath (os.path.join ( \
+  os.path.dirname (os.path.realpath (__file__)), os.pardir, 'lib') )):
 
-  # Approach 2:
-  # If this file is a duplicate, which has been stored in an external module, we may be able to use
-  #   a softlink to the build script if such has been created
-  if not imported(os.path.join(os.path.dirname(os.path.realpath(os.path.join(os.path.dirname(__file__), \
-                                                                             os.pardir, \
-                                                                             'build'))), \
-                               'lib')):
+  # If this file is a duplicate, which has been stored in an external module,
+  # we may be able to figure out the location of the core library using the
+  # build script.
 
-    sys.stderr.write('Unable to locate MRtrix3 Python modules\n')
-    sys.stderr.write('https://mrtrix.readthedocs.io/en/latest/tips_and_tricks/external_modules.html\n')
-    sys.stderr.flush()
-    sys.exit(1)
+  # case 1: build is a symbolic link:
+  if not imported (os.path.join (os.path.dirname (os.path.realpath ( \
+      os.path.join (os.path.dirname(__file__), os.pardir, 'build'))), 'lib')):
+
+    # case 2: build is a file containing the path to the core build script:
+    try:
+      with open (os.path.join (os.path.dirname(__file__), os.pardir, 'build')) as fp:
+        for line in fp:
+          build_path = line.split ('#',1)[0].strip()
+          if build_path:
+            break
+    except IOError:
+      pass
+
+    if not imported (os.path.join (os.path.dirname (build_path), 'lib')):
+
+      sys.stderr.write('''
+ERROR: Unable to locate MRtrix3 Python modules
+
+For detailed instructions, please refer to:
+https://mrtrix.readthedocs.io/en/latest/tips_and_tricks/external_modules.html
+''')
+      sys.stderr.flush()
+      sys.exit(1)
