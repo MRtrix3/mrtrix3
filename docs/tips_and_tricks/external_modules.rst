@@ -13,147 +13,178 @@ private if they wish to, and the *MRtrix3* core can be kept as lean as possible.
 Filesystem structure
 --------------------
 
-A module consists of a separate directory, with a similar directory structure
-to the *MRtrix3* core installation, but with some symbolic links providing
-reference to that *MRtrix3* core installation. To demonstrate this, first
-consider the contents of an *MRtrix3* installation directory::
+A module simply consists of a separate directory, which contains its own
+``cmd/`` folder, and potentially also its own ``src/`` folder if required. The
+build process is then almost identical to that for the MRtrix3 core, with a few
+differences.
 
-    $ cd ~/src/mrtrix3/
-
-    mrtrix3/
-    |-- bin/
-    |   |-- (executable files)
-    |-- build
-    |-- build.log
-    |-- build.default.active
-    |   |-- (directories)
-    |-- cmd/
-    |   |-- (.cpp files)
-    |-- config
-    |-- configure
-    |-- core/
-    |   |-- (directories and files)
-    |-- docs/
-    |   |-- (directories and files)
-    |-- icons/
-    |   |-- (.svg files)
-    |-- lib/
-    |   |-- libmrtrix.so
-    |   |-- mrtrix3
-    |-- matlab/
-    |   |-- (files)
-    |-- run_pylint
-    |-- run_tests
-    |-- set_path
-    |-- share/
-    |   |-- mrtrix3
-    |-- src/
-    |   |-- (directories and files)
-    |-- testing/
-    |   |-- (directories and files)
-    |-- tmp/
-    |   |-- (directories)
-
-To construct an *MRtrix3* *module*, it is necessary to both duplicate certain
-aspects of this directory structure, and provide reference to the core *MRtrix3*
-installation against which that module will be compiled and/or executed. Here,
-we construct such a module residing alongside this core installation::
+To demonstrate this, we construct a module residing
+alongside the core installation::
 
     $ cd ~/src/
-    $ mkdir module
-    $ cd module/
+    $ mkdir mymodule
+    $ cd mymodule/
     $ mkdir cmd bin
-    $ ln -s ../mrtrix3/build
-    $ ln -sr ../mrtrix3/bin/mrtrix3.py bin/
 
-    module/
+This results in the following folder structure (assuming the module contains a
+single command named ``mycommand``)::
+
+    mymodule/
     |-- bin/
-    |   |-- mrtrix3.py -> ../../mrtrix3/bin/mrtrix3.py
-    |-- build -> ../mrtrix3/build
     |-- cmd/
-    |   |-- (empty)
+    |   |-- mycommand.cpp
 
-This satisfies a number of requirements:
+The most relevant difference is how the build script is invoked. For a module,
+compilation is started by invoking the *MRtrix3* core’s ``build`` script, but
+with the module’s top-level folder being the current working directory. For
+example, if the MRtrix3 core resides in the directory ``~/mrtrix3/``, and
+the module resides in ``~/mymodule``, then the module can be compiled by
+typing::
 
-- By constructing a symbolic link to the ``build`` script of the *MRtrix3* core
-  installation within the module, execution of that script will automatically
-  detect that it is an external module that is being built, and will set up
-  all required paths and dependencies accordingly.
+    $ cd ~/mymodule
+    $ ../mrtrix3/build
 
-  Note that setting up this symbolic link is not *strictly* required, but it
-  is generally the most convenient approach. The alternative approach is to
-  navigate to the root directory of the module, and then execute the ``build``
-  script of the *MRtrix3* core installation from that location by providing
-  its full path (relative or absolute). For example::
-
-      $ cd ~/src/module
-      $ ../mrtrix3/build
-
-- The ``mrtrix3.py`` symbolic link in the ``bin/`` directory is used to ensure
-  that any external Python scripts making use of the *MRtrix3* library modules
-  are appropriately linked to the core *MRtrix3* installation against which
-  they are expected to run. This makes it possible to have multiple versions of
-  the *MRtrix3* library installed in different locations, and ensure that
-  different scripts can locate and import the appropriate versions of the
-  library at runtime.
-
-  Note that if a module being configured consists of C++ code only, and there
-  are no executable Python scripts, then providing a symbolic link to this file
-  is not strictly necessary.
+This will compile all ``.cpp`` files found in the ``cmd/`` folder, along with
+any potentially dependencies in the ``src/`` folder (if applicable), and place
+the resulting executables in the ``bin/`` folder (which will be created if not
+already present).
 
 .. note::
 
-   It is in fact possible to execute Python commands external to the core
-   *MRtrix3* installation without creation of this symbolic link. If the
-   environment variable "``PYTHONPATH``" includes the location of the ``lib/``
-   directory within an *MRtrix3* installation, then Python will immediately
-   locate and import the corresponding modules. Note however that if you have
-   multiple versions of *MRtrix3* installed on one system, and use this approach,
-   then the Python modules within whichever of those *MRtrix3* versions is added
-   to ``PYTHONPATH`` will *always* be imported, regardless of the version of
-   *MRtrix3* against which any particular external module is *intended* to run.
-   Creation of a softlink to file ``bin/mrtrix3.py`` is therefore preferable,
-   as it allows different external modules to run against different *MRtrix3*
-   installations.
+  Once compiled, the newly created executables will only run if they remain in
+  the same location relative to the *MRtrix3* core folder. This is because the
+  runtime search path for the *MRtrix3* dynamic library is set within each
+  executable to search in the core *MRtrix3* ``lib/`` folder (for our example,
+  this is ``../../mrtrix3/lib/``). If you need to move your *MRtrix3* and
+  module installations, make sure to maintain their relative paths. 
 
-.. note::
-   **For Windows users**:
-   In ``msys2``, the ``ln -s`` command actually creates a *copy* of the
-   target, *not* a symbolic link. If this is done, the build script will be unable
-   to identify the location of the *MRtrix3* core libraries when trying to compile
-   an external module.
 
-   One way around this is to simply invoke the build script of the core
-   *MRtrix3* installation directly, as explained above.
 
-   If however you wish to set up the symbolic link(s), the solution is:
+Linking to the MRtrix3 core (C++ code only)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-   1. In the Start menu, type "Command prompt" into the search bar, right-click on
-      the icon corresponding to that command, and select 'Run as administrator'.
+For routine use of modules containing C++ code, it is more convenient to set up
+a reference to the core *MRtrix3* installation. This can be done in two ways:
 
-   2. Within this prompt, use the ``mklink`` command to create symbolic links.
-      Note that the argument order passed to the ``mklink`` command is *reversed*
-      with respect to the ``ln -s`` command; that is, you must provide the location
-      where the symbolic link will be creted, and *then* the path to the target for
-      the link. Additionally, make sure that you provide the *full filesystem paths*
-      to both the link location and the target. So this might look something like::
+- **Using a symbolic link** to the *MRtrix3* core’s build script::
 
-         $ mklink C:\msys64\home\username\src\module\build C:\msys64\home\username\src\mrtrix\build
-         $ mklink C:\msys64\home\username\src\module\bin\mrtrix3.py C:\msys64\home\username\src\mrtrix\bin\mrtrix3.py
+      $ cd ~/mymodule
+      $ ln -s ../mrtrix3/build
 
-   3. In the standard terminal used for running *MRtrix3* commands (i.e. *not* the
-      Windows command prompt, but e.g. MSYS2), run the command::
+  This results in the following folder structure::
 
-         $ cd ~/src/module
-         $ ls -la
-         $ ls -la bin/
+      mymodule/
+      |-- bin/
+      |-- build -> ../mrtrix3/build
+      |-- cmd/
+      |   |-- mycommand.cpp
 
-      Both of these filesystem paths should be reprted by the ``ls`` command as
-      being symbolic links that refer back to the corresponding files in the
-      *MRtrix3* core installation.
+  The link can then be invoked directly, and the build script will detect that
+  it is compiling a module::
 
-   4. Ensure that Python version 3 is used. Python version 2 has been observed
-      to not correctly identify and interpret symbolic links on Windows.
+      $ ./build
+
+  Note that this approach will NOT work on Windows / MSYS2 installations, due
+  to the lack of support for symbolic links. In this case, use the alternative
+  approach below.
+
+- **Using a text file** containing the path to the *MRtrix3* core’s build script::
+
+      $ cd ~/mymodule
+      $ echo ../mrtrix3/build > build
+      $ chmod +x build
+
+  The last command ensures the file is executable. This results in the
+  following folder structure::
+
+      mymodule/
+      |-- bin/
+      |-- build
+      |-- cmd/
+      |   |-- mycommand.cpp
+
+  The new executable file can then be invoked directly, and the build script
+  will again detect that it is compiling a module::
+
+      $ ./build
+
+
+
+Handling Python commands
+------------------------
+
+The instructions above relate to modules containing C++ code. Modules can also
+contain Python scripts, in which case additional steps will be required to
+ensure the module's scripts use the core *MRtrix3* python libraries. There are
+several ways to do this, depending on your circumstances. In all cases, the aim
+is to ensure that the correct ``mrtrix3.py`` module can be located and imported
+(i.e. that the ``import mrtrix3`` line succeeds).
+
+- **Symbolic link to the *MRtrix3* core ``mrtrix3.py`` (recommended):** the
+  core installation contains a ``bin/mrtrix3.py`` file that will be imported
+  preferentially for any script co-located within the same ``bin/`` folder. It
+  will in turn locate and import the actual ``mrtrix3`` module, which is
+  located in the core ``lib/mrtrix3`` folder. If a symbolic link to that file
+  is placed in the module's ``bin/`` folder, it will locate the correct
+  modules. For example::
+
+      $ cd ~/mymodule/
+      $ ln -sr ../mrtrix3/bin/mrtrix3.py bin/
+
+  This results in the following folder structure::
+      mymodule/
+      |-- bin/
+      |   |-- mrtrix3.py -> ../../mrtrix3/bin/mrtrix3.py
+      |-- build -> ../mrtrix3/build
+      |-- cmd/
+      |   |-- mycommand.cpp
+
+- **Copy of the *MRtrix3* core ``mrtrix3.py`` file:** in some cases, it may not
+  be possible or convenient to use a symbolic link as described above. This is
+  the case particularly on Windows / MSYS2 installations, or when distributing
+  an independent module. In this case, a *copy* of the core *MRtrix3*
+  ``bin/mrtrix3.py`` can be placed in the module's ``bin/`` folder::
+
+      $ cd ~/mymodule/
+      $ cp ../mrtrix3/bin/mrtrix3.py bin/
+
+  This results in the following folder structure::
+
+      mymodule/
+      |-- bin/
+      |   |-- mrtrix3.py
+      |-- build -> ../mrtrix3/build
+      |-- cmd/
+      |   |-- mycommand.cpp
+
+  In this case, the script will fail to detect the *MRtrix3* modules in the
+  normal way, and will instead rely on the ``build`` symbolic link or file to
+  locate the core libraries. For this to work, the module must therefore have
+  been set up as suggested in the previous section: either with a ``build``
+  symbolic link pointing the core *MRtrix3* ``build`` script, or with a
+  ``build`` file containing the path to the core ``build`` script. The location
+  of the core *MRtrix3* ``build`` script is then sufficient to locate the core
+  Python libraries, since they should reside in a known location relative to
+  that script.
+
+- **Use the ``PYTHONPATH`` environment variable:** some users may prefer to
+  set the ``PYTHONPATH`` environment variable to point to the core *MRtrix3*
+  ``lib/`` folder. This is the more usual way of locating modules in Python,
+  and will work here also::
+
+      $ export PYTHONPATH=~/mrtrix3/lib
+
+  .. note::
+  
+    While the ``PYTHONPATH`` environment variable will work, there are good
+    reasons not to use this approach.  If you have multiple versions of
+    *MRtrix3* installed on one system, and use this approach, then the Python
+    modules within whichever of those *MRtrix3* versions is added to
+    ``PYTHONPATH`` will *always* be imported, regardless of the version of
+    *MRtrix3* against which any particular external module is *intended* to
+    run.  Creation of a ``bin/mrtrix3.py`` symbolic link or copy is therefore
+    preferable, as it allows different external modules to run against
+    different *MRtrix3* installations.
 
 Adding code to the module
 -------------------------
@@ -163,7 +194,7 @@ New code can be added to this new module as follows:
 - **Stand-alone .cpp file**: a single C++ code file destined to be compiled
   into a binary executable should have the ``.cpp`` file extension, and be
   placed into the ``cmd/`` directory of the module. Execution of the ``build``
-  symbolic link in the module root directory should then detect the presence of
+  script in the module root directory should then detect the presence of
   this file, and generate an executable file in the corresponding ``bin/``
   directory.
 
@@ -174,9 +205,9 @@ New code can be added to this new module as follows:
   necessary to mark the file as executable before the system will allow it to
   run::
 
-   $ chmod +x bin/example_script
+    $ chmod +x bin/example_script
 
-   (Replace ``example_script`` with the name of the script file you have added)
+  (Replace ``example_script`` with the name of the script file you have added)
 
 - **More complex modules**: If the requisite code for a particular functionality
   cannot reasonably be fully encapsulated within a single file, additional
@@ -190,7 +221,7 @@ For example, the following steps take the ``example_script`` Python script and
 created as described above, ensure the Python script is executable, and build
 the C++ executable::
 
-    $ cd ~/src/module
+    $ cd ~/mymodule
     $ cp ~/Downloads/example_script bin/
     $ cp ~/Downloads/example_binary.cpp cmd/
     $ chmod +x bin/example_script
@@ -198,7 +229,9 @@ the C++ executable::
     [1/2] [CC] tmp/cmd/example_binary.o
     [2/2] [LD] bin/example_binary
 
-    module/
+This results in the following folder structure::
+
+    mymodule/
     |-- bin/
     |   |-- example_binary
     |   |-- example_script
@@ -210,11 +243,11 @@ the C++ executable::
     |   |-- (directories)
 
 Both example command executables -- ``example_binary`` and ``example_script``
--- now reside in directory ``~/src/module/bin/``. The ``example_binary``
+-- now reside in directory ``~/mymodule/bin/``. The ``example_binary``
 executable will be linked against the core *MRtrix3* library (in the
-``~/src/mrtrix3/lib`` folder), and the ``example_script`` Python script will
+``~/mrtrix3/lib`` folder), and the ``example_script`` Python script will
 import modules from the core *MRtrix3* Python module (in the
-``~/src/mrtrix3/lib/mrtrix3`` folder) -- neither will run if these libraries
+``~/mrtrix3/lib/mrtrix3`` folder) -- neither will run if these libraries
 are not found.
 
 Adding modules to ``PATH``
@@ -233,7 +266,7 @@ ways:
 
       you would use::
 
-         $ ~/src/module/bin/example_binary argument1 argument2 ...
+         $ ~/mymodule/bin/example_binary argument1 argument2 ...
 
       While this may be inconvenient in some circumstances, in others it can
       be beneficial, as it is entirely explicit and clear as to exactly which
@@ -241,7 +274,16 @@ ways:
       experimenting with different versions of a command, where the name of the
       command has not changed.
 
-   2. Manually add the location of the ``bin/`` directory of this new module to
+   2. Use the ``set_path`` script provided with *MRtrix3* to automatically add
+      the location of the module's ``bin/`` directory to ``PATH`` whenever a
+      terminal session is created. To do this, execute your core *MRtrix3*
+      installation's ``set_path`` script while residing in the top-level
+      directory of the module::
+
+         $ cd ~/mymodule
+         $ ../mrtrix3/set_path
+
+   3. Manually add the location of the ``bin/`` directory of this new module to
       your system's ``PATH`` environment variable. Most likely you will want this
       location to be already stored within ``PATH`` whenever you open a new
       terminal; therefore you will most likely want to add a line such as that
@@ -249,18 +291,8 @@ ways:
       ``~/.bashrc`` or ``~/.bash_profile``; the appropriate file will depend
       on your particular system)::
 
-         $ export PATH=/home/username/src/module/bin:$PATH
+         $ export PATH=~/mymodule/bin:$PATH
 
-      Obviously you will need to modify this line according to both your user
-      name, and the location on your file system where you have installed the
-      module.
-
-   3. Use the ``set_path`` script provided with *MRtrix3* to automatically add
-      the location of the module's ``bin/`` directory to ``PATH`` whenever a
-      terminal session is created. To do this, execute your core *MRtrix3*
-      installation's ``set_path`` script while residing in the top-level
-      directory of the module::
-
-         $ cd ~/src/module
-         $ ../mrtrix3/set_path
+      Obviously you will need to modify this line according to the location on
+      your file system where you have installed the module.
 
