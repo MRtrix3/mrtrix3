@@ -32,6 +32,9 @@ void usage ()
 
   SYNOPSIS = "Evaluate the amplitude of an image of spherical harmonic functions along specified directions";
 
+  DESCRIPTION
+  + Math::SH::encoding_description;
+
   ARGUMENTS
     + Argument ("input",
                 "the input image consisting of spherical harmonic (SH) "

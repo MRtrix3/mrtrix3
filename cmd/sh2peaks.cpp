@@ -35,6 +35,9 @@ void usage ()
 
   SYNOPSIS = "Extract the peaks of a spherical harmonic function at each voxel, by commencing a Newton search along a set of specified directions";
 
+  DESCRIPTION
+  + Math::SH::encoding_description;
+
   ARGUMENTS
   + Argument ("SH", "the input image of SH coefficients.")
   .type_image_in ()
