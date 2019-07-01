@@ -1,5 +1,6 @@
 import argparse, os, sys
 import mrtrix3
+from mrtrix3.utils import is_windows
 
 # These global constants can / should be accessed directly by scripts:
 # - 'ARGS' will contain the user's command-line inputs upon parsing of the command-line
@@ -68,14 +69,18 @@ _SIGNALS = { 'SIGALRM': 'Timer expiration',
            # Can't be handled; see https://bugs.python.org/issue9524
            # 'CTRL_C_EVENT': 'Terminated by user Ctrl-C input',
            # 'CTRL_BREAK_EVENT': 'Terminated by user Ctrl-Break input'
-if mrtrix3.is_windows():
+if is_windows():
   _SIGNALS['SIGBREAK'] = 'Received Windows \'break\' signal'
 else:
   _SIGNALS['SIGTERM'] = 'Received termination signal'
 
 
 
-def execute(): #pylint: disable=unused-variable
+# Generally preferable to use:
+#   "import mrtrix3"
+#   "mrtrix3.execute()"
+# , rather than executing this function directly
+def _execute(module): #pylint: disable=unused-variable
   import inspect, shutil, signal
   from mrtrix3 import ANSI, CONFIG, MRtrixError, run, setup_ansi
   global ARGS, CMDLINE, CONTINUE_OPTION, DO_CLEANUP, EXEC_NAME, FORCE_OVERWRITE, NUM_THREADS, SCRATCH_DIR, VERBOSITY, WORKING_DIR
@@ -87,7 +92,6 @@ def execute(): #pylint: disable=unused-variable
     except:
       pass
 
-  module = inspect.getmodule(inspect.stack()[-1][0])
   CMDLINE = Parser()
   try:
     module.usage(CMDLINE)
@@ -534,51 +538,7 @@ class ProgressBar(object): #pylint: disable=unused-variable
 
 
 
-# A simple wrapper class for executing a set of commands or functions of some known length,
-#   generating and managing a progress bar as it does so
-# Can use in one of two ways:
-# - Construct using a progress bar message, and the number of commands / functions that are to be executed;
-#     each is then executed by calling member functions command() and function(), which
-#     use the corresponding functions in the mrtrix3.run module
-# - Construct using a progress bar message, and a list of command strings to run;
-#     all commands within the list will be executed sequentially within the constructor
-class RunList(object): #pylint: disable=unused-variable
-  def __init__(self, message, value):
-    from mrtrix3 import run
-    if isinstance(value, int):
-      self.progress = ProgressBar(message, value)
-      self.target_count = value
-      self.counter = 0
-      self.valid = True
-    elif isinstance(value, list):
-      assert all(isinstance(entry, str) for entry in value)
-      self.progress = ProgressBar(message, len(value))
-      for entry in value:
-        run.command(entry)
-        self.progress.increment()
-      self.progress.done()
-      self.valid = False
-    else:
-      raise TypeError('Construction of RunList class expects either an '
-                      'integer (number of commands/functions to run), or a '
-                      'list of command strings to execute')
-  def command(self, cmd):
-    from mrtrix3 import run
-    assert self.valid
-    run.command(cmd)
-    self._increment()
-  def function(self, func, *args, **kwargs):
-    from mrtrix3 import run
-    assert self.valid
-    run.function(func, *args, **kwargs)
-    self._increment()
-  def _increment(self):
-    self.counter += 1
-    if self.counter == self.target_count:
-      self.progress.done()
-      self.valid = False
-    else:
-      self.progress.increment()
+
 
 
 

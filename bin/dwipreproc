@@ -3,6 +3,7 @@
 # Script for performing DWI pre-processing using FSL 5.0 (onwards) tools eddy / topup / applytopup
 
 def usage(cmdline): #pylint: disable=unused-variable
+  from mrtrix3 import app #pylint: disable=no-name-in-module
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Perform diffusion image pre-processing using FSL\'s eddy tool; including inhomogeneity distortion correction using FSL\'s topup tool if possible')
   cmdline.add_description('This script is intended to provide convenience of use of the FSL software tools topup and eddy for performing DWI pre-processing, by encapsulating some of the surrounding image data and metadata processing steps. It is intended to simply these processing steps for most commonly-used DWI acquisition strategies, whilst also providing support for some more exotic acquisitions. The "example usage" section demonstrates the ways in which the script can be used based on the (compulsory) -rpe_* command-line options.')
@@ -56,9 +57,9 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  import itertools, json, math, shutil
+  import itertools, json, math, os, shutil, sys
   from distutils.spawn import find_executable
-  from mrtrix3 import CONFIG, fsl, image, is_windows, MRtrixError, path, phaseencoding, run
+  from mrtrix3 import app, CONFIG, fsl, image, is_windows, MRtrixError, path, phaseencoding, run #pylint: disable=no-name-in-module
 
   if is_windows():
     raise MRtrixError('Script cannot run on Windows due to FSL dependency')
@@ -1143,13 +1144,6 @@ def execute(): #pylint: disable=unused-variable
 
 
 
-# Make the corresponding MRtrix3 Python libraries available
-import inspect, os, sys
-LIB_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
-if not os.path.isdir(LIB_FOLDER):
-  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
-  sys.exit(1)
-sys.path.insert(0, LIB_FOLDER)
 # Execute the script
-from mrtrix3 import app
-app.execute()
+import mrtrix3
+mrtrix3.execute() #pylint: disable=no-member

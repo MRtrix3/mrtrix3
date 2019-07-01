@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 def usage(cmdline): #pylint: disable=unused-variable
+  from mrtrix3 import app #pylint: disable=no-name-in-module
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Check the orientation of the diffusion gradient table')
   cmdline.add_citation('Jeurissen, B.; Leemans, A.; Sijbers, J. Automated correction of improperly rotated diffusion gradient orientations in diffusion weighted MRI. Medical Image Analysis, 2014, 18(7), 953-962')
@@ -18,8 +19,8 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  import copy, numbers, shutil
-  from mrtrix3 import image, MRtrixError, path, run
+  import copy, numbers, os, shutil, sys
+  from mrtrix3 import app, image, MRtrixError, path, run #pylint: disable=no-name-in-module
 
   image_dimensions = image.Header(path.from_user(app.ARGS.input, False)).size()
   if len(image_dimensions) != 4:
@@ -194,13 +195,6 @@ def execute(): #pylint: disable=unused-variable
     run.command('mrinfo data.mif' + grad_import_option + grad_export_option)
 
 
-# Make the corresponding MRtrix3 Python libraries available
-import inspect, os, sys
-LIB_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
-if not os.path.isdir(LIB_FOLDER):
-  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
-  sys.exit(1)
-sys.path.insert(0, LIB_FOLDER)
 # Execute the script
-from mrtrix3 import app
-app.execute()
+import mrtrix3
+mrtrix3.execute() #pylint: disable=no-member
