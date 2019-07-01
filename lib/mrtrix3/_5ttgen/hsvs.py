@@ -184,7 +184,7 @@ def execute(): #pylint: disable=unused-variable
                  (27,  1, 'Left-Substancia-Nigra'),
                  (28,  2, 'Left-VentralDC'),
                  (30,  3, 'Left-vessel'),
-                 (31,  1, 'Left-choroid-plexus'),
+                 (31,  3, 'Left-choroid-plexus'),
                  (43,  3, 'Right-Lateral-Ventricle'),
                  (44,  3, 'Right-Inf-Lat-Vent'),
                  (45,  3, 'Right-Cerebellum-Exterior'),
@@ -202,7 +202,7 @@ def execute(): #pylint: disable=unused-variable
                  (59,  1, 'Right-Substancia-Nigra'),
                  (60,  2, 'Right-VentralDC'),
                  (62,  3, 'Right-vessel'),
-                 (63,  1, 'Right-choroid-plexus'),
+                 (63,  3, 'Right-choroid-plexus'),
                  (72,  3, '5th-Ventricle'),
                  (192, 2, 'Corpus_Callosum'),
                  (250, 2, 'Fornix') ]
