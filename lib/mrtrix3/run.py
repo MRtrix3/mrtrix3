@@ -496,8 +496,8 @@ def function(fn_to_execute, *args, **kwargs): #pylint: disable=unused-variable
 def exe_name(item):
   import os
   from distutils.spawn import find_executable
-  from mrtrix3 import app, BIN_PATH, is_windows
-  if not is_windows():
+  from mrtrix3 import app, BIN_PATH, utils
+  if not utils.is_windows():
     path = item
   elif item.endswith('.exe'):
     path = item
@@ -549,7 +549,7 @@ def version_match(item):
 def _shebang(item):
   import os
   from distutils.spawn import find_executable
-  from mrtrix3 import app, is_windows, MRtrixError
+  from mrtrix3 import app, MRtrixError, utils
 
   # If a complete path has been provided rather than just a file name, don't perform any additional file search
   if os.sep in item:
@@ -576,7 +576,7 @@ def _shebang(item):
     if len(line) > 2 and line[0:2] == '#!':
       # Need to strip first in case there's a gap between the shebang symbol and the interpreter path
       shebang = line[2:].strip().split(' ')
-      if is_windows():
+      if utils.is_windows():
         # On Windows, /usr/bin/env can't be easily found, and any direct interpreter path will have a similar issue.
         #   Instead, manually find the right interpreter to call using distutils
         if os.path.basename(shebang[0]) == 'env':
