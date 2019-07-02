@@ -73,7 +73,7 @@ void run ()
         std::cout << (i == properties.comments.begin() ? "" : "                       ") << *i << "\n";
     }
 
-    for (std::multimap<std::string,std::string>::const_iterator i = properties.roi.begin(); i != properties.roi.end(); ++i)
+    for (std::multimap<std::string,std::string>::const_iterator i = properties.prior_rois.begin(); i != properties.prior_rois.end(); ++i)
       std::cout << "    ROI:                  " << i->first << " " << i->second << "\n";
 
 

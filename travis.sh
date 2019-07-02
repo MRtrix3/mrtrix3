@@ -13,7 +13,7 @@ case  $test in
     ;;
   "pylint")
     # Normally rely on build script to create this file
-    echo "__version__ = pylint_testing" > ./lib/mrtrix3/_version.py
+    echo "__version__ = 'pylint testing' #pylint: disable=unused-variable" > ./lib/mrtrix3/_version.py
     PYTHON=$py ./run_pylint
     ;;
   "build")
