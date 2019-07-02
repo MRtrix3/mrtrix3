@@ -35,12 +35,13 @@ List of MRtrix3 commands
     commands/dwi2response
     commands/dwi2tensor
     commands/dwibiascorrect
+    commands/dwicat
     commands/dwidenoise
     commands/dwiextract
     commands/dwigradcheck
-    commands/dwiintensitynorm
     commands/dwinormalise
     commands/dwipreproc
+    commands/dwishellmath
     commands/fixel2sh
     commands/fixel2tsf
     commands/fixel2voxel
@@ -51,6 +52,7 @@ List of MRtrix3 commands
     commands/fixelreorient
     commands/fod2dec
     commands/fod2fixel
+    commands/foreach
     commands/label2colour
     commands/label2mesh
     commands/labelconvert
@@ -66,19 +68,17 @@ List of MRtrix3 commands
     commands/mrcheckerboardmask
     commands/mrclusterstats
     commands/mrconvert
-    commands/mrcrop
     commands/mrdegibbs
     commands/mrdump
     commands/mredit
     commands/mrfilter
+    commands/mrgrid
     commands/mrhistmatch
     commands/mrhistogram
     commands/mrinfo
     commands/mrmath
     commands/mrmetric
-    commands/mrpad
     commands/mrregister
-    commands/mrresize
     commands/mrstats
     commands/mrthreshold
     commands/mrtransform
@@ -86,6 +86,7 @@ List of MRtrix3 commands
     commands/mtnormalise
     commands/peaks2amp
     commands/population_template
+    commands/responsemean
     commands/sh2amp
     commands/sh2peaks
     commands/sh2power
@@ -153,14 +154,15 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`dwi2fod`, "Estimate fibre orientation distributions from diffusion data using spherical deconvolution"
     |cpp.png|, :ref:`dwi2mask`, "Generates a whole brain mask from a DWI image"
     |python.png|, :ref:`dwi2response`, "Estimate response function(s) for spherical deconvolution"
-    |cpp.png|, :ref:`dwi2tensor`, "Diffusion (kurtosis) tensor estimation using iteratively reweighted linear least squares estimator"
+    |cpp.png|, :ref:`dwi2tensor`, "Diffusion (kurtosis) tensor estimation"
     |python.png|, :ref:`dwibiascorrect`, "Perform B1 field inhomogeneity correction for a DWI volume series"
+    |python.png|, :ref:`dwicat`, "Concatenating multiple DWI series accounting for differential intensity scaling"
     |cpp.png|, :ref:`dwidenoise`, "Denoise DWI data and estimate the noise level based on the optimal threshold for PCA"
     |cpp.png|, :ref:`dwiextract`, "Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset"
     |python.png|, :ref:`dwigradcheck`, "Check the orientation of the diffusion gradient table"
-    |python.png|, :ref:`dwiintensitynorm`, "Performs a global DWI intensity normalisation on a group of subjects using the median b=0 white matter value as the reference"
-    |cpp.png|, :ref:`dwinormalise`, "Intensity normalise the b=0 signal within a supplied white matter mask"
-    |python.png|, :ref:`dwipreproc`, "Perform diffusion image pre-processing using FSL's eddy / topup / applytopup tools"
+    |python.png|, :ref:`dwinormalise`, "Perform various forms of intensity normalisation of DWIs"
+    |python.png|, :ref:`dwipreproc`, "Perform diffusion image pre-processing using FSL's eddy tool; including inhomogeneity distortion correction using FSL's topup tool if possible"
+    |python.png|, :ref:`dwishellmath`, "Apply an mrmath operation to each b-value shell in a DWI series"
     |cpp.png|, :ref:`fixel2sh`, "Convert a fixel-based sparse-data image into an spherical harmonic image"
     |cpp.png|, :ref:`fixel2tsf`, "Map fixel values to a track scalar file based on an input tractogram"
     |cpp.png|, :ref:`fixel2voxel`, "Convert a fixel-based sparse-data image into some form of scalar image"
@@ -171,6 +173,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`fixelreorient`, "Reorient fixel directions"
     |cpp.png|, :ref:`fod2dec`, "Generate FOD-based DEC maps, with optional panchromatic sharpening and/or luminance/perception correction"
     |cpp.png|, :ref:`fod2fixel`, "Perform segmentation of continuous Fibre Orientation Distributions (FODs) to produce discrete fixels"
+    |python.png|, :ref:`foreach`, "Perform some arbitrary processing step for each of a set of inputs"
     |cpp.png|, :ref:`label2colour`, "Convert a parcellated image (where values are node indices) into a colour image"
     |cpp.png|, :ref:`label2mesh`, "Generate meshes from a label image"
     |cpp.png|, :ref:`labelconvert`, "Convert a connectome node image from one lookup table to another"
@@ -186,19 +189,17 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`mrcheckerboardmask`, "Create bitwise checkerboard image"
     |cpp.png|, :ref:`mrclusterstats`, "Voxel-based analysis using permutation testing and threshold-free cluster enhancement"
     |cpp.png|, :ref:`mrconvert`, "Perform conversion between different file types and optionally extract a subset of the input image"
-    |cpp.png|, :ref:`mrcrop`, "Crop an image to a reduced field of view"
     |cpp.png|, :ref:`mrdegibbs`, "Remove Gibbs Ringing Artifacts"
     |cpp.png|, :ref:`mrdump`, "Print out the values within an image"
     |cpp.png|, :ref:`mredit`, "Directly edit the intensities within an image from the command-line"
     |cpp.png|, :ref:`mrfilter`, "Perform filtering operations on 3D / 4D MR images"
+    |cpp.png|, :ref:`mrgrid`, "Modify the grid of an image without interpolation (cropping or padding) or by regridding to an image grid with modified orientation, location and or resolution. The image content remains in place in real world coordinates."
     |cpp.png|, :ref:`mrhistmatch`, "Modify the intensities of one image to match the histogram of another"
     |cpp.png|, :ref:`mrhistogram`, "Generate a histogram of image intensities"
     |cpp.png|, :ref:`mrinfo`, "Display image header information, or extract specific information from the header"
     |cpp.png|, :ref:`mrmath`, "Compute summary statistic on image intensities either across images, or along a specified axis of a single image"
     |cpp.png|, :ref:`mrmetric`, "Computes a dissimilarity metric between two images"
-    |cpp.png|, :ref:`mrpad`, "Pad an image to increase the FOV"
     |cpp.png|, :ref:`mrregister`, "Register two images together using a symmetric rigid, affine or non-linear transformation model"
-    |cpp.png|, :ref:`mrresize`, "Resize an image by defining the new image resolution, voxel size or a scale factor"
     |cpp.png|, :ref:`mrstats`, "Compute images statistics"
     |cpp.png|, :ref:`mrthreshold`, "Create bitwise image by thresholding image intensity"
     |cpp.png|, :ref:`mrtransform`, "Apply spatial transformations to an image"
@@ -206,6 +207,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`mtnormalise`, "Multi-tissue informed log-domain intensity normalisation"
     |cpp.png|, :ref:`peaks2amp`, "Extract amplitudes from a peak directions image"
     |python.png|, :ref:`population_template`, "Generates an unbiased group-average template from a series of images"
+    |python.png|, :ref:`responsemean`, "Calculate the mean response function from a set of text files"
     |cpp.png|, :ref:`sh2amp`, "Evaluate the amplitude of an image of spherical harmonic functions along specified directions"
     |cpp.png|, :ref:`sh2peaks`, "Extract the peaks of a spherical harmonic function in each voxel"
     |cpp.png|, :ref:`sh2power`, "Compute the total power of a spherical harmonics image"
@@ -243,7 +245,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`voxel2mesh`, "Generate a surface mesh representation from a voxel image"
     |cpp.png|, :ref:`warp2metric`, "Compute fixel-wise or voxel-wise metrics from a 4D deformation field"
     |cpp.png|, :ref:`warpconvert`, "Convert between different representations of a non-linear warp"
-    |cpp.png|, :ref:`warpcorrect`, "Replaces voxels in a deformation field that point to 0,0,0 with nan,nan,nan"
+    |cpp.png|, :ref:`warpcorrect`, "Replaces voxels in a deformation field that point to a specific out of bounds location with nan,nan,nan"
     |cpp.png|, :ref:`warpinit`, "Create an initial warp image, representing an identity transformation"
     |cpp.png|, :ref:`warpinvert`, "Invert a non-linear warp field"
 
