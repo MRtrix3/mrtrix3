@@ -83,7 +83,7 @@ namespace MR
       if (p >= 1.0)
         return std::numeric_limits<default_type>::infinity();
       if (p > 0.5) {
-        if (p > 1.0 - 1e6)
+        if (p > 1.0 - 1e-6)
           shared.trigger_warning();
         return erfcinv (1.0 - p);
       }
