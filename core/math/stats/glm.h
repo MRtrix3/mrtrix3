@@ -21,6 +21,7 @@
 
 #include "math/condition_number.h"
 #include "math/least_squares.h"
+#include "math/zstatistic.h"
 #include "math/stats/import.h"
 #include "math/stats/typedefs.h"
 
@@ -203,7 +204,8 @@ namespace MR
             TestBase (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses) :
                 y (measurements),
                 M (design),
-                c (hypotheses)
+                c (hypotheses),
+                stat2z (new Math::Zstatistic())
             {
               assert (y.rows() == M.rows());
               // Can no longer apply this assertion here; GLMTTestVariable later
@@ -217,7 +219,15 @@ namespace MR
              * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
              * @param output the matrix containing the output statistics (one column per hypothesis)
              */
-            virtual void operator() (const matrix_type& shuffling_matrix, matrix_type& output) const = 0;
+            virtual void operator() (const matrix_type& shuffling_matrix, matrix_type& output) const;
+
+            /*! Compute the statistics, including conversion to Z-score
+             * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
+             * @param stat the matrix containing the output statistics (one column per hypothesis)
+             * @param zstat the matrix containing the Z-transformed statistics (one column per hypothesis)
+             */
+            virtual void operator() (const matrix_type& shuffling_matrix, matrix_type& stat, matrix_type& zstat) const = 0;
+
 
             size_t num_elements () const { return y.cols(); }
             size_t num_outputs  () const { return c.size(); }
@@ -227,6 +237,7 @@ namespace MR
           protected:
             const matrix_type& y, M;
             const vector<Hypothesis>& c;
+            std::shared_ptr<Math::Zstatistic> stat2z;
 
         };
 
@@ -254,9 +265,10 @@ namespace MR
 
             /*! Compute the statistics
              * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
-             * @param output the vector containing the output statistics (one column per hypothesis)
+             * @param stats the vector containing the output statistics (one column per hypothesis)
+             * @param zstats the vector containing the Z-transformed output statistics (one column per hypothesis)
              */
-            void operator() (const matrix_type& shuffling_matrix, matrix_type& output) const override;
+            void operator() (const matrix_type& shuffling_matrix, matrix_type& stats, matrix_type& zstats) const override;
 
           protected:
             // New classes to store information relevant to Freedman-Lane implementation
@@ -293,12 +305,13 @@ namespace MR
 
             /*! Compute the statistics
              * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
-             * @param output the vector containing the output statistics
+             * @param stat the vector containing the native output statistics (one column per hypothesis)
+             * @param zstat the vector containing the Z-transformed output statistics (one column per hypothesis)
              *
              * In TestVariable, this function additionally needs to import the
              * extra external data individually for each element tested.
              */
-            void operator() (const matrix_type& shuffling_matrix, matrix_type& output) const override;
+            void operator() (const matrix_type& shuffling_matrix, matrix_type& stat, matrix_type& zstat) const override;
 
             size_t num_factors() const override { return M.cols() + importers.size(); }
 
