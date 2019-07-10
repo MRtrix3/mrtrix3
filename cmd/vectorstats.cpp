@@ -216,13 +216,11 @@ void run()
   // Manually construct default shuffling matrix
   // TODO Change to use convenience function; we make an empty enhancer later anyway
   const matrix_type default_shuffle (matrix_type::Identity (num_subjects, num_subjects));
-  matrix_type default_output;
-  (*glm_test) (default_shuffle, default_output);
+  matrix_type default_statistic, default_zstat;
+  (*glm_test) (default_shuffle, default_statistic, default_zstat);
   for (size_t i = 0; i != num_hypotheses; ++i) {
-    if (hypotheses[i].is_F())
-      save_matrix (default_output.col(i).array().square(), output_prefix + "Fvalue" + postfix(i) + ".csv");
-    else
-      save_matrix (default_output.col(i), output_prefix + "tvalue" + postfix(i) + ".csv");
+    save_matrix (default_statistic.col(i), output_prefix + (hypotheses[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".csv");
+    save_matrix (default_statistic.col(i), output_prefix + "Zstat" + postfix(i) + ".csv");
   }
 
   // Perform permutation testing
@@ -237,7 +235,7 @@ void run()
     matrix_type null_distribution, uncorrected_pvalues;
     count_matrix_type null_contributions;
     matrix_type empirical_distribution; // unused
-    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_distribution, default_output, fwe_strong,
+    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_distribution, default_zstat, fwe_strong,
                                        null_distribution, null_contributions, uncorrected_pvalues);
     if (fwe_strong) {
       save_vector (null_distribution.col(0), output_prefix + "null_dist.csv");
@@ -245,7 +243,7 @@ void run()
       for (size_t i = 0; i != num_hypotheses; ++i)
         save_vector (null_distribution.col(i), output_prefix + "null_dist" + postfix(i) + ".csv");
     }
-    const matrix_type fwe_pvalues = MR::Math::Stats::fwe_pvalue (null_distribution, default_output);
+    const matrix_type fwe_pvalues = MR::Math::Stats::fwe_pvalue (null_distribution, default_zstat);
     for (size_t i = 0; i != num_hypotheses; ++i) {
       save_vector (fwe_pvalues.col(i), output_prefix + "fwe_1mpvalue" + postfix(i) + ".csv");
       save_vector (uncorrected_pvalues.col(i), output_prefix + "uncorrected_pvalue" + postfix(i) + ".csv");

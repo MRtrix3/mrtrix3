@@ -302,15 +302,13 @@ void run()
       save_matrix (mat2vec.V2M (empirical_statistic.col(i)), output_prefix + "empirical" + postfix(i) + ".csv");
   }
 
-  // Precompute default statistic and enhanced statistic
-  matrix_type default_output, enhanced_output;
-  Stats::PermTest::precompute_default_permutation (glm_test, enhancer, empirical_statistic, enhanced_output, default_output);
+  // Precompute default statistic, Z-transformation of such, and enhanced statistic
+  matrix_type default_statistic, default_zstat, default_enhanced;
+  Stats::PermTest::precompute_default_permutation (glm_test, enhancer, empirical_statistic, default_statistic, default_zstat, default_enhanced);
   for (size_t i = 0; i != num_hypotheses; ++i) {
-    if (hypotheses[i].is_F())
-      save_matrix (mat2vec.V2M (default_output.col(i).array().square()), output_prefix + "Fvalue" + postfix(i) + ".csv");
-    else
-      save_matrix (mat2vec.V2M (default_output.col(i)), output_prefix + "tvalue" + postfix(i) + ".csv");
-    save_matrix (mat2vec.V2M (enhanced_output.col(i)), output_prefix + "enhanced" + postfix(i) + ".csv");
+    save_matrix (mat2vec.V2M (default_statistic.col(i)), output_prefix + (hypotheses[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".csv");
+    save_matrix (mat2vec.V2M (default_zstat    .col(i)), output_prefix + "Zstat" + postfix(i) + ".csv");
+    save_matrix (mat2vec.V2M (default_enhanced .col(i)), output_prefix + "enhanced" + postfix(i) + ".csv");
   }
 
   // Perform permutation testing
@@ -323,7 +321,7 @@ void run()
 
     matrix_type null_distribution, uncorrected_pvalues;
     count_matrix_type null_contributions;
-    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_statistic, enhanced_output, fwe_strong,
+    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_statistic, default_enhanced, fwe_strong,
                                        null_distribution, null_contributions, uncorrected_pvalues);
     if (fwe_strong) {
       save_vector (null_distribution.col(0), output_prefix + "null_dist.txt");
@@ -332,7 +330,7 @@ void run()
         save_vector (null_distribution.col(i), output_prefix + "null_dist" + postfix(i) + ".txt");
     }
 
-    const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, enhanced_output);
+    const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, default_enhanced);
     for (size_t i = 0; i != num_hypotheses; ++i) {
       save_matrix (mat2vec.V2M (pvalue_output.col(i)),       output_prefix + "fwe_1mpvalue" + postfix(i) + ".csv");
       save_matrix (mat2vec.V2M (uncorrected_pvalues.col(i)), output_prefix + "uncorrected_pvalue" + postfix(i) + ".csv");

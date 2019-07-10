@@ -179,24 +179,26 @@ namespace MR
 
       void precompute_default_permutation (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                                            const std::shared_ptr<EnhancerBase> enhancer,
-                                           const matrix_type& empirical_enhanced_statistic,
-                                           matrix_type& default_enhanced_statistics,
-                                           matrix_type& default_statistics)
+                                           const matrix_type& empirical_enhanced,
+                                           matrix_type& output_statistics,
+                                           matrix_type& output_zstats,
+                                           matrix_type& output_enhanced)
       {
         assert (stats_calculator);
-        default_statistics.resize (stats_calculator->num_elements(), stats_calculator->num_outputs());
-        default_enhanced_statistics.resize (stats_calculator->num_elements(), stats_calculator->num_outputs());
+        output_statistics.resize (stats_calculator->num_elements(), stats_calculator->num_outputs());
+        output_zstats    .resize (stats_calculator->num_elements(), stats_calculator->num_outputs());
+        output_enhanced  .resize (stats_calculator->num_elements(), stats_calculator->num_outputs());
 
         const matrix_type default_shuffle (matrix_type::Identity (stats_calculator->num_subjects(), stats_calculator->num_subjects()));
-        (*stats_calculator) (default_shuffle, default_statistics);
+        (*stats_calculator) (default_shuffle, output_statistics, output_zstats);
 
         if (enhancer)
-          (*enhancer) (default_statistics, default_enhanced_statistics);
+          (*enhancer) (output_zstats, output_enhanced);
         else
-          default_enhanced_statistics = default_statistics;
+          output_enhanced = output_statistics;
 
-        if (empirical_enhanced_statistic.size())
-          default_enhanced_statistics.array() /= empirical_enhanced_statistic.array();
+        if (empirical_enhanced.size())
+          output_enhanced.array() /= empirical_enhanced.array();
       }
 
 

@@ -333,14 +333,12 @@ void run() {
   }
 
   // Precompute statistic value and enhanced statistic for the default permutation
-  matrix_type default_output, enhanced_output;
-  Stats::PermTest::precompute_default_permutation (glm_test, enhancer, empirical_enhanced_statistic, enhanced_output, default_output);
+  matrix_type default_statistic, default_zstat, default_enhanced;
+  Stats::PermTest::precompute_default_permutation (glm_test, enhancer, empirical_enhanced_statistic, default_statistic, default_zstat, default_enhanced);
   for (size_t i = 0; i != num_hypotheses; ++i) {
-    if (hypotheses[i].is_F())
-      write_output (default_output.col(i).array().square(), *v2v, prefix + "Fvalue" + postfix(i) + ".mif", output_header);
-    else
-      write_output (default_output.col (i), *v2v, prefix + "tvalue" + postfix(i) + ".mif", output_header);
-    write_output (enhanced_output.col (i), *v2v, prefix + (use_tfce ? "tfce" : "clustersize") + postfix(i) + ".mif", output_header);
+    write_output (default_statistic.col (i), *v2v, prefix + (hypotheses[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".mif", output_header);
+    write_output (default_zstat    .col (i), *v2v, prefix + "Zstat" + postfix(i) + ".mif", output_header);
+    write_output (default_enhanced .col (i), *v2v, prefix + (use_tfce ? "tfce" : "clustersize") + postfix(i) + ".mif", output_header);
   }
 
   if (!get_options ("notest").size()) {
@@ -353,7 +351,7 @@ void run() {
     matrix_type null_distribution, uncorrected_pvalue;
     count_matrix_type null_contributions;
 
-    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_enhanced_statistic, enhanced_output, fwe_strong,
+    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_enhanced_statistic, default_enhanced, fwe_strong,
                                        null_distribution, null_contributions, uncorrected_pvalue);
 
     ProgressBar progress ("Outputting final results", (fwe_strong ? 1 : num_hypotheses) + 1 + 3*num_hypotheses);
@@ -368,7 +366,7 @@ void run() {
       }
     }
 
-    const matrix_type fwe_pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, enhanced_output);
+    const matrix_type fwe_pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, default_enhanced);
     ++progress;
     for (size_t i = 0; i != num_hypotheses; ++i) {
       write_output (fwe_pvalue_output.col(i), *v2v, prefix + "fwe_1mpvalue" + postfix(i) + ".mif", output_header);

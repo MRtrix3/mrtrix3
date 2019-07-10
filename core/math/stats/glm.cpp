@@ -17,6 +17,8 @@
 
 #include "debug.h"
 #include "thread_queue.h"
+#include "math/betainc.h"
+#include "math/erfinv.h"
 #include "misc/bitset.h"
 
 namespace MR
@@ -472,6 +474,22 @@ namespace MR
 
 
 
+
+        void TestBase::operator() (const matrix_type& shuffling_matrix, matrix_type& output) const
+        {
+          matrix_type temp;
+          (*this) (shuffling_matrix, temp, output);
+        }
+
+
+
+
+
+
+
+
+
+
 //#define GLM_TEST_DEBUG
 
 
@@ -483,17 +501,19 @@ namespace MR
         {
           assert (hypotheses[0].cols() == design.cols());
           // When the design matrix is fixed, we can pre-calculate the model partitioning for each hypothesis
-          for (const auto h : hypotheses)
+          for (const auto& h : hypotheses)
             partitions.emplace_back (h.partition (design));
         }
 
 
 
-        void TestFixed::operator() (const matrix_type& shuffling_matrix, matrix_type& output) const
+        void TestFixed::operator() (const matrix_type& shuffling_matrix,
+                                    matrix_type& stats,
+                                    matrix_type& zstats) const
         {
           assert (size_t(shuffling_matrix.rows()) == num_subjects());
-          if (!(size_t(output.rows()) == num_elements() && size_t(output.cols()) == num_outputs()))
-            output.resize (num_elements(), num_outputs());
+          stats .resize (num_elements(), num_outputs());
+          zstats.resize (num_elements(), num_outputs());
 
           matrix_type Sy, lambdas, XtX, beta;
           vector_type sse;
@@ -535,9 +555,11 @@ namespace MR
             VAR (XtX.rows());
             VAR (XtX.cols());
 #endif
-            const default_type one_over_dof = 1.0 / (num_subjects() - partitions[ih].rank_x - partitions[ih].rank_z);
+            const size_t dof = num_subjects() - partitions[ih].rank_x - partitions[ih].rank_z;
+            const default_type one_over_dof = 1.0 / default_type(dof);
             sse = (Rm*Sy).colwise().squaredNorm();
 #ifdef GLM_TEST_DEBUG
+            VAR (dof);
             VAR (one_over_dof);
             VAR (sse.size());
 #endif
@@ -550,15 +572,14 @@ namespace MR
               const value_type F = ((beta.transpose() * XtX * beta) (0,0) / c[ih].rank()) /
                                    (one_over_dof * sse[ie]);
               if (!std::isfinite (F)) {
-                output (ie, ih) = value_type(0);
+                stats  (ie, ih) = zstats (ie, ih) = value_type(0);
               } else if (c[ih].is_F()) {
-                // Note: sqrt(F) stored in output so that statistical enhancement of F-tests
-                //   behaves comparably to that of t-tests; individual commands will be
-                //   responsible for squaring these values when exporting actual F-statistics
-                output (ie, ih) = std::sqrt (F);
+                stats  (ie, ih) = F;
+                zstats (ie, ih) = stat2z->F2z (F, c[ih].rank(), dof);
               } else {
                 assert (beta.rows() == 1);
-                output (ie, ih) = std::sqrt (F) * (beta.sum() > 0.0 ? 1.0 : -1.0);
+                stats  (ie, ih) = std::sqrt (F) * (beta.sum() > 0.0 ? 1.0 : -1.0);
+                zstats (ie, ih) = stat2z->t2z (stats (ie, ih), dof);
               }
             }
 
@@ -593,10 +614,15 @@ namespace MR
 
 
 
-        void TestVariable::operator() (const matrix_type& shuffling_matrix, matrix_type& output) const
+
+        void TestVariable::operator() (const matrix_type& shuffling_matrix,
+                                       matrix_type& stat,
+                                       matrix_type& zstat) const
         {
-          if (!(size_t(output.rows()) == num_elements() && size_t(output.cols()) == num_outputs()))
-            output.resize (num_elements(), num_outputs());
+          stat .resize (num_elements(), num_outputs());
+          zstat.resize (num_elements(), num_outputs());
+
+          matrix_type dof (num_elements(), num_outputs());
 
           matrix_type extra_data (num_subjects(), importers.size());
           BitSet element_mask (num_subjects()), perm_matrix_mask (num_subjects());
@@ -651,7 +677,9 @@ namespace MR
             //   more stringent criterion met in order to proceed with the test.
             //   Let's do: DoF must be at least equal to the number of factors.
             if (finite_count < num_subjects() && finite_count < 2 * num_factors()) {
-              output.row (ie).setZero();
+              stat.row (ie).setZero();
+              zstat.row (ie).setZero();
+              dof.row (ie).fill (NaN);
             } else {
 
               // Do we need to reduce the size of our matrices / vectors
@@ -714,7 +742,9 @@ namespace MR
               //   would a rank calculation with tolerance be faster?
               const default_type condition_number = Math::condition_number (Mfull_masked);
               if (!std::isfinite (condition_number) || condition_number > 1e5) {
-                output.row (ie).fill (0.0);
+                stat.row (ie).fill (0.0);
+                zstat.row (ie).fill (0.0);
+                dof.row (ie).fill (NaN);
               } else {
 
                 pinvMfull_masked = Math::pinv (Mfull_masked);
@@ -723,12 +753,12 @@ namespace MR
 
                 // We now have our permutation (shuffling) matrix and design matrix prepared,
                 //   and can commence regressing the partitioned model of each hypothesis
-                for (size_t ih = 0; ih != c.size(); ++ih) {
+                for (ssize_t ih = 0; ih != c.size(); ++ih) {
 
                   const auto partition = c[ih].partition (Mfull_masked);
-                  const ssize_t dof = finite_count - partition.rank_x - partition.rank_z;
-                  if (dof < 1) {
-                    output (ie, ih) = value_type(0);
+                  dof (ie, ih) = finite_count - partition.rank_x - partition.rank_z;
+                  if (dof (ie, ih) < 1) {
+                    stat (ie, ih) = zstat (ie, ih) = dof (ie, ih) = value_type(0);
                   } else {
 
                     XtX.noalias() = partition.X.transpose()*partition.X;
@@ -742,15 +772,17 @@ namespace MR
                     const default_type sse = (Rm*Sy.matrix()).squaredNorm();
 
                     const default_type F = ((beta.transpose() * XtX * beta) (0, 0) / c[ih].rank()) /
-                        (sse / value_type (dof));
+                                            (sse / dof (ie, ih));
 
                     if (!std::isfinite (F)) {
-                      output (ie, ih) = value_type(0);
+                      stat  (ie, ih) = zstat (ie, ih) = value_type(0);
                     } else if (c[ih].is_F()) {
-                      output (ie, ih) = std::sqrt (F);
+                      stat  (ie, ih) = F;
+                      zstat (ie, ih) = stat2z->F2z (F, c[ih].rank(), dof (ie, ih));
                     } else {
                       assert (beta.rows() == 1);
-                      output (ie, ih) = std::sqrt (F) * (beta.sum() > 0 ? 1.0 : -1.0);
+                      stat  (ie, ih) = std::sqrt (F) * (beta.sum() > 0 ? 1.0 : -1.0);
+                      zstat (ie, ih) = stat2z->t2z (stat (ie, ih), dof (ie, ih));
                     }
 
                   } // End checking for sufficient degrees of freedom
@@ -762,7 +794,9 @@ namespace MR
             } // End checking for adequate number of remaining subjects after NaN removal
 
           } // End looping over elements
-        }
+
+        } // End functor
+
 
 
 
