@@ -266,8 +266,8 @@ namespace MR
           vol_group->setMinimum(0);
           layout->addWidget (vol_group, 0, 3);
 
-          connect(vol_index, SIGNAL (valueChanged(int)), this, SLOT (onSetVolumeIndex(int)));
-          connect(vol_group, SIGNAL (valueChanged(int)), this, SLOT (onSetVolumeGroup(int)));
+          connect (vol_index, SIGNAL (valueChanged(int)), this, SLOT (onSetVolumeIndex()));
+          connect (vol_group, SIGNAL (valueChanged(int)), this, SLOT (onSetVolumeIndex()));
 
           // Intensity
           group_box = new QGroupBox ("Intensity scaling");
@@ -483,8 +483,7 @@ namespace MR
           connect (&window(), SIGNAL (scalingChanged()), this, SLOT (onScalingChanged()));
           connect (&window(), SIGNAL (modeChanged()), this, SLOT (onModeChanged()));
           connect (&window(), SIGNAL (fieldOfViewChanged()), this, SLOT (onFOVChanged()));
-          connect (&window(), SIGNAL (volumeChanged(size_t)), this, SLOT (onVolumeIndexChanged(size_t)));
-          connect (&window(), SIGNAL (volumeGroupChanged(size_t)), this, SLOT (onVolumeGroupChanged(size_t)));
+          connect (&window(), SIGNAL (volumeChanged()), this, SLOT (onVolumeIndexChanged()));
           onPlaneChanged();
           onFocusChanged();
           onScalingChanged();
@@ -494,6 +493,15 @@ namespace MR
           clip_planes_selection_changed_slot();
         }
 
+
+
+
+        void View::onVolumeIndexChanged()
+        {
+          assert (window().image());
+          vol_index->setValue (window().image()->image.index(3));
+          vol_group->setValue (window().image()->image.index(4));
+        }
 
 
 
@@ -648,20 +656,17 @@ namespace MR
 
 
 
-        void View::onSetVolumeIndex (int value)
+        void View::onSetVolumeIndex ()
         {
-          if(window().image())
-            window().set_image_volume (3, value);
+          if (window().image()) {
+            window().set_image_volume (3, vol_index->value());
+            if (vol_group->isEnabled())
+              window().set_image_volume (4, vol_group->value());
+          }
         }
 
 
 
-
-        void View::onSetVolumeGroup (int value)
-        {
-          if(window().image())
-            window().set_image_volume (4, value);
-        }
 
 
 
@@ -1064,7 +1069,7 @@ namespace MR
           connect(light_box_show_grid, SIGNAL (toggled(bool)), &mode, SLOT (show_grid_slot(bool)));
           connect(light_box_show_4d, SIGNAL (toggled(bool)), &mode, SLOT (show_volumes_slot(bool)));
           connect(light_box_show_4d, SIGNAL (toggled(bool)), this, SLOT (light_box_toggle_volumes_slot(bool)));
-          connect(&window(), SIGNAL (volumeChanged(size_t)), &mode, SLOT (image_volume_changed_slot()));
+          connect(&window(), SIGNAL (volumeChanged()), &mode, SLOT (image_volume_changed_slot()));
 
           reset_light_box_gui_controls();
         }
