@@ -203,7 +203,11 @@ namespace MR
 
         void render_text_align (int x, int y, const std::string& text, int halign = 0, int valign = 0) const {
           QString s (text.c_str());
+          #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
           int w = font.metric.width (s);
+          #else
+          int w = font.metric.horizontalAdvance (s);
+          #endif
           int h = font.metric.height();
           if (halign == 0) x -= w/2;
           else if (halign > 0) x -= w;
@@ -218,8 +222,14 @@ namespace MR
             inset = font.metric.height() / 2;
           if (x < inset)
             x = inset;
+          #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
           if (x + font.metric.width (s) + inset > width())
             x = width() - font.metric.width (s) - inset;
+          #else
+          if (x + font.metric.horizontalAdvance (s) + inset > width())
+            x = width() - font.metric.horizontalAdvance (s) - inset;
+          #endif
+
           if (y < inset)
             y = inset;
           if (y + font.metric.height() + inset > height())
@@ -231,9 +241,15 @@ namespace MR
           QString s (text.c_str());
           int x, y;
 
+          #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
           if (position & RightEdge) x = width() - font.metric.height() / 2 - font.metric.width (s);
           else if (position & LeftEdge) x = font.metric.height() / 2;
           else x = (width() - font.metric.width (s)) / 2;
+          #else
+          if (position & RightEdge) x = width() - font.metric.height() / 2 - font.metric.horizontalAdvance (s);
+          else if (position & LeftEdge) x = font.metric.height() / 2;
+          else x = (width() - font.metric.horizontalAdvance (s)) / 2;
+          #endif
 
           if (position & TopEdge) y = height() - 1.5 * font.metric.height() - line * font.metric.lineSpacing();
           else if (position & BottomEdge) y = font.metric.height() / 2 + line * font.metric.lineSpacing();
