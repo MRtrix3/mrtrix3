@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __dwi_tractography_properties_h__
 #define __dwi_tractography_properties_h__
@@ -50,20 +51,24 @@ namespace MR
               (*this)["project_version"] = App::project_version;
           }
 
+          // In use at time of execution
           ROISet include, exclude, mask;
           Seeding::List seeds;
+
+          // As stored within the header of an existing .tck file
+          std::multimap<std::string, std::string> prior_rois;
+
           vector<std::string> comments;
-          std::multimap<std::string, std::string> roi;
 
 
-          void  clear () {
+          void clear () {
             std::map<std::string, std::string>::clear();
             seeds.clear();
             include.clear();
             exclude.clear();
             mask.clear();
+            prior_rois.clear();
             comments.clear();
-            roi.clear();
           }
 
           template <typename T> void set (T& variable, const std::string& name) {
@@ -71,7 +76,6 @@ namespace MR
             else variable = to<T> ((*this)[name]);
           }
 
-          void load_ROIs ();
       };
 
 

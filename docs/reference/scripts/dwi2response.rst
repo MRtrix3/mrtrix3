@@ -9,7 +9,7 @@ Synopsis
 Estimate response function(s) for spherical deconvolution
 
 Usage
---------
+-----
 
 ::
 
@@ -20,48 +20,58 @@ Usage
 Description
 -----------
 
-dwi2response acts as a 'master' script for performing various types of response function estimation; a range of different algorithms are available for completing this task. When using this script, the name of the algorithm to be used must appear as the first argument on the command-line after 'dwi2response'. The subsequent compulsory arguments and options available depend on the particular algorithm being invoked.
+dwi2response offers different algorithms for performing various types of response function estimation. The name of the algorithm must appear as the first argument on the command-line after 'dwi2response'. The subsequent arguments and options depend on the particular algorithm being invoked.
 
-Each algorithm available also has its own help page, including necessary references; e.g. to see the help page of the 'fa' algorithm, type 'dwi2response fa'.
+Each algorithm available has its own help page, including necessary references; e.g. to see the help page of the 'fa' algorithm, type 'dwi2response fa'.
 
 Options
 -------
 
-Options common to all dwi2response algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-shells** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+- **-grad** Provide the diffusion gradient table in MRtrix format
 
-- **-lmax** The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
+General dwi2response options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-mask** Provide an initial mask for response voxel selection
 
 - **-voxels** Output an image showing the final voxel selection(s)
 
-- **-grad** Pass the diffusion gradient table in MRtrix format
+- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
 
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
+- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
+
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+
+- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-info** display information messages.
 
-- **-force** Force overwrite of output files if pre-existing
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-help** Display help information for the script
+- **-debug** display debugging messages.
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-force** force overwrite of output files.
 
-- **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
-- **-quiet** Suppress all console output during script execution
+- **-help** display this information page and exit.
 
-- **-info** Display additional information and progress for every command invoked
-
-- **-debug** Display additional debugging information over and above the output of -info
+- **-version** display version information and exit.
 
 --------------
 
@@ -69,17 +79,20 @@ Standard options
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix3 is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
-For more details, see http://www.mrtrix.org/
+For more details, see http://www.mrtrix.org/.
 
 .. _dwi2response_dhollander:
 
@@ -89,78 +102,88 @@ dwi2response dhollander
 Synopsis
 --------
 
-Use the Dhollander et al. (2016) algorithm for unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof)
+An improved version of the Dhollander et al. (2016) algorithm for unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof). This implementation includes the Dhollander et al. (2019) improvements for single-fibre WM response function estimation.
 
 Usage
---------
+-----
 
 ::
 
     dwi2response dhollander input out_sfwm out_gm out_csf [ options ]
 
--  *input*: The input DWI
--  *out_sfwm*: Output single-fibre WM response text file
--  *out_gm*: Output GM response text file
--  *out_csf*: Output CSF response text file
+-  *input*: Input DWI dataset
+-  *out_sfwm*: Output single-fibre WM response function text file
+-  *out_gm*: Output GM response function text file
+-  *out_csf*: Output CSF response function text file
 
 Options
 -------
 
-Options specific to the 'dhollander' algorithm
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options for the 'dhollander' algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-erode** Number of erosion passes to apply to initial (whole brain) mask. (default: 3)
+- **-erode** Number of erosion passes to apply to initial (whole brain) mask. Set to 0 to not erode the brain mask. (default: 3)
 
 - **-fa** FA threshold for crude WM versus GM-CSF separation. (default: 0.2)
 
-- **-sfwm** Number of single-fibre WM voxels to select, as a percentage of refined WM. (default: 0.5 per cent)
+- **-sfwm** Final number of single-fibre WM voxels to select, as a percentage of refined WM. (default: 0.5 per cent)
 
-- **-gm** Number of GM voxels to select, as a percentage of refined GM. (default: 2 per cent)
+- **-gm** Final number of GM voxels to select, as a percentage of refined GM. (default: 2 per cent)
 
-- **-csf** Number of CSF voxels to select, as a percentage of refined CSF. (default: 10 per cent)
+- **-csf** Final number of CSF voxels to select, as a percentage of refined CSF. (default: 10 per cent)
 
-Options common to all dwi2response algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-shells** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+- **-grad** Provide the diffusion gradient table in MRtrix format
 
-- **-lmax** The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
+General dwi2response options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-mask** Provide an initial mask for response voxel selection
 
 - **-voxels** Output an image showing the final voxel selection(s)
 
-- **-grad** Pass the diffusion gradient table in MRtrix format
+- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
 
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
+- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
+
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+
+- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-info** display information messages.
 
-- **-force** Force overwrite of output files if pre-existing
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-help** Display help information for the script
+- **-debug** display debugging messages.
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-force** force overwrite of output files.
 
-- **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
-- **-quiet** Suppress all console output during script execution
+- **-help** display this information page and exit.
 
-- **-info** Display additional information and progress for every command invoked
-
-- **-debug** Display additional debugging information over and above the output of -info
+- **-version** display version information and exit.
 
 References
 ^^^^^^^^^^
 
 * Dhollander, T.; Raffelt, D. & Connelly, A. Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5
 
-* Dhollander, T.; Raffelt, D. & Connelly, A. Accuracy of response function estimation algorithms for 3-tissue spherical deconvolution of diverse quality diffusion MRI data. Proc Intl Soc Mag Reson Med, 2018, 26, 1569
+* Dhollander, T.; Mito, R.; Raffelt, D. & Connelly, A. Improved white matter response function estimation for 3-tissue constrained spherical deconvolution. Proc Intl Soc Mag Reson Med, 2019, 555
 
 --------------
 
@@ -168,17 +191,20 @@ References
 
 **Author:** Thijs Dhollander (thijs.dhollander@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix3 is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
-For more details, see http://www.mrtrix.org/
+For more details, see http://www.mrtrix.org/.
 
 .. _dwi2response_fa:
 
@@ -191,7 +217,7 @@ Synopsis
 Use the old FA-threshold heuristic for single-fibre voxel selection and response function estimation
 
 Usage
---------
+-----
 
 ::
 
@@ -212,41 +238,51 @@ Options specific to the 'fa' algorithm
 
 - **-threshold** Apply a hard FA threshold, rather than selecting the top voxels
 
-Options common to all dwi2response algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-shells** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+- **-grad** Provide the diffusion gradient table in MRtrix format
 
-- **-lmax** The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
+General dwi2response options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-mask** Provide an initial mask for response voxel selection
 
 - **-voxels** Output an image showing the final voxel selection(s)
 
-- **-grad** Pass the diffusion gradient table in MRtrix format
+- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
 
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
+- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
+
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+
+- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-info** display information messages.
 
-- **-force** Force overwrite of output files if pre-existing
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-help** Display help information for the script
+- **-debug** display debugging messages.
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-force** force overwrite of output files.
 
-- **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
-- **-quiet** Suppress all console output during script execution
+- **-help** display this information page and exit.
 
-- **-info** Display additional information and progress for every command invoked
-
-- **-debug** Display additional debugging information over and above the output of -info
+- **-version** display version information and exit.
 
 References
 ^^^^^^^^^^
@@ -259,17 +295,20 @@ References
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix3 is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
-For more details, see http://www.mrtrix.org/
+For more details, see http://www.mrtrix.org/.
 
 .. _dwi2response_manual:
 
@@ -282,7 +321,7 @@ Synopsis
 Derive a response function using an input mask image alone (i.e. pre-selected voxels)
 
 Usage
---------
+-----
 
 ::
 
@@ -300,41 +339,51 @@ Options specific to the 'manual' algorithm
 
 - **-dirs** Manually provide the fibre direction in each voxel (a tensor fit will be used otherwise)
 
-Options common to all dwi2response algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-shells** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+- **-grad** Provide the diffusion gradient table in MRtrix format
 
-- **-lmax** The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
+General dwi2response options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-mask** Provide an initial mask for response voxel selection
 
 - **-voxels** Output an image showing the final voxel selection(s)
 
-- **-grad** Pass the diffusion gradient table in MRtrix format
+- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
 
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
+- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
+
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+
+- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-info** display information messages.
 
-- **-force** Force overwrite of output files if pre-existing
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-help** Display help information for the script
+- **-debug** display debugging messages.
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-force** force overwrite of output files.
 
-- **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
-- **-quiet** Suppress all console output during script execution
+- **-help** display this information page and exit.
 
-- **-info** Display additional information and progress for every command invoked
-
-- **-debug** Display additional debugging information over and above the output of -info
+- **-version** display version information and exit.
 
 --------------
 
@@ -342,17 +391,20 @@ Standard options
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix3 is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
-For more details, see http://www.mrtrix.org/
+For more details, see http://www.mrtrix.org/.
 
 .. _dwi2response_msmt_5tt:
 
@@ -365,7 +417,7 @@ Synopsis
 Derive MSMT-CSD tissue response functions based on a co-registered five-tissue-type (5TT) image
 
 Usage
---------
+-----
 
 ::
 
@@ -393,41 +445,51 @@ Options specific to the 'msmt_5tt' algorithm
 
 - **-sfwm_fa_threshold** Sets -wm_algo to fa and allows to specify a hard FA threshold for single-fibre WM voxels, which is passed to the -threshold option of the fa algorithm (warning: overrides -wm_algo option)
 
-Options common to all dwi2response algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-shells** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+- **-grad** Provide the diffusion gradient table in MRtrix format
 
-- **-lmax** The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
+General dwi2response options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-mask** Provide an initial mask for response voxel selection
 
 - **-voxels** Output an image showing the final voxel selection(s)
 
-- **-grad** Pass the diffusion gradient table in MRtrix format
+- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
 
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
+- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
+
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+
+- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-info** display information messages.
 
-- **-force** Force overwrite of output files if pre-existing
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-help** Display help information for the script
+- **-debug** display debugging messages.
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-force** force overwrite of output files.
 
-- **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
-- **-quiet** Suppress all console output during script execution
+- **-help** display this information page and exit.
 
-- **-info** Display additional information and progress for every command invoked
-
-- **-debug** Display additional debugging information over and above the output of -info
+- **-version** display version information and exit.
 
 References
 ^^^^^^^^^^
@@ -440,17 +502,20 @@ References
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix3 is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
-For more details, see http://www.mrtrix.org/
+For more details, see http://www.mrtrix.org/.
 
 .. _dwi2response_tax:
 
@@ -463,7 +528,7 @@ Synopsis
 Use the Tax et al. (2014) recursive calibration algorithm for single-fibre voxel selection and response function estimation
 
 Usage
---------
+-----
 
 ::
 
@@ -484,41 +549,51 @@ Options specific to the 'tax' algorithm
 
 - **-convergence** Percentile change in any RF coefficient required to continue iterating
 
-Options common to all dwi2response algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-shells** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+- **-grad** Provide the diffusion gradient table in MRtrix format
 
-- **-lmax** The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
+General dwi2response options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-mask** Provide an initial mask for response voxel selection
 
 - **-voxels** Output an image showing the final voxel selection(s)
 
-- **-grad** Pass the diffusion gradient table in MRtrix format
+- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
 
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
+- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
+
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+
+- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-info** display information messages.
 
-- **-force** Force overwrite of output files if pre-existing
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-help** Display help information for the script
+- **-debug** display debugging messages.
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-force** force overwrite of output files.
 
-- **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
-- **-quiet** Suppress all console output during script execution
+- **-help** display this information page and exit.
 
-- **-info** Display additional information and progress for every command invoked
-
-- **-debug** Display additional debugging information over and above the output of -info
+- **-version** display version information and exit.
 
 References
 ^^^^^^^^^^
@@ -531,17 +606,20 @@ References
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix3 is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
-For more details, see http://www.mrtrix.org/
+For more details, see http://www.mrtrix.org/.
 
 .. _dwi2response_tournier:
 
@@ -554,7 +632,7 @@ Synopsis
 Use the Tournier et al. (2013) iterative algorithm for single-fibre voxel selection and response function estimation
 
 Usage
---------
+-----
 
 ::
 
@@ -577,41 +655,51 @@ Options specific to the 'tournier' algorithm
 
 - **-max_iters** Maximum number of iterations
 
-Options common to all dwi2response algorithms
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-shells** The b-value shell(s) to use in response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+- **-grad** Provide the diffusion gradient table in MRtrix format
 
-- **-lmax** The maximum harmonic degree(s) of response function estimation (single value for single-shell response, comma-separated list for multi-shell response)
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
+General dwi2response options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-mask** Provide an initial mask for response voxel selection
 
 - **-voxels** Output an image showing the final voxel selection(s)
 
-- **-grad** Pass the diffusion gradient table in MRtrix format
+- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
 
-- **-fslgrad bvecs bvals** Pass the diffusion gradient table in FSL bvecs/bvals format
+- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
+
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+
+- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-info** display information messages.
 
-- **-force** Force overwrite of output files if pre-existing
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-help** Display help information for the script
+- **-debug** display debugging messages.
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-force** force overwrite of output files.
 
-- **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
-- **-quiet** Suppress all console output during script execution
+- **-help** display this information page and exit.
 
-- **-info** Display additional information and progress for every command invoked
-
-- **-debug** Display additional debugging information over and above the output of -info
+- **-version** display version information and exit.
 
 References
 ^^^^^^^^^^
@@ -624,15 +712,18 @@ References
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix3 is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
-For more details, see http://www.mrtrix.org/
+For more details, see http://www.mrtrix.org/.
 

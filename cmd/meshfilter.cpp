@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "progressbar.h"
@@ -47,6 +48,18 @@ void usage ()
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Apply filter operations to meshes";
+
+  DESCRIPTION
+  + "While this command has only one filter operation currently available, it "
+    "nevertheless presents with a comparable interface to the MRtrix3 commands "
+    "maskfilter and mrfilter commands.";
+
+  EXAMPLES
+  + Example ("Apply a mesh smoothing filter (currently the only filter available",
+             "meshfilter input.vtk smooth output.vtk",
+             "The usage of this command may cause confusion due to the generic interface "
+             "despite only one filtering operation being currently available. This simple "
+             "example usage is therefore provided for clarity.");
 
   ARGUMENTS
   + Argument ("input",  "the input mesh file").type_file_in()

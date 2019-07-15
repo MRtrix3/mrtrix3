@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "bitset.h"
 
@@ -63,8 +64,10 @@ namespace MR {
       if (new_bytes > bytes) {
         memcpy (new_data, data, bytes);
         memset (new_data + bytes, (allocator ? 0xFF : 0x00), new_bytes - bytes);
-        const uint8_t mask = 0xFF << excess_bits();
-        data[bytes - 1] = allocator ? (data[bytes - 1] | mask) : (data[bytes - 1] & ~mask);
+        if (excess_bits()) {
+          const uint8_t mask = 0xFF << excess_bits();
+          new_data[bytes - 1] = allocator ? (data[bytes - 1] | mask) : (data[bytes - 1] & ~mask);
+        }
       } else {
         memcpy (new_data, data, new_bytes);
       }

@@ -34,7 +34,6 @@ List of MRtrix3 commands
     commands/dwi2tensor
     commands/dwidenoise
     commands/dwiextract
-    commands/dwinormalise
     commands/fixel2sh
     commands/fixel2tsf
     commands/fixel2voxel
@@ -59,19 +58,17 @@ List of MRtrix3 commands
     commands/mrcheckerboardmask
     commands/mrclusterstats
     commands/mrconvert
-    commands/mrcrop
     commands/mrdegibbs
     commands/mrdump
     commands/mredit
     commands/mrfilter
+    commands/mrgrid
     commands/mrhistmatch
     commands/mrhistogram
     commands/mrinfo
     commands/mrmath
     commands/mrmetric
-    commands/mrpad
     commands/mrregister
-    commands/mrresize
     commands/mrstats
     commands/mrthreshold
     commands/mrtransform
@@ -143,10 +140,9 @@ List of MRtrix3 commands
     :ref:`dwi2adc`, "Convert mean dwi (trace-weighted) images to mean ADC maps"
     :ref:`dwi2fod`, "Estimate fibre orientation distributions from diffusion data using spherical deconvolution"
     :ref:`dwi2mask`, "Generates a whole brain mask from a DWI image"
-    :ref:`dwi2tensor`, "Diffusion (kurtosis) tensor estimation using iteratively reweighted linear least squares estimator"
+    :ref:`dwi2tensor`, "Diffusion (kurtosis) tensor estimation"
     :ref:`dwidenoise`, "Denoise DWI data and estimate the noise level based on the optimal threshold for PCA"
     :ref:`dwiextract`, "Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset"
-    :ref:`dwinormalise`, "Intensity normalise the b=0 signal within a supplied white matter mask"
     :ref:`fixel2sh`, "Convert a fixel-based sparse-data image into an spherical harmonic image"
     :ref:`fixel2tsf`, "Map fixel values to a track scalar file based on an input tractogram"
     :ref:`fixel2voxel`, "Convert a fixel-based sparse-data image into some form of scalar image"
@@ -171,25 +167,23 @@ List of MRtrix3 commands
     :ref:`mrcheckerboardmask`, "Create bitwise checkerboard image"
     :ref:`mrclusterstats`, "Voxel-based analysis using permutation testing and threshold-free cluster enhancement"
     :ref:`mrconvert`, "Perform conversion between different file types and optionally extract a subset of the input image"
-    :ref:`mrcrop`, "Crop an image to a reduced field of view"
     :ref:`mrdegibbs`, "Remove Gibbs Ringing Artifacts"
     :ref:`mrdump`, "Print out the values within an image"
     :ref:`mredit`, "Directly edit the intensities within an image from the command-line"
     :ref:`mrfilter`, "Perform filtering operations on 3D / 4D MR images"
+    :ref:`mrgrid`, "Modify the grid of an image without interpolation (cropping or padding) or by regridding to an image grid with modified orientation, location and or resolution. The image content remains in place in real world coordinates."
     :ref:`mrhistmatch`, "Modify the intensities of one image to match the histogram of another"
     :ref:`mrhistogram`, "Generate a histogram of image intensities"
     :ref:`mrinfo`, "Display image header information, or extract specific information from the header"
     :ref:`mrmath`, "Compute summary statistic on image intensities either across images, or along a specified axis of a single image"
     :ref:`mrmetric`, "Computes a dissimilarity metric between two images"
-    :ref:`mrpad`, "Pad an image to increase the FOV"
     :ref:`mrregister`, "Register two images together using a symmetric rigid, affine or non-linear transformation model"
-    :ref:`mrresize`, "Resize an image by defining the new image resolution, voxel size or a scale factor"
     :ref:`mrstats`, "Compute images statistics"
     :ref:`mrthreshold`, "Create bitwise image by thresholding image intensity"
     :ref:`mrtransform`, "Apply spatial transformations to an image"
-    :ref:`mrview`, "The MRtrix image viewer."
+    :ref:`mrview`, "The MRtrix image viewer"
     :ref:`mtnormalise`, "Multi-tissue informed log-domain intensity normalisation"
-    :ref:`peaks2amp`, "Convert peak directions image to amplitudes"
+    :ref:`peaks2amp`, "Extract amplitudes from a peak directions image"
     :ref:`sh2amp`, "Evaluate the amplitude of an image of spherical harmonic functions along specified directions"
     :ref:`sh2peaks`, "Extract the peaks of a spherical harmonic function at each voxel, by commencing a Newton search along a set of specified directions"
     :ref:`sh2power`, "Compute the total power of a spherical harmonics image"
@@ -227,6 +221,6 @@ List of MRtrix3 commands
     :ref:`voxel2mesh`, "Generate a surface mesh representation from a voxel image"
     :ref:`warp2metric`, "Compute fixel-wise or voxel-wise metrics from a 4D deformation field"
     :ref:`warpconvert`, "Convert between different representations of a non-linear warp"
-    :ref:`warpcorrect`, "Replaces voxels in a deformation field that point to 0,0,0 with nan,nan,nan"
+    :ref:`warpcorrect`, "Replaces voxels in a deformation field that point to a specific out of bounds location with nan,nan,nan"
     :ref:`warpinit`, "Create an initial warp image, representing an identity transformation"
     :ref:`warpinvert`, "Invert a non-linear warp field"

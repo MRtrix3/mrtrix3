@@ -9,7 +9,7 @@ Synopsis
 Generate a 5TT image suitable for ACT
 
 Usage
---------
+-----
 
 ::
 
@@ -34,26 +34,33 @@ Options common to all 5ttgen algorithms
 
 - **-sgm_amyg_hipp** Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image
 
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+
+- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-info** display information messages.
 
-- **-force** Force overwrite of output files if pre-existing
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-help** Display help information for the script
+- **-debug** display debugging messages.
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-force** force overwrite of output files.
 
-- **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
-- **-quiet** Suppress all console output during script execution
+- **-help** display this information page and exit.
 
-- **-info** Display additional information and progress for every command invoked
-
-- **-debug** Display additional debugging information over and above the output of -info
+- **-version** display version information and exit.
 
 References
 ^^^^^^^^^^
@@ -66,17 +73,20 @@ References
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix3 is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
-For more details, see http://www.mrtrix.org/
+For more details, see http://www.mrtrix.org/.
 
 .. _5ttgen_freesurfer:
 
@@ -89,7 +99,7 @@ Synopsis
 Generate the 5TT image based on a FreeSurfer parcellation image
 
 Usage
---------
+-----
 
 ::
 
@@ -113,26 +123,33 @@ Options common to all 5ttgen algorithms
 
 - **-sgm_amyg_hipp** Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image
 
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+
+- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-info** display information messages.
 
-- **-force** Force overwrite of output files if pre-existing
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-help** Display help information for the script
+- **-debug** display debugging messages.
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-force** force overwrite of output files.
 
-- **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
-- **-quiet** Suppress all console output during script execution
+- **-help** display this information page and exit.
 
-- **-info** Display additional information and progress for every command invoked
-
-- **-debug** Display additional debugging information over and above the output of -info
+- **-version** display version information and exit.
 
 References
 ^^^^^^^^^^
@@ -145,17 +162,20 @@ References
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix3 is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
-For more details, see http://www.mrtrix.org/
+For more details, see http://www.mrtrix.org/.
 
 .. _5ttgen_fsl:
 
@@ -168,7 +188,7 @@ Synopsis
 Use FSL commands to generate the 5TT image based on a T1-weighted image
 
 Usage
---------
+-----
 
 ::
 
@@ -196,26 +216,33 @@ Options common to all 5ttgen algorithms
 
 - **-sgm_amyg_hipp** Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image
 
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+
+- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-info** display information messages.
 
-- **-force** Force overwrite of output files if pre-existing
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-help** Display help information for the script
+- **-debug** display debugging messages.
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-force** force overwrite of output files.
 
-- **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
-- **-quiet** Suppress all console output during script execution
+- **-help** display this information page and exit.
 
-- **-info** Display additional information and progress for every command invoked
-
-- **-debug** Display additional debugging information over and above the output of -info
+- **-version** display version information and exit.
 
 References
 ^^^^^^^^^^
@@ -236,17 +263,20 @@ References
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix3 is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
-For more details, see http://www.mrtrix.org/
+For more details, see http://www.mrtrix.org/.
 
 .. _5ttgen_gif:
 
@@ -259,7 +289,7 @@ Synopsis
 Generate the 5TT image based on a Geodesic Information Flow (GIF) segmentation image
 
 Usage
---------
+-----
 
 ::
 
@@ -278,26 +308,33 @@ Options common to all 5ttgen algorithms
 
 - **-sgm_amyg_hipp** Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image
 
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+
+- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
-- **-continue <TempDir> <LastFile>** Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file
+- **-info** display information messages.
 
-- **-force** Force overwrite of output files if pre-existing
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-help** Display help information for the script
+- **-debug** display debugging messages.
 
-- **-nocleanup** Do not delete temporary files during script, or temporary directory at script completion
+- **-force** force overwrite of output files.
 
-- **-nthreads number** Use this number of threads in MRtrix multi-threaded applications (0 disables multi-threading)
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
-- **-tempdir /path/to/tmp/** Manually specify the path in which to generate the temporary directory
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
-- **-quiet** Suppress all console output during script execution
+- **-help** display this information page and exit.
 
-- **-info** Display additional information and progress for every command invoked
-
-- **-debug** Display additional debugging information over and above the output of -info
+- **-version** display version information and exit.
 
 References
 ^^^^^^^^^^
@@ -310,15 +347,18 @@ References
 
 **Author:** Matteo Mancini (m.mancini@ucl.ac.uk)
 
-**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix3 is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
-For more details, see http://www.mrtrix.org/
+For more details, see http://www.mrtrix.org/.
 
