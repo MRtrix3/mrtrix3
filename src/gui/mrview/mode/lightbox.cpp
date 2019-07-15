@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "gui/mrview/mode/lightbox.h"
 
@@ -39,7 +40,8 @@ namespace MR
 
 
 
-        LightBox::LightBox ()
+        LightBox::LightBox () :
+            frames_dirty (true)
         {
           Image* img = image();
 
@@ -57,8 +59,7 @@ namespace MR
         void LightBox::set_rows (size_t rows)
         {
           n_rows = rows;
-          frame_VB.clear();
-          frame_VAO.clear();
+          frames_dirty = true;
           updateGL();
         }
 
@@ -68,8 +69,7 @@ namespace MR
         void LightBox::set_cols (size_t cols)
         {
           n_cols = cols;
-          frame_VB.clear();
-          frame_VAO.clear();
+          frames_dirty = true;
           updateGL();
         }
 
@@ -250,7 +250,7 @@ namespace MR
           GL::mat4 P = GL::ortho (0, width(), 0, height(), -1.0, 1.0);
           projection.set (MV, P);
 
-          if (!frame_VB || !frame_VAO) {
+          if (frames_dirty) {
             frame_VB.gen();
             frame_VAO.gen();
 
@@ -286,6 +286,8 @@ namespace MR
             }
 
             gl::BufferData (gl::ARRAY_BUFFER, sizeof(data), data, gl::STATIC_DRAW);
+
+            frames_dirty = false;
           }
           else
             frame_VAO.bind();

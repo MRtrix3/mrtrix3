@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __header_h__
 #define __header_h__
@@ -202,7 +203,7 @@ namespace MR
           NDimProxy (vector<Axis>& axes) : axes (axes) { }
           NDimProxy (NDimProxy&&) = default;
           NDimProxy (const NDimProxy&) = delete;
-          NDimProxy& operator=(NDimProxy&&) = default;
+          NDimProxy& operator=(NDimProxy&&) = delete;
           NDimProxy& operator=(const NDimProxy&) = delete;
 
           operator size_t () const { return axes.size(); }
@@ -240,7 +241,7 @@ namespace MR
           DataTypeProxy (Header& H) : DataType (H.datatype_), H (H) { }
           DataTypeProxy (DataTypeProxy&&) = default;
           DataTypeProxy (const DataTypeProxy&) = delete;
-          DataTypeProxy& operator=(DataTypeProxy&&) = default;
+          DataTypeProxy& operator=(DataTypeProxy&&) = delete;
           DataTypeProxy& operator=(const DataTypeProxy&) = delete;
 
           uint8_t operator()() const { return DataType::operator()(); }
@@ -326,6 +327,8 @@ namespace MR
       const std::map<std::string, std::string>& keyval () const { return keyval_; }
       //! get/set generic key/value text attributes
       std::map<std::string, std::string>& keyval () { return keyval_; }
+      //! merge key/value entries from another header
+      void merge_keyval (const Header& H);
 
       static Header open (const std::string& image_name);
       static Header create (const std::string& image_name, const Header& template_header, bool add_to_command_history = true);
@@ -356,7 +359,7 @@ namespace MR
 
 
       void acquire_io (Header& H) { io = std::move (H.io); }
-      void merge (const Header& H);
+      void check (const Header& H) const;
 
       //! realign transform to match RAS coordinate system as closely as possible
       void realign_transform ();
@@ -374,8 +377,8 @@ namespace MR
 
 
 
-
-
+  // Can't be a static member function due to memory alignment requirements of vector<>
+  Header concatenate (const vector<Header>& headers, const size_t axis, const bool permit_datatype_mismatch);
 
 
 

@@ -3,13 +3,6 @@
 LOGFILE=pylint.log
 echo logging to \""$LOGFILE"\"
 
-cat > $LOGFILE <<EOD
--------------------------------------------
-  Testing MRtrix3 Python scripts
--------------------------------------------
-
-EOD
-
 # generate list of tests to run:
 tests="build configure"
 if [ $# == 0 ]; then
@@ -18,12 +11,12 @@ if [ $# == 0 ]; then
       for src_file in ${lib_path}/*.py; do
         tests="$tests $src_file"
       done
-    elif [[ ${lib_path} == *.py && ! ( ${lib_path} == *"_"* ) ]]; then
+    elif [[ ${lib_path} == *.py ]]; then
       tests="$tests $lib_path"
     fi
   done
   for bin_path in bin/*; do
-    if head ${bin_path} -n1 | grep -q "#!/usr/bin/env python"; then
+    if [ -f ${bin_path} ] && $(head ${bin_path} -n1 | grep -q "#!/usr/bin/env python"); then
       tests="$tests $bin_path"
     fi
   done
@@ -40,6 +33,26 @@ else
   echo "Using pylint for "${PYTHON}" (from PYTHON environment variable)"
   forcepyversion="$PYTHON -m "
 fi
+
+
+
+cat > $LOGFILE <<EOD
+-------------------------------------------
+  Version information
+-------------------------------------------
+
+EOD
+
+eval ${forcepyversion} pylint --version >> $LOGFILE
+
+cat >> $LOGFILE <<EOD
+
+-------------------------------------------
+  Testing MRtrix3 Python scripts
+-------------------------------------------
+
+EOD
+
 
 export PYTHONPATH="$(pwd)/lib:$PYTHONPATH"
 for file in $tests; do
