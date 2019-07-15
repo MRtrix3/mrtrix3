@@ -193,18 +193,14 @@ struct PolyBasisFunction<2> { MEMALIGN (PolyBasisFunction<2>)
 };
 
 
-// Removes non-physical voxels from the mask
-FORCE_INLINE void refine_mask (Image<float>& summed,
-  Image<bool>& initial_mask,
-  Image<bool>& refined_mask) {
 
-  for (auto i = Loop (summed, 0, 3) (summed, initial_mask, refined_mask); i; ++i) {
-    if (std::isfinite((float) summed.value ()) && summed.value () > 0.f && initial_mask.value ())
-      refined_mask.value () = true;
-    else
-      refined_mask.value () = false;
+struct mask_refiner {
+  FORCE_INLINE void operator() (Image<float>& summed, Image<bool>& initial_mask, Image<bool>& refined) const
+  {
+    refined.value() = ( std::isfinite(float(summed.value())) && summed.value() > 0.f && initial_mask.value() );
   }
-}
+};
+
 
 
 template <int poly_order> void run_primitive ();
@@ -283,22 +279,29 @@ void run_primitive () {
   // Load the mask and refine the initial mask to exclude non-positive summed tissue components
   Header header_3D (input_images[0]);
   header_3D.ndim() = 3;
+  header_3D.datatype() = DataType::Float32;
   auto opt = get_options ("mask");
 
   auto orig_mask = MaskType::open (opt[0][0]);
-  auto initial_mask = MaskType::scratch (orig_mask, "Initial processing mask");
-  auto mask = MaskType::scratch (orig_mask, "Processing mask");
-  auto prev_mask = MaskType::scratch (orig_mask, "Previous processing mask");
+  Header mask_header (orig_mask);
+  mask_header.ndim() = 3;
+  mask_header.datatype() = DataType::Bit;
+  Stride::set (mask_header, header_3D);
+
+  auto initial_mask = MaskType::scratch (mask_header, "Initial processing mask");
+  auto mask = MaskType::scratch (mask_header, "Processing mask");
+  auto prev_mask = MaskType::scratch (mask_header, "Previous processing mask");
 
   {
     auto summed = ImageType::scratch (header_3D, "Summed tissue volumes");
     for (size_t j = 0; j < input_images.size(); ++j) {
       input_progress++;
-
-      for (auto i = Loop (0, 3) (summed, input_images[j]); i; ++i)
-        summed.value() += input_images[j].value();
+      struct ValueAccumulator {
+        FORCE_INLINE void operator () (decltype(summed)& sum, decltype(input_images[0])& in) const { sum.value() += in.value(); }
+      };
+      ThreadedLoop (summed, 0, 3).run (ValueAccumulator(), summed, input_images[j]);
     }
-    refine_mask (summed, orig_mask, initial_mask);
+    ThreadedLoop (summed, 0, 3).run (mask_refiner(), summed, orig_mask, initial_mask);
   }
 
   threaded_copy (initial_mask, mask);
