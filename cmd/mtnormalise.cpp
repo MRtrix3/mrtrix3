@@ -201,7 +201,55 @@ struct mask_refiner {
   }
 };
 
+// Struct calculating the exponentials of the Norm Field Image
+struct NormFieldIm {
+    void operator () (Image<float> norm_field_image, const Image<float> norm_field_log) {
+         norm_field_image.value() = std::exp (norm_field_log.value());
+   }  
+};
 
+
+// Struct calculating the log of the summed_log values
+struct SummedLogValue {
+  template <class ImageType1>
+    void operator() (ImageType1& summed_log) {
+      summed_log.value() = std::log (summed_log.value());
+    }
+};
+
+// Struct calculating the initial summed_log values
+struct SummedLog { 
+  SummedLog (const size_t n_tissue_types, Eigen::VectorXd balance_factors) : n_tissue_types (n_tissue_types), balance_factors (balance_factors) { }
+
+  template <class ImageType>  
+  void operator () (ImageType& summed_log, ImageType& combined_tissue, ImageType& norm_field_image) {
+      for (size_t j = 0; j < n_tissue_types; ++j) {
+        combined_tissue.index(3) = j;
+        summed_log.value() += balance_factors(j) * combined_tissue.value() / norm_field_image.value();
+      }
+  }
+
+  const size_t n_tissue_types;
+  Eigen::VectorXd balance_factors;
+};
+
+// Templated struct calculating the norm_field_log values
+template<int poly_order>
+struct NormFieldLog {
+
+   NormFieldLog (Eigen::MatrixXd norm_field_weights, Transform transform, struct PolyBasisFunction<poly_order> basis_function) : norm_field_weights (norm_field_weights), transform (transform), basis_function (basis_function){ }
+
+   template <class ImageType>
+   void operator () (ImageType& norm_field_log) {
+       Eigen::Vector3 vox (norm_field_log.index(0), norm_field_log.index(1), norm_field_log.index(2));
+       Eigen::Vector3 pos = transform.voxel2scanner * vox;
+       norm_field_log.value() = basis_function (pos).col(0).dot (norm_field_weights.col(0));
+   }
+
+   Eigen::MatrixXd norm_field_weights;
+   Transform transform;
+   struct PolyBasisFunction<poly_order> basis_function;
+};
 
 template <int poly_order> void run_primitive ();
 
@@ -359,14 +407,8 @@ void run_primitive () {
   auto outlier_rejection = [&](float outlier_range) {
 
     auto summed_log = ImageType::scratch (header_3D, "Log of summed tissue volumes");
-    for (auto i = Loop (0, 3) (summed_log, combined_tissue, norm_field_image); i; ++i) {
-      for (size_t j = 0; j < n_tissue_types; ++j) {
-        combined_tissue.index(3) = j;
-        summed_log.value() += balance_factors(j) * combined_tissue.value() / norm_field_image.value();
-      }
-      summed_log.value() = std::log(summed_log.value());
-    }
-
+    ThreadedLoop (summed_log, 0, 3).run (SummedLog(n_tissue_types, balance_factors), summed_log, combined_tissue, norm_field_image);
+    ThreadedLoop (summed_log, 0, 3).run (SummedLogValue(), summed_log);
     threaded_copy (initial_mask, mask);
 
     vector<float> summed_log_values;
@@ -494,15 +536,10 @@ void run_primitive () {
     norm_field_weights = norm_field_basis.colPivHouseholderQr().solve(y);
 
     // Generate normalisation field in the log domain
-    for (auto i = Loop (0, 3) (norm_field_log); i; ++i) {
-      Eigen::Vector3 vox (norm_field_log.index(0), norm_field_log.index(1), norm_field_log.index(2));
-      Eigen::Vector3 pos = transform.voxel2scanner * vox;
-      norm_field_log.value() = basis_function (pos).col(0).dot (norm_field_weights.col(0));
-    }
+    ThreadedLoop (norm_field_log, 0, 3).run (NormFieldLog<poly_order>(norm_field_weights, transform, basis_function), norm_field_log);
 
     // Generate normalisation field in the image domain
-    for (auto i = Loop (0, 3) (norm_field_log, norm_field_image); i; ++i)
-      norm_field_image.value () = std::exp(norm_field_log.value());
+    ThreadedLoop (norm_field_image, 0, 3).run (NormFieldIm(),norm_field_image, norm_field_log);
 
     progress++;
     iter++;
