@@ -499,8 +499,9 @@ namespace MR
         void View::onVolumeIndexChanged()
         {
           assert (window().image());
-          vol_index->setValue (window().image()->image.index(3));
-          vol_group->setValue (window().image()->image.index(4));
+          const auto& image (window().image()->image);
+          vol_index->setValue (image.ndim() > 3 ? image.index(3) : 0);
+          vol_group->setValue (image.ndim() > 4 ? image.index(4) : 0);
         }
 
 
@@ -659,9 +660,12 @@ namespace MR
         void View::onSetVolumeIndex ()
         {
           if (window().image()) {
-            window().set_image_volume (3, vol_index->value());
-            if (vol_group->isEnabled())
-              window().set_image_volume (4, vol_group->value());
+            const auto& image (window().image()->image);
+            if (image.ndim() > 3) {
+              window().set_image_volume (3, vol_index->value());
+              if (image.ndim() > 4)
+                window().set_image_volume (4, vol_group->value());
+            }
           }
         }
 
