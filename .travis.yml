@@ -32,13 +32,13 @@ matrix:
     # (Note: Run this one first, since it'll be the longest job)        #
     #####################################################################
     - os: linux
-      env: CFLAGS="-Werror" TRAVIS_CXX=clang++-6.0 py=python3 test=run
+      env: CFLAGS="-Werror" TRAVIS_CXX=clang++-8 py=python3 test=run
     #######################################################################
     # Build binaries (without optimisation): GCC, Python2                 #
     # (Also ensures both Python 2 and 3 are tested for configure & build) #
     #######################################################################
     - os: linux
-      env: CFLAGS="-Werror" TRAVIS_CXX=g++-7 py=python2 test=build
+      env: CFLAGS="-Werror" TRAVIS_CXX=g++-9 py=python2 test=build
     #######################################################################
     # Generate documentation through Sphinx; Use both Python2 and Python3 #
     #######################################################################
