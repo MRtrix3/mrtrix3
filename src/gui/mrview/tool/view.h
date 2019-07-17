@@ -109,7 +109,7 @@ namespace MR
             QPushButton *copy_voxel_button;
             AdjustButton *focus_x, *focus_y, *focus_z;
             AdjustButton *voxel_x, *voxel_y, *voxel_z;
-            SpinBox *vol_index, *vol_group;
+            vector<SpinBox *> volgroup_indices;
             AdjustButton *max_entry, *min_entry, *fov;
             AdjustButton *transparent_intensity, *opaque_intensity;
             AdjustButton *lower_threshold, *upper_threshold;
