@@ -317,16 +317,19 @@ void run ()
     input_progress++;
 
     combined_tissue.index (3) = i;
-    for (auto l = Loop (0, 3) (combined_tissue, input_images[i]); l; ++l) {
-      combined_tissue.value () = std::max<float>(input_images[i].value (), 0.f);
-    }
+    struct CombinedTissue {
+      FORCE_INLINE void operator () (decltype(combined_tissue)& comb_tissue, decltype(input_images[0]) in_images) { comb_tissue.value () = std::max<float>(in_images.value (), 0.f); }
+    };
+    ThreadedLoop (combined_tissue, 0, 3).run (CombinedTissue(), combined_tissue, input_images[i]);
   }
 
   size_t num_voxels = 0;
-  for (auto i = Loop (mask) (mask); i; ++i) {
-    if (mask.value())
-      num_voxels++;
-  }
+  struct VoxCount {
+  VoxCount(size_t& num_voxels) : num_voxels (num_voxels) { }
+    FORCE_INLINE void operator () (decltype(mask) mask_in) { if (mask_in.value()) { num_voxels++; } }
+    size_t& num_voxels;
+  };
+  ThreadedLoop (mask, 0, 3).run (VoxCount(num_voxels), mask);
 
   if (!num_voxels)
     throw Exception ("Mask contains no valid voxels.");
@@ -343,10 +346,11 @@ void run ()
   auto norm_field_image = ImageType::scratch (header_3D, "Normalisation field (intensity)");
   auto norm_field_log = ImageType::scratch (header_3D, "Normalisation field (log-domain)");
 
-  for (auto i = Loop(norm_field_log) (norm_field_image, norm_field_log); i; ++i) {
-    norm_field_image.value() = 1.f;
-    norm_field_log.value() = 0.f;
-  }
+  struct NormFieldValAdj {
+  FORCE_INLINE void operator () (decltype(norm_field_image)& norm_image, decltype(norm_field_log)& norm_log) { norm_image.value() = 1.f; norm_log.value() = 0.f;  }
+  };
+  ThreadedLoop (norm_field_log, 0, 3).run (NormFieldValAdj(), norm_field_image, norm_field_log);
+
 
   Eigen::VectorXd balance_factors (Eigen::VectorXd::Ones (n_tissue_types));
 
@@ -390,7 +394,7 @@ void run ()
       }
     }
 
-    if (log_level >= 3)
+  if (log_level >= 3)
       display (mask);
   };
 
@@ -522,12 +526,14 @@ void run ()
   // Compute log-norm scale parameter (geometric mean of normalisation field in outlier-free mask).
   double lognorm_scale (0.0);
   if (num_voxels) {
-    for (auto i = Loop (0,3) (mask, norm_field_log); i; ++i) {
-      if (mask.value ())
-        lognorm_scale += norm_field_log.value ();
-    }
+  struct LogNormScale {
+    LogNormScale (double& lognorm_scale, uint32_t num_voxels) : lognorm_scale (lognorm_scale), num_voxels (num_voxels) { }
+    FORCE_INLINE void operator () (decltype(mask) mask_in, decltype(norm_field_log) norm_field_lg) { if (mask_in.value ()){ lognorm_scale += norm_field_lg.value (); } lognorm_scale = std::exp(lognorm_scale / (double)num_voxels); }
 
-    lognorm_scale = std::exp(lognorm_scale / (double)num_voxels);
+    double& lognorm_scale;
+    uint32_t num_voxels;
+  };
+  ThreadedLoop (mask, 0, 3).run (LogNormScale(lognorm_scale, num_voxels), mask, norm_field_log);
   }
 
   const bool output_balanced = get_options("balanced").size();
@@ -545,13 +551,12 @@ void run ()
     const size_t n_vols = input_images[j].size(3);
     const Eigen::VectorXf zero_vec = Eigen::VectorXf::Zero (n_vols);
 
-    for (auto i = Loop (0,3) (output_image, input_images[j], norm_field_image); i; ++i) {
-      input_images[j].index(3) = 0;
-
-      if (input_images[j].value() < 0.f)
-        output_image.row(3) = zero_vec;
-      else
-        output_image.row(3) = Eigen::VectorXf{input_images[j].row(3)} * balance_multiplier / norm_field_image.value();
-    }
+  struct ReadInOutput {
+     ReadInOutput (Eigen::VectorXf zero_vec, float balance_multiplier) : zero_vec (zero_vec), balance_multiplier (balance_multiplier) { }
+     FORCE_INLINE void operator () (decltype(output_image)& out_im, decltype(input_images[0]) in_im, decltype(norm_field_image) norm_field_im) { in_im.index(3) = 0; if (in_im.value() < 0.f) { out_im.row(3) = zero_vec; } else { out_im.row(3) = Eigen::VectorXf{in_im.row(3)} * balance_multiplier / norm_field_im.value(); } }
+     Eigen::VectorXf zero_vec;
+     float balance_multiplier;
+  };
+  ThreadedLoop (output_image, 0, 3).run (ReadInOutput(zero_vec, balance_multiplier), output_image, input_images[j], norm_field_image);
   }
 }
