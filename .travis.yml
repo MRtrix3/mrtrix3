@@ -11,7 +11,7 @@ addons:
       - llvm-toolchain-xenial-8
     packages:
       - g++-9
-      - clang-8.0
+      - clang-8
       - zlib1g-dev
       - libqt4-opengl-dev
       - python3
