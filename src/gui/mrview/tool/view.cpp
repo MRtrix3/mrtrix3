@@ -251,23 +251,24 @@ namespace MR
           layout->addWidget (copy_focus_button, 1, 4);
 
           // Volume
-          volume_box = new QGroupBox ("Volume");
+          volume_box = new QGroupBox ("Volume indices (dimension: index)");
           main_box->addWidget (volume_box);
           layout = new GridLayout;
           volume_box->setLayout (layout);
 
-          layout->addWidget (new QLabel (tr("Index: ")), 0, 0);
-          vol_index = new SpinBox(this);
-          vol_index->setMinimum(0);
-          layout->addWidget (vol_index, 0, 1);
-
-          layout->addWidget (new QLabel (tr("Group: ")), 0, 2);
-          vol_group = new SpinBox(this);
-          vol_group->setMinimum(0);
-          layout->addWidget (vol_group, 0, 3);
-
-          connect (vol_index, SIGNAL (valueChanged(int)), this, SLOT (onSetVolumeIndex()));
-          connect (vol_group, SIGNAL (valueChanged(int)), this, SLOT (onSetVolumeIndex()));
+          const size_t maxdim = 9;
+          size_t col = 0;
+          // layout->addWidget (new QLabel (tr("")), 0, col++);
+          vector<std::string> vol_labels;
+          for (size_t d = 3; d < maxdim; ++d) {
+            vol_labels.push_back(str(d + 1) + ": ");
+            volgroup_indices.push_back(new SpinBox(this));
+            volgroup_indices.back()->setMinimum(0);
+            volgroup_indices.back()->setPrefix(tr(vol_labels[d - 3].c_str()));;
+            layout->addWidget (volgroup_indices.back(), 0, col++);
+          }
+          for (auto & volgroup : volgroup_indices)
+            connect (volgroup, SIGNAL (valueChanged(int)), this, SLOT (onSetVolumeIndex()));
 
           // Intensity
           group_box = new QGroupBox ("Intensity scaling");
@@ -500,8 +501,8 @@ namespace MR
         {
           assert (window().image());
           const auto& image (window().image()->image);
-          vol_index->setValue (image.ndim() > 3 ? image.index(3) : 0);
-          vol_group->setValue (image.ndim() > 4 ? image.index(4) : 0);
+          for (auto i = 0; i < volgroup_indices.size(); ++i)
+            volgroup_indices[i]->setValue (image.ndim() > (i + 3) ? image.index(i + 3) : 0);
         }
 
 
@@ -534,23 +535,14 @@ namespace MR
           focus_y->setRate (rate);
           focus_z->setRate (rate);
 
-          size_t dim = image->image.ndim();
-          if(dim > 3) {
-            volume_box->setVisible(true);
-            vol_index->setEnabled(true);
-            vol_index->setMaximum(image->image.size(3) - 1);
-            vol_index->setValue(image->image.index(3));
-
-            if(dim > 4) {
-              vol_group->setEnabled(true);
-              vol_group->setMaximum(image->image.size(4) - 1);
-              vol_group->setValue(image->image.index(4));
-            } else
-              vol_group->setEnabled(false);
-          } else {
-            volume_box->setVisible(false);
-            vol_index->setEnabled(false);
-            vol_group->setEnabled(false);
+          const size_t dim = image->image.ndim();
+          volume_box->setVisible(dim > 3);
+          for (auto i = 0; i < volgroup_indices.size(); ++i) {
+            volgroup_indices[i]->setEnabled(dim > i + 3);
+            if (dim > i + 3) {
+              volgroup_indices[i]->setMaximum(image->image.size(i + 3) - 1);
+              volgroup_indices[i]->setValue(image->image.index(i + 3));
+            }
           }
 
           lower_threshold_check_box->setChecked (image->use_discard_lower());
@@ -661,10 +653,10 @@ namespace MR
         {
           if (window().image()) {
             const auto& image (window().image()->image);
-            if (image.ndim() > 3) {
-              window().set_image_volume (3, vol_index->value());
-              if (image.ndim() > 4)
-                window().set_image_volume (4, vol_group->value());
+            for (size_t d = 3; d < volgroup_indices.size() + 3; ++d){
+              if (image.ndim() <= d)
+                break;
+              window().set_image_volume (d, volgroup_indices[d - 3]->value());
             }
           }
         }
