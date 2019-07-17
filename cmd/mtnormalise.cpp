@@ -102,11 +102,33 @@ void usage ()
 
 }
 
+// Function to get the number of basis vectors based on the desired order
+int GetBasisVecs(int order)
+{
+  int n_basis_vecs;
+    switch (order) {
+      case 0:
+        n_basis_vecs = 1;
+        break;
+      case 1:
+        n_basis_vecs = 4;
+        break;
+      case 2:
+        n_basis_vecs = 10;
+        break;
+      default:
+        n_basis_vecs = 20;
+        break;
+      }
+  return n_basis_vecs;
+};
 
-template <int poly_order>
+// Un-templated PolyBasisFunction struct to get the user specified amount of basis functions
 struct PolyBasisFunction { MEMALIGN (PolyBasisFunction)
 
-  const int n_basis_vecs = 20;
+  PolyBasisFunction(const int order) : n_basis_vecs (GetBasisVecs(order)) { };
+
+  const int n_basis_vecs;
 
   FORCE_INLINE Eigen::MatrixXd operator () (const Eigen::Vector3& pos) {
     double x = pos[0];
@@ -114,85 +136,34 @@ struct PolyBasisFunction { MEMALIGN (PolyBasisFunction)
     double z = pos[2];
     Eigen::MatrixXd basis(n_basis_vecs, 1);
     basis(0) = 1.0;
+    if (n_basis_vecs >= 4){
     basis(1) = x;
     basis(2) = y;
     basis(3) = z;
-    basis(4) = x * x;
-    basis(5) = y * y;
-    basis(6) = z * z;
-    basis(7) = x * y;
-    basis(8) = x * z;
-    basis(9) = y * z;
-    basis(10) = x * x * x;
-    basis(11) = y * y * y;
-    basis(12) = z * z * z;
-    basis(13) = x * x * y;
-    basis(14) = x * x * z;
-    basis(15) = y * y * x;
-    basis(16) = y * y * z;
-    basis(17) = z * z * x;
-    basis(18) = z * z * y;
-    basis(19) = x * y * z;
+       if (n_basis_vecs >= 10){
+       basis(4) = x * x;
+       basis(5) = y * y;
+       basis(6) = z * z;
+       basis(7) = x * y;
+       basis(8) = x * z;
+       basis(9) = y * z;
+          if (n_basis_vecs >= 20){
+          basis(10) = x * x * x;
+          basis(11) = y * y * y;
+          basis(12) = z * z * z;
+          basis(13) = x * x * y;
+          basis(14) = x * x * z;
+          basis(15) = y * y * x;
+          basis(16) = y * y * z;
+          basis(17) = z * z * x;
+          basis(18) = z * z * y;
+          basis(19) = x * y * z;
+          }
+       }
+    }
     return basis;
   }
 };
-
-
-template <>
-struct PolyBasisFunction<0> { MEMALIGN (PolyBasisFunction<0>)
-  const int n_basis_vecs = 1;
-
-  PolyBasisFunction() {}
-  FORCE_INLINE Eigen::MatrixXd operator () (const Eigen::Vector3&) {
-    Eigen::MatrixXd basis(n_basis_vecs, 1);
-    basis(0) = 1.0;
-    return basis;
-  }
-};
-
-
-template <>
-struct PolyBasisFunction<1> { MEMALIGN (PolyBasisFunction<1>)
-  const int n_basis_vecs = 4;
-
-  FORCE_INLINE Eigen::MatrixXd operator () (const Eigen::Vector3& pos) {
-    double x = pos[0];
-    double y = pos[1];
-    double z = pos[2];
-    Eigen::MatrixXd basis(n_basis_vecs, 1);
-    basis(0) = 1.0;
-    basis(1) = x;
-    basis(2) = y;
-    basis(3) = z;
-    return basis;
-  }
-};
-
-
-template <>
-struct PolyBasisFunction<2> { MEMALIGN (PolyBasisFunction<2>)
-  const int n_basis_vecs = 10;
-
-  FORCE_INLINE Eigen::MatrixXd operator () (const Eigen::Vector3& pos) {
-    double x = pos[0];
-    double y = pos[1];
-    double z = pos[2];
-    Eigen::MatrixXd basis(n_basis_vecs, 1);
-    basis(0) = 1.0;
-    basis(1) = x;
-    basis(2) = y;
-    basis(3) = z;
-    basis(4) = x * x;
-    basis(5) = y * y;
-    basis(6) = z * z;
-    basis(7) = x * y;
-    basis(8) = x * z;
-    basis(9) = y * z;
-    return basis;
-  }
-};
-
-
 
 struct mask_refiner {
   FORCE_INLINE void operator() (Image<float>& summed, Image<bool>& initial_mask, Image<bool>& refined) const
@@ -234,10 +205,9 @@ struct SummedLog {
 };
 
 // Templated struct calculating the norm_field_log values
-template<int poly_order>
 struct NormFieldLog {
 
-   NormFieldLog (Eigen::MatrixXd norm_field_weights, Transform transform, struct PolyBasisFunction<poly_order> basis_function) : norm_field_weights (norm_field_weights), transform (transform), basis_function (basis_function){ }
+   NormFieldLog (Eigen::MatrixXd norm_field_weights, Transform transform, struct PolyBasisFunction basis_function) : norm_field_weights (norm_field_weights), transform (transform), basis_function (basis_function){ }
 
    template <class ImageType>
    void operator () (ImageType& norm_field_log) {
@@ -248,43 +218,25 @@ struct NormFieldLog {
 
    Eigen::MatrixXd norm_field_weights;
    Transform transform;
-   struct PolyBasisFunction<poly_order> basis_function;
+   struct PolyBasisFunction basis_function;
 };
 
-template <int poly_order> void run_primitive ();
 
 void run ()
 {
-  if (argument.size() % 2)
+  if (argument.size() % 2){
     throw Exception ("The number of arguments must be even, provided as pairs of each input and its corresponding output file.");
+  }
 
-  // Get poly-order of basis function
-  auto opt = get_options ("order");
-  if (opt.size ()) {
-    const int order = int(opt[0][0]);
-    switch (order) {
-      case 0:
-        run_primitive<0> ();
-        break;
-      case 1:
-        run_primitive<1> ();
-        break;
-      case 2:
-        run_primitive<2> ();
-        break;
-      default:
-        run_primitive<DEFAULT_POLY_ORDER> ();
-        break;
-    }
-  } else
-      run_primitive<DEFAULT_POLY_ORDER> ();
-}
+  int order;
+  auto opt1 = get_options ("order");
+  if (opt1.size ()) {
+     order = int(opt1[0][0]);
+  }else {
+     order = DEFAULT_POLY_ORDER;
+  }
 
-
-template <int poly_order>
-void run_primitive () {
-
-  PolyBasisFunction<poly_order> basis_function;
+  PolyBasisFunction basis_function(order);
 
   using ImageType = Image<float>;
   using MaskType = Image<bool>;
@@ -536,7 +488,7 @@ void run_primitive () {
     norm_field_weights = norm_field_basis.colPivHouseholderQr().solve(y);
 
     // Generate normalisation field in the log domain
-    ThreadedLoop (norm_field_log, 0, 3).run (NormFieldLog<poly_order>(norm_field_weights, transform, basis_function), norm_field_log);
+    ThreadedLoop (norm_field_log, 0, 3).run (NormFieldLog(norm_field_weights, transform, basis_function), norm_field_log);
 
     // Generate normalisation field in the image domain
     ThreadedLoop (norm_field_image, 0, 3).run (NormFieldIm(),norm_field_image, norm_field_log);
