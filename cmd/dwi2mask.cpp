@@ -78,8 +78,6 @@ void run () {
   dwi_brain_mask_filter (input, temp_mask);
 
   Header H_out (temp_mask);
-  DWI::stash_DW_scheme (H_out, grad);
-  PhaseEncoding::clear_scheme (H_out);
   auto output = Image<bool>::create (argument[1], H_out);
 
   unsigned int scale = get_option_value ("clean_scale", DEFAULT_CLEAN_SCALE);

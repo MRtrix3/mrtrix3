@@ -44,6 +44,24 @@ namespace MR
     App::OptionGroup GradExportOptions();
 
 
+
+    //! check that the DW scheme matches the DWI data in \a header
+    template <class MatrixType>
+      inline void check_DW_scheme (const Header& header, const MatrixType& grad)
+      {
+        if (!grad.rows())
+          throw Exception ("no valid diffusion gradient table found");
+
+        if (header.ndim() == 4) {
+          if (header.size (3) != (int) grad.rows())
+            throw Exception ("number of studies in base image (" + str(header.size(3)) + ") does not match number of rows in diffusion gradient table (" + str(grad.rows()) + ")");
+        } else if (header.ndim() < 4 && grad.rows() != 1) {
+          throw Exception ("For images with less than four dimensions, gradient table can have one row only");
+        }
+      }
+
+
+
     //! ensure each non-b=0 gradient vector is normalised to unit amplitude
     template <class MatrixType>
       Eigen::MatrixXd& normalise_grad (MatrixType& grad)
@@ -133,6 +151,23 @@ namespace MR
 
 
 
+    namespace
+    {
+      template <class MatrixType>
+      std::string scheme2str (const MatrixType& G)
+      {
+        std::string dw_scheme;
+        for (ssize_t row = 0; row < G.rows(); ++row) {
+          std::string line = str(G(row,0), 10);
+          for (ssize_t col = 1; col < G.cols(); ++col)
+            line += "," + str(G(row,col), 10);
+          add_line (dw_scheme, line);
+        }
+        return dw_scheme;
+      }
+    }
+
+
 
     //! store the DW gradient encoding matrix in a header
     /*! this will store the DW gradient encoding matrix into the
@@ -147,19 +182,12 @@ namespace MR
             header.keyval().erase (it);
           return;
         }
-        std::string dw_scheme;
-        for (ssize_t row = 0; row < G.rows(); ++row) {
-          std::string line;
-          for (ssize_t col = 0; col < G.cols(); ++col) {
-            line += str(G(row,col), 10);
-            if (col < G.cols() - 1) line += ",";
-          }
-          add_line (dw_scheme, line);
+        try {
+          check_DW_scheme (header, G);
+          header.keyval()["dw_scheme"] = scheme2str (G);
+        } catch (Exception&) {
+          WARN ("attempt to add non-matching DW scheme to header - ignored");
         }
-        if (dw_scheme.size())
-          header.keyval()["dw_scheme"] = dw_scheme;
-        else
-          WARN ("attempt to add empty DW scheme to header - ignored");
       }
 
 
@@ -170,6 +198,11 @@ namespace MR
      * structure, under the key 'dw_scheme'.
      */
     Eigen::MatrixXd parse_DW_scheme (const Header& header);
+
+
+
+    //! clear any DW gradient encoding scheme from the header
+    void clear_DW_scheme (Header&);
 
 
 
@@ -185,17 +218,12 @@ namespace MR
     template <class MatrixType>
     void stash_DW_scheme (Header& header, const MatrixType& grad)
     {
-      set_DW_scheme (header, grad);
-      auto dw_scheme = header.keyval().find ("dw_scheme");
-      if (dw_scheme != header.keyval().end()) {
-        header.keyval()["prior_dw_scheme"] = dw_scheme->second;
-        header.keyval().erase (dw_scheme);
-      }
+      clear_DW_scheme (header);
+      if (grad.rows())
+        header.keyval()["prior_dw_scheme"] = scheme2str (grad);
     }
 
 
-    //! clear any DW gradient encoding scheme from the header
-    void clear_DW_scheme (Header&);
 
 
 
@@ -213,19 +241,6 @@ namespace MR
     Eigen::MatrixXd get_DW_scheme (const Header& header);
 
 
-    //! check that the DW scheme matches the DWI data in \a header
-    template <class MatrixType>
-      inline void check_DW_scheme (const Header& header, const MatrixType& grad)
-      {
-        if (!grad.rows())
-          throw Exception ("no valid diffusion gradient table found");
-
-        if (header.ndim() != 4)
-          throw Exception ("dwi image should contain 4 dimensions");
-
-        if (header.size (3) != (int) grad.rows())
-          throw Exception ("number of studies in base image (" + str(header.size(3)) + ") does not match number of rows in diffusion gradient table (" + str(grad.rows()) + ")");
-      }
 
 
     //! process GradExportOptions command-line options

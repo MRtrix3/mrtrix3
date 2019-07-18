@@ -613,7 +613,7 @@ void get_header (const StackEntry& entry, Header& header)
       header.spacing(n) = entry.image->spacing(n);
   }
 
-  header.merge (*entry.image, false);
+  header.merge_keyval (*entry.image);
 }
 
 

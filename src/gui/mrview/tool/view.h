@@ -66,13 +66,11 @@ namespace MR
             void onImageChanged ();
             void onImageVisibilityChanged (bool);
             void onFocusChanged ();
-            void onVolumeIndexChanged(size_t value) { vol_index->setValue(value); }
-            void onVolumeGroupChanged(size_t value) { vol_group->setValue(value); }
+            void onVolumeIndexChanged();
             void onFOVChanged ();
             void onSetFocus ();
             void onSetVoxel ();
-            void onSetVolumeIndex (int value);
-            void onSetVolumeGroup (int value);
+            void onSetVolumeIndex ();
             void onPlaneChanged ();
             void onSetPlane (int index);
             void onSetScaling ();

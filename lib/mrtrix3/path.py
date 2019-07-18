@@ -14,7 +14,7 @@ except ImportError:
 # List the content of a directory
 def all_in_dir(directory, dir_path=True, ignore_hidden_files=True): #pylint: disable=unused-variable
   import ctypes, os
-  from mrtrix3 import is_windows
+  from mrtrix3.utils import is_windows
   def is_hidden(directory, filename):
     if is_windows():
       try:
@@ -174,14 +174,14 @@ def to_scratch(filename, escape=True): #pylint: disable=unused-variable
 #   for the file once a minute.
 def wait_for(paths): #pylint: disable=unused-variable
   import os, time
-  from mrtrix3 import app, is_windows
+  from mrtrix3 import app, utils
 
   def in_use(path):
     import subprocess
     from distutils.spawn import find_executable
     if not os.path.isfile(path):
       return None
-    if is_windows():
+    if utils.is_windows():
       if not os.access(path, os.W_OK):
         return None
       try:

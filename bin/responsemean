@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import os, sys
+
 def usage(cmdline): #pylint: disable=unused-variable
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)')
   cmdline.set_synopsis('Calculate the mean response function from a set of text files')
@@ -14,7 +16,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import math
-  from mrtrix3 import MRtrixError
+  from mrtrix3 import app, MRtrixError #pylint: disable=no-name-in-module
 
   app.check_output_path(app.ARGS.output)
 
@@ -66,14 +68,6 @@ def execute(): #pylint: disable=unused-variable
 
 
 
-
-# Make the corresponding MRtrix3 Python libraries available
-import inspect, os, sys
-LIB_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
-if not os.path.isdir(LIB_FOLDER):
-  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
-  sys.exit(1)
-sys.path.insert(0, LIB_FOLDER)
 # Execute the script
-from mrtrix3 import app
-app.execute()
+import mrtrix3
+mrtrix3.execute() #pylint: disable=no-member

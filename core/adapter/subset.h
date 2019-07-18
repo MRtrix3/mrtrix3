@@ -25,9 +25,9 @@ namespace MR
   namespace Adapter {
 
     template <class ImageType>
-      class Subset : 
+      class Subset :
         public Base<Subset<ImageType>,ImageType>
-    { MEMALIGN(Subset<ImageType>) 
+    { MEMALIGN(Subset<ImageType>)
       public:
 
         using base_type = Base<Subset<ImageType>, ImageType>;
@@ -43,8 +43,8 @@ namespace MR
             size_ (container_cast<decltype(size_)>(size)),
             transform_ (original.transform()) {
 
-              for (size_t n = 0; n < ndim(); ++n) 
-                if (from_[n] + size_[n] > original.size(n))
+              for (size_t n = 0; n < ndim(); ++n)
+                if (from_[n] + size_[n] > original.size(n) || from_[n] < 0)
                   throw Exception ("FIXME: dimensions requested for Subset adapter are out of bounds!");
 
               for (size_t j = 0; j < 3; ++j)
