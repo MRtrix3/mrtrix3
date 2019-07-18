@@ -33,7 +33,7 @@ namespace MR
 
     class Projection;
 
-    namespace GL 
+    namespace GL
     {
       class Lighting;
     }
@@ -66,7 +66,7 @@ namespace MR
             mode = i;
           }
 
-          void start (const Projection& projection, const GL::Lighting& lighting, float scale, 
+          void start (const Projection& projection, const GL::Lighting& lighting, float scale,
               bool use_lighting, bool color_by_direction, bool hide_neg_lobes, bool orthographic = false);
 
           void draw (const Eigen::Vector3f& origin, int buffer_ID = 0) const {
@@ -98,7 +98,7 @@ namespace MR
           float object_color[3];
           mutable GLuint reverse_ID, origin_ID;
 
-          class Shader : public GL::Shader::Program { MEMALIGN(Shader)
+          class Shader : public GL::Shader::Program { NOMEMALIGN
             public:
               Shader () : mode_ (mode_t::SH), use_lighting_ (true), colour_by_direction_ (true), hide_neg_values_ (true), orthographic_ (false) { }
               void start (mode_t mode, bool use_lighting, bool colour_by_direction, bool hide_neg_values, bool orthographic);

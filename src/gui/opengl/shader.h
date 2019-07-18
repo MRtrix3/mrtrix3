@@ -82,11 +82,14 @@ namespace MR
 
 
         class Program
-        { MEMALIGN(Program)
+        { NOMEMALIGN
           public:
             Program () : index_ (0) { }
+            Program (Program&& P) : index_ (P.index_) { P.index_ = 0; }
+            Program (const Program&) = delete;
+
             ~Program () { clear(); }
-        
+
             void clear () {
               if (index_) {
                 GL_DEBUG ("deleting OpenGL shader program " + str(index_));
@@ -137,12 +140,14 @@ namespace MR
               print_log (true, "OpenGL shader program", index_);
             }
 
-            Program& operator= (Program& P) {
+            Program& operator= (Program&& P) {
               clear();
               index_ = P.index_;
               P.index_ = 0;
               return *this;
             }
+
+            Program& operator= (const Program&) = delete;
 
           protected:
             GLuint index_;
