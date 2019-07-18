@@ -1,5 +1,6 @@
 import argparse, os, sys
 import mrtrix3
+from mrtrix3.utils import is_windows
 
 # These global constants can / should be accessed directly by scripts:
 # - 'ARGS' will contain the user's command-line inputs upon parsing of the command-line
@@ -68,16 +69,20 @@ _SIGNALS = { 'SIGALRM': 'Timer expiration',
            # Can't be handled; see https://bugs.python.org/issue9524
            # 'CTRL_C_EVENT': 'Terminated by user Ctrl-C input',
            # 'CTRL_BREAK_EVENT': 'Terminated by user Ctrl-Break input'
-if mrtrix3.is_windows():
+if is_windows():
   _SIGNALS['SIGBREAK'] = 'Received Windows \'break\' signal'
 else:
   _SIGNALS['SIGTERM'] = 'Received termination signal'
 
 
 
-def execute(): #pylint: disable=unused-variable
+# Generally preferable to use:
+#   "import mrtrix3"
+#   "mrtrix3.execute()"
+# , rather than executing this function directly
+def _execute(module): #pylint: disable=unused-variable
   import inspect, shutil, signal
-  from mrtrix3 import ANSI, MRtrixError, run
+  from mrtrix3 import ANSI, CONFIG, MRtrixError, run, setup_ansi
   global ARGS, CMDLINE, CONTINUE_OPTION, DO_CLEANUP, EXEC_NAME, FORCE_OVERWRITE, NUM_THREADS, SCRATCH_DIR, VERBOSITY, WORKING_DIR
 
   # Set up signal handlers
@@ -87,7 +92,6 @@ def execute(): #pylint: disable=unused-variable
     except:
       pass
 
-  module = inspect.getmodule(inspect.stack()[-1][0])
   CMDLINE = Parser()
   try:
     module.usage(CMDLINE)
@@ -142,11 +146,15 @@ def execute(): #pylint: disable=unused-variable
   elif hasattr(ARGS, 'debug') and ARGS.debug:
     VERBOSITY = 3
 
+  if hasattr(ARGS, 'config') and ARGS.config:
+    for keyval in ARGS.config:
+      CONFIG[keyval[0]] = keyval[1]
+  # ANSI settings may have been altered at the command-line
+  setup_ansi()
+
   if hasattr(ARGS, 'cont') and ARGS.cont:
     CONTINUE_OPTION = True
     SCRATCH_DIR = os.path.abspath(ARGS.cont[0])
-    # Prevent error from re-appearing at end of terminal output if script continuation results in success
-    #   and -nocleanup is used
     try:
       os.remove(os.path.join(SCRATCH_DIR, 'error.txt'))
     except OSError:
@@ -455,6 +463,9 @@ class ProgressBar(object): #pylint: disable=unused-variable
            '  . ',
            ' .  ' ]
 
+  WRAPON = '\033[?7h'
+  WRAPOFF = '\033[?7l'
+
   def __init__(self, msg, target=0):
     from mrtrix3 import ANSI, run
     global EXEC_NAME, VERBOSITY
@@ -467,9 +478,12 @@ class ProgressBar(object): #pylint: disable=unused-variable
     self.old_value = 0
     self.orig_verbosity = VERBOSITY
     self.value = 0
+    # Only disable wrapping if the progress bar is the only thing being printed
+    self.wrapoff = '' if self.newline else ProgressBar.WRAPOFF
+    self.wrapon = '' if self.newline else ProgressBar.WRAPON
     VERBOSITY = run.shared.verbosity = VERBOSITY - 1 if VERBOSITY else 0
     if self.isatty:
-      sys.stderr.write(EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[0]) + ']' + ANSI.clear + ' ' + ANSI.console + self.message + '... ' + ANSI.clear + ANSI.lineclear + self.newline)
+      sys.stderr.write(self.wrapoff + EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[0]) + ']' + ANSI.clear + ' ' + ANSI.console + self.message + '... ' + ANSI.clear + ANSI.lineclear + self.wrapoff + self.newline)
     else:
       sys.stderr.write(EXEC_NAME + ': ' + self.message + '... [' + self.newline)
     sys.stderr.flush()
@@ -514,7 +528,7 @@ class ProgressBar(object): #pylint: disable=unused-variable
     global EXEC_NAME
     assert not self.iscomplete
     if self.isatty:
-      sys.stderr.write('\r' + EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[self.counter%6]) + ']' + ANSI.clear + ' ' + ANSI.console + self.message + '... ' + ANSI.clear + ANSI.lineclear + self.newline)
+      sys.stderr.write(self.wrapoff + '\r' + EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[self.counter%6]) + ']' + ANSI.clear + ' ' + ANSI.console + self.message + '... ' + ANSI.clear + ANSI.lineclear + self.wrapon + self.newline)
     else:
       if self.newline:
         sys.stderr.write(EXEC_NAME + ': ' + self.message + '... [' + ('=' * int(self.value/2)) + self.newline)
@@ -524,51 +538,7 @@ class ProgressBar(object): #pylint: disable=unused-variable
 
 
 
-# A simple wrapper class for executing a set of commands or functions of some known length,
-#   generating and managing a progress bar as it does so
-# Can use in one of two ways:
-# - Construct using a progress bar message, and the number of commands / functions that are to be executed;
-#     each is then executed by calling member functions command() and function(), which
-#     use the corresponding functions in the mrtrix3.run module
-# - Construct using a progress bar message, and a list of command strings to run;
-#     all commands within the list will be executed sequentially within the constructor
-class RunList(object): #pylint: disable=unused-variable
-  def __init__(self, message, value):
-    from mrtrix3 import run
-    if isinstance(value, int):
-      self.progress = ProgressBar(message, value)
-      self.target_count = value
-      self.counter = 0
-      self.valid = True
-    elif isinstance(value, list):
-      assert all(isinstance(entry, str) for entry in value)
-      self.progress = ProgressBar(message, len(value))
-      for entry in value:
-        run.command(entry)
-        self.progress.increment()
-      self.progress.done()
-      self.valid = False
-    else:
-      raise TypeError('Construction of RunList class expects either an '
-                      'integer (number of commands/functions to run), or a '
-                      'list of command strings to execute')
-  def command(self, cmd):
-    from mrtrix3 import run
-    assert self.valid
-    run.command(cmd)
-    self._increment()
-  def function(self, func, *args, **kwargs):
-    from mrtrix3 import run
-    assert self.valid
-    run.function(func, *args, **kwargs)
-    self._increment()
-  def _increment(self):
-    self.counter += 1
-    if self.counter == self.target_count:
-      self.progress.done()
-      self.valid = False
-    else:
-      self.progress.increment()
+
 
 
 
@@ -605,7 +575,8 @@ class Parser(argparse.ArgumentParser):
       standard_options.add_argument('-debug', action='store_true', help='display debugging messages.')
       self.flag_mutually_exclusive_options( [ 'info', 'quiet', 'debug' ] )
       standard_options.add_argument('-force', action='store_true', help='force overwrite of output files.')
-      standard_options.add_argument('-nthreads', metavar='number', type=int, help='use this number of threads in multi-threaded applications (set to 0 to disable multi-threading)')
+      standard_options.add_argument('-nthreads', metavar='number', type=int, help='use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).')
+      standard_options.add_argument('-config', action='append', metavar='key value', nargs=2, help='temporarily set the value of an MRtrix config file entry.')
       standard_options.add_argument('-help', action='store_true', help='display this information page and exit.')
       standard_options.add_argument('-version', action='store_true', help='display version information and exit.')
       script_options = self.add_argument_group('Additional standard options for Python scripts')
@@ -627,8 +598,13 @@ class Parser(argparse.ArgumentParser):
   def set_synopsis(self, text):
     self._synopsis = text
 
-  def add_citation(self, condition, reference, is_external): #pylint: disable=unused-variable
-    self._citation_list.append( (condition, reference) )
+  def add_citation(self, citation, **kwargs): #pylint: disable=unused-variable
+    # condition, is_external
+    condition = kwargs.pop('condition', None)
+    is_external = kwargs.pop('is_external', False)
+    if kwargs:
+      raise TypeError('Unsupported keyword arguments passed to app.Parser.add_citation(): ' + str(kwargs))
+    self._citation_list.append( (condition, citation) )
     if is_external:
       self._external_citations = True
 
@@ -841,6 +817,8 @@ class Parser(argparse.ArgumentParser):
           group_text += ' ' + option.dest.upper()
         # Any options that haven't tripped one of the conditions above should be a store_true or store_false, and
         #   therefore there's nothing to be appended to the option instruction
+        if isinstance(option, argparse._AppendAction):
+          group_text += '  (multiple uses permitted)'
         group_text += '\n'
         group_text += wrapper_other.fill(option.help) + '\n'
         group_text += '\n'
@@ -911,7 +889,9 @@ class Parser(argparse.ArgumentParser):
 
     def print_group_options(group):
       for option in group._group_actions:
-        sys.stdout.write('OPTION ' + '/'.join(option.option_strings) + ' 1 0\n')
+        optional = '0' if option.required else '1'
+        allow_multiple = '1' if isinstance(option, argparse._AppendAction) else '0'
+        sys.stdout.write('OPTION ' + '/'.join(option.option_strings) + ' ' + optional + ' ' + allow_multiple + '\n')
         sys.stdout.write(option.help + '\n')
         if option.metavar:
           if isinstance(option.metavar, tuple):
@@ -972,7 +952,10 @@ class Parser(argparse.ArgumentParser):
             option_text += ' '.join(option.metavar)
           else:
             option_text += option.metavar
-        group_text += '+ **-' + option_text + '**<br>' + option.help + '\n\n'
+        group_text += '+ **-' + option_text + '**'
+        if isinstance(option, argparse._AppendAction):
+          group_text += '  *(multiple uses permitted)*'
+        group_text += '<br>' + option.help + '\n\n'
       return group_text
 
     ungrouped_options = self._get_ungrouped_options()
@@ -1054,7 +1037,10 @@ class Parser(argparse.ArgumentParser):
           else:
             option_text += option.metavar
         group_text += '\n'
-        group_text += '- **' + option_text + '** ' + option.help.replace('|', '\\|') + '\n'
+        group_text += '- **' + option_text + '**'
+        if isinstance(option, argparse._AppendAction):
+          group_text += '  *(multiple uses permitted)*'
+        group_text += ' ' + option.help.replace('|', '\\|') + '\n'
       return group_text
 
     ungrouped_options = self._get_ungrouped_options()
@@ -1110,6 +1096,50 @@ class Parser(argparse.ArgumentParser):
            isinstance(group._group_actions[0], argparse._SubParsersAction)) and \
            not group == self._positionals and \
            group.title != 'optional arguments'
+
+
+
+
+# Define functions for incorporating commonly-used command-line options / option groups
+def add_dwgrad_import_options(): #pylint: disable=unused-variable
+  global CMDLINE
+  assert CMDLINE
+  options = CMDLINE.add_argument_group('Options for importing the diffusion gradient table')
+  options.add_argument('-grad', help='Provide the diffusion gradient table in MRtrix format')
+  options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Provide the diffusion gradient table in FSL bvecs/bvals format')
+  CMDLINE.flag_mutually_exclusive_options( [ 'grad', 'fslgrad' ] )
+def read_dwgrad_import_options(): #pylint: disable=unused-variable
+  from mrtrix3 import path
+  global ARGS
+  assert ARGS
+  if ARGS.grad:
+    return ' -grad ' + path.from_user(ARGS.grad)
+  if ARGS.fslgrad:
+    return ' -fslgrad ' + path.from_user(ARGS.fslgrad[0]) + ' ' + path.from_user(ARGS.fslgrad[1])
+  return ''
+
+def add_dwgrad_export_options(): #pylint: disable=unused-variable
+  global CMDLINE
+  assert CMDLINE
+  options = CMDLINE.add_argument_group('Options for exporting the diffusion gradient table')
+  options.add_argument('-export_grad_mrtrix', metavar='grad', help='Export the final gradient table in MRtrix format')
+  options.add_argument('-export_grad_fsl', nargs=2, metavar=('bvecs', 'bvals'), help='Export the final gradient table in FSL bvecs/bvals format')
+  CMDLINE.flag_mutually_exclusive_options( [ 'export_grad_mrtrix', 'export_grad_fsl' ] )
+def read_dwgrad_export_options(): #pylint: disable=unused-variable
+  from mrtrix3 import path
+  global ARGS
+  assert ARGS
+  if ARGS.export_grad_mrtrix:
+    check_output_path(path.from_user(ARGS.export_grad_mrtrix, False))
+    return ' -export_grad_mrtrix ' + path.from_user(ARGS.export_grad_mrtrix)
+  if ARGS.export_grad_fsl:
+    check_output_path(path.from_user(ARGS.export_grad_fsl[0], False))
+    check_output_path(path.from_user(ARGS.export_grad_fsl[1], False))
+    return ' -export_grad_fsl ' + path.from_user(ARGS.export_grad_fsl[0]) + ' ' + path.from_user(ARGS.export_grad_fsl[1])
+  return ''
+
+
+
 
 
 

@@ -6,7 +6,7 @@
 
 
 def usage(cmdline): #pylint: disable=unused-variable
-  from mrtrix3 import algorithm
+  from mrtrix3 import algorithm, app #pylint: disable=no-name-in-module
 
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)')
   cmdline.set_synopsis('Estimate response function(s) for spherical deconvolution')
@@ -19,9 +19,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   common_options.add_argument('-voxels', help='Output an image showing the final voxel selection(s)')
   common_options.add_argument('-shells', help='The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)')
   common_options.add_argument('-lmax', help='The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)')
-  common_options.add_argument('-grad', help='Pass the diffusion gradient table in MRtrix format')
-  common_options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Pass the diffusion gradient table in FSL bvecs/bvals format')
-  cmdline.flag_mutually_exclusive_options( [ 'grad', 'fslgrad' ] )
+  app.add_dwgrad_import_options()
 
   # Import the command-line settings for all algorithms found in the relevant directory
   algorithm.usage(cmdline)
@@ -32,7 +30,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import algorithm, image, MRtrixError, path, run
+  from mrtrix3 import algorithm, app, image, MRtrixError, path, run #pylint: disable=no-name-in-module
 
   # Find out which algorithm the user has requested
   alg = algorithm.get_module(app.ARGS.algorithm)
@@ -65,12 +63,8 @@ def execute(): #pylint: disable=unused-variable
   if alg.needs_single_shell():
     singleshell_option = ' -singleshell -no_bzero'
 
-  grad_import_option = ''
-  if app.ARGS.grad:
-    grad_import_option = ' -grad ' + path.from_user(app.ARGS.grad)
-  elif app.ARGS.fslgrad:
-    grad_import_option = ' -fslgrad ' + path.from_user(app.ARGS.fslgrad[0]) + ' ' + path.from_user(app.ARGS.fslgrad[1])
-  elif 'dw_scheme' not in image.Header(path.from_user(app.ARGS.input, False)).keyval():
+  grad_import_option = app.read_dwgrad_import_options()
+  if not grad_import_option and 'dw_scheme' not in image.Header(path.from_user(app.ARGS.input, False)).keyval():
     raise MRtrixError('Script requires diffusion gradient table: either in image header, or using -grad / -fslgrad option')
 
   app.make_scratch_dir()
@@ -109,13 +103,6 @@ def execute(): #pylint: disable=unused-variable
 
 
 
-# Make the corresponding MRtrix3 Python libraries available
-import inspect, os, sys
-LIB_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
-if not os.path.isdir(LIB_FOLDER):
-  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
-  sys.exit(1)
-sys.path.insert(0, LIB_FOLDER)
 # Execute the script
-from mrtrix3 import app
-app.execute()
+import mrtrix3
+mrtrix3.execute() #pylint: disable=no-member
