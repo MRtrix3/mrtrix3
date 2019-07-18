@@ -258,13 +258,17 @@ namespace MR
 
           const size_t maxdim = 9;
           size_t col = 0;
-          // layout->addWidget (new QLabel (tr("")), 0, col++);
+
           vector<std::string> vol_labels;
+          vector<QLabel *> vol_label_widgets;
           for (size_t d = 3; d < maxdim; ++d) {
             vol_labels.push_back(str(d + 1) + ": ");
+            vol_label_widgets.push_back(new QLabel (tr(vol_labels.back().c_str())));
+            float width = vol_label_widgets.back()->fontMetrics().boundingRect(vol_label_widgets.back()->text()).width();
+            vol_label_widgets.back()->setFixedWidth(width);
+            layout->addWidget (vol_label_widgets.back(), 0, col++);
             volgroup_indices.push_back(new SpinBox(this));
             volgroup_indices.back()->setMinimum(0);
-            volgroup_indices.back()->setPrefix(tr(vol_labels[d - 3].c_str()));;
             layout->addWidget (volgroup_indices.back(), 0, col++);
           }
           for (auto & volgroup : volgroup_indices)
