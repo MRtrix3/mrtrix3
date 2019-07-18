@@ -487,7 +487,7 @@ namespace MR
         {
           assert (window().image());
           const auto& image (window().image()->image);
-          assert (image.ndim() = volume_index_layout->count() + 3);
+          assert (image.ndim() == volume_index_layout->count() + 3);
 
           for (int i = 0; i < volume_index_layout->count(); ++i) {
             auto* box = dynamic_cast<SpinBox*> (volume_index_layout->itemAt(i)->widget());
