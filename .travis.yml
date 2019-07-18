@@ -94,7 +94,7 @@ install:
     fi
   - |
     if [[ "${test}" == "build" || "${test}" == "run" ]]; then
-        export EIGEN_CFLAGS="-isystem `pwd`/../eigen";
+        export EIGEN_CFLAGS="-idirafter `pwd`/../eigen";
         ( cd ..; git clone https://github.com/eigenteam/eigen-git-mirror.git eigen; cd eigen; git checkout branches/3.3 )
     fi
 before_script:
