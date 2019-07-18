@@ -16,6 +16,7 @@
 #ifndef __gui_projection_h__
 #define __gui_projection_h__
 
+#include "gui/crosshair.h"
 #include "gui/opengl/gl.h"
 #include "gui/opengl/font.h"
 #include "gui/opengl/transformation.h"
@@ -167,11 +168,12 @@ namespace MR
 
 
     class Projection : public ModelViewProjection
-    { MEMALIGN(Projection)
+    { NOMEMALIGN
       public:
         Projection (GL::Area* parent, const GL::Font& font) :
-          glarea (parent),
-          font (font) { }
+            glarea (parent),
+            font (font),
+            crosshair (new Crosshair()) { }
 
         void set_viewport (const QWidget& frame, int x, int y, int w, int h) {
           ModelViewProjection::set_viewport (x, y, w, h);
@@ -189,7 +191,7 @@ namespace MR
         }
 #endif
 
-        void render_crosshairs (const Eigen::Vector3f& focus) const;
+        void render_crosshairs (const Eigen::Vector3f& focus) const { crosshair->render (focus, *this); }
 
         void setup_render_text (float red = 1.0, float green = 1.0, float blue = 0.0) const {
           font.start (width(), height(), red, green, blue);
@@ -278,9 +280,7 @@ namespace MR
       protected:
         GL::Area* glarea;
         const GL::Font& font;
-        mutable GL::VertexBuffer crosshairs_VB;
-        mutable GL::VertexArrayObject crosshairs_VAO;
-        mutable GL::Shader::Program crosshairs_program;
+        std::shared_ptr<Crosshair> crosshair;
     };
 
 
