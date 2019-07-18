@@ -17,6 +17,7 @@ addons:
       - python3
       - python-pip
       - python3-pip
+      - python3-setuptools
 matrix:
   include:
     #################################################
