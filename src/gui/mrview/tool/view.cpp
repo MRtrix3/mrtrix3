@@ -253,26 +253,8 @@ namespace MR
           // Volume
           volume_box = new QGroupBox ("Volume indices (dimension: index)");
           main_box->addWidget (volume_box);
-          layout = new GridLayout;
-          volume_box->setLayout (layout);
-
-          const size_t maxdim = 9;
-          size_t col = 0;
-
-          vector<std::string> vol_labels;
-          vector<QLabel *> vol_label_widgets;
-          for (size_t d = 3; d < maxdim; ++d) {
-            vol_labels.push_back(str(d + 1) + ": ");
-            vol_label_widgets.push_back(new QLabel (tr(vol_labels.back().c_str())));
-            float width = vol_label_widgets.back()->fontMetrics().boundingRect(vol_label_widgets.back()->text()).width();
-            vol_label_widgets.back()->setFixedWidth(width);
-            layout->addWidget (vol_label_widgets.back(), 0, col++);
-            volgroup_indices.push_back(new SpinBox(this));
-            volgroup_indices.back()->setMinimum(0);
-            layout->addWidget (volgroup_indices.back(), 0, col++);
-          }
-          for (auto & volgroup : volgroup_indices)
-            connect (volgroup, SIGNAL (valueChanged(int)), this, SLOT (onSetVolumeIndex()));
+          volume_index_layout = new GridLayout;
+          volume_box->setLayout (volume_index_layout);
 
           // Intensity
           group_box = new QGroupBox ("Intensity scaling");
@@ -505,8 +487,12 @@ namespace MR
         {
           assert (window().image());
           const auto& image (window().image()->image);
-          for (auto i = 0; i < volgroup_indices.size(); ++i)
-            volgroup_indices[i]->setValue (image.ndim() > (i + 3) ? image.index(i + 3) : 0);
+          assert (image.ndim() = volume_index_layout->count() + 3);
+
+          for (int i = 0; i < volume_index_layout->count(); ++i) {
+            auto* box = dynamic_cast<SpinBox*> (volume_index_layout->itemAt(i)->widget());
+            box->setValue (image.ndim() > size_t(i + 3) ? image.index(i + 3) : 0);
+          }
         }
 
 
@@ -539,14 +525,20 @@ namespace MR
           focus_y->setRate (rate);
           focus_z->setRate (rate);
 
-          const size_t dim = image->image.ndim();
+          const int dim = image->image.ndim();
           volume_box->setVisible(dim > 3);
-          for (auto i = 0; i < volgroup_indices.size(); ++i) {
-            volgroup_indices[i]->setEnabled(dim > i + 3);
-            if (dim > i + 3) {
-              volgroup_indices[i]->setMaximum(image->image.size(i + 3) - 1);
-              volgroup_indices[i]->setValue(image->image.index(i + 3));
-            }
+
+          while (volume_index_layout->count())
+            delete volume_index_layout->takeAt (volume_index_layout->count()-1)->widget();
+
+          for (size_t d = 3; d < image->image.ndim(); ++d) {
+            SpinBox* vol_index = new SpinBox (this);
+            vol_index->setMinimum (0);
+            vol_index->setPrefix (tr((str(d+1) + ": ").c_str()));;
+            vol_index->setValue (image->image.index(d));
+            vol_index->setMaximum (image->image.size(d) - 1);
+            volume_index_layout->addWidget (vol_index, volume_index_layout->count()/3, volume_index_layout->count()%3);
+            connect (vol_index, SIGNAL (valueChanged(int)), this, SLOT (onSetVolumeIndex()));
           }
 
           lower_threshold_check_box->setChecked (image->use_discard_lower());
@@ -657,10 +649,13 @@ namespace MR
         {
           if (window().image()) {
             const auto& image (window().image()->image);
-            for (size_t d = 3; d < volgroup_indices.size() + 3; ++d){
-              if (image.ndim() <= d)
+            assert (image.ndim() == volume_index_layout->count()+3);
+
+            for (int i = 0; i < volume_index_layout->count(); ++i) {
+              auto* box = dynamic_cast<SpinBox*> (volume_index_layout->itemAt(i)->widget());
+              if (image.ndim() <= size_t(i+3))
                 break;
-              window().set_image_volume (d, volgroup_indices[d - 3]->value());
+              window().set_image_volume (i+3, box->value());
             }
           }
         }
