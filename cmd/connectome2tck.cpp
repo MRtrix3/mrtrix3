@@ -208,7 +208,7 @@ void run ()
   auto opt = get_options ("prefix_tck_weights_out");
   const std::string weights_prefix = opt.size() ? std::string (opt[0][0]) : "";
 
-  INFO ("Maximum node index is " + str(max_node_index));
+  INFO ("Maximum node index in assignments file is " + str(max_node_index));
 
   const node_t first_node = get_options ("keep_unassigned").size() ? 0 : 1;
   const bool keep_self = get_options ("keep_self").size();
@@ -259,10 +259,17 @@ void run ()
     for (auto i = Loop() (image); i; ++i) {
       const node_t index = image.value();
       if (index) {
-        assert (index <= max_node_index);
+        while (index >= COMs.size()) {
+          COMs.push_back (Eigen::Vector3f (0.0f, 0.0f, 0.0f));
+          volumes.push_back (0);
+        }
         COMs[index] += Eigen::Vector3f (image.index(0), image.index(1), image.index(2));
         ++volumes[index];
       }
+    }
+    if (COMs.size() > max_node_index + 1) {
+      WARN ("Parcellation image \"" + std::string (opt[0][0]) + "\" provided via -exemplars option contains more nodes (" + str(COMs.size()-1) + ") than are present in input assignments file \"" + std::string (argument[1]) + "\" (" + str(max_node_index) + ")");
+      max_node_index = COMs.size()-1;
     }
     Transform transform (image);
     for (node_t index = 1; index <= max_node_index; ++index) {
