@@ -58,7 +58,7 @@ namespace MR
               name (name),
               glsl_mapping (glsl_mapping),
               basic_mapping (basic_mapping),
-              amplitude (amplitude ? amplitude : default_amplitude), 
+              amplitude (amplitude ? amplitude : default_amplitude),
               special (special),
               is_colour (is_colour) { }
 
@@ -127,7 +127,7 @@ namespace MR
 
 
 
-        class Renderer { MEMALIGN(Renderer)
+        class Renderer { NOMEMALIGN
           public:
             Renderer();
             void begin_render_colourbars (Projection* projection,
