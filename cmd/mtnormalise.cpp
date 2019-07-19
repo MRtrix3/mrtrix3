@@ -221,6 +221,14 @@ struct NormFieldLog {
    struct PolyBasisFunction basis_function;
 };
 
+// Function to define the output values at the beginning of the run () function
+Image<float> DefineOutput(vector<std::string> output_filenames, vector<Header> output_headers) {
+  Image<float> output_image;
+  for (size_t j = 0; j < output_filenames.size(); ++j) {
+     output_image = Image<float>::scratch (output_headers[j], output_filenames[j]);
+  }
+return output_image;
+};
 
 void run ()
 {
@@ -244,6 +252,7 @@ void run ()
   vector<Adapter::Replicate<ImageType>> input_images;
   vector<Header> output_headers;
   vector<std::string> output_filenames;
+  ImageType output_image;
 
   ProgressBar input_progress ("loading input images", 3*argument.size()/2);
 
@@ -274,6 +283,10 @@ void run ()
     output_filenames.push_back (argument[i + 1]);
   }
 
+  // Preparing default settings to the output images
+  output_image = DefineOutput(output_filenames, output_headers);
+
+  // Setting the n_tissue_types
   const size_t n_tissue_types = input_images.size();
 
   // Load the mask and refine the initial mask to exclude non-positive summed tissue components
@@ -547,7 +560,7 @@ void run ()
       balance_multiplier = balance_factors[j];
       output_headers[j].keyval()["lognorm_balance"] = str(balance_multiplier);
     }
-    auto output_image = ImageType::create (output_filenames[j], output_headers[j]);
+    output_image = ImageType::create (output_filenames[j], output_headers[j]);
     const size_t n_vols = input_images[j].size(3);
     const Eigen::VectorXf zero_vec = Eigen::VectorXf::Zero (n_vols);
 
