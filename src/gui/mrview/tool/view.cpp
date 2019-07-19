@@ -251,23 +251,10 @@ namespace MR
           layout->addWidget (copy_focus_button, 1, 4);
 
           // Volume
-          volume_box = new QGroupBox ("Volume");
+          volume_box = new QGroupBox ("Volume indices (dimension: index)");
           main_box->addWidget (volume_box);
-          layout = new GridLayout;
-          volume_box->setLayout (layout);
-
-          layout->addWidget (new QLabel (tr("Index: ")), 0, 0);
-          vol_index = new SpinBox(this);
-          vol_index->setMinimum(0);
-          layout->addWidget (vol_index, 0, 1);
-
-          layout->addWidget (new QLabel (tr("Group: ")), 0, 2);
-          vol_group = new SpinBox(this);
-          vol_group->setMinimum(0);
-          layout->addWidget (vol_group, 0, 3);
-
-          connect (vol_index, SIGNAL (valueChanged(int)), this, SLOT (onSetVolumeIndex()));
-          connect (vol_group, SIGNAL (valueChanged(int)), this, SLOT (onSetVolumeIndex()));
+          volume_index_layout = new GridLayout;
+          volume_box->setLayout (volume_index_layout);
 
           // Intensity
           group_box = new QGroupBox ("Intensity scaling");
@@ -499,8 +486,13 @@ namespace MR
         void View::onVolumeIndexChanged()
         {
           assert (window().image());
-          vol_index->setValue (window().image()->image.index(3));
-          vol_group->setValue (window().image()->image.index(4));
+          const auto& image (window().image()->image);
+          assert (image.ndim() == size_t(volume_index_layout->count() + 3));
+
+          for (int i = 0; i < volume_index_layout->count(); ++i) {
+            auto* box = dynamic_cast<SpinBox*> (volume_index_layout->itemAt(i)->widget());
+            box->setValue (image.ndim() > size_t(i + 3) ? image.index(i + 3) : 0);
+          }
         }
 
 
@@ -533,23 +525,20 @@ namespace MR
           focus_y->setRate (rate);
           focus_z->setRate (rate);
 
-          size_t dim = image->image.ndim();
-          if(dim > 3) {
-            volume_box->setVisible(true);
-            vol_index->setEnabled(true);
-            vol_index->setMaximum(image->image.size(3) - 1);
-            vol_index->setValue(image->image.index(3));
+          const int dim = image->image.ndim();
+          volume_box->setVisible(dim > 3);
 
-            if(dim > 4) {
-              vol_group->setEnabled(true);
-              vol_group->setMaximum(image->image.size(4) - 1);
-              vol_group->setValue(image->image.index(4));
-            } else
-              vol_group->setEnabled(false);
-          } else {
-            volume_box->setVisible(false);
-            vol_index->setEnabled(false);
-            vol_group->setEnabled(false);
+          while (volume_index_layout->count())
+            delete volume_index_layout->takeAt (volume_index_layout->count()-1)->widget();
+
+          for (size_t d = 3; d < image->image.ndim(); ++d) {
+            SpinBox* vol_index = new SpinBox (this);
+            vol_index->setMinimum (0);
+            vol_index->setPrefix (tr((str(d+1) + ": ").c_str()));;
+            vol_index->setValue (image->image.index(d));
+            vol_index->setMaximum (image->image.size(d) - 1);
+            volume_index_layout->addWidget (vol_index, volume_index_layout->count()/3, volume_index_layout->count()%3);
+            connect (vol_index, SIGNAL (valueChanged(int)), this, SLOT (onSetVolumeIndex()));
           }
 
           lower_threshold_check_box->setChecked (image->use_discard_lower());
@@ -659,9 +648,15 @@ namespace MR
         void View::onSetVolumeIndex ()
         {
           if (window().image()) {
-            window().set_image_volume (3, vol_index->value());
-            if (vol_group->isEnabled())
-              window().set_image_volume (4, vol_group->value());
+            const auto& image (window().image()->image);
+            assert (image.ndim() == size_t(volume_index_layout->count()+3));
+
+            for (int i = 0; i < volume_index_layout->count(); ++i) {
+              auto* box = dynamic_cast<SpinBox*> (volume_index_layout->itemAt(i)->widget());
+              if (image.ndim() <= size_t(i+3))
+                break;
+              window().set_image_volume (i+3, box->value());
+            }
           }
         }
 
