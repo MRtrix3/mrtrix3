@@ -38,38 +38,24 @@ namespace MR
           {
             m_P << -0.000508781949658280665617, -0.00836874819741736770379, 0.0334806625409744615033, -0.0126926147662974029034, -0.0365637971411762664006, 0.0219878681111168899165, 0.00822687874676915743155, -0.00538772965071242932965;
             m_Q << 1.0, -0.970005043303290640362, -1.56574558234175846809, 1.56221558398423026363, 0.662328840472002992063, -0.71228902341542847553, -0.0527396382340099713954, 0.0795283687341571680018, -0.00233393759374190016776, 0.000886216390456424707504;
-            precision_warning.clear();
-          }
-
-          ~Shared()
-          {
-            if (precision_warning.test_and_set()) {
-              WARN ("Misuse of Math::erfinv() function leading to loss of precision; "
-                    "recommend native use of erfcinv()");
-            }
           }
 
           default_type Y() const { return m_Y; }
           const Eigen::Array<default_type, 8, 1>&  P() const { return m_P; }
           const Eigen::Array<default_type, 10, 1>& Q() const { return m_Q; }
-          void trigger_warning() { precision_warning.test_and_set (std::memory_order_relaxed); }
 
         private:
           Eigen::Array<default_type, 8, 1> m_P;
           Eigen::Array<default_type, 10, 1> m_Q;
           const default_type m_Y;
-          std::atomic_flag precision_warning;
 
       };
       static Shared shared;
 
       if (p >= 1.0)
         return std::numeric_limits<default_type>::infinity();
-      if (p > 0.5) {
-        if (p > 1.0 - 1e-6)
-          shared.trigger_warning();
+      if (p > 0.5)
         return erfcinv (1.0 - p);
-      }
       if (p < 0.0)
         return -erfinv (-p);
 
