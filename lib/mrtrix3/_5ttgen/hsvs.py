@@ -1,16 +1,93 @@
+HIPPOCAMPI_CHOICES = [ 'subfields', 'first', 'aseg' ]
+
 def initialise(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('hsvs', author='Robert E. Smith (robert.smith@florey.edu.au)', synopsis='Generate a 5TT image based on Hybrid Surface and Volume Segmentation (HSVS), using FreeSurfer and FSL tools', parents=[base_parser])
   # TODO Permit either FreeSurfer directory or T1 image as input
+  # TODO Operate on HCP pre-processed data
   parser.add_argument('input',  help='The input FreeSurfer subject directory')
   parser.add_argument('output', help='The output 5TT image')
-  # TESTME Option to specify spatial resolution of output image?
-  # Or just a template image; that way can control voxel size & axis orientations
   parser.add_argument('-template', help='Provide an image that will form the template for the generated 5TT image')
+  parser.add_argument('-hippocampi', choices=HIPPOCAMPI_CHOICES, help='Select method to be used for hippocampi (& amygdalae) segmentation; options are: ' + ','.join(HIPPOCAMPI_CHOICES))
   parser.add_argument('-white_stem', action='store_true', help='Classify the brainstem as white matter')
+
   # TODO Add references
 
-
 # TODO Add file.delTemporary() throughout
+# TODO STILL need to do something about anterior commissure
+
+
+
+# TODO If releasing, these should ideally read from FreeSurferColorLUT.txt to get the indices
+
+ASEG_STRUCTURES = [ ( 4,  3, 'Left-Lateral-Ventricle'),
+                    ( 5,  3, 'Left-Inf-Lat-Vent'),
+                    ( 9,  1, 'Left-Thalamus'),
+                    (10,  1, 'Left-Thalamus-Proper'),
+                    (11,  1, 'Left-Caudate'),
+                    (12,  1, 'Left-Putamen'),
+                    (13,  1, 'Left-Pallidum'),
+                    (14,  3, '3rd-Ventricle'),
+                    (15,  3, '4th-Ventricle'),
+                    (24,  3, 'CSF'),
+                    (25,  4, 'Left-Lesion'),
+                    (26,  1, 'Left-Accumbens-area'),
+                    (30,  3, 'Left-vessel'),
+                    (31,  3, 'Left-choroid-plexus'),
+                    (43,  3, 'Right-Lateral-Ventricle'),
+                    (44,  3, 'Right-Inf-Lat-Vent'),
+                    (48,  1, 'Right-Thalamus'),
+                    (49,  1, 'Right-Thalamus-Proper'),
+                    (50,  1, 'Right-Caudate'),
+                    (51,  1, 'Right-Putamen'),
+                    (52,  1, 'Right-Pallidum'),
+                    (57,  4, 'Right-Lesion'),
+                    (58,  1, 'Right-Accumbens-area'),
+                    (62,  3, 'Right-vessel'),
+                    (63,  3, 'Right-choroid-plexus'),
+                    (72,  3, '5th-Ventricle'),
+                    (192, 2, 'Corpus_Callosum'),
+                    (250, 2, 'Fornix') ]
+
+
+HIPP_ASEG = [ (17,  1, 'Left-Hippocampus'),
+              (53,  1, 'Right-Hippocampus') ]
+
+
+AMYG_ASEG = [ (18,  1, 'Left-Amygdala'),
+              (54,  1, 'Right-Amygdala') ]
+
+
+CEREBELLUM_ASEG = [ ( 6,  3, 'Left-Cerebellum-Exterior'),
+                    ( 7,  2, 'Left-Cerebellum-White-Matter'),
+                    ( 8,  1, 'Left-Cerebellum-Cortex'),
+                    (45,  3, 'Right-Cerebellum-Exterior'),
+                    (46,  2, 'Right-Cerebellum-White-Matter'),
+                    (47,  1, 'Right-Cerebellum-Cortex') ]
+
+
+CORPUS_CALLOSUM_ASEG = [ (251, 'CC_Posterior'),
+                         (252, 'CC_Mid_Posterior'),
+                         (253, 'CC_Central'),
+                         (254, 'CC_Mid_Anterior'),
+                         (255, 'CC_Anterior') ]
+
+
+BRAIN_STEM_ASEG = [ (16, 'Brain-Stem'),
+                    (27, 'Left-Substancia-Nigra'),
+                    (28, 'Left-VentralDC'),
+                    (59, 'Right-Substancia-Nigra'),
+                    (60, 'Right-VentralDC') ]
+
+
+SGM_FIRST_MAP = { 'L_Accu':'Left-Accumbens-area',  'R_Accu':'Right-Accumbens-area', \
+                  'L_Amyg':'Left-Amygdala',        'R_Amyg':'Right-Amygdala', \
+                  'L_Caud':'Left-Caudate',         'R_Caud':'Right-Caudate', \
+                  'L_Hipp':'Left-Hippocampus',     'R_Hipp':'Right-Hippocampus', \
+                  'L_Pall':'Left-Pallidum',        'R_Pall':'Right-Pallidum', \
+                  'L_Puta':'Left-Putamen',         'R_Puta':'Right-Putamen', \
+                  'L_Thal':'Left-Thalamus-Proper', 'R_Thal':'Right-Thalamus-Proper' }
+
+
 
 
 
@@ -57,13 +134,8 @@ def execute(): #pylint: disable=unused-variable
   checkFile(reg_file)
   template_image = 'template.mif' if app.args.template else aparc_image
 
-  if app.args.template:
-    run.command('mrtransform ' + mask_image + ' -template template.mif - | mrthreshold - brainmask.mif -abs 0.5')
-    mask_image = 'brainmask.mif'
-
-  sgm_first_map = { }
-  have_first = True
-  have_fast = True
+  have_first = False
+  have_fast = False
   fsl_path = os.environ.get('FSLDIR', '')
   if fsl_path:
     # Use brain-extracted, bias-corrected image for FSL tools
@@ -73,151 +145,101 @@ def execute(): #pylint: disable=unused-variable
     # Verify FAST availability
     fast_cmd = fsl.exeName('fast', False)
     if fast_cmd:
+      have_fast = True
       if fast_cmd == 'fast':
         fast_suffix = fsl.suffix()
       else:
         fast_suffix = '.nii.gz'
     else:
-      have_fast = False
       app.warn('Could not find FSL program fast; script will not use fast for cerebellar tissue segmentation')
     # Verify FIRST availability
     first_cmd = fsl.exeName('run_first_all', False)
-    if first_cmd:
-      first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
-      if os.path.isdir(first_atlas_path):
-        sgm_first_map = { 'L_Accu':'Left-Accumbens-area',  'R_Accu':'Right-Accumbens-area', \
-                          'L_Amyg':'Left-Amygdala',        'R_Amyg':'Right-Amygdala', \
-                          'L_Caud':'Left-Caudate',         'R_Caud':'Right-Caudate', \
-                          'L_Hipp':'Left-Hippocampus',     'R_Hipp':'Right-Hippocampus', \
-                          'L_Pall':'Left-Pallidum',        'R_Pall':'Right-Pallidum', \
-                          'L_Puta':'Left-Putamen',         'R_Puta':'Right-Putamen', \
-                          'L_Thal':'Left-Thalamus-Proper', 'R_Thal':'Right-Thalamus-Proper' }
-      else:
-        app.warn('Atlases required for FSL\'s FIRST program not installed; script will proceed without using FIRST for sub-cortical grey matter segmentation')
-    else:
-      have_first = False
-      app.warn('Could not find FSL program run_first_all; script will proceed without using FIRST for sub-cortical grey matter segmentation')
+    first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
+    have_first = first_cmd and os.path.isdir(first_atlas_path)
   else:
-    have_first = have_fast = False
     app.warn('Environment variable FSLDIR is not set; script will run without FSL components')
 
   # Need to perform a better search for hippocampal subfield output: names & version numbers may change
-  hipp_subfield_regex = re.compile('[lr]h\.hippo[a-zA-Z]*Labels-T1\.v[0-9]+\.mg[hz]')
-  hipp_subfield_images = sorted(list(filter(hipp_subfield_regex.match, os.listdir(mri_dir))))
-  app.var(hipp_subfield_images)
-  if len(hipp_subfield_images) == 2 and hipp_subfield_images[0][0] == 'l' and hipp_subfield_images[1][0] == 'r':
-    hipp_subfield_image_map = { os.path.join(mri_dir, hipp_subfield_images[0]): 'Left-Hippocampus',
-                                os.path.join(mri_dir, hipp_subfield_images[1]): 'Right-Hippocampus' }
-    progress = app.progressBar('Using detected FreeSurfer hippocampal subfields module output', 6)
-    for filename, outputname in hipp_subfield_image_map.items():
-      init_mesh_path = os.path.basename(filename)[0:2] + '_hipp_init.vtk'
-      smooth_mesh_path = os.path.basename(filename)[0:2] + '_hipp_smooth.vtk'
-      run.command('mrthreshold ' + filename + ' - -abs 0.5 | voxel2mesh - ' + init_mesh_path)
-      progress.increment()
-      # Since the hippocampal subfields segmentation can include some fine structures, reduce the extent of smoothing
-      run.command('meshfilter ' + init_mesh_path + ' smooth ' + smooth_mesh_path + ' -smooth_spatial 5 -smooth_influence 5')
-      file.delTemporary(init_mesh_path)
-      progress.increment()
-      run.command('mesh2voxel ' + smooth_mesh_path + ' ' + template_image + ' ' + outputname + '.mif')
-      file.delTemporary(smooth_mesh_path)
-      progress.increment()
-    progress.done()
-    # If we're going to be running FIRST, then we don't want to run it on the hippocampi
-    if have_first:
-      sgm_first_map = { key:value for key, value in sgm_first_map.items() if value not in hipp_subfield_image_map.values() }
+  have_hipp_subfields = False
+  hipp_subfield_has_amyg = False
+  # Could result in multiple matches
+  hipp_subfield_regex = re.compile(r'[lr]h\.hippo[a-zA-Z]*Labels-[a-zA-Z0-9]*\.v[0-9]+\.?[a-zA-Z0-9]*\.mg[hz]')
+  hipp_subfield_all_images = sorted(list(filter(hipp_subfield_regex.match, os.listdir(mri_dir))))
+  # Remove any images that provide segmentations in FreeSurfer voxel space; we want the high-resolution versions
+  hipp_subfield_all_images = [ item for item in hipp_subfield_all_images if 'FSvoxelSpace' not in item ]
+  # Arrange the images into lr pairs
+  hipp_subfield_paired_images = [ ]
+  for lh_filename in [ item for item in hipp_subfield_all_images if item[0] == 'l' ]:
+    if 'r' + lh_filename[1:] in hipp_subfield_all_images:
+      hipp_subfield_paired_images.append(lh_filename[1:])
+  # Choose which of these image pairs we are going to use
+  for code in [ '.CA.', '.FS60.' ]:
+    if any([ code in filename for filename in hipp_subfield_paired_images ]):
+      hipp_subfield_image_suffix = [ filename for filename in hipp_subfield_paired_images if code in filename ][0]
+      have_hipp_subfields = True
+      break
+  # Choose the pair with the shortest filename string if we have no other criteria
+  if not have_hipp_subfields and hipp_subfield_paired_images:
+    hipp_subfield_paired_images = sorted(hipp_subfield_paired_images, key=len)
+    if len(hipp_subfield_paired_images):
+      hipp_subfield_image_suffix = hipp_subfield_paired_images[0]
+      have_hipp_subfields = True
+  if have_hipp_subfields:
+    hipp_subfield_has_amyg = 'Amyg' in hipp_subfield_image_suffix
+
+
+  # If particular hippocampal segmentation method is requested, make sure we can perform such;
+  #   if not, decide how to segment hippocampus based on what's available
+  hippocampi_method = app.args.hippocampi
+  if hippocampi_method:
+    if hippocampi_method == 'subfields':
+      if not have_hipp_subfields:
+        app.error('Could not isolate hippocampal subfields module output (candidate images: ' + str(hipp_subfield_all_images) + ')')
+    elif hippocampi_method == 'first':
+      if not have_first:
+        app.error('Cannot use "first" method for hippocampi segmentation; check FSL installation')
   else:
-    app.console(('Unrecognised ' if hipp_subfield_images else 'No ') + \
-                'FreeSurfer hippocampal subfields module output detected; ' + \
-                ('FIRST segmentation ' if have_first else 'standard FreeSurfer segmentation ') + \
-                'will instead be used')
-    hipp_subfield_image_map = { }
+    if have_hipp_subfields:
+      hippocampi_method = 'subfields'
+      app.console('Hippocampal subfields module output detected; will utilise for hippocampi ' + \
+                  ('and amygdalae ' if hipp_subfield_has_amyg else '') + \
+                  'segmentation')
+    elif have_first:
+      hippocampi_method = 'first'
+      app.console('No hippocampal subfields module output detected, but FSL FIRST is installed; ' + \
+                  'will utilise latter for hippocampi segmentation')
+    else:
+      hippocampi_method = 'aseg'
+      app.console('Neither hippocampal subfields module output nor FSL FIRST detected; ' + \
+                  'FreeSurfer aseg will be used for hippocampi segmentation')
+
+  if hippocampi_method == 'subfields':
+    if 'FREESURFER_HOME' not in os.environ:
+      app.error('FREESURFER_HOME environment variable not set; required for use of hippocampal subfields module')
+    freesurfer_lut_file = os.path.join(os.environ['FREESURFER_HOME'], 'FreeSurferColorLUT.txt')
+    checkFile(freesurfer_lut_file)
+    hipp_lut_file = os.path.join(path.sharedDataPath(), path.scriptSubDirName(), 'hsvs', 'HippSubfields.txt')
+    checkFile(hipp_lut_file)
+    if hipp_subfield_has_amyg:
+      amyg_lut_file = os.path.join(path.sharedDataPath(), path.scriptSubDirName(), 'hsvs', 'AmygSubfields.txt')
+      checkFile(amyg_lut_file)
+
+  if app.args.sgm_amyg_hipp:
+    app.warn('Option -sgm_amyg_hipp ignored ' + \
+             '(hsvs algorithm always assigns hippocampi & ampygdalae as sub-cortical grey matter)')
 
 
 
-  if have_first:
-    app.console('Running FSL FIRST to segment sub-cortical grey matter structures')
-    run.command(first_cmd + ' -s ' + ','.join(sgm_first_map.keys()) + ' -i T1.nii -b -o first')
-    fsl.checkFirst('first', sgm_first_map.keys())
-    file.delTemporary(glob.glob('T1_to_std_sub.*'))
-    progress = app.progressBar('Mapping FIRST segmentations to image', 2*len(sgm_first_map))
-    for key, value in sgm_first_map.items():
-      vtk_in_path = 'first-' + key + '_first.vtk'
-      vtk_converted_path = 'first-' + key + '_transformed.vtk'
-      run.command('meshconvert ' + vtk_in_path + ' ' + vtk_converted_path + ' -transform first2real T1.nii')
-      file.delTemporary(vtk_in_path)
-      progress.increment()
-      run.command('mesh2voxel ' + vtk_converted_path + ' ' + template_image + ' ' + value + '.mif')
-      file.delTemporary(vtk_converted_path)
-      progress.increment()
-    if not have_fast:
-      file.delTemporary('T1.nii')
-    file.delTemporary(glob.glob('first*'))
-    progress.done()
 
+  ###########################
+  # Commencing segmentation #
+  ###########################
 
-
-  # TODO If releasing, this should ideally read from FreeSurferColorLUT.txt to get the indices
-  # TODO Currently mesh2voxel assumes a single closed surface;
-  #   may need to run a connected component analysis first for some structures e.g. lesions
-
-  # Honour -sgm_amyg_hipp option
-  ah = 1 if app.args.sgm_amyg_hipp else 0
-  # Honour -white_stem option
-  bs = 2 if app.args.white_stem else 4
-
-  structures = [ ( 4,  3, 'Left-Lateral-Ventricle'),
-                 ( 5,  3, 'Left-Inf-Lat-Vent'),
-                 ( 6,  3, 'Left-Cerebellum-Exterior'),
-                 ( 7,  2, 'Left-Cerebellum-White-Matter'),
-                 ( 8,  1, 'Left-Cerebellum-Cortex'),
-                 ( 9,  1, 'Left-Thalamus'),
-                 (10,  1, 'Left-Thalamus-Proper'),
-                 (11,  1, 'Left-Caudate'),
-                 (12,  1, 'Left-Putamen'),
-                 (13,  1, 'Left-Pallidum'),
-                 (14,  3, '3rd-Ventricle'),
-                 (15,  3, '4th-Ventricle'),
-# Brain stem handled separately
-#                (16,  2, 'Brain-Stem'),
-                 (17, ah, 'Left-Hippocampus'),
-                 (18, ah, 'Left-Amygdala'),
-                 (24,  3, 'CSF'),
-                 (25,  4, 'Left-Lesion'),
-                 (26,  1, 'Left-Accumbens-area'),
-                 (27, bs, 'Left-Substancia-Nigra'),
-                 (28, bs, 'Left-VentralDC'),
-                 (30,  3, 'Left-vessel'),
-                 (31,  3, 'Left-choroid-plexus'),
-                 (43,  3, 'Right-Lateral-Ventricle'),
-                 (44,  3, 'Right-Inf-Lat-Vent'),
-                 (45,  3, 'Right-Cerebellum-Exterior'),
-                 (46,  2, 'Right-Cerebellum-White-Matter'),
-                 (47,  1, 'Right-Cerebellum-Cortex'),
-                 (48,  1, 'Right-Thalamus'),
-                 (49,  1, 'Right-Thalamus-Proper'),
-                 (50,  1, 'Right-Caudate'),
-                 (51,  1, 'Right-Putamen'),
-                 (52,  1, 'Right-Pallidum'),
-                 (53, ah, 'Right-Hippocampus'),
-                 (54, ah, 'Right-Amygdala'),
-                 (57,  4, 'Right-Lesion'),
-                 (58,  1, 'Right-Accumbens-area'),
-                 (59, bs, 'Right-Substancia-Nigra'),
-                 (60, bs, 'Right-VentralDC'),
-                 (62,  3, 'Right-vessel'),
-                 (63,  3, 'Right-choroid-plexus'),
-                 (72,  3, '5th-Ventricle'),
-                 (192, 2, 'Corpus_Callosum'),
-                 (250, 2, 'Fornix') ]
-
-
-  corpus_callosum = [ (251, 'CC_Posterior'),
-                      (252, 'CC_Mid_Posterior'),
-                      (253, 'CC_Central'),
-                      (254, 'CC_Mid_Anterior'),
-                      (255, 'CC_Anterior') ]
-
-  # TODO Need to do something about anterior commissure
+  tissue_images = [ [ 'lh.pial.mif', 'rh.pial.mif' ],
+                    [],
+                    [ 'lh.white.mif', 'rh.white.mif' ],
+                    [],
+                    [] ]
 
   # Get the main cerebrum segments; these are already smooth
   # FIXME There may be some minor mismatch between the WM and pial segments within the medial section
@@ -236,94 +258,202 @@ def execute(): #pylint: disable=unused-variable
       progress.increment()
   progress.done()
 
-  # Get other structures that need to be converted from the voxel image
-  progress = app.progressBar('Smoothing non-cortical structures segmented by FreeSurfer', len(structures) + 2)
-  for (index, tissue, name) in structures:
-    # Don't segment anything for which we have instead obtained estimates using FIRST
-    # Also don't segment the hippocampi from the aparc+aseg image if we're using the hippocampal subfields module
-    if not name in sgm_first_map.values() and not name in hipp_subfield_image_map.values():
-      # If we're going to subsequently use fast directly on the FreeSurfer T1 image,
-      #   don't bother smoothing cerebellar segmentations; we're only going to use
-      #   them to produce a mask anyway
-      # FIXME This will still be included in the list of images to be combined;
-      #   if a template image is being used, this will lead to heartache due to image grid mismatch
-      if 'Cerebellum' in name and have_fast:
-        run.command('mrcalc ' + aparc_image + ' ' + str(index) + ' -eq ' + name + '.mif -datatype float32')
-      else:
-        init_mesh_path = name + '_init.vtk'
-        smoothed_mesh_path = name + '.vtk'
-        run.command('mrcalc ' + aparc_image + ' ' + str(index) + ' -eq - | voxel2mesh - -threshold 0.5 ' + init_mesh_path)
-        run.command('meshfilter ' + init_mesh_path + ' smooth ' + smoothed_mesh_path)
-        file.delTemporary(init_mesh_path)
-        run.command('mesh2voxel ' + smoothed_mesh_path + ' ' + template_image + ' ' + name + '.mif')
-        file.delTemporary(smoothed_mesh_path)
+
+
+  # Get other structures that need to be converted from the aseg voxel image
+  from_aseg = ASEG_STRUCTURES.copy()
+  if hippocampi_method == 'subfields':
+    if not hipp_subfield_has_amyg:
+      from_aseg.extend(AMYG_ASEG)
+    if have_first:
+      from_aseg = [ entry for entry in from_aseg if entry[2] not in SGM_FIRST_MAP.values() ]
+  elif hippocampi_method == 'first':
+    # Wouldn't still be executing if first were not installed
+    from_aseg = [ entry for entry in from_aseg if entry[2] not in SGM_FIRST_MAP.values() ]
+  elif hippocampi_method == 'aseg':
+    from_aseg.extend(AMYG_ASEG)
+    if have_first:
+      from_aseg = [ entry for entry in from_aseg if entry[2] not in SGM_FIRST_MAP.values() ]
+    from_aseg.extend(HIPP_ASEG)
+  progress = app.progressBar('Smoothing non-cortical structures segmented by FreeSurfer', len(from_aseg))
+  for (index, tissue, name) in from_aseg:
+    init_mesh_path = name + '_init.vtk'
+    smoothed_mesh_path = name + '.vtk'
+    run.command('mrcalc ' + aparc_image + ' ' + str(index) + ' -eq - | voxel2mesh - -threshold 0.5 ' + init_mesh_path)
+    run.command('meshfilter ' + init_mesh_path + ' smooth ' + smoothed_mesh_path)
+    file.delTemporary(init_mesh_path)
+    run.command('mesh2voxel ' + smoothed_mesh_path + ' ' + template_image + ' ' + name + '.mif')
+    file.delTemporary(smoothed_mesh_path)
+    tissue_images[tissue].append(name + '.mif')
     progress.increment()
+  progress.done()
+
+
 
   # Combine corpus callosum segments before smoothing
-  for (index, name) in corpus_callosum:
+  progress = app.progressBar('Combining and smoothing corpus callosum segmentation', len(CORPUS_CALLOSUM_ASEG) + 3)
+  for (index, name) in CORPUS_CALLOSUM_ASEG:
     run.command('mrcalc ' + aparc_image + ' ' + str(index) + ' -eq ' + name + '.mif -datatype bit')
+    progress.increment()
   cc_init_mesh_path = 'combined_corpus_callosum_init.vtk'
   cc_smoothed_mesh_path = 'combined_corpus_callosum.vtk'
-  run.command('mrmath ' + ' '.join([ name + '.mif' for (index, name) in corpus_callosum ]) + ' sum - | voxel2mesh - -threshold 0.5 ' + cc_init_mesh_path)
-  for name in [ n for i, n in corpus_callosum ]:
-    file.delTemporary(name)
+  run.command('mrmath ' + ' '.join([ name + '.mif' for (index, name) in CORPUS_CALLOSUM_ASEG ]) + ' sum - | voxel2mesh - -threshold 0.5 ' + cc_init_mesh_path)
+  for name in [ n for i, n in CORPUS_CALLOSUM_ASEG ]:
+    file.delTemporary(name + '.mif')
+  progress.increment()
   run.command('meshfilter ' + cc_init_mesh_path + ' smooth ' + cc_smoothed_mesh_path)
   file.delTemporary(cc_init_mesh_path)
+  progress.increment()
   run.command('mesh2voxel ' + cc_smoothed_mesh_path + ' ' + template_image + ' combined_corpus_callosum.mif')
   file.delTemporary(cc_smoothed_mesh_path)
-  progress.increment()
+  progress.done()
+  tissue_images[2].append('combined_corpus_callosum.mif')
+
+
 
   # Deal with brain stem, including determining those voxels that should
   #   be erased from the 5TT image in order for streamlines traversing down
   #   the spinal column to be terminated & accepted
   bs_fullmask_path = 'Brain_stem_init.mif'
   bs_cropmask_path = ''
-  run.command('mrcalc ' + aparc_image + ' 16 -eq ' + bs_fullmask_path + ' -datatype bit')
+  progress = app.progressBar('Segmenting and cropping brain stem', 6 + (2 if app.args.template else 0))
+
+  run.command('mrcalc ' + aparc_image + ' ' + str(BRAIN_STEM_ASEG[0][0]) + ' -eq ' + \
+              ' -add '.join([ aparc_image + ' ' + str(index) + ' -eq' for index, name in BRAIN_STEM_ASEG[1:] ]) + ' -add ' + \
+              bs_fullmask_path + ' -datatype bit')
+  progress.increment()
   fourthventricle_zmin = min([ int(line.split()[2]) for line in run.command('maskdump 4th-Ventricle.mif')[0].splitlines() ])
   bs_voxel2mesh_input = bs_fullmask_path
   if fourthventricle_zmin:
-    bs_wmmask_path = 'Brain_stem_wm.mif'
+    bs_wmmask_path = 'Brain_stem_preserve.mif'
     bs_cropmask_path = 'Brain_stem_crop.mif'
     run.command('mredit ' + bs_fullmask_path + ' ' + bs_wmmask_path + ' ' + ' '.join([ '-plane 2 ' + str(index) + ' 0' for index in range(0, fourthventricle_zmin) ]))
+    progress.increment()
     run.command('mrcalc ' + bs_fullmask_path + ' ' + bs_wmmask_path + ' -sub -1 -mult ' + bs_cropmask_path + ' -datatype bit')
+    progress.increment()
     if app.args.template:
       bs_cropmesh_path = 'Brain_stem_crop.vtk'
       bs_new_cropmask_path = 'Brain_stem_crop_template.mif'
       run.command('voxel2mesh ' + bs_cropmask_path + ' ' + bs_cropmesh_path + ' -blocky')
+      progress.increment()
       run.command('mesh2voxel ' + bs_cropmesh_path + ' ' + template_image + ' - | ' + \
                   'mrthreshold - -abs 1e-6 ' + bs_new_cropmask_path)
+      progress.increment()
       file.delTemporary(bs_cropmesh_path)
       file.delTemporary(bs_cropmask_path)
       bs_cropmask_path = bs_new_cropmask_path
     bs_voxel2mesh_input = bs_wmmask_path
 
+  file.delTemporary(bs_fullmask_path)
   bs_init_mesh_path = 'brain_stem_init.vtk'
   bs_smoothed_mesh_path = 'brain_stem.vtk'
   run.command('voxel2mesh ' + bs_voxel2mesh_input + ' ' + bs_init_mesh_path)
   file.delTemporary(bs_voxel2mesh_input)
+  progress.increment()
   run.command('meshfilter ' + bs_init_mesh_path + ' smooth ' + bs_smoothed_mesh_path)
   file.delTemporary(bs_init_mesh_path)
+  progress.increment()
   run.command('mesh2voxel ' + bs_smoothed_mesh_path + ' ' + template_image + ' brain_stem.mif')
   file.delTemporary(bs_smoothed_mesh_path)
   progress.done()
+  tissue_images[2 if app.args.white_stem else 4].append('brain_stem.mif')
+
+
+  if hippocampi_method == 'subfields':
+    progress = app.progressBar('Using detected FreeSurfer hippocampal subfields module output', 64 if hipp_subfield_has_amyg else 32)
+
+    subfields = [ ( hipp_lut_file, 'hipp' ) ]
+    if hipp_subfield_has_amyg:
+      subfields.append(( amyg_lut_file, 'amyg' ))
+
+    for subfields_lut_file, structure_name in subfields:
+      for hemi, filename in zip([ 'Left', 'Right'], [ prefix + hipp_subfield_image_suffix for prefix in [ 'l', 'r' ] ]):
+        # Extract individual components from image and assign to different tissues
+        subfields_all_tissues_image = hemi + '_' + structure_name + '_subfields.mif'
+        run.command('labelconvert ' + os.path.join(mri_dir, filename) + ' ' + freesurfer_lut_file + ' ' + subfields_lut_file + ' ' + subfields_all_tissues_image)
+        progress.increment()
+        for tissue in range(0, 5):
+          init_mesh_path = hemi + '_' + structure_name + '_subfield_' + str(tissue) + '_init.vtk'
+          smooth_mesh_path = hemi + '_' + structure_name + '_subfield_' + str(tissue) + '.vtk'
+          subfield_tissue_image = hemi + '_' + structure_name + '_subfield_' + str(tissue) + '.mif'
+          run.command('mrcalc ' + subfields_all_tissues_image + ' ' + str(tissue+1) + ' -eq - | ' + \
+                      'voxel2mesh - ' + init_mesh_path)
+          progress.increment()
+          # Since the hippocampal subfields segmentation can include some fine structures, reduce the extent of smoothing
+          run.command('meshfilter ' + init_mesh_path + ' smooth ' + smooth_mesh_path + ' -smooth_spatial 2 -smooth_influence 2')
+          file.delTemporary(init_mesh_path)
+          progress.increment()
+          run.command('mesh2voxel ' + smooth_mesh_path + ' ' + template_image + ' ' + subfield_tissue_image)
+          file.delTemporary(smooth_mesh_path)
+          progress.increment()
+          tissue_images[tissue].append(subfield_tissue_image)
+        file.delTemporary(subfields_all_tissues_image)
+    progress.done()
+
+
+
+
+  if have_first:
+    app.console('Running FSL FIRST to segment sub-cortical grey matter structures')
+    from_first = SGM_FIRST_MAP.copy()
+    if hippocampi_method == 'subfields':
+      from_first = { key: value for key, value in from_first.items() if 'Hippocampus' not in value }
+      if hipp_subfield_has_amyg:
+        from_first = { key: value for key, value in from_first.items() if 'Amygdala' not in value }
+    elif hippocampi_method == 'aseg':
+      from_first = { key: value for key, value in from_first.items() if 'Hippocampus' not in value }
+    run.command(first_cmd + ' -s ' + ','.join(from_first.keys()) + ' -i T1.nii -b -o first')
+    fsl.checkFirst('first', from_first.keys())
+    file.delTemporary(glob.glob('T1_to_std_sub.*'))
+    progress = app.progressBar('Mapping FIRST segmentations to image', 2*len(from_first))
+    for key, value in from_first.items():
+      vtk_in_path = 'first-' + key + '_first.vtk'
+      vtk_converted_path = 'first-' + key + '_transformed.vtk'
+      run.command('meshconvert ' + vtk_in_path + ' ' + vtk_converted_path + ' -transform first2real T1.nii')
+      file.delTemporary(vtk_in_path)
+      progress.increment()
+      run.command('mesh2voxel ' + vtk_converted_path + ' ' + template_image + ' ' + value + '.mif')
+      file.delTemporary(vtk_converted_path)
+      tissue_images[1].append(value + '.mif')
+      progress.increment()
+    if not have_fast:
+      file.delTemporary('T1.nii')
+    file.delTemporary(glob.glob('first*'))
+    progress.done()
+
+
+
+  # If we don't have FAST, do cerebellar segmentation in a comparable way to the cortical GM / WM:
+  #   Generate one 'pial-like' surface containing the GM and WM of the cerebellum,
+  #   and another with just the WM
+  if not have_fast:
+    progress = app.progressBar('Adding FreeSurfer cerebellar segmentations directly', 6)
+    for hemi in [ 'Left-', 'Right-' ]:
+      wm_index = [ index for index, tissue, name in CEREBELLUM_ASEG if name.startswith(hemi) and 'White' in name ][0]
+      gm_index = [ index for index, tissue, name in CEREBELLUM_ASEG if name.startswith(hemi) and 'Cortex' in name ][0]
+      run.command('mrcalc ' + aparc_image + ' ' + str(wm_index) + ' -eq ' + aparc_image + ' ' + str(gm_index) + ' -eq -add - | ' + \
+                  'voxel2mesh - ' + hemi + 'cerebellum_all_init.vtk')
+      progress.increment()
+      run.command('mrcalc ' + aparc_image + ' ' + str(gm_index) + ' -eq - | ' + \
+                  'voxel2mesh - ' + hemi + 'cerebellum_grey_init.vtk')
+      progress.increment()
+      for name, tissue in { 'all':2, 'grey':1 }.items():
+        run.command('meshfilter ' + hemi + 'cerebellum_' + name + '_init.vtk smooth ' + hemi + 'cerebellum_' + name + '.vtk')
+        file.delTemporary(hemi + 'cerebellum_' + name + '_init.vtk')
+        progress.increment()
+        run.command('mesh2voxel ' + hemi + 'cerebellum_' + name + '.vtk ' + template_image + ' ' + hemi + 'cerebellum_' + name + '.mif')
+        file.delTemporary(hemi + 'cerebellum_' + name + '.vtk')
+        progress.increment()
+        tissue_images[tissue].append(hemi + 'cerebellum_' + name + '.mif')
+    progress.done()
+
 
   # Construct images with the partial volume of each tissue
   progress = app.progressBar('Combining segmentations of all structures corresponding to each tissue type', 5)
   for tissue in range(0,5):
-    image_list = [ n + '.mif' for (i, t, n) in structures if t == tissue and not (have_fast and 'Cerebellum' in n) ]
-    # For cortical GM and WM, need to also add the main cerebrum segments
-    if tissue == 0:
-      image_list.extend([ 'lh.pial.mif', 'rh.pial.mif' ])
-    elif tissue == 2:
-      image_list.extend([ 'lh.white.mif', 'rh.white.mif', 'combined_corpus_callosum.mif' ])
-      if app.args.white_stem:
-        image_list.append('brain_stem.mif')
-    elif tissue == 4:
-      if not app.args.white_stem:
-        image_list.append('brain_stem.mif')
-    run.command('mrmath ' + ' '.join(image_list) + ' sum - | mrcalc - 1.0 -min tissue' + str(tissue) + '_init.mif')
+    run.command('mrmath ' + ' '.join(tissue_images[tissue]) + ' sum - | mrcalc - 1.0 -min tissue' + str(tissue) + '_init.mif')
     # TODO Update file.delTemporary() to support list input
-    for entry in image_list:
+    for entry in tissue_images[tissue]:
       file.delTemporary(entry)
     progress.increment()
   progress.done()
@@ -366,6 +496,9 @@ def execute(): #pylint: disable=unused-variable
   progress.done()
 
 
+  if app.args.template:
+    run.command('mrtransform ' + mask_image + ' -template template.mif - | mrthreshold - brainmask.mif -abs 0.5')
+    mask_image = 'brainmask.mif'
 
 
   # Branch depending on whether or not FSL fast will be used to re-segment the cerebellum
@@ -382,26 +515,23 @@ def execute(): #pylint: disable=unused-variable
     #   re-combine this with the tissue maps from other sources based on the estimated PVF of
     #   cerebellum meshes
     cerebellum_volume_image = 'Cerebellum_volume.mif'
+    cerebellum_mask_image = 'Cerebellum_mask.mif'
+    T1_cerebellum_masked = 'T1_cerebellum_precrop.mif'
     if app.args.template:
 
       # If this is the case, then we haven't yet performed any cerebellar segmentation / meshing
       # What we want to do is: for each hemisphere, combine all three "cerebellar" segments from FreeSurfer,
       #   convert to a surface, map that surface to the template image
-      progress = app.progressBar('Preparing images of cerebellum for intensity-based segmentation', 11)
+      progress = app.progressBar('Preparing images of cerebellum for intensity-based segmentation', 9)
       cerebellar_hemisphere_pvf_images = [ ]
       for hemi in [ 'Left', 'Right' ]:
-        cerebellar_images = [ n + '.mif' for (i, t, n) in structures if hemi in n and 'Cerebellum' in n ]
-        sum_image = hemi + '-Cerebellum-All.mif'
         init_mesh_path = hemi + '-Cerebellum-All-Init.vtk'
         smooth_mesh_path = hemi + '-Cerebellum-All-Smooth.vtk'
         pvf_image_path = hemi + '-Cerebellum-PVF-Template.mif'
-        run.command('mrmath ' + ' '.join(cerebellar_images) + ' sum ' + sum_image)
-        # TODO Update with new file.delTemporary()
-        for entry in cerebellar_images:
-          file.delTemporary(entry)
-        progress.increment()
-        run.command('voxel2mesh ' + sum_image + ' ' + init_mesh_path)
-        file.delTemporary(sum_image)
+        cerebellum_aseg_hemi = [ entry for entry in CEREBELLUM_ASEG if hemi in entry[2] ]
+        run.command('mrcalc ' + aparc_image + ' ' + str(cerebellum_aseg_hemi[0][0]) + ' -eq ' + \
+                    ' -add '.join([ aparc_image + ' ' + str(index) + ' -eq' for index, tissue, name in cerebellum_aseg_hemi[1:] ]) + ' -add - | ' + \
+                    'voxel2mesh - ' + init_mesh_path)
         progress.increment()
         run.command('meshfilter ' + init_mesh_path + ' smooth ' + smooth_mesh_path)
         file.delTemporary(init_mesh_path)
@@ -419,27 +549,20 @@ def execute(): #pylint: disable=unused-variable
       for entry in cerebellar_hemisphere_pvf_images:
         file.delTemporary(entry)
       progress.increment()
-      T1_cerebellum_mask_image = 'T1_cerebellum_mask.mif'
-      run.command('mrthreshold ' + cerebellum_volume_image + ' ' + T1_cerebellum_mask_image + ' -abs 1e-6')
+
+      run.command('mrthreshold ' + cerebellum_volume_image + ' ' + cerebellum_mask_image + ' -abs 1e-6')
       progress.increment()
-      run.command('mrtransform ' + norm_image + ' -template ' + template_image + ' - | ' \
-                  'mrcalc - ' + T1_cerebellum_mask_image + ' -mult - | ' \
-                  'mrconvert - T1_cerebellum_precrop.mif')
+      run.command('mrtransform ' + norm_image + ' -template ' + template_image + ' - | ' + \
+                  'mrcalc - ' + cerebellum_mask_image + ' -mult ' + T1_cerebellum_masked)
       progress.done()
 
     else:
-
-      progress = app.progressBar('Preparing images of cerebellum for intensity-based segmentation', 2)
-      # Generate a mask of all voxels classified as cerebellum by FreeSurfer
-      cerebellum_mask_images = [ n + '.mif' for (i, t, n) in structures if 'Cerebellum' in n ]
-      run.command('mrmath ' + ' '.join(cerebellum_mask_images) + ' sum ' + cerebellum_volume_image)
-      for entry in cerebellum_mask_images:
-        file.delTemporary(entry)
-      progress.increment()
-      # FAST image input needs to be pre-masked
-      T1_cerebellum_mask_image = cerebellum_volume_image
-      run.command('mrcalc T1.nii ' + T1_cerebellum_mask_image + ' -mult - | mrconvert - T1_cerebellum_precrop.mif')
-      progress.done()
+      app.console('Preparing images of cerebellum for intensity-based segmentation')
+      run.command('mrcalc ' + aparc_image + ' ' + str(CEREBELLUM_ASEG[0][0]) + ' -eq ' + \
+                  ' -add '.join([ aparc_image + ' ' + str(index) + ' -eq' for index, tissue, name in CEREBELLUM_ASEG[1:] ]) + ' -add ' + \
+                  cerebellum_volume_image)
+      cerebellum_mask_image = cerebellum_volume_image
+      run.command('mrcalc T1.nii ' + cerebellum_mask_image + ' -mult ' + T1_cerebellum_masked)
 
     file.delTemporary('T1.nii')
 
@@ -453,10 +576,12 @@ def execute(): #pylint: disable=unused-variable
     # FAST memory usage can also be huge when using a high-resolution template image:
     #   Crop T1 image around the cerebellum before feeding to FAST, then re-sample to full template image FoV
     fast_input_image = 'T1_cerebellum.nii'
-    run.command('mrcrop T1_cerebellum_precrop.mif -mask ' + T1_cerebellum_mask_image + ' ' + fast_input_image)
-    # TODO Store this name in a variable
-    file.delTemporary('T1_cerebellum_precrop.mif')
-    # FIXME Cleanup of T1_cerebellum_mask_image: May be same image as cerebellum_volume_image
+    run.command('mrcrop ' + T1_cerebellum_masked + ' -mask ' + cerebellum_mask_image + ' ' + fast_input_image)
+    file.delTemporary(T1_cerebellum_masked)
+    # Cleanup of cerebellum_mask_image:
+    #   May be same image as cerebellum_volume_image, which is required later
+    if cerebellum_mask_image != cerebellum_volume_image:
+      file.delTemporary(cerebellum_mask_image)
     run.command(fast_cmd + ' -N ' + fast_input_image)
     file.delTemporary(fast_input_image)
 
