@@ -6,6 +6,7 @@ def initialise(base_parser, subparsers): #pylint: disable=unused-variable
   # TESTME Option to specify spatial resolution of output image?
   # Or just a template image; that way can control voxel size & axis orientations
   parser.add_argument('-template', help='Provide an image that will form the template for the generated 5TT image')
+  parser.add_argument('-white_stem', action='store_true', help='Classify the brainstem as white matter')
   # TODO Add references
 
 
@@ -161,6 +162,8 @@ def execute(): #pylint: disable=unused-variable
 
   # Honour -sgm_amyg_hipp option
   ah = 1 if app.args.sgm_amyg_hipp else 0
+  # Honour -white_stem option
+  bs = 2 if app.args.white_stem else 4
 
   structures = [ ( 4,  3, 'Left-Lateral-Ventricle'),
                  ( 5,  3, 'Left-Inf-Lat-Vent'),
@@ -181,8 +184,8 @@ def execute(): #pylint: disable=unused-variable
                  (24,  3, 'CSF'),
                  (25,  4, 'Left-Lesion'),
                  (26,  1, 'Left-Accumbens-area'),
-                 (27,  1, 'Left-Substancia-Nigra'),
-                 (28,  2, 'Left-VentralDC'),
+                 (27, bs, 'Left-Substancia-Nigra'),
+                 (28, bs, 'Left-VentralDC'),
                  (30,  3, 'Left-vessel'),
                  (31,  3, 'Left-choroid-plexus'),
                  (43,  3, 'Right-Lateral-Ventricle'),
@@ -199,8 +202,8 @@ def execute(): #pylint: disable=unused-variable
                  (54, ah, 'Right-Amygdala'),
                  (57,  4, 'Right-Lesion'),
                  (58,  1, 'Right-Accumbens-area'),
-                 (59,  1, 'Right-Substancia-Nigra'),
-                 (60,  2, 'Right-VentralDC'),
+                 (59, bs, 'Right-Substancia-Nigra'),
+                 (60, bs, 'Right-VentralDC'),
                  (62,  3, 'Right-vessel'),
                  (63,  3, 'Right-choroid-plexus'),
                  (72,  3, '5th-Ventricle'),
@@ -312,7 +315,12 @@ def execute(): #pylint: disable=unused-variable
     if tissue == 0:
       image_list.extend([ 'lh.pial.mif', 'rh.pial.mif' ])
     elif tissue == 2:
-      image_list.extend([ 'lh.white.mif', 'rh.white.mif', 'combined_corpus_callosum.mif', 'brain_stem.mif' ])
+      image_list.extend([ 'lh.white.mif', 'rh.white.mif', 'combined_corpus_callosum.mif' ])
+      if app.args.white_stem:
+        image_list.append('brain_stem.mif')
+    elif tissue == 4:
+      if not app.args.white_stem:
+        image_list.append('brain_stem.mif')
     run.command('mrmath ' + ' '.join(image_list) + ' sum - | mrcalc - 1.0 -min tissue' + str(tissue) + '_init.mif')
     # TODO Update file.delTemporary() to support list input
     for entry in image_list:
