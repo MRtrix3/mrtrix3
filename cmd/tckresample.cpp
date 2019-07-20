@@ -116,7 +116,7 @@ void run ()
 
   const std::unique_ptr<Resampling::Base> resampler (Resampling::get_resampler());
 
-  const float old_step_size = get_step_size (properties);
+  const float old_step_size = properties.get_step_size();
   if (!std::isfinite (old_step_size)) {
     INFO ("Do not have step size information from input track file");
   }
@@ -132,9 +132,7 @@ void run ()
   }
   properties["output_step_size"] = std::isfinite (new_step_size) ? str(new_step_size) : "variable";
 
-  auto downsample = properties.find ("downsample_factor");
-  if (downsample != properties.end())
-    properties.erase (downsample);
+  properties.erase_if_present("downsample_factor");
 
   Worker worker (resampler);
   Receiver receiver (argument[1], properties);

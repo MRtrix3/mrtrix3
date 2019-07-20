@@ -465,9 +465,7 @@ void run ()
   if (nointerp && precise)
     throw Exception ("Option -nointerp and -precise are mutually exclusive");
   const interp_type interp = nointerp ? interp_type::NEAREST : (precise ? interp_type::PRECISE : interp_type::LINEAR);
-  const size_t num_tracks = properties.find("count") == properties.end() ?
-                            0 :
-                            to<size_t>(properties["count"]);
+  const size_t num_tracks = properties.value_or_default<size_t>("count",0);
 
   if (statistic == stat_tck::NONE && interp == interp_type::PRECISE)
     throw Exception ("Precise streamline mapping may only be used with per-streamline statistics");

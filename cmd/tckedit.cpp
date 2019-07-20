@@ -28,7 +28,6 @@
 #include "dwi/tractography/weights.h"
 
 #include "dwi/tractography/editing/editing.h"
-#include "dwi/tractography/editing/loader.h"
 #include "dwi/tractography/editing/receiver.h"
 #include "dwi/tractography/editing/worker.h"
 
@@ -122,15 +121,6 @@ void usage ()
 }
 
 
-void erase_if_present (Tractography::Properties& p, const std::string s)
-{
-  auto i = p.find (s);
-  if (i != p.end())
-    p.erase (i);
-}
-
-
-
 void run ()
 {
 
@@ -138,71 +128,39 @@ void run ()
   const std::string output_path = argument[num_inputs];
 
   // Make sure configuration is sensible
+  if (num_inputs == 0)
+    throw Exception("Insufficient number of inputs");
   if (get_options("tck_weights_in").size() && num_inputs > 1)
     throw Exception ("Cannot use per-streamline weighting with multiple input files");
 
-  // Get the consensus streamline properties from among the multiple input files
+  // Either one file: .lst or .tck
+  // OR multiple .tck files 
   Tractography::Properties properties;
-  size_t count = 0;
-  vector<std::string> input_file_list;
+  Tractography::Reader<float> *reader = nullptr;
 
-  for (size_t file_index = 0; file_index != num_inputs; ++file_index) {
+  if ( num_inputs == 1 ) {
+    reader = new Tractography::Reader<float>(argument[0], properties);
+  } else {
+    vector<std::string> input_file_list;
+    for (size_t file_index = 0; file_index < num_inputs; ++file_index)
+      input_file_list.push_back (argument[file_index]);
 
-    input_file_list.push_back (argument[file_index]);
-
-    Properties p;
-    Reader<float> (argument[file_index], p);
-
-    for (const auto& i : p.comments) {
-      bool present = false;
-      for (const auto& j: properties.comments)
-        if ( (present = (i == j)) )
-          break;
-      if (!present)
-        properties.comments.push_back (i);
-    }
-
-    for (const auto& i : p.prior_rois) {
-      const auto potential_matches = properties.prior_rois.equal_range (i.first);
-      bool present = false;
-      for (auto j = potential_matches.first; !present && j != potential_matches.second; ++j)
-        present = (i.second == j->second);
-      if (!present)
-        properties.prior_rois.insert (i);
-    }
-
-    size_t this_count = 0, this_total_count = 0;
-
-    for (const auto& i : p) {
-      if (i.first == "count") {
-        this_count = to<float> (i.second);
-      } else if (i.first == "total_count") {
-        this_total_count += to<float> (i.second);
-      } else {
-        auto existing = properties.find (i.first);
-        if (existing == properties.end())
-          properties.insert (i);
-        else if (i.second != existing->second)
-          existing->second = "variable";
-      }
-    }
-
-    count += this_count;
-
+    reader = new Tractography::Reader<float>(input_file_list, properties);
   }
 
-  DEBUG ("estimated number of input tracks: " + str(count));
+  properties.load_ROIs();
 
-  load_rois (properties);
+  size_t count = properties.value_or_default<size_t>("count",0);
+  DEBUG ("estimated number of input tracks: " + str(count));
 
   // Some properties from tracking may be overwritten by this editing process
   // Due to the potential use of masking, we have no choice but to clear the
   //   properties class of any fields that would otherwise propagate through
   //   and be applied as part of this editing
-  erase_if_present (properties, "min_dist");
-  erase_if_present (properties, "max_dist");
-  erase_if_present (properties, "min_weight");
-  erase_if_present (properties, "max_weight");
+  properties.erase_if_present("min_dist");
+  properties.erase_if_present("max_dist");
+  properties.erase_if_present("min_weight");
+  properties.erase_if_present("max_weight");
   Editing::load_properties (properties);
 
   // Parameters that the worker threads need to be aware of, but do not appear in Properties
@@ -213,7 +171,6 @@ void run ()
   const size_t number = get_option_value ("number", size_t(0));
   const size_t skip   = get_option_value ("skip",   size_t(0));
 
-  Loader loader (input_file_list);
   Worker worker (properties, inverse, ends_only);
   // This needs to be run AFTER creation of the Worker class
   // (worker needs to be able to set max & min number of points based on step size in input file,
@@ -221,7 +178,7 @@ void run ()
   Receiver receiver (output_path, properties, number, skip);
 
   Thread::run_queue (
-      loader,
+      *reader,
       Thread::batch (Streamline<>()),
       Thread::multi (worker),
       Thread::batch (Streamline<>()),

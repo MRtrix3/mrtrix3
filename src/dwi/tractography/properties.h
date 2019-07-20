@@ -18,6 +18,7 @@
 #define __dwi_tractography_properties_h__
 
 #include <map>
+#include "mrtrix.h"
 #include "timer.h"
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/seeding/list.h"
@@ -71,78 +72,63 @@ namespace MR
             comments.clear();
           }
 
-          template <typename T> void set (T& variable, const std::string& name) {
+          bool has(const std::string& name) const {
+            return this->find(name) != this->end();
+          }
+
+
+          std::string get(const std::string& name) const {
+            auto p = this->find(name);
+            if (p == this->end())
+              throw Exception("Undefined property: \"" + name + "\"");
+            else 
+              return p->second;
+          }
+
+          template <typename T> 
+          T value_or_default(const std::string& name, const T& defval) const {
+            auto p = this->find(name);
+            return p == this->end() ? defval : to<T>(p->second);
+          }
+
+          template <typename T> 
+          void set (T& variable, const std::string& name) {
             if ((*this)[name].empty()) (*this)[name] = str (variable);
             else variable = to<T> ((*this)[name]);
           }
 
+          void erase_if_present(const std::string& name) {
+            auto p = this->find(name);
+            if (p != this->end())
+              this->erase(p);
+          }
+
+          inline float get_step_size() const {
+            return value_or_default<float>( "output_step_size", value_or_default<float>( "step_size", NaN ) );
+          }
+
+          void load_ROIs ();
       };
 
 
-      inline void check_timestamps (const Properties& a, const Properties& b, const std::string& type)
-      {
-        Properties::const_iterator stamp_a = a.find ("timestamp");
-        Properties::const_iterator stamp_b = b.find ("timestamp");
-        if (stamp_a == a.end() || stamp_b == b.end())
-          throw Exception ("unable to verify " + type + " pair: missing timestamp");
-        if (stamp_a->second != stamp_b->second)
-          throw Exception ("invalid " + type + " combination - timestamps do not match");
+      // JH: kept for now, but should be removed in favour of: p.get_step_size()
+      inline float get_step_size (const Properties& p) { 
+        DEBUG( "Function get_step_size is deprecated. Call properties.get_step_size() instead." );
+        return p.get_step_size(); 
       }
 
 
+      // JH: unused for now
+      void check_compatible(const Properties& a, const Properties& b, const std::string& type);
 
 
-      inline void check_counts (const Properties& a, const Properties& b, const std::string& type, bool abort_on_fail)
-      {
-        Properties::const_iterator count_a = a.find ("count");
-        Properties::const_iterator count_b = b.find ("count");
-        if ((count_a == a.end()) || (count_b == b.end())) {
-          std::string mesg = "unable to validate " + type + " pair: missing count field";
-          if (abort_on_fail) throw Exception (mesg);
-          else WARN (mesg);
-        }
-        if (to<size_t>(count_a->second) != to<size_t>(count_b->second)) {
-          std::string mesg = type + " files do not contain same number of elements";
-          if (abort_on_fail) throw Exception (mesg);
-          else WARN (mesg);
-        }
-      }
+      void check_timestamps (const Properties& a, const Properties& b, const std::string& type);
 
 
+      void check_counts (const Properties& a, const Properties& b, const std::string& type, bool abort_on_fail);
 
 
-      inline float get_step_size (const Properties& p)
-      {
-        for (size_t index = 0; index != 2; ++index) {
-          const std::string key (index ? "step_size" : "output_step_size");
-          auto it = p.find (key);
-          if (it != p.end()) {
-            try {
-              return to<float> (it->second);
-            } catch (...) { }
-          }
-        }
-        return NaN;
-      }
-
-
-
-
-
-      inline std::ostream& operator<< (std::ostream& stream, const Properties& P)
-      {
-        stream << "seeds: " << P.seeds;
-        stream << "include: " << P.include << ", exclude: " << P.exclude << ", mask: " << P.mask << ", dict: ";
-        for (std::map<std::string, std::string>::const_iterator i = P.begin(); i != P.end(); ++i)
-          stream << "[ " << i->first << ": " << i->second << " ], ";
-        stream << "comments: ";
-        for (vector<std::string>::const_iterator i = P.comments.begin(); i != P.comments.end(); ++i)
-          stream << "\"" << *i << "\", ";
-        return (stream);
-      }
-
-
-
+      std::ostream& operator<< (std::ostream& stream, const Properties& P);
 
     }
   }

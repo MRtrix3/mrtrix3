@@ -159,7 +159,7 @@ void run ()
   DWI::Tractography::Properties properties;
   DWI::Tractography::Reader<float> track_file (track_filename, properties);
   // Read in tracts, and compute whole-brain fixel-fixel connectivity
-  const size_t num_tracks = properties["count"].empty() ? 0 : to<int> (properties["count"]);
+  const size_t num_tracks = properties.value_or_default<size_t>("count",0);
   if (!num_tracks)
     throw Exception ("no tracks found in input file");
 

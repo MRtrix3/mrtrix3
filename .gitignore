@@ -17,6 +17,7 @@
 *.hdr
 *.qrc
 *.rste
+*.tar
 config
 build.*
 /configure.log
@@ -53,3 +54,4 @@ testing/bin/
 testing/src/project_version.cpp
 testing/src/project_version.h
 .__tmp.log
+.vscode

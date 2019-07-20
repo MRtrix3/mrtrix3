@@ -120,11 +120,10 @@ void run ()
     Tractography::Properties properties;
     Tractography::Reader<float> reader (argument[0], properties);
 
-    if (properties.find ("count") != properties.end())
-      header_count = to<size_t> (properties["count"]);
+    header_count = properties.value_or_default<size_t>("count",0);
 
     if (!get_options ("explicit").size()) {
-      step_size = get_step_size (properties);
+      step_size = properties.get_step_size();
       if (!std::isfinite (step_size) || !step_size) {
         INFO ("Streamline step size undefined in header; lengths will be calculated manually");
         if (get_options ("histogram").size()) {

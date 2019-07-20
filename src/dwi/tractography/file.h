@@ -25,6 +25,7 @@
 #include "file/config.h"
 #include "file/key_value.h"
 #include "file/ofstream.h"
+#include "file/utils.h"
 #include "dwi/tractography/file_base.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
@@ -61,7 +62,7 @@ namespace MR
           virtual bool operator() (const Streamline<ValueType>&) = 0;
           virtual ~WriterInterface() { }
       };
-
+      
 
 
       //! A class to read streamlines data
@@ -71,64 +72,50 @@ namespace MR
         public:
 
           //! open the \c file for reading and load header into \c properties
-          Reader (const std::string& file, Properties& properties) :
-            current_index (0) {
-              open (file, "tracks", properties);
-              auto opt = App::get_options ("tck_weights_in");
-              if (opt.size()) {
-                weights_file.reset (new std::ifstream (str(opt[0][0]).c_str(), std::ios_base::in));
-                if (!weights_file->good())
-                  throw Exception ("Unable to open streamlines weights file " + str(opt[0][0]));
-              }
+          Reader (const std::string& file, Properties& prop) 
+          {
+            vector<std::string> files;
+            if (Path::has_suffix(file, ".lst")){
+              File::readlines( file, files );
+              INFO("opening list of " + str(files.size()) + " .tck file(s)");
             }
+            else
+              files.push_back(file);
+              
+            construct( files, prop );
+          }
+
+          Reader(const vector<std::string>& files, Properties& prop) 
+            { construct(files, prop); }
+
+          ~Reader()
+            { close_current_files(false); clear(); }
 
 
-            //! fetch next track from file
-            bool operator() (Streamline<ValueType>& tck) {
-              tck.clear();
 
-              if (!in.is_open())
-                return false;
 
-              do {
-                auto p = get_next_point();
-                if (std::isinf (p[0])) {
-                  in.close();
-                  check_excess_weights();
-                  return false;
-                }
-                if (in.eof()) {
-                  in.close();
-                  check_excess_weights();
-                  return false;
-                }
+          //! reset member properties
+          void clear() 
+          {
+            std::ifstream a, b; // dummy streams
 
-                if (std::isnan (p[0])) {
-                  tck.index = current_index++;
+            file_index = 0;
+            track_index = sub_count = 0;
+            dtype = DataType::Undefined;
+            in.swap(a);
+            inw.swap(b);
+            tck_files.clear();
+            weights_files.clear();
+          }
 
-                  if (weights_file) {
 
-                    (*weights_file) >> tck.weight;
-                    if (weights_file->fail()) {
-                      WARN ("Streamline weights file contains less entries than .tck file; only read " + str(current_index-1) + " streamlines");
-                      in.close();
-                      tck.clear();
-                      return false;
-                    }
 
-                  } else {
-                    tck.weight = 1.0;
-                  }
 
-                  return true;
-                }
+          //! fetch next track from file
+          inline bool operator() (Streamline<ValueType>& tck) {
+            return get_next_track(tck);
+          }
 
-                tck.push_back (p);
-              } while (in.good());
-
-              in.close();
-              return false;
-            }
 
 
 
@@ -136,57 +123,206 @@ namespace MR
           using __ReaderBase__::in;
           using __ReaderBase__::dtype;
 
-          uint64_t current_index;
-          std::unique_ptr<std::ifstream> weights_file;
+          size_t file_index;
+          uint64_t track_index, sub_count;
+          std::ifstream inw;
 
-          //! takes care of byte ordering issues
+          vector<std::string> tck_files, weights_files;
 
-            Eigen::Matrix<ValueType,3,1> get_next_point ()
-            {
-              using namespace ByteOrder;
-              switch (dtype()) {
-                case DataType::Float32LE:
-                  {
-                    float p[3];
-                    in.read ((char*) p, sizeof (p));
-                    return { ValueType(LE(p[0])), ValueType(LE(p[1])), ValueType(LE(p[2])) };
-                  }
-                case DataType::Float32BE:
-                  {
-                    float p[3];
-                    in.read ((char*) p, sizeof (p));
-                    return { ValueType(BE(p[0])), ValueType(BE(p[1])), ValueType(BE(p[2])) };
-                  }
-                case DataType::Float64LE:
-                  {
-                    double p[3];
-                    in.read ((char*) p, sizeof (p));
-                    return { ValueType(LE(p[0])), ValueType(LE(p[1])), ValueType(LE(p[2])) };
-                  }
-                case DataType::Float64BE:
-                  {
-                    double p[3];
-                    in.read ((char*) p, sizeof (p));
-                    return { ValueType(BE(p[0])), ValueType(BE(p[1])), ValueType(BE(p[2])) };
-                  }
-                default:
-                  assert (0);
-                  break;
-              }
-              return { NaN, NaN, NaN };
-            }
 
-          //! Check that the weights file does not contain excess entries
-          void check_excess_weights()
+
+
+          //! initialise current reader instance
+          void construct( const vector<std::string>& files, Properties& prop ) 
           {
-            if (!weights_file)
+            clear();
+
+            if (files.empty())
               return;
-            float temp;
-            (*weights_file) >> temp;
-            if (!weights_file->fail())
-              WARN ("Streamline weights file contains more entries than .tck file");
+
+            // check that there are no .lst files
+            for (auto& file: files)
+              if (Path::has_suffix(file,".lst"))
+                throw Exception("Nested .lst files, or lists of files mixing .tck and .lst extensions, are not supported.");
+
+            // assign properties (also checks that input files are valid .tck files)
+            properties_consensus(files, "tracks", prop);
+            tck_files = files;
+
+            // try to find associated weights
+            auto opt = App::get_options ("tck_weights_in");
+            std::string weights;
+
+            if (opt.size()) {
+
+              weights = str(opt[0][0]);
+
+              if ( files.size()>1 && !Path::has_suffix(weights,".lst") )
+                throw Exception("When reading several .tck files, the weights file should be a list with extension .lst, containing one filename per line.");
+
+              if (Path::has_suffix(weights,".lst"))
+                File::readlines(weights, weights_files);
+              else 
+                weights_files.push_back(weights);
+
+              // check that number of files matches
+              if (weights_files.size() != tck_files.size())
+                throw Exception("Mismatch between number of .tck files and number of streamline weights files."); 
+            }
           }
 
+
+
+
+          //! close currently opened files
+          void close_current_files(bool check_excess=true) 
+          {
+            // close tck file
+            close();
+
+            // close weights file
+            float temp;
+            if (inw.is_open()) {
+              if (check_excess) {
+                inw >> temp;
+                if (!inw.fail())
+                  WARN ("Streamline weights file contains more entries than .tck file");
+              }
+
+              inw.close();
+            }
+
+          }
+
+
+
+
+          //! open next file from file list
+          bool open_next_files() 
+          {
+            close_current_files(false);
+
+            if (file_index >= tck_files.size())
+              return false;
+
+            Properties dummy;
+            open( tck_files[file_index], "tracks", dummy );
+
+            if (!weights_files.empty()) 
+            {
+              inw.open( weights_files[file_index].c_str(), std::ios_base::in );
+              if (!inw)
+                throw Exception ("Unable to open streamlines weights file " + weights_files[file_index]);
+            }
+
+            ++file_index;
+            sub_count = 0;
+            return true;
+          }
+
+
+
+
+          //! get next track in currently opened file
+          bool get_next_track( Streamline<ValueType>& tck )
+          {
+            tck.clear();
+
+            if ( !in.is_open() && !open_next_files() )
+              return false;
+
+            // keep adding points to current streamline
+            do {
+
+              auto p = get_next_point();
+
+              // if we hit eof or Inf value, call again to open next file
+              if ( in.eof() || std::isinf(p[0]) ) {
+                close_current_files();
+                return get_next_track(tck);
+              }
+
+              // end of streamline: set tck index and weight, and return
+              if (std::isnan(p[0])) {
+                
+                tck.index = track_index;
+                ++track_index;
+                ++sub_count;
+
+                if (inw.is_open()) {
+
+                  inw >> tck.weight;
+                  if (inw.fail()) {
+                    --track_index;
+                    --sub_count;
+                    close_current_files(false);
+
+                    WARN ("Streamline weights file contains fewer entries than .tck file; only read " + str(sub_count) + " streamlines.");
+                    return get_next_track(tck);
+                  }
+
+                } else {
+                  tck.weight = 1.0;
+                }
+
+                return true;
+              }
+
+              // otherwise add point and iterate
+              tck.push_back (p);
+
+            } while ( in.good() );
+
+            WARN ("Streamline-parsing from tracks file ended prematurely.");
+            close_current_files();
+            return get_next_track(tck);
+          }
+
+
+
+
+
+          //! takes care of byte ordering issues
+          Eigen::Matrix<ValueType,3,1> get_next_point ()
+          {
+            using namespace ByteOrder;
+            switch (dtype()) {
+              case DataType::Float32LE:
+                {
+                  float p[3];
+                  in.read ((char*) p, sizeof (p));
+                  return { ValueType(LE(p[0])), ValueType(LE(p[1])), ValueType(LE(p[2])) };
+                }
+              case DataType::Float32BE:
+                {
+                  float p[3];
+                  in.read ((char*) p, sizeof (p));
+                  return { ValueType(BE(p[0])), ValueType(BE(p[1])), ValueType(BE(p[2])) };
+                }
+              case DataType::Float64LE:
+                {
+                  double p[3];
+                  in.read ((char*) p, sizeof (p));
+                  return { ValueType(LE(p[0])), ValueType(LE(p[1])), ValueType(LE(p[2])) };
+                }
+              case DataType::Float64BE:
+                {
+                  double p[3];
+                  in.read ((char*) p, sizeof (p));
+                  return { ValueType(BE(p[0])), ValueType(BE(p[1])), ValueType(BE(p[2])) };
+                }
+              default:
+                assert (0);
+                break;
+            }
+            return { NaN, NaN, NaN };
+          }
+
+
+
+
+
+          //! copy construction explicitly disabled
           Reader (const Reader&) = delete;
 
       };
