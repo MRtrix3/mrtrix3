@@ -658,6 +658,12 @@ namespace MR
               connect (vol_index, SIGNAL (valueChanged(int)), this, SLOT (onSetVolumeIndex()));
             }
           }
+          if (volume_index_layout->count() == 0) {
+            if (indices.size() != 1)
+              volume_index_layout->addWidget (new QLabel ("Requires single image selected"));
+            else
+              volume_index_layout->addWidget (new QLabel ("No volumes to select"));
+          }
 
           colourmap_button->set_colourmap_index(colourmap_index);
           opacity_slider->setValue (1.0e3f * opacity);
