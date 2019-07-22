@@ -209,7 +209,7 @@ if grad_export_option:
     grad_import_option = ' -grad grad' + suffix + '.b'
   elif best[3] == 'image':
     grad_import_option = ' -fslgrad bvecs' + suffix + ' bvals'
-  run.command('mrinfo data.mif' + grad_import_option + grad_export_option)
+  run.command('mrinfo data.mif' + grad_import_option + grad_export_option + (' -force' if app.forceOverwrite else ''))
 
 
 app.complete()
