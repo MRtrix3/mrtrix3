@@ -152,7 +152,7 @@ namespace MR
         for (png_uint_32 i = 0; i != height; ++i)
           row_pointers[i] = image_data + i*row_bytes;
         png_read_image (png_ptr, row_pointers);
-        delete row_pointers;
+        delete[] row_pointers;
         row_pointers = NULL;
       }
 
