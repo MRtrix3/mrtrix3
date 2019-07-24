@@ -70,16 +70,6 @@ namespace MR
       using Area = QOpenGLWidget;
       using Format = QSurfaceFormat;
 
-#ifndef NDEBUG
-      void __assert_context_is_current (QWidget* glarea);
-#endif
-
-      inline void assert_context_is_current(QWidget* glarea = nullptr) {
-#ifndef NDEBUG
-        __assert_context_is_current (glarea);
-#endif
-      }
-
 #else
       class Area : public QGLWidget { NOMEMALIGN
         public:
@@ -104,6 +94,13 @@ namespace MR
       }
 
 
+
+#ifndef NDEBUG
+      void __assert_context_is_current (QWidget* glarea);
+      inline void assert_context_is_current(QWidget* glarea = nullptr) { __assert_context_is_current (glarea); }
+#else
+      inline void assert_context_is_current(QWidget* = nullptr) { }
+#endif
 
       extern Area* glwidget;
 
@@ -157,6 +154,7 @@ namespace MR
         };
 #else
         struct Checker { NOMEMALIGN
+          void set () { }
           void operator() () const { }
         };
 #endif
