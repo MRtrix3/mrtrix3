@@ -102,6 +102,10 @@ void usage ()
 
 }
 
+using ValueType = float;
+using ImageType = Image<ValueType>;
+using MaskType = Image<bool>;
+
 // Function to get the number of basis vectors based on the desired order
 int GetBasisVecs(int order)
 {
@@ -123,7 +127,6 @@ int GetBasisVecs(int order)
   return n_basis_vecs;
 };
 
-// Un-templated PolyBasisFunction struct to get the user specified amount of basis functions
 struct PolyBasisFunction { MEMALIGN (PolyBasisFunction)
 
   PolyBasisFunction(const int order) : n_basis_vecs (GetBasisVecs(order)) { };
@@ -136,32 +139,35 @@ struct PolyBasisFunction { MEMALIGN (PolyBasisFunction)
     double z = pos[2];
     Eigen::MatrixXd basis(n_basis_vecs, 1);
     basis(0) = 1.0;
-    if (n_basis_vecs >= 4){
+    if (n_basis_vecs < 4)
+      return basis;
+
     basis(1) = x;
     basis(2) = y;
     basis(3) = z;
-       if (n_basis_vecs >= 10){
-       basis(4) = x * x;
-       basis(5) = y * y;
-       basis(6) = z * z;
-       basis(7) = x * y;
-       basis(8) = x * z;
-       basis(9) = y * z;
-          if (n_basis_vecs >= 20){
-          basis(10) = x * x * x;
-          basis(11) = y * y * y;
-          basis(12) = z * z * z;
-          basis(13) = x * x * y;
-          basis(14) = x * x * z;
-          basis(15) = y * y * x;
-          basis(16) = y * y * z;
-          basis(17) = z * z * x;
-          basis(18) = z * z * y;
-          basis(19) = x * y * z;
-          }
-       }
-    }
-    return basis;
+    if (n_basis_vecs < 10)
+      return basis;
+
+    basis(4) = x * x;
+    basis(5) = y * y;
+    basis(6) = z * z;
+    basis(7) = x * y;
+    basis(8) = x * z;
+    basis(9) = y * z;
+    if (n_basis_vecs < 20)
+      return basis;
+
+    basis(10) = x * x * x;
+    basis(11) = y * y * y;
+    basis(12) = z * z * z;
+    basis(13) = x * x * y;
+    basis(14) = x * x * z;
+    basis(15) = y * y * x;
+    basis(16) = y * y * z;
+    basis(17) = z * z * x;
+    basis(18) = z * z * y;
+    basis(19) = x * y * z;
+  return basis;
   }
 };
 
@@ -170,38 +176,6 @@ struct mask_refiner {
   {
     refined.value() = ( std::isfinite(float(summed.value())) && summed.value() > 0.f && initial_mask.value() );
   }
-};
-
-// Struct calculating the exponentials of the Norm Field Image
-struct NormFieldIm {
-    void operator () (Image<float> norm_field_image, const Image<float> norm_field_log) {
-         norm_field_image.value() = std::exp (norm_field_log.value());
-   }  
-};
-
-
-// Struct calculating the log of the summed_log values
-struct SummedLogValue {
-  template <class ImageType1>
-    void operator() (ImageType1& summed_log) {
-      summed_log.value() = std::log (summed_log.value());
-    }
-};
-
-// Struct calculating the initial summed_log values
-struct SummedLog { 
-  SummedLog (const size_t n_tissue_types, Eigen::VectorXd balance_factors) : n_tissue_types (n_tissue_types), balance_factors (balance_factors) { }
-
-  template <class ImageType>  
-  void operator () (ImageType& summed_log, ImageType& combined_tissue, ImageType& norm_field_image) {
-      for (size_t j = 0; j < n_tissue_types; ++j) {
-        combined_tissue.index(3) = j;
-        summed_log.value() += balance_factors(j) * combined_tissue.value() / norm_field_image.value();
-      }
-  }
-
-  const size_t n_tissue_types;
-  Eigen::VectorXd balance_factors;
 };
 
 // Templated struct calculating the norm_field_log values
@@ -221,33 +195,39 @@ struct NormFieldLog {
    struct PolyBasisFunction basis_function;
 };
 
+// Struct calculating the initial summed_log values
+struct SummedLog {
+  SummedLog (const size_t n_tissue_types, Eigen::VectorXd balance_factors) : n_tissue_types (n_tissue_types), balance_factors (balance_factors) { }
+
+  template <class ImageType>
+  void operator () (ImageType& summed_log, ImageType& combined_tissue, ImageType& norm_field_image) {
+      for (size_t j = 0; j < n_tissue_types; ++j) {
+        combined_tissue.index(3) = j;
+        summed_log.value() += balance_factors(j) * combined_tissue.value() / norm_field_image.value();
+      }
+  summed_log.value() = std::log(summed_log.value());
+  }
+
+  const size_t n_tissue_types;
+  Eigen::VectorXd balance_factors;
+};
+
 // Function to define the output values at the beginning of the run () function
-Image<float> DefineOutput(vector<std::string> output_filenames, vector<Header> output_headers) {
-  Image<float> output_image;
+ImageType DefineOutput(vector<std::string> output_filenames, vector<Header> output_headers) {
+  ImageType output_image;
   for (size_t j = 0; j < output_filenames.size(); ++j) {
-     output_image = Image<float>::scratch (output_headers[j], output_filenames[j]);
+     output_image = ImageType::scratch (output_headers[j], output_filenames[j]);
   }
 return output_image;
 };
 
 void run ()
 {
-  if (argument.size() % 2){
+    if (argument.size() % 2)
     throw Exception ("The number of arguments must be even, provided as pairs of each input and its corresponding output file.");
-  }
 
-  int order;
-  auto opt1 = get_options ("order");
-  if (opt1.size ()) {
-     order = int(opt1[0][0]);
-  }else {
-     order = DEFAULT_POLY_ORDER;
-  }
-
+  const int order = get_option_value<int> ("order", DEFAULT_POLY_ORDER);
   PolyBasisFunction basis_function(order);
-
-  using ImageType = Image<float>;
-  using MaskType = Image<bool>;
 
   vector<Adapter::Replicate<ImageType>> input_images;
   vector<Header> output_headers;
@@ -330,19 +310,11 @@ void run ()
     input_progress++;
 
     combined_tissue.index (3) = i;
-    struct CombinedTissue {
-      FORCE_INLINE void operator () (decltype(combined_tissue)& comb_tissue, decltype(input_images[0]) in_images) { comb_tissue.value () = std::max<float>(in_images.value (), 0.f); }
-    };
-    ThreadedLoop (combined_tissue, 0, 3).run (CombinedTissue(), combined_tissue, input_images[i]);
+     ThreadedLoop (combined_tissue, 0, 3).run ([](decltype(combined_tissue)& comb, decltype(input_images[0]) in) { comb.value() = std::max<float>(in.value (), 0.f); },combined_tissue, input_images[i]);
   }
 
   size_t num_voxels = 0;
-  struct VoxCount {
-  VoxCount(size_t& num_voxels) : num_voxels (num_voxels) { }
-    FORCE_INLINE void operator () (decltype(mask) mask_in) { if (mask_in.value()) { num_voxels++; } }
-    size_t& num_voxels;
-  };
-  ThreadedLoop (mask, 0, 3).run (VoxCount(num_voxels), mask);
+  ThreadedLoop (mask, 0, 3).run ([&num_voxels](decltype(mask) mask) { if (mask.value()) ++num_voxels; }, mask);
 
   if (!num_voxels)
     throw Exception ("Mask contains no valid voxels.");
@@ -358,12 +330,7 @@ void run ()
 
   auto norm_field_image = ImageType::scratch (header_3D, "Normalisation field (intensity)");
   auto norm_field_log = ImageType::scratch (header_3D, "Normalisation field (log-domain)");
-
-  struct NormFieldValAdj {
-  FORCE_INLINE void operator () (decltype(norm_field_image)& norm_image, decltype(norm_field_log)& norm_log) { norm_image.value() = 1.f; norm_log.value() = 0.f;  }
-  };
-  ThreadedLoop (norm_field_log, 0, 3).run (NormFieldValAdj(), norm_field_image, norm_field_log);
-
+  ThreadedLoop (norm_field_image).run ([](decltype(norm_field_image)& in) { in.value() = 1.0; },norm_field_image);
 
   Eigen::VectorXd balance_factors (Eigen::VectorXd::Ones (n_tissue_types));
 
@@ -374,10 +341,24 @@ void run ()
   // a finer outlier-rejection within each iteration of the
   // tissue (re)balancing loop
   auto outlier_rejection = [&](float outlier_range) {
+  auto summed_log = ImageType::scratch (header_3D, "Log of summed tissue volumes");
+  ThreadedLoop (summed_log, 0, 3).run (SummedLog(n_tissue_types, balance_factors), summed_log, combined_tissue, norm_field_image);
 
-    auto summed_log = ImageType::scratch (header_3D, "Log of summed tissue volumes");
-    ThreadedLoop (summed_log, 0, 3).run (SummedLog(n_tissue_types, balance_factors), summed_log, combined_tissue, norm_field_image);
-    ThreadedLoop (summed_log, 0, 3).run (SummedLogValue(), summed_log);
+/*
+    ThreadedLoop (norm_field_image).run (
+        [](decltype(norm_field_image)& in) { in.value() = 1.0; },
+        norm_field_image);
+      ThreadedLoop (summed_log).run (
+          [&balance_factors] (ImageType& sum, ImageType& comb, ImageType& field) {
+          ValueType s = 0.0;
+          for (int j = 0; j < comb.size(3); ++j) {
+            comb.index(3) = j;
+            s += balance_factors[j] * comb.value() / field.value();
+          }
+      sum.value() = std::log (s);
+    }, summed_log, combined_tissue, norm_field_image);
+*/
+
     threaded_copy (initial_mask, mask);
 
     vector<float> summed_log_values;
@@ -508,7 +489,7 @@ void run ()
     ThreadedLoop (norm_field_log, 0, 3).run (NormFieldLog(norm_field_weights, transform, basis_function), norm_field_log);
 
     // Generate normalisation field in the image domain
-    ThreadedLoop (norm_field_image, 0, 3).run (NormFieldIm(),norm_field_image, norm_field_log);
+    ThreadedLoop (norm_field_image).run([](decltype(norm_field_image)& out, decltype(norm_field_log) in){out.value() = std::exp (in.value());}, norm_field_image, norm_field_log);
 
     progress++;
     iter++;
