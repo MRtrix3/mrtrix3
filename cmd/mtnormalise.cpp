@@ -221,6 +221,16 @@ ImageType DefineOutput(vector<std::string> output_filenames, vector<Header> outp
 return output_image;
 };
 
+// Function to compute the Choleski decompostion based on an N by n matrix and an N by 1 vector
+Eigen::VectorXd Choleski(Eigen::MatrixXd X, Eigen::VectorXd y) {
+   Eigen::MatrixXd M (X.cols(), X.cols());
+   Eigen::VectorXd alpha (X.cols());
+   M = X.transpose()*X;
+   alpha = X.transpose()*y;
+   Eigen::VectorXd res = M.llt().solve (alpha);
+return res;
+};
+
 void run ()
 {
     if (argument.size() % 2)
@@ -429,7 +439,7 @@ void run ()
           }
         }
 
-        balance_factors = X.colPivHouseholderQr().solve(y);
+        balance_factors = Choleski(X, y);
 
         // Ensure our balance factors satisfy the condition that sum(log(balance_factors)) = 0
         double log_sum = 0.0;
@@ -483,7 +493,7 @@ void run ()
       }
     }
 
-    norm_field_weights = norm_field_basis.colPivHouseholderQr().solve(y);
+    norm_field_weights = Choleski(norm_field_basis, y);
 
     // Generate normalisation field in the log domain
     ThreadedLoop (norm_field_log, 0, 3).run (NormFieldLog(norm_field_weights, transform, basis_function), norm_field_log);
