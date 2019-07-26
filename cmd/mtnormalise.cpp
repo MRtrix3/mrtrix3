@@ -183,7 +183,6 @@ struct NormFieldLog {
 
    NormFieldLog (Eigen::MatrixXd norm_field_weights, Transform transform, struct PolyBasisFunction basis_function) : norm_field_weights (norm_field_weights), transform (transform), basis_function (basis_function){ }
 
-   template <class ImageType>
    void operator () (ImageType& norm_field_log) {
        Eigen::Vector3 vox (norm_field_log.index(0), norm_field_log.index(1), norm_field_log.index(2));
        Eigen::Vector3 pos = transform.voxel2scanner * vox;
@@ -199,7 +198,6 @@ struct NormFieldLog {
 struct SummedLog {
   SummedLog (const size_t n_tissue_types, Eigen::VectorXd balance_factors) : n_tissue_types (n_tissue_types), balance_factors (balance_factors) { }
 
-  template <class ImageType>
   void operator () (ImageType& summed_log, ImageType& combined_tissue, ImageType& norm_field_image) {
       for (size_t j = 0; j < n_tissue_types; ++j) {
         combined_tissue.index(3) = j;
@@ -210,6 +208,46 @@ struct SummedLog {
 
   const size_t n_tissue_types;
   Eigen::VectorXd balance_factors;
+};
+
+// Function to perform outlier rejection
+size_t OutlierRejection(float outlier_range, MaskType& mask, MaskType& initial_mask, Header header_3D, ImageType combined_tissue, ImageType norm_field_image, Eigen::VectorXd balance_factors, size_t num_voxels){
+
+    auto summed_log = ImageType::scratch (header_3D, "Log of summed tissue volumes");
+    ThreadedLoop (summed_log, 0, 3).run (SummedLog(combined_tissue.size(3), balance_factors), summed_log, combined_tissue, norm_field_image);
+    threaded_copy (initial_mask, mask);
+
+    vector<float> summed_log_values;
+    summed_log_values.reserve (num_voxels);
+    for (auto i = Loop (0, 3) (mask, summed_log); i; ++i) {
+      if (mask.value())
+        summed_log_values.push_back (summed_log.value());
+    }
+
+    num_voxels = summed_log_values.size();
+
+    auto lower_quartile_it = summed_log_values.begin() + std::round ((float)num_voxels * 0.25f);
+    std::nth_element (summed_log_values.begin(), lower_quartile_it, summed_log_values.end());
+    float lower_quartile = *lower_quartile_it;
+    auto upper_quartile_it = summed_log_values.begin() + std::round ((float)num_voxels * 0.75f);
+    std::nth_element (lower_quartile_it, upper_quartile_it, summed_log_values.end());
+    float upper_quartile = *upper_quartile_it;
+    float lower_outlier_threshold = lower_quartile - outlier_range * (upper_quartile - lower_quartile);
+    float upper_outlier_threshold = upper_quartile + outlier_range * (upper_quartile - lower_quartile);
+
+    for (auto i = Loop (0, 3) (mask, summed_log); i; ++i) {
+      if (mask.value()) {
+        if (summed_log.value() < lower_outlier_threshold || summed_log.value() > upper_outlier_threshold) {
+          mask.value() = 0;
+          num_voxels--;
+        }
+      }
+    }
+
+  if (log_level >= 3)
+      display (mask);
+
+return num_voxels;
 };
 
 // Function to define the output values at the beginning of the run () function
@@ -346,29 +384,15 @@ void run ()
 
   size_t iter = 1;
 
+/*
   // Store lambda-function for performing outlier-rejection.
   // We perform a coarse outlier-rejection initially as well as
   // a finer outlier-rejection within each iteration of the
   // tissue (re)balancing loop
   auto outlier_rejection = [&](float outlier_range) {
-  auto summed_log = ImageType::scratch (header_3D, "Log of summed tissue volumes");
-  ThreadedLoop (summed_log, 0, 3).run (SummedLog(n_tissue_types, balance_factors), summed_log, combined_tissue, norm_field_image);
+    auto summed_log = ImageType::scratch (header_3D, "Log of summed tissue volumes");
 
-/*
-    ThreadedLoop (norm_field_image).run (
-        [](decltype(norm_field_image)& in) { in.value() = 1.0; },
-        norm_field_image);
-      ThreadedLoop (summed_log).run (
-          [&balance_factors] (ImageType& sum, ImageType& comb, ImageType& field) {
-          ValueType s = 0.0;
-          for (int j = 0; j < comb.size(3); ++j) {
-            comb.index(3) = j;
-            s += balance_factors[j] * comb.value() / field.value();
-          }
-      sum.value() = std::log (s);
-    }, summed_log, combined_tissue, norm_field_image);
-*/
-
+    ThreadedLoop (summed_log, 0, 3).run (SummedLog(n_tissue_types, balance_factors), summed_log, combined_tissue, norm_field_image);
     threaded_copy (initial_mask, mask);
 
     vector<float> summed_log_values;
@@ -401,12 +425,16 @@ void run ()
   if (log_level >= 3)
       display (mask);
   };
+*/
 
   input_progress.done ();
   ProgressBar progress ("performing log-domain intensity normalisation", max_iter);
 
+  // Pre-writing the summed_log variable and the vox_count and new_vox_count variables
+  size_t vox_count, new_vox_count;
+
   // Perform an initial outlier rejection prior to the first iteration
-  outlier_rejection (3.f);
+  vox_count = OutlierRejection(3.f, mask, initial_mask, header_3D, combined_tissue, norm_field_image, balance_factors, num_voxels);
 
   threaded_copy (mask, prev_mask);
 
@@ -425,8 +453,8 @@ void run ()
       if (n_tissue_types > 1) {
 
         // Solve for tissue balance factors
-        Eigen::MatrixXd X (num_voxels, n_tissue_types);
-        Eigen::VectorXd y (Eigen::VectorXd::Ones (num_voxels));
+        Eigen::MatrixXd X (vox_count, n_tissue_types);
+        Eigen::VectorXd y (Eigen::VectorXd::Ones (vox_count));
         uint32_t index = 0;
 
         for (auto i = Loop (0, 3) (mask, combined_tissue, norm_field_image); i; ++i) {
@@ -456,15 +484,21 @@ void run ()
       INFO ("Balance factors (" + str(balance_iter) + "): " + str(balance_factors.transpose()));
 
       // Perform outlier rejection on log-domain of summed images
-      outlier_rejection(1.5f);
+      new_vox_count = OutlierRejection(1.5f, mask, initial_mask, header_3D, combined_tissue, norm_field_image, balance_factors, vox_count);
 
       // Check for convergence
       balance_converged = true;
-      for (auto i = Loop (0, 3) (mask, prev_mask); i; ++i) {
-        if (mask.value() != prev_mask.value()) {
-          balance_converged = false;
-          break;
-        }
+
+      if (new_vox_count != vox_count){
+         balance_converged = false;
+         vox_count = new_vox_count;
+      }else{
+         for (auto i = Loop (0, 3) (mask, prev_mask); i; ++i) {
+            if (mask.value() != prev_mask.value()) {
+            balance_converged = false;
+            break;
+            }
+         }
       }
 
       threaded_copy (mask, prev_mask);
@@ -475,8 +509,8 @@ void run ()
 
     // Solve for normalisation field weights in the log domain
     Transform transform (mask);
-    Eigen::MatrixXd norm_field_basis (num_voxels, basis_function.n_basis_vecs);
-    Eigen::VectorXd y (num_voxels);
+    Eigen::MatrixXd norm_field_basis (vox_count, basis_function.n_basis_vecs);
+    Eigen::VectorXd y (vox_count);
     uint32_t index = 0;
     for (auto i = Loop (0, 3) (mask, combined_tissue); i; ++i) {
       if (mask.value()) {
@@ -529,7 +563,7 @@ void run ()
 
   // Compute log-norm scale parameter (geometric mean of normalisation field in outlier-free mask).
   double lognorm_scale (0.0);
-  if (num_voxels) {
+  if (vox_count) {
   struct LogNormScale {
     LogNormScale (double& lognorm_scale, uint32_t num_voxels) : lognorm_scale (lognorm_scale), num_voxels (num_voxels) { }
     FORCE_INLINE void operator () (decltype(mask) mask_in, decltype(norm_field_log) norm_field_lg) { if (mask_in.value ()){ lognorm_scale += norm_field_lg.value (); } lognorm_scale = std::exp(lognorm_scale / (double)num_voxels); }
@@ -537,7 +571,7 @@ void run ()
     double& lognorm_scale;
     uint32_t num_voxels;
   };
-  ThreadedLoop (mask, 0, 3).run (LogNormScale(lognorm_scale, num_voxels), mask, norm_field_log);
+  ThreadedLoop (mask, 0, 3).run (LogNormScale(lognorm_scale, vox_count), mask, norm_field_log);
   }
 
   const bool output_balanced = get_options("balanced").size();
