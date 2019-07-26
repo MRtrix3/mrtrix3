@@ -384,49 +384,6 @@ void run ()
 
   size_t iter = 1;
 
-/*
-  // Store lambda-function for performing outlier-rejection.
-  // We perform a coarse outlier-rejection initially as well as
-  // a finer outlier-rejection within each iteration of the
-  // tissue (re)balancing loop
-  auto outlier_rejection = [&](float outlier_range) {
-    auto summed_log = ImageType::scratch (header_3D, "Log of summed tissue volumes");
-
-    ThreadedLoop (summed_log, 0, 3).run (SummedLog(n_tissue_types, balance_factors), summed_log, combined_tissue, norm_field_image);
-    threaded_copy (initial_mask, mask);
-
-    vector<float> summed_log_values;
-    summed_log_values.reserve (num_voxels);
-    for (auto i = Loop (0, 3) (mask, summed_log); i; ++i) {
-      if (mask.value())
-        summed_log_values.push_back (summed_log.value());
-    }
-
-    num_voxels = summed_log_values.size();
-
-    const auto lower_quartile_it = summed_log_values.begin() + std::round ((float)num_voxels * 0.25f);
-    std::nth_element (summed_log_values.begin(), lower_quartile_it, summed_log_values.end());
-    const float lower_quartile = *lower_quartile_it;
-    const auto upper_quartile_it = summed_log_values.begin() + std::round ((float)num_voxels * 0.75f);
-    std::nth_element (lower_quartile_it, upper_quartile_it, summed_log_values.end());
-    const float upper_quartile = *upper_quartile_it;
-    const float lower_outlier_threshold = lower_quartile - outlier_range * (upper_quartile - lower_quartile);
-    const float upper_outlier_threshold = upper_quartile + outlier_range * (upper_quartile - lower_quartile);
-
-    for (auto i = Loop (0, 3) (mask, summed_log); i; ++i) {
-      if (mask.value()) {
-        if (summed_log.value() < lower_outlier_threshold || summed_log.value() > upper_outlier_threshold) {
-          mask.value() = 0;
-          num_voxels--;
-        }
-      }
-    }
-
-  if (log_level >= 3)
-      display (mask);
-  };
-*/
-
   input_progress.done ();
   ProgressBar progress ("performing log-domain intensity normalisation", max_iter);
 
