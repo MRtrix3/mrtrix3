@@ -64,12 +64,12 @@ in Git or GitHub.
    nature of the proposed change (described later below).
 
 1. Identify the appropriate classification of the change that you propose
-   to make:
+   to make, and read the relevant instructions there:
 
-   -  If the current code behaviour is *egregiously incorrect*, then
-      read the "[fixing a bug](#fixing-a-bug)" section.
+   -  "[**Fixing a bug**](#fixing-a-bug)": If the current code behaviour is
+      *egregiously incorrect*.
 
-   -  If:
+   -  "[**Adding or altering features**](#adding-or-altering-features)": If:
 
       -  The current code behaviour is considered incorrect or non-ideal,
          but is nevertheless *functional*;
@@ -80,11 +80,8 @@ in Git or GitHub.
       -  The proposed change improves the *perfomance* of a particular
          command or process, but does not change its output;
 
-      , then read the "[adding or altering features](#adding-or-altering-feature)"
-      section.
-
-   -  If you wish to make changes to the [*MRtrix3 documentation*](https://mrtrix.readthedocs.io/en/latest/),
-      read the "[documentation](#documentation)" section.
+   -  "[**Documentation**](#documentation)": If you wish to make changes to
+      the [*MRtrix3 documentation*](https://mrtrix.readthedocs.io/en/latest/).
 
 1. Check that your modified code does not prevent *MRtrix3* from
    passing existing tests (ass files are in the *MRtrix3* root directory):
