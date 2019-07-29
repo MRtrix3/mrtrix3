@@ -17,6 +17,8 @@
 #include "connectome/lut.h"
 #include "surface/freesurfer.h"
 #include "surface/mesh.h"
+#include "surface/meshfactory.h"
+#include <set>
 
 
 using namespace MR;
@@ -38,8 +40,15 @@ void usage ()
   + Argument( "mesh_o", "the output cropped mesh file." ).type_file_out ();
 
   OPTIONS
-  + Option( "annot", "crop FreeSurfer's pial or white surface; remove triangles with vertex label = 0" )
-    + Argument( "file", "FreeSurfer's annotation file" ).type_file_in();
+  + Option( "annot", "crop FreeSurfer's pial or white surface; "
+                     "remove triangles according to the label/structure index in the annotation file" )
+    + Argument( "annot", "FreeSurfer's annotation file" ).type_file_in()
+    + Argument( "label", "structure to be removed" ).type_integer( 0 )
+
+  + Option( "setdiff", "crop the intersection with a mesh; "
+                       "intersection defined as the distance (mm) between vertices" )
+    + Argument( "mesh" ).type_file_in()
+    + Argument( "radius", "radius of influence" ).type_float( 0.0 );
 
 };
 
@@ -62,68 +71,77 @@ void run ()
     if ( vertices.size() != labels.size() )
     {
       throw Exception( "Incompatible between surface mesh and annotation file " 
-                       "(vertex count and label count are not equal)." );
+                       "(vertex count and label count are not equal)" );
     }
 
-    // collect indices of vertices with label value = 0
+    // collect indices of vertices to be removed based on label value
+    const size_t label = opt[ 0 ][ 1 ];
     std::vector< uint32_t > crop_v;
     for ( size_t index = 0; index < labels.size(); index++ )
     {
-      if ( !labels[ index ] )
+      if ( labels[ index ] == label )
       {
         crop_v.push_back( index );
       }
     }
 
-    // collect indices of triangles having a vertex with label value = 0
-    std::vector< uint32_t > crop_t;
-    for ( size_t t = 0; t < triangles.size(); t++ )
+    // crop the mesh if required
+    if ( crop_v.size() )
     {
-      for ( size_t v = 0; v < 3; v++ )
-      {
-        if ( find( crop_v.begin(), crop_v.end(), triangles[ t ][ v ] ) !=
-                   crop_v.end() )
-        {
-          crop_t.push_back( t );
-          break;
-        }
-      }
+      MeshFactory::getInstance().crop( mesh, crop_v );
     }
-
-    // crop vertices
-    size_t crop_v_count = crop_v.size();
-    for ( size_t c = 0; c < crop_v_count; c++ )
+    else
     {
-      size_t i = crop_v[ crop_v_count - c - 1 ];
-      vertices.erase( vertices.begin() + i );
-    }
-
-    // crop triangles and update vertex index for the remaining triangles
-    size_t crop_t_count = crop_t.size();
-    for ( size_t c = 0; c < crop_t_count; c++ )
-    {
-      size_t i = crop_t[ crop_t_count - c - 1 ];
-      triangles.erase( triangles.begin() + i );
-    }
-    for ( size_t c = 0; c < crop_v_count; ++c )
-    {
-      for ( size_t f = 0; f < triangles.size(); ++f )
-      {
-        for ( size_t v = 0; v < 3; ++v )
-        {
-          if ( triangles[ f ][ v ] > crop_v[ crop_v_count - c - 1 ] )
-          {
-            triangles[ f ][ v ] -= 1;
-          }
-        }
-      }
+      WARN( "Label value not found; "
+            "the output surface mesh will be the same as the input" );
     }
   }
 
-  // export the output mesh
-  Mesh out;
-  out.load( vertices, triangles );
-  out.save( argument[ 1 ] );
+  opt = get_options( "setdiff" );
+  if ( opt.size() )
+  {
+    Mesh m{ opt[ 0 ][ 0 ] };
+    auto mv = m.get_vertices();
+    auto mt = m.get_triangles();
+
+    const float r = opt[ 0 ][ 1 ];
+
+    // collect intersection for the given radius of influence
+    std::set< uint32_t > intersect;
+    for ( size_t u = 0; u < vertices.size(); u++ )
+    {
+      for ( size_t v = 0; v < mv.size(); v++ )
+      {
+        if ( ( vertices[ u ] - mv[ v ] ).norm() < r )
+        {
+          intersect.insert( u );
+        }
+      }
+    }
+
+    // collect indices of vertices to be removed based on intersection
+    std::vector< uint32_t > crop_v;
+    for ( size_t u = 0; u < vertices.size(); u++ )
+    {
+      if ( intersect.find( u ) == intersect.end() )
+      {
+        crop_v.push_back( u );
+      }
+    }
+
+    // crop the mesh if required
+    if ( crop_v.size() )
+    {
+      MeshFactory::getInstance().crop( mesh, crop_v );
+    }
+    else
+    {
+      WARN( "Intersection not found; "
+            "the output surface mesh will be the same as the input" );
+    }
+  }
+
+  mesh.save( argument[ 1 ] );
 
 }
 
