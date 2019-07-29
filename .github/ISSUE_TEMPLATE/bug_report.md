@@ -18,6 +18,9 @@ how the observed behaviour differs from that expected.
 
 Steps to reproduce the behaviour.
 
+If the issue is data-dependent, please consider providing a link to
+(anonymised) data to assist developers in reproducing the bug.
+
 **Platform/Environment/Version**
 
 Please provide the following information:
@@ -42,6 +45,3 @@ Please provide the following information:
 
    -  In the case of crashes or rendering issues, the information from:
       `mrview -exit -debug`.
-
--  If the issue is data-dependent, please consider providing a link to
-   (anonymised) data to assist developers in reproducing the bug.
