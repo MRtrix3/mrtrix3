@@ -57,6 +57,8 @@ class MeshFactory : public Singleton< MeshFactory >
 
     Mesh concatenate( const std::vector< Mesh >& meshes ) const;
 
+    void crop( Mesh& mesh, const std::vector< uint32_t >& vert_index ) const;
+
   protected:
   
     friend class Singleton< MeshFactory >;

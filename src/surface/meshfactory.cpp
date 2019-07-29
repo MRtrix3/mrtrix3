@@ -214,6 +214,60 @@ Mesh MeshFactory::concatenate( const std::vector< Mesh >& meshes ) const
 }
 
 
+void MeshFactory::crop( Mesh& mesh,
+                        const std::vector< uint32_t >& vert_index ) const
+{
+  Surface::VertexList vertices = mesh.get_vertices();
+  Surface::TriangleList triangles = mesh.get_triangles();
+
+  // collect indices of triangles that will be removed
+  std::vector< uint32_t > tri_index;
+  for ( size_t t = 0; t < triangles.size(); t++ )
+  {
+    for ( size_t v = 0; v < 3; v++ )
+    {
+      if ( find( vert_index.begin(), vert_index.end(), triangles[ t ][ v ] ) !=
+                 vert_index.end() )
+      {
+        tri_index.push_back( t );
+        break;
+      }
+    }
+  }
+
+  // crop vertices
+  size_t vert_count = vert_index.size();
+  for ( size_t c = 0; c < vert_count; c++ )
+  {
+    size_t i = vert_index[ vert_count - c - 1 ];
+    vertices.erase( vertices.begin() + i );
+  }
+
+  // crop triangles & update vertex index for the remaining triangles
+  size_t tri_count = tri_index.size();
+  for ( size_t c = 0; c < tri_count; c++ )
+  {
+    size_t i = tri_index[ tri_count - c - 1 ];
+    triangles.erase( triangles.begin() + i );
+  }
+  for ( size_t c = 0; c < vert_count; ++c )
+  {
+    for ( size_t f = 0; f < triangles.size(); ++f )
+    {
+      for ( size_t v = 0; v < 3; ++v )
+      {
+        if ( triangles[ f ][ v ] > vert_index[ vert_count - c - 1 ] )
+        {
+          triangles[ f ][ v ] -= 1;
+        }
+      }
+    }
+  }
+
+  mesh.load( vertices, triangles );
+}
+
+
 }
 
 }
