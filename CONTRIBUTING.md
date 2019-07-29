@@ -86,6 +86,19 @@ in Git or GitHub.
    -  If you wish to make changes to the [*MRtrix3 documentation*](https://mrtrix.readthedocs.io/en/latest/),
       read the "[documentation](#documentation)" section.
 
+1. Check that your modified code does not prevent *MRtrix3* from
+   passing existing tests (ass files are in the *MRtrix3* root directory):
+
+   1.  If adding or mdifying C++ code, make sure that script "`check_syntax`"
+       executes successfully.
+
+   1.  If adding or modifying Python code, make sure that script
+       "`run_pylint`" executes successfully.
+
+   1.  If there is a chance of your modifications altering the observable
+       behaviour of one or more existing commands, make sure that script
+       "`run_tests`" executes successfully.
+
 1. For code contributions, if possible, a unit test or reproducibility
    test should be added. This not only demonstrates the behaviour of the
    proposed code, but will also preclude future regression of the behaviour
@@ -96,7 +109,15 @@ in Git or GitHub.
 1. Once completed, a Pull Request should be generated that merges the
    corresponding branch in your forked version of the *MRtrix3* repository
    into the appropriate target branch of the main *MRtrix3* repository
-   itself.
+   itself:
+
+   -  If your intended changes are complete, and you consider them ready
+      to be reviewed by an *MRtrix3* team member and merged imminently,
+      then create a standard Pull Request.
+
+   -  If your changes are ongoing, and you are seeking feedback from the
+      *MRtrix3* developers before completing them, then create a
+      [draft Pull Request](https://github.blog/2019-02-14-introducing-draft-pull-requests/).
 
 If multiple persons have contributed to the proposed changes, it is
 possible to modify individual Git commits to have ["multiple authors"](https://help.github.com/en/articles/creating-a-commit-with-multiple-authors),
@@ -129,6 +150,29 @@ to ensure that all contributors receive appropriate acknowledgment.
    proposed changes that fall under this classification should be made
    in a branch that is based off of the `dev` branch, and the corresponding
    Pull Request should select `dev` as the target branch for code merging.
+
+### Coding conventions
+
+While we do not have strict enforced coding conventions in *MRtrix3*, the
+accepted conventions should be self-evident from the code itself.
+
+A few more explicit notes on such:
+
+1. For both C++ and Python, indentation is achieved using two space
+   characters.
+
+1. Newline characters are Unix-style ("`LF`" / '`\n`'). Any changes that
+   introduce Windows-style newline characters ("`CR LF`" / '"`\r\n`"')
+   will need to be edited accordingly.
+
+1. In Python, variable / class / module names are enforced through
+   `pylint`. Script "`run_pylint`" in the *MRtrix3* root directory
+   will test any code modifications against these expectations.
+
+1. If the operation of your code is not trivially self-apparent,
+   please endeavour to add relevant appropriate comments.
+
+1. Do not leave excess newline characters at the end of a file.
 
 ### Documentation
 
