@@ -38,10 +38,11 @@ Please provide the following information:
 
 - For issues with `mrview`, please provide:
 
-   -  Information about the Qt version:
-      `grep "Qt:" $(dirname $(which mrview))/../config`
-      or:
-      Open `mrview` --> `[i]` --> About Qt)
+   -  Information about the Qt version; one of the following:
+
+      -  `grep "Qt:" $(dirname $(which mrview))/../config`
+
+      -  Open `mrview` --> `[i]` --> About Qt
 
    -  In the case of crashes or rendering issues, the information from:
       `mrview -exit -debug`.
