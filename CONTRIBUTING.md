@@ -123,26 +123,26 @@ If multiple persons have contributed to the proposed changes, it is
 possible to modify individual Git commits to have ["multiple authors"](https://help.github.com/en/articles/creating-a-commit-with-multiple-authors),
 to ensure that all contributors receive appropriate acknowledgment.
 
-### Fixing a bug
+#### Fixing a bug
 
 1. If there does not already exist a [GitHub Issue](https://github.com/MRtrix3/mrtrix3/issues)
    describing the bug, consider reporting the bug as a standalone Issue
    prior to progressing further; that way developers can confirm the issue,
    and possibly provide guidance if you intend to resolve the issue yourself.
    Later, the Pull Request incorporating the necessary changes should then
-   reference the listed Issue (simply add in the description section the
-   "`#`" character followed by the issue number).
+   reference the listed Issue (simply add somewhere in the description
+   section the "`#`" character followed by the issue number).
 
 1. Bug fixes are merged directly to `master`; as such, modifications to the
    code should be made in a branch that is derived from `master`, and the
    corresponding Pull Request should select `master` as the target branch
    for code merging.
 
-1. A unit test or reproducibility test should ideally be added that
-   would fail when executed using the current `master` code, but passes
-   with the proposed changes.
+1. A unit test or reproducibility test should ideally be added: such a
+   test should fail when executed using the current `master` code, but pass
+   when executed with the proposed changes.
 
-### Adding or altering features
+#### Adding or altering features
 
 1. New features, as well as any code changes that alter the output data
    produced by a command, are merged to the `dev` branch, which contains
@@ -151,18 +151,18 @@ to ensure that all contributors receive appropriate acknowledgment.
    in a branch that is based off of the `dev` branch, and the corresponding
    Pull Request should select `dev` as the target branch for code merging.
 
-### Coding conventions
+#### Coding conventions
 
 While we do not have strict enforced coding conventions in *MRtrix3*, the
 accepted conventions should be self-evident from the code itself.
 
-A few more explicit notes on such:
+A few explicit notes on such:
 
 1. For both C++ and Python, indentation is achieved using two space
    characters.
 
-1. Newline characters are Unix-style ("`LF`" / '`\n`'). Any changes that
-   introduce Windows-style newline characters ("`CR LF`" / '"`\r\n`"')
+1. Newline characters are Unix-style ("`LF`" / '`\n`'); any changes that
+   introduce Windows-style newline characters ("`CR LF`" / "`\r\n`")
    will need to be edited accordingly.
 
 1. In Python, variable / class / module names are enforced through
@@ -170,16 +170,16 @@ A few more explicit notes on such:
    will test any code modifications against these expectations.
 
 1. If the operation of your code is not trivially self-apparent,
-   please endeavour to add relevant appropriate comments.
+   please endeavour to comment appropriately.
 
 1. Do not leave excess newline characters at the end of a file.
 
-### Documentation
+#### Documentation
 
 For proposed documentation changes, please communicate with the *MRtrix3*
 developers by creating a [new GitHub issue](https://github.com/MRtrix3/mrtrix3/issues/new).
 The appropriate course of action will depend on the component of the
 documentation intended to be changed as well as the nature of the change.
 In addition, the location of much of the *MRtrix3* documentation will be
-changing imminently (#1622), and so any proposed documetation content
-changes would need to be coordinated with such.
+changing imminently (Pull Request #1622), and so any proposed documentation
+content changes would need to be coordinated with such.
