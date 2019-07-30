@@ -785,7 +785,7 @@ namespace MR
 
       // Check that dimensions of image are compatible with concatenation
       for (size_t axis = 0; axis <= global_max_nonunity_dim; ++axis) {
-        if (axis != axis_to_concat && H.size (axis) != result.size (axis)) {
+        if (axis != axis_to_concat && axis < H.ndim() && H.size (axis) != result.size (axis)) {
           e.push_back ("Images \"" + result.name() + "\" and \"" + H.name() + "\" have inequal sizes along axis " + str(axis_to_concat) + " (" + str(result.size (axis)) + " vs " + str(H.size (axis)) + ")");
           throw e;
         }
