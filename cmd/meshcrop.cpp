@@ -68,7 +68,7 @@ void run ()
     label_vector_type labels;
     FreeSurfer::read_annot( opt[ 0 ][ 0 ], labels, ctable );
 
-    if ( vertices.size() != labels.size() )
+    if ( ( uint32_t )vertices.size() != labels.size() )
     {
       throw Exception( "Incompatible between surface mesh and annotation file " 
                        "(vertex count and label count are not equal)" );
@@ -77,7 +77,7 @@ void run ()
     // collect indices of vertices to be removed based on label value
     const size_t label = opt[ 0 ][ 1 ];
     std::vector< uint32_t > crop_v;
-    for ( size_t index = 0; index < labels.size(); index++ )
+    for ( uint32_t index = 0; index < labels.size(); index++ )
     {
       if ( labels[ index ] == label )
       {
