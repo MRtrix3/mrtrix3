@@ -435,12 +435,8 @@ void run ()
         if (temp.size(axis) != 1)
           throw Exception ("Image " + path + " has axis with non-unary dimension beyond first input image " + header.name());
       }
+      header.merge_keyval (temp);
     }
-
-    // Wipe any header information that can't be guaranteed to still be accurate
-    //   after applying an operator across multiple images
-    header.keyval().erase ("dw_scheme");
-    PhaseEncoding::clear_scheme (header);
 
     // Instantiate a kernel depending on the operation requested
     std::unique_ptr<ImageKernelBase> kernel;

@@ -106,8 +106,8 @@ namespace MR
               for (size_t n = 0; n < properties.mask.size(); ++n)
                 out << "roi: mask " << properties.mask[n].parameters() << "\n";
 
-              for (const auto& it : properties.roi)
-                out << "roi: " << it.first << " " << it.second << "\n";
+              for (const auto& it : properties.prior_rois)
+                out << "prior_roi: " << it.first << " " << it.second << "\n";
 
               out << "datatype: " << dtype.specifier() << "\n";
               int64_t data_offset = int64_t(out.tellp()) + 65;

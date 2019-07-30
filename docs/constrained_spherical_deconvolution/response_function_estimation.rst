@@ -124,34 +124,43 @@ The following sections provide more details on each algorithm specifically.
 dhollander
 ^^^^^^^^^^
 
-This algorithm currently is the original implementation of the strategy proposed
-in [Dhollander2016b]_ to estimate multi b-value (single-shell + b=0, or
-multi-shell) response functions for single-fibre white matter (*anisotropic*),
-grey matter and CSF (both *isotropic*), which can subsequently be used for
-multi-tissue (constrained) spherical deconvolution algorithms.  It has the
-distinct advantage of requiring *only* the DWI data as input, in contrast to
-other multi-tissue response function estimations methods, making it the
-simplest and most accessible method, and a sensible default for applications
-that require multi-shell responses. 
+This algorithm is the official implementation of the strategy proposed
+in [Dhollander2016b]_ (including improvements proposed in [Dhollander2019]_)
+to estimate multi b-value (single-shell + b=0, or multi-shell) response functions
+for single-fibre white matter (*anisotropic*), grey matter and CSF (both
+*isotropic*), which can subsequently be used for multi-tissue (constrained)
+spherical deconvolution algorithms.  It has the distinct advantage of requiring
+*only* the DWI data as input, in contrast to other multi-tissue response function
+estimation methods, making it the simplest and most accessible method, and a
+sensible default for applications that require multi-tissue responses.
 
 This is a fully automated unsupervised algorithm that leverages the relative
 diffusion properties of the 3 tissue response functions with respect to each
-other, to select the most appropriate voxels from which to estimate the
-response functions.  It has been used successfully in a wide range of conditions
-(overall data quality, pathology, developmental state of the subjects,
-animal data and ex-vivo data). Additional insights into its performance are
-presented in [Dhollander2018a]_. Due to its ability to deal with the presence
-of extensive white matter (hyperintense) lesions, it was for example also
-successfully used in [Mito2018a]_. Finally, the response functions as obtained
-in this particular way also form the basis of the 3-tissue framework to study
-the microstructure of lesions and other pathology [Dhollander2017]_ [Mito2018b]_.
+other, across all b-values and the angular domain, to select the most appropriate
+voxels from which to estimate the response functions.  It has been used
+successfully in a wide range of conditions (overall data quality, pathology,
+developmental state of the subjects, animal data and ex-vivo data). Additional
+insights into its performance are presented in [Dhollander2018a]_. Due to its
+ability to deal with the presence of extensive white matter (hyperintense)
+lesions, it was for example also successfully used in [Mito2018a]_. The response
+functions as obtained in this particular way also form the basis of the 3-tissue
+framework to study the microstructure of lesions and other
+pathology [Dhollander2017]_ [Mito2018b]_.
 
-In almost all cases, it runs and performs well out of the box.  In exceptional
-cases where the anisotropy in the data is particularly *low* (*very* early development,
-ex-vivo data with low b-value, ...), it may be advisable to set the ``-fa``
-parameter *lower* than its default value of 0.2.  See [Dhollander2018b]_ for an
-example of a dataset where changing this parameter was required to obtain
-good results.
+The algorithm has been further improved in [Dhollander2019]_. While the 2016 version
+identified the voxels to estimate the single-fibre white matter response function
+using the tournier_ algorithm, the new 2019 version relies on a novel strategy
+that optimises these voxels using properties of the signal across all b-values (and
+the full angular domain). It's also faster than the original approach.
+
+In almost all cases, the algorithm runs and performs well out of the box.
+In *exceptional* cases where the anisotropy in the data is particularly *low*
+(*very* early development, ex-vivo data, (with) low b-value, ...), it is *sometimes*
+advisable to set the ``-fa`` parameter *lower* than its default value of 0.2.
+See [Dhollander2018b]_ for a good example of a dataset where changing this
+parameter was required to obtain good results.  This FA threshold should be set
+so as to roughly separate the bulk of WM from the rest (GM and CSF).  Further
+imperfections are corrected by the algorithm itself during a later stage.
 
 As always, check the ``-voxels`` option output in unusually (challenging) cases.
 
@@ -185,7 +194,7 @@ For more information, refer to the
 manual
 ^^^^^^
 
-This algorithm is provided for cases where none of the available
+This algorithm is provided for cases where none of the available automated
 algorithms give adequate results, for deriving multi-shell multi-tissue
 response functions in cases where the voxel mask for each tissue must be
 defined manually, or for anyone who may find it useful if trying to
