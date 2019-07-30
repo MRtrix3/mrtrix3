@@ -1,17 +1,17 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
 
 #ifndef __dwi_tractography_mapping_writer_h__
 #define __dwi_tractography_mapping_writer_h__
@@ -45,7 +45,7 @@ namespace MR {
 
 
         class MapWriterBase
-        {
+        { MEMALIGN(MapWriterBase)
 
           public:
             MapWriterBase (const Header& header, const std::string& name, const vox_stat_t s = V_SUM, const writer_dim t = GREYSCALE) :
@@ -99,12 +99,12 @@ namespace MR {
 
         template <typename value_type>
           class MapWriter : public MapWriterBase
-        {
+        { MEMALIGN(MapWriter<value_type>)
 
           public:
           MapWriter (const Header& header, const std::string& name, const vox_stat_t voxel_statistic = V_SUM, const writer_dim type = GREYSCALE) :
-            MapWriterBase (header, name, voxel_statistic, type),
-            buffer (Image<value_type>::scratch (header, "TWI " + str(writer_dims[type]) + " buffer"))
+              MapWriterBase (header, name, voxel_statistic, type),
+              buffer (Image<value_type>::scratch (header, "TWI " + str(writer_dims[type]) + " buffer"))
           {
             auto loop = Loop (buffer);
             if (type == DEC || type == TOD) {
@@ -126,7 +126,7 @@ namespace MR {
               } else if (voxel_statistic == V_MAX) {
                 for (auto l = loop (buffer); l; ++l )
                   buffer.value() = std::numeric_limits<value_type>::lowest();
-              } 
+              }
 /* shouldn't be needed: scratch IO class memset to zero already:
               else {
                 buffer.zero();
@@ -141,7 +141,7 @@ namespace MR {
                 (type == DEC && voxel_statistic == V_SUM))
             {
               Header H_counts (header);
-              if (type == DEC || type == TOD) 
+              if (type == DEC || type == TOD)
                 H_counts.ndim() = 3;
               counts.reset (new Image<float> (Image<float>::scratch (H_counts, "TWI streamline count buffer")));
             }
@@ -149,19 +149,21 @@ namespace MR {
 
           MapWriter (const MapWriter&) = delete;
 
-          void finalise () {
+          void finalise () override {
 
             auto loop = Loop (buffer, 0, 3);
             switch (voxel_statistic) {
 
               case V_SUM:
                 if (type == DEC) {
+                  assert (counts);
                   for (auto l = loop (buffer, *counts); l; ++l) {
-                    if (counts->value()) {
+                    const float total_weight = counts->value();
+                    if (total_weight) {
                       auto value = get_dec();
-                      const float norm = value.norm();
+                      const default_type norm = value.norm();
                       if (norm)
-                        value *= counts->value() / norm;
+                        value *= total_weight / norm;
                       set_dec (value);
                     }
                   }
@@ -177,33 +179,36 @@ namespace MR {
 
               case V_MEAN:
                 if (type == GREYSCALE) {
+                  assert (counts);
                   for (auto l = loop (buffer, *counts); l; ++l) {
                     if (counts->value())
                       buffer.value() /= value_type(counts->value());
                   }
-                } 
+                }
                 else if (type == DEC) {
                   for (auto l = loop (buffer); l; ++l) {
                     auto value = get_dec();
-                    if (value.squaredNorm()) 
+                    if (value.squaredNorm())
                       set_dec (value.normalized());
                   }
-                } 
+                }
                 else if (type == TOD) {
+                  assert (counts);
                   for (auto l = loop (buffer, *counts); l; ++l) {
                     if (counts->value()) {
-                      Eigen::VectorXf value;
+                      VoxelTOD::vector_type value;
                       get_tod (value);
                       value *= (1.0 / counts->value());
                       set_tod (value);
                     }
                   }
                 } else { // Dixel
+                  assert (counts);
                   // TODO For dixels, should this be a voxel mean i.e. normalise each non-zero voxel to unit density,
                   //   rather than a per-dixel mean?
                   for (auto l = Loop (buffer) (buffer, *counts); l; ++l) {
                     if (counts->value())
-                      buffer.value() /= float(counts->value());
+                      buffer.value() /= default_type(counts->value());
                   }
                 }
                 break;
@@ -231,15 +236,15 @@ namespace MR {
           }
 
 
-          bool operator() (const SetVoxel& in)    { receive_greyscale (in); return true; }
-          bool operator() (const SetVoxelDEC& in) { receive_dec       (in); return true; }
-          bool operator() (const SetDixel& in)    { receive_dixel     (in); return true; }
-          bool operator() (const SetVoxelTOD& in) { receive_tod       (in); return true; }
+          bool operator() (const SetVoxel& in)    override { receive_greyscale (in); return true; }
+          bool operator() (const SetVoxelDEC& in) override { receive_dec       (in); return true; }
+          bool operator() (const SetDixel& in)    override { receive_dixel     (in); return true; }
+          bool operator() (const SetVoxelTOD& in) override { receive_tod       (in); return true; }
 
-          bool operator() (const Gaussian::SetVoxel& in)    { receive_greyscale (in); return true; }
-          bool operator() (const Gaussian::SetVoxelDEC& in) { receive_dec       (in); return true; }
-          bool operator() (const Gaussian::SetDixel& in)    { receive_dixel     (in); return true; }
-          bool operator() (const Gaussian::SetVoxelTOD& in) { receive_tod       (in); return true; }
+          bool operator() (const Gaussian::SetVoxel& in)    override { receive_greyscale (in); return true; }
+          bool operator() (const Gaussian::SetVoxelDEC& in) override { receive_dec       (in); return true; }
+          bool operator() (const Gaussian::SetDixel& in)    override { receive_dixel     (in); return true; }
+          bool operator() (const Gaussian::SetVoxelTOD& in) override { receive_tod       (in); return true; }
 
 
           private:
@@ -252,27 +257,31 @@ namespace MR {
           template <class Cont> void receive_dixel     (const Cont&);
           template <class Cont> void receive_tod       (const Cont&);
 
+          // Partially specialized template function to shut up modern compilers
+          //   regarding using multiplication in a boolean context
+          inline void add (const default_type, const default_type);
+
           // These acquire the TWI factor at any point along the streamline;
           //   For the standard SetVoxel classes, this is a single value 'factor' for the set as
           //     stored in SetVoxelExtras
           //   For the Gaussian SetVoxel classes, there is a factor per mapped element
-          float get_factor (const Voxel&    element, const SetVoxel&    set) const { return set.factor; }
-          float get_factor (const VoxelDEC& element, const SetVoxelDEC& set) const { return set.factor; }
-          float get_factor (const Dixel&    element, const SetDixel&    set) const { return set.factor; }
-          float get_factor (const VoxelTOD& element, const SetVoxelTOD& set) const { return set.factor; }
-          float get_factor (const Gaussian::Voxel&    element, const Gaussian::SetVoxel&    set) const { return element.get_factor(); }
-          float get_factor (const Gaussian::VoxelDEC& element, const Gaussian::SetVoxelDEC& set) const { return element.get_factor(); }
-          float get_factor (const Gaussian::Dixel&    element, const Gaussian::SetDixel&    set) const { return element.get_factor(); }
-          float get_factor (const Gaussian::VoxelTOD& element, const Gaussian::SetVoxelTOD& set) const { return element.get_factor(); }
+          default_type get_factor (const Voxel&    element, const SetVoxel&    set) const { return set.factor; }
+          default_type get_factor (const VoxelDEC& element, const SetVoxelDEC& set) const { return set.factor; }
+          default_type get_factor (const Dixel&    element, const SetDixel&    set) const { return set.factor; }
+          default_type get_factor (const VoxelTOD& element, const SetVoxelTOD& set) const { return set.factor; }
+          default_type get_factor (const Gaussian::Voxel&    element, const Gaussian::SetVoxel&    set) const { return element.get_factor(); }
+          default_type get_factor (const Gaussian::VoxelDEC& element, const Gaussian::SetVoxelDEC& set) const { return element.get_factor(); }
+          default_type get_factor (const Gaussian::Dixel&    element, const Gaussian::SetDixel&    set) const { return element.get_factor(); }
+          default_type get_factor (const Gaussian::VoxelTOD& element, const Gaussian::SetVoxelTOD& set) const { return element.get_factor(); }
 
 
           // Convenience functions for Directionally-Encoded Colour processing
-          Eigen::Vector3f get_dec ();
-          void            set_dec (const Eigen::Vector3f&);
+          Eigen::Vector3 get_dec ();
+          void           set_dec (const Eigen::Vector3&);
 
           // Convenience functions for Track Orientation Distribution processing
-          void get_tod (      Eigen::VectorXf&);
-          void set_tod (const Eigen::VectorXf&);
+          void get_tod (      VoxelTOD::vector_type&);
+          void set_tod (const VoxelTOD::vector_type&);
 
         };
 
@@ -287,16 +296,16 @@ namespace MR {
           void MapWriter<value_type>::receive_greyscale (const Cont& in)
           {
             assert (MapWriterBase::type == GREYSCALE);
-            for (const auto& i : in) { 
+            for (const auto& i : in) {
               assign_pos_of (i).to (buffer);
-              const float factor = get_factor (i, in);
-              const float weight = in.weight * i.get_length();
+              const default_type factor = get_factor (i, in);
+              const default_type weight = in.weight * i.get_length();
               switch (voxel_statistic) {
-                case V_SUM:  buffer.value() += weight * factor;                  break;
-                case V_MIN:  buffer.value() = std::min (float (buffer.value()), factor); break;
-                case V_MAX:  buffer.value() = std::max (float (buffer.value()), factor); break;
+                case V_SUM:  add (weight, factor); break;
+                case V_MIN:  buffer.value() = std::min (default_type (buffer.value()), factor); break;
+                case V_MAX:  buffer.value() = std::max (default_type (buffer.value()), factor); break;
                 case V_MEAN:
-                             buffer.value() += weight * factor;
+                             add (weight, factor);
                              assert (counts);
                              assign_pos_of (i).to (*counts);
                              counts->value() += weight;
@@ -314,10 +323,10 @@ namespace MR {
           void MapWriter<value_type>::receive_dec (const Cont& in)
           {
             assert (type == DEC);
-            for (const auto& i : in) { 
+            for (const auto& i : in) {
               assign_pos_of (i).to (buffer);
-              const float factor = get_factor (i, in);
-              const float weight = in.weight * i.get_length();
+              const default_type factor = get_factor (i, in);
+              const default_type weight = in.weight * i.get_length();
               auto scaled_colour = i.get_colour();
               scaled_colour *= factor;
               const auto current_value = get_dec();
@@ -334,8 +343,6 @@ namespace MR {
                   break;
                 case V_MEAN:
                   set_dec (current_value + (scaled_colour * weight));
-                  assign_pos_of (i).to (*counts);
-                  counts->value() += weight;
                   break;
                 case V_MAX:
                   if (scaled_colour.squaredNorm() > current_value.squaredNorm())
@@ -354,17 +361,17 @@ namespace MR {
           void MapWriter<value_type>::receive_dixel (const Cont& in)
           {
             assert (type == DIXEL);
-            for (const auto& i : in) { 
+            for (const auto& i : in) {
               assign_pos_of (i, 0, 3).to (buffer);
               buffer.index(3) = i.get_dir();
-              const float factor = get_factor (i, in);
-              const float weight = in.weight * i.get_length();
+              const default_type factor = get_factor (i, in);
+              const default_type weight = in.weight * i.get_length();
               switch (voxel_statistic) {
-                case V_SUM:  buffer.value() += weight * factor;                  break;
-                case V_MIN:  buffer.value() = std::min (float (buffer.value()), factor); break;
-                case V_MAX:  buffer.value() = std::max (float (buffer.value()), factor); break;
+                case V_SUM:  add (weight, factor); break;
+                case V_MIN:  buffer.value() = std::min (default_type (buffer.value()), factor); break;
+                case V_MAX:  buffer.value() = std::max (default_type (buffer.value()), factor); break;
                 case V_MEAN:
-                             buffer.value() += weight * factor;
+                             add (weight, factor);
                              assert (counts);
                              assign_pos_of (i, 0, 3).to (*counts);
                              counts->index(3) = i.get_dir();
@@ -383,11 +390,11 @@ namespace MR {
           void MapWriter<value_type>::receive_tod (const Cont& in)
           {
             assert (type == TOD);
-            Eigen::VectorXf sh_coefs;
-            for (const auto& i : in) { 
+            VoxelTOD::vector_type sh_coefs;
+            for (const auto& i : in) {
               assign_pos_of (i, 0, 3).to (buffer);
-              const float factor = get_factor (i, in);
-              const float weight = in.weight * i.get_length();
+              const default_type factor = get_factor (i, in);
+              const default_type weight = in.weight * i.get_length();
               get_tod (sh_coefs);
               if (counts)
                 assign_pos_of (i, 0, 3).to (*counts);
@@ -432,25 +439,41 @@ namespace MR {
 
 
 
+        template <>
+        inline void MapWriter<bool>::add (const default_type weight, const default_type factor)
+        {
+          if (weight && factor)
+            buffer.value() = true;
+        }
 
         template <typename value_type>
-          Eigen::Vector3f MapWriter<value_type>::get_dec ()
+        inline void MapWriter<value_type>::add (const default_type weight, const default_type factor)
+        {
+          buffer.value() += weight * factor;
+        }
+
+
+
+
+
+        template <typename value_type>
+          Eigen::Vector3 MapWriter<value_type>::get_dec ()
           {
             assert (type == DEC);
-            Eigen::Vector3f value;
+            Eigen::Vector3 value;
             buffer.index(3) = 0; value[0] = buffer.value();
-            ++buffer.index(3);   value[1] = buffer.value();
-            ++buffer.index(3);   value[2] = buffer.value();
+            buffer.index(3)++;   value[1] = buffer.value();
+            buffer.index(3)++;   value[2] = buffer.value();
             return value;
           }
 
         template <typename value_type>
-          void MapWriter<value_type>::set_dec (const Eigen::Vector3f& value)
+          void MapWriter<value_type>::set_dec (const Eigen::Vector3& value)
           {
             assert (type == DEC);
             buffer.index(3) = 0; buffer.value() = value[0];
-            ++buffer.index(3);   buffer.value() = value[1];
-            ++buffer.index(3);   buffer.value() = value[2];
+            buffer.index(3)++;   buffer.value() = value[1];
+            buffer.index(3)++;   buffer.value() = value[2];
           }
 
 
@@ -458,20 +481,20 @@ namespace MR {
 
 
         template <typename value_type>
-          void MapWriter<value_type>::get_tod (Eigen::VectorXf& sh_coefs)
+          void MapWriter<value_type>::get_tod (VoxelTOD::vector_type& sh_coefs)
           {
             assert (type == TOD);
             sh_coefs.resize (buffer.size(3));
-            for (auto l = Loop (3) (buffer); l; ++l) 
+            for (auto l = Loop (3) (buffer); l; ++l)
               sh_coefs[buffer.index(3)] = buffer.value();
           }
 
         template <typename value_type>
-          void MapWriter<value_type>::set_tod (const Eigen::VectorXf& sh_coefs)
+          void MapWriter<value_type>::set_tod (const VoxelTOD::vector_type& sh_coefs)
           {
             assert (type == TOD);
             assert (sh_coefs.size() == buffer.size(3));
-            for (auto l = Loop (3) (buffer); l; ++l) 
+            for (auto l = Loop (3) (buffer); l; ++l)
               buffer.value() = sh_coefs[buffer.index(3)];
           }
 

@@ -1,26 +1,26 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
 
 #ifndef __gui_mrview_tool_roi_editor_item_h__
 #define __gui_mrview_tool_roi_editor_item_h__
 
 
 #include <array>
-#include <vector>
 
 #include "header.h"
+#include "types.h"
 #include "algo/loop.h"
 #include "gui/mrview/volume.h"
 #include "gui/mrview/tool/roi_editor/undoentry.h"
@@ -34,7 +34,7 @@ namespace MR
     {
       namespace Tool
       {
-            
+
 
 
        namespace {
@@ -44,13 +44,13 @@ namespace MR
            { { 0, 255, 255 } },
            { { 255, 0, 0 } },
            { { 0, 255, 255 } },
-           { { 0, 0, 25 } }
+           { { 0, 0, 255 } }
          } };
        }
 
 
 
-       class ROI_Item : public Volume {
+       class ROI_Item : public Volume { MEMALIGN(ROI_Item)
           public:
             ROI_Item (MR::Header&&);
 
@@ -73,7 +73,7 @@ namespace MR
             float min_brush_size, max_brush_size, brush_size;
 
           private:
-            std::vector<ROI_UndoEntry> undo_list;
+            vector<ROI_UndoEntry> undo_list;
             int current_undo;
 
             static int number_of_undos;

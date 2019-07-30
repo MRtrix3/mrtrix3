@@ -13,7 +13,7 @@ function write_mrtrix (image, filename)
 %    image.datatype:        the datatype specifier (default: float32) [optional]
 %    image.mrtrix_version:  a character array [optional]
 %    image.transform:       a 4x4 matrix [optional]
-%    image.DW_scheme:       a NDWx4 matrix of gradient directions [optional]
+%    image.dw_scheme:       a NDWx4 matrix of gradient directions [optional]
 
 fid = fopen (filename, 'w');
 assert(fid ~= -1, 'error opening %s', filename);
@@ -82,12 +82,6 @@ fprintf (fid, [ '\ndatatype: ' datatype ]);
 
 fprintf (fid, '\nmrtrix_version: %s', 'matlab');
 
-if isstruct (image) && isfield (image, 'comments')
-  for i=1:numel(image.comments)
-    fprintf (fid, '\ncomments: %s', image.comments{i});
-  end
-end
-
 if isstruct (image) && isfield (image, 'transform')
   fprintf (fid, '\ntransform: %.6f', image.transform(1,1));
   fprintf (fid, ',%.6f', image.transform(1,2:4));
@@ -97,12 +91,38 @@ if isstruct (image) && isfield (image, 'transform')
   fprintf (fid, ',%.6f', image.transform(3,2:4));
 end
 
-if isstruct (image) && isfield (image, 'DW_scheme')
-  for i=1:size(image.DW_scheme,1)
-    fprintf (fid, '\nDW_scheme: %.6f', image.DW_scheme(i,1));
-    fprintf (fid, ',%.6f', image.DW_scheme(i,2:4));
+if isstruct (image) && isfield (image, 'dw_scheme')
+  for i=1:size(image.dw_scheme,1)
+    fprintf (fid, '\ndw_scheme: %.6f', image.dw_scheme(i,1));
+    fprintf (fid, ',%.6f', image.dw_scheme(i,2:4));
    end
 end
+
+% write out any other fields:
+if isstruct (image)
+  f = fieldnames(image);
+  % don't worry about fields that have already been dealt with:
+  f(strcmp(f,'dim')) = [];
+  f(strcmp(f,'vox')) = [];
+  f(strcmp(f,'layout')) = [];
+  f(strcmp(f,'datatype')) = [];
+  f(strcmp(f,'transform')) = [];
+  f(strcmp(f,'dw_scheme')) = [];
+  f(strcmp(f,'data')) = [];
+  
+  % write out contents of the remainging fields:
+  for n = 1:numel(f)
+    val = getfield (image, f{n});
+    if iscell (val)
+      for i=1:numel(val)
+        fprintf (fid, '\n%s: %s', f{n}, val{i});
+      end
+    else
+      fprintf (fid, '\n%s: %s', f{n}, val);
+    end
+  end
+end
+ 
 
 if strcmp(filename(end-3:end), '.mif')
   datafile = filename;

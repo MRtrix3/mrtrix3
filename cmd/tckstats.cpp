@@ -1,25 +1,22 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
 
 
-
-#include <vector>
-
 #include "command.h"
-#include "progressbar.h"
 #include "memory.h"
+#include "progressbar.h"
+#include "types.h"
 
 #include "file/ofstream.h"
 
@@ -38,24 +35,40 @@ using namespace MR::DWI;
 using namespace MR::DWI::Tractography;
 
 
+// TODO Make compatible with stats generic options?
+// - Some features would not be compatible due to potential presence of track weights
+
+
+const char * field_choices[] = { "mean", "median", "std", "min", "max", "count", NULL };
+
 
 void usage ()
 {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-  + "calculate statistics on streamlines length.";
+  SYNOPSIS = "Calculate statistics on streamlines length";
 
   ARGUMENTS
   + Argument ("tracks_in", "the input track file").type_tracks_in();
 
   OPTIONS
+
+  + Option ("output",
+      "output only the field specified. Multiple such options can be supplied if required. "
+      "Choices are: " + join (field_choices, ", ") + ". Useful for use in scripts.").allow_multiple()
+    + Argument ("field").type_choice (field_choices)
+
   + Option ("histogram", "output a histogram of streamline lengths")
     + Argument ("path").type_file_out()
 
   + Option ("dump", "dump the streamlines lengths to a text file")
     + Argument ("path").type_file_out()
+
+  + Option ("explicit", "explicitly calculate the length of each streamline, "
+                        "ignoring any step size information present in the header")
+
+  + Option ("ignorezero", "do not generate a warning if the track file contains streamlines with zero length")
 
   + Tractography::TrackWeightsInOption;
 
@@ -63,8 +76,7 @@ void usage ()
 
 
 // Store length and weight of each streamline
-class LW
-{
+class LW { NOMEMALIGN
   public:
     LW (const float l, const float w) : length (l), weight (w) { }
     LW () : length (NaN), weight (NaN) { }
@@ -97,10 +109,10 @@ void run ()
   float step_size = NaN;
   size_t count = 0, header_count = 0;
   float min_length = std::numeric_limits<float>::infinity();
-  float max_length = 0.0f;
+  float max_length = -std::numeric_limits<float>::infinity();
   double sum_lengths = 0.0, sum_weights = 0.0;
-  std::vector<double> histogram;
-  std::vector<LW> all_lengths;
+  vector<double> histogram;
+  vector<LW> all_lengths;
   all_lengths.reserve (header_count);
 
   {
@@ -110,14 +122,14 @@ void run ()
     if (properties.find ("count") != properties.end())
       header_count = to<size_t> (properties["count"]);
 
-    if (properties.find ("output_step_size") != properties.end())
-      step_size = to<float> (properties["output_step_size"]);
-    else
-      step_size = to<float> (properties["step_size"]);
-    if (!std::isfinite (step_size) || !step_size) {
-      WARN ("Streamline step size undefined in header");
-      if (get_options ("histogram").size())
-        WARN ("Histogram will be henerated using a 1mm interval");
+    if (!get_options ("explicit").size()) {
+      step_size = get_step_size (properties);
+      if (!std::isfinite (step_size) || !step_size) {
+        INFO ("Streamline step size undefined in header; lengths will be calculated manually");
+        if (get_options ("histogram").size()) {
+          WARN ("Do not have streamline step size with which to construct histogram; histogram will be generated using 1mm bin widths");
+        }
+      }
     }
 
     std::unique_ptr<File::OFStream> dump;
@@ -147,47 +159,76 @@ void run ()
     }
   }
 
-  if (histogram.front())
+  if (histogram.size() && histogram.front() && !get_options ("ignorezero").size())
     WARN ("read " + str(histogram.front()) + " zero-length tracks");
   if (count != header_count)
     WARN ("expected " + str(header_count) + " tracks according to header; read " + str(count));
+  if (!std::isfinite (min_length))
+    min_length = NaN;
+  if (!std::isfinite (max_length))
+    max_length = NaN;
 
-  const float mean_length = sum_lengths / sum_weights;
+  const float mean_length = sum_weights ? (sum_lengths / sum_weights) : NaN;
 
   float median_length = 0.0f;
-  if (weights_provided) {
-    // Perform a weighted median calculation
-    std::sort (all_lengths.begin(), all_lengths.end());
-    size_t median_index = 0;
-    double sum = sum_weights - all_lengths[0].get_weight();
-    while (sum > 0.5 * sum_weights) { sum -= all_lengths[++median_index].get_weight(); }
-    median_length = all_lengths[median_index].get_length();
+  if (count) {
+    if (weights_provided) {
+      // Perform a weighted median calculation
+      std::sort (all_lengths.begin(), all_lengths.end());
+      size_t median_index = 0;
+      double sum = sum_weights - all_lengths[0].get_weight();
+      while (sum > 0.5 * sum_weights) { sum -= all_lengths[++median_index].get_weight(); }
+      median_length = all_lengths[median_index].get_length();
+    } else {
+      median_length = Math::median (all_lengths).get_length();
+    }
   } else {
-    median_length = Math::median (all_lengths).get_length();
+    median_length = NaN;
   }
 
   double stdev = 0.0;
-  for (std::vector<LW>::const_iterator i = all_lengths.begin(); i != all_lengths.end(); ++i)
+  for (vector<LW>::const_iterator i = all_lengths.begin(); i != all_lengths.end(); ++i)
     stdev += i->get_weight() * Math::pow2 (i->get_length() - mean_length);
-  stdev = std::sqrt (stdev / (((count - 1) / float(count)) * sum_weights));
+  stdev = sum_weights ? (std::sqrt (stdev / (((count - 1) / float(count)) * sum_weights))) : NaN;
 
-  const size_t width = 12;
+  vector<std::string> fields;
+  auto opt = get_options ("output");
+  for (size_t n = 0; n < opt.size(); ++n)
+    fields.push_back (opt[n][0]);
 
-  std::cout << " " << std::setw(width) << std::right << "mean"
-            << " " << std::setw(width) << std::right << "median"
-            << " " << std::setw(width) << std::right << "std. dev."
-            << " " << std::setw(width) << std::right << "min"
-            << " " << std::setw(width) << std::right << "max"
-            << " " << std::setw(width) << std::right << "count\n";
+  if (fields.size()) {
 
-  std::cout << " " << std::setw(width) << std::right << (mean_length)
-            << " " << std::setw(width) << std::right << (median_length)
-            << " " << std::setw(width) << std::right << (stdev)
-            << " " << std::setw(width) << std::right << (min_length)
-            << " " << std::setw(width) << std::right << (max_length)
-            << " " << std::setw(width) << std::right << (count) << "\n";
+    for (size_t n = 0; n < fields.size(); ++n) {
+      if (fields[n] == "mean")        std::cout << str(mean_length) << " ";
+      else if (fields[n] == "median") std::cout << str(median_length) << " ";
+      else if (fields[n] == "std")    std::cout << str(stdev) << " ";
+      else if (fields[n] == "min")    std::cout << str(min_length) << " ";
+      else if (fields[n] == "max")    std::cout << str(max_length) << " ";
+      else if (fields[n] == "count")  std::cout << count << " ";
+    }
+    std::cout << "\n";
 
-  auto opt = get_options ("histogram");
+  } else {
+
+    const size_t width = 12;
+
+    std::cout << " " << std::setw(width) << std::right << "mean"
+              << " " << std::setw(width) << std::right << "median"
+              << " " << std::setw(width) << std::right << "std. dev."
+              << " " << std::setw(width) << std::right << "min"
+              << " " << std::setw(width) << std::right << "max"
+              << " " << std::setw(width) << std::right << "count\n";
+
+    std::cout << " " << std::setw(width) << std::right << (mean_length)
+              << " " << std::setw(width) << std::right << (median_length)
+              << " " << std::setw(width) << std::right << (stdev)
+              << " " << std::setw(width) << std::right << (min_length)
+              << " " << std::setw(width) << std::right << (max_length)
+              << " " << std::setw(width) << std::right << (count) << "\n";
+
+  }
+
+  opt = get_options ("histogram");
   if (opt.size()) {
     File::OFStream out (opt[0][0], std::ios_base::out | std::ios_base::trunc);
     if (!std::isfinite (step_size))

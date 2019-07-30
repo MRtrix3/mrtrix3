@@ -1,17 +1,17 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
 
 #ifndef __dwi_tractography_resampling_arc_h__
 #define __dwi_tractography_resampling_arc_h__
@@ -28,11 +28,15 @@ namespace MR {
 
 
         // Also handles resampling along a fixed line
-        class Arc : public Base {
-            typedef float value_type;
-            typedef Eigen::Vector3f point_type;
+        class Arc : public BaseCRTP<Arc> { MEMALIGN(Arc)
+
+            using value_type = float;
+            using point_type = Eigen::Vector3f;
+
+            enum class state_t { BEFORE_START, AFTER_START, BEFORE_END, AFTER_END };
+
           private:
-            class Plane {
+            class Plane { MEMALIGN(Plane)
               public:
                 Plane (const point_type& pos, const point_type& dir) :
                     n (dir)
@@ -46,7 +50,7 @@ namespace MR {
                 value_type d;
             };
 
-            std::vector<Plane> planes;
+            vector<Plane> planes;
 
           public:
             Arc (const size_t n, const point_type& s, const point_type& e) :
@@ -63,30 +67,29 @@ namespace MR {
             Arc (const size_t n, const point_type& s, const point_type& w, const point_type& e) :
                 nsamples (n),
                 start (s),
-                mid (0.5*(s+e)),
+                mid (w),
                 end (e),
                 idx_start (0),
                 idx_end (0)
             {
-              init_arc (w);
+              init_arc();
             }
 
-            bool operator() (std::vector<Eigen::Vector3f>&) const override;
+            bool operator() (const Streamline<>&, Streamline<>&) const override;
             bool valid() const override { return nsamples; }
-            bool limits (const std::vector<Eigen::Vector3f>&) override;
 
           private:
             const size_t nsamples;
             const point_type start, mid, end;
 
-            size_t idx_start, idx_end;
-            point_type start_dir, mid_dir, end_dir;
+            mutable size_t idx_start, idx_end;
+            mutable point_type start_dir, mid_dir, end_dir;
 
             void init_line();
-            void init_arc (const point_type&);
+            void init_arc();
 
 
-            int state (const point_type&) const;
+            state_t state (const point_type&) const;
 
         };
 

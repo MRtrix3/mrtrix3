@@ -1,17 +1,17 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
 
 #include <map>
 
@@ -51,7 +51,7 @@ namespace MR
 
 
 
-      void Renderer::start (const Projection& projection, const GL::Lighting& lighting, float scale, 
+      void Renderer::start (const Projection& projection, const GL::Lighting& lighting, float scale,
           bool use_lighting, bool colour_by_direction, bool hide_neg_values, bool orthographic)
       {
         switch (mode) {
@@ -428,7 +428,7 @@ namespace MR
         QApplication::restoreOverrideCursor();
       }
 
-      void Renderer::SH::update_transform (const std::vector<Shapes::HalfSphere::Vertex>& vertices, int lmax)
+      void Renderer::SH::update_transform (const vector<Shapes::HalfSphere::Vertex>& vertices, int lmax)
       {
         // order is r, del, daz
 
@@ -438,7 +438,7 @@ namespace MR
           for (int l = 0; l <= lmax; l+=2) {
             for (int m = 0; m <= l; m++) {
               const int idx (Math::SH::index (l,m));
-              transform (3*n, idx) = transform(3*n, idx-2*m) = SH_NON_M0_SCALE_FACTOR Math::Legendre::Plm_sph<float> (l, m, vertices[n][2]);
+              transform (3*n, idx) = transform(3*n, idx-2*m) = (m ? Math::sqrt2 : 1.0) * Math::Legendre::Plm_sph<float> (l, m, vertices[n][2]);
             }
           }
 
@@ -456,7 +456,7 @@ namespace MR
             for (int l = 2* ( (m+1) /2); l <= lmax; l+=2) {
               const int idx (Math::SH::index (l,m));
               transform (3*n+1, idx) = - transform (3*n, idx-1) * sqrt (float ( (l+m) * (l-m+1)));
-              if (l > m) 
+              if (l > m)
                 transform (3*n+1,idx) += transform (3*n, idx+1) * sqrt (float ( (l-m) * (l+m+1)));
               transform (3*n+1, idx) /= 2.0;
 
@@ -637,9 +637,11 @@ namespace MR
 
       void Renderer::Dixel::update_dixels (const MR::DWI::Directions::Set& dirs)
       {
-        std::vector<std::array<GLint,3>> indices_data;
+        vector<Eigen::Vector3f> directions_data;
+        vector<std::array<GLint,3>> indices_data;
 
         for (size_t i = 0; i != dirs.size(); ++i) {
+          directions_data.push_back (dirs[i].cast<float>());
           for (auto j : dirs.get_adj_dirs(i)) {
             if (j > i) {
               for (auto k : dirs.get_adj_dirs(j)) {
@@ -650,15 +652,15 @@ namespace MR
                     if (I == i) {
 
                       // Invert a direction if required
-                      std::array<Eigen::Vector3f, 3> d {{ dirs[i], dirs[j], dirs[k] }};
-                      const Eigen::Vector3f mean_dir ((d[0]+d[1]+d[2]).normalized());
+                      std::array<Eigen::Vector3, 3> d {{ dirs[i], dirs[j], dirs[k] }};
+                      const Eigen::Vector3 mean_dir ((d[0]+d[1]+d[2]).normalized());
                       for (size_t v = 0; v != 3; ++v) {
-                        if (d[v].dot (mean_dir) < 0.0f)
+                        if (d[v].dot (mean_dir) < 0.0)
                           d[v] = -d[v];
                       }
                       // Conform to right hand rule
-                      const Eigen::Vector3f normal (((d[1]-d[0]).cross (d[2]-d[1])).normalized());
-                      if (normal.dot (mean_dir) < 0.0f)
+                      const Eigen::Vector3 normal (((d[1]-d[0]).cross (d[2]-d[1])).normalized());
+                      if (normal.dot (mean_dir) < 0.0)
                         indices_data.push_back ( {{GLint(i), GLint(k), GLint(j)}} );
                       else
                         indices_data.push_back ( {{GLint(i), GLint(j), GLint(k)}} );
@@ -676,7 +678,7 @@ namespace MR
         Renderer::GrabContext context (parent.context_);
         VAO.bind();
         vertex_buffer.bind (gl::ARRAY_BUFFER);
-        gl::BufferData (gl::ARRAY_BUFFER, dirs.size()*sizeof(Eigen::Vector3f), &dirs.get_dirs()[0][0], gl::STATIC_DRAW);
+        gl::BufferData (gl::ARRAY_BUFFER, dirs.size()*sizeof(Eigen::Vector3f), &directions_data[0], gl::STATIC_DRAW);
         gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 3*sizeof(GLfloat), (void*)0);
         index_buffer.bind();
         gl::BufferData (gl::ELEMENT_ARRAY_BUFFER, indices_data.size()*sizeof(std::array<GLint,3>), &indices_data[0], gl::STATIC_DRAW);

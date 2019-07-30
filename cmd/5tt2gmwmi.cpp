@@ -1,22 +1,16 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
-
-
-
-
-
 
 
 #include "command.h"
@@ -31,9 +25,6 @@
 #include "dwi/tractography/ACT/tissues.h"
 
 
-#define MIN_TISSUE_CHANGE 0.01 // Just accounting for floating-point errors
-
-
 
 using namespace MR;
 using namespace App;
@@ -44,8 +35,7 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  DESCRIPTION
-    + "Generate a mask image appropriate for seeding streamlines on the grey matter - white matter interface";
+  SYNOPSIS = "Generate a mask image appropriate for seeding streamlines on the grey matter-white matter interface";
 
   REFERENCES
     + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
@@ -67,7 +57,7 @@ void usage ()
 
 
 class Processor
-{
+{ MEMALIGN(Processor)
 
   public:
     Processor (const Image<bool>& mask) : mask (mask) { }
@@ -105,7 +95,7 @@ class Processor
             input.index(axis) = output.index(axis) + 1;
           }
           const DWI::Tractography::ACT::Tissues pos (input);
-          gradient += Math::pow2 (multiplier * std::min (std::abs (pos.get_gm() - neg.get_gm()), std::abs (pos.get_wm() - neg.get_wm())));
+          gradient += Math::pow2 (multiplier * std::min (abs (pos.get_gm() - neg.get_gm()), abs (pos.get_wm() - neg.get_wm())));
         }
         output.value() = std::max (0.0, std::sqrt (gradient));
         assign_pos_of (output, 0, 3).to (input);
@@ -127,6 +117,7 @@ void run ()
 
   auto input = Image<float>::open (argument[0]);
   DWI::Tractography::ACT::verify_5TT_image (input);
+  check_3D_nonunity (input);
 
   // TODO It would be nice to have the capability to define this mask based on another image
   // This will however require the use of interpolators
@@ -134,7 +125,7 @@ void run ()
   Image<bool> mask;
   auto opt = get_options ("mask_in");
   if (opt.size()) {
-    mask.open (opt[0][0]);
+    mask = Image<bool>::open (opt[0][0]);
     if (!dimensions_match (input, mask, 0, 3))
       throw Exception ("Mask image provided using the -mask option must match the input 5TT image");
   }

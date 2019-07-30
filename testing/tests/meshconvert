@@ -4,7 +4,7 @@ meshconvert meshconvert/in.vtk tmp.obj -force && testing_diff_mesh tmp.obj meshc
 meshconvert meshconvert/in.vtk tmp.obj -binary -force && testing_diff_mesh tmp.obj meshconvert/in.vtk 0.001
 meshconvert meshconvert/in.vtk tmp.stl -force && testing_diff_mesh tmp.stl meshconvert/in.vtk 0.001
 meshconvert meshconvert/in.vtk tmp.stl -binary -force && testing_diff_mesh tmp.stl meshconvert/in.vtk 0.001
-meshconvert meshconvert/in.vtk tmp.vtk -transform_real2first meshconvert/image.mif.gz -force && testing_diff_mesh tmp.vtk meshconvert/first.vtk 0.001
-meshconvert meshconvert/first.vtk tmp.vtk -transform_first2real meshconvert/image.mif.gz -force && testing_diff_mesh tmp.vtk meshconvert/in.vtk 0.001
-meshconvert meshconvert/in.vtk tmp.vtk -transform_real2voxel meshconvert/image.mif.gz -force && testing_diff_mesh tmp.vtk meshconvert/voxel.vtk 0.001
-meshconvert meshconvert/voxel.vtk tmp.vtk -transform_voxel2real meshconvert/image.mif.gz -force && testing_diff_mesh tmp.vtk meshconvert/in.vtk 0.001
+meshconvert meshconvert/in.vtk tmp.vtk -transform real2first meshconvert/image.mif.gz -force && testing_diff_mesh tmp.vtk meshconvert/first.vtk 0.001
+meshconvert meshconvert/first.vtk tmp.vtk -transform first2real meshconvert/image.mif.gz -force && testing_diff_mesh tmp.vtk meshconvert/in.vtk 0.001
+meshconvert meshconvert/in.vtk tmp.vtk -transform real2voxel meshconvert/image.mif.gz -force && testing_diff_mesh tmp.vtk meshconvert/voxel.vtk 0.001
+meshconvert meshconvert/voxel.vtk tmp.vtk -transform voxel2real meshconvert/image.mif.gz -force && testing_diff_mesh tmp.vtk meshconvert/in.vtk 0.001

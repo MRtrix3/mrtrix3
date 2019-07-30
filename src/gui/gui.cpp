@@ -1,17 +1,20 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
+
+#include <locale>
+#include <clocale>
 #include "gui/gui.h"
 
 namespace MR
@@ -56,67 +59,29 @@ namespace MR
 
 
 
-
-
-
-
-    namespace {
-      QProgressDialog* progress_dialog = nullptr;
-    }
-
     QWidget* App::main_window = nullptr;
     App* App::application = nullptr;
 
 
 
+    App::App (int& cmdline_argc, char** cmdline_argv)
+    {
+      application = this;
+      ::MR::File::Config::init ();
+      ::MR::GUI::GL::set_default_context ();
+
+      new QApplication (cmdline_argc, cmdline_argv);
+
+      QLocale::setDefault(QLocale::c());
+      std::locale::global (std::locale::classic());
+      std::setlocale (LC_ALL, "C");
+
+      qApp->setAttribute (Qt::AA_DontCreateNativeWidgetSiblings);
+    }
+
 
     void App::set_main_window (QWidget* window) {
       main_window = window;
-    }
-
-
-
-
-
-    void App::startProgressBar ()
-    {
-      assert (main_window);
-      main_window->setUpdatesEnabled (false);
-    }
-
-
-
-
-
-    void App::displayProgressBar (QString text, int value, bool bounded)
-    {
-      Context::Grab context;
-
-      if (!progress_dialog) {
-        progress_dialog = new QProgressDialog (text, QString(), 0, bounded ? 100 : 0, main_window);
-        progress_dialog->setWindowModality (Qt::ApplicationModal);
-        progress_dialog->show();
-        qApp->processEvents();
-      }
-      progress_dialog->setValue (value);
-      qApp->processEvents();
-    }
-
-
-
-
-
-
-    void App::doneProgressBar ()
-    {
-      assert (main_window);
-      if (progress_dialog) {
-        Context::Grab context;
-        delete progress_dialog;
-        progress_dialog = nullptr;
-      }
-
-      main_window->setUpdatesEnabled (true);
     }
 
 

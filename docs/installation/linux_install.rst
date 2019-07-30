@@ -1,12 +1,11 @@
 .. _linux_install:
 
-=============
 Linux installation
-=============
+==================
 
 We outline the steps for installing *MRtrix3* on a Linux machine. Please consult 
-:ref:`linux_trouble_shooting` if you encounter any issues with the configure, build
-or runtime operations of *MRtrix3*.
+the `MRtrix3 forum <http://community.mrtrix.org/>`__ if you encounter any
+issues with the configure, build or runtime operations of *MRtrix3*.
 
 Check requirements
 ------------------
@@ -14,13 +13,22 @@ Check requirements
 To install *MRtrix3*, you will need the following:
 
 -  a `C++11 <https://en.wikipedia.org/wiki/C%2B%2B11>`__ compliant
-   compiler (GCC version >= 4.8, clang)
+   compiler (GCC version >= 4.9, clang)
 -  `Python <https://www.python.org/>`__ version >= 2.7
 -  The `zlib <http://www.zlib.net/>`__ compression library
--  `Eigen <http://eigen.tuxfamily.org>`__ version 3.2 *(do not install the beta version)*
+-  `Eigen <http://eigen.tuxfamily.org>`__ version >= 3.2 
 -  `Qt <http://www.qt.io/>`__ version >= 4.7 *[GUI components only]*
 
+and optionally:
+
+- `libTIFF <http://www.libtiff.org/>`__ version >= 4.0 (for TIFF support)
+- `FFTW <http://www.fftw.org/>`__ version >= 3.0 (for improved performance in
+  certain applications, currently only ``mrdegibbs``)
+  
+  
+
 .. WARNING:: 
+
     To run the GUI components of *MRtrix3* (``mrview`` &
     ``shview``), you will also need:
 
@@ -39,23 +47,22 @@ same distribution. The commands below are suggestions based on what has
 been reported to work in the past, but may need to be amended. See below
 for hints on how to proceed in this case.
 
--  Ubuntu Linux (and derivatives, e.g. Linux Mint):
+-  Ubuntu Linux (and derivatives, e.g. Linux Mint)::
 
-   ::
+       sudo apt-get install git g++ python python-numpy libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev libfftw3-dev libtiff5-dev
 
-       sudo apt-get install git g++ python python-numpy libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev
+-  RPM-based distros (Fedora, CentOS)::
 
--  RPM-based distros (Fedora, CentOS):
+       sudo yum install git g++ python numpy eigen3-devel zlib-devel libqt4-devel libgl1-mesa-dev fftw-devel libtiff-devel
 
-   ::
+   on Fedora 24, this is reported to work::
 
-       sudo yum install git g++ python numpy eigen3-devel zlib-devel libqt4-devel libgl1-mesa-dev
+           sudo yum install git gcc-c++ python numpy eigen3-devel zlib-devel qt-devel mesa-libGL-devel fftw-devel libtiff-devel
 
--  Arch Linux:
 
-   ::
+-  Arch Linux::
 
-       sudo pacman -Syu git python python-numpy gcc zlib eigen qt5-svg
+       sudo pacman -Syu git python python-numpy gcc zlib eigen qt5-svg fftw libtiff
 
 If this doesn't work
 ^^^^^^^^^^^^^^^^^^^^
@@ -68,7 +75,7 @@ packages:
 
 -  git
 
--  your compiler (gcc 4.8 or above, or clang)
+-  your compiler (gcc 4.9 or above, or clang)
 
 -  Python version >2.7
 
@@ -78,8 +85,6 @@ packages:
    header/include files
 
 -  the Eigen template library (only consists of development header/include files);
-   note that *MRtrix3* may not run correctly with the beta release of Eigen,
-   so we recommend download and installation of the latest stable release
 
 -  Qt version >4.7, its corresponding development header/include files,
    and the executables required to compile the code. Note this will most
@@ -90,17 +95,19 @@ packages:
    one of the other packages).
 
 .. WARNING::  
-    The compiler included in Ubuntu 12.04 and other older distributions is no longer capable of compiling *MRtrix3*, as it now
-    requires C++11 support. The solution is to use a newer compiler as provided by the `Ubuntu toolchain 
-    PPA <https://launchpad.net/~ubuntu-toolchain-r/+archive/ubuntu/test>`__ - follow the link for instructions on how to add the PPA. Once the PPA
-    has been added, you'll need to issue a ``sudo apt-get update``, followed
-    by ``sudo apt-get install g++-4.9``. You will probably also need to tell
-    ``./configure`` to use this compiler (see ``./configure -help`` for
-    further options):
 
-    ::
+    The compiler included in Ubuntu 12.04 and other older distributions is no
+    longer capable of compiling *MRtrix3*, as it now requires C++11 support.
+    The solution is to use a newer compiler as provided by the `Ubuntu
+    toolchain PPA
+    <https://launchpad.net/~ubuntu-toolchain-r/+archive/ubuntu/test>`__ -
+    follow the link for instructions on how to add the PPA. Once the PPA has
+    been added, you'll need to issue a ``sudo apt-get update``, followed by
+    ``sudo apt-get install g++-4.9``. You will probably also need to tell
+    ``./configure`` to use this compiler (see ``./configure -help`` for further
+    options)::
 
-        CXX=g++-4.9 LD=g++-4.9 ./configure
+        CXX=g++-4.9 ./configure
 
 If this *really* doesn't work
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -113,29 +120,24 @@ last resort use the procedure described in :ref:`linux_standalone`.
 Git setup
 ---------
 
-Set up your git environment as per the `Git instructions
-page <https://help.github.com/articles/set-up-git/#setting-up-git>`__
+If you intend to contribute to the development of *MRtrix3*, set up your git
+environment as per the `Git instructions page
+<https://help.github.com/articles/set-up-git/#setting-up-git>`__
 
 .. _linux_build:
 
 Build *MRtrix3*
--------------
+---------------
 
-1. Clone the *MRtrix3* repository:
-
-   ::
+1. Clone the *MRtrix3* repository::
 
        git clone https://github.com/MRtrix3/mrtrix3.git
 
-   or if you have set up your SSH keys (for collaborators):
-
-   ::
+   or if you have set up your SSH keys (for contributors)::
 
        git clone git@github.com:MRtrix3/mrtrix3.git
 
-2. Configure the *MRtrix3* install:
-
-   ::
+2. Configure the *MRtrix3* install::
 
        cd mrtrix3
        ./configure
@@ -143,14 +145,12 @@ Build *MRtrix3*
    If this does not work, examine the 'configure.log' file that is
    generated by this step, it may give clues as to what went wrong.
 
-3. Build the binaries:
-
-   ::
+3. Build the binaries::
 
        ./build
 
 Set up *MRtrix3*
---------------
+----------------
 
 1. Update the shell startup file, so that the locations of *MRtrix3* commands
    and scripts will be added to your ``PATH`` envionment variable.
@@ -158,10 +158,8 @@ Set up *MRtrix3*
    If you are not familiar or comfortable with modification of shell files,
    *MRtrix3* now provides a convenience script that will perform this setup
    for you (assuming that you are using ``bash`` or equivalent interpreter).
-   From the top level *MRtrix3* directory, run the following:
+   From the top level *MRtrix3* directory, run the following::
    
-   ::
-
        ./set_path
 
 2. Close the terminal and start another one to ensure the startup file
@@ -169,7 +167,7 @@ Set up *MRtrix3*
 
 3. Type ``mrview`` to check that everything works
 
-4. You may also want to have a look through the :ref:`mrtrix_config_options`
+4. You may also want to have a look through the :ref:`config_file_options`
    and set anything you think might be required on your system.
    
   .. NOTE:: 
@@ -178,37 +176,64 @@ Set up *MRtrix3*
     is configured. If you find that the above doesn't work (e.g. typing
     ``mrview`` returns a 'command not found' error), try changing step 1 to
     instruct the ``set_path`` script to update ``PATH`` within a different
-    file, for example ``~/.bash_profile`` or ``~/.profile``, e.g. as follows:
-
-    ::
+    file, for example ``~/.bash_profile`` or ``~/.profile``, e.g. as follows::
 
       ./set_path ~/.bash_profile
 
 Keeping *MRtrix3* up to date
---------------------------
+----------------------------
 
 1. You can update your installation at any time by opening a terminal in
-   the *MRtrix3* folder, and typing:
-
-   ::
+   the *MRtrix3* folder, and typing::
 
        git pull
        ./build
 
 2. If this doesn't work immediately, it may be that you need to re-run
-   the configure script:
-
-   ::
+   the configure script::
 
        ./configure
 
    and re-run step 1 again.
 
 
+Setting the CPU architecture for optimal performance
+----------------------------------------------------
+
+By default, ``configure`` will cause the build script to produce generic code
+suitable for any current CPU. If you want to ensure optimal performance on your
+system, you can request that ``configure`` produce code tailored to your
+specific CPU architecture, which will allow it to use all available CPU
+instructions and tune the code differently. This can improve performance
+particularly for linear algebra operations as `Eigen
+<http://eigen.tuxfamily.org>`__ will then make use of these extensions.
+However, note that this means the executables produced will likely *not run* on
+a different CPUs with different instruction sets, resulting in 'illegal
+instruction' runtime errors. If you intend to run *MRtrix3* on a variety of
+different systems with a range of CPUs, or you have no idea what the CPU is on
+your target system, it is safest to avoid changing the default. 
+
+Specifying a different CPU architecture is done by setting the ``ARCH`` environment
+variable prior to invoking ``./configure``. The value of this variable will
+then be passed to the compiler via the ``-march`` option. To get the best
+performance *on the current system*, you can specify ``native`` as
+the architecture, leaving it up to the compiler to detect your particular CPU
+and its available instructions. For example::
+
+    export ARCH=native 
+    ./configure
+    ./build
+
+For more specific architectures, you can provide any value from the `list of
+specifiers understood by the compiler
+<https://gcc.gnu.org/onlinedocs/gcc-6.2.0/gcc/x86-Options.html#x86-Options>`_,
+for example ``ARCH='sandybridge' ./configure``
+
+
 .. _linux_standalone:
 
 Standalone installation on Linux
--------------------------------------
+--------------------------------
 
 In some cases, users need to install *MRtrix3* on systems running older
 distributions, over which they have little or no control, for example
@@ -221,28 +246,8 @@ compile *MRtrix3* on a modern distro (within a virtual machine for
 example), package it up, and install it on any Linux system without
 worrying about dependencies.
 
-Important: setting the CPU architecture
-^^^^^^
-
-By default, ``configure`` will cause the build script to generate code
-suitable to run on your current CPU (using the ``-march=native``
-option). This means the executables will likely *not run* on a different
-CPUs with different instruction sets, resulting in 'illegal instruction'
-runtime errors. If you intend to run *MRtrix3* on a variety of different
-systems with a range of CPUs, or you have no idea what the CPU is on
-your target system, it is safest to specify a generic architecture when
-configuring *MRtrix3*, before invoking ``./build``. For example, assuming
-a 64-bit build is needed:
-
-::
-
-    ARCH='x86-64' ./configure
-    ./build
-
-For a 32-bit build, substituting ARCH='i686' or similar should suffice.
-
 Static build
-^^^^^
+^^^^^^^^^^^^
 
 The simplest approach to this problem is to build so-called `static
 executables <http://en.wikipedia.org/wiki/Static_library>`__, which have
@@ -250,14 +255,12 @@ no run-time dependencies. This can be accomplished by generating a
 static configuration before building the software, as follows.
 
 First, obtain the code and extract or clone it on a modern distribution
-(Arch, Ubuntu 14.04, Mint 17, ..., potentially with a virtual machine if
-required). Then, from the main *MRtrix3* folder:
-
-.. code::
+(Arch, Ubuntu 16.04, Mint 18, ..., potentially with a virtual machine if
+required). Then, from the main *MRtrix3* folder::
 
     ./build clean
     git pull
-    ARCH=x86-64 ./configure -static [-nogui]
+    ./configure -static [-nogui]
     ./build
 
 Note that this requires the availability of static versions of the
@@ -269,30 +272,12 @@ Qt <http://doc.qt.io/qt-5/linux-deployment.html#building-qt-statically>`__
 beforehand. Use the ``-nogui`` option to skip installation of GUI
 components, which rely on Qt.
 
-You can then copy the contents of the ``release/bin/`` folder onto target
-systems, make sure their location is listed in the ``PATH``, and start
-using these commands.
+You can then deploy the software onto target systems, as described in the
+:ref:`deployment` section. 
 
-If you also wish to be able to use the *MRtrix3* Python scripts, you can
-also copy the full contents of the ``scripts`` directory to the target
-system, and append their location to the ``PATH`` environment variable
-also. However, in order for certain functionalities of these scripts to
-work (for instance, controlling the command-line verbosity and
-multi-threading of invoked *MRtrix3* commands), the relative path between
-the scripts and binaries must be maintained; that is, the binaries must
-be located in ``../release/bin`` relative to ``scripts``. Therefore, the
-recommended solution is:
-
-1. Create an ``mrtrix3`` directory on the target system.
-2. Place the contents of ``release/bin`` into ``mrtrix3/release/bin``
-   on the target system.
-3. Place the contents of ``scripts`` (including all sub-directories) into
-   ``mrtrix3/scripts`` on the target system.
-4. Add ``mrtrix3/release/bin`` and ``mrtrix3/scripts`` to ``PATH`` on the
-   target system.
 
 Standalone packager
-^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
 
 In the rare cases where the `static build <#Static-build>`__ procedure
 above doesn't work for you, *MRtrix3* now includes the ``package_mrtrix``
@@ -308,7 +293,7 @@ not work for your system. This is provided on a best-effort basis, as a
 convenience for users who genuinely have no alternative.
 
 What it does
-"""""
+""""""""""""
 
 The ``package_mrtrix`` script is included in the top-level folder of the
 *MRtrix3* package (if you don't have it, use ``git pull`` to update). In
@@ -320,7 +305,7 @@ system libraries required for runtime operation from your current
 system, making them available on any target system.
 
 Limitations
-"""""
+"""""""""""
 
 -  **OpenGL support:** this approach cannot magically make your system
    run ``mrview`` if it doesn't already support OpenGL 3.3 and above. This
@@ -338,27 +323,25 @@ Limitations
 
 -  **Installation on remote systems:** bear in mind that running the GUI
    components over a remote X11 connection is not possible, since the
-   GLX protocol does not support OpenGL 3 and above. You may be able to
-   use an OpenGL-capable VNC connection, but if that is not possible,
-   there is little point in installing the GUI components on the remote
-   server. The recommendation would be to configure with the ``-nogui``
-   option to skip the GUI components. You should also be able to access
-   your data over the network (e.g. using SAMBA or SSHFS), in which case
-   you would be able to display the images by running ``mrview`` locally and
-   loading the images over the shared network drives.
+   GLX protocol does not support OpenGL 3 and above (see :ref:`remote_display`
+   for details). You may be able to use an OpenGL-capable VNC connection, but
+   if that is not possible, there is little point in installing the GUI
+   components on the remote server. The recommendation would be to configure
+   with the ``-nogui`` option to skip the GUI components. You should also be
+   able to access your data over the network (e.g. using SAMBA or SSHFS), in
+   which case you would be able to display the images by running ``mrview``
+   locally and loading the images over the shared network drives.
 
 Instructions
-"""""
+""""""""""""
 
 First, obtain the code and extract or clone it on a modern distribution
 (Arch, Ubuntu 14.04, Mint 17, ..., potentially with a virtual machine if
-required). Then, from the main *MRtrix3* folder:
-
-::
+required). Then, from the main *MRtrix3* folder::
 
     ./build clean
     git pull
-    ARCH='x86-64' ./configure [-nogui]
+    ./configure [-nogui]
     ./build
     ./package_mrtrix -standalone
 
@@ -366,17 +349,12 @@ Then copy the resulting ``_package/mrtrix3`` folder to the desired
 location on the target system (maybe your own home folder). To make the
 *MRtrix3* command available on the command-line, the ``bin/`` folder needs
 to be added to your PATH (note this assumes that you're running the BASH
-shell):
+shell)::
 
-::
+     export PATH="$(pwd)/bin:$PATH"
 
-    export PATH=$(pwd)/mrtrix3/release/bin:$(pwd)/mrtrix3/scripts:$PATH
+Note that the above command will only add *MRtrix3* to the ``PATH`` for the
+current session. You would need to add the equivalent line to your users'
+startup scripts, using whichever mechanism is appropriate for your system. 
 
-The above will only set your PATH for the current session. To make this
-the default for new sessions, you should add the relevant line to your
-``~/.bashrc`` file:
-
-::
-
-    echo export PATH=$(pwd)/mrtrix3/release/bin:$(pwd)/mrtrix3/scripts:\$PATH >> ~/.bashrc
 

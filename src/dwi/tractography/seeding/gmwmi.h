@@ -1,17 +1,17 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
 
 #ifndef __dwi_tractography_seeding_gmwmi_h__
 #define __dwi_tractography_seeding_gmwmi_h__
@@ -20,10 +20,6 @@
 #include "image.h"
 #include "dwi/tractography/ACT/gmwmi.h"
 #include "dwi/tractography/seeding/basic.h"
-
-
-#define GMWMI_SEED_ATTEMPTS 10000
-
 
 
 
@@ -42,7 +38,7 @@ namespace MR
 
 
         class GMWMI_5TT_Wrapper
-        {
+        { MEMALIGN(GMWMI_5TT_Wrapper)
           public:
             GMWMI_5TT_Wrapper (const std::string& path) :
                 anat_data (Image<float>::open (path)) { }
@@ -51,7 +47,7 @@ namespace MR
 
 
         class GMWMI : public Base, private GMWMI_5TT_Wrapper, private ACT::GMWMI_finder
-        {
+        { MEMALIGN(GMWMI)
 
           public:
             using ACT::GMWMI_finder::Interp;

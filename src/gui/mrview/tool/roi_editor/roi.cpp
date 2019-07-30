@@ -1,19 +1,17 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
 
-//#define GL_DEBUG
 
 #include <string>
 
@@ -35,7 +33,7 @@ namespace MR
       namespace Tool
       {
 
-            
+
 
 
         ROI::ROI (Dock* parent) :
@@ -97,9 +95,7 @@ namespace MR
 
           main_box->addWidget (list_view, 1);
 
-          layout = new HBoxLayout;
-          layout->setContentsMargins (0, 0, 0, 0);
-          layout->setSpacing (0);
+          GridLayout* grid_layout = new GridLayout;
 
           draw_button = new QToolButton (this);
           draw_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
@@ -110,7 +106,7 @@ namespace MR
           action->setEnabled (false);
           connect (action, SIGNAL (toggled(bool)), this, SLOT (draw_slot ()));
           draw_button->setDefaultAction (action);
-          layout->addWidget (draw_button, 1);
+          grid_layout->addWidget (draw_button, 0, 0, Qt::AlignCenter);
 
           undo_button = new QToolButton (this);
           undo_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
@@ -121,7 +117,7 @@ namespace MR
           action->setEnabled (false);
           connect (action, SIGNAL (triggered()), this, SLOT (undo_slot ()));
           undo_button->setDefaultAction (action);
-          layout->addWidget (undo_button, 1);
+          grid_layout->addWidget (undo_button, 0, 1, Qt::AlignRight);
 
           redo_button = new QToolButton (this);
           redo_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
@@ -132,13 +128,13 @@ namespace MR
           action->setEnabled (false);
           connect (action, SIGNAL (triggered()), this, SLOT (redo_slot ()));
           redo_button->setDefaultAction (action);
-          layout->addWidget (redo_button, 1);
+          grid_layout->addWidget (redo_button, 0, 2, Qt::AlignLeft);
 
-          main_box->addLayout (layout, 0);
+          main_box->addLayout (grid_layout, 0);
 
-          QGroupBox* group_box = new QGroupBox ("Draw mode");
+          QGroupBox* group_box = new QGroupBox ("Edit mode");
 
-          GridLayout* grid_layout = new GridLayout;
+          grid_layout = new GridLayout;
           group_box->setLayout (grid_layout);
 
           edit_mode_group = new QActionGroup (this);
@@ -146,30 +142,9 @@ namespace MR
           edit_mode_group->setEnabled (false);
           connect (edit_mode_group, SIGNAL (triggered (QAction*)), this, SLOT (select_edit_mode (QAction*)));
 
-          rectangle_button = new QToolButton (this);
-          rectangle_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
-          action = new QAction (QIcon (":/rectangle.svg"), tr ("Rectangle"), this);
-          action->setShortcut (tr ("Ctrl+R"));
-          action->setToolTip (tr ("Edit ROI using a rectangle"));
-          action->setCheckable (true);
-          action->setChecked (false);
-          edit_mode_group->addAction (action);
-          rectangle_button->setDefaultAction (action);
-          grid_layout->addWidget (rectangle_button, 0, 0);
-
-          fill_button = new QToolButton (this);
-          fill_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
-          action = new QAction (QIcon (":/fill.svg"), tr ("Fill"), this);
-          action->setShortcut (tr ("Ctrl+F"));
-          action->setToolTip (tr ("Fill ROI slice"));
-          action->setCheckable (true);
-          action->setChecked (false);
-          edit_mode_group->addAction (action);
-          fill_button->setDefaultAction (action);
-          grid_layout->addWidget (fill_button, 0, 1);
-
           brush_button = new QToolButton (this);
           brush_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
+          brush_button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
           action = new QAction (QIcon (":/brush.svg"), tr ("Brush"), this);
           action->setShortcut (tr ("Ctrl+B"));
           action->setToolTip (tr ("Edit ROI using a brush"));
@@ -177,15 +152,40 @@ namespace MR
           action->setChecked (true);
           edit_mode_group->addAction (action);
           brush_button->setDefaultAction (action);
-          grid_layout->addWidget (brush_button, 0, 2);
-          
-          QLabel* label = new QLabel (tr("brush size: "));
-          grid_layout->addWidget (label, 1, 0, 1, 2, Qt::AlignRight);
+          grid_layout->addWidget (brush_button, 0, 0, 1, 2);
+
+          QLabel* label = new QLabel (tr("size:"));
+          grid_layout->addWidget (label, 1, 0, Qt::AlignRight);
 
           brush_size_button = new AdjustButton (this);
+          brush_size_button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
           brush_size_button->setToolTip (tr ("Brush size (in mm)"));
           brush_size_button->setEnabled (true);
-          grid_layout->addWidget (brush_size_button, 1, 2);
+          grid_layout->addWidget (brush_size_button, 1, 1);
+
+          fill_button = new QToolButton (this);
+          fill_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
+          fill_button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+          action = new QAction (QIcon (":/fill.svg"), tr ("Fill"), this);
+          action->setShortcut (tr ("Ctrl+F"));
+          action->setToolTip (tr ("Fill ROI slice"));
+          action->setCheckable (true);
+          action->setChecked (false);
+          edit_mode_group->addAction (action);
+          fill_button->setDefaultAction (action);
+          grid_layout->addWidget (fill_button, 0, 2, 1, 2);
+
+          rectangle_button = new QToolButton (this);
+          rectangle_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
+          rectangle_button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+          action = new QAction (QIcon (":/rectangle.svg"), tr ("Rectangle"), this);
+          action->setShortcut (tr ("Ctrl+R"));
+          action->setToolTip (tr ("Edit ROI using a rectangle"));
+          action->setCheckable (true);
+          action->setChecked (false);
+          edit_mode_group->addAction (action);
+          rectangle_button->setDefaultAction (action);
+          grid_layout->addWidget (rectangle_button, 1, 2, 1, 2);
 
           main_box->addWidget (group_box, 0);
 
@@ -197,7 +197,7 @@ namespace MR
           slice_copy_group->setEnabled (false);
           connect (slice_copy_group, SIGNAL (triggered (QAction*)), this, SLOT (slice_copy_slot (QAction*)));
 
-          layout->addWidget (new QLabel ("Copy from slice: "), 0, Qt::AlignRight);
+          layout->addWidget (new QLabel ("Copy from slice: "), 1, Qt::AlignRight);
 
           copy_from_above_button = new QToolButton (this);
           copy_from_above_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
@@ -207,7 +207,7 @@ namespace MR
           action->setChecked (false);
           slice_copy_group->addAction (action);
           copy_from_above_button->setDefaultAction (action);
-          layout->addWidget (copy_from_above_button, 1);
+          layout->addWidget (copy_from_above_button, 1, Qt::AlignRight);
 
           copy_from_below_button = new QToolButton (this);
           copy_from_below_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
@@ -217,7 +217,7 @@ namespace MR
           action->setChecked (false);
           slice_copy_group->addAction (action);
           copy_from_below_button->setDefaultAction (action);
-          layout->addWidget (copy_from_below_button, 1);
+          layout->addWidget (copy_from_below_button, 1, Qt::AlignLeft);
 
           main_box->addLayout (layout, 0);
 
@@ -263,7 +263,7 @@ namespace MR
             QModelIndex index = list_model->index (i, 0);
             ROI_Item* roi = list_model->get (index);
             if (!roi->saved) {
-              if (QMessageBox::question (&window(), tr("ROI not saved"), tr (("Image " + roi->get_filename() + " has been modified. Do you want to save it?").c_str())) == QMessageBox::Yes)
+              if (QMessageBox::question (&window(), tr("ROI not saved"), tr (("Image " + roi->get_filename() + " has been modified. Do you want to save it?").c_str()), QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes)
                 save (roi);
             }
           }
@@ -292,12 +292,12 @@ namespace MR
 
         void ROI::open_slot ()
         {
-          std::vector<std::string> names = Dialog::File::get_images (this, "Select ROI images to open");
+          vector<std::string> names = Dialog::File::get_images (this, "Select ROI images to open");
           if (names.empty())
             return;
-          std::vector<std::unique_ptr<MR::Header>> list;
+          vector<std::unique_ptr<MR::Header>> list;
           for (size_t n = 0; n < names.size(); ++n)
-            list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (names[n]))));
+            list.push_back (make_unique<MR::Header> (MR::Header::open (names[n])));
 
           load (list);
           in_insert_mode = false;
@@ -313,11 +313,11 @@ namespace MR
 
           const QMimeData* mimeData = event->mimeData();
           if (mimeData->hasUrls()) {
-            std::vector<std::unique_ptr<MR::Header>> list;
+            vector<std::unique_ptr<MR::Header>> list;
             QList<QUrl> urlList = mimeData->urls();
             for (int i = 0; i < urlList.size() && i < max_files; ++i) {
               try {
-                list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (urlList.at (i).path().toUtf8().constData()))));
+                list.push_back (make_unique<MR::Header> (MR::Header::open (urlList.at (i).path().toUtf8().constData())));
               }
               catch (Exception& e) {
                 e.display();
@@ -336,8 +336,8 @@ namespace MR
 
         void ROI::save (ROI_Item* roi)
         {
-          std::vector<GLubyte> data (roi->header().size(0) * roi->header().size(1) * roi->header().size(2));
-          { 
+          vector<GLubyte> data (roi->header().size(0) * roi->header().size(1) * roi->header().size(2));
+          {
             MRView::GrabContext context;
             ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
             roi->texture().bind();
@@ -368,9 +368,9 @@ namespace MR
 
         int ROI::normal2axis (const Eigen::Vector3f& normal, const MR::Transform& transform) const
         {
-          float x_dot_n = std::abs ((transform.image2scanner.rotation().cast<float>() * Eigen::Vector3f { 1.0f, 0.0f, 0.0f }).dot (normal));
-          float y_dot_n = std::abs ((transform.image2scanner.rotation().cast<float>() * Eigen::Vector3f { 0.0f, 1.0f, 0.0f }).dot (normal));
-          float z_dot_n = std::abs ((transform.image2scanner.rotation().cast<float>() * Eigen::Vector3f { 0.0f, 0.0f, 1.0f }).dot (normal));
+          float x_dot_n = abs ((transform.image2scanner.rotation().cast<float>() * Eigen::Vector3f { 1.0f, 0.0f, 0.0f }).dot (normal));
+          float y_dot_n = abs ((transform.image2scanner.rotation().cast<float>() * Eigen::Vector3f { 0.0f, 1.0f, 0.0f }).dot (normal));
+          float z_dot_n = abs ((transform.image2scanner.rotation().cast<float>() * Eigen::Vector3f { 0.0f, 0.0f, 1.0f }).dot (normal));
           if (x_dot_n > y_dot_n)
             return x_dot_n > z_dot_n ? 0 : 2;
           else
@@ -394,7 +394,7 @@ namespace MR
 
 
 
-        void ROI::load (std::vector<std::unique_ptr<MR::Header>>& list)
+        void ROI::load (vector<std::unique_ptr<MR::Header>>& list)
         {
           list_model->load (list);
           list_view->selectionModel()->clear();
@@ -448,7 +448,7 @@ namespace MR
 
 
 
-        void ROI::undo_slot () 
+        void ROI::undo_slot ()
         {
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
           if (indices.size() != 1) {
@@ -469,7 +469,7 @@ namespace MR
 
 
 
-        void ROI::redo_slot () 
+        void ROI::redo_slot ()
         {
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
           if (indices.size() != 1) {
@@ -497,7 +497,7 @@ namespace MR
             WARN ("FIXME: shouldn't be here!");
             return;
           }
-          
+
           ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[0]));
 
           const Projection* proj = window().get_current_mode()->get_current_projection();
@@ -525,7 +525,7 @@ namespace MR
 
 
 
-        void ROI::select_edit_mode (QAction*) 
+        void ROI::select_edit_mode (QAction*)
         {
           brush_size_button->setEnabled (brush_button->isChecked());
         }
@@ -536,7 +536,7 @@ namespace MR
 
 
 
-        void ROI::hide_all_slot () 
+        void ROI::hide_all_slot ()
         {
           updateGL();
           in_insert_mode = false;
@@ -565,7 +565,7 @@ namespace MR
           for (int i = 0; i < list_model->rowCount(); ++i) {
             if (list_model->items[i]->show && !hide_all_button->isChecked()) {
               ROI_Item* roi = dynamic_cast<ROI_Item*>(list_model->items[i].get());
-              //if (is_3D) 
+              //if (is_3D)
               //window.get_current_mode()->overlays_for_3D.push_back (image);
               //else
               roi->render (shader, projection, projection.depth_of (window().focus()));
@@ -587,11 +587,11 @@ namespace MR
 
 
 
-        void ROI::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2) 
+        void ROI::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2)
         {
           if (index.row() == index2.row()) {
             list_view->setCurrentIndex(index);
-          } 
+          }
           else {
             for (size_t i = 0; i < list_model->items.size(); ++i) {
               if (list_model->items[i]->show) {
@@ -609,7 +609,7 @@ namespace MR
 
 
 
-        void ROI::update_slot () 
+        void ROI::update_slot ()
         {
           updateGL();
         }
@@ -619,7 +619,7 @@ namespace MR
 
 
 
-        void ROI::colour_changed () 
+        void ROI::colour_changed ()
         {
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i) {
@@ -680,13 +680,13 @@ namespace MR
 
 
 
-        void ROI::update_selection () 
+        void ROI::update_selection ()
         {
           if (!window().image()) {
             setEnabled (false);
             return;
           }
-          else 
+          else
             setEnabled (true);
 
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
@@ -726,8 +726,8 @@ namespace MR
 
 
 
-        bool ROI::mouse_press_event () 
-        { 
+        bool ROI::mouse_press_event ()
+        {
           if (in_insert_mode || window().modifiers() != Qt::NoModifier)
             return false;
 
@@ -745,7 +745,7 @@ namespace MR
           }
 
           const Projection* proj = window().get_current_mode()->get_current_projection();
-          if (!proj) 
+          if (!proj)
             return false;
           current_origin = proj->screen_to_model (window().mouse_position(), window().focus());
           window().set_focus (current_origin);
@@ -772,7 +772,7 @@ namespace MR
           window().set_plane (current_axis);
 
           roi->start (ROI_UndoEntry (*roi, current_axis, current_slice));
-         
+
 
           if (brush_button->isChecked()) {
             if (brush_size_button->isMin())
@@ -788,7 +788,7 @@ namespace MR
 
           updateGL();
 
-          return true; 
+          return true;
         }
 
 
@@ -796,8 +796,8 @@ namespace MR
 
 
 
-        bool ROI::mouse_move_event () 
-        { 
+        bool ROI::mouse_move_event ()
+        {
           if (!in_insert_mode)
             return false;
 
@@ -809,7 +809,7 @@ namespace MR
           ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[0]));
 
           const Projection* proj = window().get_current_mode()->get_current_projection();
-          if (!proj) 
+          if (!proj)
             return false;
 
           Eigen::Vector3f pos = proj->screen_to_model (window().mouse_position(), window().focus());
@@ -836,7 +836,7 @@ namespace MR
 
           updateGL();
           prev_pos = pos_adj;
-          return true; 
+          return true;
         }
 
 
@@ -844,12 +844,12 @@ namespace MR
 
 
 
-        bool ROI::mouse_release_event () 
-        { 
+        bool ROI::mouse_release_event ()
+        {
           in_insert_mode = false;
           update_cursor();
           update_undo_redo();
-          return true; 
+          return true;
         }
 
 
@@ -872,8 +872,8 @@ namespace MR
 
 
 
-        void ROI::add_commandline_options (MR::App::OptionList& options) 
-        { 
+        void ROI::add_commandline_options (MR::App::OptionList& options)
+        {
           using namespace MR::App;
           options
             + OptionGroup ("ROI editor tool options")
@@ -882,7 +882,11 @@ namespace MR
             +   Argument ("image").type_image_in()
 
             + Option ("roi.opacity", "Sets the overlay opacity to floating value [0-1].").allow_multiple()
-            +   Argument ("value").type_float (0.0, 1.0);
+            +   Argument ("value").type_float (0.0, 1.0)
+
+            + Option ("roi.colour", "Sets the colour of the ROI overlay").allow_multiple()
+            +   Argument ("R,G,B").type_sequence_float();
+
         }
 
 
@@ -890,11 +894,11 @@ namespace MR
 
 
 
-        bool ROI::process_commandline_option (const MR::App::ParsedOption& opt) 
+        bool ROI::process_commandline_option (const MR::App::ParsedOption& opt)
         {
           if (opt.opt->is ("roi.load")) {
-            std::vector<std::unique_ptr<MR::Header>> list;
-            try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (opt[0])))); }
+            vector<std::unique_ptr<MR::Header>> list;
+            try { list.push_back (make_unique<MR::Header> (MR::Header::open (opt[0]))); }
             catch (Exception& e) { e.display(); }
             load (list);
             return true;
@@ -904,6 +908,23 @@ namespace MR
             try {
               float value = opt[0];
               opacity_slider->setSliderPosition(int(1.e3f*value));
+            }
+            catch (Exception& e) { e.display(); }
+            return true;
+          }
+
+          if (opt.opt->is ("roi.colour")) {
+            try {
+              auto values = parse_floats (opt[0]);
+              if (values.size() != 3)
+                throw Exception ("must provide exactly three comma-separated values to the -roi.colour option");
+              const float max_value = std::max ({ values[0], values[1], values[2] });
+              if (std::min ({ values[0], values[1], values[2] }) < 0.0 || max_value > 255)
+                throw Exception ("values provided to -roi.colour must be either between 0.0 and 1.0, or between 0 and 255");
+              const float multiplier = max_value <= 1.0 ? 255.0 : 1.0;
+              QColor colour (int(values[0] * multiplier), int(values[1]*multiplier), int(values[2]*multiplier));
+              colour_button->setColor (colour);
+              colour_changed();
             }
             catch (Exception& e) { e.display(); }
             return true;

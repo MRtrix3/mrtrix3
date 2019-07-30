@@ -1,23 +1,22 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
 
 #ifndef __dwi_tractography_file_h__
 #define __dwi_tractography_file_h__
 
 #include <map>
-#include <vector>
 
 #include "app.h"
 #include "types.h"
@@ -36,19 +35,27 @@ namespace MR
   {
     namespace Tractography
     {
-      
+
+
+      constexpr const char* preserve_track_order_desc
+          = "Note that if multi-threading is used in this command, the ordering of tracks in the "
+            "output file is unlikely to match the order of the incoming data. If your application "
+            "explicitly requires that the order of tracks not change, you should run this command "
+            "with the option -nthreads 0.";
+
+
       template <class ValueType>
       class ReaderInterface
-      {
+      { NOMEMALIGN
         public:
           virtual bool operator() (Streamline<ValueType>&) = 0;
           virtual ~ReaderInterface() { }
       };
-      
-      
+
+
       template <class ValueType>
       class WriterInterface
-      {
+      { NOMEMALIGN
         public:
           virtual bool operator() (const Streamline<ValueType>&) = 0;
           virtual ~WriterInterface() { }
@@ -59,7 +66,7 @@ namespace MR
       //! A class to read streamlines data
       template <class ValueType = float>
       class Reader : public __ReaderBase__, public ReaderInterface<ValueType>
-      {
+      { NOMEMALIGN
         public:
 
           //! open the \c file for reading and load header into \c properties
@@ -134,10 +141,10 @@ namespace MR
           //! takes care of byte ordering issues
 
             Eigen::Matrix<ValueType,3,1> get_next_point ()
-            { 
+            {
               using namespace ByteOrder;
               switch (dtype()) {
-                case DataType::Float32LE: 
+                case DataType::Float32LE:
                   {
                     float p[3];
                     in.read ((char*) p, sizeof (p));
@@ -203,7 +210,7 @@ namespace MR
        * */
       template <class ValueType = float>
         class WriterUnbuffered : public __WriterBase__<ValueType>, public WriterInterface<ValueType>
-      {
+      { NOMEMALIGN
         public:
           using __WriterBase__<ValueType>::count;
           using __WriterBase__<ValueType>::total_count;
@@ -214,7 +221,7 @@ namespace MR
           using __WriterBase__<ValueType>::update_counts;
           using __WriterBase__<ValueType>::open_success;
 
-          typedef Eigen::Matrix<ValueType,3,1> vector_type;
+          using vector_type = Eigen::Matrix<ValueType,3,1>;
 
           //! create a new track file with the specified properties
           WriterUnbuffered (const std::string& file, const Properties& properties) :
@@ -250,20 +257,20 @@ namespace MR
 
           //! append track to file
           bool operator() (const Streamline<ValueType>& tck) {
-            if (tck.size()) {
-              // allocate buffer on the stack for performance:
-              NON_POD_VLA (buffer, vector_type, tck.size()+2);
-              for (size_t n = 0; n < tck.size(); ++n)
-                format_point (tck[n], buffer[n]);
-              format_point (delimiter(), buffer[tck.size()]);
-
-              commit (buffer, tck.size()+1);
-
-              if (weights_name.size()) 
-                write_weights (str(tck.weight) + "\n");
-
-              ++count;
+            // allocate buffer on the stack for performance:
+            NON_POD_VLA (buffer, vector_type, tck.size()+2);
+            for (size_t n = 0; n < tck.size(); ++n) {
+              assert (tck[n].allFinite());
+              format_point (tck[n], buffer[n]);
             }
+            format_point (delimiter(), buffer[tck.size()]);
+
+            commit (buffer, tck.size()+1);
+
+            if (weights_name.size())
+              write_weights (str(tck.weight) + "\n");
+
+            ++count;
             ++total_count;
             return true;
           }
@@ -274,7 +281,7 @@ namespace MR
             if (weights_name.size())
               throw Exception ("Cannot change output streamline weights file path");
             weights_name = path;
-            App::check_overwrite (name);
+            App::check_overwrite (weights_name);
             File::OFStream out (weights_name, std::ios::out | std::ios::binary | std::ios::trunc);
           }
 
@@ -290,7 +297,7 @@ namespace MR
           //! perform per-point byte-swapping if required
           void format_point (const vector_type& src, vector_type& dest) {
             using namespace ByteOrder;
-            if (dtype.is_little_endian()) 
+            if (dtype.is_little_endian())
               dest = { LE(src[0]), LE(src[1]), LE(src[2]) };
             else
               dest = { BE(src[0]), BE(src[1]), BE(src[2]) };
@@ -346,11 +353,11 @@ namespace MR
        * It also helps reduce file fragmentation when multiple processes write
        * to file concurrently. The size of the write-back buffer defaults to
        * 16MB, and can be set in the config file using the
-       * TrackWriterBufferSize field (in bytes). 
+       * TrackWriterBufferSize field (in bytes).
        * */
       template <typename ValueType = float>
         class Writer : public WriterUnbuffered<ValueType>
-      {
+      { NOMEMALIGN
         public:
           using __WriterBase__<ValueType>::count;
           using __WriterBase__<ValueType>::total_count;
@@ -358,7 +365,7 @@ namespace MR
           using WriterUnbuffered<ValueType>::format_point;
           using WriterUnbuffered<ValueType>::weights_name;
           using WriterUnbuffered<ValueType>::write_weights;
-          typedef typename WriterUnbuffered<ValueType>::vector_type vector_type;
+          using vector_type = typename WriterUnbuffered<ValueType>::vector_type;
 
           //! create new RAM-buffered track file with specified properties
           /*! the capacity of the RAM buffer can be specified as a config file
@@ -370,9 +377,9 @@ namespace MR
           //CONF The size of the write-back buffer (in bytes) to use when
           //CONF writing track files. MRtrix will store the output tracks in a
           //CONF relatively large buffer to limit the number of write() calls,
-          //CONF avoid associated issues such as file fragmentation. 
+          //CONF avoid associated issues such as file fragmentation.
           Writer (const std::string& file, const Properties& properties, size_t default_buffer_capacity = 16777216) :
-            WriterUnbuffered<ValueType> (file, properties), 
+            WriterUnbuffered<ValueType> (file, properties),
             buffer_capacity (File::Config::get_int ("TrackWriterBufferSize", default_buffer_capacity) / sizeof (vector_type)),
             buffer (new vector_type [buffer_capacity]),
             buffer_size (0) { }
@@ -386,19 +393,19 @@ namespace MR
 
           //! append track to file
           bool operator() (const Streamline<ValueType>& tck) {
-            if (tck.size()) {
-              if (buffer_size + tck.size() + 2 > buffer_capacity)
-                commit ();
+            if (buffer_size + tck.size() + 2 > buffer_capacity)
+              commit ();
 
-              for (const auto& i : tck)
-                add_point (i);
-              add_point (delimiter());
-
-              if (weights_name.size())
-                weights_buffer += str (tck.weight) + ' ';
-
-              ++count;
+            for (const auto& i : tck) {
+              assert (i.allFinite());
+              add_point (i);
             }
+            add_point (delimiter());
+
+            if (weights_name.size())
+              weights_buffer += str (tck.weight) + ' ';
+
+            ++count;
             ++total_count;
             return true;
           }
@@ -410,7 +417,7 @@ namespace MR
           size_t buffer_size;
           std::string weights_buffer;
 
-          //! add point to buffer and increment buffer_size accordingly 
+          //! add point to buffer and increment buffer_size accordingly
           void add_point (const vector_type& p) {
             format_point (p, buffer[buffer_size++]);
           }

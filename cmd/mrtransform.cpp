@@ -1,24 +1,23 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/
  */
 
 
-#include <unsupported/Eigen/MatrixFunctions>
 #include "command.h"
 #include "progressbar.h"
 #include "image.h"
 #include "math/math.h"
+#include "math/sphere.h"
 #include "interp/nearest.h"
 #include "interp/linear.h"
 #include "interp/cubic.h"
@@ -31,7 +30,7 @@
 #include "dwi/directions/predefined.h"
 #include "dwi/gradient.h"
 #include "registration/transform/reorient.h"
-#include "registration/warp/utils.h"
+#include "registration/warp/helpers.h"
 #include "registration/warp/compose.h"
 #include "math/average_space.h"
 #include "math/SH.h"
@@ -41,16 +40,16 @@
 using namespace MR;
 using namespace App;
 
-const char* interp_choices[] = { "nearest", "linear", "cubic", "sinc", NULL };
+const char* interp_choices[] = { "nearest", "linear", "cubic", "sinc", nullptr };
 
 void usage ()
 {
 
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and David Raffelt (david.raffelt@florey.edu.au) and Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
-  DESCRIPTION
-  + "apply spatial transformations to an image. "
+  SYNOPSIS = "Apply spatial transformations to an image";
 
+  DESCRIPTION
   + "If a linear transform is applied without a template image the command "
     "will modify the image header transform matrix"
 
@@ -62,7 +61,12 @@ void usage ()
 
   + "If a DW scheme is contained in the header (or specified separately), and "
     "the number of directions matches the number of volumes in the images, any "
-    "transformation applied using the -linear option will be also be applied to the directions.";
+    "transformation applied using the -linear option will be also be applied to the directions."
+
+  + "When the -template option is used to specify the target image grid, the "
+    "image provided via this option will not influence the axis data strides "
+    "of the output image; these are determined based on the input image, or the "
+    "input to the -strides option.";
 
   REFERENCES
     + "* If FOD reorientation is being performed:\n"
@@ -125,6 +129,14 @@ void usage ()
         "set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: cubic).")
     + Argument ("method").type_choice (interp_choices)
 
+    + Option ("oversample",
+        "set the amount of over-sampling (in the target space) to perform when regridding. This is particularly "
+        "relevant when downsamping a high-resolution image to a low-resolution image, to avoid aliasing artefacts. "
+        "This can consist of a single integer, or a comma-separated list of 3 integers if different oversampling "
+        "factors are desired along the different axes. Default is determined from ratio of voxel dimensions (disabled "
+        "for nearest-neighbour interpolation).")
+    + Argument ("factor").type_sequence_int()
+
     + OptionGroup ("Non-linear transformation options")
 
     // TODO point users to a documentation page describing the warp field format
@@ -168,23 +180,28 @@ void usage ()
 
     + DataType::options ()
 
+    + Stride::Options
+
+    + OptionGroup ("Additional generic options for mrtransform")
+
     + Option ("nan",
       "Use NaN as the out of bounds value (Default: 0.0)");
 }
 
-void apply_warp (Image<float>& input, Image<float>& output, Image<default_type>& warp, const int interp, const float out_of_bounds_value) {
+void apply_warp (Image<float>& input, Image<float>& output, Image<default_type>& warp,
+  const int interp, const float out_of_bounds_value, const vector<int>& oversample) {
   switch (interp) {
   case 0:
-    Filter::warp<Interp::Nearest> (input, output, warp, out_of_bounds_value);
+    Filter::warp<Interp::Nearest> (input, output, warp, out_of_bounds_value, oversample);
     break;
   case 1:
-    Filter::warp<Interp::Linear> (input, output, warp, out_of_bounds_value);
+    Filter::warp<Interp::Linear> (input, output, warp, out_of_bounds_value, oversample);
     break;
   case 2:
-    Filter::warp<Interp::Cubic> (input, output, warp, out_of_bounds_value);
+    Filter::warp<Interp::Cubic> (input, output, warp, out_of_bounds_value, oversample);
     break;
   case 3:
-    Filter::warp<Interp::Sinc> (input, output, warp, out_of_bounds_value);
+    Filter::warp<Interp::Sinc> (input, output, warp, out_of_bounds_value, oversample);
     break;
   default:
     assert (0);
@@ -199,9 +216,10 @@ void run ()
   auto input_header = Header::open (argument[0]);
   Header output_header (input_header);
   output_header.datatype() = DataType::from_command_line (DataType::from<float> ());
+  Stride::set_from_command_line (output_header);
 
   // Linear
-  transform_type linear_transform;
+  transform_type linear_transform = transform_type::Identity();
   bool linear = false;
   auto opt = get_options ("linear");
   if (opt.size()) {
@@ -254,12 +272,7 @@ void run ()
   Image<default_type> warp;
   if (opt.size()) {
     warp = Image<default_type>::open (opt[0][0]).with_direct_io();
-    if (warp.ndim() != 5)
-      throw Exception ("the input -warp_full image must be a 5D file.");
-    if (warp.size(3) != 3)
-      throw Exception ("the input -warp_full image must have 3 volumes (x,y,z) in the 4th dimension.");
-    if (warp.size(4) != 4)
-      throw Exception ("the input -warp_full image must have 4 volumes in the 5th dimension.");
+    Registration::Warp::check_warp_full (warp);
     if (linear)
       throw Exception ("the -warp_full option cannot be applied in combination with -linear since the "
                        "linear transform is already included in the warp header");
@@ -315,7 +328,7 @@ void run ()
   // Flip
   opt = get_options ("flip");
   if (opt.size()) {
-    std::vector<int> axes = opt[0][0];
+    vector<int> axes = opt[0][0];
     transform_type flip;
     flip.setIdentity();
     for (size_t i = 0; i < axes.size(); ++i) {
@@ -352,7 +365,7 @@ void run ()
       directions_az_el = load_matrix (opt[0][0]);
     else
       directions_az_el = DWI::Directions::electrostatic_repulsion_300();
-    Math::SH::spherical2cartesian (directions_az_el, directions_cartesian);
+    Math::Sphere::spherical2cartesian (directions_az_el, directions_cartesian);
 
     // load with SH coeffients contiguous in RAM
     stride = Stride::contiguous_along_axis (3, input_header);
@@ -366,21 +379,22 @@ void run ()
       throw Exception ("modulation can only be performed with FOD reorientation");
   }
 
+
   // Rotate/Flip gradient directions if present
   if (linear && input_header.ndim() == 4 && !warp && !fod_reorientation) {
-    Eigen::MatrixXd rotation = linear_transform.linear();
+    Eigen::MatrixXd rotation = linear_transform.linear().inverse();
     Eigen::MatrixXd test = rotation.transpose() * rotation;
     test = test.array() / test.diagonal().mean();
-    if (!test.isIdentity (0.001)) {
-      WARN ("the input linear transform contains shear or anisotropic scaling and "
-            "therefore should not be used to reorient directions / diffusion gradients");
-    }
     if (replace)
       rotation = linear_transform.linear() * input_header.transform().linear().inverse();
     try {
       auto grad = DWI::get_DW_scheme (input_header);
       if (input_header.size(3) == (ssize_t) grad.rows()) {
         INFO ("DW gradients detected and will be reoriented");
+        if (!test.isIdentity (0.001)) {
+          WARN ("the input linear transform contains shear or anisotropic scaling and "
+                "therefore should not be used to reorient directions / diffusion gradients");
+        }
         for (ssize_t n = 0; n < grad.rows(); ++n) {
           Eigen::Vector3 grad_vector = grad.block<1,3>(n,0);
           grad.block<1,3>(n,0) = rotation * grad_vector;
@@ -396,6 +410,10 @@ void run ()
     auto hit = input_header.keyval().find ("directions");
     if (hit != input_header.keyval().end()) {
       INFO ("Header entry \"directions\" detected and will be reoriented");
+      if (!test.isIdentity (0.001)) {
+        WARN ("the input linear transform contains shear or anisotropic scaling and "
+              "therefore should not be used to reorient directions / diffusion gradients");
+      }
       try {
         const auto lines = split_lines (hit->second);
         if (lines.size() != size_t(input_header.size(3)))
@@ -414,9 +432,9 @@ void run ()
           if (result.cols() == 2) {
             Eigen::Matrix<default_type, 2, 1> azel (v.data());
             Eigen::Vector3 dir;
-            Math::SH::spherical2cartesian (azel, dir);
+            Math::Sphere::spherical2cartesian (azel, dir);
             dir = rotation * dir;
-            Math::SH::cartesian2spherical (dir, azel);
+            Math::Sphere::cartesian2spherical (dir, azel);
             result.row (l) = azel;
           } else {
             const Eigen::Vector3 dir = rotation * Eigen::Vector3 (v.data());
@@ -443,6 +461,27 @@ void run ()
       WARN ("interpolator choice ignored since the input image will not be regridded");
   }
 
+  // over-sampling
+  vector<int> oversample = Adapter::AutoOverSample;
+  opt = get_options ("oversample");
+  if (opt.size()) {
+    if (!template_header.valid() && !warp)
+      throw Exception ("-oversample option applies only to regridding using the template option or to non-linear transformations");
+    oversample = opt[0][0];
+    if (oversample.size() == 1)
+      oversample.resize (3, oversample[0]);
+    else if (oversample.size() != 3)
+      throw Exception ("-oversample option requires either a single integer, or a comma-separated list of 3 integers");
+    for (const auto x : oversample)
+      if (x < 1)
+        throw Exception ("-oversample factors must be positive integers");
+  }
+  else if (interp == 0)
+    // default for nearest-neighbour is no oversampling
+    oversample = { 1, 1, 1 };
+
+
+
   // Out of bounds value
   float out_of_bounds_value = 0.0;
   opt = get_options ("nan");
@@ -460,10 +499,10 @@ void run ()
 
     if (get_options ("midway_space").size()) {
       INFO("regridding to midway space");
-      std::vector<Header> headers;
+      vector<Header> headers;
       headers.push_back(input_header);
       headers.push_back(template_header);
-      std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> void_trafo;
+      vector<Eigen::Transform<default_type, 3, Eigen::Projective>> void_trafo;
       auto padding = Eigen::Matrix<double, 4, 1>(1.0, 1.0, 1.0, 1.0);
       int subsampling = 1;
       auto midway_header = compute_minimum_average_header (headers, subsampling, padding, void_trafo);
@@ -480,16 +519,16 @@ void run ()
 
     switch (interp) {
       case 0:
-        Filter::reslice<Interp::Nearest> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        Filter::reslice<Interp::Nearest> (input, output, linear_transform, oversample, out_of_bounds_value);
         break;
       case 1:
-        Filter::reslice<Interp::Linear> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        Filter::reslice<Interp::Linear> (input, output, linear_transform, oversample, out_of_bounds_value);
         break;
       case 2:
-        Filter::reslice<Interp::Cubic> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        Filter::reslice<Interp::Cubic> (input, output, linear_transform, oversample, out_of_bounds_value);
         break;
       case 3:
-        Filter::reslice<Interp::Sinc> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        Filter::reslice<Interp::Sinc> (input, output, linear_transform, oversample, out_of_bounds_value);
         break;
       default:
         assert (0);
@@ -525,7 +564,7 @@ void run ()
       } else {
         warp_deform = Registration::Warp::compute_full_deformation (warp, template_header, from);
       }
-      apply_warp (input, output, warp_deform, interp, out_of_bounds_value);
+      apply_warp (input, output, warp_deform, interp, out_of_bounds_value, oversample);
       if (fod_reorientation)
         Registration::Transform::reorient_warp ("reorienting", output, warp_deform, directions_cartesian.transpose(), modulate);
 
@@ -533,13 +572,13 @@ void run ()
     } else if (warp.ndim() == 4 && linear) {
       auto warp_composed = Image<default_type>::scratch (warp);
       Registration::Warp::compose_linear_deformation (linear_transform, warp, warp_composed);
-      apply_warp (input, output, warp_composed, interp, out_of_bounds_value);
+      apply_warp (input, output, warp_composed, interp, out_of_bounds_value, oversample);
       if (fod_reorientation)
         Registration::Transform::reorient_warp ("reorienting", output, warp_composed, directions_cartesian.transpose(), modulate);
 
     // Apply 4D deformation field only
     } else {
-      apply_warp (input, output, warp, interp, out_of_bounds_value);
+      apply_warp (input, output, warp, interp, out_of_bounds_value, oversample);
       if (fod_reorientation)
         Registration::Transform::reorient_warp ("reorienting", output, warp, directions_cartesian.transpose(), modulate);
     }

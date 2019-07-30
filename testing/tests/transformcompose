@@ -1,0 +1,4 @@
+transformcompose rotatez.txt rotatez.txt tmp.txt && testing_diff_matrix tmp.txt transformcompose/out.txt -abs 0.0001 && rm -f tmp.txt
+transformcompose rotatez.txt unit_warp.mif - | testing_diff_image - transformcompose/out2.mif -frac 0.001
+transformcompose rotatez.txt -template fod.mif - | testing_diff_image - transformcompose/out3.mif -frac 0.001
+transformcompose rotatez_warp.mif rotatez_warp.mif - | testing_diff_image - transformcompose/out4.mif -frac 0.001

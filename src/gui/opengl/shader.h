@@ -1,17 +1,17 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
 
 #ifndef __gui_opengl_shader_h__
 #define __gui_opengl_shader_h__
@@ -33,19 +33,31 @@ namespace MR
         class Program;
 
         template <GLint TYPE> class Object
-        {
+        { NOMEMALIGN
           public:
             Object () : index_ (0) { }
             Object (const std::string& source) : index_ (0) { if(!source.empty()) compile (source); }
-            ~Object () {
+            Object (const Object&) = delete;
+            Object (Object&& other) : index_ (other.index_) { other.index_ = 0; }
+            Object& operator= (const Object&) = delete;
+            Object& operator= (Object&& other) {
+              clear();
+              index_ = other.index_;
+              other.index_ = 0;
+              return *this;
+            }
+            ~Object () { clear(); }
+
+            void clear() {
               if (index_) {
                 GL_DEBUG ("deleting OpenGL shader ID " + str(index_));
                 gl::DeleteShader (index_);
               }
+              index_ = 0;
             }
-            operator GLuint () const {
-              return (index_);
-            }
+
+            operator GLuint () const { return (index_); }
+
             void compile (const std::string& source) {
               std::string code = "#version 330 core\n" + source;
               DEBUG ("compiling OpenGL " + this->type() + " shader:\n" + code);
@@ -75,18 +87,27 @@ namespace MR
             friend class Program;
         };
 
-        typedef Object<gl::VERTEX_SHADER> Vertex;
-        typedef Object<gl::GEOMETRY_SHADER> Geometry;
-        typedef Object<gl::FRAGMENT_SHADER> Fragment;
+        using Vertex = Object<gl::VERTEX_SHADER>;
+        using Geometry = Object<gl::GEOMETRY_SHADER>;
+        using Fragment = Object<gl::FRAGMENT_SHADER>;
 
 
 
         class Program
-        {
+        { NOMEMALIGN
           public:
             Program () : index_ (0) { }
+            Program (Program&& other) : index_ (other.index_) { other.index_ = 0; }
+            Program (const Program&) = delete;
+            Program& operator= (const Program&) = delete;
+            Program& operator= (Program&& other) {
+              clear();
+              index_ = other.index_;
+              other.index_ = 0;
+              return *this;
+            }
             ~Program () { clear(); }
-        
+
             void clear () {
               if (index_) {
                 GL_DEBUG ("deleting OpenGL shader program " + str(index_));
@@ -135,13 +156,6 @@ namespace MR
             void debug () const {
               assert (index_);
               print_log (true, "OpenGL shader program", index_);
-            }
-
-            Program& operator= (Program& P) {
-              clear();
-              index_ = P.index_;
-              P.index_ = 0;
-              return *this;
             }
 
           protected:

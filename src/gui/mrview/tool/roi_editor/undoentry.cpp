@@ -1,20 +1,19 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
 
+
 #include <limits>
-#include <vector>
 
 #include "gui/mrview/window.h"
 #include "gui/mrview/tool/roi_editor/item.h"
@@ -371,7 +370,7 @@ namespace MR
           const bool existing_value = after[seed_index];
           if (existing_value == insert_mode_value) return;
           after[seed_index] = fill_value;
-          std::vector<std::array<int,3>> buffer (1, seed_voxel);
+          vector<std::array<int,3>> buffer (1, seed_voxel);
           while (buffer.size()) {
             const std::array<int,3> v (buffer.back());
             buffer.pop_back();

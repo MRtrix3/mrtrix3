@@ -1,17 +1,17 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
 
 #ifndef __gui_mrview_displayable_h__
 #define __gui_mrview_displayable_h__
@@ -21,6 +21,7 @@
 #include "gui/opengl/shader.h"
 #include "gui/projection.h"
 #include "gui/mrview/colourmap.h"
+
 
 namespace MR
 {
@@ -45,19 +46,19 @@ namespace MR
       const uint32_t LightingEnabled = 0x00800000;
 
       class Image;
-      namespace Tool { class AbstractFixel; }
+      namespace Tool { class BaseFixel; }
       namespace Tool { class Connectome; }
       namespace Tool { class Tractogram; }
       class DisplayableVisitor
-      {
+      { NOMEMALIGN
         public:
-          virtual void render_image_colourbar(const Image&) {}
-          virtual void render_fixel_colourbar(const Tool::AbstractFixel&) {}
-          virtual void render_tractogram_colourbar(const Tool::Tractogram&) {}
+          virtual void render_image_colourbar (const Image&) {}
+          virtual void render_fixel_colourbar (const Tool::BaseFixel&) {}
+          virtual void render_tractogram_colourbar (const Tool::Tractogram&) {}
       };
 
       class Displayable : public QAction
-      {
+      { MEMALIGN(Displayable)
         Q_OBJECT
 
         public:
@@ -97,6 +98,12 @@ namespace MR
 
           float intensity_max () const {
             return value_max;
+          }
+
+          void set_min_max (float min, float max) {
+            value_min = min;
+            value_max = max;
+            update_levels();
           }
 
           void set_windowing (float min, float max) {
@@ -194,7 +201,7 @@ namespace MR
           }
 
 
-          class Shader : public GL::Shader::Program {
+          class Shader : public GL::Shader::Program { NOMEMALIGN
             public:
               virtual std::string fragment_shader_source (const Displayable& object) = 0;
               virtual std::string geometry_shader_source (const Displayable&) { return std::string(); }
@@ -204,7 +211,7 @@ namespace MR
               virtual void update (const Displayable& object);
 
               void start (const Displayable& object) {
-                if (*this  == 0 || need_update (object)) 
+                if (*this  == 0 || need_update (object))
                   recompile (object);
                 GL::Shader::Program::start();
               }
@@ -213,7 +220,7 @@ namespace MR
               size_t colourmap;
 
               void recompile (const Displayable& object) {
-                if (*this != 0) 
+                if (*this != 0)
                   clear();
 
                 update (object);
@@ -240,7 +247,7 @@ namespace MR
             if (use_discard_upper())
               source += "uniform float " + with_prefix+"upper;\n";
             if (use_transparency()) {
-              source += 
+              source +=
                 "uniform float " + with_prefix+"alpha_scale;\n"
                 "uniform float " + with_prefix+"alpha_offset;\n"
                 "uniform float " + with_prefix+"alpha;\n";
@@ -268,7 +275,7 @@ namespace MR
               gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"alpha").c_str()), alpha);
             }
             if (ColourMap::maps[colourmap].is_colour)
-              gl::Uniform3f (gl::GetUniformLocation (shader_program, (with_prefix+"colourmap_colour").c_str()), 
+              gl::Uniform3f (gl::GetUniformLocation (shader_program, (with_prefix+"colourmap_colour").c_str()),
                   colour[0]/255.0, colour[1]/255.0, colour[2]/255.0);
           }
 
@@ -308,11 +315,11 @@ namespace MR
           void update_levels () {
             assert (std::isfinite (value_min));
             assert (std::isfinite (value_max));
-            if (!std::isfinite (transparent_intensity)) 
+            if (!std::isfinite (transparent_intensity))
               transparent_intensity = value_min + 0.1 * (value_max - value_min);
-            if (!std::isfinite (opaque_intensity)) 
+            if (!std::isfinite (opaque_intensity))
               opaque_intensity = value_min + 0.5 * (value_max - value_min);
-            if (!std::isfinite (alpha)) 
+            if (!std::isfinite (alpha))
               alpha = 0.5;
             if (!std::isfinite (lessthan))
               lessthan = value_min;

@@ -1,26 +1,26 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
 
 #ifndef __gui_mrview_tool_connectome_connectome_h__
 #define __gui_mrview_tool_connectome_connectome_h__
 
 #include <map>
-#include <vector>
 
 #include "bitset.h"
 #include "image.h"
+#include "types.h"
 
 #include "gui/opengl/gl.h"
 #include "gui/opengl/lighting.h"
@@ -37,7 +37,7 @@
 #include "gui/color_button.h"
 #include "gui/projection.h"
 
-#include "mesh/mesh.h"
+#include "surface/mesh.h"
 
 #include "connectome/mat2vec.h"
 #include "connectome/lut.h"
@@ -66,7 +66,7 @@ namespace MR
       {
 
         class Connectome : public Base
-        {
+        { MEMALIGN(Connectome)
             Q_OBJECT
 
             enum class node_visibility_matrix_operator_t { ANY, ALL };
@@ -192,6 +192,7 @@ namespace MR
             QLabel *edge_visibility_threshold_label;
             AdjustButton *edge_visibility_threshold_button;
             QCheckBox *edge_visibility_threshold_invert_checkbox;
+            QCheckBox *edge_visibility_by_nodes_checkbox;
 
             QComboBox *edge_geometry_combobox;
             QLabel *edge_geometry_cylinder_lod_label;
@@ -239,12 +240,12 @@ namespace MR
             std::unique_ptr< MR::Image<node_t> > buffer;
 
 
-            std::vector<Node> nodes;
-            std::vector<Edge> edges;
+            vector<Node> nodes;
+            vector<Edge> edges;
 
 
             // For converting connectome matrices to vectors
-            MR::Connectome::Mat2Vec mat2vec;
+            std::unique_ptr<MR::Connectome::Mat2Vec> mat2vec;
 
 
             // If a lookup table is provided, this container will store the
@@ -351,7 +352,7 @@ namespace MR
             void clear_all();
             void enable_all (const bool);
             void initialise (const std::string&);
-            void add_matrices (const std::vector<std::string>&);
+            void add_matrices (const vector<std::string>&);
 
             void draw_nodes (const Projection&);
             void draw_edges (const Projection&);
@@ -375,7 +376,7 @@ namespace MR
 
             // Helper functions for determining actual node / edge visual properties
             //   given current selection status
-            void           node_selection_changed          (const std::vector<node_t>&);
+            void           node_selection_changed          (const vector<node_t>&);
             bool           node_visibility_given_selection (const node_t);
             Eigen::Array3f node_colour_given_selection     (const node_t);
             float          node_size_given_selection       (const node_t);

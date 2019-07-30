@@ -1,17 +1,17 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
 
 #ifndef __gui_mrview_tool_view_h__
 #define __gui_mrview_tool_view_h__
@@ -34,8 +34,8 @@ namespace MR
       {
 
 
-        class ClipPlane 
-        {
+        class ClipPlane
+        { MEMALIGN (ClipPlane)
           public:
             GL::vec4 plane;
             bool active;
@@ -43,15 +43,15 @@ namespace MR
         };
 
         class View : public Base, public Mode::ModeGuiVisitor
-        {
+        { MEMALIGN(View)
           Q_OBJECT
           public:
             View (Dock* parent);
 
             QPushButton *clip_on_button[3], *clip_edit_button[3], *clip_modify_button;
 
-            std::vector< std::pair<GL::vec4,bool> > get_active_clip_planes () const;
-            std::vector<GL::vec4*> get_clip_planes_to_be_edited () const;
+            vector< std::pair<GL::vec4,bool> > get_active_clip_planes () const;
+            vector<GL::vec4*> get_clip_planes_to_be_edited () const;
             bool get_cliphighlightstate () const;
             bool get_clipintersectionmodestate () const;
 
@@ -81,6 +81,8 @@ namespace MR
             void onCheckThreshold (bool);
             void onModeChanged ();
             void hide_image_slot (bool flag);
+            void copy_focus_slot ();
+            void copy_voxel_slot ();
             void clip_planes_right_click_menu_slot (const QPoint& pos);
             void clip_planes_selection_changed_slot ();
             void clip_planes_toggle_shown_slot();
@@ -100,9 +102,12 @@ namespace MR
             void clip_planes_clear_slot ();
 
             void light_box_slice_inc_reset_slot ();
+            void light_box_toggle_volumes_slot (bool);
 
           private:
             QPushButton *hide_button;
+            QPushButton *copy_focus_button;
+            QPushButton *copy_voxel_button;
             AdjustButton *focus_x, *focus_y, *focus_z;
             AdjustButton *voxel_x, *voxel_y, *voxel_z;
             SpinBox *vol_index, *vol_group;
@@ -117,9 +122,11 @@ namespace MR
             QAction *clip_planes_new_axial_action, *clip_planes_new_sagittal_action, *clip_planes_new_coronal_action;
             QAction *clip_planes_reset_axial_action, *clip_planes_reset_sagittal_action, *clip_planes_reset_coronal_action;
             QAction *clip_planes_invert_action, *clip_planes_remove_action, *clip_planes_clear_action;
-            AdjustButton* light_box_slice_inc;
-            SpinBox *light_box_rows, *light_box_cols;
-            QCheckBox *light_box_show_grid;
+
+            QLabel *light_box_slice_inc_label, *light_box_volume_inc_label;
+            AdjustButton *light_box_slice_inc;
+            SpinBox *light_box_rows, *light_box_cols, *light_box_volume_inc;
+            QCheckBox *light_box_show_grid, *light_box_show_4d;
 
             class ClipPlaneModel;
             ClipPlaneModel* clip_planes_model;
