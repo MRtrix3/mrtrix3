@@ -113,10 +113,13 @@ OPTIONS
   + Option ("isinf", "true (1) is operand is infinite (Inf)").allow_multiple()
   + Option ("finite", "true (1) is operand is finite (i.e. not NaN or Inf)").allow_multiple()
 
+  + OptionGroup ("Unary operators dedicated to complex data")
   + Option ("real", "real part of complex number").allow_multiple()
   + Option ("imag", "imaginary part of complex number").allow_multiple()
+  + Option ("magnitude", "magnitude of complex number").allow_multiple()
   + Option ("phase", "phase of complex number").allow_multiple()
   + Option ("conj", "complex conjugate").allow_multiple()
+  + Option ("proj", "projection onto the Riemann sphere").allow_multiple()
 
   + OptionGroup ("Binary operators")
 
@@ -134,7 +137,9 @@ OPTIONS
   + Option ("eq", "equal-to operator (true=1, false=0)").allow_multiple()
   + Option ("neq", "not-equal-to operator (true=1, false=0)").allow_multiple()
 
+  + OptionGroup ("Binary operators dedicated to complex data")
   + Option ("complex", "create complex number using the last two operands as real,imaginary components").allow_multiple()
+  + Option ("polar", "create complex number using the last two operands as magnitude,phase components (phase in radians)").allow_multiple()
 
   + OptionGroup ("Ternary operators")
 
@@ -861,38 +866,43 @@ class OpAcos : public OpUnary { NOMEMALIGN
   public:
     OpAcos () : OpUnary ("acos (%1)") { }
     complex_type R (real_type v) const { return std::acos (v); }
+    complex_type Z (complex_type v) const { return std::acos (v); }
 };
 
 class OpAsin : public OpUnary { NOMEMALIGN
   public:
     OpAsin () : OpUnary ("asin (%1)") { }
     complex_type R (real_type v) const { return std::asin (v); }
+    complex_type Z (complex_type v) const { return std::asin (v); }
 };
 
 class OpAtan : public OpUnary { NOMEMALIGN
   public:
     OpAtan () : OpUnary ("atan (%1)") { }
     complex_type R (real_type v) const { return std::atan (v); }
+    complex_type Z (complex_type v) const { return std::atan (v); }
 };
 
 class OpAcosh : public OpUnary { NOMEMALIGN
   public:
     OpAcosh () : OpUnary ("acosh (%1)") { }
     complex_type R (real_type v) const { return std::acosh (v); }
+    complex_type Z (complex_type v) const { return std::acosh (v); }
 };
 
 class OpAsinh : public OpUnary { NOMEMALIGN
   public:
     OpAsinh () : OpUnary ("asinh (%1)") { }
     complex_type R (real_type v) const { return std::asinh (v); }
+    complex_type Z (complex_type v) const { return std::asinh (v); }
 };
 
 class OpAtanh : public OpUnary { NOMEMALIGN
   public:
     OpAtanh () : OpUnary ("atanh (%1)") { }
     complex_type R (real_type v) const { return std::atanh (v); }
+    complex_type Z (complex_type v) const { return std::atanh (v); }
 };
-
 
 class OpRound : public OpUnary { NOMEMALIGN
   public:
@@ -910,30 +920,6 @@ class OpFloor : public OpUnary { NOMEMALIGN
   public:
     OpFloor () : OpUnary ("floor (%1)") { }
     complex_type R (real_type v) const { return std::floor (v); }
-};
-
-class OpReal : public OpUnary { NOMEMALIGN
-  public:
-    OpReal () : OpUnary ("real (%1)", true) { }
-    complex_type Z (complex_type v) const { return v.real(); }
-};
-
-class OpImag : public OpUnary { NOMEMALIGN
-  public:
-    OpImag () : OpUnary ("imag (%1)", true) { }
-    complex_type Z (complex_type v) const { return v.imag(); }
-};
-
-class OpPhase : public OpUnary { NOMEMALIGN
-  public:
-    OpPhase () : OpUnary ("phase (%1)", true) { }
-    complex_type Z (complex_type v) const { return std::arg (v); }
-};
-
-class OpConj : public OpUnary { NOMEMALIGN
-  public:
-    OpConj () : OpUnary ("conj (%1)") { }
-    complex_type Z (complex_type v) const { return std::conj (v); }
 };
 
 class OpIsNaN : public OpUnary { NOMEMALIGN
@@ -956,6 +942,46 @@ class OpFinite : public OpUnary { NOMEMALIGN
     complex_type R (real_type v) const { return std::isfinite (v) != 0; }
     complex_type Z (complex_type v) const { return std::isfinite (v.real()) != 0|| std::isfinite (v.imag()) != 0; }
 };
+
+class OpReal : public OpUnary { NOMEMALIGN
+  public:
+    OpReal () : OpUnary ("real (%1)", true) { }
+    complex_type Z (complex_type v) const { return v.real(); }
+};
+
+class OpImag : public OpUnary { NOMEMALIGN
+  public:
+    OpImag () : OpUnary ("imag (%1)", true) { }
+    complex_type Z (complex_type v) const { return v.imag(); }
+};
+
+class OpMagnitude : public OpUnary { NOMEMALIGN
+  public:
+    OpMagnitude () : OpUnary ("|%1|", true) { }
+    complex_type Z (complex_type v) const { return std::abs (v); }
+};
+
+class OpPhase : public OpUnary { NOMEMALIGN
+  public:
+    OpPhase () : OpUnary ("phase (%1)", true) { }
+    complex_type Z (complex_type v) const { return std::arg (v); }
+};
+
+class OpConj : public OpUnary { NOMEMALIGN
+  public:
+    OpConj () : OpUnary ("conj (%1)") { }
+    complex_type Z (complex_type v) const { return std::conj (v); }
+};
+
+class OpProj : public OpUnary { NOMEMALIGN
+  public:
+    OpProj () : OpUnary ("proj (%1)", false, true) { }
+    complex_type R (real_type v) const { return std::proj (v); }
+    complex_type Z (complex_type v) const { return std::proj (v); }
+};
+
+
+
 
 
 /**********************************************************************
@@ -1053,6 +1079,12 @@ class OpComplex : public OpBinary { NOMEMALIGN
     complex_type R (real_type a, real_type b) const { return complex_type (a, b); }
 };
 
+class OpPolar : public OpBinary { NOMEMALIGN
+  public:
+    OpPolar () : OpBinary ("(%1 /_ %2)", false, true) { }
+    complex_type R (real_type a, real_type b) const { return std::polar (a, b); }
+};
+
 
 
 
@@ -1117,14 +1149,16 @@ void run () {
       else if (opt->is ("ceil")) unary_operation (opt->id, stack, OpCeil());
       else if (opt->is ("floor")) unary_operation (opt->id, stack, OpFloor());
 
-      else if (opt->is ("real")) unary_operation (opt->id, stack, OpReal());
-      else if (opt->is ("imag")) unary_operation (opt->id, stack, OpImag());
-      else if (opt->is ("phase")) unary_operation (opt->id, stack, OpPhase());
-      else if (opt->is ("conj")) unary_operation (opt->id, stack, OpConj());
-
       else if (opt->is ("isnan")) unary_operation (opt->id, stack, OpIsNaN());
       else if (opt->is ("isinf")) unary_operation (opt->id, stack, OpIsInf());
       else if (opt->is ("finite")) unary_operation (opt->id, stack, OpFinite());
+
+      else if (opt->is ("real")) unary_operation (opt->id, stack, OpReal());
+      else if (opt->is ("imag")) unary_operation (opt->id, stack, OpImag());
+      else if (opt->is ("magnitude")) unary_operation (opt->id, stack, OpMagnitude());
+      else if (opt->is ("phase")) unary_operation (opt->id, stack, OpPhase());
+      else if (opt->is ("conj")) unary_operation (opt->id, stack, OpConj());
+      else if (opt->is ("proj")) unary_operation (opt->id, stack, OpProj());
 
       else if (opt->is ("add")) binary_operation (opt->id, stack, OpAdd());
       else if (opt->is ("subtract")) binary_operation (opt->id, stack, OpSubtract());
@@ -1142,6 +1176,7 @@ void run () {
       else if (opt->is ("neq")) binary_operation (opt->id, stack, OpNotEqual());
 
       else if (opt->is ("complex")) binary_operation (opt->id, stack, OpComplex());
+      else if (opt->is ("polar")) binary_operation (opt->id, stack, OpPolar());
 
       else if (opt->is ("if")) ternary_operation (opt->id, stack, OpIf());
       else if (opt->is ("replace")) ternary_operation (opt->id, stack, OpReplace());
