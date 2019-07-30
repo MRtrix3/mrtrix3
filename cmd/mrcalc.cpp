@@ -613,29 +613,7 @@ void get_header (const StackEntry& entry, Header& header)
       header.spacing(n) = entry.image->spacing(n);
   }
 
-  const auto header_grad = DWI::parse_DW_scheme (header);
-  if (header_grad.rows()) {
-    const auto entry_grad = DWI::parse_DW_scheme (*entry.image);
-    if (entry_grad.rows()) {
-      if (!entry_grad.isApprox (header_grad))
-        DWI::clear_DW_scheme (header);
-    }
-  }
-
-  const auto header_pe = PhaseEncoding::get_scheme (header);
-  if (header_pe.rows()) {
-    const auto entry_pe = PhaseEncoding::get_scheme (*entry.image);
-    if (entry_pe.rows()) {
-      if (!entry_pe.isApprox (header_pe))
-        PhaseEncoding::clear_scheme (header);
-    }
-  }
-
-  auto slice_encoding_it = entry.image->keyval().find ("SliceEncodingDirection");
-  if (slice_encoding_it != entry.image->keyval().end()) {
-    if (header.keyval()["SliceEncodingDirection"] != slice_encoding_it->second)
-      header.keyval().erase (header.keyval().find ("SliceEncodingDirection"));
-  }
+  header.merge_keyval (*entry.image);
 }
 
 

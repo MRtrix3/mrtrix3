@@ -127,7 +127,7 @@ namespace MR
 
 
 
-        class Renderer { MEMALIGN(Renderer)
+        class Renderer { NOMEMALIGN
           public:
             Renderer();
             void begin_render_colourbars (Projection* projection,

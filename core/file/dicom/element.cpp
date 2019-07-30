@@ -50,6 +50,21 @@ namespace MR {
 
 
 
+      const char* Element::type_as_str[] = { "invalid",
+                                             "integer",
+                                             "unsigned integer",
+                                             "floating-point",
+                                             "date",
+                                             "time",
+                                             "string",
+                                             "sequence",
+                                             "other",
+                                             nullptr };
+
+
+
+
+
 
       void Element::set (const std::string& filename, bool force_read, bool read_write)
       {
@@ -432,7 +447,9 @@ namespace MR {
           }
         }
         catch (Exception& e) {
-          e.display();
+          DEBUG ("Error converting data at offset " + str(offset(start)) + " to " + type_as_str[type()] + " type: ");
+          for (auto& s : e.description)
+            DEBUG (s);
           return "invalid entry";
         }
         return "";
@@ -503,6 +520,7 @@ namespace MR {
 
         return stream;
       }
+
 
 
     }
