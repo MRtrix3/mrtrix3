@@ -76,15 +76,16 @@ in Git or GitHub.
       single commit.
 
    -  Commits should contain an appropriate message that adequately
-      describes the change encapsulated within. If the change demands
-      a longer description, then the commit message should be broken
-      into a synopsis (less than 80 characters) and message body,
-      separated by two newline characters (as this enables GitHub to
+      describes the change encapsulated within.
+
+      If the change demands a longer description, then the commit message
+      should be broken into a synopsis (less than 80 characters) and message
+      body, separated by two newline characters (as this enables GitHub to
       parse them appropriately).
 
       This can be achieved at the command-line as follows:
 
-      `$ git commit -m $'Commit synopsis\n\nHere is a much longer and wordier description of my proposed changes that doesn\' fit into 80 characters.\nI can even spread the message body across multiple lines.'`
+      `$ git commit -m $'Commit synopsis\n\nHere is a much longer and wordier description of my proposed changes that doesn\'t fit into 80 characters.\nI can even spread the message body across multiple lines.'`
 
       (Note also the escape character "`\`" necessary for including an
       apostrophe in the message text)
@@ -95,8 +96,8 @@ in Git or GitHub.
       and paste the first 8-10 characters of the commit hash).
 
    -  If multiple persons have contributed to the proposed changes, it is
-      possible to modify individual Git commits to have ["multiple
-      authors"](https://help.github.com/en/articles/creating-a-commit-with-multiple-authors),
+      possible to modify individual Git commits to have [multiple
+      authors](https://help.github.com/en/articles/creating-a-commit-with-multiple-authors),
       to ensure that all contributors receive appropriate acknowledgment.
 
    As a general rule: Git commits and commit messages should be constructed
@@ -119,15 +120,15 @@ in Git or GitHub.
          a command;
 
       -  The proposed change improves the *perfomance* of a particular
-         command or process, but does not change its output;
+         command or process, but does not change its output.
 
    -  "[**Documentation**](#documentation)": If you wish to make changes to
       the [*MRtrix3 documentation*](https://mrtrix.readthedocs.io/en/latest/).
 
 1. Check that your modified code does not prevent *MRtrix3* from
-   passing existing tests (ass files are in the *MRtrix3* root directory):
+   passing existing tests (all files are in the *MRtrix3* root directory):
 
-   1.  If adding or mdifying C++ code, make sure that script "`check_syntax`"
+   1.  If adding or modifying C++ code, make sure that script "`check_syntax`"
        executes successfully.
 
    1.  If adding or modifying Python code, make sure that script
