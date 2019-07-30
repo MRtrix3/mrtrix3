@@ -19,12 +19,12 @@
 #include "file/png.h"
 
 #include <chrono>
+#include <zlib.h>
 
 #include "app.h"
 #include "datatype.h"
 #include "exception.h"
 #include "mrtrix.h"
-#include "version.cpp"
 #include "file/path.h"
 
 
@@ -196,7 +196,7 @@ namespace MR
         }
         outfile = fopen (filename.c_str(), "wb");
         png_init_io (png_ptr, outfile);
-        png_set_compression_level (png_ptr, PNG_Z_DEFAULT_COMPRESSION);
+        png_set_compression_level (png_ptr, Z_DEFAULT_COMPRESSION);
         switch (H.ndim()) {
           case 2:
           case 3:
