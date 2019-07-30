@@ -171,14 +171,7 @@ struct PolyBasisFunction { MEMALIGN (PolyBasisFunction)
   }
 };
 
-struct mask_refiner {
-  FORCE_INLINE void operator() (Image<float>& summed, Image<bool>& initial_mask, Image<bool>& refined) const
-  {
-    refined.value() = ( std::isfinite(float(summed.value())) && summed.value() > 0.f && initial_mask.value() );
-  }
-};
-
-// Templated struct calculating the norm_field_log values
+// Struct calculating the norm_field_log values
 struct NormFieldLog {
 
    NormFieldLog (Eigen::MatrixXd norm_field_weights, Transform transform, struct PolyBasisFunction basis_function) : norm_field_weights (norm_field_weights), transform (transform), basis_function (basis_function){ }
@@ -269,6 +262,48 @@ Eigen::VectorXd Choleski(Eigen::MatrixXd X, Eigen::VectorXd y) {
 return res;
 };
 
+// Function to refine the mask
+void RefinedMask(vector<Adapter::Replicate<ImageType>> input_images, MaskType& initial_mask, MaskType orig_mask, ProgressBar& input_progress, ImageType summed){
+    for (size_t j = 0; j < input_images.size(); ++j) {
+      input_progress++;
+      ThreadedLoop(summed).run([](decltype(summed)& sum, decltype(input_images[0])& in){sum.value()+=in.value();}, summed, input_images[j]);
+    }
+ThreadedLoop(summed).run([](ImageType& summed, MaskType& initial_mask, MaskType& refined){refined.value() = ( std::isfinite(float(summed.value())) && summed.value() > 0.f && initial_mask.value() );}, summed, orig_mask, initial_mask);
+};
+
+// Function to solve for tissue balance factors
+void BalFactSolver(Eigen::MatrixXd& X, Eigen::VectorXd& y, MaskType mask, ImageType combined_tissue, ImageType norm_field_image, size_t n_tissue_types){
+ uint32_t index = 0;
+   for (auto i = Loop (0, 3) (mask, combined_tissue, norm_field_image); i; ++i) {
+      if (mask.value()) {
+        for (size_t j = 0; j < n_tissue_types; ++j) {
+          combined_tissue.index (3) = j;
+          X (index, j) = combined_tissue.value() / norm_field_image.value();
+        }
+      ++index;
+      }
+   }
+};
+
+// Function to solve for normalisation field weights in the log domain
+void NormWeightsLog(Eigen::MatrixXd& norm_field_basis, Eigen::VectorXd& y, Eigen::VectorXd balance_factors, struct PolyBasisFunction basis_function, MaskType mask, ImageType& combined_tissue, Transform transform, size_t n_tissue_types, float log_norm_value){
+    uint32_t index = 0;
+    for (auto i = Loop (0, 3) (mask, combined_tissue); i; ++i) {
+      if (mask.value()) {
+        Eigen::Vector3 vox (mask.index(0), mask.index(1), mask.index(2));
+        Eigen::Vector3 pos = transform.voxel2scanner * vox;
+        norm_field_basis.row (index) = basis_function (pos).col(0);
+
+        double sum = 0.0;
+        for (size_t j = 0; j < n_tissue_types; ++j) {
+          combined_tissue.index(3) = j;
+          sum += balance_factors(j) * combined_tissue.value() ;
+        }
+        y (index++) = std::log(sum) - log_norm_value;
+      }
+    }
+};
+
 void run ()
 {
     if (argument.size() % 2)
@@ -335,18 +370,10 @@ void run ()
 
   {
     auto summed = ImageType::scratch (header_3D, "Summed tissue volumes");
-    for (size_t j = 0; j < input_images.size(); ++j) {
-      input_progress++;
-      struct ValueAccumulator {
-        FORCE_INLINE void operator () (decltype(summed)& sum, decltype(input_images[0])& in) const { sum.value() += in.value(); }
-      };
-      ThreadedLoop (summed, 0, 3).run (ValueAccumulator(), summed, input_images[j]);
-    }
-    ThreadedLoop (summed, 0, 3).run (mask_refiner(), summed, orig_mask, initial_mask);
+    RefinedMask(input_images, initial_mask, orig_mask, input_progress, summed);
   }
 
   threaded_copy (initial_mask, mask);
-
 
   // Load input images into single 4d-image and zero-clamp combined-tissue image
   Header h_combined_tissue (input_images[0]);
@@ -412,18 +439,7 @@ void run ()
         // Solve for tissue balance factors
         Eigen::MatrixXd X (vox_count, n_tissue_types);
         Eigen::VectorXd y (Eigen::VectorXd::Ones (vox_count));
-        uint32_t index = 0;
-
-        for (auto i = Loop (0, 3) (mask, combined_tissue, norm_field_image); i; ++i) {
-          if (mask.value()) {
-            for (size_t j = 0; j < n_tissue_types; ++j) {
-              combined_tissue.index (3) = j;
-              X (index, j) = combined_tissue.value() / norm_field_image.value();
-            }
-            ++index;
-          }
-        }
-
+        BalFactSolver(X, y, mask, combined_tissue, norm_field_image, n_tissue_types);
         balance_factors = Choleski(X, y);
 
         // Ensure our balance factors satisfy the condition that sum(log(balance_factors)) = 0
@@ -468,22 +484,7 @@ void run ()
     Transform transform (mask);
     Eigen::MatrixXd norm_field_basis (vox_count, basis_function.n_basis_vecs);
     Eigen::VectorXd y (vox_count);
-    uint32_t index = 0;
-    for (auto i = Loop (0, 3) (mask, combined_tissue); i; ++i) {
-      if (mask.value()) {
-        Eigen::Vector3 vox (mask.index(0), mask.index(1), mask.index(2));
-        Eigen::Vector3 pos = transform.voxel2scanner * vox;
-        norm_field_basis.row (index) = basis_function (pos).col(0);
-
-        double sum = 0.0;
-        for (size_t j = 0; j < n_tissue_types; ++j) {
-          combined_tissue.index(3) = j;
-          sum += balance_factors(j) * combined_tissue.value() ;
-        }
-        y (index++) = std::log(sum) - log_ref_value;
-      }
-    }
-
+    NormWeightsLog(norm_field_basis, y, balance_factors, basis_function, mask, combined_tissue, transform, n_tissue_types, log_ref_value);
     norm_field_weights = Choleski(norm_field_basis, y);
 
     // Generate normalisation field in the log domain
