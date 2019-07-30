@@ -79,7 +79,7 @@ void usage ()
             "processing a whole-brain tractogram, and images for which the "
             "quantiative parameter is additive)");
 
-  
+
   // TODO add support for SH amplitude along tangent
   // TODO add support for reading from fixel image
   //   (this would supersede fixel2tsf when used without -precise or -stat_tck options)
@@ -127,7 +127,7 @@ class TDI : public Image<value_type> { MEMALIGN(TDI)
 
 
 template <class Interp>
-class SamplerNonPrecise 
+class SamplerNonPrecise
 { MEMALIGN (SamplerNonPrecise<Interp>)
   public:
     SamplerNonPrecise (Image<value_type>& image, const stat_tck statistic, MR::copy_ptr<TDI>& precalc_tdi) :
@@ -220,7 +220,7 @@ class SamplerNonPrecise
 
 
 
-class SamplerPrecise 
+class SamplerPrecise
 { MEMALIGN (SamplerPrecise)
   public:
     SamplerPrecise (Image<value_type>& image, const stat_tck statistic, MR::copy_ptr<TDI>& precalc_tdi) :
@@ -382,10 +382,12 @@ class Receiver_NoStatistic : private ReceiverBase { MEMALIGN(Receiver_NoStatisti
                           const DWI::Tractography::Properties& properties) :
         ReceiverBase (num_tracks)
     {
-      if (Path::has_suffix (path, ".tsf"))
+      if (Path::has_suffix (path, ".tsf")) {
         tsf.reset (new DWI::Tractography::ScalarWriter<value_type> (path, properties));
-      else
+      } else {
         ascii.reset (new File::OFStream (path));
+        (*ascii) << "# " << App::command_history_string << "\n";
+      }
     }
     Receiver_NoStatistic (const Receiver_NoStatistic&) = delete;
 

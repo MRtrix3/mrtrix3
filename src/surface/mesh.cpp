@@ -702,7 +702,7 @@ namespace MR
     void Mesh::save_obj (const std::string& path) const
     {
       File::OFStream out (path);
-      out << "# mrtrix_version: " << App::mrtrix_version << "\n";
+      out << "# " << App::command_history_string << "\n";
       out << "o " << name << "\n";
       for (VertexList::const_iterator v = vertices.begin(); v != vertices.end(); ++v)
         out << "v " << str((*v)[0]) << " " << str((*v)[1]) << " " << str((*v)[2]) << " 1.0\n";

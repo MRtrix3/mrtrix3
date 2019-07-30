@@ -189,6 +189,7 @@ namespace MR
 
             // Do NOT set Properties timestamp here! (Must match corresponding .tck file)
             const_cast<Properties&> (properties).set_version_info();
+            const_cast<Properties&> (properties).update_command_history();
             create (out, properties, "track scalars");
             open_success = true;
             current_offset = out.tellp();
