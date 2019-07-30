@@ -165,8 +165,7 @@ namespace MR
           void imageChanged ();
           void imageVisibilityChanged (bool);
           void scalingChanged ();
-          void volumeChanged (size_t);
-          void volumeGroupChanged (size_t);
+          void volumeChanged ();
 
         public slots:
           void on_scaling_changed ();
