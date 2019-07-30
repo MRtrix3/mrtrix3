@@ -48,16 +48,10 @@ class SDStream : public MethodBase { MEMALIGN(SDStream)
           if (is_act() && act().backtrack())
             throw Exception ("Backtracking not valid for deterministic algorithms");
 
-          set_step_size (0.1f);
-          dot_threshold = std::cos (max_angle);
-
+          set_step_size (rk4 ? 0.5f : 0.1f, rk4);
+          dot_threshold = std::cos (max_angle_1o);
+          set_num_points();
           set_cutoff (TCKGEN_DEFAULT_CUTOFF_FOD);
-
-          if (rk4) {
-            INFO ("minimum radius of curvature = " + str(step_size / (max_angle / (0.5 * Math::pi))) + " mm");
-          } else {
-            INFO ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
-          }
 
           properties["method"] = "SDStream";
 
@@ -127,7 +121,7 @@ class SDStream : public MethodBase { MEMALIGN(SDStream)
       const Eigen::Vector3f prev_dir (dir);
 
       if (!find_peak())
-        return BAD_SIGNAL;
+        return MODEL;
 
       if (prev_dir.dot (dir) < S.dot_threshold)
         return HIGH_CURVATURE;

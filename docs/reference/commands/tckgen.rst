@@ -41,6 +41,8 @@ Below is a list of available tracking algorithms, the input image data that they
 
 - Tensor_Prob: A probabilistic algorithm that takes as input a 4D diffusion-weighted image (DWI) series. Within each image voxel, a residual bootstrap is performed to obtain a unique realisation of the DWI data in that voxel for each streamline. These data are then sampled via trilinear interpolation at each streamline step, the diffusion tensor model is fitted, and the streamline follows the orientation of the principal eigenvector of that tensor.
 
+Note that the behaviour of the -angle option varies slightly depending on the order of integration: for any first-order method, this angle corresponds to the deviation in streamline trajectory per step; for higher-order methods, this corresponds to the change in underlying fibre orientation between the start and end points of each step.
+
 Options
 -------
 
@@ -53,7 +55,7 @@ Streamlines tractography options
 
 -  **-step size** set the step size of the algorithm in mm (default is 0.1 x voxelsize; for iFOD2: 0.5 x voxelsize).
 
--  **-angle theta** set the maximum angle between successive steps (default is 90deg x stepsize / voxelsize).
+-  **-angle theta** set the maximum angle between successive steps: default is chosen such that minimum radius of curvature is one voxel; interpretation depends on order of integration (see Description).
 
 -  **-minlength value** set the minimum length of any track in mm (default is 5 x voxelsize without ACT, 2 x voxelsize with ACT).
 
