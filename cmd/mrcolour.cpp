@@ -120,7 +120,7 @@ void run ()
     float image_min = NaN, image_max = NaN;
     min_max (in, image_min, image_max);
     if (int(argument[1]) == 6) { // RGB
-      image_max = std::max (std::abs (image_min), std::abs (image_max));
+      image_max = std::max (MR::abs (image_min), MR::abs (image_max));
     } else {
       if (!std::isfinite (lower)) {
         if (!std::isfinite (image_min))
