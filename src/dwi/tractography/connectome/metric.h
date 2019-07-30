@@ -79,9 +79,9 @@ class Metric { MEMALIGN(Metric)
     {
       double result = 1.0;
       if (scale_by_length)
-        result *= tck.calc_length();
+        result *= Tractography::length (tck);
       else if (scale_by_invlength)
-        result = (tck.size() > 1 ? (result / tck.calc_length()) : 0.0);
+        result = (tck.size() > 1 ? (result / Tractography::length (tck)) : 0.0);
       if (scale_by_file) {
         if (tck.index >= size_t(file_values.size()))
           throw Exception ("File " + file_path + " does not contain enough entries for this tractogram");

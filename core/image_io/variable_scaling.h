@@ -33,7 +33,7 @@ namespace MR
           Base (header) { }
 
         VariableScaling (VariableScaling&&) noexcept = default;
-        VariableScaling& operator=(VariableScaling&&) = default;
+        VariableScaling& operator=(VariableScaling&&) = delete;
 
         class ScaleFactor { NOMEMALIGN
           public:

@@ -58,9 +58,9 @@ namespace MR
       //CONF Note that this location can also be manipulated using the
       //CONF :envvar:`MRTRIX_TMPFILE_DIR` environment variable, without editing the
       //CONF config file. Note also that this setting does not influence the
-      //CONF location in which Python scripts construct their temporary
+      //CONF location in which Python scripts construct their scratch
       //CONF directories; that is determined based on config file option
-      //CONF ScriptTmpDir.
+      //CONF ScriptScratchDir.
 
       //ENVVAR name: MRTRIX_TMPFILE_DIR
       //ENVVAR This has the same effect as the :option:`TmpFileDir`
@@ -125,19 +125,19 @@ namespace MR
        * directory.
        */
 
-      //CONF option: ScriptTmpDir
+      //CONF option: ScriptScratchDir
       //CONF default: `.`
-      //CONF The location in which to generate the temporary directories to be
+      //CONF The location in which to generate the scratch directories to be
       //CONF used by MRtrix Python scripts. By default they will be generated
       //CONF in the working directory.
       //CONF Note that this setting does not influence the location in which
       //CONF piped images and other temporary files are created by MRtrix3;
       //CONF that is determined based on config file option :option:`TmpFileDir`.
 
-      //CONF option: ScriptTmpPrefix
+      //CONF option: ScriptScratchPrefix
       //CONF default: `<script>-tmp-`
       //CONF The prefix to use when generating a unique name for a Python
-      //CONF script temporary directory. By default the name of the invoked
+      //CONF script scratch directory. By default the name of the invoked
       //CONF script itself will be used, followed by `-tmp-` (six random
       //CONF characters are then appended to produce a unique name in cases
       //CONF where a script may be run multiple times in parallel).

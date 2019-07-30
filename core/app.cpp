@@ -52,12 +52,16 @@ namespace MR
 
     OptionGroup __standard_options = OptionGroup ("Standard options")
       + Option ("info", "display information messages.")
-      + Option ("quiet", "do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.")
+      + Option ("quiet", "do not display information messages or progress status; "
+                         "alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.")
       + Option ("debug", "display debugging messages.")
-      + Option ("force", "force overwrite of output files. "
-          "Caution: Using the same file as input and output might cause unexpected behaviour.")
+      + Option ("force", "force overwrite of output files "
+                         "(caution: using the same file as input and output might cause unexpected behaviour).")
       + Option ("nthreads", "use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).")
         + Argument ("number").type_integer (0)
+      + Option ("config", "temporarily set the value of an MRtrix config file entry.").allow_multiple()
+        + Argument ("key").type_text()
+        + Argument ("value").type_text()
       + Option ("help", "display this information page and exit.")
       + Option ("version", "display version information and exit.");
 
@@ -257,7 +261,7 @@ namespace MR
     {
       if (!format)
         return SYNOPSIS;
-      return bold("SYNOPSIS") + "\n" + paragraph ("", SYNOPSIS, HELP_PURPOSE_INDENT) + "\n";
+      return bold("SYNOPSIS") + "\n\n" + paragraph ("", SYNOPSIS, HELP_PURPOSE_INDENT) + "\n";
     }
 
 
@@ -402,12 +406,13 @@ namespace MR
       for (size_t i = 0; i < size(); ++i)
         opt += std::string (" ") + (*this)[i].id;
 
+      if (format && (flags & AllowMultiple))
+        opt += "  (multiple uses permitted)";
+
       if (format)
-        opt = "  " + opt + "\n" + paragraph ("", desc, HELP_PURPOSE_INDENT);
+        opt = "  " + opt + "\n" + paragraph ("", desc, HELP_PURPOSE_INDENT) + "\n";
       else
         opt = paragraph (opt, desc, HELP_OPTION_INDENT);
-      if (format)
-        opt += "\n";
       return opt;
     }
 
@@ -734,7 +739,10 @@ namespace MR
         std::string f = std::string ("+ **-") + opt.id;
         for (size_t a = 0; a < opt.size(); ++a)
           f += std::string (" ") + opt[a].id;
-        f += std::string("**<br>") + indent_newlines (opt.desc) + "\n\n";
+        f += "**";
+        if (opt.flags & AllowMultiple)
+          f+= "  *(multiple uses permitted)*";
+        f += std::string("<br>") + indent_newlines (opt.desc) + "\n\n";
         return f;
       };
 
@@ -862,7 +870,10 @@ namespace MR
         std::string f = std::string ("-  **-") + opt.id;
         for (size_t a = 0; a < opt.size(); ++a)
           f += std::string (" ") + opt[a].id;
-        f += std::string("** ") + escape_special (indent_newlines (opt.desc)) + "\n\n";
+        f += "**";
+        if (opt.flags & AllowMultiple)
+          f += "  *(multiple uses permitted)*";
+        f += std::string(" ") + escape_special (indent_newlines (opt.desc)) + "\n\n";
         return f;
       };
 
