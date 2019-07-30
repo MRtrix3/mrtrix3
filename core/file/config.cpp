@@ -31,7 +31,7 @@ namespace MR
   namespace File
   {
 
-    std::map<std::string, std::string> Config::config;
+    KeyValues Config::config;
 
     //ENVVAR name: MRTRIX_CONFIGFILE
     //ENVVAR This can be used to set the location of the system-wide

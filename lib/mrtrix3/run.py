@@ -199,14 +199,19 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
 
   import itertools, os, shlex, string, sys
   from distutils.spawn import find_executable
-  from mrtrix3 import ANSI, app, EXE_LIST
+  from mrtrix3 import ANSI, app, COMMAND_HISTORY_STRING, EXE_LIST
 
   global shared #pylint: disable=invalid-name
 
   shell = kwargs.pop('shell', False)
   show = kwargs.pop('show', True)
+  mrconvert_keyval = kwargs.pop('mrconvert_keyval', None)
+  force = kwargs.pop('force', False)
   if kwargs:
     raise TypeError('Unsupported keyword arguments passed to run.command(): ' + str(kwargs))
+
+  if shell and mrconvert_keyval:
+    raise TypeError('Cannot use "mrconvert_keyval=" parameter in shell mode')
 
   subprocess_kwargs = {}
   if sys.platform == 'win32':
@@ -298,6 +303,11 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
     #   individual executable (along with its arguments) appears as its own list
     cmdstack = [ list(g) for k, g in itertools.groupby(cmdsplit, lambda s : s != '|') if k ]
 
+    if mrconvert_keyval:
+      if cmdstack[-1][0] != 'mrconvert':
+        raise TypeError('Argument "mrconvert_keyval=" can only be used if the mrconvert command is being invoked')
+      cmdstack[-1].extend([ '-copy_properties', mrconvert_keyval.strip('"'), '-append_property', 'command_history', COMMAND_HISTORY_STRING ])
+
     for line in cmdstack:
       is_mrtrix_exe = line[0] in EXE_LIST
       if is_mrtrix_exe:
@@ -307,6 +317,8 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
         # Get MRtrix3 binaries to output additional INFO-level information if script running in debug mode
         if shared.verbosity == 3 and not any(entry in line for entry in ['-info', '-debug']):
           line.append('-info')
+        if force:
+          line.append('-force')
       else:
         line[0] = exe_name(line[0])
       shebang = _shebang(line[0])
@@ -322,14 +334,6 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
     with shared.lock:
       app.debug('To execute: ' + str(cmdstack))
       if (shared.verbosity and show) or shared.verbosity > 1:
-        # Hide use of these options in mrconvert to alter header key-values and command history at the end of scripts
-        if all(key in cmdsplit for key in [ '-copy_properties', '-append_property', 'command_history' ]):
-          cmdstring = shlex.split(cmdstring)
-          index = cmdstring.index('-append_property')
-          del cmdstring[index:index+3]
-          index = cmdstring.index('-copy_properties')
-          del cmdstring[index:index+2]
-          cmdstring = ' '.join(cmdstring)
         sys.stderr.write(ANSI.execute + 'Command:' + ANSI.clear + '  ' + cmdstring + '\n')
         sys.stderr.flush()
 

@@ -14,9 +14,9 @@ except ImportError:
 # List the content of a directory
 def all_in_dir(directory, dir_path=True, ignore_hidden_files=True): #pylint: disable=unused-variable
   import ctypes, os
-  from mrtrix3.utils import is_windows
+  from mrtrix3 import utils
   def is_hidden(directory, filename):
-    if is_windows():
+    if utils.is_windows():
       try:
         attrs = ctypes.windll.kernel32.GetFileAttributesW(u"%s" % str(os.path.join(directory, filename)))
         assert attrs != -1
