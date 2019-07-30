@@ -107,13 +107,20 @@ Unary operators
 
 -  **-finite**  *(multiple uses permitted)* true (1) is operand is finite (i.e. not NaN or Inf)
 
+Unary operators dedicated to complex data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 -  **-real**  *(multiple uses permitted)* real part of complex number
 
 -  **-imag**  *(multiple uses permitted)* imaginary part of complex number
 
+-  **-magnitude**  *(multiple uses permitted)* magnitude of complex number
+
 -  **-phase**  *(multiple uses permitted)* phase of complex number
 
 -  **-conj**  *(multiple uses permitted)* complex conjugate
+
+-  **-proj**  *(multiple uses permitted)* projection onto the Riemann sphere
 
 Binary operators
 ^^^^^^^^^^^^^^^^
@@ -144,7 +151,12 @@ Binary operators
 
 -  **-neq**  *(multiple uses permitted)* not-equal-to operator (true=1, false=0)
 
+Binary operators dedicated to complex data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 -  **-complex**  *(multiple uses permitted)* create complex number using the last two operands as real,imaginary components
+
+-  **-polar**  *(multiple uses permitted)* create complex number using the last two operands as magnitude,phase components (phase in radians)
 
 Ternary operators
 ^^^^^^^^^^^^^^^^^
