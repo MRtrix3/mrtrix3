@@ -37,20 +37,17 @@ MACT_Shared_additions::MACT_Shared_additions( Properties& property_set )
 
   // import the meshes
   std::map< std::string, Surface::Mesh > meshes;
-  meshes[ "cbr_gm" ] = Surface::Mesh{ property_set[ "mact_cbr_gm" ] };
-  meshes[ "cbr_wm" ] = Surface::Mesh{ property_set[ "mact_cbr_wm" ] };
-  meshes[ "sgm"    ] = Surface::Mesh{ property_set[ "mact_sgm"    ] };
-  meshes[ "cbl_gm" ] = Surface::Mesh{ property_set[ "mact_cbl_gm" ] };
-  meshes[ "cbl_wm" ] = Surface::Mesh{ property_set[ "mact_cbl_wm" ] };
-  meshes[ "bst"    ] = Surface::Mesh{ property_set[ "mact_bst"    ] };
-  meshes[ "csf"    ] = Surface::Mesh{ property_set[ "mact_csf"    ] };
+  meshes[ "cgm" ] = Surface::Mesh{ property_set[ "mact_cgm" ] };
+  meshes[ "sgm" ] = Surface::Mesh{ property_set[ "mact_sgm" ] };
+  meshes[ "bst" ] = Surface::Mesh{ property_set[ "mact_bst" ] };
+  meshes[ "csf" ] = Surface::Mesh{ property_set[ "mact_csf" ] };
 
-  // determine the mesh bounding box based on cerebral gm and brain stem
+  // determine the mesh bounding box based on cortical gm and brain stem
   Eigen::Vector3d lower_p = meshes.begin()->second.vert( 0 );
   Eigen::Vector3d upper_p = meshes.begin()->second.vert( 0 );
   for ( auto m = meshes.begin(); m != meshes.end(); ++ m )
   {
-    if ( m->first == "cbr_gm" || m->first == "bst" )
+    if ( m->first == "cgm" || m->first == "bst" )
     {
       for ( size_t v = 0; v < m->second.num_vertices(); v++ )
       {
@@ -77,19 +74,13 @@ MACT_Shared_additions::MACT_Shared_additions( Properties& property_set )
   // build tissues in scene modeller
   std::set< Tissue_ptr > tissues;
   Tissue_ptr tissue;
-  tissue.reset( new Tissue( CBR_GM, "cbr_gm", meshes[ "cbr_gm" ], _sceneModeller ) );
+  tissue.reset( new Tissue( CGM, "cgm", meshes[ "cgm" ], _sceneModeller ) );
   tissues.insert( tissue );
-  tissue.reset( new Tissue( CBR_WM, "cbr_wm", meshes[ "cbr_wm" ], _sceneModeller ) );
+  tissue.reset( new Tissue( SGM, "sgm", meshes[ "sgm" ], _sceneModeller ) );
   tissues.insert( tissue );
-  tissue.reset( new Tissue( SGM   , "sgm"   , meshes[ "sgm"    ], _sceneModeller ) );
+  tissue.reset( new Tissue( BST, "bst", meshes[ "bst" ], _sceneModeller ) );
   tissues.insert( tissue );
-  tissue.reset( new Tissue( CBL_GM, "cbl_gm", meshes[ "cbl_gm" ], _sceneModeller ) );
-  tissues.insert( tissue );
-  tissue.reset( new Tissue( CBL_WM, "cbl_wm", meshes[ "cbl_wm" ], _sceneModeller ) );
-  tissues.insert( tissue );
-  tissue.reset( new Tissue( BST   , "bst"   , meshes[ "bst"    ], _sceneModeller ) );
-  tissues.insert( tissue );
-  tissue.reset( new Tissue( CSF   , "csf"   , meshes[ "csf"    ], _sceneModeller ) );
+  tissue.reset( new Tissue( CSF, "csf", meshes[ "csf" ], _sceneModeller ) );
   tissues.insert( tissue );
   _sceneModeller->addTissues( tissues );
 
