@@ -17,6 +17,7 @@
 #include "dwi/tractography/connectome/matrix.h"
 
 #include "bitset.h"
+#include "file/path.h"
 
 
 namespace MR {
@@ -236,7 +237,7 @@ void Matrix<T>::save (const std::string& path,
   assert (mat2vec);
 
   File::OFStream out (path);
-  Eigen::IOFormat fmt (Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
+  Eigen::IOFormat fmt (Eigen::FullPrecision, Eigen::DontAlignCols, std::string (1, Path::delimiter (path)), "\n", "", "", "", "");
   for (node_t row = 0; row != mat2vec->mat_size(); ++row) {
     if (!row && !keep_unassigned)
       continue;
