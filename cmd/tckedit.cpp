@@ -151,31 +151,38 @@ void run ()
     input_file_list.push_back (argument[file_index]);
 
     Properties p;
-    Reader<float> reader (argument[file_index], p);
+    Reader<float> (argument[file_index], p);
 
-    for (vector<std::string>::const_iterator i = p.comments.begin(); i != p.comments.end(); ++i) {
+    for (const auto& i : p.comments) {
       bool present = false;
-      for (vector<std::string>::const_iterator j = properties.comments.begin(); !present && j != properties.comments.end(); ++j)
-        present = (*i == *j);
+      for (const auto& j: properties.comments)
+        if ( (present = (i == j)) )
+          break;
       if (!present)
-        properties.comments.push_back (*i);
+        properties.comments.push_back (i);
     }
 
-    // ROI paths are ignored - otherwise tckedit will try to find the ROIs used
-    //   during streamlines generation!
+    for (const auto& i : p.prior_rois) {
+      const auto potential_matches = properties.prior_rois.equal_range (i.first);
+      bool present = false;
+      for (auto j = potential_matches.first; !present && j != potential_matches.second; ++j)
+        present = (i.second == j->second);
+      if (!present)
+        properties.prior_rois.insert (i);
+    }
 
     size_t this_count = 0, this_total_count = 0;
 
-    for (Properties::const_iterator i = p.begin(); i != p.end(); ++i) {
-      if (i->first == "count") {
-        this_count = to<float>(i->second);
-      } else if (i->first == "total_count") {
-        this_total_count += to<float>(i->second);
+    for (const auto& i : p) {
+      if (i.first == "count") {
+        this_count = to<float> (i.second);
+      } else if (i.first == "total_count") {
+        this_total_count += to<float> (i.second);
       } else {
-        Properties::iterator existing = properties.find (i->first);
+        auto existing = properties.find (i.first);
         if (existing == properties.end())
-          properties.insert (*i);
-        else if (i->second != existing->second)
+          properties.insert (i);
+        else if (i.second != existing->second)
           existing->second = "variable";
       }
     }
