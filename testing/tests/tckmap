@@ -1,4 +1,4 @@
-tckmap tckmap/in.tck -template dwi.mif - | testing_diff_data - tckmap/tdi.mif.gz -abs 1.5
-tckmap tckmap/in.tck -vox 1 - | testing_diff_data - tckmap/tdi_vox1.mif.gz -abs 1.5
-tckmap tckmap/in.tck -template dwi.mif -dec - | testing_diff_data - tckmap/tdi_color.mif.gz -abs 1.5
-tckmap tckmap/in.tck -tod 6 -template dwi.mif - | testing_diff_data - tckmap/tod_lmax6.mif.gz -voxel 1e-4
+tckmap tracks.tck -template dwi.mif - | testing_diff_image - tckmap/tdi.mif.gz -abs 1.5
+tckmap tracks.tck -vox 1 - | testing_diff_image - tckmap/tdi_vox1.mif.gz -abs 1.5
+tckmap tracks.tck -template dwi.mif -dec - | testing_diff_image - tckmap/tdi_color.mif.gz -abs 1.5
+tckmap tracks.tck -tod 6 -template dwi.mif - | testing_diff_image - tckmap/tod_lmax6.mif.gz -voxel 1e-4

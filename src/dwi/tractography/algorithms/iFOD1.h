@@ -1,17 +1,17 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
 
 #ifndef __dwi_tractography_algorithms_iFOD1_h__
 #define __dwi_tractography_algorithms_iFOD1_h__
@@ -35,14 +35,14 @@ namespace MR
 
     using namespace MR::DWI::Tractography::Tracking;
 
-    class iFOD1 : public MethodBase {
+    class iFOD1 : public MethodBase { MEMALIGN(iFOD1)
       public:
-      class Shared : public SharedBase {
+      class Shared : public SharedBase { MEMALIGN(Shared)
         public:
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           SharedBase (diff_path, property_set),
           lmax (Math::SH::LforN (source.size(3))),
-          max_trials (MAX_TRIALS),
+          max_trials (TCKGEN_DEFAULT_MAX_TRIALS_PER_STEP),
           sin_max_angle (std::sin (max_angle)),
           mean_samples (0.0),
           mean_truncations (0.0),
@@ -56,7 +56,7 @@ namespace MR
             throw Exception ("Algorithm iFOD1 expects as input a spherical harmonic (SH) image");
           }
 
-          set_step_size (0.1);
+          set_step_size (0.1f);
           if (rk4) {
             max_angle = 0.5 * max_angle_rk4;
             INFO ("minimum radius of curvature = " + str(step_size / (max_angle_rk4 / (0.5 * Math::pi))) + " mm");
@@ -64,6 +64,8 @@ namespace MR
             INFO ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
           }
           sin_max_angle = std::sin (max_angle);
+
+          set_cutoff (TCKGEN_DEFAULT_CUTOFF_FOD);
 
           properties["method"] = "iFOD1";
           properties.set (lmax, "lmax");
@@ -132,7 +134,7 @@ namespace MR
 
 
 
-      bool init()
+      bool init() override
       {
         if (!get_data (source))
           return (false);
@@ -149,7 +151,7 @@ namespace MR
                 return true;
           }
 
-        } 
+        }
         else {
           dir = S.init_dir;
           float val = FOD (dir);
@@ -164,7 +166,7 @@ namespace MR
 
 
 
-      term_t next ()
+      term_t next () override
       {
         if (!get_data (source))
           return EXIT_IMAGE;
@@ -179,7 +181,7 @@ namespace MR
         }
 
         if (max_val <= 0.0)
-          return CALIBRATE_FAIL;
+          return CALIBRATOR;
 
         max_val *= calibrate_ratio;
 
@@ -213,7 +215,7 @@ namespace MR
       }
 
 
-      float get_metric()
+      float get_metric() override
       {
         return FOD (dir);
       }
@@ -225,7 +227,7 @@ namespace MR
       float calibrate_ratio;
       size_t mean_sample_num, num_sample_runs, num_truncations;
       float max_truncation;
-      std::vector< Eigen::Vector3f > calibrate_list;
+      vector< Eigen::Vector3f > calibrate_list;
 
       float FOD (const Eigen::Vector3f& d) const
       {
@@ -242,7 +244,7 @@ namespace MR
 
 
       class Calibrate
-      {
+      { MEMALIGN (Calibrate)
         public:
           Calibrate (iFOD1& method) :
             P (method),

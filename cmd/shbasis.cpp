@@ -1,31 +1,28 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
 
-
-
-#include <vector>
 
 #include "app.h"
 #include "bitset.h"
 #include "command.h"
 #include "datatype.h"
-#include "progressbar.h"
-#include "memory.h"
-
 #include "header.h"
 #include "image.h"
+#include "memory.h"
+#include "progressbar.h"
+#include "types.h"
+
 #include "algo/loop.h"
 
 #include "math/SH.h"
@@ -35,7 +32,7 @@ using namespace MR;
 using namespace App;
 
 
-const char* conversions[] = { "old", "new", "native", "force_oldtonew", "force_newtoold", NULL };
+const char* conversions[] = { "old", "new", "force_oldtonew", "force_newtoold", nullptr };
 enum conv_t { NONE, OLD, NEW, FORCE_OLDTONEW, FORCE_NEWTOOLD };
 
 
@@ -44,20 +41,22 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
+  SYNOPSIS = "Examine the values in spherical harmonic images to estimate (and optionally change) the SH basis used";
 
   DESCRIPTION
-    + "examine the values in spherical harmonic images to estimate (and optionally change) the SH basis used."
-
     + "In previous versions of MRtrix, the convention used for storing spherical harmonic "
       "coefficients was a non-orthonormal basis (the m!=0 coefficients were a factor of "
-      "sqrt(2) too large). This error has been rectified in the new MRtrix (assuming that "
-      "compilation was performed without the USE_NON_ORTHONORMAL_SH_BASIS symbol defined), "
+      "sqrt(2) too large). This error has been rectified in newer versions of MRtrix, "
       "but will cause issues if processing SH data that was generated using an older version "
       "of MRtrix (or vice-versa)."
 
     + "This command provides a mechanism for testing the basis used in storage of image data "
       "representing a spherical harmonic series per voxel, and allows the user to forcibly "
-      "modify the raw image data to conform to the desired basis.";
+      "modify the raw image data to conform to the desired basis."
+
+    + "Note that the \"force_*\" conversion choices should only be used in cases where this "
+      "command has previously been unable to automatically determine the SH basis from the "
+      "image data, but the user themselves are confident of the SH basis of the data.";
 
 
   ARGUMENTS
@@ -65,12 +64,8 @@ void usage ()
 
 
   OPTIONS
-    + Option ("convert", "convert the image data in-place to the desired basis (if necessary). "
-                         "Options are: old, new, native (whichever basis MRtrix is compiled for; "
-                         "most likely the new orthonormal basis), force_oldtonew, force_newtoold. "
-                         "Note that for the \"force_*\" choices should ideally only be used in "
-                         "cases where the command is unable to automatically determine the SH basis "
-                         "using the existing image data.")
+    + Option ("convert", "convert the image data in-place to the desired basis; "
+                         "options are: " + join(conversions, ",") + ".")
       + Argument ("mode").type_choice (conversions);
 
 }
@@ -81,7 +76,7 @@ void usage ()
 
 // Perform a linear regression on the power ratio in each order
 // Omit l=2 - tends to be abnormally small due to non-isotropic brain-wide fibre distribution
-std::pair<float, float> get_regression (const std::vector<float>& ratios)
+std::pair<float, float> get_regression (const vector<float>& ratios)
 {
   const size_t n = ratios.size() - 1;
   Eigen::VectorXf Y (n), b (2);
@@ -133,7 +128,7 @@ void check_and_update (Header& H, const conv_t conversion)
   }
 
   // Get sums independently for each l
- 
+
   // Each order has a different power, and a different number of m!=0 volumes.
   // Therefore, calculate the mean-square intensity for the m==0 and m!=0
   // volumes independently, and report ratio for each harmonic order
@@ -141,7 +136,7 @@ void check_and_update (Header& H, const conv_t conversion)
   if (App::log_level > 0 && App::log_level < 2)
     progress.reset (new ProgressBar ("Evaluating SH basis of image \"" + H.name() + "\"", N-1));
 
-  std::vector<float> ratios;
+  vector<float> ratios;
 
   for (size_t l = 2; l <= lmax; l += 2) {
 
@@ -271,7 +266,7 @@ void check_and_update (Header& H, const conv_t conversion)
   // Decide whether the user needs to be warned about a poor diffusion encoding scheme
   if (regression.second)
     DEBUG ("Gradient of regression is " + str(regression.second) + "; threshold is " + str(grad_threshold));
-  if (std::abs(regression.second) > grad_threshold) {
+  if (abs(regression.second) > grad_threshold) {
     WARN ("Image \"" + H.name() + "\" may have been derived from poor directional encoding, or have some other underlying data problem");
     WARN ("(m!=0 to m==0 power ratio changing by " + str(2.0*regression.second) + " per even order)");
   }
@@ -310,20 +305,13 @@ void run ()
     switch (int(opt[0][0])) {
       case 0: conversion = OLD; break;
       case 1: conversion = NEW; break;
-      case 2:
-#ifndef USE_NON_ORTHONORMAL_SH_BASIS
-        conversion = NEW;
-#else
-        conversion = OLD;
-#endif
-        break;
-      case 3: conversion = FORCE_OLDTONEW; break;
-      case 4: conversion = FORCE_NEWTOOLD; break;
+      case 2: conversion = FORCE_OLDTONEW; break;
+      case 3: conversion = FORCE_NEWTOOLD; break;
       default: assert (0); break;
     }
   }
 
-  for (std::vector<ParsedArgument>::const_iterator i = argument.begin(); i != argument.end(); ++i) {
+  for (vector<ParsedArgument>::const_iterator i = argument.begin(); i != argument.end(); ++i) {
 
     const std::string path = *i;
     Header H = Header::open (path);

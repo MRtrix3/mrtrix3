@@ -1,17 +1,17 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
 
 #ifndef __dwi_tractography_properties_h__
 #define __dwi_tractography_properties_h__
@@ -33,10 +33,10 @@ namespace MR
     {
 
 
-      class Properties : public std::map<std::string, std::string> {
+      class Properties : public std::map<std::string, std::string> { MEMALIGN(Properties)
         public:
 
-          Properties () { 
+          Properties () {
             set_timestamp();
           }
 
@@ -52,17 +52,17 @@ namespace MR
 
           ROISet include, exclude, mask;
           Seeding::List seeds;
-          std::vector<std::string> comments;
+          vector<std::string> comments;
           std::multimap<std::string, std::string> roi;
 
 
-          void  clear () { 
-            std::map<std::string, std::string>::clear(); 
+          void  clear () {
+            std::map<std::string, std::string>::clear();
             seeds.clear();
             include.clear();
             exclude.clear();
             mask.clear();
-            comments.clear(); 
+            comments.clear();
             roi.clear();
           }
 
@@ -75,7 +75,7 @@ namespace MR
       };
 
 
-      inline void check_timestamps (const Properties& a, const Properties& b, const std::string& type) 
+      inline void check_timestamps (const Properties& a, const Properties& b, const std::string& type)
       {
         Properties::const_iterator stamp_a = a.find ("timestamp");
         Properties::const_iterator stamp_b = b.find ("timestamp");
@@ -88,7 +88,7 @@ namespace MR
 
 
 
-      inline void check_counts (const Properties& a, const Properties& b, const std::string& type, bool abort_on_fail) 
+      inline void check_counts (const Properties& a, const Properties& b, const std::string& type, bool abort_on_fail)
       {
         Properties::const_iterator count_a = a.find ("count");
         Properties::const_iterator count_b = b.find ("count");
@@ -107,6 +107,23 @@ namespace MR
 
 
 
+      inline float get_step_size (const Properties& p)
+      {
+        for (size_t index = 0; index != 2; ++index) {
+          const std::string key (index ? "step_size" : "output_step_size");
+          auto it = p.find (key);
+          if (it != p.end()) {
+            try {
+              return to<float> (it->second);
+            } catch (...) { }
+          }
+        }
+        return NaN;
+      }
+
+
+
+
 
       inline std::ostream& operator<< (std::ostream& stream, const Properties& P)
       {
@@ -115,7 +132,7 @@ namespace MR
         for (std::map<std::string, std::string>::const_iterator i = P.begin(); i != P.end(); ++i)
           stream << "[ " << i->first << ": " << i->second << " ], ";
         stream << "comments: ";
-        for (std::vector<std::string>::const_iterator i = P.comments.begin(); i != P.comments.end(); ++i)
+        for (vector<std::string>::const_iterator i = P.comments.begin(); i != P.comments.end(); ++i)
           stream << "\"" << *i << "\", ";
         return (stream);
       }

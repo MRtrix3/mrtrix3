@@ -1,18 +1,16 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
-
 
 
 #include "command.h"
@@ -29,8 +27,7 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  DESCRIPTION
-  + "output DICOM fields in human-readable format.";
+  SYNOPSIS = "Output DICOM fields in human-readable format";
 
   ARGUMENTS
   + Argument ("file", "the DICOM file to be scanned.").type_file_in();
@@ -48,7 +45,7 @@ void usage ()
 }
 
 
-class Tag {
+class Tag { NOMEMALIGN
   public:
     uint16_t group, element;
     std::string value;
@@ -68,7 +65,7 @@ void run ()
   if (opt.size()) {
     std::istringstream hex;
 
-    std::vector<Tag> tags (opt.size());
+    vector<Tag> tags (opt.size());
     for (size_t n = 0; n < opt.size(); ++n) {
       tags[n].group = read_hex (opt[n][0]);
       tags[n].element = read_hex (opt[n][1]);
@@ -79,11 +76,8 @@ void run ()
     while (item.read()) {
       for (size_t n = 0; n < opt.size(); ++n)
         if (item.is (tags[n].group, tags[n].element))
-          tags[n].value = item.get_string()[0];
+          std::cout << MR::printf ("[%04X,%04X] ", tags[n].group, tags[n].element) <<  item.as_string() << "\n";
     }
-
-    for (size_t n = 0; n < opt.size(); ++n)
-      std::cout << tags[n].value << "\n";
 
     return;
   }

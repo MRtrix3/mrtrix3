@@ -1,1 +1,1 @@
-warpcorrect warp.mif - | testing_diff_data - warpcorrect/out.mif -frac 1e-5
+warpcorrect warp.mif - | testing_diff_image - warpcorrect/out.mif -frac 1e-5

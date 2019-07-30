@@ -1,8 +1,8 @@
 tcksample tracks.tck tcksample/fa.mif tmp.txt -force # Can't compare using testing_diff_matrix; just make sure it runs
-tcksample tracks.tck tcksample/fa.mif tmp.tsf -nthreads 0 -force && testing_diff_tsf tmp.tsf tcksample/out.tsf -frac 1e-5
-tcksample tracks.tck tcksample/fa.mif tmp.csv -nthreads 0 -stat_tck mean -force && testing_diff_matrix tmp.csv tcksample/mean.csv -frac 1e-5
-tcksample tracks.tck tcksample/fa.mif tmp.csv -nthreads 0 -stat_tck median -force && testing_diff_matrix tmp.csv tcksample/median.csv -frac 1e-5
-tcksample tracks.tck tcksample/fa.mif tmp.csv -nthreads 0 -stat_tck min -force && testing_diff_matrix tmp.csv tcksample/min.csv -frac 1e-5
-tcksample tracks.tck tcksample/fa.mif tmp.csv -nthreads 0 -stat_tck max -force && testing_diff_matrix tmp.csv tcksample/max.csv -frac 1e-5
-tcksample tracks.tck tcksample/fa.mif tmp.csv -nthreads 0 -stat_tck mean -precise -force && testing_diff_matrix tmp.csv tcksample/precise.csv -frac 1e-5
-tcksample tracks.tck tcksample/fa.mif tmp.csv -nthreads 0 -stat_tck median -precise -use_tdi_fraction -force && testing_diff_matrix tmp.csv tcksample/tdidiv.csv -frac 1e-5
+tcksample tracks.tck tcksample/fa.mif tmp.tsf -force && testing_diff_tsf tmp.tsf tcksample/out.tsf -frac 1e-5
+tcksample tracks.tck tcksample/fa.mif tmp.csv -stat_tck mean -force && testing_diff_matrix tmp.csv tcksample/mean.csv -frac 1e-5
+tcksample tracks.tck tcksample/fa.mif tmp.csv -stat_tck median -force && testing_diff_matrix tmp.csv tcksample/median.csv -frac 1e-5
+tcksample tracks.tck tcksample/fa.mif tmp.csv -stat_tck min -force && testing_diff_matrix tmp.csv tcksample/min.csv -frac 1e-5
+tcksample tracks.tck tcksample/fa.mif tmp.csv -stat_tck max -force && testing_diff_matrix tmp.csv tcksample/max.csv -frac 1e-5
+tcksample tracks.tck tcksample/fa.mif tmp.csv -stat_tck mean -precise -force && testing_diff_matrix tmp.csv tcksample/precise.csv -frac 1e-5
+tcksample tracks.tck tcksample/fa.mif tmp.csv -stat_tck median -precise -use_tdi_fraction -force && testing_diff_matrix tmp.csv tcksample/tdidiv.csv -frac 1e-3

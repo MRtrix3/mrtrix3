@@ -1,30 +1,34 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
 
 #ifndef __dwi_tractography_algorithms_iFOD2_h__
 #define __dwi_tractography_algorithms_iFOD2_h__
 
 #include <algorithm>
 
+#include "types.h"
 #include "math/SH.h"
+#include "dwi/tractography/properties.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/tractography.h"
 #include "dwi/tractography/tracking/types.h"
 #include "dwi/tractography/algorithms/calibrator.h"
 
+
+#define TCKGEN_DEFAULT_IFOD2_NSAMPLES 4
 
 
 
@@ -37,18 +41,21 @@ namespace MR
       namespace Algorithms
       {
 
+        extern const App::OptionGroup iFOD2Option;
+        void load_iFOD2_options (Tractography::Properties&);
+
         using namespace MR::DWI::Tractography::Tracking;
 
-        class iFOD2 : public MethodBase {
+        class iFOD2 : public MethodBase { MEMALIGN(iFOD2)
           public:
 
-            class Shared : public SharedBase {
+            class Shared : public SharedBase { MEMALIGN(Shared)
               public:
                 Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
                   SharedBase (diff_path, property_set),
                   lmax (Math::SH::LforN (source.size(3))),
-                  num_samples (DEFAULT_TRACTOGRAPHY_IFOD2_NSAMPLES),
-                  max_trials (DEFAULT_TRACTOGRAPHY_MAX_TRIALS),
+                  num_samples (TCKGEN_DEFAULT_IFOD2_NSAMPLES),
+                  max_trials (TCKGEN_DEFAULT_MAX_TRIALS_PER_STEP),
                   sin_max_angle (std::sin (max_angle)),
                   mean_samples (0.0),
                   mean_truncations (0.0),
@@ -65,8 +72,10 @@ namespace MR
                 if (rk4)
                   throw Exception ("4th-order Runge-Kutta integration not valid for iFOD2 algorithm");
 
-                set_step_size (0.5);
+                set_step_size (0.5f);
                 INFO ("minimum radius of curvature = " + str(step_size / (max_angle / Math::pi_2)) + " mm");
+
+                set_cutoff (TCKGEN_DEFAULT_CUTOFF_FOD);
 
                 properties["method"] = "iFOD2";
                 properties.set (lmax, "lmax");
@@ -188,7 +197,7 @@ namespace MR
 
 
 
-            bool init()
+            bool init() override
             {
               if (!get_data (source))
                 return false;
@@ -223,7 +232,7 @@ end_init:
 
 
 
-            term_t next ()
+            term_t next () override
             {
 
               if (++sample_idx < S.num_samples) {
@@ -245,7 +254,7 @@ end_init:
               }
 
               if (max_val <= 0.0)
-                return CALIBRATE_FAIL;
+                return CALIBRATOR;
 
               max_val *= calibrate_ratio;
 
@@ -275,7 +284,7 @@ end_init:
             }
 
 
-            float get_metric()
+            float get_metric() override
             {
               return FOD (dir);
             }
@@ -290,7 +299,7 @@ end_init:
             }
 
 
-            void truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step)
+            void truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step) override
             {
               // OK, if we know length_to_revert_from, we can reconstruct what sample_idx was at that point
               size_t sample_idx_at_full_length = (length_to_revert_from - tck.get_seed_index()) % S.num_samples;
@@ -321,7 +330,8 @@ end_init:
               sample_idx = S.num_samples;
 
               // Need to update sgm_depth appropriately, remembering that it is tracked by exec
-              act().sgm_depth = (act().sgm_depth > points_to_remove) ? act().sgm_depth - points_to_remove : 0;
+              if (S.is_act())
+                act().sgm_depth = (act().sgm_depth > points_to_remove) ? act().sgm_depth - points_to_remove : 0;
             }
 
 
@@ -332,11 +342,11 @@ end_init:
             float calibrate_ratio, half_log_prob0, last_half_log_probN, half_log_prob0_seed;
             size_t mean_sample_num, num_sample_runs, num_truncations;
             float max_truncation;
-            std::vector<Eigen::Vector3f> calibrate_list;
+            vector<Eigen::Vector3f> calibrate_list;
 
             // Store list of points in the currently-calculated arc
-            std::vector<Eigen::Vector3f> positions, calib_positions;
-            std::vector<Eigen::Vector3f> tangents, calib_tangents;
+            vector<Eigen::Vector3f> positions, calib_positions;
+            vector<Eigen::Vector3f> tangents, calib_tangents;
 
             // Generate an arc only when required, and on the majority of next() calls, simply return the next point
             //   in the arc - more dense structural image sampling
@@ -344,7 +354,7 @@ end_init:
 
 
 
-            float FOD (const Eigen::Vector3f& direction) const
+            FORCE_INLINE float FOD (const Eigen::Vector3f& direction) const
             {
               return (S.precomputer ?
                   S.precomputer.value (values, direction) :
@@ -352,7 +362,7 @@ end_init:
                   );
             }
 
-            float FOD (const Eigen::Vector3f& position, const Eigen::Vector3f& direction)
+            FORCE_INLINE float FOD (const Eigen::Vector3f& position, const Eigen::Vector3f& direction)
             {
               if (!get_data (source, position))
                 return NaN;
@@ -362,7 +372,7 @@ end_init:
 
 
 
-            float rand_path_prob ()
+            FORCE_INLINE float rand_path_prob ()
             {
               get_path (positions, tangents, rand_dir (dir));
               return path_prob (positions, tangents);
@@ -370,7 +380,7 @@ end_init:
 
 
 
-            float path_prob (std::vector<Eigen::Vector3f>& positions, std::vector<Eigen::Vector3f>& tangents)
+            float path_prob (vector<Eigen::Vector3f>& positions, vector<Eigen::Vector3f>& tangents)
             {
 
               // Early exit for ACT when path is not sensible
@@ -403,7 +413,7 @@ end_init:
 
 
           protected:
-            void get_path (std::vector<Eigen::Vector3f>& positions, std::vector<Eigen::Vector3f>& tangents, const Eigen::Vector3f& end_dir) const
+            void get_path (vector<Eigen::Vector3f>& positions, vector<Eigen::Vector3f>& tangents, const Eigen::Vector3f& end_dir) const
             {
               float cos_theta = end_dir.dot (dir);
               cos_theta = std::min (cos_theta, float(1.0));
@@ -438,13 +448,13 @@ end_init:
 
 
 
-            Eigen::Vector3f rand_dir (const Eigen::Vector3f& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
+            FORCE_INLINE Eigen::Vector3f rand_dir (const Eigen::Vector3f& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
 
 
 
           private:
             class Calibrate
-            {
+            { MEMALIGN(Calibrate)
               public:
                 Calibrate (iFOD2& method) :
                   P (method),
@@ -481,7 +491,7 @@ end_init:
                 Eigen::VectorXf& fod;
                 const float vox;
                 float init_log_prob;
-                std::vector<Eigen::Vector3f> positions, tangents;
+                vector<Eigen::Vector3f> positions, tangents;
             };
 
             friend void calibrate<iFOD2> (iFOD2& method);

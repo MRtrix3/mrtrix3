@@ -35,7 +35,7 @@ void usage ()
 
 // It is a good idea to use typedef's to help with flexibility if types need to
 // be changed later on.
-typedef float value_type;
+using value_type = float;
 
 // This is the functor that will be invoked per-voxel. Note this could be a
 // simple function if the operation to be performed was independent of any

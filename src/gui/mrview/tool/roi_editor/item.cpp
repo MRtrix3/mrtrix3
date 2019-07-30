@@ -1,22 +1,20 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/
  */
 
 
 #include <iomanip>
 #include <string>
-#include <vector>
 
 #include "gui/mrview/tool/roi_editor/item.h"
 
@@ -92,7 +90,7 @@ namespace MR
           MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           bind();
-          std::vector<GLubyte> data (header().size(0)*header().size(1));
+          vector<GLubyte> data (header().size(0)*header().size(1));
           for (int n = 0; n < header().size(2); ++n)
             upload_data ({ { 0, 0, n } }, { { header().size(0), header().size(1), 1 } }, reinterpret_cast<void*> (&data[0]));
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
@@ -101,11 +99,11 @@ namespace MR
 
         void ROI_Item::load ()
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           MRView::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           bind();
           auto image = header().get_image<bool>();
-          std::vector<GLubyte> data (image.size(0)*image.size(1));
+          vector<GLubyte> data (image.size(0)*image.size(1));
           ProgressBar progress ("loading ROI image \"" + header().name() + "\"");
           for (auto outer = MR::Loop(2) (image); outer; ++outer) {
             auto p = data.begin();

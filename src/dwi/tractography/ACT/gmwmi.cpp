@@ -1,16 +1,15 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -43,7 +42,7 @@ namespace MR
 
 
 
-        Eigen::Vector3f GMWMI_finder::find_interface (const std::vector< Eigen::Vector3f >& tck, const bool end) const
+        Eigen::Vector3f GMWMI_finder::find_interface (const vector< Eigen::Vector3f >& tck, const bool end) const
         {
           Interp interp (interp_template);
           return find_interface (tck, end, interp);
@@ -52,7 +51,7 @@ namespace MR
 
 
 
-        void GMWMI_finder::crop_track (std::vector< Eigen::Vector3f >& tck) const
+        void GMWMI_finder::crop_track (vector< Eigen::Vector3f >& tck) const
         {
           if (tck.size() < 3)
             return;
@@ -81,13 +80,13 @@ namespace MR
             p += step;
             tissues = get_tissues (p, interp);
           } while (tissues.valid() && step.squaredNorm() && 
-              (std::abs (tissues.get_gm() - tissues.get_wm()) > GMWMI_ACCURACY) && 
+              (abs (tissues.get_gm() - tissues.get_wm()) > GMWMI_ACCURACY) && 
               (++gradient_iters < GMWMI_MAX_ITERS_TO_FIND_BOUNDARY));
 
           // Make sure an appropriate cost function minimum has been found, and that
           //   this would be an acceptable termination point if it were processed by the tracking algorithm
           if (!tissues.valid() || tissues.is_csf() || tissues.is_path() || !tissues.get_wm()
-              || (std::abs (tissues.get_gm() - tissues.get_wm()) > GMWMI_ACCURACY)) {
+              || (abs (tissues.get_gm() - tissues.get_wm()) > GMWMI_ACCURACY)) {
 
             p = { NaN, NaN, NaN };
             return false;
@@ -192,7 +191,7 @@ namespace MR
 
 
 
-        Eigen::Vector3f GMWMI_finder::find_interface (const std::vector<Eigen::Vector3f>& tck, const bool end, Interp& interp) const
+        Eigen::Vector3f GMWMI_finder::find_interface (const vector<Eigen::Vector3f>& tck, const bool end, Interp& interp) const
         {
 
           if (tck.size() == 0)

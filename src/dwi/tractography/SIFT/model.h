@@ -1,27 +1,25 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
-
 
 
 #ifndef __dwi_tractography_sift_model_h__
 #define __dwi_tractography_sift_model_h__
 
 
-#include <vector>
-
 #include "app.h"
+#include "thread_queue.h"
+#include "types.h"
 
 #include "dwi/fixel_map.h"
 
@@ -41,7 +39,7 @@
 #include "dwi/tractography/SIFT/track_index_range.h"
 #include "dwi/tractography/SIFT/types.h"
 
-#include "thread_queue.h"
+
 
 
 
@@ -57,11 +55,11 @@ namespace MR
 
       template <class Fixel>
       class Model : public ModelBase<Fixel>
-      {
+      { MEMALIGN(Model<Fixel>)
 
         protected:
-        typedef typename Fixel_map<Fixel>::MapVoxel MapVoxel;
-        typedef typename Fixel_map<Fixel>::VoxelAccessor VoxelAccessor;
+          using MapVoxel = typename Fixel_map<Fixel>::MapVoxel;
+          using VoxelAccessor = typename Fixel_map<Fixel>::VoxelAccessor;
 
         public:
           template <class Set>
@@ -93,7 +91,7 @@ namespace MR
 
         protected:
           std::string tck_file_path;
-          std::vector<TrackContribution*> contributions;
+          vector<TrackContribution*> contributions;
 
           using Fixel_map<Fixel>::accessor;
           using Fixel_map<Fixel>::begin;
@@ -106,38 +104,45 @@ namespace MR
 
         private:
           // Some member classes to support multi-threaded processes
-          class MappedTrackReceiver
-          {
+          class TrackMappingWorker
+          { MEMALIGN(TrackMappingWorker)
             public:
-              MappedTrackReceiver (Model& i) :
-                master (i),
-                mutex (new std::mutex),
-                TD_sum (0.0),
-                fixel_TDs (master.fixels.size(), 0.0) { }
-              MappedTrackReceiver (const MappedTrackReceiver& that) :
-                master (that.master),
-                mutex (that.mutex),
-                TD_sum (0.0),
-                fixel_TDs (master.fixels.size(), 0.0) { }
-              ~MappedTrackReceiver();
-              bool operator() (const Mapping::SetDixel&);
+              TrackMappingWorker (Model& i, const default_type upsample_ratio) :
+                  master (i),
+                  mapper (i.header(), i.dirs),
+                  mutex (new std::mutex),
+                  TD_sum (0.0),
+                  fixel_TDs (master.fixels.size(), 0.0)
+              {
+                mapper.set_upsample_ratio (upsample_ratio);
+                mapper.set_use_precise_mapping (true);
+              }
+              TrackMappingWorker (const TrackMappingWorker& that) :
+                  master (that.master),
+                  mapper (that.mapper),
+                  mutex (that.mutex),
+                  TD_sum (0.0),
+                  fixel_TDs (master.fixels.size(), 0.0) { }
+              ~TrackMappingWorker();
+              bool operator() (const Tractography::Streamline<>&);
             private:
               Model& master;
+              Mapping::TrackMapperBase mapper;
               std::shared_ptr<std::mutex> mutex;
               double TD_sum;
-              std::vector<double> fixel_TDs;
+              vector<double> fixel_TDs;
           };
 
           class FixelRemapper
-          {
+          { MEMALIGN(FixelRemapper)
             public:
-              FixelRemapper (Model& i, std::vector<size_t>& r) :
+              FixelRemapper (Model& i, vector<size_t>& r) :
                 master   (i),
                 remapper (r) { }
               bool operator() (const TrackIndexRange&);
             private:
               Model& master;
-              std::vector<size_t>& remapper;
+              vector<size_t>& remapper;
           };
 
       };
@@ -149,7 +154,7 @@ namespace MR
       template <class Fixel>
       Model<Fixel>::~Model ()
       {
-        for (std::vector<TrackContribution*>::iterator i = contributions.begin(); i != contributions.end(); ++i) {
+        for (vector<TrackContribution*>::iterator i = contributions.begin(); i != contributions.end(); ++i) {
           if (*i) {
             delete *i;
             *i = nullptr;
@@ -174,16 +179,10 @@ namespace MR
 
         {
           Mapping::TrackLoader loader (file, count);
-          Mapping::TrackMapperBase mapper (Fixel_map<Fixel>::header(), dirs);
-          mapper.set_upsample_ratio (Mapping::determine_upsample_ratio (Fixel_map<Fixel>::header(), properties, 0.1));
-          mapper.set_use_precise_mapping (true);
-          MappedTrackReceiver receiver (*this);
-          Thread::run_queue (
-              loader,
-              Thread::batch (Tractography::Streamline<>()),
-              Thread::multi (mapper),
-              Thread::batch (Mapping::SetDixel()),
-              Thread::multi (receiver));
+          TrackMappingWorker worker (*this, Mapping::determine_upsample_ratio (Fixel_map<Fixel>::header(), properties, 0.1));
+          Thread::run_queue (loader,
+                             Thread::batch (Tractography::Streamline<>()),
+                             Thread::multi (worker));
         }
 
         if (!contributions.back()) {
@@ -218,10 +217,10 @@ namespace MR
         if (!remove_untracked_fixels && !min_fibre_density)
           return;
 
-        std::vector<size_t> fixel_index_mapping (fixels.size(), 0);
+        vector<size_t> fixel_index_mapping (fixels.size(), 0);
         VoxelAccessor v (accessor());
 
-        std::vector<Fixel> new_fixels;
+        vector<Fixel> new_fixels;
         new_fixels.push_back (Fixel());
         FOD_sum = 0.0;
 
@@ -257,7 +256,7 @@ namespace MR
         Thread::run_queue (writer, TrackIndexRange(), Thread::multi (remapper));
 
         TD_sum = 0.0;
-        for (typename std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
+        for (typename vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
           TD_sum += i->get_weight() * i->get_TD();
 
         INFO ("After fixel exclusion, the proportionality coefficient is " + str(mu()));
@@ -275,14 +274,14 @@ namespace MR
       {
         VAR (TD_sum);
         double sum_from_fixels = 0.0, sum_from_fixels_weighted = 0.0;
-        for (typename std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
+        for (typename vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
           sum_from_fixels          += i->get_TD();
           sum_from_fixels_weighted += i->get_TD() * i->get_weight();
         }
         VAR (sum_from_fixels);
         VAR (sum_from_fixels_weighted);
         double sum_from_tracks = 0.0;
-        for (std::vector<TrackContribution*>::const_iterator i = contributions.begin(); i != contributions.end(); ++i) {
+        for (vector<TrackContribution*>::const_iterator i = contributions.begin(); i != contributions.end(); ++i) {
           if (*i)
             sum_from_tracks += (*i)->get_total_contribution();
         }
@@ -299,14 +298,14 @@ namespace MR
         Tractography::Properties p;
         Tractography::Reader<float> reader (tck_file_path, p);
         Tractography::Writer<float> writer (output_path, p);
-        Tractography::Streamline<> tck, null_tck;
+        Tractography::Streamline<> tck;
         ProgressBar progress ("Writing non-contributing streamlines output file", contributions.size());
         track_t tck_counter = 0;
         while (reader (tck) && tck_counter < contributions.size()) {
           if (contributions[tck_counter] && !contributions[tck_counter++]->get_total_contribution())
             writer (tck);
           else
-            writer (null_tck);
+            writer.skip();
           ++progress;
         }
         reader.close();
@@ -320,7 +319,7 @@ namespace MR
 
 
       template <class Fixel>
-      Model<Fixel>::MappedTrackReceiver::~MappedTrackReceiver()
+      Model<Fixel>::TrackMappingWorker::~TrackMappingWorker()
       {
         std::lock_guard<std::mutex> lock (*mutex);
         master.TD_sum += TD_sum;
@@ -331,26 +330,26 @@ namespace MR
 
 
       template <class Fixel>
-      bool Model<Fixel>::MappedTrackReceiver::operator() (const Mapping::SetDixel& in)
+      bool Model<Fixel>::TrackMappingWorker::operator() (const Tractography::Streamline<>& in)
       {
-
-        if (in.index >= master.contributions.size())
-          throw Exception ("Received mapped streamline beyond the expected number of streamlines (run tckfixcount on your .tck file!)");
-        if (master.contributions[in.index])
-          throw Exception ("FIXME: Same streamline has been mapped multiple times! (?)");
+        assert (in.index < master.contributions.size());
+        assert (!master.contributions[in.index]);
 
         try {
 
-          std::vector<Track_fixel_contribution> masked_contributions;
-          double total_contribution = 0.0, total_length = 0.0;
+          Mapping::SetDixel dixels;
+          mapper (in, dixels);
 
-          for (Mapping::SetDixel::const_iterator i = in.begin(); i != in.end(); ++i) {
+          vector<Track_fixel_contribution> masked_contributions;
+          default_type total_contribution = 0.0, total_length = 0.0;
+
+          for (Mapping::SetDixel::const_iterator i = dixels.begin(); i != dixels.end(); ++i) {
             total_length += i->get_length();
             const size_t fixel_index = master.dixel2fixel (*i);
             if (fixel_index && (i->get_length() > Track_fixel_contribution::min())) {
               total_contribution += i->get_length() * master.fixels[fixel_index].get_weight();
               bool incremented = false;
-              for (std::vector<Track_fixel_contribution>::iterator c = masked_contributions.begin(); !incremented && c != masked_contributions.end(); ++c) {
+              for (vector<Track_fixel_contribution>::iterator c = masked_contributions.begin(); !incremented && c != masked_contributions.end(); ++c) {
                 if ((c->get_fixel_index() == fixel_index) && c->add (i->get_length()))
                   incremented = true;
               }
@@ -362,7 +361,7 @@ namespace MR
           master.contributions[in.index] = new TrackContribution (masked_contributions, total_contribution, total_length);
 
           TD_sum += total_contribution;
-          for (std::vector<Track_fixel_contribution>::const_iterator i = masked_contributions.begin(); i != masked_contributions.end(); ++i)
+          for (vector<Track_fixel_contribution>::const_iterator i = masked_contributions.begin(); i != masked_contributions.end(); ++i)
             fixel_TDs [i->get_fixel_index()] += i->get_length();
 
           return true;
@@ -383,7 +382,7 @@ namespace MR
         for (track_t track_index = in.first; track_index != in.second; ++track_index) {
           if (master.contributions[track_index]) {
             TrackContribution& this_cont (*master.contributions[track_index]);
-            std::vector<Track_fixel_contribution> new_cont;
+            vector<Track_fixel_contribution> new_cont;
             double total_contribution = 0.0;
             for (size_t i = 0; i != this_cont.dim(); ++i) {
               const size_t new_index = remapper[this_cont[i].get_fixel_index()];

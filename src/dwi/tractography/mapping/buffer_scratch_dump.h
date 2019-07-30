@@ -1,27 +1,29 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
 
 #ifndef __dwi_tractography_mapping_buffer_scratch_dump_h__
 #define __dwi_tractography_mapping_buffer_scratch_dump_h__
 
 
 #include <map>
-#include <vector>
+
+#include "image.h"
+#include "types.h"
 
 #include "file/ofstream.h"
-#include "image.h"
+
 
 
 namespace MR {
@@ -32,7 +34,7 @@ namespace MR {
 
         template <typename value_type>
           class BufferScratchDump : public Image<value_type>
-        {
+        { MEMALIGN(BufferScratchDump)
 
           public:
             template <class Template>
@@ -87,16 +89,16 @@ namespace MR {
             Image::Stride::List stride = Image::Stride::get (H);
             Image::Stride::symbolise (stride);
 
-            out_header << "\nlayout: " << (stride[0] >0 ? "+" : "-") << std::abs (stride[0])-1;
+            out_header << "\nlayout: " << (stride[0] >0 ? "+" : "-") << abs (stride[0])-1;
             for (size_t n = 1; n < H.ndim(); ++n)
-              out_header << "," << (stride[n] >0 ? "+" : "-") << std::abs (stride[n])-1;
+              out_header << "," << (stride[n] >0 ? "+" : "-") << abs (stride[n])-1;
 
             out_header << "\ndatatype: " << H.datatype().specifier();
 
             for (std::map<std::string, std::string>::const_iterator i = H.begin(); i != H.end(); ++i)
               out_header << "\n" << i->first << ": " << i->second;
 
-            for (std::vector<std::string>::const_iterator i = H.comments().begin(); i != H.comments().end(); i++)
+            for (vector<std::string>::const_iterator i = H.comments().begin(); i != H.comments().end(); i++)
               out_header << "\ncomments: " << *i;
 
 

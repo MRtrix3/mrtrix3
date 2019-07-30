@@ -1,21 +1,21 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
 
 #include "gui/shapes/cylinder.h"
 
-#include <vector>
+#include "types.h"
 
 #include "math/math.h"
 
@@ -32,8 +32,8 @@ namespace MR
     void Cylinder::LOD (const size_t level_of_detail)
     {
 
-      std::vector<Eigen::Vector3f> vertices, normals;
-      std::vector<Eigen::Array3i> indices;
+      vector<Eigen::Vector3f> vertices, normals;
+      vector<Eigen::Array3i> indices;
 
       // Want to be able to display using a single DrawElements call; not worth faffing about
       //   with combinations of GL_TRIANGLES and GL_TRIANGLE_FAN

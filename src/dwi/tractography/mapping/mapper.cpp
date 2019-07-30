@@ -1,16 +1,15 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -48,7 +47,7 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
 
     case TDI: out.factor = 1.0; break;
     case LENGTH: out.factor = tck.calc_length(); break;
-    case INVLENGTH: out.factor = 1.0f / tck.calc_length(); break;
+    case INVLENGTH: out.factor = 1.0 / tck.calc_length(); break;
 
     case SCALAR_MAP:
     case SCALAR_MAP_COUNT:
@@ -63,7 +62,7 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
 
         case T_SUM:
           out.factor = 0.0;
-          for (const auto& i : factors) 
+          for (const auto& i : factors)
             if (std::isfinite (i))
               out.factor += i;
           break;
@@ -84,7 +83,7 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
               ++count;
             }
           }
-          out.factor = (count ? (out.factor / float(count)) : 0.0);
+          out.factor = (count ? (out.factor / default_type(count)) : 0.0);
           break;
 
         case T_MAX:
@@ -112,7 +111,7 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
               ++count;
             }
           }
-          out.factor = (count ? (out.factor / float(count)) : 0.0);
+          out.factor = (count ? (out.factor / default_type(count)) : 0.0);
           break;
 
         case GAUSSIAN:
@@ -120,7 +119,7 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
 
         case ENDS_MIN:
           assert (factors.size() == 2);
-          out.factor = (std::abs(factors[0]) < std::abs(factors[1])) ? factors[0] : factors[1];
+          out.factor = (abs(factors[0]) < abs(factors[1])) ? factors[0] : factors[1];
           break;
 
         case ENDS_MEAN:
@@ -130,7 +129,7 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
 
         case ENDS_MAX:
           assert (factors.size() == 2);
-          out.factor = (std::abs(factors[0]) > std::abs(factors[1])) ? factors[0] : factors[1];
+          out.factor = (abs(factors[0]) > abs(factors[1])) ? factors[0] : factors[1];
           break;
 
         case ENDS_PROD:
@@ -139,6 +138,11 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
             out.factor = factors[0] * factors[1];
           else
             out.factor = 0.0;
+          break;
+
+        case ENDS_CORR:
+          assert (factors.size() == 1);
+          out.factor = factors.front();
           break;
 
         default:
@@ -178,13 +182,46 @@ void TrackMapperTWI::add_scalar_image (const std::string& path)
   image_plugin.reset (new TWIScalarImagePlugin (path, track_statistic));
 }
 
+void TrackMapperTWI::set_backtrack()
+{
+  if (!image_plugin)
+    throw Exception ("Cannot backtrack if no TWI associated image provided");
+  const TWIImagePluginBase* const base = image_plugin.get();
+  if (typeid(*base) != typeid(TWIScalarImagePlugin))
+    throw Exception ("Backtracking is only applicable to scalar image TWI plugins");
+  TWIScalarImagePlugin* const ptr = dynamic_cast<TWIScalarImagePlugin*>(image_plugin.get());
+  ptr->set_backtrack();
+}
+
 void TrackMapperTWI::add_fod_image (const std::string& path)
 {
   if (image_plugin)
     throw Exception ("Cannot add more than one associated image to TWI");
   if (contrast != FOD_AMP)
     throw Exception ("Cannot add an FOD image to TWI unless the FOD_AMP contrast is used");
-  image_plugin.reset (new TWIFODImagePlugin (path));
+  image_plugin.reset (new TWIFODImagePlugin (path, track_statistic));
+}
+
+void TrackMapperTWI::add_twdfc_static_image (Image<float>& image)
+{
+  if (image_plugin)
+    throw Exception ("Cannot add more than one associated image to TWI");
+  if (contrast != SCALAR_MAP)
+    throw Exception ("For fMRI correlation mapping, mapper must be set to SCALAR_MAP contrast");
+  if (track_statistic != ENDS_CORR)
+    throw Exception ("For fMRI correlation mapping, only the endpoint correlation track-wise statistic is valid");
+  image_plugin.reset (new TWDFCStaticImagePlugin (image));
+}
+
+void TrackMapperTWI::add_twdfc_dynamic_image (Image<float>& image, const vector<float>& kernel, const ssize_t timepoint)
+{
+  if (image_plugin)
+    throw Exception ("Cannot add more than one associated image to TWI");
+  if (contrast != SCALAR_MAP)
+    throw Exception ("For sliding time-window fMRI mapping, mapper must be set to SCALAR_MAP contrast");
+  if (track_statistic != ENDS_CORR)
+    throw Exception ("For sliding time-window fMRI mapping, only the endpoint correlation track-wise statistic is valid");
+  image_plugin.reset (new TWDFCDynamicImagePlugin (image, kernel, timepoint));
 }
 
 void TrackMapperTWI::add_vector_data (const std::string& path)
@@ -216,7 +253,7 @@ void TrackMapperTWI::load_factors (const Streamline<>& tck) const
   if (contrast != CURVATURE)
     throw Exception ("Unsupported contrast in function TrackMapperTWI::load_factors()");
 
-  std::vector<Eigen::Vector3f> tangents;
+  vector<Eigen::Vector3> tangents;
   tangents.reserve (tck.size());
 
   // Would like to be able to manipulate the length over which the tangent calculation is affected
@@ -229,17 +266,17 @@ void TrackMapperTWI::load_factors (const Streamline<>& tck) const
 
   // Need to know the distance along the spline between every point and every other point
   // Start by logging the length of each step
-  std::vector<float> step_sizes;
+  vector<default_type> step_sizes;
   step_sizes.reserve (tck.size());
 
   for (size_t i = 0; i != tck.size(); ++i) {
-    Eigen::Vector3f this_tangent;
+    Eigen::Vector3 this_tangent;
     if (i == 0)
-      this_tangent = ((tck[1]   - tck[0]  ).normalized());
+      this_tangent = ((tck[1]   - tck[0]  ).cast<default_type>().normalized());
     else if (i == tck.size() - 1)
-      this_tangent = ((tck[i]   - tck[i-1]).normalized());
+      this_tangent = ((tck[i]   - tck[i-1]).cast<default_type>().normalized());
     else
-      this_tangent = ((tck[i+1] - tck[i-1]).normalized());
+      this_tangent = ((tck[i+1] - tck[i-1]).cast<default_type>().normalized());
     if (this_tangent.allFinite())
       tangents.push_back (this_tangent);
     else
@@ -271,8 +308,7 @@ void TrackMapperTWI::load_factors (const Streamline<>& tck) const
   }
 
   // Produce a matrix of spline distances between points
-  Eigen::MatrixXf spline_distances (tck.size(), tck.size());
-  spline_distances.setZero();
+  Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> spline_distances = Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic>::Zero (tck.size(), tck.size());
   for (size_t i = 0; i != tck.size(); ++i) {
     for (size_t j = 0; j <= i; ++j) {
       for (size_t k = i+1; k != tck.size(); ++k) {
@@ -285,19 +321,19 @@ void TrackMapperTWI::load_factors (const Streamline<>& tck) const
   // Smooth both the tangent vectors and the principal normal vectors according to a Gaussuan kernel
   // Remember: tangent vectors are unit length, but for principal normal vectors length must be preserved!
 
-  std::vector<Eigen::Vector3f> smoothed_tangents;
+  vector<Eigen::Vector3> smoothed_tangents;
   smoothed_tangents.reserve (tangents.size());
 
-  static const float gaussian_theta = CURVATURE_TRACK_SMOOTHING_FWHM / (2.0 * sqrt (2.0 * log (2.0)));
-  static const float gaussian_denominator = 2.0 * gaussian_theta * gaussian_theta;
+  static const default_type gaussian_theta = CURVATURE_TRACK_SMOOTHING_FWHM / (2.0 * sqrt (2.0 * log (2.0)));
+  static const default_type gaussian_denominator = 2.0 * gaussian_theta * gaussian_theta;
 
   for (size_t i = 0; i != tck.size(); ++i) {
 
-    Eigen::Vector3f this_tangent (0.0, 0.0, 0.0);
+    Eigen::Vector3 this_tangent (0.0, 0.0, 0.0);
 
     for (size_t j = 0; j != tck.size(); ++j) {
-      const float distance = spline_distances (i, j);
-      const float this_weight = exp (-distance * distance / gaussian_denominator);
+      const default_type distance = spline_distances (i, j);
+      const default_type this_weight = exp (-distance * distance / gaussian_denominator);
       this_tangent += tangents[j] * this_weight;
     }
 
@@ -307,7 +343,7 @@ void TrackMapperTWI::load_factors (const Streamline<>& tck) const
 
   for (size_t i = 0; i != tck.size(); ++i) {
 
-    float tangent_dot_product, length;
+    default_type tangent_dot_product, length;
     if (i == 0) {
       tangent_dot_product = smoothed_tangents[ 1 ].dot (smoothed_tangents[ 0 ]);
       length = spline_distances (0, 1);

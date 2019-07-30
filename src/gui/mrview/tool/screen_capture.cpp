@@ -1,17 +1,17 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
 
 #include <Eigen/Geometry>
 
@@ -179,13 +179,13 @@ namespace MR
 
 
           QPushButton* preview = new QPushButton (this);
-          preview->setToolTip(tr("Preview play"));
-          preview->setIcon(QIcon (":/play.svg"));
+          preview->setToolTip(tr("Play preview"));
+          preview->setIcon(QIcon (":/start.svg"));
           connect (preview, SIGNAL (clicked()), this, SLOT (on_screen_preview()));
           capture_grid_layout->addWidget (preview, 2, 0);
 
           QPushButton* stop = new QPushButton (this);
-          stop->setToolTip (tr ("Stop"));
+          stop->setToolTip (tr ("Stop preview"));
           stop->setIcon(QIcon (":/stop.svg"));
           connect (stop, SIGNAL (clicked()), this, SLOT (on_screen_stop()));
           capture_grid_layout->addWidget (stop, 2, 1);
@@ -379,10 +379,14 @@ namespace MR
                 break;
               case TranslationType::Camera:
               {
-                const GL::vec4 trans_gl_vec =  GL::inv (GL::mat4 (orientation)) * GL::vec4 (trans_vec[0], trans_vec[1], trans_vec[2], 1.0f);
-                trans_vec[0] = trans_gl_vec[0];
-                trans_vec[1] = trans_gl_vec[1];
-                trans_vec[2] = trans_gl_vec[2];
+                const Mode::Base* mode = window().get_current_mode();
+                if (mode) {
+                  const GL::vec4 trans_gl_vec =  mode->get_current_projection()->modelview_inverse() *
+                    GL::vec4 (trans_vec[0], trans_vec[1], trans_vec[2], 0.0f);
+                  trans_vec[0] = trans_gl_vec[0];
+                  trans_vec[1] = trans_gl_vec[1];
+                  trans_vec[2] = trans_gl_vec[2];
+                }
                 break;
               }
               case TranslationType::Scanner:
@@ -390,7 +394,6 @@ namespace MR
               default:
                 break;
             }
-
 
             Eigen::Vector3f focus_delta (trans_vec);
 
@@ -421,7 +424,7 @@ namespace MR
             start_index->setValue (i + 1);
             this->window().updateGL();
             qApp->processEvents();
-          } 
+          }
 
           is_playing = false;
         }
@@ -456,22 +459,22 @@ namespace MR
 
 
 
-        void Capture::add_commandline_options (MR::App::OptionList& options) 
-        { 
+        void Capture::add_commandline_options (MR::App::OptionList& options)
+        {
           using namespace MR::App;
           options
             + OptionGroup ("Screen Capture tool options")
 
-            + Option ("capture.folder", "Set the output folder for the screen capture tool.")
+            + Option ("capture.folder", "Set the output folder for the screen capture tool.").allow_multiple()
             +   Argument ("path").type_text()
 
-            + Option ("capture.prefix", "Set the output file prefix for the screen capture tool.")
+            + Option ("capture.prefix", "Set the output file prefix for the screen capture tool.").allow_multiple()
             +   Argument ("string").type_text()
 
-            + Option ("capture.grab", "Start the screen capture process.");
+            + Option ("capture.grab", "Start the screen capture process.").allow_multiple();
         }
 
-        bool Capture::process_commandline_option (const MR::App::ParsedOption& opt) 
+        bool Capture::process_commandline_option (const MR::App::ParsedOption& opt)
         {
           if (opt.opt->is ("capture.folder")) {
             directory->setPath (std::string(opt[0]).c_str());

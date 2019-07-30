@@ -1,7 +1,7 @@
 .. _mrtrix_config:
 
 Configuration file
-======
+==================
 
 The behaviour of a number of aspects of *MRtrix3* can be controlled by
 the user via the *MRtrix3 configuration file*. Note, that this file is distinct

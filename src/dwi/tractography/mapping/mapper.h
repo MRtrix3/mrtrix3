@@ -1,28 +1,26 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
+
 
 #ifndef __dwi_tractography_mapping_mapper_h__
 #define __dwi_tractography_mapping_mapper_h__
 
 
-
-#include <vector>
-
 #include "image.h"
-#include "transform.h"
 #include "thread_queue.h"
+#include "transform.h"
+#include "types.h"
 
 #include "dwi/directions/set.h"
 
@@ -54,32 +52,31 @@ namespace MR {
 
 
         class TrackMapperBase
-        {
+        { MEMALIGN(TrackMapperBase)
 
           public:
             template <class HeaderType>
-              TrackMapperBase (const HeaderType& template_image) :
-                info      (template_image),
+            TrackMapperBase (const HeaderType& template_image) :
+                info          (template_image),
                 scanner2voxel (Transform(template_image).scanner2voxel.cast<float>()),
-                map_zero  (false),
-                precise   (false),
-                ends_only (false),
-                upsampler (1) { }
+                map_zero      (false),
+                precise       (false),
+                ends_only     (false),
+                upsampler     (1) { }
 
             template <class HeaderType>
-              TrackMapperBase (const HeaderType& template_image, const DWI::Directions::FastLookupSet& dirs) :
-                info         (template_image),
+            TrackMapperBase (const HeaderType& template_image, const DWI::Directions::FastLookupSet& dirs) :
+                info          (template_image),
                 scanner2voxel (Transform(template_image).scanner2voxel.cast<float>()),
-                map_zero     (false),
-                precise      (false),
-                ends_only    (false),
-                dixel_plugin (new DixelMappingPlugin (dirs)),
-                upsampler    (1) { }
+                map_zero      (false),
+                precise       (false),
+                ends_only     (false),
+                dixel_plugin  (new DixelMappingPlugin (dirs)),
+                upsampler     (1) { }
 
             TrackMapperBase (const TrackMapperBase&) = default;
             TrackMapperBase (TrackMapperBase&&) = default;
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             virtual ~TrackMapperBase() { }
 
@@ -87,12 +84,12 @@ namespace MR {
             void set_upsample_ratio (const size_t i) { upsampler.set_ratio (i); }
             void set_map_zero (const bool i) { map_zero = i; }
             void set_use_precise_mapping (const bool i) {
-              if (i && ends_only) 
+              if (i && ends_only)
                 throw Exception ("Cannot do precise mapping and endpoint mapping together");
               precise = i;
             }
             void set_map_ends_only (const bool i) {
-              if (i && precise) 
+              if (i && precise)
                 throw Exception ("Cannot do precise mapping and endpoint mapping together");
               ends_only = i;
             }
@@ -111,7 +108,7 @@ namespace MR {
 
 
             template <class Cont>
-              bool operator() (Streamline<>& in, Cont& out) const
+              bool operator() (const Streamline<>& in, Cont& out) const
               {
                 out.clear();
                 out.index = in.index;
@@ -119,14 +116,15 @@ namespace MR {
                 if (in.empty())
                   return true;
                 if (preprocess (in, out) || map_zero) {
-                  upsampler (in);
+                  Streamline<> temp;
+                  upsampler (in, temp);
                   if (precise)
-                    voxelise_precise (in, out);
+                    voxelise_precise (temp, out);
                   else if (ends_only)
-                    voxelise_ends (in, out);
+                    voxelise_ends (temp, out);
                   else
-                    voxelise (in, out);
-                  postprocess (in, out);
+                    voxelise (temp, out);
+                  postprocess (temp, out);
                 }
                 return true;
               }
@@ -161,11 +159,11 @@ namespace MR {
             virtual void postprocess (const Streamline<>& tck, SetVoxelExtras& out) const { }
 
             // Used by voxelise() and voxelise_precise() to increment the relevant set
-            inline void add_to_set (SetVoxel&   , const Eigen::Vector3i&, const Eigen::Vector3f&, const float) const;
-            inline void add_to_set (SetVoxelDEC&, const Eigen::Vector3i&, const Eigen::Vector3f&, const float) const;
-            inline void add_to_set (SetVoxelDir&, const Eigen::Vector3i&, const Eigen::Vector3f&, const float) const;
-            inline void add_to_set (SetDixel&   , const Eigen::Vector3i&, const Eigen::Vector3f&, const float) const;
-            inline void add_to_set (SetVoxelTOD&, const Eigen::Vector3i&, const Eigen::Vector3f&, const float) const;
+            inline void add_to_set (SetVoxel&   , const Eigen::Vector3i&, const Eigen::Vector3&, const default_type) const;
+            inline void add_to_set (SetVoxelDEC&, const Eigen::Vector3i&, const Eigen::Vector3&, const default_type) const;
+            inline void add_to_set (SetVoxelDir&, const Eigen::Vector3i&, const Eigen::Vector3&, const default_type) const;
+            inline void add_to_set (SetDixel&   , const Eigen::Vector3i&, const Eigen::Vector3&, const default_type) const;
+            inline void add_to_set (SetVoxelTOD&, const Eigen::Vector3i&, const Eigen::Vector3&, const default_type) const;
 
             DWI::Tractography::Resampling::Upsampler upsampler;
 
@@ -184,21 +182,21 @@ namespace MR {
             for (auto i = tck.cbegin(); i != last; ++i) {
               vox = round (scanner2voxel * (*i));
               if (check (vox, info)) {
-                const auto dir = (*(i+1) - *prev).normalized();
-                if (dir.allFinite())
-                  add_to_set (output, vox, dir, 1.0f);
+                const Eigen::Vector3 dir = (*(i+1) - *prev).cast<default_type>().normalized();
+                if (dir.allFinite() && !dir.isZero())
+                  add_to_set (output, vox, dir, 1.0);
               }
               prev = i;
             }
 
             vox = round (scanner2voxel * (*last));
             if (check (vox, info)) {
-              const auto dir = (*last - *prev).normalized();
-              if (dir.allFinite())
-                add_to_set (output, vox, dir, 1.0f);
+              const Eigen::Vector3 dir = (*last - *prev).cast<default_type>().normalized();
+              if (dir.allFinite() && !dir.isZero())
+                add_to_set (output, vox, dir, 1.0);
             }
 
-            for (auto& i : output) 
+            for (auto& i : output)
               i.normalize();
 
           }
@@ -211,29 +209,31 @@ namespace MR {
         template <class Cont>
           void TrackMapperBase::voxelise_precise (const Streamline<>& tck, Cont& out) const
           {
-            typedef Eigen::Vector3f PointF;
 
-            const float accuracy = Math::pow2 (0.005 * std::min (info.spacing (0), std::min (info.spacing (1), info.spacing (2))));
+            using point_type = Streamline<>::point_type;
+            using value_type = Streamline<>::value_type;
+
+            const default_type accuracy = Math::pow2 (0.005 * std::min (info.spacing (0), std::min (info.spacing (1), info.spacing (2))));
 
             if (tck.size() < 2)
               return;
 
-            Math::Hermite<float> hermite (0.1);
+            Math::Hermite<value_type> hermite (0.1);
 
-            const PointF tck_proj_front = (tck[      0     ] * 2.0) - tck[     1      ];
-            const PointF tck_proj_back  = (tck[tck.size()-1] * 2.0) - tck[tck.size()-2];
+            const point_type tck_proj_front = (tck[      0     ] * 2.0) - tck[     1      ];
+            const point_type tck_proj_back  = (tck[tck.size()-1] * 2.0) - tck[tck.size()-2];
 
             unsigned int p = 0;
-            PointF p_voxel_exit = tck.front();
-            float mu = 0.0;
+            point_type p_voxel_exit = tck.front();
+            default_type mu = 0.0;
             bool end_track = false;
             auto next_voxel = round (scanner2voxel * tck.front());
 
             do {
 
-              const PointF p_voxel_entry (p_voxel_exit);
-              PointF p_prev (p_voxel_entry);
-              float length = 0.0;
+              const point_type p_voxel_entry (p_voxel_exit);
+              point_type p_prev (p_voxel_entry);
+              default_type length = 0.0;
               const auto this_voxel = next_voxel;
 
               while ((p != tck.size()) && ((next_voxel = round (scanner2voxel * tck[p])) == this_voxel)) {
@@ -246,23 +246,23 @@ namespace MR {
               if (p == tck.size()) {
                 p_voxel_exit = tck.back();
                 end_track = true;
-              } 
+              }
               else {
 
-                float mu_min = mu;
-                float mu_max = 1.0;
+                default_type mu_min = mu;
+                default_type mu_max = 1.0;
 
-                const PointF* p_one  = (p == 1)              ? &tck_proj_front : &tck[p - 2];
-                const PointF* p_four = (p == tck.size() - 1) ? &tck_proj_back  : &tck[p + 1];
+                const point_type* p_one  = (p == 1)              ? &tck_proj_front : &tck[p - 2];
+                const point_type* p_four = (p == tck.size() - 1) ? &tck_proj_back  : &tck[p + 1];
 
-                PointF p_min = p_prev;
-                PointF p_max = tck[p];
+                point_type p_min = p_prev;
+                point_type p_max = tck[p];
 
                 while ((p_min - p_max).squaredNorm() > accuracy) {
 
                   mu = 0.5 * (mu_min + mu_max);
                   hermite.set (mu);
-                  const PointF p_mu = hermite.value (*p_one, tck[p - 1], tck[p], *p_four);
+                  const point_type p_mu = hermite.value (*p_one, tck[p - 1], tck[p], *p_four);
                   const Eigen::Vector3i mu_voxel = round (scanner2voxel * p_mu);
 
                   if (mu_voxel == this_voxel) {
@@ -281,7 +281,7 @@ namespace MR {
               }
 
               length += (p_prev - p_voxel_exit).norm();
-              PointF traversal_vector = (p_voxel_exit - p_voxel_entry).normalized();
+              const Eigen::Vector3 traversal_vector = (p_voxel_exit - p_voxel_entry).cast<default_type>().normalized();
               if (std::isfinite (traversal_vector[0]) && check (this_voxel, info))
                 add_to_set (out, this_voxel, traversal_vector, length);
 
@@ -297,10 +297,10 @@ namespace MR {
             for (size_t end = 0; end != 2; ++end) {
               const auto vox = round (scanner2voxel * (end ? tck.back() : tck.front()));
               if (check (vox, info)) {
-                Streamline<>::point_type dir { NAN, NAN, NAN };
+                Eigen::Vector3 dir { NaN, NaN, NaN };
                 if (tck.size() > 1)
-                  dir = (end ? (tck[tck.size()-1] - tck[tck.size()-2]) : (tck[0] - tck[1])).normalized();
-                add_to_set (out, vox, dir, 1.0f);
+                  dir = (end ? (tck[tck.size()-1] - tck[tck.size()-2]) : (tck[0] - tck[1])).cast<default_type>().normalized();
+                add_to_set (out, vox, dir, 1.0);
               }
             }
           }
@@ -309,28 +309,28 @@ namespace MR {
 
 
         // These are inlined to make as fast as possible
-        inline void TrackMapperBase::add_to_set (SetVoxel&    out, const Eigen::Vector3i& v, const Eigen::Vector3f& d, const float l) const
+        inline void TrackMapperBase::add_to_set (SetVoxel&    out, const Eigen::Vector3i& v, const Eigen::Vector3& d, const default_type l) const
         {
           out.insert (v, l);
         }
-        inline void TrackMapperBase::add_to_set (SetVoxelDEC& out, const Eigen::Vector3i& v, const Eigen::Vector3f& d, const float l) const
+        inline void TrackMapperBase::add_to_set (SetVoxelDEC& out, const Eigen::Vector3i& v, const Eigen::Vector3& d, const default_type l) const
         {
           out.insert (v, d, l);
         }
-        inline void TrackMapperBase::add_to_set (SetVoxelDir& out, const Eigen::Vector3i& v, const Eigen::Vector3f& d, const float l) const
+        inline void TrackMapperBase::add_to_set (SetVoxelDir& out, const Eigen::Vector3i& v, const Eigen::Vector3& d, const default_type l) const
         {
           out.insert (v, d, l);
         }
-        inline void TrackMapperBase::add_to_set (SetDixel&    out, const Eigen::Vector3i& v, const Eigen::Vector3f& d, const float l) const
+        inline void TrackMapperBase::add_to_set (SetDixel&    out, const Eigen::Vector3i& v, const Eigen::Vector3& d, const default_type l) const
         {
           assert (dixel_plugin);
-          const size_t bin = (*dixel_plugin) (d);
+          const DWI::Directions::index_type bin = (*dixel_plugin) (d);
           out.insert (v, bin, l);
         }
-        inline void TrackMapperBase::add_to_set (SetVoxelTOD& out, const Eigen::Vector3i& v, const Eigen::Vector3f& d, const float l) const
+        inline void TrackMapperBase::add_to_set (SetVoxelTOD& out, const Eigen::Vector3i& v, const Eigen::Vector3& d, const default_type l) const
         {
           assert (tod_plugin);
-          Eigen::VectorXf sh;
+          Eigen::Matrix<default_type, Eigen::Dynamic, 1> sh;
           (*tod_plugin) (sh, d);
           out.insert (v, sh, l);
         }
@@ -347,33 +347,30 @@ namespace MR {
 
 
         class TrackMapperTWI : public TrackMapperBase
-        {
+        { MEMALIGN(TrackMapperTWI)
           public:
             template <class HeaderType>
-              TrackMapperTWI (const HeaderType& template_image, const contrast_t c, const tck_stat_t s) :
-                TrackMapperBase       (template_image),
-                contrast              (c),
-                track_statistic       (s) { }
+            TrackMapperTWI (const HeaderType& template_image, const contrast_t c, const tck_stat_t s) :
+                TrackMapperBase (template_image),
+                contrast        (c),
+                track_statistic (s) { }
 
             TrackMapperTWI (const TrackMapperTWI& that) :
-              TrackMapperBase       (static_cast<const TrackMapperBase&> (that)),
-              contrast              (that.contrast),
-              track_statistic       (that.track_statistic),
-              vector_data           (that.vector_data) {
-                if (that.image_plugin) {
-                  if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)
-                    image_plugin.reset (new TWIScalarImagePlugin (*dynamic_cast<TWIScalarImagePlugin*> (that.image_plugin.get())));
-                  else if (contrast == FOD_AMP)
-                    image_plugin.reset (new TWIFODImagePlugin    (*dynamic_cast<TWIFODImagePlugin*>    (that.image_plugin.get())));
-                  else
-                    throw Exception ("Copy-constructing TrackMapperTWI with unknown image plugin");
-                }
-              }
+                TrackMapperBase (static_cast<const TrackMapperBase&> (that)),
+                contrast        (that.contrast),
+                track_statistic (that.track_statistic),
+                vector_data     (that.vector_data)
+            {
+              if (that.image_plugin)
+                image_plugin.reset (that.image_plugin->clone());
+            }
 
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // avoid memory alignment errors in Eigen3;
 
             void add_scalar_image (const std::string&);
+            void set_backtrack();
             void add_fod_image    (const std::string&);
+            void add_twdfc_static_image  (Image<float>&);
+            void add_twdfc_dynamic_image (Image<float>&, const vector<float>&, const ssize_t);
             void add_vector_data  (const std::string&);
 
 
@@ -382,7 +379,7 @@ namespace MR {
             const tck_stat_t track_statistic;
 
             // Members for when the contribution of a track is not constant along its length
-            mutable std::vector<float> factors;
+            mutable vector<default_type> factors;
             void load_factors (const Streamline<>&) const;
 
             // Member for incorporating additional information from an external image into the TWI process

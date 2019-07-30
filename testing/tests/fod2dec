@@ -1,0 +1,12 @@
+fod2dec fod2dec/fod.mif - | testing_diff_image - fod2dec/out/dec.mif -voxel 1e-5
+fod2dec fod2dec/fod.mif - -mask fod2dec/roi.mif | testing_diff_image - fod2dec/out/dec_masked.mif -voxel 1e-5
+fod2dec fod2dec/fod.mif - -threshold 0.06 | testing_diff_image - fod2dec/out/dec_thresh.mif -voxel 1e-5
+fod2dec fod2dec/fod.mif - -no_weight | testing_diff_image - fod2dec/out/dec_noweig.mif -voxel 1e-5
+fod2dec fod2dec/fod.mif - -lum | testing_diff_image - fod2dec/out/dec_lum.mif -voxel 1e-5
+fod2dec fod2dec/fod.mif - -mask fod2dec/roi.mif -threshold 0.07 -lum | testing_diff_image - fod2dec/out/dec_combo.mif -voxel 1e-5
+fod2dec fod2dec/fod.mif - -contrast fod2dec/anat.mif | testing_diff_image - fod2dec/out/dec-anat.mif -voxel 1e-5
+fod2dec fod2dec/fod.mif - -contrast fod2dec/anat.mif -mask fod2dec/roi.mif | testing_diff_image - fod2dec/out/dec-anat_masked.mif -voxel 1e-5
+fod2dec fod2dec/fod.mif - -contrast fod2dec/anat.mif -threshold 0.06 | testing_diff_image - fod2dec/out/dec-anat_thresh.mif -voxel 1e-5
+fod2dec fod2dec/fod.mif - -contrast fod2dec/anat.mif -no_weight | testing_diff_image - fod2dec/out/dec-anat_noweig.mif -voxel 1e-5
+fod2dec fod2dec/fod.mif - -contrast fod2dec/anat.mif -lum | testing_diff_image - fod2dec/out/dec-anat_lum.mif -voxel 1e-5
+fod2dec fod2dec/fod.mif - -contrast fod2dec/anat.mif -mask fod2dec/roi.mif -threshold 0.07 -lum | testing_diff_image - fod2dec/out/dec-anat_combo.mif -voxel 1e-5

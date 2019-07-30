@@ -1,16 +1,15 @@
 /*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
- * For more details, see www.mrtrix.org
- * 
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ *
+ * MRtrix3 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * For more details, see http://www.mrtrix.org/
  */
 
 
@@ -34,21 +33,21 @@ namespace MR {
             "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
             "must traverse ALL inclusion regions to be accepted.")
           .allow_multiple()
-          + Argument ("spec").type_text()
+          + Argument ("spec").type_various()
 
       + Option ("exclude",
             "specify an exclusion region of interest, as either a binary mask image, "
             "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
             "that enter ANY exclude region will be discarded.")
           .allow_multiple()
-          + Argument ("spec").type_text()
+          + Argument ("spec").type_various()
 
       + Option ("mask",
             "specify a masking region of interest, as either a binary mask image, "
             "or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, "
             "streamlines exiting the mask will be truncated.")
           .allow_multiple()
-          + Argument ("spec").type_text();
+          + Argument ("spec").type_various();
 
 
 
@@ -75,7 +74,7 @@ namespace MR {
       Image<bool> Mask::__get_mask (const std::string& name)
       {
         auto data = Image<bool>::open (name);
-        std::vector<size_t> bottom (data.ndim(), 0), top (data.ndim(), 0);
+        vector<size_t> bottom (data.ndim(), 0), top (data.ndim(), 0);
         std::fill_n (bottom.begin(), 3, std::numeric_limits<size_t>::max());
 
         size_t sum = 0;
@@ -89,7 +88,7 @@ namespace MR {
             if (size_t(data.index(1)) > top[1])    top[1]    = data.index(1);
             if (size_t(data.index(2)) < bottom[2]) bottom[2] = data.index(2);
             if (size_t(data.index(2)) > top[2])    top[2]    = data.index(2);
-          } 
+          }
         }
 
         if (!sum)

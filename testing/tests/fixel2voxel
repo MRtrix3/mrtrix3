@@ -1,0 +1,13 @@
+fixel2voxel fixel_image/afd.mif min - | testing_diff_image - fixel2voxel/min.mif -frac 0.001
+fixel2voxel fixel_image/afd.mif mean - | testing_diff_image - fixel2voxel/mean.mif -frac 0.001
+fixel2voxel fixel_image/afd.mif sum - | testing_diff_image - fixel2voxel/sum.mif -frac 0.001
+fixel2voxel fixel_image/afd.mif product - | testing_diff_image - fixel2voxel/product.mif -frac 0.001
+fixel2voxel fixel_image/afd.mif absmax - | testing_diff_image - fixel2voxel/absmax.mif -frac 0.001
+fixel2voxel fixel_image/afd.mif magmax - | testing_diff_image - fixel2voxel/magmax.mif -frac 0.001
+fixel2voxel fixel_image/afd.mif count - | testing_diff_image - fixel2voxel/count.mif -frac 0.001
+fixel2voxel fixel_image/afd.mif complexity - | testing_diff_image - fixel2voxel/complexity.mif -frac 0.001
+fixel2voxel fixel_image/afd.mif sf - | testing_diff_image - fixel2voxel/sf.mif -frac 0.001
+fixel2voxel fixel_image/afd.mif dec_unit - | testing_diff_image - fixel2voxel/dec_unit.mif -frac 0.001
+fixel2voxel fixel_image/afd.mif dec_scaled - | testing_diff_image - fixel2voxel/dec_scaled.mif -frac 0.001
+fixel2voxel fixel_image/afd.mif split_data - | testing_diff_image - fixel2voxel/split_data.mif -frac 0.001
+fixel2voxel fixel_image/afd.mif split_dir - | testing_diff_image - fixel2voxel/split_dir.mif -frac 0.001
