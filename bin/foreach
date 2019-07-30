@@ -7,6 +7,7 @@
 CMDSPLIT = [ ]
 
 def usage(cmdline): #pylint: disable=unused-variable
+  import sys
   global CMDSPLIT
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)')
   cmdline.set_synopsis('Perform some arbitrary processing step for each of a set of inputs')
@@ -85,8 +86,8 @@ KEYLIST = [ 'IN', 'NAME', 'PRE', 'UNI' ]
 
 
 def execute(): #pylint: disable=unused-variable
-  import re, multiprocessing
-  from mrtrix3 import ANSI, MRtrixError, run
+  import multiprocessing, os, re, sys
+  from mrtrix3 import ANSI, app, MRtrixError, run #pylint: disable=no-name-in-module
   global CMDSPLIT
 
   inputs = app.ARGS.inputs
@@ -274,14 +275,6 @@ def execute(): #pylint: disable=unused-variable
 
 
 
-
-# Make the corresponding MRtrix3 Python libraries available
-import inspect, os, sys
-LIB_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
-if not os.path.isdir(LIB_FOLDER):
-  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
-  sys.exit(1)
-sys.path.insert(0, LIB_FOLDER)
 # Execute the script
-from mrtrix3 import app
-app.execute()
+import mrtrix3
+mrtrix3.execute() #pylint: disable=no-member

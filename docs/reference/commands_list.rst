@@ -204,7 +204,7 @@ List of MRtrix3 commands
     :ref:`tcksample`, "Sample values of an associated image along tracks"
     :ref:`tcksift2`, "Successor to the SIFT method; instead of removing streamlines, use an EM framework to find an appropriate cross-section multiplier for each streamline"
     :ref:`tcksift`, "Filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals"
-    :ref:`tckstats`, "Calculate statistics on streamlines length"
+    :ref:`tckstats`, "Calculate statistics on streamlines lengths"
     :ref:`tcktransform`, "Apply a spatial transformation to a tracks file"
     :ref:`tensor2metric`, "Generate maps of tensor-derived parameters"
     :ref:`transformcalc`, "Perform calculations on linear transformation matrices"
