@@ -228,7 +228,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`tcksample`, "Sample values of an associated image along tracks"
     |cpp.png|, :ref:`tcksift2`, "Optimise per-streamline cross-section multipliers to match a whole-brain tractogram to fixel-wise fibre densities"
     |cpp.png|, :ref:`tcksift`, "Filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals"
-    |cpp.png|, :ref:`tckstats`, "Calculate statistics on streamlines length"
+    |cpp.png|, :ref:`tckstats`, "Calculate statistics on streamlines lengths"
     |cpp.png|, :ref:`tcktransform`, "Apply a spatial transformation to a tracks file"
     |cpp.png|, :ref:`tensor2metric`, "Generate maps of tensor-derived parameters"
     |cpp.png|, :ref:`transformcalc`, "Perform calculations on linear transformation matrices"
@@ -255,3 +255,4 @@ List of MRtrix3 commands
 
 .. |python.png| image:: python.png
    :alt: Python
+
