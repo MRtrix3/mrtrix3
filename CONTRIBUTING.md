@@ -58,10 +58,51 @@ in Git or GitHub.
    into your GitHub account, where unlike the main *MRtrix3* repository,
    you will have full write access to make the requisite changes.
 
-1. Modifications should be made in a Git branch that is named appropriately
-   according to the modifications that are being made. The existing code
-   branch on which this new derived branch should be based depends on the
-   nature of the proposed change (described later below).
+1. Create a Git branch that is named appropriately according to the
+   modifications that are being made. The existing code branch on which
+   this new derived branch should be based depends on the nature of the
+   proposed change (described later below).
+
+1. Generate one or more Git commits that apply your proposed changes to
+   the repository:
+
+   -  Individual commits should ideally have a clear singular purpose,
+      and not incorporate multiple unrelated changes. If your proposed
+      changes involve multiple disparate components, consider breaking
+      those changes up into individual commits.
+
+      Conversely, if multiple code changes are logically grouped with /
+      linked to one another, these should ideally be integrated into a
+      single commit.
+
+   -  Commits should contain an appropriate message that adequately
+      describes the change encapsulated within. If the change demands
+      a longer description, then the commit message should be broken
+      into a synopsis (less than 80 characters) and message body,
+      separated by two newline characters (as this enables GitHub to
+      parse them appropriately).
+
+      This can be achieved at the command-line as follows:
+
+      `$ git commit -m $'Commit synopsis\n\nHere is a much longer and wordier description of my proposed changes that doesn\' fit into 80 characters.\nI can even spread the message body across multiple lines.'`
+
+      (Note also the escape character "`\`" necessary for including an
+      apostrophe in the message text)
+
+   -  Where relevant, commit messages can also contain references to
+      GitHub issues or pull requests (type the "`#`" character followed
+      by the issue / PR number), and/or other individual commits (copy
+      and paste the first 8-10 characters of the commit hash).
+
+   -  If multiple persons have contributed to the proposed changes, it is
+      possible to modify individual Git commits to have ["multiple
+      authors"](https://help.github.com/en/articles/creating-a-commit-with-multiple-authors),
+      to ensure that all contributors receive appropriate acknowledgment.
+
+   As a general rule: Git commits and commit messages should be constructed
+   in such a way that, at some time in the future, when one is navigating
+   through the contribution history, the evolution of the code is as clear
+   as possible.
 
 1. Identify the appropriate classification of the change that you propose
    to make, and read the relevant instructions there:
@@ -115,10 +156,6 @@ in Git or GitHub.
    -  If your changes are ongoing, and you are seeking feedback from the
       *MRtrix3* developers before completing them, then create a
       [draft Pull Request](https://github.blog/2019-02-14-introducing-draft-pull-requests/).
-
-If multiple persons have contributed to the proposed changes, it is
-possible to modify individual Git commits to have ["multiple authors"](https://help.github.com/en/articles/creating-a-commit-with-multiple-authors),
-to ensure that all contributors receive appropriate acknowledgment.
 
 #### Fixing a bug
 
