@@ -255,4 +255,3 @@ List of MRtrix3 commands
 
 .. |python.png| image:: python.png
    :alt: Python
-
