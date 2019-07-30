@@ -6,7 +6,7 @@ sh2peaks
 Synopsis
 --------
 
-Extract the peaks of a spherical harmonic function at each voxel, by commencing a Newton search along a set of specified directions
+Extract the peaks of a spherical harmonic function in each voxel
 
 Usage
 --------
@@ -17,6 +17,11 @@ Usage
 
 -  *SH*: the input image of SH coefficients.
 -  *output*: the output image. Each volume corresponds to the x, y & z component of each peak direction vector in turn.
+
+Description
+-----------
+
+Peaks of the spherical harmonic function in each voxel are located by commencing a Newton search along each of a set of pre-specified directions
 
 Options
 -------
@@ -53,6 +58,11 @@ Standard options
 -  **-help** display this information page and exit.
 
 -  **-version** display version information and exit.
+
+References
+^^^^^^^^^^
+
+Jeurissen, B.; Leemans, A.; Tournier, J.-D.; Jones, D.K.; Sijbers, J. Investigating the prevalence of complex fiber configurations in white matter tissue with diffusion magnetic resonance imaging. Human Brain Mapping, 2013, 34(11), 2747-2766
 
 --------------
 
