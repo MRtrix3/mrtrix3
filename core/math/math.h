@@ -129,23 +129,6 @@ namespace MR
       using type = typename Cont::Scalar;
   };
 
-  namespace
-  {
-    std::string delimiter (const std::ofstream& stream, const std::string& filename)
-    {
-      if (Path::has_suffix (filename, ".tsv")) {
-        return "\t";
-      } else if (Path::has_suffix (filename, ".csv")) {
-        if (std::use_facet< std::numpunct<char> >(stream.getloc()).decimal_point() == ',')
-          return ";";
-        else
-          return ",";
-      } else {
-        return " ";
-      }
-    }
-  }
-
 
   //! write the matrix \a M to file
   template <class MatrixType>
@@ -153,7 +136,7 @@ namespace MR
     {
       DEBUG ("saving " + str(M.rows()) + "x" + str(M.cols()) + " matrix to file \"" + filename + "\"...");
       File::OFStream out (filename);
-      Eigen::IOFormat fmt (Eigen::FullPrecision, Eigen::DontAlignCols, delimiter (out, filename), "\n", "", "", "", "");
+      Eigen::IOFormat fmt (Eigen::FullPrecision, Eigen::DontAlignCols, std::string (1, Path::delimiter (filename)), "\n", "", "", "", "");
       out << M.format (fmt);
       out << "\n";
     }
@@ -260,8 +243,8 @@ namespace MR
   {
     DEBUG ("saving transform to file \"" + filename + "\"...");
     File::OFStream out (filename);
-    const std::string d = delimiter (out, filename);
-    Eigen::IOFormat fmt (Eigen::FullPrecision, Eigen::DontAlignCols, d, "\n", "", "", "", "");
+    const char d (Path::delimiter (filename));
+    Eigen::IOFormat fmt (Eigen::FullPrecision, Eigen::DontAlignCols, std::string (1, d), "\n", "", "", "", "");
     out << M.matrix().format (fmt);
     out << "\n0" << d << "0" << d << "0" << d << "1\n";
   }
@@ -272,7 +255,7 @@ namespace MR
     {
       DEBUG ("saving vector of size " + str(V.size()) + " to file \"" + filename + "\"...");
       File::OFStream out (filename);
-      const std::string d = delimiter (out, filename);
+      const char d (Path::delimiter (filename));
       for (decltype(V.size()) i = 0; i < V.size() - 1; i++)
         out << str(V[i], 10) << d;
       out << str(V[V.size() - 1], 10) << "\n";
