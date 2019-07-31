@@ -101,25 +101,25 @@ using vector_type = Eigen::VectorXf;
 
 
 
-class TDI : public Image<value_type> { MEMALIGN(TDI)
+class TDI { MEMALIGN(TDI)
   public:
-    TDI (const Header& H, const size_t num_tracks) :
-        Image<value_type> (Image<value_type>::scratch (H, "TDI scratch image")),
+    TDI (Image<value_type>& image, const size_t num_tracks) :
+        image (image),
         progress ("Generating initial TDI", num_tracks) { }
+    ~TDI () { progress.done(); }
 
     bool operator() (const DWI::Tractography::Mapping::SetVoxel& in)
     {
       for (const auto v : in) {
-        assign_pos_of (v, 0, 3).to (*this);
-        value() += v.get_length();
+        assign_pos_of (v, 0, 3).to (image);
+        image.value() += v.get_length();
       }
       ++progress;
       return true;
     }
 
-    void done() { progress.done(); }
-
   protected:
+    Image<value_type>& image;
     ProgressBar progress;
 
 };
@@ -130,9 +130,9 @@ template <class Interp>
 class SamplerNonPrecise
 { MEMALIGN (SamplerNonPrecise<Interp>)
   public:
-    SamplerNonPrecise (Image<value_type>& image, const stat_tck statistic, MR::copy_ptr<TDI>& precalc_tdi) :
+    SamplerNonPrecise (Image<value_type>& image, const stat_tck statistic, const Image<value_type>& precalc_tdi) :
         interp (image),
-        mapper (precalc_tdi ? new DWI::Tractography::Mapping::TrackMapperBase (image) : nullptr),
+        mapper (precalc_tdi.valid() ? new DWI::Tractography::Mapping::TrackMapperBase (image) : nullptr),
         tdi (precalc_tdi),
         statistic (statistic)
     {
@@ -204,16 +204,16 @@ class SamplerNonPrecise
   private:
     Interp interp;
     std::shared_ptr<DWI::Tractography::Mapping::TrackMapperBase> mapper;
-    MR::copy_ptr<TDI> tdi;
+    Image<value_type> tdi;
     const stat_tck statistic;
 
     value_type get_tdi_multiplier (const DWI::Tractography::Mapping::Voxel& v)
     {
-      if (!tdi)
+      if (!tdi.valid())
         return value_type(1);
-      assign_pos_of (v).to (*tdi);
-      assert (!is_out_of_bounds (*tdi));
-      return v.get_length() / tdi->value();
+      assign_pos_of (v).to (tdi);
+      assert (!is_out_of_bounds (tdi));
+      return v.get_length() / tdi.value();
     }
 
 };
@@ -223,7 +223,7 @@ class SamplerNonPrecise
 class SamplerPrecise
 { MEMALIGN (SamplerPrecise)
   public:
-    SamplerPrecise (Image<value_type>& image, const stat_tck statistic, MR::copy_ptr<TDI>& precalc_tdi) :
+    SamplerPrecise (Image<value_type>& image, const stat_tck statistic, const Image<value_type>& precalc_tdi) :
         image (image),
         mapper (new DWI::Tractography::Mapping::TrackMapperBase (image)),
         tdi (precalc_tdi),
@@ -305,16 +305,16 @@ class SamplerPrecise
   private:
     Image<value_type> image;
     std::shared_ptr<DWI::Tractography::Mapping::TrackMapperBase> mapper;
-    MR::copy_ptr<TDI> tdi;
+    Image<value_type> tdi;
     const stat_tck statistic;
 
     value_type get_tdi_multiplier (const DWI::Tractography::Mapping::Voxel& v)
     {
-      if (!tdi)
+      if (!tdi.valid())
         return value_type(1);
-      assign_pos_of (v).to (*tdi);
-      assert (!is_out_of_bounds (*tdi));
-      return v.get_length() / tdi->value();
+      assign_pos_of (v).to (tdi);
+      assert (!is_out_of_bounds (tdi));
+      return v.get_length() / tdi.value();
     }
 
 };
@@ -418,8 +418,7 @@ void execute_nostat (DWI::Tractography::Reader<value_type>& reader,
                      Image<value_type>& image,
                      const std::string& path)
 {
-  MR::copy_ptr<TDI> no_tdi;
-  SamplerNonPrecise<InterpType> sampler (image, stat_tck::NONE, no_tdi);
+  SamplerNonPrecise<InterpType> sampler (image, stat_tck::NONE, Image<value_type>());
   Receiver_NoStatistic receiver (path, num_tracks, properties);
   DWI::Tractography::Streamline<value_type> tck;
   std::pair<size_t, vector_type> values;
@@ -438,7 +437,7 @@ void execute (DWI::Tractography::Reader<value_type>& reader,
               const size_t num_tracks,
               Image<value_type>& image,
               const stat_tck statistic,
-              MR::copy_ptr<TDI>& tdi,
+              Image<value_type>& tdi,
               const std::string& path)
 {
   SamplerType sampler (image, statistic, tdi);
@@ -474,20 +473,20 @@ void run ()
   if (statistic == stat_tck::NONE && interp == interp_type::PRECISE)
     throw Exception ("Precise streamline mapping may only be used with per-streamline statistics");
 
-  MR::copy_ptr<TDI> tdi;
+  Image<value_type> tdi;
   if (get_options ("use_tdi_fraction").size()) {
     if (statistic == stat_tck::NONE)
       throw Exception ("Cannot use -use_tdi_fraction option unless a per-streamline statistic is used");
     DWI::Tractography::Reader<value_type> tdi_reader (argument[0], properties);
     DWI::Tractography::Mapping::TrackMapperBase mapper (H);
     mapper.set_use_precise_mapping (interp == interp_type::PRECISE);
-    tdi.reset (new TDI (H, num_tracks));
+    tdi = Image<value_type>::scratch (H, "TDI scratch image");
+    TDI tdi_fill (tdi, num_tracks);
     Thread::run_queue (tdi_reader,
                        Thread::batch (DWI::Tractography::Streamline<value_type>()),
                        Thread::multi (mapper),
                        Thread::batch (DWI::Tractography::Mapping::SetVoxel()),
-                       *tdi);
-    tdi->done();
+                       tdi_fill);
   }
 
   if (statistic == stat_tck::NONE) {
