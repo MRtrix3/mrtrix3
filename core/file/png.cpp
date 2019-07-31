@@ -221,6 +221,10 @@ namespace MR
           png_destroy_write_struct (&png_ptr, &info_ptr);
           throw Exception ("Complex datatype from image \"" + H.name() + "\" not supported by PNG format");
         }
+        if (data_type.is_floating_point()) {
+          INFO ("Data to be converted to PNG is floating-point; "
+                "image will be scaled to integer representation assuming input data is in the range 0.0 - 1.0");
+        }
         switch (data_type() & DataType::Type) {
           case DataType::Undefined:
             png_destroy_write_struct (&png_ptr, &info_ptr);
