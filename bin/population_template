@@ -55,6 +55,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 
+
 # Binds raw_input() to input() in Python2, so that input() can be used
 #   and the code will work on both Python 2 and 3
 try:
@@ -73,60 +74,19 @@ def relpath(*arg):
   from mrtrix3 import app #pylint: disable=no-name-in-module
   return os.path.relpath(os.path.join(*arg), app.WORKING_DIR)
 
-try:
-  from numpy import loadtxt, savetxt, dot
-except ImportError:
-  import sys
-  sys.stderr.write('numpy not found; using replacement functions\n')
-  def loadtxt(fname, delimiter=" ", dtype=float):
-    with open(fname, "rb") as file_in:
-      return [[dtype(a) for a in l.decode(errors='ignore').rstrip().split(delimiter)] for l in file_in.readlines()]
-
-  def savetxt(fname, matrix, delimiter=" ", fmt="%.14e"):
-    try:
-      file_out = open(fname, 'wb')
-      if len(matrix) == 1:
-        ncol = 1
-      else:
-        ncol = len(matrix[0])
-      fmt = [fmt, ] * ncol
-      row_format = delimiter.join(fmt)
-      for row in matrix:
-        file_out.write(((row_format % tuple(row) + '\n').encode(errors='ignore')))
-    finally:
-      file_out.close()
-
-  def dot(matrix_a, matrix_b):
-    # matrix dot product
-    # does not check input dimensions
-    return [[sum(x*y for x,y in zip(a_row,b_col)) for b_col in zip(*matrix_b)] for a_row in matrix_a]
-
 def check_linear_transformation (transformation, cmd, max_scaling = 0.5, max_shear = 0.2, max_rot = None, pause_on_warn = True):
   import math, os
-  from mrtrix3 import app, run #pylint: disable=no-name-in-module
+  from mrtrix3 import app, run, utils #pylint: disable=no-name-in-module
 
   if max_rot is None:
     max_rot = 2 * math.pi
-
-  def load_key_value(file_path):
-    res = {}
-    with open (file_path, "r") as file_in:
-      for line in file_in.readlines():
-        if len(line)==1 or line.startswith("#"):
-          continue
-        name, var = line.rstrip().partition(":")[::2]
-        if name in res.keys():
-          res[name].append(var.split())
-        else:
-          res[name] = var.split()
-    return res
 
   good = True
   run.command('transformcalc ' + transformation + ' decompose ' + transformation + 'decomp')
   if not os.path.isfile(transformation + 'decomp'): # does not exist if run with -continue option
     app.console(transformation + 'decomp not found. skipping check')
     return True
-  data = load_key_value(transformation + 'decomp')
+  data = utils.load_keyval(transformation + 'decomp')
   run.function(os.remove, transformation + 'decomp')
   scaling = [float(value) for value in data['scaling']]
   if any([a < 0 for a in scaling]) or any([a > (1 + max_scaling) for a in scaling]) or any([a < (1 - max_scaling) for a in scaling]):
@@ -193,7 +153,7 @@ class Input(object):
 
 def execute(): #pylint: disable=unused-variable
   import math, os, shutil
-  from mrtrix3 import app, image, MRtrixError, path, run #pylint: disable=no-name-in-module
+  from mrtrix3 import app, image, matrix, MRtrixError, path, run #pylint: disable=no-name-in-module
 
   if not app.ARGS.type in REGISTRATION_MODES:
     raise MRtrixError("registration type must be one of %s. provided: %s" % (str(["rigid", "affine", "rigid_affine"]), app.ARGS.type))
@@ -511,10 +471,10 @@ def execute(): #pylint: disable=unused-variable
     # update average space to new extent
     run.command(['mraverageheader', [os.path.join('inputs_transformed', i.prefix + '_translated.mif') for i in inputs], 'average_header_tight.mif'])
     if voxel_size is None:
-      run.command('mrgrid average_header_tight.mif pad -uniform 10 average_header.mif -force')
+      run.command('mrgrid average_header_tight.mif pad -uniform 10 average_header.mif', force=True)
     else:
       run.command('mrgrid average_header_tight.mif pad -uniform 10 - | ' \
-                  'mrgrid - regrid -voxel '+','.join(voxel_size)+' average_header.mif -force')
+                  'mrgrid - regrid -voxel '+','.join(voxel_size)+' average_header.mif', force=True)
     run.function(os.remove, 'average_header_tight.mif')
     if use_masks:
       # reslice masks
@@ -534,7 +494,7 @@ def execute(): #pylint: disable=unused-variable
       run.command(['mrmath', mask_filenames, 'max', 'mask_translated.mif'])
       run.command('mrgrdi average_header.mif crop -mask mask_translated.mif average_header_cropped.mif')
       # pad average space to allow for deviation from initial alignment
-      run.command('mrgrid average_header_cropped.mif pad -uniform 10 -force average_header.mif')
+      run.command('mrgrid average_header_cropped.mif pad -uniform 10 average_header.mif', force=True)
       run.function(os.remove, 'average_header_cropped.mif')
       progress = app.ProgressBar('Reslicing mask images to new padded average header', len(inputs))
       for i in inputs:
@@ -542,8 +502,8 @@ def execute(): #pylint: disable=unused-variable
                     os.path.join('masks_transformed', i.prefix + '_translated.mif') + ' ' + \
                     os.path.join('masks_transformed', i.prefix + '.mif') + ' ' + \
                     '-interp nearest -template average_header.mif' + \
-                    datatype_option + ' ' + \
-                    '-force')
+                    datatype_option,
+                    force=True)
         run.function(os.remove, os.path.join('masks_transformed', i.prefix + '_translated.mif'))
         progress.increment()
       progress.done()
@@ -613,7 +573,6 @@ def execute(): #pylint: disable=unused-variable
             mrregister_log_option = ' -info -affine_log ' + os.path.join('log', i.filename + '_' + str(level) + '.log')
 
         command = 'mrregister ' + abspath(i.directory, i.filename) + ' ' + current_template + \
-                  ' -force' + \
                   initialise_option + \
                   mask_option + \
                   scale_option + \
@@ -624,22 +583,22 @@ def execute(): #pylint: disable=unused-variable
                   datatype_option + \
                   output_option + \
                   mrregister_log_option
-        run.command(command)
+        run.command(command, force=True)
         check_linear_transformation(os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix), command, pause_on_warn=do_pause_on_warn)
         progress.increment()
       progress.done()
 
       # Here we ensure the template doesn't drift or scale
-      run.command(['transformcalc', path.all_in_dir('linear_transforms_%i' % level), 'average', 'linear_transform_average.txt', '-force', '-quiet'])
+      run.command(['transformcalc', path.all_in_dir('linear_transforms_%i' % level), 'average', 'linear_transform_average.txt', '-quiet'], force=True)
       if linear_type[level] == 'rigid':
-        run.command('transformcalc linear_transform_average.txt rigid linear_transform_average.txt -force -quiet')
-      run.command('transformcalc linear_transform_average.txt invert linear_transform_average_inv.txt -force -quiet')
+        run.command('transformcalc linear_transform_average.txt rigid linear_transform_average.txt -quiet', force=True)
+      run.command('transformcalc linear_transform_average.txt invert linear_transform_average_inv.txt -quiet', force=True)
 
-      average_inv = run.function(loadtxt, 'linear_transform_average_inv.txt')
+      average_inv = matrix.load_transform('linear_transform_average_inv.txt')
       if average_inv is not None:
         for i in inputs:
-          transform = dot(loadtxt(os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix)), average_inv)
-          savetxt(os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix), transform)
+          transform = matrix.dot(matrix.load_transform(os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix)), average_inv)
+          matrix.save_transform(os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix), transform)
 
       progress = app.ProgressBar('Transforming all subjects to revised template', len(inputs))
       for i in inputs:
@@ -647,12 +606,12 @@ def execute(): #pylint: disable=unused-variable
                     '-template ' + current_template + ' ' + \
                     '-linear ' + os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix) + ' ' + \
                     os.path.join('inputs_transformed', '%s.mif' % i.prefix) + \
-                    datatype_option + ' ' + \
-                    '-force')
+                    datatype_option,
+                    force=True)
         progress.increment()
       progress.done()
 
-      run.command(['mrmath', path.all_in_dir('inputs_transformed'), 'mean', 'linear_template' + str(level) + '.mif', '-force'])
+      run.command(['mrmath', path.all_in_dir('inputs_transformed'), 'mean', 'linear_template' + str(level) + '.mif'], force=True)
       current_template = 'linear_template' + str(level) + '.mif'
 
     for entry in os.listdir('linear_transforms_%i' % level):
@@ -666,13 +625,13 @@ def execute(): #pylint: disable=unused-variable
                   '-template ' + current_template + ' ' + \
                   '-interp nearest ' + \
                   '-linear ' + os.path.join('linear_transforms', '%s.txt' % i.prefix) + ' ' + \
-                  os.path.join('masks_transformed', '%s.mif' % i.prefix) + ' ' + \
-                  '-force')
+                  os.path.join('masks_transformed', '%s.mif' % i.prefix),
+                  force=True)
       progress.increment()
     progress.done()
     run.command(['mrmath', path.all_in_dir('masks_transformed'), 'min', '-', '|', \
                  'maskfilter', '-', 'median', '-', '|', \
-                 'maskfilter', '-', 'dilate', '-npass', '5', 'init_nl_template_mask.mif', '-force'])
+                 'maskfilter', '-', 'dilate', '-npass', '5', 'init_nl_template_mask.mif'], force=True)
     current_template_mask = 'init_nl_template_mask.mif'
 
   if dononlinear:
@@ -709,12 +668,12 @@ def execute(): #pylint: disable=unused-variable
                     '-nl_update_smooth ' +  app.ARGS.nl_update_smooth + ' ' + \
                     '-nl_disp_smooth ' +  app.ARGS.nl_disp_smooth + ' ' + \
                     '-nl_grad_step ' +  app.ARGS.nl_grad_step + ' ' + \
-                    '-force' + \
                     initialise_option + \
                     scale_option + \
                     mask_option + \
                     datatype_option + \
-                    lmax_option)
+                    lmax_option,
+                    force=True)
 
         if level > 0:
           run.function(os.remove, os.path.join('warps_%i'%(level-1), '%s.mif' % i.prefix))
@@ -723,8 +682,8 @@ def execute(): #pylint: disable=unused-variable
                       '-template ' + current_template + ' ' + \
                       '-warp_full ' + os.path.join('warps_%i' % level, '%s.mif' % i.prefix) + ' ' + \
                       os.path.join('masks_transformed', i.prefix + '.mif') + ' ' + \
-                      '-interp nearest ' +
-                      '-force')
+                      '-interp nearest',
+                      force=True)
         progress.increment()
       progress.done()
 
@@ -748,7 +707,9 @@ def execute(): #pylint: disable=unused-variable
           run.function(shutil.move, os.path.join('warps_' + str(level), '%s.mif' % i.prefix), 'warps')
 
 
-  run.command('mrconvert ' + current_template + ' ' + path.from_user(app.ARGS.template) + app.mrconvert_output_option('NULL'))
+  run.command('mrconvert ' + current_template + ' ' + path.from_user(app.ARGS.template), \
+              mrconvert_keyval='NULL', \
+              force=app.FORCE_OVERWRITE)
 
   if app.ARGS.warp_dir:
     warp_path = path.from_user(app.ARGS.warp_dir, False)
@@ -757,7 +718,9 @@ def execute(): #pylint: disable=unused-variable
     os.makedirs(warp_path)
     progress = app.ProgressBar('Copying non-linear warps to output directory "' + warp_path + '"')
     for i in inputs:
-      run.command('mrconvert ' + os.path.join('warps', '%s.mif' % i.prefix) + ' ' + os.path.join(warp_path, '%s.mif' % i.prefix) + app.mrconvert_output_option(path.from_user(os.path.join(input_dir, i.filename))))
+      run.command('mrconvert ' + os.path.join('warps', '%s.mif' % i.prefix) + ' ' + os.path.join(warp_path, '%s.mif' % i.prefix), \
+                  mrconvert_keyval=path.from_user(os.path.join(input_dir, i.filename)), \
+                  force=app.FORCE_OVERWRITE)
       progress.increment()
     progress.done()
 
@@ -774,12 +737,16 @@ def execute(): #pylint: disable=unused-variable
     os.makedirs(transformed_path)
     progress = app.ProgressBar('Copying transformed images to output directory "' + transformed_path + '"')
     for i in inputs:
-      run.command('mrconvert ' + os.path.join('inputs_transformed', '%s.mif' % i.prefix) + ' ' + os.path.join(transformed_path, '%s.mif' % i.prefix) + app.mrconvert_output_option(path.from_user(os.path.join(input_dir, i.filename))))
+      run.command('mrconvert ' + os.path.join('inputs_transformed', '%s.mif' % i.prefix) + ' ' + os.path.join(transformed_path, '%s.mif' % i.prefix), \
+                  mrconvert_keyval=path.from_user(os.path.join(input_dir, i.filename)), \
+                  force=app.FORCE_OVERWRITE)
       progress.increment()
     progress.done()
 
   if app.ARGS.template_mask:
-    run.command('mrconvert ' + current_template_mask + ' ' + path.from_user(app.ARGS.template_mask) + app.mrconvert_output_option('NULL'))
+    run.command('mrconvert ' + current_template_mask + ' ' + path.from_user(app.ARGS.template_mask), \
+                mrconvert_keyval='NULL', \
+                force=app.FORCE_OVERWRITE)
 
 
 

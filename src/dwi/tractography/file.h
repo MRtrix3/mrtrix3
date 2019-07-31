@@ -240,6 +240,7 @@ namespace MR
 
             const_cast<Properties&> (properties).set_timestamp();
             const_cast<Properties&> (properties).set_version_info();
+            const_cast<Properties&> (properties).update_command_history();
 
             create (out, properties, "tracks");
             barrier_addr = out.tellp();

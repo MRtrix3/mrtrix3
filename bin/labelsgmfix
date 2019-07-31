@@ -33,12 +33,13 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   import math, os
-  from mrtrix3 import app, fsl, image, is_windows, MRtrixError, path, run #pylint: disable=no-name-in-module
+  from mrtrix3 import app, fsl, image, MRtrixError, path, run, utils #pylint: disable=no-name-in-module
+
+  if utils.is_windows():
+    raise MRtrixError('Script cannot run on Windows due to FSL dependency')
+
   app.check_output_path(path.from_user(app.ARGS.output, False))
   image.check_3d_nonunity(path.from_user(app.ARGS.t1, False))
-
-  if is_windows():
-    raise MRtrixError('Script cannot run on Windows due to FSL dependency')
 
   fsl_path = os.environ.get('FSLDIR', '')
   if not fsl_path:
@@ -147,7 +148,7 @@ def execute(): #pylint: disable=unused-variable
   # Insert the new delineations of all SGM structures in a single call
   # Enforce unsigned integer datatype of output image
   run.command('mrcalc sgm_new_labels.mif 0.5 -gt sgm_new_labels.mif parc.mif -if result.mif -datatype uint32')
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output) + app.mrconvert_output_option(path.from_user(app.ARGS.parc)))
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.parc), force=app.FORCE_OVERWRITE)
 
 
 

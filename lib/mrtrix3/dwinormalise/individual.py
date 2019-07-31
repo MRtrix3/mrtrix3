@@ -41,4 +41,6 @@ def execute(): #pylint: disable=unused-variable
   multiplier = app.ARGS.intensity / reference_value
 
   run.command('mrcalc ' + path.from_user(app.ARGS.input_dwi) + ' ' + str(multiplier) + ' -mult - | ' + \
-              'mrconvert - ' + path.from_user(app.ARGS.output_dwi) + grad_option + app.mrconvert_output_option(path.from_user(app.ARGS.input_dwi)))
+              'mrconvert - ' + path.from_user(app.ARGS.output_dwi) + grad_option, \
+              mrconvert_keyval=path.from_user(app.ARGS.input_dwi), \
+              force=app.FORCE_OVERWRITE)

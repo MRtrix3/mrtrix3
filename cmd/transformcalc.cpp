@@ -282,6 +282,7 @@ void run ()
 
 
       File::OFStream out (output_path);
+      out << "# " << App::command_history_string << "\n";
       Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "\n");
       out << "scaling: "     << Eigen::RowVector3d(S(0,0), S(1,1), S(2,2)).format(fmt);
       out << "shear: "       << Eigen::RowVector3d(S(0,1), S(0,2), S(1,2)).format(fmt);
