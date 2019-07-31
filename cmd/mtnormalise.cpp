@@ -469,6 +469,7 @@ void run ()
          for (auto i = Loop (0, 3) (mask, prev_mask); i; ++i) {
             if (mask.value() != prev_mask.value()) {
             balance_converged = false;
+            vox_count = new_vox_count;
             break;
             }
          }
@@ -489,6 +490,7 @@ void run ()
 
     // Generate normalisation field in the log domain
     ThreadedLoop (norm_field_log, 0, 3).run (NormFieldLog(norm_field_weights, transform, basis_function), norm_field_log);
+
 
     // Generate normalisation field in the image domain
     ThreadedLoop (norm_field_image).run([](decltype(norm_field_image)& out, decltype(norm_field_log) in){out.value() = std::exp (in.value());}, norm_field_image, norm_field_log);
