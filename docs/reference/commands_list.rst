@@ -67,6 +67,7 @@ List of MRtrix3 commands
     commands/mrcat
     commands/mrcheckerboardmask
     commands/mrclusterstats
+    commands/mrcolour
     commands/mrconvert
     commands/mrdegibbs
     commands/mrdump
@@ -188,6 +189,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`mrcat`, "Concatenate several images into one"
     |cpp.png|, :ref:`mrcheckerboardmask`, "Create bitwise checkerboard image"
     |cpp.png|, :ref:`mrclusterstats`, "Voxel-based analysis using permutation testing and threshold-free cluster enhancement"
+    |cpp.png|, :ref:`mrcolour`, "Apply a colour map to an image"
     |cpp.png|, :ref:`mrconvert`, "Perform conversion between different file types and optionally extract a subset of the input image"
     |cpp.png|, :ref:`mrdegibbs`, "Remove Gibbs Ringing Artifacts"
     |cpp.png|, :ref:`mrdump`, "Print out the values within an image"

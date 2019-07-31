@@ -166,9 +166,19 @@ namespace MR
         const Header template_header (H);
 
         // Convenient to know a priori which loop index corresponds to which image axis
+        // This needs to detect unity-sized axes and flag the loop to concatenate data along that axis
         vector<size_t> loopindex2axis;
-        for (size_t i = 0; i != num.size(); ++i)
-          loopindex2axis.push_back (H.ndim() + num.size() - i - 1);
+        size_t axis;
+        for (axis = 0; axis != H.ndim(); ++axis) {
+          if (H.size (axis) == 1) {
+            loopindex2axis.push_back (axis);
+            if (loopindex2axis.size() == num.size())
+              break;
+          }
+        }
+        for (; loopindex2axis.size() < num.size(); ++axis)
+          loopindex2axis.push_back (axis);
+        std::reverse (loopindex2axis.begin(), loopindex2axis.end());
 
         // Reimplemented support for [] notation using recursive function calls
         // Note that the very first image header has already been opened before this function is
@@ -729,9 +739,10 @@ namespace MR
 
     if (axis_to_concat >= result.ndim()) {
       result.ndim() = axis_to_concat + 1;
-      result.stride(axis_to_concat) = axis_to_concat+1;
       result.size(axis_to_concat) = 1;
     }
+
+    result.stride (axis_to_concat) = result.ndim()+1;
 
     for (size_t axis = 0; axis != result.ndim(); ++axis) {
       if (axis != axis_to_concat && result.size (axis) <= 1) {
