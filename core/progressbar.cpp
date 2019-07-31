@@ -40,13 +40,13 @@ namespace MR
 
 
 
-    void display_func_multithreaded (ProgressInfo& p)
+    void display_func_multithreaded (const ProgressBar& p)
     {
       p.notifier.notify_all();
     }
 
 
-    void display_func_terminal (ProgressInfo& p)
+    void display_func_terminal (const ProgressBar& p)
     {
       __need_newline = true;
       if (p.multiplier)
@@ -58,7 +58,7 @@ namespace MR
     }
 
 
-    void done_func_terminal (ProgressInfo& p)
+    void done_func_terminal (const ProgressBar& p)
     {
       if (p.multiplier)
         __print_stderr (printf ("\r%s: [100%%] %s" CLEAR_LINE_CODE "\n",
@@ -75,7 +75,7 @@ namespace MR
 
 
 
-    void display_func_redirect (ProgressInfo& p)
+    void display_func_redirect (const ProgressBar& p)
     {
       static size_t count = 0;
       static size_t next_update_at = 0;
@@ -124,7 +124,7 @@ namespace MR
     }
 
 
-    void done_func_redirect (ProgressInfo& p)
+    void done_func_redirect (const ProgressBar& p)
     {
       if (p.text_has_been_modified) {
         if (p.multiplier) {
@@ -146,26 +146,29 @@ namespace MR
   }
 
 
-  void (*ProgressInfo::display_func) (ProgressInfo& p) = display_func_terminal;
-  void (*ProgressInfo::done_func) (ProgressInfo& p) = done_func_terminal;
-  void (*ProgressInfo::previous_display_func) (ProgressInfo& p) = nullptr;
+  void (*ProgressBar::display_func) (const ProgressBar& p) = display_func_terminal;
+  void (*ProgressBar::done_func) (const ProgressBar& p) = done_func_terminal;
+  void (*ProgressBar::previous_display_func) (const ProgressBar& p) = nullptr;
 
+  std::condition_variable ProgressBar::notifier;
+  std::mutex ProgressBar::mutex;
+  void* ProgressBar::data = nullptr;
 
   ProgressBar::SwitchToMultiThreaded::SwitchToMultiThreaded () {
-    ProgressInfo::previous_display_func = ProgressInfo::display_func;
-    ProgressInfo::display_func = display_func_multithreaded;
+    ProgressBar::previous_display_func = ProgressBar::display_func;
+    ProgressBar::display_func = display_func_multithreaded;
   }
 
 
   ProgressBar::SwitchToMultiThreaded::~SwitchToMultiThreaded () {
-    ProgressInfo::display_func = ProgressInfo::previous_display_func;
-    ProgressInfo::previous_display_func = nullptr;
+    ProgressBar::display_func = ProgressBar::previous_display_func;
+    ProgressBar::previous_display_func = nullptr;
   }
 
 
 
 
-  void (*previous_display_func) (ProgressInfo& p);
+  void (*previous_display_func) (ProgressBar& p);
 
 
 
@@ -183,12 +186,12 @@ namespace MR
 
 
     if (stderr_to_file) {
-      ProgressInfo::display_func = display_func_redirect;
-      ProgressInfo::done_func = done_func_redirect;
+      ProgressBar::display_func = display_func_redirect;
+      ProgressBar::done_func = done_func_redirect;
     }
     else {
-      ProgressInfo::display_func = display_func_terminal;
-      ProgressInfo::done_func = done_func_terminal;
+      ProgressBar::display_func = display_func_terminal;
+      ProgressBar::done_func = done_func_terminal;
     }
 
     return stderr_to_file;
