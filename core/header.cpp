@@ -177,6 +177,7 @@ namespace MR
         }
         for (; loopindex2axis.size() < num.size(); ++axis)
           loopindex2axis.push_back (axis);
+        std::reverse (loopindex2axis.begin(), loopindex2axis.end());
 
         // Reimplemented support for [] notation using recursive function calls
         // Note that the very first image header has already been opened before this function is
