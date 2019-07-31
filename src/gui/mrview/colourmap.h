@@ -54,22 +54,22 @@ namespace MR
             using basic_map_fn = std::function< Eigen::Array3f (float) >;
 
             Entry (const char* name, const char* glsl_mapping, basic_map_fn basic_mapping,
-                const char* amplitude = NULL, bool special = false, bool is_colour = false) :
+                const char* amplitude = NULL, bool special = false, bool is_colour = false, bool is_rgb = false) :
               name (name),
               glsl_mapping (glsl_mapping),
               basic_mapping (basic_mapping),
               amplitude (amplitude ? amplitude : default_amplitude),
               special (special),
-              is_colour (is_colour) { }
+              is_colour (is_colour),
+              is_rgb (is_rgb) { }
 
             const char* name;
             const char* glsl_mapping;
             basic_map_fn basic_mapping;
             const char* amplitude;
-            bool special, is_colour;
+            bool special, is_colour, is_rgb;
 
             static const char* default_amplitude;
-
 
         };
 
