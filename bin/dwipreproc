@@ -59,9 +59,9 @@ def usage(cmdline): #pylint: disable=unused-variable
 def execute(): #pylint: disable=unused-variable
   import itertools, json, math, os, shutil, sys
   from distutils.spawn import find_executable
-  from mrtrix3 import app, CONFIG, fsl, image, is_windows, MRtrixError, path, phaseencoding, run #pylint: disable=no-name-in-module
+  from mrtrix3 import app, CONFIG, fsl, image, matrix, MRtrixError, path, phaseencoding, run, utils #pylint: disable=no-name-in-module
 
-  if is_windows():
+  if utils.is_windows():
     raise MRtrixError('Script cannot run on Windows due to FSL dependency')
 
   image.check_3d_nonunity(path.from_user(app.ARGS.input, False))
@@ -197,23 +197,16 @@ def execute(): #pylint: disable=unused-variable
         # Since there's a chance that we may need to pad this info, we can't just copy this file
         #   to the scratch directory...
         try:
-          with open(slspec_file_path, 'r') as slspec_file:
-            for line in slspec_file:
-              line = line.strip()
-              if line:
-                slice_groups.append([int(value) for value in line.split()])
+          slice_groups = matrix.load_numeric(slspec_file_path, dtype=int)
           app.debug('Slice groups: ' + str(slice_groups))
         except ValueError:
           try:
-            with open(slspec_file_path, 'r') as slspec_file:
-              for line in slspec_file:
-                line = line.strip()
-                if line:
-                  slice_timing.append(float(line))
-            app.warn('\"slspec\" file provided to FSL eddy should contain slice indices for slice groups, not slice timing; nevertheless, slice timing has been imported from file \"' + slspec_file_path + '\"')
+            slice_timing = matrix.load_numeric(slspec_file_path, dtype=float)
             app.debug('Slice timing: ' + str(slice_timing))
+            app.warn('\"slspec\" file provided to FSL eddy should contain slice indices for slice groups, not slice timing; nevertheless, slice timing has been imported from file \"' + slspec_file_path + '\"')
             if len(slice_timing) != dwi_num_slices:
-              raise MRtrixError('Cannot use slice timing information from file \"' + slspec_file_path + '\" for slice-to-volume correction: Number of entries (' + len(slice_timing) + ') does not match number of slices (' + dwi_header.size()[2] + ')')
+              raise MRtrixError('Cannot use slice timing information from file \"' + slspec_file_path + '\" for slice-to-volume correction: ' + \
+                                'Number of entries (' + len(slice_timing) + ') does not match number of slices (' + dwi_header.size()[2] + ')')
           except ValueError:
             raise MRtrixError('Error parsing \"slspec\" file (this should contain integer values indicating slice groups, not slice timing; please see FSL eddy help page)')
         # Remove this entry from eddy_manual_options; it'll be inserted later, with the
@@ -418,9 +411,7 @@ def execute(): #pylint: disable=unused-variable
   # This may be required by -rpe_all for extracting b=0 volumes while retaining phase-encoding information
   import_dwi_pe_table_option = ''
   if dwi_manual_pe_scheme:
-    with open('dwi_manual_pe_scheme.txt', 'w') as pe_scheme_file:
-      for line in dwi_manual_pe_scheme:
-        pe_scheme_file.write(' '.join( [ str(value) for value in line ] ) + '\n')
+    matrix.save_matrix('dwi_manual_pe_scheme.txt', dwi_manual_pe_scheme)
     import_dwi_pe_table_option = ' -import_pe_table dwi_manual_pe_scheme.txt'
 
 
@@ -658,9 +649,7 @@ def execute(): #pylint: disable=unused-variable
   # This may be required when setting up the topup call
   se_epi_manual_pe_table_option = ''
   if se_epi_manual_pe_scheme:
-    with open('se_epi_manual_pe_scheme.txt', 'w') as pe_scheme_file:
-      for line in se_epi_manual_pe_scheme:
-        pe_scheme_file.write(' '.join([str(value) for value in line]) + '\n')
+    matrix.save_matrix('se_epi_manual_pe_scheme.txt', se_epi_manual_pe_scheme)
     se_epi_manual_pe_table_option = ' -import_pe_table se_epi_manual_pe_scheme.txt'
 
 
@@ -750,22 +739,22 @@ def execute(): #pylint: disable=unused-variable
     # Plus, recombination doesn't need to be optimal; we're only using this to derive a brain mask
     applytopup_image_list = [ ]
     index = 1
-    with open('applytopup_config.txt', 'r') as applytopup_config_file:
-      for line in applytopup_config_file:
-        prefix = os.path.splitext(dwi_path)[0] + '_pe_' + str(index)
-        input_path = prefix + '.nii'
-        json_path = prefix + '.json'
-        temp_path = prefix + '_applytopup.nii'
-        output_path = prefix + '_applytopup.mif'
-        run.command('dwiextract ' + dwi_path + import_dwi_pe_table_option + ' -pe ' + ','.join(line.split()) + ' - | mrconvert - ' + input_path + ' -json_export ' + json_path)
-        run.command(applytopup_cmd + ' --imain=' + input_path + ' --datain=applytopup_config.txt --inindex=' + str(index) + ' --topup=field --out=' + temp_path + ' --method=jac')
-        app.cleanup(input_path)
-        temp_path = fsl.find_image(temp_path)
-        run.command('mrconvert ' + temp_path + ' ' + output_path + ' -json_import ' + json_path)
-        app.cleanup(json_path)
-        app.cleanup(temp_path)
-        applytopup_image_list.append(output_path)
-        index += 1
+    applytopup_config = matrix.load_matrix('applytopup_config.txt')
+    for line in applytopup_config:
+      prefix = os.path.splitext(dwi_path)[0] + '_pe_' + str(index)
+      input_path = prefix + '.nii'
+      json_path = prefix + '.json'
+      temp_path = prefix + '_applytopup.nii'
+      output_path = prefix + '_applytopup.mif'
+      run.command('dwiextract ' + dwi_path + import_dwi_pe_table_option + ' -pe ' + ','.join(str(value) for value in line) + ' - | mrconvert - ' + input_path + ' -json_export ' + json_path)
+      run.command(applytopup_cmd + ' --imain=' + input_path + ' --datain=applytopup_config.txt --inindex=' + str(index) + ' --topup=field --out=' + temp_path + ' --method=jac')
+      app.cleanup(input_path)
+      temp_path = fsl.find_image(temp_path)
+      run.command('mrconvert ' + temp_path + ' ' + output_path + ' -json_import ' + json_path)
+      app.cleanup(json_path)
+      app.cleanup(temp_path)
+      applytopup_image_list.append(output_path)
+      index += 1
 
     # Use the initial corrected volumes to derive a brain mask for eddy
     if len(applytopup_image_list) == 1:
@@ -811,9 +800,7 @@ def execute(): #pylint: disable=unused-variable
       app.debug('New: ' + str(new_slice_groups))
       slice_groups = new_slice_groups
 
-    with open('slspec.txt', 'w') as slspec_file:
-      for line in slice_groups:
-        slspec_file.write(' '.join(str(value) for value in line) + '\n')
+    matrix.save_numeric('slspec.txt', slice_groups, header='')
     eddy_manual_options.append('--slspec=slspec.txt')
 
 
@@ -950,47 +937,37 @@ def execute(): #pylint: disable=unused-variable
     #   not precisely equivalent), the best we can do is take the mean of the two vectors.
     # Manual recombination of volumes needs to take into account the explicit volume matching
 
-    bvecs = [ [] for axis in range(3) ]
-    with open(bvecs_path, 'r') as bvecs_file:
-      for axis, line in enumerate(bvecs_file):
-        bvecs[axis] = line.split()
-
+    bvecs = matrix.load_matrix(bvecs_path)
     bvecs_combined_transpose = [ ]
     bvals_combined = [ ]
 
     for pair in volume_pairs:
-      bvec_sum = [ float(bvecs[0][pair[0]]) + float(bvecs[0][pair[1]]),
-                   float(bvecs[1][pair[0]]) + float(bvecs[1][pair[1]]),
-                   float(bvecs[2][pair[0]]) + float(bvecs[2][pair[1]]) ]
-      norm2 = bvec_sum[0]*bvec_sum[0] + bvec_sum[1]*bvec_sum[1] + bvec_sum[2]*bvec_sum[2]
+      bvec_mean = [ 0.5*(bvecs[0][pair[0]] + bvecs[0][pair[1]]),
+                    0.5*(bvecs[1][pair[0]] + bvecs[1][pair[1]]),
+                    0.5*(bvecs[2][pair[0]] + bvecs[2][pair[1]]) ]
+      norm2 = matrix.dot(bvec_mean, bvec_mean)
 
       # If one diffusion sensitisation gradient direction is reversed with respect to
       #   the other, still want to enable their recombination; but need to explicitly
       #   account for this when averaging the two directions
-      if norm2 < 0.0:
-        bvec_sum = [ float(bvecs[0][pair[0]]) - float(bvecs[0][pair[1]]),
-                     float(bvecs[1][pair[0]]) - float(bvecs[1][pair[1]]),
-                     float(bvecs[2][pair[0]]) - float(bvecs[2][pair[1]]) ]
-        norm2 = bvec_sum[0]*bvec_sum[0] + bvec_sum[1]*bvec_sum[1] + bvec_sum[2]*bvec_sum[2]
+      if norm2 < 0.5:
+        bvec_mean = [ 0.5*(bvecs[0][pair[0]] - bvecs[0][pair[1]]),
+                      0.5*(bvecs[1][pair[0]] - bvecs[1][pair[1]]),
+                      0.5*(bvecs[2][pair[0]] - bvecs[2][pair[1]]) ]
+        norm2 = matrix.dot(bvec_mean, bvec_mean)
 
-      # Occasionally a bzero volume can have a zero vector
+      # Occasionally a b=0 volume can have a zero vector
       if norm2:
         factor = 1.0 / math.sqrt(norm2)
-        new_vec = [ bvec_sum[0]*factor, bvec_sum[1]*factor, bvec_sum[2]*factor ]
+        new_vec = [ bvec_mean[0]*factor, bvec_mean[1]*factor, bvec_mean[2]*factor ]
       else:
         new_vec = [ 0.0, 0.0, 0.0 ]
       bvecs_combined_transpose.append(new_vec)
       bvals_combined.append(0.5 * (grad[pair[0]][3] + grad[pair[1]][3]))
 
-    with open('bvecs_combined', 'w') as bvecs_file:
-      for axis in range(0, 3):
-        axis_data = [ ]
-        for volume in range(0, int(dwi_num_volumes/2)):
-          axis_data.append(str(bvecs_combined_transpose[volume][axis]))
-        bvecs_file.write(' '.join(axis_data) + '\n')
-
-    with open('bvals_combined', 'w') as bvals_file:
-      bvals_file.write(' '.join( [ str(b) for b in bvals_combined ] ))
+    bvecs_combined = matrix.transpose(bvecs_combined_transpose)
+    matrix.save_matrix('bvecs_combined', bvecs_combined, header='')
+    matrix.save_vector('bvals_combined', bvals_combined, delimiter=' ', header='')
 
     # Prior to 5.0.8, a bug resulted in the output field map image from topup having an identity transform,
     #   regardless of the transform of the input image
@@ -1025,9 +1002,8 @@ def execute(): #pylint: disable=unused-variable
     #   The jacobian image may be different for any particular volume pair
     #   The appropriate PE directions and total readout times can be acquired from the eddy-style config/index files
     #   eddy_config.txt and eddy_indices.txt
-
-    eddy_config  = [ [ float(f) for f in line.split() ] for line in open('eddy_config.txt', 'r').read().split('\n')[:-1] ]
-    eddy_indices = [ int(i) for i in open('eddy_indices.txt', 'r').read().split() ]
+    eddy_config = matrix.load_matrix('eddy_config.txt')
+    eddy_indices = matrix.load_vector('eddy_indices.txt', dtype=int)
     app.debug('EDDY config: ' + str(eddy_config))
     app.debug('EDDY indices: ' + str(eddy_indices))
 
@@ -1137,7 +1113,7 @@ def execute(): #pylint: disable=unused-variable
 
 
   # Finish!
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output) + grad_export_option + app.mrconvert_output_option('output.json'))
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output) + grad_export_option, mrconvert_keyval='output.json', force=app.FORCE_OVERWRITE)
 
 
 

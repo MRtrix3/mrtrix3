@@ -1,6 +1,6 @@
 import os, sys
 from collections import namedtuple
-from mrtrix3._version import __version__  #pylint: disable=unused-variable
+from mrtrix3._version import __version__
 
 
 
@@ -10,6 +10,17 @@ class MRtrixBaseError(Exception):
 class MRtrixError(MRtrixBaseError): #pylint: disable=unused-variable
   pass
 
+
+
+# Contains the command currently being executed, appended with the version of the MRtrix3 Python library
+COMMAND_HISTORY_STRING = sys.argv[0]
+try:
+  from shlex import quote
+except ImportError:
+  from pipes import quote
+for arg in sys.argv[1:]:
+  COMMAND_HISTORY_STRING += ' ' + quote(arg) # Use quotation marks only if required
+COMMAND_HISTORY_STRING += '  (version=' + __version__ + ')"'
 
 
 # Location of binaries that belong to the same MRtrix3 installation as the Python library being invoked
@@ -50,6 +61,7 @@ def setup_ansi():
   if sys.stderr.isatty() and not ('TerminalColor' in CONFIG and CONFIG['TerminalColor'].lower() in ['no', 'false', '0']):
     ANSI = ANSICodes('\033[0K', '\033[0m', '\033[03;32m', '\033[03;34m', '\033[01;31m', '\033[03;36m', '\033[00;31m') #pylint: disable=unused-variable
 setup_ansi()
+
 
 
 # Execute a command
