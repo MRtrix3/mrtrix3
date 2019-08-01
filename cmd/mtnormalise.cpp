@@ -263,7 +263,8 @@ return res;
 };
 
 // Function to refine the mask
-void RefinedMask(vector<Adapter::Replicate<ImageType>> input_images, MaskType& initial_mask, MaskType orig_mask, ProgressBar& input_progress, ImageType summed){
+template<class InType>
+void RefinedMask(InType input_images, MaskType& initial_mask, MaskType orig_mask, ProgressBar& input_progress, ImageType summed){
     for (size_t j = 0; j < input_images.size(); ++j) {
       input_progress++;
       ThreadedLoop(summed).run([](decltype(summed)& sum, decltype(input_images[0])& in){sum.value()+=in.value();}, summed, input_images[j]);
