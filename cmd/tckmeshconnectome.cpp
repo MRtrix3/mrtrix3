@@ -78,12 +78,12 @@ class Assigner
       Eigen::Vector3d first = ( *tck.begin() ).cast< double >();
       Intersection ix1;
       _sceneModeller->nearestTissue( first, ix1 );
-      nodePair.setFirst( ix1.nearestVertex() );
+      nodePair.setFirst( ix1.nearestVertexId() );
 
       Eigen::Vector3d last = ( *tck.rbegin() ).cast< double >();
       Intersection ix2;
       _sceneModeller->nearestTissue( last, ix2 );
-      nodePair.setSecond( ix2.nearestVertex() );
+      nodePair.setSecond( ix2.nearestVertexId() );
 
       nodePair.set_tck_index( tck.index );
       nodePair.set_tck_weight( tck.weight );

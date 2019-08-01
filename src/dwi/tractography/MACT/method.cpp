@@ -108,11 +108,10 @@ term_t MACT_Method_additions::check_structural( const Eigen::Vector3f& old_pos,
     else if ( tissue->type() == CGM )
     {
       /* can pre-calculate polygon normal */
-      auto v1 = tissue->mesh().vert( firstIntersection._triangle[ 0 ] );
-      auto v2 = tissue->mesh().vert( firstIntersection._triangle[ 1 ] );
-      auto v3 = tissue->mesh().vert( firstIntersection._triangle[ 2 ] );
-      auto n = ( v2 - v1 ).cross( v3 - v1 );
-      if ( n.dot( v1 - from ) < 0 )
+      auto m = tissue->mesh();
+      auto n = tissue->normal( firstIntersection._triangleId );
+      auto t = m.tri( firstIntersection._triangleId );
+      if ( n.dot( m.vert( t[ 0 ] ) - from ) < 0 )
       {
         // exclude this track since the point locates outside cgm
         return ENTER_EXCLUDE;
@@ -161,12 +160,9 @@ bool MACT_Method_additions::seed_is_unidirectional( Eigen::Vector3f& pos,
   {
     // seed is considered to be on WM surface but can actually locate inside or
     // outside the surface due to numerical precision error
-    auto mesh = intersection._tissue->mesh();
-    auto v1 = mesh.vert( intersection._triangle[ 0 ] );
-    auto v2 = mesh.vert( intersection._triangle[ 1 ] );
-    auto v3 = mesh.vert( intersection._triangle[ 2 ] );
-    auto n = ( v2 - v1 ).cross( v3 - v1 );
-    n.normalize();
+    auto m = intersection._tissue->mesh();
+    auto n = intersection._tissue->normal( intersection._triangleId );
+    auto t = m.tri( intersection._triangleId );
     if ( n.dot( d ) > 0 )
     {
       // normal and seed direction are pointing outward from the surface
@@ -174,7 +170,7 @@ bool MACT_Method_additions::seed_is_unidirectional( Eigen::Vector3f& pos,
       d = -d;
       dir = d.cast< float >();
     }
-    while ( n.dot( v1 - p ) < 0 )
+    while ( n.dot( m.vert( t[ 0 ] ) - p ) < 0 )
     {
       // seed locates outside the surface
       // --> shift the seed until it crosses over the surface

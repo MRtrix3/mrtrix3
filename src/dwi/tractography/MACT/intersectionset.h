@@ -42,17 +42,18 @@ struct Intersection
     Intersection( double arcLength,
                   const Eigen::Vector3d& point,
                   const Tissue_ptr& tissue,
-                  Surface::Triangle triangle );
+                  uint32_t triangleId );
+
 
     Intersection( const Intersection& other );
     Intersection& operator=( const Intersection& other );
 
-    size_t nearestVertex() const;
+    size_t nearestVertexId() const;
 
     double _arcLength;
     Eigen::Vector3d _point;
     Tissue_ptr _tissue;
-    Surface::Triangle _triangle;
+    uint32_t _triangleId;
 
 };
 

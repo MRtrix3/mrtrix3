@@ -133,7 +133,7 @@ bool SceneModeller::nearestTissue( const Eigen::Vector3d& point,
 
     // unless specified, increase the layer until the nearest tissue is found
     // (min numner of voxels: 3x3x3=27)
-    std::map< Tissue_ptr, TriangleSet > checked_tissue_polygons;
+    std::map< Tissue_ptr, std::set< uint32_t > > checked_tissue_polygons;
     int32_t l = 1;
     do
     {
@@ -156,30 +156,32 @@ bool SceneModeller::nearestTissue( const Eigen::Vector3d& point,
         {
           if ( !checked_tissue_polygons.count( *t ) )
           {
-            checked_tissue_polygons[ *t ] = TriangleSet();
+            checked_tissue_polygons[ *t ] = std::set< uint32_t >();
           }
           auto mesh = ( *t )->mesh();
-          auto polygons = ( *t )->polygonLut().getTriangles( voxels );
-          if ( !polygons.empty() )
+          auto polygonIds = ( *t )->polygonLut().getPolygonIds( voxels );
+          if ( !polygonIds.empty() )
           {
-            auto p = polygons.begin(), pe = polygons.end();
+            auto p = polygonIds.begin(), pe = polygonIds.end();
             while ( p != pe )
             {
               if ( !checked_tissue_polygons[ *t ].count( *p ) )
               {
                 Eigen::Vector3d projectionPoint;
+                auto triangle = mesh.tri( *p );
                 double dist = MACT::pointToTriangleDistance( 
-                                                       point,
-                                                       mesh.vert( ( *p )[ 0 ] ),
-                                                       mesh.vert( ( *p )[ 1 ] ),
-                                                       mesh.vert( ( *p )[ 2 ] ),
-                                                       projectionPoint );
+                                                     point,
+                                                     mesh.vert( triangle[ 0 ] ),
+                                                     mesh.vert( triangle[ 1 ] ),
+                                                     mesh.vert( triangle[ 2 ] ),
+                                                     projectionPoint );
+
                 if ( dist < intersection._arcLength )
                 {
                   intersection._arcLength = dist;
                   intersection._point = projectionPoint;
                   intersection._tissue = *t;
-                  intersection._triangle = *p;
+                  intersection._triangleId = *p;
                 }
                 checked_tissue_polygons[ *t ].insert( *p );
               }
@@ -206,30 +208,32 @@ bool SceneModeller::nearestTissue( const Eigen::Vector3d& point,
         {
           if ( !checked_tissue_polygons.count( *t ) )
           {
-            checked_tissue_polygons[ *t ] = TriangleSet();
+            checked_tissue_polygons[ *t ] = std::set< uint32_t >();
           }
           auto mesh = ( *t )->mesh();
-          auto polygons = ( *t )->polygonLut().getTriangles( voxels );
-          if ( !polygons.empty() )
+          auto polygonIds = ( *t )->polygonLut().getPolygonIds( voxels );
+          if ( !polygonIds.empty() )
           {
-            auto p = polygons.begin(), pe = polygons.end();
+            auto p = polygonIds.begin(), pe = polygonIds.end();
             while ( p != pe )
             {
               if ( !checked_tissue_polygons[ *t ].count( *p ) )
               {
                 Eigen::Vector3d projectionPoint;
+                auto triangle = mesh.tri( *p );
                 double dist = MACT::pointToTriangleDistance( 
-                                                       point,
-                                                       mesh.vert( ( *p )[ 0 ] ),
-                                                       mesh.vert( ( *p )[ 1 ] ),
-                                                       mesh.vert( ( *p )[ 2 ] ),
-                                                       projectionPoint );
+                                                     point,
+                                                     mesh.vert( triangle[ 0 ] ),
+                                                     mesh.vert( triangle[ 1 ] ),
+                                                     mesh.vert( triangle[ 2 ] ),
+                                                     projectionPoint );
+
                 if ( dist < intersection._arcLength )
                 {
                   intersection._arcLength = dist;
                   intersection._point = projectionPoint;
                   intersection._tissue = *t;
-                  intersection._triangle = *p;
+                  intersection._triangleId = *p;
                 }
                 checked_tissue_polygons[ *t ].insert( *p );
               }
@@ -287,15 +291,15 @@ bool SceneModeller::nearestVertex( const Eigen::Vector3d& point,
             tissue_vertices[ *t ] = std::set< int32_t >();
           }
           // collect the vertices of the current tissue within the voxels
-          auto polygons = ( *t )->polygonLut().getTriangles( voxels );
-          if ( !polygons.empty() )
+          auto polygonIds = ( *t )->polygonLut().getPolygonIds( voxels );
+          if ( !polygonIds.empty() )
           {
-            auto p = polygons.begin(), pe = polygons.end();
+            auto p = polygonIds.begin(), pe = polygonIds.end();
             while ( p != pe )
             {
               for ( size_t v = 0; v < 3; v++ )
               {
-                tissue_vertices[ *t ].insert( ( *p )[ v ] );
+                tissue_vertices[ *t ].insert( ( *t )->mesh().tri( *p )[ v ] );
               }
               ++ p;
             }
@@ -340,15 +344,15 @@ bool SceneModeller::nearestVertex( const Eigen::Vector3d& point,
           {
             tissue_vertices[ *t ].clear();
           }
-          auto polygons = ( *t )->polygonLut().getTriangles( voxels );
-          if ( !polygons.empty() )
+          auto polygonIds = ( *t )->polygonLut().getPolygonIds( voxels );
+          if ( !polygonIds.empty() )
           {
-            auto p = polygons.begin(), pe = polygons.end();
+            auto p = polygonIds.begin(), pe = polygonIds.end();
             while ( p != pe )
             {
               for ( size_t v = 0; v < 3; v++ )
               {
-                tissue_vertices[ *t ].insert( ( *p )[ v ] );
+                tissue_vertices[ *t ].insert( ( *t )->mesh().tri( *p )[ v ] );
               }
               ++ p;
             }

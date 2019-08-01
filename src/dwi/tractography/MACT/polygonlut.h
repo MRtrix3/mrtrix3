@@ -54,8 +54,7 @@ struct PolygonCompare : public std::binary_function< Surface::Polygon< 3 >,
                  ( ( p1[ 1 ] == p2[ 1 ] ) && ( p1[ 0 ] < p2[ 0 ] ) ) ) );
   }
 };
-typedef std::set< Surface::Triangle, PolygonCompare > TriangleSet;
-
+// typedef std::set< Surface::Triangle, PolygonCompare > TriangleSet;
 
 class PolygonLut
 {
@@ -65,16 +64,16 @@ class PolygonLut
     PolygonLut( const Tissue_ptr& tissue );
     virtual ~PolygonLut();
 
-    TriangleSet getTriangles( const Eigen::Vector3i& voxel ) const;
-    TriangleSet getTriangles( const Eigen::Vector3d& point ) const;
+    std::set< uint32_t > getPolygonIds( const Eigen::Vector3i& voxel ) const;
+    std::set< uint32_t > getPolygonIds( const Eigen::Vector3d& point ) const;
 
-    TriangleSet getTriangles( const std::set< Eigen::Vector3i, Vector3iCompare >& voxels ) const;
-    TriangleSet getTriangles( const std::set< Eigen::Vector3d >& points ) const;
+    std::set< uint32_t > getPolygonIds( const std::set< Eigen::Vector3i, Vector3iCompare >& voxels ) const;
+    std::set< uint32_t > getPolygonIds( const std::set< Eigen::Vector3d >& points ) const;
 
   private:
 
     Tissue_ptr _tissue;
-    std::map< Eigen::Vector3i, TriangleSet, Vector3iCompare > _lut;
+    std::map< Eigen::Vector3i, std::set< uint32_t >, Vector3iCompare > _lut;
 
 };
 

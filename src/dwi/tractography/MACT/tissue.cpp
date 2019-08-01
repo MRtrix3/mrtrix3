@@ -41,6 +41,16 @@ Tissue::Tissue( const TissueType& type,
          _radiusOfInfluence( radiusOfInfluence ),
          _polygonLut( Tissue_ptr( this ) )
 {
+  // compute polygon normals (can move to Mesh Class)
+  auto triangles = mesh.get_triangles();
+  _normals.resize( triangles.size() );
+  for ( size_t t = 0; t < triangles.size(); t++ )
+  {
+    auto v0 = mesh.vert( triangles[ t ][ 0 ] );
+    auto v1 = mesh.vert( triangles[ t ][ 1 ] );
+    auto v2 = mesh.vert( triangles[ t ][ 2 ] );
+    _normals[ t ] = ( v1 - v0 ).cross( v2 - v0 ).normalized();
+  }
 }
 
 
@@ -88,6 +98,12 @@ size_t Tissue::polygonCount() const
 const PolygonLut& Tissue::polygonLut() const
 {
   return _polygonLut;
+}
+
+
+const Eigen::Vector3d& Tissue::normal( size_t triangleId ) const
+{
+  return _normals[ triangleId ];
 }
 
 

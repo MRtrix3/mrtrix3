@@ -37,32 +37,30 @@ PolygonLut::PolygonLut( const std::shared_ptr< Tissue >& tissue )
   Surface::TriangleList polygons = tissue->mesh().get_triangles();
 
   std::set< Eigen::Vector3i, Vector3iCompare > voxels;
-  auto p = polygons.begin(), pe = polygons.end();
-  while ( p != pe )
+  for ( uint32_t p = 0; p < polygons.size(); p++ )
   {
     _tissue->sceneModeller()->bresenhamLine().discTriangleVoxels(
-                                   vertices[ ( *p )[ 0 ] ],
-                                   vertices[ ( *p )[ 1 ] ],
-                                   vertices[ ( *p )[ 2 ] ],
+                                   vertices[ polygons[ p ][ 0 ] ],
+                                   vertices[ polygons[ p ][ 1 ] ],
+                                   vertices[ polygons[ p ][ 2 ] ],
                                    _tissue->radiusOfInfluence(), voxels, true );
     auto v = voxels.begin(), ve = voxels.end();
     while ( v != ve )
     {
-      if ( _lut.count( *v ) == 0 )
+      if ( !_lut.count( *v ) )
       {
         // LUT does not have this voxel :
         // initialise a new set of polygon indices and add to this voxel
-        TriangleSet newPolygons{ *p };
+        std::set< uint32_t > newPolygons{ p };
         _lut[ *v ] = newPolygons;
       }
       else
       {
         // LUT has this voxel --> add the polygon index to the list of the voxel
-        _lut[ *v ].insert( *p );
+        _lut[ *v ].insert( p );
       }
       ++ v;
     }
-    ++ p;
   }
 }
 
@@ -72,11 +70,12 @@ PolygonLut::~PolygonLut()
 }
 
 
-TriangleSet PolygonLut::getTriangles( const Eigen::Vector3i& voxel ) const
+std::set< uint32_t > 
+PolygonLut::getPolygonIds( const Eigen::Vector3i& voxel ) const
 {
   if ( _lut.count( voxel ) == 0 )
   {
-    return TriangleSet();
+    return std::set< uint32_t >();
   }
   else
   {
@@ -85,37 +84,40 @@ TriangleSet PolygonLut::getTriangles( const Eigen::Vector3i& voxel ) const
 }
 
 
-TriangleSet PolygonLut::getTriangles( const Eigen::Vector3d& point ) const
+std::set< uint32_t > 
+PolygonLut::getPolygonIds( const Eigen::Vector3d& point ) const
 {
   Eigen::Vector3i voxel;
   _tissue->sceneModeller()->lutVoxel( point, voxel );
-  return getTriangles( voxel );
+  return getPolygonIds( voxel );
 }
 
 
-TriangleSet PolygonLut::getTriangles( const std::set< Eigen::Vector3i, Vector3iCompare >& voxels ) const
+std::set< uint32_t > 
+PolygonLut::getPolygonIds( const std::set< Eigen::Vector3i, Vector3iCompare >& voxels ) const
 {
-  TriangleSet triangleSet;
+  std::set< uint32_t > triangleIds;
   for ( auto v = voxels.begin(); v != voxels.end(); ++v )
   {
-    auto triangles = getTriangles( *v );
-    triangleSet.insert( triangles.begin(), triangles.end() );
+    auto t = getPolygonIds( *v );
+    triangleIds.insert( t.begin(), t.end() );
   }
-  return triangleSet;
+  return triangleIds;
 }
 
 
-TriangleSet PolygonLut::getTriangles( const std::set< Eigen::Vector3d >& points ) const
+std::set< uint32_t > 
+PolygonLut::getPolygonIds( const std::set< Eigen::Vector3d >& points ) const
 {
-  TriangleSet triangleSet;
+  std::set< uint32_t > triangleIds;
   for ( auto p = points.begin(); p != points.end(); ++p )
   {
     Eigen::Vector3i voxel;
     _tissue->sceneModeller()->lutVoxel( *p, voxel );
-    auto triangleList = getTriangles( voxel );
-    triangleSet.insert( triangleList.begin(), triangleList.end() );
+    auto t = getPolygonIds( voxel );
+    triangleIds.insert( t.begin(), t.end() );
   }
-  return triangleSet;
+  return triangleIds;
 }
 
 

@@ -62,6 +62,7 @@ class Tissue
 
     size_t polygonCount() const;
     const PolygonLut& polygonLut() const;
+    const Eigen::Vector3d& normal( size_t triangleId ) const;
 
   private:
 
@@ -71,6 +72,9 @@ class Tissue
     std::shared_ptr< SceneModeller > _sceneModeller;
     double _radiusOfInfluence;
     PolygonLut _polygonLut;
+
+    // polygon normals (can move to Mesh class)
+    std::vector< Eigen::Vector3d > _normals;
 
 };
 

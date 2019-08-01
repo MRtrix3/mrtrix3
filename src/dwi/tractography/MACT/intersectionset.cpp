@@ -42,11 +42,11 @@ Intersection::Intersection()
 Intersection::Intersection( double arcLength,
                             const Eigen::Vector3d& point,
                             const Tissue_ptr& tissue,
-                            Surface::Triangle triangle )
+                            uint32_t triangleId )
              : _arcLength( arcLength ),
                _point( point ),
                _tissue( tissue ),
-               _triangle( triangle )
+               _triangleId( triangleId )
 {
 }
 
@@ -55,7 +55,7 @@ Intersection::Intersection( const Intersection& other )
              : _arcLength( other._arcLength ),
                _point( other._point ),
                _tissue( other._tissue ),
-               _triangle( other._triangle )
+               _triangleId( other._triangleId )
 {
 }
 
@@ -65,19 +65,19 @@ Intersection& Intersection::operator=( const Intersection& other )
   _arcLength = other._arcLength;
   _point = other._point;
   _tissue = other._tissue;
-  _triangle = other._triangle;
+  _triangleId = other._triangleId;
   return *this;
 }
 
 
-size_t Intersection::nearestVertex() const
+size_t Intersection::nearestVertexId() const
 {
-  auto mesh = _tissue->mesh();
-  double d0 = ( mesh.vert( _triangle[ 0 ] ) - _point ).norm();
-  double d1 = ( mesh.vert( _triangle[ 1 ] ) - _point ).norm();
-  double d2 = ( mesh.vert( _triangle[ 2 ] ) - _point ).norm();
-  return ( d0 <= d1 && d0 <= d2 ) ? _triangle[ 0 ] :
-                                    ( d1 <= d2 ? _triangle[ 1 ] : _triangle[ 2 ] );
+  auto t = _tissue->mesh().tri( _triangleId );
+  auto v = _tissue->mesh().get_vertices();
+  double d0 = ( v[ t[ 0 ] ] - _point ).norm();
+  double d1 = ( v[ t[ 1 ] ] - _point ).norm();
+  double d2 = ( v[ t[ 2 ] ] - _point ).norm();
+  return ( d0 <= d1 && d0 <= d2 ) ? t[ 0 ] : ( d1 <= d2 ? t[ 1 ] : t[ 2 ] );
   /*
   / Did not handle equal distances between the point and the vertices
   */
@@ -112,16 +112,18 @@ IntersectionSet::IntersectionSet( const SceneModeller& sceneModeller,
     while ( t != te )
     {
       auto mesh = ( *t )->mesh();
-      auto polygons = ( *t )->polygonLut().getTriangles( voxels );
-      auto p = polygons.begin(), pe = polygons.end();
+      auto polygonIds = ( *t )->polygonLut().getPolygonIds( voxels );
+      auto p = polygonIds.begin(), pe = polygonIds.end();
       while ( p != pe )
       {
         // perform ray/triangle intersection to find intersecting point
+        auto triangle = mesh.tri( *p );
         hasIntersection = rayTriangleIntersection( from, to,
-                                                   mesh.vert( ( *p )[ 0 ] ),
-                                                   mesh.vert( ( *p )[ 1 ] ),
-                                                   mesh.vert( ( *p )[ 2 ] ),
+                                                   mesh.vert( triangle[ 0 ] ),
+                                                   mesh.vert( triangle[ 1 ] ),
+                                                   mesh.vert( triangle[ 2 ] ),
                                                    intersectionPoint );
+
         if ( hasIntersection )
         {
           fromIntersectionLength = ( intersectionPoint - from ).norm();
@@ -173,16 +175,18 @@ IntersectionSet::IntersectionSet( const SceneModeller& sceneModeller,
       if ( ( *t )->name() == targetTissue->name() )
       {
         auto mesh = ( *t )->mesh();
-        auto polygons = ( *t )->polygonLut().getTriangles( voxels );
-        auto p = polygons.begin(), pe = polygons.end();
+        auto polygonIds = ( *t )->polygonLut().getPolygonIds( voxels );
+        auto p = polygonIds.begin(), pe = polygonIds.end();
         while ( p != pe )
         {
           // perform ray/triangle intersection to find intersecting point
+          auto triangle = mesh.tri( *p );
           hasIntersection = rayTriangleIntersection( from, to,
-                                                     mesh.vert( ( *p )[ 0 ] ),
-                                                     mesh.vert( ( *p )[ 1 ] ),
-                                                     mesh.vert( ( *p )[ 2 ] ),
+                                                     mesh.vert( triangle[ 0 ] ),
+                                                     mesh.vert( triangle[ 1 ] ),
+                                                     mesh.vert( triangle[ 2 ] ),
                                                      intersectionPoint );
+
           if ( hasIntersection )
           {
             fromIntersectionLength = ( intersectionPoint - from ).norm();
