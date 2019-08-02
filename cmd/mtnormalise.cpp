@@ -305,6 +305,19 @@ void NormWeightsLog(Eigen::MatrixXd& norm_field_basis, Eigen::VectorXd& y, Eigen
     }
 };
 
+// Function to compute log-norm scale parameter
+void LogScale(double& lognorm_scale, uint32_t vox_count, MaskType mask, ImageType norm_field_log){
+  if (vox_count) {
+    struct LogNormScale {
+      LogNormScale (double& lognorm_scale, uint32_t num_voxels) : lognorm_scale (lognorm_scale), num_voxels (num_voxels) { }
+      FORCE_INLINE void operator () (decltype(mask) mask_in, decltype(norm_field_log) norm_field_lg) { if (mask_in.value ()){ lognorm_scale += norm_field_lg.value (); } lognorm_scale = std::exp(lognorm_scale / (double)num_voxels); }
+      double& lognorm_scale;
+      uint32_t num_voxels;
+   };
+   ThreadedLoop (mask).run (LogNormScale(lognorm_scale, vox_count), mask, norm_field_log);
+  }
+};
+
 void run ()
 {
     if (argument.size() % 2)
@@ -524,17 +537,7 @@ void run ()
 
   // Compute log-norm scale parameter (geometric mean of normalisation field in outlier-free mask).
   double lognorm_scale (0.0);
-  if (vox_count) {
-  struct LogNormScale {
-    LogNormScale (double& lognorm_scale, uint32_t num_voxels) : lognorm_scale (lognorm_scale), num_voxels (num_voxels) { }
-    FORCE_INLINE void operator () (decltype(mask) mask_in, decltype(norm_field_log) norm_field_lg) { if (mask_in.value ()){ lognorm_scale += norm_field_lg.value (); } lognorm_scale = std::exp(lognorm_scale / (double)num_voxels); }
-
-    double& lognorm_scale;
-    uint32_t num_voxels;
-  };
-  ThreadedLoop (mask, 0, 3).run (LogNormScale(lognorm_scale, vox_count), mask, norm_field_log);
-  }
-
+  LogScale(lognorm_scale, vox_count, mask, norm_field_log);
   const bool output_balanced = get_options("balanced").size();
 
   for (size_t j = 0; j < output_filenames.size(); ++j) {
