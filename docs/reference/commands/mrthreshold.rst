@@ -29,7 +29,7 @@ The threshold value to be applied can be determined in one of a number of ways:
 
 - The -percentile, -top and -bottom options enable more fine-grained control over how the threshold value is determined.
 
-The -mask option only influences those image values that contribute toward the determination of the threshold value; once the threshold is determined, it is applied to the entire image, irrespective of use of the -mask option.
+The -mask option only influences those image values that contribute toward the determination of the threshold value; once the threshold is determined, it is applied to the entire image, irrespective of use of the -mask option. If you wish for the voxels outside of the specified mask to additionally be excluded from the output mask, this can be achieved by multiplying this mask by the output of the mrthreshold command using mrcalc.
 
 If no output image path is specified, the command will instead write to standard output the determined threshold value.
 
@@ -49,6 +49,8 @@ Different mechanisms for determining the threshold value (use no more than one)
 
 Options that influence determination of the threshold based on the input image
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-allvolumes** compute and apply a single threshold for all image volumes, rather than an individual threshold per volume
 
 -  **-ignorezero** ignore zero-valued input values
 
@@ -89,7 +91,7 @@ References
 
 
 
-**Author:** J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)
 
 **Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 

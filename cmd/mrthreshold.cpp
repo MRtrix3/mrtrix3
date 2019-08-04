@@ -47,7 +47,10 @@ void usage ()
 
   + "The -mask option only influences those image values that contribute "
     "toward the determination of the threshold value; once the threshold is determined, "
-    "it is applied to the entire image, irrespective of use of the -mask option."
+    "it is applied to the entire image, irrespective of use of the -mask option. If you "
+    "wish for the voxels outside of the specified mask to additionally be excluded from "
+    "the output mask, this can be achieved by multiplying this mask by the output of "
+    "the mrthreshold command using mrcalc."
 
   + "If no output image path is specified, the command will instead write to "
     "standard output the determined threshold value.";
@@ -83,7 +86,7 @@ void usage ()
 
   + Option ("allvolumes", "compute and apply a single threshold for all image volumes, rather than an individual threshold per volume")
 
-  + Option ("ignore_zero", "ignore zero-valued input values")
+  + Option ("ignorezero", "ignore zero-valued input values")
 
   + Option ("mask", "compute the threshold based only on values within an input mask image")
     + Argument ("image").type_image_in ()
@@ -286,8 +289,11 @@ default_type calculate (Image<value_type>& in,
         return Filter::estimate_optimal_threshold (in_subset);
       }
 
+    } else if (mask.valid()) {
+      Adapter::Replicate<Image<bool>> mask_replicate (mask, in);
+      return Filter::estimate_optimal_threshold (in, mask_replicate);
     } else {
-      return Filter::estimate_optimal_threshold (in, mask);
+      return Filter::estimate_optimal_threshold (in);
     }
 
   }
