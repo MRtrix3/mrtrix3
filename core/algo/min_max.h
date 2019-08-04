@@ -50,6 +50,7 @@ namespace MR
             }
           }
 
+<<<<<<< HEAD
           template <class MaskType>
           void operator() (ImageType& vox, MaskType& mask) {
             if (mask.value()) {
@@ -61,6 +62,8 @@ namespace MR
             }
           }
 
+=======
+>>>>>>> dev
           value_type& overall_min;
           value_type& overall_max;
           value_type min, max;

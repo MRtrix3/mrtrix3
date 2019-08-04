@@ -126,4 +126,4 @@ def execute(): #pylint: disable=unused-variable
   # Generate output 4D binary image with voxel selections; RGB as in MSMT-CSD paper
   run.command('mrcat csf_mask.mif gm_mask.mif wm_sf_mask.mif voxels.mif -axis 3')
   if app.ARGS.voxels:
-    run.command('mrconvert voxels.mif ' + path.from_user(app.ARGS.voxels) + app.mrconvert_output_option(path.from_user(app.ARGS.input)))
+    run.command('mrconvert voxels.mif ' + path.from_user(app.ARGS.voxels), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE)
