@@ -18,6 +18,8 @@
 #define __dwi_tractography_streamline_h__
 
 
+#include <limits>
+
 #include "types.h"
 
 
@@ -43,7 +45,7 @@ namespace MR
             index (-1),
             weight (value_type (1.0)) { }
 
-          Streamline (size_t size, const Eigen::Vector3f& fill) :
+          Streamline (size_t size, const point_type& fill) :
             vector<point_type> (size, fill),
             index (-1),
             weight (value_type (1.0)) { }
@@ -80,42 +82,21 @@ namespace MR
             weight = 1.0;
           }
 
-          float calc_length() const;
-          float calc_length (const float step_size) const;
-
           size_t index;
           float weight;
       };
 
 
 
-
-      template <typename ValueType>
-      float Streamline<ValueType>::calc_length() const
+      template <typename PointType>
+      typename PointType::Scalar length (const vector<PointType>& tck)
       {
-        switch (Streamline<ValueType>::size()) {
-          case 0: return NaN;
-          case 1: return 0.0;
-          default: break;
-        }
-        default_type length = 0.0;
-        for (size_t i = 1; i != Streamline<ValueType>::size(); ++i)
-          length += ((*this)[i]-(*this)[i-1]).norm();
-        return length;
-      }
-
-      template <typename ValueType>
-      float Streamline<ValueType>::calc_length (const float step_size) const
-      {
-        switch (Streamline<ValueType>::size()) {
-          case 0: return NaN;
-          case 1: return 0.0;
-          case 2: return ((*this)[1]-(*this)[0]).norm();
-          case 3: return ((*this)[1]-(*this)[0]).norm() + ((*this)[2], (*this)[1]).norm();
-          default: break;
-        }
-        const size_t size = Streamline<ValueType>::size();
-        return step_size*(size-3) + ((*this)[1]-(*this)[0]).norm() + ((*this)[size-1]-(*this)[size-2]).norm();
+        if (tck.empty())
+          return std::numeric_limits<typename PointType::Scalar>::quiet_NaN();
+        typename PointType::Scalar value = typename PointType::Scalar(0);
+        for (size_t i = 1; i != tck.size(); ++i)
+          value += (tck[i] - tck[i-1]).norm();
+        return value;
       }
 
 
