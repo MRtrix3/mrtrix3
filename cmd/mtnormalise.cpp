@@ -127,8 +127,8 @@ int GetBasisVecs(int order)
   return n_basis_vecs;
 };
 
+// Struct to get user specified number of basis functions
 struct PolyBasisFunction { MEMALIGN (PolyBasisFunction)
-
   PolyBasisFunction(const int order) : n_basis_vecs (GetBasisVecs(order)) { };
 
   const int n_basis_vecs;
@@ -173,7 +173,6 @@ struct PolyBasisFunction { MEMALIGN (PolyBasisFunction)
 
 // Struct calculating the norm_field_log values
 struct NormFieldLog {
-
    NormFieldLog (Eigen::MatrixXd norm_field_weights, Transform transform, struct PolyBasisFunction basis_function) : norm_field_weights (norm_field_weights), transform (transform), basis_function (basis_function){ }
 
    void operator () (ImageType& norm_field_log) {
@@ -504,7 +503,6 @@ void run ()
 
     // Generate normalisation field in the log domain
     ThreadedLoop (norm_field_log, 0, 3).run (NormFieldLog(norm_field_weights, transform, basis_function), norm_field_log);
-
 
     // Generate normalisation field in the image domain
     ThreadedLoop (norm_field_image).run([](decltype(norm_field_image)& out, decltype(norm_field_log) in){out.value() = std::exp (in.value());}, norm_field_image, norm_field_log);
