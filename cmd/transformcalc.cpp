@@ -38,6 +38,7 @@ const char* operations[] = {
   "interpolate",
   "decompose",
   "align_vertices_rigid",
+  "align_vertices_rigid_scale",
   NULL
 };
 
@@ -91,8 +92,9 @@ void usage ()
              "R: composed roation matrix (R = rot_x * rot_y * rot_z); "
              "S: composed scaling and shear matrix")
 
-  + Example ("Align two sets of landmarks using a rigid transformation",
-             "transformcalc input moving.txt fixed.txt align_vertices_rigid output",
+  + Example ("Calculate transformation that aligns two images based on sets of corresponding landmarks",
+             "transformcalc input moving.txt fixed.txt align_vertices_rigid rigid.txt",
+             "Similary, 'align_vertices_rigid_scale' produces an affine matrix (rigid and global scale). "
              "Vertex coordinates are in scanner space, corresponding vertices must be stored in the same row "
              "of moving.txt and fixed.txt. Requires 3 or more vertices in each file. "
              "Algorithm: Kabsch 'A solution for the best rotation to relate two sets of vectors' DOI:10.1107/S0567739476001873");
@@ -103,27 +105,28 @@ template <typename T> int sgn(T val) {
     return (T(0) < val) - (val < T(0));
 }
 
-transform_type align_corresponding_vertices (const Eigen::MatrixXd &target_vertices, const Eigen::MatrixXd &moving_vertices, bool scale) {
+transform_type align_corresponding_vertices (const Eigen::MatrixXd &src_vertices, const Eigen::MatrixXd &trg_vertices, bool scale) {
   //  this function aligns two sets of vertices which must have corresponding vertices stored in the same row
   //
   //  scale == false --> Kabsch
-  //  minimise (target_vertices.row(i) - M * moving_vertices.row(i) + t).squaredNorm();
+  //  minimise (src_vertices.row(i) - M * trg_vertices.row(i) + t).squaredNorm();
   //
-  //  scale == true --> Umeyama
+  //  scale == true
   //  nonrigid version of Kabsch algorithm that also includes scale (not shear)
   //
-  assert(target_vertices.rows() == moving_vertices.rows());
-  const size_t n = moving_vertices.rows();
-  assert (n > 2);
+  assert(src_vertices.rows() == trg_vertices.rows());
+  const size_t n = trg_vertices.rows();
+  if (n < 3)
+    throw Exception ("vertex alignment requires at least 3 points");
 
-  assert(target_vertices.cols() == moving_vertices.cols());
-  assert(target_vertices.cols() == 3 && "align_corresponding_vertices implemented only for 3D data");
+  assert(src_vertices.cols() == trg_vertices.cols());
+  assert(src_vertices.cols() == 3 && "align_corresponding_vertices implemented only for 3D data");
 
-  Eigen::VectorXd moving_centre = moving_vertices.colwise().mean();
-  Eigen::VectorXd target_centre = target_vertices.colwise().mean();
-  Eigen::MatrixXd moving_centered = moving_vertices.rowwise() - moving_centre.transpose();
-  Eigen::MatrixXd target_centered = target_vertices.rowwise() - target_centre.transpose();
-  Eigen::MatrixXd cov = (target_centered.adjoint() * moving_centered) / default_type (n - 1);
+  Eigen::VectorXd trg_centre = trg_vertices.colwise().mean();
+  Eigen::VectorXd src_centre = src_vertices.colwise().mean();
+  Eigen::MatrixXd trg_centred = trg_vertices.rowwise() - trg_centre.transpose();
+  Eigen::MatrixXd src_centred = src_vertices.rowwise() - src_centre.transpose();
+  Eigen::MatrixXd cov = (src_centred.adjoint() * trg_centred) / default_type (n - 1);
 
   Eigen::JacobiSVD<Eigen::Matrix3d> svd (cov, Eigen::ComputeFullU | Eigen::ComputeFullV);
 
@@ -142,18 +145,25 @@ transform_type align_corresponding_vertices (const Eigen::MatrixXd &target_verti
   R = Eigen::Quaterniond(R).normalized().toRotationMatrix();
 
   if (scale) {
-    default_type fsq = 0;
-    for (size_t i = 0; i < n; ++ i)
-      fsq += moving_centered.row(i).squaredNorm();
+    default_type fsq_t = 0.0;
+    default_type fsq_s = 0.0;
+    for (size_t i = 0; i < n; ++ i) {
+      fsq_t += trg_centred.row(i).squaredNorm();
+      fsq_s += src_centred.row(i).squaredNorm();
+    }
     // calculate and apply the scale
-    default_type fscale = svd.singularValues().dot(e) / fsq;
+    default_type fscale = sqrt(fsq_t / fsq_s); // Umeyama: svd.singularValues().dot(e) / fsq;
+    DEBUG("scaling: "+str(fscale));
     R *= fscale;
   }
 
-  transform_type T;
-  T.linear() = R;
-  T.translation() = target_centre - (R * moving_centre);
-  return T;
+  transform_type T1 = transform_type::Identity();
+  transform_type T2 = transform_type::Identity();
+  transform_type T3 = transform_type::Identity();
+  T1.translation() = trg_centre;
+  T2.linear() = R;
+  T3.translation() = -src_centre;
+  return T1 * T2 * T3;
 }
 
 void run ()
@@ -298,12 +308,12 @@ void run ()
 
       break;
     }
-    case 7: { // align_vertices_rigid
+    case 7: case 8: { // align_vertices_rigid and align_vertices_rigid_scale
       if (num_inputs != 2)
-        throw Exception ("align_vertices_rigid requires 2 input");
+        throw Exception ("align_vertices_rigid requires 2 inputs");
       const Eigen::MatrixXd target_vertices = load_matrix (argument[0]);
       const Eigen::MatrixXd moving_vertices = load_matrix (argument[1]);
-      const transform_type T = align_corresponding_vertices (target_vertices, moving_vertices, false);
+      const transform_type T = align_corresponding_vertices (moving_vertices, target_vertices, op==8);
       save_transform (T, output_path);
       break;
     }

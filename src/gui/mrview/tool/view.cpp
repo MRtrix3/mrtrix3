@@ -567,11 +567,12 @@ namespace MR
           if(!window().image())
             return;
 
-          auto focus (window().focus());
-          std::cout << str(focus[0]) << ", " << str(focus[1]) << ", " << str(focus[2]) << std::endl;
+          Eigen::VectorXf focus (window().focus());
+          Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
+          std::cout << focus.transpose().format(fmt) << "\n";
 
           QClipboard *clip = QApplication::clipboard();
-          QString input = QString::fromStdString(str(focus[0])+", "+str(focus[1])+", "+str(focus[2]));
+          QString input = QString::fromStdString(str(focus.transpose().format(fmt)));
           clip->setText(input);
         }
 
@@ -580,12 +581,12 @@ namespace MR
           if(!window().image())
             return;
 
-          auto focus (window().focus());
-          focus = window().image()->transform().scanner2voxel.cast<float>() * focus;
-          std::cout << str(focus[0]) << ", " << str(focus[1]) << ", " << str(focus[2]) << std::endl;
+          Eigen::VectorXf focus = window().image()->transform().scanner2voxel.cast<float>() * window().focus();
+          Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
+          std::cout << focus.transpose().format(fmt) << "\n";
 
           QClipboard *clip = QApplication::clipboard();
-          QString input = QString::fromStdString(str(focus[0])+", "+str(focus[1])+", "+str(focus[2]));
+          QString input = QString::fromStdString(str(focus.transpose().format(fmt)));
           clip->setText(input);
         }
 
