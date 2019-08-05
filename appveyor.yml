@@ -1,45 +1,26 @@
 version: 1.0.{build}
-
 image: Visual Studio 2017
-
 platform: x64
-
 configuration: Release
-
 clone_folder: c:\msys64\mrtrix3
-
 shallow_clone: false
-
-matrix:
-  fast_finish: false
-
-environment:
-  matrix:
-    - PYTHON: /usr/bin/python2
-    - PYTHON: /usr/bin/python3
 
 init:
   - git config --global core.autocrlf input
 
-build: off
-
 build_script:
-  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -c "cd /mrtrix3/ && echo 0 > success.status"
-  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -c "pacman -S --noconfirm bc mingw-w64-x86_64-diffutils mingw-w64-x86_64-eigen3 mingw-w64-x86_64-fftw mingw-w64-x86_64-libtiff mingw-w64-x86_64-qt5 python python2"
-# - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -c "cd /mrtrix3/ && $PYTHON ./configure -assert; echo $? > configure.status"
-  - cmd: fc configure.status success.status || appveyor PushArtifact %APPVEYOR_BUILD_FOLDER%/configure.log
-  - cmd: fc configure.status success.status
-  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -c "cd /mrtrix3/ && $PYTHON ./build -nowarnings -persistent -nopaginate; echo $? > build.status"
-  - cmd: fc build.status success.status || appveyor PushArtifact %APPVEYOR_BUILD_FOLDER%/build.log
-  - cmd: fc build.status success.status
+  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "pacman -S --noconfirm bc mingw-w64-x86_64-diffutils mingw-w64-x86_64-eigen3 mingw-w64-x86_64-fftw mingw-w64-x86_64-libtiff mingw-w64-x86_64-qt5 python > pacman.log" || (appveyor PushArtifact %APPVEYOR_BUILD_FOLDER%/pacman.log & EXIT 1)
+  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "python --version"
+  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "./configure -assert" || (appveyor PushArtifact %APPVEYOR_BUILD_FOLDER%/configure.log & EXIT 1)
+  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "./build -nowarnings -nopaginate" || (appveyor PushArtifact %APPVEYOR_BUILD_FOLDER%/build.log & EXIT 1)
 
 test_script:
-  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -c "cd /mrtrix3/ && ./run_tests; echo $? > testing.status"
-  - cmd: fc testing.status success.status || appveyor PushArtifact %APPVEYOR_BUILD_FOLDER%/testing.log
-  - cmd: fc testing.status success.status
+  - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "./run_tests" || (appveyor PushArtifact %APPVEYOR_BUILD_FOLDER%/testing.log & EXIT 1)
 
 artifacts:
+  - path: pacman.log
+  - path: config
   - path: configure.log
   - path: build.log
   - path: testing.log
+

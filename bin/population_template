@@ -2,77 +2,91 @@
 
 # Generates an unbiased group-average template via image registration of images to a midway space.
 
-# Make the corresponding MRtrix3 Python libraries available
-import inspect, os, sys, shutil
+DEFAULT_RIGID_SCALES  = [0.3,0.4,0.6,0.8,1.0,1.0]
+DEFAULT_RIGID_LMAX    = [2,2,2,4,4,4]
+DEFAULT_AFFINE_SCALES = [0.3,0.4,0.6,0.8,1.0,1.0]
+DEFAULT_AFFINE_LMAX   = [2,2,2,4,4,4]
 
-lib_folder = os.path.realpath(
-  os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
-if not os.path.isdir(lib_folder):
-  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
-  sys.exit(1)
-sys.path.insert(0, lib_folder)
+DEFAULT_NL_SCALES = [0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0]
+DEFAULT_NL_NITER  = [  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5]
+DEFAULT_NL_LMAX   = [  2,  2,  2,  2,  2,  2,  2,  2,  4,  4,  4,  4,  4,  4,  4,  4]
 
-move = shutil.move
-copy = shutil.copy
-copytree = shutil.copytree
-rmtree = shutil.rmtree
-remove = os.remove
+REGISTRATION_MODES = ['rigid', 'affine', 'nonlinear', 'rigid_affine', 'rigid_nonlinear', 'affine_nonlinear', 
+                      'rigid_affine_nonlinear']
+
+AGGREGATION_MODES = ["mean", "median"]
+
+def usage(cmdline): #pylint: disable=unused-variable
+  cmdline.set_author('David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk) & Thijs Dhollander (thijs.dhollander@gmail.com)')
+
+  cmdline.set_synopsis('Generates an unbiased group-average template from a series of images')
+  cmdline.add_description('First a template is optimised with linear registration (rigid and/or affine, both by default), then non-linear registration is used to optimise the template further.')
+  print(dir(cmdline))
+  cmdline.add_argument("input", nargs='+', action=cmdline.PlusSep, metavar=('input_dir', 'template'), help='Pair of an input directory containing all images used to build the template and the output template image. For multi-contrast registration, provide multiple pairs separated by a plus sign. Example: wm_dir template_wm.mif + gm_dir template_gm.mif')
+
+  options = cmdline.add_argument_group('Multi-contrast options')
+  options.add_argument('-mc_weight_initial_alignment', help='Weight contribution of each contrast to the initial alignment. Comma separated, default: 1.0')
+  options.add_argument('-mc_weight_rigid', help='Weight contribution of each contrast to the rigid registration. Comma separated, default: 1.0')
+  options.add_argument('-mc_weight_affine', help='Weight contribution of each contrast to the affine registration. Comma separated, default: 1.0')
+  options.add_argument('-mc_weight_nl', help='Weight contribution of each contrast to the nonlinear registration. Comma separated, default: 1.0')
+
+  linoptions = cmdline.add_argument_group('Options for the linear registration')
+  linoptions.add_argument('-linear_no_pause', action='store_true', help='Do not pause the script if a linear registration seems implausible')
+  linoptions.add_argument('-linear_estimator', help='Choose estimator for intensity difference metric. Valid choices are: l1 (least absolute: |x|), l2 (ordinary least squares), lp (least powers: |x|^1.2), Default: l2')
+  linoptions.add_argument('-rigid_scale', help='Specifiy the multi-resolution pyramid used to build the rigid template, in the form of a list of scale factors (default: %s). This and affine_scale implicitly  define the number of template levels' % ','.join([str(x) for x in DEFAULT_RIGID_SCALES]))
+  linoptions.add_argument('-rigid_lmax', help='Specifiy the lmax used for rigid registration for each scale factor, in the form of a list of integers (default: %s). The list must be the same length as the linear_scale factor list' % ','.join([str(x) for x in DEFAULT_RIGID_LMAX]))
+  linoptions.add_argument('-rigid_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:50 for each scale). This must be a single number or a list of same length as the linear_scale factor list')
+  linoptions.add_argument('-affine_scale', help='Specifiy the multi-resolution pyramid used to build the affine template, in the form of a list of scale factors (default: %s). This and rigid_scale implicitly define the number of template levels' % ','.join([str(x) for x in DEFAULT_AFFINE_SCALES]))
+  linoptions.add_argument('-affine_lmax', help='Specifiy the lmax used for affine registration for each scale factor, in the form of a list of integers (default: %s). The list must be the same length as the linear_scale factor list' % ','.join([str(x) for x in DEFAULT_AFFINE_LMAX]))
+  linoptions.add_argument('-affine_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:500 for each scale). This must be a single number or a list of same length as the linear_scale factor list')
+
+  nloptions = cmdline.add_argument_group('Options for the non-linear registration')
+  nloptions.add_argument('-nl_scale', help='Specifiy the multi-resolution pyramid used to build the non-linear template, in the form of a list of scale factors (default: %s). This implicitly defines the number of template levels' % ','.join([str(x) for x in DEFAULT_NL_SCALES]))
+  nloptions.add_argument('-nl_lmax', help='Specifiy the lmax used for non-linear registration for each scale factor, in the form of a list of integers (default: %s). The list must be the same length as the nl_scale factor list' % ','.join([str(x) for x in DEFAULT_NL_LMAX]))
+  nloptions.add_argument('-nl_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default: %s). The list must be the same length as the nl_scale factor list' % ','.join([str(x) for x in DEFAULT_NL_NITER]))
+  nloptions.add_argument('-nl_update_smooth', default='2.0', help='Regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0 x voxel_size)')
+  nloptions.add_argument('-nl_disp_smooth', default='1.0', help='Regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)')
+  nloptions.add_argument('-nl_grad_step', default='0.5', help='The gradient step size for non-linear registration (Default: 0.5)')
+
+  options = cmdline.add_argument_group('Input, output and general options')
+  options.add_argument('-type', help='Specifiy the types of registration stages to perform. Options are "rigid" (perform rigid registration only which might be useful for intra-subject registration in longitudinal analysis), "affine" (perform affine registration) and "nonlinear" as well as cominations of registration types: %s. Default: rigid_affine_nonlinear' % ', '.join('"' + x + '"' for x in REGISTRATION_MODES if "_" in x), default='rigid_affine_nonlinear')
+  options.add_argument('-voxel_size', help='Define the template voxel size in mm. Use either a single value for isotropic voxels or 3 comma separated values.')
+  options.add_argument('-initial_alignment', default='mass', help='Method of alignment to form the initial template. Options are "mass" (default), "robust_mass" (requires masks), "geometric" and "none".')
+  options.add_argument('-mask_dir', help='Optionally input a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly. Note that masks are used for registration, not for aggregation. To exclude areas from aggregation, NaN-mask your input images.')
+  options.add_argument('-warp_dir', help='Output a directory containing warps from each input to the template. If the folder does not exist it will be created')
+  options.add_argument('-transformed_dir', help='Output a directory containing the input images transformed to the template. If the folder does not exist it will be created')
+  options.add_argument('-linear_transformations_dir', help='Output a directory containing the linear transformations used to generate the template. If the folder does not exist it will be created')
+  options.add_argument('-template_mask', help='Output a template mask. Only works if -mask_dir has been input. The template mask is computed as the intersection of all subject masks in template space.')
+  options.add_argument('-noreorientation', action='store_true', help='Turn off FOD reorientation in mrregister. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc)')
+  options.add_argument('-leave_one_out', help='Register each input image to a template that does not contain that image. Valid choices: 0, 1, auto. (Default: auto (true if n_subjects larger than 2 and smaller than 15)) ')
+  options.add_argument('-aggregate', help='Measure used to aggregate information from transformed images to the template image. Valid choices: %s. Default: mean' % ', '.join(AGGREGATION_MODES))
+  options.add_argument('-nanmask', action='store_true', help='Optionally apply masks to (transformed) input images using NaN values to specify include areas for registration and aggregation. Only works if -mask_dir has been input.')
+
 
 # Binds raw_input() to input() in Python2, so that input() can be used
 #   and the code will work on both Python 2 and 3
 try:
-  input = raw_input  #pylint: disable=redefined-builtin
+  input = raw_input #pylint: disable=redefined-builtin, invalid-name
 except NameError:
   pass
 
-import math
-from mrtrix3 import app, file, image, path, run  #pylint: disable=redefined-builtin
-from mrtrix3.path import allindir
-
 
 def abspath(*arg):
+  import os
   return os.path.abspath(os.path.join(*arg))
 
 
 def relpath(*arg):
-  return os.path.relpath(os.path.join(*arg), app.workingDir)
+  import os
+  from mrtrix3 import app #pylint: disable=no-name-in-module
+  return os.path.relpath(os.path.join(*arg), app.WORKING_DIR)
 
 
-try:
-  from numpy import loadtxt, savetxt, dot
-except ImportError:
-  app.console("numpy not found; using replacement functions")
-
-
-  def loadtxt(fname, delimiter=" ", dtype=float):
-    with open(fname, "rb") as f:
-      return [[dtype(a) for a in l.decode(errors='ignore').rstrip().split(delimiter)] for l in f.readlines()
-              if not l.decode(errors='ignore').startswith('#')]
-
-
-  def savetxt(fname, X, delimiter=" ", fmt="%.14e"):
-    try:
-      fh = open(fname, 'wb')
-      if len(X) == 1:
-        ncol = 1
-      else:
-        ncol = len(X[0])
-      fmt = [fmt, ] * ncol
-      row_format = delimiter.join(fmt)
-      for row in X:
-        fh.write(((row_format % tuple(row) + '\n').encode(errors='ignore')))
-    finally:
-      fh.close()
-
-
-  def dot(a, b):
-    # matrix dot product
-    # does not check input dimensions
-    return [[sum(x * y for x, y in zip(a_row, b_col)) for b_col in zip(*b)] for a_row in a]
-
-
-def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=0.2, max_rot=2 * math.pi,
-                                pause_on_warn=True):
+def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=0.2, max_rot=None, pause_on_warn=True):
+  import math, os
+  from mrtrix3 import app, run  # pylint: disable=no-name-in-module
+  if max_rot is None:
+    max_rot = 2 * math.pi
   def load_key_value(file_path):
     res = {}
     with open(file_path, "r") as f:
@@ -92,7 +106,7 @@ def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=
     app.console(transformation + 'decomp not found. skipping check')
     return True
   data = load_key_value(transformation + 'decomp')
-  run.function(remove, transformation + 'decomp')
+  run.function(os.remove, transformation + 'decomp')
   scaling = [float(value) for value in data['scaling']]
   if any([a < 0 for a in scaling]) or any([a > (1 + max_scaling) for a in scaling]) or any(
       [a < (1 - max_scaling) for a in scaling]):
@@ -147,7 +161,9 @@ def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=
       raw_input("press enter to continue population_template")
   return b_good
 
+
 def aggregate(images, output, mode, force=' -force'):
+  from mrtrix3 import app, run  # pylint: disable=no-name-in-module
   if mode == 'mean':
     run.command('mrmath ' + ' '.join(images) + ' mean ' + output + force)
   elif mode == 'median':
@@ -155,22 +171,27 @@ def aggregate(images, output, mode, force=' -force'):
   else:
     app.error("aggregation mode %s not understood" % mode)
 
-def inplacenanmask(images, masks, progress=True):
+
+def inplace_nan_mask(images, masks, progress=True):
+  import os, shutil
+  from mrtrix3 import app, run  # pylint: disable=no-name-in-module
   assert len(images) == len(masks), (len(images), len(masks))
   if progress:
-    pbar = app.progressBar('Nanmasking', len(images))
+    pbar = app.ProgressBar('Nanmasking', len(images))
   for image, mask in zip(images, masks):
     target_dir = os.path.split(image)[0]
     masked = os.path.join(target_dir, '__' + os.path.split(image)[1])
     run.command("mrcalc " + mask + " " + image + " nan -if " + masked + ' -force')
-    run.function(move, masked, image)
+    run.function(shutil.move, masked, image)
     if progress:
       pbar.increment()
   if progress:
     pbar.done()
 
+
 def calculate_isfinite(inputs, isfinite_count, contrasts, n_volumes):
-  progress = app.progressBar('Preparations for leave one out registration', len(inputs) * len(contrasts) + 1)
+  import os
+  progress = app.ProgressBar('Preparations for leave one out registration', len(inputs) * len(contrasts) + 1)
   for c in range(n_contrasts):
     for i in inputs:
       if n_volumes[c] > 0:
@@ -181,11 +202,17 @@ def calculate_isfinite(inputs, isfinite_count, contrasts, n_volumes):
                     ' -finite isfinite%s/%s.mif' % (i.contrasts[c], i.prefix) + ' -force')
       progress.increment()
   for c in range(n_contrasts):
-    run.command('mrmath ' + allindir('isfinite%s' % contrasts[c]) + ' sum ' + isfinite_count[c] + ' -force')
+    run.command('mrmath ' + path.all_in_dir('isfinite%s' % contrasts[c]) + ' sum ' + isfinite_count[c] + ' -force')
   progress.done()
 
+
+def get_common_postfix(file_list):
+  import os
+  return os.path.commonprefix([i[::-1] for i in file_list])[::-1]
+
+
 class Input:
-  def __init__(self, filenames, prefix, directories, contrasts=[''], mask_filename='', mask_directory=''):
+  def __init__(self, filenames, prefix, directories, contrasts, mask_filename='', mask_directory=''):
     self.filenames = filenames
     self.prefix = prefix
     self.directories = directories
@@ -197,995 +224,940 @@ class Input:
     assert (mask_filename.count(' ') == 0)
     assert (len(self.directories) == len(self.filenames))
     assert (len(self.filenames) == len(self.contrasts))
-    self.paths_in = [path.fromUser(abspath(d, f), True) for d, f in zip(self.directories, self.filenames)]
-    self.mask = path.fromUser(os.path.join(mask_directory, mask_filename), True)
-    # self.fnames_out = list(map("".join, zip([self.prefix] * len(self.contrasts), self.contrasts)))
+    import os
+    from mrtrix3 import path  # pylint: disable=no-name-in-module
+    self.paths_in = [path.from_user(abspath(d, f), True) for d, f in zip(self.directories, self.filenames)]
+    self.mask = path.from_user(os.path.join(mask_directory, mask_filename), True)
 
 
-rigid_scales = [0.3, 0.4, 0.6, 0.8, 1.0, 1.0]
-rigid_lmax = [2, 2, 2, 4, 4, 4]
-affine_scales = [0.3, 0.4, 0.6, 0.8, 1.0, 1.0]
-affine_lmax = [2, 2, 2, 4, 4, 4]
+def execute():  #pylint: disable=unused-variable
+  import math, os, shutil
+  from mrtrix3 import app, image, matrix, MRtrixError, path, run  #pylint: disable=no-name-in-module
 
-nl_scales = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-nl_niter = [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5]
-nl_lmax = [2, 2, 2, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4]
+  if not app.ARGS.type in REGISTRATION_MODES:
+    raise MRtrixError("registration type must be one of %s. provided: %s" % (str(["rigid", "affine", "rigid_affine"]), app.ARGS.type))
+  dorigid     = "rigid"     in app.ARGS.type
+  doaffine    = "affine"    in app.ARGS.type
+  dolinear    = dorigid or doaffine
+  dononlinear = "nonlinear" in app.ARGS.type
+  assert (dorigid + doaffine + dononlinear >= 1), "FIXME: registration type not valid"
 
-registration_modes = ["rigid", "affine", "nonlinear", "rigid_affine", "rigid_nonlinear", "affine_nonlinear", "rigid_affine_nonlinear"]
-aggregation_modes = ["mean", "median"]
-
-app.init('David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk) & Thijs Dhollander (thijs.dhollander@gmail.com)',
-  'Generates an unbiased group-average template from a series of images')
-app.cmdline.addDescription('First a template is optimised with linear registration (rigid or affine, affine is default), then non-linear registration is used to optimise the template further.')
-
-app.cmdline.add_argument("input", nargs='+', action=app.cmdline.PlusSep, metavar=('input_dir', 'template'), help='Pair of an input directory containing all images used to build the template and the output template image. For multi-contrast registration, provide multiple pairs separated by a plus sign. Example: wm_dir template_wm.mif + gm_dir template_gm.mif')
-
-options = app.cmdline.add_argument_group('Multi-contrast options')
-options.add_argument('-mc_weight_initial_alignment', help='Weight contribution of each contrast to the initial alignment. Comma separated, default: 1.0')
-options.add_argument('-mc_weight_rigid', help='Weight contribution of each contrast to the rigid registration. Comma separated, default: 1.0')
-options.add_argument('-mc_weight_affine', help='Weight contribution of each contrast to the affine registration. Comma separated, default: 1.0')
-options.add_argument('-mc_weight_nl', help='Weight contribution of each contrast to the nonlinear registration. Comma separated, default: 1.0')
-
-linoptions = app.cmdline.add_argument_group('Options for the linear registration')
-linoptions.add_argument('-linear_no_pause', action='store_true', help='Do not pause the script if a linear registration seems implausible')
-linoptions.add_argument('-linear_estimator', help='Choose estimator for intensity difference metric. Valid choices are: l1 (least absolute: |x|), l2 (ordinary least squares), lp (least powers: |x|^1.2), Default: l2')
-linoptions.add_argument('-rigid_scale', help='Specifiy the multi-resolution pyramid used to build the rigid template, in the form of a list of scale factors (default: %s). This and affine_scale implicitly  define the number of template levels' % ','.join([str(x) for x in rigid_scales]))
-linoptions.add_argument('-rigid_lmax', help='Specifiy the lmax used for rigid registration for each scale factor, in the form of a list of integers (default: %s). The list must be the same length as the linear_scale factor list' % ','.join([str(x) for x in rigid_lmax]))
-linoptions.add_argument('-rigid_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:50 for each scale). This must be a single number or a list of same length as the linear_scale factor list')
-linoptions.add_argument('-affine_scale', help='Specifiy the multi-resolution pyramid used to build the affine template, in the form of a list of scale factors (default: %s). This and rigid_scale implicitly define the number of template levels' % ','.join([str(x) for x in affine_scales]))
-linoptions.add_argument('-affine_lmax', help='Specifiy the lmax used for affine registration for each scale factor, in the form of a list of integers (default: %s). The list must be the same length as the linear_scale factor list' % ','.join([str(x) for x in affine_lmax]))
-linoptions.add_argument('-affine_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:500 for each scale). This must be a single number or a list of same length as the linear_scale factor list')
-
-nloptions = app.cmdline.add_argument_group('Options for the non-linear registration')
-nloptions.add_argument('-nl_scale', help='Specifiy the multi-resolution pyramid used to build the non-linear template, in the form of a list of scale factors (default: %s). This implicitly defines the number of template levels' % ','.join([str(x) for x in nl_scales]))
-nloptions.add_argument('-nl_lmax', help='Specifiy the lmax used for non-linear registration for each scale factor, in the form of a list of integers (default: %s). The list must be the same length as the nl_scale factor list' % ','.join([str(x) for x in nl_lmax]))
-nloptions.add_argument('-nl_niter', help='Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default: %s). The list must be the same length as the nl_scale factor list' % ','.join([str(x) for x in nl_niter]))
-nloptions.add_argument('-nl_update_smooth', default='2.0', help='Regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0 x voxel_size)')
-nloptions.add_argument('-nl_disp_smooth', default='1.0', help='Regularise the displacement field with Gaussian smoothing (standard deviation in voxel units, Default 1.0 x voxel_size)')
-nloptions.add_argument('-nl_grad_step', default='0.5', help='The gradient step size for non-linear registration (Default: 0.5)')
-
-options = app.cmdline.add_argument_group('Input, output and general options')
-options.add_argument('-type', help='Specifiy the types of registration stages to perform. Options are "rigid" (perform rigid registration only which might be useful for intra-subject registration in longitudinal analysis), "affine" (perform affine registration) and "nonlinear" as well as cominations of registration types: %s. Default: rigid_affine_nonlinear' % ', '.join('"' + x + '"' for x in registration_modes if "_" in x), default='rigid_affine_nonlinear')
-options.add_argument('-voxel_size', help='Define the template voxel size in mm. Use either a single value for isotropic voxels or 3 comma separated values.')
-options.add_argument('-initial_alignment', default='mass', help='Method of alignment to form the initial template. Options are "mass" (default), "robust_mass" (requires masks), "geometric" and "none".')
-options.add_argument('-mask_dir', help='Optionally input a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly. Note that masks are used for registration, not for aggregation. To exclude areas from aggregation, NaN-mask your input images.')
-options.add_argument('-warp_dir', help='Output a directory containing warps from each input to the template. If the folder does not exist it will be created')
-options.add_argument('-transformed_dir', help='Output a directory containing the input images transformed to the template. If the folder does not exist it will be created')
-options.add_argument('-linear_transformations_dir', help='Output a directory containing the linear transformations used to generate the template. If the folder does not exist it will be created')
-options.add_argument('-template_mask', help='Output a template mask. Only works if -mask_dir has been input. The template mask is computed as the intersection of all subject masks in template space.')
-options.add_argument('-noreorientation', action='store_true', help='Turn off FOD reorientation in mrregister. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc)')
-options.add_argument('-leave_one_out', help='Register each input image to a template that does not contain that image. Valid choices: 0, 1, auto. (Default: auto (true if n_subjects larger than 2 and smaller than 15)) ')
-options.add_argument('-aggregate', help='Measure used to aggregate information from transformed images to the template image. Valid choices: %s. Default: mean' % ', '.join(aggregation_modes))
-options.add_argument('-nanmask', action='store_true', help='Optionally apply masks to (transformed) input images using NaN values to specify include areas for registration and aggregation. Only works if -mask_dir has been input.')
-
-app.parse()
-
-if not app.args.type in registration_modes:
-  app.error("registration type must be one of %s. provided: %s" % (str(registration_modes), app.args.type))
-dorigid = "rigid" in app.args.type
-doaffine = "affine" in app.args.type
-dolinear = dorigid or doaffine
-dononlinear = "nonlinear" in app.args.type
-assert (dorigid + doaffine + dononlinear >= 1), "FIXME: registration type not valid"
-
-app.args.input = app.args.input[0]
-n_contrasts = len(app.args.input)
-if n_contrasts > 1:
-  app.console('Generating population template using multi-contrast registration')
-
-app.args.input_dir = []
-app.args.template = []
-for t in app.args.input:
-  if len(t) != 2:
-    app.error('expected two arguments per contrast, received %i: %s' % (len(t), ', '.join(t)))
-  app.console('\tcontrast: %s, template: %s' % (t[0], t[1]))
-  app.args.input_dir.append(relpath(t[0]))
-  app.args.template.append(path.fromUser(t[1], True))
-
-voxel_size = None
-if app.args.voxel_size:
-  voxel_size = app.args.voxel_size.split(',')
-  if len(voxel_size) == 1:
-    voxel_size = voxel_size * 3
-  try:
-    if len(voxel_size) != 3:
-      raise ValueError
-    [float(v) for v in voxel_size]
-  except ValueError:
-    app.error('voxel size needs to be a single or three comma separated floating point numbers, received: ' + str(
-      app.args.voxel_size))
-
-if app.args.mc_weight_initial_alignment:
-  if n_contrasts == 1:
-    app.error('mc_weight_initial_alignment requires multiple input contrasts')
-  else:
-    app.args.mc_weight_initial_alignment = app.args.mc_weight_initial_alignment.split(',')
-    if len(app.args.mc_weight_initial_alignment) != n_contrasts:
-      app.error('mc_weight_initial_alignment needs to be defined for each contrast')
-else:
-  app.args.mc_weight_initial_alignment = n_contrasts * ["1"]
-
-if app.args.mc_weight_rigid:
-  if n_contrasts == 1:
-    app.error('mc_weight_rigid requires multiple input contrasts')
-  else:
-    app.args.mc_weight_rigid = app.args.mc_weight_rigid.split(',')
-    if len(app.args.mc_weight_rigid) != n_contrasts:
-      app.error('mc_weight_rigid needs to be defined for each contrast')
-else:
-  app.args.mc_weight_rigid = n_contrasts * ["1"]
-
-if app.args.mc_weight_affine:
-  if n_contrasts == 1:
-    app.error('mc_weight_affine requires multiple input contrasts')
-  else:
-    app.args.mc_weight_affine = app.args.mc_weight_affine.split(',')
-    if len(app.args.mc_weight_affine) != n_contrasts:
-      app.error('mc_weight_affine needs to be defined for each contrast')
-else:
-  app.args.mc_weight_affine = n_contrasts * ["1"]
-
-if app.args.mc_weight_nl:
-  if n_contrasts == 1:
-    app.error('mc_weight_nl requires multiple input contrasts')
-  else:
-    app.args.mc_weight_nl = app.args.mc_weight_nl.split(',')
-    if len(app.args.mc_weight_nl) != n_contrasts:
-      app.error('mc_weight_nl needs to be defined for each contrast')
-else:
-  app.args.mc_weight_nl = n_contrasts * ["1"]
-
-for inputDir in app.args.input_dir:
-  if not os.path.exists(inputDir):
-    app.error('input directory not found: ' + inputDir)
-
-inFiles = [sorted(allindir(inputDir, dir_path=False)) for inputDir in app.args.input_dir]
-if len(inFiles[0]) <= 1:
-  app.error('Not enough images found in input directory ' + app.args.input_dir[
-    0] + '. More than one image is needed to generate a population template')
-elif n_contrasts > 1:
-  for i in range(1, n_contrasts):
-    if len(inFiles[i]) != len(inFiles[0]):
-      app.error('Found %i images in input directory %s but %i input images in %s.' % (
-        len(app.args.input_dir[0]), app.args.input_dir[0], len(app.args.input_dir[i]), app.args.input_dir[i]))
-else:
-  app.console('Generating a population-average template from ' + str(len(inFiles[0])) + ' input images')
+  app.ARGS.input = app.ARGS.input[0]
+  n_contrasts = len(app.ARGS.input)
   if n_contrasts > 1:
-    app.console('using ' + str(len(inFiles)) + ' contrasts for each input image')
+    app.console('Generating population template using multi-contrast registration')
 
-voxel_size = None
-if app.args.voxel_size:
-  voxel_size = app.args.voxel_size.split(',')
-  if len(voxel_size) == 1:
-    voxel_size = voxel_size * 3
-  try:
-    assert len(voxel_size) == 3
-    [float(v) for v in voxel_size]  #pylint: disable=expression-not-assigned
-  except:
-    app.error('voxel size needs to be a single or three comma-separated floating point numbers; received: ' + str(
-      app.args.voxel_size))
+  app.ARGS.input_dir = []
+  app.ARGS.template = []
+  for t in app.ARGS.input:
+    if len(t) != 2:
+      app.error('expected two arguments per contrast, received %i: %s' % (len(t), ', '.join(t)))
+    app.console('\tcontrast: %s, template: %s' % (t[0], t[1]))
+    if not os.path.exists(t[0]):
+      raise MRtrixError('input directory not found')
+    app.ARGS.input_dir.append(relpath(t[0]))
+    app.ARGS.template.append(path.from_user(t[1], True))
 
-agg_measure = 'mean'
-if app.args.aggregate is not None:
-  if not app.args.aggregate in aggregation_modes:
-    app.error("aggregation type must be one of %s. provided: %s" % (str(aggregation_modes), app.args.aggregate))
-  agg_measure = app.args.aggregate
-
-initial_alignment = app.args.initial_alignment
-if initial_alignment not in ["mass", "robust_mass", "geometric", "none"]:
-  app.error('initial_alignment must be one of ' + " ".join(["mass", "robust_mass", "geometric", "none"]))
-
-linear_estimator = app.args.linear_estimator
-if linear_estimator:
-  if not dononlinear:
-    app.error('linear_estimator specified when no linear registration is requested')
-  if linear_estimator not in ["l1", "l2", "lp"]:
-    app.error('linear_estimator must be one of ' + " ".join(["l1", "l2", "lp"]))
-
-useMasks = False
-maskPrefixes = []
-maskFiles = []
-if app.args.mask_dir:
-  useMasks = True
-  app.args.mask_dir = relpath(app.args.mask_dir)
-  maskDir = app.args.mask_dir
-  if not os.path.exists(maskDir):
-    app.error('mask directory not found')
-  maskFiles = sorted(allindir(maskDir, dir_path=False))
-  if len(maskFiles) < len(inFiles[0]):
-    app.error('there are not enough mask images for the number of images in the input directory')
-  maskCommonPostfix = path.commonPostfix(maskFiles)
-  if len(maskCommonPostfix) == 0:
-    app.error('mask filenames do not have a common postfix')
-  for m in maskFiles:
-    maskPrefixes.append(m.split(maskCommonPostfix)[0])
-
-if not useMasks:
-  app.warn('no masks input. Use input masks to reduce computation time and improve robustness')
-
-if app.args.template_mask and not useMasks:
-  app.error('you cannot output a template mask because no subject masks were input using -mask_dir')
-
-nanmask_input = app.args.nanmask
-if nanmask_input and not useMasks:
-  app.error('you cannot use NaN masking when no subject masks were input using -mask_dir')
-
-commonPostfix = [path.commonPostfix(files) for files in inFiles]
-for postfix in commonPostfix:
-  if len(postfix) == 0:
-    app.error('image filenames do not have a common postfix')
-contrasts = [''] + ["_c" + c for c in map(str, range(1, n_contrasts))]
-inputs = []
-for ifile, fname in enumerate(inFiles[0]):
-  prefix = fname.split(commonPostfix[0])[0]
-  fnames = [fname]
-  dirs = [abspath(path.fromUser(app.args.input_dir[0], False))]
-  if n_contrasts > 1:
-    for c in range(1, n_contrasts):
-      image.check3DNonunity(os.path.join(abspath(path.fromUser(app.args.input_dir[c], False)), inFiles[c][ifile]))
-      if prefix != inFiles[c][ifile].split(commonPostfix[c])[0]:
-        app.error('no matching image was found for image %s and contrasts %s and %s.' % (
-          fname, path.fromUser(app.args.input_dir[0], False), path.fromUser(app.args.input_dir[c], False)))
-      fnames.append(inFiles[c][ifile])
-      dirs.append(abspath(path.fromUser(app.args.input_dir[c], False)))
-
-  if useMasks:
-    if prefix not in maskPrefixes:
-      app.error('no matching mask image was found for input image ' + fname)
-    index = maskPrefixes.index(prefix)
-    inputs.append(Input(fnames, prefix, dirs, contrasts, maskFiles[index], abspath(path.fromUser(maskDir, False))))
+  if app.ARGS.mc_weight_initial_alignment:
+    if n_contrasts == 1:
+      app.error('mc_weight_initial_alignment requires multiple input contrasts')
+    else:
+      app.ARGS.mc_weight_initial_alignment = app.ARGS.mc_weight_initial_alignment.split(',')
+      if len(app.ARGS.mc_weight_initial_alignment) != n_contrasts:
+        app.error('mc_weight_initial_alignment needs to be defined for each contrast')
   else:
-    inputs.append(Input(fnames, prefix, dirs, contrasts))
+    app.ARGS.mc_weight_initial_alignment = n_contrasts * ["1"]
 
-leave_one_out = 'auto'
-if app.args.leave_one_out is not None:
-  leave_one_out = app.args.leave_one_out
-  if not leave_one_out in ['0', '1', 'auto']:
-    app.error('leave_one_out not understood: ' + str(leave_one_out))
-
-if leave_one_out == 'auto':
-  leave_one_out = len(inputs) > 2 and len(inputs) < 15
-else:
-  leave_one_out = bool(int(leave_one_out))
-if leave_one_out:
-  app.console('performing leave-one-out registration')
-noreorientation = app.args.noreorientation
-
-do_pause_on_warn = True
-if app.args.linear_no_pause:
-  do_pause_on_warn = False
-  if not dolinear:
-    app.error("linear option set when no linear registration is performed")
-
-if len(app.args.template) != n_contrasts:
-  app.error('mismatch between number of output templates (%i) and number of contrasts (%i)' % (len(app.args.template),
-                                                 n_contrasts))
-for t in app.args.template:
-  app.checkOutputPath(t)
-
-if app.args.warp_dir:
-  app.args.warp_dir = relpath(app.args.warp_dir)
-  app.checkOutputPath(app.args.warp_dir)
-
-if app.args.transformed_dir:
-  app.args.transformed_dir = [relpath(d) for d in app.args.transformed_dir.split(',')]
-  if len(app.args.transformed_dir) != n_contrasts:
-    app.error('require multiple transformed directories if multi-contrast registration is used')
-  for d in app.args.transformed_dir:
-    app.checkOutputPath(d)
-
-if app.args.linear_transformations_dir:
-  if not dolinear:
-    app.error("linear option set when no linear registration is performed")
-  app.args.linear_transformations_dir = relpath(app.args.linear_transformations_dir)
-  app.checkOutputPath(app.args.linear_transformations_dir)
-
-# automatically detect SH series
-do_fod_registration = False
-n_volumes = []
-for c in range(n_contrasts):
-  image_size = image.Header(relpath(inputs[0].directories[c], inputs[0].filenames[c])).size()
-  if len(image_size) < 3 or len(image_size) > 4:
-    app.error('only 3 and 4 dimensional images can be used to build a template')
-  if len(image_size) == 4:
-    n_volumes.append(image_size[3])
-    val = (math.sqrt(1 + 8 * image_size[3]) - 3.0) / 4.0
-    if not (val - int(val)) and not noreorientation:
-      do_fod_registration = True
+  if app.ARGS.mc_weight_rigid:
+    if n_contrasts == 1:
+      app.error('mc_weight_rigid requires multiple input contrasts')
+    else:
+      app.ARGS.mc_weight_rigid = app.ARGS.mc_weight_rigid.split(',')
+      if len(app.ARGS.mc_weight_rigid) != n_contrasts:
+        app.error('mc_weight_rigid needs to be defined for each contrast')
   else:
-    n_volumes.append(0)
-if do_fod_registration:
-  app.console("SH Series detected, performing FOD registration")
+    app.ARGS.mc_weight_rigid = n_contrasts * ["1"]
 
-if nanmask_input:
-  app.console("NaN masking transformed images")
+  if app.ARGS.mc_weight_affine:
+    if n_contrasts == 1:
+      app.error('mc_weight_affine requires multiple input contrasts')
+    else:
+      app.ARGS.mc_weight_affine = app.ARGS.mc_weight_affine.split(',')
+      if len(app.ARGS.mc_weight_affine) != n_contrasts:
+        app.error('mc_weight_affine needs to be defined for each contrast')
+  else:
+    app.ARGS.mc_weight_affine = n_contrasts * ["1"]
 
-# TODO check for consistent headers across contrasts?
+  if app.ARGS.mc_weight_nl:
+    if n_contrasts == 1:
+      app.error('mc_weight_nl requires multiple input contrasts')
+    else:
+      app.ARGS.mc_weight_nl = app.ARGS.mc_weight_nl.split(',')
+      if len(app.ARGS.mc_weight_nl) != n_contrasts:
+        app.error('mc_weight_nl needs to be defined for each contrast')
+  else:
+    app.ARGS.mc_weight_nl = n_contrasts * ["1"]
 
-# rigid options
-if app.args.rigid_scale:
-  rigid_scales = [float(x) for x in app.args.rigid_scale.split(',')]
-  if not dorigid:
-    app.error("rigid_scales option set when no rigid registration is performed")
-if app.args.rigid_lmax:
-  if not dorigid:
-    app.error("rigid_lmax option set when no rigid registration is performed")
-  rigid_lmax = [int(x) for x in app.args.rigid_lmax.split(',')]
-  if do_fod_registration and len(rigid_scales) != len(rigid_lmax):
-    app.error('rigid_scales and rigid_lmax schedules are not equal in length')
+  for inputDir in app.ARGS.input_dir:
+    if not os.path.exists(inputDir):
+      app.error('input directory not found: ' + inputDir)
 
-rigid_niter = [100] * len(rigid_scales)
-if app.args.rigid_niter:
-  if not dorigid:
-    app.error("rigid_niter specified when no rigid registration is performed")
-  rigid_niter = [int(x) for x in app.args.rigid_niter.split(',')]
-  if len(rigid_niter) == 1:
-    rigid_niter = rigid_niter * len(rigid_scales)
-  elif len(rigid_scales) != len(rigid_niter):
-    app.error('rigid_scales and rigid_niter schedules are not equal in length')
+  inFiles = [sorted(path.all_in_dir(inputDir, dir_path=False)) for inputDir in app.ARGS.input_dir]
+  if len(inFiles[0]) <= 1:
+    app.error('Not enough images found in input directory ' + app.ARGS.input_dir[
+      0] + '. More than one image is needed to generate a population template')
+  elif n_contrasts > 1:
+    for i in range(1, n_contrasts):
+      if len(inFiles[i]) != len(inFiles[0]):
+        app.error('Found %i images in input directory %s but %i input images in %s.' % (
+          len(app.ARGS.input_dir[0]), app.ARGS.input_dir[0], len(app.ARGS.input_dir[i]), app.ARGS.input_dir[i]))
+  else:
+    app.console('Generating a population-average template from ' + str(len(inFiles[0])) + ' input images')
+    if n_contrasts > 1:
+      app.console('using ' + str(len(inFiles)) + ' contrasts for each input image')
 
-# affine options
-if app.args.affine_scale:
-  affine_scales = [float(x) for x in app.args.affine_scale.split(',')]
-  if not doaffine:
-    app.error("affine_scale option set when no affine registration is performed")
-if app.args.affine_lmax:
-  if not doaffine:
-    app.error("affine_lmax option set when no affine registration is performed")
-  affine_lmax = [int(x) for x in app.args.affine_lmax.split(',')]
-  if do_fod_registration and len(affine_scales) != len(affine_lmax):
-    app.error('affine_scales and affine_lmax schedules are not equal in length')
+  voxel_size = None
+  if app.ARGS.voxel_size:
+    voxel_size = app.ARGS.voxel_size.split(',')
+    if len(voxel_size) == 1:
+      voxel_size = voxel_size * 3
+    try:
+      if len(voxel_size) != 3:
+        raise ValueError
+      [float(v) for v in voxel_size]  #pylint: disable=expression-not-assigned
+    except ValueError:
+      app.error('voxel size needs to be a single or three comma-separated floating point numbers; received: ' + str(
+        app.ARGS.voxel_size))
 
-affine_niter = [500] * len(affine_scales)
-if app.args.affine_niter:
-  if not doaffine:
-    app.error("affine_niter specified when no affine registration is performed")
-  affine_niter = [int(x) for x in app.args.affine_niter.split(',')]
-  if len(affine_niter) == 1:
-    affine_niter = affine_niter * len(affine_scales)
-  elif len(affine_scales) != len(affine_niter):
-    app.error('affine_scales and affine_niter schedules are not equal in length')
+  agg_measure = 'mean'
+  if app.ARGS.aggregate is not None:
+    if not app.ARGS.aggregate in AGGREGATION_MODES:
+      app.error("aggregation type must be one of %s. provided: %s" % (str(AGGREGATION_MODES), app.ARGS.aggregate))
+    agg_measure = app.ARGS.aggregate
 
-linear_scales = []
-linear_lmax = []
-linear_niter = []
-linear_type = []
-if dorigid:
-  linear_scales += rigid_scales
-  linear_lmax += rigid_lmax
-  linear_niter += rigid_niter
-  linear_type += ['rigid'] * len(rigid_scales)
+  initial_alignment = app.ARGS.initial_alignment
+  if initial_alignment not in ["mass", "robust_mass", "geometric", "none"]:
+    app.error('initial_alignment must be one of ' + " ".join(["mass", "robust_mass", "geometric", "none"]))
 
-if doaffine:
-  linear_scales += affine_scales
-  linear_lmax += affine_lmax
-  linear_niter += affine_niter
-  linear_type += ['affine'] * len(affine_scales)
+  linear_estimator = app.ARGS.linear_estimator
+  if linear_estimator:
+    if not dononlinear:
+      app.error('linear_estimator specified when no linear registration is requested')
+    if linear_estimator not in ["l1", "l2", "lp"]:
+      app.error('linear_estimator must be one of ' + " ".join(["l1", "l2", "lp"]))
 
-assert len(linear_type) == len(linear_scales)
-assert len(linear_scales) == len(linear_niter)
-if do_fod_registration:
-  assert len(linear_lmax) == len(linear_niter)
-app.console('-' * 60)
-app.console('initial alignment of images: %s' % initial_alignment)
-app.console('-' * 60)
-if n_contrasts > 1:
+  use_masks = False
+  mask_prefixes = []
+  mask_files = []
+  if app.ARGS.mask_dir:
+    use_masks = True
+    app.ARGS.mask_dir = relpath(app.ARGS.mask_dir)
+    maskDir = app.ARGS.mask_dir
+    if not os.path.exists(maskDir):
+      app.error('mask directory not found')
+    mask_files = sorted(path.all_in_dir(maskDir, dir_path=False))
+    if len(mask_files) < len(inFiles[0]):
+      app.error('there are not enough mask images for the number of images in the input directory')
+    mask_common_postfix = get_common_postfix(mask_files)
+    if len(mask_common_postfix) == 0:
+      app.error('mask filenames do not have a common postfix')
+    for m in mask_files:
+      mask_prefixes.append(m.split(mask_common_postfix)[0])
+
+  if not use_masks:
+    app.warn('no masks input. Use input masks to reduce computation time and improve robustness')
+
+  if app.ARGS.template_mask and not use_masks:
+    app.error('you cannot output a template mask because no subject masks were input using -mask_dir')
+
+  nanmask_input = app.ARGS.nanmask
+  if nanmask_input and not use_masks:
+    app.error('you cannot use NaN masking when no subject masks were input using -mask_dir')
+
+  commonPostfix = [get_common_postfix(files) for files in inFiles]
+  for postfix in commonPostfix:
+    if len(postfix) == 0:
+      app.error('image filenames do not have a common postfix')
+  contrasts = [''] + ["_c" + c for c in map(str, range(1, n_contrasts))]
+  inputs = []
+  for ifile, fname in enumerate(inFiles[0]):
+    prefix = fname.split(commonPostfix[0])[0]
+    fnames = [fname]
+    dirs = [abspath(path.from_user(app.ARGS.input_dir[0], False))]
+    if n_contrasts > 1:
+      for c in range(1, n_contrasts):
+        image.check_3d_nonunity(os.path.join(abspath(path.from_user(app.ARGS.input_dir[c], False)), inFiles[c][ifile]))
+        if prefix != inFiles[c][ifile].split(commonPostfix[c])[0]:
+          app.error('no matching image was found for image %s and contrasts %s and %s.' % (
+            fname, path.from_user(app.ARGS.input_dir[0], False), path.from_user(app.ARGS.input_dir[c], False)))
+        fnames.append(inFiles[c][ifile])
+        dirs.append(abspath(path.from_user(app.ARGS.input_dir[c], False)))
+
+    if use_masks:
+      if prefix not in mask_prefixes:
+        app.error('no matching mask image was found for input image ' + fname)
+      index = mask_prefixes.index(prefix)
+      inputs.append(Input(fnames, prefix, dirs, contrasts, mask_files[index], abspath(path.from_user(maskDir, False))))
+    else:
+      inputs.append(Input(fnames, prefix, dirs, contrasts))
+
+  leave_one_out = 'auto'
+  if app.ARGS.leave_one_out is not None:
+    leave_one_out = app.ARGS.leave_one_out
+    if not leave_one_out in ['0', '1', 'auto']:
+      app.error('leave_one_out not understood: ' + str(leave_one_out))
+
+  if leave_one_out == 'auto':
+    leave_one_out = len(inputs) > 2 and len(inputs) < 15
+  else:
+    leave_one_out = bool(int(leave_one_out))
+  if leave_one_out:
+    app.console('performing leave-one-out registration')
+  noreorientation = app.ARGS.noreorientation
+
+  do_pause_on_warn = True
+  if app.ARGS.linear_no_pause:
+    do_pause_on_warn = False
+    if not dolinear:
+      app.error("linear option set when no linear registration is performed")
+
+  if len(app.ARGS.template) != n_contrasts:
+    app.error('mismatch between number of output templates (%i) and number of contrasts (%i)' % (len(app.ARGS.template),
+                                                   n_contrasts))
+  for t in app.ARGS.template:
+    app.check_output_path(t)
+
+  if app.ARGS.warp_dir:
+    app.ARGS.warp_dir = relpath(app.ARGS.warp_dir)
+    app.check_output_path(app.ARGS.warp_dir)
+
+  if app.ARGS.transformed_dir:
+    app.ARGS.transformed_dir = [relpath(d) for d in app.ARGS.transformed_dir.split(',')]
+    if len(app.ARGS.transformed_dir) != n_contrasts:
+      app.error('require multiple transformed directories if multi-contrast registration is used')
+    for d in app.ARGS.transformed_dir:
+      app.check_output_path(d)
+
+  if app.ARGS.linear_transformations_dir:
+    if not dolinear:
+      app.error("linear option set when no linear registration is performed")
+    app.ARGS.linear_transformations_dir = relpath(app.ARGS.linear_transformations_dir)
+    app.check_output_path(app.ARGS.linear_transformations_dir)
+
+  # automatically detect SH series
+  do_fod_registration = False
+  n_volumes = []
   for c in range(n_contrasts):
-    app.console('\tcontrast: %s, weight: %s, suffix: %s' % (
-      app.args.input_dir[c], app.args.mc_weight_initial_alignment[c], contrasts[c]))
-
-if dolinear:
-  app.console('-' * 60)
-  app.console('linear registration stages:')
-  app.console('-' * 60)
-  if 'rigid' in linear_type and n_contrasts > 1:
-    for c in range(n_contrasts):
-      app.console('\tcontrast (rigid): %s, weight: %s, suffix: %s' % (
-        app.args.input_dir[c], app.args.mc_weight_rigid[c], contrasts[c]))
-  if 'affine' in linear_type and n_contrasts > 1:
-    for c in range(n_contrasts):
-      app.console('\tcontrast (affine): %s, weight: %s, suffix: %s' % (
-        app.args.input_dir[c], app.args.mc_weight_affine[c], contrasts[c]))
-
+    image_size = image.Header(relpath(inputs[0].directories[c], inputs[0].filenames[c])).size()
+    if len(image_size) < 3 or len(image_size) > 4:
+      app.error('only 3 and 4 dimensional images can be used to build a template')
+    if len(image_size) == 4:
+      n_volumes.append(image_size[3])
+      val = (math.sqrt(1 + 8 * image_size[3]) - 3.0) / 4.0
+      if not (val - int(val)) and not noreorientation:
+        do_fod_registration = True
+    else:
+      n_volumes.append(0)
   if do_fod_registration:
-    for istage, [tpe, scale, lmax, niter] in enumerate(zip(linear_type, linear_scales, linear_lmax, linear_niter)):
-      app.console('(%02i) %s scale: %.4f, niter: %i, lmax: %i' % (istage, tpe.ljust(9), scale, niter, lmax))
+    app.console("SH Series detected, performing FOD registration")
+
+  if nanmask_input:
+    app.console("NaN masking transformed images")
+
+  # TODO check for consistent headers across contrasts?
+
+  # rigid options
+  if app.ARGS.rigid_scale:
+    rigid_scales = [float(x) for x in app.ARGS.rigid_scale.split(',')]
+    if not dorigid:
+      app.error("rigid_scales option set when no rigid registration is performed")
   else:
-    for istage, [tpe, scale, niter] in enumerate(zip(linear_type, linear_scales, linear_niter)):
-      app.console('(%02i) %s scale: %.4f, niter: %i, no reorientation' % (istage, tpe.ljust(9), scale, niter))
+      rigid_scales = DEFAULT_RIGID_SCALES
+  if app.ARGS.rigid_lmax:
+    if not dorigid:
+      app.error("rigid_lmax option set when no rigid registration is performed")
+    rigid_lmax = [int(x) for x in app.ARGS.rigid_lmax.split(',')]
+    if do_fod_registration and len(rigid_scales) != len(rigid_lmax):
+      app.error('rigid_scales and rigid_lmax schedules are not equal in length')
+  else:
+      rigid_lmax = DEFAULT_RIGID_LMAX
 
-datatype_option = ' -datatype float32'
-outofbounds_option = ' -nan'
+  rigid_niter = [100] * len(rigid_scales)
+  if app.ARGS.rigid_niter:
+    if not dorigid:
+      app.error("rigid_niter specified when no rigid registration is performed")
+    rigid_niter = [int(x) for x in app.ARGS.rigid_niter.split(',')]
+    if len(rigid_niter) == 1:
+      rigid_niter = rigid_niter * len(rigid_scales)
+    elif len(rigid_scales) != len(rigid_niter):
+      app.error('rigid_scales and rigid_niter schedules are not equal in length')
 
-if not dononlinear:
-  nl_scales = []
-  nl_lmax = []
-  nl_niter = []
-  if app.args.warp_dir:
-    app.error('warp_dir specified when no nonlinear registration is performed')
-else:
-  if app.args.nl_scale:
-    nl_scales = [float(x) for x in app.args.nl_scale.split(',')]
-  if app.args.nl_niter:
-    nl_niter = [int(x) for x in app.args.nl_niter.split(',')]
-  if app.args.nl_lmax:
-    nl_lmax = [int(x) for x in app.args.nl_lmax.split(',')]
+  # affine options
+  if app.ARGS.affine_scale:
+    affine_scales = [float(x) for x in app.ARGS.affine_scale.split(',')]
+    if not doaffine:
+      app.error("affine_scale option set when no affine registration is performed")
+  else:
+      affine_scales = DEFAULT_AFFINE_SCALES
+  if app.ARGS.affine_lmax:
+    if not doaffine:
+      app.error("affine_lmax option set when no affine registration is performed")
+    affine_lmax = [int(x) for x in app.ARGS.affine_lmax.split(',')]
+    if do_fod_registration and len(affine_scales) != len(affine_lmax):
+      app.error('affine_scales and affine_lmax schedules are not equal in length')
+  else:
+      affine_lmax = DEFAULT_AFFINE_LMAX
 
-  if len(nl_scales) != len(nl_niter):
-    app.error('nl_scales and nl_niter schedules are not equal in length')
+  affine_niter = [500] * len(affine_scales)
+  if app.ARGS.affine_niter:
+    if not doaffine:
+      app.error("affine_niter specified when no affine registration is performed")
+    affine_niter = [int(x) for x in app.ARGS.affine_niter.split(',')]
+    if len(affine_niter) == 1:
+      affine_niter = affine_niter * len(affine_scales)
+    elif len(affine_scales) != len(affine_niter):
+      app.error('affine_scales and affine_niter schedules are not equal in length')
 
+  linear_scales = []
+  linear_lmax = []
+  linear_niter = []
+  linear_type = []
+  if dorigid:
+    linear_scales += rigid_scales
+    linear_lmax += rigid_lmax
+    linear_niter += rigid_niter
+    linear_type += ['rigid'] * len(rigid_scales)
+
+  if doaffine:
+    linear_scales += affine_scales
+    linear_lmax += affine_lmax
+    linear_niter += affine_niter
+    linear_type += ['affine'] * len(affine_scales)
+
+  assert len(linear_type) == len(linear_scales)
+  assert len(linear_scales) == len(linear_niter)
+  if do_fod_registration:
+    assert len(linear_lmax) == len(linear_niter)
   app.console('-' * 60)
-  app.console('nonlinear registration stages:')
+  app.console('initial alignment of images: %s' % initial_alignment)
   app.console('-' * 60)
   if n_contrasts > 1:
     for c in range(n_contrasts):
       app.console('\tcontrast: %s, weight: %s, suffix: %s' % (
-        app.args.input_dir[c], app.args.mc_weight_nl[c], contrasts[c]))
+        app.ARGS.input_dir[c], app.ARGS.mc_weight_initial_alignment[c], contrasts[c]))
 
-  if do_fod_registration:
-    if len(nl_scales) != len(nl_lmax):
-      app.error('nl_scales and nl_lmax schedules are not equal in length')
+  if dolinear:
+    app.console('-' * 60)
+    app.console('linear registration stages:')
+    app.console('-' * 60)
+    if 'rigid' in linear_type and n_contrasts > 1:
+      for c in range(n_contrasts):
+        app.console('\tcontrast (rigid): %s, weight: %s, suffix: %s' % (
+          app.ARGS.input_dir[c], app.ARGS.mc_weight_rigid[c], contrasts[c]))
+    if 'affine' in linear_type and n_contrasts > 1:
+      for c in range(n_contrasts):
+        app.console('\tcontrast (affine): %s, weight: %s, suffix: %s' % (
+          app.ARGS.input_dir[c], app.ARGS.mc_weight_affine[c], contrasts[c]))
 
-  if do_fod_registration:
-    for istage, [scale, lmax, niter] in enumerate(zip(nl_scales, nl_lmax, nl_niter)):
-      app.console('(%02i) nonlinear scale: %.4f, niter: %i, lmax: %i' % (istage, scale, niter, lmax))
-  else:
-    for istage, [scale, niter] in enumerate(zip(nl_scales, nl_niter)):
-      app.console('(%02i) nonlinear scale: %.4f, niter: %i, no reorientation' % (istage, scale, niter))
-
-app.makeTempDir()
-app.gotoTempDir()
-
-for contrast in contrasts:
-  file.makeDir('input_transformed' + contrast)
-
-for contrast in contrasts:
-  file.makeDir('isfinite' + contrast)
-isfinite_count = ['isfinite' + contrast + '.mif' for contrast in contrasts]
-
-file.makeDir('linear_transforms_initial')
-file.makeDir('linear_transforms')
-for level in range(0, len(linear_scales)):
-  file.makeDir('linear_transforms_%i' % level)
-for level in range(0, len(nl_scales)):
-  file.makeDir('warps_%i' % level)
-
-if useMasks:
-  file.makeDir('masks_transformed')
-write_log = (app.verbosity >= 2)
-if write_log:
-  file.makeDir('log')
-
-if initial_alignment == 'robust_mass':
-  if not useMasks:
-    app.error('robust_mass initial alignment requires masks')
-  file.makeDir('robust')
-
-# Make initial template in average space using first contrast
-app.console('Generating initial template')
-input_filenames = []
-for i in inputs:
-  input_filenames.append(i.paths_in[0])
-
-if voxel_size is None:
-  run.command('mraverageheader ' + ' '.join(input_filenames) + ' average_header.mif -fill')
-else:
-  run.command('mraverageheader -fill ' + ' '.join(input_filenames) + ' - | mrresize - -voxel ' +
-              ','.join(map(str, voxel_size)) + ' average_header.mif')
-
-# crop average space to extent defined by original masks
-if useMasks:
-  progress = app.progressBar('Importing input masks to average space for template cropping', len(inputs))
-  mask_filenames = []
-  for i in inputs:
-    run.command('mrtransform ' + abspath(i.mask_directory, i.mask_filename) +
-                ' -interp nearest -template average_header.mif ' + os.path.join('masks_transformed', i.mask_filename))
-    mask_filenames.append(os.path.join('masks_transformed', i.mask_filename))
-    progress.increment()
-  progress.done()
-  run.command('mrmath ' + ' '.join(mask_filenames) + ' max mask_initial.mif')
-  run.command('mrcrop ' + 'average_header.mif -mask mask_initial.mif average_header_cropped.mif')
-  run.function(remove, 'mask_initial.mif')
-  run.function(remove, 'average_header.mif')
-  run.function(move, 'average_header_cropped.mif', 'average_header.mif')
-  progress = app.progressBar('Erasing temporary mask images', len(mask_filenames))
-  for mask in mask_filenames:
-    run.function(remove, mask)
-    progress.increment()
-  progress.done()
-
-# create average space headers for other contrasts
-if n_contrasts > 1:
-  avh3d = 'average_header3d.mif'
-  avh4d = 'average_header4d.mif'
-  if len(image.Header('average_header.mif').size()) == 3:
-    run.command('mrconvert average_header.mif ' + avh3d)
-  else:
-    run.command('mrconvert average_header.mif -coord 3 0 -axes 0,1,2 ' + avh3d)
-  run.command('mrconvert ' + avh3d + ' -axes 0,1,2,-1 ' + avh4d)
-  for c in range(1, n_contrasts):
-    if n_volumes[c] == 0:
-      run.function(copy, avh3d, 'average_header' + contrasts[c] + '.mif')
-    elif n_volumes[c] == 1:
-      run.function(copy, avh4d, 'average_header' + contrasts[c] + '.mif')
+    if do_fod_registration:
+      for istage, [tpe, scale, lmax, niter] in enumerate(zip(linear_type, linear_scales, linear_lmax, linear_niter)):
+        app.console('(%02i) %s scale: %.4f, niter: %i, lmax: %i' % (istage, tpe.ljust(9), scale, niter, lmax))
     else:
-      run.command('mrcat ' + ' '.join([avh3d] * n_volumes[c]) + ' -axis 3 average_header' + contrasts[c] + '.mif')
-  run.function(remove, avh3d)
-  run.function(remove, avh4d)
+      for istage, [tpe, scale, niter] in enumerate(zip(linear_type, linear_scales, linear_niter)):
+        app.console('(%02i) %s scale: %.4f, niter: %i, no reorientation' % (istage, tpe.ljust(9), scale, niter))
 
-current_template = ['average_header' + contrast + '.mif' for contrast in contrasts]
+  datatype_option = ' -datatype float32'
+  outofbounds_option = ' -nan'
 
-if initial_alignment == 'none':
-  progress = app.progressBar('Resampling input images to template space with no initial alignment', len(inputs) * n_contrasts)
-  for i in inputs:
-    for c in range(n_contrasts):
-      run.command('mrtransform ' + i.paths_in[c] + ' -interp linear ' +
-                  '-template ' + current_template[c] + ' ' +
-                  os.path.join('input_transformed' + contrasts[c], i.prefix + '.mif') +
-                  outofbounds_option +
-                  datatype_option)
-      progress.increment()
-  progress.done()
-
-  if useMasks:
-    progress = app.progressBar('Reslicing input masks to average header', len(inputs))
-    for i in inputs:
-      run.command('mrtransform ' + i.paths_in[c] + ' ' +
-                  os.path.join('masks_transformed', i.prefix + '.mif') + ' ' +
-                  '-interp nearest -template average_header.mif' +
-                  datatype_option)
-      progress.increment()
-    progress.done()
-
-  if nanmask_input:
-    inplacenanmask([os.path.join('input_transformed' + contrasts[c], i.prefix + '.mif') for i in inputs for c in range(n_contrasts)],
-                   [os.path.join('masks_transformed', i.prefix + '.mif') for i in inputs for c in range(n_contrasts)])
-
-  if leave_one_out:
-    calculate_isfinite(inputs, isfinite_count, contrasts, n_volumes)
-
-  if not dolinear:
-    for i in inputs:
-      with open(os.path.join('linear_transforms_initial', '%s.txt' % (i.prefix)), 'w') as fout:
-        fout.write('1 0 0 0\n0 1 0 0\n0 0 1 0\n0 0 0 1\n')
-else:
-  progress = app.progressBar('Performing initial rigid registration to template', len(inputs))
-  mask_option = ''
-  if do_fod_registration:
-    lmax_option = ' -rigid_lmax 0 '
+  if not dononlinear:
+    nl_scales = []
+    nl_lmax = []
+    nl_niter = []
+    if app.ARGS.warp_dir:
+      app.error('warp_dir specified when no nonlinear registration is performed')
   else:
-    lmax_option = ' -noreorientation '
-  if n_contrasts > 1:
-    contrast_weight_option = ' -mc_weights ' + ','.join(app.args.mc_weight_initial_alignment) + ' '
-  else:
-    contrast_weight_option = ''
-  for i in inputs:
-    output_option = ' -rigid ' + os.path.join('linear_transforms_initial', i.prefix + '.txt')
-    images = ' + '.join([p + ' ' + t for p, t in zip(i.paths_in, current_template)])
-    if useMasks:
-      mask_option = ' -mask1 ' + i.mask
-      if initial_alignment == 'robust_mass':
-        if not os.path.isfile('robust/template.mif'):
-          if n_volumes[0] > 0:
-            run.command('mrconvert ' + current_template[
-              0] + ' -coord 3 0 - | mrconvert - -axes 0,1,2 robust/template.mif')
-          else:
-            run.command('mrconvert ' + current_template[0] + ' robust/template.mif')
-        if n_contrasts > 1:
-          cmd = ['mrcalc', i.paths_in[0], app.args.mc_weight_initial_alignment[0], '-mult']
-          for c in range(1, n_contrasts):
-            cmd += [i.paths_in[c], app.args.mc_weight_initial_alignment[c], '-mult', '-add']
-          contrast_weight_option = ''
-          run.command(' '.join(cmd) +
-                      ' - | mrfilter - zclean -zlower 3 -zupper 3 robust/image_' + i.prefix +
-                      '.mif -maskin ' + i.mask + ' -maskout robust/mask_' + i.prefix + '.mif')
-        else:
-          run.command('mrfilter ' + i.paths_in[0] + ' zclean -zlower 3 -zupper 3 robust/image_' + i.prefix +
-                      '.mif -maskin ' + i.mask + ' -maskout robust/mask_' + i.prefix + '.mif')
-        images = 'robust/image_' + i.prefix + '.mif robust/template.mif'
-        mask_option = ' -mask1 ' + 'robust/mask_' + i.prefix + '.mif'
-        lmax_option = ''
+    nl_scales = [float(x) for x in app.ARGS.nl_scale.split(',')] if app.ARGS.nl_scale else DEFAULT_NL_SCALES
+    nl_niter = [int(x) for x in app.ARGS.nl_niter.split(',')] if app.ARGS.nl_niter else DEFAULT_NL_NITER
+    nl_lmax = [int(x) for x in app.ARGS.nl_lmax.split(',')] if app.ARGS.nl_lmax else DEFAULT_NL_LMAX
 
-    run.command('mrregister ' + images +
-                mask_option +
-                ' -rigid_scale 1 ' +
-                ' -rigid_niter 0 ' +
-                ' -type rigid ' +
-                lmax_option +
-                contrast_weight_option +
-                ' -rigid_init_translation ' + initial_alignment.replace('robust_', '') + ' ' +
-                datatype_option +
-                output_option)
-    # translate input images to centre of mass without interpolation
-    for c in range(n_contrasts):
-      run.command('mrtransform ' + i.paths_in[c] +
-                  ' -linear ' + os.path.join('linear_transforms_initial', i.prefix + '.txt') +
-                  datatype_option +
-                  ' ' + os.path.join('input_transformed' + i.contrasts[c], i.prefix + '_translated.mif'))
-    if useMasks:
-      run.command('mrtransform ' + i.mask +
-                  ' -linear ' + os.path.join('linear_transforms_initial', i.prefix + '.txt') +
-                  datatype_option +
-                  ' ' + os.path.join('masks_transformed', i.prefix + '_translated.mif'))
-    progress.increment()
-  # update average space of first contrast to new extent, delete other average space images
-  run.command('mraverageheader ' + ' '.join([os.path.join('input_transformed', i.prefix + '_translated.mif')
-                                             for i in inputs]) + ' average_header_tight.mif')
-  progress.done()
+    if len(nl_scales) != len(nl_niter):
+      app.error('nl_scales and nl_niter schedules are not equal in length')
+
+    app.console('-' * 60)
+    app.console('nonlinear registration stages:')
+    app.console('-' * 60)
+    if n_contrasts > 1:
+      for c in range(n_contrasts):
+        app.console('\tcontrast: %s, weight: %s, suffix: %s' % (
+          app.ARGS.input_dir[c], app.ARGS.mc_weight_nl[c], contrasts[c]))
+
+    if do_fod_registration:
+      if len(nl_scales) != len(nl_lmax):
+        app.error('nl_scales and nl_lmax schedules are not equal in length')
+
+    if do_fod_registration:
+      for istage, [scale, lmax, niter] in enumerate(zip(nl_scales, nl_lmax, nl_niter)):
+        app.console('(%02i) nonlinear scale: %.4f, niter: %i, lmax: %i' % (istage, scale, niter, lmax))
+    else:
+      for istage, [scale, niter] in enumerate(zip(nl_scales, nl_niter)):
+        app.console('(%02i) nonlinear scale: %.4f, niter: %i, no reorientation' % (istage, scale, niter))
+
+  app.make_scratch_dir()
+  app.goto_scratch_dir()
+
+  for contrast in contrasts:
+    path.make_dir('input_transformed' + contrast)
+
+  for contrast in contrasts:
+    path.make_dir('isfinite' + contrast)
+  isfinite_count = ['isfinite' + contrast + '.mif' for contrast in contrasts]
+
+  path.make_dir('linear_transforms_initial')
+  path.make_dir('linear_transforms')
+  for level in range(0, len(linear_scales)):
+    path.make_dir('linear_transforms_%i' % level)
+  for level in range(0, len(nl_scales)):
+    path.make_dir('warps_%i' % level)
+
+  if use_masks:
+    path.make_dir('masks_transformed')
+  write_log = (app.VERBOSITY >= 2)
+  if write_log:
+    path.make_dir('log')
+
+  if initial_alignment == 'robust_mass':
+    if not use_masks:
+      app.error('robust_mass initial alignment requires masks')
+    path.make_dir('robust')
+
+  # Make initial template in average space using first contrast
+  app.console('Generating initial template')
+  input_filenames = []
+  for i in inputs:
+    input_filenames.append(i.paths_in[0])
 
   if voxel_size is None:
-    run.command('mrpad -uniform 10 average_header_tight.mif average_header.mif -force')
+    run.command('mraverageheader ' + ' '.join(input_filenames) + ' average_header.mif -fill')
   else:
-    run.command('mrpad -uniform 10 average_header_tight.mif - | mrresize - -voxel ' + ','.join(map(str, voxel_size)) +
-                ' average_header.mif -force')
-  run.function(remove, 'average_header_tight.mif')
-  for c in range(1, n_contrasts):
-    run.function(remove, 'average_header' + contrasts[c] + '.mif')
+    run.command('mraverageheader -fill ' + ' '.join(input_filenames) + ' - | mrresize - -voxel ' +
+                ','.join(map(str, voxel_size)) + ' average_header.mif')
 
-  if useMasks:
-    # reslice masks
-    progress = app.progressBar('Reslicing input masks to average header', len(inputs))
-    for i in inputs:
-      run.command('mrtransform ' +
-                  os.path.join('masks_transformed', i.prefix + '_translated.mif') + ' ' +
-                  os.path.join('masks_transformed', i.prefix + '.mif') + ' ' +
-                  '-interp nearest -template average_header.mif' +
-                  datatype_option)
-      progress.increment()
-    progress.done()
-    # crop average space to extent defined by translated masks
+  # crop average space to extent defined by original masks
+  if use_masks:
+    progress = app.ProgressBar('Importing input masks to average space for template cropping', len(inputs))
     mask_filenames = []
     for i in inputs:
-      mask_filenames.append(os.path.join('masks_transformed', i.prefix + '.mif'))
-    run.command('mrmath ' + ' '.join(mask_filenames) + ' max mask_translated.mif')
-    run.command('mrcrop ' + 'average_header.mif -mask mask_translated.mif average_header_cropped.mif')
-    # pad average space to allow for deviation from initial alignment
-    run.command('mrpad -uniform 10 average_header_cropped.mif -force average_header.mif')
-    run.function(remove, 'average_header_cropped.mif')
-    progress = app.progressBar('Reslicing mask images to new padded average header', len(inputs))
-    for i in inputs:
-      run.command('mrtransform ' +
-                  os.path.join('masks_transformed', i.prefix + '_translated.mif') + ' ' +
-                  os.path.join('masks_transformed', i.prefix + '.mif') + ' ' +
-                  '-interp nearest -template average_header.mif' +
-                  datatype_option +
-                  ' -force')
-      run.function(remove, os.path.join('masks_transformed', i.prefix + '_translated.mif'))
+      run.command('mrtransform ' + abspath(i.mask_directory, i.mask_filename) +
+                  ' -interp nearest -template average_header.mif ' + os.path.join('masks_transformed', i.mask_filename))
+      mask_filenames.append(os.path.join('masks_transformed', i.mask_filename))
       progress.increment()
     progress.done()
-    run.function(remove, 'mask_translated.mif')
-
-  # reslice input images
-  progress = app.progressBar('Reslicing input images to average header', len(inputs) * n_contrasts)
-  for c in range(n_contrasts):
-    for i in inputs:
-      run.command('mrtransform ' +
-                  ' ' + os.path.join('input_transformed' + i.contrasts[c], i.prefix + '_translated.mif') +
-                  ' ' + os.path.join('input_transformed' + i.contrasts[c], i.prefix + '.mif') +
-                  ' -interp linear -template average_header.mif' +
-                  outofbounds_option +
-                  datatype_option)
-      run.function(remove, os.path.join('input_transformed' + i.contrasts[c], i.prefix + '_translated.mif'))
-    progress.increment()
-  progress.done()
-
-  if nanmask_input:
-    inplacenanmask([os.path.join('input_transformed' + contrasts[c], i.prefix + '.mif') for i in inputs for c in range(n_contrasts)],
-                   [os.path.join('masks_transformed', i.prefix + '.mif') for i in inputs for c in range(n_contrasts)])
-
-  if leave_one_out:
-    calculate_isfinite(inputs, isfinite_count, contrasts, n_volumes)
-
-current_template = ['initial_template' + contrast + '.mif' for contrast in contrasts]
-for c in range(n_contrasts):
-  aggregate(allindir('input_transformed' + contrasts[c]), 'initial_template' + contrasts[c] + '.mif', agg_measure)
-  if n_volumes[c] == 1:
-    run.function(move, 'initial_template' + contrasts[c] + '.mif', 'tmp.mif')
-    run.command('mrconvert tmp.mif initial_template' + contrasts[c] + '.mif -axes 0,1,2,-1')
-
-# Optimise template with linear registration
-if not dolinear:
-  for i in inputs:
-    run.function(copy, os.path.join('linear_transforms_initial', '%s.txt' % (i.prefix)),
-                 os.path.join('linear_transforms', '%s.txt' % i.prefix))
-else:
-  for level, (regtype, scale, niter, lmax) in enumerate(zip(linear_type, linear_scales, linear_niter, linear_lmax)):
-    progress = app.progressBar(
-      'Optimising template with linear registration (stage {0} of {1})'.format(level + 1, len(linear_scales)),
-      len(inputs) * n_contrasts)
-    for i in inputs:
-      initialise_option = ''
-      if useMasks:
-        mask_option = ' -mask1 ' + i.mask
-      else:
-        mask_option = ''
-      lmax_option = ''
-      metric_option = ''
-      mrregister_log_option = ''
-      contrast_weight_option = ''
-      if regtype == 'rigid':
-        scale_option = ' -rigid_scale ' + str(scale)
-        niter_option = ' -rigid_niter ' + str(niter)
-        regtype_option = ' -type rigid'
-        output_option = ' -rigid ' + os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix)
-        if n_contrasts > 1:
-          contrast_weight_option = ' -mc_weights ' + ','.join(app.args.mc_weight_rigid) + ' '
-        if level > 0:
-          initialise_option = ' -rigid_init_matrix ' + os.path.join('linear_transforms_%i' % (level - 1),
-                                        '%s.txt' % i.prefix)
-        if do_fod_registration:
-          lmax_option = ' -rigid_lmax ' + str(lmax)
-        else:
-          lmax_option = ' -noreorientation'
-        if linear_estimator:
-          metric_option = ' -rigid_metric.diff.estimator ' + linear_estimator
-        if app.verbosity >= 2:
-          mrregister_log_option = ' -info -rigid_log ' + os.path.join('log', i.prefix + "_" + str(level) + '.log')
-      else:
-        scale_option = ' -affine_scale ' + str(scale)
-        niter_option = ' -affine_niter ' + str(niter)
-        regtype_option = ' -type affine'
-        output_option = ' -affine ' + os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix)
-        if n_contrasts > 1:
-          contrast_weight_option = ' -mc_weights ' + ','.join(app.args.mc_weight_affine) + ' '
-        if level > 0:
-          initialise_option = ' -affine_init_matrix ' + os.path.join('linear_transforms_%i' % (level - 1),
-                                         '%s.txt' % i.prefix)
-        if do_fod_registration:
-          lmax_option = ' -affine_lmax ' + str(lmax)
-        else:
-          lmax_option = ' -noreorientation'
-        if linear_estimator:
-          metric_option = ' -affine_metric.diff.estimator ' + linear_estimator
-        if write_log:
-          mrregister_log_option = ' -info -affine_log ' + os.path.join('log', i.prefix + '_' + str(level) + '.log')
-
-      if leave_one_out:
-        tmpl = []
-        for c in range(n_contrasts):
-          current = os.path.join('input_transformed' + i.contrasts[c], '%s.mif' % i.prefix)
-          isfinite = 'isfinite%s/%s.mif' % (i.contrasts[c], i.prefix)
-          run.command('mrcalc ' + isfinite_count[c] + ' ' + isfinite + ' -neg -add - | mrcalc ' + current_template[c] +
-                      ' ' + isfinite_count[c] + ' -mult ' + current + ' -neg -add - -div loo_%s -force' %current_template[c])
-          tmpl.append('loo_%s' % current_template[c])
-        images = ' + '.join([p + ' ' + t for p, t in zip(i.paths_in, tmpl)])
-      else:
-        images = ' + '.join([p + ' ' + t for p, t in zip(i.paths_in, current_template)])
-      command = 'mrregister ' + images + \
-                ' -force' + \
-                initialise_option + \
-                mask_option + \
-                scale_option + \
-                niter_option + \
-                lmax_option + \
-                regtype_option + \
-                metric_option + \
-                datatype_option + \
-                contrast_weight_option + \
-                output_option + \
-                mrregister_log_option
-      run.command(command)
-      check_linear_transformation(os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix), command,
-                                  pause_on_warn=do_pause_on_warn)
-      if leave_one_out:
-        for im_temp in tmpl:
-          run.function(remove, im_temp)
+    run.command('mrmath ' + ' '.join(mask_filenames) + ' max mask_initial.mif')
+    run.command('mrcrop ' + 'average_header.mif -mask mask_initial.mif average_header_cropped.mif')
+    run.function(os.remove, 'mask_initial.mif')
+    run.function(os.remove, 'average_header.mif')
+    run.function(shutil.move, 'average_header_cropped.mif', 'average_header.mif')
+    progress = app.ProgressBar('Erasing temporary mask images', len(mask_filenames))
+    for mask in mask_filenames:
+      run.function(os.remove, mask)
       progress.increment()
     progress.done()
-    # Here we ensure the template doesn't drift or scale
-    # TODO matrix avarage might produce a large FOV for large rotations
-    run.command('transformcalc ' + ' '.join(
-      allindir('linear_transforms_%i' % level)) + ' average linear_transform_average.txt -force -quiet')
-    if linear_type[level] == 'rigid':
-      run.command('transformcalc linear_transform_average.txt rigid linear_transform_average.txt -force -quiet')
-    run.command('transformcalc linear_transform_average.txt invert linear_transform_average_inv.txt -force -quiet')
 
-    average_inv = run.function(loadtxt, 'linear_transform_average_inv.txt')
-    if average_inv is not None:
-      for i in inputs:
-        transform = dot(loadtxt(os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix)), average_inv)
-        savetxt(os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix), transform)
+  # create average space headers for other contrasts
+  if n_contrasts > 1:
+    avh3d = 'average_header3d.mif'
+    avh4d = 'average_header4d.mif'
+    if len(image.Header('average_header.mif').size()) == 3:
+      run.command('mrconvert average_header.mif ' + avh3d)
+    else:
+      run.command('mrconvert average_header.mif -coord 3 0 -axes 0,1,2 ' + avh3d)
+    run.command('mrconvert ' + avh3d + ' -axes 0,1,2,-1 ' + avh4d)
+    for c in range(1, n_contrasts):
+      if n_volumes[c] == 0:
+        run.function(shutil.copy, avh3d, 'average_header' + contrasts[c] + '.mif')
+      elif n_volumes[c] == 1:
+        run.function(shutil.copy, avh4d, 'average_header' + contrasts[c] + '.mif')
+      else:
+        run.command('mrcat ' + ' '.join([avh3d] * n_volumes[c]) + ' -axis 3 average_header' + contrasts[c] + '.mif')
+    run.function(os.remove, avh3d)
+    run.function(os.remove, avh4d)
 
-    progress = app.progressBar('Transforming all subjects to revised template', len(inputs) * n_contrasts)
-    for c in range(n_contrasts):
-      for i in inputs:
-        run.command('mrtransform ' + i.paths_in[c] +
-                    ' -template ' + current_template[c] +
-                    ' -linear ' + os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix) +
-                    ' ' + os.path.join('input_transformed' + contrasts[c], '%s.mif' % i.prefix) +
+  current_template = ['average_header' + contrast + '.mif' for contrast in contrasts]
+
+  if initial_alignment == 'none':
+    progress = app.ProgressBar('Resampling input images to template space with no initial alignment', len(inputs) * n_contrasts)
+    for i in inputs:
+      for c in range(n_contrasts):
+        run.command('mrtransform ' + i.paths_in[c] + ' -interp linear ' +
+                    '-template ' + current_template[c] + ' ' +
+                    os.path.join('input_transformed' + contrasts[c], i.prefix + '.mif') +
                     outofbounds_option +
-                    datatype_option +
-                    ' -force')
+                    datatype_option)
         progress.increment()
     progress.done()
 
-    if useMasks:
-      progress = app.progressBar('Transforming all masks to revised template', len(inputs) * n_contrasts)
-      for c in range(n_contrasts):
-        for i in inputs:
-          run.command('mrtransform ' + i.mask +
-                      ' -template ' + current_template[c] +
-                      ' -interp nearest' +
-                      ' -linear ' + os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix) +
-                      ' ' + os.path.join('masks_transformed', '%s.mif' % i.prefix) +
-                      ' -force')
-          progress.increment()
+    if use_masks:
+      progress = app.ProgressBar('Reslicing input masks to average header', len(inputs))
+      for i in inputs:
+        run.command('mrtransform ' + i.paths_in[c] + ' ' +
+                    os.path.join('masks_transformed', i.prefix + '.mif') + ' ' +
+                    '-interp nearest -template average_header.mif' +
+                    datatype_option)
+        progress.increment()
       progress.done()
 
     if nanmask_input:
-      inplacenanmask([os.path.join('input_transformed' + contrasts[c], i.prefix + '.mif') for i in inputs for c in range(n_contrasts)],
+      inplace_nan_mask([os.path.join('input_transformed' + contrasts[c], i.prefix + '.mif') for i in inputs for c in range(n_contrasts)],
                      [os.path.join('masks_transformed', i.prefix + '.mif') for i in inputs for c in range(n_contrasts)])
 
     if leave_one_out:
       calculate_isfinite(inputs, isfinite_count, contrasts, n_volumes)
 
-    for c in range(n_contrasts):
-      current_template[c] = 'linear_template%i%s.mif' % (level, contrasts[c])
-      aggregate(allindir('input_transformed' + contrasts[c]), current_template[c], agg_measure)
-      if n_volumes[c] == 1:
-        run.function(move, current_template[c], 'tmp.mif')
-        run.command('mrconvert tmp.mif ' + current_template[c] + ' -axes 0,1,2,-1')
-        run.function(remove, 'tmp.mif')
-
-  for entry in os.listdir('linear_transforms_%i' % level):
-    run.function(copy, os.path.join('linear_transforms_%i' % level, entry), os.path.join('linear_transforms', entry))
-
-# Create a template mask for nl registration by taking the intersection of all transformed input masks and dilating
-if useMasks and (dononlinear or app.args.template_mask):
-  run.command('mrmath ' + ' '.join(allindir('masks_transformed')) +
-              ' min - | maskfilter - median - | maskfilter - dilate -npass 5 init_nl_template_mask.mif -force')
-  current_template_mask = 'init_nl_template_mask.mif'
-
-if dononlinear:
-  app.console('Optimising template with non-linear registration')
-  file.makeDir('warps')
-  for level, (scale, niter, lmax) in enumerate(zip(nl_scales, nl_niter, nl_lmax)):
-    progress = app.progressBar(
-      'Optimising template with non-linear registration (stage {0} of {1})'.format(level + 1, len(nl_scales)),
-      len(inputs))
-    for i in inputs:
-      if level > 0:
-        initialise_option = ' -nl_init ' + os.path.join('warps_%i' % (level - 1), '%s.mif' % i.prefix)
-        scale_option = ''
-      else:
-        scale_option = ' -nl_scale ' + str(scale)
-        if not doaffine:  # rigid or no previous linear stage
-          initialise_option = ' -rigid_init_matrix ' + os.path.join('linear_transforms', '%s.txt' % i.prefix)
-        else:
-          initialise_option = ' -affine_init_matrix ' + os.path.join('linear_transforms', '%s.txt' % i.prefix)
-
-      if useMasks:
-        mask_option = ' -mask1 ' + abspath(i.mask_directory, i.mask_filename) + ' -mask2 ' + current_template_mask
-      else:
-        mask_option = ''
-
-      if do_fod_registration:
-        lmax_option = ' -nl_lmax ' + str(lmax)
-      else:
-        lmax_option = ' -noreorientation'
-
+    if not dolinear:
+      for i in inputs:
+        with open(os.path.join('linear_transforms_initial', '%s.txt' % (i.prefix)), 'w') as fout:
+          fout.write('1 0 0 0\n0 1 0 0\n0 0 1 0\n0 0 0 1\n')
+  else:
+    progress = app.ProgressBar('Performing initial rigid registration to template', len(inputs))
+    mask_option = ''
+    if do_fod_registration:
+      lmax_option = ' -rigid_lmax 0 '
+    else:
+      lmax_option = ' -noreorientation '
+    if n_contrasts > 1:
+      contrast_weight_option = ' -mc_weights ' + ','.join(app.ARGS.mc_weight_initial_alignment) + ' '
+    else:
       contrast_weight_option = ''
-      if n_contrasts > 1:
-        contrast_weight_option = ' -mc_weights ' + ','.join(app.args.mc_weight_nl) + ' '
-      if leave_one_out:
-        tmpl = []
-        for c in range(n_contrasts):
-          current = os.path.join('input_transformed' + i.contrasts[c], '%s.mif' % i.prefix)
-          isfinite = 'isfinite%s/%s.mif' % (i.contrasts[c], i.prefix)
-          run.command('mrcalc ' + isfinite_count[c] + ' ' + isfinite + ' -neg -add - | mrcalc ' +
-                      current_template[c] + ' ' + isfinite_count[c] + ' -mult ' + current +
-                      ' -neg -add - -div loo_%s -force' %current_template[c])
-          tmpl.append('loo_%s' % current_template[c])
-        images = ' + '.join([p + ' ' + t for p, t in zip(i.paths_in, tmpl)])
-      else:
-        images = ' + '.join([p + ' ' + t for p, t in zip(i.paths_in, current_template)])
+    for i in inputs:
+      output_option = ' -rigid ' + os.path.join('linear_transforms_initial', i.prefix + '.txt')
+      images = ' + '.join([p + ' ' + t for p, t in zip(i.paths_in, current_template)])
+      if use_masks:
+        mask_option = ' -mask1 ' + i.mask
+        if initial_alignment == 'robust_mass':
+          if not os.path.isfile('robust/template.mif'):
+            if n_volumes[0] > 0:
+              run.command('mrconvert ' + current_template[
+                0] + ' -coord 3 0 - | mrconvert - -axes 0,1,2 robust/template.mif')
+            else:
+              run.command('mrconvert ' + current_template[0] + ' robust/template.mif')
+          if n_contrasts > 1:
+            cmd = ['mrcalc', i.paths_in[0], app.ARGS.mc_weight_initial_alignment[0], '-mult']
+            for c in range(1, n_contrasts):
+              cmd += [i.paths_in[c], app.ARGS.mc_weight_initial_alignment[c], '-mult', '-add']
+            contrast_weight_option = ''
+            run.command(' '.join(cmd) +
+                        ' - | mrfilter - zclean -zlower 3 -zupper 3 robust/image_' + i.prefix +
+                        '.mif -maskin ' + i.mask + ' -maskout robust/mask_' + i.prefix + '.mif')
+          else:
+            run.command('mrfilter ' + i.paths_in[0] + ' zclean -zlower 3 -zupper 3 robust/image_' + i.prefix +
+                        '.mif -maskin ' + i.mask + ' -maskout robust/mask_' + i.prefix + '.mif')
+          images = 'robust/image_' + i.prefix + '.mif robust/template.mif'
+          mask_option = ' -mask1 ' + 'robust/mask_' + i.prefix + '.mif'
+          lmax_option = ''
+
       run.command('mrregister ' + images +
-                  ' -type nonlinear' +
-                  ' -nl_niter ' + str(nl_niter[level]) +
-                  ' -nl_warp_full ' + os.path.join('warps_%i' % level, '%s.mif' % i.prefix) +
-                  ' -transformed ' +
-                  ' -transformed '.join([os.path.join('input_transformed' + contrast, '%s.mif' % i.prefix) for contrast
-                                         in contrasts]) + ' ' +
-                  ' -nl_update_smooth ' + app.args.nl_update_smooth +
-                  ' -nl_disp_smooth ' + app.args.nl_disp_smooth +
-                  ' -nl_grad_step ' + app.args.nl_grad_step +
-                  ' -force ' +
-                  initialise_option +
-                  contrast_weight_option +
-                  scale_option +
                   mask_option +
+                  ' -rigid_scale 1 ' +
+                  ' -rigid_niter 0 ' +
+                  ' -type rigid ' +
+                  lmax_option +
+                  contrast_weight_option +
+                  ' -rigid_init_translation ' + initial_alignment.replace('robust_', '') + ' ' +
                   datatype_option +
-                  outofbounds_option +
-                  lmax_option)
-
-      if useMasks:
+                  output_option)
+      # translate input images to centre of mass without interpolation
+      for c in range(n_contrasts):
+        run.command('mrtransform ' + i.paths_in[c] +
+                    ' -linear ' + os.path.join('linear_transforms_initial', i.prefix + '.txt') +
+                    datatype_option +
+                    ' ' + os.path.join('input_transformed' + i.contrasts[c], i.prefix + '_translated.mif'))
+      if use_masks:
         run.command('mrtransform ' + i.mask +
-                    ' -template ' + current_template[0] +
-                    ' -warp_full ' + os.path.join('warps_%i' % level, '%s.mif' % i.prefix) +
-                    ' ' + os.path.join('masks_transformed', i.prefix + '.mif') +
-                    ' -interp nearest ' +
+                    ' -linear ' + os.path.join('linear_transforms_initial', i.prefix + '.txt') +
+                    datatype_option +
+                    ' ' + os.path.join('masks_transformed', i.prefix + '_translated.mif'))
+      progress.increment()
+    # update average space of first contrast to new extent, delete other average space images
+    run.command('mraverageheader ' + ' '.join([os.path.join('input_transformed', i.prefix + '_translated.mif')
+                                               for i in inputs]) + ' average_header_tight.mif')
+    progress.done()
+
+    if voxel_size is None:
+      run.command('mrpad -uniform 10 average_header_tight.mif average_header.mif -force')
+    else:
+      run.command('mrpad -uniform 10 average_header_tight.mif - | mrresize - -voxel ' + ','.join(map(str, voxel_size)) +
+                  ' average_header.mif -force')
+    run.function(os.remove, 'average_header_tight.mif')
+    for c in range(1, n_contrasts):
+      run.function(os.remove, 'average_header' + contrasts[c] + '.mif')
+
+    if use_masks:
+      # reslice masks
+      progress = app.ProgressBar('Reslicing input masks to average header', len(inputs))
+      for i in inputs:
+        run.command('mrtransform ' +
+                    os.path.join('masks_transformed', i.prefix + '_translated.mif') + ' ' +
+                    os.path.join('masks_transformed', i.prefix + '.mif') + ' ' +
+                    '-interp nearest -template average_header.mif' +
+                    datatype_option)
+        progress.increment()
+      progress.done()
+      # crop average space to extent defined by translated masks
+      mask_filenames = []
+      for i in inputs:
+        mask_filenames.append(os.path.join('masks_transformed', i.prefix + '.mif'))
+      run.command('mrmath ' + ' '.join(mask_filenames) + ' max mask_translated.mif')
+      run.command('mrcrop ' + 'average_header.mif -mask mask_translated.mif average_header_cropped.mif')
+      # pad average space to allow for deviation from initial alignment
+      run.command('mrpad -uniform 10 average_header_cropped.mif -force average_header.mif')
+      run.function(os.remove, 'average_header_cropped.mif')
+      progress = app.ProgressBar('Reslicing mask images to new padded average header', len(inputs))
+      for i in inputs:
+        run.command('mrtransform ' +
+                    os.path.join('masks_transformed', i.prefix + '_translated.mif') + ' ' +
+                    os.path.join('masks_transformed', i.prefix + '.mif') + ' ' +
+                    '-interp nearest -template average_header.mif' +
+                    datatype_option +
                     ' -force')
+        run.function(os.remove, os.path.join('masks_transformed', i.prefix + '_translated.mif'))
+        progress.increment()
+      progress.done()
+      run.function(os.remove, 'mask_translated.mif')
 
-      if nanmask_input:
-        inplacenanmask([os.path.join('input_transformed' + contrasts[c], i.prefix + '.mif') for c in range(n_contrasts)],
-                       [os.path.join('masks_transformed', i.prefix + '.mif') for c in range(n_contrasts)], progress=False)
-
-      if leave_one_out:
-        for im_temp in tmpl:
-          run.function(remove, im_temp)
-
-      if level > 0:
-        run.function(remove, os.path.join('warps_%i' % (level - 1), '%s.mif' % i.prefix))
-
+    # reslice input images
+    progress = app.ProgressBar('Reslicing input images to average header', len(inputs) * n_contrasts)
+    for c in range(n_contrasts):
+      for i in inputs:
+        run.command('mrtransform ' +
+                    ' ' + os.path.join('input_transformed' + i.contrasts[c], i.prefix + '_translated.mif') +
+                    ' ' + os.path.join('input_transformed' + i.contrasts[c], i.prefix + '.mif') +
+                    ' -interp linear -template average_header.mif' +
+                    outofbounds_option +
+                    datatype_option)
+        run.function(os.remove, os.path.join('input_transformed' + i.contrasts[c], i.prefix + '_translated.mif'))
       progress.increment()
     progress.done()
+
+    if nanmask_input:
+      inplace_nan_mask([os.path.join('input_transformed' + contrasts[c], i.prefix + '.mif') for i in inputs for c in range(n_contrasts)],
+                     [os.path.join('masks_transformed', i.prefix + '.mif') for i in inputs for c in range(n_contrasts)])
 
     if leave_one_out:
       calculate_isfinite(inputs, isfinite_count, contrasts, n_volumes)
 
-    for c in range(n_contrasts):
-      current_template[c] = 'nl_template%i%s.mif' % (level, contrasts[c])
-      aggregate(allindir('input_transformed' + contrasts[c]), current_template[c], agg_measure)
-      if n_volumes[c] == 1:
-        run.function(move, current_template[c], 'tmp.mif')
-        run.command('mrconvert tmp.mif ' + current_template[c] + ' -axes 0,1,2,-1')
-        run.function(remove, 'tmp.mif')
+  current_template = ['initial_template' + contrast + '.mif' for contrast in contrasts]
+  for c in range(n_contrasts):
+    aggregate(path.all_in_dir('input_transformed' + contrasts[c]), 'initial_template' + contrasts[c] + '.mif', agg_measure)
+    if n_volumes[c] == 1:
+      run.function(shutil.move, 'initial_template' + contrasts[c] + '.mif', 'tmp.mif')
+      run.command('mrconvert tmp.mif initial_template' + contrasts[c] + '.mif -axes 0,1,2,-1')
 
-    if useMasks:
-      run.command('mrmath ' + ' '.join(allindir('masks_transformed')) + ' min - | maskfilter - median - | ' +
-                  'maskfilter - dilate -npass 5 nl_template_mask' + str(level) + '.mif')
-      current_template_mask = 'nl_template_mask' + str(level) + '.mif'
-
-    if level < len(nl_scales) - 1:
-      if scale < nl_scales[level + 1]:
-        upsample_factor = nl_scales[level + 1] / scale
-        for i in inputs:
-          run.command('mrresize ' + os.path.join('warps_%i' % level, '%s.mif' % i.prefix) +
-                      ' -force -scale %f tmp.mif' % upsample_factor)
-          run.function(move, 'tmp.mif', os.path.join('warps_' + str(level), '%s.mif' % i.prefix))
-    else:
-      for i in inputs:
-        run.function(move, os.path.join('warps_' + str(level), '%s.mif' % i.prefix), 'warps')
-
-for c in range(n_contrasts):
-  run.command('mrconvert ' + current_template[c] + ' ' + path.fromUser(app.args.template[c],True) +
-        app.mrconvertOutputOption('NULL'))
-
-if app.args.warp_dir:
-  warp_path = path.fromUser(app.args.warp_dir, False)
-  if os.path.exists(warp_path):
-    run.function(rmtree, warp_path)
-  os.makedirs(warp_path)
-  progress = app.progressBar('Copying non-linear warps to output directory "' + warp_path + '"')
-  for i in inputs:
-    run.command('mrconvert ' + os.path.join('warps', '%s.mif' % i.prefix) + ' ' +
-                os.path.join(warp_path, '%s.mif' % i.prefix) +
-                app.mrconvertOutputOption(i.paths_in[0]))
-    progress.increment()
-  progress.done()
-
-if app.args.linear_transformations_dir:
-  linear_transformations_path = path.fromUser(app.args.linear_transformations_dir, False)
-  if os.path.exists(linear_transformations_path):
-    run.function(rmtree, linear_transformations_path)
-  run.function(copytree, 'linear_transforms', linear_transformations_path)
-
-if app.args.transformed_dir:
-  for c, d in enumerate(app.args.transformed_dir):
-    transformed_path = path.fromUser(d, False)
-    if os.path.exists(transformed_path):
-      run.function(rmtree, transformed_path)
-    os.makedirs(transformed_path)
-    progress = app.progressBar('Copying transformed images to output directory "' + transformed_path + '"')
+  # Optimise template with linear registration
+  if not dolinear:
     for i in inputs:
-      run.command('mrconvert ' + os.path.join('input_transformed' + contrasts[c], i.prefix + '.mif') +
-                  ' ' + os.path.join(transformed_path, i.filenames[c]) +
-                  app.mrconvertOutputOption(i.paths_in[0]))
+      run.function(shutil.copy, os.path.join('linear_transforms_initial', '%s.txt' % (i.prefix)),
+                   os.path.join('linear_transforms', '%s.txt' % i.prefix))
+  else:
+    for level, (regtype, scale, niter, lmax) in enumerate(zip(linear_type, linear_scales, linear_niter, linear_lmax)):
+      progress = app.ProgressBar(
+        'Optimising template with linear registration (stage {0} of {1})'.format(level + 1, len(linear_scales)),
+        len(inputs) * n_contrasts)
+      for i in inputs:
+        initialise_option = ''
+        if use_masks:
+          mask_option = ' -mask1 ' + i.mask
+        else:
+          mask_option = ''
+        lmax_option = ''
+        metric_option = ''
+        mrregister_log_option = ''
+        contrast_weight_option = ''
+        if regtype == 'rigid':
+          scale_option = ' -rigid_scale ' + str(scale)
+          niter_option = ' -rigid_niter ' + str(niter)
+          regtype_option = ' -type rigid'
+          output_option = ' -rigid ' + os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix)
+          if n_contrasts > 1:
+            contrast_weight_option = ' -mc_weights ' + ','.join(app.ARGS.mc_weight_rigid) + ' '
+          if level > 0:
+            initialise_option = ' -rigid_init_matrix ' + os.path.join('linear_transforms_%i' % (level - 1),
+                                          '%s.txt' % i.prefix)
+          if do_fod_registration:
+            lmax_option = ' -rigid_lmax ' + str(lmax)
+          else:
+            lmax_option = ' -noreorientation'
+          if linear_estimator:
+            metric_option = ' -rigid_metric.diff.estimator ' + linear_estimator
+          if app.VERBOSITY >= 2:
+            mrregister_log_option = ' -info -rigid_log ' + os.path.join('log', i.prefix + "_" + str(level) + '.log')
+        else:
+          scale_option = ' -affine_scale ' + str(scale)
+          niter_option = ' -affine_niter ' + str(niter)
+          regtype_option = ' -type affine'
+          output_option = ' -affine ' + os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix)
+          if n_contrasts > 1:
+            contrast_weight_option = ' -mc_weights ' + ','.join(app.ARGS.mc_weight_affine) + ' '
+          if level > 0:
+            initialise_option = ' -affine_init_matrix ' + os.path.join('linear_transforms_%i' % (level - 1),
+                                           '%s.txt' % i.prefix)
+          if do_fod_registration:
+            lmax_option = ' -affine_lmax ' + str(lmax)
+          else:
+            lmax_option = ' -noreorientation'
+          if linear_estimator:
+            metric_option = ' -affine_metric.diff.estimator ' + linear_estimator
+          if write_log:
+            mrregister_log_option = ' -info -affine_log ' + os.path.join('log', i.prefix + '_' + str(level) + '.log')
+
+        if leave_one_out:
+          tmpl = []
+          for c in range(n_contrasts):
+            current = os.path.join('input_transformed' + i.contrasts[c], '%s.mif' % i.prefix)
+            isfinite = 'isfinite%s/%s.mif' % (i.contrasts[c], i.prefix)
+            run.command('mrcalc ' + isfinite_count[c] + ' ' + isfinite + ' -neg -add - | mrcalc ' + current_template[c] +
+                        ' ' + isfinite_count[c] + ' -mult ' + current + ' -neg -add - -div loo_%s -force' %current_template[c])
+            tmpl.append('loo_%s' % current_template[c])
+          images = ' + '.join([p + ' ' + t for p, t in zip(i.paths_in, tmpl)])
+        else:
+          images = ' + '.join([p + ' ' + t for p, t in zip(i.paths_in, current_template)])
+        command = 'mrregister ' + images + \
+                  ' -force' + \
+                  initialise_option + \
+                  mask_option + \
+                  scale_option + \
+                  niter_option + \
+                  lmax_option + \
+                  regtype_option + \
+                  metric_option + \
+                  datatype_option + \
+                  contrast_weight_option + \
+                  output_option + \
+                  mrregister_log_option
+        run.command(command)
+        check_linear_transformation(os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix), command,
+                                    pause_on_warn=do_pause_on_warn)
+        if leave_one_out:
+          for im_temp in tmpl:
+            run.function(os.remove, im_temp)
+        progress.increment()
+      progress.done()
+      # Here we ensure the template doesn't drift or scale
+      # TODO matrix avarage might produce a large FOV for large rotations
+      run.command('transformcalc ' + ' '.join(
+        path.all_in_dir('linear_transforms_%i' % level)) + ' average linear_transform_average.txt -force -quiet')
+      if linear_type[level] == 'rigid':
+        run.command('transformcalc linear_transform_average.txt rigid linear_transform_average.txt -force -quiet')
+      run.command('transformcalc linear_transform_average.txt invert linear_transform_average_inv.txt -force -quiet')
+
+      average_inv = matrix.load_transform('linear_transform_average_inv.txt')
+      if average_inv is not None:
+        for i in inputs:
+          transform = matrix.dot(matrix.load_transform(os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix)), average_inv)
+          matrix.save_transform(os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix), transform)
+
+      progress = app.ProgressBar('Transforming all subjects to revised template', len(inputs) * n_contrasts)
+      for c in range(n_contrasts):
+        for i in inputs:
+          run.command('mrtransform ' + i.paths_in[c] +
+                      ' -template ' + current_template[c] +
+                      ' -linear ' + os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix) +
+                      ' ' + os.path.join('input_transformed' + contrasts[c], '%s.mif' % i.prefix) +
+                      outofbounds_option +
+                      datatype_option +
+                      ' -force')
+          progress.increment()
+      progress.done()
+
+      if use_masks:
+        progress = app.ProgressBar('Transforming all masks to revised template', len(inputs) * n_contrasts)
+        for c in range(n_contrasts):
+          for i in inputs:
+            run.command('mrtransform ' + i.mask +
+                        ' -template ' + current_template[c] +
+                        ' -interp nearest' +
+                        ' -linear ' + os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix) +
+                        ' ' + os.path.join('masks_transformed', '%s.mif' % i.prefix) +
+                        ' -force')
+            progress.increment()
+        progress.done()
+
+      if nanmask_input:
+        inplace_nan_mask([os.path.join('input_transformed' + contrasts[c], i.prefix + '.mif') for i in inputs for c in range(n_contrasts)],
+                       [os.path.join('masks_transformed', i.prefix + '.mif') for i in inputs for c in range(n_contrasts)])
+
+      if leave_one_out:
+        calculate_isfinite(inputs, isfinite_count, contrasts, n_volumes)
+
+      for c in range(n_contrasts):
+        current_template[c] = 'linear_template%i%s.mif' % (level, contrasts[c])
+        aggregate(path.all_in_dir('input_transformed' + contrasts[c]), current_template[c], agg_measure)
+        if n_volumes[c] == 1:
+          run.function(shutil.move, current_template[c], 'tmp.mif')
+          run.command('mrconvert tmp.mif ' + current_template[c] + ' -axes 0,1,2,-1')
+          run.function(os.remove, 'tmp.mif')
+
+    for entry in os.listdir('linear_transforms_%i' % level):
+      run.function(shutil.copy, os.path.join('linear_transforms_%i' % level, entry), os.path.join('linear_transforms', entry))
+
+  # Create a template mask for nl registration by taking the intersection of all transformed input masks and dilating
+  if use_masks and (dononlinear or app.ARGS.template_mask):
+    run.command('mrmath ' + ' '.join(path.all_in_dir('masks_transformed')) +
+                ' min - | maskfilter - median - | maskfilter - dilate -npass 5 init_nl_template_mask.mif -force')
+    current_template_mask = 'init_nl_template_mask.mif'
+
+  if dononlinear:
+    app.console('Optimising template with non-linear registration')
+    path.make_dir('warps')
+    for level, (scale, niter, lmax) in enumerate(zip(nl_scales, nl_niter, nl_lmax)):
+      progress = app.ProgressBar(
+        'Optimising template with non-linear registration (stage {0} of {1})'.format(level + 1, len(nl_scales)),
+        len(inputs))
+      for i in inputs:
+        if level > 0:
+          initialise_option = ' -nl_init ' + os.path.join('warps_%i' % (level - 1), '%s.mif' % i.prefix)
+          scale_option = ''
+        else:
+          scale_option = ' -nl_scale ' + str(scale)
+          if not doaffine:  # rigid or no previous linear stage
+            initialise_option = ' -rigid_init_matrix ' + os.path.join('linear_transforms', '%s.txt' % i.prefix)
+          else:
+            initialise_option = ' -affine_init_matrix ' + os.path.join('linear_transforms', '%s.txt' % i.prefix)
+
+        if use_masks:
+          mask_option = ' -mask1 ' + abspath(i.mask_directory, i.mask_filename) + ' -mask2 ' + current_template_mask
+        else:
+          mask_option = ''
+
+        if do_fod_registration:
+          lmax_option = ' -nl_lmax ' + str(lmax)
+        else:
+          lmax_option = ' -noreorientation'
+
+        contrast_weight_option = ''
+        if n_contrasts > 1:
+          contrast_weight_option = ' -mc_weights ' + ','.join(app.ARGS.mc_weight_nl) + ' '
+        if leave_one_out:
+          tmpl = []
+          for c in range(n_contrasts):
+            current = os.path.join('input_transformed' + i.contrasts[c], '%s.mif' % i.prefix)
+            isfinite = 'isfinite%s/%s.mif' % (i.contrasts[c], i.prefix)
+            run.command('mrcalc ' + isfinite_count[c] + ' ' + isfinite + ' -neg -add - | mrcalc ' +
+                        current_template[c] + ' ' + isfinite_count[c] + ' -mult ' + current +
+                        ' -neg -add - -div loo_%s -force' %current_template[c])
+            tmpl.append('loo_%s' % current_template[c])
+          images = ' + '.join([p + ' ' + t for p, t in zip(i.paths_in, tmpl)])
+        else:
+          images = ' + '.join([p + ' ' + t for p, t in zip(i.paths_in, current_template)])
+        run.command('mrregister ' + images +
+                    ' -type nonlinear' +
+                    ' -nl_niter ' + str(nl_niter[level]) +
+                    ' -nl_warp_full ' + os.path.join('warps_%i' % level, '%s.mif' % i.prefix) +
+                    ' -transformed ' +
+                    ' -transformed '.join([os.path.join('input_transformed' + contrast, '%s.mif' % i.prefix) for contrast
+                                           in contrasts]) + ' ' +
+                    ' -nl_update_smooth ' + app.ARGS.nl_update_smooth +
+                    ' -nl_disp_smooth ' + app.ARGS.nl_disp_smooth +
+                    ' -nl_grad_step ' + app.ARGS.nl_grad_step +
+                    ' -force ' +
+                    initialise_option +
+                    contrast_weight_option +
+                    scale_option +
+                    mask_option +
+                    datatype_option +
+                    outofbounds_option +
+                    lmax_option)
+
+        if use_masks:
+          run.command('mrtransform ' + i.mask +
+                      ' -template ' + current_template[0] +
+                      ' -warp_full ' + os.path.join('warps_%i' % level, '%s.mif' % i.prefix) +
+                      ' ' + os.path.join('masks_transformed', i.prefix + '.mif') +
+                      ' -interp nearest ' +
+                      ' -force')
+
+        if nanmask_input:
+          inplace_nan_mask([os.path.join('input_transformed' + contrasts[c], i.prefix + '.mif') for c in range(n_contrasts)],
+                         [os.path.join('masks_transformed', i.prefix + '.mif') for c in range(n_contrasts)], progress=False)
+
+        if leave_one_out:
+          for im_temp in tmpl:
+            run.function(os.remove, im_temp)
+
+        if level > 0:
+          run.function(os.remove, os.path.join('warps_%i' % (level - 1), '%s.mif' % i.prefix))
+
+        progress.increment()
+      progress.done()
+
+      if leave_one_out:
+        calculate_isfinite(inputs, isfinite_count, contrasts, n_volumes)
+
+      for c in range(n_contrasts):
+        current_template[c] = 'nl_template%i%s.mif' % (level, contrasts[c])
+        aggregate(path.all_in_dir('input_transformed' + contrasts[c]), current_template[c], agg_measure)
+        if n_volumes[c] == 1:
+          run.function(shutil.move, current_template[c], 'tmp.mif')
+          run.command('mrconvert tmp.mif ' + current_template[c] + ' -axes 0,1,2,-1')
+          run.function(os.remove, 'tmp.mif')
+
+      if use_masks:
+        run.command('mrmath ' + ' '.join(path.all_in_dir('masks_transformed')) + ' min - | maskfilter - median - | ' +
+                    'maskfilter - dilate -npass 5 nl_template_mask' + str(level) + '.mif')
+        current_template_mask = 'nl_template_mask' + str(level) + '.mif'
+
+      if level < len(nl_scales) - 1:
+        if scale < nl_scales[level + 1]:
+          upsample_factor = nl_scales[level + 1] / scale
+          for i in inputs:
+            run.command('mrresize ' + os.path.join('warps_%i' % level, '%s.mif' % i.prefix) +
+                        ' -force -scale %f tmp.mif' % upsample_factor)
+            run.function(shutil.move, 'tmp.mif', os.path.join('warps_' + str(level), '%s.mif' % i.prefix))
+      else:
+        for i in inputs:
+          run.function(shutil.move, os.path.join('warps_' + str(level), '%s.mif' % i.prefix), 'warps')
+
+  for c in range(n_contrasts):
+    run.command('mrconvert ' + current_template[c] + ' ' + path.from_user(app.ARGS.template[c],True),
+                mrconvert_keyval='NULL', force=app.FORCE_OVERWRITE)
+
+  if app.ARGS.warp_dir:
+    warp_path = path.from_user(app.ARGS.warp_dir, False)
+    if os.path.exists(warp_path):
+      run.function(shutil.rmtree, warp_path)
+    os.makedirs(warp_path)
+    progress = app.ProgressBar('Copying non-linear warps to output directory "' + warp_path + '"')
+    for i in inputs:
+      run.command('mrconvert ' + os.path.join('warps', '%s.mif' % i.prefix) + ' ' +
+                  os.path.join(warp_path, '%s.mif' % i.prefix),
+                  mrconvert_keyval=i.paths_in[0], force=app.FORCE_OVERWRITE)
       progress.increment()
     progress.done()
 
-if app.args.template_mask:
-  run.command('mrconvert ' + current_template_mask + ' ' + path.fromUser(app.args.template_mask, True) +
-              app.mrconvertOutputOption('NULL'))
+  if app.ARGS.linear_transformations_dir:
+    linear_transformations_path = path.from_user(app.ARGS.linear_transformations_dir, False)
+    if os.path.exists(linear_transformations_path):
+      run.function(shutil.rmtree, linear_transformations_path)
+    run.function(shutil.copytree, 'linear_transforms', linear_transformations_path)
 
-app.complete()
+  if app.ARGS.transformed_dir:
+    for c, d in enumerate(app.ARGS.transformed_dir):
+      transformed_path = path.from_user(d, False)
+      if os.path.exists(transformed_path):
+        run.function(shutil.rmtree, transformed_path)
+      os.makedirs(transformed_path)
+      progress = app.ProgressBar('Copying transformed images to output directory "' + transformed_path + '"')
+      for i in inputs:
+        run.command('mrconvert ' + os.path.join('input_transformed' + contrasts[c], i.prefix + '.mif') +
+                    ' ' + os.path.join(transformed_path, i.filenames[c]),
+                    mrconvert_keyval=i.paths_in[0], force=app.FORCE_OVERWRITE)
+        progress.increment()
+      progress.done()
+
+  if app.ARGS.template_mask:
+    run.command('mrconvert ' + current_template_mask + ' ' + path.from_user(app.ARGS.template_mask, True),
+                mrconvert_keyval='NULL', force=app.FORCE_OVERWRITE)
+
+
+# Execute the script
+import mrtrix3
+mrtrix3.execute() #pylint: disable=no-member

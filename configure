@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# pylint: disable=invalid-name
+
 usage_string = '''
 USAGE
 
@@ -196,7 +198,7 @@ for arg in sys.argv[1:]:
   elif '-openmp'.startswith (arg):
     openmp = True
   else:
-    sys.stderr.write (usage_string)
+    sys.stdout.write (usage_string)
     sys.exit (1)
 
 
@@ -222,7 +224,8 @@ def report (message):
 def error (message):
   global logfile
   logfile.write (('\nERROR: ' + message.rstrip() + '\n\n').encode (errors='ignore'))
-  sys.stderr.write ('\nERROR: ' + message.rstrip() + '\n\n')
+  sys.stdout.write ('\nERROR: ' + message.rstrip() + '\n\n')
+  sys.stdout.flush()
   sys.exit (1)
 
 
@@ -979,6 +982,30 @@ int main() {
   cpp_flags += [ '-DMRTRIX_TIFF_SUPPORT' ] + tiff_cflags
   ld_flags += tiff_ldflags
   ld_lib_flags += tiff_ldflags
+
+
+
+
+
+# PNG:
+
+png_cflags = get_flags ([], 'PNG_CFLAGS', '--cflags libpng')
+png_ldflags = get_flags ([ '-lpng' ], 'PNG_LDFLAGS', '--libs libpng')
+
+if compile_test ('PNG library', cpp_flags + png_cflags, ld_flags + png_ldflags, '''
+#include <iostream>
+#include <png.h>
+
+int main() {
+  std::cout << "Header: " << PNG_LIBPNG_VER_STRING << "; library: " << png_libpng_ver;
+  return (0);
+}
+''', on_failure='not found - PNG support disabled'):
+  cpp_flags += [ '-DMRTRIX_PNG_SUPPORT' ] + png_cflags
+  ld_flags += png_ldflags
+  ld_lib_flags += png_ldflags
+
+
 
 
 

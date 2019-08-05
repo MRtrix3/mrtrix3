@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include <algorithm>
 
@@ -119,12 +120,33 @@ namespace MR {
         const Image& image (*(*series[0])[0]);
         const Frame& frame (*frames[0]);
 
-        if (std::isfinite (image.echo_time))
-          H.keyval()["EchoTime"] = str (0.001 * image.echo_time, 6);
-        if (std::isfinite (image.flip_angle))
-          H.keyval()["FlipAngle"] = str (image.flip_angle, 6);
-        if (std::isfinite (image.repetition_time))
-          H.keyval()["RepetitionTime"] = str (0.001 * image.repetition_time, 6);
+        // If the value of the parameter changes for every volume,
+        //   write the values as a comma-separated list to the header
+        auto import_parameter = [&] (const std::string key,
+                                     std::function<default_type(Frame*)> functor,
+                                     const default_type multiplier) -> void
+        {
+          vector<std::string> values;
+          for (const auto f : frames) {
+            const default_type value = functor (f);
+            if (!std::isfinite (value))
+              return;
+            const std::string value_string = str(multiplier * value, 6);
+            if (values.empty() || value_string != values.back())
+              values.push_back (value_string);
+          }
+          if (values.size())
+            H.keyval()[key] = join(values, ",");
+        };
+        import_parameter ("EchoTime",
+                          [] (Frame* f) -> default_type { return f->echo_time; },
+                          0.001);
+        import_parameter ("FlipAngle",
+                          [] (Frame* f) -> default_type { return f->flip_angle; },
+                          1.0);
+        import_parameter ("RepetitionTime",
+                          [] (Frame* f) -> default_type { return f->repetition_time; },
+                          0.001);
 
         size_t nchannels = image.frames.size() ? 1 : image.data_size / (frame.dim[0] * frame.dim[1] * (frame.bits_alloc/8));
         if (nchannels > 1)
@@ -218,13 +240,13 @@ namespace MR {
         // Slice timing may come from a few different potential sources
         vector<float> slices_timing;
         if (image.images_in_mosaic) {
-          if (image.mosaic_slices_timing.size() != image.images_in_mosaic) {
-            WARN ("Number of entries in mosaic slice timing (" + str(image.mosaic_slices_timing.size()) + ") does not match number of images in mosaic (" + str(image.images_in_mosaic) + "); omitting");
+          if (image.mosaic_slices_timing.size() < image.images_in_mosaic) {
+            WARN ("Number of entries in mosaic slice timing (" + str(image.mosaic_slices_timing.size()) + ") is smaller than number of images in mosaic (" + str(image.images_in_mosaic) + "); omitting");
           } else {
             DEBUG ("Taking slice timing information from CSA mosaic info");
             // CSA mosaic defines these in ms; we want them in s
-            for (auto f : image.mosaic_slices_timing)
-              slices_timing.push_back (0.001 * f);
+            for (size_t n = 0; n < image.images_in_mosaic; ++n)
+              slices_timing.push_back (0.001 * image.mosaic_slices_timing[n]);
           }
         } else if (std::isfinite (frame.time_after_start)) {
           DEBUG ("Taking slice timing information from CSA TimeAfterStart field");

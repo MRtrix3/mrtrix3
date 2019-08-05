@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "progressbar.h"
@@ -29,9 +30,12 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  SYNOPSIS = "Reorder a set of directions to ensure near-uniformity upon truncation - "
-             "i.e. if the scan is terminated early, the acquired directions are still "
-             "close to optimal";
+  SYNOPSIS = "Reorder a set of directions to ensure near-uniformity upon truncation";
+
+  DESCRIPTION
+  + "The intent of this command is to reorder a set of gradient directions such that "
+    "if a scan is terminated prematurely, at any point, the acquired directions will "
+    "still be close to optimally distributed on the half-sphere.";
 
   ARGUMENTS
     + Argument ("input", "the input directions file").type_file_in()
@@ -46,7 +50,7 @@ using value_type = double;
 
 
   template <typename value_type>
-inline std::function<value_type()> get_rng_uniform (value_type from, value_type to) 
+inline std::function<value_type()> get_rng_uniform (value_type from, value_type to)
 {
   std::random_device rd;
   std::mt19937 gen (rd());
@@ -55,7 +59,7 @@ inline std::function<value_type()> get_rng_uniform (value_type from, value_type 
 }
 
 
-void run () 
+void run ()
 {
   auto directions = DWI::Directions::load_cartesian (argument[0]);
   auto rng = get_rng_uniform<size_t> (0, directions.rows()-1);
