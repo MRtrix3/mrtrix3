@@ -11,7 +11,7 @@ DEFAULT_NL_SCALES = [0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0
 DEFAULT_NL_NITER  = [  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5]
 DEFAULT_NL_LMAX   = [  2,  2,  2,  2,  2,  2,  2,  2,  4,  4,  4,  4,  4,  4,  4,  4]
 
-REGISTRATION_MODES = ['rigid', 'affine', 'nonlinear', 'rigid_affine', 'rigid_nonlinear', 'affine_nonlinear', 
+REGISTRATION_MODES = ['rigid', 'affine', 'nonlinear', 'rigid_affine', 'rigid_nonlinear', 'affine_nonlinear',
                       'rigid_affine_nonlinear']
 
 AGGREGATION_MODES = ["mean", "median"]
@@ -100,7 +100,7 @@ def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=
           res[name] = var.split()
     return res
 
-  b_good = True
+  good = True
   run.command('transformcalc ' + transformation + ' decompose ' + transformation + 'decomp')
   if not os.path.isfile(transformation + 'decomp'):  # does not exist if run with -continue option
     app.console(transformation + 'decomp not found. skipping check')
@@ -111,17 +111,17 @@ def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=
   if any([a < 0 for a in scaling]) or any([a > (1 + max_scaling) for a in scaling]) or any(
       [a < (1 - max_scaling) for a in scaling]):
     app.warn("large scaling (" + str(scaling) + ") in " + transformation)
-    b_good = False
+    good = False
   shear = [float(value) for value in data['shear']]
   if any([abs(a) > max_shear for a in shear]):
     app.warn("large shear (" + str(shear) + ") in " + transformation)
-    b_good = False
+    good = False
   rot_angle = float(data['angle_axis'][0])
   if abs(rot_angle) > max_rot:
     app.warn("large rotation (" + str(rot_angle) + ") in " + transformation)
-    b_good = False
+    good = False
 
-  if not b_good:
+  if not good:
     newcmd = []
     what = ''
     init_rotation_found = False
@@ -159,15 +159,15 @@ def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=
       app.console('The command that failed the test was: \n' + command)
       app.console('Working directory: \n' + os.getcwd())
       raw_input("press enter to continue population_template")
-  return b_good
+  return good
 
 
-def aggregate(images, output, mode, force=' -force'):
+def aggregate(images, output, mode, force=True):
   from mrtrix3 import app, run  # pylint: disable=no-name-in-module
   if mode == 'mean':
-    run.command('mrmath ' + ' '.join(images) + ' mean ' + output + force)
+    run.command('mrmath ' + ' '.join(images) + ' mean ' + output, force=force)
   elif mode == 'median':
-    run.command('mrmath ' + ' '.join(images) + ' median ' + output + force)
+    run.command('mrmath ' + ' '.join(images) + ' median ' + output, force=force)
   else:
     app.error("aggregation mode %s not understood" % mode)
 
@@ -181,7 +181,7 @@ def inplace_nan_mask(images, masks, progress=True):
   for image, mask in zip(images, masks):
     target_dir = os.path.split(image)[0]
     masked = os.path.join(target_dir, '__' + os.path.split(image)[1])
-    run.command("mrcalc " + mask + " " + image + " nan -if " + masked + ' -force')
+    run.command("mrcalc " + mask + " " + image + " nan -if " + masked, force=True)
     run.function(shutil.move, masked, image)
     if progress:
       pbar.increment()
@@ -196,13 +196,13 @@ def calculate_isfinite(inputs, isfinite_count, contrasts, n_volumes):
     for i in inputs:
       if n_volumes[c] > 0:
         run.command('mrconvert ' + os.path.join('input_transformed' + i.contrasts[c], '%s.mif' % i.prefix) +
-                    ' -coord 3 0 - | mrcalc - -finite isfinite%s/%s.mif' % (i.contrasts[c], i.prefix) + ' -force')
+                    ' -coord 3 0 - | mrcalc - -finite isfinite%s/%s.mif' % (i.contrasts[c], i.prefix), force=True)
       else:
         run.command('mrcalc ' + os.path.join('input_transformed' + i.contrasts[c], '%s.mif' % i.prefix) +
-                    ' -finite isfinite%s/%s.mif' % (i.contrasts[c], i.prefix) + ' -force')
+                    ' -finite isfinite%s/%s.mif' % (i.contrasts[c], i.prefix), force=True)
       progress.increment()
   for c in range(n_contrasts):
-    run.command('mrmath ' + path.all_in_dir('isfinite%s' % contrasts[c]) + ' sum ' + isfinite_count[c] + ' -force')
+    run.command('mrmath ' + path.all_in_dir('isfinite%s' % contrasts[c]) + ' sum ' + isfinite_count[c], force=True)
   progress.done()
 
 
@@ -302,19 +302,19 @@ def execute():  #pylint: disable=unused-variable
     if not os.path.exists(inputDir):
       app.error('input directory not found: ' + inputDir)
 
-  inFiles = [sorted(path.all_in_dir(inputDir, dir_path=False)) for inputDir in app.ARGS.input_dir]
-  if len(inFiles[0]) <= 1:
+  in_files = [sorted(path.all_in_dir(inputDir, dir_path=False)) for inputDir in app.ARGS.input_dir]
+  if len(in_files[0]) <= 1:
     app.error('Not enough images found in input directory ' + app.ARGS.input_dir[
       0] + '. More than one image is needed to generate a population template')
   elif n_contrasts > 1:
     for i in range(1, n_contrasts):
-      if len(inFiles[i]) != len(inFiles[0]):
+      if len(in_files[i]) != len(in_files[0]):
         app.error('Found %i images in input directory %s but %i input images in %s.' % (
           len(app.ARGS.input_dir[0]), app.ARGS.input_dir[0], len(app.ARGS.input_dir[i]), app.ARGS.input_dir[i]))
   else:
-    app.console('Generating a population-average template from ' + str(len(inFiles[0])) + ' input images')
+    app.console('Generating a population-average template from ' + str(len(in_files[0])) + ' input images')
     if n_contrasts > 1:
-      app.console('using ' + str(len(inFiles)) + ' contrasts for each input image')
+      app.console('using ' + str(len(in_files)) + ' contrasts for each input image')
 
   voxel_size = None
   if app.ARGS.voxel_size:
@@ -356,7 +356,7 @@ def execute():  #pylint: disable=unused-variable
     if not os.path.exists(maskDir):
       app.error('mask directory not found')
     mask_files = sorted(path.all_in_dir(maskDir, dir_path=False))
-    if len(mask_files) < len(inFiles[0]):
+    if len(mask_files) < len(in_files[0]):
       app.error('there are not enough mask images for the number of images in the input directory')
     mask_common_postfix = get_common_postfix(mask_files)
     if len(mask_common_postfix) == 0:
@@ -374,23 +374,23 @@ def execute():  #pylint: disable=unused-variable
   if nanmask_input and not use_masks:
     app.error('you cannot use NaN masking when no subject masks were input using -mask_dir')
 
-  commonPostfix = [get_common_postfix(files) for files in inFiles]
+  commonPostfix = [get_common_postfix(files) for files in in_files]
   for postfix in commonPostfix:
     if len(postfix) == 0:
       app.error('image filenames do not have a common postfix')
   contrasts = [''] + ["_c" + c for c in map(str, range(1, n_contrasts))]
   inputs = []
-  for ifile, fname in enumerate(inFiles[0]):
+  for ifile, fname in enumerate(in_files[0]):
     prefix = fname.split(commonPostfix[0])[0]
     fnames = [fname]
     dirs = [abspath(path.from_user(app.ARGS.input_dir[0], False))]
     if n_contrasts > 1:
       for c in range(1, n_contrasts):
-        image.check_3d_nonunity(os.path.join(abspath(path.from_user(app.ARGS.input_dir[c], False)), inFiles[c][ifile]))
-        if prefix != inFiles[c][ifile].split(commonPostfix[c])[0]:
+        image.check_3d_nonunity(os.path.join(abspath(path.from_user(app.ARGS.input_dir[c], False)), in_files[c][ifile]))
+        if prefix != in_files[c][ifile].split(commonPostfix[c])[0]:
           app.error('no matching image was found for image %s and contrasts %s and %s.' % (
             fname, path.from_user(app.ARGS.input_dir[0], False), path.from_user(app.ARGS.input_dir[c], False)))
-        fnames.append(inFiles[c][ifile])
+        fnames.append(in_files[c][ifile])
         dirs.append(abspath(path.from_user(app.ARGS.input_dir[c], False)))
 
     if use_masks:
@@ -639,8 +639,9 @@ def execute():  #pylint: disable=unused-variable
   if voxel_size is None:
     run.command('mraverageheader ' + ' '.join(input_filenames) + ' average_header.mif -fill')
   else:
-    run.command('mraverageheader -fill ' + ' '.join(input_filenames) + ' - | mrresize - -voxel ' +
-                ','.join(map(str, voxel_size)) + ' average_header.mif')
+    run.command(['mraverageheader', '-fill', input_filenames, '-', '|',
+                 'mrgrid', '-', 'regrid', '-voxel', ','.join(map(str, voxel_size)), 'average_header.mif'])
+
 
   # crop average space to extent defined by original masks
   if use_masks:
@@ -653,7 +654,7 @@ def execute():  #pylint: disable=unused-variable
       progress.increment()
     progress.done()
     run.command('mrmath ' + ' '.join(mask_filenames) + ' max mask_initial.mif')
-    run.command('mrcrop ' + 'average_header.mif -mask mask_initial.mif average_header_cropped.mif')
+    run.command('mrgrid average_header.mif crop -mask mask_initial.mif average_header_cropped.mif')
     run.function(os.remove, 'mask_initial.mif')
     run.function(os.remove, 'average_header.mif')
     run.function(shutil.move, 'average_header_cropped.mif', 'average_header.mif')
@@ -783,10 +784,10 @@ def execute():  #pylint: disable=unused-variable
     progress.done()
 
     if voxel_size is None:
-      run.command('mrpad -uniform 10 average_header_tight.mif average_header.mif -force')
+      run.command('mrgrid average_header_tight.mif pad -uniform 10 average_header.mif', force=True)
     else:
-      run.command('mrpad -uniform 10 average_header_tight.mif - | mrresize - -voxel ' + ','.join(map(str, voxel_size)) +
-                  ' average_header.mif -force')
+      run.command('mrgrid average_header_tight.mif pad -uniform 10 - | '\
+                  'mrgrid - regrid -voxel ' + ','.join(map(str, voxel_size)) + ' average_header.mif', force=True)
     run.function(os.remove, 'average_header_tight.mif')
     for c in range(1, n_contrasts):
       run.function(os.remove, 'average_header' + contrasts[c] + '.mif')
@@ -807,9 +808,9 @@ def execute():  #pylint: disable=unused-variable
       for i in inputs:
         mask_filenames.append(os.path.join('masks_transformed', i.prefix + '.mif'))
       run.command('mrmath ' + ' '.join(mask_filenames) + ' max mask_translated.mif')
-      run.command('mrcrop ' + 'average_header.mif -mask mask_translated.mif average_header_cropped.mif')
+      run.command('mrgrid average_header.mif crop -mask mask_translated.mif average_header_cropped.mif')
       # pad average space to allow for deviation from initial alignment
-      run.command('mrpad -uniform 10 average_header_cropped.mif -force average_header.mif')
+      run.command('mrgrid average_header_cropped.mif pad -uniform 10 average_header.mif', force=True)
       run.function(os.remove, 'average_header_cropped.mif')
       progress = app.ProgressBar('Reslicing mask images to new padded average header', len(inputs))
       for i in inputs:
@@ -817,8 +818,8 @@ def execute():  #pylint: disable=unused-variable
                     os.path.join('masks_transformed', i.prefix + '_translated.mif') + ' ' +
                     os.path.join('masks_transformed', i.prefix + '.mif') + ' ' +
                     '-interp nearest -template average_header.mif' +
-                    datatype_option +
-                    ' -force')
+                    datatype_option,
+                    force=True)
         run.function(os.remove, os.path.join('masks_transformed', i.prefix + '_translated.mif'))
         progress.increment()
       progress.done()
@@ -915,13 +916,13 @@ def execute():  #pylint: disable=unused-variable
             current = os.path.join('input_transformed' + i.contrasts[c], '%s.mif' % i.prefix)
             isfinite = 'isfinite%s/%s.mif' % (i.contrasts[c], i.prefix)
             run.command('mrcalc ' + isfinite_count[c] + ' ' + isfinite + ' -neg -add - | mrcalc ' + current_template[c] +
-                        ' ' + isfinite_count[c] + ' -mult ' + current + ' -neg -add - -div loo_%s -force' %current_template[c])
+                        ' ' + isfinite_count[c] + ' -mult ' + current + ' -neg -add - -div loo_%s' %current_template[c],
+                        force=True)
             tmpl.append('loo_%s' % current_template[c])
           images = ' + '.join([p + ' ' + t for p, t in zip(i.paths_in, tmpl)])
         else:
           images = ' + '.join([p + ' ' + t for p, t in zip(i.paths_in, current_template)])
         command = 'mrregister ' + images + \
-                  ' -force' + \
                   initialise_option + \
                   mask_option + \
                   scale_option + \
@@ -933,7 +934,7 @@ def execute():  #pylint: disable=unused-variable
                   contrast_weight_option + \
                   output_option + \
                   mrregister_log_option
-        run.command(command)
+        run.command(command, force=True)
         check_linear_transformation(os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix), command,
                                     pause_on_warn=do_pause_on_warn)
         if leave_one_out:
@@ -944,10 +945,10 @@ def execute():  #pylint: disable=unused-variable
       # Here we ensure the template doesn't drift or scale
       # TODO matrix avarage might produce a large FOV for large rotations
       run.command('transformcalc ' + ' '.join(
-        path.all_in_dir('linear_transforms_%i' % level)) + ' average linear_transform_average.txt -force -quiet')
+        path.all_in_dir('linear_transforms_%i' % level)) + ' average linear_transform_average.txt -quiet', force=True)
       if linear_type[level] == 'rigid':
-        run.command('transformcalc linear_transform_average.txt rigid linear_transform_average.txt -force -quiet')
-      run.command('transformcalc linear_transform_average.txt invert linear_transform_average_inv.txt -force -quiet')
+        run.command('transformcalc linear_transform_average.txt rigid linear_transform_average.txt -quiet', force=True)
+      run.command('transformcalc linear_transform_average.txt invert linear_transform_average_inv.txt -quiet', force=True)
 
       average_inv = matrix.load_transform('linear_transform_average_inv.txt')
       if average_inv is not None:
@@ -963,8 +964,8 @@ def execute():  #pylint: disable=unused-variable
                       ' -linear ' + os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix) +
                       ' ' + os.path.join('input_transformed' + contrasts[c], '%s.mif' % i.prefix) +
                       outofbounds_option +
-                      datatype_option +
-                      ' -force')
+                      datatype_option,
+                      force=True)
           progress.increment()
       progress.done()
 
@@ -976,8 +977,8 @@ def execute():  #pylint: disable=unused-variable
                         ' -template ' + current_template[c] +
                         ' -interp nearest' +
                         ' -linear ' + os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix) +
-                        ' ' + os.path.join('masks_transformed', '%s.mif' % i.prefix) +
-                        ' -force')
+                        ' ' + os.path.join('masks_transformed', '%s.mif' % i.prefix),
+                        force=True)
             progress.increment()
         progress.done()
 
@@ -1002,7 +1003,7 @@ def execute():  #pylint: disable=unused-variable
   # Create a template mask for nl registration by taking the intersection of all transformed input masks and dilating
   if use_masks and (dononlinear or app.ARGS.template_mask):
     run.command('mrmath ' + ' '.join(path.all_in_dir('masks_transformed')) +
-                ' min - | maskfilter - median - | maskfilter - dilate -npass 5 init_nl_template_mask.mif -force')
+                ' min - | maskfilter - median - | maskfilter - dilate -npass 5 init_nl_template_mask.mif', force=True)
     current_template_mask = 'init_nl_template_mask.mif'
 
   if dononlinear:
@@ -1043,7 +1044,7 @@ def execute():  #pylint: disable=unused-variable
             isfinite = 'isfinite%s/%s.mif' % (i.contrasts[c], i.prefix)
             run.command('mrcalc ' + isfinite_count[c] + ' ' + isfinite + ' -neg -add - | mrcalc ' +
                         current_template[c] + ' ' + isfinite_count[c] + ' -mult ' + current +
-                        ' -neg -add - -div loo_%s -force' %current_template[c])
+                        ' -neg -add - -div loo_%s' %current_template[c], force=True)
             tmpl.append('loo_%s' % current_template[c])
           images = ' + '.join([p + ' ' + t for p, t in zip(i.paths_in, tmpl)])
         else:
@@ -1058,22 +1059,22 @@ def execute():  #pylint: disable=unused-variable
                     ' -nl_update_smooth ' + app.ARGS.nl_update_smooth +
                     ' -nl_disp_smooth ' + app.ARGS.nl_disp_smooth +
                     ' -nl_grad_step ' + app.ARGS.nl_grad_step +
-                    ' -force ' +
                     initialise_option +
                     contrast_weight_option +
                     scale_option +
                     mask_option +
                     datatype_option +
                     outofbounds_option +
-                    lmax_option)
+                    lmax_option,
+                    force=True)
 
         if use_masks:
           run.command('mrtransform ' + i.mask +
                       ' -template ' + current_template[0] +
                       ' -warp_full ' + os.path.join('warps_%i' % level, '%s.mif' % i.prefix) +
                       ' ' + os.path.join('masks_transformed', i.prefix + '.mif') +
-                      ' -interp nearest ' +
-                      ' -force')
+                      ' -interp nearest ',
+                      force=True)
 
         if nanmask_input:
           inplace_nan_mask([os.path.join('input_transformed' + contrasts[c], i.prefix + '.mif') for c in range(n_contrasts)],
@@ -1109,8 +1110,8 @@ def execute():  #pylint: disable=unused-variable
         if scale < nl_scales[level + 1]:
           upsample_factor = nl_scales[level + 1] / scale
           for i in inputs:
-            run.command('mrresize ' + os.path.join('warps_%i' % level, '%s.mif' % i.prefix) +
-                        ' -force -scale %f tmp.mif' % upsample_factor)
+            run.command('mrgrid ' + os.path.join('warps_%i' % level, '%s.mif' % i.prefix) +
+                        ' regrid -scale %f tmp.mif' % upsample_factor, force=True)
             run.function(shutil.move, 'tmp.mif', os.path.join('warps_' + str(level), '%s.mif' % i.prefix))
       else:
         for i in inputs:
