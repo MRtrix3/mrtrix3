@@ -143,7 +143,7 @@ vector<value_type> get_data (Image<value_type>& in,
       }
     } else {
       for (auto l = Loop(in, 0, max_axis) (in, mask_replicate); l; ++l) {
-        if (mask_replicate.value() && std::isfinite (in.value()))
+        if (mask_replicate.value() && std::isfinite (static_cast<value_type>(in.value())))
           data.push_back (in.value());
       }
     }
@@ -155,7 +155,7 @@ vector<value_type> get_data (Image<value_type>& in,
       }
     } else {
       for (auto l = Loop(in, 0, max_axis) (in); l; ++l) {
-          if (std::isfinite (in.value()))
+          if (std::isfinite (static_cast<value_type>(in.value())))
         data.push_back (in.value());
       }
     }
@@ -185,12 +185,12 @@ void save (Image<float> in,
   if (equal_as_above) {
     const value_type threshold_float (threshold);
     for (auto l = Loop(in) (in, out); l; ++l)
-      out.value() = std::isfinite (in.value()) ?
+      out.value() = std::isfinite (static_cast<value_type>(in.value())) ?
                     ((in.value() >= threshold_float) ? above : below) :
                     nonfinite;
   } else {
     for (auto l = Loop(in) (in, out); l; ++l)
-      out.value() = std::isfinite (in.value()) ?
+      out.value() = std::isfinite (static_cast<value_type>(in.value())) ?
                     ((default_type (in.value()) > threshold) ? above : below) :
                     nonfinite;
   }
@@ -324,12 +324,12 @@ void apply (Image<value_type>& in,
   if (equal_as_above) {
     const value_type threshold_float (threshold);
     for (auto l = Loop(in, 0, max_axis) (in, out); l; ++l)
-      out.value() = std::isfinite (in.value()) ?
+      out.value() = std::isfinite (static_cast<value_type>(in.value())) ?
                     ((in.value() >= threshold_float) ? above : below) :
                     nonfinite;
   } else {
     for (auto l = Loop(in, 0, max_axis) (in, out); l; ++l)
-      out.value() = std::isfinite (in.value()) ?
+      out.value() = std::isfinite (static_cast<value_type>(in.value())) ?
                     ((default_type (in.value()) > threshold) ? above : below) :
                     nonfinite;
   }
