@@ -21,7 +21,6 @@ def usage(cmdline): #pylint: disable=unused-variable
 
   cmdline.set_synopsis('Generates an unbiased group-average template from a series of images')
   cmdline.add_description('First a template is optimised with linear registration (rigid and/or affine, both by default), then non-linear registration is used to optimise the template further.')
-  print(dir(cmdline))
   cmdline.add_argument("input", nargs='+', action=cmdline.PlusSep, metavar=('input_dir', 'template'), help='Pair of an input directory containing all images used to build the template and the output template image. For multi-contrast registration, provide multiple pairs separated by a plus sign. Example: wm_dir template_wm.mif + gm_dir template_gm.mif')
 
   options = cmdline.add_argument_group('Multi-contrast options')
@@ -80,6 +79,18 @@ def relpath(*arg):
   import os
   from mrtrix3 import app #pylint: disable=no-name-in-module
   return os.path.relpath(os.path.join(*arg), app.WORKING_DIR)
+
+def copy(src, dst, *, follow_symlinks=True):
+  """Copy data but do not set mode bits. Return the file's destination.
+
+  mimics shutil.copy but without setting mode bits as shutil.copymode can fail on exotic mounts
+  (observed on cifs with file_mode=0777).
+  """
+  import os, shutil
+  if os.path.isdir(dst):
+    dst = os.path.join(dst, os.path.basename(src))
+  shutil.copyfile(src, dst, follow_symlinks=follow_symlinks)
+  return dst
 
 
 def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=0.2, max_rot=None, pause_on_warn=True):
@@ -163,13 +174,13 @@ def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=
 
 
 def aggregate(images, output, mode, force=True):
-  from mrtrix3 import app, run  # pylint: disable=no-name-in-module
+  from mrtrix3 import MRtrixError, run  # pylint: disable=no-name-in-module
   if mode == 'mean':
     run.command('mrmath ' + ' '.join(images) + ' mean ' + output, force=force)
   elif mode == 'median':
     run.command('mrmath ' + ' '.join(images) + ' median ' + output, force=force)
   else:
-    app.error("aggregation mode %s not understood" % mode)
+    raise MRtrixError("aggregation mode %s not understood" % mode)
 
 
 def inplace_nan_mask(images, masks, progress=True):
@@ -251,7 +262,7 @@ def execute():  #pylint: disable=unused-variable
   app.ARGS.template = []
   for t in app.ARGS.input:
     if len(t) != 2:
-      app.error('expected two arguments per contrast, received %i: %s' % (len(t), ', '.join(t)))
+      raise MRtrixError('expected two arguments per contrast, received %i: %s' % (len(t), ', '.join(t)))
     app.console('\tcontrast: %s, template: %s' % (t[0], t[1]))
     if not os.path.exists(t[0]):
       raise MRtrixError('input directory not found')
@@ -260,56 +271,56 @@ def execute():  #pylint: disable=unused-variable
 
   if app.ARGS.mc_weight_initial_alignment:
     if n_contrasts == 1:
-      app.error('mc_weight_initial_alignment requires multiple input contrasts')
+      raise MRtrixError('mc_weight_initial_alignment requires multiple input contrasts')
     else:
       app.ARGS.mc_weight_initial_alignment = app.ARGS.mc_weight_initial_alignment.split(',')
       if len(app.ARGS.mc_weight_initial_alignment) != n_contrasts:
-        app.error('mc_weight_initial_alignment needs to be defined for each contrast')
+        raise MRtrixError('mc_weight_initial_alignment needs to be defined for each contrast')
   else:
     app.ARGS.mc_weight_initial_alignment = n_contrasts * ["1"]
 
   if app.ARGS.mc_weight_rigid:
     if n_contrasts == 1:
-      app.error('mc_weight_rigid requires multiple input contrasts')
+      raise MRtrixError('mc_weight_rigid requires multiple input contrasts')
     else:
       app.ARGS.mc_weight_rigid = app.ARGS.mc_weight_rigid.split(',')
       if len(app.ARGS.mc_weight_rigid) != n_contrasts:
-        app.error('mc_weight_rigid needs to be defined for each contrast')
+        raise MRtrixError('mc_weight_rigid needs to be defined for each contrast')
   else:
     app.ARGS.mc_weight_rigid = n_contrasts * ["1"]
 
   if app.ARGS.mc_weight_affine:
     if n_contrasts == 1:
-      app.error('mc_weight_affine requires multiple input contrasts')
+      raise MRtrixError('mc_weight_affine requires multiple input contrasts')
     else:
       app.ARGS.mc_weight_affine = app.ARGS.mc_weight_affine.split(',')
       if len(app.ARGS.mc_weight_affine) != n_contrasts:
-        app.error('mc_weight_affine needs to be defined for each contrast')
+        raise MRtrixError('mc_weight_affine needs to be defined for each contrast')
   else:
     app.ARGS.mc_weight_affine = n_contrasts * ["1"]
 
   if app.ARGS.mc_weight_nl:
     if n_contrasts == 1:
-      app.error('mc_weight_nl requires multiple input contrasts')
+      raise MRtrixError('mc_weight_nl requires multiple input contrasts')
     else:
       app.ARGS.mc_weight_nl = app.ARGS.mc_weight_nl.split(',')
       if len(app.ARGS.mc_weight_nl) != n_contrasts:
-        app.error('mc_weight_nl needs to be defined for each contrast')
+        raise MRtrixError('mc_weight_nl needs to be defined for each contrast')
   else:
     app.ARGS.mc_weight_nl = n_contrasts * ["1"]
 
   for inputDir in app.ARGS.input_dir:
     if not os.path.exists(inputDir):
-      app.error('input directory not found: ' + inputDir)
+      raise MRtrixError('input directory not found: ' + inputDir)
 
   in_files = [sorted(path.all_in_dir(inputDir, dir_path=False)) for inputDir in app.ARGS.input_dir]
   if len(in_files[0]) <= 1:
-    app.error('Not enough images found in input directory ' + app.ARGS.input_dir[
+    raise MRtrixError('Not enough images found in input directory ' + app.ARGS.input_dir[
       0] + '. More than one image is needed to generate a population template')
   elif n_contrasts > 1:
     for i in range(1, n_contrasts):
       if len(in_files[i]) != len(in_files[0]):
-        app.error('Found %i images in input directory %s but %i input images in %s.' % (
+        raise MRtrixError('Found %i images in input directory %s but %i input images in %s.' % (
           len(app.ARGS.input_dir[0]), app.ARGS.input_dir[0], len(app.ARGS.input_dir[i]), app.ARGS.input_dir[i]))
   else:
     app.console('Generating a population-average template from ' + str(len(in_files[0])) + ' input images')
@@ -326,25 +337,25 @@ def execute():  #pylint: disable=unused-variable
         raise ValueError
       [float(v) for v in voxel_size]  #pylint: disable=expression-not-assigned
     except ValueError:
-      app.error('voxel size needs to be a single or three comma-separated floating point numbers; received: ' + str(
+      raise MRtrixError('voxel size needs to be a single or three comma-separated floating point numbers; received: ' + str(
         app.ARGS.voxel_size))
 
   agg_measure = 'mean'
   if app.ARGS.aggregate is not None:
     if not app.ARGS.aggregate in AGGREGATION_MODES:
-      app.error("aggregation type must be one of %s. provided: %s" % (str(AGGREGATION_MODES), app.ARGS.aggregate))
+      raise MRtrixError("aggregation type must be one of %s. provided: %s" % (str(AGGREGATION_MODES), app.ARGS.aggregate))
     agg_measure = app.ARGS.aggregate
 
   initial_alignment = app.ARGS.initial_alignment
   if initial_alignment not in ["mass", "robust_mass", "geometric", "none"]:
-    app.error('initial_alignment must be one of ' + " ".join(["mass", "robust_mass", "geometric", "none"]))
+    raise MRtrixError('initial_alignment must be one of ' + " ".join(["mass", "robust_mass", "geometric", "none"]))
 
   linear_estimator = app.ARGS.linear_estimator
   if linear_estimator:
     if not dononlinear:
-      app.error('linear_estimator specified when no linear registration is requested')
+      raise MRtrixError('linear_estimator specified when no linear registration is requested')
     if linear_estimator not in ["l1", "l2", "lp"]:
-      app.error('linear_estimator must be one of ' + " ".join(["l1", "l2", "lp"]))
+      raise MRtrixError('linear_estimator must be one of ' + " ".join(["l1", "l2", "lp"]))
 
   use_masks = False
   mask_prefixes = []
@@ -354,13 +365,13 @@ def execute():  #pylint: disable=unused-variable
     app.ARGS.mask_dir = relpath(app.ARGS.mask_dir)
     maskDir = app.ARGS.mask_dir
     if not os.path.exists(maskDir):
-      app.error('mask directory not found')
+      raise MRtrixError('mask directory not found')
     mask_files = sorted(path.all_in_dir(maskDir, dir_path=False))
     if len(mask_files) < len(in_files[0]):
-      app.error('there are not enough mask images for the number of images in the input directory')
+      raise MRtrixError('there are not enough mask images for the number of images in the input directory')
     mask_common_postfix = get_common_postfix(mask_files)
     if len(mask_common_postfix) == 0:
-      app.error('mask filenames do not have a common postfix')
+      raise MRtrixError('mask filenames do not have a common postfix')
     for m in mask_files:
       mask_prefixes.append(m.split(mask_common_postfix)[0])
 
@@ -368,16 +379,16 @@ def execute():  #pylint: disable=unused-variable
     app.warn('no masks input. Use input masks to reduce computation time and improve robustness')
 
   if app.ARGS.template_mask and not use_masks:
-    app.error('you cannot output a template mask because no subject masks were input using -mask_dir')
+    raise MRtrixError('you cannot output a template mask because no subject masks were input using -mask_dir')
 
   nanmask_input = app.ARGS.nanmask
   if nanmask_input and not use_masks:
-    app.error('you cannot use NaN masking when no subject masks were input using -mask_dir')
+    raise MRtrixError('you cannot use NaN masking when no subject masks were input using -mask_dir')
 
   commonPostfix = [get_common_postfix(files) for files in in_files]
   for postfix in commonPostfix:
     if len(postfix) == 0:
-      app.error('image filenames do not have a common postfix')
+      raise MRtrixError('image filenames do not have a common postfix')
   contrasts = [''] + ["_c" + c for c in map(str, range(1, n_contrasts))]
   inputs = []
   for ifile, fname in enumerate(in_files[0]):
@@ -388,14 +399,14 @@ def execute():  #pylint: disable=unused-variable
       for c in range(1, n_contrasts):
         image.check_3d_nonunity(os.path.join(abspath(path.from_user(app.ARGS.input_dir[c], False)), in_files[c][ifile]))
         if prefix != in_files[c][ifile].split(commonPostfix[c])[0]:
-          app.error('no matching image was found for image %s and contrasts %s and %s.' % (
+          raise MRtrixError('no matching image was found for image %s and contrasts %s and %s.' % (
             fname, path.from_user(app.ARGS.input_dir[0], False), path.from_user(app.ARGS.input_dir[c], False)))
         fnames.append(in_files[c][ifile])
         dirs.append(abspath(path.from_user(app.ARGS.input_dir[c], False)))
 
     if use_masks:
       if prefix not in mask_prefixes:
-        app.error('no matching mask image was found for input image ' + fname)
+        raise MRtrixError('no matching mask image was found for input image ' + fname)
       index = mask_prefixes.index(prefix)
       inputs.append(Input(fnames, prefix, dirs, contrasts, mask_files[index], abspath(path.from_user(maskDir, False))))
     else:
@@ -405,7 +416,7 @@ def execute():  #pylint: disable=unused-variable
   if app.ARGS.leave_one_out is not None:
     leave_one_out = app.ARGS.leave_one_out
     if not leave_one_out in ['0', '1', 'auto']:
-      app.error('leave_one_out not understood: ' + str(leave_one_out))
+      raise MRtrixError('leave_one_out not understood: ' + str(leave_one_out))
 
   if leave_one_out == 'auto':
     leave_one_out = len(inputs) > 2 and len(inputs) < 15
@@ -419,10 +430,10 @@ def execute():  #pylint: disable=unused-variable
   if app.ARGS.linear_no_pause:
     do_pause_on_warn = False
     if not dolinear:
-      app.error("linear option set when no linear registration is performed")
+      raise MRtrixError("linear option set when no linear registration is performed")
 
   if len(app.ARGS.template) != n_contrasts:
-    app.error('mismatch between number of output templates (%i) and number of contrasts (%i)' % (len(app.ARGS.template),
+    raise MRtrixError('mismatch between number of output templates (%i) and number of contrasts (%i)' % (len(app.ARGS.template),
                                                    n_contrasts))
   for t in app.ARGS.template:
     app.check_output_path(t)
@@ -434,13 +445,13 @@ def execute():  #pylint: disable=unused-variable
   if app.ARGS.transformed_dir:
     app.ARGS.transformed_dir = [relpath(d) for d in app.ARGS.transformed_dir.split(',')]
     if len(app.ARGS.transformed_dir) != n_contrasts:
-      app.error('require multiple transformed directories if multi-contrast registration is used')
+      raise MRtrixError('require multiple transformed directories if multi-contrast registration is used')
     for d in app.ARGS.transformed_dir:
       app.check_output_path(d)
 
   if app.ARGS.linear_transformations_dir:
     if not dolinear:
-      app.error("linear option set when no linear registration is performed")
+      raise MRtrixError("linear option set when no linear registration is performed")
     app.ARGS.linear_transformations_dir = relpath(app.ARGS.linear_transformations_dir)
     app.check_output_path(app.ARGS.linear_transformations_dir)
 
@@ -450,7 +461,7 @@ def execute():  #pylint: disable=unused-variable
   for c in range(n_contrasts):
     image_size = image.Header(relpath(inputs[0].directories[c], inputs[0].filenames[c])).size()
     if len(image_size) < 3 or len(image_size) > 4:
-      app.error('only 3 and 4 dimensional images can be used to build a template')
+      raise MRtrixError('only 3 and 4 dimensional images can be used to build a template')
     if len(image_size) == 4:
       n_volumes.append(image_size[3])
       val = (math.sqrt(1 + 8 * image_size[3]) - 3.0) / 4.0
@@ -470,53 +481,53 @@ def execute():  #pylint: disable=unused-variable
   if app.ARGS.rigid_scale:
     rigid_scales = [float(x) for x in app.ARGS.rigid_scale.split(',')]
     if not dorigid:
-      app.error("rigid_scales option set when no rigid registration is performed")
+      raise MRtrixError("rigid_scales option set when no rigid registration is performed")
   else:
       rigid_scales = DEFAULT_RIGID_SCALES
   if app.ARGS.rigid_lmax:
     if not dorigid:
-      app.error("rigid_lmax option set when no rigid registration is performed")
+      raise MRtrixError("rigid_lmax option set when no rigid registration is performed")
     rigid_lmax = [int(x) for x in app.ARGS.rigid_lmax.split(',')]
     if do_fod_registration and len(rigid_scales) != len(rigid_lmax):
-      app.error('rigid_scales and rigid_lmax schedules are not equal in length')
+      raise MRtrixError('rigid_scales and rigid_lmax schedules are not equal in length')
   else:
       rigid_lmax = DEFAULT_RIGID_LMAX
 
   rigid_niter = [100] * len(rigid_scales)
   if app.ARGS.rigid_niter:
     if not dorigid:
-      app.error("rigid_niter specified when no rigid registration is performed")
+      raise MRtrixError("rigid_niter specified when no rigid registration is performed")
     rigid_niter = [int(x) for x in app.ARGS.rigid_niter.split(',')]
     if len(rigid_niter) == 1:
       rigid_niter = rigid_niter * len(rigid_scales)
     elif len(rigid_scales) != len(rigid_niter):
-      app.error('rigid_scales and rigid_niter schedules are not equal in length')
+      raise MRtrixError('rigid_scales and rigid_niter schedules are not equal in length')
 
   # affine options
   if app.ARGS.affine_scale:
     affine_scales = [float(x) for x in app.ARGS.affine_scale.split(',')]
     if not doaffine:
-      app.error("affine_scale option set when no affine registration is performed")
+      raise MRtrixError("affine_scale option set when no affine registration is performed")
   else:
       affine_scales = DEFAULT_AFFINE_SCALES
   if app.ARGS.affine_lmax:
     if not doaffine:
-      app.error("affine_lmax option set when no affine registration is performed")
+      raise MRtrixError("affine_lmax option set when no affine registration is performed")
     affine_lmax = [int(x) for x in app.ARGS.affine_lmax.split(',')]
     if do_fod_registration and len(affine_scales) != len(affine_lmax):
-      app.error('affine_scales and affine_lmax schedules are not equal in length')
+      raise MRtrixError('affine_scales and affine_lmax schedules are not equal in length')
   else:
       affine_lmax = DEFAULT_AFFINE_LMAX
 
   affine_niter = [500] * len(affine_scales)
   if app.ARGS.affine_niter:
     if not doaffine:
-      app.error("affine_niter specified when no affine registration is performed")
+      raise MRtrixError("affine_niter specified when no affine registration is performed")
     affine_niter = [int(x) for x in app.ARGS.affine_niter.split(',')]
     if len(affine_niter) == 1:
       affine_niter = affine_niter * len(affine_scales)
     elif len(affine_scales) != len(affine_niter):
-      app.error('affine_scales and affine_niter schedules are not equal in length')
+      raise MRtrixError('affine_scales and affine_niter schedules are not equal in length')
 
   linear_scales = []
   linear_lmax = []
@@ -574,14 +585,14 @@ def execute():  #pylint: disable=unused-variable
     nl_lmax = []
     nl_niter = []
     if app.ARGS.warp_dir:
-      app.error('warp_dir specified when no nonlinear registration is performed')
+      raise MRtrixError('warp_dir specified when no nonlinear registration is performed')
   else:
     nl_scales = [float(x) for x in app.ARGS.nl_scale.split(',')] if app.ARGS.nl_scale else DEFAULT_NL_SCALES
     nl_niter = [int(x) for x in app.ARGS.nl_niter.split(',')] if app.ARGS.nl_niter else DEFAULT_NL_NITER
     nl_lmax = [int(x) for x in app.ARGS.nl_lmax.split(',')] if app.ARGS.nl_lmax else DEFAULT_NL_LMAX
 
     if len(nl_scales) != len(nl_niter):
-      app.error('nl_scales and nl_niter schedules are not equal in length')
+      raise MRtrixError('nl_scales and nl_niter schedules are not equal in length')
 
     app.console('-' * 60)
     app.console('nonlinear registration stages:')
@@ -593,7 +604,7 @@ def execute():  #pylint: disable=unused-variable
 
     if do_fod_registration:
       if len(nl_scales) != len(nl_lmax):
-        app.error('nl_scales and nl_lmax schedules are not equal in length')
+        raise MRtrixError('nl_scales and nl_lmax schedules are not equal in length')
 
     if do_fod_registration:
       for istage, [scale, lmax, niter] in enumerate(zip(nl_scales, nl_lmax, nl_niter)):
@@ -627,7 +638,7 @@ def execute():  #pylint: disable=unused-variable
 
   if initial_alignment == 'robust_mass':
     if not use_masks:
-      app.error('robust_mass initial alignment requires masks')
+      raise MRtrixError('robust_mass initial alignment requires masks')
     path.make_dir('robust')
 
   # Make initial template in average space using first contrast
@@ -675,9 +686,9 @@ def execute():  #pylint: disable=unused-variable
     run.command('mrconvert ' + avh3d + ' -axes 0,1,2,-1 ' + avh4d)
     for c in range(1, n_contrasts):
       if n_volumes[c] == 0:
-        run.function(shutil.copy, avh3d, 'average_header' + contrasts[c] + '.mif')
+        run.function(copy, avh3d, 'average_header' + contrasts[c] + '.mif')
       elif n_volumes[c] == 1:
-        run.function(shutil.copy, avh4d, 'average_header' + contrasts[c] + '.mif')
+        run.function(copy, avh4d, 'average_header' + contrasts[c] + '.mif')
       else:
         run.command('mrcat ' + ' '.join([avh3d] * n_volumes[c]) + ' -axis 3 average_header' + contrasts[c] + '.mif')
     run.function(os.remove, avh3d)
@@ -856,7 +867,7 @@ def execute():  #pylint: disable=unused-variable
   # Optimise template with linear registration
   if not dolinear:
     for i in inputs:
-      run.function(shutil.copy, os.path.join('linear_transforms_initial', '%s.txt' % (i.prefix)),
+      run.function(copy, os.path.join('linear_transforms_initial', '%s.txt' % (i.prefix)),
                    os.path.join('linear_transforms', '%s.txt' % i.prefix))
   else:
     for level, (regtype, scale, niter, lmax) in enumerate(zip(linear_type, linear_scales, linear_niter, linear_lmax)):
@@ -998,7 +1009,7 @@ def execute():  #pylint: disable=unused-variable
           run.function(os.remove, 'tmp.mif')
 
     for entry in os.listdir('linear_transforms_%i' % level):
-      run.function(shutil.copy, os.path.join('linear_transforms_%i' % level, entry), os.path.join('linear_transforms', entry))
+      run.function(copy, os.path.join('linear_transforms_%i' % level, entry), os.path.join('linear_transforms', entry))
 
   # Create a template mask for nl registration by taking the intersection of all transformed input masks and dilating
   if use_masks and (dononlinear or app.ARGS.template_mask):
