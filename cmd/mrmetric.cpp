@@ -173,7 +173,7 @@ void usage ()
   SYNOPSIS = "Computes a dissimilarity metric between two images";
 
   DESCRIPTION
-  + "Currently only the mean squared difference is implemented.";
+  + "Currently only the mean squared difference is fully implemented.";
 
   ARGUMENTS
   + Argument ("image1", "the first input image.").type_image_in ()
@@ -193,8 +193,8 @@ void usage ()
 
     + Option ("metric",
         "define the dissimilarity metric used to calculate the cost. "
-        "Choices: diff (squared differences), cc (negative cross correlation). Default: diff). "
-        "cc is only implemented for -space average and -interp linear.")
+        "Choices: diff (squared differences), cc (non-normalised negative cross correlation aka negative cross covariance). Default: diff). "
+        "cc is only implemented for -space average and -interp linear and cubic.")
     + Argument ("method").type_choice (metric_choices)
 
     + Option ("mask1", "mask for image 1")
@@ -397,7 +397,6 @@ void run ()
                 LinearParamType parameters (transform, input1, input2, midway_image, mask1, mask2);
                 Registration::Metric::ThreadKernel<decltype(metric), LinearParamType> kernel
                   (metric, parameters, sos, gradient, &n_voxels);
-                parameters.transformation.debug();
                 ThreadedLoop (parameters.midway_image, 0, 3).run (kernel);
               } else if (interp == 2) {
                 CubicParamType parameters (transform, input1, input2, midway_image, mask1, mask2);
@@ -412,7 +411,6 @@ void run ()
                 LinearParamType parameters (transform, input1, input2, midway_image, mask1, mask2);
                 Registration::Metric::ThreadKernel<decltype(metric), LinearParamType> kernel
                   (metric, parameters, sos, gradient, &n_voxels);
-
                 ThreadedLoop (parameters.midway_image, 0, 3).run (kernel);
               } else if (interp == 2) {
                 CubicParamType parameters (transform, input1, input2, midway_image, mask1, mask2);

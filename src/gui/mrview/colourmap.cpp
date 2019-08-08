@@ -40,11 +40,11 @@ namespace MR
 
 
         const Entry maps[] = {
-          Entry ("Gray", 
+          Entry ("Gray",
               "color.rgb = vec3 (amplitude);\n",
-              [] (float amplitude) { return Eigen::Array3f (amplitude, amplitude, amplitude); }),
+              [] (float amplitude) { return Eigen::Array3f (clamp (amplitude), clamp (amplitude), clamp (amplitude)); }),
 
-          Entry ("Hot", 
+          Entry ("Hot",
               "color.rgb = vec3 (2.7213 * amplitude, 2.7213 * amplitude - 1.0, 3.7727 * amplitude - 2.7727);\n",
               [] (float amplitude) { return Eigen::Array3f (clamp (2.7213f * amplitude),
                                                             clamp (2.7213f * amplitude - 1.0f),
@@ -56,7 +56,7 @@ namespace MR
                                                             clamp (1.0f - (2.7213f * (1.0f - amplitude) - 1.0f)),
                                                             clamp (1.0f - (3.7727f * (1.0f - amplitude) - 2.7727f))); }),
 
-          Entry ("Jet", 
+          Entry ("Jet",
               "color.rgb = 1.5 - 4.0 * abs (1.0 - amplitude - vec3(0.25, 0.5, 0.75));\n",
               [] (float amplitude) { return Eigen::Array3f (clamp (1.5f - 4.0f * abs (1.0f - amplitude - 0.25f)),
                                                             clamp (1.5f - 4.0f * abs (1.0f - amplitude - 0.5f)),
@@ -70,7 +70,7 @@ namespace MR
                                                             clamp (0.25f - abs (amplitude - 0.25f)) + clamp (2.0f * (amplitude - 0.5)),
                                                             clamp (1.0f - 2.0f * amplitude) + clamp (1.0 - 4.0 * abs (amplitude - 0.75))); }),
 
-          Entry ("Colour", 
+          Entry ("Colour",
               "color.rgb = amplitude * colourmap_colour;\n",
               Entry::basic_map_fn(),
               NULL, false, true),
@@ -79,7 +79,7 @@ namespace MR
               "color.rgb = scale * (abs(color.rgb) - offset);\n",
               Entry::basic_map_fn(),
               "length (color.rgb)",
-              true),
+              true, false, true),
 
           Entry ("Complex",
               "float C = atan (color.g, color.r) / 1.047197551196598;\n"
@@ -135,22 +135,22 @@ namespace MR
 
 
 
-        Renderer::Renderer () : 
+        Renderer::Renderer () :
           current_index (0),
           current_inverted (false),
           //CONF option: MRViewColourBarWidth
           //CONF default: 20
           //CONF The width of the colourbar in MRView, in pixels.
-          width (MR::File::Config::get_float ("MRViewColourBarWidth", 20.0f)), 
+          width (MR::File::Config::get_float ("MRViewColourBarWidth", 20.0f)),
           //CONF option: MRViewColourBarHeight
           //CONF default: 100
           //CONF The height of the colourbar in MRView, in pixels.
-          height (MR::File::Config::get_float ("MRViewColourBarHeight", 100.0f)), 
+          height (MR::File::Config::get_float ("MRViewColourBarHeight", 100.0f)),
           //CONF option: MRViewColourBarInset
           //CONF default: 20
           //CONF How far away from the edge of the main window to place the
           //CONF colourbar in MRView, in pixels.
-          inset (MR::File::Config::get_float ("MRViewColourBarInset", 20.0f)), 
+          inset (MR::File::Config::get_float ("MRViewColourBarInset", 20.0f)),
           //CONF option: MRViewColourBarTextOffset
           //CONF default: 10
           //CONF How far away from the colourbar to place the associated text,
@@ -190,7 +190,7 @@ namespace MR
 
           GL::Shader::Vertex vertex_shader (source);
 
-          std::string shader = 
+          std::string shader =
               "in float amplitude;\n"
               "out vec3 color;\n"
               "uniform vec3 colourmap_colour;\n"
@@ -213,7 +213,7 @@ namespace MR
           frame_program.attach (vertex_shader);
           frame_program.attach (frame_fragment_shader);
           frame_program.link();
-          
+
           current_index = index;
           current_inverted = inverted;
         }
@@ -236,7 +236,7 @@ namespace MR
         {
           if (!current_position) return;
           if (maps[colourmap].special) return;
-          
+
           if (!program || !frame_program || colourmap != current_index || current_inverted != inverted)
             setup (colourmap, inverted);
 

@@ -18,6 +18,7 @@
 #define __file_config_h__
 
 #include <map>
+#include "types.h"
 #include "file/key_value.h"
 
 namespace MR
@@ -33,11 +34,11 @@ namespace MR
           config[key] = value;
         }
         static std::string get (const std::string& key) {
-          std::map<std::string, std::string>::iterator i = config.find (key);
+          const KeyValues::const_iterator i = config.find (key);
           return (i != config.end() ? i->second : "");
         }
         static std::string get (const std::string& key, const std::string& default_value) {
-          std::map<std::string, std::string>::iterator i = config.find (key);
+          KeyValues::iterator i = config.find (key);
           return (i != config.end() ? i->second : default_value);
         }
 
@@ -47,7 +48,7 @@ namespace MR
         static void  get_RGB   (const std::string& key, float* ret, float default_R, float default_G, float default_B);
 
       private:
-        static std::map<std::string, std::string> config;
+        static KeyValues config;
     };
   }
 }

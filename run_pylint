@@ -16,7 +16,7 @@ if [ $# == 0 ]; then
     fi
   done
   for bin_path in bin/*; do
-    if head ${bin_path} -n1 | grep -q "#!/usr/bin/env python"; then
+    if [ -f ${bin_path} ] && $(head ${bin_path} -n1 | grep -q "#!/usr/bin/env python"); then
       tests="$tests $bin_path"
     fi
   done
