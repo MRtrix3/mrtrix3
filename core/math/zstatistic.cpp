@@ -135,10 +135,16 @@ namespace MR
       // Bypasses p:
       //   essentially calculates 2q = 2(1-p) using the regularised incomplete beta function,
       //   then converts straight to Z-score using the inverse complementary error function
+#ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
       data = Math::sqrt2 * (Math::betaincreg (array_type::Constant (x.size(), 0.5 * default_type(dof)),
                                               array_type::Constant (x.size(), 0.5),
                                               x.array()
                                              ).unaryExpr (&Math::erfcinv));
+#else
+      data.resize (x.size());
+      for (size_t i = 0; i != x.size(); ++i)
+        data[i] = Math::sqrt2 * Math::erfcinv (Math::betaincreg (0.5 * default_type(dof), 0.5, x[i]));
+#endif
       // Need to negate Z-scores for which t is negative
       data.topRows(1+t2z_halfdomain) *= -1.0;
     }
@@ -150,10 +156,15 @@ namespace MR
       auto func = [&] (const default_type in)
       {
         const default_type x = default_type(dof) / (Math::pow2 (in) + default_type(dof));
-        return Math::sqrt2 * Math::erfcinv (Math::betaincreg (array_type::Constant (1, 0.5 * default_type(dof)),
-                                                              array_type::Constant (1, 0.5),
-                                                              array_type::Constant (1, x)) (0, 0))
-                           * (in < 0.0 ? -1.0 : 1.0);
+        return Math::sqrt2 * Math::erfcinv (
+#ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
+            Math::betaincreg (array_type::Constant (1, 0.5 * default_type(dof)),
+                              array_type::Constant (1, 0.5),
+                              array_type::Constant (1, x)) (0, 0)
+#else
+            Math::betaincreg (0.5 * default_type(dof), 0.5, x)
+#endif
+                                           ) * (in < 0.0 ? -1.0 : 1.0);
       };
 
       return interp (t, offset, scale, data, func);
@@ -207,12 +218,14 @@ namespace MR
       const array_type d_one (array_type::Constant (3 + F2z_halfdomain, rank));
       const array_type dof_array (array_type::Constant (d_one.size(), dof));
 #ifdef NDEBUG
-      array_type stat (d_one.size()), oneoverstat (d_one.size());
+      array_type stat (d_one.size());
+      array_type oneoverstat (d_one.size());
 #else
       array_type stat (array_type::Constant (d_one.size(), NaN));
       array_type oneoverstat (array_type::Constant (d_one.size(), NaN));
 #endif
-      stat[0] = 1.0 - F2z_step; oneoverstat[0] = 1.0 / (1.0 - F2z_step);
+      stat[0] = 1.0 - F2z_step;
+      oneoverstat[0] = 1.0 / (1.0 - F2z_step);
       for (ssize_t i = 0; i <= F2z_halfdomain; ++i) {
         stat[i+1] = 1.0 + (default_type(i) * F2z_step);
         oneoverstat[i+1] = 1.0 / stat[i+1];
@@ -225,19 +238,31 @@ namespace MR
       // Bypasses p:
       //   calculates q = 1-p using the regularised incomplete beta function,
       //   then converts straight to Z-score using the inverse complementary error function
+#ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
       data_upper = Math::sqrt2 * (2.0 * Math::betaincreg (0.5 * dof_array,
                                                           0.5 * d_one,
                                                           x_upper)
                                  ).unaryExpr (&Math::erfcinv);
+#else
+      data_upper.resize (x_upper.size());
+      for (size_t i = 0; i != x_upper.size(); ++i)
+        data_upper[i] = Math::sqrt2 * Math::erfcinv (2.0 * Math::betaincreg (0.5 * dof, 0.5 * rank, x_upper[i]));
+#endif
 
       // Construct lookup table for F <= 1.0
       // This should involve avoiding the symmetry relationship gymnastics used in the first case
       // - Betaincreg (0.5*d1, 0.5*dof, x) should give p
       const array_type x_lower ((d_one*oneoverstat) / (d_one*oneoverstat + dof_array));
+#ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
       data_lower = Math::sqrt2 * (2.0 * Math::betaincreg (0.5 * d_one,
                                                           0.5 * dof_array,
                                                           x_lower) - 1.0
                                  ).unaryExpr (&Math::erfinv);
+#else
+      data_lower.resize (x_lower.size());
+      for (size_t i = 0; i != x_lower.size(); ++i)
+        data_lower[i] = Math::sqrt2 * Math::erfinv (2.0 * Math::betaincreg (0.5 * rank, 0.5 * dof, x_lower[i]) - 1.0);
+#endif
     }
 
 
@@ -248,17 +273,31 @@ namespace MR
       auto func_upper = [&] (const default_type in)
       {
         const default_type x = (default_type(dof)/in) / (default_type(dof)/in + default_type(rank));
-        return Math::sqrt2 * Math::erfcinv (2.0 * Math::betaincreg (array_type::Constant (1, 0.5 * default_type(dof)),
-                                                                    array_type::Constant (1, 0.5 * default_type(rank)),
-                                                                    array_type::Constant (1, x)) (0, 0));
+
+        return Math::sqrt2 * Math::erfcinv (2.0 *
+#ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
+            Math::betaincreg (array_type::Constant (1, 0.5 * default_type(dof)),
+                              array_type::Constant (1, 0.5 * default_type(rank)),
+                              array_type::Constant (1, x)) (0, 0)
+#else
+            Math::betaincreg (0.5 * default_type(dof), 0.5 * default_type(rank), x)
+#endif
+                                           );
+
       };
 
       auto func_lower = [&] (const default_type in)
       {
         const default_type x = (default_type(rank)/in) / (default_type(rank)/in + default_type(dof));
-        return Math::sqrt2 * Math::erfinv (2.0 * Math::betaincreg (array_type::Constant (1, 0.5 * default_type(rank)),
-                                                                   array_type::Constant (1, 0.5 * default_type(dof)),
-                                                                   array_type::Constant (1, x)) (0, 0) - 1.0);
+        return Math::sqrt2 * Math::erfinv (2.0 *
+#ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
+            Math::betaincreg (array_type::Constant (1, 0.5 * default_type(rank)),
+                              array_type::Constant (1, 0.5 * default_type(dof)),
+                              array_type::Constant (1, x)) (0, 0)
+#else
+            Math::betaincreg (0.5 * default_type(rank), 0.5 * default_type(dof), x)
+#endif
+                                                 - 1.0);
       };
 
       if (F >= 1.0)
