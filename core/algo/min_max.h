@@ -29,17 +29,17 @@ namespace MR
         public:
           using value_type = typename ImageType::value_type;
 
-          __MinMax (value_type& overal_min, value_type& overal_max) :
-            overal_min (overal_min), overal_max (overal_max),
-            min (std::numeric_limits<value_type>::infinity()), 
-            max (-std::numeric_limits<value_type>::infinity()) { 
-              overal_min = min;
-              overal_max = max;
+          __MinMax (value_type& overall_min, value_type& overall_max) :
+            overall_min (overall_min), overall_max (overall_max),
+            min (std::numeric_limits<value_type>::infinity()),
+            max (-std::numeric_limits<value_type>::infinity()) {
+              overall_min = min;
+              overall_max = max;
             }
           ~__MinMax () {
             std::lock_guard<std::mutex> lock (mutex);
-            overal_min = std::min (overal_min, min);
-            overal_max = std::max (overal_max, max);
+            overall_min = std::min (overall_min, min);
+            overall_max = std::max (overall_max, max);
           }
 
           void operator() (ImageType& vox) {
@@ -50,8 +50,8 @@ namespace MR
             }
           }
 
-          value_type& overal_min;
-          value_type& overal_max;
+          value_type& overall_min;
+          value_type& overall_max;
           value_type min, max;
 
           static std::mutex mutex;
@@ -64,11 +64,21 @@ namespace MR
       inline void min_max (
           ImageType& in,
           typename ImageType::value_type& min,
-          typename ImageType::value_type& max,
-          size_t from_axis = 0, 
-          size_t to_axis = std::numeric_limits<size_t>::max())
+          typename ImageType::value_type& max)
     {
       ThreadedLoop ("finding min/max of \"" + shorten (in.name()) + "\"", in)
+        .run (__MinMax<ImageType> (min, max), in);
+    }
+
+    template <class ImageType>
+      inline void min_max (
+          ImageType& in,
+          typename ImageType::value_type& min,
+          typename ImageType::value_type& max,
+          size_t from_axis,
+          size_t to_axis)
+    {
+      ThreadedLoop ("finding min/max of \"" + shorten (in.name()) + "\"", in, from_axis, to_axis)
         .run (__MinMax<ImageType> (min, max), in);
     }
 

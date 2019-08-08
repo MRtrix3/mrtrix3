@@ -65,4 +65,4 @@ def execute(): #pylint: disable=unused-variable
 
   run.function(shutil.copyfile, 'response.txt', path.from_user(app.ARGS.output, False))
   if app.ARGS.voxels:
-    run.command('mrconvert in_voxels.mif ' + path.from_user(app.ARGS.voxels) + app.mrconvert_output_option(path.from_user(app.ARGS.input)))
+    run.command('mrconvert in_voxels.mif ' + path.from_user(app.ARGS.voxels), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE)

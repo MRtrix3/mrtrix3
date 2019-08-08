@@ -39,9 +39,9 @@ def get_inputs(): #pylint: disable=unused-variable
 def execute(): #pylint: disable=unused-variable
   import math, os
   from distutils.spawn import find_executable
-  from mrtrix3 import app, fsl, image, is_windows, MRtrixError, path, run
+  from mrtrix3 import app, fsl, image, MRtrixError, path, run, utils
 
-  if is_windows():
+  if utils.is_windows():
     raise MRtrixError('\'fsl\' algorithm of 5ttgen script cannot be run on Windows: FSL not available on Windows')
 
   fsl_path = os.environ.get('FSLDIR', '')
@@ -214,4 +214,4 @@ def execute(): #pylint: disable=unused-variable
   else:
     run.command('mrmath combined_precrop.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | maskfilter - dilate - | mrgrid combined_precrop.mif crop result.mif -mask -')
 
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output, True) + app.mrconvert_output_option(path.from_user(app.ARGS.input, True)))
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE)
