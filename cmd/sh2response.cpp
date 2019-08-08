@@ -67,7 +67,7 @@ using value_type = double;
 
 
 
-void run () 
+void run ()
 {
   auto SH = Image<value_type>::open(argument[0]);
   Math::SH::check (SH);
@@ -98,7 +98,7 @@ void run ()
   auto loop = Loop ("estimating response function", SH, 0, 3);
   for (auto l = loop(mask, SH, dir); l; ++l) {
 
-    if (!mask.value()) 
+    if (!mask.value())
       continue;
 
     Eigen::Vector3d d = dir.row(3);
@@ -129,10 +129,10 @@ void run ()
       value_type val = AL[l] * d_dot_s / d_dot_d;
       response[Math::ZSH::index(l)] += val;
 
-      if (dump_stream.is_open()) 
+      if (dump_stream.is_open())
         dump_stream << val << " ";
     }
-    if (dump_stream.is_open()) 
+    if (dump_stream.is_open())
       dump_stream << "\n";
 
     ++count;

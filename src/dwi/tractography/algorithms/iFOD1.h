@@ -44,7 +44,7 @@ namespace MR
           SharedBase (diff_path, property_set),
           lmax (Math::SH::LforN (source.size(3))),
           max_trials (TCKGEN_DEFAULT_MAX_TRIALS_PER_STEP),
-          sin_max_angle (std::sin (max_angle)),
+          sin_max_angle_1o (std::sin (max_angle_1o)),
           mean_samples (0.0),
           mean_truncations (0.0),
           max_max_truncation (0.0),
@@ -57,15 +57,14 @@ namespace MR
             throw Exception ("Algorithm iFOD1 expects as input a spherical harmonic (SH) image");
           }
 
-          set_step_size (0.1f);
+          set_step_size (rk4 ? 0.5f : 0.1f, rk4);
+          // max_angle needs to be set because it influences the cone in which FOD amplitudes are sampled
           if (rk4) {
-            max_angle = 0.5 * max_angle_rk4;
-            INFO ("minimum radius of curvature = " + str(step_size / (max_angle_rk4 / (0.5 * Math::pi))) + " mm");
-          } else {
-            INFO ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
+            max_angle_1o = 0.5 * max_angle_ho;
+            cos_max_angle_1o = std::cos (max_angle_1o);
           }
-          sin_max_angle = std::sin (max_angle);
-
+          sin_max_angle_1o = std::sin (max_angle_1o);
+          set_num_points();
           set_cutoff (TCKGEN_DEFAULT_CUTOFF_FOD);
 
           properties["method"] = "iFOD1";
@@ -101,7 +100,7 @@ namespace MR
         }
 
         size_t lmax, max_trials;
-        float sin_max_angle;
+        float sin_max_angle_1o;
         Math::SH::PrecomputedAL<float> precomputer;
 
         private:
@@ -212,7 +211,7 @@ namespace MR
           }
         }
 
-        return BAD_SIGNAL;
+        return MODEL;
       }
 
 
@@ -238,7 +237,7 @@ namespace MR
         );
       }
 
-      Eigen::Vector3f rand_dir (const Eigen::Vector3f& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
+      Eigen::Vector3f rand_dir (const Eigen::Vector3f& d) { return (random_direction (d, S.max_angle_1o, S.sin_max_angle_1o)); }
 
 
 
