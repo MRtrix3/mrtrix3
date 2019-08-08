@@ -71,13 +71,12 @@ command-line *does* matter, and hence the above demonstration does not apply:
    a tool is applied to the *most recent* data (image or otherwise) opened
    by the tool associated with that option.
 
--  :ref:`Scripts <list-of-mrtrix3-scripts>`: A subset of the Python scripts provided with *MRtrix3*
-   (currently :ref:`5ttgen` and :ref:`dwi2response`) require the selection
-   of an *algorithm*, which defines the approach that the script will use to
-   arrive at its end result based on the data provided. The name of this
-   algorithm *must* be the *first* argument on the command-line; any
-   command-line options provided *prior* to this algorithm name will be
-   **silently ignored**.
+-  *Scripts*: A subset of the Python scripts provided with *MRtrix3*
+   require the selection of an *algorithm*, which defines the approach that
+   the script will use to arrive at its end result based on the data
+   provided. The name of this algorithm *must* be the *first* argument on
+   the command-line; any command-line options provided *prior* to this
+   algorithm name will be **silently ignored**.
 
 
 .. _number_sequences:

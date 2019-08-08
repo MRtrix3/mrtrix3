@@ -129,7 +129,7 @@ namespace MR
           slice_max { { NaN, NaN, NaN } }
       {
         set_colourmap (guess_colourmap());
-        const std::map<std::string, std::string>::const_iterator i = header().keyval().find ("comments");
+        const KeyValues::const_iterator i = header().keyval().find ("comments");
         if (i != header().keyval().end())
           _comments = split_lines (i->second);
       }

@@ -27,7 +27,7 @@ namespace MR
 
       namespace {
 
-        const char* vertex_shader_source = 
+        const char* vertex_shader_source =
           "layout(location = 0) in vec2 pos;\n"
           "layout(location = 1) in vec2 font_pos;\n"
           "uniform float scale_x;\n"
@@ -37,8 +37,8 @@ namespace MR
           "  gl_Position = vec4 (pos[0]*scale_x-1.0, pos[1]*scale_y-1.0, 0.0, 1.0);\n"
           "  tex_coord = font_pos;\n"
           "}\n";
-          
-        const char* fragment_shader_source = 
+
+        const char* fragment_shader_source =
           "in vec2 tex_coord;\n"
           "uniform sampler2D sampler;\n"
           "uniform float red, green, blue;\n"
@@ -47,24 +47,32 @@ namespace MR
           "  color.ra = texture (sampler, tex_coord).rg;\n"
           "  color.rgb = color.r * vec3 (red, green, blue);\n"
           "}\n";
-          
+
       }
 
 
 
 
 
-      void Font::initGL (bool with_shadow) 
+      void Font::initGL (bool with_shadow)
       {
         const int first_char = ' ', last_char = '~', default_char = '?';
         DEBUG ("loading font into OpenGL texture...");
 
         font_height = metric.height() + 2;
+        #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
         const float max_font_width = metric.width("MM") + 2;
+        #else
+        const float max_font_width = metric.horizontalAdvance("MM") + 2;
+        #endif
 
         int tex_width = 0;
-        for (int c = first_char; c <= last_char; ++c) 
+        for (int c = first_char; c <= last_char; ++c)
+          #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
           tex_width += metric.width (c) + 2;
+          #else
+          tex_width += metric.horizontalAdvance (c) + 2;
+          #endif
 
         QImage pixmap (max_font_width, font_height, QImage::Format_ARGB32);
         const GLubyte* pix_data = pixmap.bits();
@@ -75,16 +83,19 @@ namespace MR
         painter.setFont (font);
         painter.setRenderHints (QPainter::TextAntialiasing);
         painter.setPen (Qt::white);
-        
-        for (size_t n = 0; n < 256; ++n) 
+
+        for (size_t n = 0; n < 256; ++n)
           font_tex_pos[n] = NAN;
 
         int current_x = 0;
         for (int c = first_char; c <= last_char; ++c) {
           pixmap.fill (0);
           painter.drawText (1, metric.ascent() + 1, QString(c));
-
+          #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
           font_width[c] = metric.width (c);
+          #else
+          font_width[c] = metric.horizontalAdvance (c);
+          #endif
           const int current_font_width = font_width[c] + 2;
 
           if (with_shadow) {
@@ -95,7 +106,7 @@ namespace MR
                 const int pix_idx = 4 * (col + row*max_font_width);
                 float val = 0.0f;
                 for (int x = -1; x <= 1; ++x)
-                  if (col+x >= 0 && col+x < current_font_width) 
+                  if (col+x >= 0 && col+x < current_font_width)
                     val += std::exp (-x*x/2.0f) * pix_data[pix_idx+4*x];
                 tex_data[tex_idx] = val;
               }
@@ -107,8 +118,8 @@ namespace MR
                 const int tex_idx = 2 * (current_x + col + row*tex_width);
                 const int pix_idx = 4 * (col + row*max_font_width);
                 float val = 0.0f;
-                for (int x = -1; x <= 1; ++x) 
-                  if (row+x >= 0 && row+x < font_height) 
+                for (int x = -1; x <= 1; ++x)
+                  if (row+x >= 0 && row+x < font_height)
                     val += std::exp (-x*x/2.0) * tex_data[tex_idx+2*tex_width*x];
                 tex_data[tex_idx+1] = pix_data[pix_idx] ? 1.0f : 0.005f*val;
               }
@@ -146,7 +157,7 @@ namespace MR
         }
 
         tex.gen (gl::TEXTURE_2D, gl::NEAREST);
-        gl::TexImage2D (gl::TEXTURE_2D, 0, gl::RG, tex_width, font_height, 
+        gl::TexImage2D (gl::TEXTURE_2D, 0, gl::RG, tex_width, font_height,
             0, gl::RG, gl::FLOAT, tex_data);
 
         vertex_buffer[0].gen();
