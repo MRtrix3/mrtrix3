@@ -109,7 +109,7 @@ def execute(): #pylint: disable=unused-variable
   with open('result_final.json', 'w') as output_json_file:
     json.dump(keyval, output_json_file)
 
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output) + app.mrconvert_output_option('result_final.json'))
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval='result_final.json', force=app.FORCE_OVERWRITE)
 
 
 
