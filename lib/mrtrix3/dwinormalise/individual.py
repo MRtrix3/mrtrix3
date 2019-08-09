@@ -20,7 +20,8 @@ def check_output_paths(): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import app, path, run
+  import math
+  from mrtrix3 import app, MRtrixError, path, run
 
   grad_option = ''
   if app.ARGS.grad:
@@ -29,15 +30,23 @@ def execute(): #pylint: disable=unused-variable
     grad_option = ' -fslgrad ' + path.from_user(app.ARGS.fslgrad[0]) + ' ' + path.from_user(app.ARGS.fslgrad[1])
 
   if app.ARGS.percentile:
+    if app.ARGS.percentile < 0.0 or app.ARGS.percentile > 100.0:
+      raise MRtrixError('-percentile value must be between 0 and 100')
     intensities = [float(value) for value in run.command('dwiextract ' + path.from_user(app.ARGS.input_dwi) + grad_option + ' -bzero - | ' + \
                                                          'mrmath - mean - -axis 3 | ' + \
                                                          'mrdump - -mask ' + path.from_user(app.ARGS.input_mask)).stdout.splitlines()]
-    reference_value = sorted(intensities)[int(round(0.01*app.ARGS.percentile*len(intensities)))]
+    intensities = sorted(intensities)
+    float_index = 0.01 * app.ARGS.percentile * len(intensities)
+    lower_index = int(math.floor(float_index))
+    if app.ARGS.percentile == 100.0:
+      reference_value = intensities[-1]
+    else:
+      mu = float_index - float(lower_index)
+      reference_value = (1.0-mu)*intensities[lower_index] + mu*intensities[lower_index+1]
   else:
     reference_value = float(run.command('dwiextract ' + path.from_user(app.ARGS.input_dwi) + grad_option + ' -bzero - | ' + \
                                         'mrmath - mean - -axis 3 | ' + \
-                                        'mrstats - -mask ' + path.from_user(app.ARGS.input_mask) + ' -output median -allvolumes').stdout)
-
+                                        'mrstats - -mask ' + path.from_user(app.ARGS.input_mask) + ' -output median').stdout)
   multiplier = app.ARGS.intensity / reference_value
 
   run.command('mrcalc ' + path.from_user(app.ARGS.input_dwi) + ' ' + str(multiplier) + ' -mult - | ' + \
