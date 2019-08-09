@@ -40,7 +40,10 @@ namespace MR
       public:
         Stats (const bool is_complex = false, const bool ignorezero = false) :
             mean (0.0, 0.0),
-            std (0.0, 0.0),
+            delta (0.0, 0.0),
+            delta2 (0.0, 0.0),
+            m2 (0.0, 0.0),
+            std (0.0),
             min (INFINITY, INFINITY),
             max (-INFINITY, -INFINITY),
             count (0),
@@ -50,13 +53,17 @@ namespace MR
 
         void operator() (complex_type val) {
           if (std::isfinite (val.real()) && std::isfinite (val.imag()) && !(ignore_zero && val.real() == 0.0 && val.imag() == 0.0)) {
-            mean += val;
-            std += cdouble (val.real()*val.real(), val.imag()*val.imag());
+            // std += cdouble (val.real()*val.real(), val.imag()*val.imag());
             if (min.real() > val.real()) min = complex_type (val.real(), min.imag());
             if (min.imag() > val.imag()) min = complex_type (min.real(), val.imag());
             if (max.real() < val.real()) max = complex_type (val.real(), max.imag());
             if (max.imag() < val.imag()) max = complex_type (max.real(), val.imag());
             count++;
+            // Welford's online algorithm for variance calculation:
+            delta = val - mean;
+            mean += cdouble(delta.real() / count, delta.imag() / count);
+            delta2 = val - mean;
+            m2 += cdouble(delta.real() * delta2.real(), delta.imag() * delta2.imag());
             if (!is_complex)
               values.push_back(val.real());
           }
@@ -64,11 +71,8 @@ namespace MR
 
         template <class ImageType> void print (ImageType& ima, const vector<std::string>& fields) {
 
-          if (count) {
-            mean /= double (count);
-            std = complex_type (sqrt (std.real()/double(count) - mean.real()*mean.real()),
-                sqrt (std.imag()/double(count) - mean.imag()*mean.imag()));
-          }
+          if (count > 1)
+            std = cdouble(sqrt (m2.real() / double (count)), sqrt (m2.imag() / double (count)));
 
           std::sort (values.begin(), values.end());
 
@@ -84,7 +88,7 @@ namespace MR
             for (size_t n = 0; n < fields.size(); ++n) {
               if (fields[n] == "mean") std::cout << str(mean) << " ";
               else if (fields[n] == "median") std::cout << Math::median (values) << " ";
-              else if (fields[n] == "std") std::cout << str(std) << " ";
+              else if (fields[n] == "std") std::cout << ( count > 1 ? str(std) : "N/A" ) << " ";
               else if (fields[n] == "min") std::cout << str(min) << " ";
               else if (fields[n] == "max") std::cout << str(max) << " ";
               else if (fields[n] == "count") std::cout << count << " ";
@@ -119,7 +123,7 @@ namespace MR
         }
 
       private:
-        cdouble mean, std;
+        cdouble mean, delta, delta2, m2, std;
         complex_type min, max;
         size_t count;
         const bool is_complex, ignore_zero;
