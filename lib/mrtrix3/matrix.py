@@ -23,7 +23,7 @@ def dot(input_a, input_b): #pylint: disable=unused-variable
     raise MRtrixError('Both inputs must be either 1D vectors or 2D matrices')
   if len(input_a) != len(input_b):
     raise MRtrixError('Dimension mismatch (' + str(len(input_a)) + ' vs. ' + str(len(input_b)) + ')')
-  return [ x*y for x,y in zip(input_a, input_b) ]
+  return sum([ x*y for x,y in zip(input_a, input_b) ])
 
 
 
@@ -87,7 +87,7 @@ def load_numeric(filename, **kwargs):
         line = regex_comments.split(line, maxsplit=1)[0]
       line = line.strip()
       if line:
-        data.append([dtype(a) for a in line.split(delimiter)])
+        data.append([dtype(a) for a in line.split(delimiter) if a])
 
   if not data:
     return None
@@ -194,7 +194,7 @@ def save_numeric(filename, data, **kwargs):
       else:
         # input is 1D
         fmt = delimiter.join([fmt, ] * len(data))
-        outfile.write(((row_fmt % tuple(data) + newline).encode(**encode_args)))
+        outfile.write(((fmt % tuple(data) + newline).encode(**encode_args)))
 
     for key, value in footer.items():
       outfile.write((comments + key + ': ' + value + newline).encode(**encode_args))
