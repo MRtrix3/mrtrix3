@@ -41,8 +41,8 @@ def execute(): #pylint: disable=unused-variable
     if app.ARGS.percentile == 100.0:
       reference_value = intensities[-1]
     else:
-      mu = float_index - float(lower_index)
-      reference_value = (1.0-mu)*intensities[lower_index] + mu*intensities[lower_index+1]
+      interp_mu = float_index - float(lower_index)
+      reference_value = (1.0-interp_mu)*intensities[lower_index] + interp_mu*intensities[lower_index+1]
   else:
     reference_value = float(run.command('dwiextract ' + path.from_user(app.ARGS.input_dwi) + grad_option + ' -bzero - | ' + \
                                         'mrmath - mean - -axis 3 | ' + \
