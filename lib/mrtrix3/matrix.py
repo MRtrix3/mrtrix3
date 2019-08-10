@@ -194,7 +194,7 @@ def save_numeric(filename, data, **kwargs):
       else:
         # input is 1D
         fmt = delimiter.join([fmt, ] * len(data))
-        outfile.write(((row_fmt % tuple(data) + newline).encode(**encode_args)))
+        outfile.write(((fmt % tuple(data) + newline).encode(**encode_args)))
 
     for key, value in footer.items():
       outfile.write((comments + key + ': ' + value + newline).encode(**encode_args))
