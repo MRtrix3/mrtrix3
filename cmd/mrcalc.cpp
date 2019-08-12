@@ -116,7 +116,6 @@ OPTIONS
   + OptionGroup ("Unary operators dedicated to complex data")
   + Option ("real", "real part of complex number").allow_multiple()
   + Option ("imag", "imaginary part of complex number").allow_multiple()
-  + Option ("magnitude", "magnitude of complex number").allow_multiple()
   + Option ("phase", "phase of complex number").allow_multiple()
   + Option ("conj", "complex conjugate").allow_multiple()
   + Option ("proj", "projection onto the Riemann sphere").allow_multiple()
@@ -955,12 +954,6 @@ class OpImag : public OpUnary { NOMEMALIGN
     complex_type Z (complex_type v) const { return v.imag(); }
 };
 
-class OpMagnitude : public OpUnary { NOMEMALIGN
-  public:
-    OpMagnitude () : OpUnary ("|%1|", true) { }
-    complex_type Z (complex_type v) const { return abs (v); }
-};
-
 class OpPhase : public OpUnary { NOMEMALIGN
   public:
     OpPhase () : OpUnary ("phase (%1)", true) { }
@@ -1155,7 +1148,6 @@ void run () {
 
       else if (opt->is ("real")) unary_operation (opt->id, stack, OpReal());
       else if (opt->is ("imag")) unary_operation (opt->id, stack, OpImag());
-      else if (opt->is ("magnitude")) unary_operation (opt->id, stack, OpMagnitude());
       else if (opt->is ("phase")) unary_operation (opt->id, stack, OpPhase());
       else if (opt->is ("conj")) unary_operation (opt->id, stack, OpConj());
       else if (opt->is ("proj")) unary_operation (opt->id, stack, OpProj());
