@@ -27,6 +27,8 @@ using namespace App;
 
 const char* const dtypes[] = { "float32", "float64", NULL };
 
+const char* const estimators[] = { "Exp1", "Exp2", NULL };
+
 
 void usage ()
 {
@@ -78,11 +80,13 @@ void usage ()
     + Option ("noise", "the output noise map.")
     +   Argument ("level").type_image_out()
 
-    + Option ("datatype", "datatype for SVD (float32 or float64).")
-    +   Argument ("spec").type_choice(dtypes)
+    + Option ("datatype", "datatype for SVD (single or double precision).")
+    +   Argument ("float32/float64").type_choice(dtypes)
 
-    + Option ("exp1", "use the original noise estimator (exp1) as defined in Veraart et al. (2016), "
-                      "rather than the corrected estimator (exp2) in Cordero-Grande et al. (2019).");
+    + Option ("estimator", "select noise level estimator (default = Exp2), either \n"
+                           "Exp1: the original estimator used in Veraart et al. (2016), or \n"
+                           "Exp2: the improved estimator introduced in Cordero-Grande et al. (2019).")
+    +   Argument ("Exp1/Exp2").type_choice(estimators);
 
 
   COPYRIGHT = "Copyright (c) 2016 New York University, University of Antwerp, and the MRtrix3 contributors \n \n"
@@ -272,7 +276,11 @@ void run ()
         throw Exception ("-extent must be a (list of) odd numbers");
   }
 
-  bool exp1 = get_options("exp1").size();
+  bool exp1 = false;
+  opt = get_options("estimator");
+  if (opt.size()) {
+    exp1 = (int(opt[0][0]) == 0);
+  }
 
   Image<value_type> noise;
   opt = get_options("noise");
