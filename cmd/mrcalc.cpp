@@ -88,7 +88,7 @@
 #define NORMAL 0U
 #define COMPLEX_MAPS_TO_REAL 1U
 #define REAL_MAPS_TO_COMPLEX 2U
-#define NOT_IMPLEMENTED { throw Exception ("operation not allowed"); }
+#define NOT_IMPLEMENTED { throw Exception ("operation not supported"); }
 
 
 
@@ -97,49 +97,17 @@
  **********************************************************************/
 
 
-SECTION_TITLE ("Unary operators")
+SECTION_TITLE ("basic operations")
 UNARY_OP (abs, "|%1|", COMPLEX_MAPS_TO_REAL, "return absolute value (magnitude) of real or complex number", { return abs (v); }, { return abs (v); } )
 UNARY_OP (neg, "-%1", NORMAL, "negative value", { return -v; }, { return -v; })
-UNARY_OP (sqrt, "sqrt (%1)", NORMAL, "square root", { return std::sqrt (v); }, { return std::sqrt (v); })
-UNARY_OP (exp, "exp (%1)", NORMAL, "exponential function", { return std::exp (v); }, { return std::exp (v); })
-UNARY_OP (log, "log (%1)", NORMAL, "natural logarithm", { return std::log (v); }, { return std::log (v); })
-UNARY_OP (log10, "log10 (%1)", NORMAL, "common logarithm", { return std::log10 (v); }, { return std::log10 (v); })
-UNARY_OP (cos, "cos (%1)", NORMAL, "cosine", { return std::cos (v); }, { return std::cos (v); })
-UNARY_OP (sin, "sin (%1)", NORMAL, "sine", { return std::sin (v); }, { return std::sin (v); })
-UNARY_OP (tan, "tan (%1)", NORMAL, "tangent", { return std::tan (v); }, { return std::tan (v); })
-UNARY_OP (cosh, "cosh (%1)", NORMAL, "hyperbolic cosine", { return std::cosh (v); }, { return std::cosh (v); })
-UNARY_OP (sinh, "sinh (%1)", NORMAL, "hyperbolic sine", { return std::sinh (v); }, { return std::sinh (v); })
-UNARY_OP (tanh, "tanh (%1)", NORMAL, "hyperbolic tangent", { return std::tanh (v); }, { return std::tanh (v); })
-UNARY_OP (acos, "acos (%1)", NORMAL, "inverse cosine", { return std::acos (v); }, { return std::acos (v); })
-UNARY_OP (asin, "asin (%1)", NORMAL, "inverse sine", { return std::asin (v); }, { return std::asin (v); })
-UNARY_OP (atan, "atan (%1)", NORMAL, "inverse tangent", { return std::atan (v); }, { return std::atan (v); })
-UNARY_OP (acosh, "acosh (%1)", NORMAL, "inverse hyperbolic cosine", { return std::acosh (v); }, { return std::acosh (v); })
-UNARY_OP (asinh, "asinh (%1)", NORMAL, "inverse hyperbolic sine", { return std::asinh (v); }, { return std::asinh (v); })
-UNARY_OP (atanh, "atanh (%1)", NORMAL, "inverse hyperbolic tangent", { return std::atanh (v); }, { return std::atanh (v); })
-UNARY_OP (round, "round (%1)", NORMAL, "round to nearest integer", { return std::round (v); }, NOT_IMPLEMENTED)
-UNARY_OP (ceil, "ceil (%1)", NORMAL, "round up to nearest integer", { return std::ceil (v); }, NOT_IMPLEMENTED)
-UNARY_OP (floor, "floor (%1)", NORMAL, "round down to nearest integer", { return std::floor (v); }, NOT_IMPLEMENTED)
-UNARY_OP (isnan, "isnan (%1)", COMPLEX_MAPS_TO_REAL, "true (1) if operand is not-a-number (NaN)", { return std::isnan (v) != 0; }, { return std::isnan (v.real()) != 0 || std::isnan (v.imag()) != 0; })
-UNARY_OP (isinf, "isinf (%1)", COMPLEX_MAPS_TO_REAL, "true (1) if operand is infinite (Inf)", { return std::isinf (v) != 0; }, { return std::isinf (v.real()) != 0 || std::isinf (v.imag()) != 0; })
-UNARY_OP (finite, "finite (%1)", COMPLEX_MAPS_TO_REAL, "true (1) if operand is finite (i.e. not NaN or Inf)", { return std::isfinite (v) != 0; }, { return std::isfinite (v.real()) != 0|| std::isfinite (v.imag()) != 0; })
-
-SECTION_TITLE ("Unary operators dedicated to complex data")
-UNARY_OP (real, "real (%1)", COMPLEX_MAPS_TO_REAL, "real part of complex number", { return v; }, { return v.real(); })
-UNARY_OP (imag, "imag (%1)", COMPLEX_MAPS_TO_REAL, "imaginary part of complex number", { return 0.0; }, { return v.imag(); })
-UNARY_OP (phase, "phase (%1)", COMPLEX_MAPS_TO_REAL, "phase of complex number", { return v < 0.0 ? Math::pi : 0.0; }, { return std::arg (v); })
-UNARY_OP (conj, "conj (%1)", NORMAL, "complex conjugate", { return v; }, { return std::conj (v); })
-UNARY_OP (proj, "proj (%1)", REAL_MAPS_TO_COMPLEX, "projection onto the Riemann sphere", { return std::proj (v); }, { return std::proj (v); })
-
-
-SECTION_TITLE ("Binary operators")
-
 BINARY_OP (add, "(%1 + %2)", NORMAL, "add values", { return a+b; }, { return a+b; })
 BINARY_OP (subtract, "(%1 - %2)", NORMAL, "subtract nth operand from (n-1)th", { return a-b; }, { return a-b; })
 BINARY_OP (multiply, "(%1 * %2)", NORMAL, "multiply values", { return a*b; }, { return a*b; })
 BINARY_OP (divide, "(%1 / %2)", NORMAL, "divide (n-1)th operand by nth", { return a/b; }, { return a/b; })
-BINARY_OP (pow, "%1^%2", NORMAL, "raise (n-1)th operand to nth power", { return std::pow (a, b); }, { return std::pow (a, b); })
 BINARY_OP (min, "min (%1, %2)", NORMAL, "smallest of last two operands", { return std::min (a, b); }, NOT_IMPLEMENTED)
 BINARY_OP (max, "max (%1, %2)", NORMAL, "greatest of last two operands", { return std::max (a, b); }, NOT_IMPLEMENTED)
+
+SECTION_TITLE ("comparison operators")
 BINARY_OP (lt, "(%1 < %2)", NORMAL, "less-than operator (true=1, false=0)", { return a < b; }, NOT_IMPLEMENTED)
 BINARY_OP (gt, "(%1 > %2)", NORMAL, "greater-than operator (true=1, false=0)", { return a > b; }, NOT_IMPLEMENTED)
 BINARY_OP (le, "(%1 <= %2)", NORMAL, "less-than-or-equal-to operator (true=1, false=0)", { return a <= b; }, NOT_IMPLEMENTED)
@@ -147,14 +115,54 @@ BINARY_OP (ge, "(%1 >= %2)", NORMAL, "greater-than-or-equal-to operator (true=1,
 BINARY_OP (eq, "(%1 == %2)", COMPLEX_MAPS_TO_REAL, "equal-to operator (true=1, false=0)", { return a == b; }, { return a == b; })
 BINARY_OP (neq, "(%1 != %2)", COMPLEX_MAPS_TO_REAL, "not-equal-to operator (true=1, false=0)", { return a != b; }, { return a != b; })
 
-SECTION_TITLE ("Binary operators dedicated to complex data")
-BINARY_OP (complex, "(%1 + %2 i)", REAL_MAPS_TO_COMPLEX, "create complex number using the last two operands as real,imaginary components", { return complex_type (a, b); }, NOT_IMPLEMENTED)
-BINARY_OP (polar, "(%1 /_ %2)", REAL_MAPS_TO_COMPLEX, "create complex number using the last two operands as magnitude,phase components (phase in radians)", { return std::polar (a, b); }, NOT_IMPLEMENTED)
-
-SECTION_TITLE ("Ternary operators")
-
+SECTION_TITLE ("conditional operators")
 TERNARY_OP (if, "(%1 ? %2 : %3)", NORMAL, "if first operand is true (non-zero), return second operand, otherwise return third operand", { return a ? b : c; }, { return a.real() ? b : c; })
 TERNARY_OP (replace, "(%1, %2 -> %3)", NORMAL, "Wherever first operand is equal to the second operand, replace with third operand", { return ((a==b) || (std::isnan(a) && std::isnan(b))) ? c : a; }, { return (a==b) ? c : a; })
+
+SECTION_TITLE ("power functions")
+UNARY_OP (sqrt, "sqrt (%1)", NORMAL, "square root", { return std::sqrt (v); }, { return std::sqrt (v); })
+BINARY_OP (pow, "%1^%2", NORMAL, "raise (n-1)th operand to nth power", { return std::pow (a, b); }, { return std::pow (a, b); })
+
+SECTION_TITLE ("nearest integer operations")
+UNARY_OP (round, "round (%1)", NORMAL, "round to nearest integer", { return std::round (v); }, NOT_IMPLEMENTED)
+UNARY_OP (ceil, "ceil (%1)", NORMAL, "round up to nearest integer", { return std::ceil (v); }, NOT_IMPLEMENTED)
+UNARY_OP (floor, "floor (%1)", NORMAL, "round down to nearest integer", { return std::floor (v); }, NOT_IMPLEMENTED)
+
+SECTION_TITLE ("classification functions")
+UNARY_OP (isnan, "isnan (%1)", COMPLEX_MAPS_TO_REAL, "true (1) if operand is not-a-number (NaN)", { return std::isnan (v) != 0; }, { return std::isnan (v.real()) != 0 || std::isnan (v.imag()) != 0; })
+UNARY_OP (isinf, "isinf (%1)", COMPLEX_MAPS_TO_REAL, "true (1) if operand is infinite (Inf)", { return std::isinf (v) != 0; }, { return std::isinf (v.real()) != 0 || std::isinf (v.imag()) != 0; })
+UNARY_OP (finite, "finite (%1)", COMPLEX_MAPS_TO_REAL, "true (1) if operand is finite (i.e. not NaN or Inf)", { return std::isfinite (v) != 0; }, { return std::isfinite (v.real()) != 0|| std::isfinite (v.imag()) != 0; })
+
+SECTION_TITLE ("complex numbers")
+BINARY_OP (complex, "(%1 + %2 i)", REAL_MAPS_TO_COMPLEX, "create complex number using the last two operands as real,imaginary components", { return complex_type (a, b); }, NOT_IMPLEMENTED)
+BINARY_OP (polar, "(%1 /_ %2)", REAL_MAPS_TO_COMPLEX, "create complex number using the last two operands as magnitude,phase components (phase in radians)", { return std::polar (a, b); }, NOT_IMPLEMENTED)
+UNARY_OP (real, "real (%1)", COMPLEX_MAPS_TO_REAL, "real part of complex number", { return v; }, { return v.real(); })
+UNARY_OP (imag, "imag (%1)", COMPLEX_MAPS_TO_REAL, "imaginary part of complex number", { return 0.0; }, { return v.imag(); })
+UNARY_OP (phase, "phase (%1)", COMPLEX_MAPS_TO_REAL, "phase of complex number", { return v < 0.0 ? Math::pi : 0.0; }, { return std::arg (v); })
+UNARY_OP (conj, "conj (%1)", NORMAL, "complex conjugate", { return v; }, { return std::conj (v); })
+UNARY_OP (proj, "proj (%1)", REAL_MAPS_TO_COMPLEX, "projection onto the Riemann sphere", { return std::proj (v); }, { return std::proj (v); })
+
+SECTION_TITLE ("exponential functions")
+UNARY_OP (exp, "exp (%1)", NORMAL, "exponential function", { return std::exp (v); }, { return std::exp (v); })
+UNARY_OP (log, "log (%1)", NORMAL, "natural logarithm", { return std::log (v); }, { return std::log (v); })
+UNARY_OP (log10, "log10 (%1)", NORMAL, "common logarithm", { return std::log10 (v); }, { return std::log10 (v); })
+
+SECTION_TITLE ("trigonometric functions")
+UNARY_OP (cos, "cos (%1)", NORMAL, "cosine", { return std::cos (v); }, { return std::cos (v); })
+UNARY_OP (sin, "sin (%1)", NORMAL, "sine", { return std::sin (v); }, { return std::sin (v); })
+UNARY_OP (tan, "tan (%1)", NORMAL, "tangent", { return std::tan (v); }, { return std::tan (v); })
+UNARY_OP (acos, "acos (%1)", NORMAL, "inverse cosine", { return std::acos (v); }, { return std::acos (v); })
+UNARY_OP (asin, "asin (%1)", NORMAL, "inverse sine", { return std::asin (v); }, { return std::asin (v); })
+UNARY_OP (atan, "atan (%1)", NORMAL, "inverse tangent", { return std::atan (v); }, { return std::atan (v); })
+
+SECTION_TITLE ("hyperbolic functions")
+UNARY_OP (cosh, "cosh (%1)", NORMAL, "hyperbolic cosine", { return std::cosh (v); }, { return std::cosh (v); })
+UNARY_OP (sinh, "sinh (%1)", NORMAL, "hyperbolic sine", { return std::sinh (v); }, { return std::sinh (v); })
+UNARY_OP (tanh, "tanh (%1)", NORMAL, "hyperbolic tangent", { return std::tanh (v); }, { return std::tanh (v); })
+UNARY_OP (acosh, "acosh (%1)", NORMAL, "inverse hyperbolic cosine", { return std::acosh (v); }, { return std::acosh (v); })
+UNARY_OP (asinh, "asinh (%1)", NORMAL, "inverse hyperbolic sine", { return std::asinh (v); }, { return std::asinh (v); })
+UNARY_OP (atanh, "atanh (%1)", NORMAL, "inverse hyperbolic tangent", { return std::atanh (v); }, { return std::atanh (v); })
+
 
 
 #undef SECTION
