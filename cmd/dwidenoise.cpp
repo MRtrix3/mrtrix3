@@ -198,9 +198,17 @@ public:
     }
   }
 
+private:
+  const std::array<ssize_t, 3> extent;
+  const ssize_t m, n, r, q;
+  const bool exp1;
+  MatrixX X;
+  std::array<ssize_t, 3> pos;
+  double sigma2;
+  Image<bool> mask;
+  ImageType noise;
 
-  void load_data (ImageType& dwi)
-  {
+  void load_data (ImageType& dwi) {
     pos[0] = dwi.index(0); pos[1] = dwi.index(1); pos[2] = dwi.index(2);
     // fill patch
     X.setZero();
@@ -221,20 +229,8 @@ public:
     dwi.index(2) = pos[2];
   }
 
-
-private:
-  const std::array<ssize_t, 3> extent;
-  const ssize_t m, n, r, q;
-  const bool exp1;
-  MatrixX X;
-  VectorX Xm;
-  std::array<ssize_t, 3> pos;
-  double sigma2;
-  Image<bool> mask;
-  ImageType noise;
-
-
   inline size_t wrapindex(int r, int axis, int max) const {
+    // patch handling at image edges
     int rr = pos[axis] + r;
     if (rr < 0)    rr = extent[axis] - r;
     if (rr >= max) rr = (max-1) - extent[axis] - r;
@@ -260,7 +256,7 @@ void run ()
   }
 
   auto header = Header (dwi_in);
-  header.datatype() = DataType::Float32;
+  header.datatype().set_floating_point();
   auto dwi_out = Image<value_type>::create (argument[1], header);
 
   opt = get_options("extent");
