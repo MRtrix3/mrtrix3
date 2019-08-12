@@ -35,7 +35,10 @@ void usage ()
   DESCRIPTION
     + "DWI data denoising and noise map estimation by exploiting data redundancy in the PCA domain "
     "using the prior knowledge that the eigenspectrum of random covariance matrices is described by "
-    "the universal Marchenko Pastur distribution."
+    "the universal Marchenko-Pastur (MP) distribution. Fitting the MP distribution to the spectrum "
+    "of patch-wise signal matrices hence provides an estimator of the noise level 'sigma', as was "
+    "first shown in Veraart et al. (2016) and later improved in Cordero-Grande et al. (2019). This "
+    "noise level estimate then determines the optimal cut-off for PCA denoising."
 
     + "Important note: image denoising must be performed as the first step of the image processing pipeline. "
     "The routine will fail if interpolation or smoothing has been applied to the data prior to denoising."
@@ -53,7 +56,11 @@ void usage ()
 
     + "Veraart, J.; Fieremans, E. & Novikov, D.S. " // Internal
     "Diffusion MRI noise mapping using random matrix theory. "
-    "Magn. Res. Med., 2016, 76(5), 1582-1593, doi: 10.1002/mrm.26059";
+    "Magn. Res. Med., 2016, 76(5), 1582-1593, doi: 10.1002/mrm.26059"
+
+    + "Cordero-Grande, L.; Christiaens, D.; Hutter, J.; Price, A.N.; Hajnal, J.V. " // Internal
+    "Complex diffusion-weighted image estimation via matrix recovery under general noise models. "
+    "NeuroImage, 2019, 200, 391-404, doi: 10.1016/j.neuroimage.2019.06.039";
 
   ARGUMENTS
   + Argument ("dwi", "the input diffusion-weighted image.").type_image_in ()
@@ -72,7 +79,10 @@ void usage ()
     +   Argument ("level").type_image_out()
 
     + Option ("datatype", "datatype for SVD (float32 or float64).")
-    +   Argument ("spec").type_choice(dtypes);
+    +   Argument ("spec").type_choice(dtypes)
+
+    + Option ("exp1", "use the original noise estimator (exp1) as defined in Veraart et al. (2016), "
+                      "rather than the corrected estimator (exp2) in Cordero-Grande et al. (2019).");
 
 
   COPYRIGHT = "Copyright (c) 2016 New York University, University of Antwerp, and the MRtrix3 contributors \n \n"
@@ -107,10 +117,11 @@ public:
   typedef Eigen::Matrix<F, Eigen::Dynamic, Eigen::Dynamic> MatrixX;
   typedef Eigen::Matrix<F, Eigen::Dynamic, 1> VectorX;
 
-  DenoisingFunctor (ImageType& dwi, vector<int> extent, Image<bool>& mask, ImageType& noise)
+  DenoisingFunctor (ImageType& dwi, vector<int> extent, Image<bool>& mask, ImageType& noise, bool exp1)
     : extent {{extent[0]/2, extent[1]/2, extent[2]/2}},
       m (dwi.size(3)), n (extent[0]*extent[1]*extent[2]),
-      r ((m<n) ? m : n), X (m,n), pos {{0, 0, 0}},
+      r (std::min(m,n)), q (std::max(m,n)), exp1(exp1),
+      X (m,n), pos {{0, 0, 0}},
       mask (mask), noise (noise)
   { }
 
@@ -137,15 +148,15 @@ public:
     VectorX s = eig.eigenvalues();
 
     // Marchenko-Pastur optimal threshold
-    const double lam_r = std::max(double(s[0]), 0.0) / std::max(m,n);
+    const double lam_r = std::max(double(s[0]), 0.0) / q;
     double clam = 0.0;
     sigma2 = 0.0;
     ssize_t cutoff_p = 0;
     for (ssize_t p = 0; p < r; ++p)     // p+1 is the number of noise components
     {                                   // (as opposed to the paper where p is defined as the number of signal components)
-      double lam = std::max(double(s[p]), 0.0) / std::max(m,n);
+      double lam = std::max(double(s[p]), 0.0) / q;
       clam += lam;
-      double gam = double(p+1) / (std::max(m,n) - (r-p-1));
+      double gam = double(p+1) / (exp1 ? q : q-(r-p-1));
       double sigsq1 = clam / double(p+1);
       double sigsq2 = (lam - lam_r) / (4.0 * std::sqrt(gam));
       // sigsq2 > sigsq1 if signal else noise
@@ -183,9 +194,11 @@ public:
     }
   }
 
+
   void load_data (ImageType& dwi)
   {
     pos[0] = dwi.index(0); pos[1] = dwi.index(1); pos[2] = dwi.index(2);
+    // fill patch
     X.setZero();
     size_t k = 0;
     for (int z = -extent[2]; z <= extent[2]; z++) {
@@ -198,22 +211,24 @@ public:
         }
       }
     }
-
     // reset image position
     dwi.index(0) = pos[0];
     dwi.index(1) = pos[1];
     dwi.index(2) = pos[2];
-  }  
+  }
+
 
 private:
   const std::array<ssize_t, 3> extent;
-  const ssize_t m, n, r;
+  const ssize_t m, n, r, q;
+  const bool exp1;
   MatrixX X;
   VectorX Xm;
   std::array<ssize_t, 3> pos;
   double sigma2;
   Image<bool> mask;
   ImageType noise;
+
 
   inline size_t wrapindex(int r, int axis, int max) const {
     int rr = pos[axis] + r;
@@ -257,6 +272,8 @@ void run ()
         throw Exception ("-extent must be a (list of) odd numbers");
   }
 
+  bool exp1 = get_options("exp1").size();
+
   Image<value_type> noise;
   opt = get_options("noise");
   if (opt.size()) {
@@ -267,13 +284,13 @@ void run ()
   opt = get_options("datatype");
   if (!opt.size() || (int(opt[0][0]) == 0)) {
     DEBUG("Computing SVD with single precision.");
-    DenoisingFunctor< Image<value_type> , float > func (dwi_in, extent, mask, noise);
+    DenoisingFunctor< Image<value_type> , float > func (dwi_in, extent, mask, noise, exp1);
     ThreadedLoop ("running MP-PCA denoising", dwi_in, 0, 3)
       .run (func, dwi_in, dwi_out);
   }
   else if (int(opt[0][0]) == 1) {
     DEBUG("Computing SVD with double precision.");
-    DenoisingFunctor< Image<value_type> , double > func (dwi_in, extent, mask, noise);
+    DenoisingFunctor< Image<value_type> , double > func (dwi_in, extent, mask, noise, exp1);
     ThreadedLoop ("running MP-PCA denoising", dwi_in, 0, 3)
       .run (func, dwi_in, dwi_out);
   }
