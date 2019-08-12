@@ -34,13 +34,13 @@
   + OptionGroup (TITLE)
 
 #define UNARY_OP(OPTION,FEEDBACK,FLAGS,DESCRIPTION,REAL_OPERATION,COMPLEX_OPERATION) \
-  + Option (#OPTION, DESCRIPTION).allow_multiple()
+  + Option (#OPTION, FEEDBACK " : " DESCRIPTION).allow_multiple()
 
 #define BINARY_OP(OPTION,FEEDBACK,FLAGS,DESCRIPTION,REAL_OPERATION,COMPLEX_OPERATION) \
-  + Option (#OPTION, DESCRIPTION).allow_multiple()
+  + Option (#OPTION, FEEDBACK " : " DESCRIPTION).allow_multiple()
 
 #define TERNARY_OP(OPTION,FEEDBACK,FLAGS,DESCRIPTION,REAL_OPERATION,COMPLEX_OPERATION) \
-  + Option (#OPTION, DESCRIPTION).allow_multiple()
+  + Option (#OPTION, FEEDBACK " : " DESCRIPTION).allow_multiple()
 
 # elif SECTION == 2 // code section
 
