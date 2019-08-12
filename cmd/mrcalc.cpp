@@ -109,9 +109,9 @@ OPTIONS
   + Option ("round", "round to nearest integer").allow_multiple()
   + Option ("ceil", "round up to nearest integer").allow_multiple()
   + Option ("floor", "round down to nearest integer").allow_multiple()
-  + Option ("isnan", "true (1) is operand is not-a-number (NaN)").allow_multiple()
-  + Option ("isinf", "true (1) is operand is infinite (Inf)").allow_multiple()
-  + Option ("finite", "true (1) is operand is finite (i.e. not NaN or Inf)").allow_multiple()
+  + Option ("isnan", "true (1) if operand is not-a-number (NaN)").allow_multiple()
+  + Option ("isinf", "true (1) if operand is infinite (Inf)").allow_multiple()
+  + Option ("finite", "true (1) if operand is finite (i.e. not NaN or Inf)").allow_multiple()
 
   + OptionGroup ("Unary operators dedicated to complex data")
   + Option ("real", "real part of complex number").allow_multiple()
