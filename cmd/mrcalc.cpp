@@ -958,7 +958,7 @@ class OpImag : public OpUnary { NOMEMALIGN
 class OpMagnitude : public OpUnary { NOMEMALIGN
   public:
     OpMagnitude () : OpUnary ("|%1|", true) { }
-    complex_type Z (complex_type v) const { return std::abs (v); }
+    complex_type Z (complex_type v) const { return abs (v); }
 };
 
 class OpPhase : public OpUnary { NOMEMALIGN
