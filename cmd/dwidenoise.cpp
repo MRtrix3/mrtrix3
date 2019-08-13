@@ -109,19 +109,23 @@ void usage ()
 }
 
 
-using value_type = float;
+using real_type = float;
+using complex_type = std::complex<real_type>;
 
 
-template <class ImageType, typename F = float>
+template <typename F = float>
 class DenoisingFunctor {
   MEMALIGN(DenoisingFunctor)
 
 public:
 
-  typedef Eigen::Matrix<F, Eigen::Dynamic, Eigen::Dynamic> MatrixX;
-  typedef Eigen::Matrix<F, Eigen::Dynamic, 1> VectorX;
+  using C = std::complex<F>;
+  using PatchType = Eigen::Matrix<C, Eigen::Dynamic, Eigen::Dynamic>;
+  using CovarType = Eigen::Matrix<F, Eigen::Dynamic, Eigen::Dynamic>;
+  using SValsType = Eigen::Matrix<F, Eigen::Dynamic, 1>;
 
-  DenoisingFunctor (ImageType& dwi, vector<int> extent, Image<bool>& mask, ImageType& noise, bool exp1)
+  DenoisingFunctor (Image<complex_type>& dwi, vector<int> extent,
+                    Image<bool>& mask, Image<real_type>& noise, bool exp1)
     : extent {{extent[0]/2, extent[1]/2, extent[2]/2}},
       m (dwi.size(3)), n (extent[0]*extent[1]*extent[2]),
       r (std::min(m,n)), q (std::max(m,n)), exp1(exp1),
@@ -129,7 +133,7 @@ public:
       mask (mask), noise (noise)
   { }
 
-  void operator () (ImageType& dwi, ImageType& out)
+  void operator () (Image<complex_type>& dwi, Image<complex_type>& out)
   {
     // Process voxels in mask only
     if (mask.valid()) {
@@ -142,14 +146,17 @@ public:
     load_data (dwi);
 
     // Compute Eigendecomposition:
-    MatrixX XtX (r,r);
-    if (m <= n)
-      XtX.template triangularView<Eigen::Lower>() = X * X.adjoint();
-    else
-      XtX.template triangularView<Eigen::Lower>() = X.adjoint() * X;
-    Eigen::SelfAdjointEigenSolver<MatrixX> eig (XtX);
+    PatchType XtX (r,r);
+    if (X.imag().isZero()) {    // treat as special case for efficiency
+      if (m <= n) XtX.real().template triangularView<Eigen::Lower>() = X.real() * X.adjoint().real();
+      else        XtX.real().template triangularView<Eigen::Lower>() = X.adjoint().real() * X.real();
+    } else {
+      if (m <= n) XtX.template triangularView<Eigen::Lower>() = X * X.adjoint();
+      else        XtX.template triangularView<Eigen::Lower>() = X.adjoint() * X;
+    }
+    Eigen::SelfAdjointEigenSolver<CovarType> eig (XtX.real());
     // eigenvalues provide squared singular values, sorted in increasing order:
-    VectorX s = eig.eigenvalues();
+    SValsType s = eig.eigenvalues();
 
     // Marchenko-Pastur optimal threshold
     const double lam_r = std::max(double(s[0]), 0.0) / q;
@@ -182,12 +189,12 @@ public:
 
     // Store output
     assign_pos_of(dwi).to(out);
-    out.row(3) = X.col(n/2);
+    out.row(3) = X.col(n/2).template cast<complex_type>();
 
     // store noise map if requested:
     if (noise.valid()) {
       assign_pos_of(dwi).to(noise);
-      noise.value() = value_type (std::sqrt(sigma2));
+      noise.value() = real_type (std::sqrt(sigma2));
     }
   }
 
@@ -195,24 +202,26 @@ private:
   const std::array<ssize_t, 3> extent;
   const ssize_t m, n, r, q;
   const bool exp1;
-  MatrixX X;
+  PatchType X;
   std::array<ssize_t, 3> pos;
   double sigma2;
   Image<bool> mask;
-  ImageType noise;
+  Image<real_type> noise;
 
-  void load_data (ImageType& dwi) {
+  void load_data (Image<complex_type>& dwi) {
     pos[0] = dwi.index(0); pos[1] = dwi.index(1); pos[2] = dwi.index(2);
     // fill patch
     X.setZero();
     size_t k = 0;
+    Eigen::Matrix<complex_type, Eigen::Dynamic, 1> tmp (m);
     for (int z = -extent[2]; z <= extent[2]; z++) {
       dwi.index(2) = wrapindex(z, 2, dwi.size(2));
       for (int y = -extent[1]; y <= extent[1]; y++) {
         dwi.index(1) = wrapindex(y, 1, dwi.size(1));
         for (int x = -extent[0]; x <= extent[0]; x++, k++) {
           dwi.index(0) = wrapindex(x, 0, dwi.size(0));
-          X.col(k) = dwi.row(3);
+          tmp = dwi.row(3);
+          X.col(k) = tmp.cast<C>();
         }
       }
     }
@@ -236,7 +245,7 @@ private:
 
 void run ()
 {
-  auto dwi_in = Image<value_type>::open (argument[0]).with_direct_io(3);
+  auto dwi_in = Image<complex_type>::open (argument[0]).with_direct_io(3);
 
   if (dwi_in.ndim() != 4 || dwi_in.size(3) <= 1) 
     throw Exception ("input image must be 4-dimensional");
@@ -266,24 +275,25 @@ void run ()
 
   auto header = Header (dwi_in);
   header.datatype().set_floating_point();
-  auto dwi_out = Image<value_type>::create (argument[1], header);
+  auto dwi_out = Image<complex_type>::create (argument[1], header);
 
-  Image<value_type> noise;
+  Image<real_type> noise;
   opt = get_options("noise");
   if (opt.size()) {
     header.ndim() = 3;
-    noise = Image<value_type>::create (opt[0][0], header);
+    header.datatype() = DataType::Float32;
+    noise = Image<real_type>::create (opt[0][0], header);
   }
 
   if (!prec) {
     DEBUG("Computing SVD with single precision.");
-    DenoisingFunctor< Image<value_type> , float > func (dwi_in, extent, mask, noise, exp1);
+    DenoisingFunctor<float> func (dwi_in, extent, mask, noise, exp1);
     ThreadedLoop ("running MP-PCA denoising", dwi_in, 0, 3)
       .run (func, dwi_in, dwi_out);
   }
   else {
     DEBUG("Computing SVD with double precision.");
-    DenoisingFunctor< Image<value_type> , double > func (dwi_in, extent, mask, noise, exp1);
+    DenoisingFunctor<double> func (dwi_in, extent, mask, noise, exp1);
     ThreadedLoop ("running MP-PCA denoising", dwi_in, 0, 3)
       .run (func, dwi_in, dwi_out);
   }
