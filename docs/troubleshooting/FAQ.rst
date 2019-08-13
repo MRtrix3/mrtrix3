@@ -164,33 +164,6 @@ track file can also be used *without* taking into account the streamline
 weights, simply by *not* providing the weights.
 
 
-Making use of Python scripts library
-------------------------------------
-
-In addition to the principal binary commands, *MRtrix3* also includes a number
-of Pyton scripts for performing common image processing tasks.  These make use
-of a relatively simple set of library functions that provide a certain leven of
-convenience and consistency for building such scripts (e.g. common format help
-page; command-line parsing; creation, use and deletion of temporary working
-directory; control over command-line verbosity).
-
-It is hoped that in addition to growing in complexity and capability over time,
-this library may also be of assistance to users when building their own
-processing scripts, rather than the use of e.g. Bash. The same syntax as that
-used in the provided scripts can be used. If however the user wishes to run a
-script that is based on this library, but is *not* located within the *MRtrix3*
-``scripts/`` directory, it is necessary to explicitly inform Python of the
-location of those libraries; e.g.:
-
-.. code-block:: console
-
-    $ export PYTHONPATH=/home/user/mrtrix3/lib:$PYTHONPATH
-    $ ./my_script [arguments] (options)
-
-(Replace the path to the *MRtrix3* "lib" directory with the location of your
-own installation)
-
-
 ``tck2connectome`` no longer has the ``-contrast X`` option...?
 -------------------------------------------------------------------------
 
@@ -346,7 +319,7 @@ The following error messages have frequently been observed from the
      (note however that FIRST may fail silently, and hence this script may hang indefinitely)
 
 Error messages that may be found in the log files within the script's
-temporary directory include:
+scratch directory include:
 
 .. code-block:: console
 
@@ -408,8 +381,8 @@ template image, which in some cases may make the process more robust.
 
 For any further issues, the only remaining recommendations are:
 
--  Investigate the temporary files that are generated within the script's
-   temporary directory, particularly the FIRST log files, and search for
+-  Investigate the intermediate files that are generated within the script's
+   scratch directory, particularly the FIRST log files, and search for
    any indication of the cause of failure.
 
 -  Try running the FSL ``run_first_all`` script directly on your original
