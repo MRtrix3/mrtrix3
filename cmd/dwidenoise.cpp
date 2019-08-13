@@ -27,7 +27,7 @@ using namespace App;
 
 const char* const dtypes[] = { "float32", "float64", NULL };
 
-const char* const estimators[] = { "Exp1", "Exp2", NULL };
+const char* const estimators[] = { "exp1", "exp2", NULL };
 
 
 void usage ()
@@ -182,14 +182,7 @@ public:
 
     // Store output
     assign_pos_of(dwi).to(out);
-    if (m <= n) {
-      for (auto l = Loop (3) (out); l; ++l)
-        out.value() = value_type (X(out.index(3), n/2));
-    }
-    else {
-      for (auto l = Loop (3) (out); l; ++l)
-        out.value() = value_type (X(out.index(3), n/2));
-    }
+    out.row(3) = X.col(n/2);
 
     // store noise map if requested:
     if (noise.valid()) {
@@ -255,10 +248,6 @@ void run ()
     check_dimensions (mask, dwi_in, 0, 3);
   }
 
-  auto header = Header (dwi_in);
-  header.datatype().set_floating_point();
-  auto dwi_out = Image<value_type>::create (argument[1], header);
-
   opt = get_options("extent");
   vector<int> extent = { DEFAULT_SIZE, DEFAULT_SIZE, DEFAULT_SIZE };
   if (opt.size()) {
@@ -272,11 +261,12 @@ void run ()
         throw Exception ("-extent must be a (list of) odd numbers");
   }
 
-  bool exp1 = false;
-  opt = get_options("estimator");
-  if (opt.size()) {
-    exp1 = (int(opt[0][0]) == 0);
-  }
+  bool exp1 = get_option_value("estimator", 1) == 0;    // default: Exp2 (unbiased estimator)
+  bool prec = get_option_value("datatype", 0) == 1;     // default: single precision
+
+  auto header = Header (dwi_in);
+  header.datatype().set_floating_point();
+  auto dwi_out = Image<value_type>::create (argument[1], header);
 
   Image<value_type> noise;
   opt = get_options("noise");
@@ -285,21 +275,17 @@ void run ()
     noise = Image<value_type>::create (opt[0][0], header);
   }
 
-  opt = get_options("datatype");
-  if (!opt.size() || (int(opt[0][0]) == 0)) {
+  if (!prec) {
     DEBUG("Computing SVD with single precision.");
     DenoisingFunctor< Image<value_type> , float > func (dwi_in, extent, mask, noise, exp1);
     ThreadedLoop ("running MP-PCA denoising", dwi_in, 0, 3)
       .run (func, dwi_in, dwi_out);
   }
-  else if (int(opt[0][0]) == 1) {
+  else {
     DEBUG("Computing SVD with double precision.");
     DenoisingFunctor< Image<value_type> , double > func (dwi_in, extent, mask, noise, exp1);
     ThreadedLoop ("running MP-PCA denoising", dwi_in, 0, 3)
       .run (func, dwi_in, dwi_out);
-  }
-  else {
-    assert(0);
   }
 
 }
