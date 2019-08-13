@@ -96,7 +96,6 @@
   Operations defined below:
  **********************************************************************/
 
-
 SECTION_TITLE ("basic operations")
 UNARY_OP (abs, "|%1|", COMPLEX_MAPS_TO_REAL, "return absolute value (magnitude) of real or complex number", { return abs (v); }, { return abs (v); } )
 UNARY_OP (neg, "-%1", NORMAL, "negative value", { return -v; }, { return -v; })
@@ -127,6 +126,12 @@ SECTION_TITLE ("nearest integer operations")
 UNARY_OP (round, "round (%1)", NORMAL, "round to nearest integer", { return std::round (v); }, NOT_IMPLEMENTED)
 UNARY_OP (ceil, "ceil (%1)", NORMAL, "round up to nearest integer", { return std::ceil (v); }, NOT_IMPLEMENTED)
 UNARY_OP (floor, "floor (%1)", NORMAL, "round down to nearest integer", { return std::floor (v); }, NOT_IMPLEMENTED)
+
+SECTION_TITLE ("logical operators")
+UNARY_OP (not, "!%1", NORMAL, "NOT operator: true (1) if operand is false (i.e. zero)", { return !v; }, { return !is_true (v); })
+BINARY_OP (and, "(%1 && %2)", NORMAL, "AND operator: true (1) if both operands are true (i.e. non-zero)", { return a && b; }, { return is_true(a) && is_true(b); })
+BINARY_OP (or, "(%1 || %2)", NORMAL, "OR operator: true (1) if either operand is true (i.e. non-zero)", { return a || b; }, { return is_true(a) || is_true(b); })
+BINARY_OP (xor, "(%1 ^^ %2)", NORMAL, "XOR operator: true (1) if only one of the operands is true (i.e. non-zero)", { return (!a) != (!b); }, { return is_true(a) != is_true(b); })
 
 SECTION_TITLE ("classification functions")
 UNARY_OP (isnan, "isnan (%1)", COMPLEX_MAPS_TO_REAL, "true (1) if operand is not-a-number (NaN)", { return std::isnan (v) != 0; }, { return std::isnan (v.real()) != 0 || std::isnan (v.imag()) != 0; })
@@ -184,6 +189,13 @@ UNARY_OP (atanh, "atanh (%1)", NORMAL, "inverse hyperbolic tangent", { return st
 
 using namespace MR;
 using namespace App;
+
+
+using real_type = float;
+using complex_type = cfloat;
+static bool transform_mis_match_reported (false);
+
+inline bool is_true (const complex_type& z) { return z.real() || z.imag(); }
 
 
 void usage () {
@@ -253,10 +265,6 @@ OPTIONS
 }
 
 
-
-using real_type = float;
-using complex_type = cfloat;
-static bool transform_mis_match_reported (false);
 
 
 /**********************************************************************
