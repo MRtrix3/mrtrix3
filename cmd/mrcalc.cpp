@@ -138,7 +138,7 @@ BINARY_OP (complex, "(%1 + %2 i)", REAL_MAPS_TO_COMPLEX, "create complex number 
 BINARY_OP (polar, "(%1 /_ %2)", REAL_MAPS_TO_COMPLEX, "create complex number using the last two operands as magnitude,phase components (phase in radians)", { return std::polar (a, b); }, NOT_IMPLEMENTED)
 UNARY_OP (real, "real (%1)", COMPLEX_MAPS_TO_REAL, "real part of complex number", { return v; }, { return v.real(); })
 UNARY_OP (imag, "imag (%1)", COMPLEX_MAPS_TO_REAL, "imaginary part of complex number", { return 0.0; }, { return v.imag(); })
-UNARY_OP (phase, "phase (%1)", COMPLEX_MAPS_TO_REAL, "phase of complex number", { return v < 0.0 ? Math::pi : 0.0; }, { return std::arg (v); })
+UNARY_OP (phase, "phase (%1)", COMPLEX_MAPS_TO_REAL, "phase of complex number (use -abs for magnitude)", { return v < 0.0 ? Math::pi : 0.0; }, { return std::arg (v); })
 UNARY_OP (conj, "conj (%1)", NORMAL, "complex conjugate", { return v; }, { return std::conj (v); })
 UNARY_OP (proj, "proj (%1)", REAL_MAPS_TO_COMPLEX, "projection onto the Riemann sphere", { return std::proj (v); }, { return std::proj (v); })
 
