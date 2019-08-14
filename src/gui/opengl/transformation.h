@@ -50,7 +50,7 @@ namespace MR
           operator GLfloat* () { return v; }
 
           friend std::ostream& operator<< (std::ostream& stream, const vec4& v) {
-            for (size_t i = 0; i < 4; ++i) 
+            for (size_t i = 0; i < 4; ++i)
               stream << v[i] << " ";
             return stream;
           }
@@ -65,7 +65,7 @@ namespace MR
 
       class mat4 { MEMALIGN(mat4)
         public:
-          mat4 () { } 
+          mat4 () { }
           mat4 (const mat4& a) { memcpy (m, a.m, sizeof(m)); }
           mat4 (const float* p) { memcpy (m, p, sizeof(m)); }
           mat4 (const Math::Versorf& v)
@@ -79,17 +79,19 @@ namespace MR
             (*this)(3,3) = 1.0f;
           }
           template <class M>
-          mat4 (const M& m)
+          mat4 (const M& a)
           {
-            for (size_t i = 0; i != size_t(m.rows()); ++i) {
+            for (size_t i = 0; i != size_t(a.rows()); ++i) {
               for (size_t j = 0; j != 4; ++j)
-                (*this)(i,j) = m(i,j);
+                (*this)(i,j) = a(i,j);
             }
-            if (m.rows() == 3) {
+            if (a.rows() == 3) {
               (*this)(3,0) = (*this)(3,1) = (*this)(3,2) = 0.0f;
               (*this)(3,3) = 1.0f;
             }
           }
+
+          mat4& operator= (const mat4& a) { memcpy (m, a.m, sizeof(m)); return *this; }
 
           void zero () {
             memset (m, 0, sizeof (m));
@@ -117,8 +119,8 @@ namespace MR
           vec4 operator* (const vec4& v) const {
             vec4 r;
             r.zero();
-            for (size_t j = 0; j < 4; ++j) 
-              for (size_t i = 0; i < 4; ++i) 
+            for (size_t j = 0; j < 4; ++j)
+              for (size_t i = 0; i < 4; ++i)
                 r[i] += (*this)(i,j) * v[j];
             return r;
           }
@@ -130,7 +132,7 @@ namespace MR
 
           friend std::ostream& operator<< (std::ostream& stream, const mat4& m) {
             for (size_t i = 0; i < 4; ++i) {
-              for (size_t j = 0; j < 4; ++j) 
+              for (size_t j = 0; j < 4; ++j)
                 stream << m(i,j) << " ";
               stream << "\n";
             }
@@ -154,7 +156,7 @@ namespace MR
 
 
 
-      inline mat4 transpose (const mat4& a) 
+      inline mat4 transpose (const mat4& a)
       {
         mat4 b;
         for (size_t j = 0; j < 4; ++j)
@@ -167,7 +169,7 @@ namespace MR
 
 
 
-      inline mat4 inv (const mat4& a) 
+      inline mat4 inv (const mat4& a)
       {
         Eigen::Matrix<float, 4, 4> A;
         for (size_t i = 0; i != 4; ++i) {
@@ -179,7 +181,7 @@ namespace MR
 
 
 
-      inline mat4 ortho (float L, float R, float B, float T, float N, float F) 
+      inline mat4 ortho (float L, float R, float B, float T, float N, float F)
       {
         mat4 m;
         m.zero();
@@ -197,7 +199,7 @@ namespace MR
 
 
 
-      inline mat4 frustum (float L, float R, float B, float T, float N, float F) 
+      inline mat4 frustum (float L, float R, float B, float T, float N, float F)
       {
         mat4 m;
         m.zero();
@@ -214,7 +216,7 @@ namespace MR
       }
 
 
-      inline mat4 translate (float x, float y, float z) 
+      inline mat4 translate (float x, float y, float z)
       {
         mat4 m = identity();
         m(0,3) = x;
@@ -231,7 +233,7 @@ namespace MR
       }
 
 
-      inline mat4 scale (float x, float y, float z) 
+      inline mat4 scale (float x, float y, float z)
       {
         mat4 m;
         m.zero();
