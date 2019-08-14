@@ -21,7 +21,7 @@ Usage
 Description
 -----------
 
-Currently only the mean squared difference is implemented.
+Currently only the mean squared difference is fully implemented.
 
 Options
 -------
@@ -30,7 +30,7 @@ Options
 
 -  **-interp method** set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: linear).
 
--  **-metric method** define the dissimilarity metric used to calculate the cost. Choices: diff (squared differences), cc (negative cross correlation). Default: diff). cc is only implemented for -space average and -interp linear.
+-  **-metric method** define the dissimilarity metric used to calculate the cost. Choices: diff (squared differences), cc (non-normalised negative cross correlation aka negative cross covariance). Default: diff). cc is only implemented for -space average and -interp linear and cubic.
 
 -  **-mask1 image** mask for image 1
 
