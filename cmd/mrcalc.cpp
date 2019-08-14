@@ -115,8 +115,8 @@ BINARY_OP (eq, "(%1 == %2)", COMPLEX_MAPS_TO_REAL, "equal-to operator (true=1, f
 BINARY_OP (neq, "(%1 != %2)", COMPLEX_MAPS_TO_REAL, "not-equal-to operator (true=1, false=0)", { return a != b; }, { return a != b; })
 
 SECTION_TITLE ("conditional operators")
-TERNARY_OP (if, "(%1 ? %2 : %3)", NORMAL, "if first operand is true (non-zero), return second operand, otherwise return third operand", { return a ? b : c; }, { return a.real() ? b : c; })
-TERNARY_OP (replace, "(%1, %2 -> %3)", NORMAL, "Wherever first operand is equal to the second operand, replace with third operand", { return ((a==b) || (std::isnan(a) && std::isnan(b))) ? c : a; }, { return (a==b) ? c : a; })
+TERNARY_OP (if, "(%1 ? %2 : %3)", NORMAL, "if first operand is true (non-zero), return second operand, otherwise return third operand", { return a ? b : c; }, { return is_true(a) ? b : c; })
+TERNARY_OP (replace, "(%1, %2 -> %3)", NORMAL, "Wherever first operand is equal to the second operand, replace with third operand", { return (a==b) ? c : a; }, { return (a==b) ? c : a; })
 
 SECTION_TITLE ("power functions")
 UNARY_OP (sqrt, "sqrt (%1)", NORMAL, "square root", { return std::sqrt (v); }, { return std::sqrt (v); })
@@ -134,9 +134,9 @@ BINARY_OP (or, "(%1 || %2)", NORMAL, "OR operator: true (1) if either operand is
 BINARY_OP (xor, "(%1 ^^ %2)", NORMAL, "XOR operator: true (1) if only one of the operands is true (i.e. non-zero)", { return (!a) != (!b); }, { return is_true(a) != is_true(b); })
 
 SECTION_TITLE ("classification functions")
-UNARY_OP (isnan, "isnan (%1)", COMPLEX_MAPS_TO_REAL, "true (1) if operand is not-a-number (NaN)", { return std::isnan (v) != 0; }, { return std::isnan (v.real()) != 0 || std::isnan (v.imag()) != 0; })
-UNARY_OP (isinf, "isinf (%1)", COMPLEX_MAPS_TO_REAL, "true (1) if operand is infinite (Inf)", { return std::isinf (v) != 0; }, { return std::isinf (v.real()) != 0 || std::isinf (v.imag()) != 0; })
-UNARY_OP (finite, "finite (%1)", COMPLEX_MAPS_TO_REAL, "true (1) if operand is finite (i.e. not NaN or Inf)", { return std::isfinite (v) != 0; }, { return std::isfinite (v.real()) != 0|| std::isfinite (v.imag()) != 0; })
+UNARY_OP (isnan, "isnan (%1)", COMPLEX_MAPS_TO_REAL, "true (1) if operand is not-a-number (NaN)", { return std::isnan (v); }, { return std::isnan (v.real()) || std::isnan (v.imag()); })
+UNARY_OP (isinf, "isinf (%1)", COMPLEX_MAPS_TO_REAL, "true (1) if operand is infinite (Inf)", { return std::isinf (v); }, { return std::isinf (v.real()) || std::isinf (v.imag()); })
+UNARY_OP (finite, "finite (%1)", COMPLEX_MAPS_TO_REAL, "true (1) if operand is finite (i.e. not NaN or Inf)", { return std::isfinite (v); }, { return std::isfinite (v.real()) && std::isfinite (v.imag()); })
 
 SECTION_TITLE ("complex numbers")
 BINARY_OP (complex, "(%1 + %2 i)", REAL_MAPS_TO_COMPLEX, "create complex number using the last two operands as real,imaginary components", { return complex_type (a, b); }, NOT_IMPLEMENTED)
