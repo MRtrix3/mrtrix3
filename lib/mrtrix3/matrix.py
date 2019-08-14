@@ -14,10 +14,10 @@ def dot(input_a, input_b): #pylint: disable=unused-variable
   if is_2d_matrix(input_a):
     if not is_2d_matrix(input_b):
       raise MRtrixError('Both inputs must be either 1D vectors or 2D matrices')
-    #if len(input_a[0]) != len(input_b):
-    #  raise MRtrixError('Invalid dimensions for matrix dot product(' + \
-    #                        str(len(input_a)) + 'x' + str(len(input_a[0])) + ' vs. ' + \
-    #                        str(len(input_b)) + 'x' + str(len(input_b[0])) + ')')
+    if len(input_a[0]) != len(input_b):
+      raise MRtrixError('Invalid dimensions for matrix dot product(' + \
+                            str(len(input_a)) + 'x' + str(len(input_a[0])) + ' vs. ' + \
+                            str(len(input_b)) + 'x' + str(len(input_b[0])) + ')')
     return [[sum(x*y for x,y in zip(a_row,b_col)) for b_col in zip(*input_b)] for a_row in input_a]
   if is_2d_matrix(input_b):
     raise MRtrixError('Both inputs must be either 1D vectors or 2D matrices')
@@ -115,8 +115,9 @@ def load_transform(filename, **kwargs): #pylint: disable=unused-variable
   if len(data) == 4:
     if any(a!=b for a, b in zip(data[3], _TRANSFORM_LAST_ROW)):
       raise MRtrixError('File "' + filename + '" does not contain a valid transform (fourth line contains values other than "0,0,0,1")')
-    data = data[0:3]
-  elif len(data) != 3:
+  elif len(data) == 3:
+    data.append(_TRANSFORM_LAST_ROW)
+  else:
     raise MRtrixError('File "' + filename + '" does not contain a valid transform (must contain 3 or 4 lines)')
   if len(data[0]) != 4:
     raise MRtrixError('File "' + filename + '" does not contain a valid transform (must contain 4 columns)')
