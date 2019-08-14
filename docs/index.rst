@@ -38,7 +38,7 @@ These applications have been written from scratch in C++, using the functionalit
    :caption: DWI Pre-processing
 
    dwi_preprocessing/denoising
-   dwi_preprocessing/dwipreproc
+   dwi_preprocessing/dwifslpreproc
 
 .. toctree::
    :maxdepth: 1
