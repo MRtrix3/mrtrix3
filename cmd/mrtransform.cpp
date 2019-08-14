@@ -425,7 +425,8 @@ void run ()
 
   if (modulate_jac) {
     if (fod_reorientation) {
-      WARN ("Jacobian modulation performed with FOD reorientation. Did you mean FOD modulation?");
+      WARN ("Input image being interpreted as FOD data (user requested FOD reorientation); "
+          "FOD-based modulation would be more appropriate for such data than the requested Jacobian modulation.");
     } else if (is_possible_fod_image) {
       WARN ("Jacobian modulation performed on possible SH series image. Did you mean FOD modulation?");
     }
