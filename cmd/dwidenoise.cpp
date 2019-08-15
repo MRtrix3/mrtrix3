@@ -32,20 +32,22 @@ const char* const estimators[] = { "exp1", "exp2", NULL };
 
 void usage ()
 {
-  SYNOPSIS = "Denoise DWI data and estimate the noise level based on the optimal threshold for PCA";
+  SYNOPSIS = "dMRI noise level estimation and denoising using Marchenko-Pastur PCA";
 
   DESCRIPTION
     + "DWI data denoising and noise map estimation by exploiting data redundancy in the PCA domain "
-    "using the prior knowledge that the eigenspectrum of random covariance matrices is described by "
-    "the universal Marchenko-Pastur (MP) distribution. Fitting the MP distribution to the spectrum "
-    "of patch-wise signal matrices hence provides an estimator of the noise level 'sigma', as was "
-    "first shown in Veraart et al. (2016) and later improved in Cordero-Grande et al. (2019). This "
-    "noise level estimate then determines the optimal cut-off for PCA denoising."
+      "using the prior knowledge that the eigenspectrum of random covariance matrices is described by "
+      "the universal Marchenko-Pastur (MP) distribution. Fitting the MP distribution to the spectrum "
+      "of patch-wise signal matrices hence provides an estimator of the noise level 'sigma', as was "
+      "first shown in Veraart et al. (2016) and later improved in Cordero-Grande et al. (2019). This "
+      "noise level estimate then determines the optimal cut-off for PCA denoising."
 
     + "Important note: image denoising must be performed as the first step of the image processing pipeline. "
-    "The routine will fail if interpolation or smoothing has been applied to the data prior to denoising."
+      "The routine will fail if interpolation or smoothing has been applied to the data prior to denoising."
 
-    + "Note that this function does not correct for non-Gaussian noise biases.";
+    + "Note that this function does not correct for non-Gaussian noise biases present in "
+      "magnitude-reconstructed MRI images. If available, including the MRI phase data can "
+      "reduce such non-Gaussian biases, and the command now supports complex input data.";
 
   AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk) & "
            "Jelle Veraart (jelle.veraart@nyumc.org) & "
@@ -77,10 +79,13 @@ void usage ()
     + Option ("extent", "set the window size of the denoising filter. (default = " + str(DEFAULT_SIZE) + "," + str(DEFAULT_SIZE) + "," + str(DEFAULT_SIZE) + ")")
     +   Argument ("window").type_sequence_int ()
 
-    + Option ("noise", "the output noise map, i.e., the estimated noise level 'sigma' in the data.")
+    + Option ("noise", "the output noise map, i.e., the estimated noise level 'sigma' in the data. "
+                       "Note that on complex input data, this will be the total noise level across "
+                       "real and imaginary channels, so a scale factor sqrt(2) applies.")
     +   Argument ("level").type_image_out()
 
-    + Option ("datatype", "datatype for SVD (single or double precision).")
+    + Option ("datatype", "datatype for the eigenvalue decomposition (single or double precision). "
+                          "For complex input data, this will select complex float32 or complex float64 datatypes.")
     +   Argument ("float32/float64").type_choice(dtypes)
 
     + Option ("estimator", "select noise level estimator (default = Exp2), either \n"
@@ -150,7 +155,7 @@ public:
     else
       XtX.template triangularView<Eigen::Lower>() = X.adjoint() * X;
     Eigen::SelfAdjointEigenSolver<MatrixType> eig (XtX);
-    // eigenvalues provide squared singular values, sorted in increasing order:
+    // eigenvalues sorted in increasing order:
     SValsType s = eig.eigenvalues().template cast<double>();
 
     // Marchenko-Pastur optimal threshold
