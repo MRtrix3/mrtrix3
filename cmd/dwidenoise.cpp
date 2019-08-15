@@ -77,7 +77,7 @@ void usage ()
     + Option ("extent", "set the window size of the denoising filter. (default = " + str(DEFAULT_SIZE) + "," + str(DEFAULT_SIZE) + "," + str(DEFAULT_SIZE) + ")")
     +   Argument ("window").type_sequence_int ()
 
-    + Option ("noise", "the output noise map.")
+    + Option ("noise", "the output noise map, i.e., the estimated noise level 'sigma' in the data.")
     +   Argument ("level").type_image_out()
 
     + Option ("datatype", "datatype for SVD (single or double precision).")
