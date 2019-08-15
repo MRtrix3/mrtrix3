@@ -31,13 +31,15 @@ The threshold value to be applied can be determined in one of a number of ways:
 
 The -mask option only influences those image values that contribute toward the determination of the threshold value; once the threshold is determined, it is applied to the entire image, irrespective of use of the -mask option. If you wish for the voxels outside of the specified mask to additionally be excluded from the output mask, this can be achieved by multiplying this mask by the output of the mrthreshold command using mrcalc.
 
+The four operators available through the "-operator" option ("lt", "le", "ge" and "gt") correspond to "less-than" (<), "less-than-or-equal" (<=), "greater-than-or-equal" (>=) and "greater-than" (>). This offers fine-grained control over how the thresholding operation will behave in the presence of values equivalent to the threshold. By default, the command will select voxels with values greater than or equal to the determined threshold ("ge"); unless the -bottom option is used, in which case after a threshold is determined from the relevant lowest-valued image voxels, those voxels with values less than or equal to that threshold ("le") are selected. This option supersedes the -invert option available in previous versions of mrthreshold; the same behaviour can be achieved using "-operator lt".
+
 If no output image path is specified, the command will instead write to standard output the determined threshold value.
 
 Options
 -------
 
-Different mechanisms for determining the threshold value (use no more than one)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Threshold determination mechanisms
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-abs value** specify threshold value as absolute intensity
 
@@ -45,23 +47,23 @@ Different mechanisms for determining the threshold value (use no more than one)
 
 -  **-top count** determine threshold that will result in selection of some number of top-valued voxels
 
--  **-bottom count** determine threshold that will result in omission of some number of bottom-valued voxels
+-  **-bottom count** determine & apply threshold resulting in selection of some number of bottom-valued voxels (note: implies threshold application operator of "le" unless otherwise specified)
 
-Options that influence determination of the threshold based on the input image
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Threshold determination modifiers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-allvolumes** compute and apply a single threshold for all image volumes, rather than an individual threshold per volume
+-  **-allvolumes** compute a single threshold for all image volumes, rather than an individual threshold per volume
 
--  **-ignorezero** ignore zero-valued input values
+-  **-ignorezero** ignore zero-valued input values during threshold determination
 
 -  **-mask image** compute the threshold based only on values within an input mask image
 
-Options that influence generation of the output image after the threshold is determined
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Threshold application modifiers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-invert** invert the output binary mask
+-  **-operator choice** mathematical operator to use when applying the threshold; options are: lt,le,ge,gt (default = ge)
 
--  **-nan** set voxels that fail the threshold to NaN rather than zero.
+-  **-nan** set voxels that fail the threshold to NaN rather than zero (output image will be floating-point rather than binary)
 
 Standard options
 ^^^^^^^^^^^^^^^^
