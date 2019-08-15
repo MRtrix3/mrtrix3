@@ -261,7 +261,7 @@ def execute(): #pylint: disable=unused-variable
   image_size = image.Header(relpath(inputs[0].directory, inputs[0].filename)).size()
   if len(image_size) < 3 or len(image_size) > 4:
     raise MRtrixError('only 3 and 4 dimensional images can be used to build a template')
-  if len(image_size) == 4:
+  if len(image_size) == 4 and image_size[3] > 1:
     val = (math.sqrt (1 + 8 * image_size[3]) - 3.0) / 4.0
     if not (val - int(val)) and not noreorientation:
       app.console("SH series detected, performing FOD registration")
@@ -524,7 +524,7 @@ def execute(): #pylint: disable=unused-variable
     progress.done()
 
 
-  run.command(['mrmath', path.all_in_dir('inputs_transformed'), 'mean', 'initial_template.mif'])
+  run.command(['mrmath', path.all_in_dir('inputs_transformed'), 'mean', '-keep_unary_axes', 'initial_template.mif'])
   current_template = 'initial_template.mif'
 
 
@@ -614,7 +614,7 @@ def execute(): #pylint: disable=unused-variable
         progress.increment()
       progress.done()
 
-      run.command(['mrmath', path.all_in_dir('inputs_transformed'), 'mean', 'linear_template' + str(level) + '.mif'], force=True)
+      run.command(['mrmath', path.all_in_dir('inputs_transformed'), 'mean', '-keep_unary_axes', 'linear_template' + str(level) + '.mif'], force=True)
       current_template = 'linear_template' + str(level) + '.mif'
 
     for entry in os.listdir('linear_transforms_%i' % level):
@@ -690,7 +690,7 @@ def execute(): #pylint: disable=unused-variable
         progress.increment()
       progress.done()
 
-      run.command(['mrmath', path.all_in_dir('inputs_transformed'), 'mean', 'nl_template' + str(level) + '.mif'])
+      run.command(['mrmath', path.all_in_dir('inputs_transformed'), 'mean', '-keep_unary_axes', 'nl_template' + str(level) + '.mif'])
       current_template = 'nl_template' + str(level) + '.mif'
 
       if use_masks:
