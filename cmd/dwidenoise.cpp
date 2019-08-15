@@ -109,26 +109,28 @@ void usage ()
 }
 
 
-using value_type = float;
+using real_type = float;
 
 
-template <class ImageType, typename F = float>
+template <typename F = float>
 class DenoisingFunctor {
   MEMALIGN(DenoisingFunctor)
 
 public:
 
-  typedef Eigen::Matrix<F, Eigen::Dynamic, Eigen::Dynamic> MatrixX;
-  typedef Eigen::Matrix<F, Eigen::Dynamic, 1> VectorX;
+  using MatrixType = Eigen::Matrix<F, Eigen::Dynamic, Eigen::Dynamic>;
+  using SValsType = Eigen::VectorXd;
 
-  DenoisingFunctor (ImageType& dwi, vector<int> extent, Image<bool>& mask, ImageType& noise, bool exp1)
+  DenoisingFunctor (int ndwi, const vector<int>& extent,
+                    Image<bool>& mask, Image<real_type>& noise, bool exp1)
     : extent {{extent[0]/2, extent[1]/2, extent[2]/2}},
-      m (dwi.size(3)), n (extent[0]*extent[1]*extent[2]),
+      m (ndwi), n (extent[0]*extent[1]*extent[2]),
       r (std::min(m,n)), q (std::max(m,n)), exp1(exp1),
       X (m,n), pos {{0, 0, 0}},
       mask (mask), noise (noise)
   { }
 
+  template <typename ImageType>
   void operator () (ImageType& dwi, ImageType& out)
   {
     // Process voxels in mask only
@@ -142,23 +144,23 @@ public:
     load_data (dwi);
 
     // Compute Eigendecomposition:
-    MatrixX XtX (r,r);
+    MatrixType XtX (r,r);
     if (m <= n)
       XtX.template triangularView<Eigen::Lower>() = X * X.adjoint();
     else
       XtX.template triangularView<Eigen::Lower>() = X.adjoint() * X;
-    Eigen::SelfAdjointEigenSolver<MatrixX> eig (XtX);
+    Eigen::SelfAdjointEigenSolver<MatrixType> eig (XtX);
     // eigenvalues provide squared singular values, sorted in increasing order:
-    VectorX s = eig.eigenvalues();
+    SValsType s = eig.eigenvalues().template cast<double>();
 
     // Marchenko-Pastur optimal threshold
-    const double lam_r = std::max(double(s[0]), 0.0) / q;
+    const double lam_r = std::max(s[0], 0.0) / q;
     double clam = 0.0;
     sigma2 = 0.0;
     ssize_t cutoff_p = 0;
     for (ssize_t p = 0; p < r; ++p)     // p+1 is the number of noise components
     {                                   // (as opposed to the paper where p is defined as the number of signal components)
-      double lam = std::max(double(s[p]), 0.0) / q;
+      double lam = std::max(s[p], 0.0) / q;
       clam += lam;
       double gam = double(p+1) / (exp1 ? q : q-(r-p-1));
       double sigsq1 = clam / double(p+1);
@@ -175,9 +177,9 @@ public:
       s.head (cutoff_p).setZero();
       s.tail (r-cutoff_p).setOnes();
       if (m <= n)
-        X.col (n/2) = eig.eigenvectors() * ( s.asDiagonal() * ( eig.eigenvectors().adjoint() * X.col(n/2) ));
+        X.col (n/2) = eig.eigenvectors() * ( s.cast<F>().asDiagonal() * ( eig.eigenvectors().adjoint() * X.col(n/2) ));
       else
-        X.col (n/2) = X * ( eig.eigenvectors() * ( s.asDiagonal() * eig.eigenvectors().adjoint().col(n/2) ));
+        X.col (n/2) = X * ( eig.eigenvectors() * ( s.cast<F>().asDiagonal() * eig.eigenvectors().adjoint().col(n/2) ));
     }
 
     // Store output
@@ -187,7 +189,7 @@ public:
     // store noise map if requested:
     if (noise.valid()) {
       assign_pos_of(dwi).to(noise);
-      noise.value() = value_type (std::sqrt(sigma2));
+      noise.value() = real_type (std::sqrt(sigma2));
     }
   }
 
@@ -195,12 +197,13 @@ private:
   const std::array<ssize_t, 3> extent;
   const ssize_t m, n, r, q;
   const bool exp1;
-  MatrixX X;
+  MatrixType X;
   std::array<ssize_t, 3> pos;
   double sigma2;
   Image<bool> mask;
-  ImageType noise;
+  Image<real_type> noise;
 
+  template <typename ImageType>
   void load_data (ImageType& dwi) {
     pos[0] = dwi.index(0); pos[1] = dwi.index(1); pos[2] = dwi.index(2);
     // fill patch
@@ -233,19 +236,34 @@ private:
 };
 
 
+template <typename T>
+void process_image (Header& data, Image<bool>& mask, Image<real_type> noise,
+                    const std::string& output_name, const vector<int>& extent, bool exp1)
+  {
+    auto input = data.get_image<T>().with_direct_io(3);
+    // create output
+    Header header (data);
+    header.datatype() = DataType::from<T>();
+    auto output = Image<T>::create (output_name, header);
+    // run
+    DenoisingFunctor<T> func (data.size(3), extent, mask, noise, exp1);
+    ThreadedLoop ("running MP-PCA denoising", data, 0, 3).run (func, input, output);
+  }
+
+
 
 void run ()
 {
-  auto dwi_in = Image<value_type>::open (argument[0]).with_direct_io(3);
+  auto dwi = Header::open (argument[0]);
 
-  if (dwi_in.ndim() != 4 || dwi_in.size(3) <= 1) 
+  if (dwi.ndim() != 4 || dwi.size(3) <= 1)
     throw Exception ("input image must be 4-dimensional");
 
   Image<bool> mask;
   auto opt = get_options ("mask");
   if (opt.size()) {
     mask = Image<bool>::open (opt[0][0]);
-    check_dimensions (mask, dwi_in, 0, 3);
+    check_dimensions (mask, dwi, 0, 3);
   }
 
   opt = get_options("extent");
@@ -262,31 +280,38 @@ void run ()
   }
 
   bool exp1 = get_option_value("estimator", 1) == 0;    // default: Exp2 (unbiased estimator)
-  bool prec = get_option_value("datatype", 0) == 1;     // default: single precision
 
-  auto header = Header (dwi_in);
-  header.datatype().set_floating_point();
-  auto dwi_out = Image<value_type>::create (argument[1], header);
-
-  Image<value_type> noise;
+  Image<real_type> noise;
   opt = get_options("noise");
   if (opt.size()) {
+    Header header (dwi);
     header.ndim() = 3;
-    noise = Image<value_type>::create (opt[0][0], header);
+    header.datatype() = DataType::Float32;
+    noise = Image<real_type>::create (opt[0][0], header);
   }
 
-  if (!prec) {
-    DEBUG("Computing SVD with single precision.");
-    DenoisingFunctor< Image<value_type> , float > func (dwi_in, extent, mask, noise, exp1);
-    ThreadedLoop ("running MP-PCA denoising", dwi_in, 0, 3)
-      .run (func, dwi_in, dwi_out);
+  int prec = get_option_value("datatype", 0);     // default: single precision
+  if (dwi.datatype().is_complex()) prec += 2;     // support complex input data
+  switch (prec) {
+    case 0:
+      INFO("select real float32 for processing");
+      process_image<float>(dwi, mask, noise, argument[1], extent, exp1);
+      break;
+    case 1:
+      INFO("select real float64 for processing");
+      process_image<double>(dwi, mask, noise, argument[1], extent, exp1);
+      break;
+    case 2:
+      INFO("select complex float32 for processing");
+      process_image<cfloat>(dwi, mask, noise, argument[1], extent, exp1);
+      break;
+    case 3:
+      INFO("select complex float64 for processing");
+      process_image<cdouble>(dwi, mask, noise, argument[1], extent, exp1);
+      break;
   }
-  else {
-    DEBUG("Computing SVD with double precision.");
-    DenoisingFunctor< Image<value_type> , double > func (dwi_in, extent, mask, noise, exp1);
-    ThreadedLoop ("running MP-PCA denoising", dwi_in, 0, 3)
-      .run (func, dwi_in, dwi_out);
-  }
+
+
 
 }
 
