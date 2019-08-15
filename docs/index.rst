@@ -71,14 +71,6 @@ These applications have been written from scratch in C++, using the functionalit
 
 .. toctree::
    :maxdepth: 1
-   :caption: Spatial Normalisation
-
-   spatial_normalisation/warping_images_with_warps_from_other_packages
-..   spatial_normalisation/warp_file_formats
-..   spatial_normalisation/transforming_streamlines
-
-.. toctree::
-   :maxdepth: 1
    :caption: Concepts
 
    concepts/dw_scheme
@@ -96,15 +88,7 @@ These applications have been written from scratch in C++, using the functionalit
    tips_and_tricks/dicom_handling
    tips_and_tricks/batch_processing_with_foreach
    tips_and_tricks/external_modules
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Troubleshooting
-
-   troubleshooting/performance_and_crashes
-   troubleshooting/display_issues
-   troubleshooting/FAQ
-   troubleshooting/advanced_debugging
+   tips_and_tricks/troubleshooting
 
 .. toctree::
    :maxdepth: 1
