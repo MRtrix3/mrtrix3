@@ -267,6 +267,8 @@ def execute(): #pylint: disable=unused-variable
       app.console("SH series detected, performing FOD registration")
       do_fod_registration = True
 
+  mrtransform_reorientation =  ' -reorient_fod ' + ('yes' if do_fod_registration else 'no') + ' '
+
   #rigid options
   if app.ARGS.rigid_scale:
     rigid_scales = [float(x) for x in app.ARGS.rigid_scale.split(',')]
@@ -433,7 +435,8 @@ def execute(): #pylint: disable=unused-variable
   if initial_alignment == 'none':
     progress = app.ProgressBar('Resampling input images to template space with no initial alignment', len(inputs))
     for i in inputs:
-      run.command('mrtransform ' + abspath(i.directory, i.filename) + ' -interp linear -template average_header.mif ' + os.path.join('inputs_transformed', i.prefix + '.mif') + datatype_option)
+      run.command('mrtransform ' + abspath(i.directory, i.filename) + mrtransform_reorientation \
+        + ' -interp linear -template average_header.mif ' + os.path.join('inputs_transformed', i.prefix + '.mif') + datatype_option)
       progress.increment()
     progress.done()
     if not dolinear:
@@ -457,7 +460,7 @@ def execute(): #pylint: disable=unused-variable
                   datatype_option + \
                   output)
       # translate input images to centre of mass without interpolation
-      run.command('mrtransform ' + abspath(i.directory, i.filename) + \
+      run.command('mrtransform ' + abspath(i.directory, i.filename) + mrtransform_reorientation + \
                   ' -linear ' + os.path.join('linear_transforms_initial', i.prefix + '.txt') + \
                   datatype_option + \
                   ' ' + os.path.join('inputs_transformed', i.prefix + '_translated.mif'))
@@ -511,7 +514,7 @@ def execute(): #pylint: disable=unused-variable
     # reslice input images
     progress = app.ProgressBar('Reslicing input images to average header', len(inputs))
     for i in inputs:
-      run.command('mrtransform ' + \
+      run.command('mrtransform ' + mrtransform_reorientation + \
                   os.path.join('inputs_transformed', i.prefix + '_translated.mif') + ' ' + \
                   os.path.join('inputs_transformed', i.prefix + '.mif') + ' ' + \
                   '-interp linear -template average_header.mif' + \
@@ -602,7 +605,7 @@ def execute(): #pylint: disable=unused-variable
 
       progress = app.ProgressBar('Transforming all subjects to revised template', len(inputs))
       for i in inputs:
-        run.command('mrtransform ' + abspath(i.directory, i.filename) + ' ' + \
+        run.command('mrtransform ' + mrtransform_reorientation + abspath(i.directory, i.filename) + ' ' + \
                     '-template ' + current_template + ' ' + \
                     '-linear ' + os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix) + ' ' + \
                     os.path.join('inputs_transformed', '%s.mif' % i.prefix) + \
