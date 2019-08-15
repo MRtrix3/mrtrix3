@@ -9,7 +9,7 @@ Installing *MRtrix3*
 --------------------
 
 Most HPC clusters will run some flavour of GNU/Linux and hence
-a cluster administrator should be able to follow the steps outlined for a :ref:`linux_install`. 
+a cluster administrator should be able to follow the steps outlined for a :ref:`linux_install`.
 In particular, if your sysadmin is able to install the required dependencies (the
 preferred option), you should be able to subsequently :ref:`linux_build`.
 
@@ -42,19 +42,19 @@ compiled on another system.
    installation (since you almost certainly won't be able to install this
    version of ``gcc`` over the top of whatever is provided by the HPC
    sysadmin).
-   
+
    ::
 
        svn co svn://gcc.gnu.org/svn/gcc/branches/gcc-5-branch gcc_src/
-   
+
    (*Don't* checkout the trunk ``gcc`` code; *MRtrix3* will currently not compile with it)
-   
+
    The following ``gcc`` dependencies will be built as part of the ``gcc``
    compilation, provided that they are placed in the `correct location <https://gcc.gnu.org/install/prerequisites.html>`__
    within the ``gcc`` source directory.
-   
+
    ::
-   
+
        wget https://gmplib.org/download/gmp/gmp-6.1.1.tar.bz2
        tar -xf gmp-6.1.1.tar.bz2
        mv gmp-6.1.1/ gcc_src/gmp/
@@ -64,7 +64,7 @@ compiled on another system.
        wget http://www.mpfr.org/mpfr-current/mpfr-3.1.4.tar.gz
        tar -xf mpfr-3.1.4.tar.gz
        mv mpfr-3.1.4/ gcc_src/mpfr/
-       
+
    With the following, the ``configure`` script (which resides within the
    ``gcc_src`` directory in this example) must *not* be executed within that
    directory; rather, it must be executed from an alternative directory, which
@@ -72,9 +72,9 @@ compiled on another system.
    installation directory (set using the ``--prefix`` option below) must be a
    location for which you have write access; most likely somewhere in your
    home directory.
-   
+
    ::
-   
+
        mkdir gcc_obj; cd gcc_obj/
        ../gcc_src/configure --prefix=/path/to/installed/gcc --disable-multilib
        make && make install
@@ -86,9 +86,9 @@ compiled on another system.
    Therefore this necessitated a manual Python install - a newer version of
    Python 2 would also work, but downloading Python 3 should result in less
    ambiguity about which version is being run.
-   
+
    ::
-   
+
        wget https://www.python.org/ftp/python/3.5.2/Python-3.5.2.tgz
        tar -xf Python-3.5.2.tgz
        mv Python-3.5.2/ python3/
@@ -104,16 +104,16 @@ compiled on another system.
        wget http://bitbucket.org/eigen/eigen/get/3.2.8.tar.gz
        tar -xf 3.2.8.tar.gz
        mv eigen* eigen3/
-       
+
 -  Installing *MRtrix3*
 
    Personally I prefer to install a no-GUI version of *MRtrix3* on
    high-performance computing systems, and transfer files to my local system
    if I need to view anything; so I use the ``-nogui`` flag for the
    ``configure`` script.
-   
+
    ::
-   
+
        git clone https://github.com/MRtrix3/mrtrix3.git
        cd mrtrix3/
        export CXX=/path/to/installed/gcc/bin/g++
@@ -121,12 +121,12 @@ compiled on another system.
        export LD_LIBRARY_PATH="/path/to/installed/gcc/lib64:$LD_LIBRARY_PATH"
        ../python3/python configure -nogui
        ../python3/python build
-   
+
    If you encounter issues when running *MRtrix3* commands that resemble
    the following:
-   
+
    ``mrconvert: /usr/lib64/libstdc++.so.6: version `GLIBCXX_3.4.9' not found (required by mrconvert)``
-   
+
    This indicates that the shared library of the compiler version installed on
    the cluster is being found before that of the C++11-compliant compiler
    installed manually. The ``lib64/`` directory of the manually-installed
@@ -137,8 +137,10 @@ Remote display
 --------------
 
 Most people would expect to be able to run ``mrview`` on the server using
-X11 forwarding. Unfortunately, this will not work without some effort -
-please refer to :ref:`remote_display` for details.
+X11 forwarding. Unfortunately, this will not work without some effort.
+The most up-to-date details on attempts to use ``mrview`` in this way
+can be found in the [relevant Wiki entry](http://community.mrtrix.org/t/remote-display-issues/2547)
+of the [*MRtrix3* community forum](http://community.mrtrix.org).
 
 Configuration
 -------------
