@@ -110,7 +110,6 @@ void usage ()
 
 
 using real_type = float;
-using complex_type = std::complex<real_type>;
 
 
 template <typename F = float>
@@ -119,21 +118,20 @@ class DenoisingFunctor {
 
 public:
 
-  using C = std::complex<F>;
-  using MatrixType = Eigen::Matrix<C, Eigen::Dynamic, Eigen::Dynamic>;
-  using SValsType = Eigen::Matrix<F, Eigen::Dynamic, 1>;
+  using MatrixType = Eigen::Matrix<F, Eigen::Dynamic, Eigen::Dynamic>;
+  using SValsType = Eigen::VectorXd;
 
-  DenoisingFunctor (Image<complex_type>& dwi, vector<int> extent,
+  DenoisingFunctor (int ndwi, const vector<int>& extent,
                     Image<bool>& mask, Image<real_type>& noise, bool exp1)
     : extent {{extent[0]/2, extent[1]/2, extent[2]/2}},
-      m (dwi.size(3)), n (extent[0]*extent[1]*extent[2]),
+      m (ndwi), n (extent[0]*extent[1]*extent[2]),
       r (std::min(m,n)), q (std::max(m,n)), exp1(exp1),
       X (m,n), pos {{0, 0, 0}},
       mask (mask), noise (noise)
   { }
 
-  void
-  operator () (Image<complex_type>& dwi, Image<complex_type>& out)
+  template <typename ImageType>
+  void operator () (ImageType& dwi, ImageType& out)
   {
     // Process voxels in mask only
     if (mask.valid()) {
@@ -153,16 +151,16 @@ public:
       XtX.template triangularView<Eigen::Lower>() = X.adjoint() * X;
     Eigen::SelfAdjointEigenSolver<MatrixType> eig (XtX);
     // eigenvalues provide squared singular values, sorted in increasing order:
-    SValsType s = eig.eigenvalues();
+    SValsType s = eig.eigenvalues().template cast<double>();
 
     // Marchenko-Pastur optimal threshold
-    const double lam_r = std::max(double(s[0]), 0.0) / q;
+    const double lam_r = std::max(s[0], 0.0) / q;
     double clam = 0.0;
     sigma2 = 0.0;
     ssize_t cutoff_p = 0;
     for (ssize_t p = 0; p < r; ++p)     // p+1 is the number of noise components
     {                                   // (as opposed to the paper where p is defined as the number of signal components)
-      double lam = std::max(double(s[p]), 0.0) / q;
+      double lam = std::max(s[p], 0.0) / q;
       clam += lam;
       double gam = double(p+1) / (exp1 ? q : q-(r-p-1));
       double sigsq1 = clam / double(p+1);
@@ -179,14 +177,14 @@ public:
       s.head (cutoff_p).setZero();
       s.tail (r-cutoff_p).setOnes();
       if (m <= n)
-        X.col (n/2) = eig.eigenvectors() * ( s.asDiagonal() * ( eig.eigenvectors().adjoint() * X.col(n/2) ));
+        X.col (n/2) = eig.eigenvectors() * ( s.cast<F>().asDiagonal() * ( eig.eigenvectors().adjoint() * X.col(n/2) ));
       else
-        X.col (n/2) = X * ( eig.eigenvectors() * ( s.asDiagonal() * eig.eigenvectors().adjoint().col(n/2) ));
+        X.col (n/2) = X * ( eig.eigenvectors() * ( s.cast<F>().asDiagonal() * eig.eigenvectors().adjoint().col(n/2) ));
     }
 
     // Store output
     assign_pos_of(dwi).to(out);
-    out.row(3) = X.col(n/2).template cast<complex_type>();
+    out.row(3) = X.col(n/2);
 
     // store noise map if requested:
     if (noise.valid()) {
@@ -205,20 +203,19 @@ private:
   Image<bool> mask;
   Image<real_type> noise;
 
-  void load_data (Image<complex_type>& dwi) {
+  template <typename ImageType>
+  void load_data (ImageType& dwi) {
     pos[0] = dwi.index(0); pos[1] = dwi.index(1); pos[2] = dwi.index(2);
     // fill patch
     X.setZero();
     size_t k = 0;
-    Eigen::Matrix<complex_type, Eigen::Dynamic, 1> tmp (m);
     for (int z = -extent[2]; z <= extent[2]; z++) {
       dwi.index(2) = wrapindex(z, 2, dwi.size(2));
       for (int y = -extent[1]; y <= extent[1]; y++) {
         dwi.index(1) = wrapindex(y, 1, dwi.size(1));
         for (int x = -extent[0]; x <= extent[0]; x++, k++) {
           dwi.index(0) = wrapindex(x, 0, dwi.size(0));
-          tmp = dwi.row(3);
-          X.col(k) = tmp.cast<C>();
+          X.col(k) = dwi.row(3);
         }
       }
     }
@@ -239,19 +236,34 @@ private:
 };
 
 
+template <typename T>
+void process_image (Header& data, Image<bool>& mask, Image<real_type> noise,
+                    const std::string& output_name, const vector<int>& extent, bool exp1)
+  {
+    auto input = data.get_image<T>().with_direct_io(3);
+    // create output
+    Header header (data);
+    header.datatype() = DataType::from<T>();
+    auto output = Image<T>::create (output_name, header);
+    // run
+    DenoisingFunctor<T> func (data.size(3), extent, mask, noise, exp1);
+    ThreadedLoop ("running MP-PCA denoising", data, 0, 3).run (func, input, output);
+  }
+
+
 
 void run ()
 {
-  auto dwi_in = Image<complex_type>::open (argument[0]).with_direct_io(3);
+  auto dwi = Header::open (argument[0]);
 
-  if (dwi_in.ndim() != 4 || dwi_in.size(3) <= 1) 
+  if (dwi.ndim() != 4 || dwi.size(3) <= 1)
     throw Exception ("input image must be 4-dimensional");
 
   Image<bool> mask;
   auto opt = get_options ("mask");
   if (opt.size()) {
     mask = Image<bool>::open (opt[0][0]);
-    check_dimensions (mask, dwi_in, 0, 3);
+    check_dimensions (mask, dwi, 0, 3);
   }
 
   opt = get_options("extent");
@@ -268,32 +280,38 @@ void run ()
   }
 
   bool exp1 = get_option_value("estimator", 1) == 0;    // default: Exp2 (unbiased estimator)
-  bool prec = get_option_value("datatype", 0) == 1;     // default: single precision
-
-  auto header = Header (dwi_in);
-  header.datatype().set_floating_point();
-  auto dwi_out = Image<complex_type>::create (argument[1], header);
 
   Image<real_type> noise;
   opt = get_options("noise");
   if (opt.size()) {
+    Header header (dwi);
     header.ndim() = 3;
     header.datatype() = DataType::Float32;
     noise = Image<real_type>::create (opt[0][0], header);
   }
 
-  if (!prec) {
-    DEBUG("Computing SVD with single precision.");
-    DenoisingFunctor<float> func (dwi_in, extent, mask, noise, exp1);
-    ThreadedLoop ("running MP-PCA denoising", dwi_in, 0, 3)
-      .run (func, dwi_in, dwi_out);
+  int prec = get_option_value("datatype", 0);     // default: single precision
+  if (dwi.datatype().is_complex()) prec += 2;     // support complex input data
+  switch (prec) {
+    case 0:
+      INFO("select real float32 for processing");
+      process_image<float>(dwi, mask, noise, argument[1], extent, exp1);
+      break;
+    case 1:
+      INFO("select real float64 for processing");
+      process_image<double>(dwi, mask, noise, argument[1], extent, exp1);
+      break;
+    case 2:
+      INFO("select complex float32 for processing");
+      process_image<cfloat>(dwi, mask, noise, argument[1], extent, exp1);
+      break;
+    case 3:
+      INFO("select complex float64 for processing");
+      process_image<cdouble>(dwi, mask, noise, argument[1], extent, exp1);
+      break;
   }
-  else {
-    DEBUG("Computing SVD with double precision.");
-    DenoisingFunctor<double> func (dwi_in, extent, mask, noise, exp1);
-    ThreadedLoop ("running MP-PCA denoising", dwi_in, 0, 3)
-      .run (func, dwi_in, dwi_out);
-  }
+
+
 
 }
 
