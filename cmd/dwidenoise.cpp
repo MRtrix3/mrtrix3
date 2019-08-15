@@ -120,8 +120,7 @@ class DenoisingFunctor {
 public:
 
   using C = std::complex<F>;
-  using PatchType = Eigen::Matrix<C, Eigen::Dynamic, Eigen::Dynamic>;
-  using CovarType = Eigen::Matrix<F, Eigen::Dynamic, Eigen::Dynamic>;
+  using MatrixType = Eigen::Matrix<C, Eigen::Dynamic, Eigen::Dynamic>;
   using SValsType = Eigen::Matrix<F, Eigen::Dynamic, 1>;
 
   DenoisingFunctor (Image<complex_type>& dwi, vector<int> extent,
@@ -133,7 +132,8 @@ public:
       mask (mask), noise (noise)
   { }
 
-  void operator () (Image<complex_type>& dwi, Image<complex_type>& out)
+  void
+  operator () (Image<complex_type>& dwi, Image<complex_type>& out)
   {
     // Process voxels in mask only
     if (mask.valid()) {
@@ -146,15 +146,12 @@ public:
     load_data (dwi);
 
     // Compute Eigendecomposition:
-    PatchType XtX (r,r);
-    if (X.imag().isZero()) {    // treat as special case for efficiency
-      if (m <= n) XtX.real().template triangularView<Eigen::Lower>() = X.real() * X.adjoint().real();
-      else        XtX.real().template triangularView<Eigen::Lower>() = X.adjoint().real() * X.real();
-    } else {
-      if (m <= n) XtX.template triangularView<Eigen::Lower>() = X * X.adjoint();
-      else        XtX.template triangularView<Eigen::Lower>() = X.adjoint() * X;
-    }
-    Eigen::SelfAdjointEigenSolver<CovarType> eig (XtX.real());
+    MatrixType XtX (r,r);
+    if (m <= n)
+      XtX.template triangularView<Eigen::Lower>() = X * X.adjoint();
+    else
+      XtX.template triangularView<Eigen::Lower>() = X.adjoint() * X;
+    Eigen::SelfAdjointEigenSolver<MatrixType> eig (XtX);
     // eigenvalues provide squared singular values, sorted in increasing order:
     SValsType s = eig.eigenvalues();
 
@@ -202,7 +199,7 @@ private:
   const std::array<ssize_t, 3> extent;
   const ssize_t m, n, r, q;
   const bool exp1;
-  PatchType X;
+  MatrixType X;
   std::array<ssize_t, 3> pos;
   double sigma2;
   Image<bool> mask;
