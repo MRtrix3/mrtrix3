@@ -26,9 +26,9 @@ Description
 
 - crop: The image extent after cropping, can be specified either manually for each axis dimensions, or via a mask or reference image. The image can be cropped to the extent of a mask. This is useful for axially-acquired brain images, where the image size can be reduced by a factor of 2 by removing the empty space on either side of the brain. 
 
-- pad: Analogously, to cropping, padding increases the FOV of an image without image interpolation. Pad and crop can be performed simultaneously by specifying signed specifier argument values to the -axis option.
+- pad: Analogously to cropping, padding increases the FOV of an image without image interpolation. Pad and crop can be performed simultaneously by specifying signed specifier argument values to the -axis option.
 
-This command encapsulates and extends the functionality of the superseded commands 'mrpad', 'mrcrop' and 'mrresize'. Note the difference in -axis convention used for 'mrcrop' and 'mrpad' (see -axis option description) and the 1 voxel difference when cropping to a mask image.
+This command encapsulates and extends the functionality of the superseded commands 'mrpad', 'mrcrop' and 'mrresize'. Note the difference in -axis convention used for 'mrcrop' and 'mrpad' (see -axis option description) and the difference in the margin when cropping to a mask image.
 
 Example usages
 --------------
@@ -76,7 +76,9 @@ Pad and crop options (no image interpolation is performed, header transformation
 
 -  **-uniform number** pad or crop the input image by a uniform number of voxels on all sides
 
--  **-mask image** crop the input image according to the spatial extent of a mask image. The mask must share a common voxel grid with the input image but differences in image transformations are ignored. Note that even though only 3 dimensions are cropped when using a mask, the bounds are computed by checking the extent for all dimensions. Note that if a gap of 1 voxel should be left at all edges of the image, for instance for valid trilinear interpolation, the mask needs to be dilated prior to cropping (see mrfilter). Note that this differs from the deprecated mrcrop command that left a 1 voxel gap around the mask.
+-  **-mask image** crop the input image according to the spatial extent of a mask image. The mask must share a common voxel grid with the input image but differences in image transformations are ignored. Note that even though only 3 dimensions are cropped when using a mask, the bounds are computed by checking the extent for all dimensions. Note that by default a gap of 1 voxel is left at all edges of the image to allow valid trilinear interpolation at the edge of the mask after cropping. For details see the -mask_margin option.
+
+-  **-mask_margin number** Set the uniform signed margin around the extent of the mask image when cropping to the mask image. In contrast to the deprecated mrcrop command, padding is also applied beyond the FOV of the (mask) image. Can be specified as a single integer or as a comma-separated list for each spatial dimension. (Default: 1)
 
 -  **-axis index spec**  *(multiple uses permitted)* pad or crop the input image along the provided axis (defined by index). The specifier argument defines the number of voxels added or removed on the lower or upper end of the axis (-axis index delta_lower,delta_upper) or acts as a voxel selection range (-axis index start:stop). In both modes, values are relative to the input image (overriding all other extent-specifying options). Negative delta specifier values trigger the inverse operation (pad instead of crop and vice versa) and negative range specifier trigger padding. Note that the deprecated commands 'mrcrop' and 'mrpad' used range-based and delta-based -axis indices, respectively.
 
