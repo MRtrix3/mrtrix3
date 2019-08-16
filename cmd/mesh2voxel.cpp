@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 
@@ -38,7 +39,7 @@ void usage ()
 
   SYNOPSIS = "Convert a mesh surface to a partial volume estimation image";
 
-  REFERENCES 
+  REFERENCES
     + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
     "Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. "
     "NeuroImage, 2012, 62, 1924-1938";
@@ -62,9 +63,12 @@ void run ()
   Header template_header = Header::open (argument[1]);
   check_3D_nonunity (template_header);
 
-  // Create the output image
+  // Ensure that a floating-point representation is used for the output image,
+  //   as is required for representing partial volumes
   template_header.datatype() = DataType::Float32;
   template_header.datatype().set_byte_order_native();
+
+  // Create the output image
   Image<float> output = Image<float>::create (argument[2], template_header);
 
   // Perform the partial volume estimation

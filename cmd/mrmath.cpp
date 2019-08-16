@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include <limits>
 
@@ -58,10 +59,25 @@ void usage ()
     + "Supported operations are:"
 
     + "mean, median, sum, product, rms (root-mean-square value), norm (vector 2-norm), var (unbiased variance), "
-    "std (unbiased standard deviation), min, max, absmax (maximum absolute value), "
-    "magmax (value with maximum absolute value, preserving its sign)."
+      "std (unbiased standard deviation), min, max, absmax (maximum absolute value), "
+      "magmax (value with maximum absolute value, preserving its sign)."
 
-    + "See also 'mrcalc' to compute per-voxel operations.";
+    + "This command is used to traverse either along an image axis, or across a "
+      "set of input images, calculating some statistic from the values along each "
+      "traversal. If you are seeking to instead perform mathematical calculations "
+      "that are done independently for each voxel, pleaase see the 'mrcalc' command.";
+
+  EXAMPLES
+  + Example ("Calculate a 3D volume representing the mean intensity across a 4D image series",
+             "mrmath 4D.mif mean 3D_mean.mif -axis 3",
+             "This is a common operation for calculating e.g. the mean value within a "
+             "specific DWI b-value. Note that axis indices start from 0; thus, axes 0, 1 & 2 "
+             "are the three spatial axes, and axis 3 operates across volumes.")
+
+  + Example ("Generate a Maximum Intensity Projection (MIP) along the inferior-superior direction",
+             "mrmath input.mif max MIP.mif -axis 2",
+             "Since a MIP is literally the maximal value along a specific projection direction, "
+             "axis-aligned MIPs can be generated easily using mrmath with the \'max\' operation.");
 
   ARGUMENTS
   + Argument ("input", "the input image(s).").type_image_in ().allow_multiple()
@@ -419,12 +435,8 @@ void run ()
         if (temp.size(axis) != 1)
           throw Exception ("Image " + path + " has axis with non-unary dimension beyond first input image " + header.name());
       }
+      header.merge_keyval (temp);
     }
-
-    // Wipe any header information that can't be guaranteed to still be accurate
-    //   after applying an operator across multiple images
-    header.keyval().erase ("dw_scheme");
-    PhaseEncoding::clear_scheme (header);
 
     // Instantiate a kernel depending on the operation requested
     std::unique_ptr<ImageKernelBase> kernel;
