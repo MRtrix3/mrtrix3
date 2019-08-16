@@ -35,6 +35,7 @@
 #include "registration/warp/compose.h"
 #include "math/average_space.h"
 #include "math/SH.h"
+#include "adapter/jacobian.h"
 
 
 
@@ -42,6 +43,7 @@ using namespace MR;
 using namespace App;
 
 const char* interp_choices[] = { "nearest", "linear", "cubic", "sinc", nullptr };
+const char* modulation_choices[] = { "fod", "jac", nullptr };
 
 void usage ()
 {
@@ -54,15 +56,21 @@ void usage ()
   + "If a linear transform is applied without a template image the command "
     "will modify the image header transform matrix"
 
-  + "FOD reorientation (with apodised point spread functions) will be performed "
-    "by default if the number of volumes in the 4th dimension equals the number "
+  + "FOD reorientation (with apodised point spread functions) can be performed "
+    "if the number of volumes in the 4th dimension equals the number "
     "of coefficients in an antipodally symmetric spherical harmonic series (e.g. "
-    "6, 15, 28 etc). The -no_reorientation option can be used to force "
-    "reorientation off if required."
+    "6, 15, 28 etc). For such data, the -reorient_fod yes/no option must be used to specify "
+    "if reorientation is required."
+
+  + "The output image intensity can be modulated using the (local or global) volume change "
+    "if a linear or nonlinear transformation is applied. 'FOD' modulation preserves the "
+    "apparent fibre density across the fibre bundle width and can only be applied if FOD reorientation "
+    "is used. Alternatively, non-directional scaling by the Jacobian determinant can be applied to "
+    "any image type. "
 
   + "If a DW scheme is contained in the header (or specified separately), and "
     "the number of directions matches the number of volumes in the images, any "
-    "transformation applied using the -linear option will be also be applied to the directions."
+    "transformation applied using the -linear option will also be applied to the directions."
 
   + "When the -template option is used to specify the target image grid, the "
     "image provided via this option will not influence the axis data strides "
@@ -165,17 +173,22 @@ void usage ()
     + OptionGroup ("Fibre orientation distribution handling options")
 
     + Option ("modulate",
-        "modulate FODs during reorientation to preserve the apparent fibre density across fibre bundle widths before and after the transformation")
+        "Valid choices are: fod and jac. \n"
+        "fod: modulate FODs during reorientation to preserve the apparent fibre density across fibre bundle widths before and after the transformation. \n"
+        "jac: modulate the image intensity with the determinant of the Jacobian of the warp of linear transformation "
+        "to preserve the total intensity before and after the transformation.")
+    + Argument ("intensity modulation method").type_choice (modulation_choices)
 
     + Option ("directions",
         "directions defining the number and orientation of the apodised point spread functions used in FOD reorientation "
         "(Default: 300 directions)")
     + Argument ("file", "a list of directions [az el] generated using the dirgen command.").type_file_in()
 
-    + Option ("noreorientation",
-        "turn off FOD reorientation. Reorientation is on by default if the number "
+    + Option ("reorient_fod",
+        "specify whether to perform FOD reorientation. This is required if the number "
         "of volumes in the 4th dimension corresponds to the number of coefficients in an "
-        "antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc")
+        "antipodally symmetric spherical harmonic series with lmax >= 2 (i.e. 6, 15, 28, 45, 66 volumes.")
+    + Argument ("boolean").type_bool()
 
     + DWI::GradImportOptions()
 
@@ -186,27 +199,37 @@ void usage ()
     + OptionGroup ("Additional generic options for mrtransform")
 
     + Option ("nan",
-      "Use NaN as the out of bounds value (Default: 0.0)");
+      "Use NaN as the out of bounds value (Default: 0.0)")
+
+    + Option ("no_reorientation", "deprecated, use -reorient_fod instead");
 }
 
 void apply_warp (Image<float>& input, Image<float>& output, Image<default_type>& warp,
-  const int interp, const float out_of_bounds_value, const vector<int>& oversample) {
+  const int interp, const float out_of_bounds_value, const vector<int>& oversample, const bool jacobian_modulate = false) {
   switch (interp) {
   case 0:
-    Filter::warp<Interp::Nearest> (input, output, warp, out_of_bounds_value, oversample);
+    Filter::warp<Interp::Nearest> (input, output, warp, out_of_bounds_value, oversample, jacobian_modulate);
     break;
   case 1:
-    Filter::warp<Interp::Linear> (input, output, warp, out_of_bounds_value, oversample);
+    Filter::warp<Interp::Linear> (input, output, warp, out_of_bounds_value, oversample, jacobian_modulate);
     break;
   case 2:
-    Filter::warp<Interp::Cubic> (input, output, warp, out_of_bounds_value, oversample);
+    Filter::warp<Interp::Cubic> (input, output, warp, out_of_bounds_value, oversample, jacobian_modulate);
     break;
   case 3:
-    Filter::warp<Interp::Sinc> (input, output, warp, out_of_bounds_value, oversample);
+    Filter::warp<Interp::Sinc> (input, output, warp, out_of_bounds_value, oversample, jacobian_modulate);
     break;
   default:
     assert (0);
     break;
+  }
+}
+
+void apply_linear_jacobian (Image<float> & image, transform_type trafo) {
+  const float det = trafo.linear().topLeftCorner<3,3>().determinant();
+  INFO("global intensity modulation with scale factor " + str(det));
+  for (auto i = Loop ("applying global intensity modulation", image, 0, image.ndim()) (image); i; ++i) {
+    image.value() *= det;
   }
 }
 
@@ -350,15 +373,25 @@ void run ()
 
   Stride::List stride = Stride::get (input_header);
 
-  // Detect FOD image for reorientation
-  opt = get_options ("noreorientation");
-  bool fod_reorientation = false;
+  // Detect FOD image
+  bool is_possible_fod_image = input_header.ndim() == 4 && input_header.size(3) >= 6 &&
+   input_header.size(3) == (int) Math::SH::NforL (Math::SH::LforN (input_header.size(3)));
+
+
+  // reorientation
+  if (get_options ("no_reorientation").size())
+    throw Exception ("The -no_reorientation option is deprecated. Use -reorient_fod no instead.");
+  opt = get_options ("reorient_fod");
+  bool fod_reorientation = opt.size() && bool(opt[0][0]);
+  if (is_possible_fod_image && !opt.size())
+    throw Exception("-reorient_fod yes/no needs to be explicitly specified for images with " +
+      str(input_header.size(3)) + " volumes");
+  else if (!is_possible_fod_image && fod_reorientation)
+    throw Exception("Apodised PSF reorientation requires SH series images");
+
   Eigen::MatrixXd directions_cartesian;
-  if (!opt.size() && (linear || warp.valid() || template_header.valid()) && input_header.ndim() == 4 &&
-      input_header.size(3) >= 6 &&
-      input_header.size(3) == (int) Math::SH::NforL (Math::SH::LforN (input_header.size(3)))) {
-    CONSOLE ("SH series detected, performing apodised PSF reorientation");
-    fod_reorientation = true;
+  if (fod_reorientation && (linear || warp.valid() || template_header.valid()) && is_possible_fod_image) {
+    CONSOLE ("performing apodised PSF reorientation");
 
     Eigen::MatrixXd directions_az_el;
     opt = get_options ("directions");
@@ -372,12 +405,35 @@ void run ()
     stride = Stride::contiguous_along_axis (3, input_header);
   }
 
-  // Modulate FODs
-  bool modulate = false;
-  if (get_options ("modulate").size()) {
-    modulate = true;
+  // Intensity / FOD modulation
+  opt = get_options ("modulate");
+  bool modulate_fod = opt.size() && (int) opt[0][0] == 0;
+  bool modulate_jac = opt.size() && (int) opt[0][0] == 1;
+
+  const std::string reorient_msg = str("reorienting") + str((modulate_fod ? " with FOD modulation" : ""));
+  if (modulate_fod)
+    add_line (output_header.keyval()["comments"], std::string ("FOD modulation applied"));
+  if (modulate_jac)
+    add_line (output_header.keyval()["comments"], std::string ("Jacobian determinant modulation applied"));
+
+  if (modulate_fod) {
+    if (!is_possible_fod_image)
+      throw Exception ("FOD modulation can only be performed with SH series image");
     if (!fod_reorientation)
-      throw Exception ("modulation can only be performed with FOD reorientation");
+      throw Exception ("FOD modulation can only be performed with FOD reorientation");
+  }
+
+  if (modulate_jac) {
+    if (fod_reorientation) {
+      WARN ("Input image being interpreted as FOD data (user requested FOD reorientation); "
+          "FOD-based modulation would be more appropriate for such data than the requested Jacobian modulation.");
+    } else if (is_possible_fod_image) {
+      WARN ("Jacobian modulation performed on possible SH series image. Did you mean FOD modulation?");
+    }
+
+    if (!linear && !warp.valid())
+      throw Exception ("Jacobian modulation requires linear or nonlinear transformation");
+
   }
 
 
@@ -476,8 +532,7 @@ void run ()
     for (const auto x : oversample)
       if (x < 1)
         throw Exception ("-oversample factors must be positive integers");
-  }
-  else if (interp == 0)
+  } else if (interp == 0)
     // default for nearest-neighbour is no oversampling
     oversample = { 1, 1, 1 };
 
@@ -537,7 +592,10 @@ void run ()
     }
 
     if (fod_reorientation)
-      Registration::Transform::reorient ("reorienting", output, output, linear_transform, directions_cartesian.transpose(), modulate);
+      Registration::Transform::reorient (reorient_msg.c_str(), output, output, linear_transform, directions_cartesian.transpose(), modulate_fod);
+
+    if (modulate_jac)
+      apply_linear_jacobian (output, linear_transform);
 
   } else if (warp.valid()) {
 
@@ -565,23 +623,26 @@ void run ()
       } else {
         warp_deform = Registration::Warp::compute_full_deformation (warp, template_header, from);
       }
-      apply_warp (input, output, warp_deform, interp, out_of_bounds_value, oversample);
+      apply_warp (input, output, warp_deform, interp, out_of_bounds_value, oversample, modulate_jac);
       if (fod_reorientation)
-        Registration::Transform::reorient_warp ("reorienting", output, warp_deform, directions_cartesian.transpose(), modulate);
+        Registration::Transform::reorient_warp (reorient_msg.c_str(),
+          output, warp_deform, directions_cartesian.transpose(), modulate_fod);
 
     // Compose and apply input linear and 4D deformation field
     } else if (warp.ndim() == 4 && linear) {
       auto warp_composed = Image<default_type>::scratch (warp);
       Registration::Warp::compose_linear_deformation (linear_transform, warp, warp_composed);
-      apply_warp (input, output, warp_composed, interp, out_of_bounds_value, oversample);
+      apply_warp (input, output, warp_composed, interp, out_of_bounds_value, oversample, modulate_jac);
       if (fod_reorientation)
-        Registration::Transform::reorient_warp ("reorienting", output, warp_composed, directions_cartesian.transpose(), modulate);
+        Registration::Transform::reorient_warp (reorient_msg.c_str(),
+          output, warp_composed, directions_cartesian.transpose(), modulate_fod);
 
     // Apply 4D deformation field only
     } else {
-      apply_warp (input, output, warp, interp, out_of_bounds_value, oversample);
+      apply_warp (input, output, warp, interp, out_of_bounds_value, oversample, modulate_jac);
       if (fod_reorientation)
-        Registration::Transform::reorient_warp ("reorienting", output, warp, directions_cartesian.transpose(), modulate);
+        Registration::Transform::reorient_warp (reorient_msg.c_str(),
+          output, warp, directions_cartesian.transpose(), modulate_fod);
     }
 
   // No reslicing required, so just modify the header and do a straight copy of the data
@@ -605,11 +666,14 @@ void run ()
     auto output = Image<float>::create (argument[1], output_header).with_direct_io();
     copy_with_progress (input, output);
 
-    if (fod_reorientation) {
+    if (fod_reorientation || modulate_jac) {
       transform_type transform = linear_transform;
       if (replace)
         transform = linear_transform * output_header.transform().inverse();
-      Registration::Transform::reorient ("reorienting", output, output, transform, directions_cartesian.transpose());
+      if (fod_reorientation)
+        Registration::Transform::reorient ("reorienting", output, output, transform, directions_cartesian.transpose());
+      if (modulate_jac)
+        apply_linear_jacobian (output, transform);
     }
   }
 }
