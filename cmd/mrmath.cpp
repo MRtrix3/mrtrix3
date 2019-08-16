@@ -191,22 +191,25 @@ class NORM2 { NOMEMALIGN
 };
 
 
+// Welford's algorithm to avoid catastrophic cancellation
 class Var { NOMEMALIGN
   public:
-    Var () : sum (0.0), sum_sqr (0.0), count (0) { }
+    Var () : delta (0.0), delta2 (0.0), mean (0.0), m2 (0.0), count (0) { }
     void operator() (value_type val) {
       if (std::isfinite (val)) {
-        sum += val;
-        sum_sqr += Math::pow2 (val);
         ++count;
+        delta = val - mean;
+        mean += delta / count;
+        delta2 = val - mean;
+        m2 += delta * delta2;
       }
     }
     value_type result () const {
       if (count < 2)
         return NAN;
-      return  (sum_sqr - Math::pow2 (sum) / static_cast<double> (count)) / (static_cast<double> (count) - 1.0);
+      return m2 / (static_cast<double> (count) - 1.0);
     }
-    double sum, sum_sqr;
+    double delta, delta2, mean, m2;
     size_t count;
 };
 
