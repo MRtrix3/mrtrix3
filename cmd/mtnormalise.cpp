@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "image.h"
@@ -37,22 +38,37 @@ void usage ()
 
   SYNOPSIS = "Multi-tissue informed log-domain intensity normalisation";
 
+  REFERENCES
+    + "Raffelt, D.; Dhollander, T.; Tournier, J.-D.; Tabbara, R.; Smith, R. E.; Pierre, E. & Connelly, A. " // Internal
+    "Bias Field Correction and Intensity Normalisation for Quantitative Analysis of Apparent Fibre Density. "
+    "In Proc. ISMRM, 2017, 26, 3541";
+
   DESCRIPTION
-   + "This command inputs any number of tissue components (e.g. from multi-tissue CSD) "
-     "and outputs corresponding normalised tissue components. Intensity normalisation is "
-     "performed in the log-domain, and can smoothly vary spatially to accomodate the "
-     "effects of (residual) intensity inhomogeneities."
+   + "This command takes as input any number of tissue components (e.g. from "
+     "multi-tissue CSD) and outputs corresponding normalised tissue components "
+     "corrected for the effects of (residual) intensity inhomogeneities. "
+     "Intensity normalisation is performed by optimising the voxel-wise sum of "
+     "all tissue compartments towards a constant value, under constraints of "
+     "spatial smoothness (polynomial basis of a given order). Different to "
+     "the Raffelt et al. 2017 abstract, this algorithm performs this task "
+     "in the log-domain instead, with added gradual outlier rejection, different "
+     "handling of the balancing factors between tissue compartments and a "
+     "different iteration structure."
 
    + "The -mask option is mandatory and is optimally provided with a brain mask "
      "(such as the one obtained from dwi2mask earlier in the processing pipeline). "
      "Outlier areas with exceptionally low or high combined tissue contributions are "
      "accounted for and reoptimised as the intensity inhomogeneity estimation becomes "
-     "more accurate."
+     "more accurate.";
 
-   + "Example usage: mtnormalise wmfod.mif wmfod_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif.";
+  EXAMPLES
+   + Example ("Default usage (for 3-tissue CSD compartments)",
+              "mtnormalise wmfod.mif wmfod_norm.mif gm.mif gm_norm.mif csf.mif csf_norm.mif -mask mask.mif",
+              "Note how for each tissue compartment, the input and output images are provided as "
+              "a consecutive pair.");
 
   ARGUMENTS
-    + Argument ("input output", "list of all input and output tissue compartment files. See example usage in the description.").type_image_in().allow_multiple();
+    + Argument ("input output", "list of all input and output tissue compartment files (see example usage).").type_image_in().allow_multiple();
 
   OPTIONS
     + Option ("mask", "the mask defines the data used to compute the intensity normalisation. This option is mandatory.").required ()
