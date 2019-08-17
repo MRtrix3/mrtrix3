@@ -54,10 +54,14 @@ namespace MR
         // Find the next offset to be tested
         ++o[start_axis];
         for (size_t axis = start_axis; axis != header.ndim(); ++axis) {
-          if (enabled_axes[axis]) {
-            if (o[axis] == 2 && axis < header.ndim()-1) {
+          if (enabled_axes[axis] && o[axis] == 2) {
+            size_t next_enabled_axis;
+            for (next_enabled_axis = axis+1;
+                 next_enabled_axis < header.ndim() && !enabled_axes[next_enabled_axis];
+                 ++next_enabled_axis);
+            if (next_enabled_axis < header.ndim()) {
               o[axis] = -1;
-              ++o[axis+1];
+              ++o[next_enabled_axis];
             }
           }
         }
@@ -74,7 +78,7 @@ namespace MR
           for (size_t axis = 0; axis != header.ndim(); ++axis)
             neighbour[axis] = pos[axis] + o[axis];
           // Is this a valid neighbour position, i.e. within the mask?
-          // If so, the Voxel2vector class should provide us with a valid
+          // If so, the Voxel2Vector class should provide us with a valid
           //   index of this neighbouring element
           const index_t j = v2v (neighbour);
           if (j != v2v.invalid)
@@ -88,7 +92,7 @@ namespace MR
 
 
     void Connector::run (vector<Cluster>& clusters,
-                          vector<uint32_t>& labels) const
+                         vector<uint32_t>& labels) const
     {
       assert (adjacency.size());
       labels.resize (adjacency.size(), 0);
@@ -121,8 +125,8 @@ namespace MR
 
 
     void Connector::depth_first_search (const uint32_t root,
-                                         Cluster& cluster,
-                                         vector<uint32_t>& labels) const
+                                        Cluster& cluster,
+                                        vector<uint32_t>& labels) const
     {
       uint32_t node = root;
       std::stack<uint32_t> stack;
