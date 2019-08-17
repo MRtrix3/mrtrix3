@@ -128,8 +128,9 @@ namespace MR
       void precompute_default_permutation (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                                            const std::shared_ptr<EnhancerBase> enhancer,
                                            const matrix_type& empirical_enhanced_statistic,
-                                           matrix_type& default_statistics,
-                                           matrix_type& default_enhanced_statistics);
+                                           matrix_type& output_statistics,
+                                           matrix_type& output_zstats,
+                                           matrix_type& output_enhanced);
 
 
 

@@ -555,14 +555,12 @@ void run()
   }
 
   // Precompute default statistic and CFE statistic
-  matrix_type default_output, cfe_output;
-  Stats::PermTest::precompute_default_permutation (glm_test, cfe_integrator, empirical_cfe_statistic, default_output, cfe_output);
+  matrix_type default_statistic, default_zstat, default_enhanced;
+  Stats::PermTest::precompute_default_permutation (glm_test, cfe_integrator, empirical_cfe_statistic, default_statistic, default_zstat, default_enhanced);
   for (size_t i = 0; i != num_hypotheses; ++i) {
-    if (hypotheses[i].is_F())
-      write_fixel_output (Path::join (output_fixel_directory, "Fvalue" + postfix(i) + ".mif"), default_output.col(i).array().square(), output_header);
-    else
-      write_fixel_output (Path::join (output_fixel_directory, "tvalue" + postfix(i) + ".mif"), default_output.col(i), output_header);
-    write_fixel_output (Path::join (output_fixel_directory, "cfe" + postfix(i) + ".mif"), cfe_output.col(i), output_header);
+    write_fixel_output (Path::join (output_fixel_directory, (hypotheses[i].is_F() ? std::string("F") : std::string("t")) + "value" + postfix(i) + ".mif"), default_statistic.col(i), output_header);
+    write_fixel_output (Path::join (output_fixel_directory, "Zstat" + postfix(i) + ".mif"), default_zstat.col(i), output_header);
+    write_fixel_output (Path::join (output_fixel_directory, "cfe" + postfix(i) + ".mif"), default_enhanced.col(i), output_header);
   }
 
   // Perform permutation testing
@@ -575,7 +573,7 @@ void run()
 
     matrix_type null_distribution, uncorrected_pvalues;
     count_matrix_type null_contributions;
-    Stats::PermTest::run_permutations (glm_test, cfe_integrator, empirical_cfe_statistic, cfe_output, fwe_strong,
+    Stats::PermTest::run_permutations (glm_test, cfe_integrator, empirical_cfe_statistic, default_enhanced, fwe_strong,
                                        null_distribution, null_contributions, uncorrected_pvalues);
 
     ProgressBar progress ("Outputting final results", (fwe_strong ? 1 : num_hypotheses) + 1 + 3*num_hypotheses);
@@ -590,7 +588,7 @@ void run()
       }
     }
 
-    const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, cfe_output);
+    const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, default_enhanced);
     ++progress;
     for (size_t i = 0; i != num_hypotheses; ++i) {
       write_fixel_output (Path::join (output_fixel_directory, "fwe_1mpvalue" + postfix(i) + ".mif"), pvalue_output.col(i), output_header);
