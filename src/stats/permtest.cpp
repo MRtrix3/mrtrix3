@@ -1,17 +1,18 @@
-/*
- * Copyright (ih) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "stats/permtest.h"
 
@@ -179,24 +180,25 @@ namespace MR
 
       void precompute_default_permutation (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                                            const std::shared_ptr<EnhancerBase> enhancer,
-                                           const matrix_type& empirical_enhanced_statistic,
-                                           matrix_type& default_enhanced_statistics,
-                                           matrix_type& default_statistics)
+                                           const matrix_type& empirical_enhanced,
+                                           matrix_type& output_statistics,
+                                           matrix_type& output_zstats,
+                                           matrix_type& output_enhanced)
       {
         assert (stats_calculator);
-        default_statistics.resize (stats_calculator->num_elements(), stats_calculator->num_hypotheses());
-        default_enhanced_statistics.resize (stats_calculator->num_elements(), stats_calculator->num_hypotheses());
-
+        output_statistics.resize (stats_calculator->num_elements(), stats_calculator->num_hypotheses());
+        output_zstats    .resize (stats_calculator->num_elements(), stats_calculator->num_hypotheses());
+        output_enhanced  .resize (stats_calculator->num_elements(), stats_calculator->num_hypotheses());
         const matrix_type default_shuffle (matrix_type::Identity (stats_calculator->num_inputs(), stats_calculator->num_inputs()));
-        (*stats_calculator) (default_shuffle, default_statistics);
+        (*stats_calculator) (default_shuffle, output_statistics, output_zstats);
 
         if (enhancer)
-          (*enhancer) (default_statistics, default_enhanced_statistics);
+          (*enhancer) (output_zstats, output_enhanced);
         else
-          default_enhanced_statistics = default_statistics;
+          output_enhanced = output_statistics;
 
-        if (empirical_enhanced_statistic.size())
-          default_enhanced_statistics.array() /= empirical_enhanced_statistic.array();
+        if (empirical_enhanced.size())
+          output_enhanced.array() /= empirical_enhanced.array();
       }
 
 

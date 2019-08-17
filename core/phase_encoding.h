@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __phaseencoding_h__
 #define __phaseencoding_h__
@@ -92,16 +93,14 @@ namespace MR
         erase ("TotalReadoutTime");
         return;
       }
-      PhaseEncoding::check (header, PE);
+      check (header, PE);
       std::string pe_scheme;
       std::string first_line;
       bool variation = false;
       for (ssize_t row = 0; row < PE.rows(); ++row) {
-        std::string line;
-        for (ssize_t col = 0; col < PE.cols(); ++col) {
-          line += str(PE(row,col), 3);
-          if (col < PE.cols() - 1) line += ",";
-        }
+        std::string line = str(PE(row,0));
+        for (ssize_t col = 1; col < PE.cols(); ++col)
+          line += "," + str(PE(row,col), 3);
         add_line (pe_scheme, line);
         if (first_line.empty())
           first_line = line;
@@ -135,12 +134,12 @@ namespace MR
 
     //! parse the phase encoding matrix from a header
     /*! extract the phase encoding matrix stored in the \a header if one
-       *  is present. This is expected to be stored in the Header::keyval()
-       *  structure, under the key 'pe_scheme'. Alternatively, if the phase
-       *  encoding direction and bandwidth is fixed for all volumes in the
-       *  series, this information may be stored using the keys
-       *  'PhaseEncodingDirection' and 'TotalReadoutTime'.
-       */
+     *  is present. This is expected to be stored in the Header::keyval()
+     *  structure, under the key 'pe_scheme'. Alternatively, if the phase
+     *  encoding direction and bandwidth is fixed for all volumes in the
+     *  series, this information may be stored using the keys
+     *  'PhaseEncodingDirection' and 'TotalReadoutTime'.
+     */
     Eigen::MatrixXd parse_scheme (const Header&);
 
 
@@ -217,8 +216,8 @@ namespace MR
       Eigen::MatrixXd config;
       Eigen::Array<int, Eigen::Dynamic, 1> indices;
       scheme2eddy (PE, config, indices);
-      save_matrix (config, config_path);
-      save_vector (indices, index_path);
+      save_matrix (config, config_path, KeyValues(), false);
+      save_vector (indices, index_path, KeyValues(), false);
     }
 
 

@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "gui/mrview/tool/overlay.h"
 
@@ -342,13 +343,19 @@ namespace MR
 
             Image* image = dynamic_cast<Image*>(image_list_model->items[i].get());
             if (image && image->show) {
-              std::string value_str = Path::basename(image->get_filename()) + " overlay value: ";
-              cfloat value = image->interpolate() ?
-                image->trilinear_value(window().focus()) :
-                image->nearest_neighbour_value(window().focus());
-              if(std::isnan(abs(value)))
+              std::string value_str = Path::basename(image->get_filename()) + " ";
+              cfloat value;
+              if (image->interpolate()) {
+                value_str += "interp value: ";
+                value = image->trilinear_value (window().focus());
+              } else {
+                value_str += "voxel value: ";
+                value = image->nearest_neighbour_value (window().focus());
+              }
+              if (std::isnan(abs(value)))
                 value_str += "?";
-              else value_str += str(value);
+              else
+                value_str += str(value);
               transform.render_text (value_str, position, start_line_num + num_of_new_lines);
               num_of_new_lines += 1;
             }
