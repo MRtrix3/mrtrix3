@@ -87,19 +87,19 @@ namespace MR
 
         // Do an iteration of Lentz's algorithm
         d = 1.0 + numerator * d;
-        if (std::abs (d) < BETAINCREG_TINY)
+        if (abs (d) < BETAINCREG_TINY)
           d = BETAINCREG_TINY;
         d = 1.0 / d;
 
         c = 1.0 + numerator / c;
-        if (std::abs (c) < BETAINCREG_TINY)
+        if (abs (c) < BETAINCREG_TINY)
           c = BETAINCREG_TINY;
 
         const default_type cd = c*d;
         f *= cd;
 
         // Check for stop
-        if (std::abs (1.0 - cd) < BETAINCREG_STOP)
+        if (abs (1.0 - cd) < BETAINCREG_STOP)
           return front * (f-1.0);
       }
 
