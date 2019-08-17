@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "math/math.h"
@@ -44,9 +45,18 @@ void usage ()
   SYNOPSIS = "Resample each streamline in a track file to a new set of vertices";
 
   DESCRIPTION
-  + "This may be either increasing or decreasing the number of samples along "
-    "each streamline, or changing the positions of the samples according to "
-    "some specified trajectory."
+  + "It is necessary to specify precisely ONE of the command-line options for "
+    "controlling how this resampling takes place; this may be either increasing "
+    "or decreasing the number of samples along each streamline, or may involve "
+    "changing the positions of the samples according to some specified trajectory."
+
+  + "Note that because the length of a streamline is calculated based on the sums of "
+    "distances between adjacent vertices, resampling a streamline to a new set of "
+    "vertices will typically change the quantified length of that streamline; the "
+    "magnitude of the difference will typically depend on the discrepancy in the "
+    "number of vertices, with less vertices leading to a shorter length (due to "
+    "taking chordal lengths of curved trajectories)."
+
 
   + DWI::Tractography::preserve_track_order_desc;
 

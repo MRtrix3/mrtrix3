@@ -31,6 +31,7 @@ build.*
 /dev/
 /bin/
 /tmp/
+/.vscode/
 .cproject
 .idea
 .project
@@ -43,10 +44,12 @@ build.*
 *.creator.user
 *.files
 *.includes
+*.code-workspace
 /debug/
 /assert/
 testing.log
 testing/build.log
 testing/bin/
+testing/src/project_version.cpp
 testing/src/project_version.h
 .__tmp.log

@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __gui_mrview_colourmap_h__
 #define __gui_mrview_colourmap_h__
@@ -53,22 +54,22 @@ namespace MR
             using basic_map_fn = std::function< Eigen::Array3f (float) >;
 
             Entry (const char* name, const char* glsl_mapping, basic_map_fn basic_mapping,
-                const char* amplitude = NULL, bool special = false, bool is_colour = false) :
+                const char* amplitude = NULL, bool special = false, bool is_colour = false, bool is_rgb = false) :
               name (name),
               glsl_mapping (glsl_mapping),
               basic_mapping (basic_mapping),
-              amplitude (amplitude ? amplitude : default_amplitude), 
+              amplitude (amplitude ? amplitude : default_amplitude),
               special (special),
-              is_colour (is_colour) { }
+              is_colour (is_colour),
+              is_rgb (is_rgb) { }
 
             const char* name;
             const char* glsl_mapping;
             basic_map_fn basic_mapping;
             const char* amplitude;
-            bool special, is_colour;
+            bool special, is_colour, is_rgb;
 
             static const char* default_amplitude;
-
 
         };
 
@@ -126,7 +127,7 @@ namespace MR
 
 
 
-        class Renderer { MEMALIGN(Renderer)
+        class Renderer { NOMEMALIGN
           public:
             Renderer();
             void begin_render_colourbars (Projection* projection,

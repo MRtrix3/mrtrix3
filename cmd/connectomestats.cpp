@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "progressbar.h"
@@ -270,7 +271,7 @@ void run()
 
     ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_hypotheses) + 1 + (nans_in_data || extra_columns.size() ? 1 : 0));
     for (ssize_t i = 0; i != num_factors; ++i) {
-      save_matrix (mat2vec.V2M (betas.row(i)), "beta" + str(i) + ".csv");
+      save_matrix (mat2vec.V2M (betas.row(i)), output_prefix + "beta_" + str(i) + ".csv");
       ++progress;
     }
     for (size_t i = 0; i != num_hypotheses; ++i) {
@@ -297,6 +298,7 @@ void run()
   // If performing non-stationarity adjustment we need to pre-compute the empirical statistic
   matrix_type empirical_statistic;
   if (do_nonstationarity_adjustment) {
+    empirical_statistic = matrix_type::Zero (num_edges, num_hypotheses);
     Stats::PermTest::precompute_empirical_stat (glm_test, enhancer, empirical_skew, empirical_statistic);
     for (size_t i = 0; i != num_hypotheses; ++i)
       save_matrix (mat2vec.V2M (empirical_statistic.col(i)), output_prefix + "empirical" + postfix(i) + ".csv");
@@ -329,7 +331,6 @@ void run()
       for (size_t i = 0; i != num_hypotheses; ++i)
         save_vector (null_distribution.col(i), output_prefix + "null_dist" + postfix(i) + ".txt");
     }
-
     const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, default_enhanced);
     for (size_t i = 0; i != num_hypotheses; ++i) {
       save_matrix (mat2vec.V2M (pvalue_output.col(i)),       output_prefix + "fwe_1mpvalue" + postfix(i) + ".csv");
