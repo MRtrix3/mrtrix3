@@ -138,11 +138,9 @@ Image<bool> get_mask (const Image<value_type>& in)
   auto opt = get_options ("mask");
   if (opt.size()) {
     mask = Image<bool>::open (opt[0][0]);
-    if (mask.ndim() > in.ndim())
-      throw Exception ("Cannot use mask image with more axes than input image");
     check_dimensions (in, mask, 0, 3);
     for (size_t axis = 3; axis != mask.ndim(); ++axis) {
-      if (mask.size (axis) > 1 && mask.size (axis) != in.size (axis))
+      if (mask.size (axis) > 1 && axis < in.ndim() && mask.size (axis) != in.size (axis))
         throw Exception ("Dimensions of mask image do not match those of main image");
     }
   }
@@ -161,24 +159,24 @@ vector<value_type> get_data (Image<value_type>& in,
     Adapter::Replicate<Image<bool>> mask_replicate (mask, in);
     if (ignore_zero) {
       for (auto l = Loop(in, 0, max_axis) (in, mask_replicate); l; ++l) {
-        if (mask_replicate.value() && in.value() != 0.0f)
+        if (mask_replicate.value() && !std::isnan (static_cast<value_type>(in.value())) && in.value() != 0.0f)
           data.push_back (in.value());
       }
     } else {
       for (auto l = Loop(in, 0, max_axis) (in, mask_replicate); l; ++l) {
-        if (mask_replicate.value() && std::isfinite (static_cast<value_type>(in.value())))
+        if (mask_replicate.value() && !std::isnan (static_cast<value_type>(in.value())))
           data.push_back (in.value());
       }
     }
   } else {
     if (ignore_zero) {
       for (auto l = Loop(in, 0, max_axis) (in); l; ++l) {
-        if (in.value() != 0.0f)
+        if (!std::isnan (static_cast<value_type>(in.value())) && in.value() != 0.0f)
           data.push_back (in.value());
       }
     } else {
       for (auto l = Loop(in, 0, max_axis) (in); l; ++l) {
-          if (std::isfinite (static_cast<value_type>(in.value())))
+          if (!std::isnan (static_cast<value_type>(in.value())))
         data.push_back (in.value());
       }
     }
@@ -318,7 +316,7 @@ void apply (Image<value_type>& in,
   }
 
   for (auto l = Loop(in, 0, max_axis) (in, out); l; ++l)
-    out.value() = std::isfinite (static_cast<value_type>(in.value())) && func (in.value(), threshold) ? true_value : false_value;
+    out.value() = !std::isnan (static_cast<value_type>(in.value())) && func (in.value(), threshold) ? true_value : false_value;
 }
 
 
