@@ -49,7 +49,7 @@ namespace MR
         //   class, to define the volumes on the fourth axis that
         //   correspond to neighbouring directions using a Directions::Set.
         class Adjacency
-        {
+        { NOMEMALIGN
           public:
             typedef Voxel2Vector::index_t index_t;
 

@@ -918,8 +918,7 @@ if not openmp:
   eigen_cflags += [ '-DEIGEN_DONT_PARALLELIZE' ]
 
 
-if compile_test ('Eigen3 Unsupported', cpp_flags + eigen_cflags, ld_flags,
-  '''
+if compile_test ('Eigen3 Unsupported', cpp_flags + eigen_cflags, ld_flags, '''
 #include <iostream>
 #include <Eigen/Core>
 #include <unsupported/Eigen/SpecialFunctions>
