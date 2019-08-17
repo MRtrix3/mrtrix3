@@ -30,7 +30,6 @@ namespace MR
       // Pre-fill the null distribution / stats matrices with NaNs, detect when it's not overwritten
       matrix_type fwe_pvalue (const matrix_type& null_distributions, const matrix_type& statistics)
       {
-        assert (null_distributions.rows() == statistics.rows());
         assert (null_distributions.cols() == 1 || null_distributions.cols() == statistics.cols());
         matrix_type pvalues (statistics.rows(), statistics.cols());
 

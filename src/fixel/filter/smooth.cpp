@@ -42,11 +42,11 @@ namespace MR
         for (auto l = Loop(1) (input, output); l; ++l) {
           for (size_t fixel = 0; fixel != matrix.size(); ++fixel) {
             input.index(0) = output.index(0) = fixel;
-            if (std::isfinite (input.value())) {
+            if (std::isfinite (static_cast<float>(input.value()))) {
               default_type value = 0.0, sum_weights = 0.0;
               for (const auto& it : matrix[fixel]) {
                 input.index(0) = it.index();
-                if (std::isfinite (input.value())) {
+                if (std::isfinite (static_cast<float>(input.value()))) {
                   value += input.value() * it.value();
                   sum_weights += it.value();
                 }
