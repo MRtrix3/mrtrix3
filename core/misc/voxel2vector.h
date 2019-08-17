@@ -79,7 +79,7 @@ namespace MR
       throw Exception ("Dimension mismatch between image data and processing mask");
     // E.g. Mask may be 3D but data are 4D; for any voxel where the mask is
     //   true, want to include data from all volumes
-    Adapter::Replicate<Image<bool>> r_mask (mask, data);
+    Adapter::Replicate<MaskType> r_mask (mask, data);
     // Loop in axis order so that those voxels contiguous in memory are still
     //   contiguous in the vectorised data
     index_t counter = 0;

@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "memory.h"
@@ -50,7 +51,7 @@ using value_type = float;
 
 class SConvFunctor { MEMALIGN(SConvFunctor)
   public:
-  SConvFunctor (const size_t n, Image<bool>& mask, 
+  SConvFunctor (const size_t n, Image<bool>& mask,
                 const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& response) :
                     image_mask (mask),
                     response (response),
@@ -83,6 +84,7 @@ void run() {
   Math::SH::check (image_in);
 
   auto responseZSH = load_vector<value_type>(argument[1]);
+  responseZSH.conservativeResizeLike (decltype(responseZSH)::Zero (Math::ZSH::NforL (Math::SH::LforN (image_in.size (3)))));
   Eigen::Matrix<value_type, Eigen::Dynamic, 1> responseRH;
   Math::ZSH::ZSH2RH (responseRH, responseZSH);
 
@@ -96,7 +98,7 @@ void run() {
   auto header = Header(image_in);
   Stride::set_from_command_line (header);
   auto image_out = Image<value_type>::create (argument[2], header);
-  
+
   SConvFunctor sconv (image_in.size(3), mask, responseRH);
   ThreadedLoop ("performing convolution", image_in, 0, 3, 2).run (sconv, image_in, image_out);
 }

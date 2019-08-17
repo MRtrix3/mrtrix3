@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __mrtrix_h__
 #define __mrtrix_h__
@@ -162,7 +163,7 @@ namespace MR
   }
 
 
-  inline std::string strip (const std::string& string, const char* ws = " \t\n", bool left = true, bool right = true)
+  inline std::string strip (const std::string& string, const std::string& ws = {" \0\t\n", 4}, bool left = true, bool right = true)
   {
     std::string::size_type start = (left ? string.find_first_not_of (ws) : 0);
     if (start == std::string::npos)
@@ -175,15 +176,15 @@ namespace MR
 
   inline void replace (std::string& string, char orig, char final)
   {
-    for (std::string::iterator i = string.begin(); i != string.end(); ++i)
-      if (*i == orig) *i = final;
+    for (auto& c: string)
+      if (c == orig) c = final;
   }
 
   inline void replace (std::string& str, const std::string& from, const std::string& to)
   {
     if (from.empty()) return;
     size_t start_pos = 0;
-    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+    while ((start_pos = str.find (from, start_pos)) != std::string::npos) {
       str.replace (start_pos, from.length(), to);
       start_pos += to.length();
     }
