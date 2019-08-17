@@ -26,7 +26,22 @@ Supported operations are:
 
 mean, median, sum, product, rms (root-mean-square value), norm (vector 2-norm), var (unbiased variance), std (unbiased standard deviation), min, max, absmax (maximum absolute value), magmax (value with maximum absolute value, preserving its sign).
 
-See also 'mrcalc' to compute per-voxel operations.
+This command is used to traverse either along an image axis, or across a set of input images, calculating some statistic from the values along each traversal. If you are seeking to instead perform mathematical calculations that are done independently for each voxel, pleaase see the 'mrcalc' command.
+
+Example usages
+--------------
+
+-   *Calculate a 3D volume representing the mean intensity across a 4D image series*::
+
+        $ mrmath 4D.mif mean 3D_mean.mif -axis 3
+
+    This is a common operation for calculating e.g. the mean value within a specific DWI b-value. Note that axis indices start from 0; thus, axes 0, 1 & 2 are the three spatial axes, and axis 3 operates across volumes.
+
+-   *Generate a Maximum Intensity Projection (MIP) along the inferior-superior direction*::
+
+        $ mrmath input.mif max MIP.mif -axis 2
+
+    Since a MIP is literally the maximal value along a specific projection direction, axis-aligned MIPs can be generated easily using mrmath with the 'max' operation.
 
 Options
 -------
@@ -43,13 +58,15 @@ Standard options
 
 -  **-info** display information messages.
 
--  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+-  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages.
 
--  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
+-  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -61,16 +78,19 @@ Standard options
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix3 is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
-For more details, see http://www.mrtrix.org/
+For more details, see http://www.mrtrix.org/.
 
 

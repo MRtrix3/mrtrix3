@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "progressbar.h"
 #include "gui/mrview/tool/tractography/tractogram.h"
@@ -713,7 +714,7 @@ namespace MR
             while (file (tck_scalar)) {
 
               const size_t tck_size = tck_scalar.size();
-              assert (tck_size == size_t(track_sizes[intensity_scalar_buffers.size()][tck_count]));
+              assert (tck_size == size_t(original_track_sizes[intensity_scalar_buffers.size()][tck_count]));
 
               if (!tck_size)
                 continue;
@@ -808,7 +809,7 @@ namespace MR
             while (file (tck_scalar)) {
 
               const size_t tck_size = tck_scalar.size();
-              assert (tck_size == size_t(track_sizes[intensity_scalar_buffers.size()][tck_count]));
+              assert (tck_size == size_t(original_track_sizes[intensity_scalar_buffers.size()][tck_count]));
 
               if (!tck_size)
                 continue;

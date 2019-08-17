@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "file/config.h"
 #include "gui/opengl/gl.h"
@@ -73,17 +74,22 @@ namespace MR
               Eigen::Vector3f voxel (image()->transform().scanner2voxel.cast<float>() * focus());
               ssize_t vox [] = { ssize_t(std::round (voxel[0])), ssize_t(std::round (voxel[1])), ssize_t(std::round (voxel[2])) };
 
-              std::string vox_str = printf ("voxel: [ %d %d %d ", vox[0], vox[1], vox[2]);
+              std::string vox_str = printf ("voxel index: [ %d %d %d ", vox[0], vox[1], vox[2]);
               for (size_t n = 3; n < image()->header().ndim(); ++n)
                 vox_str += str(image()->image.index(n)) + " ";
               vox_str += "]";
 
               projection.render_text (printf ("position: [ %.4g %.4g %.4g ] mm", focus() [0], focus() [1], focus() [2]), LeftEdge | BottomEdge);
               projection.render_text (vox_str, LeftEdge | BottomEdge, 1);
-              std::string value_str = "value: ";
-              cfloat value = image()->interpolate() ?
-                image()->trilinear_value (window().focus()) :
-                image()->nearest_neighbour_value (window().focus());
+              std::string value_str;
+              cfloat value;
+              if (image()->interpolate()) {
+                value_str = "interp value: ";
+                value = image()->trilinear_value (window().focus());
+              } else {
+                value_str = "voxel value: ";
+                value = image()->nearest_neighbour_value (window().focus());
+              }
               if (std::isfinite (abs (value)))
                 value_str += str(value);
               else
@@ -93,7 +99,7 @@ namespace MR
 
               // Draw additional labels from tools
               QList<QAction*> tools = window().tools()->actions();
-              for (size_t i = 0, line_num = 3, N = tools.size(); i < N; ++i) {
+              for (size_t i = 0, line_num = 4, N = tools.size(); i < N; ++i) {
                 Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->dock;
                 if (dock)
                   line_num += dock->tool->draw_tool_labels (LeftEdge | BottomEdge, line_num, projection);

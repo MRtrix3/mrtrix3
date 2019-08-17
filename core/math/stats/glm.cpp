@@ -1,22 +1,25 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "math/stats/glm.h"
 
 #include "debug.h"
 #include "thread_queue.h"
+#include "math/betainc.h"
+#include "math/erfinv.h"
 #include "misc/bitset.h"
 
 namespace MR
@@ -239,7 +242,7 @@ namespace MR
 
 // TODO all_stats() needs to be updated to reflect heteroscedasticity
 
-#define GLM_ALL_STATS_DEBUG
+//#define GLM_ALL_STATS_DEBUG
 
         void all_stats (const matrix_type& measurements,
                         const matrix_type& design,
@@ -513,6 +516,22 @@ namespace MR
 
 
 
+
+        void TestBase::operator() (const matrix_type& shuffling_matrix, matrix_type& output) const
+        {
+          matrix_type temp;
+          (*this) (shuffling_matrix, temp, output);
+        }
+
+
+
+
+
+
+
+
+
+
 //#define GLM_TEST_DEBUG
 
 
@@ -533,11 +552,13 @@ namespace MR
 
 
 
-        void TestFixedHomoscedastic::operator() (const matrix_type& shuffling_matrix, matrix_type& output) const
+        void TestFixedHomoscedastic::operator() (const matrix_type& shuffling_matrix,
+                                                matrix_type& stats,
+                                                matrix_type& zstats) const
         {
           assert (size_t(shuffling_matrix.rows()) == num_inputs());
-          if (!(size_t(output.rows()) == num_elements() && size_t(output.cols()) == num_hypotheses()))
-            output.resize (num_elements(), num_hypotheses());
+          stats .resize (num_elements(), num_hypotheses());
+          zstats.resize (num_elements(), num_hypotheses());
 
           matrix_type Sy, lambdas, residuals, beta;
           vector_type sse;
@@ -577,24 +598,27 @@ namespace MR
             VAR (XtX[ih].cols());
             VAR (one_over_dof);
 #endif
+            const size_t dof = num_inputs() - partitions[ih].rank_x - partitions[ih].rank_z;
+            const default_type one_over_dof = 1.0 / default_type(dof);
             sse = (Rm*Sy).colwise().squaredNorm();
 #ifdef GLM_TEST_DEBUG
+            VAR (dof);
+            VAR (one_over_dof);
             VAR (sse.size());
 #endif
             for (size_t ie = 0; ie != num_elements(); ++ie) {
               beta.noalias() = c[ih].matrix() * lambdas.col (ie);
               const default_type F = ((beta.transpose() * XtX[ih] * beta) (0,0) / c[ih].rank()) /
-                                     (one_over_dof[ih] * sse[ie]);
+                                     (one_over_dof * sse[ie]);
               if (!std::isfinite (F)) {
-                output (ie, ih) = value_type(0);
+                stats  (ie, ih) = zstats (ie, ih) = value_type(0);
               } else if (c[ih].is_F()) {
-                // Note: sqrt(F) stored in output so that statistical enhancement of F-tests
-                //   behaves comparably to that of t-tests; individual commands will be
-                //   responsible for squaring these values when exporting actual F-statistics
-                output (ie, ih) = std::sqrt (F);
+                stats  (ie, ih) = F;
+                zstats (ie, ih) = stat2z->F2z (F, c[ih].rank(), dof);
               } else {
                 assert (beta.rows() == 1);
-                output (ie, ih) = std::sqrt (F) * (beta.sum() > 0.0 ? 1.0 : -1.0);
+                stats  (ie, ih) = std::sqrt (F) * (beta.sum() > 0.0 ? 1.0 : -1.0);
+                zstats (ie, ih) = stat2z->t2z (stats (ie, ih), dof);
               }
             }
 
@@ -767,11 +791,14 @@ namespace MR
 
 
 
-        void TestVariableHomoscedastic::operator() (const matrix_type& shuffling_matrix, matrix_type& output) const
+        void TestVariableHomoscedastic::operator() (const matrix_type& shuffling_matrix,
+                                                    matrix_type& stat,
+                                                    matrix_type& zstat) const
         {
-          if (!(size_t(output.rows()) == num_elements() && size_t(output.cols()) == num_hypotheses()))
-            output.resize (num_elements(), num_hypotheses());
+          stat .resize (num_elements(), num_hypotheses());
+          zstat.resize (num_elements(), num_hypotheses());
 
+          matrix_type dof (num_elements(), num_hypotheses());
           matrix_type extra_column_data (num_inputs(), importers.size());
           BitSet element_mask (num_inputs());
           matrix_type shuffling_matrix_masked, Mfull_masked, pinvMfull_masked, Rm;
@@ -813,7 +840,9 @@ namespace MR
             //   more stringent criterion met in order to proceed with the test.
             //   Let's do: DoF must be at least equal to the number of factors.
             if (finite_count < std::min (num_inputs(), 2 * num_factors())) {
-              output.row (ie).setZero();
+              stat.row (ie).setZero();
+              zstat.row (ie).setZero();
+              dof.row (ie).fill (NaN);
             } else {
               apply_mask (element_mask,
                           y.col (ie),
@@ -830,7 +859,9 @@ namespace MR
               //   would a rank calculation with tolerance be faster?
               const default_type condition_number = Math::condition_number (Mfull_masked);
               if (!std::isfinite (condition_number) || condition_number > 1e5) {
-                output.row (ie).fill (0.0);
+                stat.row (ie).fill (0.0);
+                zstat.row (ie).fill (0.0);
+                dof.row (ie).fill (NaN);
               } else {
 
                 pinvMfull_masked = Math::pinv (Mfull_masked);
@@ -839,12 +870,12 @@ namespace MR
 
                 // We now have our permutation (shuffling) matrix and design matrix prepared,
                 //   and can commence regressing the partitioned model of each hypothesis
-                for (size_t ih = 0; ih != c.size(); ++ih) {
+                for (ssize_t ih = 0; ih != c.size(); ++ih) {
 
                   const auto partition = c[ih].partition (Mfull_masked);
-                  const ssize_t dof = finite_count - partition.rank_x - partition.rank_z;
-                  if (dof < 1) {
-                    output (ie, ih) = value_type(0);
+                  dof (ie, ih) = finite_count - partition.rank_x - partition.rank_z;
+                  if (dof (ie, ih) < 1) {
+                    stat (ie, ih) = zstat (ie, ih) = dof (ie, ih) = value_type(0);
                   } else {
 
                     XtX.noalias() = partition.X.transpose()*partition.X;
@@ -858,15 +889,17 @@ namespace MR
                     const default_type sse = (Rm*Sy.matrix()).squaredNorm();
 
                     const default_type F = ((beta.transpose() * XtX * beta) (0, 0) / c[ih].rank()) /
-                        (sse / value_type (dof));
+                                            (sse / dof (ie, ih));
 
                     if (!std::isfinite (F)) {
-                      output (ie, ih) = value_type(0);
+                      stat  (ie, ih) = zstat (ie, ih) = value_type(0);
                     } else if (c[ih].is_F()) {
-                      output (ie, ih) = std::sqrt (F);
+                      stat  (ie, ih) = F;
+                      zstat (ie, ih) = stat2z->F2z (F, c[ih].rank(), dof (ie, ih));
                     } else {
                       assert (beta.rows() == 1);
-                      output (ie, ih) = std::sqrt (F) * (beta.sum() > 0 ? 1.0 : -1.0);
+                      stat  (ie, ih) = std::sqrt (F) * (beta.sum() > 0 ? 1.0 : -1.0);
+                      zstat (ie, ih) = stat2z->t2z (stat (ie, ih), dof (ie, ih));
                     }
 
                   } // End checking for sufficient degrees of freedom
@@ -878,7 +911,9 @@ namespace MR
             } // End checking for adequate number of remaining inputs after NaN removal
 
           } // End looping over elements
-        }
+
+        } // End functor
+
 
 
 
