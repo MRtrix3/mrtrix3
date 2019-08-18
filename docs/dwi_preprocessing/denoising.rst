@@ -61,19 +61,19 @@ spectrum of the local data matrix. Assuming M<N, P signal-carying components
 (also estimated), and M-P noise components, the squared noise level is
 estimated as:
 
-.. math:
-   \sigma^2 = \frac{\lambda_{P+1}-\lambda_M}{4\sqrt{\gamma}}
+.. math::
+   \\sigma^2 = \\frac{\\lambda_{P+1}-\\lambda_M}{4\\sqrt{\\gamma}}
 
-where :math:`\lambda_i` are the eigenvalues of the covaliance matrix, sorted in 
-decreasing order, and :math:`\gamma` is the matrix ratio.
+where :math:`\\lambda_i` are the eigenvalues of the covaliance matrix, sorted in 
+decreasing order, and :math:`\\gamma` is the matrix ratio.
 
 `dwidenoise` implements two different versions of this estimator, based on a 
-different definition of the matrix ratio :math:`\gamma`:
+different definition of the matrix ratio :math:`\\gamma`:
 
 - **Exp1** uses the definition used in the original papers [Veraart2016a]_ and 
-  [Veraart2016b]_, namely :math:`\gamma = (M-P)/N`.
+  [Veraart2016b]_, namely :math:`\\gamma = (M-P)/N`.
 
-- **Exp2** uses :math:`\gamma = (M-P)/(N-P)` instead, which was shown in 
+- **Exp2** uses :math:`\\gamma = (M-P)/(N-P)` instead, which was shown in 
   [CorderoGrande2019]_ to improve the estimation. This is now the default.
 
 
