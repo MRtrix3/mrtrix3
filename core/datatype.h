@@ -88,6 +88,11 @@ namespace MR
         const uint8_t type = dt & Type;
         return ((type == Float32) || (type == Float64));
       }
+      void set_floating_point () {
+        if (!is_floating_point()) {
+          dt = Native;
+        }
+      }
       void set_byte_order_native () {
         if (dt != Bit && dt != Int8 && dt != UInt8) {
           if (!is_little_endian() && !is_big_endian()) {

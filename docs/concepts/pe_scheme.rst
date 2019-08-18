@@ -4,7 +4,7 @@ Phase encoding scheme handling
 From version 3.0RC1 onwards, *MRtrix3* is capable of importing information from
 DICOM relating to the phase encoding of the acquired images, and encoding this
 information within key-value fields inside an image header. This information can
-then later be used by the ``dwipreproc`` script, specifically using its
+then later be used by the ``dwifslpreproc`` script, specifically using its
 ``-rpe_header`` command-line option, to automatically set up and execute FSL's
 ``topup`` and ``eddy`` commands without requiring explicit input from the user
 regarding the phase encoding design of the imaging experiment. This page
@@ -143,7 +143,7 @@ the image data, and *MRtrix3* does its best to do so.
 
 .. NOTE::
 
-   This process has consequences for the ``dwipreproc`` script when manually
+   This process has consequences for the ``dwifslpreproc`` script when manually
    providing the phase encoding direction. The axis and sign of phase encoding
    provided to the script must reflect the direction of phase encoding *after*
    *MRtrix3* has performed this transformation, i.e. as it is read by any

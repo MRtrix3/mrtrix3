@@ -1,7 +1,7 @@
-.. _dwipreproc:
+.. _dwifslpreproc:
 
-dwipreproc
-==========
+dwifslpreproc
+=============
 
 Synopsis
 --------
@@ -13,7 +13,7 @@ Usage
 
 ::
 
-    dwipreproc input output [ options ]
+    dwifslpreproc input output [ options ]
 
 -  *input*: The input DWI series to be corrected
 -  *output*: The output corrected image series
@@ -30,27 +30,27 @@ Example usages
 
 -   *A basic DWI acquisition, where all image volumes are acquired in a single protocol with fixed phase encoding*::
 
-        $ dwipreproc DWI_in.mif DWI_out.mif -rpe_none -pe_dir ap -readout_time 0.55
+        $ dwifslpreproc DWI_in.mif DWI_out.mif -rpe_none -pe_dir ap -readout_time 0.55
 
     Due to use of a single fixed phase encoding, no EPI distortion correction can be applied in this case.
 
 -   *DWIs all acquired with a single fixed phase encoding; but additionally a pair of b=0 images with reversed phase encoding to estimate the inhomogeneity field*::
 
-        $ mrcat b0_ap.mif b0_pa.mif b0_pair.mif -axis 3; dwipreproc DWI_in.mif DWI_out.mif -rpe_pair -se_epi b0_pair.mif -pe_dir ap -readout_time 0.72 -align_seepi
+        $ mrcat b0_ap.mif b0_pa.mif b0_pair.mif -axis 3; dwifslpreproc DWI_in.mif DWI_out.mif -rpe_pair -se_epi b0_pair.mif -pe_dir ap -readout_time 0.72 -align_seepi
 
     Here the two individual b=0 volumes are concatenated into a single 4D image series, and this is provided to the script via the -se_epi option. Note that with the -rpe_pair option used here, which indicates that the SE-EPI image series contains one or more pairs of b=0 images with reversed phase encoding, the FIRST HALF of the volumes in the SE-EPI series must possess the same phase encoding as the input DWI series, while the second half are assumed to contain the opposite phase encoding direction but identical total readout time. Use of the -align_seepi option is advocated as long as its use is valid (more information in the Description section).
 
 -   *All DWI directions & b-values are acquired twice, with the phase encoding direction of the second acquisition protocol being reversed with respect to the first*::
 
-        $ mrcat DWI_lr.mif DWI_rl.mif DWI_all.mif -axis 3; dwipreproc DWI_all.mif DWI_out.mif -rpe_all -pe_dir lr -readout_time 0.66
+        $ mrcat DWI_lr.mif DWI_rl.mif DWI_all.mif -axis 3; dwifslpreproc DWI_all.mif DWI_out.mif -rpe_all -pe_dir lr -readout_time 0.66
 
     Here the two acquisition protocols are concatenated into a single DWI series containing all acquired volumes. The direction indicated via the -pe_dir option should be the direction of phase encoding used in acquisition of the FIRST HALF of volumes in the input DWI series; ie. the first of the two files that was provided to the mrcat command. In this usage scenario, the output DWI series will contain the same number of image volumes as ONE of the acquired DWI series (ie. half of the number in the concatenated series); this is because the script will identify pairs of volumes that possess the same diffusion sensitisation but reversed phase encoding, and perform explicit recombination of those volume pairs in such a way that image contrast in regions of inhomogeneity is determined from the stretched rather than the compressed image.
 
 -   *Any acquisition scheme that does not fall into one of the example usages above*::
 
-        $ mrcat DWI_*.mif DWI_all.mif -axis 3; mrcat b0_*.mif b0_all.mif -axis 3; dwipreproc DWI_all.mif DWI_out.mif -rpe_header -se_epi b0_all.mif -align_seepi
+        $ mrcat DWI_*.mif DWI_all.mif -axis 3; mrcat b0_*.mif b0_all.mif -axis 3; dwifslpreproc DWI_all.mif DWI_out.mif -rpe_header -se_epi b0_all.mif -align_seepi
 
-    With this usage, the relevant phase encoding information is determined entirely based on the contents of the relevant image headers, and dwipreproc prepares all metadata for the executed FSL commands accordingly. This can therefore be used if the particular DWI acquisition strategy used does not correspond to one of the simple examples as described in the prior examples. This usage is predicated on the headers of the input files containing appropriately-named key-value fields such that MRtrix3 tools identify them as such. In some cases, conversion from DICOM using MRtrix3 commands will automatically extract and embed this information; however this is not true for all scanner vendors and/or software versions. In the latter case it may be possible to manually provide these metadata; either using the -json_import command-line option of dwipreproc, or the -json_import or one of the -import_pe_* command-line options of MRtrix3's mrconvert command (and saving in .mif format) prior to running dwipreproc.
+    With this usage, the relevant phase encoding information is determined entirely based on the contents of the relevant image headers, and dwifslpreproc prepares all metadata for the executed FSL commands accordingly. This can therefore be used if the particular DWI acquisition strategy used does not correspond to one of the simple examples as described in the prior examples. This usage is predicated on the headers of the input files containing appropriately-named key-value fields such that MRtrix3 tools identify them as such. In some cases, conversion from DICOM using MRtrix3 commands will automatically extract and embed this information; however this is not true for all scanner vendors and/or software versions. In the latter case it may be possible to manually provide these metadata; either using the -json_import command-line option of dwifslpreproc, or the -json_import or one of the -import_pe_* command-line options of MRtrix3's mrconvert command (and saving in .mif format) prior to running dwifslpreproc.
 
 Options
 -------

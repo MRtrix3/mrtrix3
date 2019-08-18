@@ -492,7 +492,7 @@ def execute(): #pylint: disable=unused-variable
       for i in inputs:
         mask_filenames.append(os.path.join('masks_transformed', i.prefix + '.mif'))
       run.command(['mrmath', mask_filenames, 'max', 'mask_translated.mif'])
-      run.command('mrgrdi average_header.mif crop -mask mask_translated.mif average_header_cropped.mif')
+      run.command('mrgrid average_header.mif crop -mask mask_translated.mif average_header_cropped.mif')
       # pad average space to allow for deviation from initial alignment
       run.command('mrgrid average_header_cropped.mif pad -uniform 10 average_header.mif', force=True)
       run.function(os.remove, 'average_header_cropped.mif')
