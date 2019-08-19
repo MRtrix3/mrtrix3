@@ -29,9 +29,9 @@ The threshold value to be applied can be determined in one of a number of ways:
 
 - The -percentile, -top and -bottom options enable more fine-grained control over how the threshold value is determined.
 
-The -mask option only influences those image values that contribute toward the determination of the threshold value; once the threshold is determined, it is applied to the entire image, irrespective of use of the -mask option. If you wish for the voxels outside of the specified mask to additionally be excluded from the output mask, this can be achieved by multiplying this mask by the output of the mrthreshold command using mrcalc.
+The -mask option only influences those image values that contribute toward the determination of the threshold value; once the threshold is determined, it is applied to the entire image, irrespective of use of the -mask option. If you wish for the voxels outside of the specified mask to additionally be excluded from the output mask, this can be achieved by providing the -out_masked option.
 
-The four operators available through the "-operator" option ("lt", "le", "ge" and "gt") correspond to "less-than" (<), "less-than-or-equal" (<=), "greater-than-or-equal" (>=) and "greater-than" (>). This offers fine-grained control over how the thresholding operation will behave in the presence of values equivalent to the threshold. By default, the command will select voxels with values greater than or equal to the determined threshold ("ge"); unless the -bottom option is used, in which case after a threshold is determined from the relevant lowest-valued image voxels, those voxels with values less than or equal to that threshold ("le") are selected. This option supersedes the -invert option available in previous versions of mrthreshold; the same behaviour can be achieved using "-operator lt".
+The four operators available through the "-operator" option ("lt", "le", "ge" and "gt") correspond to "less-than" (<), "less-than-or-equal" (<=), "greater-than-or-equal" (>=) and "greater-than" (>). This offers fine-grained control over how the thresholding operation will behave in the presence of values equivalent to the threshold. By default, the command will select voxels with values greater than or equal to the determined threshold ("ge"); unless the -bottom option is used, in which case after a threshold is determined from the relevant lowest-valued image voxels, those voxels with values less than or equal to that threshold ("le") are selected. This provides more fine-grained control than the -invert option; the latter is provided for backwards compatibility, but is equivalent to selection of the opposite operator within this selection.
 
 If no output image path is specified, the command will instead write to standard output the determined threshold value.
 
@@ -64,6 +64,8 @@ Threshold application modifiers
 -  **-operator choice** mathematical operator to use when applying the threshold; options are: lt,le,ge,gt (default = "le" for -bottom; "ge" otherwise)
 
 -  **-invert** invert the output binary mask (equivalent to flipping the operator; provided for backwards compatibility)
+
+-  **-out_masked** mask the output image based on the provided input mask image
 
 -  **-nan** set voxels that fail the threshold to NaN rather than zero (output image will be floating-point rather than binary)
 

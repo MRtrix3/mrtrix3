@@ -54,8 +54,7 @@ void usage ()
     "toward the determination of the threshold value; once the threshold is determined, "
     "it is applied to the entire image, irrespective of use of the -mask option. If you "
     "wish for the voxels outside of the specified mask to additionally be excluded from "
-    "the output mask, this can be achieved by multiplying this mask by the output of "
-    "the mrthreshold command using mrcalc."
+    "the output mask, this can be achieved by providing the -out_masked option."
 
   + "The four operators available through the \"-operator\" option (\"lt\", \"le\", \"ge\" and \"gt\") "
     "correspond to \"less-than\" (<), \"less-than-or-equal\" (<=), \"greater-than-or-equal\" (>=) "
@@ -65,8 +64,9 @@ void usage ()
     "determined threshold (\"ge\"); unless the -bottom option is used, in which case "
     "after a threshold is determined from the relevant lowest-valued image voxels, those "
     "voxels with values less than or equal to that threshold (\"le\") are selected. "
-    "This option supersedes the -invert option available in previous versions of "
-    "mrthreshold; the same behaviour can be achieved using \"-operator lt\"."
+    "This provides more fine-grained control than the -invert option; the latter "
+    "is provided for backwards compatibility, but is equivalent to selection of the "
+    "opposite operator within this selection."
 
   + "If no output image path is specified, the command will instead write to "
     "standard output the determined threshold value.";
@@ -120,6 +120,8 @@ void usage ()
 
   + Option ("invert", "invert the output binary mask "
                       "(equivalent to flipping the operator; provided for backwards compatibility)")
+
+  + Option ("out_masked", "mask the output image based on the provided input mask image")
 
   + Option ("nan", "set voxels that fail the threshold to NaN rather than zero "
                    "(output image will be floating-point rather than binary)");
@@ -295,10 +297,12 @@ default_type calculate (Image<value_type>& in,
 
 template <typename T>
 void apply (Image<value_type>& in,
+            Image<bool>& mask,
             Image<T>& out,
             const size_t max_axis,
             const value_type threshold,
             const operator_type op,
+            const bool mask_out,
             const bool to_cout)
 {
   if (to_cout) {
@@ -318,8 +322,14 @@ void apply (Image<value_type>& in,
     case operator_type::UNDEFINED: assert (0);
   }
 
-  for (auto l = Loop(in, 0, max_axis) (in, out); l; ++l)
-    out.value() = !std::isnan (static_cast<value_type>(in.value())) && func (in.value(), threshold) ? true_value : false_value;
+  if (mask_out) {
+    assert (mask.valid());
+    for (auto l = Loop(in, 0, max_axis) (in, mask, out); l; ++l)
+      out.value() = !std::isnan (static_cast<value_type>(in.value())) && !mask.value() && func (in.value(), threshold) ? true_value : false_value;
+  } else {
+    for (auto l = Loop(in, 0, max_axis) (in, out); l; ++l)
+      out.value() = !std::isnan (static_cast<value_type>(in.value())) && func (in.value(), threshold) ? true_value : false_value;
+  }
 }
 
 
@@ -336,7 +346,8 @@ void execute (Image<value_type>& in,
               const ssize_t top,
               const bool ignore_zero,
               const bool all_volumes,
-              const operator_type op)
+              const operator_type op,
+              const bool mask_out)
 {
   const bool to_cout = out_path.empty();
   Image<T> out;
@@ -364,7 +375,7 @@ void execute (Image<value_type>& in,
       const default_type threshold = calculate (in, mask, 3, abs, percentile, bottom, top, ignore_zero, to_cout);
       if (out.valid())
         assign_pos_of (in, 3).to (out);
-      apply (in, out, 3, value_type(threshold), op, to_cout);
+      apply (in, mask, out, 3, value_type(threshold), op, mask_out, to_cout);
     }
 
     return;
@@ -375,7 +386,7 @@ void execute (Image<value_type>& in,
 
   // Process whole input image as a single block
   const default_type threshold = calculate (in, mask, in.ndim(), abs, percentile, bottom, top, ignore_zero, to_cout);
-  apply (in, out, in.ndim(), value_type(threshold), op, to_cout);
+  apply (in, mask, out, in.ndim(), value_type(threshold), op, mask_out, to_cout);
 
 }
 
@@ -406,13 +417,14 @@ void run ()
   const bool all_volumes = get_options("allvolumes").size();
   const bool ignore_zero = get_options("ignorezero").size();
   const bool use_nan = get_options ("nan").size();
+  const bool invert = get_options ("invert").size();
+
+  bool mask_out = get_options ("out_masked").size();
 
   auto opt = get_options ("operator");
   operator_type op = opt.size() ?
                      operator_type(int(opt[0][0])) :
                      (bottom >= 0 ? operator_type::LE : operator_type::GE);
-
-  const bool invert = get_options ("invert").size();
   if (invert) {
     switch (op) {
       case operator_type::LT: op = operator_type::GE; break;
@@ -434,6 +446,9 @@ void run ()
     if (invert) {
       WARN ("Option -invert ignored: has no influence when no output image is specified");
     }
+    if (mask_out) {
+      WARN ("Option -out_masked ignored: has no influence when no output image is specified");
+    }
   }
 
   Image<bool> mask;
@@ -441,11 +456,15 @@ void run ()
     if (ignore_zero) {
       WARN ("-ignorezero option has no effect if combined with -abs option");
     }
-    if (get_options ("mask").size()) {
-      WARN ("-mask option has no effect if combined with -abs option");
+    if (get_options ("mask").size() && !mask_out) {
+      WARN ("-mask option has no effect if combined with -abs option and -out_masked is not used");
     }
-  } else  {
+  } else {
     mask = get_mask (in);
+    if (!mask.valid() && mask_out) {
+      WARN ("-out_masked option ignored; no mask image provided via -mask");
+      mask_out = false;
+    }
     if (!num_explicit_mechanisms) {
       if (ignore_zero) {
         WARN ("Option -ignorezero ignored by automatic threshold calculation");
@@ -459,9 +478,9 @@ void run ()
   }
 
   if (use_nan)
-    execute<value_type> (in, mask, output_path, abs, percentile, bottom, top, ignore_zero, all_volumes, op);
+    execute<value_type> (in, mask, output_path, abs, percentile, bottom, top, ignore_zero, all_volumes, op, mask_out);
   else
-    execute<bool>       (in, mask, output_path, abs, percentile, bottom, top, ignore_zero, all_volumes, op);
+    execute<bool>       (in, mask, output_path, abs, percentile, bottom, top, ignore_zero, all_volumes, op, mask_out);
 
   if (issue_degeneracy_warning) {
     WARN ("Duplicate image values surrounding threshold; "
