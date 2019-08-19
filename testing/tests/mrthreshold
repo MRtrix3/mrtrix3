@@ -11,6 +11,7 @@ mrthreshold dwi_mean.mif - -mask mask.mif | testing_diff_image - mrthreshold/3d_
 mrthreshold dwi_mean.mif - -percentile 50 -mask mask.mif | testing_diff_image - mrthreshold/3d_median_masked.mif
 mrcalc dwi_mean.mif mask.mif -mult - | mrthreshold - -percentile 50 -ignorezero - | testing_diff_image - $(mrcalc mrthreshold/3d_median_masked.mif mask.mif -mult -)
 mrconvert mask.mif -axes 0,1,2,-1 - | mrthreshold dwi_mean.mif - -mask - | testing_diff_image - mrthreshold/3d_masked.mif
+mrcalc mrthreshold/3d_masked.mif mask.mif -mult tmp.mif -force && mrthreshold dwi_mean.mif -mask mask.mif -out_masked - | testing_diff_image - tmp.mif
 mrthreshold dwi.mif > tmp.txt && testing_diff_matrix tmp.txt mrthreshold/4d_default.txt
 mrthreshold dwi.mif - | testing_diff_image - mrthreshold/4d_default.mif
 mrthreshold dwi.mif - -percentile 50 | testing_diff_image - mrthreshold/4d_median.mif
