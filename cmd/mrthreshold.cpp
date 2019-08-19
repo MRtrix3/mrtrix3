@@ -115,8 +115,11 @@ void usage ()
   + OptionGroup ("Threshold application modifiers")
 
   + Option ("operator", "mathematical operator to use when applying the threshold; "
-                        "options are: " + join(operator_list, ",") + " (default = ge)")
+                        "options are: " + join(operator_list, ",") + " (default = \"le\" for -bottom; \"ge\" otherwise)")
     + Argument ("choice").type_choice (operator_list)
+
+  + Option ("invert", "invert the output binary mask "
+                      "(equivalent to flipping the operator; provided for backwards compatibility)")
 
   + Option ("nan", "set voxels that fail the threshold to NaN rather than zero "
                    "(output image will be floating-point rather than binary)");
@@ -409,6 +412,17 @@ void run ()
                      operator_type(int(opt[0][0])) :
                      (bottom >= 0 ? operator_type::LE : operator_type::GE);
 
+  const bool invert = get_options ("invert").size();
+  if (invert) {
+    switch (op) {
+      case operator_type::LT: op = operator_type::GE; break;
+      case operator_type::LE: op = operator_type::GT; break;
+      case operator_type::GE: op = operator_type::LT; break;
+      case operator_type::GT: op = operator_type::LE; break;
+      case operator_type::UNDEFINED: assert (0);
+    }
+  }
+
   if (to_cout) {
     if (use_nan) {
       WARN ("Option -nan ignored: has no influence when no output image is specified");
@@ -416,6 +430,9 @@ void run ()
     if (opt.size()) {
       WARN ("Option -operator ignored: has no influence when no output image is specified");
       op = operator_type::UNDEFINED;
+    }
+    if (invert) {
+      WARN ("Option -invert ignored: has no influence when no output image is specified");
     }
   }
 

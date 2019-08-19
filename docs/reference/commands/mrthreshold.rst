@@ -61,7 +61,9 @@ Threshold determination modifiers
 Threshold application modifiers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-operator choice** mathematical operator to use when applying the threshold; options are: lt,le,ge,gt (default = ge)
+-  **-operator choice** mathematical operator to use when applying the threshold; options are: lt,le,ge,gt (default = "le" for -bottom; "ge" otherwise)
+
+-  **-invert** invert the output binary mask (equivalent to flipping the operator; provided for backwards compatibility)
 
 -  **-nan** set voxels that fail the threshold to NaN rather than zero (output image will be floating-point rather than binary)
 
