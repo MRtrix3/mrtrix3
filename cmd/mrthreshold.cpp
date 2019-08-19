@@ -56,7 +56,7 @@ void usage ()
     "wish for the voxels outside of the specified mask to additionally be excluded from "
     "the output mask, this can be achieved by providing the -out_masked option."
 
-  + "The four operators available through the \"-operator\" option (\"lt\", \"le\", \"ge\" and \"gt\") "
+  + "The four operators available through the \"-comparison\" option (\"lt\", \"le\", \"ge\" and \"gt\") "
     "correspond to \"less-than\" (<), \"less-than-or-equal\" (<=), \"greater-than-or-equal\" (>=) "
     "and \"greater-than\" (>). This offers fine-grained control over how the thresholding "
     "operation will behave in the presence of values equivalent to the threshold. "
@@ -66,7 +66,7 @@ void usage ()
     "voxels with values less than or equal to that threshold (\"le\") are selected. "
     "This provides more fine-grained control than the -invert option; the latter "
     "is provided for backwards compatibility, but is equivalent to selection of the "
-    "opposite operator within this selection."
+    "opposite comparison within this selection."
 
   + "If no output image path is specified, the command will instead write to "
     "standard output the determined threshold value.";
@@ -114,7 +114,7 @@ void usage ()
 
   + OptionGroup ("Threshold application modifiers")
 
-  + Option ("operator", "mathematical operator to use when applying the threshold; "
+  + Option ("comparison", "comparison operator to use when applying the threshold; "
                         "options are: " + join(operator_list, ",") + " (default = \"le\" for -bottom; \"ge\" otherwise)")
     + Argument ("choice").type_choice (operator_list)
 
@@ -301,7 +301,7 @@ void apply (Image<value_type>& in,
             Image<T>& out,
             const size_t max_axis,
             const value_type threshold,
-            const operator_type op,
+            const operator_type comp,
             const bool mask_out,
             const bool to_cout)
 {
@@ -314,7 +314,7 @@ void apply (Image<value_type>& in,
   const T false_value = std::is_floating_point<T>::value ? NaN : false;
 
   std::function<bool(value_type, value_type)> func;
-  switch (op) {
+  switch (comp) {
     case operator_type::LT: func = [] (const value_type in, const value_type ref) { return in <  ref; }; break;
     case operator_type::LE: func = [] (const value_type in, const value_type ref) { return in <= ref; }; break;
     case operator_type::GE: func = [] (const value_type in, const value_type ref) { return in >= ref; }; break;
@@ -325,7 +325,7 @@ void apply (Image<value_type>& in,
   if (mask_out) {
     assert (mask.valid());
     for (auto l = Loop(in, 0, max_axis) (in, mask, out); l; ++l)
-      out.value() = !std::isnan (static_cast<value_type>(in.value())) && !mask.value() && func (in.value(), threshold) ? true_value : false_value;
+      out.value() = !std::isnan (static_cast<value_type>(in.value())) && mask.value() && func (in.value(), threshold) ? true_value : false_value;
   } else {
     for (auto l = Loop(in, 0, max_axis) (in, out); l; ++l)
       out.value() = !std::isnan (static_cast<value_type>(in.value())) && func (in.value(), threshold) ? true_value : false_value;
@@ -421,16 +421,16 @@ void run ()
 
   bool mask_out = get_options ("out_masked").size();
 
-  auto opt = get_options ("operator");
-  operator_type op = opt.size() ?
-                     operator_type(int(opt[0][0])) :
-                     (bottom >= 0 ? operator_type::LE : operator_type::GE);
+  auto opt = get_options ("comparison");
+  operator_type comp = opt.size() ?
+                       operator_type(int(opt[0][0])) :
+                       (bottom >= 0 ? operator_type::LE : operator_type::GE);
   if (invert) {
-    switch (op) {
-      case operator_type::LT: op = operator_type::GE; break;
-      case operator_type::LE: op = operator_type::GT; break;
-      case operator_type::GE: op = operator_type::LT; break;
-      case operator_type::GT: op = operator_type::LE; break;
+    switch (comp) {
+      case operator_type::LT: comp = operator_type::GE; break;
+      case operator_type::LE: comp = operator_type::GT; break;
+      case operator_type::GE: comp = operator_type::LT; break;
+      case operator_type::GT: comp = operator_type::LE; break;
       case operator_type::UNDEFINED: assert (0);
     }
   }
@@ -440,8 +440,8 @@ void run ()
       WARN ("Option -nan ignored: has no influence when no output image is specified");
     }
     if (opt.size()) {
-      WARN ("Option -operator ignored: has no influence when no output image is specified");
-      op = operator_type::UNDEFINED;
+      WARN ("Option -comparison ignored: has no influence when no output image is specified");
+      comp = operator_type::UNDEFINED;
     }
     if (invert) {
       WARN ("Option -invert ignored: has no influence when no output image is specified");
@@ -478,9 +478,9 @@ void run ()
   }
 
   if (use_nan)
-    execute<value_type> (in, mask, output_path, abs, percentile, bottom, top, ignore_zero, all_volumes, op, mask_out);
+    execute<value_type> (in, mask, output_path, abs, percentile, bottom, top, ignore_zero, all_volumes, comp, mask_out);
   else
-    execute<bool>       (in, mask, output_path, abs, percentile, bottom, top, ignore_zero, all_volumes, op, mask_out);
+    execute<bool>       (in, mask, output_path, abs, percentile, bottom, top, ignore_zero, all_volumes, comp, mask_out);
 
   if (issue_degeneracy_warning) {
     WARN ("Duplicate image values surrounding threshold; "
