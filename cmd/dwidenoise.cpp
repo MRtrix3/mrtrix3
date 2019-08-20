@@ -20,8 +20,6 @@
 #include <Eigen/Eigenvalues>
 
 
-#define DEFAULT_SIZE 5
-
 using namespace MR;
 using namespace App;
 
@@ -73,24 +71,27 @@ void usage ()
 
 
   OPTIONS
-    + Option ("mask", "only perform computation within the specified binary brain mask image.")
+    + Option ("mask", "Only process voxels within the specified binary brain mask image.")
     +   Argument ("image").type_image_in()
 
-    + Option ("extent", "set the window size of the denoising filter. (default = " + str(DEFAULT_SIZE) + "," + str(DEFAULT_SIZE) + "," + str(DEFAULT_SIZE) + ")")
+    + Option ("extent", "Set the patch size of the denoising filter. "
+                        "By default, the command will select the smallest isotropic patch size "
+                        "that exceeds the number of DW images in the input data, e.g., 5x5x5 for "
+                        "data with <= 125 DWI volumes, 7x7x7 for data with <= 343 DWI volumes, etc.")
     +   Argument ("window").type_sequence_int ()
 
-    + Option ("noise", "the output noise map, i.e., the estimated noise level 'sigma' in the data. "
+    + Option ("noise", "The output noise map, i.e., the estimated noise level 'sigma' in the data. "
                        "Note that on complex input data, this will be the total noise level across "
                        "real and imaginary channels, so a scale factor sqrt(2) applies.")
     +   Argument ("level").type_image_out()
 
-    + Option ("datatype", "datatype for the eigenvalue decomposition (single or double precision). "
+    + Option ("datatype", "Datatype for the eigenvalue decomposition (single or double precision). "
                           "For complex input data, this will select complex float32 or complex float64 datatypes.")
     +   Argument ("float32/float64").type_choice(dtypes)
 
-    + Option ("estimator", "select noise level estimator (default = Exp2), either \n"
-                           "Exp1: the original estimator used in Veraart et al. (2016), or \n"
-                           "Exp2: the improved estimator introduced in Cordero-Grande et al. (2019).")
+    + Option ("estimator", "Select the noise level estimator (default = Exp2), either: \n"
+                           "* Exp1: the original estimator used in Veraart et al. (2016), or \n"
+                           "* Exp2: the improved estimator introduced in Cordero-Grande et al. (2019).")
     +   Argument ("Exp1/Exp2").type_choice(estimators);
 
 
@@ -272,7 +273,7 @@ void run ()
   }
 
   opt = get_options("extent");
-  vector<int> extent = { DEFAULT_SIZE, DEFAULT_SIZE, DEFAULT_SIZE };
+  vector<int> extent;
   if (opt.size()) {
     extent = parse_ints(opt[0][0]);
     if (extent.size() == 1)
@@ -282,6 +283,13 @@ void run ()
     for (auto &e : extent)
       if (!(e & 1))
         throw Exception ("-extent must be a (list of) odd numbers");
+    INFO("user defined patch size " + str(extent[0]) + " x " + str(extent[1]) + " x " + str(extent[2]) + ".");
+  } else {
+    int e = 1;
+    while (e*e*e < dwi.size(3))
+      e += 2;
+    extent = {e, e, e};
+    INFO("select default patch size " + str(e) + " x " + str(e) + " x " + str(e) + ".");
   }
 
   bool exp1 = get_option_value("estimator", 1) == 0;    // default: Exp2 (unbiased estimator)
