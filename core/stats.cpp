@@ -24,12 +24,15 @@ namespace MR
 
     using namespace App;
 
-    const char * field_choices[] = { "mean", "median", "std", "min", "max", "count", NULL };
+    const char * field_choices[] = { "mean", "median", "std", "std_rv", "min", "max", "count", NULL };
 
     const OptionGroup Options = OptionGroup ("Statistics options")
     + Option ("output",
         "output only the field specified. Multiple such options can be supplied if required. "
-        "Choices are: " + join (field_choices, ", ") + ". Useful for use in scripts.").allow_multiple()
+        "Choices are: " + join (field_choices, ", ") + ". Useful for use in scripts. "
+        "Both std options refer to the unbiased (sample) standard deviation. "
+        "For complex data, min, max and std are calculated separately for real and imaginary parts, "
+        "std_rv is based on the real valued variance (equals sqrt of sum of variances of imaginary and real parts).").allow_multiple()
     + Argument ("field").type_choice (field_choices)
 
     + Option ("mask",
