@@ -13,7 +13,6 @@
 #include <Eigen/Dense>
 #include <Eigen/SVD>
 
-#define DEFAULT_NSUB 10000
 
 using namespace MR;
 using namespace App;
@@ -49,9 +48,6 @@ void usage ()
   + Option ("lbreg", "Laplace-Beltrami regularisation weight (default = 0)")
     + Argument ("lambda").type_float(0.0)
 
-  + Option ("nsub", "number of voxels in subsampling (default = " + str(DEFAULT_NSUB) + ")")
-    + Argument ("vox").type_integer(0)
-
   + Option ("weights", "vector of weights per shell (default = ones)")
     + Argument ("w").type_file_in()
 
@@ -62,25 +58,10 @@ void usage ()
 
 using value_type = float;
 
-Eigen::Vector3i getRandomPosInMask(const Image<value_type>& in, Image<bool>& mask)
-{
-  Eigen::Vector3i pos;
-  while (true) {
-    pos[0] = std::rand() % in.size(0);
-    pos[1] = std::rand() % in.size(1);
-    pos[2] = std::rand() % in.size(2);
-    if (mask.valid()) {
-      assign_pos_of(pos).to(mask);
-      if (!mask.value()) continue;
-    }
-    return pos;
-  }
-}
-
 class SHSVDProject
 { MEMALIGN (SHSVDProject)
   public:
-    SHSVDProject (const Image<value_type>& in, const int l, const Eigen::MatrixXf& P)
+    SHSVDProject (const int l, const Eigen::MatrixXf& P)
       : l(l), P(P)
     { }
 
@@ -101,7 +82,7 @@ class SHSVDProject
 
 void run ()
 {
-  auto in = Image<value_type>::open(argument[0]);
+  auto in = Image<value_type>::open(argument[0]).with_direct_io({3,4});
 
   auto mask = Image<bool>();
   auto opt = get_options("mask");
@@ -111,6 +92,7 @@ void run ()
   }
 
   int nshells = in.size(3);
+  size_t nvox = in.size(0)*in.size(1)*in.size(2);
 
   vector<int> lmax;
   opt = get_options("lmax");
@@ -164,32 +146,26 @@ void run ()
     proj = Image<value_type>::create(opt[0][0], header);
   }
 
-  // Select voxel subset
-  size_t nsub = get_option_value("nsub", DEFAULT_NSUB);
-  vector<Eigen::Vector3i> pos;
-  for (size_t i = 0; i < nsub; i++) {
-    pos.push_back(getRandomPosInMask(in, mask));
-  }
-
   // Compute SVD per SH order l
-  Eigen::MatrixXf Sl;
   for (int l = 0; l <= lmax[0]; l+=2)
   {
     // define LB filter
     Eigen::VectorXf lbfilt = Math::pow2(l*(l+1)) * lb;
     lbfilt.array() += 1.0f; lbfilt = lbfilt.cwiseInverse();
     // load data to matrix
-    Sl.resize(nshells, nsub*(2*l+1));
+    Eigen::MatrixXf Sl (nshells, nvox*(2*l+1)); Sl.setZero();
+    auto loop = Loop(0,3);
     size_t i = 0;
-    for (auto p : pos) {
-      assign_pos_of(p).to(in);
-      for (size_t j = Math::SH::NforL(l-2); j < Math::SH::NforL(l); j++, i++) {
-        in.index(4) = j;
-        Sl.col(i) = lbfilt.asDiagonal() * Eigen::VectorXf(in.row(3));
+    for (auto v = loop(in, mask); v; v++) {
+      if (!mask.valid() || mask.value()) {
+        for (size_t j = Math::SH::NforL(l-2); j < Math::SH::NforL(l); j++, i++) {
+          in.index(4) = j;
+          Sl.col(i) = lbfilt.asDiagonal() * Eigen::VectorXf(in.row(3));
+        }
       }
     }
     // low-rank SVD
-    Eigen::JacobiSVD<Eigen::MatrixXf> svd (W.asDiagonal() * Sl, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    Eigen::JacobiSVD<Eigen::MatrixXf> svd (W.asDiagonal() * Sl.leftCols(i), Eigen::ComputeFullU);
     int rank = std::upper_bound(lmax.begin(), lmax.end(), l, std::greater<int>()) - lmax.begin();
     Eigen::MatrixXf U = svd.matrixU().leftCols(rank);
     // save basis functions
@@ -199,8 +175,8 @@ void run ()
     // save low-rank projection
     if (pout) {
       Eigen::MatrixXf P = W.asDiagonal().inverse() * U * U.adjoint() * W.asDiagonal();
-      SHSVDProject func (in, l, P);
-      ThreadedLoop(in, {0, 1, 2}).run(func, in, proj);
+      SHSVDProject func (l, P);
+      ThreadedLoop(in, 0, 3).run(func, in, proj);
     }
   }
 
@@ -210,8 +186,4 @@ void run ()
   }
 
 }
-
-
-
-
 
