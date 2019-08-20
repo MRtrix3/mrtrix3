@@ -12,7 +12,7 @@
  * For more details, see http://www.mrtrix.org/
  */
 
-
+#include <set>
 #include "command.h"
 #include "image.h"
 #include "filter/resize.h"
@@ -44,7 +44,7 @@ void usage ()
     "If the image is down-sampled, the appropriate smoothing is automatically applied using Gaussian smoothing unless nearest neighbour interpolation is selected or oversample is changed explicitly. The resolution can only be changed for spatial dimensions. "
   + "- crop: The image extent after cropping, can be specified either manually for each axis dimensions, or via a mask or reference image. "
     "The image can be cropped to the extent of a mask. "
-    "This is useful for axially-acquired brain images, where the image size can be reduced by a factor of 2 by removing the empty space on either side of the brain. Note that cropping does not extent the image beyond the original FOV unless explicitly specified (via -crop_unbound or negative -axis extent)."
+    "This is useful for axially-acquired brain images, where the image size can be reduced by a factor of 2 by removing the empty space on either side of the brain. Note that cropping does not extend the image beyond the original FOV unless explicitly specified (via -crop_unbound or negative -axis extent)."
   + "- pad: Analogously to cropping, padding increases the FOV of an image without image interpolation. Pad and crop can be performed simultaneously by specifying signed specifier argument values to the -axis option."
   + "This command encapsulates and extends the functionality of the superseded commands 'mrpad', 'mrcrop' and 'mrresize'. Note the difference in -axis convention used for 'mrcrop' and 'mrpad' (see -axis option description).";
 
@@ -61,7 +61,7 @@ void usage ()
 
   + Example ("Regrid and interpolate to match the voxel grid of a reference image",
              "mrgrid in.mif regrid -template ref.mif -scale 1,1,0.5 out.mif -fill nan",
-             "The -template instructs to regrid in.mif to match the voxel grid of ref.mif (voxel size, grid orientation and voxel centres) "
+             "The -template instructs to regrid in.mif to match the voxel grid of ref.mif (voxel size, grid orientation and voxel centres). "
              "The -scale option overwrites the voxel scaling factor yielding voxel sizes in the third dimension that are "
              "twice as coarse as those of the template image.");
 
@@ -239,6 +239,9 @@ void run () {
     std::string message = do_crop ? "cropping image" : "padding image";
     INFO("operation: " + str(operation_choices[op]));
 
+    if (get_options ("crop_unbound").size() && !do_crop)
+      throw Exception("-crop_unbound only applies only to the crop operation");
+
     const size_t nd = get_options ("nd").size() ? input_header.ndim() : 3;
 
     vector<vector<ssize_t>> bounds (input_header.ndim(), vector<ssize_t> (2));
@@ -252,6 +255,7 @@ void run () {
     opt = get_options ("mask");
     if (opt.size()) {
       if (!do_crop) throw Exception("padding with -mask option is not supported");
+      INFO("cropping to mask");
       ++crop_pad_option_count;
       auto mask = Image<bool>::open (opt[0][0]);
       check_dimensions (input_header, mask, 0, 3);
@@ -282,12 +286,19 @@ void run () {
       };
 
       ThreadedLoop (mask).run (BoundsCheck (bounds), mask);
-      // margin of 1 voxel around mask
       for (size_t axis = 0; axis != 3; ++axis) {
-        bounds[axis][0] -= 1;
-        bounds[axis][1] += 1;
+        if ((input_header.size (axis) - 1) != bounds[axis][1] or bounds[axis][0] != 0)
+          INFO ("cropping to mask changes axis " + str(axis) + " extent from 0:" + str(input_header.size (axis) - 1) +
+            " to " + str(bounds[axis][0]) + ":" + str(bounds[axis][1]));
       }
-
+      if (!get_options ("uniform").size()) {
+        INFO ("uniformly padding around mask by 1 voxel");
+        // margin of 1 voxel around mask
+        for (size_t axis = 0; axis != 3; ++axis) {
+          bounds[axis][0] -= 1;
+          bounds[axis][1] += 1;
+        }
+      }
     }
 
     opt = get_options ("as");
@@ -315,29 +326,27 @@ void run () {
     if (opt.size()) {
       ++crop_pad_option_count;
       ssize_t val = opt[0][0];
+      INFO ("uniformly " + str(do_crop ? "cropping" : "padding") + " by " + str(val) + " voxels");
       for (size_t axis = 0; axis < nd; axis++) {
         bounds[axis][0] += do_crop ? val : -val;
         bounds[axis][1] += do_crop ? -val : val;
       }
     }
 
-    opt = get_options ("crop_unbound");
-    if (opt.size() && !do_crop) throw Exception("-crop_unbound only applies to the crop operation");
-    else if (do_crop && !opt.size()) {
+    if (do_crop && !get_options ("crop_unbound").size()) {
+      opt = get_options ("axis");
+      std::set<size_t> ignore;
+      for (size_t i = 0; i != opt.size(); ++i)
+        ignore.insert(opt[i][0]);
       for (size_t axis = 0; axis != 3; ++axis) {
         if (bounds[axis][0] < 0 || bounds[axis][1] > input_header.size(axis) - 1) {
-          INFO("-crop_unbound not specified, restricting FOV on axis " + str(axis) + " from " +
-            str(bounds[axis][0]) + ":" + str(bounds[axis][1]) + " to " +
+          if (ignore.find(axis) == ignore.end())
+            INFO ("operation: crop without -crop_unbound: restricting padding on axis " + str(axis) + " to valid FOV " +
             str(std::max<ssize_t> (0, bounds[axis][0])) + ":" + str(std::min<ssize_t> (bounds[axis][1], input_header.size(axis) - 1)));
           bounds[axis][0] = std::max<ssize_t> (0, bounds[axis][0]);
           bounds[axis][1] = std::min<ssize_t> (bounds[axis][1], input_header.size(axis) - 1);
         }
       }
-    }
-
-    for (size_t axis = 0; axis != 3; ++axis) {
-      if (bounds[axis][0] > bounds[axis][1])
-        throw Exception ("image empty after cropping on axis "+str(axis));
     }
 
     opt = get_options ("axis"); // overrides image bounds set by other options
@@ -369,8 +378,11 @@ void run () {
             catch (Exception& E) { throw Exception (E, "-axis " + str(axis) + ": can't parse integer sequence specifier \"" + spec + "\""); }
         }
       }
+    }
+
+    for (size_t axis = 0; axis != 3; ++axis) {
       if (bounds[axis][1] < bounds[axis][0])
-        throw Exception ("-axis " + str(axis) + " empty: (" + str(bounds[axis][0]) + ":" + str(bounds[axis][1]) + ")");
+        throw Exception ("axis " + str(axis) + " is empty: (" + str(bounds[axis][0]) + ":" + str(bounds[axis][1]) + ")");
     }
 
     if (crop_pad_option_count == 0)
@@ -387,7 +399,7 @@ void run () {
     for (size_t axis = 0; axis < nd; axis++) {
       if (bounds[axis][0] != 0 || input_header.size (axis) != size[axis]) {
         changed_axes++;
-        INFO("changing axis " + str(axis) + " extent from 0:" + str(input_header.size (axis) - 1) +
+        CONSOLE("changing axis " + str(axis) + " extent from 0:" + str(input_header.size (axis) - 1) +
              " (n="+str(input_header.size (axis))+") to " + str(bounds[axis][0]) + ":" + str(bounds[axis][1]) +
              " (n=" + str(size[axis]) + ")");
       }
