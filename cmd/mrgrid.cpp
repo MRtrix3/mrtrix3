@@ -128,7 +128,7 @@ void usage ()
                 "Note that the deprecated commands 'mrcrop' and 'mrpad' used range-based and delta-based -axis indices, respectively."
                 ).allow_multiple()
     + Argument ("index").type_integer (0)
-    + Argument ("spec")
+    + Argument ("spec").type_text()
 
     + Option   ("all_axes", "Crop or pad all, not just spatial axes.")
 
