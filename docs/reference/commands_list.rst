@@ -158,7 +158,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`dwi2tensor`, "Diffusion (kurtosis) tensor estimation"
     |python.png|, :ref:`dwibiascorrect`, "Perform B1 field inhomogeneity correction for a DWI volume series"
     |python.png|, :ref:`dwicat`, "Concatenating multiple DWI series accounting for differential intensity scaling"
-    |cpp.png|, :ref:`dwidenoise`, "Denoise DWI data and estimate the noise level based on the optimal threshold for PCA"
+    |cpp.png|, :ref:`dwidenoise`, "dMRI noise level estimation and denoising using Marchenko-Pastur PCA"
     |cpp.png|, :ref:`dwiextract`, "Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset"
     |python.png|, :ref:`dwifslpreproc`, "Perform diffusion image pre-processing using FSL's eddy tool; including inhomogeneity distortion correction using FSL's topup tool if possible"
     |python.png|, :ref:`dwigradcheck`, "Check the orientation of the diffusion gradient table"
