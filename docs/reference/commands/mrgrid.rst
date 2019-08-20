@@ -24,7 +24,7 @@ Description
 
 - regrid: This operation performs changes of the voxel grid that require interpolation of the image such as changing the resolution or location and orientation of the voxel grid. If the image is down-sampled, the appropriate smoothing is automatically applied using Gaussian smoothing unless nearest neighbour interpolation is selected or oversample is changed explicitly. The resolution can only be changed for spatial dimensions. 
 
-- crop: The image extent after cropping, can be specified either manually for each axis dimensions, or via a mask or reference image. The image can be cropped to the extent of a mask. This is useful for axially-acquired brain images, where the image size can be reduced by a factor of 2 by removing the empty space on either side of the brain. Note that cropping does not extent the image beyond the original FOV unless explicitly specified (via -crop_unbound or negative -axis extent).
+- crop: The image extent after cropping, can be specified either manually for each axis dimensions, or via a mask or reference image. The image can be cropped to the extent of a mask. This is useful for axially-acquired brain images, where the image size can be reduced by a factor of 2 by removing the empty space on either side of the brain. Note that cropping does not extend the image beyond the original FOV unless explicitly specified (via -crop_unbound or negative -axis extent).
 
 - pad: Analogously to cropping, padding increases the FOV of an image without image interpolation. Pad and crop can be performed simultaneously by specifying signed specifier argument values to the -axis option.
 
@@ -49,7 +49,7 @@ Example usages
 
         $ mrgrid in.mif regrid -template ref.mif -scale 1,1,0.5 out.mif -fill nan
 
-    The -template instructs to regrid in.mif to match the voxel grid of ref.mif (voxel size, grid orientation and voxel centres) The -scale option overwrites the voxel scaling factor yielding voxel sizes in the third dimension that are twice as coarse as those of the template image.
+    The -template instructs to regrid in.mif to match the voxel grid of ref.mif (voxel size, grid orientation and voxel centres). The -scale option overwrites the voxel scaling factor yielding voxel sizes in the third dimension that are twice as coarse as those of the template image.
 
 Options
 -------
