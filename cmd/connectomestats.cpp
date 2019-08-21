@@ -235,6 +235,9 @@ void run()
 
   // Load variance groups
   auto variance_groups = GLM::load_variance_groups (design.rows());
+  const size_t num_vgs = variance_groups.size() ? variance_groups.maxCoeff()+1 : 1;
+  if (num_vgs > 1)
+    CONSOLE ("Number of variance groups: " + str(num_vgs));
 
   // Load hypotheses
   const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[3]);
@@ -266,28 +269,42 @@ void run()
 
   {
     matrix_type betas (num_factors, num_edges);
-    matrix_type abs_effect_size (num_edges, num_hypotheses), std_effect_size (num_edges, num_hypotheses);
-    vector_type cond (num_edges), stdev (num_edges);
+    matrix_type abs_effect_size (num_edges, num_hypotheses);
+    matrix_type std_effect_size (num_edges, num_hypotheses);
+    matrix_type stdev (num_vgs, num_edges);
+    vector_type cond (num_edges);
 
-    Math::Stats::GLM::all_stats (data, design, extra_columns, hypotheses,
+    Math::Stats::GLM::all_stats (data, design, extra_columns, hypotheses, variance_groups,
                                  cond, betas, abs_effect_size, std_effect_size, stdev);
 
-    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_hypotheses) + 1 + (nans_in_data || extra_columns.size() ? 1 : 0));
+    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_hypotheses) + num_vgs + (nans_in_data || extra_columns.size() ? 1 : 0));
     for (ssize_t i = 0; i != num_factors; ++i) {
       save_matrix (mat2vec.V2M (betas.row(i)), output_prefix + "beta_" + str(i) + ".csv");
       ++progress;
     }
     for (size_t i = 0; i != num_hypotheses; ++i) {
       if (!hypotheses[i].is_F()) {
-        save_matrix (mat2vec.V2M (abs_effect_size.col(i)), "abs_effect" + postfix(i) + ".csv"); ++progress;
-        save_matrix (mat2vec.V2M (std_effect_size.col(i)), "std_effect" + postfix(i) + ".csv"); ++progress;
+        save_matrix (mat2vec.V2M (abs_effect_size.col(i)), "abs_effect" + postfix(i) + ".csv");
+        ++progress;
+        if (num_vgs == 1)
+          save_matrix (mat2vec.V2M (std_effect_size.col(i)), "std_effect" + postfix(i) + ".csv");
+      } else {
+        ++progress;
       }
+      ++progress;
     }
     if (nans_in_data || extra_columns.size()) {
       save_matrix (mat2vec.V2M (cond), "cond.csv");
       ++progress;
     }
-    save_matrix (mat2vec.V2M (stdev), "std_dev.csv");
+    if (num_vgs == 1) {
+      save_matrix (mat2vec.V2M (stdev.row(0)), "std_dev.csv");
+    } else {
+      for (size_t i = 0; i != num_vgs; ++i) {
+        save_matrix (mat2vec.V2M (stdev.row(i)), "std_dev" + str(i) + ".csv");
+        ++progress;
+      }
+    }
   }
 
   // Construct the class for performing the initial statistical tests

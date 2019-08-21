@@ -238,6 +238,9 @@ void run() {
 
   // Load variance groups
   auto variance_groups = GLM::load_variance_groups (design.rows());
+  const size_t num_vgs = variance_groups.size() ? variance_groups.maxCoeff()+1 : 1;
+  if (num_vgs > 1)
+    CONSOLE ("Number of variance groups: " + str(num_vgs));
 
   // Load hypotheses
   const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[2]);
@@ -285,13 +288,15 @@ void run() {
 
   {
     matrix_type betas (num_factors, num_voxels);
-    matrix_type abs_effect_size (num_voxels, num_hypotheses), std_effect_size (num_voxels, num_hypotheses);
-    vector_type cond (num_voxels), stdev (num_voxels);
+    matrix_type abs_effect_size (num_voxels, num_hypotheses);
+    matrix_type std_effect_size (num_voxels, num_hypotheses);
+    matrix_type stdev (num_vgs, num_voxels);
+    vector_type cond (num_voxels);
 
-    Math::Stats::GLM::all_stats (data, design, extra_columns, hypotheses,
+    Math::Stats::GLM::all_stats (data, design, extra_columns, hypotheses, variance_groups,
                                  cond, betas, abs_effect_size, std_effect_size, stdev);
 
-    ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_hypotheses) + 1 + (nans_in_data || extra_columns.size() ? 1 : 0));
+    ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_hypotheses) + num_vgs + (nans_in_data || extra_columns.size() ? 1 : 0));
     for (ssize_t i = 0; i != num_factors; ++i) {
       write_output (betas.row(i), *v2v, prefix + "beta" + str(i) + ".mif", output_header);
       ++progress;
@@ -300,15 +305,25 @@ void run() {
       if (!hypotheses[i].is_F()) {
         write_output (abs_effect_size.col(i), *v2v, prefix + "abs_effect" + postfix(i) + ".mif", output_header);
         ++progress;
-        write_output (std_effect_size.col(i), *v2v, prefix + "std_effect" + postfix(i) + ".mif", output_header);
+        if (num_vgs == 1)
+          write_output (std_effect_size.col(i), *v2v, prefix + "std_effect" + postfix(i) + ".mif", output_header);
+      } else {
         ++progress;
       }
+      ++progress;
     }
     if (nans_in_data || extra_columns.size()) {
       write_output (cond, *v2v, prefix + "cond.mif", output_header);
       ++progress;
     }
-    write_output (stdev, *v2v, prefix + "std_dev.mif", output_header);
+    if (num_vgs == 1) {
+      write_output (stdev.row(0), *v2v, prefix + "std_dev.mif", output_header);
+    } else {
+      for (size_t i = 0; i != num_vgs; ++i) {
+        write_output (stdev.row(i), *v2v, prefix + "std_dev.mif", output_header);
+        ++progress;
+      }
+    }
   }
 
   // Construct the class for performing the initial statistical tests
