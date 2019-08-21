@@ -32,16 +32,14 @@ namespace MR
       public:
         Zstatistic() { }
 
-        // Convert a t-statistic to a z-statistic
-        default_type t2z (const default_type t,
-                          const size_t dof);
+        // Convert a t-statistic (or Aspin-Welch v) to a z-statistic
+        default_type t2z (const default_type stat,
+                           const default_type dof);
 
-        // Convert an F-statistic to a z-statistic
-        default_type F2z (const default_type F,
+        // Convert an F-statistic (or G-statistic) to a z-statistic
+        default_type F2z (const default_type stat,
                           const size_t rank,
-                          const size_t dof);
-
-        // TODO Ultimately this will require v and G inputs as well...
+                          const default_type dof);
 
       protected:
 
@@ -66,10 +64,10 @@ namespace MR
         class Lookup_t2z : public LookupBase
         { MEMALIGN(Lookup_t2z)
           public:
-            Lookup_t2z (const size_t dof);
+            Lookup_t2z (const default_type dof);
             default_type operator() (const default_type) const override;
           private:
-            const size_t dof;
+            const default_type dof;
             // Transform an input statistic value to an index location in the lookup table
             const default_type offset, scale;
             array_type data;
@@ -78,19 +76,19 @@ namespace MR
         class Lookup_F2z : public LookupBase
         { MEMALIGN(Lookup_F2z)
           public:
-            Lookup_F2z (const size_t rank, const size_t dof);
+            Lookup_F2z (const size_t rank, const default_type dof);
             default_type operator() (const default_type) const override;
           private:
-            const size_t rank, dof;
+            const size_t rank;
+            const default_type dof;
             const default_type offset_upper, scale_upper;
             array_type data_upper;
             const default_type offset_lower, scale_lower;
             array_type data_lower;
-
         };
 
-        std::map<size_t, Lookup_t2z> t2z_data;
-        std::map<std::pair<size_t, size_t>, Lookup_F2z> F2z_data;
+        std::map<default_type, Lookup_t2z> t2z_data;
+        std::map<std::pair<size_t, default_type>, Lookup_F2z> F2z_data;
         std::mutex mutex;
 
     };
