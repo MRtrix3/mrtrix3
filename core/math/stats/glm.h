@@ -149,7 +149,16 @@ namespace MR
          * @param design the design matrix
          * @return the vector containing the output standard deviation for each element
          */
-        vector_type stdev (const matrix_type& measurements, const matrix_type& design);
+        matrix_type stdev (const matrix_type& measurements, const matrix_type& design);
+
+
+
+        /*! Compute the standard deviation of each variance group
+         * @param measurements a matrix storing the measured data across subjects in each column
+         * @param design the design matrix
+         * @return the vector containing the output standard deviation for each element
+         */
+        matrix_type stdev (const matrix_type& measurements, const matrix_type& design, const index_array_type& variance_groups);
 
 
 
@@ -175,8 +184,8 @@ namespace MR
          * @param std_effect_size the matrix containing the output standardised effect size
          * @param stdev the matrix containing the output standard deviation
          */
-        void all_stats (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses,
-                        matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, vector_type& stdev);
+        void all_stats (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses, const index_array_type& variance_groups,
+                        matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, matrix_type& stdev);
 
         /*! Compute all GLM-related statistics
          * This function can be used when the design matrix varies between elements,
@@ -190,8 +199,8 @@ namespace MR
          * @param std_effect_size the matrix containing the output standardised effect size
          * @param stdev the matrix containing the output standard deviation
          */
-        void all_stats (const matrix_type& measurements, const matrix_type& design, const vector<CohortDataImport>& extra_columns, const vector<Hypothesis>& hypotheses,
-                        vector_type& cond, matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, vector_type& stdev);
+        void all_stats (const matrix_type& measurements, const matrix_type& design, const vector<CohortDataImport>& extra_columns, const vector<Hypothesis>& hypotheses, const index_array_type& variance_groups,
+                        vector_type& cond, matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, matrix_type& stdev);
 
         //! @}
 

@@ -154,6 +154,9 @@ void run()
 
   // Load variance groups
   auto variance_groups = GLM::load_variance_groups (num_inputs);
+  const size_t num_vgs = variance_groups.size() ? variance_groups.maxCoeff()+1 : 1;
+  if (num_vgs > 1)
+    CONSOLE ("Number of variance groups: " + str(num_vgs));
 
   // Load hypotheses
   const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[2]);
@@ -184,27 +187,36 @@ void run()
 
   {
     matrix_type betas (num_factors, num_elements);
-    matrix_type abs_effect_size (num_elements, num_hypotheses), std_effect_size (num_elements, num_hypotheses);
-    vector_type cond (num_elements), stdev (num_elements);
+    matrix_type abs_effect_size (num_elements, num_hypotheses);
+    matrix_type std_effect_size (num_elements, num_hypotheses);
+    matrix_type stdev (num_vgs, num_elements);
+    vector_type cond (num_elements);
 
-    Math::Stats::GLM::all_stats (data, design, extra_columns, hypotheses,
+    Math::Stats::GLM::all_stats (data, design, extra_columns, hypotheses, variance_groups,
                                  cond, betas, abs_effect_size, std_effect_size, stdev);
 
     ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", 2 + (2 * num_hypotheses) + (nans_in_data || extra_columns.size() ? 1 : 0));
-    save_matrix (betas, output_prefix + "betas.csv"); ++progress;
+    save_matrix (betas, output_prefix + "betas.csv");
+    ++progress;
     for (size_t i = 0; i != num_hypotheses; ++i) {
       if (!hypotheses[i].is_F()) {
         save_vector (abs_effect_size.col(i), output_prefix + "abs_effect" + postfix(i) + ".csv");
         ++progress;
-        save_vector (std_effect_size.col(i), output_prefix + "std_effect" + postfix(i) + ".csv");
+        if (num_vgs == 1)
+          save_vector (std_effect_size.col(i), output_prefix + "std_effect" + postfix(i) + ".csv");
+      } else {
         ++progress;
       }
+      ++progress;
     }
     if (nans_in_data || extra_columns.size()) {
       save_vector (cond, output_prefix + "cond.csv");
       ++progress;
     }
-    save_vector (stdev, output_prefix + "std_dev.csv");
+    if (num_vgs == 1)
+      save_vector (stdev.row(0), output_prefix + "std_dev.csv");
+    else
+      save_matrix (stdev, output_prefix + "std_dev.csv");
   }
 
   // Construct the class for performing the initial statistical tests

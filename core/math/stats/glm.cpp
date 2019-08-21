@@ -212,10 +212,41 @@ namespace MR
 
 
 
-        vector_type stdev (const matrix_type& measurements, const matrix_type& design)
+        matrix_type stdev (const matrix_type& measurements, const matrix_type& design)
         {
-          const vector_type sse = (measurements - design * solve_betas (measurements, design)).colwise().squaredNorm();
-          return (sse / value_type(design.rows()-Math::rank (design))).sqrt();
+          const matrix_type sse = (measurements - design * solve_betas (measurements, design)).colwise().squaredNorm();
+          return (sse.array() / value_type(design.rows()-Math::rank (design))).sqrt();
+        }
+
+
+        matrix_type stdev (const matrix_type& measurements, const matrix_type& design, const index_array_type& variance_groups)
+        {
+          assert (measurements.rows() == design.rows());
+          if (!variance_groups.size())
+            return stdev (measurements, design);
+          assert (measurements.rows() == variance_groups.rows());
+          // Residual-forming matrix
+          const matrix_type R (matrix_type::Identity (design.rows(), design.rows()) - (design * Math::pinv (design)));
+          // Residuals
+          const matrix_type e (R * measurements);
+          // One standard deviation per element per variance group
+          // Rows are variance groups, columns are elements
+          const size_t num_vgs = variance_groups.array().maxCoeff() + 1;
+          // Sum of residual-forming matrix diagonal elements within each variance group
+          //   will be equivalent across elements
+          vector_type Rnn_sums (vector_type::Zero (num_vgs));
+          for (size_t i = 0; i != measurements.rows(); ++i)
+            Rnn_sums[variance_groups[i]] += R.diagonal()[i];
+          // For each variance group, get the sum of squared residuals within that group
+          matrix_type result (num_vgs, measurements.cols());
+          for (size_t ie = 0; ie != measurements.cols(); ++ie) {
+            vector_type sse (vector_type::Zero (num_vgs));
+            for (size_t i = 0; i != measurements.rows(); ++i)
+              sse[variance_groups[i]] += Math::pow2 (e (i, ie));
+            // (Rnn_sum / sse) is the inverse of the estimated variance
+            result.col (ie) = (sse.array() / Rnn_sums.array()).sqrt();
+          }
+          return result;
         }
 
 
@@ -224,13 +255,12 @@ namespace MR
         {
           if (hypothesis.is_F())
             return vector_type::Constant (measurements.cols(), NaN);
-          else
-            return abs_effect_size (measurements, design, hypothesis).array() / stdev (measurements, design);
+          return abs_effect_size (measurements, design, hypothesis).array() / stdev (measurements, design).array().col(0);
         }
 
         matrix_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses)
         {
-          const auto stdev_reciprocal = vector_type::Ones (measurements.cols()) / stdev (measurements, design);
+          const auto stdev_reciprocal = vector_type::Ones (measurements.cols()) / stdev (measurements, design).array().col(0);
           matrix_type result (measurements.cols(), hypotheses.size());
           for (size_t ic = 0; ic != hypotheses.size(); ++ic)
             result.col (ic) = abs_effect_size (measurements, design, hypotheses[ic]) * stdev_reciprocal;
@@ -247,10 +277,11 @@ namespace MR
         void all_stats (const matrix_type& measurements,
                         const matrix_type& design,
                         const vector<Hypothesis>& hypotheses,
+                        const index_array_type& variance_groups,
                         matrix_type& betas,
                         matrix_type& abs_effect_size,
                         matrix_type& std_effect_size,
-                        vector_type& stdev)
+                        matrix_type& stdev)
         {
 #ifndef GLM_ALL_STATS_DEBUG
           // If this function is being invoked from the other version of all_stats(),
@@ -290,26 +321,17 @@ namespace MR
           if (progress)
             ++*progress;
 #endif
-          vector_type sse (residuals.cols());
-          sse = residuals.colwise().squaredNorm();
+          stdev = GLM::stdev (measurements, design, variance_groups);
 #ifdef GLM_ALL_STATS_DEBUG
-          std::cerr << "sse: " << sse.size() << ", max " << sse.maxCoeff() << "\n";
+          std::cerr << "stdev: " << stdev.rows() << " x " << stdev.cols() << ", max " << stdev.maxCoeff() << "\n";
 #else
           if (progress)
             ++*progress;
 #endif
-          const ssize_t dof = design.rows()-Math::rank (design);
-#ifdef GLM_ALL_STATS_DEBUG
-          std::cerr << "Degrees of freedom: " << design.rows() << " - " << Math::rank (design) << " = " << dof << "\n";
-#endif
-          stdev = (sse / value_type(dof)).sqrt();
-#ifdef GLM_ALL_STATS_DEBUG
-          std::cerr << "stdev: " << stdev.size() << ", max " << stdev.maxCoeff() << "\n";
-#else
-          if (progress)
-            ++*progress;
-#endif
-          std_effect_size = abs_effect_size.array().colwise() / stdev;
+          if (variance_groups.size())
+            std_effect_size = abs_effect_size.array().colwise() / stdev.array().col(0);
+          else
+            std_effect_size = matrix_type::Constant (measurements.cols(), hypotheses.size(), NaN);
 #ifdef GLM_ALL_STATS_DEBUG
           std::cerr << "std_effect_size: " << std_effect_size.rows() << " x " << std_effect_size.cols() << ", max " << std_effect_size.array().maxCoeff() << "\n";
 #endif
@@ -321,14 +343,15 @@ namespace MR
                         const matrix_type& fixed_design,
                         const vector<CohortDataImport>& extra_data,
                         const vector<Hypothesis>& hypotheses,
+                        const index_array_type& variance_groups,
                         vector_type& cond,
                         matrix_type& betas,
                         matrix_type& abs_effect_size,
                         matrix_type& std_effect_size,
-                        vector_type& stdev)
+                        matrix_type& stdev)
         {
           if (extra_data.empty() && measurements.allFinite()) {
-            all_stats (measurements, fixed_design, hypotheses, betas, abs_effect_size, std_effect_size, stdev);
+            all_stats (measurements, fixed_design, hypotheses, variance_groups, betas, abs_effect_size, std_effect_size, stdev);
             return;
           }
 
@@ -359,17 +382,19 @@ namespace MR
           class Functor
           { MEMALIGN(Functor)
             public:
-              Functor (const matrix_type& data, const matrix_type& design_fixed, const vector<CohortDataImport>& extra_data, const vector<Hypothesis>& hypotheses,
-                       vector_type& cond, matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, vector_type& stdev) :
+              Functor (const matrix_type& data, const matrix_type& design_fixed, const vector<CohortDataImport>& extra_data, const vector<Hypothesis>& hypotheses, const index_array_type& variance_groups,
+                       vector_type& cond, matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, matrix_type& stdev) :
                   data (data),
                   design_fixed (design_fixed),
                   extra_data (extra_data),
                   hypotheses (hypotheses),
+                  variance_groups (variance_groups),
                   global_cond (cond),
                   global_betas (betas),
                   global_abs_effect_size (abs_effect_size),
                   global_std_effect_size (std_effect_size),
-                  global_stdev (stdev)
+                  global_stdev (stdev),
+                  num_vgs (variance_groups.size() ? variance_groups.maxCoeff()+1 : 1)
               {
                 assert (size_t(design_fixed.cols()) + extra_data.size() == size_t(hypotheses[0].cols()));
               }
@@ -395,7 +420,7 @@ namespace MR
                   if (!std::isfinite (condition_number) || condition_number > 1e5) {
                     zero();
                   } else {
-                    Math::Stats::GLM::all_stats (element_data, element_design, hypotheses,
+                    Math::Stats::GLM::all_stats (element_data, element_design, hypotheses, variance_groups,
                                                  local_betas, local_abs_effect_size, local_std_effect_size, local_stdev);
                   }
                 } else if (valid_rows >= element_design.cols()) {
@@ -417,7 +442,7 @@ namespace MR
                   if (!std::isfinite (condition_number) || condition_number > 1e5) {
                     zero();
                   } else {
-                    Math::Stats::GLM::all_stats (element_data_finite, element_design_finite, hypotheses,
+                    Math::Stats::GLM::all_stats (element_data_finite, element_design_finite, hypotheses, variance_groups,
                                                  local_betas, local_abs_effect_size, local_std_effect_size, local_stdev);
                   }
                 } else { // Insufficient data to fit model at all
@@ -427,7 +452,7 @@ namespace MR
                 global_betas.col (element_index) = local_betas;
                 global_abs_effect_size.row (element_index) = local_abs_effect_size.row (0);
                 global_std_effect_size.row (element_index) = local_std_effect_size.row (0);
-                global_stdev[element_index] = local_stdev[0];
+                global_stdev.col (element_index) = local_stdev;
                 return true;
               }
             private:
@@ -435,24 +460,29 @@ namespace MR
               const matrix_type& design_fixed;
               const vector<CohortDataImport>& extra_data;
               const vector<Hypothesis>& hypotheses;
+              const index_array_type& variance_groups;
               vector_type& global_cond;
               matrix_type& global_betas;
               matrix_type& global_abs_effect_size;
               matrix_type& global_std_effect_size;
-              vector_type& global_stdev;
-              matrix_type local_betas, local_abs_effect_size, local_std_effect_size;
-              vector_type local_stdev;
+              matrix_type& global_stdev;
+              matrix_type local_betas, local_abs_effect_size, local_std_effect_size, local_stdev;
+              const size_t num_vgs;
 
               void zero () {
                 local_betas = matrix_type::Zero (global_betas.rows(), 1);
                 local_abs_effect_size = matrix_type::Zero (1, hypotheses.size());
                 local_std_effect_size = matrix_type::Zero (1, hypotheses.size());
-                local_stdev = vector_type::Zero (1);
+                local_stdev = matrix_type::Zero (num_vgs, 1);
+                for (size_t ih = 0; ih != hypotheses.size(); ++ih) {
+                  if (hypotheses[ih].is_F())
+                    local_abs_effect_size (1, ih) = local_std_effect_size (1, ih) = NaN;
+                }
               }
           };
 
           Source source (measurements.cols());
-          Functor functor (measurements, fixed_design, extra_data, hypotheses,
+          Functor functor (measurements, fixed_design, extra_data, hypotheses, variance_groups,
                            cond, betas, abs_effect_size, std_effect_size, stdev);
           Thread::run_queue (source, Thread::batch (size_t()), Thread::multi (functor));
         }
@@ -754,13 +784,13 @@ namespace MR
               const default_type denominator = gamma * c[ih].rank();
               const default_type G = numerator / denominator;
               if (!std::isfinite (G)) {
-                stats (ie, ih) = zstats (ie, ih) = value_type(0);
+                stats  (ie, ih) = zstats (ie, ih) = value_type(0);
               } else if (c[ih].is_F()) {
-                stats (ie, ih) = G;
+                stats  (ie, ih) = G;
                 zstats (ie, ih) = stat2z->F2z (G, c[ih].rank(), dof);
               } else {
                 // Only compute beta if required to determine sign of effect
-                stats (ie, ih) = std::sqrt (G) * ((c[ih].matrix() * lambdas.col (ie)).sum() > 0.0 ? 1.0 : -1.0);
+                stats  (ie, ih) = std::sqrt (G) * ((c[ih].matrix() * lambdas.col (ie)).sum() > 0.0 ? 1.0 : -1.0);
                 zstats (ie, ih) = stat2z->t2z (stats (ie, ih), dof);
               }
             }
@@ -1121,12 +1151,12 @@ namespace MR
                     const default_type G = numerator / denominator;
 
                     if (!std::isfinite (G)) {
-                      stats (ie, ih) = zstats (ie, ih) = value_type(0);
+                      stats  (ie, ih) = zstats (ie, ih) = value_type(0);
                     } else if (c[ih].is_F()) {
-                      stats (ie, ih) = G;
+                      stats  (ie, ih) = G;
                       zstats (ie, ih) = stat2z->F2z (G, c[ih].rank(), dof);
                     } else {
-                      stats (ie, ih) = std::sqrt (G) * ((c[ih].matrix() * lambda.matrix()).sum() > 0.0 ? 1.0 : -1.0);
+                      stats  (ie, ih) = std::sqrt (G) * ((c[ih].matrix() * lambda.matrix()).sum() > 0.0 ? 1.0 : -1.0);
                       zstats (ie, ih) = stat2z->t2z (stats (ie, ih), dof);
                     }
                   } // End looping over hypotheses for this element
