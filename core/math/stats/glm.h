@@ -218,9 +218,12 @@ namespace MR
 
             virtual ~TestBase() { }
 
-            /*! Compute the statistics
+            /*! Compute Z-statistics
              * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
              * @param output the matrix containing the output statistics (one column per hypothesis)
+             *
+             * This version ignores the statistics values themselves, and only exports Z-statistics
+             *   (as these are what is used for statistical enhancement)
              */
             virtual void operator() (const matrix_type& shuffling_matrix, matrix_type& output) const;
 
@@ -319,9 +322,10 @@ namespace MR
 
             /*! Compute the statistics
              * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
-             * @param output the vector containing the output statistics (one column per hypothesis)
+             * @param stats the vector containing the output statistics (one column per hypothesis)
+             * @param zstats the vector containing the Z-transformed output statistics (one column per hypothesis)
              */
-            void operator() (const matrix_type& shuffling_matrix, matrix_type& output) const override;
+            void operator() (const matrix_type& shuffling_matrix, matrix_type& stats, matrix_type& zstats) const override;
 
           protected:
             // Variance group assignments
@@ -425,12 +429,13 @@ namespace MR
 
             /*! Compute the statistics
              * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
-             * @param output the vector containing the output statistics
+             * @param stat the vector containing the native output statistics (one column per hypothesis)
+             * @param zstat the vector containing the Z-transformed output statistics (one column per hypothesis)
              *
              * In TestVariable* classes, this function additionally needs to import the
              * extra external data individually for each element tested.
              */
-            void operator() (const matrix_type& shuffling_matrix, matrix_type& output) const override;
+            void operator() (const matrix_type& shuffling_matrix, matrix_type& stat, matrix_type& zstat) const override;
 
             size_t num_factors() const override { return M.cols() + importers.size(); }
             size_t num_variance_groups() const { return num_vgs; }

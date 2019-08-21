@@ -669,11 +669,11 @@ namespace MR
 
 
 
-        void TestFixedHeteroscedastic::operator() (const matrix_type& shuffling_matrix, matrix_type& output) const
+        void TestFixedHeteroscedastic::operator() (const matrix_type& shuffling_matrix, matrix_type& stats, matrix_type& zstats) const
         {
           assert (size_t(shuffling_matrix.rows()) == num_inputs());
-          if (!(size_t(output.rows()) == num_elements() && size_t(output.cols()) == num_hypotheses()))
-            output.resize (num_elements(), num_hypotheses());
+          stats.resize (num_elements(), num_hypotheses());
+          zstats.resize (num_elements(), num_hypotheses());
 
           matrix_type Sy, lambdas;
           Eigen::Array<default_type, Eigen::Dynamic, Eigen::Dynamic> sq_residuals, sse, Wterms;
@@ -747,15 +747,21 @@ namespace MR
 #ifdef GLM_TEST_DEBUG
               VAR (gamma);
 #endif
+              const default_type dof = 2.0 * default_type(c[ih].rank() - 1) / 3.0 / (gamma - 1.0);
+#ifdef GLM_TEST_DEBUG
+              VAR (dof);
+#endif
               const default_type denominator = gamma * c[ih].rank();
               const default_type G = numerator / denominator;
               if (!std::isfinite (G)) {
-                output (ie, ih) = value_type(0);
+                stats (ie, ih) = zstats (ie, ih) = value_type(0);
               } else if (c[ih].is_F()) {
-                output (ie, ih) = std::sqrt (G);
+                stats (ie, ih) = G;
+                zstats (ie, ih) = stat2z->F2z (G, c[ih].rank(), dof);
               } else {
                 // Only compute beta if required to determine sign of effect
-                output (ie, ih) = std::sqrt (G) * ((c[ih].matrix() * lambdas.col (ie)).sum() > 0.0 ? 1.0 : -1.0);
+                stats (ie, ih) = std::sqrt (G) * ((c[ih].matrix() * lambdas.col (ie)).sum() > 0.0 ? 1.0 : -1.0);
+                zstats (ie, ih) = stat2z->t2z (stats (ie, ih), dof);
               }
             }
 
@@ -792,11 +798,11 @@ namespace MR
 
 
         void TestVariableHomoscedastic::operator() (const matrix_type& shuffling_matrix,
-                                                    matrix_type& stat,
-                                                    matrix_type& zstat) const
+                                                    matrix_type& stats,
+                                                    matrix_type& zstats) const
         {
-          stat .resize (num_elements(), num_hypotheses());
-          zstat.resize (num_elements(), num_hypotheses());
+          stats .resize (num_elements(), num_hypotheses());
+          zstats.resize (num_elements(), num_hypotheses());
 
           matrix_type dof (num_elements(), num_hypotheses());
           matrix_type extra_column_data (num_inputs(), importers.size());
@@ -840,8 +846,8 @@ namespace MR
             //   more stringent criterion met in order to proceed with the test.
             //   Let's do: DoF must be at least equal to the number of factors.
             if (finite_count < std::min (num_inputs(), 2 * num_factors())) {
-              stat.row (ie).setZero();
-              zstat.row (ie).setZero();
+              stats.row (ie).setZero();
+              zstats.row (ie).setZero();
               dof.row (ie).fill (NaN);
             } else {
               apply_mask (element_mask,
@@ -859,8 +865,8 @@ namespace MR
               //   would a rank calculation with tolerance be faster?
               const default_type condition_number = Math::condition_number (Mfull_masked);
               if (!std::isfinite (condition_number) || condition_number > 1e5) {
-                stat.row (ie).fill (0.0);
-                zstat.row (ie).fill (0.0);
+                stats.row (ie).fill (0.0);
+                zstats.row (ie).fill (0.0);
                 dof.row (ie).fill (NaN);
               } else {
 
@@ -875,7 +881,7 @@ namespace MR
                   const auto partition = c[ih].partition (Mfull_masked);
                   dof (ie, ih) = finite_count - partition.rank_x - partition.rank_z;
                   if (dof (ie, ih) < 1) {
-                    stat (ie, ih) = zstat (ie, ih) = dof (ie, ih) = value_type(0);
+                    stats (ie, ih) = zstats (ie, ih) = dof (ie, ih) = value_type(0);
                   } else {
 
                     XtX.noalias() = partition.X.transpose()*partition.X;
@@ -892,14 +898,14 @@ namespace MR
                                             (sse / dof (ie, ih));
 
                     if (!std::isfinite (F)) {
-                      stat  (ie, ih) = zstat (ie, ih) = value_type(0);
+                      stats  (ie, ih) = zstats (ie, ih) = value_type(0);
                     } else if (c[ih].is_F()) {
-                      stat  (ie, ih) = F;
-                      zstat (ie, ih) = stat2z->F2z (F, c[ih].rank(), dof (ie, ih));
+                      stats  (ie, ih) = F;
+                      zstats (ie, ih) = stat2z->F2z (F, c[ih].rank(), dof (ie, ih));
                     } else {
                       assert (beta.rows() == 1);
-                      stat  (ie, ih) = std::sqrt (F) * (beta.sum() > 0 ? 1.0 : -1.0);
-                      zstat (ie, ih) = stat2z->t2z (stat (ie, ih), dof (ie, ih));
+                      stats  (ie, ih) = std::sqrt (F) * (beta.sum() > 0 ? 1.0 : -1.0);
+                      zstats (ie, ih) = stat2z->t2z (stats (ie, ih), dof (ie, ih));
                     }
 
                   } // End checking for sufficient degrees of freedom
@@ -1036,10 +1042,10 @@ namespace MR
 
 
 
-        void TestVariableHeteroscedastic::operator() (const matrix_type& shuffling_matrix, matrix_type& output) const
+        void TestVariableHeteroscedastic::operator() (const matrix_type& shuffling_matrix, matrix_type& stats, matrix_type& zstats) const
         {
-          if (!(size_t(output.rows()) == num_elements() && size_t(output.cols()) == num_hypotheses()))
-            output.resize (num_elements(), num_hypotheses());
+          stats.resize (num_elements(), num_hypotheses());
+          zstats.resize (num_elements(), num_hypotheses());
 
           matrix_type extra_column_data (num_inputs(), importers.size());
           BitSet element_mask (num_inputs());
@@ -1055,7 +1061,8 @@ namespace MR
             get_mask (ie, element_mask, extra_column_data);
             const size_t finite_count = element_mask.count();
             if (finite_count < std::min (num_inputs(), 2 * num_factors())) {
-              output.row (ie).setZero();
+              stats.row (ie).setZero();
+              zstats.row (ie).setZero();
             } else {
               apply_mask (element_mask,
                           y.col (ie),
@@ -1066,11 +1073,13 @@ namespace MR
                           y_masked);
               const default_type condition_number = Math::condition_number (Mfull_masked);
               if (!std::isfinite (condition_number) || condition_number > 1e5) {
-                output.row (ie).fill (0.0);
+                stats.row (ie).fill (0.0);
+                zstats.row (ie).fill (0.0);
               } else {
                 apply_mask_VG (element_mask, VG_masked, VG_counts);
                 if (!VG_counts.minCoeff()) {
-                  output.row (ie).fill (0.0);
+                  stats.row (ie).fill (0.0);
+                  zstats.row (ie).fill (0.0);
                 } else {
                   pinvMfull_masked = Math::pinv (Mfull_masked);
                   Rm.noalias() = matrix_type::Identity (finite_count, finite_count) - (Mfull_masked*pinvMfull_masked);
@@ -1106,16 +1115,19 @@ namespace MR
                     for (size_t vg_index = 0; vg_index != num_vgs; ++vg_index)
                       gamma += Math::pow2 (1.0 - ((Wterms[vg_index] * VG_counts[vg_index]) / W_trace)) / Rnn_sums[vg_index];
                     gamma = 1.0 + (gamma_weights[ih] * gamma);
-                    const default_type denominator = gamma * c[ih].rank();
 
+                    const default_type dof = 2.0 * default_type(c[ih].rank() - 1) / 3.0 / (gamma - 1.0);
+                    const default_type denominator = gamma * c[ih].rank();
                     const default_type G = numerator / denominator;
 
                     if (!std::isfinite (G)) {
-                      output (ie, ih) = value_type(0);
+                      stats (ie, ih) = zstats (ie, ih) = value_type(0);
                     } else if (c[ih].is_F()) {
-                      output (ie, ih) = std::sqrt (G);
+                      stats (ie, ih) = G;
+                      zstats (ie, ih) = stat2z->F2z (G, c[ih].rank(), dof);
                     } else {
-                      output (ie, ih) = std::sqrt (G) * ((c[ih].matrix() * lambda.matrix()).sum() > 0.0 ? 1.0 : -1.0);
+                      stats (ie, ih) = std::sqrt (G) * ((c[ih].matrix() * lambda.matrix()).sum() > 0.0 ? 1.0 : -1.0);
+                      zstats (ie, ih) = stat2z->t2z (stats (ie, ih), dof);
                     }
                   } // End looping over hypotheses for this element
 
