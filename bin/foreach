@@ -64,9 +64,9 @@ def usage(cmdline): #pylint: disable=unused-variable
 # These need to be globals in order to be accessible from execute_parallel()
 class Shared(object):
   def __init__(self):
-    import multiprocessing
+    import threading
     self._job_index = 0
-    self.lock = multiprocessing.Lock()
+    self.lock = threading.Lock()
     self.stop = False
   def next(self, jobs):
     job = None
@@ -86,7 +86,7 @@ KEYLIST = [ 'IN', 'NAME', 'PRE', 'UNI' ]
 
 
 def execute(): #pylint: disable=unused-variable
-  import multiprocessing, os, re, sys
+  import os, re, sys, threading
   from mrtrix3 import ANSI, app, MRtrixError, run #pylint: disable=no-name-in-module
   global CMDSPLIT
 
@@ -125,8 +125,8 @@ def execute(): #pylint: disable=unused-variable
 
   common_prefix = os.path.commonprefix(inputs)
   common_suffix = os.path.commonprefix([i[::-1] for i in inputs])[::-1]
-  app.debug('Common prefix: ' + common_prefix)
-  app.debug('Common suffix: ' + common_suffix)
+  app.debug('Common prefix: ' + common_prefix if common_prefix else 'No common prefix')
+  app.debug('Common suffix: ' + common_suffix if common_suffix else 'No common suffix')
 
   for entry in CMDSPLIT:
     if os.path.exists(entry):
@@ -209,14 +209,14 @@ def execute(): #pylint: disable=unused-variable
         progress.increment(progress_string())
 
   if parallel:
-    processes = [ ]
+    threads = [ ]
     for i in range (1, app.NUM_THREADS):
-      process = multiprocessing.Process(target=execute_parallel)
-      process.start()
-      processes.append(process)
+      thread = threading.Thread(target=execute_parallel)
+      thread.start()
+      threads.append(thread)
     execute_parallel()
-    for process in processes:
-      process.join()
+    for thread in threads:
+      thread.join()
   else:
     for job in jobs:
       try:
