@@ -14,6 +14,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options.add_argument('-sfwm', type=float, default=0.5, help='Final number of single-fibre WM voxels to select, as a percentage of refined WM. (default: 0.5 per cent)')
   options.add_argument('-gm', type=float, default=2.0, help='Final number of GM voxels to select, as a percentage of refined GM. (default: 2 per cent)')
   options.add_argument('-csf', type=float, default=10.0, help='Final number of CSF voxels to select, as a percentage of refined CSF. (default: 10 per cent)')
+  options.add_argument('-algo', type=int, default=2016, help='Select version of algorithm to use, based on year of corresponding publication: 2016 or 2019 (default: 2016).')
 
 
 
@@ -44,6 +45,9 @@ def execute(): #pylint: disable=unused-variable
 
   # CHECK INPUTS AND OPTIONS
   app.console('-------')
+
+  if app.ARGS.algo not in [ 2016, 2019 ]:
+    raise MRtrixError ('valid values for -algo are 2016 or 2019')
 
   # Get b-values and number of volumes per b-value.
   bvalues = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shell_bvalues').split() ]
@@ -203,28 +207,33 @@ def execute(): #pylint: disable=unused-variable
 
   # Get final voxels for single-fibre WM response function estimation from refined WM.
   app.console('* single-fibre WM:')
-  app.console(' * Selecting final voxels (' + str(app.ARGS.sfwm) + '% of refined WM)...')
+  app.console(' * Selecting final voxels (' + str(app.ARGS.sfwm) + '% of refined WM) using ' + str(app.ARGS.algo) + ' version of algorithm...')
   voxsfwmcount = int(round(statrefwmcount * app.ARGS.sfwm / 100.0))
-  run.command('mrmath dwi.mif mean mean_sig.mif -axis 3', show=False)
-  refwmcoef = image.statistic('mean_sig.mif', 'median', '-mask refined_wm.mif') * math.sqrt(4.0 * math.pi)
-  if sfwm_lmax:
-    isiso = [ lm == 0 for lm in sfwm_lmax ]
+
+  if app.ARGS.algo == 2016:
+    run.command('dwi2response tournier dwi.mif _respsfwmss.txt -mask refined_wm.mif -sf_voxels ' + str(voxsfwmcount) + ' -iter_voxels ' + str(10*voxsfwmcount) + ' -voxels voxels_sfwm.mif -scratch ' + app.SCRATCH_DIR, show=False)
   else:
-    isiso = [ bv < bzero_threshold for bv in bvalues ]
-  with open('ewmrf.txt', 'w') as ewr:
-    for iis in isiso:
-      if iis:
-        ewr.write("%s 0 0 0\n" % refwmcoef)
-      else:
-        ewr.write("%s -%s %s -%s\n" % (refwmcoef, refwmcoef, refwmcoef, refwmcoef))
-  run.command('dwi2fod msmt_csd dwi.mif ewmrf.txt abs_ewm2.mif response_csf.txt abs_csf2.mif -mask refined_wm.mif -lmax 2,0' + bvalues_option, show=False)
-  run.command('mrconvert abs_ewm2.mif - -coord 3 0 | mrcalc - abs_csf2.mif -add abs_sum2.mif', show=False)
-  run.command('sh2peaks abs_ewm2.mif - -num 1 -mask refined_wm.mif | peaks2amp - - | mrcalc - abs_sum2.mif -divide - | mrconvert - metric_sfwm2.mif -coord 3 0 -axes 0,1,2', show=False)
-  run.command('mrcalc refined_wm.mif metric_sfwm2.mif 0 -if - | mrthreshold - - -top ' + str(voxsfwmcount * 2) + ' -ignorezero | mrcalc refined_wm.mif - 0 -if - -datatype bit | mrconvert - refined_sfwm.mif -axes 0,1,2', show=False)
-  run.command('dwi2fod msmt_csd dwi.mif ewmrf.txt abs_ewm6.mif response_csf.txt abs_csf6.mif -mask refined_sfwm.mif -lmax 6,0' + bvalues_option, show=False)
-  run.command('mrconvert abs_ewm6.mif - -coord 3 0 | mrcalc - abs_csf6.mif -add abs_sum6.mif', show=False)
-  run.command('sh2peaks abs_ewm6.mif - -num 1 -mask refined_sfwm.mif | peaks2amp - - | mrcalc - abs_sum6.mif -divide - | mrconvert - metric_sfwm6.mif -coord 3 0 -axes 0,1,2', show=False)
-  run.command('mrcalc refined_sfwm.mif metric_sfwm6.mif 0 -if - | mrthreshold - - -top ' + str(voxsfwmcount) + ' -ignorezero | mrcalc refined_sfwm.mif - 0 -if - -datatype bit | mrconvert - voxels_sfwm.mif -axes 0,1,2', show=False)
+    run.command('mrmath dwi.mif mean mean_sig.mif -axis 3', show=False)
+    refwmcoef = image.statistic('mean_sig.mif', 'median', '-mask refined_wm.mif') * math.sqrt(4.0 * math.pi)
+    if sfwm_lmax:
+      isiso = [ lm == 0 for lm in sfwm_lmax ]
+    else:
+      isiso = [ bv < bzero_threshold for bv in bvalues ]
+    with open('ewmrf.txt', 'w') as ewr:
+      for iis in isiso:
+        if iis:
+          ewr.write("%s 0 0 0\n" % refwmcoef)
+        else:
+          ewr.write("%s -%s %s -%s\n" % (refwmcoef, refwmcoef, refwmcoef, refwmcoef))
+    run.command('dwi2fod msmt_csd dwi.mif ewmrf.txt abs_ewm2.mif response_csf.txt abs_csf2.mif -mask refined_wm.mif -lmax 2,0' + bvalues_option, show=False)
+    run.command('mrconvert abs_ewm2.mif - -coord 3 0 | mrcalc - abs_csf2.mif -add abs_sum2.mif', show=False)
+    run.command('sh2peaks abs_ewm2.mif - -num 1 -mask refined_wm.mif | peaks2amp - - | mrcalc - abs_sum2.mif -divide - | mrconvert - metric_sfwm2.mif -coord 3 0 -axes 0,1,2', show=False)
+    run.command('mrcalc refined_wm.mif metric_sfwm2.mif 0 -if - | mrthreshold - - -top ' + str(voxsfwmcount * 2) + ' -ignorezero | mrcalc refined_wm.mif - 0 -if - -datatype bit | mrconvert - refined_sfwm.mif -axes 0,1,2', show=False)
+    run.command('dwi2fod msmt_csd dwi.mif ewmrf.txt abs_ewm6.mif response_csf.txt abs_csf6.mif -mask refined_sfwm.mif -lmax 6,0' + bvalues_option, show=False)
+    run.command('mrconvert abs_ewm6.mif - -coord 3 0 | mrcalc - abs_csf6.mif -add abs_sum6.mif', show=False)
+    run.command('sh2peaks abs_ewm6.mif - -num 1 -mask refined_sfwm.mif | peaks2amp - - | mrcalc - abs_sum6.mif -divide - | mrconvert - metric_sfwm6.mif -coord 3 0 -axes 0,1,2', show=False)
+    run.command('mrcalc refined_sfwm.mif metric_sfwm6.mif 0 -if - | mrthreshold - - -top ' + str(voxsfwmcount) + ' -ignorezero | mrcalc refined_sfwm.mif - 0 -if - -datatype bit | mrconvert - voxels_sfwm.mif -axes 0,1,2', show=False)
+
   statvoxsfwmcount = image.statistic('voxels_sfwm.mif', 'count', '-mask voxels_sfwm.mif')
   app.console('   [ WM: ' + str(statrefwmcount) + ' -> ' + str(statvoxsfwmcount) + ' (single-fibre) ]')
   # Estimate SF WM response function
