@@ -30,15 +30,15 @@ Note that this function does not correct for non-Gaussian noise biases present i
 Options
 -------
 
--  **-mask image** only perform computation within the specified binary brain mask image.
+-  **-mask image** Only process voxels within the specified binary brain mask image.
 
--  **-extent window** set the window size of the denoising filter. (default = 5,5,5)
+-  **-extent window** Set the patch size of the denoising filter. By default, the command will select the smallest isotropic patch size that exceeds the number of DW images in the input data, e.g., 5x5x5 for data with <= 125 DWI volumes, 7x7x7 for data with <= 343 DWI volumes, etc.
 
--  **-noise level** the output noise map, i.e., the estimated noise level 'sigma' in the data. Note that on complex input data, this will be the total noise level across real and imaginary channels, so a scale factor sqrt(2) applies.
+-  **-noise level** The output noise map, i.e., the estimated noise level 'sigma' in the data. Note that on complex input data, this will be the total noise level across real and imaginary channels, so a scale factor sqrt(2) applies.
 
--  **-datatype float32/float64** datatype for the eigenvalue decomposition (single or double precision). For complex input data, this will select complex float32 or complex float64 datatypes.
+-  **-datatype float32/float64** Datatype for the eigenvalue decomposition (single or double precision). For complex input data, this will select complex float32 or complex float64 datatypes.
 
--  **-estimator Exp1/Exp2** select noise level estimator (default = Exp2), either Exp1: the original estimator used in Veraart et al. (2016), or Exp2: the improved estimator introduced in Cordero-Grande et al. (2019).
+-  **-estimator Exp1/Exp2** Select the noise level estimator (default = Exp2), either: * Exp1: the original estimator used in Veraart et al. (2016), or * Exp2: the improved estimator introduced in Cordero-Grande et al. (2019).
 
 Standard options
 ^^^^^^^^^^^^^^^^

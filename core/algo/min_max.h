@@ -50,6 +50,17 @@ namespace MR
             }
           }
 
+          template <class MaskType>
+          void operator() (ImageType& vox, MaskType& mask) {
+            if (mask.value()) {
+              value_type val = vox.value();
+              if (std::isfinite (val)) {
+                if (val < min) min = val;
+                if (val > max) max = val;
+              }
+            }
+          }
+
           value_type& overall_min;
           value_type& overall_max;
           value_type min, max;
@@ -61,25 +72,28 @@ namespace MR
     //! \endcond
 
     template <class ImageType>
-      inline void min_max (
-          ImageType& in,
-          typename ImageType::value_type& min,
-          typename ImageType::value_type& max)
-    {
-      ThreadedLoop ("finding min/max of \"" + shorten (in.name()) + "\"", in)
-        .run (__MinMax<ImageType> (min, max), in);
-    }
-
-    template <class ImageType>
-      inline void min_max (
-          ImageType& in,
-          typename ImageType::value_type& min,
-          typename ImageType::value_type& max,
-          size_t from_axis,
-          size_t to_axis)
+    inline void min_max (
+        ImageType& in,
+        typename ImageType::value_type& min,
+        typename ImageType::value_type& max,
+        size_t from_axis = 0,
+        size_t to_axis = std::numeric_limits<size_t>::max())
     {
       ThreadedLoop ("finding min/max of \"" + shorten (in.name()) + "\"", in, from_axis, to_axis)
         .run (__MinMax<ImageType> (min, max), in);
+    }
+
+    template <class ImageType, class MaskType>
+    inline void min_max (
+        ImageType& in,
+        MaskType& mask,
+        typename ImageType::value_type& min,
+        typename ImageType::value_type& max,
+        size_t from_axis = 0,
+        size_t to_axis = std::numeric_limits<size_t>::max())
+    {
+      ThreadedLoop ("finding min/max of \"" + shorten (in.name()) + "\"", in, from_axis, to_axis)
+        .run (__MinMax<ImageType> (min, max), in, mask);
     }
 
 }
