@@ -88,6 +88,9 @@ void usage ()
   + Option ("axis", "perform operation along a specified axis of a single input image")
     + Argument ("index").type_integer (0)
 
+  + Option ("keep_unary_axes", "Keep unary axes in input images prior to calculating the stats. "
+    "The default is to wipe axes with single elements.")
+
   + DataType::options();
 }
 
@@ -419,8 +422,10 @@ void run ()
     header.datatype() = DataType::from_command_line (DataType::Float32);
 
     // Wipe any excess unary-dimensional axes
-    while (header.size (header.ndim() - 1) == 1)
-      header.ndim() = header.ndim() - 1;
+    if ( ! get_options ("keep_unary_axes").size() ) {
+      while (header.size (header.ndim() - 1) == 1)
+        header.ndim() = header.ndim() - 1;
+    }
 
     // Verify that dimensions of all input images adequately match
     for (size_t i = 1; i != num_inputs; ++i) {
