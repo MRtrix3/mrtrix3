@@ -232,7 +232,7 @@ default_type calculate (Image<value_type>& in,
                          size_t(bottom) - 1 :
                          (ssize_t(data.size()) - ssize_t(top)));
     if (index < 0 || index >= ssize_t(data.size()))
-      throw Exception ("Number of valid input image values (" + str(data.size()) + ") less than number of voxels requested via -" + (bottom >= 0 ? "bottom" : "top") + " option (" + str(index) + ")");
+      throw Exception ("Number of valid input image values (" + str(data.size()) + ") less than number of voxels requested via -" + (bottom >= 0 ? "bottom" : "top") + " option (" + str(bottom >= 0 ? bottom : top) + ")");
     std::nth_element (data.begin(), data.begin() + index, data.end());
     const value_type threshold_float = data[index];
     if (index) {

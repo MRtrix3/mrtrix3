@@ -212,6 +212,6 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.nocrop:
     run.function(os.rename, 'combined_precrop.mif', 'result.mif')
   else:
-    run.command('mrmath combined_precrop.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | maskfilter - dilate - | mrgrid combined_precrop.mif crop result.mif -mask -')
+    run.command('mrmath combined_precrop.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrgrid combined_precrop.mif crop result.mif -mask -')
 
   run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE)
