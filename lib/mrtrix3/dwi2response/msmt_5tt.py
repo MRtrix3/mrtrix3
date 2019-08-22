@@ -46,7 +46,7 @@ def execute(): #pylint: disable=unused-variable
 
   # Verify input 5tt image
   stderr_5ttcheck = run.command('5ttcheck 5tt.mif').stderr
-  if stderr_5ttcheck:
+  if '[WARNING]' in stderr_5ttcheck:
     app.warn('Command 5ttcheck indicates minor problems with provided input 5TT image \'' + app.ARGS.in_5tt + '\':')
     for line in stderr_5ttcheck.splitlines():
       app.warn(line)
