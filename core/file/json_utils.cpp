@@ -89,7 +89,7 @@ namespace MR
             auto pe_scheme = PhaseEncoding::get_scheme (H);
             if (pe_scheme.rows()) {
               for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
-                auto new_line = pe_scheme.row (row);
+                Eigen::VectorXd new_line = pe_scheme.row (row);
                 for (ssize_t axis = 0; axis != 3; ++axis)
                   new_line[perm[axis]] = flip[perm[axis]] ? pe_scheme(row,axis) : -pe_scheme(row,axis);
                 pe_scheme.row (row) = new_line;
@@ -126,7 +126,7 @@ namespace MR
           // Assume that image being written to disk is going to have its transform adjusted,
           //   so modify the phase encoding scheme appropriately before writing to JSON
           for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
-            auto new_line = pe_scheme.row (row);
+            Eigen::VectorXd new_line = pe_scheme.row (row);
             for (ssize_t axis = 0; axis != 3; ++axis)
               new_line[axis] = H.stride (order[axis]) > 0 ? pe_scheme(row, order[axis]) : -pe_scheme(row, order[axis]);
             pe_scheme.row (row) = new_line;
