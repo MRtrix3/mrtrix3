@@ -238,13 +238,13 @@ namespace MR
           // Sum of residual-forming matrix diagonal elements within each variance group
           //   will be equivalent across elements
           vector_type Rnn_sums (vector_type::Zero (num_vgs));
-          for (size_t i = 0; i != measurements.rows(); ++i)
+          for (ssize_t i = 0; i != measurements.rows(); ++i)
             Rnn_sums[variance_groups[i]] += R.diagonal()[i];
           // For each variance group, get the sum of squared residuals within that group
           matrix_type result (num_vgs, measurements.cols());
-          for (size_t ie = 0; ie != measurements.cols(); ++ie) {
+          for (ssize_t ie = 0; ie != measurements.cols(); ++ie) {
             vector_type sse (vector_type::Zero (num_vgs));
-            for (size_t i = 0; i != measurements.rows(); ++i)
+            for (ssize_t i = 0; i != measurements.rows(); ++i)
               sse[variance_groups[i]] += Math::pow2 (e (i, ie));
             // (Rnn_sum / sse) is the inverse of the estimated variance
             result.col (ie) = (sse.array() / Rnn_sums.array()).sqrt();
@@ -753,8 +753,8 @@ namespace MR
             // These terms are what appears in the weighting matrix based on the VG to which each input belongs;
             //   one row per variance group, one column per element to be tested
             Wterms = sse.array().inverse().colwise() * Rnn_sums;
-            for (ssize_t col = 0; col != num_elements(); ++col) {
-              for (ssize_t row = 0; row != num_vgs; ++row) {
+            for (size_t col = 0; col != num_elements(); ++col) {
+              for (size_t row = 0; row != num_vgs; ++row) {
                 if (!std::isfinite (Wterms (row, col)))
                   Wterms (row, col) = 0.0;
               }
@@ -930,7 +930,7 @@ namespace MR
 
                 // We now have our permutation (shuffling) matrix and design matrix prepared,
                 //   and can commence regressing the partitioned model of each hypothesis
-                for (ssize_t ih = 0; ih != c.size(); ++ih) {
+                for (size_t ih = 0; ih != c.size(); ++ih) {
 
                   const auto partition = c[ih].partition (Mfull_masked);
                   dof (ie, ih) = finite_count - partition.rank_x - partition.rank_z;
@@ -1160,7 +1160,7 @@ namespace MR
                       Rnn_sums[VG_masked[input]] += Rm.diagonal()[input];
                     }
                     Wterms = sse.inverse() * Rnn_sums;
-                    for (ssize_t vg = 0; vg != num_vgs; ++vg) {
+                    for (size_t vg = 0; vg != num_vgs; ++vg) {
                       if (!std::isfinite (Wterms[vg]))
                         Wterms[vg] = 0.0;
                     }

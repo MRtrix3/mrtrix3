@@ -29,7 +29,7 @@ namespace MR {
     {
       assert (variances.size() == counts.size());
       default_type numerator = 0.0, denominator = 0.0;
-      for (size_t i = 0; i != variances.size(); ++i) {
+      for (size_t i = 0; i != size_t(variances.size()); ++i) {
         const default_type ks2 = (1.0 / (counts[i] - 1)) * variances[i];
         numerator += ks2;
         denominator += Math::pow2 (ks2) / (counts[i] - 1);
