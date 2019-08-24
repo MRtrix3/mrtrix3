@@ -14,32 +14,32 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_stats_types_h__
-#define __math_stats_types_h__
+#ifndef __math_welch_satterthwaite_h__
+#define __math_welch_satterthwaite_h__
 
-#include "types.h"
+#include "math/math.h"
 
-#include <Eigen/Dense>
+namespace MR {
+  namespace Math {
 
-namespace MR
-{
-  namespace Math
-  {
-    namespace Stats
+
+
+    template <class VarArrayType, class CountArrayType>
+    default_type welch_satterthwaite (const VarArrayType& variances, const CountArrayType& counts)
     {
-
-
-
-      using value_type = MR::default_type;
-      using matrix_type = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>;
-      using vector_type = Eigen::Array<value_type, Eigen::Dynamic, 1>;
-      using index_array_type = Eigen::Array<size_t, Eigen::Dynamic, 1>;
-
-
-
+      assert (variances.size() == counts.size());
+      default_type numerator = 0.0, denominator = 0.0;
+      for (size_t i = 0; i != size_t(variances.size()); ++i) {
+        const default_type ks2 = (1.0 / (counts[i] - 1)) * variances[i];
+        numerator += ks2;
+        denominator += Math::pow2 (ks2) / (counts[i] - 1);
+      }
+      return Math::pow2 (numerator) / denominator;
     }
+
+
+
   }
 }
-
 
 #endif

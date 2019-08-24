@@ -32,6 +32,81 @@ namespace MR
 
 
 
+
+
+    namespace
+    {
+      default_type F2z_upper (const default_type F, const size_t rank, const default_type dof)
+      {
+        assert (F >= 1.0);
+        const default_type x = (dof/F) / (dof/F + default_type(rank));
+        return Math::sqrt2 * Math::erfcinv (2.0 *
+#ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
+              Math::betaincreg (Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant (1, 0.5 * dof),
+                                Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant (1, 0.5 * default_type(rank)),
+                                Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant (1, x)) (0, 0)
+#else
+              Math::betaincreg (0.5 * dof, 0.5 * default_type(rank), x)
+#endif
+                                            );
+      }
+
+      default_type F2z_lower (const default_type oneoverF, const size_t rank, const default_type dof)
+      {
+        assert (oneoverF >= 1.0);
+        const default_type x = (default_type(rank)/oneoverF) / (default_type(rank)/oneoverF + dof);
+        return Math::sqrt2 * Math::erfinv (2.0 *
+#ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
+              Math::betaincreg (Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant (1, 0.5 * default_type(rank)),
+                                Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant (1, 0.5 * dof),
+                                Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant (1, x)) (0, 0)
+#else
+              Math::betaincreg (0.5 * default_type(rank), 0.5 * dof, x)
+#endif
+                                                  - 1.0);
+      }
+    }
+
+
+
+
+
+
+    default_type t2z (const default_type stat, const default_type dof)
+    {
+      const default_type x = dof / (Math::pow2 (stat) + dof);
+      return Math::sqrt2 * Math::erfcinv (
+#ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
+            Math::betaincreg (Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant (1, 0.5 * dof),
+                              Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant (1, 0.5),
+                              Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant (1, x)) (0, 0)
+#else
+            Math::betaincreg (0.5 * dof, 0.5, x)
+#endif
+                                           ) * (stat < 0.0 ? -1.0 : 1.0);
+    }
+
+
+
+    default_type F2z (const default_type F, const size_t rank, const default_type dof)
+    {
+      if (F >= 1.0)
+        return F2z_upper (F, rank, dof);
+      else
+        return F2z_lower (1.0/F, rank, dof);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
     default_type Zstatistic::t2z (const default_type t, const size_t dof)
     {
       auto it = t2z_data.find (dof);
@@ -62,6 +137,25 @@ namespace MR
       }
       return (it->second) (F);
     }
+
+
+
+    default_type Zstatistic::v2z (const default_type v, const default_type dof)
+    {
+      return Math::t2z (v, dof);
+    }
+
+
+
+    default_type Zstatistic::G2z (const default_type G, const size_t rank, const default_type dof)
+    {
+      return Math::F2z (G, rank, dof);
+    }
+
+
+
+
+
 
 
 
@@ -127,8 +221,8 @@ namespace MR
 #endif
       x[0] = t2x (-t2z_max - t2z_step);
       for (ssize_t i = -t2z_halfdomain; i <= t2z_halfdomain; ++i) {
-        const default_type stat = t2z_step * i;
-        x[1+i+t2z_halfdomain] = t2x (stat);
+        const default_type t = t2z_step * i;
+        x[1+i+t2z_halfdomain] = t2x (t);
       }
       x[x.size()-1] = t2x (t2z_max + t2z_step);
       assert (x.allFinite());
@@ -136,37 +230,23 @@ namespace MR
       //   essentially calculates 2q = 2(1-p) using the regularised incomplete beta function,
       //   then converts straight to Z-score using the inverse complementary error function
 #ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
-      data = Math::sqrt2 * (Math::betaincreg (array_type::Constant (x.size(), 0.5 * default_type(dof)),
+      data = Math::sqrt2 * (Math::betaincreg (array_type::Constant (x.size(), 0.5 * dof),
                                               array_type::Constant (x.size(), 0.5),
                                               x.array()
                                              ).unaryExpr (&Math::erfcinv));
 #else
       data.resize (x.size());
       for (size_t i = 0; i != x.size(); ++i)
-        data[i] = Math::sqrt2 * Math::erfcinv (Math::betaincreg (0.5 * default_type(dof), 0.5, x[i]));
+        data[i] = Math::sqrt2 * Math::erfcinv (Math::betaincreg (0.5 * dof, 0.5, x[i]));
 #endif
-      // Need to negate Z-scores for which t is negative
+      // Need to negate Z-scores for which t-statistic is negative
       data.topRows(1+t2z_halfdomain) *= -1.0;
     }
 
 
     default_type Zstatistic::Lookup_t2z::operator() (const default_type t) const
     {
-
-      auto func = [&] (const default_type in)
-      {
-        const default_type x = default_type(dof) / (Math::pow2 (in) + default_type(dof));
-        return Math::sqrt2 * Math::erfcinv (
-#ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
-            Math::betaincreg (array_type::Constant (1, 0.5 * default_type(dof)),
-                              array_type::Constant (1, 0.5),
-                              array_type::Constant (1, x)) (0, 0)
-#else
-            Math::betaincreg (0.5 * default_type(dof), 0.5, x)
-#endif
-                                           ) * (in < 0.0 ? -1.0 : 1.0);
-      };
-
+      auto func = [&] (const default_type in) { return Math::t2z (in, dof); };
       return interp (t, offset, scale, data, func);
     }
 
@@ -216,30 +296,30 @@ namespace MR
       // HOWEVER: p_{F(v,w)} (x) = 1.0 - p_{F(w,v)} (1.0/x)
       // We want to compute the latter in order to dodge numerical precision issues
       const array_type d_one (array_type::Constant (3 + F2z_halfdomain, rank));
-      const array_type dof_array (array_type::Constant (d_one.size(), dof));
+      const array_type d_two (array_type::Constant (d_one.size(), dof));
 #ifdef NDEBUG
-      array_type stat (d_one.size());
-      array_type oneoverstat (d_one.size());
+      array_type F (d_one.size());
+      array_type oneoverF (d_one.size());
 #else
-      array_type stat (array_type::Constant (d_one.size(), NaN));
-      array_type oneoverstat (array_type::Constant (d_one.size(), NaN));
+      array_type F (array_type::Constant (d_one.size(), NaN));
+      array_type oneoverF (array_type::Constant (d_one.size(), NaN));
 #endif
-      stat[0] = 1.0 - F2z_step;
-      oneoverstat[0] = 1.0 / (1.0 - F2z_step);
+      F[0] = 1.0 - F2z_step;
+      oneoverF[0] = 1.0 / (1.0 - F2z_step);
       for (ssize_t i = 0; i <= F2z_halfdomain; ++i) {
-        stat[i+1] = 1.0 + (default_type(i) * F2z_step);
-        oneoverstat[i+1] = 1.0 / stat[i+1];
+        F[i+1] = 1.0 + (default_type(i) * F2z_step);
+        oneoverF[i+1] = 1.0 / F[i+1];
       }
-      stat[stat.size()-1] = F2z_max + F2z_step;
-      oneoverstat[oneoverstat.size()-1] = 1.0 / stat[stat.size()-1];
-      assert (stat.allFinite());
-      assert (oneoverstat.allFinite());
-      const array_type x_upper ((dof_array*oneoverstat) / (dof_array*oneoverstat + d_one));
+      F[F.size()-1] = F2z_max + F2z_step;
+      oneoverF[oneoverF.size()-1] = 1.0 / F[F.size()-1];
+      assert (F.allFinite());
+      assert (oneoverF.allFinite());
+      const array_type x_upper ((d_two*oneoverF) / (d_two*oneoverF + d_one));
       // Bypasses p:
       //   calculates q = 1-p using the regularised incomplete beta function,
       //   then converts straight to Z-score using the inverse complementary error function
 #ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
-      data_upper = Math::sqrt2 * (2.0 * Math::betaincreg (0.5 * dof_array,
+      data_upper = Math::sqrt2 * (2.0 * Math::betaincreg (0.5 * d_two,
                                                           0.5 * d_one,
                                                           x_upper)
                                  ).unaryExpr (&Math::erfcinv);
@@ -252,10 +332,10 @@ namespace MR
       // Construct lookup table for F <= 1.0
       // This should involve avoiding the symmetry relationship gymnastics used in the first case
       // - Betaincreg (0.5*d1, 0.5*dof, x) should give p
-      const array_type x_lower ((d_one*oneoverstat) / (d_one*oneoverstat + dof_array));
+      const array_type x_lower ((d_one*oneoverF) / (d_one*oneoverF + d_two));
 #ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
       data_lower = Math::sqrt2 * (2.0 * Math::betaincreg (0.5 * d_one,
-                                                          0.5 * dof_array,
+                                                          0.5 * d_two,
                                                           x_lower) - 1.0
                                  ).unaryExpr (&Math::erfinv);
 #else
@@ -269,43 +349,18 @@ namespace MR
 
     default_type Zstatistic::Lookup_F2z::operator() (const default_type F) const
     {
-
-      auto func_upper = [&] (const default_type in)
-      {
-        const default_type x = (default_type(dof)/in) / (default_type(dof)/in + default_type(rank));
-
-        return Math::sqrt2 * Math::erfcinv (2.0 *
-#ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
-            Math::betaincreg (array_type::Constant (1, 0.5 * default_type(dof)),
-                              array_type::Constant (1, 0.5 * default_type(rank)),
-                              array_type::Constant (1, x)) (0, 0)
-#else
-            Math::betaincreg (0.5 * default_type(dof), 0.5 * default_type(rank), x)
-#endif
-                                           );
-
-      };
-
-      auto func_lower = [&] (const default_type in)
-      {
-        const default_type x = (default_type(rank)/in) / (default_type(rank)/in + default_type(dof));
-        return Math::sqrt2 * Math::erfinv (2.0 *
-#ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
-            Math::betaincreg (array_type::Constant (1, 0.5 * default_type(rank)),
-                              array_type::Constant (1, 0.5 * default_type(dof)),
-                              array_type::Constant (1, x)) (0, 0)
-#else
-            Math::betaincreg (0.5 * default_type(rank), 0.5 * default_type(dof), x)
-#endif
-                                                 - 1.0);
-      };
-
+      auto func_upper = [&] (const default_type in) { return F2z_upper (in, rank, default_type(dof)); };
+      auto func_lower = [&] (const default_type in) { return F2z_lower (in, rank, default_type(dof)); };
       if (F >= 1.0)
         return interp (F, offset_upper, scale_upper, data_upper, func_upper);
       else
         return interp (1.0/F, offset_lower, scale_lower, data_lower, func_lower);
-
     }
+
+
+
+
+
 
 
 

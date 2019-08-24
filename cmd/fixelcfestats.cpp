@@ -330,7 +330,7 @@ void run()
     if (!Fixel::fixels_match (index_header, dynamic_cast<SubjectFixelImport*>(importer[i].get())->header()))
       throw Exception ("Fixel data file \"" + importer[i]->name() + "\" does not match template fixel image");
   }
-  CONSOLE ("Number of subjects: " + str(importer.size()));
+  CONSOLE ("Number of inputs: " + str(importer.size()));
 
   // Load design matrix:
   const matrix_type design = load_matrix (argument[2]);
@@ -356,6 +356,12 @@ void run()
       CONSOLE ("Non-finite values detected in element-wise design matrix columns; individual rows will be removed from fixel-wise design matrices accordingly");
   }
   Math::Stats::GLM::check_design (design, extra_columns.size());
+
+  // Load variance groups
+  auto variance_groups = Math::Stats::GLM::load_variance_groups (design.rows());
+  const size_t num_vgs = variance_groups.size() ? variance_groups.maxCoeff()+1 : 1;
+  if (num_vgs > 1)
+    CONSOLE ("Number of variance groups: " + str(num_vgs));
 
   // Load hypotheses
   const vector<Math::Stats::GLM::Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[3]);
@@ -505,13 +511,15 @@ void run()
 
   {
     matrix_type betas (num_factors, mask_fixels);
-    matrix_type abs_effect_size (mask_fixels, num_hypotheses), std_effect_size (mask_fixels, num_hypotheses);
-    vector_type cond (mask_fixels), stdev (mask_fixels);
+    matrix_type abs_effect_size (mask_fixels, num_hypotheses);
+    matrix_type std_effect_size (mask_fixels, num_hypotheses);
+    matrix_type stdev (num_vgs, mask_fixels);
+    vector_type cond (mask_fixels);
 
-    Math::Stats::GLM::all_stats (data, design, extra_columns, hypotheses,
+    Math::Stats::GLM::all_stats (data, design, extra_columns, hypotheses, variance_groups,
                                  cond, betas, abs_effect_size, std_effect_size, stdev);
 
-    ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_hypotheses) + 1 + (nans_in_data || extra_columns.size() ? 1 : 0));
+    ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_hypotheses) + num_vgs + (nans_in_data || extra_columns.size() ? 1 : 0));
 
     for (ssize_t i = 0; i != num_factors; ++i) {
       write_fixel_output (Path::join (output_fixel_directory, "beta" + str(i) + ".mif"), betas.row(i), output_header);
@@ -521,23 +529,39 @@ void run()
       if (!hypotheses[i].is_F()) {
         write_fixel_output (Path::join (output_fixel_directory, "abs_effect" + postfix(i) + ".mif"), abs_effect_size.col(i), output_header);
         ++progress;
-        write_fixel_output (Path::join (output_fixel_directory, "std_effect" + postfix(i) + ".mif"), std_effect_size.col(i), output_header);
+        if (num_vgs == 1)
+          write_fixel_output (Path::join (output_fixel_directory, "std_effect" + postfix(i) + ".mif"), std_effect_size.col(i), output_header);
+      } else {
         ++progress;
       }
+      ++progress;
     }
     if (nans_in_data || extra_columns.size()) {
       write_fixel_output (Path::join (output_fixel_directory, "cond.mif"), cond, output_header);
       ++progress;
     }
-    write_fixel_output (Path::join (output_fixel_directory, "std_dev.mif"), stdev, output_header);
+    if (num_vgs == 1) {
+      write_fixel_output (Path::join (output_fixel_directory, "std_dev.mif"), stdev.row (0), output_header);
+    } else {
+      for (size_t i = 0; i != num_vgs; ++i) {
+        write_fixel_output (Path::join (output_fixel_directory, "std_dev" + str(i) + ".mif"), stdev.row (i), output_header);
+        ++progress;
+      }
+    }
   }
 
   // Construct the class for performing the initial statistical tests
   std::shared_ptr<Math::Stats::GLM::TestBase> glm_test;
   if (extra_columns.size() || nans_in_data) {
-    glm_test.reset (new Math::Stats::GLM::TestVariable (extra_columns, data, design, hypotheses, nans_in_data, nans_in_columns));
+    if (variance_groups.size())
+      glm_test.reset (new Math::Stats::GLM::TestVariableHeteroscedastic (extra_columns, data, design, hypotheses, variance_groups, nans_in_data, nans_in_columns));
+    else
+      glm_test.reset (new Math::Stats::GLM::TestVariableHomoscedastic (extra_columns, data, design, hypotheses, nans_in_data, nans_in_columns));
   } else {
-    glm_test.reset (new Math::Stats::GLM::TestFixed (data, design, hypotheses));
+    if (variance_groups.size())
+      glm_test.reset (new Math::Stats::GLM::TestFixedHeteroscedastic (data, design, hypotheses, variance_groups));
+    else
+      glm_test.reset (new Math::Stats::GLM::TestFixedHomoscedastic (data, design, hypotheses));
   }
 
   // Construct the class for performing fixel-based statistical enhancement
