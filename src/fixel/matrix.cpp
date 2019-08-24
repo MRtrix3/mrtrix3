@@ -237,7 +237,7 @@ namespace MR
         if (Path::exists (path)) {
           if (!Path::is_dir (path)) {
             if (App::overwrite_files) {
-              File::unlink (path);
+              File::remove (path);
             } else {
               throw Exception ("Cannot create fixel-fixel connectivity matrix \"" + path + "\": Already exists as file");
             }

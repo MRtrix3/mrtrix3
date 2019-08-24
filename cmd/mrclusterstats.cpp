@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "image.h"
@@ -207,7 +208,7 @@ void run() {
     if (!dimensions_match (dynamic_cast<SubjectVoxelImport*>(importer[i].get())->header(), mask_header))
       throw Exception ("Image file \"" + importer[i]->name() + "\" does not match analysis mask");
   }
-  CONSOLE ("Number of subjects: " + str(importer.size()));
+  CONSOLE ("Number of inputs: " + str(importer.size()));
 
   // Load design matrix
   const matrix_type design = load_matrix<value_type> (argument[1]);
@@ -234,6 +235,12 @@ void run() {
       CONSOLE ("Non-finite values detected in element-wise design matrix columns; individual rows will be removed from voxel-wise design matrices accordingly");
   }
   check_design (design, extra_columns.size());
+
+  // Load variance groups
+  auto variance_groups = GLM::load_variance_groups (design.rows());
+  const size_t num_vgs = variance_groups.size() ? variance_groups.maxCoeff()+1 : 1;
+  if (num_vgs > 1)
+    CONSOLE ("Number of variance groups: " + str(num_vgs));
 
   // Load hypotheses
   const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[2]);
@@ -281,13 +288,15 @@ void run() {
 
   {
     matrix_type betas (num_factors, num_voxels);
-    matrix_type abs_effect_size (num_voxels, num_hypotheses), std_effect_size (num_voxels, num_hypotheses);
-    vector_type cond (num_voxels), stdev (num_voxels);
+    matrix_type abs_effect_size (num_voxels, num_hypotheses);
+    matrix_type std_effect_size (num_voxels, num_hypotheses);
+    matrix_type stdev (num_vgs, num_voxels);
+    vector_type cond (num_voxels);
 
-    Math::Stats::GLM::all_stats (data, design, extra_columns, hypotheses,
+    Math::Stats::GLM::all_stats (data, design, extra_columns, hypotheses, variance_groups,
                                  cond, betas, abs_effect_size, std_effect_size, stdev);
 
-    ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_hypotheses) + 1 + (nans_in_data || extra_columns.size() ? 1 : 0));
+    ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_hypotheses) + num_vgs + (nans_in_data || extra_columns.size() ? 1 : 0));
     for (ssize_t i = 0; i != num_factors; ++i) {
       write_output (betas.row(i), *v2v, prefix + "beta" + str(i) + ".mif", output_header);
       ++progress;
@@ -296,23 +305,39 @@ void run() {
       if (!hypotheses[i].is_F()) {
         write_output (abs_effect_size.col(i), *v2v, prefix + "abs_effect" + postfix(i) + ".mif", output_header);
         ++progress;
-        write_output (std_effect_size.col(i), *v2v, prefix + "std_effect" + postfix(i) + ".mif", output_header);
+        if (num_vgs == 1)
+          write_output (std_effect_size.col(i), *v2v, prefix + "std_effect" + postfix(i) + ".mif", output_header);
+      } else {
         ++progress;
       }
+      ++progress;
     }
     if (nans_in_data || extra_columns.size()) {
       write_output (cond, *v2v, prefix + "cond.mif", output_header);
       ++progress;
     }
-    write_output (stdev, *v2v, prefix + "std_dev.mif", output_header);
+    if (num_vgs == 1) {
+      write_output (stdev.row(0), *v2v, prefix + "std_dev.mif", output_header);
+    } else {
+      for (size_t i = 0; i != num_vgs; ++i) {
+        write_output (stdev.row(i), *v2v, prefix + "std_dev.mif", output_header);
+        ++progress;
+      }
+    }
   }
 
   // Construct the class for performing the initial statistical tests
   std::shared_ptr<GLM::TestBase> glm_test;
   if (extra_columns.size() || nans_in_data) {
-    glm_test.reset (new GLM::TestVariable (extra_columns, data, design, hypotheses, nans_in_data, nans_in_columns));
+    if (variance_groups.size())
+      glm_test.reset (new GLM::TestVariableHeteroscedastic (extra_columns, data, design, hypotheses, variance_groups, nans_in_data, nans_in_columns));
+    else
+      glm_test.reset (new GLM::TestVariableHomoscedastic (extra_columns, data, design, hypotheses, nans_in_data, nans_in_columns));
   } else {
-    glm_test.reset (new GLM::TestFixed (data, design, hypotheses));
+    if (variance_groups.size())
+      glm_test.reset (new GLM::TestFixedHeteroscedastic (data, design, hypotheses, variance_groups));
+    else
+      glm_test.reset (new GLM::TestFixedHomoscedastic (data, design, hypotheses));
   }
 
   std::shared_ptr<Stats::EnhancerBase> enhancer;
@@ -333,14 +358,12 @@ void run() {
   }
 
   // Precompute statistic value and enhanced statistic for the default permutation
-  matrix_type default_output, enhanced_output;
-  Stats::PermTest::precompute_default_permutation (glm_test, enhancer, empirical_enhanced_statistic, enhanced_output, default_output);
+  matrix_type default_statistic, default_zstat, default_enhanced;
+  Stats::PermTest::precompute_default_permutation (glm_test, enhancer, empirical_enhanced_statistic, default_statistic, default_zstat, default_enhanced);
   for (size_t i = 0; i != num_hypotheses; ++i) {
-    if (hypotheses[i].is_F())
-      write_output (default_output.col(i).array().square(), *v2v, prefix + "Fvalue" + postfix(i) + ".mif", output_header);
-    else
-      write_output (default_output.col (i), *v2v, prefix + "tvalue" + postfix(i) + ".mif", output_header);
-    write_output (enhanced_output.col (i), *v2v, prefix + (use_tfce ? "tfce" : "clustersize") + postfix(i) + ".mif", output_header);
+    write_output (default_statistic.col (i), *v2v, prefix + (hypotheses[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".mif", output_header);
+    write_output (default_zstat    .col (i), *v2v, prefix + "Zstat" + postfix(i) + ".mif", output_header);
+    write_output (default_enhanced .col (i), *v2v, prefix + (use_tfce ? "tfce" : "clustersize") + postfix(i) + ".mif", output_header);
   }
 
   if (!get_options ("notest").size()) {
@@ -353,7 +376,7 @@ void run() {
     matrix_type null_distribution, uncorrected_pvalue;
     count_matrix_type null_contributions;
 
-    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_enhanced_statistic, enhanced_output, fwe_strong,
+    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_enhanced_statistic, default_enhanced, fwe_strong,
                                        null_distribution, null_contributions, uncorrected_pvalue);
 
     ProgressBar progress ("Outputting final results", (fwe_strong ? 1 : num_hypotheses) + 1 + 3*num_hypotheses);
@@ -368,7 +391,7 @@ void run() {
       }
     }
 
-    const matrix_type fwe_pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, enhanced_output);
+    const matrix_type fwe_pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, default_enhanced);
     ++progress;
     for (size_t i = 0; i != num_hypotheses; ++i) {
       write_output (fwe_pvalue_output.col(i), *v2v, prefix + "fwe_1mpvalue" + postfix(i) + ".mif", output_header);

@@ -43,6 +43,13 @@ namespace MR
         + Option ("errors", "specify nature of errors for shuffling; options are: " + join(error_types, ",") + " (default: ee)")
           + Argument ("spec").type_choice (error_types)
 
+        + Option ("exchange_within", "specify blocks of observations within each of which data may undergo restricted exchange")
+          + Argument ("file").type_file_in()
+
+        + Option ("exchange_whole", "specify blocks of observations that may be exchanged with one another "
+                                    "(for independent and symmetric errors, sign-flipping will occur block-wise)")
+          + Argument ("file").type_file_in()
+
         + Option ("strong", "use strong familywise error control across multiple hypotheses")
 
         + Option ("nshuffles", "the number of shuffles (default: " + str(DEFAULT_NUMBER_SHUFFLES) + ")")
@@ -117,7 +124,30 @@ namespace MR
           }
         }
 
-        initialise (error_types, nshuffles_explicit, is_nonstationarity);
+        opt = get_options ("exchange_within");
+        index_array_type eb_within;
+        if (opt.size()) {
+          try {
+            eb_within = load_blocks (std::string (opt[0][0]), false);
+          } catch (Exception& e) {
+            throw Exception (e, "Unable to read file \"" + std::string(opt[0][0]) + "\" as within-block exchangeability");
+          }
+        }
+
+        opt = get_options ("exchange_whole");
+        index_array_type eb_whole;
+        if (opt.size()) {
+          if (eb_within.size())
+            throw Exception ("Cannot specify both \"within\" and \"whole\" exchangeability block data");
+          try {
+            eb_whole = load_blocks (std::string (opt[0][0]), true);
+          } catch (Exception& e) {
+            throw Exception (e, "Unable to read file \"" + std::string(opt[0][0]) + "\" as whole-block exchangeability");
+          }
+        }
+
+
+        initialise (error_types, nshuffles_explicit, is_nonstationarity, eb_within, eb_whole);
 
         if (msg.size())
           progress.reset (new ProgressBar (msg, nshuffles));
@@ -131,10 +161,22 @@ namespace MR
                           const error_t error_types,
                           const bool is_nonstationarity,
                           const std::string msg) :
+          Shuffler (num_rows, num_shuffles, error_types, is_nonstationarity, index_array_type(), index_array_type(), msg) { }
+
+
+
+
+      Shuffler::Shuffler (const size_t num_rows,
+                          const size_t num_shuffles,
+                          const error_t error_types,
+                          const bool is_nonstationarity,
+                          const index_array_type& eb_within,
+                          const index_array_type& eb_whole,
+                          const std::string msg) :
           rows (num_rows),
           nshuffles (num_shuffles)
       {
-        initialise (error_types, true, is_nonstationarity);
+        initialise (error_types, true, is_nonstationarity, eb_within, eb_whole);
         if (msg.size())
           progress.reset (new ProgressBar (msg, nshuffles));
       }
@@ -152,6 +194,7 @@ namespace MR
           output.data.resize (0, 0);
           return false;
         }
+        // TESTME Think I need to adjust the signflips application based on the permutations
         if (permutations.size()) {
           output.data = matrix_type::Zero (rows, rows);
           for (size_t i = 0; i != rows; ++i)
@@ -179,18 +222,62 @@ namespace MR
 
 
 
+      void Shuffler::reset()
+      {
+        counter = 0;
+        progress.reset();
+      }
+
+
+
+
+
 
       void Shuffler::initialise (const error_t error_types,
                                  const bool nshuffles_explicit,
-                                 const bool is_nonstationarity)
+                                 const bool is_nonstationarity,
+                                 const index_array_type& eb_within,
+                                 const index_array_type& eb_whole)
       {
+        assert (!(eb_within.size() && eb_whole.size()));
+        if (eb_within.size()) {
+          assert (eb_within.size() == rows);
+          assert (!eb_within.minCoeff());
+        }
+        if (eb_whole.size()) {
+          assert (eb_whole.size() == rows);
+          assert (!eb_whole.minCoeff());
+        }
+
         const bool ee = (error_types == error_t::EE || error_types == error_t::BOTH);
         const bool ise = (error_types == error_t::ISE || error_types == error_t::BOTH);
 
-        const size_t max_num_permutations = factorial (rows);
-        const size_t max_num_signflips = (rows >= 8*sizeof(size_t)) ?
-                                         (std::numeric_limits<size_t>::max()) :
-                                         ((size_t(1) << rows));
+        size_t max_num_permutations;
+        if (eb_within.size()) {
+          vector<size_t> counts (eb_within.maxCoeff()+1, 0);
+          for (ssize_t i = 0; i != eb_within.size(); ++i)
+            counts[eb_within[i]]++;
+          max_num_permutations = 1;
+          for (const auto& b : counts) {
+            const size_t old_value = max_num_permutations;
+            const size_t max_permutations_within_block = factorial (b);
+            max_num_permutations *= factorial (b);
+            if (max_num_permutations / max_permutations_within_block != old_value) {
+              max_num_permutations = std::numeric_limits<size_t>::max();
+              break;
+            }
+          }
+        } else if (eb_whole.size()) {
+          max_num_permutations = factorial (eb_whole.maxCoeff()+1);
+        } else {
+          max_num_permutations = factorial (rows);
+        }
+
+        auto safe2pow = [] (const size_t i) { return (i >= 8*sizeof(size_t)) ? (std::numeric_limits<size_t>::max()) : ((size_t(1) << i)); };
+        const size_t max_num_signflips = eb_whole.size() ?
+                                         safe2pow (eb_whole.maxCoeff()+1) :
+                                         safe2pow (rows);
+
         size_t max_shuffles;
         if (ee) {
           if (ise) {
@@ -232,9 +319,10 @@ namespace MR
         if (ee && !permutations.size()) {
           if (ise) {
             if (nshuffles == max_shuffles) {
-              generate_all_permutations (rows);
+              generate_all_permutations (rows, eb_within, eb_whole);
               assert (permutations.size() == max_num_permutations);
               vector<PermuteLabels> duplicated_permutations;
+              duplicated_permutations.reserve (max_shuffles);
               for (const auto& p : permutations) {
                 for (size_t i = 0; i != max_num_signflips; ++i)
                   duplicated_permutations.push_back (p);
@@ -242,18 +330,18 @@ namespace MR
               std::swap (permutations, duplicated_permutations);
               assert (permutations.size() == max_shuffles);
             } else if (nshuffles == max_num_permutations) {
-              generate_all_permutations (rows);
+              generate_all_permutations (rows, eb_within, eb_whole);
               assert (permutations.size() == max_num_permutations);
             } else {
               // - Only include the default shuffling if this is the actual permutation testing;
               //   if we're doing nonstationarity correction, don't include the default
               // - Permit duplicates (specifically of permutations only) if an adequate number cannot be generated
-              generate_random_permutations (nshuffles, rows, !is_nonstationarity, nshuffles > max_num_permutations);
+              generate_random_permutations (nshuffles, rows, eb_within, eb_whole, !is_nonstationarity, nshuffles > max_num_permutations);
             }
           } else if (nshuffles < max_shuffles) {
-            generate_random_permutations (nshuffles, rows, !is_nonstationarity, false);
+            generate_random_permutations (nshuffles, rows, eb_within, eb_whole, !is_nonstationarity, false);
           } else {
-            generate_all_permutations (rows);
+            generate_all_permutations (rows, eb_within, eb_whole);
             assert (permutations.size() == max_shuffles);
           }
         }
@@ -261,28 +349,62 @@ namespace MR
         if (ise) {
           if (ee) {
             if (nshuffles == max_shuffles) {
-              generate_all_signflips (rows);
+              generate_all_signflips (rows, eb_whole);
               assert (signflips.size() == max_num_signflips);
               vector<BitSet> duplicated_signflips;
+              duplicated_signflips.reserve (max_shuffles);
               for (size_t i = 0; i != max_num_permutations; ++i)
                 duplicated_signflips.insert (duplicated_signflips.end(), signflips.begin(), signflips.end());
               std::swap (signflips, duplicated_signflips);
               assert (signflips.size() == max_shuffles);
             } else if (nshuffles == max_num_signflips) {
-              generate_all_signflips (rows);
+              generate_all_signflips (rows, eb_whole);
               assert (signflips.size() == max_num_signflips);
             } else {
-              generate_random_signflips (nshuffles, rows, !is_nonstationarity, nshuffles > max_num_signflips);
+              generate_random_signflips (nshuffles, rows, eb_whole, !is_nonstationarity, nshuffles > max_num_signflips);
             }
           } else if (nshuffles < max_shuffles) {
-            generate_random_signflips (nshuffles, rows, !is_nonstationarity, false);
+            generate_random_signflips (nshuffles, rows, eb_whole, !is_nonstationarity, false);
           } else {
-            generate_all_signflips (rows);
+            generate_all_signflips (rows, eb_whole);
             assert (signflips.size() == max_shuffles);
           }
         }
 
         nshuffles = std::min (nshuffles, max_shuffles);
+      }
+
+
+
+
+
+      index_array_type Shuffler::load_blocks (const std::string& filename, const bool equal_sizes)
+      {
+        index_array_type data = load_vector<size_t> (filename).array();
+        if (size_t(data.size()) != rows)
+          throw Exception ("Number of entries in file \"" + filename + "\" (" + str(data.size()) + ") does not match number of inputs (" + str(rows) + ")");
+        const size_t min_coeff = data.minCoeff();
+        size_t max_coeff = data.maxCoeff();
+        if (min_coeff > 1)
+          throw Exception ("Minimum index in file \"" + filename + "\" must be either 0 or 1");
+        if (min_coeff) {
+          data.array() -= 1;
+          max_coeff--;
+        }
+        vector<size_t> counts (max_coeff+1, 0);
+        for (size_t i = 0; i != size_t(data.size()); ++i)
+          counts[data[i]]++;
+        for (size_t i = 0; i <= max_coeff; ++i) {
+          if (counts[i] < 2)
+            throw Exception ("Sequential indices in file \"" + filename + "\" must contain at least two entries each");
+        }
+        if (equal_sizes) {
+          for (size_t i = 1; i <= max_coeff; ++i) {
+            if (counts[i] != counts[0])
+              throw Exception ("Indices in file \"" + filename + "\" do not contain the same number of elements each");
+          }
+        }
+        return data;
       }
 
 
@@ -314,6 +436,8 @@ namespace MR
 
       void Shuffler::generate_random_permutations (const size_t num_perms,
                                                    const size_t num_rows,
+                                                   const index_array_type& eb_within,
+                                                   const index_array_type& eb_whole,
                                                    const bool include_default,
                                                    const bool permit_duplicates)
       {
@@ -329,27 +453,144 @@ namespace MR
           permutations.push_back (default_labelling);
           ++p;
         }
-        for (; p != num_perms; ++p) {
+
+        // Unrestricted exchangeability
+        if (!eb_within.size() && !eb_whole.size()) {
+          for (; p != num_perms; ++p) {
+            PermuteLabels permuted_labelling (default_labelling);
+            do {
+              std::random_shuffle (permuted_labelling.begin(), permuted_labelling.end());
+            } while (!permit_duplicates && is_duplicate (permuted_labelling));
+            permutations.push_back (permuted_labelling);
+          }
+          return;
+        }
+
+        vector<vector<size_t>> blocks;
+
+        // Within-block exchangeability
+        if (eb_within.size()) {
+          blocks = indices2blocks (eb_within);
           PermuteLabels permuted_labelling (default_labelling);
+          for (; p != num_perms; ++p) {
+            do {
+              permuted_labelling = default_labelling;
+              // Random permutation within each block independently
+              for (size_t ib = 0; ib != blocks.size(); ++ib) {
+                vector<size_t> permuted_block (blocks[ib]);
+                std::random_shuffle (permuted_block.begin(), permuted_block.end());
+                for (size_t i = 0; i != permuted_block.size(); ++i)
+                  permuted_labelling[blocks[ib][i]] = permuted_block[i];
+              }
+            } while (!permit_duplicates && is_duplicate (permuted_labelling));
+            permutations.push_back (permuted_labelling);
+          }
+          return;
+        }
+
+        // Whole-block exchangeability
+        blocks = indices2blocks (eb_whole);
+        const size_t num_blocks = blocks.size();
+        assert (!(num_rows % num_blocks));
+        const size_t block_size = num_rows / num_blocks;
+        PermuteLabels default_blocks (num_blocks);
+        for (size_t i = 0; i != num_blocks; ++i)
+          default_blocks[i] = i;
+        PermuteLabels permuted_labelling (default_labelling);
+        for (; p != num_perms; ++p) {
           do {
-            std::random_shuffle (permuted_labelling.begin(), permuted_labelling.end());
+            // Randomly order a list corresponding to the block indices, and then
+            //   generate the full permutation label listing accordingly
+            PermuteLabels permuted_blocks (default_blocks);
+            std::random_shuffle (permuted_blocks.begin(), permuted_blocks.end());
+            for (size_t ib = 0; ib != num_blocks; ++ib) {
+              for (size_t i = 0; i != block_size; ++i)
+                permuted_labelling[blocks[ib][i]] = blocks[permuted_blocks[ib]][i];
+            }
           } while (!permit_duplicates && is_duplicate (permuted_labelling));
           permutations.push_back (permuted_labelling);
         }
+
       }
 
 
 
-      void Shuffler::generate_all_permutations (const size_t num_rows)
+      void Shuffler::generate_all_permutations (const size_t num_rows,
+                                                const index_array_type& eb_within,
+                                                const index_array_type& eb_whole)
       {
         permutations.clear();
-        permutations.reserve (factorial (num_rows));
-        PermuteLabels temp (num_rows);
-        for (size_t i = 0; i < num_rows; ++i)
-          temp[i] = i;
-        permutations.push_back (temp);
-        while (std::next_permutation (temp.begin(), temp.end()))
+
+        // Unrestricted exchangeability
+        if (!eb_within.size() && !eb_whole.size()) {
+          permutations.reserve (factorial (num_rows));
+          PermuteLabels temp (num_rows);
+          for (size_t i = 0; i < num_rows; ++i)
+            temp[i] = i;
           permutations.push_back (temp);
+          while (std::next_permutation (temp.begin(), temp.end()))
+            permutations.push_back (temp);
+          return;
+        }
+
+        vector<vector<size_t>> original;
+
+        // Within-block exchangeability
+        if (eb_within.size()) {
+
+          original = indices2blocks (eb_within);
+
+          auto write = [&] (const vector<vector<size_t>>& data)
+          {
+            PermuteLabels temp (num_rows);
+            for (size_t block = 0; block != data.size(); ++block) {
+              for (size_t i = 0; i != data[block].size(); ++i)
+                temp[original[block][i]] = data[block][i];
+            }
+            permutations.push_back (std::move (temp));
+          };
+
+          vector<vector<size_t>> blocks (original);
+          write (blocks);
+          do {
+            size_t ib = 0;
+            // Go to the next valid permutation within the first block;
+            //   if there are no more permutations left, the data within that block becomes
+            //   re-sorted (i.e. the first within-block permutation), and we get the
+            //   next permutation of the next block; if there's also no more permutations
+            //   within that block, go to the next block, and so on.
+            while (!std::next_permutation (blocks[ib].begin(), blocks[ib].end())) {
+              if (++ib == blocks.size())
+                return;
+            }
+            write (blocks);
+          } while (true);
+
+        }
+
+        // Whole-block exchangeability
+        original = indices2blocks (eb_whole);
+        const size_t num_blocks = original.size();
+        PermuteLabels indices (num_blocks);
+        for (size_t i = 0; i != num_blocks; ++i)
+          indices[i] = i;
+
+        auto write = [&] (const PermuteLabels& data)
+        {
+          PermuteLabels temp (num_rows);
+          for (size_t ib = 0; ib != original.size(); ++ib) {
+            for (size_t i = 0; i != original[ib].size(); ++i)
+              temp[original[ib][i]] = original[data[ib]][i];
+          }
+          permutations.push_back (std::move (temp));
+        };
+
+        // All possible permutations of blocks;
+        //   preserving data within each block is handled within write()
+        write (indices);
+        while (std::next_permutation (indices.begin(), indices.end()))
+          write (indices);
+
       }
 
 
@@ -388,6 +629,7 @@ namespace MR
 
       void Shuffler::generate_random_signflips (const size_t num_signflips,
                                                 const size_t num_rows,
+                                                const index_array_type& block_indices,
                                                 const bool include_default,
                                                 const bool permit_duplicates)
       {
@@ -402,12 +644,31 @@ namespace MR
         std::random_device rd;
         std::mt19937 generator (rd());
         std::uniform_int_distribution<> distribution (0, 1);
+
+        BitSet rows_to_flip (num_rows);
+
+        // Whole-block sign-flipping
+        if (block_indices.size()) {
+          const auto blocks = indices2blocks (block_indices);
+          for (; s != num_signflips; ++s) {
+            do {
+              for (size_t ib = 0; ib != blocks.size(); ++ib) {
+                const bool value = distribution (generator);
+                for (const auto i : blocks[ib])
+                  rows_to_flip[i] = value;
+              }
+            } while (!permit_duplicates && is_duplicate (rows_to_flip));
+            signflips.push_back (rows_to_flip);
+          }
+          return;
+        }
+
+        // Unrestricted sign-flipping
         for (; s != num_signflips; ++s) {
-          BitSet rows_to_flip (num_rows);
           do {
             // TODO Should be a faster mechanism for generating / storing random bits
-            for (size_t index = 0; index != num_rows; ++index)
-              rows_to_flip[index] = distribution (generator);
+            for (size_t ir = 0; ir != num_rows; ++ir)
+              rows_to_flip[ir] = distribution (generator);
           } while (!permit_duplicates && is_duplicate (rows_to_flip));
           signflips.push_back (rows_to_flip);
         }
@@ -415,9 +676,43 @@ namespace MR
 
 
 
-      void Shuffler::generate_all_signflips (const size_t num_rows)
+      void Shuffler::generate_all_signflips (const size_t num_rows,
+                                             const index_array_type& block_indices)
       {
         signflips.clear();
+
+        // Whole-block sign-flipping
+        if (block_indices.size()) {
+          const auto blocks = indices2blocks (block_indices);
+
+          auto write = [&] (const BitSet& data)
+          {
+            BitSet temp (num_rows);
+            for (size_t ib = 0; ib != blocks.size(); ++ib) {
+              if (data[ib]) {
+                for (const auto i : blocks[ib])
+                  temp[i] = true;
+              }
+            }
+            signflips.push_back (std::move (temp));
+          };
+
+          BitSet temp (blocks.size());
+          write (temp);
+          do {
+            ssize_t ib = 0;
+            while (temp[ib]) {
+              if (size_t(++ib) == blocks.size())
+                return;
+            }
+            temp[ib] = true;
+            for (--ib; ib >= 0; --ib)
+              temp[ib] = false;
+            write (temp);
+          } while (true);
+        }
+
+        // Unrestricted sign-flipping
         signflips.reserve (size_t(1) << num_rows);
         BitSet temp (num_rows, false);
         signflips.push_back (temp);
@@ -429,6 +724,22 @@ namespace MR
             temp[indices_zeroed] = false;
           signflips.push_back (temp);
         }
+      }
+
+
+
+
+
+
+
+      vector<vector<size_t>> Shuffler::indices2blocks (const index_array_type& indices) const
+      {
+        const size_t num_blocks = indices.maxCoeff()+1;
+        vector<vector<size_t>> result;
+        result.resize (num_blocks);
+        for (ssize_t i = 0; i != indices.size(); ++i)
+          result[indices[i]].push_back (i);
+        return result;
       }
 
 
