@@ -58,9 +58,9 @@ namespace MR
       //CONF Note that this location can also be manipulated using the
       //CONF :envvar:`MRTRIX_TMPFILE_DIR` environment variable, without editing the
       //CONF config file. Note also that this setting does not influence the
-      //CONF location in which Python scripts construct their temporary
+      //CONF location in which Python scripts construct their scratch
       //CONF directories; that is determined based on config file option
-      //CONF ScriptTmpDir.
+      //CONF ScriptScratchDir.
 
       //ENVVAR name: MRTRIX_TMPFILE_DIR
       //ENVVAR This has the same effect as the :option:`TmpFileDir`
@@ -119,25 +119,26 @@ namespace MR
         return __tmpfile_prefix;
       }
 
+
       /* Config file options listed here so that they can be scraped by
        * generate_user_docs.sh and added to the list of config file options in
        * the documentation without modifying the script to read from the scripts
        * directory.
        */
 
-      //CONF option: ScriptTmpDir
+      //CONF option: ScriptScratchDir
       //CONF default: `.`
-      //CONF The location in which to generate the temporary directories to be
+      //CONF The location in which to generate the scratch directories to be
       //CONF used by MRtrix Python scripts. By default they will be generated
       //CONF in the working directory.
       //CONF Note that this setting does not influence the location in which
       //CONF piped images and other temporary files are created by MRtrix3;
       //CONF that is determined based on config file option :option:`TmpFileDir`.
 
-      //CONF option: ScriptTmpPrefix
+      //CONF option: ScriptScratchPrefix
       //CONF default: `<script>-tmp-`
       //CONF The prefix to use when generating a unique name for a Python
-      //CONF script temporary directory. By default the name of the invoked
+      //CONF script scratch directory. By default the name of the invoked
       //CONF script itself will be used, followed by `-tmp-` (six random
       //CONF characters are then appended to produce a unique name in cases
       //CONF where a script may be run multiple times in parallel).
@@ -146,20 +147,26 @@ namespace MR
 
 
 
+    inline void remove (const std::string& file)
+    {
+      if (std::remove (file.c_str()))
+        throw Exception ("error deleting file \"" + file + "\": " + strerror (errno));;
+    }
+
 
     inline void create (const std::string& filename, int64_t size = 0)
     {
       DEBUG (std::string("creating ") + (size ? "" : "empty ") + "file \"" + filename + "\"" + (size ? " with size " + str (size) : ""));
 
-      int fid = open (filename.c_str(), O_CREAT | O_RDWR | ( App::overwrite_files ? O_TRUNC : O_EXCL ), S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
-      if (fid < 0) {
-        if (App::check_overwrite_files_func && errno == EEXIST)
-          App::check_overwrite_files_func (filename);
-        else if (errno == EEXIST)
-          throw Exception ("output file \"" + filename + "\" already exists (use -force option to force overwrite)");
+      int fid;
+      while ( (fid = open (filename.c_str(), O_CREAT | O_RDWR | O_EXCL, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) < 0) {
+        if (errno == EEXIST) {
+          App::check_overwrite (filename);
+          INFO ("file \"" + filename + "\" already exists - removing");
+          remove (filename);
+        }
         else
           throw Exception ("error creating output file \"" + filename + "\": " + std::strerror (errno));
-        fid = open (filename.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
       }
       if (fid < 0) {
         std::string mesg ("error creating file \"" + filename + "\": " + strerror (errno));
@@ -240,12 +247,6 @@ namespace MR
 #endif
             ))
         throw Exception ("error creating folder \"" + folder + "\": " + strerror (errno));
-    }
-
-    inline void remove (const std::string& file)
-    {
-      if (std::remove (file.c_str()))
-        throw Exception ("error deleting file \"" + file + "\": " + strerror (errno));;
     }
 
     inline void rmdir (const std::string& folder, bool recursive = false)

@@ -21,6 +21,7 @@
 
 #include "image.h"
 #include "header.h"
+#include "types.h"
 #include "image_io/sparse.h"
 #include "fixel/legacy/keys.h"
 
@@ -126,14 +127,14 @@ namespace MR
             if (typeid (*ptr) != typeid (ImageIO::SparseLegacy))
               throw Exception ("cannot create sparse image to access non-sparse data");
             // Use the header information rather than trying to access this from the handler
-            std::map<std::string, std::string>::const_iterator name_it = keyval().find (Fixel::Legacy::name_key);
+            KeyValues::const_iterator name_it = keyval().find (Fixel::Legacy::name_key);
             if (name_it == keyval().end())
               throw Exception ("cannot create sparse image without knowledge of underlying class type in the image header");
             // TODO temporarily disabled this to allow updated_syntax tests to pass with files generated with master branch.
   //          const std::string& class_name = name_it->second;
   //          if (str(typeid(DataType).name()) != class_name)
   //            throw Exception ("class type of sparse image buffer (" + str(typeid(DataType).name()) + ") does not match that in image header (" + class_name + ")");
-            std::map<std::string, std::string>::const_iterator size_it = keyval().find (Fixel::Legacy::size_key);
+            KeyValues::const_iterator size_it = keyval().find (Fixel::Legacy::size_key);
             if (size_it == keyval().end())
               throw Exception ("cannot create sparse image without knowledge of underlying class size in the image header");
             const size_t class_size = to<size_t>(size_it->second);

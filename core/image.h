@@ -57,7 +57,7 @@ namespace MR
         FORCE_INLINE bool operator! () const { return !valid(); }
 
         //! get generic key/value text attributes
-        FORCE_INLINE const std::map<std::string, std::string>& keyval () const { return buffer->keyval(); }
+        FORCE_INLINE const KeyValues& keyval () const { return buffer->keyval(); }
 
         FORCE_INLINE const std::string& name() const { return buffer->name(); }
         FORCE_INLINE const transform_type& transform() const { return buffer->transform(); }

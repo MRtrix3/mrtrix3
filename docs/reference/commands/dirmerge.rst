@@ -6,7 +6,7 @@ dirmerge
 Synopsis
 --------
 
-Splice or merge sets of directions over multiple shells into a single set, in such a way as to maintain near-optimality upon truncation
+Splice / merge multiple sets of directions in such a way as to maintain near-optimality upon truncation
 
 Usage
 --------
@@ -15,7 +15,7 @@ Usage
 
     dirmerge [ options ]  subsets bvalue files [ bvalue files ... ] out
 
--  *subsets*: the number of subsets (phase-encode directions) per b-value
+-  *subsets*: the number of subsets (eg. phase encoding directions) per b-value
 -  *bvalue files*: the b-value and sets of corresponding files, in order
 -  *out*: the output directions file, with each row listing the X Y Z gradient directions, the b-value, and an index representing the phase encode direction
 
@@ -29,13 +29,15 @@ Standard options
 
 -  **-info** display information messages.
 
--  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+-  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages.
 
--  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
+-  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 

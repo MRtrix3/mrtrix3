@@ -27,7 +27,7 @@ These applications have been written from scratch in C++, using the functionalit
    :caption: Getting started
 
    getting_started/key_features
-   getting_started/commands_and_scripts
+   getting_started/commands
    getting_started/beginner_dwi_tutorial
    getting_started/image_data
    getting_started/command_line
@@ -38,7 +38,7 @@ These applications have been written from scratch in C++, using the functionalit
    :caption: DWI Pre-processing
 
    dwi_preprocessing/denoising
-   dwi_preprocessing/dwipreproc
+   dwi_preprocessing/dwifslpreproc
 
 .. toctree::
    :maxdepth: 1
@@ -71,14 +71,6 @@ These applications have been written from scratch in C++, using the functionalit
 
 .. toctree::
    :maxdepth: 1
-   :caption: Spatial Normalisation
-
-   spatial_normalisation/warping_images_with_warps_from_other_packages
-..   spatial_normalisation/warp_file_formats
-..   spatial_normalisation/transforming_streamlines
-
-.. toctree::
-   :maxdepth: 1
    :caption: Concepts
 
    concepts/dw_scheme
@@ -96,22 +88,13 @@ These applications have been written from scratch in C++, using the functionalit
    tips_and_tricks/dicom_handling
    tips_and_tricks/batch_processing_with_foreach
    tips_and_tricks/external_modules
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Troubleshooting
-
-   troubleshooting/performance_and_crashes
-   troubleshooting/display_issues
-   troubleshooting/FAQ
-   troubleshooting/advanced_debugging
+   tips_and_tricks/troubleshooting
 
 .. toctree::
    :maxdepth: 1
    :caption: Reference
 
    reference/commands_list
-   reference/scripts_list
    reference/config_file_options
    reference/environment_variables
    reference/mrtrix2_equivalent_commands

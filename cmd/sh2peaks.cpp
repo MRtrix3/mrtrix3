@@ -33,7 +33,11 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  SYNOPSIS = "Extract the peaks of a spherical harmonic function at each voxel, by commencing a Newton search along a set of specified directions";
+  SYNOPSIS = "Extract the peaks of a spherical harmonic function in each voxel";
+
+  DESCRIPTION
+  + "Peaks of the spherical harmonic function in each voxel are located by "
+    "commencing a Newton search along each of a set of pre-specified directions";
 
   ARGUMENTS
   + Argument ("SH", "the input image of SH coefficients.")
@@ -75,6 +79,11 @@ void usage ()
 
   + Option ("fast",
             "use lookup table to compute associated Legendre polynomials (faster, but approximate).");
+
+  REFERENCES
+   + "Jeurissen, B.; Leemans, A.; Tournier, J.-D.; Jones, D.K.; Sijbers, J. "
+     "Investigating the prevalence of complex fiber configurations in white matter tissue with diffusion magnetic resonance imaging. "
+     "Human Brain Mapping, 2013, 34(11), 2747-2766";
 }
 
 
