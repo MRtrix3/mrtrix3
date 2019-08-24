@@ -20,7 +20,10 @@
 #include "thread_queue.h"
 #include "math/betainc.h"
 #include "math/erfinv.h"
+#include "math/welch_satterthwaite.h"
 #include "misc/bitset.h"
+
+#define MRTRIX_USE_ZSTATISTIC_LOOKUP
 
 namespace MR
 {
@@ -644,11 +647,19 @@ namespace MR
                 stats  (ie, ih) = zstats (ie, ih) = value_type(0);
               } else if (c[ih].is_F()) {
                 stats  (ie, ih) = F;
+#ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
                 zstats (ie, ih) = stat2z->F2z (F, c[ih].rank(), dof);
+#else
+                zstats (ie, ih) = Math::F2z (F, c[ih].rank(), dof);
+#endif
               } else {
                 assert (beta.rows() == 1);
                 stats  (ie, ih) = std::sqrt (F) * (beta.sum() > 0.0 ? 1.0 : -1.0);
+#ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
                 zstats (ie, ih) = stat2z->t2z (stats (ie, ih), dof);
+#else
+                zstats (ie, ih) = Math::t2z (stats (ie, ih), dof);
+#endif
               }
             }
 
@@ -777,21 +788,34 @@ namespace MR
 #ifdef GLM_TEST_DEBUG
               VAR (gamma);
 #endif
-              const default_type dof = 2.0 * default_type(c[ih].rank() - 1) / 3.0 / (gamma - 1.0);
-#ifdef GLM_TEST_DEBUG
-              VAR (dof);
-#endif
               const default_type denominator = gamma * c[ih].rank();
               const default_type G = numerator / denominator;
               if (!std::isfinite (G)) {
                 stats  (ie, ih) = zstats (ie, ih) = value_type(0);
-              } else if (c[ih].is_F()) {
-                stats  (ie, ih) = G;
-                zstats (ie, ih) = stat2z->F2z (G, c[ih].rank(), dof);
               } else {
-                // Only compute beta if required to determine sign of effect
-                stats  (ie, ih) = std::sqrt (G) * ((c[ih].matrix() * lambdas.col (ie)).sum() > 0.0 ? 1.0 : -1.0);
-                zstats (ie, ih) = stat2z->t2z (stats (ie, ih), dof);
+                stats  (ie, ih) = c[ih].is_F() ?
+                                  G :
+                                  std::sqrt (G) * ((c[ih].matrix() * lambdas.col (ie)).sum() > 0.0 ? 1.0 : -1.0);
+                if (c[ih].is_F() && c[ih].rank() > 1) {
+                  const default_type dof = 2.0 * default_type(c[ih].rank() - 1) / (3.0 * (gamma - 1.0));
+#ifdef GLM_TEST_DEBUG
+                  VAR (dof);
+#endif
+                  zstats (ie, ih) = stat2z->F2z (G, c[ih].rank(), dof);
+                } else {
+                  const default_type dof = Math::welch_satterthwaite (Wterms.col (ie).inverse(), inputs_per_vg);
+#ifdef GLM_TEST_DEBUG
+                  VAR (dof);
+#endif
+                  zstats (ie, ih) = c[ih].is_F() ?
+#ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
+                                    stat2z->G2z (G, c[ih].rank(), dof) :
+                                    stat2z->v2z (stats (ie, ih), dof);
+#else
+                                    Math::F2z (G, c[ih].rank(), dof) :
+                                    Math::t2z (stats (ie, ih), dof);
+#endif
+                }
               }
             }
 
@@ -931,11 +955,19 @@ namespace MR
                       stats  (ie, ih) = zstats (ie, ih) = value_type(0);
                     } else if (c[ih].is_F()) {
                       stats  (ie, ih) = F;
+#ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
                       zstats (ie, ih) = stat2z->F2z (F, c[ih].rank(), dof (ie, ih));
+#else
+                      zstats (ie, ih) = Math::F2z (F, c[ih].rank(), dof (ie, ih));
+#endif
                     } else {
                       assert (beta.rows() == 1);
                       stats  (ie, ih) = std::sqrt (F) * (beta.sum() > 0 ? 1.0 : -1.0);
+#ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
                       zstats (ie, ih) = stat2z->t2z (stats (ie, ih), dof (ie, ih));
+#else
+                      zstats (ie, ih) = Math::t2z (stats (ie, ih), dof (ie, ih));
+#endif
                     }
 
                   } // End checking for sufficient degrees of freedom
@@ -1107,7 +1139,7 @@ namespace MR
                 zstats.row (ie).fill (0.0);
               } else {
                 apply_mask_VG (element_mask, VG_masked, VG_counts);
-                if (!VG_counts.minCoeff()) {
+                if (VG_counts.minCoeff() <= 1) {
                   stats.row (ie).fill (0.0);
                   zstats.row (ie).fill (0.0);
                 } else {
@@ -1146,22 +1178,35 @@ namespace MR
                       gamma += Math::pow2 (1.0 - ((Wterms[vg_index] * VG_counts[vg_index]) / W_trace)) / Rnn_sums[vg_index];
                     gamma = 1.0 + (gamma_weights[ih] * gamma);
 
-                    const default_type dof = 2.0 * default_type(c[ih].rank() - 1) / 3.0 / (gamma - 1.0);
                     const default_type denominator = gamma * c[ih].rank();
                     const default_type G = numerator / denominator;
 
                     if (!std::isfinite (G)) {
                       stats  (ie, ih) = zstats (ie, ih) = value_type(0);
-                    } else if (c[ih].is_F()) {
-                      stats  (ie, ih) = G;
-                      zstats (ie, ih) = stat2z->F2z (G, c[ih].rank(), dof);
                     } else {
-                      stats  (ie, ih) = std::sqrt (G) * ((c[ih].matrix() * lambda.matrix()).sum() > 0.0 ? 1.0 : -1.0);
-                      zstats (ie, ih) = stat2z->t2z (stats (ie, ih), dof);
-                    }
+                      stats  (ie, ih) = c[ih].is_F() ?
+                                        G :
+                                        std::sqrt (G) * ((c[ih].matrix() * lambda.matrix()).sum() > 0.0 ? 1.0 : -1.0);
+                      if (c[ih].is_F() && c[ih].rank() > 1) {
+                        const default_type dof = 2.0 * default_type(c[ih].rank() - 1) / (3.0 * (gamma - 1.0));
+                        zstats (ie, ih) = stat2z->F2z (G, c[ih].rank(), dof);
+                      } else {
+                        const default_type dof = Math::welch_satterthwaite (Wterms.inverse(), VG_counts);
+                        zstats (ie, ih) = c[ih].is_F() ?
+#ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
+                                          stat2z->G2z (G, c[ih].rank(), dof) :
+                                          stat2z->v2z (stats (ie, ih), dof);
+#else
+                                          Math::F2z (G, c[ih].rank(), dof) :
+                                          Math::t2z (stats (ie, ih), dof);
+#endif
+                      } // End switching for F-test with rank > 1
+
+                    } // End checking for G being finite
+
                   } // End looping over hypotheses for this element
 
-                } // End check for preservation of at least one element in each VG
+                } // End check for preservation of at least two elements in each VG
 
               } // End checking for adequate condition number after NaN removal
 
