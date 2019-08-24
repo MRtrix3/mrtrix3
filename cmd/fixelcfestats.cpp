@@ -76,6 +76,11 @@ void usage ()
     "Connectivity-based fixel enhancement: Whole-brain statistical analysis of diffusion MRI measures in the presence of crossing fibres. \n"
     "Neuroimage, 2015, 15(117):40-55\n"
 
+  + "* If not using the -cfe_legacy option: \n"
+    "Smith, RE.; Dimond, D; Vaughan, D.; Parker, D.; Dhollander, T.; Jackson, G.; Connelly, A. \n"
+    "Intrinsic non-stationarity correction for Fixel-Based Analysis. \n"
+    "In Proc OHBM 2019 M789\n"
+
   + "* If using the -nonstationary option: \n"
     "Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. \n"
     "Adjusting the effect of nonstationarity in cluster-based and TFCE inference. \n"
@@ -117,7 +122,7 @@ void usage ()
   + Option ("cfe_c", "cfe connectivity exponent (default: " + str(DEFAULT_CFE_C, 2) + ")")
   + Argument ("value").type_float (0.0, 100.0)
 
-  + Option ("cfe_norm", "use the intrinsically normalised form of the cfe equation")
+  + Option ("cfe_legacy", "use the legacy (non-normalised) form of the cfe equation")
 
   + Math::Stats::GLM::glm_options ("fixel");
 
@@ -134,6 +139,10 @@ void usage ()
 // 2. Re-index data matrix in order to remove empty columns, perform GLM computations, then pad out
 //    data in preparation for statistical enhancement
 //    Could this end up being more expensive than just having some unused columns?
+// 3. Within enhancer, utilise index remapper to access, for each internal fixel index,
+//    the external fixel index, grab the relevant row of the connectivity matrix,
+//    convert all entries back to internal fixel index representation,
+//    also grab only the relevant Z-statistics and place them in a contiguous vector
 
 
 
@@ -225,7 +234,7 @@ void run()
   const value_type cfe_h = get_option_value ("cfe_h", DEFAULT_CFE_H);
   const value_type cfe_e = get_option_value ("cfe_e", DEFAULT_CFE_E);
   const value_type cfe_c = get_option_value ("cfe_c", DEFAULT_CFE_C);
-  const bool cfe_norm = get_options ("cfe_norm").size();
+  const bool cfe_legacy = get_options ("cfe_legacy").size();
 
   const bool do_nonstationarity_adjustment = get_options ("nonstationarity").size();
   const default_type empirical_skew = get_option_value ("skew_nonstationarity", DEFAULT_EMPIRICAL_SKEW);
@@ -341,7 +350,7 @@ void run()
   output_header.keyval()["cfe_e"] = str(cfe_e);
   output_header.keyval()["cfe_h"] = str(cfe_h);
   output_header.keyval()["cfe_c"] = str(cfe_c);
-  output_header.keyval()["cfe_norm"] = str(cfe_norm);
+  output_header.keyval()["cfe_legacy"] = str(cfe_legacy);
 
   matrix_type data = matrix_type::Zero (importer.size(), mask_fixels);
   ProgressBar progress (std::string ("Loading input images (no smoothing)"), importer.size());
@@ -416,7 +425,7 @@ void run()
   }
 
   // Construct the class for performing fixel-based statistical enhancement
-  std::shared_ptr<Stats::EnhancerBase> cfe_integrator (new Stats::CFE (matrix, cfe_dh, cfe_e, cfe_h, cfe_c, cfe_norm));
+  std::shared_ptr<Stats::EnhancerBase> cfe_integrator (new Stats::CFE (matrix, cfe_dh, cfe_e, cfe_h, cfe_c, !cfe_legacy));
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical CFE statistic
   matrix_type empirical_cfe_statistic;

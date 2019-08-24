@@ -31,6 +31,13 @@ Options
 
 -  **-matrix file** provide a fixel-fixel connectivity matrix for filtering operations that require it
 
+Options specific to the "smooth" filter
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-fwhm value** the full-width half-maximum (FWHM) of the spatial component of the smoothing filter (default = 10mm)
+
+-  **-mask image** only perform smoothing within a specified binary fixel mask
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
