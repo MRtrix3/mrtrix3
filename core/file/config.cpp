@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include "app.h"
 #include "debug.h"
 
 #include "file/path.h"
@@ -30,7 +31,7 @@ namespace MR
   namespace File
   {
 
-    std::map<std::string, std::string> Config::config;
+    KeyValues Config::config;
 
     //ENVVAR name: MRTRIX_CONFIGFILE
     //ENVVAR This can be used to set the location of the system-wide
@@ -71,6 +72,10 @@ namespace MR
       } else {
         DEBUG ("No config file found at \"" + path + "\"");
       }
+
+      auto opt = App::get_options ("config");
+      for (const auto& keyval : opt)
+        config[std::string(keyval[0])] = std::string(keyval[1]);
     }
 
 

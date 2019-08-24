@@ -657,8 +657,8 @@ namespace MR
 
         File::OFStream out (path, std::ios_base::binary | std::ios_base::out);
         const std::string string = std::string ("mrtrix_version: ") + App::mrtrix_version;
-        char header[81];
-        strncpy (header, string.c_str(), 80);
+        char header[80];
+        strncpy (header, string.c_str(), 79);
         out.write (header, 80);
         const uint32_t count = triangles.size();
         out.write (reinterpret_cast<const char*>(&count), sizeof(uint32_t));
@@ -702,7 +702,7 @@ namespace MR
     void Mesh::save_obj (const std::string& path) const
     {
       File::OFStream out (path);
-      out << "# mrtrix_version: " << App::mrtrix_version << "\n";
+      out << "# " << App::command_history_string << "\n";
       out << "o " << name << "\n";
       for (VertexList::const_iterator v = vertices.begin(); v != vertices.end(); ++v)
         out << "v " << str((*v)[0]) << " " << str((*v)[1]) << " " << str((*v)[2]) << " 1.0\n";

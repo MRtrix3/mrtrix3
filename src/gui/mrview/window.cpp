@@ -1140,10 +1140,13 @@ namespace MR
       void Window::set_image_volume (size_t axis, ssize_t index)
       {
         assert (image());
-        image()->image.index (axis) = index;
-        set_image_navigation_menu();
-        emit volumeChanged (index);
-        updateGL();
+        assert (axis < image()->image.ndim());
+        if (image()->image.index (axis) != index) {
+          image()->image.index (axis) = index;
+          set_image_navigation_menu();
+          emit volumeChanged ();
+          updateGL();
+        }
       }
 
 
@@ -1206,7 +1209,6 @@ namespace MR
       {
         size_t vol = image()->image.index(3)+1;
         set_image_volume (3, vol);
-        emit volumeChanged(vol);
       }
 
 
@@ -1216,7 +1218,6 @@ namespace MR
       {
         size_t vol = image()->image.index(3)-1;
         set_image_volume (3, vol);
-        emit volumeChanged(vol);
       }
 
 
@@ -1227,10 +1228,8 @@ namespace MR
         bool ok;
         size_t vol = QInputDialog::getInt (this, tr("Go to..."),
           label.c_str(), image()->image.index(3), 0, maxvol, 1, &ok);
-        if (ok) {
+        if (ok)
           set_image_volume (3, vol);
-          emit volumeChanged(vol);
-        }
       }
 
       void Window::image_goto_volume_group_slot ()
@@ -1240,10 +1239,8 @@ namespace MR
         bool ok;
         size_t grp = QInputDialog::getInt (this, tr("Go to..."),
           label.c_str(), image()->image.index(4), 0, maxvolgroup, 1, &ok);
-        if (ok) {
+        if (ok)
           set_image_volume (4, grp);
-          emit volumeGroupChanged(grp);
-        }
       }
 
 
@@ -1251,7 +1248,6 @@ namespace MR
       {
         size_t vol = image()->image.index(4)+1;
         set_image_volume (4, vol);
-        emit volumeGroupChanged(vol);
       }
 
 
@@ -1261,7 +1257,6 @@ namespace MR
       {
         size_t vol = image()->image.index(4)-1;
         set_image_volume (4, vol);
-        emit volumeGroupChanged(vol);
       }
 
 

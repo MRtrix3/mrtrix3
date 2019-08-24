@@ -18,6 +18,7 @@
 #define __algo_adapter_base_h__
 
 #include "image_helpers.h"
+#include "types.h"
 
 namespace MR
 {
@@ -55,7 +56,7 @@ namespace MR
         FORCE_INLINE default_type spacing (size_t axis) const { return parent_.spacing (axis); }
         FORCE_INLINE ssize_t stride (size_t axis) const { return parent_.stride (axis); }
         FORCE_INLINE const transform_type& transform () const { return parent_.transform(); }
-        FORCE_INLINE const std::map<std::string, std::string>& keyval () const { return parent_.keyval(); }
+        FORCE_INLINE const KeyValues& keyval () const { return parent_.keyval(); }
 
         FORCE_INLINE ssize_t get_index (size_t axis) const { return parent_.index (axis); }
         FORCE_INLINE void move_index (size_t axis, ssize_t increment) { parent_.index (axis) += increment; }

@@ -20,6 +20,8 @@
 
 // MSYS2 supports VT100, and file redirection is handled explicitly so this can be used globally
 #define CLEAR_LINE_CODE "\033[0K"
+#define WRAP_ON_CODE "\033[?7h"
+#define WRAP_OFF_CODE "\033[?7l"
 
 namespace MR
 {
@@ -50,10 +52,10 @@ namespace MR
     {
       __need_newline = true;
       if (p.multiplier)
-        __print_stderr (printf ("\r%s: [%3" PRI_SIZET "%%] %s%s" CLEAR_LINE_CODE,
+        __print_stderr (printf (WRAP_OFF_CODE "\r%s: [%3" PRI_SIZET "%%] %s%s" CLEAR_LINE_CODE WRAP_ON_CODE,
               App::NAME.c_str(), p.value, p.text.c_str(), p.ellipsis.c_str()));
       else
-        __print_stderr (printf ("\r%s: [%s] %s%s" CLEAR_LINE_CODE,
+        __print_stderr (printf (WRAP_OFF_CODE "\r%s: [%s] %s%s" CLEAR_LINE_CODE WRAP_ON_CODE,
               App::NAME.c_str(), busy[p.value%6], p.text.c_str(), p.ellipsis.c_str()));
     }
 
