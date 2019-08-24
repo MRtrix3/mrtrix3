@@ -208,7 +208,7 @@ void run() {
     if (!dimensions_match (dynamic_cast<SubjectVoxelImport*>(importer[i].get())->header(), mask_header))
       throw Exception ("Image file \"" + importer[i]->name() + "\" does not match analysis mask");
   }
-  CONSOLE ("Number of subjects: " + str(importer.size()));
+  CONSOLE ("Number of inputs: " + str(importer.size()));
 
   // Load design matrix
   const matrix_type design = load_matrix<value_type> (argument[1]);
@@ -235,6 +235,12 @@ void run() {
       CONSOLE ("Non-finite values detected in element-wise design matrix columns; individual rows will be removed from voxel-wise design matrices accordingly");
   }
   check_design (design, extra_columns.size());
+
+  // Load variance groups
+  auto variance_groups = GLM::load_variance_groups (design.rows());
+  const size_t num_vgs = variance_groups.size() ? variance_groups.maxCoeff()+1 : 1;
+  if (num_vgs > 1)
+    CONSOLE ("Number of variance groups: " + str(num_vgs));
 
   // Load hypotheses
   const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[2]);
@@ -282,13 +288,15 @@ void run() {
 
   {
     matrix_type betas (num_factors, num_voxels);
-    matrix_type abs_effect_size (num_voxels, num_hypotheses), std_effect_size (num_voxels, num_hypotheses);
-    vector_type cond (num_voxels), stdev (num_voxels);
+    matrix_type abs_effect_size (num_voxels, num_hypotheses);
+    matrix_type std_effect_size (num_voxels, num_hypotheses);
+    matrix_type stdev (num_vgs, num_voxels);
+    vector_type cond (num_voxels);
 
-    Math::Stats::GLM::all_stats (data, design, extra_columns, hypotheses,
+    Math::Stats::GLM::all_stats (data, design, extra_columns, hypotheses, variance_groups,
                                  cond, betas, abs_effect_size, std_effect_size, stdev);
 
-    ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_hypotheses) + 1 + (nans_in_data || extra_columns.size() ? 1 : 0));
+    ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_hypotheses) + num_vgs + (nans_in_data || extra_columns.size() ? 1 : 0));
     for (ssize_t i = 0; i != num_factors; ++i) {
       write_output (betas.row(i), *v2v, prefix + "beta" + str(i) + ".mif", output_header);
       ++progress;
@@ -297,23 +305,39 @@ void run() {
       if (!hypotheses[i].is_F()) {
         write_output (abs_effect_size.col(i), *v2v, prefix + "abs_effect" + postfix(i) + ".mif", output_header);
         ++progress;
-        write_output (std_effect_size.col(i), *v2v, prefix + "std_effect" + postfix(i) + ".mif", output_header);
+        if (num_vgs == 1)
+          write_output (std_effect_size.col(i), *v2v, prefix + "std_effect" + postfix(i) + ".mif", output_header);
+      } else {
         ++progress;
       }
+      ++progress;
     }
     if (nans_in_data || extra_columns.size()) {
       write_output (cond, *v2v, prefix + "cond.mif", output_header);
       ++progress;
     }
-    write_output (stdev, *v2v, prefix + "std_dev.mif", output_header);
+    if (num_vgs == 1) {
+      write_output (stdev.row(0), *v2v, prefix + "std_dev.mif", output_header);
+    } else {
+      for (size_t i = 0; i != num_vgs; ++i) {
+        write_output (stdev.row(i), *v2v, prefix + "std_dev.mif", output_header);
+        ++progress;
+      }
+    }
   }
 
   // Construct the class for performing the initial statistical tests
   std::shared_ptr<GLM::TestBase> glm_test;
   if (extra_columns.size() || nans_in_data) {
-    glm_test.reset (new GLM::TestVariable (extra_columns, data, design, hypotheses, nans_in_data, nans_in_columns));
+    if (variance_groups.size())
+      glm_test.reset (new GLM::TestVariableHeteroscedastic (extra_columns, data, design, hypotheses, variance_groups, nans_in_data, nans_in_columns));
+    else
+      glm_test.reset (new GLM::TestVariableHomoscedastic (extra_columns, data, design, hypotheses, nans_in_data, nans_in_columns));
   } else {
-    glm_test.reset (new GLM::TestFixed (data, design, hypotheses));
+    if (variance_groups.size())
+      glm_test.reset (new GLM::TestFixedHeteroscedastic (data, design, hypotheses, variance_groups));
+    else
+      glm_test.reset (new GLM::TestFixedHomoscedastic (data, design, hypotheses));
   }
 
   std::shared_ptr<Stats::EnhancerBase> enhancer;

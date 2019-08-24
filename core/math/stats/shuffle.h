@@ -64,15 +64,33 @@ namespace MR
           enum class error_t { EE, ISE, BOTH };
 
           // First version reads command-line options in order to determine parameters prior to running initialise();
-          //   second version more-or-less calls initialise() directly
-          Shuffler (const size_t num_rows, const bool is_nonstationarity, const std::string msg = "");
-          Shuffler (const size_t num_rows, const size_t num_shuffles, const error_t error_types, const bool is_nonstationarity, const std::string msg = "");
+          //   second and third versions more-or-less call initialise() directly
+          Shuffler (const size_t num_rows,
+                    const bool is_nonstationarity,
+                    const std::string msg = "");
+
+          Shuffler (const size_t num_rows,
+                    const size_t num_shuffles,
+                    const error_t error_types,
+                    const bool is_nonstationarity,
+                    const std::string msg = "");
+
+          Shuffler (const size_t num_rows,
+                    const size_t num_shuffles,
+                    const error_t error_types,
+                    const bool is_nonstationarity,
+                    const index_array_type& eb_within,
+                    const index_array_type& eb_whole,
+                    const std::string msg = "");
 
           // Don't store the full set of shuffling matrices;
           //   generate each as it is required, based on the more compressed representations
           bool operator() (Shuffle& output);
 
           size_t size() const { return nshuffles; }
+
+          // Go back to the first permutation
+          void reset();
 
 
         private:
@@ -85,7 +103,14 @@ namespace MR
 
           void initialise (const error_t error_types,
                            const bool nshuffles_explicit,
-                           const bool is_nonstationarity);
+                           const bool is_nonstationarity,
+                           const index_array_type& eb_within,
+                           const index_array_type& eb_whole);
+
+
+
+          // For exchangeability blocks (either within or whole)
+          index_array_type load_blocks (const std::string& filename, const bool equal_sizes);
 
 
           // For generating unique permutations
@@ -97,20 +122,31 @@ namespace MR
           // Providing the number of rows is large then the likelihood of generating duplicates is low.
           void generate_random_permutations (const size_t num_perms,
                                              const size_t num_rows,
+                                             const index_array_type& eb_within,
+                                             const index_array_type& eb_whole,
                                              const bool include_default,
                                              const bool permit_duplicates);
 
-          void generate_all_permutations (const size_t num_rows);
+          void generate_all_permutations (const size_t num_rows,
+                                          const index_array_type& eb_within,
+                                          const index_array_type& eb_whole);
 
           void load_permutations (const std::string& filename);
 
           // Similar functions required for sign-flipping
           bool is_duplicate (const BitSet&) const;
+
           void generate_random_signflips (const size_t num_signflips,
                                           const size_t num_rows,
+                                          const index_array_type& blocks,
                                           const bool include_default,
                                           const bool permit_duplicates);
-          void generate_all_signflips (const size_t num_rows);
+
+          void generate_all_signflips (const size_t num_rows,
+                                       const index_array_type& blocks);
+
+
+          vector<vector<size_t>> indices2blocks (const index_array_type&) const;
 
       };
 

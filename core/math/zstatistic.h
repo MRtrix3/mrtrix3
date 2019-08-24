@@ -27,6 +27,12 @@ namespace MR
   {
 
 
+
+    default_type t2z (const default_type stat, const default_type dof);
+    default_type F2z (const default_type stat, const size_t rank, const default_type dof);
+
+
+
     class Zstatistic
     { MEMALIGN(Zstatistic)
       public:
@@ -41,7 +47,14 @@ namespace MR
                           const size_t rank,
                           const size_t dof);
 
-        // TODO Ultimately this will require v and G inputs as well...
+        // Convert an Aspin-Welch v to a z-statistic
+        default_type v2z (const default_type v,
+                          const default_type dof);
+
+        // Convert a G-statistic to a z-statistic
+        default_type G2z (const default_type G,
+                          const size_t rank,
+                          const default_type dof);
 
       protected:
 
@@ -86,7 +99,6 @@ namespace MR
             array_type data_upper;
             const default_type offset_lower, scale_lower;
             array_type data_lower;
-
         };
 
         std::map<size_t, Lookup_t2z> t2z_data;

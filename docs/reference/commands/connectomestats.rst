@@ -38,6 +38,10 @@ Options relating to shuffling of data for nonparametric statistical inference
 
 -  **-errors spec** specify nature of errors for shuffling; options are: ee,ise,both (default: ee)
 
+-  **-exchange_within file** specify blocks of observations within each of which data may undergo restricted exchange
+
+-  **-exchange_whole file** specify blocks of observations that may be exchanged with one another (for independent and symmetric errors, sign-flipping will occur block-wise)
+
 -  **-strong** use strong familywise error control across multiple hypotheses
 
 -  **-nshuffles number** the number of shuffles (default: 5000)
@@ -63,6 +67,8 @@ Options for controlling TFCE behaviour
 
 Options related to the General Linear Model (GLM)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-variance file** define variance groups for the G-statistic; measurements for which the expected variance is equivalent should contain the same index
 
 -  **-ftests path** perform F-tests; input text file should contain, for each F-test, a row containing ones and zeros, where ones indicate the rows of the contrast matrix to be included in the F-test.
 
