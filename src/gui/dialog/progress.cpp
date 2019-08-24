@@ -33,7 +33,7 @@ namespace MR
 
 
 
-        void display (ProgressInfo& p)
+        void display (const ::MR::ProgressBar& p)
         {
           if (!p.data) {
             INFO (MR::App::NAME + ": " + p.text);
@@ -55,7 +55,7 @@ namespace MR
         }
 
 
-        void done (ProgressInfo& p)
+        void done (const ::MR::ProgressBar& p)
         {
           INFO (MR::App::NAME + ": " + p.text + " [done]");
           if (p.data) {
