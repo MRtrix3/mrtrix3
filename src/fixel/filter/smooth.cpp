@@ -137,7 +137,7 @@ namespace MR
                 output.value() = 0.0;
                 for (const auto& c : connectivity) {
                   mask.index (0) = input.index(0) = c.index();
-                  if (mask.value() && std::isfinite (input.value())) {
+                  if (mask.value() && std::isfinite (static_cast<float>(input.value()))) {
                     const Matrix::connectivity_value_type weight = c.value() * master.gaussian_const1 * std::exp (master.gaussian_const2 * (master.fixel_positions[c.index()] - pos).squaredNorm());
                     output.value() += weight * input.value();
                     sum_weights += weight;

@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "image.h"
@@ -43,21 +44,7 @@ DESCRIPTION
   "images) are pushed onto the stack in the order they appear "
   "(as arguments) on the command-line, and operators (specified "
   "as options) operate on and consume the top-most entries in "
-  "the stack, and push their output as a new entry on the stack. "
-  "For example:"
-
-  + "    $ mrcalc a.mif 2 -mult r.mif"
-
-  + "performs the operation r = 2*a for every voxel a,r in "
-  "images a.mif and r.mif respectively. Similarly:"
-
-  + "    $ mrcalc a.mif -neg b.mif -div -exp 9.3 -mult r.mif"
-
-  + "performs the operation r = 9.3*exp(-a/b), and:"
-
-  + "    $ mrcalc a.mif b.mif -add c.mif d.mif -mult 4.2 -add -div r.mif"
-
-  + "performs r = (a+b)/(c*d+4.2)."
+  "the stack, and push their output as a new entry on the stack."
 
   + "As an additional feature, this command will allow images with different "
   "dimensions to be processed, provided they satisfy the following "
@@ -72,10 +59,31 @@ DESCRIPTION
   "volume consists of the 3D image scaled by the corresponding value for "
   "that volume in the single-voxel image.";
 
+EXAMPLES
+  + Example ("Double the value stored in every voxel",
+             "mrcalc a.mif 2 -mult r.mif",
+             "This performs the operation: r = 2*a  for every voxel a,r in "
+             "images a.mif and r.mif respectively.")
+
+  + Example ("A more complex example",
+             "mrcalc a.mif -neg b.mif -div -exp 9.3 -mult r.mif",
+             "This performs the operation: r = 9.3*exp(-a/b)")
+
+  + Example ("Another complex example",
+             "mrcalc a.mif b.mif -add c.mif d.mif -mult 4.2 -add -div r.mif",
+             "This performs: r = (a+b)/(c*d+4.2).")
+
+  + Example ("Rescale the densities in a SH l=0 image",
+             "mrcalc ODF_CSF.mif 4 pi -mult -sqrt -div ODF_CSF_scaled.mif",
+             "This applies the spherical harmonic basis scaling factor: "
+             "1.0/sqrt(4*pi), such that a single-tissue voxel containing the "
+             "same intensities as the response function of that tissue "
+             "should contain the value 1.0.");
+
 ARGUMENTS
   + Argument ("operand", "an input image, intensity value, or the special keywords "
       "'rand' (random number between 0 and 1) or 'randn' (random number from unit "
-      "std.dev. normal distribution).").type_various().allow_multiple();
+      "std.dev. normal distribution) or the mathematical constants 'e' and 'pi'.").type_various().allow_multiple();
 
 OPTIONS
   + OptionGroup ("Unary operators")
@@ -245,7 +253,9 @@ class StackEntry { NOMEMALIGN
         catch (Exception&) {
           try {
             std::string a = lowercase (arg);
-            if      (a ==  "nan")  { value =  std::numeric_limits<real_type>::quiet_NaN(); }
+            if      (a == "pi")    { value = Math::pi; }
+            else if (a == "e")     { value = Math::e; }
+            else if (a ==  "nan")  { value =  std::numeric_limits<real_type>::quiet_NaN(); }
             else if (a == "-nan")  { value = -std::numeric_limits<real_type>::quiet_NaN(); }
             else if (a ==  "inf")  { value =  std::numeric_limits<real_type>::infinity(); }
             else if (a == "-inf")  { value = -std::numeric_limits<real_type>::infinity(); }
@@ -603,29 +613,7 @@ void get_header (const StackEntry& entry, Header& header)
       header.spacing(n) = entry.image->spacing(n);
   }
 
-  const auto header_grad = DWI::parse_DW_scheme (header);
-  if (header_grad.rows()) {
-    const auto entry_grad = DWI::parse_DW_scheme (*entry.image);
-    if (entry_grad.rows()) {
-      if (!entry_grad.isApprox (header_grad))
-        DWI::clear_DW_scheme (header);
-    }
-  }
-
-  const auto header_pe = PhaseEncoding::get_scheme (header);
-  if (header_pe.rows()) {
-    const auto entry_pe = PhaseEncoding::get_scheme (*entry.image);
-    if (entry_pe.rows()) {
-      if (!entry_pe.isApprox (header_pe))
-        PhaseEncoding::clear_scheme (header);
-    }
-  }
-
-  auto slice_encoding_it = entry.image->keyval().find ("SliceEncodingDirection");
-  if (slice_encoding_it != entry.image->keyval().end()) {
-    if (header.keyval()["SliceEncodingDirection"] != slice_encoding_it->second)
-      header.keyval().erase (header.keyval().find ("SliceEncodingDirection"));
-  }
+  header.merge_keyval (*entry.image);
 }
 
 

@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "progressbar.h"
@@ -117,8 +118,8 @@ void run()
 
   CohortDataImport importer;
   importer.initialise<SubjectVectorImport> (argument[0]);
-  const size_t num_subjects = importer.size();
-  CONSOLE ("Number of subjects: " + str(num_subjects));
+  const size_t num_inputs = importer.size();
+  CONSOLE ("Number of subjects: " + str(num_inputs));
   const size_t num_elements = importer[0]->size();
   CONSOLE ("Number of elements: " + str(num_elements));
   for (size_t i = 0; i != importer.size(); ++i) {
@@ -128,8 +129,8 @@ void run()
 
   // Load design matrix
   const matrix_type design = load_matrix (argument[1]);
-  if (size_t(design.rows()) != num_subjects)
-    throw Exception ("Number of subjects (" + str(num_subjects) + ") does not match number of rows in design matrix (" + str(design.rows()) + ")");
+  if (size_t(design.rows()) != num_inputs)
+    throw Exception ("Number of subjects (" + str(num_inputs) + ") does not match number of rows in design matrix (" + str(design.rows()) + ")");
 
   // Before validating the contrast matrix, we first need to see if there are any
   //   additional design matrix columns coming from element-wise subject data
@@ -151,6 +152,12 @@ void run()
   }
   check_design (design, extra_columns.size());
 
+  // Load variance groups
+  auto variance_groups = GLM::load_variance_groups (num_inputs);
+  const size_t num_vgs = variance_groups.size() ? variance_groups.maxCoeff()+1 : 1;
+  if (num_vgs > 1)
+    CONSOLE ("Number of variance groups: " + str(num_vgs));
+
   // Load hypotheses
   const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[2]);
   const size_t num_hypotheses = hypotheses.size();
@@ -163,8 +170,8 @@ void run()
   const std::string output_prefix = argument[3];
 
   // Load input data
-  matrix_type data (num_subjects, num_elements);
-  for (size_t subject = 0; subject != num_subjects; subject++)
+  matrix_type data (num_inputs, num_elements);
+  for (size_t subject = 0; subject != num_inputs; subject++)
     (*importer[subject]) (data.row(subject));
 
   const bool nans_in_data = !data.allFinite();
@@ -180,49 +187,62 @@ void run()
 
   {
     matrix_type betas (num_factors, num_elements);
-    matrix_type abs_effect_size (num_elements, num_hypotheses), std_effect_size (num_elements, num_hypotheses);
-    vector_type cond (num_elements), stdev (num_elements);
+    matrix_type abs_effect_size (num_elements, num_hypotheses);
+    matrix_type std_effect_size (num_elements, num_hypotheses);
+    matrix_type stdev (num_vgs, num_elements);
+    vector_type cond (num_elements);
 
-    Math::Stats::GLM::all_stats (data, design, extra_columns, hypotheses,
+    Math::Stats::GLM::all_stats (data, design, extra_columns, hypotheses, variance_groups,
                                  cond, betas, abs_effect_size, std_effect_size, stdev);
 
     ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", 2 + (2 * num_hypotheses) + (nans_in_data || extra_columns.size() ? 1 : 0));
-    save_matrix (betas, output_prefix + "betas.csv"); ++progress;
+    save_matrix (betas, output_prefix + "betas.csv");
+    ++progress;
     for (size_t i = 0; i != num_hypotheses; ++i) {
       if (!hypotheses[i].is_F()) {
         save_vector (abs_effect_size.col(i), output_prefix + "abs_effect" + postfix(i) + ".csv");
         ++progress;
-        save_vector (std_effect_size.col(i), output_prefix + "std_effect" + postfix(i) + ".csv");
+        if (num_vgs == 1)
+          save_vector (std_effect_size.col(i), output_prefix + "std_effect" + postfix(i) + ".csv");
+      } else {
         ++progress;
       }
+      ++progress;
     }
     if (nans_in_data || extra_columns.size()) {
       save_vector (cond, output_prefix + "cond.csv");
       ++progress;
     }
-    save_vector (stdev, output_prefix + "std_dev.csv");
+    if (num_vgs == 1)
+      save_vector (stdev.row(0), output_prefix + "std_dev.csv");
+    else
+      save_matrix (stdev, output_prefix + "std_dev.csv");
   }
 
   // Construct the class for performing the initial statistical tests
   std::shared_ptr<GLM::TestBase> glm_test;
   if (extra_columns.size() || nans_in_data) {
-    glm_test.reset (new GLM::TestVariable (extra_columns, data, design, hypotheses, nans_in_data, nans_in_columns));
+    if (variance_groups.size())
+      glm_test.reset (new GLM::TestVariableHeteroscedastic (extra_columns, data, design, hypotheses, variance_groups, nans_in_data, nans_in_columns));
+    else
+      glm_test.reset (new GLM::TestVariableHomoscedastic (extra_columns, data, design, hypotheses, nans_in_data, nans_in_columns));
   } else {
-    glm_test.reset (new GLM::TestFixed (data, design, hypotheses));
+    if (variance_groups.size())
+      glm_test.reset (new GLM::TestFixedHeteroscedastic (data, design, hypotheses, variance_groups));
+    else
+      glm_test.reset (new GLM::TestFixedHomoscedastic (data, design, hypotheses));
   }
 
   // Precompute default statistic
   // Don't use convenience function: No enhancer!
   // Manually construct default shuffling matrix
   // TODO Change to use convenience function; we make an empty enhancer later anyway
-  const matrix_type default_shuffle (matrix_type::Identity (num_subjects, num_subjects));
-  matrix_type default_output;
-  (*glm_test) (default_shuffle, default_output);
+  const matrix_type default_shuffle (matrix_type::Identity (num_inputs, num_inputs));
+  matrix_type default_statistic, default_zstat;
+  (*glm_test) (default_shuffle, default_statistic, default_zstat);
   for (size_t i = 0; i != num_hypotheses; ++i) {
-    if (hypotheses[i].is_F())
-      save_matrix (default_output.col(i).array().square(), output_prefix + "Fvalue" + postfix(i) + ".csv");
-    else
-      save_matrix (default_output.col(i), output_prefix + "tvalue" + postfix(i) + ".csv");
+    save_matrix (default_statistic.col(i), output_prefix + (hypotheses[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".csv");
+    save_matrix (default_zstat.col(i), output_prefix + "Zstat" + postfix(i) + ".csv");
   }
 
   // Perform permutation testing
@@ -237,7 +257,7 @@ void run()
     matrix_type null_distribution, uncorrected_pvalues;
     count_matrix_type null_contributions;
     matrix_type empirical_distribution; // unused
-    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_distribution, default_output, fwe_strong,
+    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_distribution, default_zstat, fwe_strong,
                                        null_distribution, null_contributions, uncorrected_pvalues);
     if (fwe_strong) {
       save_vector (null_distribution.col(0), output_prefix + "null_dist.csv");
@@ -245,7 +265,7 @@ void run()
       for (size_t i = 0; i != num_hypotheses; ++i)
         save_vector (null_distribution.col(i), output_prefix + "null_dist" + postfix(i) + ".csv");
     }
-    const matrix_type fwe_pvalues = MR::Math::Stats::fwe_pvalue (null_distribution, default_output);
+    const matrix_type fwe_pvalues = MR::Math::Stats::fwe_pvalue (null_distribution, default_zstat);
     for (size_t i = 0; i != num_hypotheses; ++i) {
       save_vector (fwe_pvalues.col(i), output_prefix + "fwe_1mpvalue" + postfix(i) + ".csv");
       save_vector (uncorrected_pvalues.col(i), output_prefix + "uncorrected_pvalue" + postfix(i) + ".csv");

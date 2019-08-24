@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "signal_handler.h"
 
@@ -46,21 +47,21 @@ namespace MR
         if (!flag.test_and_set()) {
 
           // Try to do a tempfile cleanup before printing the error, since the latter's not guaranteed to work...
-          // Don't use File::unlink: may throw an exception
-          for (const auto& i : marked_files) 
-            ::unlink (i.c_str());
+          // Don't use File::remove: may throw an exception
+          for (const auto& i : marked_files)
+            std::remove (i.c_str());
 
 
           const char* sig = nullptr;
           const char* msg = nullptr;
           switch (i) {
 
-#define __SIGNAL(SIG,MSG) case SIG: sig = #SIG; msg = MSG; break; 
+#define __SIGNAL(SIG,MSG) case SIG: sig = #SIG; msg = MSG; break;
 #include "signals.h"
 #undef __SIGNAL
 
             default:
-              sig = "UNKNOWN"; 
+              sig = "UNKNOWN";
               msg = "Unknown fatal system signal";
               break;
           }
@@ -89,6 +90,15 @@ namespace MR
 
     void init()
     {
+      //ENVVAR name: MRTRIX_NOSIGNALS
+      //ENVVAR If this variable is set to any value, disable MRtrix3's custom
+      //ENVVAR signal handlers. This may sometimes be useful when debugging.
+      //ENVVAR Note however that this prevents the
+      //ENVVAR deletion of temporary files when the command terminates
+      //ENVVAR abnormally.
+      if (getenv ("MRTRIX_NOSIGNALS"))
+        return;
+
 #ifdef MRTRIX_WINDOWS
       // Use signal() rather than sigaction() for Windows, as the latter is not supported
 # define __SIGNAL(SIG,MSG) signal (SIG, handler)

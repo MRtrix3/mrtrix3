@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __dwi_tractography_algorithms_fact_h__
 #define __dwi_tractography_algorithms_fact_h__
@@ -51,17 +52,19 @@ namespace MR
           if (rk4)
             throw Exception ("4th-order Runge-Kutta integration not valid for FACT algorithm");
 
-          set_step_size (0.1f);
+          set_step_size (rk4 ? 0.5f : 0.1f, false);
+          set_num_points();
           set_cutoff (TCKGEN_DEFAULT_CUTOFF_FIXEL);
+
           // If user specifies the angle threshold manually, want to enforce this as-is at each step
           // If it's calculated automatically, it needs to be corrected for the fact that the permissible
           //   angle per step has been calculated within set_step_size(), but FACT will not curve at each
           //   step; only at the voxel transitions.
-          if (!App::get_options("angle").size()) {
-            max_angle *= vox() / step_size;
-            cos_max_angle = std::cos (max_angle);
+          if (!App::get_options ("angle").size()) {
+            max_angle_1o = std::min (max_angle_1o * vox() / step_size, float(Math::pi_2));
+            cos_max_angle_1o = std::cos (max_angle_1o);
           }
-          dot_threshold = std::cos (max_angle);
+          dot_threshold = std::cos (max_angle_1o);
 
           properties["method"] = "FACT";
         }
@@ -112,7 +115,7 @@ namespace MR
         const float max_norm = do_next (dir);
 
         if (max_norm < S.threshold)
-          return BAD_SIGNAL;
+          return MODEL;
 
         pos += S.step_size * dir;
         return CONTINUE;

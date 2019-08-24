@@ -97,7 +97,7 @@ namespace MR
         // For a given value in the output image (as determined by the order in which the
         //   clusters were segmented), what should the new value be, such that the clusters
         //   are indexed sequentially according to size, with 1 being the biggest cluster?
-        std::vector<size_t> index_remapper (cluster_sizes.size() + 1);
+        vector<size_t> index_remapper (cluster_sizes.size() + 1);
         index_remapper[0] = 0;
         for (size_t index = 0; index != cluster_sizes.size(); ++index)
           index_remapper[cluster_sizes[index].first] = index + 1;
