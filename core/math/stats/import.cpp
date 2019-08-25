@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2008-2016 the MRtrix3 contributors
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/
- * 
+ *
  * MRtrix is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * For more details, see www.mrtrix.org
- * 
+ *
  */
 
 #include "math/stats/import.h"
@@ -39,6 +39,14 @@ namespace MR
 
       bool CohortDataImport::allFinite() const
       {
+        // TESTME Should be possible to do this faster by populating matrix data
+        if (!size())
+          return true;
+        matrix_type data (size(), files[0]->size());
+        for (size_t i = 0; i != size(); ++i)
+          (*files[i]) (data.row (i));
+        return data.allFinite();
+/*
         for (size_t i = 0; i != files.size(); ++i) {
           for (size_t j = 0; j != files[i]->size(); ++j) {
             if ((*files[i])[j])
@@ -46,6 +54,7 @@ namespace MR
           }
         }
         return true;
+*/
       }
 
 
