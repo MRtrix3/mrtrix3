@@ -151,11 +151,12 @@ void usage ()
 template <class VectorType>
 void write_fixel_output (const std::string& filename,
                          const VectorType& data,
+                         Image<bool>& mask,
                          const Header& header)
 {
   auto output = Image<float>::create (filename, header);
-  for (output.index(0) = 0; output.index(0) != output.size (0); ++output.index(0))
-    output.value() = data[output.index(0)];
+  for (auto l = Loop(0) (output, mask); l; ++l)
+    output.value() = mask.value() ? data[output.index(0)] : NaN;
 }
 
 
@@ -291,8 +292,23 @@ void run()
   for (size_t i = 0; i != opt.size(); ++i) {
     extra_columns.push_back (Math::Stats::CohortDataImport());
     extra_columns[i].initialise<SubjectFixelImport> (opt[i][0]);
-    if (!extra_columns[i].allFinite())
-      nans_in_columns = true;
+    // Check for non-finite values in mask fixels only
+    // Can't use generic allFinite() function; need to populate matrix data
+    if (!nans_in_columns) {
+      matrix_type column_data (importer.size(), num_fixels);
+      for (size_t j = 0; j != importer.size(); ++j)
+        (*extra_columns[i][j]) (column_data.row (j));
+      if (mask_fixels == num_fixels) {
+        nans_in_columns = !column_data.allFinite();
+      } else {
+        for (auto l = Loop(0) (mask); l; ++l) {
+          if (mask.value() && !column_data.col (mask.index(0)).allFinite()) {
+            nans_in_columns = true;
+            break;
+          }
+        }
+      }
+    }
   }
   const ssize_t num_factors = design.cols() + extra_columns.size();
   CONSOLE ("Number of factors: " + str(num_factors));
@@ -358,7 +374,16 @@ void run()
     (*importer[subject]) (data.row (subject));
     progress++;
   }
-  const bool nans_in_data = !data.allFinite();
+  // Detect non-finite values in mask fixels only; NaN-fill other fixels
+  bool nans_in_data = false;
+  for (auto l = Loop(0) (mask); l; ++l) {
+    if (mask.value()) {
+      if (!data.col (mask.index(0)).allFinite())
+        nans_in_data = true;
+    } else {
+      data.col (mask.index (0)).fill (NaN);
+    }
+  }
   if (nans_in_data) {
     CONSOLE ("Non-finite values present in data; rows will be removed from fixel-wise design matrices accordingly");
     if (!extra_columns.size()) {
@@ -382,29 +407,29 @@ void run()
     ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_hypotheses) + num_vgs + (nans_in_data || extra_columns.size() ? 1 : 0));
 
     for (ssize_t i = 0; i != num_factors; ++i) {
-      write_fixel_output (Path::join (output_fixel_directory, "beta" + str(i) + ".mif"), betas.row(i), output_header);
+      write_fixel_output (Path::join (output_fixel_directory, "beta" + str(i) + ".mif"), betas.row(i), mask, output_header);
       ++progress;
     }
     for (size_t i = 0; i != num_hypotheses; ++i) {
       if (!hypotheses[i].is_F()) {
-        write_fixel_output (Path::join (output_fixel_directory, "abs_effect" + postfix(i) + ".mif"), abs_effect_size.col(i), output_header);
+        write_fixel_output (Path::join (output_fixel_directory, "abs_effect" + postfix(i) + ".mif"), abs_effect_size.col(i), mask, output_header);
         ++progress;
         if (num_vgs == 1)
-          write_fixel_output (Path::join (output_fixel_directory, "std_effect" + postfix(i) + ".mif"), std_effect_size.col(i), output_header);
+          write_fixel_output (Path::join (output_fixel_directory, "std_effect" + postfix(i) + ".mif"), std_effect_size.col(i), mask, output_header);
       } else {
         ++progress;
       }
       ++progress;
     }
     if (nans_in_data || extra_columns.size()) {
-      write_fixel_output (Path::join (output_fixel_directory, "cond.mif"), cond, output_header);
+      write_fixel_output (Path::join (output_fixel_directory, "cond.mif"), cond, mask, output_header);
       ++progress;
     }
     if (num_vgs == 1) {
-      write_fixel_output (Path::join (output_fixel_directory, "std_dev.mif"), stdev.row (0), output_header);
+      write_fixel_output (Path::join (output_fixel_directory, "std_dev.mif"), stdev.row (0), mask, output_header);
     } else {
       for (size_t i = 0; i != num_vgs; ++i) {
-        write_fixel_output (Path::join (output_fixel_directory, "std_dev" + str(i) + ".mif"), stdev.row (i), output_header);
+        write_fixel_output (Path::join (output_fixel_directory, "std_dev" + str(i) + ".mif"), stdev.row (i), mask, output_header);
         ++progress;
       }
     }
@@ -433,7 +458,7 @@ void run()
     Stats::PermTest::precompute_empirical_stat (glm_test, cfe_integrator, empirical_skew, empirical_cfe_statistic);
     output_header.keyval()["nonstationarity adjustment"] = str(true);
     for (size_t i = 0; i != num_hypotheses; ++i)
-      write_fixel_output (Path::join (output_fixel_directory, "cfe_empirical" + postfix(i) + ".mif"), empirical_cfe_statistic.col(i), output_header);
+      write_fixel_output (Path::join (output_fixel_directory, "cfe_empirical" + postfix(i) + ".mif"), empirical_cfe_statistic.col(i), mask, output_header);
   } else {
     output_header.keyval()["nonstationarity adjustment"] = str(false);
   }
@@ -442,9 +467,9 @@ void run()
   matrix_type default_statistic, default_zstat, default_enhanced;
   Stats::PermTest::precompute_default_permutation (glm_test, cfe_integrator, empirical_cfe_statistic, default_statistic, default_zstat, default_enhanced);
   for (size_t i = 0; i != num_hypotheses; ++i) {
-    write_fixel_output (Path::join (output_fixel_directory, (hypotheses[i].is_F() ? std::string("F") : std::string("t")) + "value" + postfix(i) + ".mif"), default_statistic.col(i), output_header);
-    write_fixel_output (Path::join (output_fixel_directory, "Zstat" + postfix(i) + ".mif"), default_zstat.col(i), output_header);
-    write_fixel_output (Path::join (output_fixel_directory, "cfe" + postfix(i) + ".mif"), default_enhanced.col(i), output_header);
+    write_fixel_output (Path::join (output_fixel_directory, (hypotheses[i].is_F() ? std::string("F") : std::string("t")) + "value" + postfix(i) + ".mif"), default_statistic.col(i), mask, output_header);
+    write_fixel_output (Path::join (output_fixel_directory, "Zstat" + postfix(i) + ".mif"), default_zstat.col(i), mask, output_header);
+    write_fixel_output (Path::join (output_fixel_directory, "cfe" + postfix(i) + ".mif"), default_enhanced.col(i), mask, output_header);
   }
 
   // Perform permutation testing
@@ -475,11 +500,11 @@ void run()
     const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, default_enhanced);
     ++progress;
     for (size_t i = 0; i != num_hypotheses; ++i) {
-      write_fixel_output (Path::join (output_fixel_directory, "fwe_1mpvalue" + postfix(i) + ".mif"), pvalue_output.col(i), output_header);
+      write_fixel_output (Path::join (output_fixel_directory, "fwe_1mpvalue" + postfix(i) + ".mif"), pvalue_output.col(i), mask, output_header);
       ++progress;
-      write_fixel_output (Path::join (output_fixel_directory, "uncorrected_pvalue" + postfix(i) + ".mif"), uncorrected_pvalues.col(i), output_header);
+      write_fixel_output (Path::join (output_fixel_directory, "uncorrected_pvalue" + postfix(i) + ".mif"), uncorrected_pvalues.col(i), mask, output_header);
       ++progress;
-      write_fixel_output (Path::join (output_fixel_directory, "null_contributions" + postfix(i) + ".mif"), null_contributions.col(i), output_header);
+      write_fixel_output (Path::join (output_fixel_directory, "null_contributions" + postfix(i) + ".mif"), null_contributions.col(i), mask, output_header);
       ++progress;
     }
   }
