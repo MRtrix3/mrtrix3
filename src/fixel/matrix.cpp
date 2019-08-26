@@ -282,7 +282,7 @@ namespace MR
           File::OFStream& stream (stream_index ? value_stream : fixel_stream);
           stream << leadin << std::string (dim_padding, ' ') << "\n";
           stream << "vox: 1,1,1\n";
-          stream << "layout: 1,2,3\n";
+          stream << "layout: +0,+1,+2\n";
           stream << "datatype: ";
           if (stream_index)
             stream << DataType::from<connectivity_value_type>().specifier();
