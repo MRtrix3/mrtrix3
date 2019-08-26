@@ -25,6 +25,8 @@
 
 #define MRTRIX_USE_ZSTATISTIC_LOOKUP
 
+//#define GLM_ALL_STATS_DEBUG
+
 namespace MR
 {
   namespace Math
@@ -273,9 +275,7 @@ namespace MR
 
 
 
-// TODO all_stats() needs to be updated to reflect heteroscedasticity
 
-//#define GLM_ALL_STATS_DEBUG
 
         void all_stats (const matrix_type& measurements,
                         const matrix_type& design,
@@ -292,7 +292,7 @@ namespace MR
           //   that's being displayed by that outer looping function
           std::unique_ptr<ProgressBar> progress;
           if (measurements.cols() > 1)
-            progress.reset (new ProgressBar ("Calculating basic properties of default permutation", 6));
+            progress.reset (new ProgressBar ("Calculating basic properties of default permutation", 5));
 #endif
           betas = solve_betas (measurements, design);
 #ifdef GLM_ALL_STATS_DEBUG
@@ -324,7 +324,10 @@ namespace MR
           if (progress)
             ++*progress;
 #endif
-          stdev = GLM::stdev (measurements, design, variance_groups);
+          if (variance_groups.size())
+            stdev = GLM::stdev (measurements, design, variance_groups);
+          else
+            stdev = residuals.colwise().squaredNorm();
 #ifdef GLM_ALL_STATS_DEBUG
           std::cerr << "stdev: " << stdev.rows() << " x " << stdev.cols() << ", max " << stdev.maxCoeff() << "\n";
 #else
@@ -332,9 +335,9 @@ namespace MR
             ++*progress;
 #endif
           if (variance_groups.size())
-            std_effect_size = abs_effect_size.array().colwise() / stdev.array().col(0);
-          else
             std_effect_size = matrix_type::Constant (measurements.cols(), hypotheses.size(), NaN);
+          else
+            std_effect_size = abs_effect_size.array().colwise() / stdev.array().col(0);
 #ifdef GLM_ALL_STATS_DEBUG
           std::cerr << "std_effect_size: " << std_effect_size.rows() << " x " << std_effect_size.cols() << ", max " << std_effect_size.array().maxCoeff() << "\n";
 #endif

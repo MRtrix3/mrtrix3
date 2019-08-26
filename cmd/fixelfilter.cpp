@@ -33,7 +33,7 @@ using namespace MR;
 using namespace App;
 using namespace MR::Fixel;
 
-const char* filters[] = { "connect", "smooth", nullptr };
+const char* const filters[] = { "connect", "smooth", nullptr };
 
 void usage ()
 {
@@ -117,7 +117,7 @@ void run()
       break;
     case 1:
     {
-      const float fwhm = get_option_value ("fwhm", DEFAULT_FIXEL_SMOOTHING_FWHM);
+      const float fwhm = get_option_value ("fwhm", float(DEFAULT_FIXEL_SMOOTHING_FWHM));
       opt = get_options ("mask");
       if (opt.size()) {
         Image<bool> mask_image = Image<bool>::open (opt[0][0]);
