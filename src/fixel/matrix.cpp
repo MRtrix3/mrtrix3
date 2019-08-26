@@ -291,34 +291,44 @@ namespace MR
           stream << std::string (offset - stream.tellp(), '\0');
         }
 
+        ProgressBar progress ("Normalising and writing fixel-fixel connectivity matrix to file \"" + path + "\"", matrix.size());
         size_t data_count = 0;
-
+        vector<index_type> fixel_buffer;
+        vector<connectivity_value_type> value_buffer;
         for (size_t fixel_index = 0; fixel_index != matrix.size(); ++fixel_index) {
 
-          index_type num_connections = 0;
+          fixel_buffer.clear();
+          value_buffer.clear();
+          fixel_buffer.reserve (matrix[fixel_index].size());
+          value_buffer.reserve (matrix[fixel_index].size());
+
           const connectivity_value_type normalisation_factor = 1.0 / connectivity_value_type (matrix[fixel_index].count());
           for (auto& it : matrix[fixel_index]) {
             const connectivity_value_type connectivity = normalisation_factor * it.value();
             if (connectivity >= threshold) {
-              const index_type i = it.index();
-              fixel_stream.write (reinterpret_cast<const char*>(&i), sizeof (index_type));
-              value_stream.write (reinterpret_cast<const char*>(&connectivity), sizeof (connectivity_value_type));
-              ++num_connections;
+              fixel_buffer.push_back (it.index());
+              value_buffer.push_back (connectivity);
             }
           }
 
           index_image.index (0) = fixel_index;
-          index_image.index (3) = 0; index_image.value() = uint64_t(num_connections);
-          index_image.index (3) = 1; index_image.value() = num_connections ? data_count : uint64_t(0);
-          data_count += num_connections;
+          index_image.index (3) = 0; index_image.value() = uint64_t(fixel_buffer.size());
+          index_image.index (3) = 1; index_image.value() = fixel_buffer.size() ? data_count : uint64_t(0);
+
+          fixel_stream.write (reinterpret_cast<const char*>(fixel_buffer.data()), fixel_buffer.size() * sizeof (index_type));
+          value_stream.write (reinterpret_cast<const char*>(value_buffer.data()), value_buffer.size() * sizeof (connectivity_value_type));
+
+          data_count += fixel_buffer.size();
 
           // Force deallocation of memory used for this fixel in the generated matrix
           InitFixel().swap (matrix[fixel_index]);
+
+          ++progress;
         }
 
         // Update headers to reflect the number of fixel-fixel connections
         std::string dim_string = str(data_count) + ",1,1";
-        dim_string += std::string (dim_string.size() - dim_padding, ' ');
+        dim_string += std::string (dim_padding - dim_string.size(), ' ');
         for (size_t stream_index = 0; stream_index != 2; ++stream_index) {
           File::OFStream& stream (stream_index ? value_stream : fixel_stream);
           stream.seekp (leadin.size());
