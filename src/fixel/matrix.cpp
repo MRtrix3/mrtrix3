@@ -15,7 +15,9 @@
 
 #include "fixel/matrix.h"
 
+#include "app.h"
 #include "thread_queue.h"
+#include "types.h"
 #include "file/ofstream.h"
 #include "file/path.h"
 #include "file/utils.h"
@@ -228,10 +230,10 @@ namespace MR
 
 
 
-      // TODO Could receive a map<string, string>
       void normalise_and_write (init_matrix_type& matrix,
                                 const connectivity_value_type threshold,
-                                const std::string& path)
+                                const std::string& path,
+                                const KeyValues& keyvals)
       {
 
         if (Path::exists (path)) {
@@ -258,6 +260,7 @@ namespace MR
         index_header.stride(3) = 1;
         index_header.spacing(0) = index_header.spacing(1) = index_header.spacing(2) = 1.0;
         index_header.transform() = transform_type::Identity();
+        index_header.keyval() = keyvals;
         index_header.keyval()["nfixels"] = str(matrix.size());
         index_header.datatype() = DataType::from<index_image_type>();
         Image<index_image_type> index_image = Image<index_image_type>::create (Path::join (path, "index.mif"), index_header);
@@ -277,21 +280,26 @@ namespace MR
 
         for (size_t stream_index = 0; stream_index != 2; ++stream_index) {
           File::OFStream& stream (stream_index ? value_stream : fixel_stream);
-          stream << leadin << std::string (dim_padding, ' ') << "\nvox: 1,1,1\nlayout: 0,1,2\ndatatype: ";
+          stream << leadin << std::string (dim_padding, ' ') << "\n";
+          stream << "vox: 1,1,1\n";
+          stream << "layout: 1,2,3\n";
+          stream << "datatype: ";
           if (stream_index)
             stream << DataType::from<connectivity_value_type>().specifier();
           else
             stream << DataType::from<index_type>().specifier();
-          stream << transform_type::Identity().matrix().topLeftCorner(3,4).format(fmt);
-          // TODO Insert command_history string
-          stream << "\nscaling: 0,1\nnfixels: " + str(matrix.size()) + "\nfile: ";
-          int64_t offset = stream.tellp() + int64_t(18);
+          stream << transform_type::Identity().matrix().topLeftCorner(3,4).format(fmt) << "\n";
+          stream << "scaling: 0,1\n";
+          stream << "nfixels: " + str(matrix.size()) + "\n";
+          File::KeyValue::write (stream, keyvals, "", true);
+          stream << "file: ";
+          uint64_t offset = uint64_t(stream.tellp()) + 18;
           offset += ((4 - (offset % 4)) % 4);
           stream << ". " << offset << "\nEND\n";
-          stream << std::string (offset - stream.tellp(), '\0');
+          stream << std::string (offset - uint64_t(stream.tellp()), '\0');
         }
 
-        ProgressBar progress ("Normalising and writing fixel-fixel connectivity matrix to file \"" + path + "\"", matrix.size());
+        ProgressBar progress ("Normalising and writing fixel-fixel connectivity matrix to directory \"" + path + "\"", matrix.size());
         size_t data_count = 0;
         vector<index_type> fixel_buffer;
         vector<connectivity_value_type> value_buffer;
@@ -302,7 +310,7 @@ namespace MR
           fixel_buffer.reserve (matrix[fixel_index].size());
           value_buffer.reserve (matrix[fixel_index].size());
 
-          const connectivity_value_type normalisation_factor = 1.0 / connectivity_value_type (matrix[fixel_index].count());
+          const connectivity_value_type normalisation_factor = connectivity_value_type(1) / connectivity_value_type (matrix[fixel_index].count());
           for (auto& it : matrix[fixel_index]) {
             const connectivity_value_type connectivity = normalisation_factor * it.value();
             if (connectivity >= threshold) {
