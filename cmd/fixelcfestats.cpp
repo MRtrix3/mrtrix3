@@ -358,7 +358,8 @@ void run()
     WARN ("A total of " + str(num_unconnected_fixels) + " fixels " +
           (mask_fixels == num_fixels ? "" : "in the provided mask ") +
           "do not possess any streamlines-based connectivity; "
-          "these will not be enhanced by CFE, and hence cannot be tested");
+          "these will not be enhanced by CFE, and hence cannot be "
+          "tested for statistical significance");
   }
 
   Header output_header (dynamic_cast<SubjectFixelImport*>(importer[0].get())->header());
