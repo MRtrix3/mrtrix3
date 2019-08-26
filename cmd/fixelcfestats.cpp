@@ -371,7 +371,7 @@ void run()
 
   matrix_type data = matrix_type::Zero (importer.size(), mask_fixels);
   {
-    ProgressBar progress (std::string ("Loading input images (no smoothing)"), importer.size());
+    ProgressBar progress (std::string ("Loading fixel data (no smoothing)"), importer.size());
     for (size_t subject = 0; subject != importer.size(); subject++) {
       (*importer[subject]) (data.row (subject));
       progress++;
