@@ -15,9 +15,6 @@
 
 #include "math/erfinv.h"
 
-#include <unsupported/Eigen/SpecialFunctions>
-#include <atomic>
-
 #include "math/polynomial.h"
 
 namespace MR
