@@ -219,7 +219,8 @@ namespace MR
 
         matrix_type stdev (const matrix_type& measurements, const matrix_type& design)
         {
-          const matrix_type sse = (measurements - design * solve_betas (measurements, design)).colwise().squaredNorm();
+          const matrix_type residuals = measurements - design * solve_betas (measurements, design);
+          const matrix_type sse = residuals.colwise().squaredNorm();
           return (sse.array() / value_type(design.rows()-Math::rank (design))).sqrt();
         }
 
@@ -324,10 +325,7 @@ namespace MR
           if (progress)
             ++*progress;
 #endif
-          if (variance_groups.size())
-            stdev = GLM::stdev (measurements, design, variance_groups);
-          else
-            stdev = residuals.colwise().squaredNorm();
+          stdev = GLM::stdev (measurements, design, variance_groups);
 #ifdef GLM_ALL_STATS_DEBUG
           std::cerr << "stdev: " << stdev.rows() << " x " << stdev.cols() << ", max " << stdev.maxCoeff() << "\n";
 #else
@@ -337,7 +335,7 @@ namespace MR
           if (variance_groups.size())
             std_effect_size = matrix_type::Constant (measurements.cols(), hypotheses.size(), NaN);
           else
-            std_effect_size = abs_effect_size.array().colwise() / stdev.array().col(0);
+            std_effect_size = abs_effect_size.array().colwise() / stdev.transpose().array().col(0);
 #ifdef GLM_ALL_STATS_DEBUG
           std::cerr << "std_effect_size: " << std_effect_size.rows() << " x " << std_effect_size.cols() << ", max " << std_effect_size.array().maxCoeff() << "\n";
 #endif
