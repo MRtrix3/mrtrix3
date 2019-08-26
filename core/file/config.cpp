@@ -49,7 +49,7 @@ namespace MR
       if (Path::is_file (sysconf_location)) {
         INFO (std::string("reading config file \"") + sysconf_location + "\"...");
         try {
-          KeyValue kv (sysconf_location);
+          KeyValue::Reader kv (sysconf_location);
           while (kv.next()) {
             config[kv.key()] = kv.value();
           }
@@ -63,7 +63,7 @@ namespace MR
       if (Path::is_file (path)) {
         INFO ("reading config file \"" + path + "\"...");
         try {
-          KeyValue kv (path);
+          KeyValue::Reader kv (path);
           while (kv.next()) {
             config[kv.key()] = kv.value();
           }

@@ -287,6 +287,10 @@ namespace MR
       header.size(0) = get_number_of_fixels (index);
       header.size(1) = 1;
       header.size(2) = 1;
+      header.stride(0) = 1;
+      header.stride(1) = 2;
+      header.stride(2) = 3;
+      header.transform() = transform_type::Identity();
       header.datatype() = DataType::Float32;
       header.datatype().set_byte_order_native();
       return header;

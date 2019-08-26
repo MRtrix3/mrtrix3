@@ -182,7 +182,8 @@ namespace MR
 
       void normalise_and_write (init_matrix_type& matrix,
                                 const connectivity_value_type threshold,
-                                const std::string& path);
+                                const std::string& path,
+                                const KeyValues& keyvals = KeyValues());
 
 
 
