@@ -394,7 +394,13 @@ namespace MR
         Image<index_image_type> index (index_image);
         Image<fixel_index_type> fixel (fixel_image);
         Image<connectivity_value_type> value (value_image);
+        Image<bool> mask (mask_image);
         NormFixel result;
+        if (mask.valid()) {
+          mask.index(0) = i;
+          if (!mask.value())
+            return result;
+        }
         index.index (0) = i;
         index.index (3) = 0;
         const index_image_type num_connections = index.value();
@@ -404,15 +410,14 @@ namespace MR
         const index_image_type offset = index.value();
         connectivity_value_type sum (connectivity_value_type (0));
         fixel.index (0) = value.index (0) = offset;
-        if (mask_image.valid()) {
-          Image<bool> mask (mask_image);
-          mask.index (0) = offset;
+        if (mask.valid()) {
           for (size_t i = 0; i != num_connections; ++i) {
+            mask.index(0) = fixel.value();
             if (mask.value()) {
               result.emplace_back (NormElement (fixel.value(), value.value()));
               sum += value.value();
             }
-            fixel.index (0)++; value.index (0)++; mask.index (0)++;
+            fixel.index (0)++; value.index (0)++;
           }
         } else {
           for (size_t i = 0; i != num_connections; ++i) {

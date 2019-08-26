@@ -369,10 +369,12 @@ void run()
   output_header.keyval()["cfe_legacy"] = str(cfe_legacy);
 
   matrix_type data = matrix_type::Zero (importer.size(), mask_fixels);
-  ProgressBar progress (std::string ("Loading input images (no smoothing)"), importer.size());
-  for (size_t subject = 0; subject != importer.size(); subject++) {
-    (*importer[subject]) (data.row (subject));
-    progress++;
+  {
+    ProgressBar progress (std::string ("Loading input images (no smoothing)"), importer.size());
+    for (size_t subject = 0; subject != importer.size(); subject++) {
+      (*importer[subject]) (data.row (subject));
+      progress++;
+    }
   }
   // Detect non-finite values in mask fixels only; NaN-fill other fixels
   bool nans_in_data = false;
