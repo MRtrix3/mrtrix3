@@ -241,11 +241,11 @@ namespace MR
       {
         assert (!(eb_within.size() && eb_whole.size()));
         if (eb_within.size()) {
-          assert (eb_within.size() == rows);
+          assert (size_t(eb_within.size()) == rows);
           assert (!eb_within.minCoeff());
         }
         if (eb_whole.size()) {
-          assert (eb_whole.size() == rows);
+          assert (size_t(eb_whole.size()) == rows);
           assert (!eb_whole.minCoeff());
         }
 

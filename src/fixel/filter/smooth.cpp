@@ -65,9 +65,9 @@ namespace MR
       {
         Header mask_header = Fixel::data_header_from_index (index_image);
         mask_header.datatype() = DataType::Bit;
-        assert (mask_header.size(0) == matrix.size());
+        assert (size_t(mask_header.size(0)) == matrix.size());
         mask_image = Image<bool>::scratch (mask_header, "full scratch fixel mask");
-        for (auto l = Loop(mask_image) (mask_image); l; ++l)
+        for (auto l = Loop(0) (mask_image); l; ++l)
           mask_image.value() = true;
       }
 
