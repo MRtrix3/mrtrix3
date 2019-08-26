@@ -32,9 +32,11 @@ namespace MR
       Smooth::Smooth (Image<index_type> index_image,
                       const Matrix::Reader& matrix,
                       const Image<bool>& mask_image,
-                      const float smoothing_fwhm) :
+                      const float smoothing_fwhm,
+                      const float smoothing_threshold) :
           mask_image (mask_image),
-          matrix (matrix)
+          matrix (matrix),
+          threshold (smoothing_threshold)
       {
         set_fwhm (smoothing_fwhm);
         // For smoothing, we need to be able to quickly
@@ -56,12 +58,13 @@ namespace MR
       Smooth::Smooth (Image<index_type> index_image,
                       const Matrix::Reader& matrix,
                       const Image<bool>& mask_image) :
-          Smooth (index_image, matrix, mask_image, DEFAULT_FIXEL_SMOOTHING_FWHM) { }
+          Smooth (index_image, matrix, mask_image, DEFAULT_FIXEL_SMOOTHING_FWHM, DEFAULT_FIXEL_SMOOTHING_MINWEIGHT) { }
 
       Smooth::Smooth (Image<index_type> index_image,
                       const Matrix::Reader& matrix,
-                      const float smoothing_fwhm) :
-          Smooth (index_image, matrix, Image<bool>(), smoothing_fwhm)
+                      const float smoothing_fwhm,
+                      const float smoothing_threshold) :
+          Smooth (index_image, matrix, Image<bool>(), smoothing_fwhm, smoothing_threshold)
       {
         Header mask_header = Fixel::data_header_from_index (index_image);
         mask_header.datatype() = DataType::Bit;
@@ -73,7 +76,7 @@ namespace MR
 
       Smooth::Smooth (Image<index_type> index_image,
                       const Matrix::Reader& matrix) :
-          Smooth (index_image, matrix, DEFAULT_FIXEL_SMOOTHING_FWHM) { }
+          Smooth (index_image, matrix, DEFAULT_FIXEL_SMOOTHING_FWHM, DEFAULT_FIXEL_SMOOTHING_MINWEIGHT) { }
 
 
 
@@ -139,8 +142,10 @@ namespace MR
                   mask.index (0) = input.index(0) = c.index();
                   if (mask.value() && std::isfinite (static_cast<float>(input.value()))) {
                     const Matrix::connectivity_value_type weight = c.value() * master.gaussian_const1 * std::exp (master.gaussian_const2 * (master.fixel_positions[c.index()] - pos).squaredNorm());
-                    output.value() += weight * input.value();
-                    sum_weights += weight;
+                    if (weight >= master.threshold) {
+                      output.value() += weight * input.value();
+                      sum_weights += weight;
+                    }
                   }
                 }
                 if (sum_weights) {

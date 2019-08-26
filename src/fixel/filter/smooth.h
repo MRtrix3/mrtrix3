@@ -20,6 +20,7 @@
 #include "fixel/filter/base.h"
 
 #define DEFAULT_FIXEL_SMOOTHING_FWHM 10.0
+#define DEFAULT_FIXEL_SMOOTHING_MINWEIGHT 0.01
 
 namespace MR
 {
@@ -54,13 +55,15 @@ namespace MR
           Smooth (Image<index_type> index_image,
                   const Matrix::Reader& matrix,
                   const Image<bool>& mask_image,
-                  const float smoothing_fwhm);
+                  const float smoothing_fwhm,
+                  const float smoothing_threshold);
           Smooth (Image<index_type> index_image,
                   const Matrix::Reader& matrix,
                   const Image<bool>& mask_image);
           Smooth (Image<index_type> index_image,
                   const Matrix::Reader& matrix,
-                  const float smoothing_fwhm);
+                  const float smoothing_fwhm,
+                  const float smoothing_threshold);
           Smooth (Image<index_type> index_image,
                   const Matrix::Reader& matrix);
 
@@ -72,7 +75,7 @@ namespace MR
           Image<bool> mask_image;
           Matrix::Reader matrix;
           vector<Eigen::Vector3f> fixel_positions;
-          float stdev, gaussian_const1, gaussian_const2;
+          float stdev, gaussian_const1, gaussian_const2, threshold;
 
       };
     //! @}

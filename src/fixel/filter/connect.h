@@ -20,8 +20,8 @@
 #include "fixel/matrix.h"
 #include "fixel/filter/base.h"
 
-#define DEFAULT_FIXEL_VALUE_THRESHOLD 0.5
-#define DEFAULT_FIXEL_CONNECTIVITY_THRESHOLD 0.1
+#define DEFAULT_FIXEL_CONNECT_VALUE_THRESHOLD 0.5
+#define DEFAULT_FIXEL_CONNECT_CONNECTIVITY_THRESHOLD 0.1
 
 namespace MR
 {
@@ -53,8 +53,8 @@ namespace MR
 
         public:
           Connect (const Fixel::Matrix::Reader& matrix,
-                   const float value_threshold = DEFAULT_FIXEL_VALUE_THRESHOLD,
-                   const float connectivity_threshold = DEFAULT_FIXEL_CONNECTIVITY_THRESHOLD) :
+                   const float value_threshold = DEFAULT_FIXEL_CONNECT_VALUE_THRESHOLD,
+                   const float connectivity_threshold = DEFAULT_FIXEL_CONNECT_CONNECTIVITY_THRESHOLD) :
               matrix (matrix),
               value_threshold (value_threshold),
               connectivity_threshold (connectivity_threshold) { }
