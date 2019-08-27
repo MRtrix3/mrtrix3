@@ -14,7 +14,7 @@
 #   ./set_path ~/.profile
 #
 # Note that this works only for Bourne shell and derivatives (BASH in
-# particular). This will not work for the C shell and derivatives. 
+# particular). This will not work for the C shell and derivatives.
 
 
 import sys, os, platform, subprocess
@@ -22,7 +22,7 @@ import sys, os, platform, subprocess
 # on Windows, need to use MSYS2 version of python - not MinGW version:
 if sys.executable[0].isalpha() and sys.executable[1] == ':':
   python_cmd = subprocess.check_output ([ 'cygpath.exe', '-w', '/usr/bin/python' ]).splitlines()[0].strip()
-  sys.exit (subprocess.call ([ python_cmd ] + sys.argv))
+  sys.exit (subprocess.call ([ python_cmd.decode(errors='ignore') ] + sys.argv))
 
 # check whether we are in the right location:
 basedir = os.getcwd()
@@ -64,14 +64,14 @@ is_next_line = False
 append_path = True
 output = ''
 
-if os.path.isfile (filename): 
+if os.path.isfile (filename):
   with open (filename, 'r') as f:
     for line in f:
       if is_next_line is True:
         if not line.startswith ('export PATH='):
           print ('''
 ERROR: File appears to have been modified by this script previously, but the
-contents do not match the expected format. 
+contents do not match the expected format.
 
 You will need to manually edit the relevant file "''' + filename + '''" in
 one of two ways:
@@ -88,15 +88,15 @@ one of two ways:
         if line == set_path:
           print ('File "' + filename + '" is already up to date')
           sys.exit (0)
-       
+
         output += set_path
         is_next_line = False
         append_path = False
         continue
-  
+
       if line == comment:
         is_next_line = True
-  
+
       output += line
 
 
