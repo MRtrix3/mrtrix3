@@ -19,7 +19,7 @@
 using namespace MR;
 using namespace App;
 
-#define ERFINV_PRINT_ALL
+//#define ERFINV_PRINT_ALL
 
 void usage ()
 {
