@@ -19,6 +19,9 @@ case  $test in
   "build_docs")
     $py ./configure -nooptim && $py ./build -nowarnings -persistent -nopaginate && ./docs/generate_user_docs.sh && git diff --exit-code docs/ > gitdiff.log
     ;;
+  "build")
+    $py ./configure -nooptim && $py ./build -nowarnings -persistent -nopaginate
+    ;;
   "run")
     $py ./configure -assert && $py ./build -nowarnings -persistent -nopaginate && ./run_tests
     ;;
