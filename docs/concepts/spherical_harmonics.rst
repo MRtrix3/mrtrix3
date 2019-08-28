@@ -1,5 +1,5 @@
-Spherical Harmonic basis
-========================
+Spherical Harmonics
+===================
 
 For Spherical Deconvolution (SD) as implemented in MRtrix, processing is
 done in the Spherical Harmonic (SH) basis; this mathematical formulation
@@ -11,31 +11,74 @@ all know and love. If you've ever looked at the raw image volumes from
 an FOD image, you'll know that all but the first one are basically not
 interpretable.
 
-Storage convention for Spherical Harmonics
-------------------------------------------
 
-Due to the nature of the problems addressed in diffusion MRI, the basis
-functions used are a subset of the full complex Spherical Harmonic series.
-First, the data involved are real (the phase information is invariably
-discarded due to its instability to motion), so we can use a real basis with no
-imaginary components. Second, the problems involved all exhibit antipodal
-symmetry (i.e. symmetry about the origin), so we can ignore all odd order terms
-in the series (since these correspond to strictly antisymmetric terms). The
-SH basis functions used in *MRtrix3* are therefore:
+Spherical harmonics are special functions defined on the surface of a sphere.
+They form a complete orthonormal set and can therefore be used to represent any
+well-behaved spherical function. In many ways, they are the equivalent to the
+Fourier series for functions defined over spherical (rather than
+Cartesian) coordinates. They are defined as:
 
 .. math::
 
-    Y^\textit{MRtrix3}_{l,m}(\theta, \phi) = \Biggl \lbrace {
-    \sqrt{2} (-1)^m Im\left[ Y{l,m} (\theta,\phi) \right] \text{ \qquad if } m < 0
-    \atop
-    Y_{l,0} \text{ \qquad if } m = 0
-    \atop
-    \sqrt{2} (-1)^m Re\left[ Y{l,m} (\theta,\phi) \right] \text{ \qquad if } m < 0
-    }
+   Y_l^m(\theta,\phi) = \sqrt{\frac{(2l+1)}{4\pi}\frac{(l-m)!}{(l+m)!}} P_l^m(\cos \theta) e^{im\phi}
+
+with integer *order* :math:`l` and *phase* :math:`m`, where :math:`l \geq 0`
+and :math:`-l \leq m \leq l`. Functions with increasing degree :math:`l`
+contain higher angular frequencies, while the different phase terms :math:`m`
+correspond to the different modes at that frequency. 
+
+Formulation used in MRtrix3
+---------------------------
+
+Due to the nature of the problems addressed in diffusion MRI, in *MRtrix3* a
+simplified version of the SH series is used. First, the data involved are real
+(the phase information is invariably discarded due to its instability to
+motion), so we can use a real basis with no imaginary components. Second, the
+problems involved all exhibit antipodal symmetry (i.e. symmetry about the
+origin, :math:`f(\mathbf{x}) = f(-\mathbf{x})`), so we can ignore all odd order
+terms in the series (since these correspond to strictly antisymmetric terms).
+The SH basis functions :math:`\Upsilon_l^m(\theta,\phi)` used in *MRtrix3* are
+therefore:
+
+.. math::
+
+   \Upsilon_l^m(\theta,\phi) = \begin{cases}
+   0 & \text{if $l$ is odd}, \\
+   \sqrt{2} \quad \text{Im} \left[ Y_l^{-m}(\theta,\phi) \right] & \text{if $m < 0$},\\
+   Y_l^0(\theta,\phi) & \text{if $m = 0$},\\
+   \sqrt{2} \quad \text{Re} \left[ Y_l^m(\theta,\phi) \right] & \text{if $m > 0$},\\
+   \end{cases}
 
 
-Ordering of SH components
-^^^^^^^^^^^^^^^^^^^^^^^^^
+Storage conventions
+^^^^^^^^^^^^^^^^^^^
+
+Images that contain spherical harmonic coefficients are stored as 4 (or
+higher) dimensional images, with each voxel's coefficients stored along the 4
+axis. Only the even degree coefficients are stored (since odd :math:`l`
+coefficients are assumed to be zero). The first volume contains the single
+:math:`l=0` term, the next 5 volumes contain the :math:`l=2` terms from
+:math:`m=-2` to :math:`m=2`, and so on for higher even degrees :math:`l` up to
+:math:`l_\text{max}` (the highest angular frequency band included in the
+series). 
+
+The SH coefficient :math:`(l,m)` is therefore stored in volume
+:math:`\frac{1}{2} l(l+1) + m` (indexed from zero), and the number of
+coefficients (or volumes) for a given :math:`l_\text{max}` are
+given as :math:`N= \frac{1}{2} (l_\text{max}+1) (l_\text{max}+2)` (tabulated
+below for the first few values of :math:`l_\text{max}`). 
+
+====================  =========
+:math:`l_\text{max}`  :math:`N`
+====================  =========
+         0                1
+         2                6
+         4                15
+         6                28
+         8                45
+        10                66
+        12                91
+====================  =========
 
 
 
