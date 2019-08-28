@@ -53,7 +53,7 @@ def execute(): #pylint: disable=unused-variable
     image = 'indices.mif'
   else:
     image = 'indices_cropped.mif'
-    run.command('mrthreshold indices.mif - -abs 0.5 | maskfilter - dilate - | mrgrid indices.mif crop ' + image + ' -mask -')
+    run.command('mrthreshold indices.mif - -abs 0.5 | mrgrid indices.mif crop ' + image + ' -mask -')
 
   # Convert into the 5TT format for ACT
   run.command('mrcalc ' + image + ' 1 -eq cgm.mif')
@@ -64,4 +64,4 @@ def execute(): #pylint: disable=unused-variable
 
   run.command('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | mrconvert - result.mif -datatype float32')
 
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output) + app.mrconvert_output_option(path.from_user(app.ARGS.input)))
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE)

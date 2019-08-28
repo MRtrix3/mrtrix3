@@ -6,7 +6,7 @@
 
 
 def usage(cmdline): #pylint: disable=unused-variable
-  from mrtrix3 import algorithm
+  from mrtrix3 import algorithm, app #pylint: disable=no-name-in-module
 
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)')
   cmdline.set_synopsis('Estimate response function(s) for spherical deconvolution')
@@ -30,7 +30,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import algorithm, image, MRtrixError, path, run
+  from mrtrix3 import algorithm, app, image, MRtrixError, path, run #pylint: disable=no-name-in-module
 
   # Find out which algorithm the user has requested
   alg = algorithm.get_module(app.ARGS.algorithm)
@@ -103,13 +103,6 @@ def execute(): #pylint: disable=unused-variable
 
 
 
-# Make the corresponding MRtrix3 Python libraries available
-import inspect, os, sys
-LIB_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
-if not os.path.isdir(LIB_FOLDER):
-  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
-  sys.exit(1)
-sys.path.insert(0, LIB_FOLDER)
 # Execute the script
-from mrtrix3 import app
-app.execute()
+import mrtrix3
+mrtrix3.execute() #pylint: disable=no-member

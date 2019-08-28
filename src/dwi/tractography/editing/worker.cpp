@@ -181,7 +181,7 @@ namespace MR {
 
         bool Worker::Thresholds::operator() (const Streamline<>& in) const
         {
-          const float length = (std::isfinite (step_size) ? in.calc_length (step_size) : in.calc_length());
+          const float length = Tractography::length (in);
           return ((length <= max_length) &&
               (length >= min_length) &&
               (in.weight <= max_weight) &&

@@ -178,8 +178,8 @@ namespace MR
       if (adjusted_transform.linear().determinant() > 0.0)
         bvecs.row(0) = -bvecs.row(0);
 
-      save_matrix (bvecs, bvecs_path);
-      save_matrix (bvals, bvals_path);
+      save_matrix (bvecs, bvecs_path, KeyValues(), false);
+      save_matrix (bvals, bvals_path, KeyValues(), false);
     }
 
 
