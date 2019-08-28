@@ -95,7 +95,7 @@ install:
         fi
     fi
   - |
-    if [[ "${test}" == "build_docs" || "${test}" == "run" ]]; then
+    if [[ "${test}" == "build" || "${test}" == "build_docs" || "${test}" == "run" ]]; then
         export EIGEN_CFLAGS="-idirafter `pwd`/../eigen";
         ( cd ..; git clone https://github.com/eigenteam/eigen-git-mirror.git eigen; cd eigen; git checkout branches/3.3 )
     fi
@@ -128,6 +128,10 @@ after_failure:
         cat configure.log
         cat build.log
         cat gitdiff.log
+        ;;
+      "build")
+        cat configure.log
+        cat build.log
         ;;
       *)
         cat configure.log
