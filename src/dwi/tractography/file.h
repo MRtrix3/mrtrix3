@@ -75,11 +75,8 @@ namespace MR
             current_index (0) {
               open (file, "tracks", properties);
               auto opt = App::get_options ("tck_weights_in");
-              if (opt.size()) {
-                weights_file.reset (new std::ifstream (str(opt[0][0]).c_str(), std::ios_base::in));
-                if (!weights_file->good())
-                  throw Exception ("Unable to open streamlines weights file " + str(opt[0][0]));
-              }
+              if (opt.size())
+                weights = load_vector<ValueType> (opt[0][0]);
             }
 
 
@@ -106,11 +103,13 @@ namespace MR
                 if (std::isnan (p[0])) {
                   tck.index = current_index++;
 
-                  if (weights_file) {
+                  if (weights.size()) {
 
-                    (*weights_file) >> tck.weight;
-                    if (weights_file->fail()) {
-                      WARN ("Streamline weights file contains less entries than .tck file; only read " + str(current_index-1) + " streamlines");
+                    if (tck.index < size_t(weights.size())) {
+                      tck.weight = weights[tck.index];
+                    } else {
+                      WARN ("Streamline weights file contains less entries (" + str(weights.size()) + ") than .tck file; "
+                            "ceasing reading of streamline data");
                       in.close();
                       tck.clear();
                       return false;
@@ -137,7 +136,7 @@ namespace MR
           using __ReaderBase__::dtype;
 
           uint64_t current_index;
-          std::unique_ptr<std::ifstream> weights_file;
+          Eigen::Matrix<ValueType, Eigen::Dynamic, 1> weights;
 
           //! takes care of byte ordering issues
 
@@ -179,12 +178,11 @@ namespace MR
           //! Check that the weights file does not contain excess entries
           void check_excess_weights()
           {
-            if (!weights_file)
+            if (!weights.size())
               return;
-            float temp;
-            (*weights_file) >> temp;
-            if (!weights_file->fail())
-              WARN ("Streamline weights file contains more entries than .tck file");
+            if (size_t(weights.size()) > current_index) {
+              WARN ("Streamline weights file contains more entries (" + str(weights.size()) + ") than .tck file (" + str(current_index) + ")");
+            }
           }
 
           Reader (const Reader&) = delete;

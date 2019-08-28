@@ -81,7 +81,7 @@ void usage ()
     +   Option ("strides", "data strides i.e. order and direction of axes data layout")
     +   Option ("offset", "image intensity offset")
     +   Option ("multiplier", "image intensity multiplier")
-    +   Option ("transform", "the voxel to image transformation")
+    +   Option ("transform", "the transformation from image coordinates [mm] to scanner / real world coordinates [mm]")
 
     + NoRealignOption
 
