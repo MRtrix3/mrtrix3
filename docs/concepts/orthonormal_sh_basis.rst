@@ -1,5 +1,53 @@
-Orthonormal Spherical Harmonic basis
-====================================
+Spherical Harmonic basis
+========================
+
+For Spherical Deconvolution (SD) as implemented in MRtrix, processing is
+done in the Spherical Harmonic (SH) basis; this mathematical formulation
+provides a smooth representation of data distributed on the sphere. When
+we do SD, the resulting Fibre Orientation Distributions (FODs) are
+written to an image. These FOD images contain coefficients in this SH
+basis, that when interpreted correctly, produce the FOD butterflies we
+all know and love. If you've ever looked at the raw image volumes from
+an FOD image, you'll know that all but the first one are basically not
+interpretable.
+
+Storage convention for Spherical Harmonics
+------------------------------------------
+
+Due to the nature of the problems addressed in diffusion MRI, the basis
+functions used are a subset of the full complex Spherical Harmonic series.
+First, the data involved are real (the phase information is invariably
+discarded due to its instability to motion), so we can use a real basis with no
+imaginary components. Second, the problems involved all exhibit antipodal
+symmetry (i.e. symmetry about the origin), so we can ignore all odd order terms
+in the series (since these correspond to strictly antisymmetric terms). The
+SH basis functions used in *MRtrix3* are therefore:
+
+.. math::
+
+    Y^\textit{MRtrix3}_{l,m}(\theta, \phi) = \Biggl \lbrace {
+    \sqrt{2} (-1)^m Im\left[ Y{l,m} (\theta,\phi) \right] \text{ \qquad if } m < 0
+    \atop
+    Y_{l,0} \text{ \qquad if } m = 0
+    \atop
+    \sqrt{2} (-1)^m Re\left[ Y{l,m} (\theta,\phi) \right] \text{ \qquad if } m < 0
+    }
+
+
+Ordering of SH components
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+Zonal Harmonics
+^^^^^^^^^^^^^^^
+
+
+
+
+
+Differences with previous version of MRtrix
+-------------------------------------------
 
 An important difference between the old (0.2.x) and new (0.3.x and 3.x.x)
 versions of MRtrix is a change to the Spherical Harmonic (SH) basis
@@ -16,17 +64,7 @@ correct, you should use the :ref:`shbasis` application included in *MRtrix3*,
 as described below.
 
 The problem
------------
-
-For Spherical Deconvolution (SD) as implemented in MRtrix, processing is
-done in the Spherical Harmonic (SH) basis; this mathematical formulation
-provides a smooth representation of data distributed on the sphere. When
-we do SD, the resulting Fibre Orientation Distributions (FODs) are
-written to an image. These FOD images contain coefficients in this SH
-basis, that when interpreted correctly, produce the FOD butterflies we
-all know and love. If you've ever looked at the raw image volumes from
-an FOD image, you'll know that all but the first one are basically not
-interpretable.
+^^^^^^^^^^^
 
 Here's where it gets tricky. In all previous versions of MRtrix, there
 was a 'bug' in the SH basis functions. Mathematically, the basis was
@@ -48,7 +86,7 @@ using MRtrix code that was compiled using the *new* SH basis, the data
 will *not be interpreted correctly*.
 
 The solution
-------------
+^^^^^^^^^^^^
 
 There is a solution, but it takes a bit of manual labour on your part.
 We have provided a new command called ``shbasis``. This command
@@ -88,8 +126,8 @@ version of MRtrix (0.2) won't interpret them correctly. We hope that
 once we have feature completeness in *MRtrix3*, the old version
 will no longer be necessary, and therefore this will not be a problem.
 
-Problematic data
-----------------
+Dealing with problematic data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In some circumstances, the ``shbasis`` command will give an error
 something like this:
