@@ -986,6 +986,30 @@ int main() {
 
 
 
+
+# PNG:
+
+png_cflags = get_flags ([], 'PNG_CFLAGS', '--cflags libpng')
+png_ldflags = get_flags ([ '-lpng' ], 'PNG_LDFLAGS', '--libs libpng')
+
+if compile_test ('PNG library', cpp_flags + png_cflags, ld_flags + png_ldflags, '''
+#include <iostream>
+#include <png.h>
+
+int main() {
+  std::cout << "Header: " << PNG_LIBPNG_VER_STRING << "; library: " << png_libpng_ver;
+  return (0);
+}
+''', on_failure='not found - PNG support disabled'):
+  cpp_flags += [ '-DMRTRIX_PNG_SUPPORT' ] + png_cflags
+  ld_flags += png_ldflags
+  ld_lib_flags += png_ldflags
+
+
+
+
+
+
 # FFTW:
 
 

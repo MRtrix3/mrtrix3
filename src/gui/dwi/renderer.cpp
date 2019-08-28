@@ -373,7 +373,7 @@ namespace MR
 
       Renderer::SH::~SH()
       {
-        Renderer::GrabContext context (parent.context_);
+        GL::Context::Grab context (parent.context_);
         half_sphere.vertex_buffer.clear();
         half_sphere.index_buffer.clear();
         surface_buffer.clear();
@@ -383,7 +383,7 @@ namespace MR
       void Renderer::SH::initGL()
       {
         GL_CHECK_ERROR;
-        Renderer::GrabContext context (parent.context_);
+        GL::Context::Grab context (parent.context_);
         half_sphere.vertex_buffer.gen();
         surface_buffer.gen();
         half_sphere.index_buffer.gen();
@@ -421,7 +421,7 @@ namespace MR
         INFO ("updating ODF SH renderer transform...");
         QApplication::setOverrideCursor (Qt::BusyCursor);
         {
-          Renderer::GrabContext context (parent.context_);
+          GL::Context::Grab context (parent.context_);
           LOD = lod;
           half_sphere.LOD (LOD);
         }
@@ -502,7 +502,7 @@ namespace MR
 
       Renderer::Tensor::~Tensor()
       {
-        Renderer::GrabContext context (parent.context_);
+        GL::Context::Grab context (parent.context_);
         half_sphere.vertex_buffer.clear();
         half_sphere.index_buffer.clear();
         VAO.clear();
@@ -511,7 +511,7 @@ namespace MR
       void Renderer::Tensor::initGL()
       {
         GL_CHECK_ERROR;
-        Renderer::GrabContext context (parent.context_);
+        GL::Context::Grab context (parent.context_);
         half_sphere.vertex_buffer.gen();
         half_sphere.index_buffer.gen();
         VAO.gen();
@@ -537,7 +537,7 @@ namespace MR
         INFO ("updating tensor renderer...");
         QApplication::setOverrideCursor (Qt::BusyCursor);
         {
-          Renderer::GrabContext context (parent.context_);
+          GL::Context::Grab context (parent.context_);
           LOD = lod;
           half_sphere.LOD (LOD);
         }
@@ -581,7 +581,7 @@ namespace MR
 
       Renderer::Dixel::~Dixel()
       {
-        Renderer::GrabContext context (parent.context_);
+        GL::Context::Grab context (parent.context_);
         vertex_buffer.clear();
         value_buffer.clear();
         index_buffer.clear();
@@ -591,7 +591,7 @@ namespace MR
       void Renderer::Dixel::initGL()
       {
         GL_CHECK_ERROR;
-        Renderer::GrabContext context (parent.context_);
+        GL::Context::Grab context (parent.context_);
         vertex_buffer.gen();
         value_buffer.gen();
         index_buffer.gen();
@@ -620,7 +620,7 @@ namespace MR
         assert (data.size() == vertex_count);
 
         GL_CHECK_ERROR;
-        Renderer::GrabContext context (parent.context_);
+        GL::Context::Grab context (parent.context_);
         VAO.bind();
         value_buffer.bind (gl::ARRAY_BUFFER);
         gl::BufferData (gl::ARRAY_BUFFER, vertex_count*sizeof(GLfloat), &data[0], gl::STREAM_DRAW);
@@ -676,7 +676,7 @@ namespace MR
         }
 
         GL_CHECK_ERROR;
-        Renderer::GrabContext context (parent.context_);
+        GL::Context::Grab context (parent.context_);
         VAO.bind();
         vertex_buffer.bind (gl::ARRAY_BUFFER);
         gl::BufferData (gl::ARRAY_BUFFER, dirs.size()*sizeof(Eigen::Vector3f), &directions_data[0], gl::STATIC_DRAW);

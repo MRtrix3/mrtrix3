@@ -6,7 +6,7 @@ sh2peaks
 Synopsis
 --------
 
-Extract the peaks of a spherical harmonic function at each voxel, by commencing a Newton search along a set of specified directions
+Extract the peaks of a spherical harmonic function in each voxel
 
 Usage
 --------
@@ -20,6 +20,8 @@ Usage
 
 Description
 -----------
+
+Peaks of the spherical harmonic function in each voxel are located by commencing a Newton search along each of a set of pre-specified directions
 
 The spherical harmonic coefficients are stored as follows. First, since the signal attenuation profile is real, it has conjugate symmetry, i.e. Y(l,-m) = Y(l,m)* (where * denotes the complex conjugate). Second, the diffusion profile should be antipodally symmetric (i.e. S(x) = S(-x)), implying that all odd l components should be zero. Therefore, only the even elements are computed. Note that the spherical harmonics equations used here differ slightly from those conventionally used, in that the (-1)^m factor has been omitted. This should be taken into account in all subsequent calculations. Each volume in the output image corresponds to a different spherical harmonic component. Each volume will correspond to the following: volume 0: l = 0, m = 0 ; volume 1: l = 2, m = 2 (imaginary part) ; volume 2: l = 2, m = 1 (imaginary part) ; volume 3: l = 2, m = 0 ; volume 4: l = 2, m = 1 (real part) ; volume 5: l = 2, m = 2 (real part) ; volume 6: l = 4, m = 4 (imaginary part) ; volume 7: l = 4, m = 3 (imaginary part) ; etc...
 
@@ -58,6 +60,11 @@ Standard options
 -  **-help** display this information page and exit.
 
 -  **-version** display version information and exit.
+
+References
+^^^^^^^^^^
+
+Jeurissen, B.; Leemans, A.; Tournier, J.-D.; Jones, D.K.; Sijbers, J. Investigating the prevalence of complex fiber configurations in white matter tissue with diffusion magnetic resonance imaging. Human Brain Mapping, 2013, 34(11), 2747-2766
 
 --------------
 

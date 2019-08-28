@@ -46,7 +46,7 @@ def execute(): #pylint: disable=unused-variable
 
   # Verify input 5tt image
   stderr_5ttcheck = run.command('5ttcheck 5tt.mif').stderr
-  if stderr_5ttcheck:
+  if '[WARNING]' in stderr_5ttcheck:
     app.warn('Command 5ttcheck indicates minor problems with provided input 5TT image \'' + app.ARGS.in_5tt + '\':')
     for line in stderr_5ttcheck.splitlines():
       app.warn(line)
@@ -126,4 +126,4 @@ def execute(): #pylint: disable=unused-variable
   # Generate output 4D binary image with voxel selections; RGB as in MSMT-CSD paper
   run.command('mrcat csf_mask.mif gm_mask.mif wm_sf_mask.mif voxels.mif -axis 3')
   if app.ARGS.voxels:
-    run.command('mrconvert voxels.mif ' + path.from_user(app.ARGS.voxels) + app.mrconvert_output_option(path.from_user(app.ARGS.input)))
+    run.command('mrconvert voxels.mif ' + path.from_user(app.ARGS.voxels), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE)

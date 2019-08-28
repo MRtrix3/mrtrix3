@@ -216,8 +216,8 @@ namespace MR
       Eigen::MatrixXd config;
       Eigen::Array<int, Eigen::Dynamic, 1> indices;
       scheme2eddy (PE, config, indices);
-      save_matrix (config, config_path);
-      save_vector (indices, index_path);
+      save_matrix (config, config_path, KeyValues(), false);
+      save_vector (indices, index_path, KeyValues(), false);
     }
 
 

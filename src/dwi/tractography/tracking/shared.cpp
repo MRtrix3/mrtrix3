@@ -32,13 +32,18 @@ namespace MR
             source (Image<float>::open (diff_path).with_direct_io (3)),
             properties (property_set),
             init_dir ({ NaN, NaN, NaN }),
-            min_num_points (0),
-            max_num_points (0),
-            max_angle (NaN),
-            max_angle_rk4 (NaN),
-            cos_max_angle (NaN),
-            cos_max_angle_rk4 (NaN),
+            min_num_points_preds (0),
+            max_num_points_preds (0),
+            min_num_points_postds (0),
+            max_num_points_postds (0),
+            min_dist (NaN),
+            max_dist (NaN),
+            max_angle_1o (NaN),
+            max_angle_ho (NaN),
+            cos_max_angle_1o (NaN),
+            cos_max_angle_ho (NaN),
             step_size (NaN),
+            min_radius (NaN),
             threshold (NaN),
             unidirectional (false),
             rk4 (false),
@@ -133,7 +138,7 @@ namespace MR
               case CALIBRATOR:           term_type = "Calibrator sub-threshold";      to_print = true;     break;
               case EXIT_IMAGE:           term_type = "Exited image";                  to_print = true;     break;
               case ENTER_CSF:            term_type = "Entered CSF";                   to_print = is_act(); break;
-              case BAD_SIGNAL:           term_type = "Bad diffusion signal";          to_print = true;     break;
+              case MODEL:                term_type = "Diffusion model sub-threshold"; to_print = true;     break;
               case HIGH_CURVATURE:       term_type = "Excessive curvature";           to_print = true;     break;
               case LENGTH_EXCEED:        term_type = "Max length exceeded";           to_print = true;     break;
               case TERM_IN_SGM:          term_type = "Terminated in subcortex";       to_print = is_act(); break;
@@ -174,7 +179,7 @@ namespace MR
 
 
 
-        void SharedBase::set_step_size (float stepsize)
+        void SharedBase::set_step_size (float stepsize, bool is_higher_order)
         {
           step_size = stepsize * vox();
           properties.set (step_size, "step_size");
@@ -183,26 +188,101 @@ namespace MR
           if (downsampler.get_ratio() > 1)
             properties["output_step_size"] = str (step_size * downsampler.get_ratio());
 
-          float max_dist = 100.0 * vox();
+          max_dist = 100.0f * vox();
           properties.set (max_dist, "max_dist");
-          max_num_points = std::round (max_dist/step_size) + 1;
 
-          float min_dist = is_act() ? (2.0 * vox()) : (5.0 * vox());
+          min_dist = is_act() ? (2.0f * vox()) : (5.0f * vox());
           properties.set (min_dist, "min_dist");
-          min_num_points = std::max (2, int(std::round (min_dist/step_size) + 1));
 
-          max_angle = 90.0 * step_size / vox();
-          properties.set (max_angle, "max_angle");
-          INFO ("maximum deviation angle = " + str (max_angle) + " deg");
-          max_angle *= Math::pi / 180.0;
-          cos_max_angle = std::cos (max_angle);
-
-          if (rk4) {
-            max_angle_rk4 = max_angle;
-            cos_max_angle_rk4 = cos_max_angle;
-            max_angle = Math::pi;
-            cos_max_angle = 0.0;
+          const std::string angle_msg = is_higher_order ?
+                                        "maximum angular change in fibre orientation per step" :
+                                        "maximum deviation angle per step";
+          if (properties.find ("max_angle") == properties.end()) {
+            min_radius = vox();
+            max_angle_1o = 2.0f * std::asin (step_size / (2.0f * min_radius));
+            cos_max_angle_1o = std::cos (max_angle_1o);
+            const float max_angle_deg = max_angle_1o * 180.0f / Math::pi;
+            properties["max_angle"] = max_angle_deg;
+            INFO (angle_msg + " = " + str (max_angle_deg) + " deg");
+          } else {
+            max_angle_1o = to<float> (properties["max_angle"]);
+            INFO (angle_msg + " = " + str (max_angle_1o) + " deg");
+            // User provides angle at command-line in degrees, not radians
+            max_angle_1o *= Math::pi / 180.0f;
+            cos_max_angle_1o = std::cos (max_angle_1o);
+            min_radius = step_size / (2.0f * std::sin (0.5f * max_angle_1o));
           }
+
+          if (is_higher_order) {
+            max_angle_ho = max_angle_1o;
+            cos_max_angle_ho = cos_max_angle_1o;
+            // Clear these variables so that the next() function of the underlying method
+            //   does not enforce curvature constraints; rely on e.g. RK4 to do it
+            max_angle_1o = Math::pi;
+            cos_max_angle_1o = 0.0f;
+          }
+
+          INFO ("Minimum radius of curvature = " + str(min_radius) + "mm");
+        }
+
+
+
+        void SharedBase::set_num_points()
+        {
+          // Angle around the circle of minimum radius for the given step size
+          const float angle_minradius_preds = 2.0 * std::asin (step_size / (2.0 * min_radius));
+          // Maximum inter-vertex distance after streamline has been downsampled
+          const float max_step_postds = downsampler.get_ratio() * step_size;
+
+          set_num_points (angle_minradius_preds, max_step_postds);
+        }
+
+
+
+        void SharedBase::set_num_points (const float angle_minradius_preds,
+                                         const float max_step_postds)
+        {
+          // Maximal angle around this minimum radius traversed after downsampling
+          const float angle_minradius_postds = downsampler.get_ratio() * angle_minradius_preds;
+          // Minimum chord length after streamline has been downsampled
+          const float min_step_postds = (angle_minradius_postds > 2.0 * Math::pi) ?
+                                        0.0 :
+                                        (2.0 * min_radius * std::sin (0.5 * angle_minradius_postds));
+
+          // What we need:
+          //   - Before downsampling:
+          //     - How many points must be generated in order for it to be feasible that the
+          //         streamline may exceed the minimum length after downsampling?
+          //       (If a streamline doesn't reach this number of vertices, there's no point in
+          //         even attempting any further processing of it; it will always be rejected)
+          min_num_points_preds = 1 + std::ceil (min_dist / step_size);
+          //     - How many points before it is no longer feasible to become shorter than the
+          //         maximum length, even after down-sampling?
+          //       (There is no point in continuing streamlines propagation after this point;
+          //         it will invariably be either truncated or rejected, no matter what
+          //         happens during downsampling)
+          max_num_points_preds = min_step_postds ?
+                                 (3 + std::ceil (downsampler.get_ratio() * max_dist / min_step_postds)) :
+                                 std::numeric_limits<size_t>::max();
+          //   - After downsampling:
+          //     - How many vertices must a streamline have (after downsampling) for it to be
+          //         guaranteed to exceed the minimum length?
+          //       (If a streamline has less than this number of vertices after downsampling, we
+          //         need to quantify its length precisely and compare against the minimum)
+          min_num_points_postds = 3 + std::ceil (min_dist / min_step_postds);
+          //     - How many vertices can a streamline have (after downsampling) for it to be
+          //         guaranteed to be shorter than the maximum length?
+          //       (If a streamline has more than this number of vertices after downsampling, we
+          //         need to quantify its length precisely and compare against the maximum)
+          max_num_points_postds = 1 + std::floor (max_dist / max_step_postds);
+
+          DEBUG ("For tracking step size " + str(step_size) + "mm, " +
+                 (std::isfinite (max_angle_ho) ?
+                     ("max change in fibre orientation angle per step " + str(max_angle_ho * 180.0 / Math::pi, 6) + " deg (using RK4)") :
+                     ("max angle deviation per step " + str(max_angle_1o * 180.0 / Math::pi, 6) + "deg")) +
+                 ", minimum radius of curvature " + str(min_radius, 6) + "mm, downsampling ratio " + str(downsampler.get_ratio()) + ": " +
+                 "minimum length of " + str(min_dist) + "mm requires at least " + str(min_num_points_preds) + " vertices pre-DS, is tested explicitly for " + str(min_num_points_postds) + " vertices or less post-DS; " +
+                 "maximum length of " + str(max_dist) + "mm will stop tracking after " + str(max_num_points_preds) + " vertices pre-DS, is tested explicitly for " + str(max_num_points_postds) + " or more vertices post-DS");
         }
 
 
