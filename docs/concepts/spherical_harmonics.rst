@@ -38,7 +38,7 @@ as its spherical harmonic expansion:
 
 .. math::
 
-   f(\theta,\phi) = \sum_{l=0}^{\infty} \sum_{m=-l}^{l} c_l^m \Upsilon_l^m(\theta,\phi)
+   f(\theta,\phi) = \sum_{l=0}^{\infty} \sum_{m=-l}^{l} c_l^m \Y_l^m(\theta,\phi)
 
 
 For smooth functions that have negligible high angular frequency content, the
@@ -47,7 +47,7 @@ series can be truncated at some suitable maximum harmonic order
 
 .. math::
 
-   f(\theta,\phi) = \sum_{l=0}^{l_\text{max}} \sum_{m=-l}^{l} c_l^m \Upsilon_l^m(\theta,\phi)
+   f(\theta,\phi) = \sum_{l=0}^{l_\text{max}} \sum_{m=-l}^{l} c_l^m \Y_l^m(\theta,\phi)
 
 The spherical harmonic series therefore provides a compact represention for
 smooth functions on the sphere. Moreover, due to its formulation, it has many
