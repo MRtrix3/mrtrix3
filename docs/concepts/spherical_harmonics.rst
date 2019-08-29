@@ -38,7 +38,7 @@ as its spherical harmonic expansion:
 
 .. math::
 
-   f(\theta,\phi) = \sum_{l=0}^{\infty} \sum_{m=-l}^{l} c_l^m \Y_l^m(\theta,\phi)
+   f(\theta,\phi) = \sum_{l=0}^{\infty} \sum_{m=-l}^{l} c_l^m Y_l^m(\theta,\phi)
 
 
 For smooth functions that have negligible high angular frequency content, the
@@ -47,7 +47,7 @@ series can be truncated at some suitable maximum harmonic order
 
 .. math::
 
-   f(\theta,\phi) = \sum_{l=0}^{l_\text{max}} \sum_{m=-l}^{l} c_l^m \Y_l^m(\theta,\phi)
+   f(\theta,\phi) = \sum_{l=0}^{l_\text{max}} \sum_{m=-l}^{l} c_l^m Y_l^m(\theta,\phi)
 
 The spherical harmonic series therefore provides a compact represention for
 smooth functions on the sphere. Moreover, due to its formulation, it has many
@@ -64,12 +64,12 @@ motion), so we can use a real basis with no imaginary components. Second, the
 problems involved all exhibit antipodal symmetry (i.e. symmetry about the
 origin, :math:`f(\mathbf{x}) = f(-\mathbf{x})`), so we can ignore all odd order
 terms in the series (since these correspond to strictly antisymmetric terms).
-The SH basis functions :math:`\Y_{lm}(\theta,\phi)` used in *MRtrix3* are
+The SH basis functions :math:`Y_{lm}(\theta,\phi)` used in *MRtrix3* are
 therefore:
 
 .. math::
 
-   \Y_{lm}(\theta,\phi) = \begin{cases}
+   Y_{lm}(\theta,\phi) = \begin{cases}
    0 & \text{if $l$ is odd}, \\
    \sqrt{2} \: \text{Im} \left[ Y_l^{-m}(\theta,\phi) \right] & \text{if $m < 0$},\\
    Y_l^0(\theta,\phi) & \text{if $m = 0$},\\
