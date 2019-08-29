@@ -11,6 +11,8 @@ all know and love. If you've ever looked at the raw image volumes from
 an FOD image, you'll know that all but the first one are basically not
 interpretable.
 
+What are Sherical Harmonics?
+----------------------------
 
 Spherical harmonics are special functions defined on the surface of a sphere.
 They form a complete orthonormal set and can therefore be used to represent any
@@ -26,9 +28,9 @@ with integer *order* :math:`l` and *phase* :math:`m`, where :math:`l \geq 0`
 and :math:`-l \leq m \leq l` (note that the terms *degree* and *order* are also
 commonly used to denote :math:`l` & :math:`m` respectively). The harmonic order
 :math:`l` corresponds to the angular frequency of the basis function; for
-example, all :math:`l=2` SH basis functions perform 2 full oscillations around
+example, all :math:`l=2` SH basis functions feature 2 full oscillations around
 some equator on the sphere. The harmonic phase :math:`m` correspond to
-different orthogonal modes at this frequency, e.g. where the oscillations occur
+different orthogonal modes at this frequency; e.g. where the oscillations occur
 around a different plane. 
 
 Any well-behaved function on the sphere :math:`f(\theta,\phi)` can be expressed
@@ -36,7 +38,7 @@ as its spherical harmonic expansion:
 
 .. math::
 
-   f(\theta,\phi) = \Sum_{l=0}^{\infty} \Sum_{m=-l}^{l} c_l^m \Upsilon_l^m(\theta,\phi)
+   f(\theta,\phi) = \sum_{l=0}^{\infty} \sum_{m=-l}^{l} c_l^m \Upsilon_l^m(\theta,\phi)
 
 
 For smooth functions that have negligible high angular frequency content, the
@@ -45,7 +47,7 @@ series can be truncated at some suitable maximum harmonic order
 
 .. math::
 
-   f(\theta,\phi) = \Sum_{l=0}^{l_\text{max}} \Sum_{m=-l}^{l} c_l^m \Upsilon_l^m(\theta,\phi)
+   f(\theta,\phi) = \sum_{l=0}^{l_\text{max}} \sum_{m=-l}^{l} c_l^m \Upsilon_l^m(\theta,\phi)
 
 The spherical harmonic series therefore provides a compact represention for
 smooth functions on the sphere. Moreover, due to its formulation, it has many
@@ -69,23 +71,22 @@ therefore:
 
    \Upsilon_l^m(\theta,\phi) = \begin{cases}
    0 & \text{if $l$ is odd}, \\
-   \sqrt{2} \quad \text{Im} \left[ Y_l^{-m}(\theta,\phi) \right] & \text{if $m < 0$},\\
+   \sqrt{2} \: \text{Im} \left[ Y_l^{-m}(\theta,\phi) \right] & \text{if $m < 0$},\\
    Y_l^0(\theta,\phi) & \text{if $m = 0$},\\
-   \sqrt{2} \quad \text{Re} \left[ Y_l^m(\theta,\phi) \right] & \text{if $m > 0$},\\
+   \sqrt{2} \: \text{Re} \left[ Y_l^m(\theta,\phi) \right] & \text{if $m > 0$},\\
    \end{cases}
 
 
 Storage conventions
 ^^^^^^^^^^^^^^^^^^^
 
-Images that contain spherical harmonic coefficients are stored as 4 (or
-higher) dimensional images, with each voxel's coefficients stored along the 4
-axis. Only the even degree coefficients are stored (since odd :math:`l`
-coefficients are assumed to be zero). The first volume contains the single
-:math:`l=0` term, the next 5 volumes contain the :math:`l=2` terms from
-:math:`m=-2` to :math:`m=2`, and so on for higher even degrees :math:`l` up to
-:math:`l_\text{max}` (the highest angular frequency band included in the
-series). 
+Images that contain spherical harmonic coefficients are stored as 4-dimensional
+images, with each voxel's coefficients stored along the 4 axis. Only the even
+degree coefficients are stored (since odd :math:`l` coefficients are assumed to
+be zero). The first volume contains the single :math:`l=0` coefficient, the next 5
+volumes contain the :math:`l=2` coefficients from :math:`m=-2` to :math:`m=2`, and so
+on for higher even orders :math:`l` up to :math:`l_\text{max}` (the highest
+angular frequency band included in the series). 
 
 The SH coefficient :math:`c_l^m` is therefore stored in volume
 :math:`\frac{1}{2} l(l+1) + m` (indexed from zero), and the number of
@@ -110,11 +111,11 @@ below for the first few values of :math:`l_\text{max}`).
 Representation of response functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The response functions assumed when performing spherical (de)convolution
+The response functions required when performing spherical (de)convolution
 correspond to axially symmetric kernels (they typically represent the ideal
 signal for a coherently aligned bundle of fibres aligned with the :math:`z`
 axis). Due to this symmetry, all :math:`m \neq 0` coefficients can be assumed
-to be zero. Therefore, response function can be fully represented using only
+to be zero. Therefore, response functions can be fully represented using only
 their even order :math:`l`, zero phase :math:`m=0` coefficients (the so-called
 *zonal* harmonics). 
 
@@ -125,7 +126,7 @@ coefficients up to harmonic order :math:`l=10`, which requires 6 coefficients.
 Response files can contain multiple rows, in which case they are assumed to
 represent a *multi-shell* response, with one set of coefficients per *b*-value,
 in order of increasing *b*-value (i.e. the first row would normally correspond
-to the :math:`b=0` 'shell', with all :math:`l>0` terms set to zero. The
+to the :math:`b=0` 'shell', with all :math:`l>0` terms set to zero). The
 *b*-values themselves are not stored in the response file, but are assumed to
 match the values in the DW encoding of the diffusion MRI dataset to be
 processed. 
