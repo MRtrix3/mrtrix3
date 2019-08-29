@@ -155,9 +155,11 @@ The problem
 
 Here's where it gets tricky. In all previous versions of MRtrix, there
 was a 'bug' in the SH basis functions. Mathematically, the basis was
-'non-orthonormal'; you don't necessarily need to know what this means,
-just appreciate that the formulation of this mathematical basis was not
-optimal.
+'non-orthonormal' (although still orthogonal), due to the ommission of the
+:math:`\sqrt{2}` terms in the definitions above. You don't necessarily need to
+know what this means, just appreciate that this formulation of the
+basis, although entirely self-consistent, was not optimal for some
+operations.
 
 This 'bug' didn't actually cause any problems; the previous version
 of MRtrix was self-consistent in its handling of the issue throughout
