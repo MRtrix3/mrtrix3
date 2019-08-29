@@ -23,9 +23,34 @@ Cartesian) coordinates. They are defined as:
    Y_l^m(\theta,\phi) = \sqrt{\frac{(2l+1)}{4\pi}\frac{(l-m)!}{(l+m)!}} P_l^m(\cos \theta) e^{im\phi}
 
 with integer *order* :math:`l` and *phase* :math:`m`, where :math:`l \geq 0`
-and :math:`-l \leq m \leq l`. Functions with increasing degree :math:`l`
-contain higher angular frequencies, while the different phase terms :math:`m`
-correspond to the different modes at that frequency. 
+and :math:`-l \leq m \leq l` (note that the terms *degree* and *order* are also
+commonly used to denote :math:`l` & :math:`m` respectively). The harmonic order
+:math:`l` corresponds to the angular frequency of the basis function; for
+example, all :math:`l=2` SH basis functions perform 2 full oscillations around
+some equator on the sphere. The harmonic phase :math:`m` correspond to
+different orthogonal modes at this frequency, e.g. where the oscillations occur
+around a different plane. 
+
+Any well-behaved function on the sphere :math:`f(\theta,\phi)` can be expressed
+as its spherical harmonic expansion:
+
+.. math::
+
+   f(\theta,\phi) = \Sum_{l=0}^{\infty} \Sum_{m=-l}^{l} c_l^m \Upsilon_l^m(\theta,\phi)
+
+
+For smooth functions that have negligible high angular frequency content, the
+series can be truncated at some suitable maximum harmonic order
+:math:`l_\text{max}` with little to no loss of accuracy:
+
+.. math::
+
+   f(\theta,\phi) = \Sum_{l=0}^{l_\text{max}} \Sum_{m=-l}^{l} c_l^m \Upsilon_l^m(\theta,\phi)
+
+The spherical harmonic series therefore provides a compact represention for
+smooth functions on the sphere. Moreover, due to its formulation, it has many
+compelling mathematical properties that simplify otherwise complex operations,
+including notably spherical (de)convolution.
 
 Formulation used in MRtrix3
 ---------------------------
@@ -62,7 +87,7 @@ coefficients are assumed to be zero). The first volume contains the single
 :math:`l_\text{max}` (the highest angular frequency band included in the
 series). 
 
-The SH coefficient :math:`(l,m)` is therefore stored in volume
+The SH coefficient :math:`c_l^m` is therefore stored in volume
 :math:`\frac{1}{2} l(l+1) + m` (indexed from zero), and the number of
 coefficients (or volumes) for a given :math:`l_\text{max}` are
 given as :math:`N= \frac{1}{2} (l_\text{max}+1) (l_\text{max}+2)` (tabulated
@@ -82,10 +107,28 @@ below for the first few values of :math:`l_\text{max}`).
 
 
 
-Zonal Harmonics
-^^^^^^^^^^^^^^^
+Representation of response functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+The response functions assumed when performing spherical (de)convolution
+correspond to axially symmetric kernels (they typically represent the ideal
+signal for a coherently aligned bundle of fibres aligned with the :math:`z`
+axis). Due to this symmetry, all :math:`m \neq 0` coefficients can be assumed
+to be zero. Therefore, response function can be fully represented using only
+their even order :math:`l`, zero phase :math:`m=0` coefficients (the so-called
+*zonal* harmonics). 
 
+Response functions files are text files containing the vector of even
+:math:`l`, :math:`m=0` coefficients, all on one row. We typically store these
+coefficients up to harmonic order :math:`l=10`, which requires 6 coefficients.
+
+Response files can contain multiple rows, in which case they are assumed to
+represent a *multi-shell* response, with one set of coefficients per *b*-value,
+in order of increasing *b*-value (i.e. the first row would normally correspond
+to the :math:`b=0` 'shell', with all :math:`l>0` terms set to zero. The
+*b*-values themselves are not stored in the response file, but are assumed to
+match the values in the DW encoding of the diffusion MRI dataset to be
+processed. 
 
 
 
