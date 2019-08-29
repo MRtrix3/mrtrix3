@@ -64,12 +64,12 @@ motion), so we can use a real basis with no imaginary components. Second, the
 problems involved all exhibit antipodal symmetry (i.e. symmetry about the
 origin, :math:`f(\mathbf{x}) = f(-\mathbf{x})`), so we can ignore all odd order
 terms in the series (since these correspond to strictly antisymmetric terms).
-The SH basis functions :math:`\Upsilon_l^m(\theta,\phi)` used in *MRtrix3* are
+The SH basis functions :math:`\Y_{lm}(\theta,\phi)` used in *MRtrix3* are
 therefore:
 
 .. math::
 
-   \Upsilon_l^m(\theta,\phi) = \begin{cases}
+   \Y_{lm}(\theta,\phi) = \begin{cases}
    0 & \text{if $l$ is odd}, \\
    \sqrt{2} \: \text{Im} \left[ Y_l^{-m}(\theta,\phi) \right] & \text{if $m < 0$},\\
    Y_l^0(\theta,\phi) & \text{if $m = 0$},\\
@@ -88,7 +88,7 @@ volumes contain the :math:`l=2` coefficients from :math:`m=-2` to :math:`m=2`, a
 on for higher even orders :math:`l` up to :math:`l_\text{max}` (the highest
 angular frequency band included in the series). 
 
-The SH coefficient :math:`c_l^m` is therefore stored in volume
+The SH coefficient :math:`c_{lm}` is therefore stored in volume
 :math:`\frac{1}{2} l(l+1) + m` (indexed from zero), and the number of
 coefficients (or volumes) for a given :math:`l_\text{max}` are
 given as :math:`N= \frac{1}{2} (l_\text{max}+1) (l_\text{max}+2)` (tabulated
