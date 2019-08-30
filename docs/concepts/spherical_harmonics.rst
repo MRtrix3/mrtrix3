@@ -11,8 +11,8 @@ all know and love. If you've ever looked at the raw image volumes from
 an FOD image, you'll know that all but the first one are basically not
 interpretable.
 
-What are Sherical Harmonics?
-----------------------------
+What are Spherical Harmonics?
+-----------------------------
 
 Spherical harmonics are special functions defined on the surface of a sphere.
 They form a complete orthonormal set and can therefore be used to represent any
@@ -54,16 +54,21 @@ smooth functions on the sphere. Moreover, due to its formulation, it has many
 compelling mathematical properties that simplify otherwise complex operations,
 including notably spherical (de)convolution.
 
-Formulation used in MRtrix3
----------------------------
+Formulation used in *MRtrix3*
+-----------------------------
 
 Due to the nature of the problems addressed in diffusion MRI, in *MRtrix3* a
-simplified version of the SH series is used. First, the data involved are real
-(the phase information is invariably discarded due to its instability to
-motion), so we can use a real basis with no imaginary components. Second, the
-problems involved all exhibit antipodal symmetry (i.e. symmetry about the
-origin, :math:`f(\mathbf{x}) = f(-\mathbf{x})`), so we can ignore all odd order
-terms in the series (since these correspond to strictly antisymmetric terms).
+simplified version of the SH series is used:
+
+1. The data involved are real (the phase information is invariably discarded
+   due to its instability to motion), so we can use a real basis with no
+   imaginary components.
+
+1. The problems involved all exhibit antipodal symmetry (i.e. symmetry about
+   the origin, :math:`f(\mathbf{x}) = f(-\mathbf{x})`), so we can ignore all
+   odd order terms in the series (since these correspond to strictly
+   antisymmetric terms).
+   
 The SH basis functions :math:`Y_{lm}(\theta,\phi)` used in *MRtrix3* are
 therefore:
 
@@ -81,7 +86,7 @@ Storage conventions
 ^^^^^^^^^^^^^^^^^^^
 
 Images that contain spherical harmonic coefficients are stored as 4-dimensional
-images, with each voxel's coefficients stored along the 4 axis. Only the even
+images, with each voxel's coefficients stored along the fourth axis. Only the even
 degree coefficients are stored (since odd :math:`l` coefficients are assumed to
 be zero). The first volume contains the single :math:`l=0` coefficient, the next 5
 volumes contain the :math:`l=2` coefficients from :math:`m=-2` to :math:`m=2`, and so
@@ -119,9 +124,10 @@ to be zero. Therefore, response functions can be fully represented using only
 their even order :math:`l`, zero phase :math:`m=0` coefficients (the so-called
 *zonal* harmonics). 
 
-Response functions files are text files containing the vector of even
-:math:`l`, :math:`m=0` coefficients, all on one row. We typically store these
-coefficients up to harmonic order :math:`l=10`, which requires 6 coefficients.
+Response functions are stored in plain text files. A vector of values stored
+on one row of such a file are interpreted as these even :math:`l`,
+:math:`m=0` terms. The number of coefficients stored for a response function
+of a given maximal harmonic order :math:`l_\text{max}` is :math:`1+l_\text{max}/2`.
 
 Response files can contain multiple rows, in which case they are assumed to
 represent a *multi-shell* response, with one set of coefficients per *b*-value,
