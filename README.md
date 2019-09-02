@@ -70,3 +70,7 @@ You can build a particular release of MRtrix3 by checking out the corresponding 
     git checkout 3.0_RC3
     ./configure
     ./build
+    
+## Contributing
+
+Thank you for your interest in contributing to MRtrix3! Please read on [here](CONTRIBUTING.md) to find out how to report issues, request features and make direct contributions. 
