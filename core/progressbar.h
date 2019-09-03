@@ -88,6 +88,13 @@ namespace MR
         return !show;
       }
 
+      FORCE_INLINE size_t value () const { return _value; }
+      FORCE_INLINE size_t count () const { return current_val; }
+      FORCE_INLINE bool show_percent () const { return _multiplier; }
+      FORCE_INLINE bool text_has_been_modified () const { return _text_has_been_modified; }
+      FORCE_INLINE const std::string& text () const { return _text; }
+      FORCE_INLINE const std::string& ellipsis () const { return _ellipsis; }
+
       //! set the maximum target value of the ProgressBar
       /*! This function should only be called if the ProgressBar has been
        * created with a non-zero target value. In other words, the ProgressBar
@@ -139,16 +146,6 @@ namespace MR
       };
 
 
-      const bool show;
-      std::string text, ellipsis;
-      size_t value, current_val, next_percent;
-      double next_time;
-      float multiplier;
-      Timer timer;
-      bool text_has_been_modified;
-
-      FORCE_INLINE void display_now () { display_func (*this); }
-
 
       static bool set_update_method ();
       static void (*display_func) (const ProgressBar& p);
@@ -158,6 +155,18 @@ namespace MR
       static std::condition_variable notifier;
       static std::mutex mutex;;
       static void* data;
+
+    private:
+
+      const bool show;
+      std::string _text, _ellipsis;
+      size_t _value, current_val, next_percent;
+      double next_time;
+      float _multiplier;
+      Timer timer;
+      bool _text_has_been_modified;
+
+      FORCE_INLINE void display_now () { display_func (*this); }
   };
 
 
@@ -171,14 +180,14 @@ namespace MR
 
   FORCE_INLINE ProgressBar::ProgressBar (const std::string& text, size_t target, int log_level) :
     show (App::log_level >= log_level),
-    text (text),
-    ellipsis ("... "),
-    value (0),
+    _text (text),
+    _ellipsis ("... "),
+    _value (0),
     current_val (0),
     next_percent (0),
     next_time (0.0),
-    multiplier (0.0),
-    text_has_been_modified (false) {
+    _multiplier (0.0),
+    _text_has_been_modified (false) {
       set_max (target);
     }
 
@@ -190,13 +199,13 @@ namespace MR
     if (!show)
       return;
     if (target) {
-      multiplier = 0.01 * target;
-      next_percent = multiplier;
+      _multiplier = 0.01 * target;
+      next_percent = _multiplier;
       if (!next_percent)
         next_percent = 1;
     }
     else {
-      multiplier = 0.0;
+      _multiplier = 0.0;
       next_time = BUSY_INTERVAL;
       timer.start();
     }
@@ -208,15 +217,15 @@ namespace MR
   {
     if (!show)
       return;
-    text_has_been_modified = true;
+    _text_has_been_modified = true;
     if (new_text.size()) {
 #ifdef MRTRIX_WINDOWS
-      size_t old_size = text.size();
+      size_t old_size = _text.size();
 #endif
-      text = new_text;
+      _text = new_text;
 #ifdef MRTRIX_WINDOWS
-      if (text.size() < old_size)
-        text.resize (old_size, ' ');
+      if (_text.size() < old_size)
+        _text.resize (old_size, ' ');
 #endif
     }
   }
@@ -231,12 +240,12 @@ namespace MR
       if (!show)
         return;
       double time = timer.elapsed();
-      if (increment && multiplier) {
+      if (increment && _multiplier) {
         if (++current_val >= next_percent) {
           set_text (text_func());
-          ellipsis.clear();
-          value = std::round (current_val / multiplier);
-          next_percent = std::ceil ((value+1) * multiplier);
+          _ellipsis.clear();
+          _value = std::round (current_val / _multiplier);
+          next_percent = std::ceil ((_value+1) * _multiplier);
           next_time = time;
           display_now();
           return;
@@ -244,11 +253,11 @@ namespace MR
       }
       if (time >= next_time) {
         set_text (text_func());
-        ellipsis.clear();
-        if (multiplier)
+        _ellipsis.clear();
+        if (_multiplier)
           next_time = time + BUSY_INTERVAL;
         else {
-          value = time / BUSY_INTERVAL;
+          _value = time / BUSY_INTERVAL;
           do { next_time += BUSY_INTERVAL; }
           while (next_time <= time);
         }
@@ -263,17 +272,17 @@ namespace MR
   {
     if (!show)
       return;
-    if (multiplier) {
+    if (_multiplier) {
       if (++current_val >= next_percent) {
-        value = std::round (current_val / multiplier);
-        next_percent = std::ceil ((value+1) * multiplier);
+        _value = std::round (current_val / _multiplier);
+        next_percent = std::ceil ((_value+1) * _multiplier);
         display_now();
       }
     }
     else {
       double time = timer.elapsed();
       if (time >= next_time) {
-        value = time / BUSY_INTERVAL;
+        _value = time / BUSY_INTERVAL;
         do { next_time += BUSY_INTERVAL; }
         while (next_time <= time);
         display_now();
