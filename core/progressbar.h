@@ -126,7 +126,8 @@ namespace MR
       FORCE_INLINE void operator++ (int) { ++ (*this); }
 
       FORCE_INLINE void done () {
-        done_func (*this);
+        if (show)
+          done_func (*this);
       }
 
       template <class ThreadType>
@@ -186,6 +187,8 @@ namespace MR
 
   inline void ProgressBar::set_max (size_t target)
   {
+    if (!show)
+      return;
     if (target) {
       multiplier = 0.01 * target;
       next_percent = multiplier;
@@ -203,6 +206,8 @@ namespace MR
 
   FORCE_INLINE void ProgressBar::set_text (const std::string& new_text)
   {
+    if (!show)
+      return;
     text_has_been_modified = true;
     if (new_text.size()) {
 #ifdef MRTRIX_WINDOWS
@@ -223,6 +228,8 @@ namespace MR
   template <class TextFunc>
     FORCE_INLINE void ProgressBar::update (TextFunc&& text_func, const bool increment)
     {
+      if (!show)
+        return;
       double time = timer.elapsed();
       if (increment && multiplier) {
         if (++current_val >= next_percent) {
@@ -254,6 +261,8 @@ namespace MR
 
   FORCE_INLINE void ProgressBar::operator++ ()
   {
+    if (!show)
+      return;
     if (multiplier) {
       if (++current_val >= next_percent) {
         value = std::round (current_val / multiplier);
@@ -279,6 +288,8 @@ namespace MR
   template <class ThreadType>
     inline void ProgressBar::run_update_thread (const ThreadType& threads) const
     {
+      if (!show)
+        return;
       std::unique_lock<std::mutex> lock (mutex);
       while (!threads.finished()) {
         notifier.wait (lock, []{ return true; });
