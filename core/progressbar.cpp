@@ -155,6 +155,7 @@ namespace MR
   std::condition_variable ProgressBar::notifier;
   std::mutex ProgressBar::mutex;
   void* ProgressBar::data = nullptr;
+  bool ProgressBar::progressbar_active = false;
 
   ProgressBar::SwitchToMultiThreaded::SwitchToMultiThreaded () {
     ProgressBar::previous_display_func = ProgressBar::display_func;

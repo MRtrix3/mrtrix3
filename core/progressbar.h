@@ -62,7 +62,10 @@ namespace MR
       ProgressBar (const ProgressBar& p) = delete;
       ProgressBar (ProgressBar&& p) = default;
 
-      FORCE_INLINE ~ProgressBar  () { done(); }
+      FORCE_INLINE ~ProgressBar  () {
+        done();
+        progressbar_active = false;
+      }
 
       //! Create a new ProgressBar, displaying the specified text.
       /*! If \a target is unspecified or set to zero, the ProgressBar will
@@ -167,6 +170,8 @@ namespace MR
       bool _text_has_been_modified;
 
       FORCE_INLINE void display_now () { display_func (*this); }
+
+      static bool progressbar_active;
   };
 
 
@@ -179,7 +184,7 @@ namespace MR
 
 
   FORCE_INLINE ProgressBar::ProgressBar (const std::string& text, size_t target, int log_level) :
-    show (App::log_level >= log_level),
+    show (!progressbar_active && App::log_level >= log_level),
     _text (text),
     _ellipsis ("... "),
     _value (0),
@@ -189,6 +194,7 @@ namespace MR
     _multiplier (0.0),
     _text_has_been_modified (false) {
       set_max (target);
+      progressbar_active = true;
     }
 
 
