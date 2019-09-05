@@ -264,24 +264,18 @@ namespace MR
             "  vertex_normal = normalize (cross (vertices[1]-vertices[0], vertices[2]-vertices[1]));\n"
             "  if (reverse != 0)\n"
             "    vertex_normal = -vertex_normal;\n"
-            "  vertex_normal = mat3(MV) * vertex_normal;\n";
-          for (size_t vertex = 0; vertex != 3; ++vertex) {
-            const std::string v = str(vertex);
+            "  vertex_normal = mat3(MV) * vertex_normal;\n"
+            "  for (int v = 0; v < 3; ++v) {\n"
+            "    gl_Position = MVP * vec4 (origin + (vertices[v] * scale), 1.0);\n";
+            if (orthographic_)
+              source += "    vertex_position = vec3(0.0, 0.0, 1.0);\n";
+            else
+              source += "    vertex_position = -(MV * vec4 (vertices[v] * scale, 1.0)).xyz;\n";
             source +=
-            "  gl_Position = MVP * vec4 (origin + (vertices["+v+"] * scale), 1.0);\n";
-            if (orthographic_) {
-              source +=
-            "  vertex_position = vec3(0.0, 0.0, 1.0);\n";
-            } else {
-              source +=
-            "  vertex_position = -(MV * vec4 (vertices["+v+"] * scale, 1.0)).xyz;\n";
-            }
-            source +=
-            "  vertex_color = vertex_orig_color["+v+"];\n"
-            "  amplitude = orig_amplitude["+v+"];\n"
-            "  EmitVertex();\n";
-          }
-          source +=
+            "    vertex_color = vertex_orig_color[v];\n"
+            "    amplitude = orig_amplitude[v];\n"
+            "    EmitVertex();\n"
+            "  }\n"
             "  EndPrimitive();\n"
             "}";
         }
