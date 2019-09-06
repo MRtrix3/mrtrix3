@@ -44,7 +44,8 @@ namespace MR
 
     void display_func_multithreaded (const ProgressBar& p)
     {
-      p.notifier.notify_all();
+      ProgressBar::notification_is_genuine = true;
+      ProgressBar::notifier.notify_all();
     }
 
 
@@ -153,6 +154,7 @@ namespace MR
   void (*ProgressBar::previous_display_func) (const ProgressBar& p) = nullptr;
 
   std::condition_variable ProgressBar::notifier;
+  bool ProgressBar::notification_is_genuine = false;
   std::mutex ProgressBar::mutex;
   void* ProgressBar::data = nullptr;
   bool ProgressBar::progressbar_active = false;
