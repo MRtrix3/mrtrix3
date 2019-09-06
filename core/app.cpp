@@ -95,6 +95,7 @@ namespace MR
     int exit_error_code = 0;
     bool fail_on_warn = false;
     bool terminal_use_colour = true;
+    const std::thread::id main_thread_ID = std::this_thread::get_id();
 
     const char* project_version = nullptr;
     const char* project_build_date = nullptr;
