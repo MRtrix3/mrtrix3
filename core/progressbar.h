@@ -21,6 +21,7 @@
 #include <memory>
 #include <mutex>
 #include <condition_variable>
+#include <chrono>
 
 
 #include "mrtrix.h"
@@ -157,6 +158,7 @@ namespace MR
       static void (*previous_display_func) (const ProgressBar& p);
 
       static std::condition_variable notifier;
+      static bool notification_is_genuine;
       static std::mutex mutex;;
       static void* data;
 
@@ -310,8 +312,11 @@ namespace MR
         return;
       std::unique_lock<std::mutex> lock (mutex);
       while (!threads.finished()) {
-        notifier.wait (lock, []{ return true; });
-        previous_display_func (*this);
+        notifier.wait_for (lock, std::chrono::milliseconds(1), []{ return notification_is_genuine; });
+        if (notification_is_genuine) {
+          previous_display_func (*this);
+          notification_is_genuine = false;
+        }
       }
     }
 
