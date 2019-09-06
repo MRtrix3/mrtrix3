@@ -64,7 +64,6 @@ namespace MR
 
       FORCE_INLINE ~ProgressBar  () {
         done();
-        progressbar_active = false;
       }
 
       //! Create a new ProgressBar, displaying the specified text.
@@ -136,8 +135,10 @@ namespace MR
       FORCE_INLINE void operator++ (int) { ++ (*this); }
 
       FORCE_INLINE void done () {
-        if (show)
+        if (show) {
           done_func (*this);
+          progressbar_active = false;
+        }
       }
 
       template <class ThreadType>
@@ -193,8 +194,10 @@ namespace MR
     next_time (0.0),
     _multiplier (0.0),
     _text_has_been_modified (false) {
-      set_max (target);
-      progressbar_active = true;
+      if (show) {
+        set_max (target);
+        progressbar_active = true;
+      }
     }
 
 
