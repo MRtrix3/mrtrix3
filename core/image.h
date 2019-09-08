@@ -98,7 +98,11 @@ namespace MR
         friend std::ostream& operator<< (std::ostream& stream, const Image& V) {
           stream << "\"" << V.name() << "\", datatype " << DataType::from<Image::value_type>().specifier() << ", index [ ";
           for (size_t n = 0; n < V.ndim(); ++n) stream << V.index(n) << " ";
-          stream << "], current offset = " << V.offset() << ", value = " << V.value();
+          stream << "], current offset = " << V.offset() << ", ";
+          if (is_out_of_bounds(V))
+            stream << "outside FoV";
+          else
+            stream << "value = " << V.value();
           if (!V.data_pointer) stream << " (using indirect IO)";
           else stream << " (using direct IO, data at " << V.data_pointer << ")";
           return stream;
