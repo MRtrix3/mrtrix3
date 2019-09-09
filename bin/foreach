@@ -144,8 +144,12 @@ def execute(): #pylint: disable=unused-variable
       self.input_text = input_text
       self.sub_in = input_text
       self.sub_name = os.path.basename(input_text)
-      self.sub_pre = self.sub_name.split('.')[0]
-      self.sub_uni = input_text[len(common_prefix):-len(common_suffix)]
+      self.sub_pre = self.sub_name.rstrip('.gz')
+      self.sub_pre = os.path.splitext(self.sub_pre)[0]
+      if len(common_suffix):
+        self.sub_uni = input_text[len(common_prefix):-len(common_suffix)]
+      else:
+        self.sub_uni = input_text[len(common_prefix):]
 
       self.substitutions = { 'IN': self.sub_in, 'NAME': self.sub_name, 'PRE': self.sub_pre, 'UNI': self.sub_uni }
       app.debug('Input text: ' + input_text)
