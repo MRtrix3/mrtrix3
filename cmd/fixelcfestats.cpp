@@ -256,7 +256,7 @@ void run()
     Fixel::check_data_file (mask);
     if (!Fixel::fixels_match (index_header, mask))
       throw Exception ("Mask image provided using -mask option does not match fixel template");
-    for (auto l = Loop(mask) (mask); l; ++l) {
+    for (auto l = Loop(0) (mask); l; ++l) {
       if (mask.value())
         ++mask_fixels;
     }
@@ -265,7 +265,7 @@ void run()
     Header fixel_mask_header = Fixel::data_header_from_index (index_header);
     fixel_mask_header.datatype() = DataType::Bit;
     mask = Image<bool>::scratch (fixel_mask_header, "true-filled scratch fixel mask");
-    for (mask.index(0) = 0; mask.index(0) != num_fixels; ++mask.index(0))
+    for (auto l = Loop(0) (mask); l; ++l)
       mask.value() = true;
     mask_fixels = num_fixels;
   }
