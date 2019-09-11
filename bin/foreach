@@ -144,8 +144,7 @@ def execute(): #pylint: disable=unused-variable
       self.input_text = input_text
       self.sub_in = input_text
       self.sub_name = os.path.basename(input_text)
-      self.sub_pre = self.sub_name.rstrip('.gz')
-      self.sub_pre = os.path.splitext(self.sub_pre)[0]
+      self.sub_pre = os.path.splitext(self.sub_name.rstrip('.gz'))[0]
       if common_suffix:
         self.sub_uni = input_text[len(common_prefix):-len(common_suffix)]
       else:
