@@ -139,7 +139,7 @@ def _execute(module): #pylint: disable=unused-variable
     FORCE_OVERWRITE = True
   if hasattr(ARGS, 'nocleanup') and ARGS.nocleanup:
     DO_CLEANUP = False
-  if hasattr(ARGS, 'nthreads') and ARGS.nthreads:
+  if hasattr(ARGS, 'nthreads') and ARGS.nthreads is not None:
     NUM_THREADS = ARGS.nthreads #pylint: disable=unused-variable
   if hasattr(ARGS, 'quiet') and ARGS.quiet:
     VERBOSITY = 0
