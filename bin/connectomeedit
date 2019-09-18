@@ -4,62 +4,71 @@
 import inspect
 import os
 import sys
-lib_folder = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
+
+lib_folder = os.path.realpath(os.path.join(
+    os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))),
+    os.pardir, 'lib'))
 if not os.path.isdir(lib_folder):
-  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
-  sys.exit(1)
+    sys.stderr.write('Unable to locate MRtrix3 Python libraries')
+    sys.exit(1)
 sys.path.insert(0, lib_folder)
 
-
 import mrtrix3
-import numpy as np
 from mrtrix3 import app
+from mrtrix3.matrix import load_matrix, save_matrix
 
 
 def get_and_check_value_to_set(c, i, j):
-    if c[i, j] != 0 and c[j, i] != 0:
-        if c[i, j] != c[j, i]:
+    if c[i][j] != 0 and c[j][i] != 0:
+        if c[i][j] != c[j][i]:
             raise ValueError(
                 "Entries {} and {} are not symmetric.".format((i, j), (j, i)))
         else:
-            return c[i, j]
+            return c[i][j]
     else:
-        return c[i, j] if c[i, j] !=0 else c[j, i]
+        return c[i][j] if c[i][j] != 0 else c[j][i]
 
 
 def lower_triangular(c):
-    for i in range(c.shape[0]):
-        for j in range(i + 1, c.shape[1]):
-            c[j, i] = get_and_check_value_to_set(c, i, j)
-            c[i, j] = 0.0
+    for i in range(len(c)):
+        for j in range(i + 1, len(c[0])):
+            c[j][i] = get_and_check_value_to_set(c, i, j)
+            c[i][j] = 0.0
     return c
 
 
 def upper_triangular(c):
-    for i in range(c.shape[0]):
+    for i in range(len(c)):
         for j in range(i):
-            c[j, i] = get_and_check_value_to_set(c, i, j)
-            c[i, j] = 0.0
+            c[j][i] = get_and_check_value_to_set(c, i, j)
+            c[i][j] = 0.0
     return c
 
 
 def to_symmetric(c):
-    for i, j in zip(*np.nonzero(c)):
-        get_and_check_value_to_set(c, i, j)
-    return c + c.T - np.diag(np.diag(c))
-
-
-def transpose(c):
-    return c.T
-
-
-def zero_diagonal(c):
-    np.fill_diagonal(c, 0.0)
+    for i in range(len(c)):
+        for j in range(i):
+            value = c[i][j] + c[j][i]
+            c[i][j] = value
+            c[j][i] = value
     return c
 
 
-EXCLUSIVE_TRANSFORMS = ['to_symmetric', 'upper_triangular', 'lower_triangular',]
-NON_EXCLUSIVE_TRANSFORMS=['transpose', 'zero_diagonal']
+def transpose(c):
+    for i in range(len(c)):
+        for j in range(i):
+            c[i][j], c[j][i] = c[j][i], c[i][j]
+    return c
+
+
+def zero_diagonal(c):
+    for i in range(len(c)):
+        c[i][i] = 0.0
+    return c
+
+
+EXCLUSIVE_TRANSFORMS = ['to_symmetric', 'upper_triangular', 'lower_triangular']
+NON_EXCLUSIVE_TRANSFORMS = ['transpose', 'zero_diagonal']
 
 ALL_TRANSFORMS = EXCLUSIVE_TRANSFORMS + NON_EXCLUSIVE_TRANSFORMS
 
@@ -83,7 +92,7 @@ def usage(cmdline):
         type=str,
         metavar='<character>',
         help=('The string used to separate values in the input connectome. ' +
-             'Default: \' \'.')
+              'Default: \' \'.')
     )
     cmdline.add_argument(
         '-format',
@@ -98,19 +107,19 @@ def usage(cmdline):
     operation_choice.add_argument(
         '-upper_triangular',
         action='store_true',
-        help=("Transform the connectome into an upper triangular matrix. The "+
+        help=("Transform the connectome into an upper triangular matrix. The " +
               "entries belonging to the lower triangular part will be moved " +
               "to the upper triangular part. If both the entries [i,j] and " +
-              "[j,i] are non-zero an error is raised. Not compatible with "+
+              "[j,i] are non-zero an error is raised. Not compatible with " +
               "\'-lower_triangular\' and \'-to_symmetric\'.")
     )
     operation_choice.add_argument(
         '-lower_triangular',
         action='store_true',
-        help=("Transform the connectome into an lower triangular matrix. The "+
+        help=("Transform the connectome into an lower triangular matrix. The " +
               "entries belonging to the upper triangular part will be moved " +
               "to the lower triangular part. If both the entries [i,j] and " +
-              "[j,i] are non-zero an error is raised.Not compatible with "+
+              "[j,i] are non-zero an error is raised.Not compatible with " +
               "\'-upper_triangular\' and \'-to_symmetric\'.")
     )
     operation_choice.add_argument(
@@ -118,7 +127,7 @@ def usage(cmdline):
         action='store_true',
         help=("Transform the connectome into a symmetric connectivity matrix " +
               "by adding the value of the entries that are symmetric with " +
-              "respect to the diagonal.Not compatible with "+
+              "respect to the diagonal.Not compatible with " +
               "\'-lower_triangular\' and \'-upper_triangular\'.")
     )
 
@@ -135,30 +144,39 @@ def usage(cmdline):
 
 
 def execute():
-    connectome = np.loadtxt(app.ARGS.input, delimiter=app.ARGS.delimiter)
+    connectome = load_matrix(app.ARGS.input, delimiter=app.ARGS.delimiter)
     app.check_output_path(app.ARGS.output)
 
+    no_exclusive_operation = False
     if app.ARGS.lower_triangular:
         app.console('Transforming the connectome into lower triangular form.')
         connectome = lower_triangular(connectome)
     elif app.ARGS.to_symmetric:
         app.console('Transforming the connectome into symmetric form.')
         connectome = to_symmetric(connectome)
-    elif app.ARGS.transpose:
-        app.console('Transposing the connectome.')
-        connectome = transpose(connectome)
     elif app.ARGS.upper_triangular:
         app.console('Transforming the connectome into upper triangular form.')
         connectome = upper_triangular(connectome)
-    elif app.ARGS.zero_diagonal:
+    else:
+        no_exclusive_operation = True
+
+    zero_non_exclusive_operations = False
+    if app.ARGS.zero_diagonal:
         app.console('Setting the diagonal of the connectome to zero.')
         connectome = zero_diagonal(connectome)
+    elif app.ARGS.transpose:
+        app.console('Transposing the connectome.')
+        connectome = transpose(connectome)
     else:
+        zero_non_exclusive_operations = True
+
+    if no_exclusive_operation and zero_non_exclusive_operations:
         app.console('No transformation is applied. Output connectome will be ' +
                     'identical to input connectome.')
 
-    np.savetxt(app.ARGS.output, connectome, fmt=app.ARGS.format,
-               delimiter=app.ARGS.delimiter)
+    save_matrix(app.ARGS.output, connectome, fmt=app.ARGS.format,
+                delimiter=app.ARGS.delimiter)
+
 
 # Execute the script
 mrtrix3.execute()
