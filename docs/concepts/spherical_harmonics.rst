@@ -93,23 +93,23 @@ be zero).
 The SH coefficients :math:`c_{lm}` for corresponding basis functions :math:`Y_{lm}(\theta,\phi)`
 are stored in corresponding image volumes according to the following equation:
 
-:math:`V = \frac{1}{2} l(l+1) + m`
+:math:`V_{lm} = \frac{1}{2} l(l+1) + m`
 
 The first few volumes of the image therefore correspond to SH coefficients as follows:
 
-================  =========================
-Volume :math:`V`        :math:`c_{lm}`
-================  =========================
-       0          :math:`l=0`, :math:`m=0`
-       1          :math:`l=2`, :math:`m=-2`
-       2          :math:`l=2`, :math:`m=-1`
-       3          :math:`l=2`, :math:`m=0`
-       4          :math:`l=2`, :math:`m=1`
-       5          :math:`l=2`, :math:`m=2`
-       6          :math:`l=4`, :math:`m=-4`
-       7          :math:`l=4`, :math:`m=-3`
-      ...                   ...
-================  =========================
+=====================  =========================
+Volume :math:`V_{lm}`        :math:`c_{lm}`
+=====================  =========================
+          0            :math:`l=0`, :math:`m=0`
+          1            :math:`l=2`, :math:`m=-2`
+          2            :math:`l=2`, :math:`m=-1`
+          3            :math:`l=2`, :math:`m=0`
+          4            :math:`l=2`, :math:`m=1`
+          5            :math:`l=2`, :math:`m=2`
+          6            :math:`l=4`, :math:`m=-4`
+          7            :math:`l=4`, :math:`m=-3`
+         ...                     ...
+=====================  =========================
 
 The total number of volumes *N* in the image depends on the highest
 angular frequency band included in the series, referred to as the maximal
