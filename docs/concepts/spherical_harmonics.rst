@@ -1,3 +1,5 @@
+.. _spherical_harmonics:
+
 Spherical Harmonics
 ===================
 
