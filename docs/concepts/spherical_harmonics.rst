@@ -25,13 +25,14 @@ Cartesian) coordinates. They are defined as:
    Y_l^m(\theta,\phi) = \sqrt{\frac{(2l+1)}{4\pi}\frac{(l-m)!}{(l+m)!}} P_l^m(\cos \theta) e^{im\phi}
 
 with integer *order* :math:`l` and *phase* :math:`m`, where :math:`l \geq 0`
-and :math:`-l \leq m \leq l` (note that the terms *degree* and *order* are also
-commonly used to denote :math:`l` & :math:`m` respectively). The harmonic order
-:math:`l` corresponds to the angular frequency of the basis function; for
-example, all :math:`l=2` SH basis functions feature 2 full oscillations around
-some equator on the sphere. The harmonic phase :math:`m` correspond to
-different orthogonal modes at this frequency; e.g. where the oscillations occur
-around a different plane. 
+and :math:`-l \leq m \leq l` (note that the terms *degree* and *order* are
+also commonly used to denote :math:`l` & :math:`m` respectively), and
+associated Legendre polynomials :math:`P_l^m`. The harmonic order :math:`l`
+corresponds to the angular frequency of the basis function; for example,
+all :math:`l=2` SH basis functions feature 2 full oscillations around some
+equator on the sphere. The harmonic phase :math:`m` correspond to different
+orthogonal modes at this frequency; e.g. where the oscillations occur
+around a different plane.
 
 Any well-behaved function on the sphere :math:`f(\theta,\phi)` can be expressed
 as its spherical harmonic expansion:
@@ -39,7 +40,6 @@ as its spherical harmonic expansion:
 .. math::
 
    f(\theta,\phi) = \sum_{l=0}^{\infty} \sum_{m=-l}^{l} c_l^m Y_l^m(\theta,\phi)
-
 
 For smooth functions that have negligible high angular frequency content, the
 series can be truncated at some suitable maximum harmonic order
@@ -64,11 +64,11 @@ simplified version of the SH series is used:
    due to its instability to motion), so we can use a real basis with no
    imaginary components.
 
-1. The problems involved all exhibit antipodal symmetry (i.e. symmetry about
+2. The problems involved all exhibit antipodal symmetry (i.e. symmetry about
    the origin, :math:`f(\mathbf{x}) = f(-\mathbf{x})`), so we can ignore all
    odd order terms in the series (since these correspond to strictly
    antisymmetric terms).
-   
+
 The SH basis functions :math:`Y_{lm}(\theta,\phi)` used in *MRtrix3* are
 therefore:
 
@@ -88,16 +88,34 @@ Storage conventions
 Images that contain spherical harmonic coefficients are stored as 4-dimensional
 images, with each voxel's coefficients stored along the fourth axis. Only the even
 degree coefficients are stored (since odd :math:`l` coefficients are assumed to
-be zero). The first volume contains the single :math:`l=0` coefficient, the next 5
-volumes contain the :math:`l=2` coefficients from :math:`m=-2` to :math:`m=2`, and so
-on for higher even orders :math:`l` up to :math:`l_\text{max}` (the highest
-angular frequency band included in the series). 
+be zero).
 
-The SH coefficient :math:`c_{lm}` is therefore stored in volume
-:math:`\frac{1}{2} l(l+1) + m` (indexed from zero), and the number of
-coefficients (or volumes) for a given :math:`l_\text{max}` are
-given as :math:`N= \frac{1}{2} (l_\text{max}+1) (l_\text{max}+2)` (tabulated
-below for the first few values of :math:`l_\text{max}`). 
+The SH coefficients :math:`c_{lm}` for corresponding basis functions :math:`Y_{lm}(\theta,\phi)`
+are stored in corresponding image volumes according to the following equation:
+
+:math:`V = \frac{1}{2} l(l+1) + m`
+
+The first few volumes of the image therefore correspond to SH coefficients as follows:
+
+================  =========================
+Volume :math:`V`        :math:`c_{lm}`
+================  =========================
+       0          :math:`l=0`, :math:`m=0`
+       1          :math:`l=2`, :math:`m=-2`
+       2          :math:`l=2`, :math:`m=-1`
+       3          :math:`l=2`, :math:`m=0`
+       4          :math:`l=2`, :math:`m=1`
+       5          :math:`l=2`, :math:`m=2`
+       6          :math:`l=4`, :math:`m=-4`
+       7          :math:`l=4`, :math:`m=-3`
+      ...                   ...
+================  =========================
+
+The total number of volumes *N* in the image depends on the highest
+angular frequency band included in the series, referred to as the maximal
+spherical harmonic order :math:`l_\text{max}`:
+
+:math:`N= \frac{1}{2} (l_\text{max}+1) (l_\text{max}+2)`
 
 ====================  =========
 :math:`l_\text{max}`  :math:`N`
@@ -109,9 +127,8 @@ below for the first few values of :math:`l_\text{max}`).
          8                45
         10                66
         12                91
+       ...               ...
 ====================  =========
-
-
 
 Representation of response functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -122,7 +139,7 @@ signal for a coherently aligned bundle of fibres aligned with the :math:`z`
 axis). Due to this symmetry, all :math:`m \neq 0` coefficients can be assumed
 to be zero. Therefore, response functions can be fully represented using only
 their even order :math:`l`, zero phase :math:`m=0` coefficients (the so-called
-*zonal* harmonics). 
+*zonal* harmonics).
 
 Response functions are stored in plain text files. A vector of values stored
 on one row of such a file are interpreted as these even :math:`l`,
@@ -135,7 +152,7 @@ in order of increasing *b*-value (i.e. the first row would normally correspond
 to the :math:`b=0` 'shell', with all :math:`l>0` terms set to zero). The
 *b*-values themselves are not stored in the response file, but are assumed to
 match the values in the DW encoding of the diffusion MRI dataset to be
-processed. 
+processed.
 
 
 
