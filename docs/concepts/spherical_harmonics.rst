@@ -90,8 +90,9 @@ images, with each voxel's coefficients stored along the fourth axis. Only the ev
 degree coefficients are stored (since odd :math:`l` coefficients are assumed to
 be zero).
 
-The SH coefficients :math:`c_{lm}` for corresponding basis functions :math:`Y_{lm}(\theta,\phi)`
-are stored in corresponding image volumes according to the following equation:
+The SH coefficients :math:`c_{lm}` corresponding to the basis functions
+:math:`Y_{lm}(\theta,\phi)` are stored in the corresponding image volume at
+index :math:`V_{lm}` according to the following equation:
 
 :math:`V_{lm} = \frac{1}{2} l(l+1) + m`
 
