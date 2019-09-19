@@ -13,14 +13,17 @@ case  $test in
     ;;
   "pylint")
     # Normally rely on build script to create this file
-    echo "__version__ = pylint_testing" > ./lib/mrtrix3/_version.py
+    echo "__version__ = 'pylint testing' #pylint: disable=unused-variable" > ./lib/mrtrix3/_version.py
     PYTHON=$py ./run_pylint
+    ;;
+  "build_docs")
+    $py ./configure -nooptim && $py ./build -nowarnings -persistent -nopaginate && ./docs/generate_user_docs.sh && git diff --exit-code docs/ > gitdiff.log
     ;;
   "build")
     $py ./configure -nooptim && $py ./build -nowarnings -persistent -nopaginate
     ;;
   "run")
-    $py ./configure -assert && $py ./build -nowarnings -persistent -nopaginate && ./run_tests && ./docs/generate_user_docs.sh && git diff --exit-code docs/ > gitdiff.log
+    $py ./configure -assert && $py ./build -nowarnings -persistent -nopaginate && ./run_tests
     ;;
   *)
     echo "Envvar \"test\" not defined";

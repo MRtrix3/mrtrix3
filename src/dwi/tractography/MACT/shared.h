@@ -42,7 +42,7 @@ class MACT_Shared_additions
     MACT_Shared_additions( Properties& property_set );
 
     bool backtrack() const;
-    // bool crop_at_gmwmi() const;
+    bool crop_at_gmwmi() const;
     // void crop_at_gmwmi( std::vector< Eigen::Vector3f >& tck ) const;
 
   private:

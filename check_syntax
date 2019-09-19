@@ -23,7 +23,7 @@ for f in $(find cmd core src -type f -name '*.h' -o -name '*.cpp' | grep -v '_mo
 
 
 
-  # process the file to strip comments, macros, etc:
+# process the file to strip comments, macros, etc:
   cat $f | \
 # remove C preprocessor macros:
   grep -v '^#' | \
@@ -34,9 +34,9 @@ for f in $(find cmd core src -type f -name '*.h' -o -name '*.cpp' | grep -v '_mo
 # remove any duplicate spaces:
   perl -pe 's|\s+| |g' | \
 # remove C-style comments:
-  perl -pe 's|/\*.*?\*/||g' | \
+  perl -pe 's|/\*.*?\*/||g' > .check_syntax2.tmp
 # remove quoted strings:
-  perl -pe 's/(")(\\"|.)*?"//g' > .check_syntax.tmp
+  cat .check_syntax2.tmp | perl -pe 's/(")(\\"|.)*?"//g' > .check_syntax.tmp
 
 
 # detect classes not declared MEMALIGN or NOMEMALIGN:
@@ -86,6 +86,14 @@ for f in $(find cmd core src -type f -name '*.h' -o -name '*.cpp' | grep -v '_mo
     )
   fi
 
+# detect any instances of %zu in a print() call (not supported on MSYS2):
+  res="$res"$(
+    cat .check_syntax2.tmp | \
+# match for the parts we're interested in and output just the bits that match:
+    grep -Po '\w*print\w*.*?%\d?zu\b' |
+    grep -Po '\w*print(?!.*?print).*?$'
+  )
+
 
 # if anything is left after that, show it:
   if [[ ! -z $res ]]; then
@@ -105,10 +113,12 @@ else
   echo "FAIL (see syntax.log for details)"
 
   echo "" >> $LOG
-  echo "Please add MEMALIGN() or NOMEMALIGN macro to the class declarations
-  identified above, replace all occurrences of std::vector<> with MR::vector<>
-  (or just vector<>), avoid use of std::make_shared(), and replace all
-  instances of std::abs() with MR::abs() (or just abs())" >> $LOG
+  echo "Please check the following syntax requirements:
+  - Add MEMALIGN() or NOMEMALIGN macro to any class declarations identified above;
+  - Replace all occurrences of std::vector<> with MR::vector<> (or just vector<>);
+  - Avoid use of std::make_shared();
+  - Replace all instances of std::abs() with MR::abs() (or just abs());
+  - Replace all instances of %zu in print() calls with PRI_SIZET." >> $LOG
   exit 1
 fi
 

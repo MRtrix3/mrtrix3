@@ -100,13 +100,13 @@ bool MACT_Shared_additions::backtrack() const
   return _backtrack;
 }
 
-/*
+
 bool MACT_Shared_additions::crop_at_gmwmi() const
 {
   return _crop_at_gmwmi;
 }
 
-
+/*
 void MACT_Shared_additions::crop_at_gmwmi( std::vector< Eigen::Vector3f >& tck ) const
 {
   Eigen::Vector3d last = ( *tck.rbegin() ).cast< double >();

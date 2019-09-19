@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "app.h"
 #include "timer.h"
@@ -240,7 +241,7 @@ namespace MR
         show_FPS (false),
         current_option (0) {
           main = this;
-          GUI::App::set_main_window (this);
+          GUI::App::set_main_window (this, glarea);
           GUI::Dialog::init();
 
           setDockOptions (AllowTabbedDocks | VerticalTabs);
@@ -718,6 +719,9 @@ namespace MR
 
       void Window::parse_arguments ()
       {
+        if (MR::App::get_options ("norealign").size())
+          Header::do_not_realign_transform = true;
+
         if (MR::App::argument.size()) {
           if (MR::App::option.size())  {
             // check that first non-standard option appears after last argument:
@@ -1136,10 +1140,13 @@ namespace MR
       void Window::set_image_volume (size_t axis, ssize_t index)
       {
         assert (image());
-        image()->image.index (axis) = index;
-        set_image_navigation_menu();
-        emit volumeChanged (index);
-        updateGL();
+        assert (axis < image()->image.ndim());
+        if (image()->image.index (axis) != index) {
+          image()->image.index (axis) = index;
+          set_image_navigation_menu();
+          emit volumeChanged ();
+          updateGL();
+        }
       }
 
 
@@ -1202,7 +1209,6 @@ namespace MR
       {
         size_t vol = image()->image.index(3)+1;
         set_image_volume (3, vol);
-        emit volumeChanged(vol);
       }
 
 
@@ -1212,7 +1218,6 @@ namespace MR
       {
         size_t vol = image()->image.index(3)-1;
         set_image_volume (3, vol);
-        emit volumeChanged(vol);
       }
 
 
@@ -1223,10 +1228,8 @@ namespace MR
         bool ok;
         size_t vol = QInputDialog::getInt (this, tr("Go to..."),
           label.c_str(), image()->image.index(3), 0, maxvol, 1, &ok);
-        if (ok) {
+        if (ok)
           set_image_volume (3, vol);
-          emit volumeChanged(vol);
-        }
       }
 
       void Window::image_goto_volume_group_slot ()
@@ -1236,10 +1239,8 @@ namespace MR
         bool ok;
         size_t grp = QInputDialog::getInt (this, tr("Go to..."),
           label.c_str(), image()->image.index(4), 0, maxvolgroup, 1, &ok);
-        if (ok) {
+        if (ok)
           set_image_volume (4, grp);
-          emit volumeGroupChanged(grp);
-        }
       }
 
 
@@ -1247,7 +1248,6 @@ namespace MR
       {
         size_t vol = image()->image.index(4)+1;
         set_image_volume (4, vol);
-        emit volumeGroupChanged(vol);
       }
 
 
@@ -1257,7 +1257,6 @@ namespace MR
       {
         size_t vol = image()->image.index(4)-1;
         set_image_volume (4, vol);
-        emit volumeGroupChanged(vol);
       }
 
 
@@ -1466,7 +1465,7 @@ namespace MR
 
       void Window::paintGL ()
       {
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
         GL_CHECK_ERROR;
         gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
 
@@ -1475,9 +1474,9 @@ namespace MR
 
         GL_CHECK_ERROR;
 
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
         mode->paintGL();
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
         GL_CHECK_ERROR;
 
         if (show_FPS) {
@@ -1518,13 +1517,13 @@ namespace MR
         glColorMask (true, true, true, true);
 #endif
         GL_CHECK_ERROR;
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
       }
 
 
       void Window::initGL ()
       {
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
         GL::init ();
 
         font.initGL();
@@ -1537,7 +1536,7 @@ namespace MR
         mode.reset (dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create());
         set_mode_features();
 
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
       }
 
 

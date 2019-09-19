@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+ * Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,31 +15,42 @@
 
 #include "command.h"
 #include "image.h"
+
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
 
-#define DEFAULT_SIZE 5
 
 using namespace MR;
 using namespace App;
 
+const char* const dtypes[] = { "float32", "float64", NULL };
+
+const char* const estimators[] = { "exp1", "exp2", NULL };
+
 
 void usage ()
 {
-  SYNOPSIS = "Denoise DWI data and estimate the noise level based on the optimal threshold for PCA";
-    
+  SYNOPSIS = "dMRI noise level estimation and denoising using Marchenko-Pastur PCA";
+
   DESCRIPTION
     + "DWI data denoising and noise map estimation by exploiting data redundancy in the PCA domain "
-    "using the prior knowledge that the eigenspectrum of random covariance matrices is described by "
-    "the universal Marchenko Pastur distribution."
+      "using the prior knowledge that the eigenspectrum of random covariance matrices is described by "
+      "the universal Marchenko-Pastur (MP) distribution. Fitting the MP distribution to the spectrum "
+      "of patch-wise signal matrices hence provides an estimator of the noise level 'sigma', as was "
+      "first shown in Veraart et al. (2016) and later improved in Cordero-Grande et al. (2019). This "
+      "noise level estimate then determines the optimal cut-off for PCA denoising."
 
     + "Important note: image denoising must be performed as the first step of the image processing pipeline. "
-    "The routine will fail if interpolation or smoothing has been applied to the data prior to denoising."
-    
-    + "Note that this function does not correct for non-Gaussian noise biases.";
-  
-  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk) & Jelle Veraart (jelle.veraart@nyumc.org) & J-Donald Tournier (jdtournier@gmail.com)";
-  
+      "The routine will fail if interpolation or smoothing has been applied to the data prior to denoising."
+
+    + "Note that this function does not correct for non-Gaussian noise biases present in "
+      "magnitude-reconstructed MRI images. If available, including the MRI phase data can "
+      "reduce such non-Gaussian biases, and the command now supports complex input data.";
+
+  AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk) & "
+           "Jelle Veraart (jelle.veraart@nyumc.org) & "
+           "J-Donald Tournier (jdtournier@gmail.com)";
+
   REFERENCES
     + "Veraart, J.; Novikov, D.S.; Christiaens, D.; Ades-aron, B.; Sijbers, J. & Fieremans, E. " // Internal
     "Denoising of diffusion MRI using random matrix theory. "
@@ -47,8 +58,12 @@ void usage ()
 
     + "Veraart, J.; Fieremans, E. & Novikov, D.S. " // Internal
     "Diffusion MRI noise mapping using random matrix theory. "
-    "Magn. Res. Med., 2016, 76(5), 1582-1593, doi: 10.1002/mrm.26059";
-  
+    "Magn. Res. Med., 2016, 76(5), 1582-1593, doi: 10.1002/mrm.26059"
+
+    + "Cordero-Grande, L.; Christiaens, D.; Hutter, J.; Price, A.N.; Hajnal, J.V. " // Internal
+    "Complex diffusion-weighted image estimation via matrix recovery under general noise models. "
+    "NeuroImage, 2019, 200, 391-404, doi: 10.1016/j.neuroimage.2019.06.039";
+
   ARGUMENTS
   + Argument ("dwi", "the input diffusion-weighted image.").type_image_in ()
 
@@ -56,14 +71,29 @@ void usage ()
 
 
   OPTIONS
-    + Option ("mask", "only perform computation within the specified binary brain mask image.")
+    + Option ("mask", "Only process voxels within the specified binary brain mask image.")
     +   Argument ("image").type_image_in()
 
-    + Option ("extent", "set the window size of the denoising filter. (default = " + str(DEFAULT_SIZE) + "," + str(DEFAULT_SIZE) + "," + str(DEFAULT_SIZE) + ")")
+    + Option ("extent", "Set the patch size of the denoising filter. "
+                        "By default, the command will select the smallest isotropic patch size "
+                        "that exceeds the number of DW images in the input data, e.g., 5x5x5 for "
+                        "data with <= 125 DWI volumes, 7x7x7 for data with <= 343 DWI volumes, etc.")
     +   Argument ("window").type_sequence_int ()
 
-    + Option ("noise", "the output noise map.")
-    +   Argument ("level").type_image_out();
+    + Option ("noise", "The output noise map, i.e., the estimated noise level 'sigma' in the data. "
+                       "Note that on complex input data, this will be the total noise level across "
+                       "real and imaginary channels, so a scale factor sqrt(2) applies.")
+    +   Argument ("level").type_image_out()
+
+    + Option ("datatype", "Datatype for the eigenvalue decomposition (single or double precision). "
+                          "For complex input data, this will select complex float32 or complex float64 datatypes.")
+    +   Argument ("float32/float64").type_choice(dtypes)
+
+    + Option ("estimator", "Select the noise level estimator (default = Exp2), either: \n"
+                           "* Exp1: the original estimator used in Veraart et al. (2016), or \n"
+                           "* Exp2: the improved estimator introduced in Cordero-Grande et al. (2019).")
+    +   Argument ("Exp1/Exp2").type_choice(estimators);
+
 
   COPYRIGHT = "Copyright (c) 2016 New York University, University of Antwerp, and the MRtrix3 contributors \n \n"
       "Permission is hereby granted, free of charge, to any non-commercial entity ('Recipient') obtaining a copy of this software and "
@@ -81,29 +111,35 @@ void usage ()
       "licenses under any patents or patent application owned by NYU. \n \n"
       "\t 5. The Software may only be used for non-commercial research and may not be used for clinical care. \n \n"
       "\t 6. Any publication by Recipient of research involving the Software shall cite the references listed below.";
-    
+
 }
 
 
-using value_type = float;
+using real_type = float;
 
 
-template <class ImageType>
-class DenoisingFunctor { MEMALIGN(DenoisingFunctor)
-  public:
-  DenoisingFunctor (ImageType& dwi, vector<int> extent, Image<bool>& mask, ImageType& noise)
+template <typename F = float>
+class DenoisingFunctor {
+  MEMALIGN(DenoisingFunctor)
+
+public:
+
+  using MatrixType = Eigen::Matrix<F, Eigen::Dynamic, Eigen::Dynamic>;
+  using SValsType = Eigen::VectorXd;
+
+  DenoisingFunctor (int ndwi, const vector<int>& extent,
+                    Image<bool>& mask, Image<real_type>& noise, bool exp1)
     : extent {{extent[0]/2, extent[1]/2, extent[2]/2}},
-      m (dwi.size(3)),
-      n (extent[0]*extent[1]*extent[2]),
-      r ((m<n) ? m : n),
-      X (m,n), 
-      pos {{0, 0, 0}}, 
-      mask (mask),
-      noise (noise)
+      m (ndwi), n (extent[0]*extent[1]*extent[2]),
+      r (std::min(m,n)), q (std::max(m,n)), exp1(exp1),
+      X (m,n), pos {{0, 0, 0}},
+      mask (mask), noise (noise)
   { }
-  
+
+  template <typename ImageType>
   void operator () (ImageType& dwi, ImageType& out)
   {
+    // Process voxels in mask only
     if (mask.valid()) {
       assign_pos_of (dwi).to (mask);
       if (!mask.value())
@@ -114,106 +150,130 @@ class DenoisingFunctor { MEMALIGN(DenoisingFunctor)
     load_data (dwi);
 
     // Compute Eigendecomposition:
-    Eigen::MatrixXf XtX (r,r);
+    MatrixType XtX (r,r);
     if (m <= n)
-      XtX.template triangularView<Eigen::Lower>() = X * X.transpose();
-    else 
-      XtX.template triangularView<Eigen::Lower>() = X.transpose() * X;
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXf> eig (XtX);
-    // eigenvalues provide squared singular values:
-    Eigen::VectorXf s = eig.eigenvalues();
-   
+      XtX.template triangularView<Eigen::Lower>() = X * X.adjoint();
+    else
+      XtX.template triangularView<Eigen::Lower>() = X.adjoint() * X;
+    Eigen::SelfAdjointEigenSolver<MatrixType> eig (XtX);
+    // eigenvalues sorted in increasing order:
+    SValsType s = eig.eigenvalues().template cast<double>();
+
     // Marchenko-Pastur optimal threshold
-    const double lam_r = s[0] / n;
+    const double lam_r = std::max(s[0], 0.0) / q;
     double clam = 0.0;
-    sigma2 = NaN;
+    sigma2 = 0.0;
     ssize_t cutoff_p = 0;
-    for (ssize_t p = 0; p < r; ++p)
-    {
-      double lam = s[p] / n;
+    for (ssize_t p = 0; p < r; ++p)     // p+1 is the number of noise components
+    {                                   // (as opposed to the paper where p is defined as the number of signal components)
+      double lam = std::max(s[p], 0.0) / q;
       clam += lam;
-      double gam = double(m-r+p+1) / double(n);
-      double sigsq1 = clam / (p+1) / std::max (gam, 1.0);
-      double sigsq2 = (lam - lam_r) / 4 / std::sqrt(gam);
+      double gam = double(p+1) / (exp1 ? q : q-(r-p-1));
+      double sigsq1 = clam / double(p+1);
+      double sigsq2 = (lam - lam_r) / (4.0 * std::sqrt(gam));
       // sigsq2 > sigsq1 if signal else noise
       if (sigsq2 < sigsq1) {
         sigma2 = sigsq1;
         cutoff_p = p+1;
-      } 
+      }
     }
 
     if (cutoff_p > 0) {
       // recombine data using only eigenvectors above threshold:
       s.head (cutoff_p).setZero();
       s.tail (r-cutoff_p).setOnes();
-      if (m <= n) 
-        X.col (n/2) = eig.eigenvectors() * ( s.asDiagonal() * ( eig.eigenvectors().adjoint() * X.col(n/2) ));
-      else 
-        X.col (n/2) = X * ( eig.eigenvectors() * ( s.asDiagonal() * eig.eigenvectors().adjoint().col(n/2) ));
+      if (m <= n)
+        X.col (n/2) = eig.eigenvectors() * ( s.cast<F>().asDiagonal() * ( eig.eigenvectors().adjoint() * X.col(n/2) ));
+      else
+        X.col (n/2) = X * ( eig.eigenvectors() * ( s.cast<F>().asDiagonal() * eig.eigenvectors().adjoint().col(n/2) ));
     }
 
     // Store output
     assign_pos_of(dwi).to(out);
-    for (auto l = Loop (3) (out); l; ++l)
-      out.value() = X(out.index(3), n/2);
+    out.row(3) = X.col(n/2);
 
     // store noise map if requested:
     if (noise.valid()) {
       assign_pos_of(dwi).to(noise);
-      noise.value() = value_type (std::sqrt(sigma2));
+      noise.value() = real_type (std::sqrt(sigma2));
     }
   }
-  
-  
-  void load_data (ImageType& dwi)
-  {
+
+private:
+  const std::array<ssize_t, 3> extent;
+  const ssize_t m, n, r, q;
+  const bool exp1;
+  MatrixType X;
+  std::array<ssize_t, 3> pos;
+  double sigma2;
+  Image<bool> mask;
+  Image<real_type> noise;
+
+  template <typename ImageType>
+  void load_data (ImageType& dwi) {
     pos[0] = dwi.index(0); pos[1] = dwi.index(1); pos[2] = dwi.index(2);
+    // fill patch
     X.setZero();
-    ssize_t k = 0;
-    for (dwi.index(2) = pos[2]-extent[2]; dwi.index(2) <= pos[2]+extent[2]; ++dwi.index(2))
-      for (dwi.index(1) = pos[1]-extent[1]; dwi.index(1) <= pos[1]+extent[1]; ++dwi.index(1))
-        for (dwi.index(0) = pos[0]-extent[0]; dwi.index(0) <= pos[0]+extent[0]; ++dwi.index(0), ++k)
-          if (! is_out_of_bounds(dwi,0,3))
-            X.col(k) = dwi.row(3);
+    size_t k = 0;
+    for (int z = -extent[2]; z <= extent[2]; z++) {
+      dwi.index(2) = wrapindex(z, 2, dwi.size(2));
+      for (int y = -extent[1]; y <= extent[1]; y++) {
+        dwi.index(1) = wrapindex(y, 1, dwi.size(1));
+        for (int x = -extent[0]; x <= extent[0]; x++, k++) {
+          dwi.index(0) = wrapindex(x, 0, dwi.size(0));
+          X.col(k) = dwi.row(3);
+        }
+      }
+    }
     // reset image position
     dwi.index(0) = pos[0];
     dwi.index(1) = pos[1];
     dwi.index(2) = pos[2];
   }
-  
-private:
-  const std::array<ssize_t, 3> extent;
-  const ssize_t m, n, r;
-  Eigen::MatrixXf X;
-  std::array<ssize_t, 3> pos;
-  double sigma2;
-  Image<bool> mask;
-  ImageType noise;
-  
+
+  inline size_t wrapindex(int r, int axis, int max) const {
+    // patch handling at image edges
+    int rr = pos[axis] + r;
+    if (rr < 0)    rr = extent[axis] - r;
+    if (rr >= max) rr = (max-1) - extent[axis] - r;
+    return rr;
+  }
+
 };
+
+
+template <typename T>
+void process_image (Header& data, Image<bool>& mask, Image<real_type> noise,
+                    const std::string& output_name, const vector<int>& extent, bool exp1)
+  {
+    auto input = data.get_image<T>().with_direct_io(3);
+    // create output
+    Header header (data);
+    header.datatype() = DataType::from<T>();
+    auto output = Image<T>::create (output_name, header);
+    // run
+    DenoisingFunctor<T> func (data.size(3), extent, mask, noise, exp1);
+    ThreadedLoop ("running MP-PCA denoising", data, 0, 3).run (func, input, output);
+  }
 
 
 
 void run ()
 {
-  auto dwi_in = Image<value_type>::open (argument[0]).with_direct_io(3);
+  auto dwi = Header::open (argument[0]);
 
-  if (dwi_in.ndim() != 4 || dwi_in.size(3) <= 1) 
+  if (dwi.ndim() != 4 || dwi.size(3) <= 1)
     throw Exception ("input image must be 4-dimensional");
 
   Image<bool> mask;
   auto opt = get_options ("mask");
   if (opt.size()) {
     mask = Image<bool>::open (opt[0][0]);
-    check_dimensions (mask, dwi_in, 0, 3);
+    check_dimensions (mask, dwi, 0, 3);
   }
 
-  auto header = Header (dwi_in);
-  header.datatype() = DataType::Float32;
-  auto dwi_out = Image<value_type>::create (argument[1], header);
-  
   opt = get_options("extent");
-  vector<int> extent = { DEFAULT_SIZE, DEFAULT_SIZE, DEFAULT_SIZE };
+  vector<int> extent;
   if (opt.size()) {
     extent = parse_ints(opt[0][0]);
     if (extent.size() == 1)
@@ -223,18 +283,49 @@ void run ()
     for (auto &e : extent)
       if (!(e & 1))
         throw Exception ("-extent must be a (list of) odd numbers");
-  }
-  
-  Image<value_type> noise;
-  opt = get_options("noise");
-  if (opt.size()) {
-    header.ndim() = 3;
-    noise = Image<value_type>::create (opt[0][0], header);
+    INFO("user defined patch size " + str(extent[0]) + " x " + str(extent[1]) + " x " + str(extent[2]) + ".");
+  } else {
+    int e = 1;
+    while (e*e*e < dwi.size(3))
+      e += 2;
+    extent = {e, e, e};
+    INFO("select default patch size " + str(e) + " x " + str(e) + " x " + str(e) + ".");
   }
 
-  DenoisingFunctor< Image<value_type> > func (dwi_in, extent, mask, noise);
-  ThreadedLoop ("running MP-PCA denoising", dwi_in, 0, 3)
-    .run (func, dwi_in, dwi_out);
+  bool exp1 = get_option_value("estimator", 1) == 0;    // default: Exp2 (unbiased estimator)
+
+  Image<real_type> noise;
+  opt = get_options("noise");
+  if (opt.size()) {
+    Header header (dwi);
+    header.ndim() = 3;
+    header.datatype() = DataType::Float32;
+    noise = Image<real_type>::create (opt[0][0], header);
+  }
+
+  int prec = get_option_value("datatype", 0);     // default: single precision
+  if (dwi.datatype().is_complex()) prec += 2;     // support complex input data
+  switch (prec) {
+    case 0:
+      INFO("select real float32 for processing");
+      process_image<float>(dwi, mask, noise, argument[1], extent, exp1);
+      break;
+    case 1:
+      INFO("select real float64 for processing");
+      process_image<double>(dwi, mask, noise, argument[1], extent, exp1);
+      break;
+    case 2:
+      INFO("select complex float32 for processing");
+      process_image<cfloat>(dwi, mask, noise, argument[1], extent, exp1);
+      break;
+    case 3:
+      INFO("select complex float64 for processing");
+      process_image<cdouble>(dwi, mask, noise, argument[1], extent, exp1);
+      break;
+  }
+
+
+
 }
 
 

@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "progressbar.h"
@@ -188,8 +189,9 @@ void run() {
     data_header.size(0) = num_fixels;
     data_header.size(1) = 1;
     data_header.size(2) = 1;
-    data_header.spacing(0) = data_header.spacing(1) = data_header.spacing(2) = NaN;
+    data_header.spacing(0) = data_header.spacing(1) = data_header.spacing(2) = 1.0;
     data_header.stride(0) = 1; data_header.stride(1) = 2; data_header.stride(2) = 3;
+    data_header.transform().setIdentity();
     mask = Image<bool>::scratch (data_header, "scratch fixel mask");
     for (index_type f = 0; f != num_fixels; ++f) {
       mask.index(0) = f;

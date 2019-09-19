@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "gui/mrview/tool/fixel/fixel.h"
 
@@ -258,13 +259,13 @@ namespace MR
 
         void Fixel::draw (const Projection& transform, bool is_3D, int, int)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           not_3D = !is_3D;
           for (int i = 0; i < fixel_list_model->rowCount(); ++i) {
             if (fixel_list_model->items[i]->show && !hide_all_button->isChecked())
               dynamic_cast<BaseFixel*>(fixel_list_model->items[i].get())->render (transform);
           }
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -297,7 +298,7 @@ namespace MR
 
         void Fixel::render_fixel_colourbar (const Tool::BaseFixel& fixel)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           float min_value = fixel.use_discard_lower() ?
                       fixel.scaling_min_thresholded() :
                       fixel.scaling_min();
@@ -310,7 +311,7 @@ namespace MR
                                               min_value, max_value,
                                               fixel.scaling_min(), fixel.display_range,
                                               Eigen::Array3f { fixel.colour[0] / 255.0f, fixel.colour[1] / 255.0f, fixel.colour[2] / 255.0f });
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -628,7 +629,7 @@ namespace MR
 
         void Fixel::on_crop_to_slice_slot (bool is_checked)
         {
-          do_crop_to_slice = is_checked;         
+          do_crop_to_slice = is_checked;
           lock_to_grid->setEnabled(do_crop_to_slice);
 
           window().updateGL();
@@ -770,7 +771,7 @@ namespace MR
 
 
         void Fixel::add_commandline_options (MR::App::OptionList& options)
-        { 
+        {
           using namespace MR::App;
           options
             + OptionGroup ("Fixel plot tool options")

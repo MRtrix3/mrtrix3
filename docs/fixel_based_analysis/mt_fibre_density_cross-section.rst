@@ -2,16 +2,19 @@ Fibre density and cross-section - Multi-tissue CSD
 ==================================================
 
 Introduction
--------------
+------------
 
 This tutorial explains how to perform fixel-based analysis of fibre density and cross-section [Raffelt2017]_ with fibre orientation distributions (FODs) computed using multi-tissue (3-tissue) CSD variants [Jeurissen2014]_ [Dhollander2016a]_. We note that high b-value (>2000s/mm2) data is recommended to aid the interpretation of apparent fibre density (AFD) being related to the intra-axonal space. See [Raffelt2012]_ for some details about AFD; though note that the interpretation can be altered for multi-tissue (3-tissue) CSD, depending on the context and tissues in the model.
 
 All steps in this tutorial are written as if the commands are being **run on a cohort of images**, and make extensive use of the :ref:`foreach script to simplify batch processing <batch_processing>`. This tutorial also assumes that the imaging dataset is organised with one directory identifying each subject, and all files within identifying the image type (i.e. processing step outcome). For example::
 
-    study/subjects/001_patient/dwi.mif
-    study/subjects/001_patient/wmfod.mif
+    study/subjects/001_control/dwi.mif
     study/subjects/002_control/dwi.mif
-    study/subjects/002_control/wmfod.mif
+    ...
+    study/subjects/020_control/dwi.mif
+    study/subjects/021_patient/dwi.mif
+    ...
+    study/subjects/040_patient/dwi.mif
 
 .. NOTE:: All commands at the start of this tutorial are run **from the subjects path**. From the step where tractography is performed on the template onwards, we change directory **to the template path**.
 
@@ -29,15 +32,15 @@ Pre-processsing steps
 2. Motion and distortion correction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. include:: common_fba_steps/dwipreproc.rst
+.. include:: common_fba_steps/dwifslpreproc.rst
 
 3. Bias field correction
 ^^^^^^^^^^^^^^^^^^^^^^^^
 The multi-tissue FBA pipeline corrects for bias fields (and jointly performs global intensity normalisation) at the later :ref:`mtnormalise` step. The only incentive for running the (less robust and accurate) :ref:`dwibiascorrect` at this stage in the pipeline is *to improve brain mask estimation* (at the later :ref:`dwi2mask` step, in case severe bias fields are present in the data). However, cases have been reported where running :ref:`dwibiascorrect` at this stage resulted in *inferior* brain mask estimation later on. This is probably more likely in case bias fields are not as strongly present in the data. Whether :ref:`dwibiascorrect` is run at this stage or not, does not have any significant impact on the performance of :ref:`mtnormalise` later on.
 
-If or when performing DWI bias field correction at this stage, it is achieved by first estimating the bias field from the DWI b=0 data, then applying the field to correct all DW volumes, which is done in a single step using the :ref:`dwibiascorrect` script with the :code:`-ants` option in MRtrix. The script uses a bias field correction algorithm available in `ANTS <http://stnava.github.io/ANTs/>`_ (the N4 algorithm). *Don't* use the :code:`-fsl` option with this script in this fixel-based analysis pipeline. To perform bias field correction on DW images, run::
+If or when performing DWI bias field correction at this stage, it is achieved by first estimating the bias field from the DWI b=0 data, then applying the field to correct all DW volumes, which is done in a single step using the :code:`ants` algorithm within the :ref:`dwibiascorrect` script in *MRtrix3*. The script uses a bias field correction algorithm available in `ANTs <http://stnava.github.io/ANTs/>`_ (the N4 algorithm). *Don't* use the :code:`fsl` algorithm with this script in this fixel-based analysis pipeline. To perform bias field correction on DW images, run::
 
-    foreach * : dwibiascorrect -ants IN/dwi_denoised_unringed_preproc.mif IN/dwi_denoised_unringed_preproc_unbiased.mif
+    foreach * : dwibiascorrect ants IN/dwi_denoised_unringed_preproc.mif IN/dwi_denoised_unringed_preproc_unbiased.mif
 
 
 Fixel-based analysis steps
@@ -45,17 +48,17 @@ Fixel-based analysis steps
 
 4. Computing (average) tissue response functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-A robust and fully automated (unsupervised) method to obtain 3-tissue response functions representing single-fibre white matter, grey matter and CSF from your data, is the approach proposed in [Dhollander2016b]_ (and evaluated further in [Dhollander2018a]_), which can be run by::
+A robust and fully automated unsupervised method to obtain 3-tissue response functions representing single-fibre white matter, grey matter and CSF from the data itself, is the approach proposed in [Dhollander2016b]_ with the improvements of [Dhollander2019]_, which can be run by::
 
     foreach * : dwi2response dhollander IN/dwi_denoised_unringed_preproc_unbiased.mif IN/response_wm.txt IN/response_gm.txt IN/response_csf.txt
 
-It is crucial for fixel-based analysis to only use a single *unique* set of the (three) response functions to perform (3-tissue) spherical deconvolution of all subjects: as the (3-tissue) spherical deconvolution results will be expressed in function of this set of response functions, they can (in an abstract way) be seen as the units of both the final apparent fibre density metric and the other compartments estimated in the model. A possible way to obtain a unique set of response functions, is to average the response functions obtained from all subjects for each tissue type::
+It is crucial for fixel-based analysis to only use a single *unique* set of the (three) response functions to perform (3-tissue) spherical deconvolution of all subjects: as the (3-tissue) spherical deconvolution results will be expressed in function of this set of response functions, they can (in an abstract way) be seen as the units of both the final apparent fibre density metric and the other compartments estimated in the model. One possible way to obtain a unique set of response functions, is to average the response functions obtained from all subjects for each tissue type::
 
-    average_response */response_wm.txt ../group_average_response_wm.txt
-    average_response */response_gm.txt ../group_average_response_gm.txt
-    average_response */response_csf.txt ../group_average_response_csf.txt
+    responsemean */response_wm.txt ../group_average_response_wm.txt
+    responsemean */response_gm.txt ../group_average_response_gm.txt
+    responsemean */response_csf.txt ../group_average_response_csf.txt
 
-There is however no strict requirement for the final set of response functions to be the average of *all* subject response functions (for each tissue type). In certain very specific cases, it may even be wise to leave out subjects (for this step) where the response functions could not reliably be obtained, or where pathology affected the brain globally.
+There is however no strict requirement for the final set of response functions to be the average of *all* subject response functions, for each tissue type (or indeed, it doesn't even have to be the average per se). In certain very specific cases, it may even be wise to leave out subjects (for this step) where the response functions could not reliably be obtained, or where pathology affected the brain globally.
 
 5. Upsampling DW images
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -171,7 +174,12 @@ Note that here we warp FOD images into template space *without* FOD reorientatio
 19. Perform whole-brain fibre tractography on the FOD template
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. include:: common_fba_steps/tractography.rst
+Statistical analysis using connectivity-based fixel enhancement (CFE) [Raffelt2015]_ exploits local connectivity information derived from probabilistic fibre tractography, which acts as a neighbourhood definition for threshold-free enhancement of locally clustered statistic values. To generate a whole-brain tractogram from the FOD template (note the remaining steps from here on are executed from the template directory)::
+
+    cd ../template
+    tckgen -angle 22.5 -maxlen 250 -minlen 10 -power 1.0 wmfod_template.mif -seed_image template_mask.mif -mask template_mask.mif -select 20000000 -cutoff 0.06 tracks_20_million.tck
+
+.. WARNING:: *The command line above assumes you're working with MRtrix3 RC3 or above*. An important bug in the tractography code was fixed in that version of the software. If you are not able to update your installation, and are still working with an older version of MRtrix3, you should remove the `-cutoff 0.06` option in the command line above, in line with the instructions for older versions of MRtrix3.
 
 20. Reduce biases in tractogram densities
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

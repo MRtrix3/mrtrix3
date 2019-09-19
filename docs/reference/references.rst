@@ -8,6 +8,11 @@ References
    NeuroImage, 123 (2015), pp. 89–101.
    [`full text link <http://www.sciencedirect.com/science/article/pii/S1053811915007168>`__\ ]
 
+.. [CorderoGrande2019] L. Cordero-Grande, D. Christiaens, J. Hutter, A.N. Price, J.V. Hajnal
+   *Complex diffusion-weighted image estimation via matrix recovery under general noise models.*
+   NeuroImage 200 (2019), pp. 391-404
+   [`full text link <https://www.sciencedirect.com/science/article/pii/S1053811919305348>`__\ ]
+
 .. [Dhollander2014] T. Dhollander, L. Emsell, W. Van Hecke, F. Maes, S. Sunaert, and P. Suetens.
    *Track Orientation Density Imaging (TODI) and Track Orientation Distribution (TOD) based tractography.*
    NeuroImage, 94 (2014), pp. 312–336.
@@ -47,6 +52,11 @@ References
    *Feasibility and benefits of 3-tissue constrained spherical deconvolution for studying the brains of babies.*
    Proceedings of the 26th annual meeting of the International Society of Magnetic Resonance in Medicine (2018), pp. 3077.
    [`full text link <https://www.researchgate.net/publication/324770875_Feasibility_and_benefits_of_3-tissue_constrained_spherical_deconvolution_for_studying_the_brains_of_babies>`__\ ]
+
+.. [Dhollander2019] T. Dhollander, R. Mito, D. Raffelt, and A. Connelly.
+   *Improved white matter response function estimation for 3-tissue constrained spherical deconvolution.*
+   Proceedings of the 27th annual meeting of the International Society of Magnetic Resonance in Medicine (2019), pp. 555.
+   [`full text link <https://www.researchgate.net/publication/331165168_Improved_white_matter_response_function_estimation_for_3-tissue_constrained_spherical_deconvolution>`__\ ]
 
 .. [Jeurissen2014] B. Jeurissen, J.-D. Tournier, T. Dhollander, A. Connelly, and J.  Sijbers.
    *Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data.*
