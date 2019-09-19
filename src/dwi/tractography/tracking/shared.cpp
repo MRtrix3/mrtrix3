@@ -202,7 +202,7 @@ namespace MR
             max_angle_1o = 2.0f * std::asin (step_size / (2.0f * min_radius));
             cos_max_angle_1o = std::cos (max_angle_1o);
             const float max_angle_deg = max_angle_1o * 180.0f / Math::pi;
-            properties["max_angle"] = max_angle_deg;
+            properties["max_angle"] = str (max_angle_deg);
             INFO (angle_msg + " = " + str (max_angle_deg) + " deg");
           } else {
             max_angle_1o = to<float> (properties["max_angle"]);
