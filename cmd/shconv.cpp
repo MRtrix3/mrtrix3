@@ -32,6 +32,9 @@ void usage ()
 
   SYNOPSIS = "Perform a spherical convolution";
 
+  DESCRIPTION
+  + Math::SH::encoding_description;
+
   ARGUMENTS
     + Argument ("SH_in", "the input spherical harmonics coefficients image.").type_image_in ()
     + Argument ("response", "the convolution kernel (response function)").type_file_in ()

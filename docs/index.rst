@@ -76,7 +76,7 @@ These applications have been written from scratch in C++, using the functionalit
    concepts/dw_scheme
    concepts/pe_scheme
    concepts/global_intensity_normalisation
-   concepts/orthonormal_sh_basis
+   concepts/spherical_harmonics
    concepts/sh_basis_lmax
    concepts/fixels_dixels
    concepts/afd_connectivity

@@ -41,7 +41,9 @@ void usage ()
   DESCRIPTION
   + "This command generates spherical harmonic data from fixels "
     "that can be visualised using the ODF tool in MRview. The output ODF lobes "
-    "are scaled according to the values in the input fixel image.";
+    "are scaled according to the values in the input fixel image."
+
+  + Math::SH::encoding_description;
 
   ARGUMENTS
   + Argument ("fixel_in", "the input fixel data file.").type_image_in ()
