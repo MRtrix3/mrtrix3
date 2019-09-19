@@ -57,7 +57,9 @@ void usage ()
 
     + "Note that the \"force_*\" conversion choices should only be used in cases where this "
       "command has previously been unable to automatically determine the SH basis from the "
-      "image data, but the user themselves are confident of the SH basis of the data.";
+      "image data, but the user themselves are confident of the SH basis of the data."
+
+    + Math::SH::encoding_description;
 
 
   ARGUMENTS
