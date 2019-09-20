@@ -39,6 +39,9 @@ void usage ()
   + "Peaks of the spherical harmonic function in each voxel are located by "
     "commencing a Newton search along each of a set of pre-specified directions";
 
+  DESCRIPTION
+  + Math::SH::encoding_description;
+
   ARGUMENTS
   + Argument ("SH", "the input image of SH coefficients.")
   .type_image_in ()

@@ -23,6 +23,8 @@ Description
 
 This command computes the sum of squared SH coefficients, which equals the mean-squared amplitude of the spherical function it represents.
 
+The spherical harmonic coefficients are stored according the conventions described the main documentation, which can be found at the following link: https://mrtrix3.readthedocs.io/en/3.0_RC3/concepts/spherical_harmonics.html
+
 Options
 -------
 
