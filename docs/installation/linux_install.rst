@@ -51,20 +51,20 @@ for hints on how to proceed in this case.
 
 -  Ubuntu Linux (and derivatives, e.g. Linux Mint)::
 
-       sudo apt-get install git g++ python python-numpy libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev libfftw3-dev libtiff5-dev
+       sudo apt-get install git g++ python libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev libfftw3-dev libtiff5-dev
 
 -  RPM-based distros (Fedora, CentOS)::
 
-       sudo yum install git g++ python numpy eigen3-devel zlib-devel libqt4-devel libgl1-mesa-dev fftw-devel libtiff-devel
+       sudo yum install git g++ python eigen3-devel zlib-devel libqt4-devel libgl1-mesa-dev fftw-devel libtiff-devel
 
    on Fedora 24, this is reported to work::
 
-           sudo yum install git gcc-c++ python numpy eigen3-devel zlib-devel qt-devel mesa-libGL-devel fftw-devel libtiff-devel
+           sudo yum install git gcc-c++ python eigen3-devel zlib-devel qt-devel mesa-libGL-devel fftw-devel libtiff-devel
 
 
 -  Arch Linux::
 
-       sudo pacman -Syu git python python-numpy gcc zlib eigen qt5-svg fftw libtiff
+       sudo pacman -Syu git python gcc zlib eigen qt5-svg fftw libtiff
 
 If this doesn't work
 ^^^^^^^^^^^^^^^^^^^^
@@ -80,8 +80,6 @@ packages:
 -  your compiler (gcc 4.9 or above, or clang)
 
 -  Python version >2.7
-
--  NumPy
 
 -  the zlib compression library and its corresponding development
    header/include files
