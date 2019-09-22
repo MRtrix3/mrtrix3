@@ -24,8 +24,7 @@ and optionally:
 - `libTIFF <http://www.libtiff.org/>`__ version >= 4.0 (for TIFF support)
 - `FFTW <http://www.fftw.org/>`__ version >= 3.0 (for improved performance in
   certain applications, currently only ``mrdegibbs``)
-
-
+- `libpng <http://www.libpng.org>`__ (for PNG support)
 
 .. WARNING::
 
@@ -51,20 +50,19 @@ for hints on how to proceed in this case.
 
 -  Ubuntu Linux (and derivatives, e.g. Linux Mint)::
 
-       sudo apt-get install git g++ python libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev libfftw3-dev libtiff5-dev
+       sudo apt-get install git g++ python libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev libfftw3-dev libtiff5-dev libpng-dev
 
 -  RPM-based distros (Fedora, CentOS)::
 
-       sudo yum install git g++ python eigen3-devel zlib-devel libqt4-devel libgl1-mesa-dev fftw-devel libtiff-devel
+       sudo yum install git g++ python eigen3-devel zlib-devel libqt4-devel libgl1-mesa-dev fftw-devel libtiff-devel libpng-devel
 
    on Fedora 24, this is reported to work::
 
-           sudo yum install git gcc-c++ python eigen3-devel zlib-devel qt-devel mesa-libGL-devel fftw-devel libtiff-devel
-
+           sudo yum install git gcc-c++ python eigen3-devel zlib-devel qt-devel mesa-libGL-devel fftw-devel libtiff-devel libpng-devel
 
 -  Arch Linux::
 
-       sudo pacman -Syu git python gcc zlib eigen qt5-svg fftw libtiff
+       sudo pacman -Syu git python gcc zlib eigen qt5-svg fftw libtiff libpng
 
 If this doesn't work
 ^^^^^^^^^^^^^^^^^^^^
