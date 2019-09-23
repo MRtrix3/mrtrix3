@@ -188,7 +188,9 @@ if app.args.fixedweights:
 
 # Import voxel weights
 if app.args.voxelweights:
-    run.command('mrconvert ' + path.fromUser(app.args.voxelweights, True) + ' ' + path.toTemp('voxelweights.mif', True))
+    # mrcalc "hack" to check image dimensions & copy PE table
+    run.command('mrcalc in.mif 0 -mult ' + path.fromUser(app.args.voxelweights, True) + ' -add voxelweights.mif')
+
 
 # Configuration
 class Config:
@@ -210,7 +212,7 @@ iters = [Config(False, 3, 10, 3.0),
 
 # Variable input file name
 inputfn = 'in.mif'
-
+voxweightsfn = 'voxelweights.mif'
 
 
 #   __________ Function definitions __________
@@ -224,7 +226,7 @@ def reconstep(k):
     elif app.args.priorweights:
         rcmd += ' -weights priorweights.txt'
     if app.args.voxelweights:
-        rcmd += ' -voxweights voxelweights.mif'
+        rcmd += ' -voxweights ' + voxweightsfn
     rcmd += ' -force' + nthr
     run.command(rcmd)
 
@@ -262,13 +264,19 @@ def registrationstep(k):
 
 def fieldalignstep(k):
     global inputfn
+    global voxweightsfn
     if app.args.fieldmap:
         if k == 0:
             run.command('mrfieldunwarp in.mif field.mif unwarped.mif')
+            if app.args.voxelweights:
+              run.command('mrfieldunwarp -nomodulation voxelweights.mif field.mif voxelweights-unwarped.mif')
         else:
             fidx = '-fidx ' + ('0' if not app.args.fieldidx else app.args.fieldidx)
             run.command('mrfieldunwarp in.mif field.mif -motion motion.txt ' + fidx + ' unwarped.mif -force')
+            if app.args.voxelweights:
+              run.command('mrfieldunwarp -nomodulation -motion motion.txt voxelweights.mif field.mif voxelweights-unwarped.mif -force')
         inputfn = 'unwarped.mif'
+        voxweightsfn = 'voxelweights-unwarped.mif'
 
 
 
