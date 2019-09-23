@@ -154,6 +154,11 @@ namespace MR
         W = Z * weights;
       }
 
+      void setVoxelWeights(const Eigen::VectorXf& weights)
+      {
+        Wvox = weights;
+      }
+
       const Eigen::MatrixXf& getShellBasis(const int shellidx) const { return shellbasis[shellidx]; }
 
       void setField(const Image<float>& fieldmap, const size_t fieldidx, const Eigen::MatrixXf& petable)
@@ -170,12 +175,12 @@ namespace MR
       {
         INFO("Forward projection.");
         size_t nxyz = nxy*nz;
-        Eigen::Map<const RowMatrixXf> X (rhs.data(), nxyz, nc);
+        Eigen::Map<const RowMatrixXf, Eigen::Aligned16> X (rhs.data(), nxyz, nc);
         Thread::parallel_for<size_t>(0, nv*ne,
           [&](size_t idx) {
             size_t v = idx/ne;
             auto tmp = Image<float>::scratch(htmp);
-            Eigen::Map<Eigen::VectorXf> q (tmp.address(), nxyz);
+            Eigen::Map<Eigen::VectorXf, Eigen::Aligned16> q (tmp.address(), nxyz);
             q.noalias() = X * Y.row(idx).adjoint();
             for (size_t z = idx%ne; z < nz; z += ne) {
               Eigen::Ref<Eigen::VectorXf> r = dst.segment((nz*v+z)*nxy, nxy);
@@ -189,16 +194,18 @@ namespace MR
       {
         INFO("Transpose projection.");
         size_t nxyz = nxy*nz;
-        Eigen::Map<RowMatrixXf> X (dst.data(), nxyz, nc);
+        Eigen::Map<RowMatrixXf, Eigen::Aligned16> X (dst.data(), nxyz, nc);
         RowMatrixXf zero (nxyz, nc); zero.setZero();
         X = Thread::parallel_sum<RowMatrixXf, size_t>(0, nv*ne,
           [&](size_t idx, RowMatrixXf& T) {
             size_t v = idx/ne;
             auto tmp = Image<float>::scratch(htmp);
-            Eigen::Map<Eigen::VectorXf> r (tmp.address(), nxyz);
+            Eigen::Map<Eigen::VectorXf, Eigen::Aligned16> r (tmp.address(), nxyz);
             r.setZero();
             for (size_t z = idx%ne; z < nz; z += ne) {
-              project_slice_y2x(v, z, tmp, W(z,v) * rhs.segment((nz*v+z)*nxy, nxy));
+              Eigen::VectorXf r1 = rhs.segment((nz*v+z)*nxy, nxy);
+              Eigen::VectorXf w1 = Wvox.segment((nz*v+z)*nxy, nxy);
+              project_slice_y2x(v, z, tmp, W(z,v) * r1.cwiseProduct(w1));
             }
             T.noalias() += r * Y.row(idx);
           }, zero);
@@ -223,7 +230,11 @@ namespace MR
             r.setZero();
             // Declare temporary slice
             for (size_t z = idx%ne; z < nz; z += ne) {
-              project_slice_x2x(v, z, tmp2, tmp1, W(z,v));
+              //project_slice_x2x(v, z, tmp2, tmp1, W(z,v));
+              Eigen::VectorXf r1 (nxy);
+              Eigen::VectorXf w1 = Wvox.segment((nz*v+z)*nxy, nxy);
+              project_slice_x2y(v, z, r1, tmp1);
+              project_slice_y2x(v, z, tmp2, W(z,v) * r1.cwiseProduct(w1));
             }
             T.noalias() += r * Y.row(idx);
           }, zero);
@@ -242,6 +253,7 @@ namespace MR
       RowMatrixXf motion;
       RowMatrixXf Y;
       Eigen::MatrixXf W;
+      Eigen::VectorXf Wvox;
       SparseMat L, Z;
 
       Header htmp;

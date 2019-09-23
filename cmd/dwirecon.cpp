@@ -60,6 +60,9 @@ void usage ()
   + Option ("weights", "Slice weights, provided as a matrix of dimensions Nslices x Nvols.")
     + Argument ("W").type_file_in()
 
+  + Option ("voxweights", "Voxel weights, provided as an image of same dimensions as dMRI data.")
+    + Argument ("W").type_image_in()
+
   + Option ("ssp", "Slice sensitivity profile, either as text file or as a scalar slice thickness for a "
                    "Gaussian SSP, relative to the voxel size. (default = " + str(DEFAULT_SSPW)  + ")")
     + Argument ("w").type_text()
@@ -154,7 +157,7 @@ void run ()
   if (opt.size()) {
     W = load_matrix<float>(opt[0][0]);
     if (W.rows() != dwi.size(2) || W.cols() != dwi.size(3))
-      throw Exception("Weights marix dimensions don't match image dimensions.");
+      throw Exception("Weights matrix dimensions don't match image dimensions.");
   }
 
   // Read field map and PE scheme
@@ -225,6 +228,18 @@ void run ()
     }
   }
 
+  // Read voxel weights
+  Eigen::VectorXf Wvox = Eigen::VectorXf::Ones(dwisub.size(0)*dwisub.size(1)*dwisub.size(2)*dwisub.size(3));
+  opt = get_options("voxweights");
+  if (opt.size()) {
+    auto voxweights = Image<value_type>::open(opt[0][0]);
+    check_dimensions(dwisub, voxweights, 0, 4);
+    size_t j = 0;
+    for (auto l = Loop("loading voxel weights data", {0, 1, 2, 3})(voxweights); l; l++, j++) {
+      Wvox[j] = voxweights.value();
+    }
+  }
+
   // Other parameters
   if (rf.empty())
     lmax = get_option_value("lmax", DEFAULT_LMAX);
@@ -242,6 +257,7 @@ void run ()
   INFO("initialise reconstruction matrix");
   DWI::SVR::ReconMatrix R (dwisub, motionsub, gradsub, lmax, rf, ssp, reg, zreg);
   R.setWeights(Wsub);
+  R.setVoxelWeights(Wvox);
   if (hasfield)
     R.setField(fieldmap, fieldidx, PEsub);
 
