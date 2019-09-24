@@ -230,11 +230,7 @@ namespace MR
             r.setZero();
             // Declare temporary slice
             for (size_t z = idx%ne; z < nz; z += ne) {
-              //project_slice_x2x(v, z, tmp2, tmp1, W(z,v));
-              Eigen::VectorXf r1 (nxy);
-              Eigen::VectorXf w1 = Wvox.segment((nz*v+z)*nxy, nxy);
-              project_slice_x2y(v, z, r1, tmp1);
-              project_slice_y2x(v, z, tmp2, W(z,v) * r1.cwiseProduct(w1));
+              project_slice_x2x(v, z, tmp2, tmp1, W(z,v) * Wvox.segment((nz*v+z)*nxy, nxy));
             }
             T.noalias() += r * Y.row(idx);
           }, zero);
@@ -430,8 +426,8 @@ namespace MR
         }
       }
 
-      template <typename ImageType1, typename ImageType2>
-      void project_slice_x2x(const int v, const int z, ImageType1& dst, const ImageType2& rhs, const float w) const
+      template <typename ImageType1, typename ImageType2, typename VectorType>
+      void project_slice_x2x(const int v, const int z, ImageType1& dst, const ImageType2& rhs, const VectorType& w) const
       {
         std::unique_ptr<FieldInterpType> finterp;
         if (field.valid())
@@ -448,9 +444,10 @@ namespace MR
         Interp::Cubic<ImageType2> source (rhs, 0.0f);
         Interp::CubicAdjoint<ImageType1> target (dst, 0.0f);
 
+        size_t j = 0;
         for (size_t y = 0; y < ny; y++) {         // in-plane
           ps[1] = y;
-          for (size_t x = 0; x < nx; x++) {
+          for (size_t x = 0; x < nx; x++, j++) {
             ps[0] = x;
             t = 0.0f;
             for (int s = -ssp.size(); s <= ssp.size(); s++) {       // ssp neighbourhood
@@ -461,7 +458,7 @@ namespace MR
               source.voxel(pr);
               t += (ssp(s) * iJac) * source.value();
             }
-            t *= w;
+            t *= w[j];
             for (int s = -ssp.size(); s <= ssp.size(); s++) {
               ps[2] = z+s;
               // get slice position in recon space
