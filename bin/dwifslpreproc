@@ -437,7 +437,7 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.se_epi:
 
     # Newest version of eddy requires that topup field be on the same grid as the eddy input DWI
-    if not image.match(dwi_header, se_epi_header, 3):
+    if not image.match(dwi_header, se_epi_header, up_to_dim=3):
       app.console('DWIs and SE-EPI images used for inhomogeneity field estimation are defined on different image grids; '
                   'the latter will be automatically re-gridded to match the former')
       new_se_epi_path = 'se_epi_regrid.mif'
@@ -976,7 +976,7 @@ def execute(): #pylint: disable=unused-variable
     #   visualising the script intermediate files, and it gives the user a warning about an out-of-date FSL)
     field_map_image = fsl.find_image('field_map')
     field_map_header = image.Header(field_map_image)
-    if not image.match('topup_in.nii', field_map_header, 3):
+    if not image.match('topup_in.nii', field_map_header, up_to_dim=3):
       app.warn('topup output field image has erroneous header; recommend updating FSL to version 5.0.8 or later')
       new_field_map_image = 'field_map_fix.mif'
       run.command('mrtransform ' + field_map_image + ' -replace topup_in.nii ' + new_field_map_image)
