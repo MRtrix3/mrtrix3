@@ -227,7 +227,32 @@ if eddy_mporder:
   else:
     if 'SliceTiming' not in dwi_header.keyval():
       app.error('Cannot perform slice-to-volume correction in eddy: No slspec file provided, and no slice timing information present in header')
-    slice_timing = dwi_header.keyval()['SliceTiming'][0]
+    slice_timing = dwi_header.keyval()['SliceTiming']
+    app.var(slice_timing)
+    # Fudges necessary to maniupulate nature of slice timing data in cases where
+    #   bad JSON formatting has led to the data not being simply a list of floats
+    #   (whether from MRtrix3 DICOM conversion or from anything else)
+    try:
+      basestring
+    except NameError:
+      basestring = str
+    if isinstance(slice_timing, basestring):
+      slice_timing = slice_timing.split()
+    if not isinstance(slice_timing, list):
+      app.error('Cannot use slice timing information in image header for slice-to-volume correction: Data is not a list')
+    if len(slice_timing) == 1:
+      slice_timing = slice_timing[0]
+      if not isinstance(slice_timing, list):
+        app.error('Cannot use slice timing information in image header for slice-to-volume correction: Unexpected data format')
+    if isinstance(slice_timing[0], list):
+      if not all( [ len(entry) == 1 for entry in slice_timing ] ):
+        app.error('Cannot use slice timing information in image header for slice-to-volume correction: Data do not appear to be 1D')
+      slice_timing = [ entry[0] for entry in slice_timing ]
+    if not all( [ isinstance(entry, float) for entry in slice_timing ] ):
+      try:
+        slice_timing = [ float(entry) for entry in slice_timing ]
+      except ValueError:
+        app.error('Cannot use slice timing information in image header for slice-to-volume correction: Data are not numeric')
     app.var(slice_timing)
     if len(slice_timing) != dwi_num_slices:
       app.error('Cannot use slice timing information in image header for slice-to-volume correction: Number of entries (' + len(slice_timing) + ') does not match number of slices (' + dwi_header.size()[2] + ')')

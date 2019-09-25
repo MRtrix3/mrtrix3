@@ -226,7 +226,6 @@ namespace MR {
             min_time_after_start = std::min (min_time_after_start, frames[n]->time_after_start);
           for (size_t n = 0; n != dim[1]; ++n)
             slices_timing.push_back (frames[n]->time_after_start - min_time_after_start);
-          H.keyval()["SliceTiming"] = join (slices_timing, ",");
         } else if (std::isfinite (static_cast<default_type>(frame.acquisition_time))) {
           DEBUG ("Estimating slice timing from DICOM AcquisitionTime field");
           default_type min_acquisition_time = std::numeric_limits<default_type>::infinity();
@@ -238,7 +237,7 @@ namespace MR {
         if (slices_timing.size()) {
           const size_t slices_acquired_at_zero = std::count (slices_timing.begin(), slices_timing.end(), 0.0f);
           if (slices_acquired_at_zero < (image.images_in_mosaic ? image.images_in_mosaic : dim[1])) {
-            H.keyval()["SliceTiming"] = join (slices_timing, ",");
+            H.keyval()["SliceTiming"] = join (slices_timing, " ", 5);
             H.keyval()["MultibandAccelerationFactor"] = str (slices_acquired_at_zero);
             H.keyval()["SliceEncodingDirection"] = "k";
           } else {

@@ -227,6 +227,18 @@ namespace MR
     return ret;
   }
 
+  template <typename T>
+  inline std::string join (const vector<T>& V, const std::string& delimiter, const int precision)
+  {
+    std::string ret;
+    if (V.empty())
+      return ret;
+    ret = str(V[0], precision);
+    for (typename vector<T>::const_iterator i = V.begin() +1; i != V.end(); ++i)
+      ret += delimiter + str(*i, precision);
+    return ret;
+  }
+
   inline std::string join (const char* const* null_terminated_array, const std::string& delimiter)
   {
     std::string ret;
