@@ -135,9 +135,13 @@ def mrinfo(image_path, field): #pylint: disable=unused-variable
 
 # Check to see whether the fundamental header properties of two images match
 # Inputs can be either _Header class instances, or file paths
-def match(image_one, image_two, up_to_dim=0): #pylint: disable=unused-variable, too-many-return-statements
+def match(image_one, image_two, **kwargs): #pylint: disable=unused-variable, too-many-return-statements
   import math
   from mrtrix3 import app, MRtrixError
+  up_to_dim = kwargs.pop('up_to_dim', 0)
+  check_transform = kwargs.pop('check_transform', True)
+  if kwargs:
+    raise TypeError('Unsupported keyword arguments passed to image.match(): ' + str(kwargs))
   if not isinstance(image_one, Header):
     if not isinstance(image_one, str):
       raise MRtrixError('Error trying to test \'' + str(image_one) + '\': Not an image header or file path')
