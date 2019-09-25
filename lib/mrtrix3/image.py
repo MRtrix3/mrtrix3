@@ -135,7 +135,7 @@ def mrinfo(image_path, field): #pylint: disable=unused-variable
 
 # Check to see whether the fundamental header properties of two images match
 # Inputs can be either _Header class instances, or file paths
-def match(image_one, image_two, max_dim=0): #pylint: disable=unused-variable, too-many-return-statements
+def match(image_one, image_two, max_dim=0, check_transform=True): #pylint: disable=unused-variable, too-many-return-statements
   import math
   from mrtrix3 import app
   if not isinstance(image_one, Header):
@@ -168,14 +168,15 @@ def match(image_one, image_two, max_dim=0): #pylint: disable=unused-variable, to
         app.debug(debug_prefix + ' voxel size mismatch (' + str(image_one.spacing()) + ' ' + str(image_two.spacing()) + ')')
         return False
   # Image transform
-  for line_one, line_two in zip(image_one.transform(), image_two.transform()):
-    for one, two in zip(line_one[:3], line_two[:3]):
-      if abs(one-two) > 1e-4:
-        app.debug(debug_prefix + ' transform (rotation) mismatch (' + str(image_one.transform()) + ' ' + str(image_two.transform()) + ')')
+  if check_transform:
+    for line_one, line_two in zip(image_one.transform(), image_two.transform()):
+      for one, two in zip(line_one[:3], line_two[:3]):
+        if abs(one-two) > 1e-4:
+          app.debug(debug_prefix + ' transform (rotation) mismatch (' + str(image_one.transform()) + ' ' + str(image_two.transform()) + ')')
+          return False
+      if abs(line_one[3]-line_two[3]) > 1e-2:
+        app.debug(debug_prefix + ' transform (translation) mismatch (' + str(image_one.transform()) + ' ' + str(image_two.transform()) + ')')
         return False
-    if abs(line_one[3]-line_two[3]) > 1e-2:
-      app.debug(debug_prefix + ' transform (translation) mismatch (' + str(image_one.transform()) + ' ' + str(image_two.transform()) + ')')
-      return False
   # Everything matches!
   app.debug(debug_prefix + ' image match')
   return True
