@@ -2,19 +2,21 @@
 
 
 
+import ctypes, errno, inspect, os, random, string, subprocess, time
+from distutils.spawn import find_executable
 # Function can be used in isolation if potentially needing to place quotation marks around a
 #   filesystem path that is to be included as part of a command string
 try:
   from shlex import quote
 except ImportError:
   from pipes import quote
+from mrtrix3 import CONFIG
+from mrtrix3 import app, utils
 
 
 
 # List the content of a directory
 def all_in_dir(directory, dir_path=True, ignore_hidden_files=True): #pylint: disable=unused-variable
-  import ctypes, os
-  from mrtrix3 import utils
   def is_hidden(directory, filename):
     if utils.is_windows():
       try:
@@ -41,8 +43,7 @@ def all_in_dir(directory, dir_path=True, ignore_hidden_files=True): #pylint: dis
 #   If the filesystem path provided by the script is to be interpreted in isolation, rather than as one part
 #     of a command string, then parameter 'escape' should be set to False in order to not add quotation marks
 def from_user(filename, escape=True): #pylint: disable=unused-variable
-  import os
-  from mrtrix3 import app
+
   fullpath = os.path.abspath(os.path.join(app.WORKING_DIR, filename))
   if escape:
     fullpath = quote(fullpath)
@@ -53,8 +54,6 @@ def from_user(filename, escape=True): #pylint: disable=unused-variable
 
 # Make a directory if it doesn't exist; don't do anything if it does already exist
 def make_dir(path): #pylint: disable=unused-variable
-  import errno, os
-  from mrtrix3 import app
   try:
     os.makedirs(path)
     app.debug('Created directory ' + path)
@@ -69,8 +68,6 @@ def make_dir(path): #pylint: disable=unused-variable
 # If the filesystem path separator is provided as the 'suffix' input, then the function will generate a new
 #   directory rather than a file.
 def make_temporary(suffix): #pylint: disable=unused-variable
-  import errno, os
-  from mrtrix3 import app
   is_directory = suffix in '\\/' and len(suffix) == 1
   while True:
     temp_path = name_temporary(suffix)
@@ -91,8 +88,6 @@ def make_temporary(suffix): #pylint: disable=unused-variable
 # Note: Doesn't actually create anything; just gives a unique name that won't over-write anything.
 # If you want to create a temporary file / directory, use the make_temporary() function above.
 def name_temporary(suffix): #pylint: disable=unused-variable
-  import os.path, random, string
-  from mrtrix3 import app, CONFIG
   dir_path = CONFIG['TmpFileDir'] if 'TmpFileDir' in CONFIG else (app.SCRATCH_DIR if app.SCRATCH_DIR else os.getcwd())
   prefix = CONFIG['TmpFilePrefix'] if 'TmpFilePrefix' in CONFIG else 'mrtrix-tmp-'
   full_path = dir_path
@@ -110,8 +105,6 @@ def name_temporary(suffix): #pylint: disable=unused-variable
 # This function appears here rather than in the algorithm module as some scripts may
 #   need to access the shared data directory but not actually be using the algorithm module
 def script_subdir_name(): #pylint: disable=unused-variable
-  import inspect, os
-  from mrtrix3 import app
   frameinfo = inspect.stack()[-1]
   try:
     frame = frameinfo.frame
@@ -132,8 +125,6 @@ def script_subdir_name(): #pylint: disable=unused-variable
 # For data that is stored in a named sub-directory specifically for a particular script, this function will
 #   need to be used in conjunction with scriptSubDirName()
 def shared_data_path(): #pylint: disable=unused-variable
-  import os
-  from mrtrix3 import app
   result = os.path.realpath(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, os.pardir, 'share', 'mrtrix3')))
   app.debug(result)
   return result
@@ -145,8 +136,6 @@ def shared_data_path(): #pylint: disable=unused-variable
 #   as long as parameter 'escape' is true (if the path yielded by this function is to be interpreted in
 #   isolation rather than as one part of a command string, parameter 'escape' should be set to False)
 def to_scratch(filename, escape=True): #pylint: disable=unused-variable
-  import os
-  from mrtrix3 import app
   fullpath = os.path.abspath(os.path.join(app.SCRATCH_DIR, filename))
   if escape:
     fullpath = quote(fullpath)
@@ -173,12 +162,8 @@ def to_scratch(filename, escape=True): #pylint: disable=unused-variable
 #   increases if the file still doesn't exist, until the program is only checking
 #   for the file once a minute.
 def wait_for(paths): #pylint: disable=unused-variable
-  import os, time
-  from mrtrix3 import app, utils
 
   def in_use(path):
-    import subprocess
-    from distutils.spawn import find_executable
     if not os.path.isfile(path):
       return None
     if utils.is_windows():

@@ -90,7 +90,7 @@ OPTIONS
 #                          COMMON DEFINITIONS                              #
 ############################################################################
 
-import platform, sys, os, time, threading, subprocess, copy, codecs, glob, atexit, tempfile, shutil
+import atexit, codecs, copy, glob, os, platform, re, shutil, subprocess, sys, tempfile, time, threading
 from timeit import default_timer as timer
 
 # on Windows, need to use MSYS2 version of python - not MinGW version:
@@ -288,7 +288,7 @@ bash_completion = False
 for arg in sys.argv[1:]:
   if '-help'.startswith(arg):
     sys.stdout.write (usage_string)
-    exit (0)
+    sys.exit (0)
   elif '-verbose'.startswith(arg):
     verbose = True
   elif '-persistent'.startswith(arg):
@@ -672,7 +672,7 @@ class Entry(object):
 
       self.cmd = fillin (ld, {
           'LDFLAGS': [ s.replace ('LIBNAME', os.path.basename (self.name)) for s in ld_flags ] + flags,
-          'OBJECTS': self.deps,
+          'OBJECTS': self.deps[:],
           'EXECUTABLE': [ self.name ] })
 
       try:
@@ -737,7 +737,7 @@ class Entry(object):
 
     self.cmd = fillin (ld_lib, {
         'LDLIB_FLAGS': [ s.replace ('LIBNAME', os.path.basename (self.name)) for s in ld_lib_flags ],
-        'OBJECTS': [ item for item in self.deps ],
+        'OBJECTS': self.deps,
         'LIB': [ self.name ] })
 
     try:
@@ -1201,8 +1201,6 @@ def update_user_docs ():
   # Check whether commands dir exists
   if not os.path.isdir (target_bin_dir):
     return
-
-  import re
 
   # Fetch relevant executables in bin file
   commands = [comm for comm in os.listdir (target_bin_dir) if os.access( os.path.join( target_bin_dir, comm ), os.X_OK) and not re.match (r'^\w+__debug', comm)]

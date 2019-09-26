@@ -1,12 +1,18 @@
 # Various utility functions related to vector and matrix data
 
+
+
+import re
+from mrtrix3 import COMMAND_HISTORY_STRING, MRtrixError
+
+
+
 _TRANSFORM_LAST_ROW = [ 0.0, 0.0, 0.0, 1.0 ]
 
 
 
 # Dot product between two vectors / matrices
 def dot(input_a, input_b): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError
   if not input_a:
     if input_b:
       raise MRtrixError('Dimension mismatch (0 vs. ' + str(len(input_b)) + ')')
@@ -61,8 +67,6 @@ def transpose(data): #pylint: disable=unused-variable
 # Load a text file containing numeric data
 #   (can be a different number of entries in each row)
 def load_numeric(filename, **kwargs):
-  import re
-
   dtype = kwargs.pop('dtype', float)
   delimiter = kwargs.pop('delimiter', ' ')
   comments = kwargs.pop('comments', '#')
@@ -98,7 +102,6 @@ def load_numeric(filename, **kwargs):
 
 # Load a text file containing specifically matrix data
 def load_matrix(filename, **kwargs): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError
   data = load_numeric(filename, **kwargs)
   columns = len(data[0])
   for line in data[1:]:
@@ -110,7 +113,6 @@ def load_matrix(filename, **kwargs): #pylint: disable=unused-variable
 
 # Load a text file containing specifically affine spatial transformation data
 def load_transform(filename, **kwargs): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError
   data = load_matrix(filename, **kwargs)
   if len(data) == 4:
     if any(a!=b for a, b in zip(data[3], _TRANSFORM_LAST_ROW)):
@@ -127,7 +129,6 @@ def load_transform(filename, **kwargs): #pylint: disable=unused-variable
 
 # Load a text file containing specifically vector data
 def load_vector(filename, **kwargs): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError
   data = load_matrix(filename, **kwargs)
   if len(data) == 1:
     return data[0]
@@ -140,8 +141,6 @@ def load_vector(filename, **kwargs): #pylint: disable=unused-variable
 
 # Save numeric data to a text file
 def save_numeric(filename, data, **kwargs):
-  from mrtrix3 import COMMAND_HISTORY_STRING
-
   fmt = kwargs.pop('fmt', '%.14e')
   delimiter = kwargs.pop('delimiter', ' ')
   newline = kwargs.pop('newline', '\n')
