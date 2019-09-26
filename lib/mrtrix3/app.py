@@ -1132,4 +1132,4 @@ def handler(signum, _frame):
     except OSError:
       pass
     SCRATCH_DIR = ''
-  os._exit(signum)
+  os._exit(signum) # pylint: disable=protected-access
