@@ -672,7 +672,7 @@ class Entry(object):
 
       self.cmd = fillin (ld, {
           'LDFLAGS': [ s.replace ('LIBNAME', os.path.basename (self.name)) for s in ld_flags ] + flags,
-          'OBJECTS': self.deps[:],
+          'OBJECTS': list(self.deps),
           'EXECUTABLE': [ self.name ] })
 
       try:

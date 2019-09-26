@@ -1,7 +1,7 @@
 import collections, itertools, os, shlex, signal, string, subprocess, sys, tempfile, threading
 from distutils.spawn import find_executable
 from mrtrix3 import ANSI, BIN_PATH, COMMAND_HISTORY_STRING, EXE_LIST, MRtrixBaseError, MRtrixError
-from mrtrix3 import app
+from mrtrix3 import app, utils
 
 IOStream = collections.namedtuple('IOStream', 'handle filename')
 
