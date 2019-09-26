@@ -1,5 +1,6 @@
 import argparse, inspect, math, os, random, shlex, shutil, signal, string, subprocess, sys, textwrap
-from mrtrix3 import ANSI, CONFIG, MRtrixError, setup_ansi
+import mrtrix3
+from mrtrix3 import ANSI, CONFIG, MRtrixError, path, setup_ansi
 from mrtrix3 import run, utils
 from ._version import __version__
 
