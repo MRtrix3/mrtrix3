@@ -924,4 +924,4 @@ def handler(signum, _frame):
   sys.stderr.write('\n' + os.path.basename(sys.argv[0]) + ': ' + colourError + msg + colourClear + '\n')
   complete()
   # Don't use sys.exit() inside a signal handler
-  os._exit(signum) # pylint: disable=consider-using-sys-exit
+  os._exit(signum) # pylint: disable=protected-access
