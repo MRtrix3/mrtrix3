@@ -306,43 +306,44 @@ def goto_scratch_dir(): #pylint: disable=unused-variable
 #   that is no longer required by the script. If the script has been instructed to retain
 #   all intermediates, the resource will be retained; if not, it will be deleted (in particular
 #   to dynamically free up storage space used by the script).
-def cleanup(path): #pylint: disable=unused-variable
+def cleanup(items): #pylint: disable=unused-variable
   global DO_CLEANUP, VERBOSITY
   if not DO_CLEANUP:
     return
-  if isinstance(path, list):
-    if len(path) == 1:
-      cleanup(path[0])
+  if isinstance(items, list):
+    if len(items) == 1:
+      cleanup(items[0])
       return
     if VERBOSITY > 2:
-      console('Cleaning up ' + str(len(path)) + ' intermediate items: ' + str(path))
-    for entry in path:
-      if os.path.isfile(entry):
+      console('Cleaning up ' + str(len(items)) + ' intermediate items: ' + str(items))
+    for item in items:
+      if os.path.isfile(item):
         func = os.remove
-      elif os.path.isdir(entry):
+      elif os.path.isdir(item):
         func = shutil.rmtree
       else:
         continue
       try:
-        func(entry)
+        func(item)
       except OSError:
         pass
     return
-  if os.path.isfile(path):
-    temporary_type = 'file'
+  item = items
+  if os.path.isfile(item):
+    item_type = 'file'
     func = os.remove
-  elif os.path.isdir(path):
-    temporary_type = 'directory'
+  elif os.path.isdir(item):
+    item_type = 'directory'
     func = shutil.rmtree
   else:
-    debug('Unknown target \'' + path + '\'')
+    debug('Unknown target \'' + str(item) + '\'')
     return
   if VERBOSITY > 2:
-    console('Cleaning up intermediate ' + temporary_type + ': \'' + path + '\'')
+    console('Cleaning up intermediate ' + item_type + ': \'' + item + '\'')
   try:
-    func(path)
+    func(item)
   except OSError:
-    debug('Unable to cleanup intermediate ' + temporary_type + ': \'' + path + '\'')
+    debug('Unable to cleanup intermediate ' + item_type + ': \'' + item + '\'')
 
 
 
@@ -1107,8 +1108,7 @@ def handler(signum, _frame):
   global _SIGNALS, EXEC_NAME, SCRATCH_DIR, WORKING_DIR
   # Terminate any child processes in the run module
   try:
-    from mrtrix3.run import shared
-    shared.terminate(signum)
+    run.shared.terminate(signum)
   except ImportError:
     pass
   # Generate the error message
