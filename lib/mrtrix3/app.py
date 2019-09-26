@@ -244,21 +244,21 @@ def _execute(module): #pylint: disable=unused-variable
 
 
 
-def check_output_path(path): #pylint: disable=unused-variable
+def check_output_path(item): #pylint: disable=unused-variable
   global ARGS, FORCE_OVERWRITE, WORKING_DIR
-  if not path:
+  if not item:
     return
-  abspath = os.path.abspath(os.path.join(WORKING_DIR, path))
+  abspath = os.path.abspath(os.path.join(WORKING_DIR, item))
   if os.path.exists(abspath):
-    output_type = ''
+    item_type = ''
     if os.path.isfile(abspath):
-      output_type = ' file'
+      item_type = ' file'
     elif os.path.isdir(abspath):
-      output_type = ' directory'
+      item_type = ' directory'
     if FORCE_OVERWRITE:
-      warn('Output' + output_type + ' \'' + path + '\' already exists; will be overwritten at script completion')
+      warn('Output' + item_type + ' \'' + item + '\' already exists; will be overwritten at script completion')
     else:
-      raise MRtrixError('Output' + output_type + ' \'' + path + '\' already exists (use -force to override)')
+      raise MRtrixError('Output' + item_type + ' \'' + item + '\' already exists (use -force to override)')
 
 
 
