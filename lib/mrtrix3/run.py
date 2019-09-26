@@ -1,7 +1,7 @@
-import collections, subprocess
-from mrtrix3 import MRtrixBaseError
-
-
+import collections, itertools, os, shlex, signal, string, subprocess, sys, tempfile, threading
+from distutils.spawn import find_executable
+from mrtrix3 import ANSI, BIN_PATH, COMMAND_HISTORY_STRING, EXE_LIST, MRtrixBaseError, MRtrixError
+from mrtrix3 import app
 
 IOStream = collections.namedtuple('IOStream', 'handle filename')
 
@@ -32,7 +32,6 @@ class Shared(object):
 
 
   def __init__(self):
-    import os, threading
     # If the main script has been executed in an SGE environment, don't allow
     #   sub-processes to themselves fork SGE jobs; but if the main script is
     #   itself not an SGE job ('JOB_ID' environment variable absent), then
@@ -83,7 +82,6 @@ class Shared(object):
   #   selected by default by the tempfile module, and in that case re-runs mkstemp()
   #   manually specifying an alternative temporary directory
   def make_temporary_file(self):
-    import os, tempfile
     try:
       return IOStream(*tempfile.mkstemp())
     except OSError:
@@ -100,7 +98,6 @@ class Shared(object):
   #   intended to be produced by this command; if it is, this will be the last
   #   thing that gets skipped by the -continue option
   def trigger_continue(self, entries):
-    import os
     assert self.get_continue()
     for entry in entries:
       # It's possible that the file might be defined in a '--option=XXX' style argument
@@ -135,7 +132,6 @@ class Shared(object):
 
   # Terminate any and all running processes, and delete any associated temporary files
   def terminate(self, signum): #pylint: disable=unused-variable
-    import os, signal, sys
     with self.lock:
       for process_list in self.process_lists:
         if process_list:
@@ -196,11 +192,6 @@ CommandReturn = collections.namedtuple('CommandReturn', 'stdout stderr')
 
 
 def command(cmd, **kwargs): #pylint: disable=unused-variable
-
-  import itertools, os, shlex, string, sys
-  from distutils.spawn import find_executable
-  from mrtrix3 import ANSI, app, COMMAND_HISTORY_STRING, EXE_LIST
-
   global shared #pylint: disable=invalid-name
 
   shell = kwargs.pop('shell', False)
@@ -451,9 +442,6 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
 
 
 def function(fn_to_execute, *args, **kwargs): #pylint: disable=unused-variable
-  import os, sys
-  from mrtrix3 import ANSI, app
-
   if not fn_to_execute:
     raise TypeError('Invalid input to run.function()')
 
@@ -498,9 +486,6 @@ def function(fn_to_execute, *args, **kwargs): #pylint: disable=unused-variable
 # When running on Windows, add the necessary '.exe' so that hopefully the correct
 #   command is found by subprocess
 def exe_name(item):
-  import os
-  from distutils.spawn import find_executable
-  from mrtrix3 import app, BIN_PATH, utils
   if not utils.is_windows():
     path = item
   elif item.endswith('.exe'):
@@ -527,10 +512,6 @@ def exe_name(item):
 #   (e.g. C:\Windows\system32\mrinfo.exe; On Windows, subprocess uses CreateProcess(),
 #   which checks system32\ before PATH)
 def version_match(item):
-  import os
-  from distutils.spawn import find_executable
-  from mrtrix3 import app, BIN_PATH, EXE_LIST, MRtrixError
-
   if not item in EXE_LIST:
     app.debug('Command ' + item + ' not found in MRtrix3 bin/ directory')
     return item
@@ -551,10 +532,6 @@ def version_match(item):
 # If the target executable is not a binary, but is actually a script, use the
 #   shebang at the start of the file to alter the subprocess call
 def _shebang(item):
-  import os
-  from distutils.spawn import find_executable
-  from mrtrix3 import app, MRtrixError, utils
-
   # If a complete path has been provided rather than just a file name, don't perform any additional file search
   if os.sep in item:
     path = item

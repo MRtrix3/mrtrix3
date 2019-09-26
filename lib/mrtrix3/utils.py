@@ -2,6 +2,11 @@
 
 
 
+import platform, re
+from mrtrix3 import app, run
+
+
+
 # A simple wrapper class for executing a set of commands or functions of some known length,
 #   generating and managing a progress bar as it does so
 # Can use in one of two ways:
@@ -12,7 +17,6 @@
 #     all commands within the list will be executed sequentially within the constructor
 class RunList(object): #pylint: disable=unused-variable
   def __init__(self, message, value):
-    from mrtrix3 import app, run
     if isinstance(value, int):
       self.progress = app.ProgressBar(message, value)
       self.target_count = value
@@ -31,12 +35,10 @@ class RunList(object): #pylint: disable=unused-variable
                       'integer (number of commands/functions to run), or a '
                       'list of command strings to execute')
   def command(self, cmd):
-    from mrtrix3 import run
     assert self.valid
     run.command(cmd)
     self._increment()
   def function(self, func, *args, **kwargs):
-    from mrtrix3 import run
     assert self.valid
     run.function(func, *args, **kwargs)
     self._increment()
@@ -52,7 +54,6 @@ class RunList(object): #pylint: disable=unused-variable
 
 # Return a boolean flag to indicate whether or not script is being run on a Windows machine
 def is_windows(): #pylint: disable=unused-variable
-  import platform
   system = platform.system().lower()
   return any(system.startswith(s) for s in [ 'mingw', 'msys', 'nt', 'windows' ])
 
@@ -60,8 +61,6 @@ def is_windows(): #pylint: disable=unused-variable
 
 # Load key-value entries from the comments within a text file
 def load_keyval(filename, **kwargs): #pylint: disable=unused-variable
-  import re
-
   comments = kwargs.pop('comments', '#')
   encoding = kwargs.pop('encoding', 'latin1')
   errors = kwargs.pop('errors', 'ignore')

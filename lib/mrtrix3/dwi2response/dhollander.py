@@ -1,3 +1,9 @@
+import math, shutil
+from mrtrix3 import CONFIG, MRtrixError
+from mrtrix3 import app, image, path, run
+
+
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('dhollander', parents=[base_parser])
   parser.set_author('Thijs Dhollander (thijs.dhollander@gmail.com)')
@@ -18,7 +24,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def check_output_paths(): #pylint: disable=unused-variable
-  from mrtrix3 import app
   app.check_output_path(app.ARGS.out_sfwm)
   app.check_output_path(app.ARGS.out_gm)
   app.check_output_path(app.ARGS.out_csf)
@@ -36,9 +41,6 @@ def needs_single_shell(): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  import math, shutil
-  from mrtrix3 import CONFIG, app, image, MRtrixError, path, run
-
   bzero_threshold = float(CONFIG['BZeroThreshold']) if 'BZeroThreshold' in CONFIG else 10.0
 
 
