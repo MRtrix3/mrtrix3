@@ -923,4 +923,5 @@ def handler(signum, _frame):
     msg += '?] Unknown system signal'
   sys.stderr.write('\n' + os.path.basename(sys.argv[0]) + ': ' + colourError + msg + colourClear + '\n')
   complete()
-  exit(signum)
+  # Don't use sys.exit() inside a signal handler
+  os._exit(signum) # pylint: disable=consider-using-sys-exit
