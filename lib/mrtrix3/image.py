@@ -6,13 +6,13 @@
 
 import json, math, os, shlex, subprocess
 from mrtrix3 import MRtrixError
-from mrtrix3 import app, path, run
 
 
 
 # Class for importing header information from an image file for reading
 class Header(object):
   def __init__(self, image_path):
+    from mrtrix3 import app, path, run
     filename = path.name_temporary('json')
     command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-json_all', filename ]
     if app.VERBOSITY > 1:
@@ -79,6 +79,7 @@ class Header(object):
 #   an axis index, nor a phase-encoding indication string (e.g. AP);
 #   it only accepts NIfTI codes, i.e. i, i-, j, j-, k, k-
 def axis2dir(string): #pylint: disable=unused-variable
+  from mrtrix3 import app
   if string == 'i':
     direction = [1,0,0]
   elif string == 'i-':
@@ -102,6 +103,7 @@ def axis2dir(string): #pylint: disable=unused-variable
 #   have dimension greater than one: This means that the data can plausibly represent
 #   spatial information, and 3D interpolation can be performed
 def check_3d_nonunity(image_in): #pylint: disable=unused-variable
+  from mrtrix3 import app
   if not isinstance(image_in, Header):
     if not isinstance(image_in, str):
       raise MRtrixError('Error trying to test \'' + str(image_in) + '\': Not an image header or file path')
@@ -120,6 +122,7 @@ def check_3d_nonunity(image_in): #pylint: disable=unused-variable
 #   interest. Note however that parsing the output of mrinfo e.g. into list / numerical
 #   form is not performed by this function.
 def mrinfo(image_path, field): #pylint: disable=unused-variable
+  from mrtrix3 import app, run
   command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-' + field ]
   if app.VERBOSITY > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
@@ -137,6 +140,7 @@ def mrinfo(image_path, field): #pylint: disable=unused-variable
 # Check to see whether the fundamental header properties of two images match
 # Inputs can be either _Header class instances, or file paths
 def match(image_one, image_two, up_to_dim=0): #pylint: disable=unused-variable, too-many-return-statements
+  from mrtrix3 import app
   if not isinstance(image_one, Header):
     if not isinstance(image_one, str):
       raise MRtrixError('Error trying to test \'' + str(image_one) + '\': Not an image header or file path')
@@ -188,6 +192,7 @@ def match(image_one, image_two, up_to_dim=0): #pylint: disable=unused-variable, 
 # - Integer(s) if statistic is 'count';
 #     floating-point otherwise
 def statistic(image_path, stat, options=''): #pylint: disable=unused-variable
+  from mrtrix3 import app, run
   command = [ run.exe_name(run.version_match('mrstats')), image_path, '-output', stat ]
   if options:
     command.extend(shlex.split(options))

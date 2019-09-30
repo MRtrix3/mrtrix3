@@ -3,7 +3,6 @@
 
 
 import platform, re
-from mrtrix3 import app, run
 
 
 
@@ -17,6 +16,7 @@ from mrtrix3 import app, run
 #     all commands within the list will be executed sequentially within the constructor
 class RunList(object): #pylint: disable=unused-variable
   def __init__(self, message, value):
+    from mrtrix3 import app, run
     if isinstance(value, int):
       self.progress = app.ProgressBar(message, value)
       self.target_count = value
@@ -35,10 +35,12 @@ class RunList(object): #pylint: disable=unused-variable
                       'integer (number of commands/functions to run), or a '
                       'list of command strings to execute')
   def command(self, cmd):
+    from mrtrix3 import run
     assert self.valid
     run.command(cmd)
     self._increment()
   def function(self, func, *args, **kwargs):
+    from mrtrix3 import run
     assert self.valid
     run.function(func, *args, **kwargs)
     self._increment()
