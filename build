@@ -1046,8 +1046,8 @@ def version_from_git (folder):
   try:
     log ('fetching version information from git in folder "' + folder + '": ')
     with open (os.devnull) as devnull:
-      tag = subprocess.check_output ([ 'git', 'describe', '--abbrev=0' ], cwd=folder, stderr=devnull).decode(errors='ignore').strip()
-      commit = subprocess.check_output ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=folder, stderr=devnull).decode(errors='ignore').strip()
+      tag = subprocess.check_output ([ 'git', 'describe', '--abbrev=0' ], cwd=folder, stderr=devnull).decode(errors='ignore').strip() #pylint: disable=unexpected-keyword-arg
+      commit = subprocess.check_output ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=folder, stderr=devnull).decode(errors='ignore').strip() #pylint: disable=unexpected-keyword-arg
     log (tag + ', ' + commit + '\n')
     return [ tag, commit ]
   except Exception:
