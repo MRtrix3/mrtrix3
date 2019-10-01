@@ -18,7 +18,7 @@ build_script:
   - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "./build -nowarnings -nopaginate" || (appveyor PushArtifact %APPVEYOR_BUILD_FOLDER%/build.log & EXIT 1)
 
 test_script:
-  - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
   - cmd: C:\msys64\msys2_shell.cmd -mingw64 -here -defterm -no-start -c "./run_tests" || (appveyor PushArtifact %APPVEYOR_BUILD_FOLDER%/testing.log & EXIT 1)
 
 artifacts:
