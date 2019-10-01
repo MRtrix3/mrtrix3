@@ -44,7 +44,7 @@ namespace MR
           + Argument ("number").type_integer (0)
 
       + Option ("step",
-            "set the step size of the algorithm in mm (default is 0.1 x voxelsize; for iFOD2: 0.5 x voxelsize).")
+            "set the step size of the algorithm in mm (default is 0.1 x voxelsize; if using RK4, 0.25 x voxelsize; for iFOD2: 0.5 x voxelsize).")
           + Argument ("size").type_float (0.0)
 
       + Option ("angle",
