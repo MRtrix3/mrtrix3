@@ -42,6 +42,8 @@ build.*
 *.creator.user
 *.files
 *.includes
+*.cflags
+*.cxxflags
 /debug/
 /assert/
 testing.log
