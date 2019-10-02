@@ -105,7 +105,7 @@ namespace MR
         IsRowMajor = true
       };
 
-      Eigen::Index rows() const { return nxy*nz*nc; }
+      Eigen::Index rows() const { return nxy*nz*nv; }
       Eigen::Index cols() const { return nxy*nz*nc; }
 
       template<typename Rhs>
@@ -143,6 +143,8 @@ namespace MR
         htmp.stride(2) = 3;
         htmp.sanitise();
       }
+
+      ReconMatrixAdjoint adjoint() const;
 
       const RowMatrixXf& getY() const { return Y; }
 
@@ -184,52 +186,34 @@ namespace MR
           });
       }
 
-      template <typename VectorType1, typename VectorType2>
-      void project_y2x(VectorType1& dst, const VectorType2& rhs) const
-      {
-        INFO("Transpose projection.");
-        size_t nxyz = nxy*nz;
-        Eigen::Map<RowMatrixXf> X (dst.data(), nxyz, nc);
-        RowMatrixXf zero (nxyz, nc); zero.setZero();
-        X = Thread::parallel_sum<RowMatrixXf, size_t>(0, nv*ne,
-          [&](size_t idx, RowMatrixXf& T) {
-            size_t v = idx/ne;
-            auto tmp = Image<float>::scratch(htmp);
-            Eigen::Map<Eigen::VectorXf> r (tmp.address(), nxyz);
-            r.setZero();
-            for (size_t z = idx%ne; z < nz; z += ne) {
-              project_slice_y2x(v, z, tmp, W(z,v) * rhs.segment((nz*v+z)*nxy, nxy));
-            }
-            T.noalias() += r * Y.row(idx);
-          }, zero);
-      }
 
-      template <typename VectorType1, typename VectorType2>
-      void project_x2x(VectorType1& dst, const VectorType2& rhs) const
-      {
-        INFO("Full projection.");
-        size_t nxyz = nxy*nz;
-        Eigen::Map<const RowMatrixXf, Eigen::Aligned16> Xi (rhs.data(), nxyz, nc);
-        Eigen::Map<RowMatrixXf, Eigen::Aligned16> Xo (dst.data(), nxyz, nc);
-        RowMatrixXf zero (nxyz, nc); zero.setZero();
-        Xo = Thread::parallel_sum<RowMatrixXf, size_t>(0, nv*ne,
-          [&](size_t idx, RowMatrixXf& T) {
-            size_t v = idx/ne;
-            auto tmp1 = Image<float>::scratch(htmp);
-            Eigen::Map<Eigen::VectorXf, Eigen::Aligned16> q (tmp1.address(), nxyz);
-            q.noalias() = Xi * Y.row(idx).adjoint();
-            auto tmp2 = Image<float>::scratch(htmp);
-            Eigen::Map<Eigen::VectorXf, Eigen::Aligned16> r (tmp2.address(), nxyz);
-            r.setZero();
-            // Declare temporary slice
-            for (size_t z = idx%ne; z < nz; z += ne) {
-              project_slice_x2x(v, z, tmp2, tmp1, W(z,v));
-            }
-            T.noalias() += r * Y.row(idx);
-          }, zero);
-        Xo += L.adjoint() * (L * Xi);
-        Xo += Z.adjoint() * (Z * Xi);
-      }
+
+//      template <typename VectorType1, typename VectorType2>
+//      void project_x2x(VectorType1& dst, const VectorType2& rhs) const
+//      {
+//        INFO("Full projection.");
+//        size_t nxyz = nxy*nz;
+//        Eigen::Map<const RowMatrixXf, Eigen::Aligned16> Xi (rhs.data(), nxyz, nc);
+//        Eigen::Map<RowMatrixXf, Eigen::Aligned16> Xo (dst.data(), nxyz, nc);
+//        RowMatrixXf zero (nxyz, nc); zero.setZero();
+//        Xo = Thread::parallel_sum<RowMatrixXf, size_t>(0, nv*ne,
+//          [&](size_t idx, RowMatrixXf& T) {
+//            size_t v = idx/ne;
+//            auto tmp1 = Image<float>::scratch(htmp);
+//            Eigen::Map<Eigen::VectorXf, Eigen::Aligned16> q (tmp1.address(), nxyz);
+//            q.noalias() = Xi * Y.row(idx).adjoint();
+//            auto tmp2 = Image<float>::scratch(htmp);
+//            Eigen::Map<Eigen::VectorXf, Eigen::Aligned16> r (tmp2.address(), nxyz);
+//            r.setZero();
+//            // Declare temporary slice
+//            for (size_t z = idx%ne; z < nz; z += ne) {
+//              project_slice_x2x(v, z, tmp2, tmp1, W(z,v));
+//            }
+//            T.noalias() += r * Y.row(idx);
+//          }, zero);
+//        Xo += L.adjoint() * (L * Xi);
+//        Xo += Z.adjoint() * (Z * Xi);
+//      }
 
 
     private:
@@ -249,7 +233,6 @@ namespace MR
       Image<float> field;
       Eigen::MatrixXf pe;
       transform_type Tf;
-
 
       vector<Eigen::MatrixXf> init_shellbasis(const Eigen::MatrixXf& grad, const vector<Eigen::MatrixXf>& rf) const
       {
@@ -385,83 +368,6 @@ namespace MR
         }
       }
 
-      template <typename ImageType1, typename VectorType2>
-      void project_slice_y2x(const int v, const int z, ImageType1& dst, const VectorType2& rhs) const
-      {
-        std::unique_ptr<FieldInterpType> finterp;
-        if (field.valid())
-          finterp = make_unique<FieldInterpType>(field, 0.0f);
-
-        Eigen::Vector3 ps, pr, peoffset;
-        float iJac;
-        transform_type Ts2r = get_Ts2r(v, z);
-        if (field.valid()) {
-          peoffset = pe.block<1,3>(v, 0).transpose().cast<double>();
-        }
-
-        Interp::CubicAdjoint<ImageType1> target (dst, 0.0f);
-
-        size_t i = 0;
-        for (size_t y = 0; y < ny; y++) {         // in-plane
-          ps[1] = y;
-          for (size_t x = 0; x < nx; x++, i++) {
-            ps[0] = x;
-            for (int s = -ssp.size(); s <= ssp.size(); s++) {       // ssp neighbourhood
-              ps[2] = z+s;
-              // get slice position in recon space
-              ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac);
-              // update motion matrix
-              target.voxel(pr);
-              target.adjoint_add (ssp(s) * iJac * rhs[i]);
-            }
-          }
-        }
-      }
-
-      template <typename ImageType1, typename ImageType2>
-      void project_slice_x2x(const int v, const int z, ImageType1& dst, const ImageType2& rhs, const float w) const
-      {
-        std::unique_ptr<FieldInterpType> finterp;
-        if (field.valid())
-          finterp = make_unique<FieldInterpType>(field, 0.0f);
-
-        Eigen::Vector3 ps, pr, peoffset;
-        float t;
-        float iJac;
-        transform_type Ts2r = get_Ts2r(v, z);
-        if (field.valid()) {
-          peoffset = pe.block<1,3>(v, 0).transpose().cast<double>();
-        }
-
-        Interp::Cubic<ImageType2> source (rhs, 0.0f);
-        Interp::CubicAdjoint<ImageType1> target (dst, 0.0f);
-
-        for (size_t y = 0; y < ny; y++) {         // in-plane
-          ps[1] = y;
-          for (size_t x = 0; x < nx; x++) {
-            ps[0] = x;
-            t = 0.0f;
-            for (int s = -ssp.size(); s <= ssp.size(); s++) {       // ssp neighbourhood
-              ps[2] = z+s;
-              // get slice position in recon space
-              ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac);
-              // interpolate source
-              source.voxel(pr);
-              t += (ssp(s) * iJac) * source.value();
-            }
-            t *= w;
-            for (int s = -ssp.size(); s <= ssp.size(); s++) {
-              ps[2] = z+s;
-              // get slice position in recon space
-              ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac);
-              // project to target
-              target.voxel(pr);
-              target.adjoint_add (ssp(s) * iJac * t);
-            }
-          }
-        }
-      }
-
       inline void ps2pr(const Eigen::Vector3& ps, Eigen::Vector3& pr, const transform_type& Ts2r,
                         std::unique_ptr<FieldInterpType>& field, const Eigen::Vector3 pe, float& invjac) const
       {
@@ -549,7 +455,111 @@ namespace MR
         Z.makeCompressed();
       }
 
+      friend class ReconMatrixAdjoint;
     };
+
+
+
+    class ReconMatrixAdjoint : public Eigen::EigenBase<ReconMatrixAdjoint>
+    {  MEMALIGN(ReconMatrixAdjoint);
+    public:
+      // Required typedefs, constants, and method:
+      typedef float Scalar;
+      typedef float RealScalar;
+      typedef int StorageIndex;
+      enum {
+        ColsAtCompileTime = Eigen::Dynamic,
+        MaxColsAtCompileTime = Eigen::Dynamic,
+        IsRowMajor = false
+      };
+
+      Eigen::Index rows() const { return nxy*nz*nv; }
+      Eigen::Index cols() const { return nxy*nz*nc; }
+
+      template<typename Rhs>
+      Eigen::Product<ReconMatrixAdjoint,Rhs,Eigen::AliasFreeProduct> operator*(const Eigen::MatrixBase<Rhs>& x) const {
+        return Eigen::Product<ReconMatrixAdjoint,Rhs,Eigen::AliasFreeProduct>(*this, x.derived());
+      }
+
+      using RowMatrixXf = ReconMatrix::RowMatrixXf;
+      using FieldInterpType = ReconMatrix::FieldInterpType;
+
+
+      // Custom API:
+      ReconMatrixAdjoint(const ReconMatrix& m)
+        : recmat (m),
+          nx (m.nx), ny (m.ny), nz (m.nz), nv (m.nv), nxy (nx*ny), nc (m.nc), ne (m.ne)
+      { }
+
+      const ReconMatrix& adjoint() const
+      {
+        return recmat;
+      }
+
+      template <typename VectorType1, typename VectorType2>
+      void project_y2x(VectorType1& dst, const VectorType2& rhs) const
+      {
+        INFO("Transpose projection.");
+        size_t nxyz = nxy*nz;
+        Eigen::Map<RowMatrixXf> X (dst.data(), nxyz, nc);
+        RowMatrixXf zero (nxyz, nc); zero.setZero();
+        X = Thread::parallel_sum<RowMatrixXf, size_t>(0, nv*ne,
+          [&](size_t idx, RowMatrixXf& T) {
+            size_t v = idx/ne;
+            auto tmp = Image<float>::scratch(recmat.htmp);
+            Eigen::Map<Eigen::VectorXf> r (tmp.address(), nxyz);
+            r.setZero();
+            for (size_t z = idx%ne; z < nz; z += ne) {
+              project_slice_y2x(v, z, tmp, recmat.W(z,v) * rhs.segment((nz*v+z)*nxy, nxy));
+            }
+            T.noalias() += r * recmat.Y.row(idx);
+          }, zero);
+      }
+
+    private:
+      const ReconMatrix& recmat;
+      const size_t nx, ny, nz, nv, nxy, nc, ne;
+
+
+      template <typename ImageType1, typename VectorType2>
+      void project_slice_y2x(const int v, const int z, ImageType1& dst, const VectorType2& rhs) const
+      {
+        std::unique_ptr<FieldInterpType> finterp;
+        if (recmat.field.valid())
+          finterp = make_unique<FieldInterpType>(recmat.field, 0.0f);
+
+        Eigen::Vector3 ps, pr, peoffset;
+        float iJac;
+        transform_type Ts2r = recmat.get_Ts2r(v, z);
+        if (recmat.field.valid()) {
+          peoffset = recmat.pe.block<1,3>(v, 0).transpose().cast<double>();
+        }
+
+        Interp::CubicAdjoint<ImageType1> target (dst, 0.0f);
+
+        size_t i = 0;
+        for (size_t y = 0; y < ny; y++) {         // in-plane
+          ps[1] = y;
+          for (size_t x = 0; x < nx; x++, i++) {
+            ps[0] = x;
+            for (int s = -recmat.ssp.size(); s <= recmat.ssp.size(); s++) {       // ssp neighbourhood
+              ps[2] = z+s;
+              // get slice position in recon space
+              recmat.ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac);
+              // update motion matrix
+              target.voxel(pr);
+              target.adjoint_add (recmat.ssp(s) * iJac * rhs[i]);
+            }
+          }
+        }
+      }
+
+    };
+
+    ReconMatrixAdjoint ReconMatrix::adjoint() const
+    {
+      return ReconMatrixAdjoint(*this);
+    }
 
 
     }
@@ -573,11 +583,28 @@ namespace Eigen {
         // This method should implement "dst += alpha * lhs * rhs" inplace
         assert(alpha==Scalar(1) && "scaling is not implemented");
 
-        lhs.project_x2x<Dest, Rhs>(dst, rhs);
+        lhs.project_x2y<Dest, Rhs>(dst, rhs);
 
       }
-
     };
+
+    template<typename Rhs>
+    struct generic_product_impl<MR::DWI::SVR::ReconMatrixAdjoint, Rhs, SparseShape, DenseShape, GemvProduct>
+      : generic_product_impl_base<MR::DWI::SVR::ReconMatrixAdjoint,Rhs,generic_product_impl<MR::DWI::SVR::ReconMatrixAdjoint,Rhs> >
+    {
+      typedef typename Product<MR::DWI::SVR::ReconMatrixAdjoint,Rhs>::Scalar Scalar;
+
+      template<typename Dest>
+      static void scaleAndAddTo(Dest& dst, const MR::DWI::SVR::ReconMatrixAdjoint& lhs, const Rhs& rhs, const Scalar& alpha)
+      {
+        // This method should implement "dst += alpha * lhs * rhs" inplace
+        assert(alpha==Scalar(1) && "scaling is not implemented");
+
+        lhs.project_y2x<Dest, Rhs>(dst, rhs);
+
+      }
+    };
+
   }
 }
 

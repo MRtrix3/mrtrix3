@@ -261,15 +261,15 @@ void run ()
   // Fit scattered data in basis...
   INFO("initialise conjugate gradient solver");
 
-  Eigen::ConjugateGradient<DWI::SVR::ReconMatrix, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
+  Eigen::LeastSquaresConjugateGradient<DWI::SVR::ReconMatrix, Eigen::IdentityPreconditioner> cg;
   cg.compute(R);
 
   cg.setTolerance(tol);
   cg.setMaxIterations(maxiter);
 
   // Compute M'y
-  Eigen::VectorXf p (R.cols());
-  R.project_y2x(p, y);
+  //Eigen::VectorXf p (R.cols());
+  //R.project_y2x(p, y);
 
   // Solve M'M x = M'y
   Eigen::VectorXf x (R.cols());
@@ -298,11 +298,13 @@ void run ()
       x0.segment(j, ncoefs) = mssh2x.solve(c);
     }
     INFO("solve from given starting point");
-    x = cg.solveWithGuess(p, x0);
+    //x = cg.solveWithGuess(p, x0);
+    x = cg.solveWithGuess(y, x0);
   }
   else {
     INFO("solve from zero starting point");
-    x = cg.solve(p);
+    //x = cg.solve(p);
+    x = cg.solve(y);
   }
 
   CONSOLE("CG: #iterations: " + str(cg.iterations()));
