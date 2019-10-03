@@ -1,3 +1,9 @@
+import math, os, shutil
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, image, matrix, path, run
+
+
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('tax', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
@@ -13,7 +19,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def check_output_paths(): #pylint: disable=unused-variable
-  from mrtrix3 import app
   app.check_output_path(app.ARGS.output)
 
 
@@ -29,9 +34,6 @@ def needs_single_shell(): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  import math, os, shutil
-  from mrtrix3 import app, image, matrix, MRtrixError, path, run
-
   lmax_option = ''
   if app.ARGS.lmax:
     lmax_option = ' -lmax ' + app.ARGS.lmax

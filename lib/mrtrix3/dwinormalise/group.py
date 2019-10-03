@@ -1,3 +1,9 @@
+import os
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, image, path, run
+
+
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('group', parents=[base_parser])
   parser.set_author('David Raffelt (david.raffelt@florey.edu.au)')
@@ -14,7 +20,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def check_output_paths(): #pylint: disable=unused-variable
-  from mrtrix3 import app
   app.check_output_path(app.ARGS.output_dir)
   app.check_output_path(app.ARGS.fa_template)
   app.check_output_path(app.ARGS.wm_mask)
@@ -22,9 +27,6 @@ def check_output_paths(): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  import os
-  from mrtrix3 import app, image, MRtrixError, path, run
-
 
   class Input(object):
     def __init__(self, filename, prefix, mask_filename = ''):

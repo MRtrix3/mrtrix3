@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+
+
+import copy, numbers, os, shutil, sys
+
+
+
 def usage(cmdline): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=no-name-in-module
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
@@ -15,12 +21,9 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 
-
-
-
 def execute(): #pylint: disable=unused-variable
-  import copy, numbers, os, shutil, sys
-  from mrtrix3 import app, image, matrix, MRtrixError, path, run #pylint: disable=no-name-in-module
+  from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module
+  from mrtrix3 import app, image, matrix, path, run #pylint: disable=no-name-in-module
 
   image_dimensions = image.Header(path.from_user(app.ARGS.input, False)).size()
   if len(image_dimensions) != 4:
