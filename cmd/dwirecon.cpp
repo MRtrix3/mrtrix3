@@ -252,7 +252,7 @@ void run ()
     throw Exception("user-provided padding too small.");
 
   // Read input data to vector
-  Eigen::VectorXf y (dwisub.size(0)*dwisub.size(1)*dwisub.size(2)*dwisub.size(3));
+  Eigen::VectorXf y (R.rows()); y.setZero();
   size_t j = 0;
   for (auto l = Loop("loading image data", {0, 1, 2, 3})(dwisub); l; l++, j++) {
     y[j] = dwisub.value();
@@ -359,7 +359,7 @@ void run ()
     header.size(3) = (complete) ? dwi.size(3) : dwisub.size(3);
     DWI::set_DW_scheme (header, gradsub);
     auto spred = Image<value_type>::create(opt[0][0], header);
-    Eigen::VectorXf p (dwisub.size(0)*dwisub.size(1)*dwisub.size(2)*dwisub.size(3));
+    Eigen::VectorXf p (R.rows());
     R.project_x2y(p, x);
     j = 0;
     auto ii = idx.begin();

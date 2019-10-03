@@ -105,7 +105,7 @@ namespace MR
         IsRowMajor = true
       };
 
-      Eigen::Index rows() const { return nxy*nz*nv; }
+      Eigen::Index rows() const { return nxy*nz*nv + 2*nxy*nz*nc; }
       Eigen::Index cols() const { return nxy*nz*nc; }
 
       template<typename Rhs>
@@ -184,6 +184,13 @@ namespace MR
               project_slice_x2y(v, z, r, tmp);
             }
           });
+        INFO("Forward projection - regularisers");
+        Eigen::Ref<Eigen::VectorXf> ref1 = dst.segment(nxyz*nv, nxyz*nc);
+        Eigen::Map<RowMatrixXf, Eigen::Aligned16> Yreg1 (ref1.data(), nxyz, nc);
+        Yreg1.noalias() += L * X;
+        Eigen::Ref<Eigen::VectorXf> ref2 = dst.segment(nxyz*(nv+nc), nxyz*nc);
+        Eigen::Map<RowMatrixXf, Eigen::Aligned16> Yreg2 (ref2.data(), nxyz, nc);
+        Yreg2.noalias() += Z * X;
       }
 
 
@@ -473,8 +480,8 @@ namespace MR
         IsRowMajor = false
       };
 
-      Eigen::Index rows() const { return nxy*nz*nv; }
-      Eigen::Index cols() const { return nxy*nz*nc; }
+      Eigen::Index rows() const { return recmat.cols(); }
+      Eigen::Index cols() const { return recmat.rows(); }
 
       template<typename Rhs>
       Eigen::Product<ReconMatrixAdjoint,Rhs,Eigen::AliasFreeProduct> operator*(const Eigen::MatrixBase<Rhs>& x) const {
@@ -514,6 +521,13 @@ namespace MR
             }
             T.noalias() += r * recmat.Y.row(idx);
           }, zero);
+        INFO("Transpose projection - regularisers");
+        Eigen::Ref<const Eigen::VectorXf> ref1 = rhs.segment(nxyz*nv, nxyz*nc);
+        Eigen::Map<const RowMatrixXf, Eigen::Aligned16> Yreg1 (ref1.data(), nxyz, nc);
+        X.noalias() += recmat.L.adjoint() * Yreg1;
+        Eigen::Ref<const Eigen::VectorXf> ref2 = rhs.segment(nxyz*(nv+nc), nxyz*nc);
+        Eigen::Map<const RowMatrixXf, Eigen::Aligned16> Yreg2 (ref2.data(), nxyz, nc);
+        X.noalias() += recmat.Z.adjoint() * Yreg2;
       }
 
     private:
