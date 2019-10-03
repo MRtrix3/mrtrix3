@@ -47,23 +47,23 @@ namespace MR
       return false;
     }
 
-
-    FORCE_INLINE bool is_index_image (const Header& in)
+    template <class HeaderType>
+    FORCE_INLINE bool is_index_image (const HeaderType& in)
     {
       return is_index_filename (in.name())
           && in.ndim() == 4
           && in.size(3) == 2;
     }
 
-    template <class IndexHeaderType>
-    FORCE_INLINE void check_index_image (const IndexHeaderType& index)
+    template <class HeaderType>
+    FORCE_INLINE void check_index_image (const HeaderType& index)
     {
       if (!is_index_image (index))
         throw InvalidImageException (index.name() + " is not a valid fixel index image. Image must be 4D with 2 volumes in the 4th dimension");
     }
 
-
-    FORCE_INLINE bool is_data_file (const Header& in)
+    template <class HeaderType>
+    FORCE_INLINE bool is_data_file (const HeaderType& in)
     {
       return in.ndim() == 3 && in.size(2) == 1;
     }
@@ -79,8 +79,8 @@ namespace MR
       return false;
     }
 
-
-    FORCE_INLINE bool is_directions_file (const Header& in)
+    template <class HeaderType>
+    FORCE_INLINE bool is_directions_file (const HeaderType& in)
     {
       return is_directions_filename (in.name())
           && in.ndim() == 3
@@ -91,8 +91,8 @@ namespace MR
 
 
 
-
-    FORCE_INLINE void check_data_file (const Header& in)
+    template <class HeaderType>
+    FORCE_INLINE void check_data_file (const HeaderType& in)
     {
       if (!is_data_file (in))
         throw InvalidImageException (in.name() + " is not a valid fixel data file. Expected a 3-dimensional image of size n x m x 1");
