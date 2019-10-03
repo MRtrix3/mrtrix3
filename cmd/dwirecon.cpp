@@ -253,9 +253,15 @@ void run ()
 
   // Read input data to vector
   Eigen::VectorXf y (R.rows()); y.setZero();
-  size_t j = 0;
-  for (auto l = Loop("loading image data", {0, 1, 2, 3})(dwisub); l; l++, j++) {
-    y[j] = dwisub.value();
+  size_t j = 0, v = 0;
+  for (auto lv = Loop("loading image data", 3)(dwisub); lv; lv++, v++) {
+    size_t z = 0;
+    for (auto lz = Loop(2)(dwisub); lz; lz++, z++) {
+      float ww = std::sqrt(Wsub(z,v));
+      for (auto lxy = Loop({0,1})(dwisub); lxy; lxy++, j++) {
+        y[j] = ww * dwisub.value();
+      }
+    }
   }
 
   // Fit scattered data in basis...
@@ -360,6 +366,7 @@ void run ()
     DWI::set_DW_scheme (header, gradsub);
     auto spred = Image<value_type>::create(opt[0][0], header);
     Eigen::VectorXf p (R.rows());
+    R.setWeights(Eigen::MatrixXf::Ones(Wsub.rows(), Wsub.cols()));
     R.project_x2y(p, x);
     j = 0;
     auto ii = idx.begin();

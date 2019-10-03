@@ -152,7 +152,7 @@ namespace MR
 
       void setWeights(const Eigen::MatrixXf& weights)
       {
-        float Z = weights.rows() * 1.0f / weights.sum();
+        float Z = 1.0;// weights.rows() * 1.0f / weights.sum();
         W = Z * weights;
       }
 
@@ -182,6 +182,7 @@ namespace MR
             for (size_t z = idx%ne; z < nz; z += ne) {
               Eigen::Ref<Eigen::VectorXf> r = dst.segment((nz*v+z)*nxy, nxy);
               project_slice_x2y(v, z, r, tmp);
+              r *= std::sqrt(W(z,v));
             }
           });
         INFO("Forward projection - regularisers");
@@ -517,7 +518,7 @@ namespace MR
             Eigen::Map<Eigen::VectorXf> r (tmp.address(), nxyz);
             r.setZero();
             for (size_t z = idx%ne; z < nz; z += ne) {
-              project_slice_y2x(v, z, tmp, recmat.W(z,v) * rhs.segment((nz*v+z)*nxy, nxy));
+              project_slice_y2x(v, z, tmp, std::sqrt(recmat.W(z,v)) * rhs.segment((nz*v+z)*nxy, nxy));
             }
             T.noalias() += r * recmat.Y.row(idx);
           }, zero);
