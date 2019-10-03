@@ -15,8 +15,12 @@ from mrtrix3 import CONFIG
 
 
 # List the content of a directory
-def all_in_dir(directory, dir_path=True, ignore_hidden_files=True): #pylint: disable=unused-variable
+def all_in_dir(directory, **kwargs): #pylint: disable=unused-variable
   from mrtrix3 import utils
+  dir_path = kwargs.pop('dir_path', True)
+  ignore_hidden_files = kwargs.pop('ignore_hidden_files', True)
+  if kwargs:
+    raise TypeError('Unsupported keyword arguments passed to path.all_in_dir(): ' + str(kwargs))
   def is_hidden(directory, filename):
     if utils.is_windows():
       try:
