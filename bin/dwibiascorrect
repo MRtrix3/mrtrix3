@@ -51,7 +51,7 @@ def execute(): #pylint: disable=unused-variable
 
   # Generate a brain mask if required, or check the mask if provided by the user
   if app.ARGS.mask:
-    if not image.match('in.mif', 'mask.mif', 3):
+    if not image.match('in.mif', 'mask.mif', up_to_dim=3):
       raise MRtrixError('Provided mask image does not match input DWI')
   else:
     run.command('dwi2mask in.mif mask.mif')
