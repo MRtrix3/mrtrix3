@@ -1,6 +1,9 @@
-import argparse, os, sys
+import argparse, inspect, math, os, random, shlex, shutil, signal, string, subprocess, sys, textwrap
 import mrtrix3
-from mrtrix3 import utils
+from mrtrix3 import ANSI, CONFIG, MRtrixError, setup_ansi
+from mrtrix3 import utils # Needed at global level
+from ._version import __version__
+
 
 # These global constants can / should be accessed directly by scripts:
 # - 'ARGS' will contain the user's command-line inputs upon parsing of the command-line
@@ -83,8 +86,7 @@ else:
 #   "mrtrix3.execute()"
 # , rather than executing this function directly
 def _execute(module): #pylint: disable=unused-variable
-  import inspect, shutil, signal
-  from mrtrix3 import ANSI, CONFIG, MRtrixError, run, setup_ansi
+  from mrtrix3 import run
   global ARGS, CMDLINE, CONTINUE_OPTION, DO_CLEANUP, EXEC_NAME, FORCE_OVERWRITE, NUM_THREADS, SCRATCH_DIR, VERBOSITY, WORKING_DIR
 
   # Set up signal handlers
@@ -243,28 +245,26 @@ def _execute(module): #pylint: disable=unused-variable
 
 
 
-def check_output_path(path): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError
+def check_output_path(item): #pylint: disable=unused-variable
   global ARGS, FORCE_OVERWRITE, WORKING_DIR
-  if not path:
+  if not item:
     return
-  abspath = os.path.abspath(os.path.join(WORKING_DIR, path))
+  abspath = os.path.abspath(os.path.join(WORKING_DIR, item))
   if os.path.exists(abspath):
-    output_type = ''
+    item_type = ''
     if os.path.isfile(abspath):
-      output_type = ' file'
+      item_type = ' file'
     elif os.path.isdir(abspath):
-      output_type = ' directory'
+      item_type = ' directory'
     if FORCE_OVERWRITE:
-      warn('Output' + output_type + ' \'' + path + '\' already exists; will be overwritten at script completion')
+      warn('Output' + item_type + ' \'' + item + '\' already exists; will be overwritten at script completion')
     else:
-      raise MRtrixError('Output' + output_type + ' \'' + path + '\' already exists (use -force to override)')
+      raise MRtrixError('Output' + item_type + ' \'' + item + '\' already exists (use -force to override)')
 
 
 
 def make_scratch_dir(): #pylint: disable=unused-variable
-  import random, string
-  from mrtrix3 import CONFIG, run
+  from mrtrix3 import run
   global ARGS, CONTINUE_OPTION, EXEC_NAME, SCRATCH_DIR, WORKING_DIR
   if CONTINUE_OPTION:
     debug('Skipping scratch directory creation due to use of -continue option')
@@ -308,44 +308,44 @@ def goto_scratch_dir(): #pylint: disable=unused-variable
 #   that is no longer required by the script. If the script has been instructed to retain
 #   all intermediates, the resource will be retained; if not, it will be deleted (in particular
 #   to dynamically free up storage space used by the script).
-def cleanup(path): #pylint: disable=unused-variable
-  import shutil
+def cleanup(items): #pylint: disable=unused-variable
   global DO_CLEANUP, VERBOSITY
   if not DO_CLEANUP:
     return
-  if isinstance(path, list):
-    if len(path) == 1:
-      cleanup(path[0])
+  if isinstance(items, list):
+    if len(items) == 1:
+      cleanup(items[0])
       return
     if VERBOSITY > 2:
-      console('Cleaning up ' + str(len(path)) + ' intermediate items: ' + str(path))
-    for entry in path:
-      if os.path.isfile(entry):
+      console('Cleaning up ' + str(len(items)) + ' intermediate items: ' + str(items))
+    for item in items:
+      if os.path.isfile(item):
         func = os.remove
-      elif os.path.isdir(entry):
+      elif os.path.isdir(item):
         func = shutil.rmtree
       else:
         continue
       try:
-        func(entry)
+        func(item)
       except OSError:
         pass
     return
-  if os.path.isfile(path):
-    temporary_type = 'file'
+  item = items
+  if os.path.isfile(item):
+    item_type = 'file'
     func = os.remove
-  elif os.path.isdir(path):
-    temporary_type = 'directory'
+  elif os.path.isdir(item):
+    item_type = 'directory'
     func = shutil.rmtree
   else:
-    debug('Unknown target \'' + path + '\'')
+    debug('Unknown target \'' + str(item) + '\'')
     return
   if VERBOSITY > 2:
-    console('Cleaning up intermediate ' + temporary_type + ': \'' + path + '\'')
+    console('Cleaning up intermediate ' + item_type + ': \'' + item + '\'')
   try:
-    func(path)
+    func(item)
   except OSError:
-    debug('Unable to cleanup intermediate ' + temporary_type + ': \'' + path + '\'')
+    debug('Unable to cleanup intermediate ' + item_type + ': \'' + item + '\'')
 
 
 
@@ -354,14 +354,11 @@ def cleanup(path): #pylint: disable=unused-variable
 
 # A set of functions and variables for printing various information at the command-line.
 def console(text): #pylint: disable=unused-variable
-  from mrtrix3 import ANSI
   global VERBOSITY
   if VERBOSITY:
     sys.stderr.write(EXEC_NAME + ': ' + ANSI.console + text + ANSI.clear + '\n')
 
 def debug(text): #pylint: disable=unused-variable
-  import inspect
-  from mrtrix3 import ANSI
   global EXEC_NAME, VERBOSITY
   if VERBOSITY <= 2:
     return
@@ -396,7 +393,6 @@ def debug(text): #pylint: disable=unused-variable
     del nearest
 
 def trace(): #pylint: disable=unused-variable
-  import inspect
   calling_frame = inspect.getouterframes(inspect.currentframe())[1]
   try:
     try:
@@ -410,7 +406,6 @@ def trace(): #pylint: disable=unused-variable
     del calling_frame
 
 def var(*variables): #pylint: disable=unused-variable
-  import inspect
   calling_frame = inspect.getouterframes(inspect.currentframe())[1]
   try:
     try:
@@ -429,7 +424,6 @@ def var(*variables): #pylint: disable=unused-variable
     del calling_frame
 
 def warn(text): #pylint: disable=unused-variable
-  from mrtrix3 import ANSI
   global EXEC_NAME
   sys.stderr.write(EXEC_NAME + ': ' + ANSI.warn + '[WARNING] ' + text + ANSI.clear + '\n')
 
@@ -450,7 +444,7 @@ class ProgressBar(object): #pylint: disable=unused-variable
   WRAPOFF = '\033[?7l'
 
   def __init__(self, msg, target=0):
-    from mrtrix3 import ANSI, run
+    from mrtrix3 import run
     global EXEC_NAME, VERBOSITY
     self.counter = 0
     self.isatty = sys.stderr.isatty()
@@ -472,7 +466,6 @@ class ProgressBar(object): #pylint: disable=unused-variable
     sys.stderr.flush()
 
   def increment(self, msg=''):
-    import math
     assert not self.iscomplete
     self.counter += 1
     force_update = False
@@ -491,7 +484,7 @@ class ProgressBar(object): #pylint: disable=unused-variable
       self._update()
 
   def done(self):
-    from mrtrix3 import ANSI, run
+    from mrtrix3 import run
     global EXEC_NAME, VERBOSITY
     self.iscomplete = True
     if self.multiplier:
@@ -507,7 +500,6 @@ class ProgressBar(object): #pylint: disable=unused-variable
     VERBOSITY = run.shared.verbosity = self.orig_verbosity
 
   def _update(self):
-    from mrtrix3 import ANSI
     global EXEC_NAME
     assert not self.iscomplete
     if self.isatty:
@@ -535,7 +527,6 @@ class Parser(argparse.ArgumentParser):
   # pylint: disable=protected-access
 
   def __init__(self, *args_in, **kwargs_in):
-    import inspect, subprocess
     global _DEFAULT_COPYRIGHT
     self._author = None
     self._citation_list = [ ]
@@ -642,7 +633,6 @@ class Parser(argparse.ArgumentParser):
 
   # Overloads argparse.ArgumentParser function to give a better error message on failed parsing
   def error(self, text):
-    import shlex
     for entry in sys.argv:
       if '-help'.startswith(entry):
         self.print_help()
@@ -700,10 +690,6 @@ class Parser(argparse.ArgumentParser):
     return self.prog + ' ' + ' '.join(argument_list) + ' [ options ]' + trailing_ellipsis
 
   def print_help(self):
-    import subprocess, textwrap
-    from mrtrix3 import CONFIG
-    from ._version import __version__
-
     def bold(text):
       return ''.join( c + chr(0x08) + c for c in text)
 
@@ -892,7 +878,6 @@ class Parser(argparse.ArgumentParser):
     sys.stdout.flush()
 
   def print_usage_markdown(self):
-    import subprocess
     if self._subparsers and len(sys.argv) == 3:
       for alg in self._subparsers._group_actions[0].choices:
         if alg == sys.argv[-2]:
@@ -966,7 +951,6 @@ class Parser(argparse.ArgumentParser):
         subprocess.call ([ sys.executable, os.path.realpath(sys.argv[0]), alg, '__print_usage_markdown__' ])
 
   def print_usage_rst(self):
-    import subprocess
     # Need to check here whether it's the documentation for a particular subparser that's being requested
     if self._subparsers and len(sys.argv) == 3:
       for alg in self._subparsers._group_actions[0].choices:
@@ -1057,7 +1041,6 @@ class Parser(argparse.ArgumentParser):
         subprocess.call ([ sys.executable, os.path.realpath(sys.argv[0]), alg, '__print_usage_rst__' ])
 
   def print_version(self):
-    from ._version import __version__
     text = '== ' + self.prog + ' ' + (self._git_version if self._is_project else __version__) + ' ==\n'
     if self._is_project:
       text += 'executing against MRtrix ' + __version__ + '\n'
@@ -1128,13 +1111,11 @@ def read_dwgrad_export_options(): #pylint: disable=unused-variable
 
 # Handler function for dealing with system signals
 def handler(signum, _frame):
-  import shutil, signal
-  from mrtrix3 import ANSI
+  from mrtrix3 import run
   global _SIGNALS, EXEC_NAME, SCRATCH_DIR, WORKING_DIR
   # Terminate any child processes in the run module
   try:
-    from mrtrix3.run import shared
-    shared.terminate(signum)
+    run.shared.terminate(signum)
   except ImportError:
     pass
   # Generate the error message
@@ -1159,4 +1140,4 @@ def handler(signum, _frame):
     except OSError:
       pass
     SCRATCH_DIR = ''
-  sys.exit(signum)
+  os._exit(signum) # pylint: disable=protected-access

@@ -2,6 +2,13 @@
 
 # Script for performing DWI pre-processing using FSL 5.0 (onwards) tools eddy / topup / applytopup
 
+
+
+import itertools, json, math, os, shutil, sys
+from distutils.spawn import find_executable
+
+
+
 def usage(cmdline): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=no-name-in-module
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
@@ -55,11 +62,9 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 
-
 def execute(): #pylint: disable=unused-variable
-  import itertools, json, math, os, shutil, sys
-  from distutils.spawn import find_executable
-  from mrtrix3 import app, CONFIG, fsl, image, matrix, MRtrixError, path, phaseencoding, run, utils #pylint: disable=no-name-in-module
+  from mrtrix3 import CONFIG, MRtrixError #pylint: disable=no-name-in-module
+  from mrtrix3 import app, fsl, image, matrix, path, phaseencoding, run, utils #pylint: disable=no-name-in-module
 
   if utils.is_windows():
     raise MRtrixError('Script cannot run on Windows due to FSL dependency')
@@ -262,13 +267,13 @@ def execute(): #pylint: disable=unused-variable
     # - If both are zero, skip this check
     # - If one is zero and the other is not, volumes don't match
     # - If neither is zero, test the dot product
-    if any([val for val in one[0:3]]):
-      if not any([val for val in two[0:3]]):
+    if any(one[0:3]):
+      if not any(two[0:3]):
         return False
       dot_product = one[0]*two[0] + one[1]*two[1] + one[2]*two[2]
       if abs(dot_product) < 0.999:
         return False
-    elif any([val for val in two[0:3]]):
+    elif any(two[0:3]):
       return False
     # b-value
     if abs(one[3]-two[3]) > 10.0:

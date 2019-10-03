@@ -1,3 +1,9 @@
+import os
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, fsl, path, run, utils
+
+
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('fsl', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
@@ -21,9 +27,6 @@ def get_inputs(): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  import os
-  from mrtrix3 import app, fsl, MRtrixError, path, run, utils
-
   if utils.is_windows():
     raise MRtrixError('Script cannot run using FSL on Windows due to FSL dependency')
 

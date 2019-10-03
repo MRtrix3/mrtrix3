@@ -2,12 +2,17 @@
 
 
 
+import os, re, sys, threading
+
+
+
 # Since we're going to capture everything after the colon character and "hide" it from argparse,
 #   we need to store the contents from there in a global so as for it to be accessible from execute()
 CMDSPLIT = [ ]
 
+
+
 def usage(cmdline): #pylint: disable=unused-variable
-  import sys
   global CMDSPLIT
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)')
   cmdline.set_synopsis('Perform some arbitrary processing step for each of a set of inputs')
@@ -64,7 +69,6 @@ def usage(cmdline): #pylint: disable=unused-variable
 # These need to be globals in order to be accessible from execute_parallel()
 class Shared(object):
   def __init__(self):
-    import threading
     self._job_index = 0
     self.lock = threading.Lock()
     self.stop = False
@@ -86,8 +90,8 @@ KEYLIST = [ 'IN', 'NAME', 'PRE', 'UNI' ]
 
 
 def execute(): #pylint: disable=unused-variable
-  import os, re, sys, threading
-  from mrtrix3 import ANSI, app, MRtrixError, run #pylint: disable=no-name-in-module
+  from mrtrix3 import ANSI, MRtrixError #pylint: disable=no-name-in-module
+  from mrtrix3 import app, run #pylint: disable=no-name-in-module
   global CMDSPLIT
 
   inputs = app.ARGS.inputs

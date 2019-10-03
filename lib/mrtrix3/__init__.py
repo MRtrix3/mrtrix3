@@ -1,5 +1,9 @@
-import os, sys
+import inspect, os, sys
 from collections import namedtuple
+try:
+  from shlex import quote
+except ImportError:
+  from pipes import quote
 from mrtrix3._version import __version__
 
 
@@ -14,10 +18,6 @@ class MRtrixError(MRtrixBaseError): #pylint: disable=unused-variable
 
 # Contains the command currently being executed, appended with the version of the MRtrix3 Python library
 COMMAND_HISTORY_STRING = sys.argv[0]
-try:
-  from shlex import quote
-except ImportError:
-  from pipes import quote
 for arg in sys.argv[1:]:
   COMMAND_HISTORY_STRING += ' ' + quote(arg) # Use quotation marks only if required
 COMMAND_HISTORY_STRING += '  (version=' + __version__ + ')"'
@@ -29,14 +29,13 @@ BIN_PATH = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(os.path.
 EXE_LIST = [ os.path.splitext(name)[0] for name in os.listdir(BIN_PATH) ] #pylint: disable=unused-variable
 
 
-
 # - 'CONFIG' is a directory containing those entries present in the MRtrix config files
 CONFIG = { }
+
 
 # Codes for printing information to the terminal
 ANSICodes = namedtuple('ANSI', 'lineclear clear console debug error execute warn')
 ANSI = ANSICodes('\033[0K', '', '', '', '', '', '') #pylint: disable=unused-variable
-
 
 
 # Load the MRtrix configuration files here, and create a dictionary
@@ -55,6 +54,11 @@ for config_path in [ os.environ.get ('MRTRIX_CONFIGFILE', os.path.join(os.path.s
   except IOError:
     pass
 
+
+
+
+
+
 # Set up terminal special characters now, since they may be dependent on the config file
 def setup_ansi():
   global ANSI, CONFIG
@@ -66,6 +70,5 @@ setup_ansi()
 
 # Execute a command
 def execute(): #pylint: disable=unused-variable
-  import inspect
   from . import app
   app._execute(inspect.getmodule(inspect.stack()[-1][0])) # pylint: disable=protected-access
