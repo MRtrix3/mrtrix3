@@ -161,7 +161,7 @@ namespace MR
           try {
             auto M_float = parse_matrix<default_type> (kv.second);
             if (M_float.cols() == 1)
-              M_float = M_float.transpose();
+              M_float.transposeInPlace();
             nlohmann::json temp;
             bool noninteger = false;
             for (ssize_t row = 0; row != M_float.rows(); ++row) {
@@ -185,7 +185,7 @@ namespace MR
               // Write the data natively as integers
               auto M_int = parse_matrix<int> (kv.second);
               if (M_int.cols() == 1)
-                M_int = M_int.transpose();
+                M_int.transposeInPlace();
               temp[kv.first] = nlohmann::json({});
               for (ssize_t row = 0; row != M_int.rows(); ++row) {
                 vector<int> data (M_int.cols());
