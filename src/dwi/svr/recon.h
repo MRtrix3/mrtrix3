@@ -166,7 +166,7 @@ namespace MR
       }
 
       template <typename VectorType1, typename VectorType2>
-      void project_x2y(VectorType1& dst, const VectorType2& rhs) const
+      void project(VectorType1& dst, const VectorType2& rhs, bool useweights = true) const
       {
         INFO("Forward projection.");
         size_t nxyz = nxy*nz;
@@ -180,7 +180,7 @@ namespace MR
             for (size_t z = idx%ne; z < nz; z += ne) {
               Eigen::Ref<Eigen::VectorXf> r = dst.segment((nz*v+z)*nxy, nxy);
               project_slice_x2y(v, z, r, tmp);
-              r *= std::sqrt(W(z,v));
+              if (useweights) r *= std::sqrt(W(z,v));
             }
           });
         INFO("Forward projection - regularisers");
@@ -191,35 +191,6 @@ namespace MR
         Eigen::Map<RowMatrixXf, Eigen::Aligned16> Yreg2 (ref2.data(), nxyz, nc);
         Yreg2.noalias() += Z * X;
       }
-
-
-
-//      template <typename VectorType1, typename VectorType2>
-//      void project_x2x(VectorType1& dst, const VectorType2& rhs) const
-//      {
-//        INFO("Full projection.");
-//        size_t nxyz = nxy*nz;
-//        Eigen::Map<const RowMatrixXf, Eigen::Aligned16> Xi (rhs.data(), nxyz, nc);
-//        Eigen::Map<RowMatrixXf, Eigen::Aligned16> Xo (dst.data(), nxyz, nc);
-//        RowMatrixXf zero (nxyz, nc); zero.setZero();
-//        Xo = Thread::parallel_sum<RowMatrixXf, size_t>(0, nv*ne,
-//          [&](size_t idx, RowMatrixXf& T) {
-//            size_t v = idx/ne;
-//            auto tmp1 = Image<float>::scratch(htmp);
-//            Eigen::Map<Eigen::VectorXf, Eigen::Aligned16> q (tmp1.address(), nxyz);
-//            q.noalias() = Xi * Y.row(idx).adjoint();
-//            auto tmp2 = Image<float>::scratch(htmp);
-//            Eigen::Map<Eigen::VectorXf, Eigen::Aligned16> r (tmp2.address(), nxyz);
-//            r.setZero();
-//            // Declare temporary slice
-//            for (size_t z = idx%ne; z < nz; z += ne) {
-//              project_slice_x2x(v, z, tmp2, tmp1, W(z,v));
-//            }
-//            T.noalias() += r * Y.row(idx);
-//          }, zero);
-//        Xo += L.adjoint() * (L * Xi);
-//        Xo += Z.adjoint() * (Z * Xi);
-//      }
 
 
     private:
@@ -503,7 +474,7 @@ namespace MR
       }
 
       template <typename VectorType1, typename VectorType2>
-      void project_y2x(VectorType1& dst, const VectorType2& rhs) const
+      void project(VectorType1& dst, const VectorType2& rhs, bool useweights = true) const
       {
         INFO("Transpose projection.");
         size_t nxyz = nxy*nz;
@@ -516,7 +487,8 @@ namespace MR
             Eigen::Map<Eigen::VectorXf> r (tmp.address(), nxyz);
             r.setZero();
             for (size_t z = idx%ne; z < nz; z += ne) {
-              project_slice_y2x(v, z, tmp, std::sqrt(recmat.W(z,v)) * rhs.segment((nz*v+z)*nxy, nxy));
+              float ww = (useweights) ? std::sqrt(recmat.W(z,v)) : 1.0f;
+              project_slice_y2x(v, z, tmp, rhs.segment((nz*v+z)*nxy, nxy), ww);
             }
             T.noalias() += r * recmat.Y.row(idx);
           }, zero);
@@ -535,7 +507,7 @@ namespace MR
 
 
       template <typename ImageType1, typename VectorType2>
-      void project_slice_y2x(const int v, const int z, ImageType1& dst, const VectorType2& rhs) const
+      void project_slice_y2x(const int v, const int z, ImageType1& dst, const VectorType2& rhs, const float weight) const
       {
         std::unique_ptr<FieldInterpType> finterp;
         if (recmat.field.valid())
@@ -555,13 +527,14 @@ namespace MR
           ps[1] = y;
           for (size_t x = 0; x < nx; x++, i++) {
             ps[0] = x;
+            float tmp = weight * rhs[i];
             for (int s = -recmat.ssp.size(); s <= recmat.ssp.size(); s++) {       // ssp neighbourhood
               ps[2] = z+s;
               // get slice position in recon space
               recmat.ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac);
               // update motion matrix
               target.voxel(pr);
-              target.adjoint_add (recmat.ssp(s) * iJac * rhs[i]);
+              target.adjoint_add (recmat.ssp(s) * iJac * tmp);
             }
           }
         }
@@ -596,7 +569,7 @@ namespace Eigen {
         // This method should implement "dst += alpha * lhs * rhs" inplace
         assert(alpha==Scalar(1) && "scaling is not implemented");
 
-        lhs.project_x2y<Dest, Rhs>(dst, rhs);
+        lhs.project<Dest, Rhs>(dst, rhs);
 
       }
     };
@@ -613,7 +586,7 @@ namespace Eigen {
         // This method should implement "dst += alpha * lhs * rhs" inplace
         assert(alpha==Scalar(1) && "scaling is not implemented");
 
-        lhs.project_y2x<Dest, Rhs>(dst, rhs);
+        lhs.project<Dest, Rhs>(dst, rhs);
 
       }
     };

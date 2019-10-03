@@ -366,8 +366,7 @@ void run ()
     DWI::set_DW_scheme (header, gradsub);
     auto spred = Image<value_type>::create(opt[0][0], header);
     Eigen::VectorXf p (R.rows());
-    R.setWeights(Eigen::MatrixXf::Ones(Wsub.rows(), Wsub.cols()));
-    R.project_x2y(p, x);
+    R.project(p, x, false);
     j = 0;
     auto ii = idx.begin();
     for (auto l = Loop("saving source prediction", 3)(spred); l; l++) {
