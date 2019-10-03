@@ -91,6 +91,17 @@ void run ()
   meshes[0].set_name ("none");
   const bool blocky = get_options ("blocky").size();
 
+  vector<uint32_t> missing_nodes;
+  for (uint32_t i = 1; i != upper_corners.size(); ++i) {
+    if (upper_corners[i][0] < 0)
+      missing_nodes.push_back (i);
+  }
+  if (missing_nodes.size()) {
+    WARN ("The following labels are absent from the parcellation image "
+          "and so will have an empty mesh in the output file: "
+          + join(missing_nodes, ", "));
+  }
+
   {
     std::mutex mutex;
     ProgressBar progress ("Generating meshes from labels", lower_corners.size() - 1);
@@ -103,11 +114,8 @@ void run ()
       for (size_t axis = 0; axis != 3; ++axis) {
         from.push_back (lower_corners[in][axis]);
         dimensions.push_back (upper_corners[in][axis] - lower_corners[in][axis] + 1);
-        if (dimensions.back() < 1) {
-          std::lock_guard<std::mutex> lock (mutex);
-          WARN ("Index " + str(in) + " absent from label image; mesh data will be empty");
+        if (dimensions.back() < 1)
           return true;
-        }
       }
 
       Adapter::Subset<Image<uint32_t>> subset (labels, from, dimensions);
