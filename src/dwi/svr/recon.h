@@ -132,8 +132,10 @@ namespace MR
       {
         INFO("Multiband factor " + str(nz/ne) + " detected.");
         init_Y(grad);
-        init_laplacian(reg);
-        init_zreg(zreg);
+
+        float scale = std::sqrt(1.0f * nv);
+        init_laplacian(scale*reg);
+        init_zreg(scale*zreg);
         assert (motion.rows() == nv*ne);
 
         // set header for temporary images.
@@ -150,11 +152,7 @@ namespace MR
 
       const Eigen::MatrixXf& getWeights() const { return W; }
 
-      void setWeights(const Eigen::MatrixXf& weights)
-      {
-        float Z = 1.0;// weights.rows() * 1.0f / weights.sum();
-        W = Z * weights;
-      }
+      void setWeights(const Eigen::MatrixXf& weights) { W = weights; }
 
       const Eigen::MatrixXf& getShellBasis(const int shellidx) const { return shellbasis[shellidx]; }
 
