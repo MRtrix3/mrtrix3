@@ -246,7 +246,32 @@ def get_real_name (path):
   return path
 
 
+def _get_expected_bin_filenames (exe_suffix, cmd_directory=cmd_dir):
+  binary_apps = { 'mrtrix.dll' } if exe_suffix else set()
+  for entry in os.listdir(cmd_directory):
+    if entry.endswith(cpp_suffix):
+      binary_apps.add (entry[:-len(cpp_suffix)] + exe_suffix)
+  return binary_apps
 
+
+def list_expected_bin_files (exe_suffix, cmd_directory=cmd_dir, bin_directory=bin_dir):
+  bin_files = []
+  binary_apps = _get_expected_bin_filenames(exe_suffix, cmd_directory=cmd_directory)
+  for app in sorted(binary_apps):
+    if os.path.isfile(os.path.join(bin_directory, app)):
+      bin_files.append(os.path.join(bin_directory, app))
+  return bin_files
+
+
+def list_unexpected_bin_files (exe_suffix, cmd_directory=cmd_dir, bin_directory=bin_dir):
+  unexpected = []
+  if os.path.isdir(bin_directory):
+    binary_apps = _get_expected_bin_filenames(exe_suffix, cmd_directory=cmd_directory)
+    for filename in sorted(os.listdir(bin_directory)):
+      filepath = os.path.normpath(os.path.join(bin_directory, filename))
+      if os.path.isfile(filepath) and filename not in binary_apps and not is_likely_text(filepath):
+        unexpected.append(filepath)
+  return unexpected
 
 
 def list_untracked_bin_files (directory = '.'):
@@ -256,6 +281,31 @@ def list_untracked_bin_files (directory = '.'):
     return filelist.decode(errors='ignore').splitlines()
   return []
 
+
+def is_likely_text(filename, nbytes=1024):
+  """ detects if file has a shebang or is utf-8 encoded, empty file is deemed non-text
+  :arg filename
+  :arg nbytes sample size to analyse
+  """
+  chunk = b''
+  try:
+    with open(filename, 'rb') as f:
+      chunk = f.read(nbytes)
+  except IOError as e:
+    log('could not read file ' + filename + '\n' + str(e) + '\n')
+
+  if chunk:
+    if chunk.startswith(b'\x23\x21'):  # starts with shebang '#!'
+      log('is_likely_text: ' + filename + ': starts with shebang \n')
+      return True
+
+    try:
+      chunk.decode('utf-8')
+      log('is_likely_text: ' + filename + 'utf-8 encoded \n')
+      return True
+    except UnicodeDecodeError:
+      pass
+  return False
 
 
 
@@ -274,6 +324,7 @@ def modify_path (name, tmp=False, strip=None, add=None):
       relname = os.sep.join (split_path (relname)[1:])
     name = os.path.normpath (os.path.join (project_dir, relname))
     return name
+
 
 
 
@@ -454,6 +505,48 @@ activate_build (active_config_core, mrtrix_dir)
 
 
 
+############################################################################
+#                          LOAD CONFIGURATION FILE                         #
+############################################################################
+
+if config_file is None:
+  config_file = os.path.normpath (os.path.join (mrtrix_dir[-1], 'config'))
+
+# prevent pylint from generating a huge number of undefined variable / non-iterable warnings
+PATH = obj_suffix = exe_suffix = lib_prefix = lib_suffix = \
+cpp = ld = runpath = ld_enabled = ld_lib = moc = rcc = nogui = None
+cpp_flags = ld_flags = ld_lib_flags = eigen_cflags = qt_cflags = qt_ldflags = [ ]
+
+try:
+  log ('reading configuration from "' + config_file + '"...' + os.linesep)
+  exec (codecs.open (config_file, mode='r', encoding='utf-8').read()) # pylint: disable=exec-used
+except IOError:
+  fail ('''no configuration file found!
+please run "./configure" prior to invoking this script
+
+''')
+
+if separate_project:
+  cpp_flags += [ '-DMRTRIX_PROJECT' ]
+
+environ = os.environ.copy()
+environ.update ({ 'PATH': PATH })
+
+target_bin_dir = os.path.join (mrtrix_dir[0], bin_dir)
+purged_bin_dir = os.path.join (target_bin_dir, 'purged_files')
+
+system = platform.system().lower()
+if system.startswith('mingw') or system.startswith('msys'):
+  target_lib_dir = os.path.join (mrtrix_dir[-1], bin_dir)
+else:
+  target_lib_dir = os.path.join (mrtrix_dir[-1], 'lib')
+lib_dir = os.path.join (mrtrix_dir[-1], lib_dir)
+
+if ld_enabled and runpath:
+  ld_flags += [ runpath+os.path.relpath (target_lib_dir,target_bin_dir) ]
+
+
+
 
 ############################################################################
 #                            BUILD CLEAN                                   #
@@ -485,12 +578,24 @@ if 'clean' in targets:
     except OSError as excp:
       disp ('error deleting folder "' + f + '": ' + os.strerror (excp.errno))
 
-  for filename in list_untracked_bin_files():
+  for filename in list_expected_bin_files(exe_suffix):
     disp ('delete file: ' + filename + '\n')
     try:
       os.remove (filename)
     except OSError as excp:
       disp ('error deleting file "' + filename + '": ' + os.strerror (excp.errno))
+
+  for filepath in list_unexpected_bin_files(exe_suffix):
+    if not os.path.exists(purged_bin_dir):
+      os.makedirs(purged_bin_dir)
+    move_to = os.path.join(purged_bin_dir, os.path.split(filepath)[1])
+    while os.path.isfile(move_to):
+      move_to = move_to + '_'
+    disp ('WARNING: moving unexpected file ' + filepath + ' to ' + move_to + '\n')
+    try:
+      shutil.move(filepath, move_to)
+    except OSError as excp:
+      disp ('error moving file "' + filepath + '": ' + os.strerror (excp.errno))
 
   for filename in glob.glob (os.path.join ('lib', 'libmrtrix*')):
     if os.path.isfile (filename):
@@ -501,52 +606,6 @@ if 'clean' in targets:
         disp ('error deleting file "' + filename + '": ' + os.strerror (excp.errno))
 
   sys.exit (0)
-
-
-
-
-
-
-
-############################################################################
-#                          LOAD CONFIGURATION FILE                         #
-############################################################################
-
-if config_file is None:
-  config_file = os.path.normpath (os.path.join (mrtrix_dir[-1], 'config'))
-
-# prevent pylint from generating a huge number of undefined variable / non-iterable warnings
-PATH = obj_suffix = exe_suffix = lib_prefix = lib_suffix = \
-cpp = ld = runpath = ld_enabled = ld_lib = moc = rcc = nogui = None
-cpp_flags = ld_flags = ld_lib_flags = eigen_cflags = qt_cflags = qt_ldflags = [ ]
-
-try:
-  log ('reading configuration from "' + config_file + '"...' + os.linesep)
-  exec (codecs.open (config_file, mode='r', encoding='utf-8').read()) # pylint: disable=exec-used
-except IOError:
-  fail ('''no configuration file found!
-please run "./configure" prior to invoking this script
-
-''')
-
-if separate_project:
-  cpp_flags += [ '-DMRTRIX_PROJECT' ]
-
-environ = os.environ.copy()
-environ.update ({ 'PATH': PATH })
-
-target_bin_dir = os.path.join (mrtrix_dir[0], bin_dir)
-
-system = platform.system().lower()
-if system.startswith('mingw') or system.startswith('msys'):
-  target_lib_dir = os.path.join (mrtrix_dir[-1], bin_dir)
-else:
-  target_lib_dir = os.path.join (mrtrix_dir[-1], 'lib')
-lib_dir = os.path.join (mrtrix_dir[-1], lib_dir)
-
-if ld_enabled and runpath:
-  ld_flags += [ runpath+os.path.relpath (target_lib_dir,target_bin_dir) ]
-
 
 
 
@@ -581,6 +640,19 @@ for entry in glob.glob (os.path.normpath (os.path.join (target_lib_dir, '*' + li
   if os.path.basename (entry) != libname:
     disp ('WARNING: removing "' + entry + '" - most likely left over from a previous installation\n')
     os.remove (entry)
+
+# move unexpected binary files out of the target bin directory:
+for filepath in list_unexpected_bin_files(exe_suffix):
+  if not os.path.exists(purged_bin_dir):
+    os.makedirs(purged_bin_dir)
+  move_to = os.path.join(purged_bin_dir, os.path.split(filepath)[1])
+  while os.path.isfile(move_to):
+    move_to = move_to + '_'
+  disp ('WARNING: moving unexpected binary file ' + filepath + ' to ' + move_to + '\n')
+  try:
+    shutil.move(filepath, move_to)
+  except OSError as excp:
+    disp ('error moving file "' + filepath + '": ' + os.strerror (excp.errno))
 
 
 ###########################################################################
