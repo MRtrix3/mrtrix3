@@ -372,6 +372,7 @@ void run ()
   auto opt = get_options ("mask");
 
   auto orig_mask = MaskType::open (opt[0][0]);
+  check_dimensions (header_3D, orig_mask, 0, 3);
   Header mask_header (orig_mask);
   mask_header.ndim() = 3;
   mask_header.datatype() = DataType::Bit;

@@ -262,7 +262,7 @@ path = os.environ['PATH']
 if path.endswith ('\\'):
   path = path[:-1]
 oldpath = path.split(':')
-cleanpath = [ entry for entry in oldpath if 'anaconda' not in entry ]
+cleanpath = [ entry for entry in oldpath if 'anaconda' not in entry.lower() ]
 if not oldpath == cleanpath:
   report ('WARNING: Anaconda removed from PATH to avoid conflicts\n\n')
 path = os.pathsep.join(cleanpath)
@@ -982,6 +982,30 @@ int main() {
   cpp_flags += [ '-DMRTRIX_TIFF_SUPPORT' ] + tiff_cflags
   ld_flags += tiff_ldflags
   ld_lib_flags += tiff_ldflags
+
+
+
+
+
+# PNG:
+
+png_cflags = get_flags ([], 'PNG_CFLAGS', '--cflags libpng')
+png_ldflags = get_flags ([ '-lpng' ], 'PNG_LDFLAGS', '--libs libpng')
+
+if compile_test ('PNG library', cpp_flags + png_cflags, ld_flags + png_ldflags, '''
+#include <iostream>
+#include <png.h>
+
+int main() {
+  std::cout << "Header: " << PNG_LIBPNG_VER_STRING << "; library: " << png_libpng_ver;
+  return (0);
+}
+''', on_failure='not found - PNG support disabled'):
+  cpp_flags += [ '-DMRTRIX_PNG_SUPPORT' ] + png_cflags
+  ld_flags += png_ldflags
+  ld_lib_flags += png_ldflags
+
+
 
 
 

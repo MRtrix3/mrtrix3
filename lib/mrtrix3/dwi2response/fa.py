@@ -1,3 +1,9 @@
+import shutil
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, image, path, run
+
+
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('fa', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
@@ -14,7 +20,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def check_output_paths(): #pylint: disable=unused-variable
-  from mrtrix3 import app
   app.check_output_path(app.ARGS.output)
 
 
@@ -30,8 +35,6 @@ def needs_single_shell(): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  import shutil
-  from mrtrix3 import app, image, MRtrixError, path, run
   bvalues = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shell_bvalues').split() ]
   if len(bvalues) < 2:
     raise MRtrixError('Need at least 2 unique b-values (including b=0).')
@@ -53,4 +56,4 @@ def execute(): #pylint: disable=unused-variable
 
   run.function(shutil.copyfile, 'response.txt', path.from_user(app.ARGS.output, False))
   if app.ARGS.voxels:
-    run.command('mrconvert voxels.mif ' + path.from_user(app.ARGS.voxels) + app.mrconvert_output_option(path.from_user(app.ARGS.input)))
+    run.command('mrconvert voxels.mif ' + path.from_user(app.ARGS.voxels), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE)

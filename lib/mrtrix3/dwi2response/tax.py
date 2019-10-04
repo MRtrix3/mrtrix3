@@ -1,3 +1,9 @@
+import math, os, shutil
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, image, matrix, path, run
+
+
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('tax', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
@@ -13,7 +19,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def check_output_paths(): #pylint: disable=unused-variable
-  from mrtrix3 import app
   app.check_output_path(app.ARGS.output)
 
 
@@ -29,9 +34,6 @@ def needs_single_shell(): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  import math, os, shutil
-  from mrtrix3 import app, image, MRtrixError, path, run
-
   lmax_option = ''
   if app.ARGS.lmax:
     lmax_option = ' -lmax ' + app.ARGS.lmax
@@ -95,15 +97,13 @@ def execute(): #pylint: disable=unused-variable
     run.command('amp2response dwi.mif ' + prefix + 'SF.mif ' + prefix + 'first_dir.mif ' + prefix + 'RF.txt' + lmax_option)
     app.cleanup(prefix + 'first_dir.mif')
 
-    with open(prefix + 'RF.txt', 'r') as new_rf_file:
-      new_rf = [ float(x) for x in new_rf_file.read().split() ]
+    new_rf = matrix.load_vector(prefix + 'RF.txt')
     progress.increment('Optimising (' + str(iteration+1) + ' iterations, ' + str(sf_voxel_count) + ' voxels, RF: [ ' + ', '.join('{:.3f}'.format(n) for n in new_rf) + '] )')
 
     # Detect convergence
     # Look for a change > some percentage - don't bother looking at the masks
     if iteration > 0:
-      with open(rf_in_path, 'r') as old_rf_file:
-        old_rf = [ float(x) for x in old_rf_file.read().split() ]
+      old_rf = matrix.load_vector(rf_in_path)
       reiterate = False
       for old_value, new_value in zip(old_rf, new_rf):
         mean = 0.5 * (old_value + new_value)
@@ -133,4 +133,4 @@ def execute(): #pylint: disable=unused-variable
 
   run.function(shutil.copyfile, 'response.txt', path.from_user(app.ARGS.output, False))
   if app.ARGS.voxels:
-    run.command('mrconvert voxels.mif ' + path.from_user(app.ARGS.voxels) + app.mrconvert_output_option(path.from_user(app.ARGS.input)))
+    run.command('mrconvert voxels.mif ' + path.from_user(app.ARGS.voxels), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE)
