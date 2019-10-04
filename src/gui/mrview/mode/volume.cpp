@@ -328,7 +328,7 @@ namespace MR
 
         void Volume::paint (Projection& projection)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           GL_CHECK_ERROR;
           setup_projection (orientation(), projection);
           GL_CHECK_ERROR;
@@ -523,7 +523,7 @@ namespace MR
           GL_CHECK_ERROR;
           draw_orientation_labels (projection);
 
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
         inline Tool::View* Volume::get_view_tool () const

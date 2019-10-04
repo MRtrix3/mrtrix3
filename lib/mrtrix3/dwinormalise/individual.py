@@ -1,6 +1,12 @@
+from mrtrix3 import app, path, run
+
+
+
 DEFAULT_TARGET_INTENSITY=1000
+
+
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  from mrtrix3 import app
   parser = subparsers.add_parser('individual', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)')
   parser.set_synopsis('Intensity normalise a DWI series based on the b=0 signal within a supplied mask')
@@ -14,14 +20,11 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def check_output_paths(): #pylint: disable=unused-variable
-  from mrtrix3 import app
   app.check_output_path(app.ARGS.output_dwi)
 
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import app, path, run
-
   grad_option = ''
   if app.ARGS.grad:
     grad_option = ' -grad ' + path.from_user(app.ARGS.grad)
@@ -41,4 +44,6 @@ def execute(): #pylint: disable=unused-variable
   multiplier = app.ARGS.intensity / reference_value
 
   run.command('mrcalc ' + path.from_user(app.ARGS.input_dwi) + ' ' + str(multiplier) + ' -mult - | ' + \
-              'mrconvert - ' + path.from_user(app.ARGS.output_dwi) + grad_option + app.mrconvert_output_option(path.from_user(app.ARGS.input_dwi)))
+              'mrconvert - ' + path.from_user(app.ARGS.output_dwi) + grad_option, \
+              mrconvert_keyval=path.from_user(app.ARGS.input_dwi), \
+              force=app.FORCE_OVERWRITE)

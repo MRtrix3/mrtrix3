@@ -1,3 +1,9 @@
+import os
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, fsl, path, run, utils
+
+
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('fsl', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
@@ -21,9 +27,6 @@ def get_inputs(): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  import os
-  from mrtrix3 import app, fsl, MRtrixError, path, run, utils
-
   if utils.is_windows():
     raise MRtrixError('Script cannot run using FSL on Windows due to FSL dependency')
 
@@ -47,6 +50,6 @@ def execute(): #pylint: disable=unused-variable
   # Rather than using a bias field estimate of 1.0 outside the brain mask, zero-fill the
   #   output image outside of this mask
   run.command('mrcalc in.mif ' + bias_path + ' -div mask.mif -mult result.mif')
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output) + app.mrconvert_output_option(path.from_user(app.ARGS.input)))
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE)
   if app.ARGS.bias:
-    run.command('mrconvert ' + bias_path + ' ' + path.from_user(app.ARGS.bias) + app.mrconvert_output_option(path.from_user(app.ARGS.input)))
+    run.command('mrconvert ' + bias_path + ' ' + path.from_user(app.ARGS.bias), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE)

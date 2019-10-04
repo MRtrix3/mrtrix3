@@ -109,7 +109,6 @@ namespace MR
             QPushButton *copy_voxel_button;
             AdjustButton *focus_x, *focus_y, *focus_z;
             AdjustButton *voxel_x, *voxel_y, *voxel_z;
-            SpinBox *vol_index, *vol_group;
             AdjustButton *max_entry, *min_entry, *fov;
             AdjustButton *transparent_intensity, *opaque_intensity;
             AdjustButton *lower_threshold, *upper_threshold;
@@ -121,6 +120,7 @@ namespace MR
             QAction *clip_planes_new_axial_action, *clip_planes_new_sagittal_action, *clip_planes_new_coronal_action;
             QAction *clip_planes_reset_axial_action, *clip_planes_reset_sagittal_action, *clip_planes_reset_coronal_action;
             QAction *clip_planes_invert_action, *clip_planes_remove_action, *clip_planes_clear_action;
+            GridLayout *volume_index_layout;
 
             QLabel *light_box_slice_inc_label, *light_box_volume_inc_label;
             AdjustButton *light_box_slice_inc;

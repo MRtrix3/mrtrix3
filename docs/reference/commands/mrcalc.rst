@@ -56,102 +56,138 @@ Example usages
 Options
 -------
 
-Unary operators
-^^^^^^^^^^^^^^^
-
--  **-abs**  *(multiple uses permitted)* absolute value
-
--  **-neg**  *(multiple uses permitted)* negative value
-
--  **-sqrt**  *(multiple uses permitted)* square root
-
--  **-exp**  *(multiple uses permitted)* exponential function
-
--  **-log**  *(multiple uses permitted)* natural logarithm
-
--  **-log10**  *(multiple uses permitted)* common logarithm
-
--  **-cos**  *(multiple uses permitted)* cosine
-
--  **-sin**  *(multiple uses permitted)* sine
-
--  **-tan**  *(multiple uses permitted)* tangent
-
--  **-cosh**  *(multiple uses permitted)* hyperbolic cosine
-
--  **-sinh**  *(multiple uses permitted)* hyperbolic sine
-
--  **-tanh**  *(multiple uses permitted)* hyperbolic tangent
-
--  **-acos**  *(multiple uses permitted)* inverse cosine
-
--  **-asin**  *(multiple uses permitted)* inverse sine
-
--  **-atan**  *(multiple uses permitted)* inverse tangent
-
--  **-acosh**  *(multiple uses permitted)* inverse hyperbolic cosine
-
--  **-asinh**  *(multiple uses permitted)* inverse hyperbolic sine
-
--  **-atanh**  *(multiple uses permitted)* inverse hyperbolic tangent
-
--  **-round**  *(multiple uses permitted)* round to nearest integer
-
--  **-ceil**  *(multiple uses permitted)* round up to nearest integer
-
--  **-floor**  *(multiple uses permitted)* round down to nearest integer
-
--  **-isnan**  *(multiple uses permitted)* true (1) is operand is not-a-number (NaN)
-
--  **-isinf**  *(multiple uses permitted)* true (1) is operand is infinite (Inf)
-
--  **-finite**  *(multiple uses permitted)* true (1) is operand is finite (i.e. not NaN or Inf)
-
--  **-real**  *(multiple uses permitted)* real part of complex number
-
--  **-imag**  *(multiple uses permitted)* imaginary part of complex number
-
--  **-phase**  *(multiple uses permitted)* phase of complex number
-
--  **-conj**  *(multiple uses permitted)* complex conjugate
-
-Binary operators
+basic operations
 ^^^^^^^^^^^^^^^^
 
--  **-add**  *(multiple uses permitted)* add values
+-  **-abs**  *(multiple uses permitted)* \|%1\| : return absolute value (magnitude) of real or complex number
 
--  **-subtract**  *(multiple uses permitted)* subtract nth operand from (n-1)th
+-  **-neg**  *(multiple uses permitted)* -%1 : negative value
 
--  **-multiply**  *(multiple uses permitted)* multiply values
+-  **-add**  *(multiple uses permitted)* (%1 + %2) : add values
 
--  **-divide**  *(multiple uses permitted)* divide (n-1)th operand by nth
+-  **-subtract**  *(multiple uses permitted)* (%1 - %2) : subtract nth operand from (n-1)th
 
--  **-pow**  *(multiple uses permitted)* raise (n-1)th operand to nth power
+-  **-multiply**  *(multiple uses permitted)* (%1 * %2) : multiply values
 
--  **-min**  *(multiple uses permitted)* smallest of last two operands
+-  **-divide**  *(multiple uses permitted)* (%1 / %2) : divide (n-1)th operand by nth
 
--  **-max**  *(multiple uses permitted)* greatest of last two operands
+-  **-min**  *(multiple uses permitted)* min (%1, %2) : smallest of last two operands
 
--  **-lt**  *(multiple uses permitted)* less-than operator (true=1, false=0)
+-  **-max**  *(multiple uses permitted)* max (%1, %2) : greatest of last two operands
 
--  **-gt**  *(multiple uses permitted)* greater-than operator (true=1, false=0)
+comparison operators
+^^^^^^^^^^^^^^^^^^^^
 
--  **-le**  *(multiple uses permitted)* less-than-or-equal-to operator (true=1, false=0)
+-  **-lt**  *(multiple uses permitted)* (%1 < %2) : less-than operator (true=1, false=0)
 
--  **-ge**  *(multiple uses permitted)* greater-than-or-equal-to operator (true=1, false=0)
+-  **-gt**  *(multiple uses permitted)* (%1 > %2) : greater-than operator (true=1, false=0)
 
--  **-eq**  *(multiple uses permitted)* equal-to operator (true=1, false=0)
+-  **-le**  *(multiple uses permitted)* (%1 <= %2) : less-than-or-equal-to operator (true=1, false=0)
 
--  **-neq**  *(multiple uses permitted)* not-equal-to operator (true=1, false=0)
+-  **-ge**  *(multiple uses permitted)* (%1 >= %2) : greater-than-or-equal-to operator (true=1, false=0)
 
--  **-complex**  *(multiple uses permitted)* create complex number using the last two operands as real,imaginary components
+-  **-eq**  *(multiple uses permitted)* (%1 == %2) : equal-to operator (true=1, false=0)
 
-Ternary operators
+-  **-neq**  *(multiple uses permitted)* (%1 != %2) : not-equal-to operator (true=1, false=0)
+
+conditional operators
+^^^^^^^^^^^^^^^^^^^^^
+
+-  **-if**  *(multiple uses permitted)* (%1 ? %2 : %3) : if first operand is true (non-zero), return second operand, otherwise return third operand
+
+-  **-replace**  *(multiple uses permitted)* (%1, %2 -> %3) : Wherever first operand is equal to the second operand, replace with third operand
+
+power functions
+^^^^^^^^^^^^^^^
+
+-  **-sqrt**  *(multiple uses permitted)* sqrt (%1) : square root
+
+-  **-pow**  *(multiple uses permitted)* %1^%2 : raise (n-1)th operand to nth power
+
+nearest integer operations
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-round**  *(multiple uses permitted)* round (%1) : round to nearest integer
+
+-  **-ceil**  *(multiple uses permitted)* ceil (%1) : round up to nearest integer
+
+-  **-floor**  *(multiple uses permitted)* floor (%1) : round down to nearest integer
+
+logical operators
 ^^^^^^^^^^^^^^^^^
 
--  **-if**  *(multiple uses permitted)* if first operand is true (non-zero), return second operand, otherwise return third operand
+-  **-not**  *(multiple uses permitted)* !%1 : NOT operator: true (1) if operand is false (i.e. zero)
 
--  **-replace**  *(multiple uses permitted)* Wherever first operand is equal to the second operand, replace with third operand
+-  **-and**  *(multiple uses permitted)* (%1 && %2) : AND operator: true (1) if both operands are true (i.e. non-zero)
+
+-  **-or**  *(multiple uses permitted)* (%1 \|\| %2) : OR operator: true (1) if either operand is true (i.e. non-zero)
+
+-  **-xor**  *(multiple uses permitted)* (%1 ^^ %2) : XOR operator: true (1) if only one of the operands is true (i.e. non-zero)
+
+classification functions
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-isnan**  *(multiple uses permitted)* isnan (%1) : true (1) if operand is not-a-number (NaN)
+
+-  **-isinf**  *(multiple uses permitted)* isinf (%1) : true (1) if operand is infinite (Inf)
+
+-  **-finite**  *(multiple uses permitted)* finite (%1) : true (1) if operand is finite (i.e. not NaN or Inf)
+
+complex numbers
+^^^^^^^^^^^^^^^
+
+-  **-complex**  *(multiple uses permitted)* (%1 + %2 i) : create complex number using the last two operands as real,imaginary components
+
+-  **-polar**  *(multiple uses permitted)* (%1 /_ %2) : create complex number using the last two operands as magnitude,phase components (phase in radians)
+
+-  **-real**  *(multiple uses permitted)* real (%1) : real part of complex number
+
+-  **-imag**  *(multiple uses permitted)* imag (%1) : imaginary part of complex number
+
+-  **-phase**  *(multiple uses permitted)* phase (%1) : phase of complex number (use -abs for magnitude)
+
+-  **-conj**  *(multiple uses permitted)* conj (%1) : complex conjugate
+
+-  **-proj**  *(multiple uses permitted)* proj (%1) : projection onto the Riemann sphere
+
+exponential functions
+^^^^^^^^^^^^^^^^^^^^^
+
+-  **-exp**  *(multiple uses permitted)* exp (%1) : exponential function
+
+-  **-log**  *(multiple uses permitted)* log (%1) : natural logarithm
+
+-  **-log10**  *(multiple uses permitted)* log10 (%1) : common logarithm
+
+trigonometric functions
+^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-cos**  *(multiple uses permitted)* cos (%1) : cosine
+
+-  **-sin**  *(multiple uses permitted)* sin (%1) : sine
+
+-  **-tan**  *(multiple uses permitted)* tan (%1) : tangent
+
+-  **-acos**  *(multiple uses permitted)* acos (%1) : inverse cosine
+
+-  **-asin**  *(multiple uses permitted)* asin (%1) : inverse sine
+
+-  **-atan**  *(multiple uses permitted)* atan (%1) : inverse tangent
+
+hyperbolic functions
+^^^^^^^^^^^^^^^^^^^^
+
+-  **-cosh**  *(multiple uses permitted)* cosh (%1) : hyperbolic cosine
+
+-  **-sinh**  *(multiple uses permitted)* sinh (%1) : hyperbolic sine
+
+-  **-tanh**  *(multiple uses permitted)* tanh (%1) : hyperbolic tangent
+
+-  **-acosh**  *(multiple uses permitted)* acosh (%1) : inverse hyperbolic cosine
+
+-  **-asinh**  *(multiple uses permitted)* asinh (%1) : inverse hyperbolic sine
+
+-  **-atanh**  *(multiple uses permitted)* atanh (%1) : inverse hyperbolic tangent
 
 Data type options
 ^^^^^^^^^^^^^^^^^

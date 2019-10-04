@@ -313,14 +313,14 @@ namespace MR
 
         void Tractography::draw (const Projection& transform, bool is_3D, int, int)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           not_3D = !is_3D;
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
             Tractogram* tractogram = dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get());
             if (tractogram->show && !hide_all_button->isChecked())
               tractogram->render (transform);
           }
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -407,7 +407,7 @@ namespace MR
 
         void Tractography::tractogram_close_slot ()
         {
-          MRView::GrabContext context;
+          GL::Context::Grab context;
           QModelIndexList indexes = tractogram_list_view->selectionModel()->selectedIndexes();
           while (indexes.size()) {
             tractogram_list_model->remove_item (indexes.first());

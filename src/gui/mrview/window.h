@@ -338,19 +338,6 @@ namespace MR
       };
 
 
-      class GrabContext : private Context::Grab { NOMEMALIGN
-        public:
-          GrabContext () : Context::Grab (Window::main->glarea) { }
-      };
-
-
-#ifndef NDEBUG
-# define ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT ASSERT_GL_CONTEXT_IS_CURRENT (::MR::GUI::MRView::Window::main->glwidget())
-#else
-# define ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT
-#endif
-
-
     }
   }
 }

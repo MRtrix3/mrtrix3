@@ -39,10 +39,10 @@ class Seedtest : public MethodBase { MEMALIGN(Seedtest)
     Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
         SharedBase (diff_path, property_set)
     {
-      set_step_size (1.0f);
+      set_step_size (1.0f, false);
+      min_num_points_preds = min_num_points_postds = 1;
+      max_num_points_preds = max_num_points_postds = 2;
       set_cutoff (0.0f);
-      min_num_points = 1;
-      max_num_points = 2;
       unidirectional = true;
       properties["method"] = "Seedtest";
     }

@@ -1,3 +1,10 @@
+import math, os
+from distutils.spawn import find_executable
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, fsl, image, path, run, utils
+
+
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('fsl', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
@@ -17,13 +24,11 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def check_output_paths(): #pylint: disable=unused-variable
-  from mrtrix3 import app
   app.check_output_path(app.ARGS.output)
 
 
 
 def get_inputs(): #pylint: disable=unused-variable
-  from mrtrix3 import app, image, MRtrixError, path, run
   image.check_3d_nonunity(path.from_user(app.ARGS.input, False))
   run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('input.mif'))
   if app.ARGS.mask:
@@ -35,12 +40,7 @@ def get_inputs(): #pylint: disable=unused-variable
 
 
 
-
 def execute(): #pylint: disable=unused-variable
-  import math, os
-  from distutils.spawn import find_executable
-  from mrtrix3 import app, fsl, image, MRtrixError, path, run, utils
-
   if utils.is_windows():
     raise MRtrixError('\'fsl\' algorithm of 5ttgen script cannot be run on Windows: FSL not available on Windows')
 
@@ -212,6 +212,6 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.nocrop:
     run.function(os.rename, 'combined_precrop.mif', 'result.mif')
   else:
-    run.command('mrmath combined_precrop.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | maskfilter - dilate - | mrgrid combined_precrop.mif crop result.mif -mask -')
+    run.command('mrmath combined_precrop.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrgrid combined_precrop.mif crop result.mif -mask -')
 
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output, True) + app.mrconvert_output_option(path.from_user(app.ARGS.input, True)))
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE)
