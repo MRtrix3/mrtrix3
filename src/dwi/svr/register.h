@@ -164,7 +164,7 @@ namespace MR
         // b-value index in MSSH image.
         size_t bidx;
         // rigid motion parameters in Lie vector representation.
-        Eigen::Matrix<float, 6, 1> motion;
+        Eigen::Matrix<float, 1, 6> motion;
         // reoriented gradient direction.
         Eigen::Vector3f bvec;
       };
@@ -197,6 +197,8 @@ namespace MR
 
         bool operator() (SliceIdx& slice)
         {
+          if (idx >= nv*ne)
+            return false;
           slice.vol = idx / ne;
           slice.exc = idx % ne;
           slice.bidx = bidx[slice.vol];
@@ -207,7 +209,7 @@ namespace MR
           // reorient vector
           slice.bvec = m.rotation() * dirs.row(slice.vol).normalized().transpose();
           idx++;
-          return idx <= nv*ne;
+          return true;
         }
 
       private:
@@ -271,10 +273,10 @@ namespace MR
           Eigen::LevenbergMarquardt<SliceRegistrationFunctor> lm (func);
           if (maxiter > 0)
             lm.setMaxfev(maxiter);
-          Eigen::VectorXf x (slice.motion);
+          Eigen::VectorXf x = slice.motion.transpose();
           lm.minimize(x);
           if (lm.info() == Eigen::ComputationInfo::Success || lm.info() == Eigen::ComputationInfo::NoConvergence)
-            out.motion = x.head<6>();
+            out.motion = x.head<6>().transpose();
           return true;
         }
 
@@ -297,7 +299,7 @@ namespace MR
         SliceAlignSink(const size_t nv, const size_t nz, const size_t mb)
           : ne ((mb) ? nz/mb : 1),
             motion (nv*ne, 6),
-            progress ("Registering slices to template volume.", nv*ne)
+            progress ("Registering slices to template volume", nv*ne)
         {
           motion.setZero();
         }
