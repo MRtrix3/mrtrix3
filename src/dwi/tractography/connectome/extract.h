@@ -44,7 +44,8 @@ class Selector
       exact_match (false),
       keep_self (keep_self) { }
     Selector (const node_t node_one, const node_t node_two) :
-      exact_match (true) { list.push_back (node_one); list.push_back (node_two); }
+      exact_match (true),
+      keep_self (true) { list.push_back (node_one); list.push_back (node_two); }
     Selector (const vector<node_t>& node_list, const bool both, const bool keep_self = false) :
       list (node_list),
       exact_match (both),

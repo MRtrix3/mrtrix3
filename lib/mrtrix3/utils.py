@@ -2,6 +2,10 @@
 
 
 
+import platform, re
+
+
+
 # A simple wrapper class for executing a set of commands or functions of some known length,
 #   generating and managing a progress bar as it does so
 # Can use in one of two ways:
@@ -52,7 +56,6 @@ class RunList(object): #pylint: disable=unused-variable
 
 # Return a boolean flag to indicate whether or not script is being run on a Windows machine
 def is_windows(): #pylint: disable=unused-variable
-  import platform
   system = platform.system().lower()
   return any(system.startswith(s) for s in [ 'mingw', 'msys', 'nt', 'windows' ])
 
@@ -60,8 +63,6 @@ def is_windows(): #pylint: disable=unused-variable
 
 # Load key-value entries from the comments within a text file
 def load_keyval(filename, **kwargs): #pylint: disable=unused-variable
-  import re
-
   comments = kwargs.pop('comments', '#')
   encoding = kwargs.pop('encoding', 'latin1')
   errors = kwargs.pop('errors', 'ignore')
