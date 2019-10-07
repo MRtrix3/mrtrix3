@@ -77,31 +77,31 @@ namespace MR
           name << "ROI" << std::setfill('0') << std::setw(5) << new_roi_counter++ << ".mif";
           filename = name.str();
 
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
           bind();
           allocate();
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
 
         void ROI_Item::zero ()
         {
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
           bind();
           vector<GLubyte> data (header().size(0)*header().size(1));
           for (int n = 0; n < header().size(2); ++n)
             upload_data ({ { 0, 0, n } }, { { header().size(0), header().size(1), 1 } }, reinterpret_cast<void*> (&data[0]));
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
         void ROI_Item::load ()
         {
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
           bind();
           auto image = header().get_image<bool>();
           vector<GLubyte> data (image.size(0)*image.size(1));
@@ -114,7 +114,7 @@ namespace MR
             ++progress;
           }
           filename = header().name();
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 

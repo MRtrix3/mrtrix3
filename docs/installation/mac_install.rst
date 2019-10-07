@@ -23,6 +23,7 @@ and optionally:
 - `libTIFF <http://www.libtiff.org/>`__ version >= 4.0 (for TIFF support)
 - `FFTW <http://www.fftw.org/>`__ version >= 3.0 (for improved performance in
   certain applications, currently only ``mrdegibbs``)
+- `libpng <http://www.libpng.org>`__ (for PNG support)
 
 .. WARNING:: 
 
@@ -106,17 +107,19 @@ Install Dependencies
            Make sure *not* to include the final ``/Eigen`` folder in the path
            name - use the folder in which it resides instead!
 
-4. Install TIFF and FFTW library.
+4. Install TIFF, FFTW and PNG libraries.
 
    - With `Homebrew <http://brew.sh/>`__:
 
        - Install TIFF: ``brew install libtiff``
        - Install FFTW: ``brew install fftw``
+       - Install PNG:  ``brew install libpng``
       
    - With `MacPorts <http://macports.org/>`__:
 
        - Install TIFF: ``port install tiff``
        - Install FFTW: ``port install fftw-3``
+       - Install PNG:  ``port install libpng``
 
 Git setup
 ---------

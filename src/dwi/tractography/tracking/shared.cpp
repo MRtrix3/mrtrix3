@@ -179,9 +179,9 @@ namespace MR
 
 
 
-        void SharedBase::set_step_size (float stepsize, bool is_higher_order)
+        void SharedBase::set_step_size (float voxel_frac, bool is_higher_order)
         {
-          step_size = stepsize * vox();
+          step_size = voxel_frac * vox();
           properties.set (step_size, "step_size");
           INFO ("step size = " + str (step_size) + " mm");
 
@@ -197,32 +197,26 @@ namespace MR
           const std::string angle_msg = is_higher_order ?
                                         "maximum angular change in fibre orientation per step" :
                                         "maximum deviation angle per step";
-          if (properties.find ("max_angle") == properties.end()) {
-            min_radius = vox();
-            max_angle_1o = 2.0f * std::asin (step_size / (2.0f * min_radius));
-            cos_max_angle_1o = std::cos (max_angle_1o);
-            const float max_angle_deg = max_angle_1o * 180.0f / Math::pi;
-            properties["max_angle"] = max_angle_deg;
-            INFO (angle_msg + " = " + str (max_angle_deg) + " deg");
-          } else {
-            max_angle_1o = to<float> (properties["max_angle"]);
-            INFO (angle_msg + " = " + str (max_angle_1o) + " deg");
-            // User provides angle at command-line in degrees, not radians
-            max_angle_1o *= Math::pi / 180.0f;
-            cos_max_angle_1o = std::cos (max_angle_1o);
-            min_radius = step_size / (2.0f * std::sin (0.5f * max_angle_1o));
-          }
+
+          max_angle_1o = 90.0f * step_size / vox();
+          properties.set (max_angle_1o, "max_angle");
+          INFO (angle_msg + " = " + str (max_angle_1o) + " deg");
+          // Both automated calculation of angle, and user-specified angles,
+          //   are in degrees
+          max_angle_1o *= Math::pi / 180.0;
+          cos_max_angle_1o = std::cos (max_angle_1o);
+
+          min_radius = step_size / (2.0f * std::sin (0.5f * max_angle_1o));
+          INFO ("Minimum radius of curvature = " + str(min_radius) + "mm");
 
           if (is_higher_order) {
             max_angle_ho = max_angle_1o;
             cos_max_angle_ho = cos_max_angle_1o;
             // Clear these variables so that the next() function of the underlying method
             //   does not enforce curvature constraints; rely on e.g. RK4 to do it
-            max_angle_1o = Math::pi;
+            max_angle_1o = float(Math::pi);
             cos_max_angle_1o = 0.0f;
           }
-
-          INFO ("Minimum radius of curvature = " + str(min_radius) + "mm");
         }
 
 
@@ -230,7 +224,7 @@ namespace MR
         void SharedBase::set_num_points()
         {
           // Angle around the circle of minimum radius for the given step size
-          const float angle_minradius_preds = 2.0 * std::asin (step_size / (2.0 * min_radius));
+          const float angle_minradius_preds = 2.0f * std::asin (step_size / (2.0f * min_radius));
           // Maximum inter-vertex distance after streamline has been downsampled
           const float max_step_postds = downsampler.get_ratio() * step_size;
 
@@ -245,9 +239,9 @@ namespace MR
           // Maximal angle around this minimum radius traversed after downsampling
           const float angle_minradius_postds = downsampler.get_ratio() * angle_minradius_preds;
           // Minimum chord length after streamline has been downsampled
-          const float min_step_postds = (angle_minradius_postds > 2.0 * Math::pi) ?
-                                        0.0 :
-                                        (2.0 * min_radius * std::sin (0.5 * angle_minradius_postds));
+          const float min_step_postds = (angle_minradius_postds > float(2.0 * Math::pi)) ?
+                                        0.0f :
+                                        (2.0f * min_radius * std::sin (0.5f * angle_minradius_postds));
 
           // What we need:
           //   - Before downsampling:

@@ -121,6 +121,11 @@ namespace MR
           __single_thread (const __single_thread&) = delete;
           __single_thread (__single_thread&&) = default;
 
+          bool finished () const
+          {
+            return thread.wait_for(std::chrono::microseconds(0)) == std::future_status::ready;
+          }
+
           void wait () noexcept (false) {
             DEBUG ("waiting for completion of thread \"" + name + "\"...");
             thread.get();
@@ -170,6 +175,13 @@ namespace MR
               if (exception_thrown)
                 throw Exception ("exception thrown from one or more threads \"" + name + "\"");
               DEBUG ("threads \"" + name + "\" completed OK");
+            }
+
+            bool finished () const {
+              for (auto& t : threads)
+                if (t.wait_for (std::chrono::microseconds(0)) != std::future_status::ready)
+                  return false;
+              return true;
             }
 
             bool any_valid () const {

@@ -109,8 +109,8 @@ namespace MR
           data.push_back (parent.get_node_centre (0));
           data.push_back (parent.get_node_centre (1));
 
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
 
           vertex_buffer.gen();
           vertex_buffer.bind (gl::ARRAY_BUFFER);
@@ -130,12 +130,12 @@ namespace MR
           tangent_buffer.bind (gl::ARRAY_BUFFER);
           gl::EnableVertexAttribArray (1);
           gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
         Edge::Line::~Line()
         {
-          MRView::GrabContext context;
+          GL::Context::Grab context;
           vertex_buffer.clear();
           tangent_buffer.clear();
           vertex_array_object.clear();
@@ -143,14 +143,14 @@ namespace MR
 
         void Edge::Line::render() const
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           if (!vertex_buffer || !tangent_buffer || !vertex_array_object)
             return;
           vertex_buffer.bind (gl::ARRAY_BUFFER);
           tangent_buffer.bind (gl::ARRAY_BUFFER);
           vertex_array_object.bind();
           gl::DrawArrays (gl::LINES, 0, 2);
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -187,8 +187,8 @@ namespace MR
 
         Edge::Streamline::Streamline (const Exemplar& data)
         {
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
           assert (data.tangents.size() == data.vertices.size());
 
           count = data.vertices.size();
@@ -211,12 +211,12 @@ namespace MR
           tangent_buffer.bind (gl::ARRAY_BUFFER);
           gl::EnableVertexAttribArray (1);
           gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
         Edge::Streamline::~Streamline()
         {
-          MRView::GrabContext context;
+          GL::Context::Grab context;
           vertex_buffer.clear();
           tangent_buffer.clear();
           vertex_array_object.clear();
@@ -224,14 +224,14 @@ namespace MR
 
         void Edge::Streamline::render() const
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           if (!vertex_buffer || !tangent_buffer || !vertex_array_object)
             return;
           vertex_buffer.bind (gl::ARRAY_BUFFER);
           tangent_buffer.bind (gl::ARRAY_BUFFER);
           vertex_array_object.bind();
           gl::DrawArrays (gl::LINE_STRIP, 0, count);
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -246,8 +246,8 @@ namespace MR
         Edge::Streamtube::Streamtube (const Exemplar& data) :
             count (data.vertices.size())
         {
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
 
           assert (data.normals.size() == data.vertices.size());
           assert (data.binormals.size() == data.vertices.size());
@@ -303,12 +303,12 @@ namespace MR
           normal_buffer.bind (gl::ARRAY_BUFFER);
           gl::EnableVertexAttribArray (2);
           gl::VertexAttribPointer (2, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
         Edge::Streamtube::~Streamtube()
         {
-          MRView::GrabContext context;
+          GL::Context::Grab context;
           vertex_buffer.clear();
           tangent_buffer.clear();
           normal_buffer.clear();
@@ -317,7 +317,7 @@ namespace MR
 
         void Edge::Streamtube::render() const
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           if (!vertex_buffer || !tangent_buffer || !normal_buffer || !vertex_array_object)
             return;
           vertex_buffer.bind (gl::ARRAY_BUFFER);
@@ -325,7 +325,7 @@ namespace MR
           normal_buffer.bind (gl::ARRAY_BUFFER);
           vertex_array_object.bind();
           gl::MultiDrawElements (gl::TRIANGLE_STRIP, shared.element_counts, gl::UNSIGNED_INT, (const GLvoid* const*)shared.element_indices, count-1);
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
