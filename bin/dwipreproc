@@ -22,7 +22,7 @@ if not os.path.isdir(lib_folder):
   sys.exit(1)
 sys.path.insert(0, lib_folder)
 
-import math, itertools, shutil
+import math, itertools, shutil, subprocess
 from mrtrix3 import app, file, fsl, image, path, phaseEncoding, run #pylint: disable=redefined-builtin
 
 
@@ -122,11 +122,11 @@ eddyqc_files = [ 'eddy_parameters', 'eddy_movement_rms', 'eddy_restricted_moveme
                  'eddy_post_eddy_shell_alignment_parameters', 'eddy_post_eddy_shell_PE_translation_parameters', \
                  'eddy_outlier_report', 'eddy_outlier_map', 'eddy_outlier_n_stdev_map', 'eddy_outlier_n_sqr_stdev_map', \
                  'eddy_movement_over_time' ]
+eddyqc_images = [ 'eddy_outlier_free_data', 'eddy_cnr_maps', 'eddy_residuals' ]
 if app.args.eddyqc_text:
   eddyqc_path = path.fromUser(app.args.eddyqc_text, False)
 elif app.args.eddyqc_all:
   eddyqc_path = path.fromUser(app.args.eddyqc_all, False)
-  eddyqc_files.extend([ 'eddy_outlier_free_data.nii.gz', 'eddy_cnr_maps.nii.gz', 'eddy_residuals.nii.gz' ])
 if eddyqc_path:
   if os.path.exists(eddyqc_path):
     if os.path.isdir(eddyqc_path):
@@ -142,7 +142,7 @@ if eddyqc_path:
         app.error('Target for eddy QC output exists, and is not a directory (use -force to override)')
 
 
-eddy_manual_options = ''
+eddy_manual_options = []
 if app.args.eddy_options:
   # Initially process as a list; we'll convert back to a string later
   eddy_manual_options = app.args.eddy_options.strip().split()
@@ -826,22 +826,40 @@ if eddy_mporder:
   eddy_manual_options.append('--slspec=slspec.txt')
 
 
-# Revert eddy_manual_options from a list back to a single string
-eddy_manual_options = (' ' + ' '.join(eddy_manual_options)) if eddy_manual_options else ''
-
-
 # Prepare input data for eddy
 run.command('mrconvert ' + dwi_path + import_dwi_pe_table_option + dwi_permute_volumes_pre_eddy_option + ' eddy_in.nii -strides -1,+2,+3,+4 -export_grad_fsl bvecs bvals -export_pe_eddy eddy_config.txt eddy_indices.txt')
 file.delTemporary(dwi_path)
 
+
+# May need to add command-line options depending on version of eddy
+#   in order to get desired image output for -eddyqc_all option
+def eddy_options_qc(eddy_cmd, existing_options, eddyqc_all):
+  if not eddyqc_all:
+    return []
+  eddy_help_process = subprocess.Popen([ eddy_cmd, '--help' ], stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
+  eddy_stderr = eddy_help_process.communicate()[1].decode('utf-8', errors='replace').splitlines()
+  options = []
+  for line in eddy_stderr:
+    line = line.lstrip()
+    for opt in [ '--cnr_maps', '--residuals' ]:
+      if line.startswith(opt) and opt not in existing_options:
+        options.append(opt)
+  return options
+
+
 # Run eddy
 # If a CUDA version is in PATH, run that first; if it fails, re-try using the non-CUDA version
-eddy_all_options = '--imain=eddy_in.nii --mask=eddy_mask.nii --acqp=eddy_config.txt --index=eddy_indices.txt --bvecs=bvecs --bvals=bvals' + eddy_in_topup_option + eddy_manual_options + ' --out=dwi_post_eddy'
+eddy_all_options = '--imain=eddy_in.nii --mask=eddy_mask.nii --acqp=eddy_config.txt --index=eddy_indices.txt --bvecs=bvecs --bvals=bvals' + eddy_in_topup_option + ' --out=dwi_post_eddy'
 eddy_cuda_cmd = fsl.eddyBinary(True)
 eddy_openmp_cmd = fsl.eddyBinary(False)
 if eddy_cuda_cmd:
+  additional_eddy_options = eddy_options_qc(eddy_cuda_cmd, eddy_manual_options, app.args.eddyqc_all)
   # If running CUDA version, but OpenMP version is also available, don't stop the script if the CUDA version fails
-  (eddy_stdout, eddy_stderr) = run.command(eddy_cuda_cmd + ' ' + eddy_all_options, not eddy_openmp_cmd)
+  (eddy_stdout, eddy_stderr) = run.command(eddy_cuda_cmd + ' '
+                                           + eddy_all_options
+                                           + (' ' + ' '.join(eddy_manual_options) if eddy_manual_options else '')
+                                           + (' ' + ' '.join(additional_eddy_options) if additional_eddy_options else ''),
+                                           not eddy_openmp_cmd)
   if app.verbosity > 2:
     app.console('Output of CUDA eddy command:\n' + eddy_stdout + '\n' + eddy_stderr)
   if os.path.isfile('dwi_post_eddy.eddy_parameters'):
@@ -850,7 +868,11 @@ if eddy_cuda_cmd:
   else:
     app.warn('CUDA version of eddy appears to have failed; trying OpenMP version')
 if eddy_openmp_cmd:
-  (eddy_stdout, eddy_stderr) = run.command(eddy_openmp_cmd + ' ' + eddy_all_options)
+  additional_eddy_options = eddy_options_qc(eddy_openmp_cmd, eddy_manual_options, app.args.eddyqc_all)
+  (eddy_stdout, eddy_stderr) = run.command(eddy_openmp_cmd + ' '
+                                           + eddy_all_options
+                                           + (' ' + ' '.join(eddy_manual_options) if eddy_manual_options else '')
+                                           + (' ' + ' '.join(additional_eddy_options) if additional_eddy_options else ''))
   if app.verbosity > 2:
     app.console('Output of OpenMP eddy command:\n' + eddy_stdout + '\n' + eddy_stderr)
 file.delTemporary('eddy_in.nii')
@@ -1064,7 +1086,18 @@ if eddyqc_path:
     run.function(os.makedirs, eddyqc_path)
   for filename in eddyqc_files:
     if os.path.exists('dwi_post_eddy.' + filename):
-      run.function(shutil.copy, 'dwi_post_eddy.' + filename, os.path.join(eddyqc_path, filename))
+      run.function(os.rename if app.cleanup else shutil.copy,
+                   'dwi_post_eddy.' + filename,
+                   os.path.join(eddyqc_path, filename))
+  if app.args.eddyqc_all:
+    for basename in eddyqc_images:
+      # Can't use fsl.findImage(): in this version, will call app.error() if not found
+      for extension in [ '.nii', '.nii.gz' ]:
+        full_path = 'dwi_post_eddy.' + basename + extension
+        if os.path.exists(full_path):
+          run.function(os.rename if app.cleanup else shutil.copy,
+                       full_path,
+                       basename + extension)
 
 
 # Build a list of header key-value entries that we want to _remove_ from the
