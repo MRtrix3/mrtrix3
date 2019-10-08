@@ -33,7 +33,7 @@ using namespace MR;
 using namespace App;
 
 
-const char* algorithms[] = { "nbs", "nbse", "none", nullptr };
+const char* algorithms[] = { "nbs", "tfnbs", "none", nullptr };
 
 
 
@@ -81,7 +81,11 @@ void usage ()
                "Zalesky, A.; Fornito, A. & Bullmore, E. T. Network-based statistic: Identifying differences in brain networks. \n"
                "NeuroImage, 2010, 53, 1197-1207"
 
-             + "* If using the NBSE algorithm: \n"
+             + "* If using the TFNBS algorithm: \n"
+               "Baggio, H.C.; Abos, A.; Segura, B.; Campabadal, A.; Garcia-Diaz, A.; Uribe, C.; Compta, Y.; Marti, M.J.; Valldeoriola, F.; Junque, C. Statistical inference in brain graphs using threshold-free network-based statistics."
+               "HBM, 2018, 39, 2289-2302"
+
+             + "* If using the TFNBS algorithm: \n"
                "Vinokur, L.; Zalesky, A.; Raffelt, D.; Smith, R.E. & Connelly, A. A Novel Threshold-Free Network-Based Statistics Method: Demonstration using Simulated Pathology. \n"
                "OHBM, 2015, 4144"
 
